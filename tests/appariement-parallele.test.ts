@@ -55,7 +55,14 @@ interface Espace {
   reference: SearchResult;
 }
 
-/** Des espaces de quelques milliers à quelques centaines de milliers de paires, avec des candidats, par la construction de production. */
+/**
+ * Au-delà, un espace garde des centaines de milliers de candidats : les cinq
+ * restent en mémoire pendant toute l'entrée, avec leurs références, et le pic
+ * de l'entrée approchait la limite du tas de Node (3,9 Go pour 4).
+ */
+const PAIRES_MAX = 250_000;
+
+/** Des espaces de quelques milliers à `PAIRES_MAX` paires, avec des candidats, par la construction de production. */
 function espaces(): Espace[] {
   const out: Espace[] = [];
   for (let s = 0; out.length < 5 && s < 200; s++) {
@@ -71,8 +78,9 @@ function espaces(): Espace[] {
     const bucketsA = drain(construireMoitie('A', [0, 1, 2], prepared, prepared.maxSetsForA));
     const bucketsB = drain(construireMoitie('B', [3, 4, 5], prepared, prepared.maxSetsForB));
     const total = totalPairCount(prepared, bucketsA, bucketsB);
+    if (total < 2000 || total > PAIRES_MAX) continue;
     const reference = drain(apparier(prepared, bucketsA, bucketsB));
-    if (total < 2000 || reference.candidates.length < 8) continue;
+    if (reference.candidates.length < 8) continue;
     out.push({ nom: `espace ${s} (${total} paires, ${reference.candidates.length} candidats)`, params, prepared, bucketsA, bucketsB, total, reference });
   }
   return out;
