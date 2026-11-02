@@ -1,4 +1,5 @@
 import { Search } from 'lucide-react';
+import { useTraduction } from '../hooks/useLangue';
 
 interface Props {
   value: string;
@@ -6,6 +7,7 @@ interface Props {
 }
 
 export default function SearchBar({ value, onChange }: Props) {
+  const t = useTraduction().bestiaire;
   return (
     <div className="relative">
       <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-[18px] h-[18px] text-ink-dim" />
@@ -13,7 +15,7 @@ export default function SearchBar({ value, onChange }: Props) {
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder="Rechercher un monstre par nom…"
+        placeholder={t.rechercher}
         // ⚠️ Pas de halo `focus:shadow` en plus de la bordure : il s'ajoutait à
         // l'anneau `:focus-visible` global, ce qui faisait TROIS traits d'accent
         // concentriques autour du champ. La bordure marque le champ actif,

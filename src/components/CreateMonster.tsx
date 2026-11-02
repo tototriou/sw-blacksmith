@@ -32,7 +32,9 @@ interface Props {
 
 // Bouton + formulaire pour créer un monstre perso (nom, élément, SPD de base).
 export default function CreateMonster({ onCreate, customMonsters, onDelete, sansBouton, ouvert, onOuvert }: Props) {
-  const jeu = useTraduction().jeu;
+  const t = useTraduction();
+  const jeu = t.jeu;
+  const c = t.creerMonstre;
   // ⚠️ La suppression d'un monstre créé à la main demande une CONFIRMATION : il
   // n'existe nulle part ailleurs. Contrairement à un monstre du jeu, qu'on
   // retrouve dans les données, celui-ci part avec son nom, son élément et sa
@@ -87,7 +89,7 @@ export default function CreateMonster({ onCreate, customMonsters, onDelete, sans
       <Champ
         value={name}
         onChange={(e) => setName(e.target.value)}
-        placeholder="Nom du monstre"
+        placeholder={c.nom}
         className="mb-2 compact:py-2.5"
       />
 
@@ -111,8 +113,8 @@ export default function CreateMonster({ onCreate, customMonsters, onDelete, sans
           allowEmpty
           min={0}
           width="w-16"
-          placeholder="SPD"
-          ariaLabel="Vitesse de base"
+          placeholder={jeu.stats.spd}
+          ariaLabel={c.vitesseBase}
           onChange={(v) => setSpeed(v == null ? '' : String(v))}
         />
       </div>
@@ -121,13 +123,13 @@ export default function CreateMonster({ onCreate, customMonsters, onDelete, sans
       <Selecteur
         value={leadStat}
         onChange={(e) => setLeadStat(e.target.value)}
-        title="Type de lead (optionnel)"
+        title={c.typeLead}
         className="mb-2.5"
       >
-        <option value="">Lead : aucun</option>
+        <option value="">{c.leadAucun}</option>
         {LEAD_STATS.map((s) => (
           <option key={s} value={s}>
-            Lead {nomStatLead(jeu, s)}
+            {c.lead(nomStatLead(jeu, s))}
           </option>
         ))}
       </Selecteur>
@@ -141,18 +143,18 @@ export default function CreateMonster({ onCreate, customMonsters, onDelete, sans
             max={100}
             width="w-14"
             placeholder="%"
-            ariaLabel="Valeur du lead en %"
+            ariaLabel={c.valeurLead}
             onChange={(v) => setLead(v == null ? '' : String(v))}
           />
           <Selecteur
             value={scope}
             onChange={(e) => setScope(e.target.value as 'General' | 'Element')}
-            title="Portée du lead"
+            title={c.porteeLead}
             pleineLargeur={false}
             className="flex-1"
           >
-            <option value="General">Toutes cibles</option>
-            <option value="Element">Même élément</option>
+            <option value="General">{c.toutesCibles}</option>
+            <option value="Element">{c.memeElement}</option>
           </Selecteur>
         </div>
       )}
@@ -177,23 +179,23 @@ export default function CreateMonster({ onCreate, customMonsters, onDelete, sans
       fond="doux"
       trait="aucun"
       icone={<Plus size={14} />}
-      libelle="Créer"
+      libelle={c.creer}
     />
   );
 
   // Liste des monstres déjà créés, partagée elle aussi par les deux contenants.
   const listePerso = customMonsters.length > 0 && (
     <div className="mt-3 border-t border-border pt-2.5">
-      <span className="label">Mes monstres perso</span>
+      <span className="label">{c.mesMonstres}</span>
       <ul className="mt-1.5 flex max-h-40 flex-col gap-1 overflow-y-auto">
         {customMonsters.map((m) => (
           <li key={m.id} className="flex items-center gap-2 text-xs">
             <ElementIcon element={m.element} size={15} className="flex-none" />
             <span className="flex-1 truncate">{m.name}</span>
-            <span className="font-mono text-ink-dim">SPD {m.stats.speed ?? '—'}</span>
+            <span className="font-mono text-ink-dim">{jeu.stats.spd} {m.stats.speed ?? '—'}</span>
             <BoutonIcone
               onClick={() => setSuppressionAConfirmer({ id: String(m.id), nom: m.name })}
-              libelle={`Supprimer ${m.name}`}
+              libelle={c.supprimer(m.name)}
               taille="serre"
               ton="danger"
               icone={<X size={13} />}
@@ -218,11 +220,11 @@ export default function CreateMonster({ onCreate, customMonsters, onDelete, sans
       {!sansBouton && (
         <Bouton
           onClick={() => setOpen(!open)}
-          aria-label="Créer un monstre"
-          title="Créer un monstre qui n'existe pas dans les données chargées"
+          aria-label={c.bouton}
+          title={c.boutonAide}
           icone={<Wand2 size={15} />}
-          libelle="Créer un monstre"
-          libelleCourt="Monstre"
+          libelle={c.bouton}
+          libelleCourt={c.boutonCourt}
         />
       )}
 
@@ -243,7 +245,7 @@ export default function CreateMonster({ onCreate, customMonsters, onDelete, sans
         <Modale
           onClose={() => setOpen(false)}
           labelledBy="creer-monstre-titre"
-          titre="Nouveau monstre"
+          titre={c.titre}
           largeur="max-w-[340px]"
           croix
           actions={actionCreer}
@@ -257,9 +259,9 @@ export default function CreateMonster({ onCreate, customMonsters, onDelete, sans
           de bureau ET le panneau mobile, qui affichent chacun leur liste. */}
       {suppressionAConfirmer && (
         <ConfirmDialog
-          titre={`Supprimer ${suppressionAConfirmer.nom} ?`}
-          message="Ce monstre a été créé à la main : il n'existe pas dans les données du jeu et devra être ressaisi en entier. Les équipes qui l'utilisaient perdent leur emplacement."
-          libelleAction="Supprimer"
+          titre={c.confirmerTitre(suppressionAConfirmer.nom)}
+          message={c.confirmerMessage}
+          libelleAction={c.confirmerAction}
           destructif
           onCancel={() => setSuppressionAConfirmer(null)}
           onConfirm={() => {

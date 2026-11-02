@@ -103,8 +103,8 @@ tous les autres dans n'importe quelle analyse de dépendances.
 | **Outils** | `#/outils/optimizer`, `/speed-tuning` | `src/pages/OutilsPage.tsx` | tout `src/components/outils/` | [outils/](../02-app/outils/README.md), [optimizer/](../02-app/optimizer/README.md), [speed-tuning/](../02-app/speed-tuning/README.md), [degats-reels/](../02-app/degats-reels/README.md) |
 | Bestiaire | `#/bestiary` | `src/pages/BestiaryPage.tsx` | `MonsterGrid`, `FilterBar`, `SearchBar`, `MonsterDetailDialog`, `Pager` | [bestiaire/](../02-app/bestiaire/README.md) |
 | Paramètres | `#/parametres` | `src/pages/SettingsPage.tsx` | `SettingsMenu`, `AccountImportControl` | [feat-navigation/compte-et-parametres.md](../02-app/transverse/feat-navigation/compte-et-parametres.md) |
-| Mécaniques | `#/mecaniques` | `src/pages/MechanicsPage.tsx` | — (page statique) | [mecaniques/](../02-app/mecaniques/README.md) |
-| Nouveautés | `#/releases` | `src/pages/ReleasesPage.tsx` | `src/data/releases.ts` | [nouveautes/](../02-app/nouveautes/README.md) |
+| Mécaniques | `#/mecaniques` | `src/pages/MechanicsPage.tsx` | `src/i18n/articles/mecaniques.*.tsx` (l'article, un par langue), `src/components/mecaniques/blocs.tsx` | [mecaniques/](../02-app/mecaniques/README.md) |
+| Nouveautés | `#/releases` | `src/pages/ReleasesPage.tsx` | `src/data/releases.ts`, `src/data/releases.en.ts` (un journal par langue) | [nouveautes/](../02-app/nouveautes/README.md) |
 | Télécharger (site seulement) | `#/telecharger` | `src/pages/TelechargerPage.tsx` | `src/lib/bureau.ts` (`TELECHARGEMENTS`), `src/components/IconesSystemes.tsx` | [telecharger/](../02-app/telecharger/README.md) |
 | Arène | `#/arene` | `src/pages/ComingSoon.tsx` | — | [arene/](../02-app/arene/README.md) |
 

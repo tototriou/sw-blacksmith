@@ -58,11 +58,12 @@ src/
                  # Modale, Flottant, Pastille…) — point d'entrée src/ui/index.ts
   hooks/         # état et persistance (usePersistence, useOptimizerState, useSpeedTune, useLangue…)
   i18n/          # les textes de l'interface : un dictionnaire par langue (fr.ts source, en.ts), formats ;
-                 # jeu/ : le vocabulaire du jeu dans chaque langue (sets, stats, effets…)
+                 # jeu/ : le vocabulaire du jeu dans chaque langue (sets, stats, effets…) ;
+                 # articles/ : les longs textes suivis, un par langue (Mécaniques)
   lib/           # calcul pur, testé : vitesse (speed.ts), runes, artéfacts, reliques, dégâts réels
                  # (damage.ts), moteur de l'Optimizer (runeBuildOptim.ts), import de compte, session
   workers/       # Web Workers de l'Optimizer (recherche, appariement parallèle, classement, résolution)
-  data/          # contenu statique (journal des versions releases.ts)
+  data/          # contenu statique (journal des versions : releases.ts, releases.en.ts)
 bureau/          # application de bureau Electron (main, protocole, session, SW Exporter, mise à jour)
 public/          # icônes, portraits, données SWARFARM (public/data, régénérées par npm run fetch-data)
 scripts/         # outillage Node : données, benchmarks, harnais de diagnostic, hooks, bureau

@@ -9,11 +9,19 @@ import { SettingsList } from '../../src/components/SettingsMenu';
 import { RuneDetailBox } from '../../src/components/PieceDetail';
 import type { RuneDetail } from '../../src/types';
 import { setChoixLangue } from '../../src/hooks/useLangue';
-import { ok, titre } from '../outils';
+import MechanicsPage from '../../src/pages/MechanicsPage';
+import BestiaryPage from '../../src/pages/BestiaryPage';
+import MonsterDetailDialog from '../../src/components/MonsterDetailDialog';
+import { mecaniquesEn } from '../../src/i18n/articles/mecaniques.en';
+import { mecaniquesFr } from '../../src/i18n/articles/mecaniques.fr';
+import { autreForme } from '../../src/lib/monsterForms';
+import type { Monster } from '../../src/types';
+import { egal, monstersJson, ok, titre } from '../outils';
 import { rendreApp } from './app.test';
-import { boutons, rendre, texteVisible } from './outils-rendu';
+import { auTelephone, boutons, rendre, texteVisible } from './outils-rendu';
 
 const rien = () => {};
+const MONSTRES = monstersJson() as Monster[];
 const reglages = () => rendre(<SettingsList onClearData={rien} onKeepAccount={rien} accountExportedAt={Date.UTC(2026, 7, 9)} groupes />);
 
 function enAnglais<T>(f: () => T): T {
@@ -93,4 +101,46 @@ export function testRenduLangueApp() {
   titre('rendu · langue — en français, rien ne change');
   const fr = texteVisible(rendreApp('#/parametres'));
   ok(['Accueil', 'Jouer', 'Mon compte', 'Ressources', 'Paramètres'].every((m) => fr.includes(m)), 'les mêmes entrées, en français');
+}
+
+// Les pages ouvertes à tous (lot 3) : accueil, Nouveautés, Télécharger,
+// Mécaniques, Bestiaire et la fiche d'un monstre, en anglais.
+export function testRenduLanguePagesPubliques() {
+  titre('rendu · langue — les pages ouvertes à tous, en anglais');
+  const accueil = enAnglais(() => texteVisible(rendreApp('#/')));
+  for (const attendu of ['The toolbox for Summoners', 'How it works', 'Export your account', 'Features', 'Rune analysis', 'Drop your .json file here', "See what's new"])
+    ok(accueil.includes(attendu), `accueil : « ${attendu} »`);
+  for (const absent of ['Comment ça marche', 'Fonctionnalités', 'Dépose ton fichier']) ok(!accueil.includes(absent), `accueil : plus de « ${absent} »`);
+
+  const nouveautes = enAnglais(() => texteVisible(rendreApp('#/releases')));
+  for (const attendu of ['What changed in each version', 'SW Blacksmith in English', 'Not yet released', 'A redesigned Optimizer'])
+    ok(nouveautes.includes(attendu), `Nouveautés : « ${attendu} »`);
+  ok(!nouveautes.includes('Version actuelle') && !nouveautes.includes('Un Optimizer repensé'), 'Nouveautés : le journal anglais, pas le français');
+  ok(/October 29, 2026/.test(nouveautes), 'Nouveautés : les dates au format anglais');
+
+  const telecharger = enAnglais(() => texteVisible(rendreApp('#/telecharger')));
+  ok(telecharger.includes('Download for Windows') && telecharger.includes('Version offered: v'), 'Télécharger : boutons et version proposée');
+
+  const mecaniques = enAnglais(() => rendre(<MechanicsPage />));
+  ok(texteVisible(mecaniques).startsWith('Game mechanics The formulas behind Summoners War'), 'Mécaniques : l’article anglais');
+  egal(boutons(mecaniques).map((b) => b.texte), mecaniquesEn.sections.map((s) => s.titre), 'Mécaniques : le sommaire anglais');
+
+  const bestiaire = enAnglais(() => rendre(<BestiaryPage monsters={MONSTRES} loadState="live" menuOuvert={false} onFermerMenu={rien} />));
+  ok(bestiaire.includes('placeholder="Search for a monster by name…"') && texteVisible(bestiaire).includes('Bestiary'), 'Bestiaire : titre et recherche');
+  ok(/\d+ monsters/.test(texteVisible(bestiaire)) && !texteVisible(bestiaire).includes('monstres'), 'Bestiaire : les comptes en anglais');
+
+  const bellenus = MONSTRES.find((m) => m.name === 'Bellenus' && autreForme(m, MONSTRES))!;
+  const fiche = enAnglais(() => texteVisible(auTelephone(() => rendre(<MonsterDetailDialog monster={bellenus} autre={autreForme(bellenus, MONSTRES)} onClose={rien} />))));
+  for (const attendu of ['Base form', 'Transformed form', 'HP', 'ATK', 'CRI Rate', 'CRI Dmg', 'Resistance', 'Accuracy'])
+    ok(fiche.includes(attendu), `fiche d’un monstre : « ${attendu} »`);
+}
+
+// L'article « Mécaniques » : un par langue, mêmes sections dans le même ordre.
+export function testRenduMecaniquesLangues() {
+  titre('Mécaniques — un article par langue, mêmes sections');
+  egal(mecaniquesEn.sections.map((s) => s.id), mecaniquesFr.sections.map((s) => s.id), 'mêmes sections (ancres), même ordre');
+  // « Variance » s'écrit pareil dans les deux langues.
+  ok(mecaniquesEn.sections.every((s, i) => s.titre !== mecaniquesFr.sections[i].titre || s.titre === 'Variance'), 'chaque titre de section est traduit');
+  const fr = texteVisible(rendre(<MechanicsPage />));
+  ok(fr.includes('Correction Rapide') && !fr.includes('Swift'), 'en français, le set porte son nom du jeu : Rapide');
 }
