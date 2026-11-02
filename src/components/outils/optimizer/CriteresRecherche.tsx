@@ -1,5 +1,6 @@
 import { SlidersHorizontal } from 'lucide-react';
 import { type ReactNode } from 'react';
+import { useTraduction } from '../../../hooks/useLangue';
 
 export interface CriteresRechercheProps {
   setDeRunes: ReactNode;
@@ -10,6 +11,7 @@ export interface CriteresRechercheProps {
 // Le titre de la carte, au téléphone : le bureau n'en a pas
 // (`bureau/SetDeRunesCompact.tsx`).
 function TitreCriteresRecherche({ className }: { className: string }) {
+  const c = useTraduction().optimizer.criteres;
   return (
     <div className={`${className} flex items-center gap-2`}>
       {/* Curseurs de réglage, colorés (accent) — plus parlant qu'une
@@ -17,7 +19,7 @@ function TitreCriteresRecherche({ className }: { className: string }) {
       <div className="flex h-6 w-6 flex-none items-center justify-center rounded-md border border-accent/40 bg-accent-soft">
         <SlidersHorizontal size={13} className="text-accent" />
       </div>
-      <p className="text-[13.5px] font-bold text-ink">Critères de recherche</p>
+      <p className="text-[13.5px] font-bold text-ink">{c.titre}</p>
     </div>
   );
 }

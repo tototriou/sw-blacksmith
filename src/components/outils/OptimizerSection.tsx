@@ -183,7 +183,8 @@ import ObjectifEtRechercherBureau from './optimizer/bureau/ObjectifEtRechercherB
 import ResultatsBureau from './optimizer/bureau/ResultatsBureau';
 import { attenteResultats, type ColonneReglage } from '../../lib/optimizerColonnes';
 import { PREFIXE_FICHIER } from '../../marque';
-import { useTraduction } from '../../hooks/useLangue';
+import { useLangue, useTraduction } from '../../hooks/useLangue';
+import { formatNombre } from '../../i18n/format';
 import { nomElement } from '../../i18n/jeu';
 
 interface Props {
@@ -362,7 +363,10 @@ const AUCUNE_RECOMMANDATION: Reco[] = [];
 const AUCUNE_CARTE: CarteClassement[] = [];
 
 export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATION, box, runes, artifacts, relics, relicUsageById, optimizer, onImporterEquipe, allMonsters, rtaEntries, siegeDefenseTeams, siegeOffenseTeams, lists, accountName, menuOuvert, onFermerMenu, onOuvrirMenu, onMonstreHorsVue }: Props) {
-  const jeu = useTraduction().jeu;
+  const textes = useTraduction();
+  const langue = useLangue();
+  const jeu = textes.jeu;
+  const os = textes.optimizer.section;
   const [rapportImport, setRapportImport] = useState<RapportImportOptimizer | null>(null);
   // Zone C du téléphone (« Gérer mes listes »), repliée par défaut.
   const [zoneCOpen, setZoneCOpen] = useState(false);
@@ -537,8 +541,8 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
   // en mémoire le temps du chargement, et son rappel ne doit pas s'afficher
   // sous le nouveau monstre.
   const rappelsBuffs = useMemo(
-    () => (skillDetail?.com2usId === selectedCom2usId ? rappelsBuffsDePassif(skillDetail) : []),
-    [skillDetail, selectedCom2usId]
+    () => (skillDetail?.com2usId === selectedCom2usId ? rappelsBuffsDePassif(skillDetail, textes) : []),
+    [skillDetail, selectedCom2usId, textes]
   );
   // Le sort RÉELLEMENT retenu — `resolveDamageSkill` est la source unique de
   // cette résolution, partagée avec la relecture d'une recette en ligne de
@@ -588,14 +592,14 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
    */
   const echoEtatMonstre = useMemo(() => {
     const bouts = [
-      damageSetup.atkBuff && 'buff ATQ',
-      damageSetup.defBuff && 'buff DEF',
-      damageSetup.spdBuff && 'buff VIT',
+      damageSetup.atkBuff && os.etatBuffs.atk,
+      damageSetup.defBuff && os.etatBuffs.def,
+      damageSetup.spdBuff && os.etatBuffs.spd,
       damageSetup.leaderSkill && `lead ${damageSetup.leaderSkill.stat} +${damageSetup.leaderSkill.pct} %`,
       SUMMONER_SKILLS_LABELS.find((s) => s.key === damageSetup.summonerSkills)?.label,
     ].filter(Boolean);
-    return `État du monstre : ${bouts.length > 0 ? bouts.join(' · ') : 'aucun buff, aucun lead'} · ${echoAurasExternes(damageSetup.setsAuraExternes)}`;
-  }, [damageSetup]);
+    return os.etatMonstre(bouts.length > 0 ? bouts.join(' · ') : os.etatVide, echoAurasExternes(damageSetup.setsAuraExternes, textes));
+  }, [damageSetup, textes, os]);
   const critInterdit = useMemo(() => monsterCritInterdit(skillDetail), [skillDetail]);
   /**
    * Ce que l'objectif « Dégâts réels » suppose, en une ligne — le résumé qui
@@ -611,31 +615,31 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
    */
   const resumeCombat = useMemo(() => {
     const bouts: string[] = [];
-    bouts.push(resolvedSkill ? `S${resolvedSkill.slot} ${resolvedSkill.nom}` : 'Aucun sort exploitable');
+    bouts.push(resolvedSkill ? `S${resolvedSkill.slot} ${resolvedSkill.nom}` : os.aucunSort);
     // La cible calculée d'un sort à coup de zone curé (Blade Surge), quand ce
     // n'est pas la cible visée : celle que RETIENT le calcul pour le sort
     // RÉSOLU, même règle que le reste de cette ligne.
     const cibleRetenue = resolvedSkill && resumeCibleDegatsRetenue(resolvedSkill, damageSetup);
     if (cibleRetenue) bouts.push(cibleRetenue);
     const cible = ELEMENTS.find((e) => e.key === damageSetup.enemyElement);
-    bouts.push(cible ? `vs ${nomElement(jeu, cible.key)}` : 'élément ignoré');
-    bouts.push(`PV ${damageSetup.enemyHp.toLocaleString('fr-FR')}`);
+    bouts.push(cible ? os.contre(nomElement(jeu, cible.key)) : os.elementIgnore);
+    bouts.push(`${jeu.stats.hp} ${formatNombre(damageSetup.enemyHp, langue)}`);
     // ⚠️ **La DEF et le critique seulement si le sort les CONSOMME**, via le
     // même prédicat que la fenêtre (`champsDuCombat`). Cette ligne affichait
     // « DEF 1000 » en dur — donc sur un S3 qui ignore la défense, où le champ
     // n'existe même pas dans la fenêtre qu'elle résume. Signalé à l'usage.
     const champs = champsDuCombat(resolvedSkill);
-    if (champs.defEnnemie) bouts.push(`DEF ${damageSetup.enemyDef.toLocaleString('fr-FR')}`);
+    if (champs.defEnnemie) bouts.push(`${jeu.stats.def} ${formatNombre(damageSetup.enemyDef, langue)}`);
     if (champs.crit && !critInterdit) {
       bouts.push(CRIT_MODE_LABELS.find((c) => c.key === damageSetup.critMode)?.label ?? damageSetup.critMode);
     }
-    if (critInterdit) bouts.push('critique impossible');
+    if (critInterdit) bouts.push(os.critiqueImpossible);
     // ⚠️ **Plus de buffs ici.** Cette ligne résume la FENÊTRE qu'elle rouvre,
     // et les buffs n'y sont plus — ils ont leurs propres contrôles, toujours
     // visibles, dans « État de mon monstre ». Les répéter en texte alors qu'ils
     // sont réglables trois cartes plus haut ne fait que du bruit.
     return bouts.join(' · ');
-  }, [resolvedSkill, damageSetup, critInterdit, jeu]);
+  }, [resolvedSkill, damageSetup, critInterdit, jeu, langue, os]);
   // Passifs offensifs de CE monstre (Feng Yan, Sia, Roid… — voir
   // docs/02-app/degats-reels/) — indépendants du sort choisi, calculés dès
   // qu'une fiche est chargée, comme `damageSkills`.
@@ -897,23 +901,23 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
   // Le nom complet reste le nom accessible ; l'écran montre les monstres
   // importés puis un libellé court, sous l'en-tête de leur section.
   const sourcesImport = useMemo<SourceImportOptimizer[]>(() => [
-    { groupe: 'Prépa RTA', libelle: 'Tous les monstres', nom: 'Prépa RTA', produire: importerPrepaRtaOptimizer },
-    { groupe: 'Défenses de siège', libelle: 'Toutes les défenses', nom: 'Défenses de siège', produire: importerDefensesSiegeOptimizer },
+    { groupe: os.import.prepaRta, libelle: os.import.tousLesMonstres, nom: os.import.prepaRta, produire: importerPrepaRtaOptimizer },
+    { groupe: os.import.defenses, libelle: os.import.toutesLesDefenses, nom: os.import.defenses, produire: importerDefensesSiegeOptimizer },
     ...exclusionData.siegeOffenseTeams.map((team, i) => ({
-      groupe: 'Offenses de siège', libelle: `Offense ${i + 1}`,
-      nom: `Offense de siège ${i + 1} · ${team.slots.map(s => s.monsterId && exclusionData.monsterById.get(s.monsterId)?.name).filter(Boolean).join(', ') || 'Deck vide'}`,
+      groupe: os.import.offenses, libelle: os.import.offense(i + 1),
+      nom: `${os.import.offenseDeSiege(i + 1)} · ${team.slots.map(s => s.monsterId && exclusionData.monsterById.get(s.monsterId)?.name).filter(Boolean).join(', ') || os.import.deckVide}`,
       produire: (courantes: ExclusionSourceData) => importerOffenseSiegeOptimizer(team.id, courantes),
     })),
     ...recommandations.flatMap((reco, ri) => reco.decks.map((deck, di) => ({
-      groupe: 'Recommandations', libelle: `${reco.name || `Recommandation ${ri + 1}`} · Deck ${di + 1}`,
-      nom: `Recommandation ${ri + 1} · ${reco.name || 'Sans nom'} · Deck ${di + 1} · ${deck.slots.map(s => s.com2usId != null && [...exclusionData.monsterById.values()].find(m => m.com2usId === s.com2usId)?.name || s.name).filter(Boolean).join(', ') || 'Deck vide'}`,
+      groupe: os.import.recommandations, libelle: `${reco.name || os.import.recommandation(ri + 1)} · ${os.import.deck(di + 1)}`,
+      nom: `${os.import.recommandation(ri + 1)} · ${reco.name || os.import.sansNom} · ${os.import.deck(di + 1)} · ${deck.slots.map(s => s.com2usId != null && [...exclusionData.monsterById.values()].find(m => m.com2usId === s.com2usId)?.name || s.name).filter(Boolean).join(', ') || os.import.deckVide}`,
       produire: (courantes: ExclusionSourceData) => importerRecoOptimizer(deck, courantes),
     }))),
   ].map(source => {
     const { membres } = source.produire(exclusionData);
     return { ...source, utilisable: membres.length > 0,
       monstres: membres.flatMap(m => resolveExclusionEntry(m.selector, exclusionData)?.monster ?? []) };
-  }), [exclusionData, recommandations]);
+  }), [exclusionData, recommandations, os]);
 
   // Candidats de compte pour l'ESPÈCE COURANTE, un tableau par source —
   // pilote À LA FOIS l'état actif/grisé/désactivé de chaque puce et le contenu de la désambiguïsation d'exemplaire (zone
@@ -1053,7 +1057,7 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
   }
 
   function disponibiliteEspece(monster: Monster) {
-    return exemplaireSuivantEspece(monster, speciesCandidatesBySource(monster.com2usId, box, exclusionData), lists.members, lists.activeListId);
+    return exemplaireSuivantEspece(monster, speciesCandidatesBySource(monster.com2usId, box, exclusionData), lists.members, lists.activeListId, textes);
   }
 
   // Une résolution explicite partage l'inclusion ordinaire : capture au geste,
@@ -1598,9 +1602,9 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
      */
     const explication =
       sortesFigees.length >= ARTIFACT_KINDS.length
-        ? 'Les deux emplacements sont sur « Comme équipé » : la paire est déjà décidée, il n’y a rien à chercher.'
+        ? os.paireDecidee
         : scoreRetenu <= 0
-          ? 'Aucun artéfact équipable n’apporte de dégâts supplémentaires pour ce critère.'
+          ? os.aucunGain
           : null;
     // ⚠️ Comparaison par IDENTIFIANT, jamais par référence : les pièces
     // retenues viennent de l'inventaire, celles portées du `gear` — deux
@@ -2043,7 +2047,7 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
     file.text().then((text) => {
       const { recipe, error, avertissements } = parseOptimizerRecipe(text);
       if (!recipe) {
-        setImportMsg({ text: `Import refusé : ${error}`, error: true });
+        setImportMsg({ text: os.recette.refuse(error ?? ''), error: true });
         return;
       }
       optimizer.effacerProprietaireCriteres();
@@ -2142,13 +2146,13 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
       // Les runes imposées ignorées (voir plus haut) sont signalées en
       // SUFFIXE du message d'import — un verrou perdu change réellement le
       // résultat, contrairement à un sélecteur d'exclusion introuvable.
-      const suffixeLocks = locksIgnores > 0 ? ` ${locksIgnores} rune(s) imposée(s) ignorée(s) : absentes de ton inventaire.` : ''
+      const suffixeLocks = locksIgnores > 0 ? ` ${os.recette.verrousIgnores(locksIgnores)}` : ''
         // ⚠️ La bascule « Comme équipé » → « Libre » se DIT : elle
         // change ce que la recherche va renvoyer, exactement comme un verrou
         // perdu. Une recette qui se comporte autrement que chez son auteur,
         // sans un mot, serait pire que la donnée transportée telle quelle.
-        + (bascules ? ` Cette recette vient d'un autre compte : « Comme équipé » est passé sur « Libre ».` : '')
-        + (relicBascule ? ` Cette recette vient d'un autre compte : « Comme équipée » est passé sur « Libre ».` : '')
+        + (bascules ? ` ${os.recette.autreCompteArtefacts}` : '')
+        + (relicBascule ? ` ${os.recette.autreCompteRelique}` : '')
         // ⚠️ Ce que le parseur a CONVERTI (l'ancien mode critique « Moyenne »
         // → « Critique ») se dit aussi, mot pour mot
         // comme le CLI (`chargerRecette`) : jamais une conversion silencieuse.
@@ -2172,7 +2176,7 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
         // (même source que `pickSpecies`), jamais une constante — seulement
         // si la recette ne porte pas le champ (`relicMainResolu` absent).
         optimizer.poserCriteresAutomatiques({ relicMainChoice: relicMainResolu ?? defaultRelicMainChoice(boxCandidates[0]?.gear.relic) });
-        setImportMsg({ text: `Réglages importés pour ${recipe.monsterName} — monstre sélectionné automatiquement.${suffixeLocks}`, avertissement: avecAvertissement });
+        setImportMsg({ text: `${os.recette.importes(recipe.monsterName)}${suffixeLocks}`, avertissement: avecAvertissement });
       } else {
         // Cas limite : le `com2usId` de la recette ne correspond à AUCUN
         // monstre des données actuellement chargées (ex. retiré du jeu) —
@@ -2184,7 +2188,7 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
         // sur une espèce possédée nulle part).
         optimizer.poserCriteresAutomatiques({ relicMainChoice: relicMainResolu ?? 'libre' });
         setImportMsg({
-          text: `Réglages importés (${recipe.monsterName}), mais ce monstre est introuvable dans les données actuelles — choisis-en un manuellement.${suffixeLocks}`,
+          text: `${os.recette.monstreIntrouvable(recipe.monsterName)}${suffixeLocks}`,
           avertissement: avecAvertissement,
         });
       }
@@ -2405,7 +2409,7 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
   // jamais d'un clic : les puces, à largeur égale (`size="lg"`), ne bougent pas.
   const sourceOptions = SOURCE_OPTIONS.map((o) => ({
     ...o,
-    label: libellePuceSource(o.label, candidatesBySource[o.key].length),
+    label: libellePuceSource(textes.optimizer.sources[o.key], candidatesBySource[o.key].length),
     disabled: candidatsApercu[o.key].length === 0,
   }));
   const allSourcesEmpty = sourceOptions.every((o) => o.disabled);
@@ -2589,7 +2593,7 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
         const build = otherValidatedBuilds.find((v) => v.runeIds.includes(id));
         if (!build) return null;
         const rune = runeById.get(id);
-        const monsterName = resolveExclusionEntry(build.selector, exclusionData)?.monster.name ?? 'un autre monstre';
+        const monsterName = resolveExclusionEntry(build.selector, exclusionData)?.monster.name ?? os.autreMonstre;
         return { slot: rune?.slot ?? null, monsterName };
       })
       .filter((c): c is { slot: number | null; monsterName: string } => c != null);
@@ -2638,15 +2642,15 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
   const vuesExemplaire = <Segmented
     size="lg"
     options={[
-      { key: 'actuel', label: 'Build actuel' },
-      { key: 'valide', label: 'Build validé', disabled: !ownValidatedBuild, hint: !ownValidatedBuild ? 'Aucun build validé pour ce membre' : undefined },
+      { key: 'actuel', label: os.buildActuel },
+      { key: 'valide', label: os.buildValide, disabled: !ownValidatedBuild, hint: !ownValidatedBuild ? os.aucunBuildValide : undefined },
     ]}
     value={apercu ? null : ownValidatedBuild && !showRealGear ? 'valide' : 'actuel'}
     onChange={vue => { setApercu(null); setZoneDOpen(false); setShowRealGear(vue === 'actuel'); }}
   />;
   const bandeauApercu = apercu && <div className="mb-2 flex items-center gap-2 rounded-lg bg-warn-soft px-2 py-1 text-micro text-warn">
-    <span className="min-w-0 flex-1">Aperçu : {selectionAffichee?.monster.name} · {SOURCE_OPTIONS.find(o => o.key === apercu.source)?.label}. Ce n'est pas l'exemplaire de la liste.</span>
-    <Bouton taille="sm" libelle="Revenir" onClick={() => { setApercu(null); setZoneDOpen(false); }} />
+    <span className="min-w-0 flex-1">{os.apercu(selectionAffichee?.monster.name ?? '', textes.optimizer.sources[apercu.source])}</span>
+    <Bouton taille="sm" libelle={os.revenir} onClick={() => { setApercu(null); setZoneDOpen(false); }} />
   </div>;
 
   // Même bouton que sur une carte de résultat (`BuildCandidateCard`), sous
@@ -2988,7 +2992,7 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
         const conflits = conflitsDeRunes(c.runeIds);
         if (conflits.length === 0) return null;
         const noms = [...new Set(conflits.map((x) => x.monsterName))];
-        return `${conflits.length > 1 ? 'Runes déjà réservées' : 'Rune déjà réservée'} dans cette liste pour ${noms.join(', ')}`;
+        return os.conflit(conflits.length, noms.join(', '));
       })(),
     };
   }
@@ -3020,9 +3024,10 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
     if (!f?.vide) return null;
     if (f.vide === 'bornes-contradictoires') {
       const c = f.bornes.contradictoires[0], b = instantane!.vue.bornes?.[c];
-      return `Vue vide : le minimum de ${libelleColonne(c, mesureDesCartes)} (${b?.min?.toLocaleString('fr-FR')}) dépasse son maximum (${b?.max?.toLocaleString('fr-FR')}).`;
+      const nombre = (v: number | null | undefined) => (v == null ? '' : formatNombre(v, langue));
+      return os.vueVideBornes(libelleColonne(c, mesureDesCartes), nombre(b?.min), nombre(b?.max));
     }
-    return 'Aucune combinaison confirmée ne passe ces filtres.';
+    return os.vueVide;
   })();
   // Le détail d'une ligne du tableau (`detailTableau`) : la carte telle
   // quelle, dans une modale. Retenu par les runes du build : une nouvelle page
@@ -3105,7 +3110,7 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
                   on le dit, plutôt que de laisser « Tableau » sans effet visible. */}
               {formeResultats === 'tableau' && (
                 <p className="mb-2 text-xs text-ink-dim" data-tableau-trop-etroit="">
-                  Trop étroit pour le tableau : cartes affichées
+                  {os.tropEtroit}
                 </p>
               )}
               {!sousLg && (
@@ -3150,7 +3155,7 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
           )}
           {indexDetail >= 0 && (
             <Modale onClose={() => setDetailTableau(null)} labelledBy="optimizer-detail-build" croix largeur="max-w-[420px]"
-              titre={`Build n° ${composition.premierRang + indexDetail}`}>
+              titre={os.buildNumero(composition.premierRang + indexDetail)}>
               <BuildCandidateCard
                 rank={composition.premierRang + indexDetail}
                 candidate={composition.cartes[indexDetail]}
@@ -3230,7 +3235,7 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
       {addListPromptOpen && (
         <OptimizerCreateListDialog
           listes={lists.lists}
-          libelleAction={addListPromptOpen === 'validate' ? 'Créer et valider' : 'Créer'}
+          libelleAction={addListPromptOpen === 'validate' ? os.creerEtValider : textes.commun.creer}
           onValider={creerListeDepuisDialogue}
           onCancel={() => setAddListPromptOpen(null)}
         />
@@ -3438,8 +3443,7 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
       {/* La phrase d'introduction, au téléphone seulement : la page de bureau
           n'a rien au-dessus de ses colonnes. */}
       <p className="text-sm text-ink-dim">
-        Recherche parmi tes runes possédées ; rien n'est appliqué à ton compte, l'outil est purement
-        indicatif — c'est à toi de re-runer dans le jeu.
+        {os.introduction}
       </p>
 
       {/* Les cartes de réglage, une par rangée. `minmax(0,1fr)` : la colonne

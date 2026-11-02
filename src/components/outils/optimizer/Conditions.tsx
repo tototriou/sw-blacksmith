@@ -27,23 +27,24 @@ export interface ConditionsProps {
 }
 
 export default function Conditions({ excludeBase, setExcludeBase, baseOf, artifactFloorOf, minStats, maxStats, setMinStats, setMaxStats, bureau = false }: ConditionsProps) {
-  const jeu = useTraduction().jeu;
+  const textes = useTraduction();
+  const jeu = textes.jeu;
+  const k = textes.optimizer.conditions;
+  const a = k.aideBase;
   return (
     <div>
       <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
-        <p className="label">Conditions</p>
+        <p className="label">{k.titre}</p>
         <div className="flex items-center gap-1.5">
-          <span className="text-xs font-semibold text-ink-dim">Stats de base exclues</span>
-          <HelpPopover title="Stats de base exclues">
-            <b className="text-ink">PV/ATQ/DEF/VIT</b> : activé, la valeur est ce que l'équipement (runes ET
-            artéfacts comptés) doit apporter <b className="text-ink">au-dessus de la base</b> du monstre. Désactivé,
-            elle porte sur le total. <b className="text-ink">Taux Crit/Dgts Crit/RES/Précision</b> restent toujours
-            en total, quel que soit ce réglage — ils partent de la valeur d'éveil du monstre.
+          <span className="text-xs font-semibold text-ink-dim">{k.baseExclue}</span>
+          <HelpPopover title={k.baseExclue}>
+            <b className="text-ink">{a.statsDeBase}</b>{a.active}<b className="text-ink">{a.auDessus}</b>{a.desactive}
+            <b className="text-ink">{a.statsTotales}</b>{a.toujoursTotal}
           </HelpPopover>
           <Interrupteur
             actif={excludeBase}
             onChange={setExcludeBase}
-            aria-label="Stats de base exclues des conditions PV/ATQ/DEF/VIT"
+            aria-label={k.baseExclueAria}
           />
         </div>
       </div>
@@ -71,8 +72,8 @@ export default function Conditions({ excludeBase, setExcludeBase, baseOf, artifa
             et on pose ces deux en-têtes une seule fois. Ailleurs (`sm:`, hors
             variante bureau), chaque champ garde son libellé à côté. */}
         <span className={bureau ? '' : 'sm:hidden'} aria-hidden />
-        <span className={`label text-center ${bureau ? '' : 'sm:hidden'}`}>Min</span>
-        <span className={`label text-center ${bureau ? '' : 'sm:hidden'}`}>Max</span>
+        <span className={`label text-center ${bureau ? '' : 'sm:hidden'}`}>{k.min}</span>
+        <span className={`label text-center ${bureau ? '' : 'sm:hidden'}`}>{k.max}</span>
         {RECO_STATS.map((st) => {
           const affectedByToggle = BASE_TOGGLE_STATS.has(st.key);
           const base = baseOf(st.key);
@@ -118,9 +119,9 @@ export default function Conditions({ excludeBase, setExcludeBase, baseOf, artifa
                   suffix={st.suffix || undefined}
                   boxWidth="w-24"
                   ariaLabel={`${jeu.stats[st.key]} minimum`}
-                  title="Minimum"
+                  title={k.minimum}
                 />
-                {!bureau && <span className="hidden sm:inline text-ink-dim text-micro">Min</span>}
+                {!bureau && <span className="hidden sm:inline text-ink-dim text-micro">{k.min}</span>}
               </div>
               <div className="flex items-center gap-1.5">
                 <NumberField
@@ -166,9 +167,9 @@ export default function Conditions({ excludeBase, setExcludeBase, baseOf, artifa
                     });
                   }}
                   ariaLabel={`${jeu.stats[st.key]} maximum`}
-                  title="Maximum"
+                  title={k.maximum}
                 />
-                {!bureau && <span className="hidden sm:inline text-ink-dim text-micro">Max</span>}
+                {!bureau && <span className="hidden sm:inline text-ink-dim text-micro">{k.max}</span>}
               </div>
             </Fragment>
           );
@@ -184,7 +185,7 @@ export default function Conditions({ excludeBase, setExcludeBase, baseOf, artifa
             setMaxStats({});
           }}
           icone={<RotateCcw size={13} />}
-          libelle="Réinitialiser les conditions"
+          libelle={k.reinitialiser}
           className="text-ink-dim hoverable:text-bad"
         />
       </div>

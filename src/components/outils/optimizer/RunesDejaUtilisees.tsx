@@ -5,6 +5,7 @@ import { Interrupteur } from '../../../ui';
 import Segmented from '../../../ui/Segmented';
 import { AUTO_EXCLUSION_SCOPES, type AutoExclusionScope } from '../../../lib/optimizerExclusion';
 import { type Dispatch, type SetStateAction } from 'react';
+import { useTraduction } from '../../../hooks/useLangue';
 
 export interface RunesDejaUtiliseesProps {
   excludeUsedRunes: boolean;
@@ -17,15 +18,10 @@ export interface RunesDejaUtiliseesProps {
 }
 
 export default function RunesDejaUtilisees({ excludeUsedRunes, setExcludeUsedRunes, excludeUsedScope, setExcludeUsedScope, bureau = false }: RunesDejaUtiliseesProps) {
-  const aide = (
-    <HelpPopover title="Exclure les runes déjà utilisées">
-      Par défaut, la recherche considère TOUT l'inventaire, runes déjà portées ailleurs comprises. Active ce
-      réglage pour retirer de la recherche les runes déjà portées par d'AUTRES monstres dans le périmètre
-      choisi ci-dessous (un seul à la fois) — un build réellement montable sans déruner quelqu'un. Le monstre
-      recherché lui-même n'est jamais exclu de ses propres runes.
-    </HelpPopover>
-  );
-  const interrupteur = <Interrupteur actif={excludeUsedRunes} onChange={setExcludeUsedRunes} aria-label="Exclure les runes déjà utilisées" />;
+  const o = useTraduction().optimizer;
+  const u = o.dejaUtilisees;
+  const aide = <HelpPopover title={u.titre}>{u.aide}</HelpPopover>;
+  const interrupteur = <Interrupteur actif={excludeUsedRunes} onChange={setExcludeUsedRunes} aria-label={u.titre} />;
   return (
     <div>
       {/* ⚠️ Au bureau, l'interrupteur est à droite, aligné sur ceux des
@@ -40,11 +36,11 @@ export default function RunesDejaUtilisees({ excludeUsedRunes, setExcludeUsedRun
         <IconeInterdite>
           <img src={WHEEL_IMG} alt="" className="h-4 w-4 object-contain" />
         </IconeInterdite>
-        <span className={`text-[12.5px] font-semibold text-ink-dim${bureau ? ' min-w-0 flex-1' : ''}`}>Exclure les runes déjà utilisées</span>
+        <span className={`text-[12.5px] font-semibold text-ink-dim${bureau ? ' min-w-0 flex-1' : ''}`}>{u.titre}</span>
         {bureau ? <span className="flex flex-none items-center gap-3">{aide}{interrupteur}</span> : <>{aide}{interrupteur}</>}
       </div>
       <Segmented
-        options={AUTO_EXCLUSION_SCOPES}
+        options={AUTO_EXCLUSION_SCOPES.map((s) => ({ key: s.key, label: o.sources[s.key] }))}
         value={excludeUsedScope}
         onChange={setExcludeUsedScope}
         disabled={!excludeUsedRunes}

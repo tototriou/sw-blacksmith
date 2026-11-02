@@ -2,6 +2,7 @@ import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import MonsterAvatar from '../../../MonsterAvatar';
 import MonstresDeLaListe, { type MonstresDeLaListeProps } from '../MonstresDeLaListe';
 import { type Monster } from '../../../../types';
+import { useTraduction } from '../../../../hooks/useLangue';
 
 // La place de « Monstre » (docs/02-app/optimizer/ecran/README.md,
 // « Mise en page d'ensemble ») : son panneau en prend 376, le reste va à
@@ -47,7 +48,7 @@ export default function ListeDeTravailBureau({ listes, recherche, monstreActif, 
     return () => obs.disconnect();
   }, []);
   return (
-    <section ref={section} aria-label="Liste de travail">
+    <section ref={section} aria-label={useTraduction().optimizer.criteres.listeDeTravail}>
       {listes}
       <div className="mt-2">
         <MonstresDeLaListe

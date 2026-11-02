@@ -9,6 +9,7 @@ import { ToolSub } from '../App';
 import OptimizerSection from '../components/outils/OptimizerSection';
 import SpeedTuningSection from '../components/outils/SpeedTuningSection';
 import { estAdresseGabarits } from '../lib/optimizerGabarits';
+import { useTraduction } from '../hooks/useLangue';
 
 // La vue des gabarits de l'Optimizer (docs/03-developpeur/vue-des-gabarits.md),
 // en DÉVELOPPEMENT seulement : `import.meta.env.DEV` est remplacé à la
@@ -65,6 +66,8 @@ export default function OutilsPage({ recommandations, sub, box, runes, artifacts
   // Speed tuning ne dépend PAS d'un compte importé : on ajoute n'importe quel
   // monstre du bestiaire et on saisit sa vitesse de runes à la main. Il passe
   // donc AVANT la garde « aucune donnée de compte » (propre à l'Optimizer).
+  const textes = useTraduction();
+  const o = textes.optimizer;
   if (sub === 'speed-tuning') {
     return (
       <SpeedTuningSection
@@ -84,7 +87,7 @@ export default function OutilsPage({ recommandations, sub, box, runes, artifacts
     return (
       <div className="mt-10 flex flex-col items-center text-center text-ink-dim">
         <Wrench size={34} className="mb-3 opacity-40" />
-        <p className="text-sm">Chargement de ton compte…</p>
+        <p className="text-sm">{o.page.chargement}</p>
       </div>
     );
   }
@@ -93,12 +96,9 @@ export default function OutilsPage({ recommandations, sub, box, runes, artifacts
     return (
       <div className="mt-10 flex flex-col items-center text-center text-ink-dim">
         <Wrench size={34} className="mb-3 opacity-70" />
-        <p className="text-base font-semibold text-ink">Aucune donnée de compte chargée</p>
-        <p className="mt-1 text-sm max-w-sm">
-          Importe ton compte (bouton « Importer un JSON ») pour rechercher des combinaisons de runes
-          parmi celles que tu possèdes déjà.
-        </p>
-        {loadState === 'loading' && <p className="mt-3 text-xs">Chargement des monstres…</p>}
+        <p className="text-base font-semibold text-ink">{o.page.videTitre}</p>
+        <p className="mt-1 text-sm max-w-sm">{o.page.videTexte}</p>
+        {loadState === 'loading' && <p className="mt-3 text-xs">{textes.commun.chargementMonstres}</p>}
       </div>
     );
   }

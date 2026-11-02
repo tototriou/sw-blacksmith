@@ -1,4 +1,5 @@
 import Conditions, { type ConditionsProps } from '../Conditions';
+import { useTraduction } from '../../../../hooks/useLangue';
 
 // La largeur d'une section de « Critères » en colonne. La section prend la
 // largeur qu'on lui donne (plus large en deux piles) ; la grille y est
@@ -13,7 +14,7 @@ export const LARGEUR_CONDITIONS = 294;
 // dans les 294 px d'une colonne.
 export default function ConditionsBureau(props: Omit<ConditionsProps, 'bureau'>) {
   return (
-    <section aria-label="Conditions" className="w-full">
+    <section aria-label={useTraduction().optimizer.conditions.titre} className="w-full">
       <Conditions {...props} bureau />
     </section>
   );

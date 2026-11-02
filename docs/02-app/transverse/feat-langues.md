@@ -103,8 +103,11 @@ jeu dans la langue choisie**, jamais une traduction de l'app. Ils vivent dans
   sans verdict (`raisonSansVerdict`), alerte de tick (`tickTeamMessage`), résumé d'une équipe
   (`teamSummary`), erreurs de l'import d'un compte (`parseAccountJson`, `parseAccountBox`,
   `parseAccountInventory`, `parseSiegeDefense`, `parseSiegeOffense`), titres et en-têtes du top
-  des artéfacts par propriété (`topParPropriete`). Le calcul reste pur ; un test ou un script
-  passe `fr`. Les **fichiers partagés**
+  des artéfacts par propriété (`topParPropriete`), raison d'une espèce déjà dans la liste de
+  l'Optimizer (`exemplaireSuivantEspece`), rappel d'un passif qui pose un buff
+  (`rappelsBuffsDePassif`), écho et libellé des sets d'aura externes (`echoAurasExternes`,
+  `libelleNombreAura`), nom par défaut d'une liste (`nomNouvelleListeOptimizer`). Le calcul reste
+  pur ; un test ou un script passe `fr`. Les **fichiers partagés**
   restent en français, la langue du fichier : clés, champ `propriete` d'une recommandation
   (`fr.jeu`). Un libellé que `src/lib/` fabrique comme une donnée (« Défense 3 », la source d'un
   build) se traduit à l'affichage par `libelleSource`.
@@ -112,7 +115,10 @@ jeu dans la langue choisie**, jamais une traduction de l'app. Ils vivent dans
   (`runesCurve.hidden`, `runesCompare.hidden`) gardent leurs clés françaises (« Actuelle »,
   « Moi »…) et seul le nom affiché change — sinon changer de langue réafficherait ce qu'on avait
   masqué. Une donnée créée par l'app (la catégorie « Lead VIT », une courbe exportée « Moi »)
-  prend la langue du moment de sa création, puis appartient au joueur.
+  prend la langue du moment de sa création, puis appartient au joueur — de même le nom par
+  défaut d'une liste de l'Optimizer (« Liste 2 », « List 2 »).
+- **Une raison que `src/lib/` rend pour qu'on la compare est un code**, traduit à l'affichage :
+  le motif d'un lead d'équipe inactif (`MotifLeadOptimizer`, phrases sous `optimizer.motifsLead`).
 - **Les noms de monstres et les compétences** (nom, description, améliorations) viennent de
   SWARFARM, en anglais, et le restent dans toutes les langues.
 - **Les effets de compétence** sont indexés par leur nom SWARFARM. Un effet qui n'a pas de nom
@@ -135,7 +141,12 @@ RTA (prépa, catégories, ordre de tour, sauvegarde et partage, prépa d'un ami)
 (équipes de défense et d'offense, recommandations, leader skills) ; le Compte (box, runes,
 artéfacts, courbes, comparaison, optimisation, builds rapides), l'import d'un compte, la
 question de conservation, les fenêtres de dialogue communes et [App.tsx](../../../src/App.tsx) en
-entier (pied de page, remplacement et suppression des données, session).
+entier (pied de page, remplacement et suppression des données, session) ; l'Optimizer, écran
+des critères (listes et équipes, recherche du monstre, état du monstre et sets d'aura, set,
+principales imposées, conditions, artéfacts, relique, sous-propriétés verrouillées, meilleurs
+artéfacts, réglages avancés, exclusion, validation et libération). Restent en français dans
+l'Optimizer : résultats, diagnostics, imports et exports (lot suivant), la description du combat
+« Dégâts réels », et la vue de développement des gabarits.
 
 Le **vocabulaire du jeu** suit la langue choisie dans toute l'app : fiches de rune, d'artéfact et
 de relique, inventaires, Optimizer, recommandations de siège, prépa RTA, Bestiaire, fiche d'un
@@ -171,10 +182,11 @@ Un écran qu'on traduit entre dans `FICHIERS_TRADUITS` dans le même commit.
   Mécaniques, le Bestiaire et la fiche d'un monstre en anglais ; les deux articles des Mécaniques,
   mêmes sections dans le même ordre ; la RTA (prépa, prépa d'un ami) et le Siège (défense,
   offense, recommandations) en anglais ; le Compte vide, la box, le résumé et le top des
-  artéfacts, le pied de page en anglais.
+  artéfacts, le pied de page en anglais ; l'Optimizer, écran des critères au bureau et panneau
+  « Options » du téléphone, en anglais.
 - [partage-langues.test.ts](../../../tests/partage-langues.test.ts) : les messages de `src/lib/`
   (imports, statut d'équipe, alerte de tick, source d'un build, import d'un compte, top des
-  artéfacts) dans la langue reçue.
+  artéfacts, espèce déjà dans la liste, écho des auras externes) dans la langue reçue.
 - [journal-langues.test.ts](../../../tests/journal-langues.test.ts) : le journal anglais a la
   forme du français (versions, dates, tags, points mis en avant, changements), aucun texte vide ni
   resté en français.

@@ -10,6 +10,7 @@ import { type RefObject, type Dispatch, type SetStateAction, type ReactNode } fr
 import { type ExclusionSourceData, type ExclusionSource } from '../../../lib/optimizerExclusion';
 import { type ImportOptimizer, type RapportImportOptimizer } from '../../../lib/importEquipes';
 import { EMPTY_GEAR } from './constantes';
+import { useTraduction } from '../../../hooks/useLangue';
 
 export interface MonstreEquipementTelephoneProps {
   allMonsters: Monster[];
@@ -41,13 +42,14 @@ export interface MonstreEquipementTelephoneProps {
 }
 
 export default function MonstreEquipementTelephone({ allMonsters, pickSpecies, disponibiliteEspece, ligneMonstreTelephoneRef, selected, selectionAffichee, sourcesImport, importerDepuisEcran, rapportImport, setZoneCOpen, zoneCOpen, eclatImport, listesTelephone, sourceOptions, vuesExemplaire, gearSource, pickSource, allSourcesEmpty, zoneDOpen, zoneDList, zoneCContent, validatedBadge, selectionFiche, setSelectionFiche, relicUsageById, validateBuildButton }: MonstreEquipementTelephoneProps) {
+  const c = useTraduction().optimizer.criteres;
   return (
     <div className="space-y-3">
       {/* Bloc 1 — recherche TOUJOURS visible, liste active
           rattachée EN DESSOUS en dépliement (`zoneCOpen`, repliée par
           défaut). */}
       <div>
-        <p className="label mb-1.5">Monstre à optimiser</p>
+        <p className="label mb-1.5">{c.monstreAOptimiser}</p>
         <MonsterSourcePicker mode="bestiary" candidates={allMonsters} onPick={pickSpecies} disponibilite={disponibiliteEspece} />
         <div ref={ligneMonstreTelephoneRef} className="mt-3 h-8 flex items-center gap-2">
           {selected && <>
@@ -63,7 +65,7 @@ export default function MonstreEquipementTelephone({ allMonsters, pickSpecies, d
           aria-expanded={zoneCOpen}
           className={`-mx-1 mt-3 flex w-[calc(100%+0.5rem)] items-center gap-1.5 rounded-md px-1 text-[12.5px] font-semibold transition-colors duration-300 motion-reduce:transition-none ${eclatImport ? 'bg-accent-soft text-ink' : 'text-ink-dim'}`}
         >
-          Gérer mes listes
+          {c.gererListes}
           <ChevronDown size={13} className={`ml-auto transition-transform ${zoneCOpen ? 'rotate-180' : ''}`} />
         </ZoneCliquable>
         {zoneCOpen && (
@@ -77,9 +79,9 @@ export default function MonstreEquipementTelephone({ allMonsters, pickSpecies, d
           en dépliement (`zoneDOpen`, EN LIGNE plutôt qu'en `Flottant` —
           un panneau flottant se prête mal à un écran étroit). */}
       <div>
-        <p className="label mb-1.5">Exemplaire</p>
+        <p className="label mb-1.5">{c.exemplaire}</p>
         {vuesExemplaire}
-        <p className="label mb-1.5 mt-2">Voir aussi</p>
+        <p className="label mb-1.5 mt-2">{c.voirAussi}</p>
         <Segmented
           options={sourceOptions}
           value={gearSource}

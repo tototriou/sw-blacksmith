@@ -1,4 +1,5 @@
 import { Dispatch, MutableRefObject, SetStateAction, useCallback, useEffect, useRef, useState } from 'react';
+import { useTraduction } from './useLangue';
 import { StatKey } from '../lib/effects';
 import { Objective, SlotFilterPresetKey } from '../lib/runeBuildOptim';
 import { bornesAvecMesure, type ColonneResultat } from '../lib/colonnesResultats';
@@ -13,14 +14,13 @@ import { consommerImportOptimizer, type ImportOptimizer, type RapportImportOptim
 import { preparerRepriseOptimizer } from '../lib/optimizerBackup';
 import { AutoExclusionScope, ExclusionSelector, ExclusionSource, resolveExclusionEntry, type ExclusionSourceData } from '../lib/optimizerExclusion';
 import { ArtifactKind, type LeaderSkill } from '../types';
-import { leadEffectifMembreOptimizer, memeLeadOptimizer, modifierEquipeOptimizer } from '../lib/equipesOptimizer';
+import { leadEffectifMembreOptimizer, memeLeadOptimizer, modifierEquipeOptimizer, type MotifLeadOptimizer } from '../lib/equipesOptimizer';
 import type { EquipeOptimizer } from '../lib/optimizerMemberStorage';
 import { LigneVerrouillee } from '../lib/artifactOptim';
 import { useBuildOptimSearch } from './useBuildOptimSearch';
 import { useRuneMetric } from './useRuneMetric';
 import { combatSelonContenuListeOptimizer } from '../lib/combatListeOptimizer';
 
-const REFUS_IDENTITE_MEMBRE = 'Critères non restaurés : l’identité enregistrée du membre diffère de l’espèce résolue.';
 
 export type { SlotFilterPresetKey };
 // API historique conservée pour l'écran, les recettes et les scripts.
@@ -121,7 +121,7 @@ export function relicIntentDepuisEtat(
 export interface OptimizerState {
   proprietaireCriteres: ProprietaireCriteresOptimizer | null;
   rapportCriteres: string[];
-  lireCombatMembre: () => { setup: DamageSetup; equipe: EquipeOptimizer | null; motif: string | null };
+  lireCombatMembre: () => { setup: DamageSetup; equipe: EquipeOptimizer | null; motif: MotifLeadOptimizer | null };
   modifierLeadMembre: (lead: DamageSetup['leaderSkill']) => void;
   effacerProprietaireCriteres: () => void;
   choisirMembre: (listId: string, selector: ExclusionSelector) => CriteresOptimizer | null;
@@ -396,6 +396,12 @@ export interface ContexteMembresOptimizer {
 }
 
 export function useOptimizerState(contexte?: ContexteMembresOptimizer): OptimizerState {
+  // Les messages se rédigent au geste, dans la langue du moment : les gestes
+  // lisent la langue vivante, comme ils lisent l'état (`vivant`).
+  const textes = useTraduction();
+  const textesVivants = useRef(textes);
+  textesVivants.current = textes;
+  const messages = () => textesVivants.current.optimizer.memoires;
   const [base] = useState(() => baseCompleteCriteres(undefined));
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [gearSource, setGearSource] = useState<ExclusionSource>('box');
@@ -491,7 +497,8 @@ export function useOptimizerState(contexte?: ContexteMembresOptimizer): Optimize
   function effacerRefusIdentite() {
     if (!refusIdentite.current) return;
     refusIdentite.current = null;
-    setRapportCriteres(messages => messages.filter(m => m !== REFUS_IDENTITE_MEMBRE));
+    const refus = messages().refusIdentite;
+    setRapportCriteres(rapport => rapport.filter(m => m !== refus));
   }
 
   function effacerProprietaireCriteres() {
@@ -536,7 +543,7 @@ export function useOptimizerState(contexte?: ContexteMembresOptimizer): Optimize
     if (!c) return null;
     const resolu = resolveExclusionEntry(selector, c.data);
     if (!resolu?.monster.com2usId) {
-      effacerProprietaireCriteres(); setRapportCriteres(['Membre introuvable : critères non restaurés.']); return null;
+      effacerProprietaireCriteres(); setRapportCriteres([messages().membreIntrouvable]); return null;
     }
     const affichage = choisir ? { selectedId: String(resolu.monster.id), sourceSelector: selector } : v;
     const candidat = { listId, selector, com2usId: resolu.monster.com2usId };
@@ -547,24 +554,24 @@ export function useOptimizerState(contexte?: ContexteMembresOptimizer): Optimize
       if (identite && identite.com2usId !== resolu.monster.com2usId
         && c.lists.members.some(m => cleMemoireMembre(m.listId, m.selector) === cleMemoireMembre(listId, selector))) {
         refusIdentite.current = candidat;
-        setRapportCriteres([REFUS_IDENTITE_MEMBRE]);
+        setRapportCriteres([messages().refusIdentite]);
       }
       return null;
     }
     const memoire = c.lists.memories.get(cleMemoireMembre(listId, selector));
-    const messages: string[] = [];
+    const rapport: string[] = [];
     if (memoire && memoire.com2usId !== valide.com2usId) {
-      messages.push('Mémoire conservée sans application : l’espèce du membre ne correspond pas.');
+      rapport.push(messages().especeDifferente);
     }
     const photo = memoire?.com2usId === valide.com2usId ? appliquerCriteres(memoire.criteres, { type: 'personnel' }) : null;
     // Une navigation de liste n'attribue jamais les critères courants à un
     // membre sans mémoire ; le clic explicite lui donne la base complète.
-    if (!choisir && !photo) { effacerProprietaireCriteres(); setRapportCriteres(messages); return null; }
+    if (!choisir && !photo) { effacerProprietaireCriteres(); setRapportCriteres(rapport); return null; }
     const suivante = photo ?? baseCompleteCriteres(resolu.gear);
     const locks = Object.entries(suivante.lockedRunes);
     suivante.lockedRunes = Object.fromEntries(locks.filter(([, id]) => id != null && c.runeIds.has(id)));
     const ignores = locks.length - Object.keys(suivante.lockedRunes).length;
-    if (ignores) messages.push(`${ignores} rune(s) imposée(s) ignorée(s) : absentes de ton inventaire.`);
+    if (ignores) rapport.push(messages().verrousIgnores(ignores));
     effacerResultats(); setSetPickerInvalid(false);
     if (choisir) {
       v.selectedId = affichage.selectedId; v.sourceSelector = selector;
@@ -573,7 +580,7 @@ export function useOptimizerState(contexte?: ContexteMembresOptimizer): Optimize
     }
     appliquerPhoto(suivante);
     refusIdentite.current = null;
-    v.proprietaire = valide; setProprietaireCriteres(valide); setRapportCriteres(messages);
+    v.proprietaire = valide; setProprietaireCriteres(valide); setRapportCriteres(rapport);
     // Le geste peut lire la destination réellement appliquée sans attendre
     // un rendu, ni résoudre une seconde fois la mémoire ou sa base.
     return photoCriteres(v.criteres, { type: 'personnel' });
@@ -589,14 +596,14 @@ export function useOptimizerState(contexte?: ContexteMembresOptimizer): Optimize
     // Le réimport publie une photo préparée avant le remplacement du compte :
     // ajouter entre cette photo et sa revérification ferait perdre la nouvelle liste.
     if (c.reverificationEnAttente?.()) return { listeCreee: null, membresImportes: 0, equipesCreees: 0,
-      ignores: [], equipesNonCreees: [], messages: ['Import refusé : la revérification du compte réimporté est en attente. Réessayez après sa fin.'] };
+      ignores: [], equipesNonCreees: [], messages: [messages().importEnAttente] };
     const courant = c.lists.lireStockageCourant();
     const resultat = consommerImportOptimizer(courant, courant.activeListId, produire(c.data), c.data, 'import');
     if (!resultat.rapport.listeCreee) return resultat.rapport;
     const listId = resultat.rapport.listeCreee.id;
     if (!c.lists.ajouterParImport(resultat.stockage, listId)) return { ...resultat.rapport,
       listeCreee: null, membresImportes: 0, equipesCreees: 0,
-      messages: [...resultat.rapport.messages, 'Import refusé : identifiant de liste déjà occupé. Réessayez pour créer une autre liste.'] };
+      messages: [...resultat.rapport.messages, messages().importCollision] };
     effacerProprietaireCriteres();
     // Le choix juge la destination publiée par ce geste, avant le prochain rendu.
     v.contexte = { ...c, lists: { ...c.lists, ...resultat.stockage, activeListId: listId } };
@@ -646,7 +653,7 @@ export function useOptimizerState(contexte?: ContexteMembresOptimizer): Optimize
     const ignores = locks.length - Object.keys(lockedRunes).length;
     poserCriteresAutomatiques({ lockedRunes,
       ...(v.criteres.relicMainChoice === 'equipped' && !resolu?.gear.relic ? { relicMainChoice: 'libre' } : {}) });
-    setRapportCriteres(ignores ? [`${ignores} rune(s) imposée(s) ignorée(s) : absentes de ton inventaire.`] : []);
+    setRapportCriteres(ignores ? [messages().verrousIgnores(ignores)] : []);
     setImportDuCompte(n => n + 1);
     importReliqueTraite.current = v.importDuCompte + 1;
     effacerResultats();
@@ -731,7 +738,7 @@ export function useOptimizerState(contexte?: ContexteMembresOptimizer): Optimize
         v.proprietaire = p; setProprietaireCriteres(p);
         c.lists.writeMemory(p, capture.criteres, c.data);
         listePrecedente.current = c.lists.activeListId;
-      } else setRapportCriteres(['Critères non mémorisés : le membre affiché ou son espèce a changé.']);
+      } else setRapportCriteres([messages().nonMemorises]);
     }
     if (listePrecedente.current !== c.lists.activeListId) {
       listePrecedente.current = c.lists.activeListId;

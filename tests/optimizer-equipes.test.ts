@@ -51,7 +51,7 @@ export const verificationsOptimizerEquipesActivite: [string, () => void][] = cas
       if (attendu === 'oui') egal(effectif, { type: 'equipe', lead: { stat, pct: 24 } }, `${stat} : lead actif`);
       else {
         egal(effectif.type, 'aucun', `${stat} : aucun lead`);
-        ok(effectif.type === 'aucun' && effectif.motif.includes('inactive'), `${stat} : motif explicite`);
+        ok(effectif.type === 'aucun' && effectif.motif === 'porteeInactive', `${stat} : motif explicite`);
       }
     }
   }]);
@@ -66,7 +66,7 @@ export function testOptimizerEquipesElementsEtLeadPersonnel() {
   const meme = leadEffectifMembreOptimizer(stockageLead([e]), 'l1', membres[0], 'fire');
   egal(resolvedLeaderSkill(appliquerCriteres(personnel, meme).damageSetup), { stat: 'Attack Speed', pct: 24 }, 'même élément : superposition du lead');
   const autre = leadEffectifMembreOptimizer(stockageLead([e]), 'l1', membres[0], 'water');
-  ok(autre.type === 'aucun' && autre.motif.includes('élément'), 'élément différent : aucun avec motif');
+  ok(autre.type === 'aucun' && autre.motif === 'autreElement', 'élément différent : aucun avec motif');
   egal(resolvedLeaderSkill(appliquerCriteres(personnel, autre).damageSetup), null, 'aucun repli sur le moderne ou le legacy personnel');
   egal(leadEffectifMembreOptimizer(stockageLead([e]), 'l2', membres[0], 'fire'), { type: 'personnel' }, 'autre liste : lead personnel');
   egal(leadEffectifMembreOptimizer(stockageLead([e]), 'l1', membres[3], 'fire'), { type: 'personnel' }, 'membre hors équipe : personnel');
@@ -80,7 +80,7 @@ export function testOptimizerEquipesLeadsNonCalculablesEtHorsListe() {
   for (const stat of ['Accuracy', 'Resistance', 'Inconnue', null]) {
     const e = equipe({ ...lead, stat });
     const effectif = leadEffectifMembreOptimizer(stockageLead([e]), 'l1', membres[0], 'fire');
-    ok(effectif.type === 'aucun' && effectif.motif.includes('sans effet calculé'), `${stat} : aucun avec motif`);
+    ok(effectif.type === 'aucun' && effectif.motif === 'statSansEffet', `${stat} : aucun avec motif`);
     const cree = creerEquipeOptimizer(contexte(), e);
     egal(cree.teams[0].lead, e.lead, `${stat} : donnée entière conservée`);
   }
@@ -90,12 +90,12 @@ export function testOptimizerEquipesLeadsNonCalculablesEtHorsListe() {
   for (const amount of [NaN, Infinity, -1]) {
     e.lead!.amount = amount;
     const resultat = leadEffectifMembreOptimizer(stockageLead([e]), 'l1', membres[0], 'fire');
-    ok(resultat.type === 'aucun' && resultat.motif.includes('montant'), 'montant invalide : aucun avec motif');
+    ok(resultat.type === 'aucun' && resultat.motif === 'montantInvalide', 'montant invalide : aucun avec motif');
   }
   for (const area of ['Inconnue', 'toString']) {
     e.lead = { ...lead, area };
     const resultat = leadEffectifMembreOptimizer(stockageLead([e]), 'l1', membres[0], 'fire');
-    ok(resultat.type === 'aucun' && resultat.motif.includes('pas établie'), `${area} : portée inconnue sans effet`);
+    ok(resultat.type === 'aucun' && resultat.motif === 'porteeInconnue', `${area} : portée inconnue sans effet`);
   }
   ok(leadEffectifMembreOptimizer(stockageLead([equipe(null)]), 'l1', membres[0], 'fire').type === 'aucun', 'équipe sans lead : aucun');
 }

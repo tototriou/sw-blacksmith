@@ -46,7 +46,7 @@ export function testOptimizerContenuListeSansContenu() {
   titre('Contenu de liste · absence de contenu et aucun repli personnel');
   const lu = { teams: [equipe], listContents: new Map<string, ContenuListeOptimizer>() };
   const effectif = leadEffectifMembreOptimizer(lu, 'l1', a, 'fire');
-  ok(effectif.type === 'aucun' && effectif.motif.includes('n’est pas défini'), 'contenu absent : motif explicite');
+  ok(effectif.type === 'aucun' && effectif.motif === 'contenuNonDefini', 'contenu absent : motif explicite');
   const personnel = baseCompleteCriteres(undefined);
   personnel.damageSetup.leaderSkill = { stat: 'HP', pct: 33 }; personnel.damageSetup.leaderSpeedPct = 19;
   egal(appliquerCriteres(personnel, effectif).damageSetup.leaderSkill, undefined, 'aucun lead personnel moderne en repli');
@@ -62,7 +62,7 @@ export const verificationsOptimizerContenuListeElements: [string, () => void][] 
     const lu = { teams, listContents: new Map<string, ContenuListeOptimizer>([['l1', contenu], ['l2', 'guilde']]) };
     egal(leadEffectifMembreOptimizer(lu, 'l1', a, 'fire'), { type: 'equipe', lead: { stat: 'Attack Speed', pct: 24 } }, 'élément identique actif');
     const autre = leadEffectifMembreOptimizer(lu, 'l1', a, 'water');
-    ok(autre.type === 'aucun' && autre.motif.includes('élément'), 'autre élément sans effet avec motif');
+    ok(autre.type === 'aucun' && autre.motif === 'autreElement', 'autre élément sans effet avec motif');
     teams.forEach(e => { e.lead = { ...e.lead!, area: 'Guild', element: 'fire' }; });
     egal(leadEffectifMembreOptimizer(lu, 'l1', a, 'fire').type, contenu === 'guilde' ? 'equipe' : 'aucun', 'contenu de la liste du membre lu');
     egal(leadEffectifMembreOptimizer(lu, 'l2', a, 'fire').type, 'equipe', 'même sélecteur dans une autre liste : son contenu propre');

@@ -24,21 +24,23 @@ export const LARGEUR_COLONNE_ETROITE = 177;
 // surface ouverte garde sa place même si le champ s'allonge sous elle
 // (`SelecteurMultiple`), seules les rangées suivantes descendent.
 export default function PrincipalesImposeesBureau({ mainStatsBySlot, toggleMainStat }: StatPrincipaleImposeeProps) {
-  const jeu = useTraduction().jeu;
+  const textes = useTraduction();
+  const jeu = textes.jeu;
+  const c = textes.optimizer.criteres;
   return (
-    <section aria-label="Statistique principale imposée (slots pairs)" className="flex flex-col">
-      <p className="label mb-1.5">Statistique principale imposée (slots pairs)</p>
+    <section aria-label={c.principaleImposee} className="flex flex-col">
+      <p className="label mb-1.5">{c.principaleImposee}</p>
       <div className="flex flex-col gap-1.5">
         {CONFIGURABLE_SLOTS.map((slot) => {
           const avant = mainStatsBySlot[slot] ?? [];
           return (
             <div key={slot} className="flex items-center gap-1.5">
-              <span className="w-9 flex-none text-micro text-ink-dim">Slot {slot}</span>
+              <span className="w-9 flex-none text-micro text-ink-dim">{c.slot(slot)}</span>
               <div className="min-w-0 flex-1">
                 <SelecteurMultiple
-                  libelle={`Slot ${slot}`}
+                  libelle={c.slot(slot)}
                   taille="sm"
-                  vide="Libre"
+                  vide={c.libre}
                   forme="surbrillance"
                   resumeEntier
                   // Fermé, le champ manque de place : la forme réduite, celle d'une

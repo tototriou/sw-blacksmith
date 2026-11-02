@@ -1654,6 +1654,536 @@ export const fr = {
       equipe: (n: number, nom: string) => `Équipe ${n}, ${nom}`,
     },
   },
+
+  // L'Optimizer (Outils → Optimizer) : l'écran des critères, les listes de
+  // travail et leurs équipes.
+  optimizer: {
+    page: {
+      chargement: 'Chargement de ton compte…',
+      videTitre: 'Aucune donnée de compte chargée',
+      videTexte:
+        'Importe ton compte (bouton « Importer un JSON ») pour rechercher des combinaisons de runes parmi celles que tu possèdes déjà.',
+    },
+    // Les sources d'un exemplaire, par clé de `ExclusionSource`.
+    sources: {
+      box: 'Box',
+      rta: 'RTA',
+      'siege-defense': 'Défenses siège',
+      'siege-offense': 'Offenses siège',
+      unowned: 'Non possédé',
+    },
+    sourceEquipe: (source: string, n: number) => `${source} · équipe ${n}`,
+    // Pourquoi la recherche du monstre n'ajoute plus d'exemplaire de l'espèce.
+    dejaDansLaListe: {
+      tousLesExemplaires: (n: number, nom: string) => `Les ${n} ${nom} de ta Box sont dans la liste`,
+      unExemplaire: (nom: string) => `${nom} est déjà dans la liste`,
+    },
+    recherche: {
+      placeholder: 'Rechercher un monstre…',
+      resultats: 'Résultats de la recherche',
+      aucunDansSource: 'Aucun monstre dans cette source.',
+      aucunTrouve: 'Aucun monstre trouvé.',
+    },
+    candidat: {
+      runes: (n: number) => `${n} rune${n > 1 ? 's' : ''}`,
+      equipe: (n: number) => `Équipe ${n}`,
+    },
+    exclusion: {
+      placeholder: 'Rechercher un monstre à exclure…',
+      aucunEquipe: 'Aucun monstre équipé de runes dans cette source.',
+      dejaExclu: 'déjà exclu',
+      retirer: 'Retirer cette exclusion',
+      introuvable: (source: string) => `exclusion introuvable (${source})`,
+    },
+    // Le contenu de combat d'une liste, par clé de `ContenuListeOptimizer`.
+    contenus: { guilde: 'Guilde', donjon: 'Donjon', arene: 'Arène' },
+    listes: {
+      contenuListe: 'Contenu de la liste',
+      choisirContenu: 'Choisis le contenu de la liste',
+      sansContenu: 'Sans contenu',
+      contenu: 'Contenu',
+      enregistrer: 'Enregistrer',
+      editer: 'Éditer la liste',
+      nouvelle: 'Nouvelle liste',
+      contenuDabord: "Choisis d'abord le contenu.",
+      nom: 'Nom de la liste',
+      contenuObligatoire: "Obligatoire : le contenu décide des leads actifs et des compétences d'invocateur.",
+      // Le nom d'une liste créée sans nom ; il appartient ensuite au joueur.
+      nomParDefaut: (n: number) => `Liste ${n}`,
+      active: 'Liste active',
+      aucune: 'Aucune liste — choisir ou créer',
+      menu: 'Listes',
+      aucuneCreer: 'Aucune liste — crée-en une pour commencer.',
+      monstres: (n: number) => `${n} monstre${n > 1 ? 's' : ''}`,
+      supprimer: 'Supprimer cette liste',
+      nouvelleMenu: 'Nouvelle liste…',
+      sansContenuAvis: 'Sans contenu : aucun lead d’équipe appliqué.',
+      supprimerTitre: (nom: string) => `Supprimer « ${nom} » ?`,
+      supprimerMessage:
+        'Ses monstres et ses éventuelles runes validées seront perdus. Les runes elles-mêmes ne sont pas touchées — seule cette liste de travail disparaît.',
+    },
+    leadInactif: {
+      titre: 'Lead inactif',
+      libelle: (motif: string) => `Lead inactif : ${motif}`,
+    },
+    equipe: {
+      introuvable: 'Introuvable',
+      leader: 'Leader',
+      leaderAria: 'Leader de l’équipe',
+      aucun: 'Aucun',
+      lead: 'Lead',
+      leadAria: 'Type de lead de l’équipe',
+      sansEffet: '(sans effet calculé)',
+      valeur: 'Valeur',
+      valeurAria: 'Valeur du lead de l’équipe',
+      portee: 'Portée',
+      porteeAria: 'Portée du lead de l’équipe',
+      portees: { General: 'Générale', Element: 'Élément', Guild: 'Guilde', Dungeon: 'Donjon', Arena: 'Arène' },
+      element: 'Élément',
+      elementAria: 'Élément du lead de l’équipe',
+      conserveSansEffet: 'Ce lead est conservé sans effet calculé.',
+      modifier: 'Modifier l’équipe',
+      lier: 'Lier une équipe',
+      sousTitre: 'Deux à cinq membres de cette liste. Le lead de l’équipe devient celui de chaque membre.',
+      delier: 'Délier',
+      lierAction: 'Lier',
+      membres: (n: number) => `${n} / 5 membres`,
+      dissoudra: ' — enregistrer dissoudra l’équipe.',
+      pasAssez: 'Pas assez de monstres pour faire une équipe : rajoute des monstres dans la liste.',
+    },
+    sets: {
+      retirer: (nom: string) => `Retirer ${nom}`,
+      plein: 'Plus de place (6 runes)',
+      utilisees: (n: number) => `${n}/6 runes`,
+      principal: 'Set principal',
+      secondaire: 'Set secondaire',
+    },
+    // La raison d'un lead d'équipe sans effet, par code de `MotifLeadOptimizer`.
+    motifsLead: {
+      contenuNonDefini: 'Le contenu de combat de la liste n’est pas défini : aucun lead d’équipe appliqué.',
+      sansLead: 'L’équipe ne porte aucun lead.',
+      porteeInconnue: 'L’activité de cette portée de lead n’est pas établie pour ce contenu.',
+      porteeInactive: 'Cette portée de lead est inactive pour ce contenu.',
+      autreElement: 'Le lead ne concerne pas l’élément de ce membre.',
+      statSansEffet: 'La statistique de ce lead est conservée, sans effet calculé.',
+      montantInvalide: 'Le montant de ce lead est invalide.',
+    },
+    // « État de mon monstre ».
+    etat: {
+      titre: 'État de mon monstre',
+      // L'aide coupée autour de ses passages en gras.
+      aide: {
+        debut: 'Ce qui rend ton monstre plus fort, ',
+        adversaire: "quel que soit l'adversaire",
+        reglages: " : buffs reçus, leader skill de l'équipe, compétences d'invocateur",
+        auras: ", sets d'aura des autres monstres",
+        changent: '. Ces réglages changent ses statistiques, donc les ',
+        degatsSupplementaires: 'dégâts supplémentaires',
+        artefacts: " que lui apportent des artéfacts proportionnels aux PV, à l'ATQ, à la DEF ou à la VIT.",
+        combatDebut: 'Ce qui décrit ',
+        combat: 'le combat',
+        combatFin: " — le sort, la cible, le coup critique — vit dans la fenêtre « Dégâts réels », qui s'ouvre depuis l'objectif de recherche.",
+      },
+      // Les vignettes des buffs, et le libellé du buff dans le rappel d'un passif.
+      buffs: { atk: 'Buff ATQ', def: 'Buff DEF', spd: 'Buff VIT', cr: 'Buff Taux Crit' },
+      descriptionsBuffs: {
+        atk: 'Augmente l’ATQ du monstre de 50 %.',
+        def: 'Augmente la DEF du monstre de 70 %.',
+        spd: 'Augmente la VIT du monstre de 30 %.',
+      },
+      et: 'et',
+      ou: 'ou',
+      // Le rappel d'un passif qui pose un buff ; la condition est la prose du jeu.
+      pose: (buffs: string, condition: string) => `pose ${buffs} — « ${condition} »`,
+      lead: {
+        titre: 'Lead',
+        type: 'Type de leader skill',
+        aucun: 'Aucun',
+        valeur: 'Valeur du leader skill',
+      },
+    },
+    // Les sets d'aura des autres monstres de l'équipe.
+    auras: {
+      titre: "Sets d'aura des autres monstres",
+      plafond: (n: number) => `${n} sets au total : cinq autres monstres à trois sets`,
+      tousPresents: 'Les cinq sets d’aura ont déjà leur ligne',
+      aide: {
+        setsDebut: 'Les sets ',
+        // Les noms tels que l'aide les écrit, dans l'ordre de `STAT_DE_L_AURA`.
+        noms: ['Fight', 'Determination', 'Enhance', 'Accuracy', 'Tolerance'],
+        et: ' et ',
+        portesPar: ' portés par les ',
+        autres: 'autres',
+        equipe: (n: number) => ` monstres de l'équipe : ${n} au plus, cinq monstres à trois sets.`,
+        optimiseDebut: 'Les sets du monstre optimisé sont ',
+        comptes: 'comptés automatiquement',
+        optimiseFin: " sur chaque build, même s'ils ne sont pas recherchés : ne les saisis pas ici.",
+        valeurs:
+          "Fight, Determination et Enhance ajoutent chacun 8 % de l'ATQ, de la DEF ou des PV de base ; Accuracy et Tolerance, 8 points de Précision ou de RES.",
+      },
+      rappel: "Pense à vérifier les sets d'aura externes.",
+      ajouter: "Ajouter un set d'aura",
+      ligne: (n: number) => `Set d'aura de la ligne ${n}`,
+      retirer: (nom: string) => `Retirer les sets ${nom}`,
+      nombre: (nom: string) => `Nombre de sets ${nom} des autres monstres de l'équipe`,
+      // L'écho des auras dans le résumé du combat (`echoAurasExternes`).
+      echo: {
+        sets: (n: number, nom: string) => `${n} set${n > 1 ? 's' : ''} ${nom}`,
+        externes: (liste: string) => `auras externes : ${liste} ; les sets d'aura du build s'y ajoutent sur chaque résultat`,
+        aucune: "aucune aura externe ; les sets d'aura du build comptent sur chaque résultat",
+      },
+    },
+    // Les onglets de réglages du bureau : nom court, et nom complet en infobulle.
+    onglets: {
+      criteres: { libelle: 'Critères', title: 'Critères de recherche' },
+      artefacts: { libelle: 'Artéfacts', title: 'Artéfacts et relique' },
+      complements: { libelle: 'Options', title: 'Aura, exclusion, avancés' },
+    },
+    reglagesRecherche: 'Réglages de recherche',
+    // Les objectifs de recherche, par clé d'`Objective`.
+    objectifs: { efficience: 'Efficience', degats_reels: 'Dégâts réels', ehp: 'PV effectifs', vitesse: 'Vitesse' },
+    // Les préréglages de profondeur, par clé de `SlotFilterPresetKey`.
+    prereglages: {
+      bas: { libelle: 'Bas', aide: 'Rapide, mais peut manquer des runes si tu en as beaucoup au même emplacement.' },
+      moyen: { libelle: 'Moyen', aide: 'Un bon équilibre entre rapidité et exhaustivité — le choix par défaut.' },
+      haut: {
+        libelle: 'Haut',
+        aide: 'Considère plus de runes, donc plus long — utile si Moyen ne trouve pas de résultat satisfaisant.',
+      },
+      extreme: {
+        libelle: 'Extrême',
+        aide: 'Le plus complet, mais le plus long — peut prendre plusieurs minutes selon le nombre de conditions demandées.',
+      },
+    },
+    criteres: {
+      titre: 'Critères de recherche',
+      aucunExemplaire: 'Aucun exemplaire.',
+      estimation: (total: string, detail: string) =>
+        `${total} runes gardées après pré-filtrage (pool par emplacement : ${detail})`,
+      exclureMonstre: "Exclure les runes d'un monstre",
+      deuxReglages: 'Deux réglages indépendants, qui se superposent.',
+      exemplaire: 'Exemplaire',
+      voirAussi: 'Voir aussi',
+      choisirExemplaire: "Choisir l'exemplaire",
+      monstreEquipement: 'Monstre & équipement',
+      optionsRecherche: 'Options de recherche',
+      setRecherche: 'Set de runes recherché',
+      setRequis: 'Sélectionne au moins un set avant de lancer la recherche.',
+      principaleImposee: 'Statistique principale imposée (slots pairs)',
+      slot: (n: number) => `Slot ${n}`,
+      exclusionRunes: 'Exclusion de runes',
+      reglagesAvances: 'Réglages avancés',
+      listeDeTravail: 'Liste de travail',
+      libre: 'Libre',
+      aucun: 'Aucun',
+      monstreAOptimiser: 'Monstre à optimiser',
+      gererListes: 'Gérer mes listes',
+    },
+    // L'objectif et les actions : Rechercher, Arrêter, Exporter, Importer.
+    actions: {
+      objectif: 'Objectif de recherche',
+      objectifAide: 'Ce que la recherche maximise. ',
+      objectifAideFin: " : les dégâts d'un sort précis contre l'adversaire décrit.",
+      modifierCombat: 'Modifier la description du combat',
+      setDabord: "Choisis d'abord un set de runes recherché",
+      rechercheEnCours: 'Recherche…',
+      rechercher: 'Rechercher',
+      exporterAide:
+        'Télécharger les réglages de cette recherche en fichier .json (set, minimums, objectif…) — pour la partager ou la reproduire, jamais tes runes ni ton compte.',
+      exporterLong: 'Exporter les paramètres de recherche',
+      exporter: 'Exporter',
+      importerAide: "Reprendre les réglages d'un fichier .json exporté depuis l'Optimizer (le tien ou celui d'un autre joueur).",
+      importerLong: 'Importer les paramètres de recherche',
+      importer: 'Importer',
+      arreterAide: 'Arrêter la recherche et garder ce qui a déjà été trouvé',
+      arreter: 'Arrêter',
+      objectifEtRechercher: 'Objectif et Rechercher',
+    },
+    conditions: {
+      titre: 'Conditions',
+      baseExclue: 'Stats de base exclues',
+      baseExclueAria: 'Stats de base exclues des conditions PV/ATQ/DEF/VIT',
+      aideBase: {
+        statsDeBase: 'PV/ATQ/DEF/VIT',
+        active: " : activé, la valeur est ce que l'équipement (runes ET artéfacts comptés) doit apporter ",
+        auDessus: 'au-dessus de la base',
+        desactive: ' du monstre. Désactivé, elle porte sur le total. ',
+        statsTotales: 'Taux Crit/Dgts Crit/RES/Précision',
+        toujoursTotal: " restent toujours en total, quel que soit ce réglage — ils partent de la valeur d'éveil du monstre.",
+      },
+      min: 'Min',
+      max: 'Max',
+      minimum: 'Minimum',
+      maximum: 'Maximum',
+      reinitialiser: 'Réinitialiser les conditions',
+    },
+    // Les réglages avancés de la recherche.
+    avances: {
+      profondeur: 'Profondeur de recherche',
+      pool: (n: string) => `Pool de runes = ${n}`,
+      exhaustif: "Rechercher jusqu'à épuisement complet",
+      exhaustifAide:
+        "Retire la limite de temps de 10 minutes : la recherche continue tant qu'il reste des combinaisons à examiner. Peut prendre très longtemps sur une recherche avec peu de conditions — le bouton ",
+      exhaustifArreter: '« Arrêter »',
+      exhaustifAideFin:
+        " reste disponible et garde le meilleur trouvé jusque-là. Le plafond d'un million de résultats collectés, lui, reste actif.",
+      diagnostic: 'Diagnostic approfondi sur 0 résultat',
+      diagnosticAide:
+        'Après une recherche à 0 résultat, identifie quelle condition posée libère le plus de candidats si on la retire — ',
+      diagnosticIndice: 'un indice, pas une preuve',
+      toutVerifier: 'Vérifier toutes les combinaisons trouvées',
+      toutVerifierAide: "Par défaut, la vérification des artéfacts et de la relique s'arrête dès que ",
+      toutVerifierCent: '100 combinaisons sont confirmées',
+      toutVerifierAideSuite: ' (300 quand la relique est cherchée) : les suivantes ne sont vérifiées que si tu ouvres leur page.',
+      toutVerifierActive:
+        'Activé, toutes les combinaisons trouvées sont vérifiées, au-delà de ces confirmées : le compte devient complet, mais cela peut prendre plusieurs minutes.',
+      aurasResPre: "Compter les effets d'auras Tolerance et Précision dans les conditions",
+      aurasResPreAide: {
+        debut: 'Activé, chaque set ',
+        tolerance: 'Tolerance',
+        ou: ' ou ',
+        accuracy: 'Accuracy',
+        ajoute: ' ajoute 8 points de RES ou de Précision aux ',
+        minMax: 'minimums et aux maximums',
+        conditions: (ou: string) =>
+          ` de ces deux conditions : ceux des autres monstres, saisis dans ${ou}, et ceux que forment les runes de chaque build.`,
+        ouBureau: '« Aura, exclusion, avancés »',
+        ouTelephone: '« État de mon monstre »',
+        desactive:
+          'Désactivé, ces deux conditions portent sur les statistiques sans aucune aura. Les dégâts et les PV effectifs comptent les auras dans les deux cas.',
+      },
+    },
+    relique: {
+      titre: 'Relique',
+      aideSoins: 'Les soins et boucliers (Régénération) ne sont mesurés par aucun objectif, donc jamais notés.',
+      commeEquipeeGuillemets: '« Comme équipée »',
+      aideCommeEquipee: ' conserve la pièce entière portée sur le build affiché ci-dessus, sans rien chercher.',
+      principale: 'Principale',
+      commeEquipee: 'Comme équipée',
+      libre: 'Libre',
+      proprieteUnique: 'Propriété unique',
+      sansEffet: 'Sans effet : la relique équipée est fixée',
+      niveauMin: 'Niveau minimum',
+      niveauMinCourt: 'Niveau min.',
+      niveauMinAide: "Niveau minimum de la relique — filtre d'entrée sur le pool cherché, jamais un critère de classement",
+    },
+    dejaUtilisees: {
+      titre: 'Exclure les runes déjà utilisées',
+      aide:
+        "Par défaut, la recherche considère TOUT l'inventaire, runes déjà portées ailleurs comprises. Active ce réglage pour retirer de la recherche les runes déjà portées par d'AUTRES monstres dans le périmètre choisi ci-dessous (un seul à la fois) — un build réellement montable sans déruner quelqu'un. Le monstre recherché lui-même n'est jamais exclu de ses propres runes.",
+    },
+    imposees: {
+      titre: "Conserver ces slots dans l'optimisation",
+      aide: 'Verrouille un emplacement sur la rune que le monstre porte déjà : la recherche gardera',
+      aideGras: ' exactement cette rune',
+      aideFin:
+        " et n'optimisera que les autres. Utile pour conserver une rune que tu ne veux pas déruner. Les emplacements laissés libres sont optimisés normalement.",
+      aucuneRune: 'Aucune rune équipée sur cet exemplaire — rien à conserver.',
+      emplacementVide: (slot: number) => `Aucune rune en emplacement ${slot}`,
+      liberer: (slot: number) => `Libérer l'emplacement ${slot}`,
+      imposer: (slot: number) => `Imposer cette rune en emplacement ${slot} (le pool de ce slot tombe à 1)`,
+    },
+    artefacts: {
+      titre: 'Artéfacts et relique',
+      aide: {
+        libre: '« Libre »',
+        libreSuite: ' cherche parmi tous tes artéfacts équipables ; une ',
+        principale: 'principale',
+        principaleSuite: ' restreint la recherche à ceux qui la portent. ',
+        commeEquipe: '« Comme équipé »',
+        commeEquipeSuite: ' conserve la pièce entière portée sur le build affiché ci-dessus, sans rien chercher.',
+        paire: 'La paire retenue suit le ',
+        tri: 'tri',
+        triSuite: ' affiché — trier par PV effectifs ne choisit pas les mêmes artéfacts que trier par dégâts.',
+      },
+      activer: "Activer l'optimisation d'artéfacts et reliques",
+      activerAide:
+        "Activé (défaut), chaque build reçoit la meilleure paire d'artéfacts ET la meilleure relique parmi les tiennes, selon les réglages ci-dessous.",
+      desactiveDebut: 'Désactivé, le monstre ',
+      desactiveGras: "garde les artéfacts et la relique qu'il porte",
+      desactiveFin:
+        ", statistiques comprises — on cesse simplement d'en chercher d'autres. Utile pour composer un runage autour des pièces déjà en place.",
+      commeEquipe: 'Comme équipé',
+      libre: 'Libre',
+    },
+    // Les sous-propriétés verrouillées d'artéfact.
+    verrous: {
+      titre: 'Sous-propriétés verrouillées',
+      lesDeux: 'les deux',
+      attribut: 'attribut',
+      type: 'type',
+      toutFige:
+        "Les deux emplacements sont sur « Comme équipé » : la paire est déjà décidée, un verrou n'a plus rien à chercher. Mets un emplacement sur « Libre » ou sur une principale pour en poser.",
+      minimumPour: (nom: string) => `Minimum pour ${nom}`,
+      retirer: (nom: string) => `Retirer ${nom}`,
+      sansEffet: (fige: string) =>
+        `Sans effet : ${fige} sur « Comme équipé ». À retirer, ou remets cet emplacement sur « Libre ».`,
+      deuxFiges: 'les deux emplacements sont figés',
+      unFige: (sorte: string) => `l’emplacement ${sorte} est figé`,
+      maxCumuleLesDeux: (plafond: number, parPiece: number) =>
+        `max ${plafond} % cumulé — au-delà de ${parPiece} %, les DEUX artéfacts devront la porter`,
+      maxCumule: (plafond: number) => `max ${plafond} % en cumulant les deux artéfacts`,
+      maxUnSeul: (plafond: number) => `max ${plafond} % · un seul artéfact peut la porter`,
+      // `noms` : les autres formes, déjà entre guillemets et jointes.
+      formeSeule: (noms: string, n: number) =>
+        `Compte uniquement cette forme. ${noms} ${n > 1 ? 'valent' : 'vaut'} pareil au calcul des dégâts, mais${
+          n > 1 ? ' ne seront pas comptées' : ' ne sera pas comptée'
+        } par ce verrou.`,
+      guillemets: (nom: string) => `« ${nom} »`,
+      et: ' et ',
+      pleines: (n: number) => `Les ${n} sous-propriétés sont prises`,
+      ajouter: '+ Sous-propriété…',
+      budgetAttribut: 'sous-propriétés : attribut',
+      aPlacer: (n: number) => `${n} à placer`,
+      aucunePaire: 'Aucune paire d’artéfacts ne satisfait ces sous-propriétés',
+      exigeAuMieux: (min: number, auMieux: number) => `${min} % exigé · ${auMieux} % au mieux`,
+      chaqueMaximum:
+        'Chaque maximum est mesuré sous-propriété par sous-propriété : deux sous-propriétés atteignables séparément peuvent ne l’être par aucune paire à la fois.',
+      impossible: (n: number) => `Ces sous-propriétés ne tiennent pas sur deux artéfacts : chacun n’en porte que ${n}.`,
+    },
+    // « Meilleurs artéfacts offensifs pour ce build ».
+    meilleurs: {
+      titre: 'Meilleurs artéfacts offensifs pour ce build',
+      degats: ' dégâts',
+      parCoup: ' / coup',
+      // Les deux crans, par clé de `CRITERES_ARTEFACTS`.
+      criteres: { brut: 'Dégâts supplémentaires', reel: 'Dégâts réels' },
+      reelIndisponible: 'Aucun sort de ce monstre n’est calculable : classement sur les dégâts supplémentaires.',
+      emplacementFige: (sorte: string) => `Emplacement ${sorte} figé`,
+      seulCherche: (sorte: string) => `il est gardé tel que porté, pas optimisé. Seul l’emplacement ${sorte} est cherché ici.`,
+      dejaPorte: 'Tu portes déjà la meilleure paire disponible pour ce critère.',
+      aucunArtefact: 'Aucun artéfact équipable ne correspond aux critères.',
+      fige: 'figé',
+      guillemets: (nom: string) => `« ${nom} »`,
+      ceSort: 'ce sort',
+      legendeReel: (sort: string) =>
+        `Dégâts totaux de ${sort} contre l’adversaire décrit — ouvre « Dégâts réels » pour changer le sort, la cible ou le traitement du critique.`,
+      legendeBrut:
+        'Dégâts supplémentaires bruts, à chaque coup — ils ne peuvent pas être critiques et ignorent la défense adverse, donc ce gain ne dépend ni du sort utilisé ni de la cible.',
+      coutVerrous: (pct: string) => `Vos lignes verrouillées coûtent −${pct} % sur ce build.`,
+      valides: 'Artéfacts validés',
+      validerArtefacts: 'Valider ces artéfacts',
+      validerBuild: 'Valider ce build avec ces artéfacts',
+    },
+    // Valider le build de la fiche, et le bandeau d'un build validé.
+    validation: {
+      valide: 'Validé',
+      validerArtefacts: 'Valider les artéfacts',
+      validerBuild: 'Valider ce build',
+      dejaReservees: (n: number) => `${n > 1 ? 'Runes déjà réservées' : 'Rune déjà réservée'} dans cette liste :`,
+      emplacement: (slot: number) => `emplacement ${slot}`,
+      uneRune: 'une rune',
+      valideAffiche: "Build validé affiché — pas l'équipement réellement porté",
+      reelAffiche: 'Équipement réellement porté affiché',
+      runesAbsentes: (n: number) =>
+        `Build conservé : ${n} rune(s) absente(s) du compte. Seules les runes présentes sont affichées et réservées.`,
+      artefactsAbsents: (n: number) =>
+        `Build conservé : ${n} artéfact(s) absent(s) du compte. Seuls les artéfacts présents sont affichés et réservés.`,
+    },
+    liberation: {
+      liberer: 'Libérer',
+      buildTitre: 'Libérer ce build validé ?',
+      buildMessage: 'Ces 6 runes ET la paire d’artéfacts redeviendront disponibles pour les autres monstres de cette liste.',
+      artefactsTitre: 'Libérer les artéfacts validés ?',
+      artefactsMessage:
+        'Cette paire redeviendra disponible pour les autres monstres de cette liste. Les 6 runes du build restent réservées.',
+      toutTitre: 'Libérer toutes les runes validées de cette liste ?',
+      toutMessage: "Tous les builds validés de cette liste seront libérés d'un coup — leurs runes redeviennent disponibles.",
+      toutLiberer: 'Tout libérer',
+      retirerTitre: 'Retirer ce monstre de la liste ?',
+      retirerMessage:
+        'Ses runes validées seront aussi libérées — elles redeviennent disponibles pour les recherches des autres monstres de cette liste.',
+      retirer: 'Retirer',
+    },
+    // Les monstres de la liste active (zone C).
+    zoneC: {
+      monstresDe: (nom: string) => `Monstres de « ${nom} »`,
+      monstres: 'Monstres de la liste',
+      rapport: 'Rapport des critères',
+      rapportMessages: (n: number) => `Rapport des critères : ${n} message${n > 1 ? 's' : ''}`,
+      listeVide: "Aucun monstre dans cette liste pour l'instant.",
+      choisirListe: 'Choisis ou crée une liste ci-dessus.',
+      equipe: (n: number) => `Équipe ${n}`,
+      sansEquipe: 'Sans équipe',
+      leadEquipe: (montant: number, stat: string, zone: string) => `Lead de l’équipe : +${montant} % ${stat} · ${zone}`,
+      sansLead: 'Sans lead',
+      leader: (nom: string) => `Leader : ${nom}`,
+      leadsInactifs: (n: number) => `${n} lead${n > 1 ? 's' : ''} inactif${n > 1 ? 's' : ''}`,
+      nonPossede: '(non possédé)',
+      buildConserve: 'Build conservé ; les pièces absentes du compte ne sont plus réservées.',
+      runesAbsentes: (n: number) => `${n} rune(s) absente(s)`,
+      artefactsAbsents: (n: number) => `${n} artéfact(s) absent(s)`,
+      libererBuild: 'Libérer ce build (runes et artéfacts)',
+      libererArtefacts: 'Libérer les artéfacts (le runage reste réservé)',
+      pasValide: 'pas encore validé',
+      retirer: 'Retirer de la liste',
+      libererTout: (nom: string) => `Libérer toutes les runes de « ${nom} »`,
+    },
+    // Les mémoires de critères des membres : restauration, capture, import.
+    memoires: {
+      refusIdentite: 'Critères non restaurés : l’identité enregistrée du membre diffère de l’espèce résolue.',
+      membreIntrouvable: 'Membre introuvable : critères non restaurés.',
+      especeDifferente: 'Mémoire conservée sans application : l’espèce du membre ne correspond pas.',
+      verrousIgnores: (n: number) => `${n} rune(s) imposée(s) ignorée(s) : absentes de ton inventaire.`,
+      importEnAttente: 'Import refusé : la revérification du compte réimporté est en attente. Réessayez après sa fin.',
+      importCollision: 'Import refusé : identifiant de liste déjà occupé. Réessayez pour créer une autre liste.',
+      nonMemorises: 'Critères non mémorisés : le membre affiché ou son espèce a changé.',
+    },
+    // L'écran de l'Optimizer (OptimizerSection.tsx) : résumés, import de
+    // recette, vues de l'exemplaire, introduction.
+    section: {
+      introduction:
+        "Recherche parmi tes runes possédées ; rien n'est appliqué à ton compte, l'outil est purement indicatif — c'est à toi de re-runer dans le jeu.",
+      etatBuffs: { atk: 'buff ATQ', def: 'buff DEF', spd: 'buff VIT' },
+      etatMonstre: (etat: string, auras: string) => `État du monstre : ${etat} · ${auras}`,
+      etatVide: 'aucun buff, aucun lead',
+      aucunSort: 'Aucun sort exploitable',
+      contre: (element: string) => `vs ${element}`,
+      elementIgnore: 'élément ignoré',
+      critiqueImpossible: 'critique impossible',
+      paireDecidee: 'Les deux emplacements sont sur « Comme équipé » : la paire est déjà décidée, il n’y a rien à chercher.',
+      aucunGain: 'Aucun artéfact équipable n’apporte de dégâts supplémentaires pour ce critère.',
+      // Les sources proposées par « Importer une équipe ».
+      import: {
+        prepaRta: 'Prépa RTA',
+        tousLesMonstres: 'Tous les monstres',
+        defenses: 'Défenses de siège',
+        toutesLesDefenses: 'Toutes les défenses',
+        offenses: 'Offenses de siège',
+        offense: (n: number) => `Offense ${n}`,
+        offenseDeSiege: (n: number) => `Offense de siège ${n}`,
+        deckVide: 'Deck vide',
+        recommandations: 'Recommandations',
+        recommandation: (n: number) => `Recommandation ${n}`,
+        sansNom: 'Sans nom',
+        deck: (n: number) => `Deck ${n}`,
+      },
+      // Le message d'import d'une recette (« Importer les paramètres de recherche »).
+      recette: {
+        refuse: (erreur: string) => `Import refusé : ${erreur}`,
+        verrousIgnores: (n: number) => `${n} rune(s) imposée(s) ignorée(s) : absentes de ton inventaire.`,
+        autreCompteArtefacts: "Cette recette vient d'un autre compte : « Comme équipé » est passé sur « Libre ».",
+        autreCompteRelique: "Cette recette vient d'un autre compte : « Comme équipée » est passé sur « Libre ».",
+        importes: (monstre: string) => `Réglages importés pour ${monstre} — monstre sélectionné automatiquement.`,
+        monstreIntrouvable: (monstre: string) =>
+          `Réglages importés (${monstre}), mais ce monstre est introuvable dans les données actuelles — choisis-en un manuellement.`,
+      },
+      autreMonstre: 'un autre monstre',
+      buildActuel: 'Build actuel',
+      buildValide: 'Build validé',
+      aucunBuildValide: 'Aucun build validé pour ce membre',
+      apercu: (monstre: string, source: string) => `Aperçu : ${monstre} · ${source}. Ce n'est pas l'exemplaire de la liste.`,
+      revenir: 'Revenir',
+      conflit: (n: number, noms: string) =>
+        `${n > 1 ? 'Runes déjà réservées' : 'Rune déjà réservée'} dans cette liste pour ${noms}`,
+      vueVideBornes: (colonne: string, min: string, max: string) =>
+        `Vue vide : le minimum de ${colonne} (${min}) dépasse son maximum (${max}).`,
+      vueVide: 'Aucune combinaison confirmée ne passe ces filtres.',
+      tropEtroit: 'Trop étroit pour le tableau : cartes affichées',
+      buildNumero: (n: number) => `Build n° ${n}`,
+      creerEtValider: 'Créer et valider',
+    },
+  },
 };
 
 export type Dictionnaire = typeof fr;

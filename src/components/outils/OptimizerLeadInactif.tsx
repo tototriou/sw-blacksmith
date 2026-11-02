@@ -2,11 +2,13 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { BoutonIcone, FlottantAuto, Modale } from '../../ui';
 import { COMPACT, useMediaQuery } from '../../hooks/useMediaQuery';
+import { useTraduction } from '../../hooks/useLangue';
 
 /** Le motif sort du flux et du défilement de la liste ; la cible garde sa place. */
 export default function OptimizerLeadInactif({ motif }: { motif?: string }) {
+  const l = useTraduction().optimizer.leadInactif;
   return <span className="inline-flex h-6 w-6 flex-none compact:h-10 compact:w-10">
-    {motif && <MotifHorsFlux titre="Lead inactif" libelle={`Lead inactif : ${motif}`} messages={[motif]} />}
+    {motif && <MotifHorsFlux titre={l.titre} libelle={l.libelle(motif)} messages={[motif]} />}
   </span>;
 }
 
