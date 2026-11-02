@@ -57,6 +57,15 @@ RTA et Siège.
   vraisemblablement une moisson partielle). Sans lui, la PR est un diff JSON de
   milliers de lignes où personne ne voit qu'une collaboration est arrivée.
 
+### Option Fast Pace de l'Homunculus lumière
+
+La compétence *Fast Pace* (10243010) est fournie par l'API sans monstre associé.
+`fetch-skills.mjs` la rattache aux deux formes lumière (1000204 et 1000214),
+en complément des compétences initiales. La liste est dédoublonnée si l'API
+la rattache elle-même. Une option absente de la moisson fait échouer le script
+**avant** l'effacement des fiches existantes. Le speed tuning permet de la
+sélectionner ; il ne présume pas du chemin d'évolution en jeu.
+
 ### ⚠️ La pagination de l'API : une moisson incomplète échoue
 
 L'API **plafonne une page à 100** résultats quel que soit le `limit` demandé, et

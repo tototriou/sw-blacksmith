@@ -46,6 +46,7 @@ import {
   ligneVierge,
   plateauDeLignes,
   majMod,
+  modifierMod,
   oublierCamp,
   ordreApresImport,
   plusRapideAllie,
@@ -4181,5 +4182,75 @@ export function testSpeedTuneModele() {
     egal(estimerCumuls([chilling], donnees)[0].cumulsPassif, 1, 'un compte saisi reste intact');
     const vierge = { ...chilling, cumulsPassif: undefined };
     egal(estimerCumuls([vierge], donnees)[0].cumulsPassif, 1, "une case jamais touchée reçoit l'estimation (Volonté)");
+  }
+}
+
+export function testSpeedTuneResetAtb() {
+  titre('Speed tuning — remise à zéro exacte, Tablo et Fast Pace');
+  const fiche = (id: number): DetailMonstre => JSON.parse(readFileSync('public/data/skills/' + id + '.json', 'utf8'));
+  const tablo = sortsVitesse(fiche(21314)).find(s => s.nom === 'Returned Dice')!;
+  const fast = sortsVitesse(fiche(1000214)).find(s => s.nom === 'Fast Pace')!;
+  egal(tablo.effet, { atbTousAZero: true, buffEquipe: 30, buffEquipeSansSoi: true }, 'Returned Dice : zéro sur les deux camps, buff sur les autres alliés (portée confirmée par la fiche)');
+  egal([tablo.cooldown, tablo.chance, tablo.neutre], [5, null, false], 'Tablo : recharge maxée à cinq tours, remise à zéro garantie');
+  egal(fast.effet, { atbTousAZero: true, atbTous: 100, buffAllie: 30 }, 'Fast Pace : zéro, puis +100 sur les deux camps, buff ciblé');
+  egal([fast.cooldown, fast.chance, fast.neutre], [4, null, false], 'Fast Pace : recharge maxée à quatre tours, sans chance inventée');
+  ok(sortsVitesse(fiche(1000204)).some(s => s.nom === 'Fast Pace'), 'Fast Pace aussi disponible sur la forme non éveillée lumière');
+  ok(!sortsVitesse(fiche(1000215)).some(s => s.nom === 'Fast Pace'), 'Fast Pace absent de l’Homunculus ténèbres');
+  for (const camp of ['allie', 'ennemi'] as const) {
+    const adverse = camp === 'allie' ? 'ennemi' : 'allie';
+    const plateau: TuneMonstre[] = [
+      { id: 'lanceur', combat: 2000, camp, sort: { ...tablo.effet, cooldown: 5 } },
+      { id: 'partenaire', combat: 1600, camp },
+      { id: 'adverse', combat: 1800, camp: adverse },
+    ];
+    const sim = simuler(plateau, 2);
+    egal(sim.lignes.filter(l => l.id !== 'lanceur').map(l => l.trajectoire[0]), [0, 0], camp + ' : toutes les jauges retombent exactement à zéro, même au-dessus de 100');
+    egal(sim.actions.map(a => a.id), ['lanceur', 'partenaire'], camp + ' : le buff des autres alliés départage le deuxième tick');
+    egal(sim.lignes.map(l => l.effetSpeed[2] ?? 0), [0, 30, 0], camp + ' : Tablo ne reçoit pas son propre buff, ni l’adverse');
+    const tresHaut = simuler(plateau.map(m => ({ ...m, combat: m.combat * 10 })), 1);
+    egal(tresHaut.lignes.find(l => l.id === 'adverse')!.trajectoire[0], 0, camp + ' : remise à zéro exacte même à 1260 %, sans sentinelle −999');
+    const rempli = simuler(plateau.map(m => m.id === 'lanceur' ? { ...m, sort: { ...fast.effet, cibleAllie: 'partenaire', cooldown: 4 } } : m), 2);
+    egal(rempli.lignes.filter(l => l.id !== 'lanceur').map(l => l.trajectoire[0]), [100, 100], camp + ' : Fast Pace fixe les deux camps à 100, sans conserver le surplus');
+    egal(rempli.lignes.find(l => l.id === 'lanceur')!.effetAtb[1], 100, camp + ' : le lanceur reçoit lui aussi les 100 points après sa remise à zéro');
+    egal(rempli.lignes.map(l => l.effetSpeed[2] ?? 0), [0, 30, 0], camp + ' : seul l’allié ciblé reçoit le buff de Fast Pace');
+    const surSoi = simuler([{ ...plateau[0], sort: { ...fast.effet, cibleAllie: 'lanceur', cooldown: 4 } }, ...plateau.slice(1)], 2);
+    egal(surSoi.lignes.map(l => l.effetSpeed[2] ?? 0), [30, 0, 0], camp + ' : Fast Pace permet aussi de se viser soi-même');
+  }
+  const modifie = (v: number) => simuler([{ id: 'cible', combat: 200, camp: 'allie', atbMod: { 8: v } }], 8).lignes[0].trajectoire[7];
+  egal(modifie(-100), 12, 'une jauge à 112 % conserve 12 % après −100 points');
+  egal(modifie(-999), 0, '−999 points vident cette jauge sans passer sous zéro');
+
+  const corpus = JSON.parse(readFileSync('public/data/monsters.json', 'utf8')) as { monsters: Monster[] };
+  const monstres = new Map(corpus.monsters.map(m => [m.com2usId, m]));
+  const donnees: DonneesKit = { kits: new Map(), sorts: new Map(), passifs: new Map() };
+  for (const id of [21314, 1000214]) {
+    donnees.kits.set(id, kitVitesse(fiche(id)));
+    donnees.sorts.set(id, sortsVitesse(fiche(id)));
+  }
+  for (const [id, nom] of [[21314, 'Returned Dice'], [1000214, 'Fast Pace']] as const) {
+    const lignes = [
+      { ...ligneVierge(monstres.get(id)!, 'allie'), runeSpeed: 250 },
+      { ...ligneVierge(monstres.get(15311)!, 'allie'), runeSpeed: 160 },
+      { ...ligneVierge(monstres.get(15311)!, 'ennemi'), runeSpeed: 220, atbMod: { 2: -20 } },
+    ];
+    const choix = { sort: { [lignes[0].uid]: nom, [lignes[1].uid]: '' }, cible: { [lignes[0].uid]: lignes[1].uid } };
+    const leads = { allie: null, ennemi: null };
+    const analyser = (ls: Ligne[]) => analyseAutomatique(plateauDeLignes(ls, leads), 0, donnees, { choix, horizon: 15 });
+    const premier = analyser(lignes);
+    const ennemi = premier.mods.get(lignes[2].uid)!;
+    ok(!!ennemi?.atbAuto && Object.keys(ennemi.atbAuto).length > 0, nom + ' : les effets globaux sont écrits sur un vrai adverse');
+    egal(ennemi?.atbMod[2], -20, nom + ' : la correction manuelle adverse reste à son tick');
+    const appliquees = appliquerMods(lignes, premier.mods);
+    const simulation = simuler(tuneDe(appliquees, leads, donnees, choix), 15);
+    egal(premiersTours(simulation).filter(a => a.camp === 'allie').map(a => ({ id: a.id, tick: a.tick })), premier.ordre, nom + ' : analyse et tableau affichent le même ordre');
+    const relance = analyser(appliquees);
+    egal([...relance.mods], [...premier.mods], nom + ' : relancer ne déplace ni ne double les effets adverses');
+    const retire = analyseAutomatique(plateauDeLignes(appliquees, leads), 0, donnees, { choix: { sort: { ...choix.sort, [lignes[0].uid]: '' } }, horizon: 15 });
+    egal(retire.mods.get(lignes[2].uid)?.atbMod, { 2: -20 }, nom + ' : retirer le sort efface seulement ses cases automatiques adverses');
+    const tick = Number(Object.keys(ennemi.atbAuto!)[0]);
+    const corrigee = modifierMod(appliquees[2], 'atbMod', tick, 0);
+    egal(corrigee.atbAuto?.[tick], undefined, nom + ' : une saisie de zéro cesse d’être une case automatique');
+    const manuel = analyser([appliquees[0], appliquees[1], corrigee]);
+    egal(manuel.mods.get(lignes[2].uid)?.atbMod[tick] ?? corrigee.atbMod[tick], 0, nom + ' : la relance conserve le zéro saisi explicitement');
   }
 }

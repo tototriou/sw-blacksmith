@@ -37,7 +37,7 @@ import {
   ligneReference as ligneReferenceDe,
   ligneVierge,
   lignesDeDeck,
-  majMod,
+  modifierMod,
   oublierCamp,
   ordreApresImport,
   passifActifDe as passifActifDeLigne,
@@ -439,11 +439,11 @@ export function useSpeedTune({
   // dépendre. Seule une case VIDE (`null`) rend la main à la compétence.
   function setMod(champ: ChampMod, uid: string, tick: number, v: number | null) {
     setLignes((prev) =>
-      prev.map((l) => (l.uid === uid ? { ...aLaMain(l), [champ]: majMod(l[champ], tick, v) } : l))
+      prev.map((l) => (l.uid === uid ? modifierMod(l, champ, tick, v) : l))
     );
   }
   function setModEquipe(champ: ChampMod, camp: Camp, tick: number, v: number | null) {
-    setLignes((prev) => prev.map((l) => (l.camp === camp ? { ...l, [champ]: majMod(l[champ], tick, v) } : l)));
+    setLignes((prev) => prev.map((l) => (l.camp === camp ? modifierMod(l, champ, tick, v) : l)));
   }
 
   const leadDe = (camp: Camp) => leadDeCamp(leads, camp);
@@ -573,7 +573,7 @@ export function useSpeedTune({
     setLignes((prev) =>
       prev.map((l) => {
         const mods = resultat.mods.get(l.uid);
-        return mods ? { ...l, atbMod: mods.atbMod, speedMod: mods.speedMod } : l;
+        return mods ? { ...l, ...mods } : l;
       })
     );
 

@@ -55,6 +55,10 @@ export type ModParTick = Record<number, number>;
 // barre d'un adverse, ce qui aide tout autant à passer devant lui.
 export interface EffetSort {
   // Barre d'action, en % (positif = on remplit).
+  // Affectation exacte avant les remplissages : une réduction de 100 points
+  // laisserait du surplus sur une jauge supérieure à 100 (Tablo, Fast Pace).
+  atbTousAZero?: boolean;
+  atbTous?: number; // les deux camps, lanceur compris, après la remise à zéro
   atbEquipe?: number; // tout son camp, lui compris
   atbAllie?: number; // UN allié : celui dont la barre est la plus basse
   // ⚠️ **L'allié VISÉ**, quand on le désigne. Certains sorts laissent le joueur
@@ -71,6 +75,7 @@ export interface EffetSort {
   atbEnnemiTous?: boolean; // le retrait touche tout le camp adverse
   // Vitesse, en % (le jeu : +30 en buff, −30 en ralenti).
   buffEquipe?: number;
+  buffEquipeSansSoi?: boolean;
   buffSoi?: number;
   // ⚠️ **Le buff de vitesse posé sur l'allié VISÉ** — la même cible que
   // `atbAllie`, parce que c'est le même sort. Rabbit's Agility remplit une barre
@@ -222,13 +227,15 @@ const rangCamp = (c: Camp): number => (c === 'allie' ? 0 : 1);
 // équipe tunée parce qu'elle aura freiné l'adverse : le jour où le retrait
 // rate, se voit résisté, ou tombe sur un monstre déjà passé, l'équipe se coupe.
 // Les monstres doivent jouer les uns après les autres SANS ça — donc la
-// simulation du tune ne voit jamais ces effets, et les grilles n'en montrent
+// simulation du tune écarte ces retraits ordinaires, et les grilles n'en montrent
 // aucune trace (ce qui est affiché est exactement ce qui est calculé).
 //
 // Ce que l'utilisateur pose LUI-MÊME dans une case de grille reste intact :
 // c'est une saisie, pas une déduction.
 export function sansReductionAdverse(e: EffetSort): EffetSort {
   const copie = { ...e };
+  // Une remise à zéro des deux camps est un effet garanti et indivisible,
+  // pas un retrait adverse résistible : Tablo et Fast Pace la conservent.
   delete copie.atbEnnemi;
   delete copie.atbEnnemiTous;
   delete copie.ralenti;
@@ -368,6 +375,10 @@ export function simuler(monstres: TuneMonstre[], horizon = HORIZON_TICKS): Simul
       }
       const camp = gagnant.camp;
       const adverse: Camp = camp === 'allie' ? 'ennemi' : 'allie';
+      // L'affectation précède tout remplissage, même si la barre dépasse 999.
+      // Le delta exact permet aussi de rejouer cet effet dans les grilles.
+      if (sort.atbTousAZero) for (const m of etat) ajouter(m, -m.atb);
+      if (sort.atbTous) for (const m of etat) ajouter(m, sort.atbTous);
       if (sort.atbEquipe) for (const m of etat) if (m.camp === camp) ajouter(m, sort.atbEquipe);
       if (sort.atbSoi) ajouter(gagnant, sort.atbSoi);
       // La cible d'un sort « sur un allié », résolue UNE FOIS : la barre et le
@@ -401,7 +412,12 @@ export function simuler(monstres: TuneMonstre[], horizon = HORIZON_TICKS): Simul
             : [];
         for (const m of cibles) ajouter(m, -sort.atbEnnemi);
       }
-      if (sort.buffEquipe && sort.buffEquipe > buffCamp[camp]) buffCamp[camp] = sort.buffEquipe;
+      if (sort.buffEquipe) {
+        if (sort.buffEquipeSansSoi) {
+          for (const m of etat) if (m.camp === camp && m !== gagnant)
+            buffIndiv[m.id] = Math.max(buffIndiv[m.id] ?? 0, sort.buffEquipe);
+        } else if (sort.buffEquipe > buffCamp[camp]) buffCamp[camp] = sort.buffEquipe;
+      }
       if (sort.buffSoi && sort.buffSoi > (buffIndiv[gagnant.id] ?? 0)) buffIndiv[gagnant.id] = sort.buffSoi;
       if (sort.buffAllie && cibleAlliee && sort.buffAllie > (buffIndiv[cibleAlliee.id] ?? 0))
         buffIndiv[cibleAlliee.id] = sort.buffAllie;

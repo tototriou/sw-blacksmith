@@ -66,6 +66,8 @@ export const RELEASES: Release[] = [
     changes: [
       { kind: 'fix', scope: 'Speed tuning', text: 'Belladeon 2A remplit 30 % de barre sans skill-up, et 33 % une fois maxé.' },
       { kind: 'fix', scope: 'Speed tuning', text: 'À barre égale, le gain de Chilling lié aux buffs ne change plus sa priorité initiale.' },
+      { kind: 'fix', scope: 'Speed tuning', text: 'Tablo remet toutes les barres à zéro ; Fast Pace les fixe à 100 %.' },
+      { kind: 'fix', scope: 'Speed tuning', text: 'Les réductions manuelles de barre acceptent jusqu’à −999 %.' },
     ],
   },
   {

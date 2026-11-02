@@ -29,6 +29,15 @@ const ATB_NIVEAU_1_CONNUS = new Map<number, number>([[2064, 30]]);
 const atbNiveau1De = (c: Competence, e: Competence['effets'][number]): number =>
   (c.com2usId != null ? ATB_NIVEAU_1_CONNUS.get(c.com2usId) : undefined) ?? e.quantite ?? 0;
 
+// Effets globaux dont les drapeaux SWARFARM ne décrivent pas la portée.
+// Curation par identifiant, après balayage des 1 007 compétences ATB :
+// Returned Dice remet les deux camps à zéro ; Fast Pace les fixe à 100.
+// Le buff de Tablo exclut le lanceur, celui de Fast Pace vise un seul allié.
+const ATB_GLOBAUX_CONNUS = new Map<number, EffetSort>([
+  [12114, { atbTousAZero: true, buffEquipe: BUFF_SPD_JEU, buffEquipeSansSoi: true }],
+  [10243010, { atbTousAZero: true, atbTous: 100, buffAllie: BUFF_SPD_JEU }],
+]);
+
 // Le ralenti du jeu vaut −30 % de vitesse, comme le buff en vaut +30 ; les
 // données SWARFARM ne donnent là encore que sa DURÉE en tours.
 export const RALENTI_SPD_JEU = 30;
@@ -286,6 +295,8 @@ export function kitVitesse(detail: DetailMonstre | null): KitVitesse {
 
 // Ce qu'une compétence fait à la barre et à la vitesse, cible par cible.
 function lireEffet(c: Competence): { effet: EffetSort; atbNiveau1: number; atbSkillUp: number; chance: number | null } {
+  const global = c.com2usId != null ? ATB_GLOBAUX_CONNUS.get(c.com2usId) : undefined;
+  if (global) return { effet: { ...global }, atbNiveau1: global.atbTous ?? 0, atbSkillUp: 0, chance: null };
   const effet: EffetSort = {};
   let atbNiveau1 = 0;
   let chance: number | null = null;

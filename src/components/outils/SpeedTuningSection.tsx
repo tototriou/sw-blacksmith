@@ -139,6 +139,8 @@ const signe = (v: number) => (v > 0 ? `+${v}` : `−${Math.abs(v)}`);
 function libelleSort(x: SortVitesse): string {
   const bouts: string[] = [];
   const e = x.effet;
+  if (e.atbTousAZero) bouts.push('barres de tous à 0 %');
+  if (e.atbTous) bouts.push(`+${pourcentBarre(e.atbTous)} % barre des deux camps`);
   if (e.atbEquipe) bouts.push(`+${pourcentBarre(e.atbEquipe)} % barre équipe`);
   if (e.atbAllie) bouts.push(`+${pourcentBarre(e.atbAllie)} % barre 1 allié`);
   if (e.atbSoi) bouts.push(`+${pourcentBarre(e.atbSoi)} % sa barre`);
@@ -150,7 +152,7 @@ function libelleSort(x: SortVitesse): string {
   // que le calcul en tient compte.
   if (e.atbEnnemi)
     bouts.push(`−${e.atbEnnemi} % barre adv${e.atbEnnemiTous ? ' (tous)' : ''} (non compté)`);
-  if (e.buffEquipe) bouts.push('buff VIT équipe');
+  if (e.buffEquipe) bouts.push(e.buffEquipeSansSoi ? 'buff VIT des autres alliés' : 'buff VIT équipe');
   if (e.buffSoi) bouts.push('buff VIT sur soi');
   if (e.buffAllie) bouts.push('buff VIT 1 allié');
   if (e.ralenti) bouts.push(`ralenti adv${e.ralentiTous ? ' (tous)' : ''} (non compté)`);
@@ -1630,7 +1632,7 @@ function GrilleMod({
       </div>
     ) : (
       // Boost d'ATB : positif pour remplir, négatif pour vider (la barre ne
-      // descend jamais sous 0, garanti par la simulation). Bornes ±100.
+      // descend jamais sous 0, garanti par la simulation). De −999 à +100 %.
       //
       // ⚠️ La cellule porte le TON de sa valeur : une grille mêle des gains et
       // des pertes, et le signe seul — en mono 12 px, au milieu de quarante
@@ -1640,7 +1642,7 @@ function GrilleMod({
         value={value}
         onChange={onChange}
         allowEmpty
-        min={-100}
+        min={-999}
         max={100}
         // ⚠️ Élargi d'un cran avec le suffixe : « −100 % » doit tenir sans que
         // le champ ne rétrécisse le chiffre. La colonne fait 92 px, on y est.
