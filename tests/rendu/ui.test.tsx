@@ -249,6 +249,13 @@ export function testRenduUiSelecteurMultiple() {
     'résumé entier : chaque valeur choisie insécable, la ligne ne se coupe qu\'entre deux valeurs');
   ok(/data-resume-entier/.test(declencheurEntier) && !/data-reserve-resume|invisible/.test(declencheurEntier),
     'résumé entier : aucune copie invisible qui réserve la place de toutes les options');
+  // Forme réduite : le champ fermé, qui manque de place, montre `court` ; la
+  // surface ouverte garde le libellé entier.
+  const avecCourt = [{ valeur: 2, libelle: 'PV %', court: 'PV%' }, { valeur: 4, libelle: 'ATQ %', court: 'ATQ%' }];
+  const reduit = rendre(<SelecteurMultiple libelle="Slot 2" options={avecCourt} valeurs={[2, 4]} onChange={rien} vide="Libre" forme="surbrillance" resumeEntier />);
+  ok(!!bouton(reduit, 'Slot 2 : PV%, ATQ%'), 'forme réduite : le champ fermé et son nom accessible écrivent `court`');
+  const reduitOuvert = rendre(<SelecteurMultiple libelle="Slot 2" options={avecCourt} valeurs={[2]} onChange={rien} vide="Libre" forme="surbrillance" resumeEntier ouvert onOuvertChange={rien} />);
+  ok(boutons(reduitOuvert).some((b) => b.texte === 'PV %') && boutons(reduitOuvert).some((b) => b.texte === 'ATQ %'), 'forme réduite : la liste ouverte garde le libellé entier');
   const entierVide = rendre(<SelecteurMultiple libelle="Slot 2" options={options} valeurs={[]} onChange={rien} vide="Libre" resumeEntier />);
   ok(!!bouton(entierVide, 'Slot 2 : Libre') && /text-ink-dim">Libre</.test(entierVide), 'résumé entier sans choix : « Libre », atténué');
   ok(!/data-resume-entier/.test(surb) && /truncate/.test(surb), 'sans résumé entier : le champ fermé tronque (inchangé)');
