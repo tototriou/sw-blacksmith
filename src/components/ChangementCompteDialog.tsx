@@ -1,6 +1,7 @@
 import { AlertTriangle } from 'lucide-react';
 import Bouton from '../ui/Bouton';
 import { Modale } from '../ui/Dialogs';
+import { useTraduction } from '../hooks/useLangue';
 
 // Avant un changement de compte (application de bureau : choisir un autre
 // invocateur du dossier SW Exporter, ou un dossier, qui peut en désigner un
@@ -24,12 +25,14 @@ export default function ChangementCompteDialog({
   onChanger: () => void;
   onAnnuler: () => void;
 }) {
+  const textes = useTraduction();
+  const c = textes.changementCompte;
   return (
     <Modale
       onClose={onAnnuler}
       labelledBy="changement-compte-titre"
-      titre="Sauvegarder ta session ?"
-      sousTitre="Le compte de SW Exporter va remplacer ta prépa RTA, tes équipes de siège et ta box. Les changements faits depuis ta dernière sauvegarde seront perdus si tu ne sauvegardes pas."
+      titre={c.titre}
+      sousTitre={c.texte}
       icone={
         <span className="mt-0.5 flex-none rounded-lg bg-warn/15 p-2 text-warn">
           <AlertTriangle size={18} />
@@ -38,14 +41,14 @@ export default function ChangementCompteDialog({
       actionsEmpilees
       actions={
         <>
-          <Bouton onClick={onChanger} ton="danger" fond="vide" trait="plein" libelle="Changer sans sauvegarder" />
-          <Bouton onClick={onAnnuler} fond="vide" trait="plein" libelle="Annuler" />
+          <Bouton onClick={onChanger} ton="danger" fond="vide" trait="plein" libelle={c.sansSauvegarder} />
+          <Bouton onClick={onAnnuler} fond="vide" trait="plein" libelle={textes.commun.annuler} />
           <Bouton
             onClick={onSauvegarder}
             autoFocus
             ton="accent"
             fond="plein"
-            libelle="Sauvegarder et changer"
+            libelle={c.sauvegarderEtChanger}
             disabled={sauvegardeIndisponible !== null}
             title={sauvegardeIndisponible ?? undefined}
           />

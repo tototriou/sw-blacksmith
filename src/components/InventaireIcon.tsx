@@ -1,4 +1,5 @@
 import { ReactNode } from 'react';
+import { useTraduction } from '../hooks/useLangue';
 
 // Icônes des trois inventaires de « Mon compte » — monstres, runes, artéfacts —
 // **dessinées au trait, dans le style de la librairie d'icônes** (lucide) :
@@ -16,11 +17,6 @@ import { ReactNode } from 'react';
 
 export type InventaireIconKey = 'monster' | 'rune' | 'artifact';
 
-const LABEL: Record<InventaireIconKey, string> = {
-  monster: 'Monstres',
-  rune: 'Runes',
-  artifact: 'Artéfacts',
-};
 
 const PATHS: Record<InventaireIconKey, ReactNode> = {
   // Tête de démon : deux cornes, un crâne arrondi qui se termine en menton
@@ -57,6 +53,7 @@ export default function InventaireIcon({
   // l'icône suit l'encre du texte (`currentColor`) comme avant.
   couleur?: string;
 }) {
+  const libelle = useTraduction().inventaire[name];
   return (
     <svg
       width={size}
@@ -69,7 +66,7 @@ export default function InventaireIcon({
       strokeLinecap="round"
       strokeLinejoin="round"
       role="img"
-      aria-label={LABEL[name]}
+      aria-label={libelle}
       // `flex-none` : ces icônes vivent dans des rangées en flex (nav, onglets),
       // où elles se feraient écraser à la première contrainte de largeur.
       className={`flex-none ${className}`}

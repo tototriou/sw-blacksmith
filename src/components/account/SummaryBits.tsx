@@ -7,6 +7,8 @@
 // composants étrangers l'un à l'autre.
 
 import React from 'react';
+import { useLangue } from '../../hooks/useLangue';
+import { formatNombre } from '../../i18n/format';
 
 export const pct = (n: number, total: number) => (total ? (n / total) * 100 : 0);
 export const fmt = (v: number) => v.toFixed(1);
@@ -113,6 +115,7 @@ export function BarRow({
   // autres résumés.
   labelWidth?: number;
 }) {
+  const langue = useLangue();
   return (
     <div className="flex items-center gap-2.5">
       <span
@@ -129,7 +132,7 @@ export function BarRow({
         />
       </div>
       <span className="w-[92px] flex-none text-right font-mono text-micro text-ink-dim tabular-nums">
-        <b className="text-ink">{n.toLocaleString('fr-FR')}</b> · {fmt(pct(n, total))} %
+        <b className="text-ink">{formatNombre(n, langue)}</b> · {fmt(pct(n, total))} %
       </span>
     </div>
   );

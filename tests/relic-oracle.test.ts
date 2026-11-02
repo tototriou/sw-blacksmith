@@ -16,6 +16,7 @@ import { resolve } from 'path';
 import { buildCaseSearchParams, CASES } from '../scripts/lib/perfShared';
 import { buildRealDamageContext } from '../scripts/lib/realDamageCli';
 import { egal, exportSynthetique, ok, titre } from './outils';
+import { fr } from '../src/i18n/fr';
 
 const racineTests = resolve(new URL('.', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1'));
 
@@ -50,8 +51,8 @@ export default function testRelicOracle() {
 
   /* Identité sur la fixture fixe : mode équipé = un seul vrai run moteur. */
   const data = parseAccountSource(exportSynthetique())!;
-  const box = parseAccountBox(data).monsters;
-  const inventaire = parseAccountInventory(data);
+  const box = parseAccountBox(data, fr).monsters;
+  const inventaire = parseAccountInventory(data, fr);
   const gear = box.find((m) => m.gear?.relic)?.gear!;
   const paramsFixture: SearchParams = {
     base: gear.base,

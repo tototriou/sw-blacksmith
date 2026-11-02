@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { AlertTriangle, HardDriveDownload, ShieldCheck, X } from 'lucide-react';
 import { useScrollBloque } from '../hooks/useScrollBloque';
 import { selonSupport } from '../lib/bureau';
+import { useTraduction } from '../hooks/useLangue';
 import { Bouton, BoutonIcone, Case, Champ, PiedDeDialogue } from '../ui';
 
 /* --------------------------------------------------------------------------
@@ -114,6 +115,7 @@ export function Modale({
   // conteneur vide laisserait un blanc entre le message et les boutons.
   children?: ReactNode;
 }) {
+  const textes = useTraduction();
   const boite = useRef<HTMLDivElement>(null);
   // ⚠️ **La modale est montée dans `<body>`, pas là où elle est écrite.**
   //
@@ -393,7 +395,7 @@ export function Modale({
               // texte — au milieu de la boîte, là où on ne la cherche pas.
               <BoutonIcone
                 onClick={onClose}
-                libelle="Fermer"
+                libelle={textes.commun.fermer}
                 icone={<X size={18} />}
                 className="-mr-1 -mt-1 ml-auto flex-none hoverable:bg-transparent"
               />
@@ -481,7 +483,7 @@ export function Modale({
 export function ConfirmDialog({
   titre,
   message,
-  libelleAction = 'Confirmer',
+  libelleAction,
   destructif = false,
   onConfirm,
   onCancel,
@@ -493,6 +495,10 @@ export function ConfirmDialog({
   onConfirm: () => void;
   onCancel: () => void;
 }) {
+  // Le libellé par défaut suit la langue : il ne peut pas être une valeur par
+  // défaut du paramètre, qui ne lit pas le dictionnaire.
+  const textes = useTraduction();
+  const action = libelleAction ?? textes.commun.confirmer;
   return (
     // ⚠️ **PAS de croix ici, et c'est la seule exception de l'app.** Sur une
     // confirmation, « Annuler » EST la sortie : une croix à côté ferait deux
@@ -531,12 +537,12 @@ export function ConfirmDialog({
             onClick={onConfirm}
             ton={destructif ? 'danger' : 'neutre'}
             fond="plein"
-            libelle={libelleAction}
+            libelle={action}
           />
           {destructif ? (
-            <Bouton onClick={onCancel} autoFocus fond="vide" trait="plein" libelle="Annuler" />
+            <Bouton onClick={onCancel} autoFocus fond="vide" trait="plein" libelle={textes.commun.annuler} />
           ) : (
-            <Bouton onClick={onCancel} autoFocus ton="accent" fond="doux" libelle="Annuler" />
+            <Bouton onClick={onCancel} autoFocus ton="accent" fond="doux" libelle={textes.commun.annuler} />
           )}
         </>
       }
@@ -551,7 +557,7 @@ export function PromptDialog({
   message,
   valeurInitiale = '',
   placeholder,
-  libelleAction = 'Valider',
+  libelleAction,
   onValider,
   onCancel,
 }: {
@@ -563,6 +569,8 @@ export function PromptDialog({
   onValider: (valeur: string) => void;
   onCancel: () => void;
 }) {
+  const textes = useTraduction();
+  const action = libelleAction ?? textes.commun.valider;
   const [valeur, setValeur] = useState(valeurInitiale);
   const ref = useRef<HTMLInputElement>(null);
 
@@ -583,7 +591,7 @@ export function PromptDialog({
       // pas confirmer une destruction.
       actions={
         <>
-          <Bouton onClick={onCancel} fond="plein" libelle="Annuler" />
+          <Bouton onClick={onCancel} fond="plein" libelle={textes.commun.annuler} />
           {/* ⚠️ `form` + `id` : le bouton vit dans le PIED, hors du `<form>` qui
               est dans le corps. Cet attribut les relie — sans lui, « Valider »
               ne soumettrait rien, et seule la touche Entrée dans le champ
@@ -593,7 +601,7 @@ export function PromptDialog({
             form="prompt-form"
             ton="accent"
             fond="doux"
-            libelle={libelleAction}
+            libelle={action}
           />
         </>
       }
@@ -657,6 +665,7 @@ export function KeepAccountDialog({
   onChoose: (keep: boolean, nePlusMontrer: boolean) => void;
   onDismiss: () => void;
 }) {
+  const k = useTraduction().conservation;
   const [nePlusMontrer, setNePlusMontrer] = useState(false);
   // ⚠️ La coquille commune, alors que ce dialogue en réécrivait une à trois
   // lignes d'ici. Il perdait ainsi le piège à focus, le retour du focus à
@@ -675,18 +684,12 @@ export function KeepAccountDialog({
       onClose={onDismiss}
       labelledBy="keep-account-titre"
       largeur="max-w-[420px]"
-      titre="Garder tes données sur cet appareil ?"
+      titre={k.titre}
       sousTitre={
         <>
-          {selonSupport(
-            'Ton compte, ta prépa RTA, tes équipes de siège et tes recommandations seront encore là à ta prochaine visite, sans rien redéposer.',
-            "Ton compte, ta prépa RTA, tes équipes de siège et tes recommandations seront encore là à la prochaine ouverture de l'application, sans rien redéposer."
-          )}
+          {selonSupport(k.texteNavigateur, k.texteApplication)}
           <span className="mt-2 block font-semibold text-star">
-            {selonSupport(
-              "Recommandé : sans ça, tu perds tout ton travail en fermant l'onglet.",
-              "Recommandé : sans ça, tu perds tout ton travail en fermant l'application."
-            )}
+            {selonSupport(k.recommandeNavigateur, k.recommandeApplication)}
           </span>
         </>
       }
@@ -703,14 +706,14 @@ export function KeepAccountDialog({
       // elle y devenait une consigne de plus à lire avant de choisir, alors que
       // son rôle est de désamorcer l'engagement une fois les choix sous les yeux.
       // Sans elle, on répond « non » par prudence.
-      noteFinale="Tu pourras changer d'avis à tout moment dans les réglages ⚙."
+      noteFinale={k.changerDAvis}
       actions={
         <>
           <Bouton
             onClick={() => onChoose(false, nePlusMontrer)}
             fond="plein"
             taille="sm"
-            libelle="Non, ne rien garder de mes informations"
+            libelle={k.non}
           />
           <Bouton
             onClick={() => onChoose(true, nePlusMontrer)}
@@ -719,7 +722,7 @@ export function KeepAccountDialog({
             fond="doux"
             trait="aucun"
             taille="sm"
-            libelle="Garder mes données (recommandé)"
+            libelle={k.oui}
           />
         </>
       }
@@ -727,8 +730,7 @@ export function KeepAccountDialog({
       <p className="flex items-start gap-2 rounded-lg border border-border bg-panel2 px-3 py-2 text-micro leading-relaxed text-ink-dim">
         <ShieldCheck size={14} className="mt-[1px] flex-none text-good" />
         <span>
-          Tout reste <b className="text-ink">dans ton navigateur</b>, sur cet ordinateur. Rien
-          n'est envoyé nulle part, et rien n'est partagé.
+          {k.localAvant} <b className="text-ink">{k.localGras}</b>{k.localApres}
         </span>
       </p>
 
@@ -736,7 +738,7 @@ export function KeepAccountDialog({
           ⚠️ Ton `star` : elle accompagne la réponse recommandée, dont elle
           reprend la couleur — la même que celle du paragraphe au-dessus. */}
       <Case
-        libelle="Ne plus me montrer pendant cette session"
+        libelle={k.nePlusMontrer}
         ton="star"
         checked={nePlusMontrer}
         onChange={(e) => setNePlusMontrer(e.target.checked)}

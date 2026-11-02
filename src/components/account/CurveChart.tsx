@@ -85,14 +85,17 @@ function downsample(effs: number[], toX: (i: number) => number, toY: (e: number)
 // `yLabel` / `unit` : le graphe sert aussi bien à l'efficience qu'au score SW.
 export default function CurveChart({
   series,
-  yLabel = 'Efficience (%)',
+  yLabel,
   unit = '%',
 }: {
   series: CurveSeries[];
   yLabel?: string;
   unit?: string; // suffixe des valeurs (graduations et infobulle)
 }) {
-  const jeu = useTraduction().jeu;
+  const textes = useTraduction();
+  const jeu = textes.jeu;
+  const k = textes.courbes;
+  const axeY = yLabel ?? k.axeEfficience;
   const svgRef = useRef<SVGSVGElement>(null);
   const [hover, setHover] = useState<number | null>(null);
   // Rang cliqué. `null` = fermé.
@@ -200,7 +203,7 @@ export default function CurveChart({
 
   const active = series.filter((s) => s.effs.length > 0);
   if (active.length === 0) {
-    return <p className="text-ink-dim text-sm">Aucune rune à afficher.</p>;
+    return <p className="text-ink-dim text-sm">{k.aucuneRune}</p>;
   }
 
   // Bornes X (nb max de runes) et Y (min→max global, arrondis).
@@ -391,7 +394,7 @@ export default function CurveChart({
                          border border-border bg-panel px-2.5 py-2 text-xs shadow-glow shadow-black/60"
               style={{ ...cote, top: `${((PAD_T + 4) / H) * 100}%` }}
             >
-              <span className="font-mono text-ink-dim">{hover + 1} runes</span>
+              <span className="font-mono text-ink-dim">{k.nRunesSurvol(hover + 1)}</span>
               {hoverSeries.map(({ s, val }) => (
                 <span key={s.name} className="flex items-center gap-2">
                   <span className="h-2 w-2 flex-none rounded-full" style={{ background: s.color }} />
@@ -530,7 +533,7 @@ export default function CurveChart({
 
         {/* Titres des axes */}
         <text x={PAD_L + IW / 2} y={H - 5} textAnchor="middle" fontSize="11" fill="rgb(var(--ink-dim))" fontFamily="monospace">
-          Nombre de runes
+          {k.nombreRunes}
         </text>
         <text
           x={15}
@@ -541,7 +544,7 @@ export default function CurveChart({
           fontFamily="monospace"
           transform={`rotate(-90 15 ${PAD_T + IH / 2})`}
         >
-          {yLabel}
+          {axeY}
         </text>
 
         {/* Survol : ligne verticale + points + infobulle */}
@@ -638,8 +641,8 @@ export default function CurveChart({
           <button
             onClick={() => setChoisi(null)}
             className="absolute right-0 top-2 text-ink-dim transition hoverable:text-ink"
-            title="Fermer le détail"
-            aria-label="Fermer le détail"
+            title={k.fermerDetail}
+            aria-label={k.fermerDetail}
           >
             <X size={14} />
           </button>
@@ -658,8 +661,8 @@ export default function CurveChart({
               className="flex-none rounded-lg border border-border bg-panel p-1.5 text-ink-dim
                          transition hoverable:border-accent hoverable:text-ink
                          disabled:cursor-not-allowed disabled:opacity-30"
-              title="Rune précédente (mieux classée)"
-              aria-label="Rune précédente"
+              title={k.precedenteAide}
+              aria-label={k.precedente}
             >
               <ChevronLeft size={16} />
             </button>
@@ -677,8 +680,8 @@ export default function CurveChart({
               className="flex-none rounded-lg border border-border bg-panel p-1.5 text-ink-dim
                          transition hoverable:border-accent hoverable:text-ink
                          disabled:cursor-not-allowed disabled:opacity-30"
-              title="Rune suivante (moins bien classée)"
-              aria-label="Rune suivante"
+              title={k.suivanteAide}
+              aria-label={k.suivante}
             >
               <ChevronRight size={16} />
             </button>
@@ -709,7 +712,7 @@ export default function CurveChart({
                   <div className="min-w-0">
                     <div className="truncate text-sm font-bold leading-tight text-ink">
                       {nomSet(jeu, rune.set)} ·{' '}
-                      <span className="text-ink-dim">slot {rune.slot}</span>
+                      <span className="text-ink-dim">{k.slot(rune.slot)}</span>
                     </div>
                     {/* Le rang n'est PAS répété ici : il vit dans la barre de
                         navigation au-dessus, entre les deux flèches. */}
@@ -775,7 +778,7 @@ export default function CurveChart({
     <div className={`absolute bottom-2 right-2 z-10 flex ${pleinEcran ? '' : 'lg:hidden'}`}>
       <BoutonIcone
         onClick={() => setPleinEcran((v) => !v)}
-        libelle={pleinEcran ? 'Quitter le plein écran' : 'Afficher le graphe en plein écran'}
+        libelle={pleinEcran ? k.quitterPleinEcran : k.pleinEcran}
         icone={pleinEcran ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
         cadre
         forme="pilule"

@@ -8,6 +8,7 @@ import RunesCurve from './RunesCurve';
 import RunesCompare from './RunesCompare';
 import RunesOptim from './RunesOptim';
 import ComingSoon from '../../pages/ComingSoon';
+import { useTraduction } from '../../hooks/useLangue';
 
 interface Props {
   runes: RuneDetail[];
@@ -35,6 +36,7 @@ export default function RunesSection({
   menuOuvert,
   onFermerMenu,
 }: Props) {
+  const textes = useTraduction();
   return (
     <div>
       {view === 'resume' && <RunesSummary runes={runes} />}
@@ -53,8 +55,8 @@ export default function RunesSection({
           onFermerMenu={onFermerMenu}
         />
       )}
-      {view === 'meules' && <ComingSoon title="Meules" icon={Hammer} />}
-      {view === 'gemmes' && <ComingSoon title="Gemmes" icon={Gem} />}
+      {view === 'meules' && <ComingSoon title={textes.jeu.objets.meules} icon={Hammer} />}
+      {view === 'gemmes' && <ComingSoon title={textes.jeu.objets.gemmes} icon={Gem} />}
     </div>
   );
 }

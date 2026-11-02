@@ -20,14 +20,15 @@ export default function SetFilter({
   runes,
   value,
   onChange,
-  label = 'Sets',
+  label,
 }: {
   runes: RuneDetail[];
   value: Set<string>;
   onChange: (next: Set<string>) => void;
   label?: string;
 }) {
-  const jeu = useTraduction().jeu;
+  const textes = useTraduction();
+  const jeu = textes.jeu;
   // Pointeur grossier (téléphone) → icônes de set agrandies pour la visée.
   const auDoigt = useMediaQuery(COMPACT);
   // Au-delà de `lg`, un filtre actif est un aplat d'accent (`ACTIF_FILTRE_LG`).
@@ -53,7 +54,7 @@ export default function SetFilter({
 
   return (
     <div className="flex flex-wrap items-center gap-1">
-      <span className="label mr-1">{label}</span>
+      <span className="label mr-1">{label ?? textes.filtresRunes.sets}</span>
       {/* Une SEULE barre continue plutôt que des boutons détachés : les symboles
           se lisent comme une rangée d'icônes du jeu, et l'ensemble tient sur une
           ligne même avec 25 sets. Seul l'état actif porte un cadre. */}
@@ -67,8 +68,8 @@ export default function SetFilter({
         {present.length > 0 && (
           <button
             onClick={() => onChange(toutSelectionne ? new Set() : new Set(present.map((s) => s.key)))}
-            title={toutSelectionne ? 'Tout désélectionner' : 'Tout sélectionner'}
-            aria-label={toutSelectionne ? 'Tout désélectionner' : 'Tout sélectionner'}
+            title={toutSelectionne ? textes.filtresRunes.toutDeselectionner : textes.filtresRunes.toutSelectionner}
+            aria-label={toutSelectionne ? textes.filtresRunes.toutDeselectionner : textes.filtresRunes.toutSelectionner}
             aria-pressed={toutSelectionne}
             data-cible-fine
             className={`flex items-center justify-center w-7 h-7 coarse:w-9 coarse:h-9 rounded-md border transition select-none ${CASE_FILTRE_LG}

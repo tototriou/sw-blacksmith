@@ -20,6 +20,7 @@ import { buildCaseSearchParams, CASES } from '../scripts/lib/perfShared';
 import { caseAvecRelique, jetonsRelique, libelleAvecRelique, parseOptionsRelique } from '../scripts/lib/perfRelicOptions';
 import { projectionCanonique } from './relic-search.test';
 import { egal, exportSynthetique, ok, titre } from './outils';
+import { fr } from '../src/i18n/fr';
 
 function leve(f: () => unknown): string | null {
   try {
@@ -61,8 +62,8 @@ export default function testPerfRelicOptions() {
 
   /* (2) Le cas porteur : libellé et relicContext par l'expression de prod. */
   const data = parseAccountSource(exportSynthetique())!;
-  const box = parseAccountBox(data).monsters;
-  const inventaire = parseAccountInventory(data);
+  const box = parseAccountBox(data, fr).monsters;
+  const inventaire = parseAccountInventory(data, fr);
   const gear = box.find((m) => m.gear?.relic)?.gear!;
   ok(gear != null && gear.relic != null, 'fixture : un exemplaire porte une relique (7001)');
   const charge = { gear, allRunes: inventaire.runes, allRelics: inventaire.relics, requirement: { sets: activeSets(gear.runes.map((r) => r.set)), minStats: {} } };

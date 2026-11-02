@@ -1,6 +1,7 @@
 import Segmented from '../../ui/Segmented';
 import { RuneDetail } from '../../types';
 import { isAncient } from '../../lib/effects';
+import { useTraduction } from '../../hooks/useLangue';
 
 // Filtre antique COMMUN à toutes les pages qui affichent des runes (Liste,
 // Comparaison, Courbes, Optimisation).
@@ -13,11 +14,8 @@ import { isAncient } from '../../lib/effects';
 // l'Optimisation, remonté ici pour que le même filtre serve partout.
 export type AncientFilter = 'all' | 'without' | 'only';
 
-export const ANCIENTS: { key: AncientFilter; label: string; hint: string }[] = [
-  { key: 'all', label: 'Toutes', hint: 'Runes normales et antiques' },
-  { key: 'only', label: 'Antiques uniquement', hint: 'Uniquement les runes antiques' },
-  { key: 'without', label: 'Aucune antique', hint: 'Masquer les runes antiques' },
-];
+// Libellés et infobulles : `filtresRunes.antiques` du dictionnaire.
+export const ANCIENTS: AncientFilter[] = ['all', 'only', 'without'];
 
 export function keepAncient(rune: RuneDetail, filter: AncientFilter): boolean {
   if (filter === 'all') return true;
@@ -55,7 +53,9 @@ export default function AncientFilter({
   onChange: (v: AncientFilter) => void;
   size?: 'sm' | 'md' | 'lg';
 }) {
+  const a = useTraduction().filtresRunes.antiques;
+  const options = ANCIENTS.map((key) => ({ key, label: a[key].label, hint: a[key].hint }));
   return (
-    <Segmented value={value} onChange={onChange} options={ANCIENTS} size={size} dense={size === 'lg'} />
+    <Segmented value={value} onChange={onChange} options={options} size={size} dense={size === 'lg'} />
   );
 }

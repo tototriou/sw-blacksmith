@@ -7,6 +7,8 @@ import { lireEquipes } from '../src/lib/siegeShare';
 import { raisonSansVerdict, type EntreeStatut } from '../src/lib/siegeStatut';
 import { tickDanger, tickTeamMessage } from '../src/lib/speed';
 import { libelleSource } from '../src/lib/ownedBuilds';
+import { parseAccountBox, parseAccountJson } from '../src/lib/importAccount';
+import { topParPropriete } from '../src/lib/artifactsTop';
 import { fr } from '../src/i18n/fr';
 import { en } from '../src/i18n/en';
 import { egal, ok, titre } from './outils';
@@ -51,4 +53,16 @@ export function testPartageLangues() {
   egal(libelleSource('Box', en.carteReco.sources), 'Box', 'source d’un build : « Box » reste « Box »');
   egal(libelleSource('Défense 3', fr.carteReco.sources), 'Défense 3', 'source d’un build : inchangée en français');
   egal(libelleSource('Autre chose', en.carteReco.sources), 'Autre chose', 'un libellé venu d’ailleurs est rendu tel quel');
+
+  egal(parseAccountJson('pas du json', en).error, 'Unreadable JSON file.', 'import du compte : fichier illisible, en anglais');
+  egal(parseAccountBox('{}', fr).error, "Ce fichier ne contient pas de 'unit_list' — un export de compte SWEX est attendu.", 'import du compte : en français');
+  egal(
+    topParPropriete([], 'water', en).map((f) => f.titre)[0],
+    'Damage taken reduction',
+    'top des artéfacts : les titres de tableau en anglais'
+  );
+  ok(
+    topParPropriete([], 'water', en)[0].colonnes.map((c) => c.entete).includes('Fire'),
+    'top des artéfacts : les en-têtes d’élément viennent du lexique anglais'
+  );
 }

@@ -18,6 +18,7 @@ import { autreForme } from '../../src/lib/monsterForms';
 import type { Monster } from '../../src/types';
 import { egal, monstersJson, ok, titre } from '../outils';
 import { rendreApp } from './app.test';
+import { rendreCompte } from './compte.test';
 import { auTelephone, boutons, rendre, texteVisible } from './outils-rendu';
 
 const rien = () => {};
@@ -159,6 +160,26 @@ export function testRenduLangueRtaSiege() {
   for (const attendu of ['Recommendations', 'No recommendation.', 'Create one', 'Create a recommendation'])
     ok(recos.includes(attendu), `recommandations : « ${attendu} »`);
   ok(!recos.includes('Recommandations'), 'recommandations : plus de français');
+}
+
+// Le Compte, le pied de page et les messages d'import en anglais.
+export function testRenduLangueCompte() {
+  titre('rendu · langue — le Compte et le pied de page, en anglais');
+  const vide = enAnglais(() => texteVisible(rendreApp('#/compte')));
+  ok(vide.includes('No account data loaded'), 'Compte vide : le titre de l’état vide');
+  ok(vide.includes('Unofficial project, not affiliated with Com2uS.'), 'pied de page : la mention Com2uS');
+  ok(!vide.includes('Aucune donnée de compte chargée'), 'Compte vide : plus de français');
+
+  const box = enAnglais(() => texteVisible(rendreCompte('monstres', 'resume')));
+  for (const attendu of ['My box', 'Duplicates', 'Clear filters']) ok(box.includes(attendu), `box : « ${attendu} »`);
+
+  const resume = enAnglais(() => texteVisible(rendreCompte('artefacts', 'resume')));
+  for (const attendu of ['Artifacts 8', '5 attribute · 3 type · 2 to level', 'Best score 144 attribute 144 · type 93', 'Efficiency distribution', 'Rarities', 'Main stats'])
+    ok(resume.includes(attendu), `résumé des artéfacts : « ${attendu} »`);
+  for (const absent of ['Raretés', 'Meilleur score']) ok(!resume.includes(absent), `résumé des artéfacts : plus de « ${absent} »`);
+
+  const top = enAnglais(() => texteVisible(rendreCompte('artefacts', 'resume')));
+  ok(top.includes('Damage taken reduction') && top.includes('Other substats'), 'top par propriété : les familles en anglais');
 }
 
 // L'article « Mécaniques » : un par langue, mêmes sections dans le même ordre.

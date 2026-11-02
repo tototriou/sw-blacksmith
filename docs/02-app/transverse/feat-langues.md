@@ -101,10 +101,18 @@ jeu dans la langue choisie**, jamais une traduction de l'app. Ils vivent dans
   rapports d'import de la prépa RTA, des recommandations et des équipes de siège
   (`validateRtaImport`, `validateRecosImport`, `lireEquipes`, `cleanGear`), raison d'une équipe
   sans verdict (`raisonSansVerdict`), alerte de tick (`tickTeamMessage`), résumé d'une équipe
-  (`teamSummary`). Le calcul reste pur ; un test ou un script passe `fr`. Les **fichiers partagés**
+  (`teamSummary`), erreurs de l'import d'un compte (`parseAccountJson`, `parseAccountBox`,
+  `parseAccountInventory`, `parseSiegeDefense`, `parseSiegeOffense`), titres et en-têtes du top
+  des artéfacts par propriété (`topParPropriete`). Le calcul reste pur ; un test ou un script
+  passe `fr`. Les **fichiers partagés**
   restent en français, la langue du fichier : clés, champ `propriete` d'une recommandation
   (`fr.jeu`). Un libellé que `src/lib/` fabrique comme une donnée (« Défense 3 », la source d'un
   build) se traduit à l'affichage par `libelleSource`.
+- ⚠️ **Une clé MÉMORISÉE ne suit pas la langue** : les courbes masquées du Compte
+  (`runesCurve.hidden`, `runesCompare.hidden`) gardent leurs clés françaises (« Actuelle »,
+  « Moi »…) et seul le nom affiché change — sinon changer de langue réafficherait ce qu'on avait
+  masqué. Une donnée créée par l'app (la catégorie « Lead VIT », une courbe exportée « Moi »)
+  prend la langue du moment de sa création, puis appartient au joueur.
 - **Les noms de monstres et les compétences** (nom, description, améliorations) viennent de
   SWARFARM, en anglais, et le restent dans toutes les langues.
 - **Les effets de compétence** sont indexés par leur nom SWARFARM. Un effet qui n'a pas de nom
@@ -124,9 +132,10 @@ barre du haut, la palette Ctrl K, l'écran partagé, la page et le popover des P
 l'export chargé ; l'accueil, les Nouveautés (journal compris), Télécharger, les Mécaniques, le
 Bestiaire (filtres, grille, pagination), la fiche d'un monstre et la création d'un monstre ; la
 RTA (prépa, catégories, ordre de tour, sauvegarde et partage, prépa d'un ami) et le Siège
-(équipes de défense et d'offense, recommandations, leader skills). Dans
-[App.tsx](../../../src/App.tsx), les destinations de la navigation, le titre et le fil d'Ariane de
-la barre du haut, les actions de la palette et le sélecteur de page d'un volet vide.
+(équipes de défense et d'offense, recommandations, leader skills) ; le Compte (box, runes,
+artéfacts, courbes, comparaison, optimisation, builds rapides), l'import d'un compte, la
+question de conservation, les fenêtres de dialogue communes et [App.tsx](../../../src/App.tsx) en
+entier (pied de page, remplacement et suppression des données, session).
 
 Le **vocabulaire du jeu** suit la langue choisie dans toute l'app : fiches de rune, d'artéfact et
 de relique, inventaires, Optimizer, recommandations de siège, prépa RTA, Bestiaire, fiche d'un
@@ -161,9 +170,11 @@ Un écran qu'on traduit entre dans `FICHIERS_TRADUITS` dans le même commit.
   dans le vocabulaire du jeu de chaque langue ; l'accueil, les Nouveautés, Télécharger, les
   Mécaniques, le Bestiaire et la fiche d'un monstre en anglais ; les deux articles des Mécaniques,
   mêmes sections dans le même ordre ; la RTA (prépa, prépa d'un ami) et le Siège (défense,
-  offense, recommandations) en anglais.
+  offense, recommandations) en anglais ; le Compte vide, la box, le résumé et le top des
+  artéfacts, le pied de page en anglais.
 - [partage-langues.test.ts](../../../tests/partage-langues.test.ts) : les messages de `src/lib/`
-  (imports, statut d'équipe, alerte de tick, source d'un build) dans la langue reçue.
+  (imports, statut d'équipe, alerte de tick, source d'un build, import d'un compte, top des
+  artéfacts) dans la langue reçue.
 - [journal-langues.test.ts](../../../tests/journal-langues.test.ts) : le journal anglais a la
   forme du français (versions, dates, tags, points mis en avant, changements), aucun texte vide ni
   resté en français.

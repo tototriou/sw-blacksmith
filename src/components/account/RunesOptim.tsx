@@ -61,13 +61,8 @@ export interface OptimRow {
 type SortMode = 'gainLegend' | 'gainHero' | 'effCur' | 'potHero' | 'potLegend';
 const PAGE = 60;
 
-const SORTS: { key: SortMode; label: string }[] = [
-  { key: 'effCur', label: 'Valeur actuelle' },
-  { key: 'potHero', label: 'Potentiel héroïque' },
-  { key: 'potLegend', label: 'Potentiel légendaire' },
-  { key: 'gainHero', label: 'Gain héroïque' },
-  { key: 'gainLegend', label: 'Gain légendaire' },
-];
+// L'ordre des tris ; leur libellé : `optimRunes.tris` du dictionnaire.
+const SORTS: SortMode[] = ['effCur', 'potHero', 'potLegend', 'gainHero', 'gainLegend'];
 
 const SORT_VAL: Record<SortMode, (p: RunePotential) => number> = {
   gainLegend: (p) => p.legendGain,
@@ -142,6 +137,7 @@ function FiltreACases({
   tous?: { coche: boolean; basculer: () => void };
   choix: ChoixCase[];
 }) {
+  const textes = useTraduction();
   const [ouvert, setOuvert] = useState(false);
   const ancre = useRef<HTMLSpanElement>(null);
   const visible = ouvert && actif;
@@ -162,7 +158,7 @@ function FiltreACases({
   const cases = (grisees: boolean) => (
     <div className={`flex flex-col gap-1.5 ${grisees ? 'opacity-50' : ''}`}>
       {tous && (
-        <Case checked={tous.coche} disabled={grisees} onChange={tous.basculer} libelle="Tous" />
+        <Case checked={tous.coche} disabled={grisees} onChange={tous.basculer} libelle={textes.artefactsCompte.tous} />
       )}
       {choix.map((c) => (
         <Case key={c.cle} checked={c.coche} disabled={grisees} onChange={c.basculer} libelle={c.libelle} />
@@ -218,6 +214,8 @@ export default function RunesOptim({
   menuOuvert,
   onFermerMenu,
 }: Props) {
+  const textes = useTraduction();
+  const o = textes.optimRunes;
   const [threshold, setThreshold] = useStickyState('optim.threshold', 100);
   const metric = useRuneMetric(); // réglage global : efficience ou score SW
   const [sort, setSort] = useStickyState<SortMode>('optim.sort', 'effCur');
@@ -279,7 +277,7 @@ export default function RunesOptim({
     ? choixMarqueurs.filter((c) => marqueursExclus.has(c.k)).length
     : 0;
   const libelleMarqueur = (k: number) =>
-    k === SANS_MARQUEUR ? 'Sans marqueur' : runeMarkerLabels[k] ?? `Marqueur ${k}`;
+    k === SANS_MARQUEUR ? o.sansMarqueur : runeMarkerLabels[k] ?? o.marqueur(k);
   const [page, setPage] = useState(0);
   // Changer un filtre ramène à la première page.
   const choisirSets = (next: Set<string>) => {
@@ -491,7 +489,7 @@ export default function RunesOptim({
   // Les cases des deux filtres « à cases », chacune avec son nombre de runes.
   const choixPerimetres: ChoixCase[] = PERIMETRES_UTILISES.map((p) => ({
     cle: p.key,
-    libelle: `${p.libelle} (${usedRuneIds[p.key].length})`,
+    libelle: `${o.perimetres[p.key]} (${usedRuneIds[p.key].length})`,
     coche: perimetres.has(p.key),
     basculer: () => basculerPerimetre(p.key),
   }));
@@ -523,12 +521,8 @@ export default function RunesOptim({
       }}
       size={large ? 'lg' : undefined}
       options={[
-        { key: 'gem', label: 'Gemme + meule', hint: 'Potentiel avec la gemme optimale + les meules' },
-        {
-          key: 'grind',
-          label: 'Meule seule',
-          hint: 'Potentiel en gardant les stats actuelles (meules seulement)',
-        },
+        { key: 'gem', label: textes.courbes.gemmeMeule, hint: textes.courbes.gemmeMeuleAide },
+        { key: 'grind', label: textes.courbes.meuleSeule, hint: textes.courbes.meuleSeuleAide },
       ]}
     />
   );
@@ -542,20 +536,20 @@ export default function RunesOptim({
             s'agit d'un seuil, là où « Toutes / Antiques » se passent de titre.
             Il reste donc affiché au doigt (voir index.css). */}
         <span className="label" data-intitule-conserve>
-          Palier
+          {o.palier}
         </span>
         <NumberField
           value={threshold}
           min={0}
           step={5}
           width="w-14"
-          ariaLabel="Palier"
+          ariaLabel={o.palier}
           onChange={(v) => {
             setThreshold(Math.max(0, v ?? 0));
             setPage(0);
           }}
         />
-        <span className="font-mono text-xs text-ink-dim">{metric === 'eff' ? '%' : 'pts'}</span>
+        <span className="font-mono text-xs text-ink-dim">{metric === 'eff' ? '%' : o.pts}</span>
       </div>
 
       {avecMode && modeControl(large)}
@@ -571,16 +565,14 @@ export default function RunesOptim({
         taille="sm"
         pleineLargeur={large}
         title={
-          withGem
-            ? 'Rune déjà gemmée : proposer aussi de regemmer sa ligne gemmée avec une autre stat, absente de la rune'
-            : 'Sans objet en « Meule seule » : aucune gemme n’est proposée'
+          withGem ? o.regemmeAide : o.regemmeSansObjet
         }
         icone={<Gem size={14} />}
-        libelle="Autoriser un regemme différent"
+        libelle={textes.courbes.regemme}
       />
 
       <div className={large ? 'flex flex-col gap-1' : 'flex items-center gap-2'}>
-        <span className="label">Runes</span>
+        <span className="label">{textes.filtresRunes.runes}</span>
         <AncientFilter
           value={ancient}
           onChange={(k) => {
@@ -611,14 +603,10 @@ export default function RunesOptim({
         taille="sm"
         pleineLargeur={large}
         title={
-          stockDispo
-            ? `Ne garder que les runes applicables avec tes ${stock.total} meules et gemmes en réserve`
-            : reserveLue
-              ? 'Ta réserve ne contient que des immémoriaux, que le filtre voisin met de côté'
-              : 'Aucune meule ni gemme dans les données chargées — réimporte ton compte'
+          stockDispo ? o.faisableAide(stock.total) : reserveLue ? o.reserveImmemoriaux : o.sansReserve
         }
         icone={<PackageCheck size={14} />}
-        libelle="Faisable avec ma réserve"
+        libelle={o.faisable}
       />
 
       {/* ⚠️ Utile MÊME quand « Faisable » est éteint : le marquage vert/grisé
@@ -635,12 +623,10 @@ export default function RunesOptim({
         taille="sm"
         pleineLargeur={large}
         title={
-          reserveLue
-            ? 'Garder tes gemmes et meules immémoriales de côté : elles vont sur tous les sets, elles ne se remplacent pas'
-            : 'Aucune meule ni gemme dans les données chargées — réimporte ton compte'
+          reserveLue ? o.sansImmemoriauxAide : o.sansReserve
         }
         icone={<Lock size={14} />}
-        libelle="Sans les immémoriaux"
+        libelle={o.sansImmemoriaux}
       />
 
       {/* ⚠️ Au DOIGT, côte à côte sur deux colonnes : empilés, bouton + six
@@ -673,13 +659,11 @@ export default function RunesOptim({
           setPage(0);
         }}
         title={
-          utiliseesDispo
-            ? `Ne garder que les ${utilisees.size} runes qui jouent dans les périmètres cochés`
-            : 'Aucun deck lu dans les données chargées — réimporte ton compte'
+          utiliseesDispo ? o.utiliseesAide(utilisees.size) : o.sansDeck
         }
         icone={<Swords size={14} />}
-        libelle="Runes utilisées"
-        libelleChoix="Choisir les périmètres des runes utilisées"
+        libelle={o.utilisees}
+        libelleChoix={o.choisirPerimetres}
         choix={choixPerimetres}
       />
 
@@ -691,10 +675,10 @@ export default function RunesOptim({
             setMarqueursActif((v) => !v);
             setPage(0);
           }}
-          title="Ne garder que les runes des marqueurs cochés"
+          title={o.marqueursAide}
           icone={<Tag size={14} />}
-          libelle="Marqueurs"
-          libelleChoix="Choisir les marqueurs"
+          libelle={o.marqueurs}
+          libelleChoix={o.choisirMarqueurs}
           tous={{
             coche: tousMarqueurs,
             basculer: () => {
@@ -714,17 +698,14 @@ export default function RunesOptim({
           le titre de la vue et ce qu'elle cherche. Au doigt, la barre du haut
           dit déjà la vue. */}
       <div className="mb-3 hidden items-baseline gap-3 lg:flex">
-        <h1 className="font-display text-xl tracking-wide text-ink">Optimisation</h1>
-        <span className="text-sm text-ink-dim">
-          Ce que tes meules et gemmes permettent d'améliorer, rune par rune.
-        </span>
+        <h1 className="font-display text-xl tracking-wide text-ink">{textes.courbes.optimisation}</h1>
+        <span className="text-sm text-ink-dim">{o.sousTitre}</span>
       </div>
 
       <div className="mb-4 flex items-start gap-2 rounded-lg border border-warn/50 bg-warn/10 px-3 py-2 text-xs text-warn">
         <AlertTriangle size={15} className="flex-none mt-0.5" />
         <span>
-          Ceci est une optimisation d'<b>efficience</b> : ce n'est pas toujours la bonne solution pour tes
-          runes (la stat la plus efficiente n'est pas forcément celle utile à ton monstre).
+          {o.avertissementAvant}<b>{o.avertissementGras}</b>{o.avertissementApres}
         </span>
       </div>
 
@@ -755,7 +736,7 @@ export default function RunesOptim({
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="label">Trier par</span>
+          <span className="label">{textes.listeRunes.trierPar}</span>
           {/* Au DOIGT : la liste déroulante. */}
           <Selecteur
             value={sort}
@@ -767,8 +748,8 @@ export default function RunesOptim({
             className="lg:hidden"
           >
             {SORTS.map((s) => (
-              <option key={s.key} value={s.key}>
-                {s.label}
+              <option key={s} value={s}>
+                {o.tris[s]}
               </option>
             ))}
           </Selecteur>
@@ -781,7 +762,7 @@ export default function RunesOptim({
                 setSort(v);
                 setPage(0);
               }}
-              options={SORTS.map((s) => ({ key: s.key, label: s.label }))}
+              options={SORTS.map((s) => ({ key: s, label: o.tris[s] }))}
             />
           </div>
           <BoutonSensTri
@@ -810,40 +791,36 @@ export default function RunesOptim({
 
         {/* Aide : « ? » sur la même ligne, à droite */}
         <div className="ml-auto">
-          <HelpPopover title="Comment est-ce calculé ?" width={360}>
+          <HelpPopover title={o.aideTitre} width={360}>
               <p>
-                <b className="text-ink">Gemme + meule</b> : meilleure gemme possible, puis toutes les meules
-                au max. <b className="text-ink">Meule seule</b> : les stats actuelles, meules au max. Une rune
-                déjà gemmée garde sa stat gemmée, sauf avec{' '}
-                <b className="text-ink">Autoriser un regemme différent</b>.
+                <b className="text-ink">{textes.courbes.gemmeMeule}</b> {o.aideGemmeMeule}{' '}
+                <b className="text-ink">{textes.courbes.meuleSeule}</b> {o.aideMeuleSeule}{' '}
+                <b className="text-ink">{textes.courbes.regemme}</b>.
               </p>
               <p className="mt-2">
-                <span className="text-ink font-semibold">Gain</span> = potentiel − efficience actuelle.
+                <span className="text-ink font-semibold">{o.gain}</span> {o.aideGain}
               </p>
               <p className="mt-2">
-                <span className="text-ink font-semibold">Palier</span> : filtre sur la{' '}
-                <b className="text-ink">valeur actuelle</b> de la rune, pas sur son potentiel ni son gain.
+                <span className="text-ink font-semibold">{o.palier}</span> {o.aidePalier}{' '}
+                <b className="text-ink">{o.aidePalierGras}</b> {o.aidePalierFin}
               </p>
               <p className="mt-2">
                 <span className="text-ink font-semibold">
-                  <Hammer size={12} className="inline mb-0.5" /> et{' '}
-                  <Gem size={12} className="inline mb-0.5" /> dans le plan
+                  <Hammer size={12} className="inline mb-0.5" /> {textes.siege.fautes.et}{' '}
+                  <Gem size={12} className="inline mb-0.5" /> {o.aidePlan}
                 </span>{' '}
-                : <b className="text-good">vert</b>, tu l'as en réserve ;{' '}
-                <b className="text-ink">grisé</b>, il est à farmer. Les{' '}
-                <b className="text-ink">immémoriaux</b> vont sur tous les sets.
+                : <b className="text-good">{o.aideVert}</b>{o.aideVertSuite}{' '}
+                <b className="text-ink">{o.aideGrise}</b>{o.aideGriseSuite}{' '}
+                <b className="text-ink">{o.aideImmemoriaux}</b> {o.aideImmemoriauxSuite}
               </p>
               <p className="mt-2">
-                <span className="text-ink font-semibold">Faisable avec ma réserve</span> : seulement les runes
-                améliorables <b className="text-ink">tout de suite</b>, avec le gain réellement atteignable
-                aujourd'hui. <span className="text-ink font-semibold">Sans les immémoriaux</span> : la même
-                chose, sans toucher à tes gemmes et meules immémoriales.
+                <span className="text-ink font-semibold">{o.faisable}</span> {o.aideFaisable}{' '}
+                <b className="text-ink">{o.aideFaisableGras}</b>{o.aideFaisableSuite}{' '}
+                <span className="text-ink font-semibold">{o.sansImmemoriaux}</span> {o.aideSansImmemoriaux}
               </p>
               <p className="mt-2">
-                <span className="text-ink font-semibold">Runes utilisées</span> : seulement les runes posées
-                sur un monstre d'un deck enregistré ou d'un preset RTA, selon les périmètres cochés.{' '}
-                <span className="text-ink font-semibold">Marqueurs</span> : seulement les runes des marqueurs
-                cochés.
+                <span className="text-ink font-semibold">{o.utilisees}</span> {o.aideUtilisees}{' '}
+                <span className="text-ink font-semibold">{o.marqueurs}</span> {o.aideMarqueurs}
               </p>
           </HelpPopover>
         </div>
@@ -855,30 +832,27 @@ export default function RunesOptim({
           barre de nav — voir App.tsx (`pageAPanneau`). Le mode gemme/meule
           (en tête de page au doigt), sets, slots, tri et aide
           restent dans la page. */}
-      <MobileSheet ouvert={menuOuvert} onFermer={onFermerMenu} titre="Options d'optimisation">
+      <MobileSheet ouvert={menuOuvert} onFermer={onFermerMenu} titre={o.options}>
         <div className="flex flex-col gap-3">{optionsControls(true, false)}</div>
       </MobileSheet>
 
       <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
         <p className="font-mono text-xs text-ink-dim">
-          {filtered.length} rune{filtered.length > 1 ? 's' : ''} ≥ {threshold}
+          {o.nRunes(filtered.length)} ≥ {threshold}
           {metric === 'eff' ? '%' : ''}
-          {ancient === 'without' && ' · hors antiques'}
-          {ancient === 'only' && ' · antiques seules'}
-          {verifie && ' · faisables avec ma réserve'}
-          {verifie && sansImmemoriaux && ' · sans immémoriaux'}
-          {filtreUtilisees && ' · utilisées'}
+          {ancient === 'without' && o.resume.horsAntiques}
+          {ancient === 'only' && o.resume.antiquesSeules}
+          {verifie && o.resume.faisables}
+          {verifie && sansImmemoriaux && o.resume.sansImmemoriaux}
+          {filtreUtilisees && o.resume.utilisees}
           {filtreUtilisees &&
             !tousPerimetres &&
             ` (${
               PERIMETRES_UTILISES.filter((p) => perimetres.has(p.key))
-                .map((p) => p.libelle)
-                .join(', ') || 'aucun périmètre'
+                .map((p) => o.perimetres[p.key])
+                .join(', ') || o.resume.aucunPerimetre
             })`}
-          {filtreMarqueurs &&
-            ` · marqueurs${
-              nbMarqueursExclus > 0 ? ` (${nbMarqueursExclus} exclu${nbMarqueursExclus > 1 ? 's' : ''})` : ''
-            }`}
+          {filtreMarqueurs && o.resume.marqueurs(nbMarqueursExclus)}
         </p>
         <Pager page={safePage} pageCount={pageCount} onChange={setPage} />
       </div>
@@ -913,15 +887,14 @@ export default function RunesOptim({
 
       {filtered.length === 0 && (
         <p className="text-ink-dim text-sm">
-          Aucune rune ≥ {threshold}
+          {o.vide.aucune} {threshold}
           {metric === 'eff' ? '%' : ''}
-          {ancient !== 'all' && (ancient === 'without' ? ' hors antiques' : ' parmi les antiques')}
-          {filtreUtilisees &&
-            (perimetres.size === 0 ? ' — aucun périmètre coché pour « Runes utilisées »' : ' parmi tes runes utilisées')}
-          . Baisse le palier
-          {ancient !== 'all' ? ' ou repasse sur « Toutes »' : ''}
-          {filtreUtilisees ? ' ou désactive « Runes utilisées »' : ''}
-          {filtreMarqueurs ? ' ou désactive « Marqueurs »' : ''} pour en voir plus.
+          {ancient !== 'all' && (ancient === 'without' ? o.vide.horsAntiques : o.vide.parmiAntiques)}
+          {filtreUtilisees && (perimetres.size === 0 ? o.vide.aucunPerimetre : o.vide.parmiUtilisees)}
+          {o.vide.baisser}
+          {ancient !== 'all' ? o.vide.repasser : ''}
+          {filtreUtilisees ? o.vide.desactiverUtilisees : ''}
+          {filtreMarqueurs ? o.vide.desactiverMarqueurs : ''} {o.vide.pourVoirPlus}
         </p>
       )}
 
@@ -961,7 +934,8 @@ export const OptimTile = memo(function OptimTile({
   // garde sa taille.
   etroit?: boolean;
 }) {
-  const jeu = useTraduction().jeu;
+  const textes = useTraduction();
+  const jeu = textes.jeu;
   const ref = useRef<HTMLDivElement>(null);
   const { rune, pot } = row;
   const ancient = rune.rank > 10;
@@ -999,7 +973,7 @@ export const OptimTile = memo(function OptimTile({
                 (`meta.ink`), la valeur se confondait avec la ligne de même
                 rareté juste dessous — violette comme « Héro » sur une rune
                 héroïque, orange près de l'or de « Légend » sur une légendaire. */}
-            actuelle <b>{fmt(pot.eff)}</b>
+            {textes.optimRunes.actuelle} <b>{fmt(pot.eff)}</b>
           </div>
           <div
             className={`font-mono leading-tight ${etroit ? 'text-nano' : 'text-micro'}`}
@@ -1010,10 +984,10 @@ export const OptimTile = memo(function OptimTile({
                 gain, et la ligne « Héro » se lisait en deux couleurs. Le signe du
                 gain dit déjà s'il monte ou descend ; le vert / rouge reste dans
                 le plan détaillé (`OptimPlanBox`). */}
-            Héro {signed(pot.heroGain, metric)} → {fmt(pot.heroEff)}
+            {textes.optimRunes.hero} {signed(pot.heroGain, metric)} → {fmt(pot.heroEff)}
           </div>
           <div className={`font-mono leading-tight font-bold text-star ${etroit ? 'text-nano' : 'text-micro'}`}>
-            Légend {signed(pot.legendGain, metric)}{' '}
+            {textes.optimRunes.legend} {signed(pot.legendGain, metric)}{' '}
             <span className="font-normal">→ {fmt(pot.legendEff)}</span>
           </div>
         </div>
@@ -1067,7 +1041,8 @@ function SubLine({
   // `null` = rien à poser sur cette ligne, ou réserve inconnue → aucun marquage.
   enReserve?: { kind: 'grind' | 'gem'; ok: boolean } | null;
 }) {
-  const jeu = useTraduction().jeu;
+  const textes = useTraduction();
+  const jeu = textes.jeu;
   const def = RUNE_EFFECT[code];
   // La stat seule : la ligne porte déjà le « % » après sa valeur.
   const label = def ? jeu.stats[def.stat] : `#${code}`;
@@ -1136,7 +1111,8 @@ export function OptimPlanBox({
   restreint?: boolean;
   stock?: CraftStock | null;
 }) {
-  const jeu = useTraduction().jeu;
+  const textes = useTraduction();
+  const jeu = textes.jeu;
   const metric = useRuneMetric();
   // ⚠️ **Quelle ligne puis-je poser MAINTENANT.** Le plan dit quoi faire, la
   // réserve dit ce qui est à portée : sans le croisement, il faut aller compter
@@ -1155,7 +1131,7 @@ export function OptimPlanBox({
     <div className="text-xs">
       <div className="flex items-center justify-between mb-2 gap-2">
         <span className="font-bold text-ink uppercase tracking-wide text-micro">
-          {scenario === 'legend' ? 'Légendaire' : 'Héroïque'}
+          {scenario === 'legend' ? textes.optimRunes.legendaire : textes.optimRunes.heroique}
         </span>
         <span className="font-mono text-ink-dim text-micro">
           {formatRuneMetric(plan.eff, metric)} →{' '}
@@ -1171,8 +1147,8 @@ export function OptimPlanBox({
       )}
 
       <div className="mt-2 pt-2 border-t border-border/40 grid grid-cols-2 gap-x-4">
-        <div className="label mb-1">Actuel</div>
-        <div className="label mb-1">Optimisé</div>
+        <div className="label mb-1">{textes.optimRunes.actuel}</div>
+        <div className="label mb-1">{textes.optimRunes.optimise}</div>
 
         {/* Colonne gauche : substats actuels */}
         <div className="space-y-1">

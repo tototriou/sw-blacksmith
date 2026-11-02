@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Grid2x2, Rows2 } from 'lucide-react';
 import SubSearchDialog, { Critere } from './SubSearchDialog';
+import { useTraduction } from '../../hooks/useLangue';
 
 // Barre « Propriété secondaire » — la grille de rappel du JEU : deux ou quatre
 // cases numérotées, chacune montrant le critère qu'elle porte
@@ -30,6 +31,7 @@ export default function SubSearchBar({
   largeurModale?: string;
   onChange: (c: Critere[]) => void;
 }) {
+  const s = useTraduction().filtresRunes;
   const [ouverte, setOuverte] = useState(false);
   // Deux ou quatre cases, comme le jeu. ⚠️ Le mode ne fait que CACHER des
   // cases : les critères 3 et 4 restent posés si on repasse à 2, ils
@@ -71,7 +73,7 @@ export default function SubSearchBar({
               <button
                 key={i}
                 onClick={() => setOuverte(true)}
-                title={c ? 'Modifier la recherche' : 'Choisir une propriété'}
+                title={c ? s.modifierRecherche : s.choisirPropriete}
                 className={`flex min-h-[26px] items-center gap-1.5 rounded border px-1.5 py-0.5 text-left
                             transition ${
                               c
@@ -109,13 +111,9 @@ export default function SubSearchBar({
           disabled={force}
           aria-pressed={visibles === max}
           title={
-            force
-              ? 'Plus de deux propriétés sont posées : la grille reste à quatre'
-              : large
-                ? 'Revenir à deux propriétés'
-                : 'Passer à quatre propriétés'
+            force ? s.grilleForcee : large ? s.deuxProprietes : s.quatreProprietes
           }
-          aria-label={large ? 'Revenir à deux propriétés' : 'Passer à quatre propriétés'}
+          aria-label={large ? s.deuxProprietes : s.quatreProprietes}
           className="flex h-[26px] w-[26px] flex-none items-center justify-center rounded border
                      border-border bg-panel text-ink-dim transition
                      hoverable:border-accent hoverable:text-ink

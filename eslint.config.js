@@ -46,6 +46,15 @@ const FICHIERS_TRADUITS = [
   'src/components/siege/pastilleStatut.ts',
   'src/pages/RtaPage.tsx',
   'src/pages/SiegePage.tsx',
+  // Lot 5 : le Compte, l'import et les données ; App.tsx en entier.
+  'src/App.tsx',
+  'src/components/AccountImportControl.tsx',
+  'src/components/ChangementCompteDialog.tsx',
+  'src/components/DialogueBuildsRapides.tsx',
+  'src/components/InventaireIcon.tsx',
+  'src/components/account/*.tsx',
+  'src/pages/AccountPage.tsx',
+  'src/ui/Dialogs.tsx',
 ];
 
 export default tseslint.config(

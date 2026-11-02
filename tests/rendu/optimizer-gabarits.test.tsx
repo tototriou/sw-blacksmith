@@ -22,9 +22,10 @@ import type { Monster } from '../../src/types';
 import { egal, exportSynthetique, faussLocalStorage, monstersJson, ok, titre } from '../outils';
 import { bouton, boutons, rendre, texteVisible } from './outils-rendu';
 import { BOX, CHOISI } from './optimizer.test';
+import { fr } from '../../src/i18n/fr';
 
 const MONSTRES = monstersJson() as Monster[];
-const INVENTAIRE = parseAccountInventory(exportSynthetique());
+const INVENTAIRE = parseAccountInventory(exportSynthetique(), fr);
 const rien = () => {};
 const ref = { current: null };
 

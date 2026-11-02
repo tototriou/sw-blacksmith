@@ -85,7 +85,7 @@ export default function RtaAmiSection({
   // import de compte (`parseAccountJson` → `mapRtaVueAmi`).
   function lireCompte(data: any) {
     setReport(null); // un export de compte ne produit pas de rapport de validation
-    const res = parseAccountJson(data);
+    const res = parseAccountJson(data, textes);
     if (!res.units || res.units.length === 0) {
       setMsg({
         text: res.error ?? a.compteSansRta,
