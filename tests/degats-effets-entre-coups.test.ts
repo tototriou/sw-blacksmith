@@ -561,6 +561,23 @@ export function testEffetsEntreCoupsMecaniques() {
   egal(flurry.effetsEntreCoups?.map((e) => [e.id, e.tirage ?? null]), [['decrease-def', null], ['brand', 'passif:25215']],
     'Reelseiden・Flurry : Réduction de DEF du sort hors tirage, Marque d’Empathy au tirage');
   egal(reglagesDesPoses(flurry, CIBLE).map((r) => r.type), ['effet', 'effet'], 'Reelseiden・Flurry : deux effets réglés à part');
+  // Divine Judgment (Arella) : chaque coup pose la branche de sa condition, la
+  // Réduction de DEF OU la Marque — un tirage. ⚠️ Garde : un tirage exclut deux
+  // effets, juste tant que chaque branche n'en propose qu'un (Réduction de VIT
+  // et Silence, sans lecteur chez Arella) ; un lecteur qui en ajouterait un
+  // ferait échouer ce test, et demanderait des branches.
+  const arella = profil(23514);
+  egal(arella.effetsEntreCoups?.map((e) => [e.id, e.tirage ?? null]), [['decrease-def', 'sort:23514'], ['brand', 'sort:23514']],
+    'Divine Judgment : une branche par coup, la Réduction de DEF ou la Marque, un seul effet proposé par branche');
+  const ARELLA = 34214;
+  const deuxBranches = { skillCom2usId: 23514, scenariosEffetsEntreCoups: { 23514: { actif: true, apresCoup: { 'decrease-def': 1, brand: 1 } } } };
+  const uneBranche = { skillCom2usId: 23514, scenariosEffetsEntreCoups: { 23514: { actif: true, apresCoup: { 'decrease-def': 1 } } } };
+  ok(proche(scoreComplet(ARELLA, deuxBranches), scoreComplet(ARELLA, uneBranche)), 'Divine Judgment : les deux branches après le même coup, une seule est posée');
+  // Ghost Appearance et Roll Dice : un effet par coup, au hasard (prose) ; un
+  // seul effet utile, réglé comme un effet seul.
+  for (const id of [11507, 11509, 12101, 12102, 12103, 12104, 12105]) {
+    egal(profil(id).effetsEntreCoups?.map((e) => e.tirage), [`sort:${id}`], `${profil(id).nom} ${id} : la Réduction de DEF, au tirage du sort`);
+  }
   // Blessing of Curse (Jessica lumière) : comme Empathy, Marque ou Réduction de DEF.
   const fantomes = profil(18429);
   egal(fantomes.effetsEntreCoups?.map((e) => [e.id, e.tirage ?? null]), [['brand', 'passif:18434'], ['decrease-def', 'passif:18434']],

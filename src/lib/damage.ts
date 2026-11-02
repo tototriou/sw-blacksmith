@@ -3020,8 +3020,18 @@ const PRECISION_PAR_NOTE: Readonly<Record<string, string>> = {
   'If allies have received more damage than enemies': 'si les alliés ont subi plus de dégâts que les ennemis',
 };
 
-// Notes dont les effets forment un tirage : un seul d'entre eux par coup.
-const NOTES_DE_TIRAGE: ReadonlySet<string> = new Set(['one random per hit']);
+// Notes dont les effets forment un tirage : un seul d'entre eux par coup. Un
+// effet tiré au hasard (Virus), ou les deux branches d'une condition (Divine
+// Judgment d'Arella : « each hit decreases their Defense … Otherwise, each hit
+// leaves a Branding effect ») : un coup pose l'une OU l'autre. ⚠️ Un tirage
+// exclut deux EFFETS au même coup : juste tant que chaque branche n'a qu'un
+// effet proposé (la Réduction de DEF, la Marque ; la Réduction de VIT et le
+// Silence, sans lecteur chez Arella, ne le sont pas). Le test le garde.
+const NOTES_DE_TIRAGE: ReadonlySet<string> = new Set([
+  'one random per hit',
+  'If enemies have received more damage than allies',
+  'If allies have received more damage than enemies',
+]);
 
 interface ExceptionEffetsEntreCoups {
   // Rangs lus dans la PROSE (la donnée n'a pas de note), par identifiant d'effet.
@@ -3041,6 +3051,9 @@ interface ExceptionEffetsEntreCoups {
   // Effets posés au DERNIER coup, proposés quand même : ils valent pour
   // l'attaque que le sort enchaîne (`EffetEntreCoupsProfile.pourLaSuite`).
   pourLaSuite?: readonly string[];
+  // Effets d'un tirage que seule la prose dit (un effet par coup, au hasard) :
+  // le tirage du sort (`EffetEntreCoupsProfile.tirage`).
+  tirage?: readonly string[];
 }
 
 // Exceptions à la règle, chacune avec la prose qui la fonde. ⚠️ Rôle : corriger
@@ -3077,15 +3090,15 @@ const EFFETS_ENTRE_COUPS_EXCEPTIONS_PAR_ID: Readonly<Record<number, ExceptionEff
   // Ghost Appearance (Smokey, Misty) : « Each hit has a 50% chance to cast one
   // random effect among weaken the Defense, weaken the Attack Power or disturb
   // recovery », comme Virus — la note qui le dit manque.
-  11507: { precision: { 'decrease-def': 'un seul des effets possibles par coup, au hasard' } },
-  11509: { precision: { 'decrease-def': 'un seul des effets possibles par coup, au hasard' } },
+  11507: { precision: { 'decrease-def': 'un seul des effets possibles par coup, au hasard' }, tirage: ['decrease-def'] },
+  11509: { precision: { 'decrease-def': 'un seul des effets possibles par coup, au hasard' }, tirage: ['decrease-def'] },
   // Roll Dice (Reno, Ludo, Morris, Tablo, Monte) : « grants an effect according
   // to each number you get … 5: Decrease DEF » — un dé par coup.
-  12101: { precision: { 'decrease-def': 'sur un 5 au dé' } },
-  12102: { precision: { 'decrease-def': 'sur un 5 au dé' } },
-  12103: { precision: { 'decrease-def': 'sur un 5 au dé' } },
-  12104: { precision: { 'decrease-def': 'sur un 5 au dé' } },
-  12105: { precision: { 'decrease-def': 'sur un 5 au dé' } },
+  12101: { precision: { 'decrease-def': 'sur un 5 au dé' }, tirage: ['decrease-def'] },
+  12102: { precision: { 'decrease-def': 'sur un 5 au dé' }, tirage: ['decrease-def'] },
+  12103: { precision: { 'decrease-def': 'sur un 5 au dé' }, tirage: ['decrease-def'] },
+  12104: { precision: { 'decrease-def': 'sur un 5 au dé' }, tirage: ['decrease-def'] },
+  12105: { precision: { 'decrease-def': 'sur un 5 au dé' }, tirage: ['decrease-def'] },
   // Fatal Mortar Bullet (Scarlett, séquence) : « Attacks the enemy with a cannon
   // gun and weakens the Defense and leaves a Branding effect … Afterwards,
   // attacks all enemies » — Réduction de DEF et Marque au coup 1, comme la note
@@ -3337,7 +3350,9 @@ function effetsEntreCoupsDuSort(
     const precision = exception?.precision?.[id] ?? (conditions.every((p) => !!p) ? conditions.join(' ; ') : undefined);
     // Un tirage seulement si TOUTES les sources de l'effet sont le même tirage :
     // posé aussi hors tirage (le sort lui-même), l'effet se règle seul.
-    const tirage = entrees.every((x) => !!x.tirage && x.tirage === entrees[0].tirage) ? entrees[0].tirage : undefined;
+    const tirage = exception?.tirage?.includes(id)
+      ? `sort:${c.com2usId}`
+      : entrees.every((x) => !!x.tirage && x.tirage === entrees[0].tirage) ? entrees[0].tirage : undefined;
     out.push({
       ...base,
       ...(utiles ? { coups: utiles } : {}),

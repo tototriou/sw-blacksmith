@@ -239,7 +239,9 @@ effet proposé :
   avant le dernier coup que le réglage retient, et pour la cible secondaire
   les seuls coups de zone) ;
 - **un tirage** (deux effets au moins d'un même tirage, un seul posé par
-  coup : Virus de 570RM, Empathy, Dimensional Memory, Blessing of Curse) :
+  coup : Virus de 570RM, Blessing of Curse de Jessica, et Divine Judgment
+  d'Arella, dont chaque coup pose la Réduction de DEF ou la Marque selon la
+  branche de sa condition) :
   « Un seul de ces effets par coup », puis un sélecteur par coup, « Après le
   coup N » : « Aucun » ou l'un des effets que ce coup peut poser, sauf un
   effet déjà posé par un coup plus tôt (`reglagesDesPoses`,
@@ -248,9 +250,13 @@ effet proposé :
   d'un même tirage après le même coup (recette importée : le premier du
   profil). Le joueur choisit ainsi, à chaque coup, si et quel effet est posé
   (utilisateur, 2026-11-02). Un tirage réduit à un effet utile (Ghost
-  Appearance, Virus de 7R1X et N1X : la Réduction de DEF seule ; la Marque
-  d'Empathy quand le sort pose lui-même la Réduction de DEF) se règle comme
-  un effet seul ;
+  Appearance, Roll Dice, Virus de 7R1X et N1X : la Réduction de DEF seule ;
+  Empathy et Dimensional Memory, dont les seuls sorts à plusieurs coups,
+  Reelseiden・Flurry et Dimension Slash・Flurry, posent eux-mêmes la
+  Réduction de DEF : la Marque reste seule) se règle comme un effet seul.
+  Divine Judgment n'impose pas d'ordre entre ses branches (la condition peut
+  basculer pendant le sort, à décider par un relevé) : seul le même coup
+  est exclu ;
 - un effet non cumulable que la cible peut déjà porter garde son
   interrupteur « déjà présent » ; la Réduction de DEF et la Marque lisent
   « Brise DEF » et « Marque » du réglage ;
