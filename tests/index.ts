@@ -357,7 +357,7 @@ import { testRenduUiBouton, testRenduUiEtats, testRenduUiMenu, testRenduUiSelect
 import { testRenduUiSelecteurTab, testRenduTelephoneUiSelecteurListe, testRenduUiFlottantBoiteQuiDefile, testRenduUiSegmentedDeuxLignes } from './rendu/ui-flottants.test';
 import { testPalette } from './palette.test';
 import { testLangueResolution, testLangueDictionnaires, testLangueFormats, testLangueReglage, testLangueTexteEnDur } from './langue.test';
-import { testRenduLangueReglage, testRenduLangueParametres, testRenduLangueApp, testRenduLangueFicheRune, testRenduLanguePagesPubliques, testRenduMecaniquesLangues } from './rendu/langue.test';
+import { testRenduLangueReglage, testRenduLangueParametres, testRenduLangueApp, testRenduLangueFicheRune, testRenduLanguePagesPubliques, testRenduMecaniquesLangues, testRenduLangueRtaSiege } from './rendu/langue.test';
 import { testLexiqueJeuCouverture, testLexiqueJeuLibelles } from './lexique-jeu.test';
 import { testRenduAppRoutes, testRenduAppNavigation, testRenduAppMobile, testRenduAppFil, testRenduAppLiensMorts } from './rendu/app.test';
 import { testEcranPartageMediaQueryVolet, testEcranPartageMemePage, testRenduEcranPartageApp,
@@ -406,6 +406,7 @@ import { testRenduMemoireOptimizerSelection, testRenduMemoireOptimizerIdentiteEn
 import { testRenduBestiaire, testRenduFicheFormes, testRenduMecaniques, testRenduNouveautes, testRenduParametres, testRenduBientot } from './rendu/ressources.test';
 import { testAlignementVersion } from './alignement-version.test';
 import { testJournalAligne } from './journal-langues.test';
+import { testPartageLangues } from './partage-langues.test';
 import { testRenduTelephoneAccueil, testRenduTelephoneRta, testRenduTelephoneRtaAmi, testRenduTelephoneRtaFiltre } from './rendu/telephone-accueil-rta.test';
 import { testRenduTelephoneSiege, testRenduTelephoneRecos } from './rendu/telephone-siege.test';
 import { testRenduTelephoneMonstres, testRenduTelephoneArtefacts, testRenduTelephoneRunes } from './rendu/telephone-compte.test';
@@ -609,6 +610,7 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testRenduNouveautes', testRenduNouveautes],
   ['testAlignementVersion', testAlignementVersion],
   ['testJournalAligne', testJournalAligne],
+  ['testPartageLangues', testPartageLangues],
   ['testRenduParametres', testRenduParametres],
   ['testRenduBientot', testRenduBientot],
   ['testRenduTelephoneAccueil', testRenduTelephoneAccueil],
@@ -644,6 +646,7 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testRenduLangueFicheRune', testRenduLangueFicheRune],
   ['testRenduLanguePagesPubliques', testRenduLanguePagesPubliques],
   ['testRenduMecaniquesLangues', testRenduMecaniquesLangues],
+  ['testRenduLangueRtaSiege', testRenduLangueRtaSiege],
   ['testLexiqueJeuCouverture', testLexiqueJeuCouverture],
   ['testLexiqueJeuLibelles', testLexiqueJeuLibelles],
   ['testRenduAppRoutes', testRenduAppRoutes],

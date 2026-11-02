@@ -11,6 +11,7 @@ import { contexteConfrontationReco, matchReco, RecoMatch } from '../../lib/recoM
 import { chercheMonstre, RecoHit, RecoSearchMode } from '../../lib/recoSearch';
 import type { VueRecos } from '../../lib/recoDefenses';
 import { ConfirmDialog } from '../../ui/Dialogs';
+import { useTraduction } from '../../hooks/useLangue';
 import { OwnedBuild, OwnedTeam } from '../../lib/ownedBuilds';
 import { formesJouables } from '../../lib/monsterForms';
 import { telechargerTexte } from '../../lib/telechargement';
@@ -51,38 +52,19 @@ interface Props {
 //   calculée à partir des decks (lib/recoDefenses.ts), en lecture seule.
 // Le filtre d'origine qu'elle remplace est retiré ([retrait #19]) ; la pastille
 // « Importée » reste sur chaque carte reçue.
-const VUES: { key: VueRecos; label: string; hint: string }[] = [
-  { key: 'attaque', label: 'Attaque', hint: 'Chaque deck, puis les défenses contre lesquelles il est fort' },
-  { key: 'defense', label: 'Défense', hint: 'Chaque défense visée, puis les offenses fortes contre elle' },
-];
+// Libellés et infobulles : `recos.vues` du dictionnaire.
+const VUES: VueRecos[] = ['attaque', 'defense'];
 
 // Où chercher quand on tape un nom de monstre. Le mode FILTRE : ce qui relève
 // de l'autre rôle n'est pas affiché — voir lib/recoSearch.ts.
-const SEARCH_MODES: { key: RecoSearchMode; label: string; hint: string }[] = [
-  { key: 'all', label: 'Partout', hint: 'Dans les decks et dans les défenses visées' },
-  {
-    key: 'defense',
-    label: 'Défense à taper',
-    hint: 'Uniquement dans les défenses visées — quels decks la battent',
-  },
-  {
-    key: 'offense',
-    label: 'Offense à runer',
-    hint: 'Uniquement dans les monstres des decks — qui joue ce monstre',
-  },
-];
+// Libellés et infobulles : `recos.modes` du dictionnaire.
+const SEARCH_MODES: RecoSearchMode[] = ['all', 'defense', 'offense'];
 
-// Sujet du message quand la recherche ne renvoie rien — il doit nommer le rôle
-// où l'on vient de chercher, puisque le sélecteur filtre.
-//
+// Le message quand la recherche ne renvoie rien nomme le rôle où l'on vient de
+// chercher, puisque le sélecteur filtre : `recos.aucunResultat` du dictionnaire.
 // ⚠️ Formulé au SINGULIER et sans accord à porter par la suite de la phrase
 // (« … ne réunit X », « … ne contient X ») : le libellé change, pas la
 // grammaire autour.
-const LIBELLE_VIDE: Record<RecoSearchMode, string> = {
-  all: 'Aucun deck ni défense visée',
-  defense: 'Aucune défense visée',
-  offense: 'Aucun deck d’offense',
-};
 
 export default function RecoBoard({
   onImporterEquipe,
@@ -97,10 +79,12 @@ export default function RecoBoard({
   menuOuvert,
   onFermerMenu,
 }: Props) {
+  const textes = useTraduction();
+  const r = textes.recos;
   const disponibilitesExport = useMemo(() => new Map(recos.state.recos.map(reco => [reco.id,
-    reco.decks.map(deck => !compteCharge ? 'Importe un compte pour exporter vers l’Optimizer.'
-      : importerRecoOptimizer(deck, sourcesOptimizer).membres.length ? undefined : 'Aucun monstre importable dans ce deck recommandé.')
-  ])), [recos.state.recos, sourcesOptimizer, compteCharge]);
+    reco.decks.map(deck => !compteCharge ? r.exportSansCompte
+      : importerRecoOptimizer(deck, sourcesOptimizer).membres.length ? undefined : r.exportDeckVide)
+  ])), [r, recos.state.recos, sourcesOptimizer, compteCharge]);
   // Mémorisée comme l'était le filtre qu'elle remplace : on retrouve la vue
   // qu'on avait choisie. Clé NEUVE — l'ancienne (`recos.filter`) portait une
   // origine, pas une vue.
@@ -208,11 +192,11 @@ export default function RecoBoard({
         .map((team, index) => ({
           team,
           index,
-          summary: teamSummary(team, monsterById),
+          summary: teamSummary(team, monsterById, textes.siege.equipeVide),
           monsters: team.slots.map((s) => (s.monsterId ? monsterById.get(s.monsterId) ?? null : null)),
         }))
         .filter(({ team }) => isTeamUsable(team, monsterById)),
-    [offense.state.teams, monsterById]
+    [offense.state.teams, monsterById, textes.siege.equipeVide]
   );
 
   const matchCtx = useMemo(
@@ -245,7 +229,7 @@ export default function RecoBoard({
     setChoixOuverture((m) => new Map(m).set(reco.id, true));
     setPickAnalyse('');
     onFermerMenu();
-    setMsg({ text: `Analyse lancée pour « ${reco.name || 'cette recommandation'} ».` });
+    setMsg({ text: r.analyseLancee(reco.name || r.cetteReco) });
   }
 
   // Effacer le résultat : la carte redevient neutre (plus d'aura ni de pastille).
@@ -280,7 +264,7 @@ export default function RecoBoard({
     );
     if (usable.length === 0) {
       // Rien à confirmer : l'export échouerait de toute façon.
-      setMsg({ text: 'Rien à exporter : ajoute au moins un monstre.', error: true });
+      setMsg({ text: r.rienAExporter, error: true });
       return;
     }
     const decks = usable.reduce(
@@ -296,9 +280,8 @@ export default function RecoBoard({
     // Un seul format ET un seul support : le fichier .json. Plus de copie au
     // presse-papier — l'import ne lit que des fichiers, un contenu collé
     // n'aurait nulle part où aller.
-    const what = `${usable.length} recommandation(s) · ${decks} deck(s)`;
     telechargerTexte(`${PREFIXE_FICHIER}-reco-${slugify(label)}.json`, encodeRecosJson(usable));
-    setMsg({ text: `${what} · fichier .json téléchargé.` });
+    setMsg({ text: r.exportees(usable.length, decks) });
     setExportAConfirmer(null);
   }
 
@@ -309,7 +292,7 @@ export default function RecoBoard({
   // rien n'est importé en cas d'erreur bloquante, et les corrections appliquées
   // sont remontées à l'utilisateur.
   function applyImport(text: string) {
-    const rep = validateRecosImport(text);
+    const rep = validateRecosImport(text, textes);
 
     // Monstres absents des données chargées : signalés ici (le validateur de
     // format ne connaît pas le bestiaire).
@@ -321,9 +304,7 @@ export default function RecoBoard({
             if (s.com2usId != null && !monsterByCom2us.has(s.com2usId)) inconnus.add(s.com2usId);
       if (inconnus.size > 0) {
         rep.warnings.push(
-          `${inconnus.size} monstre(s) inconnu(s) des données chargées (id ${[...inconnus]
-            .slice(0, 5)
-            .join(', ')}${inconnus.size > 5 ? '…' : ''}) : affichés sans portrait et non confrontés.`
+          r.inconnus(inconnus.size, `${[...inconnus].slice(0, 5).join(', ')}${inconnus.size > 5 ? '…' : ''}`)
         );
       }
     }
@@ -336,7 +317,7 @@ export default function RecoBoard({
     // « Tout effacer » est là — c'est un geste explicite et séparé.
     const n = recos.importRecos(rep.recos);
     setMsg({
-      text: `${n} recommandation(s) · ${rep.counts.decks} deck(s) · ${rep.counts.monstres} monstre(s) importés.`,
+      text: r.importees(n, rep.counts.decks, rep.counts.monstres),
     });
   }
 
@@ -385,15 +366,15 @@ export default function RecoBoard({
           onFermerMenu();
         }}
         icone={<Plus size={15} />}
-        libelle="Créer une recommandation"
-        libelleCourt="Créer"
+        libelle={r.creer}
+        libelleCourt={textes.commun.creer}
       />
 
       <Bouton
         onClick={() => fileRef.current?.click()}
         icone={<Download size={15} />}
-        libelle="Importer"
-        title="Charger un fichier .json reçu d'un ami"
+        libelle={textes.commun.importer}
+        title={r.importerAide}
       />
 
       {/* ⚠️ **Toujours affiché, désactivé plutôt que retiré.** Un bouton qui
@@ -406,13 +387,9 @@ export default function RecoBoard({
         onClick={() => requestExport(list, 'toutes')}
         disabled={list.length === 0}
         icone={<Upload size={15} />}
-        libelle="Tout exporter"
-        libelleCourt="Exporter"
-        title={
-          list.length === 0
-            ? 'Aucune recommandation à exporter'
-            : 'Exporter toutes les recommandations en un seul fichier'
-        }
+        libelle={r.toutExporter}
+        libelleCourt={textes.commun.exporter}
+        title={list.length === 0 ? r.aucuneAExporter : r.toutExporterAide}
       />
     </>
   );
@@ -432,14 +409,14 @@ export default function RecoBoard({
         value={vue}
         onChange={setVue}
         size={pleineLargeur ? 'lg' : 'md'}
-        options={VUES.map((v) => ({ key: v.key, label: v.label, hint: v.hint }))}
+        options={VUES.map((key) => ({ key, label: r.vues[key].label, hint: r.vues[key].hint }))}
       />
     );
     // Pas d'intitulé à la SOURIS : les deux crans se lisent d'eux-mêmes, en
     // tête de la barre d'outils. Gardé au DOIGT, seul repère du panneau.
     return pleineLargeur ? (
       <div className="w-full">
-        <span className="label mb-1 block">Vue</span>
+        <span className="label mb-1 block">{r.vue}</span>
         {segmented}
       </div>
     ) : (
@@ -471,8 +448,8 @@ export default function RecoBoard({
       pleineLargeur={dansLePanneau}
       taille="sm"
       icone={<Trash2 size={13} />}
-      libelle="Tout effacer"
-      title={all.length === 0 ? 'Aucune recommandation à effacer' : undefined}
+      libelle={textes.commun.toutEffacer}
+      title={all.length === 0 ? r.aucuneAEffacer : undefined}
       className="leading-none"
     />
   );
@@ -491,12 +468,12 @@ export default function RecoBoard({
           libellés, désactivations et infobulles sont ceux des boutons
           d'avant. Le téléphone garde son panneau « Options ». */}
       <div className="mt-5 hidden flex-wrap items-center gap-x-3 gap-y-1 lg:flex">
-        <h1 className="font-display text-xl tracking-wide text-ink">Recommandations</h1>
+        <h1 className="font-display text-xl tracking-wide text-ink">{r.titre}</h1>
         <span className="rounded-full border border-border-soft bg-panel2 px-2 py-0.5 font-mono text-micro text-ink-dim">
-          {all.length} recommandation{all.length > 1 ? 's' : ''}
+          {r.compte(all.length)}
         </span>
         <BarreActions
-          libelleMenu="Plus d'actions"
+          libelleMenu={textes.sauvegardeRta.plusActions}
           // ⚠️ **Importer ET Créer toujours visibles, dans cet ordre** (Le mainteneur :
           // « l'organisation des boutons comme sur la maquette ») :
           // la maquette les pose tous deux en boutons, Tout exporter et Tout
@@ -505,14 +482,14 @@ export default function RecoBoard({
           toujours={[
             {
               cle: 'importer',
-              libelle: 'Importer',
+              libelle: textes.commun.importer,
               icone: <Download size={15} />,
-              title: "Charger un fichier .json reçu d'un ami",
+              title: r.importerAide,
               onClick: () => fileRef.current?.click(),
             },
             {
               cle: 'creer',
-              libelle: 'Créer une recommandation',
+              libelle: r.creer,
               icone: <Plus size={15} />,
               onClick: () => {
                 const id = recos.addReco();
@@ -524,29 +501,26 @@ export default function RecoBoard({
           autres={[
             {
               cle: 'exporter',
-              libelle: 'Tout exporter',
+              libelle: r.toutExporter,
               icone: <Upload size={15} />,
               disabled: list.length === 0,
-              title:
-                list.length === 0
-                  ? 'Aucune recommandation à exporter'
-                  : 'Exporter toutes les recommandations en un seul fichier',
+              title: list.length === 0 ? r.aucuneAExporter : r.toutExporterAide,
               onClick: () => requestExport(list, 'toutes'),
             },
             {
               cle: 'effacer',
-              libelle: 'Tout effacer',
+              libelle: textes.commun.toutEffacer,
               icone: <Trash2 size={13} />,
               danger: true,
               disabled: all.length === 0,
-              title: all.length === 0 ? 'Aucune recommandation à effacer' : undefined,
+              title: all.length === 0 ? r.aucuneAEffacer : undefined,
               onClick: () => setEffacementAConfirmer(true),
             },
           ]}
         />
       </div>
 
-      <MobileSheet ouvert={menuOuvert} onFermer={onFermerMenu} titre="Actions — recommandations">
+      <MobileSheet ouvert={menuOuvert} onFermer={onFermerMenu} titre={r.actions}>
         <div data-rangee-actions>{actions}</div>
 
         {/* ⚠️ « Analyser mes decks », AU DOIGT : le bouton de l'en-tête d'une
@@ -558,7 +532,7 @@ export default function RecoBoard({
             « Tout effacer » : un contrôle qui apparaît une fois qu'on a de
             quoi l'utiliser surprend, on ne l'a jamais vu absent d'un geste. */}
         <div className="mt-4 flex flex-col gap-1.5 border-t border-border pt-3">
-          <span className="label">Analyser une recommandation</span>
+          <span className="label">{r.analyserUne}</span>
           <div className="flex items-center gap-1.5">
             <Selecteur
               value={pickAnalyse}
@@ -567,15 +541,11 @@ export default function RecoBoard({
               className="flex-1"
             >
               <option value="">
-                {list.length === 0
-                  ? 'Aucune recommandation'
-                  : builds.length === 0
-                    ? 'Importe ton compte pour analyser'
-                    : 'Choisir…'}
+                {list.length === 0 ? r.aucune : builds.length === 0 ? r.importerPourAnalyser : r.choisir}
               </option>
-              {list.map((r, i) => (
-                <option key={r.id} value={r.id}>
-                  {r.name || `Recommandation ${i + 1}`}
+              {list.map((reco, i) => (
+                <option key={reco.id} value={reco.id}>
+                  {reco.name || textes.partage.reco.recommandation(i + 1)}
                 </option>
               ))}
             </Selecteur>
@@ -583,7 +553,7 @@ export default function RecoBoard({
               onClick={analyserDepuisPanneau}
               disabled={!pickAnalyse || list.length === 0 || builds.length === 0}
               icone={<Gauge size={14} />}
-              libelle="Analyser"
+              libelle={r.analyser}
               taille="sm"
             />
           </div>
@@ -602,9 +572,9 @@ export default function RecoBoard({
 
       {effacementAConfirmer && (
         <ConfirmDialog
-          titre="Effacer toutes les recommandations ?"
-          message="Les tiennes comme celles que tu as importées seront supprimées, avec tous leurs decks. Tes équipes de siège ne sont pas touchées."
-          libelleAction="Tout effacer"
+          titre={r.effacerTitre}
+          message={r.effacerMessage}
+          libelleAction={textes.commun.toutEffacer}
           destructif
           onCancel={() => setEffacementAConfirmer(false)}
           onConfirm={() => {
@@ -621,15 +591,11 @@ export default function RecoBoard({
         <ConfirmDialog
           titre={
             exportAConfirmer.usable.length > 1
-              ? `Exporter ${exportAConfirmer.usable.length} recommandations ?`
-              : `Exporter « ${exportAConfirmer.usable[0].name || 'cette recommandation'} » ?`
+              ? r.exporterTitrePlusieurs(exportAConfirmer.usable.length)
+              : r.exporterTitreUne(exportAConfirmer.usable[0].name || r.cetteReco)
           }
-          message={`${exportAConfirmer.usable.length} recommandation${
-            exportAConfirmer.usable.length > 1 ? 's' : ''
-          } · ${exportAConfirmer.decks} deck${
-            exportAConfirmer.decks > 1 ? 's' : ''
-          } seront réunis dans un fichier .json téléchargé sur cet appareil.`}
-          libelleAction="Exporter"
+          message={r.exporterMessage(exportAConfirmer.usable.length, exportAConfirmer.decks)}
+          libelleAction={textes.commun.exporter}
           onCancel={() => setExportAConfirmer(null)}
           onConfirm={handleExport}
         />
@@ -714,7 +680,7 @@ export default function RecoBoard({
                   // ET exige des monstres DISTINCTS (voir recoSearch.ts), poser
                   // deux fois le même garantirait zéro résultat.
                   excludeIds={dejaPoses}
-                  placeholder="Nom du monstre…"
+                  placeholder={textes.siege.board.nomMonstre}
                   onPick={(id) => {
                     const m = monsters.find((x) => String(x.id) === id);
                     if (m) poserMonstre(m.name);
@@ -723,7 +689,7 @@ export default function RecoBoard({
               </div>
             ) : (
               <p className="flex-1 text-xs text-ink-dim">
-                Trois monstres posés — clique un portrait pour le retirer.
+                {r.troisPoses}
               </p>
             )}
 
@@ -761,8 +727,8 @@ export default function RecoBoard({
                     className="group relative flex h-[40px] w-[40px] flex-none items-center justify-center
                                rounded-lg border border-accent bg-accent/[0.08] transition
                                hoverable:border-bad"
-                    title={`Retirer ${nom}`}
-                    aria-label={`Retirer ${nom}`}
+                    title={textes.carteRta.retirer(nom)}
+                    aria-label={textes.carteRta.retirer(nom)}
                   >
                     {/* Le portrait, pas le nom : plusieurs monstres portent le
                         même nom (formes 2A) — voir MonsterAvatar. Le repli sur
@@ -792,9 +758,9 @@ export default function RecoBoard({
                 onClick={effacerRecherche}
                 taille="sm"
                 icone={<X size={13} />}
-                libelle="Vider"
-                title="Vider la recherche"
-                aria-label="Vider la recherche"
+                libelle={textes.commun.vider}
+                title={textes.siege.board.viderRecherche}
+                aria-label={textes.siege.board.viderRecherche}
                 className="flex-none"
               />
             )}
@@ -808,17 +774,15 @@ export default function RecoBoard({
               hauteur de ligne en dur pour se caler sur un contrôle voisin. */}
           {aUneRecherche && (
             <div className="flex flex-wrap items-center gap-2 lg:mt-0.5 lg:basis-full">
-              <span className="w-[76px] flex-none label">Rôle</span>
+              <span className="w-[76px] flex-none label">{r.role}</span>
               <Segmented
                 value={searchMode}
                 onChange={setSearchMode}
-                options={SEARCH_MODES.map((m) => ({ key: m.key, label: m.label, hint: m.hint }))}
+                options={SEARCH_MODES.map((key) => ({ key, label: r.modes[key].label, hint: r.modes[key].hint }))}
               />
               {hits && (
                 <span className="font-mono text-micro text-ink-dim">
-                  {hits.length === 0
-                    ? 'aucun résultat'
-                    : `${hits.length} reco${hits.length > 1 ? 's' : ''}`}
+                  {hits.length === 0 ? r.aucunResultat : r.resultats(hits.length)}
                 </span>
               )}
             </div>
@@ -834,10 +798,9 @@ export default function RecoBoard({
             <IconeRecos size={26} className="text-ink-dim" />
           </div>
           <p className="text-ink-dim text-sm max-w-md">
-            Aucune recommandation. <b className="text-ink">Crée-en une</b> pour proposer un{' '}
-            <b className="text-ink">ensemble de decks</b> avec les sets, les artéfacts et les stats à
-            viser sur chaque monstre, ou <b className="text-ink">importe</b> celle d'un autre joueur pour vérifier
-            lesquels de ses decks tu peux jouer.
+            {r.vide1} <b className="text-ink">{r.vide2}</b> {r.vide3}{' '}
+            <b className="text-ink">{r.vide4}</b> {r.vide5} <b className="text-ink">{r.vide6}</b>{' '}
+            {r.vide7}
           </p>
         </div>
       ) : list.length === 0 && hits ? (
@@ -857,13 +820,13 @@ export default function RecoBoard({
                 « Partout ». */}
             {termesPoses.length > 1 ? (
               <>
-                {LIBELLE_VIDE[searchMode]} ne réunit{' '}
+                {r.videSelon[searchMode]} {r.neReunit}{' '}
                 <b className="text-ink">{termesPoses.join(' + ')}</b>
               </>
             ) : (
               <>
-                {LIBELLE_VIDE[searchMode]} ne contient «{' '}
-                <b className="text-ink">{termesPoses[0]}</b> »
+                {r.videSelon[searchMode]} {r.neContient}{' '}
+                <b className="text-ink">{termesPoses[0]}</b> {r.guillemetFermant}
               </>
             )}
 .{' '}
@@ -876,7 +839,7 @@ export default function RecoBoard({
                   onClick={() => setSearchMode('all')}
                   className="text-ink underline transition hoverable:text-star"
                 >
-                  Chercher partout
+                  {r.chercherPartout}
                 </button>
                 {' · '}
               </>
@@ -885,7 +848,7 @@ export default function RecoBoard({
               onClick={effacerRecherche}
               className="text-ink underline transition hoverable:text-star"
             >
-              Effacer la recherche
+              {textes.siege.board.effacerRecherche}
             </button>
           </p>
         </div>
@@ -932,6 +895,7 @@ export default function RecoBoard({
 // Rapport de validation du dernier import. Reste affiché jusqu'à fermeture :
 // contrairement au message de succès, il y a quelque chose à LIRE.
 function ValidationReport({ report, onClose }: { report: ImportReport; onClose: () => void }) {
+  const rapport = useTraduction().rapportImport;
   const bloque = report.errors.length > 0;
   return (
     <div
@@ -948,13 +912,11 @@ function ValidationReport({ report, onClose }: { report: ImportReport; onClose: 
           <AlertTriangle size={15} className="flex-none text-warn" />
         )}
         <span className={`text-xs font-semibold ${bloque ? 'text-bad' : 'text-warn'}`}>
-          {bloque
-            ? "Import refusé — le contenu n'est pas valide"
-            : `Import effectué avec ${report.warnings.length} correction${report.warnings.length > 1 ? 's' : ''}`}
+          {bloque ? rapport.importRefuse : rapport.importAvec(report.warnings.length)}
         </span>
         <BoutonIcone
           onClick={onClose}
-          libelle="Fermer le rapport"
+          libelle={rapport.fermer}
           icone={<X size={14} />}
           className="ml-auto"
         />
@@ -975,8 +937,7 @@ function ValidationReport({ report, onClose }: { report: ImportReport; onClose: 
 
       {!bloque && (
         <p className="mt-1.5 font-mono text-micro text-ink-dim">
-          {report.counts.recos} recommandation(s) · {report.counts.decks} deck(s) ·{' '}
-          {report.counts.monstres} monstre(s) retenus.
+          {rapport.bilanRecos(report.counts.recos, report.counts.decks, report.counts.monstres)}
         </p>
       )}
     </div>

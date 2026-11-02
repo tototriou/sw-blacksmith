@@ -27,6 +27,7 @@ import LeadPill from './LeadPill';
 import { ConfirmDialog } from '../../ui/Dialogs';
 import { pastilleStatut } from './pastilleStatut';
 import { Bouton, BoutonIcone, Selecteur, ZoneCliquable } from '../../ui';
+import { useTraduction } from '../../hooks/useLangue';
 import { useMediaQuery, COMPACT } from '../../hooks/useMediaQuery';
 
 interface Props {
@@ -70,6 +71,8 @@ export default function SiegeTeam({
   onVoirSpeedTune,
   onSwap,
 }: Props) {
+  const textes = useTraduction();
+  const e = textes.equipeSiege;
   const [dragFrom, setDragFrom] = useState<number | null>(null);
   const [overIdx, setOverIdx] = useState<number | null>(null);
   const [detailIdx, setDetailIdx] = useState<number | null>(null); // slot dont on montre le détail
@@ -220,11 +223,12 @@ export default function SiegeTeam({
   const messageTick = tickTeamMessage(
     slotInfos
       .map(({ monster, combat }, i) => ({
-        nom: monster?.name ?? 'Ce monstre',
+        nom: monster?.name ?? e.ceMonstre,
         danger: slotDangers[i],
         combat,
       }))
-      .sort((a, b) => (b.combat ?? -Infinity) - (a.combat ?? -Infinity))
+      .sort((a, b) => (b.combat ?? -Infinity) - (a.combat ?? -Infinity)),
+    textes
   );
 
   // ⚠️ **La décision n'est plus écrite ici** : elle vit dans
@@ -248,7 +252,7 @@ export default function SiegeTeam({
   const statut = statutEquipe(entreeStatut);
   // Ce qu'on dit quand le mode est allumé mais qu'il n'y a pas de verdict : sans
   // ça, la card ne bouge pas et le bouton semble ne rien faire.
-  const sansVerdict = raisonSansVerdict(entreeStatut);
+  const sansVerdict = raisonSansVerdict(entreeStatut, textes);
 
   // Validation d'équipement — indépendante du mode « Vérifier mes speed ».
   // Seuls les slots AVEC données importées (`gear` présent) sont contrôlés :
@@ -291,7 +295,7 @@ export default function SiegeTeam({
     swift: teamHasSwift,
     manqueRunes: gearIncomplet.some((g) => g.manqueRunes),
     manqueArtes: gearIncomplet.some((g) => g.manqueArtes),
-  });
+  }, textes);
 
   return (
     // ⚠️ `p-2.5` sous `sm` : la page empile jusqu'à huit équipes, et chaque
@@ -306,7 +310,7 @@ export default function SiegeTeam({
       {/* ⚠️ `gap-3` sous `sm` autour des deux icônes nues : sans cadre, elles se
           distinguent par l'espace. */}
       <div className="mb-2 flex flex-wrap items-center gap-2 compact:mb-2 compact:gap-3">
-        <h3 className="font-display text-base tracking-wide">Équipe {index + 1}</h3>
+        <h3 className="font-display text-base tracking-wide">{e.titre(index + 1)}</h3>
         {pastille && (
           // ⚠️ Texte à l'ENCRE sur le fond doux du ton, le point porte la
           // couleur : un texte `good`/`warn` sur son propre fond doux manque de
@@ -335,8 +339,8 @@ export default function SiegeTeam({
             différentes, ce n'est pas un doublon. */}
         {leaderMonster?.leaderSkill && <LeadPill ls={leaderMonster.leaderSkill} />}
         <Bouton onClick={onExporterOptimizer} disabled={!!raisonExportOptimizer}
-          title={raisonExportOptimizer ?? 'Créer une liste avec cette équipe de siège.'}
-          aria-label="Exporter vers l'Optimizer" libelle="Exporter vers l'Optimizer"
+          title={raisonExportOptimizer ?? e.exportAide}
+          aria-label={textes.commun.exporterOptimizer} libelle={textes.commun.exporterOptimizer}
           icone={<Upload size={13} />} taille="sm" nuAuDoigt libelleAuDoigt={false} />
 
         {/* ⚠️ **Icône nue au doigt** (`nuAuDoigt`) — ni cadre, ni bordure, ni
@@ -354,10 +358,10 @@ export default function SiegeTeam({
           libelleAuDoigt={false}
           taille="sm"
           icone={<Pencil size={13} />}
-          libelle={expanded ? 'Terminer' : 'Éditer'}
+          libelle={expanded ? textes.commun.terminer : textes.commun.editer}
           aria-expanded={expanded}
-          title={expanded ? "Terminer l'édition" : "Éditer l'équipe"}
-          aria-label={expanded ? "Terminer l'édition" : "Éditer l'équipe"}
+          title={expanded ? e.terminerEdition : e.editer}
+          aria-label={expanded ? e.terminerEdition : e.editer}
           className="ml-auto"
         />
         <Bouton
@@ -369,9 +373,9 @@ export default function SiegeTeam({
           libelleAuDoigt={false}
           taille="sm"
           icone={<Trash2 size={13} />}
-          libelle="Supprimer"
-          title="Supprimer l'équipe"
-          aria-label="Supprimer l'équipe"
+          libelle={textes.commun.supprimer}
+          title={e.supprimer}
+          aria-label={e.supprimer}
         />
       </div>
 
@@ -415,8 +419,8 @@ export default function SiegeTeam({
               title={
                 slotDanger
                   ? slotDanger.kind === 'below'
-                    ? `À ${slotDanger.diff} sous le tick ${slotDanger.tick}`
-                    : `${slotDanger.diff} au-dessus du tick ${slotDanger.tick} (overshoot)`
+                    ? e.sousLeTick(slotDanger.diff, slotDanger.tick)
+                    : e.auDessusDuTick(slotDanger.diff, slotDanger.tick)
                   : undefined
               }
             >
@@ -472,11 +476,11 @@ export default function SiegeTeam({
                 title={
                   danger
                     ? danger.kind === 'below'
-                      ? `À ${danger.diff} sous le tick ${danger.tick}`
-                      : `${danger.diff} au-dessus du tick ${danger.tick} (overshoot)`
+                      ? e.sousLeTick(danger.diff, danger.tick)
+                      : e.auDessusDuTick(danger.diff, danger.tick)
                     : canDetail
-                      ? 'Voir le détail des runes'
-                      : 'Modifier'
+                      ? textes.carteRta.voirRunes
+                      : e.modifier
                 }
                 className={`flex-1 min-w-0 flex items-center gap-2 rounded-lg border
                   px-2 py-1.5 compact:gap-1 compact:px-1 compact:py-1 transition hoverable:border-accent ${
@@ -531,7 +535,7 @@ export default function SiegeTeam({
                       <div className="mt-0.5 flex items-center gap-1 compact:gap-0.5">
                         <img
                           src={SPD_ICON}
-                          alt="SPD"
+                          alt={textes.jeu.stats.spd}
                           width={14}
                           height={14}
                           className="flex-none compact:hidden"
@@ -567,7 +571,7 @@ export default function SiegeTeam({
                       +
                     </span>
                     <span className="min-w-0 truncate text-micro">
-                      {idx === 0 ? 'Leader' : 'vide'}
+                      {idx === 0 ? e.leader : e.vide}
                     </span>
                   </div>
                 )}
@@ -583,7 +587,7 @@ export default function SiegeTeam({
       {!expanded && detailIdx !== null && (team.slots[detailIdx]?.gear ?? team.slots[detailIdx]?.gearPartage) && (
         <div className="mt-2 rounded-xl border border-border bg-panel/40 p-3">
           {!team.slots[detailIdx].gear && (
-            <p className="mb-2 text-micro text-ink-dim">Équipement de l'auteur du fichier.</p>
+            <p className="mb-2 text-micro text-ink-dim">{e.equipementAuteur}</p>
           )}
           <MonsterGear gear={(team.slots[detailIdx].gear ?? team.slots[detailIdx].gearPartage)!} />
         </div>
@@ -632,16 +636,12 @@ export default function SiegeTeam({
                     <span key={id} className="block">
                       <span className="font-semibold">{monster.name}</span>
                       {' '}
-                      {manqueRunes && manqueArtes
-                        ? "n'a pas toutes ses runes ni tous ses artefacts"
-                        : manqueRunes
-                          ? "n'a pas toutes ses runes"
-                          : "n'a pas tous ses artefacts"}
+                      {manqueRunes && manqueArtes ? e.manqueTout : manqueRunes ? e.manqueRunes : e.manqueArtes}
                     </span>
                   ))}
                 </span>
               ) : statut === 'rouge' ? (
-                (messageTick ?? "Ton équipe n'est pas au tick.")
+                (messageTick ?? e.pasAuTick)
               ) : statut === 'orange' ? (
                 speedTune?.cibleIndecise ? (
                   // ⚠️ **Pas de chiffre ici, et c'est le sujet.** Un sort retenu
@@ -650,7 +650,7 @@ export default function SiegeTeam({
                   // cible devinée enverrait régler une équipe sur un chiffre qui
                   // n'est pas le sien. « Voir le speed tune », juste à droite,
                   // ouvre l'outil où la cible se désigne.
-                  <span className="font-semibold text-ink">Vérifier le speed tuning</span>
+                  <span className="font-semibold text-ink">{e.verifierSpeedTuning}</span>
                 ) : speedTune ? (
                   // ⚠️ **Rien que ce qui ne va pas.** « Équipe speed : » ouvrait
                   // la phrase et ne disait rien de plus que le pictogramme et le
@@ -658,15 +658,15 @@ export default function SiegeTeam({
                   // seul morceau utile, le nom et le chiffre qui manque.
                   <span className="font-semibold text-ink">
                     {speedTune.requis.length === 0
-                      ? 'Elle ne passe pas devant un monstre aussi rapide que le tien'
+                      ? e.nePassePas
                       : speedTune.requis
                           .map((r) => {
                             // ⚠️ Les identifiants de l'analyse indexent
                             // l'ÉQUIPE (slots vides écartés), pas les 3 slots.
-                            const nom = equipeAuto[Number(r.id)]?.monster.name ?? 'Ce monstre';
+                            const nom = equipeAuto[Number(r.id)]?.monster.name ?? e.ceMonstre;
                             return r.combatRequis == null
-                              ? `${nom} (hors de portée)`
-                              : `${nom} +${r.combatRequis - r.combatActuel} VIT`;
+                              ? e.horsDePortee(nom)
+                              : `${nom} +${r.combatRequis - r.combatActuel} ${textes.jeu.stats.spd}`;
                           })
                           .join(', ')}
                   </span>
@@ -675,14 +675,14 @@ export default function SiegeTeam({
                 <button
                   onClick={() => onDismissAlert(team.id, false)}
                   className="text-good hoverable:text-ink transition"
-                  title="Revenir sur cette validation et réafficher la recommandation"
+                  title={e.retablirAide}
                 >
-                  ✓ {teamHasSwift ? 'Speed tune validé' : 'Tick validé'} ·{' '}
-                  <span className="underline underline-offset-2">rétablir</span>
+                  ✓ {teamHasSwift ? textes.siege.pastille.speedTuneValide : textes.siege.pastille.tickValide} ·{' '}
+                  <span className="underline underline-offset-2">{e.retablir}</span>
                 </button>
               ) : statut === 'vert' ? (
                 <span className="text-good">
-                  ✓ {speedTune?.verdict.ok ? 'Équipe speed : elle est speed tune' : 'Tous au tick'}
+                  ✓ {speedTune?.verdict.ok ? e.estSpeedTune : textes.siege.pastille.tousAuTick}
                 </span>
               ) : (
                 sansVerdict
@@ -695,13 +695,9 @@ export default function SiegeTeam({
               <Bouton
                 onClick={() => onDismissAlert(team.id, true)}
                 taille="sm"
-                libelle={teamHasSwift ? 'Valider le speed tune' : 'Valider le tick'}
-                libelleCourt="Valider"
-                title={
-                  teamHasSwift
-                    ? "Tu prends la responsabilité de ce speed tune : l'équipe passe au vert."
-                    : "Tu prends la responsabilité de ce calage : l'équipe passe au vert."
-                }
+                libelle={teamHasSwift ? e.validerSpeedTune : e.validerTick}
+                libelleCourt={textes.commun.valider}
+                title={teamHasSwift ? e.validerSpeedTuneAide : e.validerTickAide}
               />
             )}
             {/* ⚠️ TOUJOURS là, quelle que soit l'équipe : le speed tune n'est pas
@@ -716,9 +712,9 @@ export default function SiegeTeam({
                 trait="aucun"
                 // Le chronomètre de l'outil qu'il ouvre.
                 icone={<IconeSpeedTuning size={14} />}
-                libelle="Voir le speed tune"
-                libelleCourt="Speed tune"
-                title="Ouvre le speed tuning avec cette équipe déjà chargée"
+                libelle={e.voirSpeedTune}
+                libelleCourt={textes.siege.pastille.speedTune}
+                title={e.voirSpeedTuneAide}
               />
             )}
           </span>
@@ -806,6 +802,8 @@ function SlotContent({
   onDragStart,
   onDragEnd,
 }: SlotProps) {
+  const textes = useTraduction();
+  const e = textes.equipeSiege;
   const cardRef = useRef<HTMLDivElement>(null);
   // ⚠️ Le retrait passe par une CONFIRMATION, comme sur une carte de prépa RTA
   // (voir RtaCard) : la vitesse saisie et le tick visé partent avec le monstre,
@@ -824,7 +822,7 @@ function SlotContent({
         <div className="flex items-center gap-1.5 mb-2">
           {isLeader && <Crown size={13} className="text-star" />}
           <span className="label">
-            {isLeader ? 'Leader' : 'Slot'}
+            {isLeader ? e.leader : e.slot}
           </span>
         </div>
         <MonsterPicker
@@ -832,7 +830,7 @@ function SlotContent({
           onPick={onPick}
           jetonFocus={jetonFocus}
           excludeIds={usedIds}
-          placeholder="Choisir un monstre…"
+          placeholder={e.choisirMonstre}
         />
       </div>
     );
@@ -860,11 +858,11 @@ function SlotContent({
   // endroits selon la largeur (`hidden lg:…` / `lg:hidden`).
   const position = (
     <>
-      <span className="label">Position</span>
+      <span className="label">{e.position}</span>
       <Selecteur
         value={idx}
-        onChange={(e) => onMoveTo(Number(e.target.value))}
-        title="Changer la position (intervertir les monstres)"
+        onChange={(ev) => onMoveTo(Number(ev.target.value))}
+        title={e.changerPosition}
         taille="dense"
         surface="panel"
         // ⚠️ `data-cible-fine` : la règle tactile portait ce sélecteur à 40 px
@@ -873,7 +871,7 @@ function SlotContent({
         // sa ligne : rien d'autre à toucher autour, donc rien à rater.
         data-cible-fine
       >
-        <option value={0}>1 · Leader</option>
+        <option value={0}>1 · {e.leader}</option>
         <option value={1}>2</option>
         <option value={2}>3</option>
       </Selecteur>
@@ -886,15 +884,15 @@ function SlotContent({
   const ecart =
     diff === null ? null : diff < 0 ? (
       <span className="inline-flex items-center gap-1 rounded-md bg-bad-soft text-bad px-2 py-0.5 text-micro font-mono font-semibold">
-        manque {-diff} pour {tick}
+        {e.manque(-diff, tick)}
       </span>
     ) : diff > 0 ? (
       <span className="inline-flex items-center gap-1 rounded-md bg-water/15 text-water px-2 py-0.5 text-micro font-mono font-semibold">
-        +{diff} au-dessus de {tick}
+        {e.auDessus(diff, tick)}
       </span>
     ) : (
       <span className="inline-flex items-center gap-1 rounded-md bg-good-soft text-good px-2 py-0.5 text-micro font-mono font-semibold">
-        pile au tick {tick} ✓
+        {e.pileAuTick(tick)} ✓
       </span>
     );
 
@@ -926,8 +924,8 @@ function SlotContent({
           // aussi le portrait, le nom, les sets et la croix.
           // Même traitement que la poignée d'une carte RTA (voir RtaCard).
           className="text-ink-dim hoverable:text-ink coarse:hidden"
-          title="Glisser pour intervertir"
-          aria-label="Déplacer"
+          title={e.glisser}
+          aria-label={textes.commun.deplacer}
         >
           <GripVertical size={15} />
         </ZoneCliquable>
@@ -974,11 +972,7 @@ function SlotContent({
         <span className="hidden flex-none items-center gap-0.5 lg:flex">
           <BoutonIcone
             libelle={
-              idx === 0
-                ? 'Déjà en première position'
-                : idx === 1
-                  ? 'Déplacer à gauche (devient le leader)'
-                  : 'Déplacer à gauche'
+              idx === 0 ? e.dejaPremier : idx === 1 ? e.gaucheLeader : e.gauche
             }
             icone={<ChevronLeft size={14} />}
             disabled={idx === 0}
@@ -986,11 +980,7 @@ function SlotContent({
           />
           <BoutonIcone
             libelle={
-              idx === 2
-                ? 'Déjà en dernière position'
-                : idx === 0
-                  ? 'Déplacer à droite (le monstre suivant devient le leader)'
-                  : 'Déplacer à droite'
+              idx === 2 ? e.dejaDernier : idx === 0 ? e.droiteLeader : e.droite
             }
             icone={<ChevronRight size={14} />}
             disabled={idx === 2}
@@ -999,7 +989,7 @@ function SlotContent({
         </span>
         <BoutonIcone
           onClick={() => setRetraitAConfirmer(true)}
-          libelle="Retirer"
+          libelle={textes.commun.retirer}
           taille="serre"
           ton="danger"
           icone={<X size={14} />}
@@ -1031,18 +1021,18 @@ function SlotContent({
             {ecart && <span className="hidden lg:inline-flex">{ecart}</span>}
           </div>
           <div className="mt-1 font-mono text-micro text-ink-dim compact:mt-0.5 compact:text-nano">
-            base {base ?? '—'}
+            {e.base(base ?? '—')}
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 lg:col-start-1 lg:row-start-2">
           <label className="flex items-center gap-1.5">
-            <span className="label">SPD :</span>
+            <span className="label">{e.vitesseRunesCourt(textes.jeu.stats.spd)}</span>
             <NumberField
               value={slot.runeSpeed}
               allowEmpty
               min={0}
               width="w-12"
-              ariaLabel="SPD des runes"
+              ariaLabel={e.vitesseRunes(textes.jeu.stats.spd)}
               onChange={onRune}
             />
           </label>
@@ -1057,14 +1047,14 @@ function SlotContent({
             états s'éteint là où on l'a allumé, sans aller chercher un
             troisième bouton. Au doigt, « Off » reste pour l'instant,
             et le reclic y marche aussi. */}
-        <TickBtn active={tick === 0} onClick={() => onTick(0)} label="Off" className="lg:hidden" />
+        <TickBtn active={tick === 0} onClick={() => onTick(0)} label={e.off} className="lg:hidden" />
         {SIEGE_TICKS.map((t) => (
           <TickBtn
             key={t.key}
             active={tick === t.value}
             onClick={() => onTick(tick === t.value ? 0 : t.value)}
-            label={`${t.label} ${t.value}`}
-            title={tick === t.value ? `Ne plus viser le tick ${t.value}` : `Viser le tick ${t.value}`}
+            label={`${textes.siege.ticks[t.key]} ${t.value}`}
+            title={tick === t.value ? e.nePlusViser(t.value) : e.viser(t.value)}
           />
         ))}
       </div>
@@ -1079,14 +1069,9 @@ function SlotContent({
 
       {retraitAConfirmer && (
         <ConfirmDialog
-          titre={`Retirer ${monster.name} de cette équipe ?`}
-          message={
-            <>
-              Sa vitesse saisie et son tick visé partent avec lui. L'emplacement
-              redevient libre, les deux autres monstres ne sont pas touchés.
-            </>
-          }
-          libelleAction="Retirer"
+          titre={e.retirerTitre(monster.name)}
+          message={e.retirerMessage}
+          libelleAction={textes.commun.retirer}
           destructif
           onCancel={() => setRetraitAConfirmer(false)}
           onConfirm={() => {

@@ -12,6 +12,7 @@ import { InterrupteurAffichage } from './CategoryBar';
 import { COMPACT, useMediaQuery } from '../../hooks/useMediaQuery';
 import { Bouton, BoutonGroupe, BoutonIcone, Interrupteur } from '../../ui';
 import { ConfirmDialog } from '../../ui/Dialogs';
+import { useTraduction } from '../../hooks/useLangue';
 
 const SPD_ICON = `${import.meta.env.BASE_URL}stats/spd.png`;
 
@@ -118,6 +119,8 @@ export default function TurnOrder({
   showSpeed = true,
   onToggleSpeed,
 }: Props) {
+  const textes = useTraduction();
+  const o = textes.ordreTour;
   const [lead, setLead] = useState(0);
   // Les deux interrupteurs d'affichage sont ceux de la barre de catégories —
   // même composant, donc même rendu au doigt qu'à la souris.
@@ -196,7 +199,7 @@ export default function TurnOrder({
       {/* Boutons de lead SPD : du plus gros au plus petit */}
       <div className="flex flex-wrap items-center gap-2 mb-4">
         <span className="label mr-1">
-          Lead SPD
+          {o.lead}
         </span>
         {leads.map((pct) => {
           const active = lead === pct;
@@ -223,7 +226,7 @@ export default function TurnOrder({
                    dégradé au lieu de le désigner. */
                 <BoutonIcone
                   onClick={() => setLeadASupprimer(pct)}
-                  libelle={`Retirer le lead +${pct}%`}
+                  libelle={o.retirerLead(pct)}
                   taille="serre"
                   icone={<X size={11} strokeWidth={3} />}
                   className="text-current opacity-50 hoverable:bg-transparent hoverable:text-current hoverable:opacity-100"
@@ -236,7 +239,7 @@ export default function TurnOrder({
             actions : c'est ce qui garantit qu'il ne fait pas une dent de scie au
             bout de la rangée. Fond seul comme marqueur d'état — la règle vient
             du composant, rien n'est redit ici. */}
-        <BoutonGroupe actif={lead === 0} onClick={() => setLead(0)} libelle="Sans lead" />
+        <BoutonGroupe actif={lead === 0} onClick={() => setLead(0)} libelle={o.sansLead} />
 
         {/* Ajout d'un lead absent de la prépa : il REJOINT la rangée au lieu de
             vivre dans un champ à part — une fois ajouté, il se clique comme les
@@ -250,7 +253,7 @@ export default function TurnOrder({
             width="w-11"
             placeholder="%"
             allowEmpty
-            ariaLabel="Lead de vitesse à ajouter, en pourcentage"
+            ariaLabel={o.leadAAjouter}
           />
           <Bouton
             onClick={ajouterLead}
@@ -258,7 +261,7 @@ export default function TurnOrder({
             fond="vide"
             trait="aucun"
             taille="xs"
-            libelle="Ajouter"
+            libelle={textes.commun.ajouter}
             className="underline-offset-2 hoverable:underline"
           />
         </span>
@@ -269,9 +272,9 @@ export default function TurnOrder({
           <InterrupteurAffichage
             actif={showSpeed}
             onToggle={() => onToggleSpeed(!showSpeed)}
-            libelle="Vitesses"
-            titreActif="Masquer les vitesses (l'ordre reste le même)"
-            titreInactif="Réafficher les vitesses"
+            libelle={o.vitesses}
+            titreActif={o.masquerVitesses}
+            titreInactif={o.afficherVitesses}
             surMobile={surMobile}
           />
 
@@ -281,9 +284,9 @@ export default function TurnOrder({
           <InterrupteurAffichage
             actif={categoriesVisible}
             onToggle={() => onToggleCategories(!categoriesVisible)}
-            libelle="Catégories"
-            titreActif="Masquer les couleurs de catégories"
-            titreInactif="Réafficher les couleurs de catégories"
+            libelle={o.categories}
+            titreActif={o.masquerCategories}
+            titreInactif={o.afficherCategories}
             surMobile={surMobile}
           />
         )}
@@ -295,8 +298,8 @@ export default function TurnOrder({
           actif={highlightMovers}
           onChange={setHighlightMovers}
           ton="star"
-          libelle="Surligner les changements"
-          title="Surligner les monstres dont la place change avec le lead actif"
+          libelle={o.surligner}
+          title={o.surlignerAide}
           className="ml-1"
         />
       </div>
@@ -360,7 +363,7 @@ export default function TurnOrder({
                 fond="vide"
                 trait="aucun"
                 taille="xs"
-                title={off ? `Réafficher « ${c.label} »` : `Masquer « ${c.label} »`}
+                title={off ? o.afficherCategorie(c.label) : o.masquerCategorie(c.label)}
                 icone={puce}
                 libelle={libelle}
                 className={`px-0 font-normal ${off ? 'opacity-60' : ''}`}
@@ -372,7 +375,7 @@ export default function TurnOrder({
 
       {ordered.length === 0 ? (
         <div className="rounded-xl border border-dashed border-border/70 py-8 text-center text-ink-dim text-sm">
-          Ajoute des monstres pour visualiser l'ordre de tour.
+          {o.vide}
         </div>
       ) : (
         // ⚠️ **Grille qui se replie, MÊME rendu qu'en bureau — plus de
@@ -454,7 +457,7 @@ export default function TurnOrder({
 
                     {showSpeed && (
                       <div className="flex items-center gap-1">
-                        <img src={SPD_ICON} alt="SPD" width={13} height={13} className="flex-none" />
+                        <img src={SPD_ICON} alt={textes.jeu.stats.spd} width={13} height={13} className="flex-none" />
                         <span className="font-mono text-sm font-black text-ink leading-none">
                           {eff ?? '—'}
                         </span>
@@ -480,9 +483,9 @@ export default function TurnOrder({
                         value={it.entry.runeSpeed}
                         allowEmpty
                         min={0}
-                        placeholder="+ runes"
+                        placeholder={o.plusRunes}
                         boxWidth="w-full"
-                        ariaLabel={`SPD des runes de ${m.name}`}
+                        ariaLabel={o.vitesseRunes(m.name)}
                         onChange={(v) => onRuneSpeed(String(m.id), v)}
                       />
                     )}
@@ -506,7 +509,7 @@ export default function TurnOrder({
                         <div className="flex items-center gap-1 mt-1">
                           {showSpeed && (
                             <>
-                              <img src={SPD_ICON} alt="SPD" width={15} height={15} className="flex-none" />
+                              <img src={SPD_ICON} alt={textes.jeu.stats.spd} width={15} height={15} className="flex-none" />
                               <span className="font-mono text-base font-black text-ink leading-none">
                                 {eff ?? '—'}
                               </span>
@@ -525,9 +528,9 @@ export default function TurnOrder({
                           value={it.entry.runeSpeed}
                           allowEmpty
                           min={0}
-                          placeholder="+ runes"
+                          placeholder={o.plusRunes}
                           width="w-14"
-                          ariaLabel={`SPD des runes de ${m.name}`}
+                          ariaLabel={o.vitesseRunes(m.name)}
                           onChange={(v) => onRuneSpeed(String(m.id), v)}
                         />
                       </div>
@@ -542,9 +545,9 @@ export default function TurnOrder({
 
       {leadASupprimer !== null && (
         <ConfirmDialog
-          titre={`Retirer le lead +${leadASupprimer} % de la rangée ?`}
-          message="Il disparaît des boutons de lead, mais rien n'est perdu : retape-le dans le champ à droite pour le faire revenir. Les vitesses de tes monstres ne changent pas."
-          libelleAction="Retirer"
+          titre={o.retirerTitre(leadASupprimer)}
+          message={o.retirerMessage}
+          libelleAction={textes.commun.retirer}
           destructif
           onCancel={() => setLeadASupprimer(null)}
           onConfirm={() => {

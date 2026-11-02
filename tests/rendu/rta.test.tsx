@@ -112,7 +112,7 @@ export function testRenduRtaPrepa() {
 
   // Ordre de tour.
   ok(t.includes('Ordre de tour') && t.includes('par vitesse combat totale'), '« Ordre de tour · par vitesse combat totale »');
-  ok(t.includes('Lead SPD'), 'rangée « Lead SPD »');
+  ok(t.includes('Lead VIT'), 'rangée « Lead VIT »');
   ok(!!bouton(html, 'Sans lead'), 'bouton « Sans lead »');
   egal(valeurs(html, 'placeholder').filter((v) => v === '+ runes').length, 3, 'un champ « + runes » par monstre de l\'ordre de tour');
   ok(!!bouton(html, 'Surligner les changements'), 'bouton « Surligner les changements »');

@@ -3,6 +3,7 @@
 // est faux. Règle : docs/02-app/transverse/.
 
 import { combatSpeed, ficheSpeedForTick, pctSpeedBonus, swiftFlat, tickDanger, tickTeamMessage } from '../src/lib/speed';
+import { fr } from '../src/i18n/fr';
 import { egal, ok, titre } from './outils';
 
 export default function testVitesse() {
@@ -63,7 +64,7 @@ export default function testVitesse() {
   // fautif. Un message d'équipe ne pouvait pas décrire trois situations
   // différentes : il en laissait un dans l'ombre.
   const msg = (couples: [string, number][]) =>
-    tickTeamMessage(couples.map(([nom, v]) => ({ nom, danger: tickDanger(v) })));
+    tickTeamMessage(couples.map(([nom, v]) => ({ nom, danger: tickDanger(v) })), fr);
 
   egal(msg([['Tesarion', 286], ['Camille', 239]]), null, 'équipe calée → aucun message');
   egal(

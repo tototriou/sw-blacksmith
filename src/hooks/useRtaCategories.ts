@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Monster } from '../types';
 import { speedLeadOf } from '../lib/speed';
 import { saveLocal, usePersistence } from './usePersistence';
+import { useTraduction } from './useLangue';
 
 // Catégories libres de la prépa RTA : l'utilisateur crée ses propres étiquettes
 // (« Striper », « Lead SPD », « AoE »…) avec une couleur, et les applique à ses
@@ -54,15 +55,16 @@ export interface UseRtaCategories {
   isoler: (id: string) => void;
   // Peut-on encore en ajouter une à ce monstre ?
   canAssign: (monsterId: string) => boolean;
-  // Amorce la catégorie « Lead SPD » à la première prépa non vide.
+  // Amorce la catégorie « Lead VIT » à la première prépa non vide.
   ensureDefault: (monsters: Monster[]) => void;
   // Remplace TOUTES les catégories (restauration d'un point, import d'une prépa).
   replaceAll: (cats: { label: string; color: string; members: string[] }[]) => void;
 }
 
 // Catégorie proposée d'office : c'est le classement que tout le monde fait de
-// tête en RTA, autant le donner déjà fait.
-const DEFAULT_LABEL = 'Lead SPD';
+// tête en RTA, autant le donner déjà fait. Son nom (« Lead VIT », « Lead SPD »)
+// est celui de la langue affichée À SA CRÉATION : c'est ensuite une donnée du
+// joueur, qui la renomme à son gré.
 const DEFAULT_COLOR = '#4ad8d8';
 
 // ⚠️ Un lead ne compte ici que s'il s'applique EN RTA, sans condition :
@@ -149,6 +151,7 @@ function load(): Stored {
 }
 
 export function useRtaCategories(): UseRtaCategories {
+  const libelleDefaut = useTraduction().rta.categorieLead;
   const [state, setState] = useState<Stored>(load);
   const { categories, visible, showSpeeds, markDesync, masquees } = state;
   const setCategories = useCallback(
@@ -186,11 +189,11 @@ export function useRtaCategories(): UseRtaCategories {
         seeded: true,
         categories: [
           ...st.categories,
-          { id: uid(), label: DEFAULT_LABEL, color: DEFAULT_COLOR, members: membres },
+          { id: uid(), label: libelleDefaut, color: DEFAULT_COLOR, members: membres },
         ],
       };
     });
-  }, []);
+  }, [libelleDefaut]);
 
   // Remplacement en bloc — restauration d'un point de sauvegarde, ou import
   // d'une prépa reçue. Les ids sont RÉGÉNÉRÉS : ils n'ont de sens que localement

@@ -25,6 +25,7 @@ import { mapRtaVueAmi } from '../src/lib/applyAccount';
 import { parseAccountJson, parseAccountSource } from '../src/lib/importAccount';
 import { Monster, RtaState, RTA_OTHER, RTA_UNASSIGNED } from '../src/types';
 import { RtaCategory } from '../src/hooks/useRtaCategories';
+import { fr } from '../src/i18n/fr';
 import { egal, exportSynthetique, ok, titre } from './outils';
 
 // Deux bestiaires aux ids LOCAUX différents pour le même `com2usId` : c'est la
@@ -156,7 +157,7 @@ export default function testRtaPartage() {
   /* ---- Consultation chez QUELQU'UN D'AUTRE ------------------------------ */
 
   const json = encodeSnapshot(snap);
-  const rapport = validateRtaImport(json);
+  const rapport = validateRtaImport(json, fr);
   ok(rapport.snapshot !== null, 'un export de SW Forge se relit sans erreur bloquante');
   egal(rapport.errors, [], 'aucune erreur sur un fichier produit par l’app');
   egal(rapport.warnings, [], 'et aucun avertissement — la relique porte bien id et upgrade');
@@ -255,7 +256,7 @@ export default function testRtaPartage() {
   const rangs = relu.monstres.map((m) => m.rang).sort();
   egal(rangs, [1, 2, 3], 'seul le RANG dans l’ordre de tour est transmis');
 
-  const vueOrdre = versVueAmi(validateRtaImport(jsonOrdre).snapshot!, parCom2us(chezLui));
+  const vueOrdre = versVueAmi(validateRtaImport(jsonOrdre, fr).snapshot!, parCom2us(chezLui));
   egal(vueOrdre.niveau, 'ordre', 'la consultation sait qu’elle n’a que l’ordre');
   egal(vueOrdre.sections, [RTA_OTHER], 'aucune section de runes à afficher');
   egal(
@@ -297,7 +298,7 @@ export default function testRtaPartage() {
   );
   egal(reluVitesses.sections, [], 'et aucune section n’est déclarée');
 
-  const vueVitesses = versVueAmi(validateRtaImport(jsonVitesses).snapshot!, parCom2us(chezLui));
+  const vueVitesses = versVueAmi(validateRtaImport(jsonVitesses, fr).snapshot!, parCom2us(chezLui));
   egal(vueVitesses.niveau, 'vitesses', 'l’ordre de tour est calculable');
   egal(
     vueVitesses.entries.find((e) => e.monster.com2usId === 15214)?.entry.sets,
@@ -383,14 +384,14 @@ export default function testRtaPartage() {
     version: 4,
     recommandations: [],
   });
-  const refus = validateRtaImport(autreExport);
+  const refus = validateRtaImport(autreExport, fr);
   egal(refus.snapshot, null, 'un export de recommandations est REFUSÉ, pas lu de travers');
   ok(refus.errors.length > 0, 'et le refus est expliqué');
 
-  ok(validateRtaImport('').errors.length > 0, 'contenu vide refusé');
-  ok(validateRtaImport('pas du json').errors.length > 0, 'contenu non-JSON refusé avec un message clair');
+  ok(validateRtaImport('', fr).errors.length > 0, 'contenu vide refusé');
+  ok(validateRtaImport('pas du json', fr).errors.length > 0, 'contenu non-JSON refusé avec un message clair');
   ok(
-    validateRtaImport('{"format":"sw-forge/prepa-rta","monstres":[]}').snapshot === null,
+    validateRtaImport('{"format":"sw-forge/prepa-rta","monstres":[]}', fr).snapshot === null,
     'un fichier sans aucun monstre exploitable est refusé'
   );
 
@@ -407,7 +408,7 @@ export default function testRtaPartage() {
         { com2usId: 'pas un id', nom: 'Cassé', section: 'swift' },
         { com2usId: 19315, nom: 'Bella', section: 'violent', vitesse: -5 },
       ],
-    })
+    }), fr
   );
 
   ok(bricole.snapshot !== null, 'un fichier partiellement fautif est lu quand même');
@@ -454,7 +455,7 @@ export default function testRtaPartage() {
           },
         },
       ],
-    })
+    }), fr
   );
 
   const runesLues = gearDouteux.snapshot!.entries[0].gear?.runes;
@@ -472,7 +473,7 @@ export default function testRtaPartage() {
       monstres: [
         { com2usId: 15214, nom: 'Trevor', section: 'swift', equipement: { runes: [], artifacts: [] } },
       ],
-    })
+    }), fr
   );
   egal(
     gearVide.snapshot!.entries[0].gear,
@@ -491,7 +492,7 @@ export default function testRtaPartage() {
       format: 'sw-forge/prepa-rta',
       sections: [], // l'auteur a bricolé le fichier et vidé la liste
       monstres: [{ com2usId: 15214, nom: 'Trevor', section: 'despair', vitesse: 100 }],
-    })
+    }), fr
   );
   ok(
     sectionOrpheline.snapshot!.sections.includes('despair'),
@@ -560,7 +561,7 @@ export default function testRtaPartage() {
           },
         },
       ],
-    })
+    }), fr
   );
   egal(
     avecRelique.snapshot!.entries[0].gear?.relic?.unique,
@@ -595,7 +596,7 @@ export default function testRtaPartage() {
           },
         },
       ],
-    })
+    }), fr
   );
   egal(
     ancienFichier.snapshot!.entries[0].gear?.relic?.unique,
@@ -636,7 +637,7 @@ export default function testRtaPartage() {
           },
         },
       ],
-    })
+    }), fr
   );
   egal(sansIdNiUpgrade.snapshot!.entries[0].gear?.relic, undefined, 'relique sans id/upgrade : ignorée, pas fabriquée');
   egal(
@@ -668,7 +669,7 @@ export default function testRtaPartage() {
           },
         },
       ],
-    })
+    }), fr
   );
   egal(upgradeHorsBornes.snapshot!.entries[0]?.gear, undefined, 'relique seule, upgrade hors bornes : équipement vide');
 }

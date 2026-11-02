@@ -16,6 +16,7 @@ import { JSON_FORMAT as FORMAT_RECO, decodeRecosJson } from '../src/lib/recoShar
 import { CURVE_FORMAT, decodeCurve } from '../src/lib/runeCurveShare';
 import { NOM_APP, PREFIXE_FICHIER } from '../src/marque';
 import type { Monster } from '../src/types';
+import { fr } from '../src/i18n/fr';
 import { egal, monstersJson, ok, titre } from './outils';
 
 const RACINE = resolve(new URL('..', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1'));
@@ -32,13 +33,14 @@ export default function testMarque() {
   const lushen = MONSTRES.find((m) => m.name === 'Lushen' && m.com2usId != null)!;
   for (const prefixe of ['sw-forge', 'swblacksmith']) {
     const rta = validateRtaImport(
-      JSON.stringify({ format: `${prefixe}/prepa-rta`, version: 2, monstres: [{ com2usId: lushen.com2usId, nom: 'Lushen', section: 'violent' }] })
+      JSON.stringify({ format: `${prefixe}/prepa-rta`, version: 2, monstres: [{ com2usId: lushen.com2usId, nom: 'Lushen', section: 'violent' }] }), fr
     );
     ok(rta.snapshot !== null && rta.errors.length === 0, `prépa RTA « ${prefixe}/prepa-rta » : lue, sans erreur`);
 
     const ctx = { errors: [] as string[], warnings: [] as string[] };
     const recos = decodeRecosJson(
       JSON.stringify({ format: `${prefixe}/recommandations`, version: 5, recommandations: [{ nom: 'R', decks: [{ monstres: [{ com2usId: lushen.com2usId, nom: 'Lushen' }] }] }] }),
+      fr,
       ctx as never
     );
     ok(recos !== null && recos.length === 1, `recommandations « ${prefixe}/recommandations » : lues`);
@@ -46,15 +48,15 @@ export default function testMarque() {
 
     const siege = lireEquipes(
       JSON.stringify({ format: `${prefixe}/siege-equipes`, version: 1, cote: 'defense', equipes: [{ monstres: [{ com2usId: lushen.com2usId, nom: 'Lushen', vitesseRunes: 100, tick: 0, sets: [] }] }] }),
-      MONSTRES
+      MONSTRES, fr
     );
     ok(siege.ok, `équipes de siège « ${prefixe}/siege-equipes » : lues`);
 
     ok(decodeCurve(JSON.stringify({ format: `${prefixe}/courbe-runes`, version: 2, nom: 'Ami', efficiences: [100, 90], scores: [] })) !== null, `courbe « ${prefixe}/courbe-runes » : lue`);
   }
   // Un autre type de fichier reste refusé, sous l'un ou l'autre nom.
-  ok(validateRtaImport(JSON.stringify({ format: 'swblacksmith/recommandations', monstres: [] })).errors.length > 0, 'une recommandation donnée à l’import RTA reste refusée');
-  ok(!lireEquipes(JSON.stringify({ format: 'sw-forge/prepa-rta', version: 1, equipes: [] }), MONSTRES).ok, 'une prépa RTA donnée à l’import de siège reste refusée');
+  ok(validateRtaImport(JSON.stringify({ format: 'swblacksmith/recommandations', monstres: [] }), fr).errors.length > 0, 'une recommandation donnée à l’import RTA reste refusée');
+  ok(!lireEquipes(JSON.stringify({ format: 'sw-forge/prepa-rta', version: 1, equipes: [] }), MONSTRES, fr).ok, 'une prépa RTA donnée à l’import de siège reste refusée');
 
   titre('marque · le nom est écrit une fois');
   egal(NOM_APP, 'SW Blacksmith', 'le nom de l\'app');

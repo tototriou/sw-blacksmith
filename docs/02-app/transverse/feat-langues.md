@@ -96,9 +96,15 @@ jeu dans la langue choisie**, jamais une traduction de l'app. Ils vivent dans
   français de la stat reste dans la ligne, parce que le moteur de l'Optimizer s'en sert pour
   reconnaître une ligne (colonnes compactes). L'affichage ne le lit pas : il nomme la stat par
   `jeu.stats[clé]`.
-- **Un texte que `src/lib/` rédige lui-même en français** (messages d'import, fichier de
-  recommandation partagé, titres d'un écran pas encore traduit) cite les termes du jeu dans le
-  lexique français (`jeuFr`), pour que la phrase reste d'une seule langue.
+- **Un texte que `src/lib/` rédige pour l'écran reçoit sa langue en paramètre** (décision de
+  l'utilisateur) : la fonction prend le dictionnaire (`t: Dictionnaire`) et y lit ses phrases —
+  rapports d'import de la prépa RTA, des recommandations et des équipes de siège
+  (`validateRtaImport`, `validateRecosImport`, `lireEquipes`, `cleanGear`), raison d'une équipe
+  sans verdict (`raisonSansVerdict`), alerte de tick (`tickTeamMessage`), résumé d'une équipe
+  (`teamSummary`). Le calcul reste pur ; un test ou un script passe `fr`. Les **fichiers partagés**
+  restent en français, la langue du fichier : clés, champ `propriete` d'une recommandation
+  (`fr.jeu`). Un libellé que `src/lib/` fabrique comme une donnée (« Défense 3 », la source d'un
+  build) se traduit à l'affichage par `libelleSource`.
 - **Les noms de monstres et les compétences** (nom, description, améliorations) viennent de
   SWARFARM, en anglais, et le restent dans toutes les langues.
 - **Les effets de compétence** sont indexés par leur nom SWARFARM. Un effet qui n'a pas de nom
@@ -116,7 +122,9 @@ Les fichiers traduits sont ceux de `FICHIERS_TRADUITS` (`eslint.config.js`) : la
 (barre latérale, carte du compte, recherche, onglets du bas, panneau de navigation mobile), la
 barre du haut, la palette Ctrl K, l'écran partagé, la page et le popover des Paramètres, la date de
 l'export chargé ; l'accueil, les Nouveautés (journal compris), Télécharger, les Mécaniques, le
-Bestiaire (filtres, grille, pagination), la fiche d'un monstre et la création d'un monstre. Dans
+Bestiaire (filtres, grille, pagination), la fiche d'un monstre et la création d'un monstre ; la
+RTA (prépa, catégories, ordre de tour, sauvegarde et partage, prépa d'un ami) et le Siège
+(équipes de défense et d'offense, recommandations, leader skills). Dans
 [App.tsx](../../../src/App.tsx), les destinations de la navigation, le titre et le fil d'Ariane de
 la barre du haut, les actions de la palette et le sélecteur de page d'un volet vide.
 
@@ -152,7 +160,10 @@ Un écran qu'on traduit entre dans `FICHIERS_TRADUITS` dans le même commit.
   l'app entière (`#/parametres`) en anglais, puis de retour en français ; la fiche d'une rune
   dans le vocabulaire du jeu de chaque langue ; l'accueil, les Nouveautés, Télécharger, les
   Mécaniques, le Bestiaire et la fiche d'un monstre en anglais ; les deux articles des Mécaniques,
-  mêmes sections dans le même ordre.
+  mêmes sections dans le même ordre ; la RTA (prépa, prépa d'un ami) et le Siège (défense,
+  offense, recommandations) en anglais.
+- [partage-langues.test.ts](../../../tests/partage-langues.test.ts) : les messages de `src/lib/`
+  (imports, statut d'équipe, alerte de tick, source d'un build) dans la langue reçue.
 - [journal-langues.test.ts](../../../tests/journal-langues.test.ts) : le journal anglais a la
   forme du français (versions, dates, tags, points mis en avant, changements), aucun texte vide ni
   resté en français.

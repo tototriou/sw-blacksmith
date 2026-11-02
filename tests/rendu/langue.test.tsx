@@ -135,6 +135,32 @@ export function testRenduLanguePagesPubliques() {
     ok(fiche.includes(attendu), `fiche d’un monstre : « ${attendu} »`);
 }
 
+// La RTA et le Siège en anglais : en-têtes, actions et états vides.
+export function testRenduLangueRtaSiege() {
+  titre('rendu · langue — la RTA et le Siège, en anglais');
+  const prepa = enAnglais(() => rendreApp('#/rta'));
+  for (const attendu of ['My prep', 'Add a section', 'Turn order', 'by total combat speed', 'Categories'])
+    ok(texteVisible(prepa).includes(attendu), `prépa RTA : « ${attendu} »`);
+  ok(prepa.includes('placeholder="Search a monster to add to your RTA prep…"'), 'prépa RTA : la recherche');
+  for (const absent of ['Ma prépa', 'Ajouter une section', 'Ordre de tour']) ok(!texteVisible(prepa).includes(absent), `prépa RTA : plus de « ${absent} »`);
+
+  const ami = enAnglais(() => texteVisible(rendreApp('#/rta/ami')));
+  ok(ami.includes('No prep opened') && ami.includes('Open a friend’s prep'), 'prépa d’un ami : état vide et bouton');
+
+  const defense = enAnglais(() => texteVisible(rendreApp('#/siege/defense')));
+  for (const attendu of ['Defense', '0 team', 'No defense team yet', 'Add a team'])
+    ok(defense.includes(attendu), `Siège · défense : « ${attendu} »`);
+  ok(!defense.includes('Ajouter une équipe'), 'Siège · défense : plus de français');
+
+  const offense = enAnglais(() => texteVisible(rendreApp('#/siege/offense')));
+  ok(offense.includes('No offense team yet'), 'Siège · offense : l’état vide nomme le côté');
+
+  const recos = enAnglais(() => texteVisible(rendreApp('#/siege/recommandations')));
+  for (const attendu of ['Recommendations', 'No recommendation.', 'Create one', 'Create a recommendation'])
+    ok(recos.includes(attendu), `recommandations : « ${attendu} »`);
+  ok(!recos.includes('Recommandations'), 'recommandations : plus de français');
+}
+
 // L'article « Mécaniques » : un par langue, mêmes sections dans le même ordre.
 export function testRenduMecaniquesLangues() {
   titre('Mécaniques — un article par langue, mêmes sections');

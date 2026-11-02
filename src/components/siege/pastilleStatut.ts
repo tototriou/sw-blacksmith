@@ -1,4 +1,5 @@
 import type { StatutEquipe } from '../../lib/siegeStatut';
+import type { Dictionnaire } from '../../i18n/fr';
 
 // La PASTILLE de statut d'une équipe de siège, écrite à côté de son titre, à
 // la place d'un point de couleur ou d'un fond coloré : le statut y est ÉCRIT.
@@ -25,20 +26,21 @@ export interface EntreePastille {
   manqueArtes: boolean;
 }
 
-export function pastilleStatut(e: EntreePastille): { libelle: string; ton: TonPastille } | null {
+export function pastilleStatut(e: EntreePastille, t: Dictionnaire): { libelle: string; ton: TonPastille } | null {
+  const p = t.siege.pastille;
   // L'équipement d'abord, comme dans le pied : c'est le défaut le plus urgent.
   // ⚠️ « Artéfacts incomplets » quand il ne manque QUE des artéfacts : « Runes
   // incomplètes » y serait faux.
-  if (e.manqueRunes) return { libelle: 'Runes incomplètes', ton: 'bad' };
-  if (e.manqueArtes) return { libelle: 'Artéfacts incomplets', ton: 'bad' };
+  if (e.manqueRunes) return { libelle: p.runesIncompletes, ton: 'bad' };
+  if (e.manqueArtes) return { libelle: p.artefactsIncomplets, ton: 'bad' };
   switch (e.statut) {
     case 'rouge':
-      return { libelle: 'Pas au tick', ton: 'bad' };
+      return { libelle: p.pasAuTick, ton: 'bad' };
     case 'orange':
-      return { libelle: 'À vérifier', ton: 'warn' };
+      return { libelle: p.aVerifier, ton: 'warn' };
     case 'vert':
-      if (e.validee) return { libelle: e.swift ? 'Speed tune validé' : 'Tick validé', ton: 'good' };
-      return { libelle: e.swift ? 'Speed tune' : 'Tous au tick', ton: 'good' };
+      if (e.validee) return { libelle: e.swift ? p.speedTuneValide : p.tickValide, ton: 'good' };
+      return { libelle: e.swift ? p.speedTune : p.tousAuTick, ton: 'good' };
     default:
       return null;
   }

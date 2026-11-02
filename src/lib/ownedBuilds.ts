@@ -30,6 +30,18 @@ export const SOURCE_LABEL: Record<BuildSource, string> = {
   offense: 'Offense',
 };
 
+// Un `label` (« Défense 3 ») dans la langue affichée : le préfixe de la source
+// est remplacé par son nom dans `noms`, le rang garde sa place. Un libellé qui
+// ne vient pas d'ici est rendu tel quel.
+export function libelleSource(label: string, noms: Record<BuildSource, string>): string {
+  for (const source of Object.keys(SOURCE_LABEL) as BuildSource[]) {
+    const prefixe = SOURCE_LABEL[source];
+    if (label === prefixe) return noms[source];
+    if (label.startsWith(`${prefixe} `)) return `${noms[source]}${label.slice(prefixe.length)}`;
+  }
+  return label;
+}
+
 // Rassemble les builds depuis toutes les sources chargées.
 export function collectOwnedBuilds(args: {
   box: BoxItem[];

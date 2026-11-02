@@ -80,8 +80,8 @@ export default function RtaPage({
 }: Props) {
   const textes = useTraduction();
   const exportDisponible = useMemo(() => importerPrepaRtaOptimizer(sourcesOptimizer).membres.length > 0, [sourcesOptimizer]);
-  const raisonExport = !compteCharge ? 'Importe un compte pour exporter vers l’Optimizer.'
-    : !exportDisponible ? 'Aucun monstre importable dans la prépa RTA.' : undefined;
+  const raisonExport = !compteCharge ? textes.rta.exportSansCompte
+    : !exportDisponible ? textes.rta.exportSansMonstre : undefined;
   const exporterOptimizer = () => onImporterEquipe(importerPrepaRtaOptimizer);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [newSection, setNewSection] = useState('');
@@ -190,9 +190,9 @@ export default function RtaPage({
   const notifier = useNotifier();
   function retirerMonstre(id: string) {
     const entree = rta.state.entries[id];
-    const nom = monsterById.get(id)?.name ?? 'Monstre';
+    const nom = monsterById.get(id)?.name ?? textes.rta.monstreParDefaut;
     rta.removeMonster(id);
-    if (entree) notifier({ message: `${nom} retiré de ta prépa`, action: () => rta.restaurerMonstre(entree) });
+    if (entree) notifier({ message: textes.rta.retire(nom), action: () => rta.restaurerMonstre(entree) });
   }
 
   function renderCards(items: TurnItem[]) {
@@ -307,7 +307,7 @@ export default function RtaPage({
       pleineLargeur={dansLePanneau}
       taille="sm"
       icone={<Trash2 size={13} />}
-      libelle="Tout effacer"
+      libelle={textes.commun.toutEffacer}
       // ⚠️ `leading-none` : l'interligne du libellé (1,5) donne au texte une
       // boîte plus haute que sa lettre. Centrées boîte contre boîte, la poubelle
       // et le mot ne le sont plus à l'œil — l'icône paraît remonter. Sans
@@ -335,7 +335,7 @@ export default function RtaPage({
   // Posé DEUX fois : dans l'en-tête bureau, et seul dans la page au téléphone.
   const compteur = (
     <>
-      {addedIds.size} monstre{addedIds.size > 1 ? 's' : ''} en prépa
+      {textes.rta.enPrepa(addedIds.size)}
     </>
   );
 
@@ -350,7 +350,7 @@ export default function RtaPage({
           d'actions, inchangés. */}
       <div className="mb-4 hidden flex-wrap items-center gap-x-3 gap-y-1 lg:flex">
         {/* Cinzel, comme tous les titres de l'app. */}
-        <h1 className="font-display text-xl tracking-wide text-ink">Ma prépa</h1>
+        <h1 className="font-display text-xl tracking-wide text-ink">{textes.rta.maPrepa}</h1>
         <span className="rounded-full border border-border-soft bg-panel2 px-2 py-0.5 font-mono text-micro text-ink-dim">
           {compteur}
         </span>
@@ -368,13 +368,13 @@ export default function RtaPage({
           onCreateMonster={onCreateMonster}
           disposition="menu"
           entreesEnPlus={[
-            { cle: 'optimizer', libelle: "Exporter vers l'Optimizer", icone: <Upload size={14} />,
+            { cle: 'optimizer', libelle: textes.commun.exporterOptimizer, icone: <Upload size={14} />,
               disabled: !!raisonExport, title: raisonExport, onClick: exporterOptimizer },
             {
               cle: 'creer',
-              libelle: 'Créer un monstre',
+              libelle: textes.creerMonstre.bouton,
               icone: <Wand2 size={14} />,
-              title: "Créer un monstre qui n'existe pas dans les données chargées",
+              title: textes.creerMonstre.boutonAide,
               onClick: () => setCreationOuverte(true),
             },
             // « Tout effacer » : seulement sur une prépa non vide, comme le
@@ -383,7 +383,7 @@ export default function RtaPage({
               ? [
                   {
                     cle: 'effacer',
-                    libelle: 'Tout effacer',
+                    libelle: textes.commun.toutEffacer,
                     icone: <Trash2 size={14} />,
                     onClick: () => setEffacementAConfirmer(true),
                     danger: true,
@@ -419,24 +419,23 @@ export default function RtaPage({
 
       {effacementAConfirmer && (
         <ConfirmDialog
-          titre="Effacer toute la prépa RTA ?"
+          titre={textes.rta.effacerTitre}
           message={
             <>
-              Tous les monstres ajoutés, leurs vitesses et leurs sections seront retirés. Tes
-              catégories de couleur sont conservées.
+              {textes.rta.effacerMessage}
               {/* ⚠️ Le point de sauvegarde SURVIT volontairement : c'est ce qui
                   permet de revenir sur un effacement. L'effacer aussi ferait de
                   ce bouton une perte sans retour. */}
               {backup.backup && (
                 <>
                   {' '}
-                  Ton point de sauvegarde n'est pas touché :{' '}
-                  <b className="text-ink">« Reprendre » te ramènera à ta prépa.</b>
+                  {textes.rta.effacerSauvegardeIntacte}{' '}
+                  <b className="text-ink">{textes.rta.effacerReprendre}</b>
                 </>
               )}
             </>
           }
-          libelleAction="Tout effacer"
+          libelleAction={textes.commun.toutEffacer}
           destructif
           onCancel={() => setEffacementAConfirmer(false)}
           onConfirm={() => {
@@ -459,7 +458,7 @@ export default function RtaPage({
           revenir, puis échanger un fichier — on vise la bonne rangée d'abord et
           le bon bouton ensuite. `RtaBackupBar` porte ses deux rangées ; celle-ci
           ajoute la création avant, les catégories et l'effacement après. */}
-      <MobileSheet ouvert={menuOuvert} onFermer={onFermerMenu} titre="Ma prépa RTA">
+      <MobileSheet ouvert={menuOuvert} onFermer={onFermerMenu} titre={textes.rta.maPrepaRta}>
         <div className="flex flex-col gap-3">
           {/* ⚠️ **La création est SEULE sur sa ligne**, hors de la grille des
               six autres. Elle ne relève pas du même geste : les six échangent ou
@@ -470,7 +469,7 @@ export default function RtaPage({
               qu'aucune ne paraisse plus importante. */}
           {creation}
 
-          <Bouton libelle="Exporter vers l'Optimizer" icone={<Upload size={14} />}
+          <Bouton libelle={textes.commun.exporterOptimizer} icone={<Upload size={14} />}
             disabled={!!raisonExport} title={raisonExport} onClick={exporterOptimizer} />
 
           <div data-grille-actions className="flex flex-col gap-1.5">
@@ -502,7 +501,7 @@ export default function RtaPage({
       </div>
 
       {loadState === 'loading' && monsters.length === 0 && (
-        <p className="mt-4 text-ink-dim text-sm">Chargement des monstres…</p>
+        <p className="mt-4 text-ink-dim text-sm">{textes.commun.chargementMonstres}</p>
       )}
 
       {/* ⚠️ **Filtre par section, au TÉLÉPHONE** (la
@@ -513,16 +512,16 @@ export default function RtaPage({
           « Tous » a la clé `''` (aucune section ne la porte) : l'état, lui,
           garde `null`. */}
       <Onglets
-        aria-label="Afficher une section"
+        aria-label={textes.rta.afficherSection}
         className="mt-4 lg:hidden"
         valeur={sectionFiltree ?? ''}
         onChange={(cle) => setFiltreSection(cle === '' ? null : cle)}
         options={[
-          { cle: '', libelle: `Tous ${allItems.length}` },
+          { cle: '', libelle: textes.rta.tous(allItems.length) },
           ...[RTA_UNASSIGNED, ...runeSections].map((key) => ({
             cle: key,
             icone: RUNE_SETS.some((s) => s.key === key) ? <RuneIcon setKey={key} size={15} /> : undefined,
-            libelle: `${key === RTA_UNASSIGNED ? 'Non classé' : sectionLabel(key, textes)} ${groups[key]?.length ?? 0}`,
+            libelle: `${key === RTA_UNASSIGNED ? textes.sectionsRta.nonClasse : sectionLabel(key, textes)} ${groups[key]?.length ?? 0}`,
           })),
         ]}
       />
@@ -531,7 +530,7 @@ export default function RtaPage({
       <div className={`mt-5 ${horsFiltre(RTA_UNASSIGNED)}`}>
         <RtaSection
           sectionKey={RTA_UNASSIGNED}
-          label="Non classé"
+          label={textes.sectionsRta.nonClasse}
           accent={sectionAccent(RTA_UNASSIGNED)}
           count={groups[RTA_UNASSIGNED]?.length ?? 0}
           onDropMonster={handleDrop}
@@ -564,7 +563,7 @@ export default function RtaPage({
       {/* Ajout d'une nouvelle section par set de runes */}
       <div className="mt-4 flex items-center gap-2.5 flex-wrap">
         <span className="label">
-          Ajouter une section
+          {textes.rta.ajouterSection}
         </span>
         <Selecteur
           value={newSection}
@@ -573,7 +572,7 @@ export default function RtaPage({
           pleineLargeur={false}
           surface="panel"
         >
-          <option value="">Choisir un set de runes…</option>
+          <option value="">{textes.rta.choisirSet}</option>
           {availableSets.map((s) => (
             <option key={s.key} value={s.key}>
               {nomSet(textes.jeu, s.key)}
@@ -588,15 +587,15 @@ export default function RtaPage({
           }}
           taille="sm"
           icone={<Plus size={14} />}
-          libelle="Créer"
+          libelle={textes.commun.creer}
         />
       </div>
 
       {/* Ordre de tour global, trié par vitesse totale */}
       <section className="mt-10">
         <div className="flex items-baseline gap-x-3 gap-y-1 flex-wrap pb-2.5 mb-4 border-b border-border">
-          <h2 className="font-display text-lg tracking-wide">Ordre de tour</h2>
-          <span className="font-mono text-ink-dim text-xs">par vitesse combat totale</span>
+          <h2 className="font-display text-lg tracking-wide">{textes.rta.ordreTour}</h2>
+          <span className="font-mono text-ink-dim text-xs">{textes.rta.parVitesseTotale}</span>
         </div>
         {/* ⚠️ Les catégories sont passées ENTIÈRES, le masquage est le rôle de
             `categoriesVisible`. Les filtrer ici les retirait du composant, dont

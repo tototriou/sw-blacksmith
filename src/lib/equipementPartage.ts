@@ -12,6 +12,7 @@
 // l'affichage serait pire que montrer un chiffre surprenant.
 
 import { GearSet, RelicUnique, RUNE_SETS } from '../types';
+import type { Dictionnaire } from '../i18n/fr';
 
 const SET_KEYS = new Set<string>(RUNE_SETS.map((s) => s.key));
 
@@ -59,8 +60,13 @@ const nombre = (v: unknown, defaut = 0): number => {
 };
 
 // `avertir` reçoit les corrections appliquées (une relique ignorée), à
-// remonter au lecteur ; `where` situe l'équipement dans le fichier.
-export function cleanGear(raw: unknown, avertir: (message: string) => void, where: string): GearSet | undefined {
+// remonter au lecteur, dans la langue de `t` ; `where` situe l'équipement dans le fichier.
+export function cleanGear(
+  raw: unknown,
+  avertir: (message: string) => void,
+  where: string,
+  t: Dictionnaire
+): GearSet | undefined {
   if (!raw || typeof raw !== 'object') return undefined;
   const o = raw as Record<string, unknown>;
 
@@ -146,7 +152,7 @@ export function cleanGear(raw: unknown, avertir: (message: string) => void, wher
         ...(relicUnique ? { unique: relicUnique } : {}),
       };
     } else {
-      avertir(`${where} : relique sans « id » ou « upgrade » valide (fichier d'une version antérieure de l'application) — ignorée.`);
+      avertir(t.partage.reliqueIgnoree(where));
     }
   }
 
