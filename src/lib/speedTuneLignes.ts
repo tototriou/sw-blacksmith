@@ -279,6 +279,7 @@ export function tuneDe(lignes: Ligne[], leads: Leads, d: DonneesKit, choix: Choi
     out.push({
       id: l.uid,
       combat: c,
+      gainApresBuffs: passifDe(l, d)?.gain?.apresBuffs ? gainPassifDe(l, d) : 0,
       camp: l.camp,
       atbMod: l.atbMod,
       speedMod: l.speedMod,

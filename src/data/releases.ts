@@ -62,9 +62,10 @@ export const RELEASES: Release[] = [
   {
     version: null,
     date: '2026-11-02',
-    title: 'Des barres d’attaque plus justes en speed tuning',
+    title: 'Des barres d’attaque et des égalités plus justes en speed tuning',
     changes: [
       { kind: 'fix', scope: 'Speed tuning', text: 'Belladeon 2A remplit 30 % de barre sans skill-up, et 33 % une fois maxé.' },
+      { kind: 'fix', scope: 'Speed tuning', text: 'À barre égale, le gain de Chilling lié aux buffs ne change plus sa priorité initiale.' },
     ],
   },
   {

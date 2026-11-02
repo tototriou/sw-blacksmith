@@ -399,6 +399,14 @@ export function analyseAutomatique(
     if (c != null && c > 0) combats.set(e.id, c);
   }
 
+  // Le gain dépendant des buffs n'entre pas dans la priorité fixée avant eux.
+  // Les gains permanents restent inclus, comme celui de Shumar.
+  const gainApresBuffsDe = (e: EntreeAuto): number => {
+    if (!passifDe(e, donnees)?.gain?.apresBuffs) return 0;
+    const base = combatSpeed(e.monster.stats.speed, e.runeSpeed, e.lead ?? lead, e.swift ?? false);
+    return base == null ? 0 : combats.get(e.id)! - base;
+  };
+
   // L'amplification de buff est une affaire de camp, elle aussi.
   const ampli = ampliCamp(allies, donnees);
   const ampliAdverse = ampliCamp(adverses, donnees);
@@ -428,6 +436,7 @@ export function analyseAutomatique(
         return {
           id: e.id,
           combat: combats.get(e.id)!,
+          gainApresBuffs: gainApresBuffsDe(e),
           camp: 'ennemi' as Camp,
           artefactBuff: (e.artefactBuff ?? 0) + ampliAdverse,
           ampliBuff: ampliAdverse,
@@ -469,6 +478,7 @@ export function analyseAutomatique(
       return {
         id: e.id,
         combat: combats.get(e.id)!,
+        gainApresBuffs: gainApresBuffsDe(e),
         camp: 'allie' as Camp,
         artefactBuff: (e.artefactBuff ?? 0) + ampli,
         ampliBuff: ampli,
@@ -486,6 +496,7 @@ export function analyseAutomatique(
     avecSorts.push({
       id: idReference ?? `ref:${modele.id}`,
       combat: combats.get(modele.id)!,
+      gainApresBuffs: gainApresBuffsDe(modele),
       camp: 'ennemi',
       artefactBuff: modele.artefactBuff ?? 0,
       // Il est en face : il ne reçoit pas l'amplification de l'équipe.
@@ -527,6 +538,7 @@ export function analyseAutomatique(
     return {
       id: m.id,
       combat: m.combat,
+      gainApresBuffs: m.gainApresBuffs,
       camp: m.camp,
       artefactBuff: m.artefactBuff,
       ampliBuff: m.ampliBuff,
