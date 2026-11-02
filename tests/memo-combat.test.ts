@@ -76,13 +76,15 @@ const PROPRES: AurasPropres = { fight: 1, determination: 1, enhance: 0, accuracy
 // coups de Crow Hunt, Lightning Storm, Splash et Splash Splash, 3ᵉ coup de
 // Tempest Sword, ignore DEF de Fei et de Katarina sous interrupteur, dégâts
 // bruts de Kiki et d'Amber, lecteurs de Yoga Sunburst, Havoc, Critical Link,
-// Fatal Mortar Bullet, Bullet Assassination et Hairpin.
+// Fatal Mortar Bullet, Bullet Assassination et Hairpin. Puis l'écart de DEF de
+// Martial Arts Specialist (Sin feu), pris sur la DEF réduite sous Réduction de
+// DEF (réglage riche : Réduction de DEF posée au coup 1 de Combo Attack).
 // ⚠️ Un écart veut dire qu'une note a changé. Voulu (modèle de dégâts, données
 // SWARFARM régénérées) : relever l'empreinte de nouveau (le message d'échec
 // la donne) et le dire dans le commit. Sinon : un défaut du code commun au
 // calcul avec et sans memo.
 const EMPREINTE_ANCIEN_CALCUL = {
-  contextes: 12426, notes: 310650, sha256: '10cc956632a3aa0e60074fa7b7c3cf556729177447d369308170ed66e1f73b81',
+  contextes: 12426, notes: 310650, sha256: '7b6e04e93235321b19428110d08760e4710f42b7850ae2c0838b4d4a4809d81b',
 };
 
 // Quatre pièces par sorte, deux principales par sorte : des paires partagent
