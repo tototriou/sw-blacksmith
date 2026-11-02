@@ -23,6 +23,10 @@ const TANJIRO = 31811; // Whirlpool 21311 : Gel au coup 1, deux coups en plus
 const VENDHAN = 28312; // Wild Bolt 18127 : Marque en état Thunderer
 const SCARLETT = 22912; // Fatal Mortar Bullet 13312 : séquence, Marque au coup 1
 const SHAINA = 21912; // Crescent Moon Slash 12602 : Réduction de DEF de Precision (passif)
+const XIAO_LIN = 17311; // Water Dragon Attack 8211 : coups au hasard
+const FEI = 17315; // Dark Dragon Attack 8215 : ignore DEF coup par coup
+const KIKI = 25215; // Magical Eye 15105 : Start of Pain
+const SAVANNAH = 23513; // Critical Link 13608 : effets bénéfiques convertis
 
 const SECTION = 'Prendre en compte les débuffs posés entre les coups';
 
@@ -101,6 +105,20 @@ function verifier(etroit: boolean) {
   // Effet posé par un passif : le libellé le nomme.
   ok(texteVisible(carte(SHAINA, 12602, etroit, actif(12602))).includes('Réduction de DEF (par Precision)'),
     `${format} : Crescent Moon Slash — « Réduction de DEF (par Precision) »`);
+
+  // Coups au hasard : le compteur dit ce qu'il compte.
+  ok(texteVisible(carte(XIAO_LIN, 8211, etroit)).includes('Coups qui touchent la cible (coups au hasard, 1 à 4)'),
+    `${format} : Water Dragon Attack — « Coups qui touchent la cible (coups au hasard, 1 à 4) »`);
+  // Fei : un interrupteur d'ignore DEF par coup retenu.
+  const fei = texteVisible(carte(FEI, 8215, etroit));
+  ok(fei.includes('Coups qui ignorent la DEF') && fei.includes('Coup 4') && !fei.includes('Coup 5'),
+    `${format} : Dark Dragon Attack — un interrupteur par coup, du coup 1 au coup 4`);
+  // Start of Pain (Kiki) : le compteur des effets néfastes, de 0 à 2.
+  ok(texteVisible(carte(KIKI, 15105, etroit)).includes('Start of Pain : effets néfastes sur la cible (0 à 2)'),
+    `${format} : Magical Eye — compteur de Start of Pain, 0 à 2`);
+  // Critical Link : le nombre d'effets bénéfiques convertis.
+  ok(texteVisible(carte(SAVANNAH, 13608, etroit, actif(13608))).includes('Effets bénéfiques convertis'),
+    `${format} : Critical Link — « Effets bénéfiques convertis »`);
 
   // La condition de la pose suit le libellé.
   ok(texteVisible(carte(VENDHAN, 18127, etroit, actif(18127))).includes('Marque (en état Thunderer)'), `${format} : Wild Bolt — « Marque (en état Thunderer) »`);

@@ -107,6 +107,25 @@ par invention.
 | S1 appelé par un sort coopératif — 411 et 400 | 411 s'applique (première attaque du monstre dans son tour : le déclencheur ne frappe pas) ; le S1 reçoit la ligne de **son** slot (400), jamais celle du déclencheur | déduit des deux lignes précédentes et des réponses de l'utilisateur sur les attaques appelées ([feat-attaque-apres-un-sort.md](feat-attaque-apres-un-sort.md#ce-quil-faudra-fournir-pour-un-autre-cas), point 5 : One More Drink) ; à relire par l'utilisateur |
 | Attack Command (`10912`, Lisa et Neostone Agent feu) | Appelle le S1 du monstre **une fois** ; la prose (« attacks the enemy target with 2 other allies ») ne nomme pas le S1, et le `coups: 3` de la donnée compte les alliés, il n'est pas lu | utilisateur, 2026-10-16 |
 | Concentrated Attack (`3163`, Moria 2e éveil) — critique | Le S1 appelé (Cross Attack) frappe une fois et **critique toujours**, quel que soit le réglage critique : « Attacks the enemy with an ally at the same time with [Cross Attack]. You and the ally's attack will always land as a Critical Hit » (effet `Guaranteed Critical Hit` de la donnée). Cross Attack choisi seul ne critique pas d'office | prose du sort |
+| Poses entre les coups — coup non précisé | Quand la prose ne dit pas quel coup pose l'effet, chaque coup le pose et le joueur choisit après lequel la pose réussit ; quand elle le dit, un interrupteur à ce coup | utilisateur, 2026-11-02 |
+| Coups au hasard | Le joueur choisit combien de coups touchent la cible ; **défaut : tous les coups** (Water Dragon Attack 4 sur 4) ; Katarina et Splash Splash, « 2 to 3 times » au hasard : 1 + 2 par défaut, 4 au plus | utilisateur, 2026-11-02 |
+| Splash Splash (`25815`, Noctaris) | 1 coup qui peut poser la Marque, puis 0 à 3 coups au hasard sur la cible | utilisateur, 2026-11-02 |
+| Crow Hunt (`1618`, Prilea) et Lightning Storm (`19113`, Yennefer) | Crow Hunt : **2 coups**, les deux peuvent poser la Réduction de DEF ; Lightning Storm : **un seul coup** | utilisateur, 2026-11-02 |
+| Fei — Dark Dragon Attack (`8215`) | Chacun des 4 coups peut ignorer la DEF : un interrupteur par coup | utilisateur, 2026-11-02 |
+| Katarina — Sword of Discharge (`6013`) | Interrupteur « sous Invincibilité » : tous les coups ignorent la DEF, ou aucun | utilisateur, 2026-11-02 |
+| PPK Combo / Chain Combo Attack (`13915`, `14415`) | Cible visée : les 6 coups ; autres ennemis : les coups 5 et 6. Réduction de DEF aux coups 4 et 5 sur la cible visée, au coup 5 seul pour les autres ennemis | utilisateur, 2026-11-02 |
+| Tempest Sword (`10613`) — Marque | Proposée aux coups 1 et 2 ; le 3ᵉ coup (zone) se calcule aussi sur les autres ennemis | utilisateur, 2026-11-02 |
+| Fast Link (`13606`, `13607`, `13610`) | La Réduction de DEF est posée au coup 1 et ne vaut que pour le coup 2 | utilisateur, 2026-11-02 |
+| Water Dragon Attack (`8211`) | Le premier coup peut aussi poser la Réduction de DEF | utilisateur, 2026-11-02 |
+| Ancient Power (Tesarion) | L'Oubli est posé à la fin de l'attaque : il ne compte pas entre les coups | utilisateur, 2026-11-02 |
+| King of the Ruins (Manannan) | Les dégâts continus « after each hit » touchent les autres ennemis, pas la cible | utilisateur, 2026-11-02 |
+| Start of Pain (Kiki) | Dégâts fixes **par coup** : 4 % des PV max de Kiki par effet néfaste de la cible, 8 % au plus (2 effets), sans les artéfacts de dégâts élémentaires ; compteur 0 à 2 ; Magical Eye peut poser une baisse d'ATQ à ses deux coups | utilisateur, 2026-11-02 |
+| Nano Vision (Amber) | Même mécanique : 4 % des PV max de la cible par effet néfaste, 12 % au plus (3 effets) ; Irrécupérable à chaque coup ; S1 ralentit, S2 pose des dégâts continus cumulables | utilisateur, 2026-11-02 |
+| Reelseiden・Havoc, Dimension Slash・Havoc (`25212`, `25712`) | 5 % des PV max de la cible par dégât continu, **à chaque coup**, sans les artéfacts de dégâts élémentaires ; Bullet Assassination et Shining Butterfly : 25 % au dernier coup, de même | utilisateur, 2026-11-02 |
+| Fatal Mortar Bullet (`13312`) | Le coup 1 pose Réduction de DEF et/ou Marque ; le +25 % par effet de la phase de zone compte les effets du coup 1 sur la cible visée | utilisateur, 2026-11-02 |
+| Ralentissement posé | −30 % de la VIT saisie de la cible, exactement l'inverse du buff de VIT | utilisateur, 2026-11-02 |
+| Empathy, Dimensional Memory | Le joueur choisit si l'effet tiré est une Marque ou une Réduction de DEF | utilisateur, 2026-11-02 |
+| Hammer Punch — coup en plus | Le coup en plus « contre une cible sans effet nocif » se décide **avant** l'attaque, jamais pendant | utilisateur, 2026-11-02 |
 | Coopératifs sans dégâts du monstre | Assailing Horn (`17515`, Eivor ténèbres) et Flag of Ambush (`18015`, Sigrid) sont **exclus** : le monstre n'y inflige aucun dégât | utilisateur, 2026-09-25 et 2026-10-16 |
 
 ⚠️ **La jauge d'ATB adverse n'est pas modélisée dans l'Optimizer.** C'est

@@ -1552,7 +1552,8 @@ function testEffetsEntreCoups322() {
     [27714, 17509, 'brand', 'brand', 1, 1.125], // Eivor
     [12134, 3454, 'decrease-def', 'defBreak', 1, 1.682], // Sia — note « First hit »
     [36011, 25206, 'decrease-def', 'defBreak', 1, 1.682], // Übel — note « 1st hit », en zone
-    [36015, 25210, 'decrease-def', 'defBreak', 1, 1.682], // Übel
+    // (25210, Übel ténèbres : son passif Empathy pose aussi Marque ou Réduction
+    // de DEF à chaque attaque — tests/degats-effets-entre-coups.test.ts.)
   ];
   const cible = { ...setupAudit, enemyDef: 1500 };
   const total = (p: SkillDamageProfile, setup: DamageSetup) => computeSkillDamage(p, buildAudit, setup, AUCUNE_AURA_PROPRE);

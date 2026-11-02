@@ -152,7 +152,7 @@ import testRechargement from './rechargement.test';
 import testCollabPaires from './collab-paires.test';
 import testDegats, { testFormesEquivalentes } from './degats.test';
 import testAuditDegatsConditionnels from './audit-degats-conditionnels.test';
-import { testInventaireEffetsEntreCoups, testEffetsPosablesConnus, testEffetsEntreCoupsRegle } from './degats-effets-entre-coups.test';
+import { testInventaireEffetsEntreCoups, testEffetsPosablesConnus, testEffetsEntreCoupsRegle, testEffetsEntreCoupsMecaniques } from './degats-effets-entre-coups.test';
 import { testCritiqueMoyenneImport, testCritiqueMoyenneEcranEtCli, testCritiqueMoyenneMessageImport } from './critique-moyenne-supprime.test';
 import {
   testDegatsTempestFormule,
@@ -720,6 +720,7 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testInventaireEffetsEntreCoups', testInventaireEffetsEntreCoups],
   ['testEffetsPosablesConnus', testEffetsPosablesConnus],
   ['testEffetsEntreCoupsRegle', testEffetsEntreCoupsRegle],
+  ['testEffetsEntreCoupsMecaniques', testEffetsEntreCoupsMecaniques],
   ['testCritiqueMoyenneImport', testCritiqueMoyenneImport],
   ['testCritiqueMoyenneEcranEtCli', testCritiqueMoyenneEcranEtCli],
   ['testCritiqueMoyenneMessageImport', testCritiqueMoyenneMessageImport],

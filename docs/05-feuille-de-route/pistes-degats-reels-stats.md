@@ -125,23 +125,22 @@ les coups. La forme d'une piste et des relevés en jeu est celle de
 
 ### Composantes conditionnelles et comptées
 
-- **Constat** : Red Battlefield (`13414`, Lucifer) et Start of Pain
-  (`15115`, Kiki) n'ont aucune entrée dans `src/lib/damage.ts`, alors que
-  leurs valeurs sont fournies ([02-app/degats-reels/](../02-app/degats-reels/)) ;
-  les clauses conditionnelles d'Amber, d'Übel feu, de Shakan (et de
-  Disdain), de Mandrake (Hyanes), du S3 de Jin et Kai ne sont pas comptées.
+- **Constat** : Red Battlefield (`13414`, Lucifer) n'a aucune entrée dans
+  `src/lib/damage.ts`, alors que sa valeur est fournie
+  ([02-app/degats-reels/](../02-app/degats-reels/)) ; les clauses
+  conditionnelles de Shakan (et de Disdain), de Mandrake (Hyanes), du S3 de
+  Jin et Kai ne sont pas comptées. (Kiki, Amber, Übel feu, Wieb feu, Nina et
+  Shasha lumière, eux, se comptent : `BRUT_PAR_EFFET_CIBLE_PAR_ID` et
+  `BRUT_PAR_EFFET_CIBLE_PAR_PASSIF_PAR_ID`,
+  [feat-poses-entre-les-coups.md](../02-app/degats-reels/feat-poses-entre-les-coups.md).)
 - **Idée** : une clause « la cible porte un effet » en interrupteur ;
   Lucifer, un effet actif saisi de 0 à 50 % avec l'équivalent en dégâts
-  reçus ; Kiki, un choix de 0, 1 ou 2 effets nocifs sur la cible (la baisse
-  d'ATQ que Magical Eye, `15105`, pose à chaque coup deviendra alors
-  proposable entre ses coups sans autre curation) ; le
-  bonus du S4 de Zenitsu et de Qilin Slasher, lié à un seuil de PV de la
-  cible, en interrupteur.
-- **Bloque** : des relevés. Nina ou Shasha, S3, valeurs par coup. Shakan, PV % égaux puis cible entamée, et Disdain
-  par un relevé propre. Amber (deux coups) contre 0, 1, 3, 4 débuffs.
-  Mandrake avec puis sans effet sur la cible. S3 d'Übel feu sur une cible
-  sans dégât continu, valeurs par coup. S3 de Jin ou de Kai, jumeaux, une
-  mesure, coup par coup, contre une ATQ entre la leur sans et avec buff.
+  reçus ; le bonus du S4 de Zenitsu et de Qilin Slasher, lié à un seuil de
+  PV de la cible, en interrupteur.
+- **Bloque** : des relevés. Shakan, PV % égaux puis cible entamée, et
+  Disdain par un relevé propre. Mandrake avec puis sans effet sur la cible.
+  S3 de Jin ou de Kai, jumeaux, une mesure, coup par coup, contre une ATQ
+  entre la leur sans et avec buff.
 
 ### PV et comparaisons continues
 

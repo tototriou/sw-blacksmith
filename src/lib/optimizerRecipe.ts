@@ -14,7 +14,7 @@
 // à connaître la base du monstre pour le réinterpréter, une source d'erreur
 // de plus, pas de moins.
 import { BuildRequirement, Objective, SLOT_FILTER_PRESETS, SLOT_MAIN_OPTIONS } from './runeBuildOptim';
-import { DamageSetup, IGNORE_DEF_A_PARTIR_DU_COUP_PAR_ID, LEADER_SKILL_STATS, cibleSecondairePriseEnCharge, cransDeLaRegleIgnoreDef } from './damage';
+import { DamageSetup, IGNORE_DEF_A_PARTIR_DU_COUP_PAR_ID, LEADER_SKILL_STATS, cibleSecondairePriseEnCharge, cransDeLaRegleIgnoreDef, ignoreDefParCoupChoisi } from './damage';
 import { erreurAurasExternes } from './aurasExternes';
 import { AutoExclusionScope, ExclusionSelector } from './optimizerExclusion';
 import { ArtifactKind, RUNE_SETS } from '../types';
@@ -427,6 +427,16 @@ function validerDamageSetup(value: unknown): string | null {
           if ((coup as number) < 1) return erreur(`${path}.apresCoup.${effet}`, 'doit être supérieur ou égal à 1');
         }
       }
+      // Nombre d'effets posés, pour un effet dont le joueur le saisit
+      // (Critical Link : un dégât continu par effet bénéfique converti).
+      if (scenarioBrut.nombres !== undefined) {
+        if (!estObjet(scenarioBrut.nombres)) return erreur(`${path}.nombres`, 'doit être un objet indexé par effet');
+        for (const [effet, nombre] of Object.entries(scenarioBrut.nombres)) {
+          const e = validerNombre(nombre, `${path}.nombres.${effet}`, true);
+          if (e) return e;
+          if ((nombre as number) < 0) return erreur(`${path}.nombres.${effet}`, 'doit être positif ou nul');
+        }
+      }
     }
   }
   // Rang du premier coup qui ignore la DEF, par sort (les Blade Dancers,
@@ -456,6 +466,23 @@ function validerDamageSetup(value: unknown): string | null {
       const permis = cransDeLaRegleIgnoreDef(regle).map((c) => c.rang);
       if (!permis.includes(rang as number | null)) {
         return erreur(path, `doit valoir ${permis.map((r) => (r === null ? 'null' : String(r))).join(', ')} pour ce sort`);
+      }
+    }
+  }
+  // Coups qui ignorent la DEF, cochés un par un (Fei) : une liste de rangs
+  // entiers ≥ 1, pour un sort qui le permet seulement ; la clé d'un autre sort
+  // est refusée avec son chemin. Un rang au-delà des coups retenus est permis
+  // (le nombre de coups sur la cible se règle à part) et n'a pas lieu au calcul.
+  if (setup.coupsIgnorantDefParSort !== undefined) {
+    if (!estObjet(setup.coupsIgnorantDefParSort)) {
+      return erreur('damageSetup.coupsIgnorantDefParSort', 'doit être un objet indexé par identifiant de compétence');
+    }
+    for (const [skillId, rangs] of Object.entries(setup.coupsIgnorantDefParSort)) {
+      const path = `damageSetup.coupsIgnorantDefParSort.${skillId}`;
+      if (!estIdentifiantDeCompetence(skillId)) return erreur(path, "utilise un identifiant de compétence invalide");
+      if (!ignoreDefParCoupChoisi(Number(skillId))) return erreur(path, "désigne un sort sans ignore DEF choisi coup par coup");
+      if (!Array.isArray(rangs) || rangs.some((r) => !Number.isInteger(r) || (r as number) < 1)) {
+        return erreur(path, 'doit être une liste de rangs de coup entiers, à partir de 1');
       }
     }
   }

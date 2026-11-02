@@ -168,13 +168,13 @@ export function testAttaqueAppeleeApprovisionnement() {
 
   egal(
     Object.entries(TABLE).map(([k, v]) => [Number(k), v.slotAppele, v.sortCooperatifSansDegats !== undefined]),
-    [[3163, 1, true], [10912, 1, true]],
-    'production : la table n’est plus vide — deux entrées, les sorts coopératifs sans dégâts propres qui appellent le S1 (Concentrated Attack, Attack Command), aucune attaque conditionnelle'
+    [[3163, 1, true], [10912, 1, true], [13907, 1, false], [13908, 1, false], [13910, 1, false], [14407, 1, false], [14408, 1, false], [14410, 1, false]],
+    'production : les deux sorts coopératifs sans dégâts propres qui appellent le S1 (Concentrated Attack, Attack Command), puis Shoryuken et Iron Uppercut et leur S1 enchaîné (utilisateur, 2026-11-02)'
   );
   const ryu = fiche(RYU_FEU);
   const passifsAvant = monsterOffensivePassives(ryu);
   const sortsAvant = monsterDamageSkills(ryu);
-  egal(appeleesDe(ryu), [], 'RYU feu sans entrée : aucune attaque appelée');
+  egal(appeleesDe(ryu).map((p) => p.skillCom2usId), [HADOKEN_FEU], 'RYU feu en production : Hadoken appelé après Shoryuken');
   const s1 = sortDe(ryu, HADOKEN_FEU);
   const s2 = sortDe(ryu, SHORYUKEN_FEU);
 
@@ -504,12 +504,18 @@ export function testAttaqueAppeleeEspaceDeCles() {
     const d = fiche(forme);
     // Structure : aucun lecteur connu de `passifsOffensifs[appelee]`.
     egal(reglagesSurLaCle(d, appelee), [], `${forme} : la compétence appelée ${appelee} (amorces ${amorces.join(', ')}) ne porte aucun réglage dans passifsOffensifs`);
-    // Comportement : sans attaque appelée, allumer cette clé ne change ni le
-    // score complet ni les stats à privilégier, pour chaque sort proposé.
+    // Comportement : allumer cette clé ne change ni le score complet ni les
+    // stats à privilégier, pour chaque sort proposé — sauf le déclencheur
+    // d'une attaque appelée de PRODUCTION (Shoryuken, Iron Uppercut), où elle
+    // ajoute l'attaque appelée, et elle seule.
     for (const s of monsterDamageSkills(d)) {
       if (!estPrisEnCharge(s)) continue;
       const sans = scoreEtStats(forme, { ...BASE, skillCom2usId: s.skillCom2usId, passifsOffensifs: {} });
       const avec = scoreEtStats(forme, { ...BASE, skillCom2usId: s.skillCom2usId, passifsOffensifs: { [appelee]: true } });
+      if (TABLE[s.skillCom2usId] && amorces.includes(s.skillCom2usId)) {
+        ok(avec.score > sans.score, `${forme}, sort ${s.skillCom2usId} choisi (déclencheur de production) : la clé ${appelee} allumée ajoute l'attaque appelée`);
+        continue;
+      }
       ok(sans.score === avec.score && JSON.stringify(sans.stats) === JSON.stringify(avec.stats),
         `${forme}, sort ${s.skillCom2usId} choisi : la clé ${appelee} allumée ne change ni le score complet ni les stats à privilégier`);
     }
@@ -531,7 +537,8 @@ export function testAttaqueAppeleeEspaceDeCles() {
     }
     return { formes, collisions };
   };
-  egal(gardeDuCorpus(), { formes: 0, collisions: [] }, 'production : aucune forme ne reçoit d’attaque appelée conditionnelle (les entrées coopératives n’en rendent aucune), donc aucune collision');
+  egal(gardeDuCorpus(), { formes: 12, collisions: [] },
+    'production : les douze formes qui portent Shoryuken ou Iron Uppercut reçoivent leur S1 appelé (les entrées coopératives n’en rendent aucune), sans collision de clé');
   const entreesAcceptees = Object.fromEntries(
     Object.entries(VERDICTS).filter(([, v]) => v.verdict === 'acceptée').map(([k]) => [Number(k), entree(1, 'test : amorce acceptée')])
   );

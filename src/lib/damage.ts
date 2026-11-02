@@ -63,6 +63,9 @@ export const ATK_BUFF_ICON = 'https://swarfarm.com/static/herders/images/buffs/b
 export const DEF_BUFF_PCT = 70;
 export const DEF_BUFF_ICON = 'https://swarfarm.com/static/herders/images/buffs/buff_defence_up.png';
 export const SPD_BUFF_PCT = 30;
+// Ralentissement posé sur la cible : −30 % de sa VIT de combat saisie, le
+// pendant exact du buff de VIT (utilisateur, 2026-11-02).
+export const RALENTISSEMENT_PCT = 30;
 export const SPD_BUFF_ICON = 'https://swarfarm.com/static/herders/images/buffs/buff_speed.png';
 // Réduction de défense (« def break ») : la DEF de la cible est multipliée
 // par ce facteur.
@@ -1198,6 +1201,8 @@ export function resolvedEffetsCibleCount(profile: SkillDamageProfile, setup: Dam
   switch (profile.bonusParEffetCible?.source) {
     case 'buffs': return Math.max(0, setup.effetsCibleCount?.[profile.skillCom2usId] ?? 0);
     case 'buffsEtDebuffs': return resolvedEffetsMixtesCibleCount(profile.skillCom2usId, setup);
+    // Les dégâts continus seuls : la saisie et les poses, ni Brise DEF ni Marque.
+    case 'degatsContinus': return Math.min(10, Math.max(0, setup.effetsCibleCount?.[profile.skillCom2usId] ?? 0));
     default: return resolvedDebuffsCibleCount(profile.skillCom2usId, setup);
   }
 }
@@ -1327,7 +1332,22 @@ function countEffetsCiblePourMonstre(
     ? Math.max(0, setup.effetsCibleCount?.[profile.skillCom2usId] ?? 0)
     : profile.source === 'buffsEtDebuffs'
       ? resolvedEffetsMixtesCibleCount(profile.skillCom2usId, setup)
-      : resolvedDebuffsCibleCount(profile.skillCom2usId, setup);
+      : profile.source === 'degatsContinus'
+        ? Math.min(10, Math.max(0, setup.effetsCibleCount?.[profile.skillCom2usId] ?? 0))
+        : resolvedDebuffsCibleCount(profile.skillCom2usId, setup);
+}
+
+/**
+ * Le nombre d'effets nocifs que compte une règle de dégâts bruts
+ * (`BrutParEffetCibleProfile`), plafonné : la présence seule pour `maxCount: 1`
+ * (interrupteur, Brise DEF et Marque comprises), les seuls dégâts continus
+ * saisis ou posés pour `'degatsContinus'`, sinon tous les effets nocifs.
+ */
+export function resolvedBrutParEffetCount(brut: BrutParEffetCibleProfile, setup: DamageSetup): number {
+  const plafond = brut.maxCount ?? 10;
+  if (brut.source === 'degatsContinus') return Math.min(plafond, Math.max(0, setup.effetsCibleCount?.[brut.cle] ?? 0));
+  if (plafond === 1) return resolvedDebuffCiblePresent(brut.cle, setup) ? 1 : 0;
+  return Math.min(plafond, resolvedDebuffsCibleCount(brut.cle, setup));
 }
 
 function conditionCombatActive(
@@ -2113,7 +2133,28 @@ type Noeud =
   | { type: 'variable'; nom: DamageVariable }
   | { type: 'binaire'; op: '+' | '-' | '*' | '/'; gauche: Noeud; droite: Noeud };
 
-export type SourceEffetCible = 'buffs' | 'debuffs' | 'buffsEtDebuffs';
+// `'degatsContinus'` : les seuls dégâts continus de la cible (Yoga Sunburst,
+// Chemical Gas Spray, les deux « Havoc ») — ni Brise DEF, ni Marque, ni
+// aucun autre effet nocif n'y entre.
+export type SourceEffetCible = 'buffs' | 'debuffs' | 'buffsEtDebuffs' | 'degatsContinus';
+
+/**
+ * Dégâts BRUTS par coup selon les effets nocifs de la cible : `pct` % de la base
+ * par effet compté, au plus `maxCount` effets (`maxCount: 1` = la seule
+ * présence d'un effet). Ni critiques, ni mitigés par la DEF, ni majorés par
+ * les artéfacts de dégâts élémentaires : le seau Additionnel, Marque comprise
+ * (`computeSkillDamageDetail`). La cible est supposée hors boss (l'écran ne la
+ * décrit pas comme telle). `cle` porte le compteur (`effetsCibleCount`) : le
+ * sort lui-même, ou le passif qui porte la règle pour tout le monstre.
+ */
+export interface BrutParEffetCibleProfile {
+  cle: number;
+  nom: string;
+  pct: number;
+  base: 'pvMaxPropre' | 'pvMaxCible';
+  source: 'debuffs' | 'degatsContinus';
+  maxCount?: number;
+}
 
 export interface BonusParEffetProfile {
   pct: number;
@@ -2212,6 +2253,16 @@ export interface EffetEntreCoupsProfile {
   // Effets nocifs qu'une pose ajoute au compte (Meteor Strike : deux dégâts
   // continus par coup) ; absent = 1. Seul un effet cumulable en porte plus.
   nombre?: number;
+  // La pose baisse la VIT de la cible pour les coups suivants
+  // (`RALENTISSEMENT_PCT`) : proposée quand la VIT adverse est lue.
+  ralentit?: true;
+  // Le nombre d'effets que la pose ajoute se saisit (`ScenarioEffetsEntreCoups.
+  // nombres`) : Critical Link, un dégât continu par effet bénéfique converti.
+  nombreChoisi?: true;
+  // Posé au DERNIER coup, pour l'attaque que le sort enchaîne (Shoryuken, Iron
+  // Uppercut : la Marque avant leur S1 enchaîné) : rien dans le sort lui-même,
+  // la contribution qui suit lit l'état après lui (`etatCibleApresSort`).
+  pourLaSuite?: true;
   // La pose allume, pour les coups suivants, l'interrupteur propre au sort
   // (`passifsOffensifs[sort]`) : Arrow of Water et Dark Storm, « +50 % si la
   // cible est sous un effet d'incapacité », après un Étourdissement posé.
@@ -2227,6 +2278,8 @@ export interface ScenarioEffetsEntreCoups {
   presentsInitialement?: string[];
   /** Numéro du coup APRÈS lequel la pose réussit ; absent/null = aucune réussite. */
   apresCoup?: Record<string, number | null>;
+  /** Effets qu'ajoute la pose d'un effet à `nombreChoisi` ; absent = 0. */
+  nombres?: Record<string, number>;
 }
 
 export interface MonsterWideDamageModifiers {
@@ -2356,6 +2409,12 @@ export interface GroupeDeCoups {
   formule: string;
   variables: DamageVariable[];
   noeud: Noeud;
+  // Ces coups ne lisent PAS les effets de la cible que le sort compte (bonus
+  // par effet, dégâts bruts par effet, condition « la cible porte un effet
+  // nocif ») : seul le groupe suivant les lit (Fatal Mortar Bullet, sa phase de
+  // zone ; Critical Link, le coup du cavalier ; Hairpin: Black Flash, le coup 2 ;
+  // Bullet Assassination, le dernier coup).
+  horsLecteurs?: true;
 }
 
 export interface SkillDamageProfile {
@@ -2468,6 +2527,13 @@ export interface SkillDamageProfile {
   // lit par `resolvedPremierCoupIgnoreDef` (`DamageSetup.premierCoupIgnoreDefParSort`).
   // Donnée pure : traverse le Worker et `RealDamageContext` avec le profil.
   ignoreDefAPartirDuCoup?: IgnoreDefAPartirDuCoupProfile;
+  // Chaque coup ignore la DEF s'il est coché (`DamageSetup.
+  // coupsIgnorantDefParSort`), aucun par défaut (Fei, `IGNORE_DEF_PAR_COUP_CHOISI_PAR_ID`).
+  ignoreDefParCoupChoisi?: true;
+  // Dégâts bruts par coup selon les effets nocifs de la cible (Havoc, Bullet
+  // Assassination ; Start of Pain de Kiki et Nano Vision d'Amber, posés sur
+  // chaque sort du monstre par `monsterDamageSkills`). Voir `BrutParEffetCibleProfile`.
+  brutParEffetCible?: BrutParEffetCibleProfile;
   // Somme des « Damage +X% » des améliorations de compétence, en points de
   // pourcentage — la compétence est supposée MAXÉE, comme partout ailleurs
   // dans l'app (voir `paliersRechargement`, même parti pris).
@@ -2624,6 +2690,22 @@ const BONUS_PAR_EFFET_CIBLE_CONNUS: Record<string, BonusParEffetProfile> = {
 // compétence du corpus porte le même nom avec une mécanique différente.
 // Ces entrées restent donc attachées à l'identifiant Com2us exact du sort.
 const BONUS_PAR_EFFET_CIBLE_PAR_ID_CONNUS: Record<number, BonusParEffetProfile> = {
+  // Lecteurs codés à la demande de l'utilisateur (2026-11-02), la prose de
+  // chaque sort citée.
+  // Yoga Sunburst (DHALSIM vent) et Chemical Gas Spray (Jarrett) : « The damage
+  // increases by 50% per Continuous Damage granted on the enemy » (note « Continuous
+  // Damage debuff only »).
+  14213: { pct: 50, source: 'degatsContinus' }, // DHALSIM vent
+  14728: { pct: 50, source: 'degatsContinus' }, // Jarrett
+  // Fatal Mortar Bullet (Scarlett) : « attacks all enemies to inflict damage that
+  // increases by 25% for every beneficial effect or harmful effect granted on the
+  // enemy » — la phase de zone seule (groupe `horsLecteurs` avant elle).
+  13312: { pct: 25, source: 'buffsEtDebuffs' },
+  // Critical Link (Savannah, Narsha) : « the rider's attack inflicts damage that
+  // increases by 15% for each harmful effect granted on the target » — le coup du
+  // cavalier seul (séquence curée).
+  13608: { pct: 15, source: 'debuffs' }, // Savannah
+  13609: { pct: 15, source: 'debuffs' }, // Narsha
   2060: { pct: 20, source: 'debuffs' }, // Kro 2A — Team Up
   10013: { pct: 30, source: 'debuffs', exactementUnPct: 50 }, // Akhamamir 2A — Mach Crush
   2561: { pct: 15, source: 'debuffs' }, // Kahn 2A — Pursuit
@@ -2746,11 +2828,22 @@ const CONDITIONS_COMBAT_PAR_ID_CONNUS: Record<number, ConditionCombatProfile[]> 
   7004: [{ type: 'manuel', libelle: "l'ignore DEF s'est déclenché", ignoreDefPct: 100, chanceBase: 25 }],
   7005: [{ type: 'manuel', libelle: "l'ignore DEF s'est déclenché", ignoreDefPct: 100, chanceBase: 25 }],
   3311: [{ type: 'manuel', libelle: "l'ignore DEF s'est déclenché", ignoreDefPct: 100, chanceBase: 25 }],
-  8215: [{ type: 'manuel', libelle: "l'ignore DEF s'est déclenché", ignoreDefPct: 100, chanceBase: 25 }],
+  // (8215, Dark Dragon Attack de Fei : l'ignore DEF à 25 % se choisit COUP PAR
+  // COUP, `IGNORE_DEF_PAR_COUP_CHOISI_PAR_ID`.)
   6815: [{
     type: 'manuel', libelle: "l'ignore DEF de Shadow Arrow s'est déclenché", ignoreDefPct: 100,
     chanceBase: 30, chanceParBuffPropre: 20, chanceMax: 100,
   }],
+  // Sword of Discharge (Katarina) : « The enemy's Defense is ignored when used
+  // in invincible state » — tous ses coups ignorent la DEF sous Invincibilité,
+  // aucun sinon (utilisateur, 2026-11-02).
+  6013: [{ type: 'manuel', libelle: 'Katarina est sous Invincibilité', ignoreDefPct: 100 }],
+  // Hairpin: Black Flash (Nobara ténèbres) et Exorcist Shuriken Formation (Aya
+  // ténèbres) : « the second hit deals damage that increases by 100% if the
+  // target has a harmful effect » — le coup 2 seul (séquence curée, coup 1
+  // `horsLecteurs`) ; la Réduction de DEF du coup 1 le déclenche.
+  20315: [{ type: 'debuffCiblePresent', pct: 100 }],
+  20915: [{ type: 'debuffCiblePresent', pct: 100 }],
 };
 
 const BONUS_CONDITIONNEL_AUDIT_CONNUS: Record<string, { pct: number; condition: string }> = {
@@ -2863,7 +2956,7 @@ const EFFETS_POSABLES_PAR_NOM: Readonly<Record<string, Omit<EffetEntreCoupsProfi
   Freeze: { id: 'freeze', label: 'Gel', cumulable: false },
   Sleep: { id: 'sleep', label: 'Sommeil', cumulable: false },
   'Decrease ATK': { id: 'decrease-atk', label: 'Réduction d’ATQ', cumulable: false },
-  'Decrease ATK SPD': { id: 'decrease-spd', label: 'Réduction de VIT', cumulable: false },
+  'Decrease ATK SPD': { id: 'decrease-spd', label: 'Réduction de VIT', cumulable: false, ralentit: true },
   Unrecoverable: { id: 'unrecoverable', label: 'Irrécupérable', cumulable: false },
   'Increase Glancing Hit Chance': { id: 'increase-glancing', label: 'Chances de coup glancing augmentées', cumulable: false },
   'Beneficial Effects Blocked': { id: 'beneficial-effects-blocked', label: 'Blocage des effets bénéfiques', cumulable: false },
@@ -2913,6 +3006,7 @@ const RANGS_PAR_NOTE: Readonly<Record<string, readonly number[] | 'dernier'>> = 
 
 // Une `note` qui pose une CONDITION, pas un rang : affichée à côté du libellé.
 const PRECISION_PAR_NOTE: Readonly<Record<string, string>> = {
+  '1 per buff removed': 'un par effet bénéfique converti',
   'one random per hit': 'un seul des effets possibles par coup, au hasard',
   'When used during the Thunderer state': 'en état Thunderer',
   'If enemies have received more damage than allies': 'si les ennemis ont subi au moins autant de dégâts que les alliés',
@@ -2932,22 +3026,40 @@ interface ExceptionEffetsEntreCoups {
   // (`EffetEntreCoupsProfile.allumeLeBoutonDuSort`) : proposés même sans
   // lecteur du compte des effets nocifs.
   allumeLeBouton?: readonly string[];
+  // Effets dont le joueur saisit le nombre posé (`EffetEntreCoupsProfile.nombreChoisi`).
+  nombreChoisi?: readonly string[];
+  // Effets posés au DERNIER coup, proposés quand même : ils valent pour
+  // l'attaque que le sort enchaîne (`EffetEntreCoupsProfile.pourLaSuite`).
+  pourLaSuite?: readonly string[];
 }
 
 // Exceptions à la règle, chacune avec la prose qui la fonde. ⚠️ Rôle : corriger
 // la donnée d'UN identifiant, jamais compléter la règle (un effet de la donnée
 // est déjà pris sans entrée ici).
 const EFFETS_ENTRE_COUPS_EXCEPTIONS_PAR_ID: Readonly<Record<number, ExceptionEffetsEntreCoups>> = {
+  // Shoryuken (RYU) et Iron Uppercut (Striker) : « Uses an uppercut to inflict
+  // damage and leaves a Branding effect for 2 turns. [Hadoken] (ou [Mach Punch])
+  // will be activated in succession » — la Marque est posée (ou non) AVANT que le
+  // S1 enchaîné frappe : interrupteur « Marque posée » (utilisateur, 2026-10-03,
+  // valeurs-de-jeu-curees.md, « Marque de la S2, puis S1 enchaîné »).
+  13907: { pourLaSuite: ['brand'], precision: { brand: 'pour [Hadoken] enchaîné' } }, // RYU feu
+  13908: { pourLaSuite: ['brand'], precision: { brand: 'pour [Hadoken] enchaîné' } }, // RYU vent
+  13910: { pourLaSuite: ['brand'], precision: { brand: 'pour [Hadoken] enchaîné' } }, // RYU ténèbres
+  14407: { pourLaSuite: ['brand'], precision: { brand: 'pour [Mach Punch] enchaîné' } }, // Douglas
+  14408: { pourLaSuite: ['brand'], precision: { brand: 'pour [Mach Punch] enchaîné' } }, // Kashmir
+  14410: { pourLaSuite: ['brand'], precision: { brand: 'pour [Mach Punch] enchaîné' } }, // Vancliffe
+  // Critical Link (Savannah, Narsha) : « The beast's attack changes all
+  // beneficial effects granted on the target to Continuous Damage » (note « 1
+  // per buff removed ») — au coup 1, autant de dégâts continus que d'effets
+  // bénéfiques convertis, que le joueur saisit ; le coup du cavalier les compte.
+  13608: { coups: { 'continuous-damage': [1] }, nombreChoisi: ['continuous-damage'] }, // Savannah
+  13609: { coups: { 'continuous-damage': [1] }, nombreChoisi: ['continuous-damage'] }, // Narsha
   // Arrow of Water (Sharron) et Dark Storm (Grogen) : « each having a 25% chance
   // to stun the enemy. The damage increases by 50% if the target is under
   // inability effects » — l'Étourdissement d'un coup allume le +50 %
   // (`BONUS_CONDITIONNEL_AUDIT_*`, interrupteur du sort) des coups suivants.
   6811: { allumeLeBouton: ['stun'], precision: { stun: 'allume le +50 % contre une cible sous incapacité' } }, // Arrow of Water — Sharron
   2910: { allumeLeBouton: ['stun'], precision: { stun: 'allume le +50 % contre une cible sous incapacité' } }, // Dark Storm — Grogen
-  // Water Dragon Attack (Xiao Lin) : « Attacks the enemy target and randomly
-  // attacks 3 more times to decrease Defense for 2 turns each » — la Réduction
-  // de DEF suit les trois coups au hasard (coups 2 à 4), pas le premier.
-  8211: { coups: { 'decrease-def': [2, 3] } },
   // Undefeated Warrior (Kuna, séquence) : « You sequentially attack all enemies
   // and decrease their Defense » — la Réduction de DEF est posée par la phase
   // de zone, la dernière : rien entre les coups.
@@ -2978,8 +3090,8 @@ const EFFETS_ENTRE_COUPS_EXCEPTIONS_PAR_ID: Readonly<Record<number, ExceptionEff
   // 2 turns with an 80% chance » (coup 2, sans note).
   10413: { coups: { 'decrease-def': [2] } },
   // Fast Link (Barbara, Masha, Xiana) : « The beast's attack decreases the
-  // enemy's Defense for 1 turn » ; la bête attaque en premier (coup 1), sans
-  // relevé (piste « Poses entre les coups », pistes-degats-reels.md).
+  // enemy's Defense for 1 turn » ; la bête attaque en premier, au coup 1, et la
+  // réduction ne vaut que pour le coup 2 (utilisateur, 2026-11-02).
   13606: { coups: { 'decrease-def': [1] } }, // Barbara
   13607: { coups: { 'decrease-def': [1] } }, // Masha
   13610: { coups: { 'decrease-def': [1] } }, // Xiana
@@ -3007,12 +3119,48 @@ const EFFETS_ENTRE_COUPS_EXCEPTIONS_PAR_ID: Readonly<Record<number, ExceptionEff
   21911: { coups: { freeze: [1] }, retirer: ['continuous-damage'] }, // Azure Dragon Swordsman
 };
 
+// Dégâts bruts par effet nocif de la cible, propres à UN sort (valeurs de
+// l'utilisateur, 2026-11-02) :
+// - Reelseiden・Havoc (Übel feu) et Dimension Slash・Havoc (Wieb feu) : « deals
+//   fixed damage equal to 5% of its MAX HP for each Continuous Damage granted on
+//   the target » — à chaque coup, les dégâts continus déjà posés comptés ;
+// - Bullet Assassination (Nina lumière) et Shining Butterfly (Shasha lumière) :
+//   « the last hit deals additional damage by 25% of their MAX HP … if the target
+//   is granted with a harmful effect » — la présence, au dernier coup seul
+//   (séquence curée).
+const BRUT_PAR_EFFET_CIBLE_PAR_ID: Readonly<Record<number, Omit<BrutParEffetCibleProfile, 'cle' | 'nom'>>> = {
+  25212: { pct: 5, base: 'pvMaxCible', source: 'degatsContinus' },
+  25712: { pct: 5, base: 'pvMaxCible', source: 'degatsContinus' },
+  22714: { pct: 25, base: 'pvMaxCible', source: 'debuffs', maxCount: 1 },
+  23214: { pct: 25, base: 'pvMaxCible', source: 'debuffs', maxCount: 1 },
+};
+
+// La même règle portée par un PASSIF, pour CHAQUE coup de chaque sort du
+// monstre (`monsterDamageSkills`), le compteur partagé sous la clé du passif :
+// - Start of Pain (Kiki) : 4 % des PV max de Kiki par effet nocif de la cible, 8 %
+//   au plus (deux effets) ;
+// - Nano Vision (Amber) : « deals additional damage by 4% of the target's MAX HP
+//   per harmful effect on the enemy target (up to 12%) » (trois effets).
+const BRUT_PAR_EFFET_CIBLE_PAR_PASSIF_PAR_ID: Readonly<Record<number, Omit<BrutParEffetCibleProfile, 'cle' | 'nom'>>> = {
+  15115: { pct: 4, base: 'pvMaxPropre', source: 'debuffs', maxCount: 2 }, // Kiki
+  15911: { pct: 4, base: 'pvMaxCible', source: 'debuffs', maxCount: 3 }, // Amber
+};
+
+// La règle brute qu'un passif de la fiche pose sur tous les sorts, ou `null`.
+function brutParEffetDesPassifs(detail: DetailMonstre): BrutParEffetCibleProfile | null {
+  for (const c of detail.competences) {
+    const r = c.passif && c.com2usId != null ? BRUT_PAR_EFFET_CIBLE_PAR_PASSIF_PAR_ID[c.com2usId] : undefined;
+    if (r && c.com2usId != null) return { ...r, cle: c.com2usId, nom: c.nom.replace(/\s*\(Passive\)\s*$/i, '') };
+  }
+  return null;
+}
+
 // Passifs qui posent un effet à CHAQUE attaque du monstre : pendant un sort à
 // plusieurs coups, l'effet du coup 1 vaut pour les suivants, comme si le sort le
 // posait à chaque coup. Lus dans la prose du passif, par identifiant ; nom
 // d'effet SWARFARM et condition éventuelle. Un effet qui ne fait que compter
-// reste soumis à un lecteur du compte (Ancient Power, King of the Ruins : le
-// monstre le lit).
+// reste soumis à un lecteur du compte (Unrecoverable de Nano Vision : un sort ou
+// un passif du monstre le lit).
 // ⚠️ Écartés : Eagle Deception (Bayek ténèbres, 17315) et Eye of the Desert
 // (Salah, 17815), dont la bête frappe « a random enemy … when you attack on
 // your turn » — ni la cible ni l'instant (avant le coup 2 ?) ne sont dits ;
@@ -3040,14 +3188,30 @@ const EFFETS_ENTRE_COUPS_PAR_PASSIF_PAR_ID: Readonly<Record<number, readonly { e
   // effect for 2 turns with a 30% chance on each attack ».
   22512: [{ effet: 'Brand', precision: 'par Blood Talon' }],
   23012: [{ effet: 'Brand', precision: 'par Heaven’s Might' }],
-  // Ancient Power (Tesarion) : « Grants Oblivion for 2 turns when you attack the
-  // enemy » — et le passif lit les effets nocifs (+30 %).
-  10011: [{ effet: 'Oblivion', precision: 'par Ancient Power' }],
+  // Nano Vision (Amber) : « Each attack disturbs the enemy's HP recovery for 1
+  // turn » — compté par sa propre règle brute (4 % des PV max de la cible par
+  // effet nocif).
+  15911: [{ effet: 'Unrecoverable', precision: 'par Nano Vision' }],
+  // Empathy (Übel ténèbres) et Dimensional Memory (Wieb ténèbres) : « Grants 1
+  // random harmful effect that was applied in the current battle on the enemy
+  // … whenever you attack » — le joueur choisit si c'est une Marque ou une
+  // Réduction de DEF (utilisateur, 2026-11-02).
+  25215: [
+    { effet: 'Brand', precision: 'par Empathy, au hasard parmi les effets du combat' },
+    { effet: 'Decrease DEF', precision: 'par Empathy, au hasard parmi les effets du combat' },
+  ],
+  25715: [
+    { effet: 'Brand', precision: 'par Dimensional Memory, au hasard parmi les effets du combat' },
+    { effet: 'Decrease DEF', precision: 'par Dimensional Memory, au hasard parmi les effets du combat' },
+  ],
+  // ⚠️ Ancient Power (Tesarion, 10011) n'est PAS ici : son Oubli (« Grants
+  // Oblivion for 2 turns when you attack the enemy ») est posé à la fin de
+  // l'attaque, pas entre les coups (utilisateur, 2026-11-02).
   // ⚠️ King of the Ruins (Manannan, 10515) n'est PAS ici : « decreases the HP of
   // all enemies except the target by 40% of the damage dealt and inflicts
   // Continuous Damage for 1 turn after each hit », effet `aoe: true` — les
-  // dégâts continus semblent viser les ennemis autres que la cible. Relevé
-  // attendu (pistes-degats-reels.md, « Poses entre les coups »).
+  // dégâts continus visent les ennemis autres que la cible (utilisateur,
+  // 2026-11-02).
 };
 
 // Les effets que les passifs de la fiche posent à chaque attaque.
@@ -3062,18 +3226,19 @@ function effetsPosesParLesPassifs(detail: DetailMonstre): { effet: string; preci
 /**
  * Les effets qu'un coup de `c` peut poser pour les coups suivants (voir la
  * règle plus haut). `coupsMax` : le plus grand nombre de coups du sort (plage
- * et séquence comprises) ; `avecCompteur` : le compte des effets nocifs de la
- * cible est lu ; `parLesPassifs` : effets que les passifs du monstre posent à
+ * et séquence comprises) ; `lecteurs` : ce que le sort et le monstre lisent
+ * de la cible ; `parLesPassifs` : effets que les passifs du monstre posent à
  * chaque attaque. `undefined` quand rien n'est proposable.
  */
 function effetsEntreCoupsDuSort(
   c: Competence,
   coupsMax: number,
-  avecCompteur: boolean,
+  lecteurs: LecteursDeLaCible,
   parLesPassifs: readonly { effet: string; precision?: string }[] = []
 ): EffetEntreCoupsProfile[] | undefined {
-  if (coupsMax < 2 || c.com2usId == null) return undefined;
+  if (c.com2usId == null) return undefined;
   const exception = EFFETS_ENTRE_COUPS_EXCEPTIONS_PAR_ID[c.com2usId];
+  if (coupsMax < 2 && !exception?.pourLaSuite?.length) return undefined;
   const sources: { nom: string; coups: readonly number[] | null; precision?: string; passif?: true }[] = [];
   for (const e of c.effets) {
     if (e.type !== 'Debuff' || e.surSoi || !e.nom) continue;
@@ -3095,7 +3260,14 @@ function effetsEntreCoupsDuSort(
     const base = EFFETS_POSABLES_PAR_NOM[s.nom];
     if (!base) continue;
     if (exception?.retirer?.includes(base.id)) continue;
-    if (!base.effetCombat && !avecCompteur && !exception?.allumeLeBouton?.includes(base.id)) continue;
+    // Proposé seulement s'il change un chiffre : état de combat (DEF, Marque),
+    // compte lu des effets nocifs, compte lu des dégâts continus, VIT lue
+    // (ralentissement), ou interrupteur du sort qu'il allume.
+    const utile = !!base.effetCombat || lecteurs.tous ||
+      (lecteurs.dot && base.id === 'continuous-damage') ||
+      (lecteurs.vit && !!base.ralentit) ||
+      !!exception?.allumeLeBouton?.includes(base.id);
+    if (!utile) continue;
     const vu = parId.get(base.id);
     if (vu) vu.entrees.push(s);
     else parId.set(base.id, { base, entrees: [s] });
@@ -3110,11 +3282,16 @@ function effetsEntreCoupsDuSort(
     const rangsDuSort = duSort.length === 0 || duSort.some((x) => !x.coups)
       ? null
       : Array.from(new Set(duSort.flatMap((x) => x.coups ?? []))).sort((a, b) => a - b);
-    const coups = entrees.some((x) => x.passif) ? null : exception?.coups?.[id] ?? rangsDuSort;
+    // Posé au dernier coup pour l'attaque enchaînée : ce seul rang.
+    const pourLaSuite = !!exception?.pourLaSuite?.includes(id);
+    const coups = pourLaSuite
+      ? [coupsMax]
+      : entrees.some((x) => x.passif) ? null : exception?.coups?.[id] ?? rangsDuSort;
     // Un rang au-delà du DERNIER coup possible, ou le dernier lui-même, ne
     // change rien au sort.
-    const utiles = coups?.filter((n) => n >= 1 && n < coupsMax);
+    const utiles = pourLaSuite ? coups : coups?.filter((n) => n >= 1 && n < coupsMax);
     if (utiles && utiles.length === 0) continue;
+    if (!utiles && coupsMax < 2) continue;
     const nombre = base.cumulable && memes ? entrees.length : 1;
     // Une condition ne s'affiche que si TOUTES les sources de l'effet en ont
     // une : une seule pose sans condition rend l'effet posable sans elle.
@@ -3126,6 +3303,8 @@ function effetsEntreCoupsDuSort(
       ...(nombre > 1 ? { nombre } : {}),
       ...(precision ? { precision } : {}),
       ...(exception?.allumeLeBouton?.includes(id) ? { allumeLeBoutonDuSort: true as const } : {}),
+      ...(exception?.nombreChoisi?.includes(id) ? { nombreChoisi: true as const } : {}),
+      ...(pourLaSuite ? { pourLaSuite: true as const } : {}),
     });
   }
   return out.length > 0 ? out : undefined;
@@ -3146,21 +3325,51 @@ export function coupsDuScenario(profile: SkillDamageProfile, setup: DamageSetup)
   return profile.sequenceDeCoups ? coupsMaxDuProfil(profile) : resolvedHits(profile, setup);
 }
 
-// Le compte des effets nocifs de la cible est-il lu par CE profil ? Les seuls
-// lecteurs du calcul : un bonus par effet (hors buffs seuls) et la condition
-// « la cible porte un effet nocif » (`calculerChronologie`, `clesDebuffs`).
-function litLeCompteDesDebuffs(p: Pick<SkillDamageProfile, 'bonusParEffetCible' | 'conditionsCombat'>): boolean {
-  return (!!p.bonusParEffetCible && p.bonusParEffetCible.source !== 'buffs') ||
-    !!p.conditionsCombat?.some((condition) => condition.type === 'debuffCiblePresent');
+/**
+ * Ce que le calcul lit de la cible, et qu'une pose entre les coups peut donc
+ * changer : `tous` = le compte ou la présence des effets nocifs (bonus par
+ * effet hors buffs seuls, condition « la cible porte un effet nocif », dégâts
+ * bruts par effet nocif) ; `dot` = le compte des seuls dégâts continus ; `vit`
+ * = la VIT de la cible (formule à VIT relative ou de la cible, ignore DEF selon
+ * l'écart de VIT, critique si plus rapide, bonus selon l'écart de VIT).
+ */
+interface LecteursDeLaCible {
+  tous: boolean;
+  dot: boolean;
+  vit: boolean;
 }
 
-// Le monstre lit-il le compte des effets nocifs de la cible, quel que soit le
-// sort : modificateur monstre-wide, ou passif offensif qui le lit ?
-function monstreLitLeCompteDesDebuffs(detail: DetailMonstre): boolean {
+function lecteursDuProfil(
+  p: Pick<SkillDamageProfile, 'bonusParEffetCible' | 'conditionsCombat' | 'brutParEffetCible' | 'variables' | 'ignoreDefSelonVit'>
+): LecteursDeLaCible {
+  const source = p.bonusParEffetCible?.source;
+  return {
+    tous: (!!source && source !== 'buffs' && source !== 'degatsContinus') ||
+      !!p.conditionsCombat?.some((c) => c.type === 'debuffCiblePresent') ||
+      p.brutParEffetCible?.source === 'debuffs',
+    dot: source === 'degatsContinus' || p.brutParEffetCible?.source === 'degatsContinus',
+    vit: p.variables.includes('Relative SPD') || p.variables.includes('Target SPD') || !!p.ignoreDefSelonVit ||
+      !!p.conditionsCombat?.some((c) => c.type === 'vitPropreSuperieure'),
+  };
+}
+
+function unionDesLecteurs(a: LecteursDeLaCible, b: LecteursDeLaCible): LecteursDeLaCible {
+  return { tous: a.tous || b.tous, dot: a.dot || b.dot, vit: a.vit || b.vit };
+}
+
+// Ce que le monstre lit de la cible, quel que soit le sort : modificateur
+// monstre-wide, passif offensif, règle brute d'un passif.
+function lecteursDuMonstre(detail: DetailMonstre): LecteursDeLaCible {
   const mw = monsterBonusParEffetCible(detail);
-  if (mw && mw.source !== 'buffs') return true;
-  if (monsterConditionsCombat(detail).some((p) => p.condition.type === 'debuffCiblePresent')) return true;
-  return monsterOffensivePassives(detail).some((p) => litLeCompteDesDebuffs(p.profile));
+  let l: LecteursDeLaCible = {
+    tous: (!!mw && mw.source !== 'buffs' && mw.source !== 'degatsContinus') ||
+      monsterConditionsCombat(detail).some((p) => p.condition.type === 'debuffCiblePresent') ||
+      brutParEffetDesPassifs(detail)?.source === 'debuffs',
+    dot: mw?.source === 'degatsContinus',
+    vit: !!monsterBonusDegatsSelonVit(detail) || monsterCritSiPlusRapide(detail),
+  };
+  for (const p of monsterOffensivePassives(detail)) l = unionDesLecteurs(l, lecteursDuProfil(p.profile));
+  return l;
 }
 
 /** Identifiants des exceptions (test qui exige une forme jouable par entrée). */
@@ -3183,6 +3392,31 @@ export function notesEffetsEntreCoupsConnues(): string[] {
   return Array.from(new Set([...Object.keys(RANGS_PAR_NOTE), ...Object.keys(PRECISION_PAR_NOTE)]));
 }
 
+// La VIT adverse que lit un réglage, bornée à 1 comme partout.
+function vitEnnemieDe(setup: DamageSetup): number {
+  return Math.max(1, setup.enemySpd ?? DEFAULT_DAMAGE_SETUP.enemySpd!);
+}
+
+/**
+ * Note la part majorable d'une part de sort et la VIT adverse qu'elle lit (voir
+ * `partsVit` de `computeSkillDamageDetail`). Le tableau ne naît qu'à la
+ * première part dont la VIT diffère du réglage : les parts d'avant, à la VIT du
+ * réglage, se retrouvent par différence avec le total (`computeTotalDamage`).
+ * Une pose ne fait que ralentir : une fois changée, la VIT ne revient pas.
+ */
+function noterPartVit(
+  parts: { vit: number; part: number }[] | undefined,
+  setup: DamageSetup,
+  setupPart: DamageSetup,
+  detail: { total: number; additionnel: number; fixeProtege: number }
+): { vit: number; part: number }[] | undefined {
+  const vit = vitEnnemieDe(setupPart);
+  if (!parts && vit === vitEnnemieDe(setup)) return undefined;
+  const out = parts ?? [];
+  out.push({ vit, part: detail.total - detail.additionnel - detail.fixeProtege });
+  return out;
+}
+
 /**
  * Les rangs proposés pour poser `effet` dans le sort `profile` : ceux qu'il
  * porte (`coups`), sinon chaque coup, toujours AVANT le dernier coup que le
@@ -3198,8 +3432,17 @@ export function rangsDePoseProposes(
   const plafond = coupsEnPlusDeCondition(profile) && profile.hitsRange
     ? profile.hitsRange.max
     : coupsDuScenario(profile, setup);
+  // Pose pour l'attaque enchaînée : au dernier coup, le seul rang.
+  if (effet.pourLaSuite) return [plafond];
   const tous = Array.from({ length: Math.max(0, plafond - 1) }, (_, i) => i + 1);
-  return effet.coups ? effet.coups.filter((n) => n < plafond) : tous;
+  const rangs = effet.coups ? effet.coups.filter((n) => n < plafond) : tous;
+  // Cible secondaire d'une séquence : seule une pose d'un coup de zone l'atteint
+  // (PPK Combo : le coup 5, pas le coup 4).
+  if (profile.sequenceDeCoups && cibleDegatsRetenue(profile, setup) === 'secondaire') {
+    const zone = rangsDeZone(profile);
+    return rangs.filter((n) => zone.has(n));
+  }
+  return rangs;
 }
 
 /** Libellé affiché d'un effet posable : le libellé, puis sa condition. */
@@ -3590,12 +3833,10 @@ const CALCUL_PARTIEL_PAR_ID: Readonly<Record<number, string>> = {
   13410: 'L’ignore DEF est compté en entier, en permanence ; la part du jeu, qui grandit quand tes PV baissent, n’est pas encore modélisée.', // Madness Judgement (Beelzebub)
   13611: 'L’ignore DEF est compté en entier, en permanence ; la condition du jeu (35 % par effet bénéfique retiré par la bête) n’est pas encore modélisée.', // Start of Attacking (Barbara)
   7713: 'L’ignore DEF est compté en permanence ; la condition du jeu (DEF de la cible sous 50 % de la tienne) n’est pas encore modélisée.', // Thunder Strike (Copper éveillé, sans second éveil)
-  6013: 'L’ignore DEF est compté en permanence ; la condition du jeu (sort lancé sous Invincibilité) n’est pas encore modélisée.', // Sword of Discharge (Katarina)
   // ── Part décidée « comptée », pas encore codée ──
   11912: 'La perte de 40 % des PV de la cible (15 % pour un boss) avant le coup n’est pas encore comptée.', // Hellfire (Daphnis)
   6015: 'La perte de 15 % des PV de tous les ennemis avant le coup n’est pas encore comptée.', // Ragnarok (Trinity)
   15114: 'Le bonus de dégâts selon les PV détruits de la cible (15 à 60 %) n’est pas encore compté.', // Time of Destruction (Dorothy)
-  13312: 'Le bonus de 25 % par effet bénéfique ou nocif sur la cible, sur la phase de zone, n’est pas encore compté.', // Fatal Mortar Bullet (Scarlett)
   20413: 'La perte de PV des ennemis dont un effet bénéfique est retiré n’est pas encore comptée.', // Dragon Bombardment (Ereshion)
   13401: 'La part proportionnelle aux PV retirés à l’ennemi le plus en forme (10 % de ses PV actuels) n’est pas encore comptée.', // Sword of Destruction (Belial)
   13402: 'La part proportionnelle aux PV retirés à l’ennemi le plus en forme (10 % de ses PV actuels) n’est pas encore comptée.', // Sword of Destruction (Bael)
@@ -3653,6 +3894,10 @@ export function clesDesTablesParId(): Record<string, number[]> {
     BONUS_STACK_PROPRE_PAR_ID_CONNUS: cles(BONUS_STACK_PROPRE_PAR_ID_CONNUS),
     SORTS_SANS_ATTAQUE_PAR_ID: [...SORTS_SANS_ATTAQUE_PAR_ID],
     COUPS_VARIABLES_PAR_ID_CONNUS: cles(COUPS_VARIABLES_PAR_ID_CONNUS),
+    COUPS_AU_HASARD_PAR_ID: cles(COUPS_AU_HASARD_PAR_ID),
+    IGNORE_DEF_PAR_COUP_CHOISI_PAR_ID: [...IGNORE_DEF_PAR_COUP_CHOISI_PAR_ID],
+    BRUT_PAR_EFFET_CIBLE_PAR_ID: cles(BRUT_PAR_EFFET_CIBLE_PAR_ID),
+    BRUT_PAR_EFFET_CIBLE_PAR_PASSIF_PAR_ID: cles(BRUT_PAR_EFFET_CIBLE_PAR_PASSIF_PAR_ID),
     IGNORE_DEF_CONDITIONNEL_PAR_ID: [...IGNORE_DEF_CONDITIONNEL_PAR_ID],
     IGNORE_DEF_A_PARTIR_DU_COUP_PAR_ID: cles(IGNORE_DEF_A_PARTIR_DU_COUP_PAR_ID),
     COUPS_FIXES_CORRIGES_PAR_ID: cles(COUPS_FIXES_CORRIGES_PAR_ID),
@@ -3786,15 +4031,92 @@ const COUPS_VARIABLES_PAR_ID_CONNUS: Record<number, { min: number; max: number; 
   2052: { min: 1, max: 10 },
 };
 
+// Sorts dont des coups frappent des ennemis AU HASARD : le joueur choisit
+// combien de coups touchent la cible calculée (champ « Coups qui touchent la
+// cible », `coupsPersonnalises`). `min` = les coups garantis sur la cible (au
+// moins 1) ; `max` = tous les coups ; `defaut` = TOUS les coups que le sort
+// porte (décision de l'utilisateur, 2026-11-02 : aucun total d'avant ne
+// change). Katarina et Splash Splash frappent « 2 to 3 times » au hasard : par
+// défaut 1 + 2 coups sur la cible, 4 au plus. Lu par identifiant, prose de
+// chaque sort relue (« randomly », « random enemies »). Ne sont pas ici les
+// sorts dont seul l'EFFET est tiré au hasard (Ghost Appearance, Surprise Box,
+// Dice Trick, Tatsumaki Senpukyaku), ni les attaques appelées au hasard
+// (Rolling Punch, Giant's Punch), ni les tirs qui choisissent leur cible
+// (Magic Shot, Full Burst).
+const COUPS_AU_HASARD_PAR_ID: Record<number, { min: number; max: number; defaut: number }> = {
+  1612: { min: 1, max: 6, defaut: 6 }, // Wolf Hunt — Lucasha : « Attacks randomly … 6 times »
+  1157: { min: 1, max: 2, defaut: 2 }, // Double Arrow — Iselia : « a target enemy and a random enemy »
+  1160: { min: 1, max: 2, defaut: 2 }, // Double Arrow — Sorin
+  1361: { min: 1, max: 4, defaut: 4 }, // Shooting Star — Kacey : « attack enemies randomly »
+  3315: { min: 1, max: 5, defaut: 5 }, // Spear Shower — Loque : « Attacks random enemies 5 times »
+  5313: { min: 1, max: 5, defaut: 5 }, // Blooming Nightmare — Selena : « Attacks random targets 5 times »
+  5413: { min: 1, max: 5, defaut: 5 }, // Firing Axe — Walter : « Throws 5 axes randomly »
+  5813: { min: 1, max: 5, defaut: 5 }, // Wind Shot — Hina : « Attacks random enemies with arrows »
+  6013: { min: 1, max: 4, defaut: 3 }, // Sword of Discharge — Katarina : « the enemy target … and randomly attacks the enemies 2 to 3 times »
+  7013: { min: 1, max: 4, defaut: 4 }, // Trigger Happy — Roger : « on random enemies (4 hits total) »
+  8211: { min: 1, max: 4, defaut: 4 }, // Water Dragon Attack — Xiao Lin : « the enemy target and randomly attacks 3 more times »
+  8212: { min: 1, max: 4, defaut: 4 }, // Fire Dragon Attack — Hong Hua
+  8213: { min: 1, max: 4, defaut: 4 }, // Wind Dragon Attack — Ling Ling
+  8214: { min: 1, max: 4, defaut: 4 }, // Light Dragon Attack — Liu Mei
+  8215: { min: 1, max: 4, defaut: 4 }, // Dark Dragon Attack — Fei
+  8912: { min: 1, max: 4, defaut: 4 }, // Meteor Bomb — Zibrolta : « randomly attack the enemies 4 times »
+  9112: { min: 1, max: 5, defaut: 5 }, // Pride Will Fall — Hwahee : « attack the enemies randomly »
+  10217: { min: 1, max: 3, defaut: 3 }, // Bombardment — Carrack : « 3 rounds to attack random targets »
+  10220: { min: 1, max: 3, defaut: 3 }, // Bombardment — Frigate
+  11707: { min: 1, max: 4, defaut: 4 }, // Arrow Storm — Adrian : « Attacks random enemies for 4 times »
+  11708: { min: 1, max: 4, defaut: 4 }, // Arrow Storm — Erwin
+  11710: { min: 1, max: 4, defaut: 4 }, // Arrow Storm — Isillen
+  20307: { min: 1, max: 4, defaut: 4 }, // Hairpin: 4 Nails — Nobara feu : « the enemy target and 3 random enemies »
+  20308: { min: 1, max: 4, defaut: 4 }, // Hairpin: 4 Nails — Nobara vent
+  20309: { min: 1, max: 4, defaut: 4 }, // Hairpin: 4 Nails — Nobara lumière
+  20907: { min: 1, max: 4, defaut: 4 }, // Multi Shuriken — Aya feu
+  20908: { min: 1, max: 4, defaut: 4 }, // Multi Shuriken — Aya vent
+  20909: { min: 1, max: 4, defaut: 4 }, // Multi Shuriken — Aya lumière
+  21606: { min: 1, max: 6, defaut: 6 }, // Thunderclap and Flash Sixfold — Zenitsu eau : « the target once and random enemies 5 times »
+  21608: { min: 1, max: 6, defaut: 6 }, // Thunderclap and Flash Sixfold — Zenitsu vent
+  21610: { min: 1, max: 6, defaut: 6 }, // Thunderclap and Flash Sixfold — Zenitsu ténèbres
+  22206: { min: 1, max: 6, defaut: 6 }, // Divine Slash Sixfold — Qilin Slasher eau
+  22208: { min: 1, max: 6, defaut: 6 }, // Divine Slash Sixfold — Qilin Slasher vent
+  22210: { min: 1, max: 6, defaut: 6 }, // Divine Slash Sixfold — Qilin Slasher ténèbres
+  // Splash (Maris, Noctaris) : « Attacks the enemy … Afterwards, attacks a
+  // random enemy » — `coups: 1` en donnée, deux coups dont un au hasard.
+  25806: { min: 1, max: 2, defaut: 2 },
+  25810: { min: 1, max: 2, defaut: 2 },
+  // Splash Splash (Noctaris) : « Attacks the enemy to stun … and leave a Branding
+  // effect. Afterwards, attacks random enemies 2 to 3 times » — 1 coup sur la
+  // cible, puis 0 à 3 au hasard sur elle (utilisateur, 2026-11-02).
+  25815: { min: 1, max: 4, defaut: 3 },
+};
+
+/** Ce sort a-t-il des coups sur des cibles au hasard (`COUPS_AU_HASARD_PAR_ID`) ? */
+export function coupsAuHasard(skillCom2usId: number): boolean {
+  return skillCom2usId in COUPS_AU_HASARD_PAR_ID;
+}
+
 // Nombre de coups d'un sort ou passif : l'identifiant, puis le nom.
 function plageDeCoupsDe(c: { com2usId: number | null; nom: string }): { min: number; max: number; defaut?: number } | undefined {
+  if (c.com2usId != null && COUPS_AU_HASARD_PAR_ID[c.com2usId]) return COUPS_AU_HASARD_PAR_ID[c.com2usId];
   return (c.com2usId == null ? undefined : COUPS_VARIABLES_PAR_ID_CONNUS[c.com2usId]) ?? COUPS_VARIABLES_CONNUS[c.nom];
 }
 
 const IGNORE_DEF_COMPLET_CONNUS = new Set(['Hero Strike', 'Strike of Fighter']);
+// Sorts dont CHAQUE coup peut ignorer la DEF par sa propre chance : le joueur
+// coche les coups qui l'ignorent (`DamageSetup.coupsIgnorantDefParSort`), aucun
+// par défaut. Dark Dragon Attack (Fei) : « Attacks the enemy target and randomly
+// attacks 3 more times to deal damage that ignores Defense with a 25% chance
+// each » — les quatre coups, un interrupteur par coup (utilisateur, 2026-11-02).
+const IGNORE_DEF_PAR_COUP_CHOISI_PAR_ID: ReadonlySet<number> = new Set([8215]);
+
+/** Ce sort coche ses coups qui ignorent la DEF (recette, écran) ? */
+export function ignoreDefParCoupChoisi(skillCom2usId: number): boolean {
+  return IGNORE_DEF_PAR_COUP_CHOISI_PAR_ID.has(skillCom2usId);
+}
+
 const IGNORE_DEF_CONDITIONNEL_PAR_ID = new Set([
   7001, 7002, 7003, 7004, 7005, 3311, 8215, 6815,
   7808, 7810, 7763, 15907, 15908, 15910, 19215, 19615, 5315,
+  6013, // Sword of Discharge (Katarina) : sous Invincibilité seulement
+
   // Unlimited Power (Liam) : l'ignore DEF n'appartient qu'au mode « 3 ennemis
   // ou moins », proposé à part (`MODES_PAR_AUXILIAIRE`) ; le sort de la fiche
   // (4 ennemis ou plus) n'en a pas.
@@ -3885,10 +4207,16 @@ const COUPS_FIXES_CORRIGES: Record<string, number> = {
 };
 
 // Même table, clée par IDENTIFIANT (homonyme jouable à `coups` différent, voir
-// `COUPS_VARIABLES_PAR_ID_CONNUS`). Vide à ce jour : Crow Hunt de Prilea (1618,
-// « attack the enemy target 2 times » pour `coups: 1`) attend le relevé R9 —
-// ses homonymes jouables 1607 et 1609 portent `coups: 4`.
-const COUPS_FIXES_CORRIGES_PAR_ID: Record<number, number> = {};
+// `COUPS_VARIABLES_PAR_ID_CONNUS`). Valeurs de l'utilisateur (2026-11-02).
+const COUPS_FIXES_CORRIGES_PAR_ID: Record<number, number> = {
+  // Crow Hunt de Prilea : « attack the enemy target 2 times » pour `coups: 1` ;
+  // les deux coups peuvent poser la Réduction de DEF. Ses homonymes jouables
+  // 1607 et 1609 (« attack multiple enemies at once ») gardent `coups: 4`.
+  1618: 2,
+  // Lightning Storm de Yennefer : un seul coup, comme le dit la prose
+  // (« Attacks all enemies … and leaves a Branding effect »), pour `coups: 2`.
+  19113: 1,
+};
 
 function coupsFixesCorrigesDe(c: { com2usId: number | null; nom: string }): number | undefined {
   return (c.com2usId == null ? undefined : COUPS_FIXES_CORRIGES_PAR_ID[c.com2usId] ?? COUPS_DU_MODE_DE_LA_FICHE_PAR_ID[c.com2usId]) ??
@@ -3938,7 +4266,7 @@ type SequenceCuree = {
   // `formule: AUXILIAIRE` : le ratio du groupe est celui de la compétence
   // auxiliaire du sort (`formuleAuxiliaire`), jamais recopié ici. Absent de la
   // donnée, le sort est refusé avec sa raison.
-  groupes: readonly { formule: string | typeof AUXILIAIRE; coups: number; zone: boolean }[];
+  groupes: readonly { formule: string | typeof AUXILIAIRE; coups: number; zone: boolean; horsLecteurs?: true }[];
 };
 const AUXILIAIRE = Symbol('formule de la compétence auxiliaire');
 const SEQUENCE_BLADE_SURGE: SequenceCuree = {
@@ -3946,6 +4274,34 @@ const SEQUENCE_BLADE_SURGE: SequenceCuree = {
   groupes: [
     { formule: '0.5*{ATK}', coups: 2, zone: false },
     { formule: '3.0*{ATK}', coups: 1, zone: true },
+  ],
+};
+const SEQUENCE_PPK_COMBO: SequenceCuree = {
+  empreinte: { formule: '1.1*{ATK}', coups: 6, aoe: false },
+  groupes: [
+    { formule: '1.1*{ATK}', coups: 4, zone: false },
+    { formule: '1.1*{ATK}', coups: 2, zone: true },
+  ],
+};
+const SEQUENCE_CRITICAL_LINK: SequenceCuree = {
+  empreinte: { formule: '{ATK}*({SPD} + 120)/100', coups: 2, aoe: false },
+  groupes: [
+    { formule: '{ATK}*({SPD} + 120)/100', coups: 1, zone: false, horsLecteurs: true },
+    { formule: '{ATK}*({SPD} + 120)/100', coups: 1, zone: false },
+  ],
+};
+const SEQUENCE_HAIRPIN: SequenceCuree = {
+  empreinte: { formule: '3.6*{ATK}', coups: 2, aoe: false },
+  groupes: [
+    { formule: '3.6*{ATK}', coups: 1, zone: false, horsLecteurs: true },
+    { formule: '3.6*{ATK}', coups: 1, zone: false },
+  ],
+};
+const SEQUENCE_BULLET_ASSASSINATION: SequenceCuree = {
+  empreinte: { formule: '1.1*{ATK}', coups: 4, aoe: false },
+  groupes: [
+    { formule: '1.1*{ATK}', coups: 3, zone: true, horsLecteurs: true },
+    { formule: '1.1*{ATK}', coups: 1, zone: true },
   ],
 };
 const SEQUENCES_DE_COUPS_PAR_ID_CONNUS: Record<number, SequenceCuree> = {
@@ -3985,7 +4341,9 @@ const SEQUENCES_DE_COUPS_PAR_ID_CONNUS: Record<number, SequenceCuree> = {
   13312: {
     empreinte: { formule: '3.5*{ATK}', coups: 1, aoe: false },
     groupes: [
-      { formule: '3.5*{ATK}', coups: 1, zone: false },
+      // Le +25 % par effet de la cible ne vaut que pour la phase de zone
+      // (`BONUS_PAR_EFFET_CIBLE_PAR_ID_CONNUS[13312]`).
+      { formule: '3.5*{ATK}', coups: 1, zone: false, horsLecteurs: true },
       { formule: AUXILIAIRE, coups: 1, zone: true },
     ],
   },
@@ -4030,6 +4388,44 @@ const SEQUENCES_DE_COUPS_PAR_ID_CONNUS: Record<number, SequenceCuree> = {
       { formule: AUXILIAIRE, coups: 1, zone: true },
     ],
   },
+
+  // ── Séquences de l'utilisateur (2026-11-02) : la portée des coups, ou le seul
+  // coup qui lit les effets de la cible. Même ratio pour tous les coups. ──
+  // PPK Combo (RYU ténèbres) et Chain Combo Attack (Vancliffe) : « Attacks 6
+  // times … the 4th hit stuns and decreases Defense … Afterwards, attacks all
+  // enemies 2 more times, where the 5th hit … decreases Defense » — 4 coups sur
+  // la cible, puis 2 en zone ; les autres ennemis ne reçoivent que les coups 5 et 6.
+  13915: SEQUENCE_PPK_COMBO,
+  14415: SEQUENCE_PPK_COMBO,
+  // Tempest Sword (Lupinus) : « Attacks the enemy target 2 times … Afterwards,
+  // attacks all enemies » — le 3ᵉ coup, en zone, au ratio des deux premiers
+  // (valeurs-de-jeu-curees.md, « Tempest Sword de Lupinus ») ; la donnée
+  // `aoe: true` est la portée de ce coup.
+  10613: {
+    empreinte: { formule: '{ATK} + 0.06*{Target MAX HP}', coups: 2, aoe: true },
+    groupes: [
+      { formule: '{ATK} + 0.06*{Target MAX HP}', coups: 2, zone: false },
+      { formule: '{ATK} + 0.06*{Target MAX HP}', coups: 1, zone: true },
+    ],
+  },
+  // Critical Link (Savannah, Narsha) : « Attacks the enemy with the beast 2
+  // times. The beast's attack changes all beneficial effects … to Continuous
+  // Damage, and the rider's attack inflicts damage that increases by 15% for
+  // each harmful effect » — le coup 1 (la bête) ne lit pas les effets, le coup
+  // 2 (le cavalier) oui.
+  13608: SEQUENCE_CRITICAL_LINK,
+  13609: SEQUENCE_CRITICAL_LINK,
+  // Hairpin: Black Flash (Nobara ténèbres) et Exorcist Shuriken Formation (Aya
+  // ténèbres) : « the second hit deals damage that increases by 100% if the
+  // target has a harmful effect » — le coup 2 seul.
+  20315: SEQUENCE_HAIRPIN,
+  20915: SEQUENCE_HAIRPIN,
+  // Bullet Assassination (Nina lumière) et Shining Butterfly (Shasha lumière) :
+  // « Attacks all enemies 4 times … the last hit deals additional damage by 25%
+  // of their MAX HP … if the target is granted with a harmful effect » — le
+  // dernier coup seul ; tous en zone.
+  22714: SEQUENCE_BULLET_ASSASSINATION,
+  23214: SEQUENCE_BULLET_ASSASSINATION,
 };
 
 /**
@@ -4039,7 +4435,10 @@ const SEQUENCES_DE_COUPS_PAR_ID_CONNUS: Record<number, SequenceCuree> = {
  * l'identifiant seul, sans monstre chargé.
  */
 export function cibleSecondairePriseEnCharge(skillCom2usId: number): boolean {
-  return SEQUENCES_DE_COUPS_PAR_ID_CONNUS[skillCom2usId]?.groupes.some((g) => g.zone) ?? false;
+  // Une séquence TOUTE de zone (Bullet Assassination) frappe la cible visée et
+  // les autres ennemis des mêmes coups : rien à distinguer.
+  const groupes = SEQUENCES_DE_COUPS_PAR_ID_CONNUS[skillCom2usId]?.groupes;
+  return !!groupes && groupes.some((g) => g.zone) && groupes.some((g) => !g.zone);
 }
 
 /**
@@ -4391,6 +4790,10 @@ export function skillDamageProfile(c: Competence): SkillDamageProfile | SkillDam
   // des données régénérées qui en annonceraient un autre (ou une plage) font
   // refuser le sort, avec sa raison, plutôt qu'appliquer des rangs faux.
   const bonusParEffetCible = BONUS_PAR_EFFET_CIBLE_PAR_ID_CONNUS[c.com2usId] ?? BONUS_PAR_EFFET_CIBLE_CONNUS[c.nom];
+  const brutDuSort = BRUT_PAR_EFFET_CIBLE_PAR_ID[c.com2usId];
+  const brutParEffetCible: BrutParEffetCibleProfile | undefined = brutDuSort
+    ? { ...brutDuSort, cle: c.com2usId, nom: c.nom }
+    : undefined;
   const conditionsCombat = CONDITIONS_COMBAT_PAR_ID_CONNUS[c.com2usId] ?? CONDITIONS_COMBAT_CONNUS[c.nom];
   const ignoreDefAPartirDuCoup = IGNORE_DEF_A_PARTIR_DU_COUP_PAR_ID[c.com2usId];
   if (ignoreDefAPartirDuCoup && (coupsVariables || hits !== ignoreDefAPartirDuCoup.coups)) {
@@ -4420,6 +4823,7 @@ export function skillDamageProfile(c: Competence): SkillDamageProfile | SkillDam
       (c.effets.some((e) => e.nom === 'Ignore DEF') || IGNORE_DEF_COMPLET_CONNUS.has(c.nom)),
     ignoreDefSelonVit,
     ignoreDefAPartirDuCoup,
+    ...(IGNORE_DEF_PAR_COUP_CHOISI_PAR_ID.has(c.com2usId) ? { ignoreDefParCoupChoisi: true as const } : {}),
     appliqueDefBreak: c.effets.some((e) => e.nom === 'Decrease DEF' && !e.surSoi),
     fixed,
     composanteFixeAdditionnelle: analyseFixeAdditionnelle
@@ -4435,12 +4839,13 @@ export function skillDamageProfile(c: Competence): SkillDamageProfile | SkillDam
     critRatePoints: CRIT_RATE_PROPRE_CONNUS[c.nom],
     critDamagePoints: CRIT_DAMAGE_PROPRE_PAR_ID_CONNUS[c.com2usId] ?? CRIT_DAMAGE_PROPRE_CONNUS[c.nom],
     bonusStackPropre: BONUS_STACK_PROPRE_PAR_ID_CONNUS[c.com2usId] ?? BONUS_STACK_PROPRE_CONNUS[c.nom],
+    brutParEffetCible,
     // Le lecteur monstre-wide et les passifs poseurs s'ajoutent dans
     // `monsterDamageSkills`.
     effetsEntreCoups: effetsEntreCoupsDuSort(
       c,
       coupsMaxDuProfil({ hits, hitsRange: coupsVariables, sequenceDeCoups }),
-      litLeCompteDesDebuffs({ bonusParEffetCible, conditionsCombat })
+      lecteursDuProfil({ bonusParEffetCible, conditionsCombat, brutParEffetCible, variables, ignoreDefSelonVit })
     ),
     bonusConditionnelPropre:
       BONUS_CONDITIONNEL_PROPRE_PAR_ID_CONNUS[c.com2usId] ??
@@ -4804,9 +5209,10 @@ export interface AttaqueAppeleeConnue {
 // `computeTotalDamage`, `damageRelevantStats`). Une entrée qui le porte est
 // lue par `sortsCooperatifsQuiAppellentDeLaFiche` seule.
 //
-// ⚠️ **Aucune attaque conditionnelle n'est codée en production.** Les 17
-// amorces examinées (onze
-// acceptables par une entrée chacune, six classées avec leur raison :
+// ⚠️ **Six attaques conditionnelles seulement sont codées en production** :
+// le S1 enchaîné de Shoryuken et d'Iron Uppercut (demande de l'utilisateur,
+// 2026-11-02). Les onze autres amorces examinées (cinq acceptables par une
+// entrée chacune, six classées avec leur raison :
 // `tests/degats-attaque-appelee.test.ts`, qui injecte ses entrées et les
 // retire) restent hors de la table. Ce qu'il faut fournir pour en ajouter
 // une : docs/02-app/degats-reels/.
@@ -4816,6 +5222,17 @@ export interface AttaqueAppeleeConnue {
 // appel du S1 chacun, seuls les dégâts du monstre comptent, jamais ceux des
 // alliés (valeurs-de-jeu-curees.md).
 export const ATTAQUES_APPELEES_PAR_DECLENCHEUR: Readonly<Record<number, AttaqueAppeleeConnue>> = {
+  // Shoryuken (RYU) et Iron Uppercut (Striker) : « [Hadoken] (ou [Mach Punch])
+  // will be activated in succession with a 50% chance » — le S1 de la même
+  // fiche, sous son interrupteur éteint par défaut ; la Marque que pose la S2,
+  // avant lui, se règle par « Marque posée » (`EFFETS_ENTRE_COUPS_EXCEPTIONS_PAR_ID`,
+  // `pourLaSuite`). Codé à la demande de l'utilisateur (2026-11-02).
+  13907: { slotAppele: 1, source: 'prose de Shoryuken (RYU feu) : [Hadoken], son S1, en succession' },
+  13908: { slotAppele: 1, source: 'prose de Shoryuken (RYU vent) : [Hadoken], son S1, en succession' },
+  13910: { slotAppele: 1, source: 'prose de Shoryuken (RYU ténèbres) : [Hadoken], son S1, en succession' },
+  14407: { slotAppele: 1, source: 'prose d’Iron Uppercut (Douglas) : [Mach Punch], son S1, en succession' },
+  14408: { slotAppele: 1, source: 'prose d’Iron Uppercut (Kashmir) : [Mach Punch], son S1, en succession' },
+  14410: { slotAppele: 1, source: 'prose d’Iron Uppercut (Vancliffe) : [Mach Punch], son S1, en succession' },
   // Attack Command — Lisa et Neostone Agent feu (S1 Preemptive Strike, 10902) :
   // « Removes all harmful effects on all allies, and attacks the enemy target
   // with 2 other allies. » La prose ne nomme pas le S1 : l'appel du S1, une
@@ -5336,14 +5753,21 @@ export function monsterDamageSkills(detail: DetailMonstre | null): (SkillDamageP
   // effets qui ne font que compter (voir `effetsEntreCoupsDuSort`).
   // Un passif qui pose un effet à chaque attaque le rend posable entre les
   // coups de chaque sort (`EFFETS_ENTRE_COUPS_PAR_PASSIF_PAR_ID`).
-  const lecteurMonstre = monstreLitLeCompteDesDebuffs(detail);
+  // Une règle brute d'un passif (Start of Pain, Nano Vision) vaut pour chaque
+  // sort du monstre : posée ici, sur chaque profil actif calculé.
+  const lecteursMonstre = lecteursDuMonstre(detail);
+  const lecteurMonstre = lecteursMonstre.tous || lecteursMonstre.dot || lecteursMonstre.vit;
   const parLesPassifs = effetsPosesParLesPassifs(detail);
+  const brutDuPassif = brutParEffetDesPassifs(detail);
   for (const c of detail.competences) {
-    const p = skillDamageProfile(c);
-    if (!p) continue;
-    if ((lecteurMonstre || parLesPassifs.length > 0) && estPrisEnCharge(p)) {
-      const avecCompteur = lecteurMonstre || litLeCompteDesDebuffs(p);
-      out.push({ ...p, effetsEntreCoups: effetsEntreCoupsDuSort(c, coupsMaxDuProfil(p), avecCompteur, parLesPassifs) });
+    const brut = skillDamageProfile(c);
+    if (!brut) continue;
+    const p = brutDuPassif && estPrisEnCharge(brut) && !brut.passif && !brut.brutParEffetCible
+      ? { ...brut, brutParEffetCible: brutDuPassif }
+      : brut;
+    if ((lecteurMonstre || parLesPassifs.length > 0 || brutDuPassif) && estPrisEnCharge(p)) {
+      const lecteurs = unionDesLecteurs(lecteursMonstre, lecteursDuProfil(p));
+      out.push({ ...p, effetsEntreCoups: effetsEntreCoupsDuSort(c, coupsMaxDuProfil(p), lecteurs, parLesPassifs) });
     } else out.push(p);
   }
   out.push(...sortsDeLAutreForme(detail));
@@ -5687,6 +6111,11 @@ export interface DamageSetup {
   // une valeur hors des rangs permis retombe sur ce même défaut. Lu par
   // `resolvedPremierCoupIgnoreDef`, sans effet sur tout autre sort.
   premierCoupIgnoreDefParSort?: Record<number, number | null>;
+  // Coups (rangs à partir de 1) qui ignorent la DEF, cochés un par un pour un
+  // sort à `ignoreDefParCoupChoisi` (Fei), clé = `skillCom2usId` DU SORT. Clé
+  // absente = aucun coup n'ignore, jamais une réussite supposée ; un rang au-delà
+  // des coups retenus n'a pas lieu. Sans effet sur tout autre sort.
+  coupsIgnorantDefParSort?: Record<number, number[]>;
   // PV ACTUELS (%) juste avant le déclenchement d'un sacrifice (Calculated
   // Sacrifice — `bonusSacrifice`), clé = `skillCom2usId` DU SORT. Absent =
   // 100 (premier tour) — voir `resolvedPvActuelsAvantSacrificePct`, SEUL
@@ -6871,11 +7300,12 @@ function decoupeDuSort(
   if (sequence) {
     const secondaire = cibleDegatsRetenue(profile, setup) === 'secondaire';
     // Sous scénario de poses, chaque coup lit l'état qui le précède : un groupe
-    // de plusieurs coups se découpe coup par coup. ⚠️ Pas pour la cible
-    // secondaire : elle ne reçoit que les groupes de zone, et les poses des
-    // séquences curées viennent d'un groupe sur la seule cible visée (Fatal
-    // Mortar Bullet : la Marque du coup 1 n'est pas sur les autres ennemis).
-    const setupsScenario = secondaire ? null : setupsAvantChaqueCoup(profile, setup, monsterWide, [], reglage);
+    // de plusieurs coups se découpe coup par coup. ⚠️ La cible secondaire ne
+    // reçoit que les poses d'un coup de ZONE (PPK Combo : la Réduction de DEF
+    // du coup 5, jamais celle du coup 4 ; Fatal Mortar Bullet : rien du coup 1) —
+    // `scenarioPourLaCibleSecondaire` retire les autres.
+    const setupScenario = secondaire ? scenarioPourLaCibleSecondaire(profile, setup) : setup;
+    const setupsScenario = setupsAvantChaqueCoup(profile, setupScenario, monsterWide, [], reglage);
     const groupes: { profil: SkillDamageProfile; rang: number; setup?: DamageSetup }[] = [];
     let rang = 0;
     for (const groupe of sequence) {
@@ -6890,6 +7320,14 @@ function decoupeDuSort(
           aoe: groupe.zone,
           effetsEntreCoups: undefined,
           sequenceDeCoups: undefined,
+          // Un groupe `horsLecteurs` ne lit pas les effets de la cible.
+          ...(groupe.horsLecteurs
+            ? {
+              bonusParEffetCible: undefined,
+              brutParEffetCible: undefined,
+              conditionsCombat: profile.conditionsCombat?.filter((c) => c.type !== 'debuffCiblePresent'),
+            }
+            : {}),
         });
         if (setupsScenario) {
           for (let k = 0; k < groupe.coups; k++) groupes.push({ profil: profilGroupe(1), rang: rang + k, setup: setupsScenario[rang + k] });
@@ -6908,11 +7346,15 @@ function decoupeDuSort(
   // vaut au moins 2 (`rangsPermis`). Aucune ATB n'est déduite.
   const setupsScenario = setupsAvantChaqueCoup(profile, setup, monsterWide, [], reglage);
   const rangIgnoreDef = resolvedPremierCoupIgnoreDef(profile, setup);
-  if (!setupsScenario && rangIgnoreDef === null) return null;
+  // Coups cochés un par un (Fei) : seulement pour un sort qui le permet.
+  const coupsCoches = profile.ignoreDefParCoupChoisi ? setup.coupsIgnorantDefParSort?.[profile.skillCom2usId] : undefined;
+  const avecCoches = !!coupsCoches && coupsCoches.length > 0;
+  if (!setupsScenario && rangIgnoreDef === null && !avecCoches) return null;
   const coups = setupsScenario ? setupsScenario.length : resolvedHits(profile, setup);
   const coupInconditionnel = profile.ignoreDefAPartirDuCoup?.dernierCoupInconditionnel ?? null;
   const ignoreAuCoup = (n: number) =>
-    profile.ignoreDef || n === coupInconditionnel || (rangIgnoreDef !== null && n >= rangIgnoreDef);
+    profile.ignoreDef || n === coupInconditionnel || (rangIgnoreDef !== null && n >= rangIgnoreDef) ||
+    (avecCoches && coupsCoches!.includes(n));
   const troncons: { profil: SkillDamageProfile; setup: DamageSetup; premier: number }[] = [];
   for (let premier = 1; premier <= coups; ) {
     let dernier = premier;
@@ -6926,6 +7368,7 @@ function decoupeDuSort(
         hitsRange: undefined,
         effetsEntreCoups: undefined,
         ignoreDefAPartirDuCoup: undefined,
+        ignoreDefParCoupChoisi: undefined,
         ignoreDef: ignoreAuCoup(premier),
       },
       setup: setupsScenario ? setupsScenario[premier - 1] : setup,
@@ -7321,10 +7764,75 @@ function chronologieEffetsEntreCoups(
   const scenario = setup.scenariosEffetsEntreCoups?.[profile.skillCom2usId];
   if (!scenario?.actif || !profile.effetsEntreCoups?.length) return null;
   const coups = coupsDuScenario(profile, setup);
-  if (coups <= 1) return null;
+  // Un sort d'un coup n'a de chronologie que pour une pose destinée à ce qui
+  // le suit (`pourLaSuite`, Shoryuken).
+  if (coups < 1 || (coups === 1 && !profile.effetsEntreCoups.some((e) => e.pourLaSuite))) return null;
   const effetsEntreCoups = profile.effetsEntreCoups;
   const calculer = () => calculerChronologie(profile, setup, monsterWide, profilsSupplementaires, scenario, coups, effetsEntreCoups);
   return reglage ? reglage.chronologie(profile, setup, monsterWide, profilsSupplementaires, calculer) : calculer();
+}
+
+// Les rangs des coups d'une séquence curée qui frappent en ZONE, donc aussi les
+// autres ennemis.
+function rangsDeZone(profile: SkillDamageProfile): Set<number> {
+  const out = new Set<number>();
+  let rang = 1;
+  for (const g of profile.sequenceDeCoups ?? []) {
+    for (let k = 0; k < g.coups; k++, rang++) if (g.zone) out.add(rang);
+  }
+  return out;
+}
+
+/**
+ * Le réglage vu de la cible SECONDAIRE d'une séquence : seules restent les
+ * poses faites par un coup de zone, les seules qui l'atteignent. Le réglage
+ * reçu tel quel quand rien n'est à retirer.
+ */
+function scenarioPourLaCibleSecondaire(profile: SkillDamageProfile, setup: DamageSetup): DamageSetup {
+  const scenario = setup.scenariosEffetsEntreCoups?.[profile.skillCom2usId];
+  if (!scenario?.actif || !scenario.apresCoup) return setup;
+  const zone = rangsDeZone(profile);
+  const apresCoup: Record<string, number | null> = {};
+  let change = false;
+  for (const [id, rang] of Object.entries(scenario.apresCoup)) {
+    const garde = rang != null && zone.has(rang);
+    apresCoup[id] = garde ? rang : null;
+    if (!garde && rang != null) change = true;
+  }
+  if (!change) return setup;
+  return {
+    ...setup,
+    scenariosEffetsEntreCoups: { ...setup.scenariosEffetsEntreCoups, [profile.skillCom2usId]: { ...scenario, apresCoup } },
+  };
+}
+
+/**
+ * Les compteurs d'effets de la cible que lisent ces profils et le monstre,
+ * avec leur nature : `'tous'` (tout effet nocif : bonus par effet, condition
+ * « la cible porte un effet nocif », dégâts bruts par effet nocif) ou `'dot'`
+ * (les seuls dégâts continus). Clé = celle du compteur (`effetsCibleCount`).
+ */
+function clesDesCompteursDeLaCible(
+  profils: readonly SkillDamageProfile[],
+  monsterWide: Pick<MonsterWideDamageModifiers, 'bonusParEffetCible' | 'conditionsCombat'>
+): Map<number, 'tous' | 'dot'> {
+  const cles = new Map<number, 'tous' | 'dot'>();
+  const ajouter = (cle: number, nature: 'tous' | 'dot') => {
+    if (cles.get(cle) !== 'tous') cles.set(cle, nature);
+  };
+  for (const p of profils) {
+    const b = p.bonusParEffetCible;
+    if (b && b.source !== 'buffs') ajouter(p.skillCom2usId, b.source === 'degatsContinus' ? 'dot' : 'tous');
+    if (p.conditionsCombat?.some((c) => c.type === 'debuffCiblePresent')) ajouter(p.skillCom2usId, 'tous');
+    if (p.brutParEffetCible) ajouter(p.brutParEffetCible.cle, p.brutParEffetCible.source === 'degatsContinus' ? 'dot' : 'tous');
+  }
+  if (monsterWide.bonusParEffetCible && monsterWide.bonusParEffetCible.source !== 'buffs') {
+    ajouter(monsterWide.bonusParEffetCible.skillCom2usId, monsterWide.bonusParEffetCible.source === 'degatsContinus' ? 'dot' : 'tous');
+  }
+  for (const c of monsterWide.conditionsCombat ?? []) {
+    if (c.condition.type === 'debuffCiblePresent') ajouter(c.skillCom2usId, 'tous');
+  }
+  return cles;
 }
 
 // Le corps de `chronologieEffetsEntreCoups`, une fois ses gardes passées.
@@ -7343,20 +7851,11 @@ function calculerChronologie(
 
   let setupCoup: DamageSetup = { ...setup };
   const profils = [profile, ...profilsSupplementaires];
-  const clesDebuffs = Array.from(new Set([
-    ...profils.flatMap((p) =>
-      p.bonusParEffetCible && p.bonusParEffetCible.source !== 'buffs' ? [p.skillCom2usId] : []
-    ),
-    ...profils.flatMap((p) =>
-      p.conditionsCombat?.some((condition) => condition.type === 'debuffCiblePresent') ? [p.skillCom2usId] : []
-    ),
-    ...(monsterWide.bonusParEffetCible && monsterWide.bonusParEffetCible.source !== 'buffs'
-      ? [monsterWide.bonusParEffetCible.skillCom2usId]
-      : []),
-    ...(monsterWide.conditionsCombat ?? [])
-      .filter((p) => p.condition.type === 'debuffCiblePresent')
-      .map((p) => p.skillCom2usId),
-  ]));
+  // Les compteurs que les poses font monter : `'tous'` compte tout effet nocif,
+  // `'dot'` les seuls dégâts continus (`SourceEffetCible` `'degatsContinus'`).
+  const cles = clesDesCompteursDeLaCible(profils, monsterWide);
+  const clesDebuffs = [...cles.keys()];
+  const clesTous = clesDebuffs.filter((k) => cles.get(k) === 'tous');
   const clesMixtes = new Set([
     ...profils.flatMap((p) => p.bonusParEffetCible?.source === 'buffsEtDebuffs' ? [p.skillCom2usId] : []),
     ...(monsterWide.bonusParEffetCible?.source === 'buffsEtDebuffs'
@@ -7367,16 +7866,17 @@ function calculerChronologie(
     // Un scénario importé d'une recette ancienne doit pouvoir ajouter une
     // nouvelle Marque/Brise DEF sans perdre le compte préexistant. On
     // convertit sa valeur inclusive en « autres débuffs » uniquement dans
-    // la copie de travail ; la recette source reste inchangée.
+    // la copie de travail ; la recette source reste inchangée. Un compte de
+    // dégâts continus n'a jamais inclus Brise DEF ni Marque.
     const comptes = { ...(setupCoup.effetsCibleCount ?? {}) };
     const explicitesInitiaux = Number(!!setup.brand) + Number(!!setup.defBreak);
-    for (const key of clesDebuffs) comptes[key] = Math.max(0, (comptes[key] ?? 0) - explicitesInitiaux);
+    for (const key of clesTous) comptes[key] = Math.max(0, (comptes[key] ?? 0) - explicitesInitiaux);
     setupCoup = { ...setupCoup, effetsCibleCount: comptes, effetsCibleCountAutres: true };
   }
   const effetsManuelsInitiaux = scenario.presentsInitialement?.length ?? 0;
-  if (clesDebuffs.length > 0 && effetsManuelsInitiaux > 0) {
+  if (clesTous.length > 0 && effetsManuelsInitiaux > 0) {
     const comptes = { ...(setupCoup.effetsCibleCount ?? {}) };
-    for (const key of clesDebuffs) comptes[key] = Math.min(plafondCompte(key), Math.max(comptes[key] ?? 0, effetsManuelsInitiaux));
+    for (const key of clesTous) comptes[key] = Math.min(plafondCompte(key), Math.max(comptes[key] ?? 0, effetsManuelsInitiaux));
     setupCoup = { ...setupCoup, effetsCibleCount: comptes };
   }
 
@@ -7390,9 +7890,23 @@ function calculerChronologie(
       const dejaPresent = presents.has(effet.id);
       if ((effet.cumulable || !dejaPresent) && !effet.effetCombat) {
         const comptes = { ...(setupCoup.effetsCibleCount ?? {}) };
-        const ajout = effet.cumulable ? effet.nombre ?? 1 : 1;
-        for (const key of clesDebuffs) comptes[key] = Math.min(plafondCompte(key), Math.max(0, comptes[key] ?? 0) + ajout);
+        // Le nombre que la pose ajoute : celui que le joueur saisit (Critical
+        // Link : un dégât continu par effet bénéfique converti), sinon celui
+        // du profil pour un effet cumulable, sinon un.
+        const ajout = effet.nombreChoisi
+          ? Math.max(0, Math.floor(scenario.nombres?.[effet.id] ?? 0))
+          : effet.cumulable ? effet.nombre ?? 1 : 1;
+        for (const [key, nature] of cles) {
+          if (nature === 'dot' && effet.id !== 'continuous-damage') continue;
+          comptes[key] = Math.min(plafondCompte(key), Math.max(0, comptes[key] ?? 0) + ajout);
+        }
         setupCoup = { ...setupCoup, effetsCibleCount: comptes };
+      }
+      // Ralentissement : −30 % de la VIT saisie de la cible, comme un buff de
+      // VIT l'augmente de 30 % (utilisateur, 2026-11-02), une fois seulement.
+      if (effet.ralentit && !dejaPresent) {
+        const vit = setupCoup.enemySpd ?? DEFAULT_DAMAGE_SETUP.enemySpd!;
+        setupCoup = { ...setupCoup, enemySpd: vit * (1 - RALENTISSEMENT_PCT / 100) };
       }
       presents.add(effet.id);
       if (effet.allumeLeBoutonDuSort) {
@@ -7474,6 +7988,12 @@ export function computeSkillDamageDetail(
   // soustraire elle aussi des bonus monstre-wide appliqués après le sort.
   fixeProtege: number;
   pvRestantsPct: number;
+  // Sort calculé par parts (tronçons, groupes d'une séquence) dont la VIT
+  // adverse change d'une part à l'autre (ralentissement posé entre les coups) :
+  // la part majorable de chacune (`total − additionnel − fixeProtege`) et la VIT
+  // qu'elle lit. Le bonus selon l'écart de VIT (`computeTotalDamage`) s'applique
+  // alors part par part. Absent quand la VIT ne change pas.
+  partsVit?: { vit: number; part: number }[];
 } {
   const reglage = memo instanceof PreparationReglage ? memo : memo?.reglage;
   const memoStats = memo instanceof MemoCombat ? memo : undefined;
@@ -7514,6 +8034,9 @@ export function computeSkillDamageDetail(
   // une fois avec le memo (`PreparationReglage.decoupe`), ses groupes et ses
   // tronçons sont alors les mêmes objets d'un appel à l'autre.
   const decoupe = reglage ? reglage.decoupe(profile, setup, monsterWide) : decoupeDuSort(profile, setup, monsterWide);
+  // Parts dont la VIT adverse diffère du réglage (ralentissement posé) :
+  // remontées pour le bonus selon l'écart de VIT, seulement s'il y en a une.
+  let partsVit: { vit: number; part: number }[] | undefined;
   if (decoupe?.groupes) {
     let totalSequence = 0;
     let additionnelSequence = 0;
@@ -7525,13 +8048,18 @@ export function computeSkillDamageDetail(
           ? artefacts
           : { ...artefacts, cdPointsPremiereAttaque: 0 };
       // Sous scénario de poses : l'état avant ce coup (`decoupeDuSort`).
-      const detail = computeSkillDamageDetail(profil, stats, setupGroupe ?? setup, propres, element, pvSequence, artefactsGroupe, monsterWide, reliqueDmgPct, memo);
+      const setupPart = setupGroupe ?? setup;
+      const detail = computeSkillDamageDetail(profil, stats, setupPart, propres, element, pvSequence, artefactsGroupe, monsterWide, reliqueDmgPct, memo);
       totalSequence += detail.total;
       additionnelSequence += detail.additionnel;
       fixeProtegeSequence += detail.fixeProtege;
       pvSequence = detail.pvRestantsPct;
+      partsVit = noterPartVit(partsVit, setup, setupPart, detail);
     }
-    return { total: totalSequence, additionnel: additionnelSequence, fixeProtege: fixeProtegeSequence, pvRestantsPct: pvSequence };
+    return {
+      total: totalSequence, additionnel: additionnelSequence, fixeProtege: fixeProtegeSequence, pvRestantsPct: pvSequence,
+      ...(partsVit ? { partsVit } : {}),
+    };
   }
 
   // Découpe COUP PAR COUP, en tronçons de coups consécutifs qui lisent le même
@@ -7553,8 +8081,12 @@ export function computeSkillDamageDetail(
       additionnelScenario += detail.additionnel;
       fixeProtegeScenario += detail.fixeProtege;
       pvScenario = detail.pvRestantsPct;
+      partsVit = noterPartVit(partsVit, setup, troncon.setup, detail);
     }
-    return { total: totalScenario, additionnel: additionnelScenario, fixeProtege: fixeProtegeScenario, pvRestantsPct: pvScenario };
+    return {
+      total: totalScenario, additionnel: additionnelScenario, fixeProtege: fixeProtegeScenario, pvRestantsPct: pvScenario,
+      ...(partsVit ? { partsVit } : {}),
+    };
   }
 
   // Ce que le calcul lit du seul réglage (`termesDuReglage`) : préparé une
@@ -8001,7 +8533,16 @@ export function computeSkillDamageDetail(
   const ajoutFixeDuSort = profile.composanteFixeAdditionnelle
     ? Math.max(0, evaluer(profile.composanteFixeAdditionnelle.noeud, valeurs))
     : 0;
-  const ajoutBrutParCoup = ajoutMaxHpPropre + ajoutSacrifice + ajoutArtefactBrut + ajoutFixeDuSort;
+  // Dégâts bruts selon les effets nocifs de la cible (Start of Pain, Nano
+  // Vision, Havoc, Bullet Assassination) : même seau, ni critiques, ni mitigés,
+  // ni élémentaires (utilisateur, 2026-11-02). Le compte lit le réglage de CE
+  // coup : sous scénario, les poses des coups précédents comprises.
+  const brut = profile.brutParEffetCible;
+  const ajoutBrutParEffet = brut
+    ? (brut.pct / 100) * resolvedBrutParEffetCount(brut, setup) *
+      (brut.base === 'pvMaxPropre' ? valeurs['MAX HP'] : Math.max(0, setup.enemyHp))
+    : 0;
+  const ajoutBrutParCoup = ajoutMaxHpPropre + ajoutSacrifice + ajoutArtefactBrut + ajoutFixeDuSort + ajoutBrutParEffet;
   // Ce que ce terme vaut par coup, amplificateurs de cible compris.
   const degatsBrutParCoup = ajoutBrutParCoup * horsCoupBrut;
   // Les PV ne peuvent pas descendre sous zéro, et une cible à 0 PV max (cas
@@ -8454,8 +8995,15 @@ export function computeTotalDamage(
     // n'étaient identiques QUE pour Sonia (50/50), jamais vérifié au-delà
     // pour Chun-Li/Leah (150 pts d'écart, 200 % de plafond) : un écart de
     // 200+ points y donnait ~267 % au lieu de rester plafonné à 200 %.
-    const pct = Math.min(bonusDegatsSelonVit.ecartMax, Math.max(0, ecartVit)) * (bonusDegatsSelonVit.pctMax / bonusDegatsSelonVit.ecartMax);
-    total *= 1 + pct / 100;
+    const facteurVit = (ecart: number) =>
+      1 + (Math.min(bonusDegatsSelonVit.ecartMax, Math.max(0, ecart)) * (bonusDegatsSelonVit.pctMax / bonusDegatsSelonVit.ecartMax)) / 100;
+    if (sort.partsVit) {
+      // Ralentissement posé entre les coups : les parts du sort qui le suivent
+      // lisent la VIT adverse baissée, le reste du total celle du réglage.
+      const ralenties = sort.partsVit.reduce((s, p) => s + p.part, 0);
+      total = (total - ralenties) * facteurVit(ecartVit) +
+        sort.partsVit.reduce((s, p) => s + p.part * facteurVit(maVit - p.vit), 0);
+    } else total *= facteurVit(ecartVit);
   }
   // Même famille, source différente ENCORE : le Taux Crit BRUT plutôt que
   // l'écart de VIT — même helper `crBrutEffectif` que `computeSkillDamageDetail`,
@@ -8695,6 +9243,9 @@ export function damageRelevantStats(
   }
   if (bonusEcartDef && !keys.includes('def')) keys.push('def');
   if (bonusHpPropre && !keys.includes('hp')) keys.push('hp');
+  // Start of Pain (Kiki) : des dégâts bruts proportionnels à SES PV max, lus
+  // dès qu'un effet nocif est compté — pour tout sort qui porte la règle.
+  if (profile.brutParEffetCible?.base === 'pvMaxPropre' && !keys.includes('hp')) keys.push('hp');
   if (bonusDegatsSelonCr && !keys.includes('cr')) keys.push('cr');
   if (bonusDegatsSelonDef && !keys.includes('def')) keys.push('def');
   if (bonusSiAtqSeuil && !keys.includes('atk')) keys.push('atk');

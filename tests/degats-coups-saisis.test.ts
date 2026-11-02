@@ -187,11 +187,14 @@ export function testDegatsCoupsSaisis() {
 
   // Témoins HORS PÉRIMÈTRE : ils restent comme avant.
   // (Stormfist, qui y figurait, a sa règle : voir plus bas.)
-  titre('Coups saisis — témoins hors périmètre : Crow Hunt');
+  titre('Coups saisis — coups fixes corrigés : Crow Hunt, Lightning Storm');
   for (const [id, forme] of [[1607, 10512], [1609, 10514], [1618, 10513]] as const) {
     const p = sortDe(forme, id);
-    egal([p.hitsRange, p.hits], [undefined, id === 1618 ? 1 : 4], `Crow Hunt ${id} sur ${forme} : inchangé (${id === 1618 ? '`coups: 1`, valeur relevée en jeu' : '`coups: 4`'})`);
+    egal([p.hitsRange, p.hits], [undefined, id === 1618 ? 2 : 4],
+      `Crow Hunt ${id} sur ${forme} : ${id === 1618 ? '2 coups (« attack the enemy target 2 times », valeur de l’utilisateur)' : '`coups: 4`, inchangé'}`);
   }
+  const lightning = sortDe(29413, 19113);
+  egal([lightning.hitsRange, lightning.hits], [undefined, 1], 'Lightning Storm (Yennefer) : un seul coup pour `coups: 2` (valeur de l’utilisateur)');
 
   testDegatsCoupsSousCondition();
 }

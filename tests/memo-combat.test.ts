@@ -71,14 +71,18 @@ const PROPRES: AurasPropres = { fight: 1, determination: 1, enhance: 0, accuracy
 // contextes. Relevée de nouveau le 2026-11-02 : les poses entre les coups
 // dérivées de la donnée (`effetsEntreCoupsDuSort`, damage.ts) donnent un
 // scénario au réglage riche de bien plus de sorts (séquences curées, effets
-// posés par un passif à chaque attaque compris) ; le réglage par défaut, sans
-// scénario, n'a pas changé.
+// posés par un passif à chaque attaque compris). Les corrections de
+// l'utilisateur du même jour changent aussi des notes du réglage par défaut :
+// coups de Crow Hunt, Lightning Storm, Splash et Splash Splash, 3ᵉ coup de
+// Tempest Sword, ignore DEF de Fei et de Katarina sous interrupteur, dégâts
+// bruts de Kiki et d'Amber, lecteurs de Yoga Sunburst, Havoc, Critical Link,
+// Fatal Mortar Bullet, Bullet Assassination et Hairpin.
 // ⚠️ Un écart veut dire qu'une note a changé. Voulu (modèle de dégâts, données
 // SWARFARM régénérées) : relever l'empreinte de nouveau (le message d'échec
 // la donne) et le dire dans le commit. Sinon : un défaut du code commun au
 // calcul avec et sans memo.
 const EMPREINTE_ANCIEN_CALCUL = {
-  contextes: 12426, notes: 310650, sha256: '8e8c91265b18bf40fa7333563d56f8b531a6b0912cda59535c0b103f1cec2678',
+  contextes: 12426, notes: 310650, sha256: '10cc956632a3aa0e60074fa7b7c3cf556729177447d369308170ed66e1f73b81',
 };
 
 // Quatre pièces par sorte, deux principales par sorte : des paires partagent

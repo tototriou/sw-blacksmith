@@ -8,6 +8,7 @@ import {
   BonusDegatsStackableProfile,
   BonusMonstreParEffetProfile,
   BonusMonstreParEffetPropreProfile,
+  type SourceEffetCible,
   CombatStatProfile,
   ConditionMonstreProfile,
   BonusSacrificeProfile,
@@ -58,6 +59,8 @@ import {
   resolvedHits,
   rangsDePoseProposes,
   libelleEffetEntreCoups,
+  coupsAuHasard,
+  resolvedBrutParEffetCount,
   resolvedPvActuelsAvantSacrificePctMonstre,
   resolvedStackPct,
   resolvedStackTrigger,
@@ -190,7 +193,7 @@ interface Props {
 // Libellé FR de `bonusParEffetCible.source`/`monsterBonusParEffetCible(...).source`
 // — factorisé, utilisé aux trois emplacements qui affichent ce type d'effet
 // (résumé du sort, libellé du champ, infobulle/aria-label).
-function libelleSourceEffet(source: 'buffs' | 'debuffs' | 'buffsEtDebuffs'): string {
+function libelleSourceEffet(source: SourceEffetCible): string {
   switch (source) {
     case 'buffs':
       return 'bénéfiques';
@@ -198,6 +201,8 @@ function libelleSourceEffet(source: 'buffs' | 'debuffs' | 'buffsEtDebuffs'): str
       return 'néfastes';
     case 'buffsEtDebuffs':
       return 'bénéfiques et néfastes';
+    case 'degatsContinus':
+      return 'de dégâts continus';
   }
 }
 
@@ -350,7 +355,9 @@ function champCoupsVariables(profile: SkillDamageProfile, setup: DamageSetup, ma
   return (
     <div className="mt-1 flex items-center gap-2">
       <span className="text-xs text-ink-dim">
-        Coups réellement infligés (variable en jeu, {profile.hitsRange.min} à {profile.hitsRange.max}) :
+        {coupsAuHasard(profile.skillCom2usId)
+          ? `Coups qui touchent la cible (coups au hasard, ${profile.hitsRange.min} à ${profile.hitsRange.max}) :`
+          : `Coups réellement infligés (variable en jeu, ${profile.hitsRange.min} à ${profile.hitsRange.max}) :`}
       </span>
       <NumberField
         value={resolvedHits(profile, setup)}
@@ -845,6 +852,34 @@ export default function DamageSetupCard({
             </Selecteur>
           </label>
         )}
+        {/* Fei : chaque coup ignore la DEF par sa propre chance — un
+            interrupteur par coup retenu, aucun coché par défaut. Posé sous
+            la liste, comme le sélecteur ci-dessus : cocher ne déplace rien. */}
+        {resolved.ignoreDefParCoupChoisi && (() => {
+          const coches = setup.coupsIgnorantDefParSort?.[resolved.skillCom2usId] ?? [];
+          return (
+            <div className="mt-1 flex flex-wrap items-center gap-2">
+              <span className="text-xs text-ink-dim">Coups qui ignorent la DEF :</span>
+              {Array.from({ length: resolvedHits(resolved, setup) }, (_, i) => i + 1).map((n) => (
+                <Interrupteur
+                  key={n}
+                  actif={coches.includes(n)}
+                  onChange={(actif) =>
+                    maj({
+                      coupsIgnorantDefParSort: {
+                        ...(setup.coupsIgnorantDefParSort ?? {}),
+                        [resolved.skillCom2usId]: actif
+                          ? Array.from(new Set([...coches, n])).sort((a, b) => a - b)
+                          : coches.filter((x) => x !== n),
+                      },
+                    })
+                  }
+                  libelle={`Coup ${n}`}
+                />
+              ))}
+            </div>
+          );
+        })()}
       </div>
 
       {/* ⚠️ **Presque toujours indépendant du sort choisi ci-dessus** — un
@@ -1603,7 +1638,9 @@ export default function DamageSetupCard({
                       [resolved.skillCom2usId]: Math.max(
                         0,
                         (v ?? 0) -
-                          (resolved.bonusParEffetCible?.source === 'buffs' || setup.effetsCibleCountAutres !== true
+                          (resolved.bonusParEffetCible?.source === 'buffs' ||
+                            resolved.bonusParEffetCible?.source === 'degatsContinus' ||
+                            setup.effetsCibleCountAutres !== true
                             ? 0 : Number(setup.defBreak) + Number(setup.brand))
                       ),
                     },
@@ -1619,6 +1656,48 @@ export default function DamageSetupCard({
               </label>
             )
           )}
+          {/* Dégâts bruts selon les effets nocifs de la cible (Havoc, Bullet
+              Assassination ; Start of Pain de Kiki, Nano Vision d'Amber sur
+              chacun de leurs sorts) : la présence en interrupteur, sinon un
+              compteur borné. Saisie sous la clé de la règle (le sort, ou le
+              passif pour tout le monstre). */}
+          {resolved.brutParEffetCible && (() => {
+            const brut = resolved.brutParEffetCible;
+            const base = brut.base === 'pvMaxPropre' ? 'de tes PV max' : 'des PV max de la cible';
+            const quoi = brut.source === 'degatsContinus' ? 'dégât continu' : 'effet néfaste';
+            if (brut.maxCount === 1) {
+              return (
+                <PassifInterrupteur
+                  icone={resolved.icone ? <img src={resolved.icone} alt="" className="h-4 w-4 rounded" loading="lazy" /> : undefined}
+                  actif={resolvedBrutParEffetCount(brut, setup) > 0}
+                  onChange={(v) => maj({ passifsOffensifs: { ...(setup.passifsOffensifs ?? {}), [brut.cle]: v } })}
+                  libelle={`${brut.nom} : la cible porte un effet néfaste (+${brut.pct} % ${base})`}
+                  title={setup.defBreak || setup.brand ? 'Activé automatiquement par Brise DEF ou Marque' : 'Effets néfastes présents sur la cible'}
+                />
+              );
+            }
+            const explicites = brut.source === 'debuffs' && setup.effetsCibleCountAutres === true
+              ? Number(!!setup.defBreak) + Number(!!setup.brand) : 0;
+            return (
+              <label className="flex items-center gap-2">
+                <span className="text-xs text-ink-dim">
+                  {brut.nom} : {brut.source === 'degatsContinus' ? 'dégâts continus' : 'effets néfastes'} sur la cible
+                  {brut.maxCount ? ` (0 à ${brut.maxCount})` : ''}
+                </span>
+                <NumberField
+                  value={resolvedBrutParEffetCount(brut, setup)}
+                  max={brut.maxCount ?? 10}
+                  min={0}
+                  onChange={(v) =>
+                    maj({ effetsCibleCount: { ...(setup.effetsCibleCount ?? {}), [brut.cle]: Math.max(0, (v ?? 0) - explicites) } })
+                  }
+                  boxWidth="w-24"
+                  title={`+${brut.pct} % ${base} en dégâts bruts par ${quoi}, à chaque coup — 0 par défaut`}
+                  ariaLabel={`Nombre de ${brut.source === 'degatsContinus' ? 'dégâts continus' : 'effets néfastes'} sur la cible (${brut.nom})`}
+                />
+              </label>
+            );
+          })()}
           {resolved.bonusParEffetPropre && (
             <label className="flex items-center gap-2">
               <span className="text-xs text-ink-dim">
@@ -1762,6 +1841,22 @@ export default function DamageSetupCard({
                                 <option key={hit} value={hit}>Après le coup {hit}</option>
                               ))}
                             </Selecteur>
+                          )}
+                          {/* Critical Link : la bête convertit chaque effet
+                              bénéfique de la cible en un dégât continu — le
+                              joueur dit combien, 0 par défaut. */}
+                          {effet.nombreChoisi && (
+                            <label className="flex items-center gap-2">
+                              <span className="text-xs text-ink-dim">Effets bénéfiques convertis</span>
+                              <NumberField
+                                value={scenario.nombres?.[effet.id] ?? 0}
+                                onChange={(v) => majScenario({ nombres: { ...(scenario.nombres ?? {}), [effet.id]: Math.max(0, v ?? 0) } })}
+                                min={0}
+                                max={10}
+                                boxWidth="w-16"
+                                ariaLabel={`Nombre d'effets bénéfiques convertis : ${effet.label}`}
+                              />
+                            </label>
                           )}
                         </div>
                       );

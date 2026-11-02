@@ -301,7 +301,9 @@ export function testDegatsPorteesParLaProse() {
       const sans = total(p, crit, ARTIFACT_DAMAGE_NEUTRE);
       ok(proche(total(p, crit, a224), sans), `${e.id} sur ${forme} : un artéfact 224 ne change pas le total critique`);
       // Sans 224, rien d'autre ne bouge : le profil forcé mono-cible donne le même total.
-      const monoCible = { ...p, aoe: false };
+      // Sans séquence : Bullet Assassination et Shining Butterfly en ont une
+      // (son dernier coup seul lit les effets de la cible), toute de zone.
+      const monoCible = { ...p, aoe: false, sequenceDeCoups: undefined };
       ok(proche(total(monoCible, crit, ARTIFACT_DAMAGE_NEUTRE), sans), `${e.id} sur ${forme} : sans artéfact, la portée ne change aucun total`);
       ok(proche(total(p, { ...base, critMode: 'normal' }, a224), total(monoCible, { ...base, critMode: 'normal' }, a224)), `${e.id} sur ${forme} : hors critique, la portée ne change aucun total`);
       // Témoin : mono-cible, la ligne 224 aurait compté.

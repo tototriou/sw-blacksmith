@@ -11,10 +11,16 @@
 
 import { readFileSync, readdirSync } from 'fs';
 import { resolve } from 'path';
+import { buildRealDamageContext } from '../scripts/lib/realDamageCli';
+import type { OptimizerRecipe } from '../src/lib/optimizerRecipe';
 import {
   AUCUNE_AURA_PROPRE,
   DEFAULT_DAMAGE_SETUP,
+  cibleSecondairePriseEnCharge,
   computeSkillDamage,
+  computeTotalDamage,
+  coupsAuHasard,
+  statsDuLanceurLuesParLaNote,
   estPrisEnCharge,
   idEffetPosable,
   libelleEffetEntreCoups,
@@ -170,7 +176,7 @@ export function testInventaireEffetsEntreCoups() {
     if (porteurs.join('|') !== [...a.porteurs].sort().join('|')) ecarts.push(`${id} ${v.nom} : porteurs ${porteurs.join(', ')}`);
   }
   egal(ecarts, [], 'chaque sort de l’inventaire garde ses effets, leurs rangs et ses porteurs');
-  egal(trouve.size, 259, 'témoin : 259 sorts des formes jouables proposent une pose entre leurs coups');
+  egal(trouve.size, 279, 'témoin : 279 sorts des formes jouables proposent une pose entre leurs coups');
 }
 
 /** Chaque effet néfaste du corpus entier a sa traduction dans le calcul. */
@@ -290,10 +296,10 @@ export function testEffetsEntreCoupsRegle() {
     ok(Math.abs(total(p, pose) - interrupteur) < 1e-6, `${p.nom} : Gel posé au coup 1 = l’interrupteur « la cible porte un effet nocif »`);
   }
 
-  // La prose restreint les coups : Water Dragon Attack, « attacks 3 more times
-  // to decrease Defense » — les coups 2 à 4 posent, pas le premier.
+  // Water Dragon Attack : le premier coup pose aussi la Réduction de DEF
+  // (utilisateur, 2026-11-02) ; ses coups au hasard se règlent à part.
   const xiaoLin = profil(8211);
-  egal(rangsDePoseProposes(xiaoLin, xiaoLin.effetsEntreCoups![0], CIBLE), [2, 3], 'Water Dragon Attack : après le coup 2 ou 3');
+  egal(rangsDePoseProposes(xiaoLin, xiaoLin.effetsEntreCoups![0], CIBLE), [1, 2, 3], 'Water Dragon Attack : après le coup 1, 2 ou 3');
   egal(libelleEffetEntreCoups(profil(11507).effetsEntreCoups![0]), 'Réduction de DEF (un seul des effets possibles par coup, au hasard)',
     'Ghost Appearance : un seul effet au hasard par coup, comme Virus');
 
@@ -328,7 +334,8 @@ export function testEffetsEntreCoupsRegle() {
   const shaina = profil(12602);
   egal(shaina.effetsEntreCoups?.map((e) => libelleEffetEntreCoups(e)), ['Réduction de DEF (par Precision)'], 'Crescent Moon Slash (Shaina) : la Réduction de DEF de Precision');
   ok(total(shaina, avecPose(shaina, { 'decrease-def': 1 })) > total(shaina, CIBLE), 'Crescent Moon Slash : posée au coup 1, le coup 2 la subit');
-  egal(profil(10007).effetsEntreCoups?.map((e) => e.id), ['decrease-def', 'oblivion'], 'Triple Crush (Tesarion) : l’Oubli d’Ancient Power compte pour son +30 %');
+  egal(profil(10007).effetsEntreCoups?.map((e) => e.id), ['decrease-def'],
+    'Triple Crush (Tesarion) : l’Oubli d’Ancient Power, posé à la fin de l’attaque, n’est pas proposé (utilisateur)');
   egal(profil(5660).effetsEntreCoups?.map((e) => e.id), ['decrease-def'], 'Surprise Attack (Jultan) : sans lecteur, les dégâts continus du passif ne sont pas proposés');
   ok(!profil(10510).effetsEntreCoups?.length,
     'Spear of Devastation (Manannan) : les dégâts continus de King of the Ruins, qui semblent viser les autres ennemis, ne sont pas proposés (relevé attendu)');
@@ -358,4 +365,152 @@ export function testEffetsEntreCoupsRegle() {
     }
   }
   egal(ecarts, [], 'scénario actif sans réussite : total inchangé, pour chaque sort de l’inventaire');
+}
+
+// Le score complet d'un réglage, comme le moteur et le CLI : sort, passifs et
+// modificateurs du monstre (`buildRealDamageContext`).
+function scoreComplet(forme: number, setup: Partial<DamageSetup>): number {
+  const recette = { objective: 'degats_reels', damageSetup: { ...CIBLE, ...setup } } as unknown as OptimizerRecipe;
+  const ctx = buildRealDamageContext(recette, forme, []);
+  if (!ctx) throw new Error(`aucun contexte « Dégâts réels » pour ${forme}`);
+  return computeTotalDamage(
+    ctx.profile, ctx.passifs, BUILD, ctx.setup, AUCUNE_AURA_PROPRE, ctx.element, ctx.artefacts, ctx.critSiPlusRapide,
+    ctx.bonusDegatsSelonVit, ctx.bonusDegatsStack, ctx.monsterWide, ctx.bonusDegatsConditionnel, ctx.bonusDegatsSelonCr,
+    ctx.bonusDegatsSelonDef, ctx.bonusSiAtqSeuil
+  );
+}
+const proche = (a: number, b: number) => Math.abs(a - b) <= 1e-9 * Math.max(1, Math.abs(a), Math.abs(b));
+
+/** Les mécaniques ajoutées à la demande de l'utilisateur (2026-11-02). */
+export function testEffetsEntreCoupsMecaniques() {
+  titre('Effets entre les coups — coups au hasard, séquences, lecteurs, ralentissement, attaque enchaînée');
+
+  // ── Coups au hasard : le joueur choisit combien touchent la cible ──
+  const xiaoLin = profil(8211);
+  egal([xiaoLin.hits, xiaoLin.hitsRange], [4, { min: 1, max: 4, defaut: 4 }], 'Water Dragon Attack : 1 à 4 coups sur la cible, tous par défaut');
+  ok(coupsAuHasard(8211) && !coupsAuHasard(8113), 'coups au hasard : Water Dragon Attack oui, Phoenix Kick non');
+  egal([profil(6013).hits, profil(6013).hitsRange?.max], [3, 4], 'Katarina : 3 coups par défaut (1 + 2), 4 au plus');
+  egal([profil(25815).hits, profil(25815).hitsRange?.max], [3, 4], 'Splash Splash : 3 coups par défaut (1 + 2), 4 au plus');
+  const un = total(xiaoLin, { ...CIBLE, coupsPersonnalises: { 8211: 1 } });
+  ok(proche(total(xiaoLin, CIBLE), 4 * un), 'Water Dragon Attack : 4 coups sur la cible = 4 fois le coup seul');
+
+  // Katarina : sous Invincibilité tous les coups ignorent la DEF, sinon aucun.
+  const katarina = profil(6013);
+  ok(!katarina.ignoreDef, 'Katarina : pas d’ignore DEF permanent');
+  ok(total(katarina, { ...CIBLE, passifsOffensifs: { 6013: true } }) > total(katarina, CIBLE), 'Katarina : « sous Invincibilité » allumé, la DEF est ignorée');
+
+  // Fei : chaque coup coché ignore la DEF.
+  const fei = profil(8215);
+  ok(!!fei.ignoreDefParCoupChoisi && !fei.ignoreDef, 'Fei : ignore DEF choisi coup par coup, aucun par défaut');
+  const feiSans = total(fei, CIBLE);
+  const feiTous = total(fei, { ...CIBLE, coupsIgnorantDefParSort: { 8215: [1, 2, 3, 4] } });
+  const feiDeux = total(fei, { ...CIBLE, coupsIgnorantDefParSort: { 8215: [2, 4] } });
+  ok(proche(feiDeux, (feiSans + feiTous) / 2), 'Fei : deux coups cochés sur quatre = la moitié du chemin entre aucun et tous');
+  ok(proche(total(fei, { ...CIBLE, coupsPersonnalises: { 8215: 2 }, coupsIgnorantDefParSort: { 8215: [3, 4] } }), total(fei, { ...CIBLE, coupsPersonnalises: { 8215: 2 } })),
+    'Fei : un coup coché au-delà des coups sur la cible n’a pas lieu');
+
+  // ── Séquences : PPK Combo, cible visée et autres ennemis ──
+  const ppk = profil(13915);
+  egal(ppk.sequenceDeCoups?.map((g) => [g.coups, g.zone]), [[4, false], [2, true]], 'PPK Combo : 4 coups sur la cible, puis 2 en zone');
+  ok(cibleSecondairePriseEnCharge(13915) && cibleSecondairePriseEnCharge(14415) && cibleSecondairePriseEnCharge(10613), 'PPK Combo, Chain Combo Attack et Tempest Sword : « autres ennemis » proposé');
+  ok(!cibleSecondairePriseEnCharge(22714), 'Bullet Assassination, toute en zone : pas de cible secondaire');
+  const autres: DamageSetup = { ...CIBLE, cibleDegatsParSort: { 13915: 'secondaire' } };
+  const ppkDef = ppk.effetsEntreCoups!.find((e) => e.id === 'decrease-def')!;
+  egal(rangsDePoseProposes(ppk, ppkDef, autres), [5], 'PPK Combo, autres ennemis : seule la Réduction de DEF du coup 5 les touche');
+  egal(total(ppk, avecPose(ppk, { 'decrease-def': 4 }, autres)), total(ppk, autres), 'PPK Combo, autres ennemis : la pose du coup 4 ne les atteint pas');
+  ok(total(ppk, avecPose(ppk, { 'decrease-def': 5 }, autres)) > total(ppk, autres), 'PPK Combo, autres ennemis : la pose du coup 5 majore le coup 6');
+  const tempest = profil(10613);
+  egal(tempest.sequenceDeCoups?.map((g) => [g.coups, g.zone]), [[2, false], [1, true]], 'Tempest Sword : 2 coups sur la cible, le 3ᵉ en zone');
+  egal(rangsDePoseProposes(tempest, tempest.effetsEntreCoups![0], CIBLE), [1, 2], 'Tempest Sword : la Marque aux coups 1 et 2');
+
+  // ── Fatal Mortar Bullet : +25 % par effet sur la cible, phase de zone seule ──
+  const scarlett = profil(13312);
+  const zone = scarlett.sequenceDeCoups!;
+  ok(zone[0].horsLecteurs === true && !zone[1].horsLecteurs, 'Fatal Mortar Bullet : seule la phase de zone lit les effets de la cible');
+  const s0 = total(scarlett, CIBLE);
+  const s2 = total(scarlett, { ...CIBLE, effetsCibleCount: { 13312: 2 }, effetsCibleCountAutres: true });
+  ok(s2 > s0, 'Fatal Mortar Bullet : deux effets sur la cible majorent le total');
+  ok(total(scarlett, avecPose(scarlett, { brand: 1, 'decrease-def': 1 })) > total(scarlett, avecPose(scarlett, { brand: 1 })),
+    'Fatal Mortar Bullet : Marque et Réduction de DEF du coup 1 comptent toutes deux pour la phase de zone');
+
+  // ── Lecteurs ──
+  // Yoga Sunburst : +50 % par dégât continu, les seuls dégâts continus.
+  const yoga = profil(14213);
+  egal(yoga.bonusParEffetCible?.source, 'degatsContinus', 'Yoga Sunburst : compte des dégâts continus seuls');
+  egal(yoga.effetsEntreCoups?.map((e) => e.id), ['continuous-damage'], 'Yoga Sunburst : l’Étourdissement, qui ne compte pas, n’est pas proposé');
+  egal(total(yoga, { ...CIBLE, brand: true }), total(yoga, { ...CIBLE, brand: true, effetsCibleCount: {} }), 'Yoga Sunburst : la Marque n’entre pas dans le compte');
+  ok(total(yoga, avecPose(yoga, { 'continuous-damage': 1 })) > total(yoga, CIBLE), 'Yoga Sunburst : un dégât continu posé au coup 1 majore les coups 2 et 3');
+
+  // Havoc : 5 % des PV max de la cible par dégât continu, à chaque coup, en brut.
+  const havoc = profil(25212);
+  egal(havoc.brutParEffetCible?.source, 'degatsContinus', 'Reelseiden・Havoc : dégâts bruts par dégât continu');
+  const h0 = total(havoc, CIBLE);
+  const h1 = total(havoc, { ...CIBLE, effetsCibleCount: { 25212: 1 } });
+  ok(proche(h1 - h0, 3 * 0.05 * CIBLE.enemyHp), 'Reelseiden・Havoc : un dégât continu = 5 % des PV max de la cible à chacun des 3 coups');
+
+  // Kiki : 4 % de SES PV max par effet nocif, 2 au plus, à chaque coup.
+  const kiki = profil(15105);
+  egal(kiki.brutParEffetCible?.cle, 15115, 'Magical Eye (Kiki) : règle de Start of Pain, compteur sous la clé du passif');
+  const k0 = total(kiki, CIBLE);
+  const k3 = total(kiki, { ...CIBLE, effetsCibleCount: { 15115: 3 }, effetsCibleCountAutres: true });
+  ok(proche(k3 - k0, kiki.hits * 2 * 0.04 * 20000), 'Kiki : trois effets saisis, deux comptés : 8 % de ses PV max à chaque coup');
+  const kPose = total(kiki, { ...avecPose(kiki, { 'decrease-atk': 1 }), effetsCibleCount: { 15115: 1 }, effetsCibleCountAutres: true });
+  const k1 = total(kiki, { ...CIBLE, effetsCibleCount: { 15115: 1 }, effetsCibleCountAutres: true });
+  ok(proche(kPose - k1, 0.04 * 20000), 'Kiki : la baisse d’ATQ posée au coup 1 ajoute 4 % de ses PV max au coup 2');
+  ok(statsPrivilegiees(25215, 15105).includes('hp'), 'Kiki : ses PV max sont une stat que la recherche privilégie');
+
+  // Amber : 4 % des PV max de la cible par effet nocif, 3 au plus ; Irrécupérable à chaque attaque.
+  const amber = profil(15901);
+  egal(amber.effetsEntreCoups?.map((e) => e.id).sort(), ['decrease-spd', 'unrecoverable'], 'Swift Slash (Amber) : ralentissement du sort, Irrécupérable de Nano Vision');
+  ok(total(amber, avecPose(amber, { unrecoverable: 1 })) > total(amber, CIBLE), 'Amber : l’Irrécupérable du coup 1 ajoute 4 % des PV max de la cible au coup 2');
+
+  // Bullet Assassination : +25 % des PV max de la cible au dernier coup, si un effet nocif.
+  const nina = profil(22714);
+  egal(nina.sequenceDeCoups?.map((g) => [g.coups, !!g.horsLecteurs]), [[3, true], [1, false]], 'Bullet Assassination : le dernier coup seul lit l’effet nocif');
+  const n0 = total(nina, CIBLE);
+  ok(proche(total(nina, avecPose(nina, { seal: 1 })) - n0, 0.25 * CIBLE.enemyHp), 'Bullet Assassination : le Sceau du coup 1 déclenche 25 % des PV max au dernier coup');
+
+  // Critical Link : la bête convertit les effets bénéfiques en dégâts continus.
+  const savannah = profil(13608);
+  const cl = (nombre: number) => total(savannah, {
+    ...CIBLE, scenariosEffetsEntreCoups: { 13608: { actif: true, apresCoup: { 'continuous-damage': 1 }, nombres: { 'continuous-damage': nombre } } },
+  });
+  ok(cl(2) > cl(1) && cl(1) > cl(0) && proche(cl(0), total(savannah, CIBLE)), 'Critical Link : chaque effet bénéfique converti ajoute un effet nocif au coup du cavalier');
+
+  // Hairpin: Black Flash : +100 % au coup 2 seul si un effet nocif.
+  const nobara = profil(20315);
+  const nSans = total(nobara, CIBLE);
+  ok(proche(total(nobara, { ...CIBLE, passifsOffensifs: { 20315: true } }), nSans * 1.5), 'Hairpin: Black Flash : « la cible porte un effet nocif » double le seul coup 2 (× 1,5 sur deux coups égaux)');
+
+  // Arrow of Water : l'Étourdissement allume le +50 % des coups suivants.
+  // (vérifié dans `testEffetsEntreCoupsRegle`.)
+
+  // ── Ralentissement : −30 % de la VIT adverse pour les coups suivants ──
+  const chunLi = 24414;
+  const vit = { ...CIBLE, skillCom2usId: 14309, enemySpd: 150 };
+  const sansSlow = scoreComplet(chunLi, vit);
+  const slow = scoreComplet(chunLi, { ...vit, scenariosEffetsEntreCoups: { 14309: { actif: true, apresCoup: { 'decrease-spd': 1 } } } });
+  ok(slow > sansSlow, 'Spinning Bird Kick (Chun-Li lumière) : le ralentissement du coup 1 creuse l’écart de VIT pour le coup 2');
+  ok(slow < scoreComplet(chunLi, { ...vit, enemySpd: 105 }), 'Spinning Bird Kick : … mais le coup 1 garde la VIT d’avant');
+
+  // ── Empathy (Übel ténèbres) : Marque ou Réduction de DEF, au choix ──
+  egal(profil(25210).effetsEntreCoups?.map((e) => e.id).sort(), ['brand', 'decrease-def'], 'Reelseiden・Flurry (Übel ténèbres) : Marque ou Réduction de DEF d’Empathy');
+
+  // ── Shoryuken : Marque posée pour [Hadoken] enchaîné ──
+  const ryu = 24012;
+  const avecHadoken: Partial<DamageSetup> = { skillCom2usId: 13907, passifsOffensifs: { 13902: true } };
+  const sansMarque = scoreComplet(ryu, avecHadoken);
+  const avecMarque = scoreComplet(ryu, { ...avecHadoken, scenariosEffetsEntreCoups: { 13907: { actif: true, apresCoup: { brand: 1 } } } });
+  ok(avecMarque > sansMarque, 'Shoryuken : « Marque posée » majore [Hadoken] enchaîné');
+  const sansHadoken = scoreComplet(ryu, { skillCom2usId: 13907 });
+  egal(scoreComplet(ryu, { skillCom2usId: 13907, scenariosEffetsEntreCoups: { 13907: { actif: true, apresCoup: { brand: 1 } } } }), sansHadoken,
+    'Shoryuken : sans [Hadoken], la Marque posée au dernier coup ne change rien au sort');
+}
+
+// Les stats que la recherche privilégie pour ce sort (`damageRelevantStats`).
+function statsPrivilegiees(forme: number, sort: number): string[] {
+  const recette = { objective: 'degats_reels', damageSetup: { ...CIBLE, skillCom2usId: sort } } as unknown as OptimizerRecipe;
+  const ctx = buildRealDamageContext(recette, forme, []);
+  if (!ctx) return [];
+  return statsDuLanceurLuesParLaNote(ctx);
 }
