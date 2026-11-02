@@ -5,6 +5,7 @@ import MonsterAvatar from '../MonsterAvatar';
 import { RtaCategory, UseRtaCategories, MAX_CATEGORIES_PER_MONSTER } from '../../hooks/useRtaCategories';
 import { ConfirmDialog, Modale } from '../../ui/Dialogs';
 import { useMediaQuery, SOUS_LG } from '../../hooks/useMediaQuery';
+import { useTraduction } from '../../hooks/useLangue';
 import { Bouton, BoutonGroupe, BoutonIcone, Champ, Flottant, Vignette } from '../../ui';
 
 // Palette FERMÉE plutôt qu'un sélecteur de couleur libre : le contrôle natif
@@ -36,6 +37,8 @@ interface Props {
 // Cliquer une catégorie ouvre en dessous la liste des monstres de la page ; on
 // les sélectionne au clic. Voir docs/02-app/rta/.
 export default function CategoryBar({ cats, monsters }: Props) {
+  const textes = useTraduction();
+  const k = textes.categories;
   const [openId, setOpenId] = useState<string | null>(null); // catégorie dépliée
   const [editId, setEditId] = useState<string | null>(null); // catégorie en édition
   const [creating, setCreating] = useState(false);
@@ -62,7 +65,7 @@ export default function CategoryBar({ cats, monsters }: Props) {
     <div className="mt-4">
       <div className="flex items-center gap-1.5 flex-wrap">
         <span className="label mr-1">
-          Catégories
+          {k.titre}
         </span>
 
         {cats.categories.map((c) => (
@@ -77,7 +80,7 @@ export default function CategoryBar({ cats, monsters }: Props) {
               actif={openId === c.id}
               onClick={() => setOpenId((o) => (o === c.id ? null : c.id))}
               aria-expanded={openId === c.id}
-              title="Choisir les monstres de cette catégorie"
+              title={k.choisirMonstres}
               icone={
                 <span
                   className="h-2.5 w-2.5 flex-none rounded-full"
@@ -89,13 +92,13 @@ export default function CategoryBar({ cats, monsters }: Props) {
                 <>
                   <BoutonIcone
                     onClick={() => setEditId((e) => (e === c.id ? null : c.id))}
-                    libelle={`Éditer ${c.label}`}
+                    libelle={k.editer(c.label)}
                     taille="serre"
                     icone={<Pencil size={11} />}
                   />
                   <BoutonIcone
                     onClick={() => setASupprimer({ id: c.id, label: c.label })}
-                    libelle={`Supprimer ${c.label}`}
+                    libelle={k.supprimer(c.label)}
                     taille="serre"
                     ton="danger"
                     icone={<Trash2 size={11} />}
@@ -128,7 +131,7 @@ export default function CategoryBar({ cats, monsters }: Props) {
             pointille
             fond="vide"
             icone={<Plus size={12} />}
-            libelle="Catégorie"
+            libelle={k.nouvelle}
             className="font-normal hoverable:bg-panel2"
           />
           {creating && (
@@ -150,18 +153,18 @@ export default function CategoryBar({ cats, monsters }: Props) {
           <InterrupteurAffichage
             actif={cats.showSpeeds}
             onToggle={() => cats.setShowSpeeds(!cats.showSpeeds)}
-            libelle="Vitesses"
-            titreActif="Masquer les vitesses sur les cartes"
-            titreInactif="Réafficher les vitesses sur les cartes"
+            libelle={textes.ordreTour.vitesses}
+            titreActif={k.masquerVitesses}
+            titreInactif={k.afficherVitesses}
             surMobile={surMobile}
             premier
           />
           <InterrupteurAffichage
             actif={cats.markDesync}
             onToggle={() => cats.setMarkDesync(!cats.markDesync)}
-            libelle="Modifiés"
-            titreActif="Ne plus signaler les monstres dont les runes ne suivent plus la vitesse demandée"
-            titreInactif="Signaler en orange les monstres dont les runes ne suivent plus"
+            libelle={k.modifies}
+            titreActif={k.masquerModifies}
+            titreInactif={k.afficherModifies}
             surMobile={surMobile}
           />
           {/* ⚠️ Toujours affiché, même sans aucune catégorie : les trois
@@ -171,9 +174,9 @@ export default function CategoryBar({ cats, monsters }: Props) {
           <InterrupteurAffichage
             actif={cats.visible}
             onToggle={() => cats.setVisible(!cats.visible)}
-            libelle="Catégories"
-            titreActif="Masquer les couleurs sur les cartes et l’ordre de tour"
-            titreInactif="Réafficher les couleurs"
+            libelle={k.titre}
+            titreActif={k.masquerCouleurs}
+            titreInactif={k.afficherCouleurs}
             surMobile={surMobile}
           />
           </>
@@ -191,18 +194,18 @@ export default function CategoryBar({ cats, monsters }: Props) {
           <InterrupteurAffichage
             actif={cats.showSpeeds}
             onToggle={() => cats.setShowSpeeds(!cats.showSpeeds)}
-            libelle="Vitesses"
-            titreActif="Masquer les vitesses sur les cartes"
-            titreInactif="Réafficher les vitesses sur les cartes"
+            libelle={textes.ordreTour.vitesses}
+            titreActif={k.masquerVitesses}
+            titreInactif={k.afficherVitesses}
             surMobile={surMobile}
             premier
           />
           <InterrupteurAffichage
             actif={cats.markDesync}
             onToggle={() => cats.setMarkDesync(!cats.markDesync)}
-            libelle="Modifiés"
-            titreActif="Ne plus signaler les monstres dont les runes ne suivent plus la vitesse demandée"
-            titreInactif="Signaler en orange les monstres dont les runes ne suivent plus"
+            libelle={k.modifies}
+            titreActif={k.masquerModifies}
+            titreInactif={k.afficherModifies}
             surMobile={surMobile}
           />
           {/* ⚠️ Toujours affiché, même sans aucune catégorie : les trois
@@ -212,9 +215,9 @@ export default function CategoryBar({ cats, monsters }: Props) {
           <InterrupteurAffichage
             actif={cats.visible}
             onToggle={() => cats.setVisible(!cats.visible)}
-            libelle="Catégories"
-            titreActif="Masquer les couleurs sur les cartes et l’ordre de tour"
-            titreInactif="Réafficher les couleurs"
+            libelle={k.titre}
+            titreActif={k.masquerCouleurs}
+            titreInactif={k.afficherCouleurs}
             surMobile={surMobile}
           />
         </div>
@@ -244,7 +247,7 @@ export default function CategoryBar({ cats, monsters }: Props) {
             <span className="w-2.5 h-2.5 rounded-full flex-none" style={{ backgroundColor: open.color }} />
             <span className="text-sm font-semibold text-ink">{open.label}</span>
             <span className="font-mono text-micro text-ink-dim">
-              {countOf(open)} monstre{countOf(open) > 1 ? 's' : ''}
+              {textes.vueAmi.monstres(countOf(open))}
             </span>
             {/* ⚠️ Ton `danger` : elle décoche d'un coup ce qu'on a coché un
                 monstre à la fois. Le ton porte l'avertissement, la confirmation
@@ -256,15 +259,15 @@ export default function CategoryBar({ cats, monsters }: Props) {
                 taille="xs"
                 forme="pilule"
                 onClick={() => setViderAConfirmer({ id: open.id, label: open.label, n: countOf(open) })}
-                title="Retirer tous les monstres de cette catégorie"
+                title={k.toutDecocherAide}
                 icone={<X size={11} />}
-                libelle="Tout décocher"
+                libelle={k.toutDecocher}
                 className="ml-auto h-6"
               />
             )}
             <BoutonIcone
               onClick={() => setOpenId(null)}
-              libelle="Fermer"
+              libelle={textes.commun.fermer}
               icone={<X size={14} />}
               className={countOf(open) > 0 ? '' : 'ml-auto'}
             />
@@ -272,7 +275,7 @@ export default function CategoryBar({ cats, monsters }: Props) {
 
           {monsters.length === 0 ? (
             <p className="text-xs text-ink-dim">
-              Aucun monstre dans ta prépa : ajoute-en d'abord ci-dessus.
+              {k.prepaVide}
             </p>
           ) : (
             // ⚠️ **Une GRILLE au doigt, une rangée qui se replie à la souris.**
@@ -323,10 +326,10 @@ export default function CategoryBar({ cats, monsters }: Props) {
                     fondAppuye={surMobile}
                     title={
                       bloque
-                        ? `${m.name} — déjà ${MAX_CATEGORIES_PER_MONSTER} catégories (maximum)`
+                        ? k.maximum(m.name, MAX_CATEGORIES_PER_MONSTER)
                         : dedans
-                          ? `Retirer ${m.name} de « ${open.label} »`
-                          : `Ajouter ${m.name} à « ${open.label} »`
+                          ? k.retirerDe(m.name, open.label)
+                          : k.ajouterA(m.name, open.label)
                     }
                     contenu={<MonsterAvatar monster={m} size={36} element={false} />}
                     // ⚠️ **Pas de nom au DOIGT.** Il n'y tenait pas : « Mei Hou
@@ -367,9 +370,9 @@ export default function CategoryBar({ cats, monsters }: Props) {
 
       {viderAConfirmer && (
         <ConfirmDialog
-          titre={`Retirer les ${viderAConfirmer.n} monstres de « ${viderAConfirmer.label} » ?`}
-          message="La catégorie reste, mais elle se vide. Les monstres ne sont pas retirés de ta prépa — c'est leur appartenance à cette catégorie qui part, et elle se recoche un monstre à la fois."
-          libelleAction="Tout retirer"
+          titre={k.viderTitre(viderAConfirmer.n, viderAConfirmer.label)}
+          message={k.viderMessage}
+          libelleAction={k.toutRetirer}
           destructif
           onCancel={() => setViderAConfirmer(null)}
           onConfirm={() => {
@@ -381,9 +384,9 @@ export default function CategoryBar({ cats, monsters }: Props) {
 
       {aSupprimer && (
         <ConfirmDialog
-          titre={`Supprimer la catégorie « ${aSupprimer.label} » ?`}
-          message="Elle disparaît de la barre et des anneaux de couleur. Les monstres qui la portaient ne sont pas retirés de ta prépa."
-          libelleAction="Supprimer"
+          titre={k.supprimerTitre(aSupprimer.label)}
+          message={k.supprimerMessage}
+          libelleAction={textes.commun.supprimer}
           destructif
           onCancel={() => setASupprimer(null)}
           onConfirm={() => {
@@ -491,6 +494,8 @@ function CategoryPopover({
   onSubmit: (label: string, color: string) => void;
   onClose: () => void;
 }) {
+  const textes = useTraduction();
+  const k = textes.categories;
   const [label, setLabel] = useState(initial.label);
   const [color, setColor] = useState(initial.color);
   // Sur la surface FLOTTANTE, pas sur le formulaire : voir plus bas.
@@ -540,7 +545,7 @@ function CategoryPopover({
           autoFocus
           value={label}
           onChange={(e) => setLabel(e.target.value)}
-          placeholder="Striper, Lead SPD…"
+          placeholder={k.exemple}
           maxLength={24}
           // ⚠️ `pleineLargeur={false}` avec `flex-1` : les deux ensemble
           // (`w-full` et `flex-1`) se contredisent dans un conteneur flex, et le
@@ -563,7 +568,7 @@ function CategoryPopover({
               teinte={c}
               choisi={actif}
               onClick={() => setColor(c)}
-              aria-label={`Couleur ${c}`}
+              aria-label={k.couleur(c)}
               // ⚠️ 44 px de haut au doigt contre 24 à la souris : douze cases
               // côte à côte, une erreur de visée choisit la voisine et il faut
               // recommencer. C'est plus que la cible tactile ordinaire, d'où une
@@ -588,14 +593,14 @@ function CategoryPopover({
         {/* ⚠️ Sans fond ni trait : l'action à côté de « Valider » ne doit pas lui
             disputer le regard — elle est là pour être trouvée, pas pour être
             proposée. */}
-        <Bouton fond="vide" trait="aucun" taille="sm" onClick={onClose} libelle="Annuler" />
+        <Bouton fond="vide" trait="aucun" taille="sm" onClick={onClose} libelle={textes.commun.annuler} />
         <Bouton
           type="submit"
           ton="accent"
           fond="doux"
           disabled={!label.trim()}
           taille="sm"
-          libelle="Valider"
+          libelle={textes.commun.valider}
         />
       </div>
     </form>
@@ -608,7 +613,7 @@ function CategoryPopover({
   // « Valider » ne soumettrait rien.
   const actions = (
     <>
-      <Bouton fond="vide" trait="aucun" taille="sm" onClick={onClose} libelle="Annuler" />
+      <Bouton fond="vide" trait="aucun" taille="sm" onClick={onClose} libelle={textes.commun.annuler} />
       <Bouton
         type="submit"
         form="categorie-form"
@@ -616,7 +621,7 @@ function CategoryPopover({
         fond="doux"
         disabled={!label.trim()}
         taille="sm"
-        libelle="Valider"
+        libelle={textes.commun.valider}
       />
     </>
   );
@@ -637,7 +642,7 @@ function CategoryPopover({
       <Modale
         onClose={onClose}
         labelledBy="categorie-titre"
-        titre={initial.label ? 'Modifier la catégorie' : 'Nouvelle catégorie'}
+        titre={initial.label ? k.modifierTitre : k.nouvelleTitre}
         largeur="max-w-[340px]"
         croix
         actions={actions}

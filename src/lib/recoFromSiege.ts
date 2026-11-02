@@ -82,12 +82,13 @@ export function deckFromSiegeTeam(team: SiegeTeam, monsterById: Map<string, Mons
   return { name: '', note: '', slots, counters: [] };
 }
 
-// Résumé d'une équipe pour le sélecteur (« Trevor · Bella · Loren »).
-export function teamSummary(team: SiegeTeam, monsterById: Map<string, Monster>): string {
+// Résumé d'une équipe pour le sélecteur (« Trevor · Bella · Loren ») ; `vide`
+// nomme une équipe sans monstre, dans la langue affichée.
+export function teamSummary(team: SiegeTeam, monsterById: Map<string, Monster>, vide: string): string {
   const noms = team.slots
     .map((s) => (s.monsterId ? monsterById.get(s.monsterId)?.name : null))
     .filter((n): n is string => !!n);
-  return noms.length ? noms.join(' · ') : 'équipe vide';
+  return noms.length ? noms.join(' · ') : vide;
 }
 
 // Une équipe est proposable si elle contient au moins un monstre partageable.

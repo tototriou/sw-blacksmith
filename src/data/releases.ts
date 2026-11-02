@@ -78,9 +78,12 @@ export const RELEASES: Release[] = [
       { kind: 'feat', scope: 'Paramètres', text: 'Nouveau réglage « Langue » : Auto, Français ou English.' },
       { kind: 'feat', scope: 'Navigation', text: 'Menus, barre du haut, recherche et Paramètres traduits en anglais.' },
       { kind: 'feat', scope: 'Ressources', text: 'Accueil, Nouveautés, Bestiaire, Mécaniques et Télécharger en anglais.' },
+      { kind: 'feat', scope: 'RTA', text: 'La prépa, ses catégories, l’ordre de tour et la prépa d’un ami en anglais.' },
+      { kind: 'feat', scope: 'Siège', text: 'Équipes de défense et d’offense, recommandations et rapports d’import en anglais.' },
       { kind: 'feat', scope: 'Jeu', text: 'Sets, stats, effets et artéfacts portent les noms du jeu, en français comme en anglais.' },
       { kind: 'fix', scope: 'Runes', text: '« Tx critiq. » et « Dgts critiq. » comme dans le jeu, et le bon effet du set Sceau.' },
       { kind: 'fix', scope: 'Bestiaire', text: 'La fiche d’un monstre écrit son type en toutes lettres.' },
+      { kind: 'fix', scope: 'Siège', text: 'L’analyse d’une recommandation nomme le set manquant comme le jeu, et la vitesse s’écrit « VIT ».' },
     ],
   },
   {

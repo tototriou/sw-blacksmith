@@ -17,9 +17,12 @@ export const RELEASES_EN: Release[] = [
       { kind: 'feat', scope: 'Settings', text: 'New “Language” setting: Auto, Français or English.' },
       { kind: 'feat', scope: 'Navigation', text: 'Menus, top bar, search and Settings translated into English.' },
       { kind: 'feat', scope: 'Resources', text: 'Home, What’s new, Bestiary, Mechanics and Download in English.' },
+      { kind: 'feat', scope: 'RTA', text: 'The prep, its categories, the turn order and a friend’s prep in English.' },
+      { kind: 'feat', scope: 'Siege', text: 'Defense and offense teams, recommendations and import reports in English.' },
       { kind: 'feat', scope: 'Game', text: 'Sets, stats, effects and artifacts use the game’s names, in French and in English.' },
       { kind: 'fix', scope: 'Runes', text: 'French stat names match the game, and the Seal set shows its real effect.' },
       { kind: 'fix', scope: 'Bestiary', text: 'A monster’s sheet spells out its type.' },
+      { kind: 'fix', scope: 'Siege', text: 'A recommendation’s analysis names the missing set as the game does.' },
     ],
   },
   {

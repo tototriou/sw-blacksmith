@@ -40,6 +40,12 @@ const FICHIERS_TRADUITS = [
   'src/pages/MechanicsPage.tsx',
   'src/pages/ReleasesPage.tsx',
   'src/pages/TelechargerPage.tsx',
+  // Lot 4 : la RTA et le Siège.
+  'src/components/rta/*.tsx',
+  'src/components/siege/*.tsx',
+  'src/components/siege/pastilleStatut.ts',
+  'src/pages/RtaPage.tsx',
+  'src/pages/SiegePage.tsx',
 ];
 
 export default tseslint.config(

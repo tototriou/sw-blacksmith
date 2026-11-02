@@ -1,6 +1,7 @@
 import { titre, egal, ok } from './outils';
 import { statutEquipe, raisonSansVerdict, EntreeStatut } from '../src/lib/siegeStatut';
 import { ResultatAuto } from '../src/lib/speedTuneAuto';
+import { fr } from '../src/i18n/fr';
 
 // Le statut d'une card de siège en mode « Vérifier mes tick ATB ».
 //
@@ -98,15 +99,15 @@ export default function testSiegeStatut() {
   // ⚠️ **Le mode allumé répond TOUJOURS quelque chose.** Un statut neutre et pas
   // un mot, c'est exactement « le bouton ne fait rien » : on a demandé une
   // vérification, la card n'a pas bougé, et rien ne dit pourquoi.
-  ok(raisonSansVerdict({ ...base, verifier: false }) === null, 'mode éteint : aucune raison à donner');
-  ok(raisonSansVerdict(base) === null, 'un statut tranché parle de lui-même');
+  ok(raisonSansVerdict({ ...base, verifier: false }, fr) === null, 'mode éteint : aucune raison à donner');
+  ok(raisonSansVerdict(base, fr) === null, 'un statut tranché parle de lui-même');
   ok(
-    (raisonSansVerdict({ ...base, desMonstres: false }) ?? '').length > 0,
+    (raisonSansVerdict({ ...base, desMonstres: false }, fr) ?? '').length > 0,
     'équipe vide : la card le dit'
   );
-  ok((raisonSansVerdict({ ...base, leo: true }) ?? '').length > 0, 'Leo : la card le dit');
+  ok((raisonSansVerdict({ ...base, leo: true }, fr) ?? '').length > 0, 'Leo : la card le dit');
   ok(
-    (raisonSansVerdict({ ...base, swift: true, speedTune: null }) ?? '').length > 0,
+    (raisonSansVerdict({ ...base, swift: true, speedTune: null }, fr) ?? '').length > 0,
     'Swift sans verdict : la card dit pourquoi, au lieu de rester grise et muette'
   );
 
@@ -118,8 +119,8 @@ export default function testSiegeStatut() {
   {
     const enChargement = { ...base, swift: true, speedTune: null, slotsRemplis: 4, monstresConnus: 0 };
     const vraimentCourte = { ...base, swift: true, speedTune: null, slotsRemplis: 1, monstresConnus: 1 };
-    const m1 = raisonSansVerdict(enChargement) ?? '';
-    const m2 = raisonSansVerdict(vraimentCourte) ?? '';
+    const m1 = raisonSansVerdict(enChargement, fr) ?? '';
+    const m2 = raisonSansVerdict(vraimentCourte, fr) ?? '';
     ok(m1.length > 0 && m2.length > 0, 'les deux cas disent quelque chose');
     ok(
       m1 !== m2,

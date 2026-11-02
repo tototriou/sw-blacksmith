@@ -16,6 +16,7 @@ import {
 } from '../types';
 import { artifactSubKinds, canAddSet, isArtifactSub } from '../lib/effects';
 import { cleanArtifacts, cleanSetOptions } from '../lib/recoShare';
+import { fr } from '../i18n/fr';
 import { avecContenuDeck, ContenuDeck } from '../lib/annulerEdition';
 import { reinsererA } from '../lib/reinsererA';
 import { saveLocal, usePersistence } from './usePersistence';
@@ -67,8 +68,9 @@ function loadSlot(raw: unknown): RecoSlot {
   // chargement, et lecture de l'ancienne forme `sets: string[]` (une seule
   // possibilité) via le même normaliseur que l'import.
   const brut = s as { setOptions?: unknown; sets?: unknown; artifacts?: unknown };
+  // Les messages ne sont pas lus : le français suffit.
   const rien = { errors: [], warnings: [] };
-  const setOptions = cleanSetOptions(brut.setOptions ?? brut.sets, rien, '');
+  const setOptions = cleanSetOptions(brut.setOptions ?? brut.sets, rien, '', fr);
   return {
     com2usId: typeof s.com2usId === 'number' ? s.com2usId : null,
     name: typeof s.name === 'string' ? s.name : '',
@@ -76,7 +78,7 @@ function loadSlot(raw: unknown): RecoSlot {
     setOptions,
     // Recommandations enregistrées avant les artéfacts : la clé est absente,
     // le normaliseur rend deux listes vides — rien n'est exigé, rien ne casse.
-    artifacts: cleanArtifacts(brut.artifacts, rien, ''),
+    artifacts: cleanArtifacts(brut.artifacts, rien, '', fr),
   };
 }
 

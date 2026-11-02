@@ -69,7 +69,7 @@ utiles** (+33 % Vanessa, +28 % Megumi, +24 % Moore/Chandra/Xing Zhe).
 ⚠️ **Seuls les leads inconditionnels en RTA** (`General`, `Arena`). Un lead
 d'élément ne profite qu'aux alliés du bon élément, or la simulation applique la
 valeur à **tout le monde** : le proposer induirait en erreur. Même règle que pour
-la catégorie « Lead SPD » (voir [feat-categories.md](feat-categories.md)).
+la catégorie « Lead VIT » (voir [feat-categories.md](feat-categories.md)).
 
 **Repli** : prépa vide ou sans lead VIT → les valeurs classiques (`SPEED_LEADS`
 dans [speed.ts](src/lib/speed.ts)), sinon la rangée serait vide et l'outil

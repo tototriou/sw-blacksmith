@@ -50,6 +50,7 @@ function CarteAmi({
   onToggle: () => void;
   avecVitesses: boolean;
 }) {
+  const textes = useTraduction();
   const base = monster.stats.speed;
   const total = base !== null || entry.runeSpeed !== null ? (base ?? 0) + (entry.runeSpeed ?? 0) : null;
   // ⚠️ Le chevron de détail n'apparaît QUE s'il y a un équipement à montrer :
@@ -86,7 +87,7 @@ function CarteAmi({
             onClick={hasGear ? onToggle : undefined}
             disabled={!hasGear}
             className="flex w-full items-center gap-1"
-            title={hasGear ? 'Voir son équipement' : undefined}
+            title={hasGear ? textes.vueAmi.voirEquipement : undefined}
           >
             <span className="text-xs font-semibold leading-tight truncate flex-1">
               {monster.name}
@@ -96,7 +97,7 @@ function CarteAmi({
                 chiffre manquant en croyant à un bug d'affichage. */}
             {avecVitesses && (
               <>
-                <img src={SPD_ICON} alt="SPD" width={15} height={15} className="flex-none" />
+                <img src={SPD_ICON} alt={textes.jeu.stats.spd} width={15} height={15} className="flex-none" />
                 <span className="font-mono text-sm font-black leading-none text-ink">
                   {total !== null ? total : '—'}
                 </span>
@@ -192,7 +193,7 @@ export default function RtaFriendView({ vue, onClose }: { vue: RtaVueAmi; onClos
     [vue.entries]
   );
 
-  const titre = vue.nom || (vue.auteur ? `Prépa de ${vue.auteur}` : "Prépa d'un ami");
+  const titre = vue.nom || (vue.auteur ? textes.vueAmi.prepaDe(vue.auteur) : textes.vueAmi.prepaAmi);
 
   function rendreSection(key: string) {
     const items = groupes[key] ?? [];
@@ -257,10 +258,10 @@ export default function RtaFriendView({ vue, onClose }: { vue: RtaVueAmi; onClos
         </span>
         <h2 className="font-display text-lg tracking-wide">{titre}</h2>
         {vue.auteur && vue.nom && (
-          <span className="font-mono text-micro text-ink-dim">par {vue.auteur}</span>
+          <span className="font-mono text-micro text-ink-dim">{textes.vueAmi.par(vue.auteur)}</span>
         )}
         <span className="font-mono text-micro text-ink-dim">
-          {vue.entries.length} monstre{vue.entries.length > 1 ? 's' : ''}
+          {textes.vueAmi.monstres(vue.entries.length)}
         </span>
         <Bouton
           onClick={onClose}
@@ -268,8 +269,8 @@ export default function RtaFriendView({ vue, onClose }: { vue: RtaVueAmi; onClos
           trait="aucun"
           taille="sm"
           icone={<X size={14} />}
-          libelle="Fermer"
-          title="Fermer la consultation"
+          libelle={textes.commun.fermer}
+          title={textes.vueAmi.fermer}
           className="ml-auto"
         />
       </div>
@@ -278,9 +279,9 @@ export default function RtaFriendView({ vue, onClose }: { vue: RtaVueAmi; onClos
           cherche un verdict (« est-ce que je peux jouer ça ? ») qui n'existe pas
           sur cet écran, et on se demande si sa propre prépa a bougé. */}
       <p className="mb-4 text-xs leading-relaxed text-ink-dim">
-        Tu regardes la prépa de quelqu'un d'autre. <b className="text-ink">Ta prépa n'a pas bougé</b>{' '}
-        et rien n'est comparé à tes monstres.
-        {vue.niveau === 'complet' && <> Clique un monstre pour voir ses runes et ses artéfacts.</>}
+        {textes.vueAmi.intro} <b className="text-ink">{textes.vueAmi.intacte}</b>{' '}
+        {textes.vueAmi.rienCompare}
+        {vue.niveau === 'complet' && <> {textes.vueAmi.cliquer}</>}
       </p>
 
       {/* Dire CE QUI a été partagé, et non seulement ce qui manque : sans ça on
@@ -290,13 +291,13 @@ export default function RtaFriendView({ vue, onClose }: { vue: RtaVueAmi; onClos
           <EyeOff size={14} className="mt-[1px] flex-none text-ink-dim" />
           {vue.niveau === 'vitesses' ? (
             <span>
-              L'auteur a partagé <b className="text-ink">son ordre de tour</b> : la vitesse et les
-              sets de chaque monstre, sans le détail de ses runes ni son classement par section.
+              {textes.vueAmi.aPartage} <b className="text-ink">{textes.vueAmi.sonOrdre}</b>{' '}
+              {textes.vueAmi.sonOrdreDetail}
             </span>
           ) : (
             <span>
-              L'auteur a partagé <b className="text-ink">son ordre de tour seul</b>. Ni vitesses, ni
-              sets, ni sections : tu vois qui passe avant qui, rien de plus.
+              {textes.vueAmi.aPartage} <b className="text-ink">{textes.vueAmi.sonOrdreSeul}</b>{' '}
+              {textes.vueAmi.sonOrdreSeulDetail}
             </span>
           )}
         </p>
@@ -304,8 +305,7 @@ export default function RtaFriendView({ vue, onClose }: { vue: RtaVueAmi; onClos
 
       {vue.inconnus.length > 0 && (
         <p className="mb-4 text-micro text-warn">
-          {vue.inconnus.length} monstre(s) de cette prépa sont absents des données chargées et ne
-          sont pas affichés.
+          {textes.vueAmi.absents(vue.inconnus.length)}
         </p>
       )}
 
@@ -316,8 +316,8 @@ export default function RtaFriendView({ vue, onClose }: { vue: RtaVueAmi; onClos
 
       <section className={avecSections ? 'mt-8' : ''}>
         <div className="flex items-baseline gap-x-3 gap-y-1 flex-wrap pb-2.5 mb-4 border-b border-border">
-          <h3 className="font-display text-lg tracking-wide">Son ordre de tour</h3>
-          <span className="font-mono text-ink-dim text-xs">par vitesse combat totale</span>
+          <h3 className="font-display text-lg tracking-wide">{textes.vueAmi.sonOrdreTitre}</h3>
+          <span className="font-mono text-ink-dim text-xs">{textes.rta.parVitesseTotale}</span>
         </div>
 
         {/* ⚠️ La condition porte sur `aDesVitesses` (ce que le FICHIER contient)
@@ -357,10 +357,11 @@ export default function RtaFriendView({ vue, onClose }: { vue: RtaVueAmi; onClos
 // numérotées** de l'ordre de tour habituel : c'est le repère qu'on lit déjà sur
 // sa propre prépa, on ne réapprend rien.
 function OrdreTransmis({ items }: { items: { monster: Monster; rang?: number }[] }) {
+  const textes = useTraduction();
   if (items.length === 0) {
     return (
       <p className="rounded-xl border border-dashed border-border bg-panel/40 px-3 py-4 text-center text-xs text-ink-dim">
-        Ce fichier ne contient pas d'ordre de tour.
+        {textes.vueAmi.sansOrdre}
       </p>
     );
   }
