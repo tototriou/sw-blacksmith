@@ -197,7 +197,9 @@ Un sort dont des coups frappent des ennemis **au hasard**
 (`COUPS_AU_HASARD_PAR_ID` : Kung Fu Girls S3, Katarina, Zenitsu et Qilin
 Slasher, Arrow Storm, Wolf Hunt, Shooting Star, Hairpin: 4 Nails, Splash
 Splash…) se règle par « Coups qui touchent la cible » : de 1 aux coups du sort,
-**tous par défaut** (utilisateur, 2026-11-02 : aucun total d'avant ne change).
+**tous par défaut** (utilisateur, 2026-11-02). Le total par défaut ne change
+donc pas, sauf pour Splash (1 → 2 coups) et Splash Splash (1 → 3), dont les
+coups au hasard n'étaient pas comptés avant ces décisions.
 Katarina et Splash Splash, « 2 to 3 times » au hasard après un coup sur la
 cible : 3 par défaut, 4 au plus. Splash (Maris, Noctaris) frappe la cible puis
 « a random enemy » : 2 par défaut. Les coups proposés pour une pose suivent le
@@ -236,8 +238,6 @@ effet proposé :
   « Après le coup N » pour ces seuls coups (`rangsDePoseProposes`, toujours
   avant le dernier coup que le réglage retient, et pour la cible secondaire
   les seuls coups de zone) ;
-- un effet non cumulable que la cible peut déjà porter garde son
-  interrupteur « déjà présent » ; la Réduction de DEF et la Marque lisent
 - **un tirage** (deux effets au moins d'un même tirage, un seul posé par
   coup : Virus de 570RM, Empathy, Dimensional Memory, Blessing of Curse) :
   « Un seul de ces effets par coup », puis un sélecteur par coup, « Après le
@@ -251,6 +251,8 @@ effet proposé :
   Appearance, Virus de 7R1X et N1X : la Réduction de DEF seule ; la Marque
   d'Empathy quand le sort pose lui-même la Réduction de DEF) se règle comme
   un effet seul ;
+- un effet non cumulable que la cible peut déjà porter garde son
+  interrupteur « déjà présent » ; la Réduction de DEF et la Marque lisent
   « Brise DEF » et « Marque » du réglage ;
 - Critical Link ajoute « Effets bénéfiques convertis » (0 à 10).
 
@@ -312,7 +314,7 @@ interrupteur d'attaque appelée
   23508, Theonia ténèbres 23510) n'a qu'un coup ; son attaque en plus est une
   attaque auxiliaire qui suit le sort et lit la Réduction de DEF qu'il pose
   par le réglage « Ce sort pose le def break »
-  ([feat-passifs-offensifs.md](feat-passifs-offensifs.md#la-réduction-de-défense--avant-nest-pas-après)).
+  ([feat-passifs-offensifs.md](feat-passifs-offensifs.md#la-réduction-de-défense---avant--nest-pas--après-)).
   De même, Exploding Hands de Jackie ténèbres (11015) n'a qu'un coup, qui
   étourdit ; son attaque en plus (auxiliaire 11016) se règle par
   l'interrupteur « l'étourdissement de ce sort réussit ». La clause de
@@ -351,15 +353,26 @@ interrupteur d'attaque appelée
 - **Coups non comptés** : Cleave (19910) et Exorcism Orb (20510), « the number
   of hits increases up to 6 times », se calculent sur 2 coups
   ([piste](../../05-feuille-de-route/pistes-degats-reels.md#plages-de-coups-à-relever-et-coups--au-hasard-)).
-- **Enchaînement vers un autre sort** : Energy Ball et Wield vers un sort à un
-  coup ; Twist Kick des Kung Fu Girls (Xiao Lin 8216, Hong Hua 8217, Liu Mei
-  8219), dont la baisse de VIT et l'Étourdissement précéderaient les 4 coups
-  de leur [Dragon Attack] (celui de Xiao Lin lit +15 % par effet nocif). Une
-  pose ne vaut qu'entre les coups d'un même sort, et ces enchaînements ne sont
-  pas calculés ([piste](../../05-feuille-de-route/pistes-degats-reels.md#chaînes-ordonnées)).
+- **Enchaînement vers un autre sort** : Energy Ball des Kung Fu Girls vers
+  leur S2 ; Twist Kick (Xiao Lin 8216, Hong Hua 8217, Liu Mei 8219), dont la
+  baisse de VIT et l'Étourdissement précéderaient les 4 coups de leur
+  [Dragon Attack] (celui de Xiao Lin lit +15 % par effet nocif)
+  ([piste](../../05-feuille-de-route/pistes-degats-reels.md#chaînes-ordonnées)) ;
+  Blood Talon (Hwoarang feu) et Heaven's Might (Taebaek feu), qui lancent
+  « [Hunting Hawk] / [Roundhouse Kick Combo] … in succession after the
+  attack » contre une cible sous effet bénéfique (auxiliaires 22516 et
+  23016, 3 coups) : la Marque de leur passif posée pendant le sort vaudrait
+  pour ces coups (même piste). Wield des Samouraïs (Kaz, Jun, Kaito, Tosi,
+  Sige ; 8021 à 8025) baisse la DEF, puis peut activer Sword of the Supreme
+  Sky Wolf, qui « persists until the skill is used » : la compétence suivante
+  se choisit au tour suivant, par un sélecteur de suite non codé
+  ([feat-attaque-apres-un-sort.md](feat-attaque-apres-un-sort.md)). Une pose
+  ne vaut qu'entre les coups d'un même sort, et ces suites ne sont pas
+  calculées.
 - **Répétition du sort par un passif** : Burning Whip de Hwa (6912) « strikes
-  again » ; la répétition n'est pas calculée, l'effet posé par le premier
-  passage n'a donc rien à majorer
+  again », Chain Effect de Vendhan feu (18132) « uses the same skill again
+  with reduced damage » ; la répétition n'est pas calculée, la Marque de Wild
+  Bolt ou l'effet posé par le premier passage n'a donc rien à majorer
   ([piste](../../05-feuille-de-route/pistes-degats-reels.md#répétition-du-sort-retenu)).
 
 ## Vérification

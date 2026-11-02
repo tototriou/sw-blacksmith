@@ -4,8 +4,8 @@
 // l'inventaire complet des formes jouables (celles que l'Optimizer propose,
 // `formesJouables`).
 //
-// Spec : docs/02-app/degats-reels/feat-conditions-et-audit.md (« Poses entre
-// les coups ») ; liste sort par sort :
+// Spec : docs/02-app/degats-reels/feat-poses-entre-les-coups.md ; liste sort
+// par sort :
 // docs/02-app/degats-reels/inventaire-effets-entre-coups.md, figée par
 // tests/fixtures/effets-entre-coups-inventaire.json.
 

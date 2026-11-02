@@ -62,7 +62,11 @@ codée porte « Calcul partiel »
   aucune entrée dans `src/lib/damage.ts`, alors que leurs valeurs sont
   fournies ([02-app/degats-reels/](../02-app/degats-reels/),
   « Déclenchements de Hwa et Jackie », « Zeratu — Forbidden Power ») ; la
-  répétition d'Elise sous 50 % de PV non plus. Exploding Hands (`11015`) se
+  répétition d'Elise sous 50 % de PV non plus, ni Chain Effect (`18132`,
+  Vendhan feu : « uses the same skill again with reduced damage », taux non
+  donné), ni les coups en plus de Severing Edge et Dimension Shatter
+  (`25213`, `25713`, Übel et Wieb vent : « attacks the target 2 to 3 more
+  times », `0.8*{ATK}`). Exploding Hands (`11015`) se
   répète par sa compétence auxiliaire, améliorations comprises, sans
   confirmation ([02-app/degats-reels/feat-competences-auxiliaires.md](../02-app/degats-reels/feat-competences-auxiliaires.md)) ;
   la clause de cette auxiliaire (`11016`), « 25% of the target's remaining
@@ -108,6 +112,9 @@ codée porte « Calcul partiel »
   que leur passif (Blood Talon, Heaven's Might) pose pendant ce préfixe
   vaudrait pour leurs trois coups, alors que le calcul ne propose que la pose
   après leur coup 1 ([02-app/degats-reels/feat-poses-entre-les-coups.md](../02-app/degats-reels/feat-poses-entre-les-coups.md)).
+  Leur passif lance aussi, contre une cible sous effet bénéfique, « [Hunting
+  Hawk] / [Roundhouse Kick Combo] … in succession after the attack »
+  (auxiliaires `22516` et `23016`, 3 coups, `{ATK}`), que rien ne calcule.
   Shoot n' Slash de Barque (`10223`, sans formule)
   enchaîne Backspin Slash et Pirate's Strike.
 - **Idée** : ce que décide chaque chaîne

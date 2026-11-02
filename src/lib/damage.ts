@@ -4162,8 +4162,9 @@ const COUPS_VARIABLES_PAR_ID_CONNUS: Record<number, { min: number; max: number; 
 // combien de coups touchent la cible calculée (champ « Coups qui touchent la
 // cible », `coupsPersonnalises`). `min` = les coups garantis sur la cible (au
 // moins 1) ; `max` = tous les coups ; `defaut` = TOUS les coups que le sort
-// porte (décision de l'utilisateur, 2026-11-02 : aucun total d'avant ne
-// change). Katarina et Splash Splash frappent « 2 to 3 times » au hasard : par
+// porte (décision de l'utilisateur, 2026-11-02 : le total par défaut ne change
+// pas, sauf Splash, 1 → 2 coups, et Splash Splash, 1 → 3, dont les coups au
+// hasard n'étaient pas comptés). Katarina et Splash Splash frappent « 2 to 3 times » au hasard : par
 // défaut 1 + 2 coups sur la cible, 4 au plus. Lu par identifiant, prose de
 // chaque sort relue (« randomly », « random enemies »). Ne sont pas ici les
 // sorts dont seul l'EFFET est tiré au hasard (Ghost Appearance, Surprise Box,
@@ -8010,18 +8011,18 @@ function calculerChronologie(
   const resultats: DamageSetup[] = [];
   for (let i = 1; i <= coups; i++) {
     resultats.push(setupCoup);
-    for (const effet of effetsEntreCoups) {
     // Un tirage ne pose qu'un effet par coup : deux effets du même tirage
     // réglés après le même coup (recette importée), seul le premier est posé.
     const tiragesDuCoup = new Set<string>();
+    for (const effet of effetsEntreCoups) {
       // Une pose à un rang que le sort n'a pas (recette importée, données
       // régénérées) n'a pas lieu.
       if (scenario.apresCoup?.[effet.id] !== i || (effet.coups && !effet.coups.includes(i))) continue;
-      const dejaPresent = presents.has(effet.id);
       if (effet.tirage) {
         if (tiragesDuCoup.has(effet.tirage)) continue;
         tiragesDuCoup.add(effet.tirage);
       }
+      const dejaPresent = presents.has(effet.id);
       if ((effet.cumulable || !dejaPresent) && !effet.effetCombat) {
         const comptes = { ...(setupCoup.effetsCibleCount ?? {}) };
         // Le nombre que la pose ajoute : celui que le joueur saisit (Critical

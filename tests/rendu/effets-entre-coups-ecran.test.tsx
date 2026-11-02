@@ -1,8 +1,7 @@
 // Tests de rendu — le scénario des poses entre les coups dans la fenêtre des
 // dégâts réels (DamageSetupCard.tsx), aux deux formats.
 //
-// Spec : docs/02-app/degats-reels/feat-conditions-et-audit.md (« Poses entre
-// les coups »).
+// Spec : docs/02-app/degats-reels/feat-poses-entre-les-coups.md.
 //
 // Un effet posé par un seul coup se règle par un interrupteur « Posé au
 // coup N » ; un effet posé par plusieurs coups, par un sélecteur limité à eux
@@ -27,8 +26,8 @@ const SHAINA = 21912; // Crescent Moon Slash 12602 : Réduction de DEF de Precis
 const XIAO_LIN = 17311; // Water Dragon Attack 8211 : coups au hasard
 const FEI = 17315; // Dark Dragon Attack 8215 : ignore DEF coup par coup
 const KIKI = 25215; // Magical Eye 15105 : Start of Pain
-const STORM = 30013; // 570RM, Virus 19708 : trois effets d'un même tirage, 4 coups
 const SAVANNAH = 23513; // Critical Link 13608 : effets bénéfiques convertis
+const STORM = 30013; // 570RM, Virus 19708 : trois effets d'un même tirage, 4 coups
 
 const SECTION = 'Prendre en compte les débuffs posés entre les coups';
 
@@ -123,6 +122,7 @@ function verifier(etroit: boolean) {
     `${format} : Critical Link — « Effets bénéfiques convertis »`);
 
   // La condition de la pose suit le libellé.
+  ok(texteVisible(carte(VENDHAN, 18127, etroit, actif(18127))).includes('Marque (en état Thunderer)'), `${format} : Wild Bolt — « Marque (en état Thunderer) »`);
 
   // Un tirage (Virus de 570RM) : un sélecteur par coup, un seul effet par coup ;
   // un effet déjà posé plus tôt n'est plus proposé ensuite.
@@ -142,7 +142,6 @@ function optionsDuCoup(html: string, coup: number): string[] | null {
   const i = html.indexOf(`aria-label="Effet posé après le coup ${coup}"`);
   if (i < 0) return null;
   return [...html.slice(i, html.indexOf('</select>', i)).matchAll(/<option[^>]*>([^<]*)<\/option>/g)].map((m) => m[1]);
-  ok(texteVisible(carte(VENDHAN, 18127, etroit, actif(18127))).includes('Marque (en état Thunderer)'), `${format} : Wild Bolt — « Marque (en état Thunderer) »`);
 }
 
 export function testRenduEffetsEntreCoupsEcran() {
