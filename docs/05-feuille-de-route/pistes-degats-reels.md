@@ -247,8 +247,10 @@ codée porte « Calcul partiel »
   Uppercut, pas pour un passif qui suit le sort. Les effets que pose une bête
   ou un disque « on a random enemy … when you attack on your turn » (Eagle
   Deception `17315`, Eye of the Desert `17815`) ne sont pas proposés : ni la
-  cible ni l'instant ne sont dits. Un critique « si plus rapide » reste jugé
-  sur la VIT adverse du réglage, même après un ralentissement posé.
+  cible ni l'instant ne sont dits. Un critique « si plus rapide » d'un
+  passif reste jugé sur la VIT adverse du réglage, même après un
+  ralentissement posé : il ne rend donc pas un ralentissement proposable
+  (`lecteursDuMonstre`).
 - **Idée** : Eightfold : à partir du coup choisi, comme l'ignore DEF des
   Blade Dancers ([02-app/degats-reels/](../02-app/degats-reels/)). Un buff
   que le sort se pose : un interrupteur allumé par défaut quand ce sort est

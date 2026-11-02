@@ -3423,7 +3423,10 @@ function lecteursDuMonstre(detail: DetailMonstre): LecteursDeLaCible {
       monsterConditionsCombat(detail).some((p) => p.condition.type === 'debuffCiblePresent') ||
       brutParEffetDesPassifs(detail)?.source === 'debuffs',
     dot: mw?.source === 'degatsContinus',
-    vit: !!monsterBonusDegatsSelonVit(detail) || monsterCritSiPlusRapide(detail),
+    // Le critique « si plus rapide » (`monsterCritSiPlusRapide`) n'y est pas :
+    // `computeTotalDamage` le juge sur la VIT adverse du réglage, jamais sur
+    // celle d'un coup ralenti — un ralentissement n'y changerait rien.
+    vit: !!monsterBonusDegatsSelonVit(detail),
   };
   for (const p of monsterOffensivePassives(detail)) l = unionDesLecteurs(l, lecteursDuProfil(p.profile));
   return l;

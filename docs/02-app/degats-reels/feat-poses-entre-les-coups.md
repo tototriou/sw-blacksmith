@@ -45,7 +45,10 @@ proposé que s'il change un chiffre :
   n'y est alors pas proposé ;
 - **une baisse de VIT** quand la VIT de la cible est lue (bonus selon l'écart
   de VIT de Chun-Li et Leah lumière et de Sonia, formule à VIT de la cible,
-  ignore DEF selon l'écart de VIT, critique si plus rapide) ;
+  ignore DEF selon l'écart de VIT, critique « si plus rapide » du sort). Le
+  critique « si plus rapide » d'un passif du monstre n'en est pas : il se
+  juge sur la VIT adverse du réglage, jamais sur celle d'un coup ralenti
+  ([piste](../../05-feuille-de-route/pistes-degats-reels.md#poses-entre-les-coups--buff-posé-par-le-sort-eightfold-poses-au-hasard)) ;
 - **un Étourdissement** qui allume le bonus « cible sous un effet
   d'incapacité » du sort (Arrow of Water de Sharron, Dark Storm de Grogen).
 
