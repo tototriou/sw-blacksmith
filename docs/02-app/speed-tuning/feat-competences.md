@@ -97,11 +97,13 @@ aide tout autant à passer devant lui. D'où `EffetSort`
 
 | Champ | Ce que ça fait |
 |---|---|
+| `atbTousAZero` | Remet exactement à **0 %** les jauges des deux camps, avant les remplissages |
+| `atbTous` | Ajoute des points de barre aux **deux camps**, lanceur compris |
 | `atbEquipe` | +% de barre à **tout son camp**, lui compris |
 | `atbAllie` | +% de barre à **UN** allié : celui dont la barre est la plus basse |
 | `atbSoi` | +% sur **sa** barre |
 | `atbEnnemi` / `atbEnnemiTous` | −% de barre à l'adverse (le plus avancé), ou à tous |
-| `buffEquipe` / `buffSoi` | +30 % de vitesse, à partir du tick **suivant** |
+| `buffEquipe` / `buffSoi` | +30 % de vitesse, à partir du tick **suivant** ; `buffEquipeSansSoi` exclut le lanceur |
 | `buffAllie` | +30 % de vitesse à l'allié **visé** — la même cible qu'`atbAllie` |
 | `ralenti` / `ralentiTous` | −30 % de vitesse sur l'adverse (le plus avancé, ou tous) |
 
@@ -143,7 +145,7 @@ aide tout autant à passer devant lui. D'où `EffetSort`
   systématiquement « celui qui l'a la plus basse » et se rendrait à lui-même un
   boost dont personne ne compte. Se viser soi-même est un **geste**, pas le
   défaut.
-- ⚠️ **Un retrait de barre et un ralenti ne sont JAMAIS appliqués
+- ⚠️ **Un retrait de barre adverse ordinaire et un ralenti ne sont pas appliqués
   automatiquement** — voir « Ce qu'on retire à l'adverse » ci-dessous. Le moteur
   sait les jouer (`atbEnnemi`, `ralenti`, sur l'adverse le plus AVANCÉ, celui
   qu'un joueur vise), mais l'analyse les coupe du sort avant de le lui donner
@@ -155,6 +157,43 @@ aide tout autant à passer devant lui. D'où `EffetSort`
   appliqué **comme s'il passait**. Un speed tune se règle sur le cas où le sort
   fait ce qu'on attend ; le taux figure dans le menu pour qu'on sache sur quoi
   l'on parie.
+
+### Jauges fixées sur les deux camps
+
+Une affectation à 0 % se distingue d'un retrait de 100 points : une jauge à
+140 % doit devenir **0 %**, et non 40 %. Le moteur remet d'abord les barres à
+zéro, puis applique les remplissages du sort. Les cases manuelles restent
+prioritaires, y compris une case à 0 qui annule l'effet.
+
+Deux compétences sont curées par identifiant dans `ATB_GLOBAUX_CONNUS`, car
+les drapeaux SWARFARM ne décrivent pas leur portée complète :
+
+| Compétence | Barre des deux camps | Buff de vitesse |
+|---|---|---|
+| *Returned Dice* (Tablo, 12114) | **0 %** pour tous, Tablo compris | +30 % sur les **autres alliés**, sans Tablo |
+| *Fast Pace* (Homunculus lumière, 10243010) | Remise à zéro puis **+100 points pour tous**, lanceur compris | +30 % sur l'**allié ciblé**, qui peut être le lanceur |
+
+La portée de Tablo vient de sa fiche ; celle de Fast Pace est donnée par la
+[fiche API SWARFARM](https://swarfarm.com/api/v2/skills/1719/), et son
+application « zéro puis +100 » est la règle demandée par l'utilisateur,
+sans relevé en jeu associé. Aucune de ces affectations ne conserve le surplus
+de barre antérieur. Les rechargements maxés sont respectivement de **5** et
+**4** tours du lanceur.
+
+Ces effets globaux garantis sont **conservés dans l'analyse**, y compris sur
+les vrais adverses : en retrancher la moitié adverse changerait le sort.
+L'analyse écrit leur delta exact dans les grilles au tick suivant le lanceur.
+Elle identifie les cases adverses qu'elle produit pour les recalculer à la
+relance et les enlever si le sort change. Une case corrigée à la main perd
+ce statut automatique ; elle est ensuite conservée.
+
+*Fast Pace* figure parmi les compétences sélectionnables des deux formes de
+l'Homunculus lumière, en complément du S3 initial *Protection Field*. Ce choix
+est explicite : l'analyse ne retient pas cette option par défaut, car elle
+ne connaît pas le chemin d'évolution du monstre. Le
+[générateur de compétences](../../../scripts/fetch-skills.mjs) rattache cette
+option même quand SWARFARM la fournit sans monstre associé ; l'Homunculus
+ténèbres ne la reçoit pas.
 
 ### Tour supplémentaire (« rejoue »)
 
@@ -350,8 +389,10 @@ après tick.
 
 ### Ce qu'on retire à l'adverse
 
-⚠️ **Aucun retrait de barre ni ralenti n'entre dans le calcul du tune, jamais,
-et même quand le sort est DÉSIGNÉ à la main.** Un speed tune, c'est ce qui tient
+⚠️ **Les retraits de barre adverses ordinaires et les ralentis ne sont pas
+comptés, même quand le sort est DÉSIGNÉ à la main.** Les affectations garanties
+des deux camps de Tablo et de Fast Pace suivent la règle des
+[jauges fixées sur les deux camps](#jauges-fixées-sur-les-deux-camps). Un speed tune, c'est ce qui tient
 quand on n'a rien enlevé à l'autre : les monstres doivent jouer les uns après
 les autres **sans ça**. Compter le −30 % de barre d'une Madeleine Cookie revient
 à déclarer l'équipe tunée parce qu'elle aura freiné l'adverse — et le jour où le
@@ -367,7 +408,7 @@ avec la règle « on affiche exactement ce qui est calculé » ; le menu de l'or
 des sorts, lui, annonce l'effet suivi de **« (non compté) »**, pour qu'on ne
 croie pas qu'il pèse.
 
-⚠️ **La seule réduction qui compte est celle que l'utilisateur ÉCRIT lui-même**
+⚠️ **Une réduction ordinaire compte quand l'utilisateur l'ÉCRIT lui-même**
 dans la grille du modificateur de barre d'attaque : c'est une saisie, pas une
 déduction, et le moteur l'applique telle quelle.
 
