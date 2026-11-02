@@ -381,6 +381,18 @@ function scoreComplet(forme: number, setup: Partial<DamageSetup>): number {
 }
 const proche = (a: number, b: number) => Math.abs(a - b) <= 1e-9 * Math.max(1, Math.abs(a), Math.abs(b));
 
+// Le même score, le bonus d'écart de DEF de Martial Arts Specialist retiré.
+function scoreSansEcartDeDef(forme: number, setup: Partial<DamageSetup>): number {
+  const recette = { objective: 'degats_reels', damageSetup: { ...CIBLE, ...setup } } as unknown as OptimizerRecipe;
+  const ctx = buildRealDamageContext(recette, forme, []);
+  if (!ctx) throw new Error(`aucun contexte « Dégâts réels » pour ${forme}`);
+  return computeTotalDamage(
+    ctx.profile, ctx.passifs, BUILD, ctx.setup, AUCUNE_AURA_PROPRE, ctx.element, ctx.artefacts, ctx.critSiPlusRapide,
+    ctx.bonusDegatsSelonVit, ctx.bonusDegatsStack, { ...ctx.monsterWide, bonusEcartDef: undefined }, ctx.bonusDegatsConditionnel, ctx.bonusDegatsSelonCr,
+    ctx.bonusDegatsSelonDef, ctx.bonusSiAtqSeuil
+  );
+}
+
 /** Les mécaniques ajoutées à la demande de l'utilisateur (2026-11-02). */
 export function testEffetsEntreCoupsMecaniques() {
   titre('Effets entre les coups — coups au hasard, séquences, lecteurs, ralentissement, attaque enchaînée');
@@ -505,6 +517,16 @@ export function testEffetsEntreCoupsMecaniques() {
   const sansHadoken = scoreComplet(ryu, { skillCom2usId: 13907 });
   egal(scoreComplet(ryu, { skillCom2usId: 13907, scenariosEffetsEntreCoups: { 13907: { actif: true, apresCoup: { brand: 1 } } } }), sansHadoken,
     'Shoryuken : sans [Hadoken], la Marque posée au dernier coup ne change rien au sort');
+
+  // ── Sin feu : l'écart de DEF de Martial Arts Specialist se prend sur la DEF
+  // réduite (utilisateur, 2026-11-02). DEF 800 contre 1 500 : aucun écart sans
+  // Réduction de DEF, 800 − 450 = 350 sous elle.
+  const SIN = 20212;
+  const comboSans = { skillCom2usId: 11007 };
+  const comboPose = { skillCom2usId: 11007, scenariosEffetsEntreCoups: { 11007: { actif: true, apresCoup: { 'decrease-def': 1 } } } };
+  ok(proche(scoreComplet(SIN, comboSans), scoreSansEcartDeDef(SIN, comboSans)), 'Sin feu : DEF de la cible plus haute, aucun bonus d’écart');
+  ok(scoreComplet(SIN, comboPose) > scoreSansEcartDeDef(SIN, comboPose) + 1, 'Sin feu : la Réduction de DEF posée au coup 1 ouvre l’écart de DEF pour les coups 2 et 3');
+  ok(scoreComplet(SIN, { ...comboSans, defBreak: true }) > scoreSansEcartDeDef(SIN, { ...comboSans, defBreak: true }) + 1, 'Sin feu : l’interrupteur Brise DEF ouvre lui aussi l’écart');
 }
 
 // Les stats que la recherche privilégie pour ce sort (`damageRelevantStats`).

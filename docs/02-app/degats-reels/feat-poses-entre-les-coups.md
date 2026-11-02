@@ -31,7 +31,9 @@ qu'un passif du monstre pose à chaque attaque (plus bas). Un effet n'est
 proposé que s'il change un chiffre :
 
 - **toujours** la Réduction de DEF (`Decrease DEF`) et la Marque (`Brand`) :
-  elles changent la DEF ou les dégâts subis des coups suivants ;
+  elles changent la DEF ou les dégâts subis des coups suivants (et, pour Sin
+  feu, l'écart de DEF de Martial Arts Specialist, pris sur la DEF réduite :
+  utilisateur, 2026-11-02) ;
 - **un autre effet néfaste** (Étourdissement, Irrécupérable, Gel…) quand le
   compte ou la présence des effets nocifs de la cible est **lu** : par le
   sort (bonus par effet nocif, condition « la cible porte un effet nocif »,

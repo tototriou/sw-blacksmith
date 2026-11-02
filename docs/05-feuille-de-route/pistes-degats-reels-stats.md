@@ -149,7 +149,11 @@ les coups. La forme d'une piste et des relevés en jeu est celle de
   favorables sous le seuil. Le bonus de Summary Justice selon la VIT
   contre un ennemi plus lent porte « Calcul partiel » (`23515`). Les PV
   propres n'ont pas de source unique ; Massacre (`1215`, Garok) n'est pas
-  curé.
+  curé. Les comparaisons de DEF de la cible (`defCibleSousDefPropre`,
+  `defCibleSousAtkPropre` : Jaara, Varus 2A, Copper 2A…) lisent la DEF
+  saisie, jamais la DEF réduite par une Réduction de DEF ; seul l'écart de
+  Martial Arts Specialist (Sin feu) la lit réduite, sur décision de
+  l'utilisateur (2026-11-02), non étendue par ressemblance.
 - **Idée** : Self Repair et Path of the Brave Warrior en réglage continu
   (valeurs fournies) ; Massacre déduit des PV de la cible ; Bayek et Ahmed
   sur l'état partagé « PV détruits de la cible ». Une seule source pour les PV propres.
@@ -163,7 +167,8 @@ les coups. La forme d'une piste et des relevés en jeu est celle de
   (cible plus lente), Spear of Thunder (`23415`, Asbolus, cible plus
   rapide). Born to Fight (Lucas), premier tour puis bouclier affiché.
   Dismantle (Sukuna) ou Bead Explosion (Hayato), sans puis avec Brise DEF,
-  puis buff d'ATQ. Stark, équipe pleine, alliés blessés, 1 puis 2 morts.
+  puis buff d'ATQ. Copper 2A (ignore DEF sous 50 % de sa DEF) contre une
+  cible juste au-dessus du seuil, sans puis avec Brise DEF : ignore ou non. Stark, équipe pleine, alliés blessés, 1 puis 2 morts.
   Bayek ou Ahmed, cible intacte puis après une destruction connue.
 
 ### Pertes de PV

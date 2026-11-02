@@ -8487,9 +8487,14 @@ export function computeSkillDamageDetail(
   const ajoutCiblePvMax = t.ajoutCiblePvMax;
   // Martial Arts Specialist — `coeff × max(0, DEF_propre − DEF_cible)`,
   // toujours actif, à CHAQUE coup (confirmé par l'utilisateur), donc dans ce
-  // même terme PAR-COUP plutôt que hors du `×coups` plus bas.
+  // même terme PAR-COUP plutôt que hors du `×coups` plus bas. La DEF de la
+  // cible est sa DEF RÉDUITE sous Réduction de DEF (`t.facteurDefBreak`,
+  // Deborah comprise), que la Brise DEF soit du réglage ou posée entre les
+  // coups (utilisateur, 2026-11-02). Les autres comparaisons de DEF
+  // (`defCibleSousDefPropre`…) lisent toujours la DEF saisie : la règle ne
+  // s'y étend pas par ressemblance.
   const ajoutEcartDef = monsterWide.bonusEcartDef
-    ? monsterWide.bonusEcartDef.coeff * Math.max(0, valeurs.DEF - Math.max(0, setup.enemyDef))
+    ? monsterWide.bonusEcartDef.coeff * Math.max(0, valeurs.DEF - Math.max(0, setup.enemyDef) * t.facteurDefBreak)
     : 0;
   const ajoutParCoup = ajoutCompteur + ajoutCiblePvMax + ajoutEcartDef;
   // Sickle Blade/Sand Blade — `pct/100 × {MAX HP}` propre.

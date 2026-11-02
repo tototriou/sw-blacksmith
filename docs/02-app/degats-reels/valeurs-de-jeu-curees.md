@@ -123,6 +123,7 @@ par invention.
 | Nano Vision (Amber) | Même mécanique : 4 % des PV max de la cible par effet néfaste, 12 % au plus (3 effets) ; Irrécupérable à chaque coup ; S1 ralentit, S2 pose des dégâts continus cumulables | utilisateur, 2026-11-02 |
 | Reelseiden・Havoc, Dimension Slash・Havoc (`25212`, `25712`) | 5 % des PV max de la cible par dégât continu, **à chaque coup**, sans les artéfacts de dégâts élémentaires ; Bullet Assassination et Shining Butterfly : 25 % au dernier coup, de même | utilisateur, 2026-11-02 |
 | Fatal Mortar Bullet (`13312`) | Le coup 1 pose Réduction de DEF et/ou Marque ; le +25 % par effet de la phase de zone compte les effets du coup 1 sur la cible visée | utilisateur, 2026-11-02 |
+| Martial Arts Specialist (Sin feu) — écart de DEF | Sous Réduction de DEF, l'écart se prend sur la DEF **réduite** de la cible, que la Brise DEF soit du réglage ou posée entre les coups de Combo Attack. Les autres comparaisons de DEF (Jaara, Varus 2A, Copper 2A…) ne sont pas tranchées et lisent la DEF saisie | utilisateur, 2026-11-02 |
 | Ralentissement posé | −30 % de la VIT saisie de la cible, exactement l'inverse du buff de VIT | utilisateur, 2026-11-02 |
 | Empathy, Dimensional Memory | Le joueur choisit si l'effet tiré est une Marque ou une Réduction de DEF | utilisateur, 2026-11-02 |
 | Hammer Punch — coup en plus | Le coup en plus « contre une cible sans effet nocif » se décide **avant** l'attaque, jamais pendant | utilisateur, 2026-11-02 |
