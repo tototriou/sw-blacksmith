@@ -4194,6 +4194,7 @@ export function testSpeedTuneResetAtb() {
   egal([tablo.cooldown, tablo.chance, tablo.neutre], [5, null, false], 'Tablo : recharge maxée à cinq tours, remise à zéro garantie');
   egal(fast.effet, { atbTousAZero: true, atbTous: 100, buffAllie: 30 }, 'Fast Pace : zéro, puis +100 sur les deux camps, buff ciblé');
   egal([fast.cooldown, fast.chance, fast.neutre], [4, null, false], 'Fast Pace : recharge maxée à quatre tours, sans chance inventée');
+  ok(fast.optionArbre === true, 'Fast Pace est une option à choisir, pas le chemin supposé de tous les Homunculus lumière');
   ok(sortsVitesse(fiche(1000204)).some(s => s.nom === 'Fast Pace'), 'Fast Pace aussi disponible sur la forme non éveillée lumière');
   ok(!sortsVitesse(fiche(1000215)).some(s => s.nom === 'Fast Pace'), 'Fast Pace absent de l’Homunculus ténèbres');
   for (const camp of ['allie', 'ennemi'] as const) {
@@ -4227,6 +4228,7 @@ export function testSpeedTuneResetAtb() {
     donnees.kits.set(id, kitVitesse(fiche(id)));
     donnees.sorts.set(id, sortsVitesse(fiche(id)));
   }
+  egal(sortRetenu({ id: 'homu', monster: monstres.get(1000214)!, runeSpeed: 220 }, donnees), null, 'l’analyse simple ne présume pas du chemin Fast Pace');
   for (const [id, nom] of [[21314, 'Returned Dice'], [1000214, 'Fast Pace']] as const) {
     const lignes = [
       { ...ligneVierge(monstres.get(id)!, 'allie'), runeSpeed: 250 },

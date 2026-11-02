@@ -183,7 +183,7 @@ function meilleurSort(liste: SortVitesse[], exclu?: string): SortVitesse | null 
     // défaut déclarait l'équipe speed tune sur un coup de dé. On peut toujours
     // le choisir à la main dans l'ordre des sorts, en connaissance de cause (le
     // menu affiche le taux).
-    if (x.chance != null) continue;
+    if (x.chance != null || x.optionArbre) continue;
     const v = valeurPourLeTune(x);
     if (v === 0) continue;
     const p = poidsDansLeRang(x);

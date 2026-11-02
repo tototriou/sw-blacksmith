@@ -128,6 +128,9 @@ export interface SortVitesse {
   // Vrai si la compétence ne touche ni la barre ni la vitesse (elle reste
   // proposable : c'est un tour où l'on ne fait rien pour le tune).
   neutre: boolean;
+  // Option d’un arbre de compétences non connu par le kit de base : le joueur
+  // doit la sélectionner, l’analyse ne peut pas présumer de son évolution.
+  optionArbre?: boolean;
   // Remplissage d'équipe dont la valeur DÉPEND DU COMBAT, à désigner : `n`
   // paliers de `pas` %, `n` de 0 à `max`. `retrait` : n buffs retirés à
   // l'adverse (Blade Fan : 15 % chacun, trois au plus) ; `pourcent` : n % de
@@ -401,6 +404,7 @@ export function sortsVitesse(detail: DetailMonstre | null): SortVitesse[] {
       atbSkillUp,
       chance,
       neutre,
+      ...(c.com2usId === 10243010 ? { optionArbre: true } : {}),
       // ⚠️ `bonus && aoe` suffit : un effet BÉNÉFIQUE de zone va sur les alliés,
       // que le lanceur en profite (`surSoi`) ou non. Exclure `surSoi` faisait
       // manquer les buffs d'équipe les plus courants au comptage du passif.

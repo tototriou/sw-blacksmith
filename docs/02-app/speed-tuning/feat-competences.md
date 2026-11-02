@@ -189,7 +189,8 @@ ce statut automatique ; elle est ensuite conservée.
 
 *Fast Pace* figure parmi les compétences sélectionnables des deux formes de
 l'Homunculus lumière, en complément du S3 initial *Protection Field*. Ce choix
-ne présume pas du chemin d'évolution du monstre. Le
+est explicite : l'analyse ne retient pas cette option par défaut, car elle
+ne connaît pas le chemin d'évolution du monstre. Le
 [générateur de compétences](../../../scripts/fetch-skills.mjs) rattache cette
 option même quand SWARFARM la fournit sans monstre associé ; l'Homunculus
 ténèbres ne la reçoit pas.

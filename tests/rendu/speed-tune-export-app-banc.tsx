@@ -69,6 +69,13 @@ export async function scenario(reset?: { monstres: Monster[]; details: DetailMon
     if (reset) {
       await ouvrirParPalette('Tablo');
       await geste(() => bouton(modale()!, 'Analyser')!.click());
+      const choixHomu = () => modale()!.querySelector<HTMLButtonElement>('button[title="Sort lancé par Homunculus(Support)"]');
+      await attendre(() => !!choixHomu() && !!bouton(modale()!, 'Returned Dice'));
+      verifier(!bouton(modale()!, 'Fast Pace'), 'le chemin Fast Pace n’est pas supposé par défaut');
+      await geste(() => choixHomu()!.click());
+      const option = [...document.querySelectorAll<HTMLButtonElement>('[role="listbox"][aria-label="Sort lancé par Homunculus(Support)"] [role="option"]')].find(b => b.textContent?.includes('Fast Pace'))!;
+      verifier(!!option, 'Fast Pace est disponible dans le choix du S3');
+      await geste(() => option.click());
       await attendre(() => !!bouton(modale()!, 'Fast Pace') && !!bouton(modale()!, 'Returned Dice'));
       const tablo = bouton(modale()!, 'Returned Dice')!;
       const fast = bouton(modale()!, 'Fast Pace')!;

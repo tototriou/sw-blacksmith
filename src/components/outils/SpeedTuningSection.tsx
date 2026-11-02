@@ -156,6 +156,7 @@ function libelleSort(x: SortVitesse): string {
   if (e.buffSoi) bouts.push('buff VIT sur soi');
   if (e.buffAllie) bouts.push('buff VIT 1 allié');
   if (e.ralenti) bouts.push(`ralenti adv${e.ralentiTous ? ' (tous)' : ''} (non compté)`);
+  if (x.optionArbre) bouts.push('option de l’arbre');
   if (x.rejoue) bouts.push('rejoue');
   if (x.cooldown > 0) bouts.push(`recharge ${x.cooldown} tours`);
   if (x.chance != null) bouts.push(`${x.chance} %`);

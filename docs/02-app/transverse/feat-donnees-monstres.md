@@ -64,7 +64,8 @@ La compétence *Fast Pace* (10243010) est fournie par l'API sans monstre associ�
 en complément des compétences initiales. La liste est dédoublonnée si l'API
 la rattache elle-même. Une option absente de la moisson fait échouer le script
 **avant** l'effacement des fiches existantes. Le speed tuning permet de la
-sélectionner ; il ne présume pas du chemin d'évolution en jeu.
+sélectionner explicitement ; l'analyse automatique ne la choisit pas par
+défaut sans connaître le chemin d'évolution en jeu.
 
 ### ⚠️ La pagination de l'API : une moisson incomplète échoue
 
