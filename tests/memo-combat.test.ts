@@ -78,13 +78,16 @@ const PROPRES: AurasPropres = { fight: 1, determination: 1, enhance: 0, accuracy
 // bruts de Kiki et d'Amber, lecteurs de Yoga Sunburst, Havoc, Critical Link,
 // Fatal Mortar Bullet, Bullet Assassination et Hairpin. Puis l'écart de DEF de
 // Martial Arts Specialist (Sin feu), pris sur la DEF réduite sous Réduction de
-// DEF (réglage riche : Réduction de DEF posée au coup 1 de Combo Attack).
+// DEF (réglage riche : Réduction de DEF posée au coup 1 de Combo Attack). Puis
+// les tirages : le réglage riche pose tous les effets au coup 1, et un tirage
+// n'en garde qu'un (Virus de 570RM, Empathy, Dimensional Memory) ; Blessing of
+// Curse donne un scénario à Here Come the Ghosts! (Jessica).
 // ⚠️ Un écart veut dire qu'une note a changé. Voulu (modèle de dégâts, données
 // SWARFARM régénérées) : relever l'empreinte de nouveau (le message d'échec
 // la donne) et le dire dans le commit. Sinon : un défaut du code commun au
 // calcul avec et sans memo.
 const EMPREINTE_ANCIEN_CALCUL = {
-  contextes: 12426, notes: 310650, sha256: '7b6e04e93235321b19428110d08760e4710f42b7850ae2c0838b4d4a4809d81b',
+  contextes: 12426, notes: 310650, sha256: 'fbd5fd63d646ff7acf0d7279f257edad348856a04ea1ae9b639d2fb70b9df4cc',
 };
 
 // Quatre pièces par sorte, deux principales par sorte : des paires partagent
