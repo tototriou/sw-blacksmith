@@ -133,10 +133,19 @@ proposé (Domain Expansion de Megumi, Continuous Summoning Technique de
 Tetsuya, Crushing Swipe de Daisy et Christine : « the last hit decreases… »),
 sauf s'il vaut pour l'attaque que le sort enchaîne (Shoryuken, plus bas). Le
 Gel de Grinding (Espresso Cookie eau) et de Spinning Tea Spoon (Rosemary eau),
-« attacks once more to freeze them », vient lui aussi au dernier coup ; il
-n'est pas proposé parce que rien ne lit son compte, la donnée n'ayant pas de
-note de rang : si Cold Brew ou Iced Tea (+200 % contre une cible gelée)
-devenait un lecteur, il faudrait l'exception « dernier coup ».
+« attacks once more to freeze them », vient lui aussi au dernier coup. La
+donnée n'ayant pas de note de rang, c'est l'absence de lecteur qui l'écarte :
+le +200 % de Cold Brew et d'Iced Tea contre une cible gelée est un
+interrupteur de passif (`BONUS_DEGATS_CONDITIONNEL_CONNUS`), qu'aucune pose
+n'allume. Relier un jour ce Gel à l'interrupteur, comme l'Étourdissement
+d'Arrow of Water, demanderait d'abord l'exception « dernier coup » : le
+résultat ne changerait pas.
+
+Un coup en plus **déduit des stats** compte dans les rangs proposés : Brutal
+Fists (Mayasura, Varuna, Usha, Danu, Vritra) propose une pose après le coup 3,
+qui ne change rien quand le 4ᵉ coup n'a pas lieu (ATQ sous celle de la
+cible). La recherche le décide build par build, l'écran ne peut pas le
+savoir d'avance.
 
 Une note qui pose une **condition** plutôt qu'un rang s'affiche après le
 libellé (`PRECISION_PAR_NOTE`) : « un seul des effets possibles par coup, au
@@ -290,6 +299,17 @@ interrupteur d'attaque appelée
 - **Spear of Thunder** (Asbolus ténèbres, 23415) lit l'écart de VIT, mais ce
   bonus n'est pas compté du tout (formule `1.4*{ATK}` seule) : sa baisse de VIT
   n'est pas proposée.
+- **Écart d'ATQ non compté** : Hellfire Trespass Slayer (Jin Kazama vent,
+  22413) et Thunderous Killer Strike (Kai vent, 22913) baissent l'ATQ de la
+  cible à chacun de leurs 5 coups et « Deals additional damage in proportion
+  to your Attack Power if your Attack Power is higher than the target's ».
+  Ce bonus n'est pas calculé, faute de formule (utilisateur, 2026-11-02 ;
+  [piste](../../05-feuille-de-route/pistes-degats-reels-stats.md#composantes-conditionnelles-et-comptées)) :
+  la baisse d'ATQ n'est pas proposée.
+- **Compte après l'attaque** : Moonlight Blow (Belita ténèbres, 12615) ôte
+  5 % des PV de la cible par dégât continu « afterwards », après ses deux
+  coups : le compte se prend une fois le sort fini, jamais entre les coups.
+  Cette perte n'est d'ailleurs pas comptée (`CALCUL_PARTIEL_PAR_ID`).
 - **Détonation des dégâts continus** : Rage of Helheim (Eivor vent, 17513) et
   Stormy Axe (Astrid vent, 18013) posent des dégâts continus aux coups 1 à 3,
   que le coup 4 fait exploser ; la détonation est hors du total
