@@ -3967,8 +3967,13 @@ export const SORTS_SANS_ATTAQUE_PAR_ID: ReadonlySet<number> = new Set([
 //      « n'est pas calculée », sans « encore » ;
 //   4. les parts connues du jeu, non modélisées, à marquer :
 //      l'équilibrage ATQ/DEF
-//      d'Internal Force sur les deux sorts de dégâts de Leona, et le bonus
-//      de VIT de Summary Justice (Theonia) : « pas encore compté ».
+//      d'Internal Force sur les deux sorts de dégâts de Leona, le bonus
+//      de VIT de Summary Justice (Theonia), le bonus « in proportion to your
+//      Attack Power if your Attack Power is higher than the target's » de
+//      Hellfire Trespass Slayer et Thunderous Killer Strike (Jin Kazama et Kai
+//      vent, sans formule : utilisateur, 2026-11-02), et le surplus « 25% of
+//      the target's remaining HP » de l'attaque en plus d'Exploding Hands
+//      (Jackie) : « pas encore compté ».
 // Écartées, parce que le total est complet par décision : Devil's Bargain
 // (la prose se trompe), Incinerate, Rage of Helheim, Stormy Axe (détonations
 // de DoT hors total), Firecracker et Bombardment (bombes à retardement hors
@@ -4010,6 +4015,18 @@ const CALCUL_PARTIEL_PAR_ID: Readonly<Record<number, string>> = {
   12520: 'L’équilibrage d’Internal Force (en début de combat, la plus basse de l’ATQ et de la DEF monte au niveau de la plus haute) n’est pas encore compté.', // Justice Strike (Leona, S1)
   12510: 'L’équilibrage d’Internal Force (en début de combat, la plus basse de l’ATQ et de la DEF monte au niveau de la plus haute) n’est pas encore compté.', // Fury of Punishment (Leona, S2)
   23515: 'Le bonus de dégâts selon ta VIT, contre les ennemis plus lents que toi, n’est pas encore compté.', // Summary Justice (Theonia, S3)
+  // « Deals additional damage in proportion to your Attack Power if your
+  // Attack Power is higher than the target's » (effet `Increase Damage`) :
+  // seuls les 5 coups à 1,6 × ATQ sont comptés.
+  22413: 'Le bonus de dégâts proportionnel à ton ATQ, contre une cible dont l’ATQ est plus basse que la tienne, n’est pas encore compté.', // Hellfire Trespass Slayer (Jin Kazama vent, S3)
+  22913: 'Le bonus de dégâts proportionnel à ton ATQ, contre une cible dont l’ATQ est plus basse que la tienne, n’est pas encore compté.', // Thunderous Killer Strike (Kai vent, S3)
+  // L'auxiliaire 11016 « will deal 25% of the target's remaining HP as
+  // additional damage » si la cible est sous incapacité — toujours le cas,
+  // puisque l'attaque en plus n'a lieu que sur une cible étourdie. La clé est
+  // le sort déclencheur : l'attaque en plus n'est pas une case de « Compétence
+  // utilisée » (`ATTAQUES_AUXILIAIRES_PAR_DECLENCHEUR`), et l'étiquette ne
+  // suit pas son interrupteur.
+  11015: 'Le surplus de l’attaque en plus, 25 % des PV restants de la cible étourdie, n’est pas encore compté.', // Exploding Hands (Jackie, S3)
 };
 
 // Identifiants de la table (tests et preuve).

@@ -130,7 +130,11 @@ les coups. La forme d'une piste et des relevés en jeu est celle de
   `src/lib/damage.ts`, alors que sa valeur est fournie
   ([02-app/degats-reels/](../02-app/degats-reels/)) ; les clauses
   conditionnelles de Shakan (et de Disdain), de Mandrake (Hyanes), du S3 de
-  Jin et Kai ne sont pas comptées. (Kiki, Amber, Übel feu, Wieb feu, Nina et
+  Jin et Kai ne sont pas comptées. Seul le S3 de Jin et Kai vent porte
+  « Calcul partiel » (`22413`, `22913`, `CALCUL_PARTIEL_PAR_ID`) ; ni
+  Mandrake (`12815`), ni les S1 et S2 de Shakan que Disdain renforce
+  (`5603`, `5608`, `5653`, `5658`), ni les sorts des alliés de Lucifer ne
+  l'ont. (Kiki, Amber, Übel feu, Wieb feu, Nina et
   Shasha lumière, eux, se comptent : `BRUT_PAR_EFFET_CIBLE_PAR_ID` et
   `BRUT_PAR_EFFET_CIBLE_PAR_PASSIF_PAR_ID`,
   [feat-poses-entre-les-coups.md](../02-app/degats-reels/feat-poses-entre-les-coups.md).)
