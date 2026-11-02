@@ -22,6 +22,13 @@ const EFFET_REJOUE = 'Additional Turn';
 const EFFET_ATB_MOINS = 'Decrease ATB';
 const EFFET_SPD_MOINS = 'Decrease ATK SPD';
 
+// Mobilize de Belladeon 2A : la prose distingue 30 % de barre et 35 % de soin,
+// mais l'effet Increase ATB de SWARFARM porte aussi 35. La correction se fait
+// avant les skill-ups et se partage entre le kit simple et l'ordre des sorts.
+const ATB_NIVEAU_1_CONNUS = new Map<number, number>([[2064, 30]]);
+const atbNiveau1De = (c: Competence, e: Competence['effets'][number]): number =>
+  (c.com2usId != null ? ATB_NIVEAU_1_CONNUS.get(c.com2usId) : undefined) ?? e.quantite ?? 0;
+
 // Le ralenti du jeu vaut −30 % de vitesse, comme le buff en vaut +30 ; les
 // données SWARFARM ne donnent là encore que sa DURÉE en tours.
 export const RALENTI_SPD_JEU = 30;
@@ -258,7 +265,7 @@ export function kitVitesse(detail: DetailMonstre | null): KitVitesse {
       if (e.nom === EFFET_ATB) {
         // Au choix : zéro par défaut, et l'analyse simple n'a pas le choix.
         if (atbSousCondition || auChoixDe(c)) continue;
-        const niveau1 = e.quantite ?? 0;
+        const niveau1 = atbNiveau1De(c, e);
         const valeur = maxee(niveau1, bonusSkillUp(c));
         if (valeur > out.atb) {
           out.atb = valeur;
@@ -308,7 +315,8 @@ function lireEffet(c: Competence): { effet: EffetSort; atbNiveau1: number; atbSk
         // sorts qui remplissent la barre entièrement (ex. Rabbit's Agility de
         // Dova). Stocker 0 rendrait le champ falsy et la simulation ignorerait
         // complètement le remplissage.
-        const qEff = q === 0 ? 100 : q;
+        const niveau1 = atbNiveau1De(c, e);
+        const qEff = niveau1 === 0 ? 100 : niveau1;
         const v = maxee(qEff, skillUp);
         atbNiveau1 = Math.max(atbNiveau1, qEff);
         if (atbDeZone(c, e)) effet.atbEquipe = Math.max(effet.atbEquipe ?? 0, v);
@@ -360,7 +368,7 @@ export function sortsVitesse(detail: DetailMonstre | null): SortVitesse[] {
     const { effet, atbNiveau1, atbSkillUp, chance } = lireEffet(c);
     const auChoix = auChoixDe(c);
     const effetAtb = c.effets.find((e) => e.nom === EFFET_ATB);
-    const valeur = effetAtb ? maxee(effetAtb.quantite ?? 0, bonusSkillUp(c)) : 0;
+    const valeur = effetAtb ? maxee(atbNiveau1De(c, effetAtb), bonusSkillUp(c)) : 0;
     const atbAuChoix: SortVitesse['atbAuChoix'] =
       !auChoix || !effetAtb
         ? undefined

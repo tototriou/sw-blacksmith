@@ -1893,6 +1893,33 @@ export function testSpeedTuneKit() {
       JSON.parse(readFileSync(`public/data/skills/${id}.json`, 'utf8')) as DetailMonstre;
     const sortNomme = (id: number, nom: string) => sortsVitesse(fiche(id)).find((s) => s.nom === nom);
 
+    // La vraie fiche 2A confond 35 % de soin et 30 % de barre. La correction
+    // doit tenir avec et sans skill-ups, sans modifier les données de soin.
+    const belladeon = fiche(11034);
+    const original = JSON.stringify(belladeon);
+    const sansSkillUp = {
+      ...belladeon,
+      competences: belladeon.competences.map((c) => ({ ...c, ameliorations: [] })),
+    };
+    const mobilize = sortsVitesse(sansSkillUp).find((s) => s.slot === 3)!;
+    egal(mobilize.effet.atbEquipe, 30, 'Belladeon 2A sans skill-up : 30 % ATB, pas les 35 % du soin');
+    egal(kitVitesse(sansSkillUp).atb, 30, 'Belladeon 2A : le kit simple retient aussi 30 % sans skill-up');
+    egal(kitVitesse(belladeon).atbNiveau1, 30, 'Belladeon 2A : la base reste 30 %');
+    egal(kitVitesse(belladeon).atb, 33, 'Belladeon 2A maxé : 30 × 1,10 = 33 %');
+    egal(kitVitesse(belladeon).atbSkillUp, 3, 'Belladeon 2A : le skill-up ajoute 3 points de barre');
+    egal(sortNomme(11034, 'Mobilize')?.effet.atbEquipe, 33, 'Belladeon 2A : le sort maxé remplit aussi 33 %');
+    egal(kitVitesse(fiche(11014)).atb, 30, 'Belladeon non 2A : le soin ne change pas les 30 % ATB');
+    egal(belladeon.competences.find((c) => c.slot === 3)?.effets.find((e) => e.nom === 'Heal')?.quantite, 35,
+      'Belladeon 2A : les 35 % de soin restent intacts');
+    egal(JSON.stringify(belladeon), original, 'la lecture ne modifie pas la fiche brute');
+    const toursBelladeon = premiersTours(simuler([
+      { id: 'belladeon', combat: 358, camp: 'allie', sort: mobilize.effet },
+      { id: 'allie', combat: 190, camp: 'allie' },
+      { id: 'rina', combat: 285, camp: 'ennemi' },
+    ]));
+    egal(toursBelladeon.slice(0, 3).map((a) => a.id), ['belladeon', 'rina', 'allie'],
+      'avec le vrai Mobilize sans skill-up, Rina coupe : 35 % ferait passer l’allié au tick 5');
+
     const trade = sortNomme(16214, 'Trade');
     egal(trade?.effet.atbEquipe, 23, 'Trade (Conrad) remplit la barre de TOUTE l’équipe, 20 × 1,15 = 23 %');
     egal(trade?.effet.atbAllie, undefined, 'et pas celle d’un seul allié');

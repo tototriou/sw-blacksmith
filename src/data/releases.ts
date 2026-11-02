@@ -60,6 +60,14 @@ export const CHANGE_META: Record<ChangeKind, { label: string; color: string }> =
 // Si une ligne dépasse ~15 mots, c'est qu'elle raconte l'implémentation.
 export const RELEASES: Release[] = [
   {
+    version: null,
+    date: '2026-11-02',
+    title: 'Des barres d’attaque plus justes en speed tuning',
+    changes: [
+      { kind: 'fix', scope: 'Speed tuning', text: 'Belladeon 2A remplit 30 % de barre sans skill-up, et 33 % une fois maxé.' },
+    ],
+  },
+  {
     version: '2.2.1',
     date: '2026-11-01',
     title: 'Réimporter une recommandation la complète, et un speed tuning plus juste',
