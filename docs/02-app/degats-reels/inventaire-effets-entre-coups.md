@@ -24,9 +24,11 @@ dégâts continus, VIT de la cible lue (ralentissement), ou bonus « cible sous
 incapacité » du sort (Étourdissement d'Arrow of Water et de Dark Storm).
 Pour un sort à coups au hasard, « chaque coup » suit le nombre de coups qui
 touchent la cible. Les effets d'un même tirage (« un seul des effets possibles
-par coup », « au hasard parmi les effets du combat », « si Jessica la porte »)
-se règlent coup par coup, un seul effet par coup, quand le sort en propose au
-moins deux.
+par coup », « sur un 5 au dé », « au hasard parmi les effets du combat », « si
+Jessica la porte », et les deux branches de Divine Judgment, « si les ennemis
+ont subi au moins autant de dégâts que les alliés » ou l'inverse) se règlent
+coup par coup, un seul effet par coup, quand le sort en propose au moins
+deux.
 
 | Sort | Identifiants | Porteurs | Effets proposés |
 | --- | --- | --- | --- |

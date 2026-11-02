@@ -374,6 +374,11 @@ interrupteur d'attaque appelée
   que le coup 4 fait exploser ; la détonation est hors du total par décision
   (écartée de `CALCUL_PARTIEL_PAR_ID`, le total étant complet), les dégâts
   continus ne changent donc rien.
+- **Un seul coup, par décision** : Lightning Storm (Yennefer vent, 19113) porte
+  `coups: 2` et une Marque dans la donnée, mais frappe une seule fois
+  (utilisateur, 2026-11-02 ; `COUPS_FIXES_CORRIGES_PAR_ID`,
+  [valeurs-de-jeu-curees.md](valeurs-de-jeu-curees.md)) : rien n'est posé
+  entre des coups qu'il n'a pas.
 - **Coups non comptés** : Cleave (19910) et Exorcism Orb (20510), « the number
   of hits increases up to 6 times », se calculent sur 2 coups
   ([piste](../../05-feuille-de-route/pistes-degats-reels.md#plages-de-coups-à-relever-et-coups--au-hasard-)).
@@ -420,7 +425,7 @@ interrupteur d'attaque appelée
   Bullet Assassination, Critical Link, Hairpin, Fatal Mortar Bullet),
   ralentissement, Empathy, Marque de Shoryuken pour [Hadoken], écart de DEF
   de Sin feu, tirages (un seul effet par coup : Virus, Empathy, Blessing of
-  Curse).
+  Curse, Divine Judgment, Ghost Appearance, Roll Dice).
 - `testRenduEffetsEntreCoupsEcran` : interrupteur, sélecteur limité,
   sélecteur par coup d'un tirage, section absente, compteurs, aux deux
   formats.

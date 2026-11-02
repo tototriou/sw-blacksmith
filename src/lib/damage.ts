@@ -2270,10 +2270,12 @@ export interface EffetEntreCoupsProfile {
   // Condition de la pose écrite par la donnée ou la prose (« sur coup
   // critique », « en état Thunderer »), affichée après le libellé.
   precision?: string;
-  // L'effet sort d'un TIRAGE au hasard qui ne pose qu'un effet par coup (Virus,
-  // Empathy, Dimensional Memory, Blessing of Curse) : les effets d'un même
-  // tirage se règlent coup par coup, un seul par coup (utilisateur,
-  // 2026-11-02), et `calculerChronologie` n'en pose qu'un après un même coup.
+  // L'effet sort d'un TIRAGE qui ne pose qu'un effet par coup — au hasard
+  // (Virus, Ghost Appearance, Roll Dice, Empathy, Dimensional Memory, Blessing
+  // of Curse) ou selon la branche d'une condition (Divine Judgment) : les
+  // effets d'un même tirage se règlent coup par coup, un seul par coup
+  // (utilisateur, 2026-11-02), et `calculerChronologie` n'en pose qu'un après
+  // un même coup.
   // Clé du tirage ; absente dès qu'une source pose l'effet hors tirage.
   tirage?: string;
 }
@@ -2930,11 +2932,14 @@ const BONUS_STACK_PROPRE_CONNUS: Record<string, NonNullable<SkillDamageProfile['
 // chaque attaque (`EFFETS_ENTRE_COUPS_PAR_PASSIF_PAR_ID`) :
 // - toujours la Réduction de DEF (`Decrease DEF`) et la Marque (`Brand`), qui
 //   changent la DEF ou les dégâts subis des coups suivants ;
-// - un autre effet seulement quand le compte des effets nocifs de la cible est
-//   LU (`avecCompteur`) : par le sort (bonus par effet nocif, condition « la
-//   cible porte un effet nocif »), ou par le monstre (passif ou modificateur
-//   monstre-wide, `monsterDamageSkills`). Sans lecteur, il ne change aucun
-//   chiffre et n'est pas proposé.
+// - un autre effet seulement quand il change un chiffre (`LecteursDeLaCible`) :
+//   compte ou présence des effets nocifs LU par le sort (bonus par effet nocif,
+//   condition « la cible porte un effet nocif », dégâts bruts par effet) ou
+//   par le monstre (passif ou modificateur monstre-wide, `monsterDamageSkills`)
+//   — `tous` ; compte des seuls dégâts continus — `dot` ; VIT de la cible lue
+//   coup par coup, pour un ralentissement — `vit` ; interrupteur du sort qu'il
+//   allume (`allumeLeBouton`). Sans lecteur, il n'est pas proposé. Un effet du
+//   dernier coup ne l'est que pour l'attaque enchaînée (`pourLaSuite`).
 // Coups qui posent : le rang que la `note` de l'effet nomme (`RANGS_PAR_NOTE`),
 // sinon celui que la prose donne (exceptions), sinon CHAQUE coup — règle de
 // l'utilisateur : une prose qui ne précise pas le coup pose à chacun, et le
@@ -3251,7 +3256,6 @@ const EFFETS_ENTRE_COUPS_PAR_PASSIF_PAR_ID: Readonly<Record<number, readonly Eff
   // 2026-11-02).
 };
 
-// Les effets que les passifs de la fiche posent à chaque attaque.
 // Les effets que les passifs de la fiche posent à chaque attaque ; `tirage`
 // porte la clé du tirage (le passif).
 function effetsPosesParLesPassifs(detail: DetailMonstre): EffetPoseParLesPassifs[] {
