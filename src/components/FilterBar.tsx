@@ -4,6 +4,8 @@ import Pastille from '../ui/Pastille';
 import Selecteur from '../ui/Selecteur';
 import { ELEMENT_FILTER_STYLES } from './elementStyles';
 import type { FiltresFormes } from '../lib/monsterForms';
+import { useTraduction } from '../hooks/useLangue';
+import { nomElement } from '../i18n/jeu';
 
 interface Props {
   activeElements: Set<ElementKey>;
@@ -37,6 +39,7 @@ export default function FilterBar({
   avecTri = true,
   className = 'mt-5 flex flex-col gap-3.5',
 }: Props) {
+  const jeu = useTraduction().jeu;
   return (
     <div className={className}>
       <div className="flex flex-wrap items-center gap-2">
@@ -48,7 +51,7 @@ export default function FilterBar({
             couleurs={ELEMENT_FILTER_STYLES[el.key]}
             onClick={() => toggleElement(el.key)}
             icone={<ElementIcon element={el.key} size={15} />}
-            libelle={el.label}
+            libelle={nomElement(jeu, el.key)}
           />
         ))}
       </div>

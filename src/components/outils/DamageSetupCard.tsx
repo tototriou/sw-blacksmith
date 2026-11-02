@@ -72,6 +72,8 @@ import Segmented from '../../ui/Segmented';
 import Selecteur from '../../ui/Selecteur';
 import { ELEMENTS, type ElementKey } from '../../types';
 import HelpPopover from '../HelpPopover';
+import { useTraduction } from '../../hooks/useLangue';
+import { nomElement } from '../../i18n/jeu';
 
 // Réglage de l'objectif « Dégâts réels » — voir docs/02-app/degats-reels/
 // pour le modèle de calcul, docs/02-app/optimizer/ pour sa place à l'écran.
@@ -413,6 +415,7 @@ export default function DamageSetupCard({
   elementAttaquant,
   critInterdit,
 }: Props) {
+  const jeu = useTraduction().jeu;
   const maj = (patch: Partial<DamageSetup>) => setSetup((prev) => ({ ...prev, ...patch }));
   // Au doigt, les champs de l'adversaire s'empilent : une largeur commune de
   // libellé (celle du plus long, « PV restants ») les aligne.
@@ -1566,7 +1569,7 @@ export default function DamageSetupCard({
               onChange={(v) => maj({ enemyElement: v === 'aucun' ? null : v })}
               options={[
                 { key: 'aucun', label: 'Ignorer' },
-                ...ELEMENTS.filter((e) => e.key !== 'unknown').map((e) => ({ key: e.key, label: e.label })),
+                ...ELEMENTS.filter((e) => e.key !== 'unknown').map((e) => ({ key: e.key, label: nomElement(jeu, e.key) })),
               ]}
             />
           </label>

@@ -54,8 +54,52 @@ un `Segmented` à trois choix.
   (`texte: 'resume'`), pas le libellé : `VUES_INVENTAIRE`, et dans [App.tsx](../../../src/App.tsx)
   `NAV`, `RTA_SUBS`, `SIEGE_SUBS`, `ACCOUNT_SUBS`, `OUTILS_SUBS`, `RESOURCES`. Les choix du thème
   et de la mesure se construisent avec leurs textes (`choixTheme(t)`, `choixMesure(t)`).
-- **Le vocabulaire du jeu** est celui du client du jeu dans chaque langue. Les noms de monstres et
-  les compétences viennent de SWARFARM, en anglais, et le restent dans toutes les langues.
+- **Le vocabulaire du jeu** a son propre lexique, `jeu` dans le dictionnaire : voir ci-dessous.
+
+## Le vocabulaire du jeu
+
+Les termes du jeu (sets, stats, grades, éléments, archétypes, sortes d'artéfact, zones de leader
+skill, effets de set, sous-propriétés d'artéfact, effets de compétence) sont ceux du **client du
+jeu dans la langue choisie**, jamais une traduction de l'app. Ils vivent dans
+[src/i18n/jeu/](../../../src/i18n/jeu/index.ts) (`fr.ts`, `en.ts`), lus par
+`useTraduction().jeu`.
+
+| Langue | Source |
+| --- | --- |
+| Français | le relevé de Thomas dans le jeu : ses réponses, et les captures des filtres du jeu ; **ses réponses priment** (« Étourdi », pas le « Assommer » du filtre) |
+| Anglais | SWARFARM, qui reprend le client anglais : ses données (sets, effets de compétence) et son code source (stats, grades, sous-propriétés d'artéfact, effets de set) |
+
+- **Forme longue, forme courte** : en toutes lettres quand il y a la place, la forme réduite du
+  jeu quand il n'y en a pas (`court` : « Suppr. eff. amélior. enn. », l'abréviation d'un grade sur
+  une tuile étroite) — `nomEffet(jeu, nom, true)`, `nomGrade(jeu, grade, true)`.
+- **Une stat dans un choix** (filtre, sélecteur) s'écrit comme le filtre du jeu : « PV + » pour la
+  valeur fixe, « PV % » (`choixEffetRune`) ; sur une ligne de rune, la stat seule
+  (`libelleEffetRune`). **La stat d'un leader skill** s'écrit comme celle d'une rune (« VIT »,
+  « Tx critiq. ») : `nomStatLead` ([LeadPill.tsx](../../../src/components/siege/LeadPill.tsx)),
+  et sa zone par `nomZoneLead` (Général, Élément, Arène, Guilde, Donjon).
+- **Les tables du code portent des clés, pas des libellés** : `RUNE_SETS`, `ELEMENTS`,
+  `ARTIFACT_KINDS`, `RUNE_EFFECT`, `ARTIFACT_MAIN`, `RELIC_MAIN`, `RARITY_META`, `SET_BONUS`,
+  `RECO_STATS`. Le nom vient de `nomSet`, `nomElement`, `nomArchetype`, `nomGrade`, `bonusSet`,
+  `jeu.stats[clé]`, `sortesArtefact(t)`. Les fonctions de [effects.ts](../../../src/lib/effects.ts)
+  qui écrivent un libellé (`formatRuneEffect`, `formatArtifactSub`, `artifactSubName`…) reçoivent
+  le lexique.
+- ⚠️ **Une exception, `StatRow.label`** ([stats.ts](../../../src/lib/stats.ts)) : le libellé
+  français de la stat reste dans la ligne, parce que le moteur de l'Optimizer s'en sert pour
+  reconnaître une ligne (colonnes compactes). L'affichage ne le lit pas : il nomme la stat par
+  `jeu.stats[clé]`.
+- **Un texte que `src/lib/` rédige lui-même en français** (messages d'import, fichier de
+  recommandation partagé, titres d'un écran pas encore traduit) cite les termes du jeu dans le
+  lexique français (`jeuFr`), pour que la phrase reste d'une seule langue.
+- **Les noms de monstres et les compétences** (nom, description, améliorations) viennent de
+  SWARFARM, en anglais, et le restent dans toutes les langues.
+- **Les effets de compétence** sont indexés par leur nom SWARFARM. Un effet qui n'a pas de nom
+  français s'affiche sous son nom anglais ; le test du lexique échoue tant qu'il n'est pas relevé
+  ou inscrit au **registre des manques** (`EFFETS_SANS_TRADUCTION`,
+  [lexique-jeu.test.ts](../../../tests/lexique-jeu.test.ts)). Une mise à jour des données qui
+  apporte un effet nouveau ne passe donc pas inaperçue.
+- **Effets de set à valeur curée** : Précision et Tolérance y valent les +8 % du calcul des dégâts
+  réels, pour ne jamais afficher un chiffre que le calcul n'applique pas
+  ([valeurs-de-jeu-curees.md](../degats-reels/valeurs-de-jeu-curees.md)).
 
 ## Ce qui est traduit
 
@@ -66,7 +110,11 @@ l'export chargé. Dans [App.tsx](../../../src/App.tsx), les destinations de la n
 et le fil d'Ariane de la barre du haut, les actions de la palette et le sélecteur de page d'un
 volet vide.
 
-Les autres écrans s'affichent encore en français, quelle que soit la langue choisie.
+Le **vocabulaire du jeu** suit la langue choisie dans toute l'app : fiches de rune, d'artéfact et
+de relique, inventaires, Optimizer, recommandations de siège, prépa RTA, Bestiaire, fiche d'un
+monstre.
+
+Les autres textes des écrans s'affichent encore en français, quelle que soit la langue choisie.
 
 ## Écrire un texte nouveau
 
@@ -86,8 +134,13 @@ Un écran qu'on traduit entre dans `FICHIERS_TRADUITS` dans le même commit.
 - [langue.test.ts](../../../tests/langue.test.ts) : la règle du premier lancement, les mêmes clés
   dans chaque langue (natures et paramètres compris), les formats, la clé de réglage et la
   session, la règle ESLint lancée sur la vraie configuration.
+- [lexique-jeu.test.ts](../../../tests/lexique-jeu.test.ts) : chaque effet des données a son nom
+  français (ou figure au registre des manques), chaque set, élément et sous-propriété connue du
+  moteur a son nom dans chaque langue, les libellés relevés en jeu, le nom d'une sous-propriété
+  sans sa valeur dans les deux langues.
 - [rendu/langue.test.tsx](../../../tests/rendu/langue.test.tsx) : le réglage, les Paramètres et
-  l'app entière (`#/parametres`) en anglais, puis de retour en français.
+  l'app entière (`#/parametres`) en anglais, puis de retour en français ; la fiche d'une rune
+  dans le vocabulaire du jeu de chaque langue.
 - Le rendu serveur n'a pas de navigateur : « Auto » y donne le français, langue des tests
   existants. Un test qui vérifie l'anglais choisit la langue, puis revient à « Auto ».
 - ⚠️ **Un vrai navigateur, lui, a une langue** : tout Chromium piloté par les tests, le banc

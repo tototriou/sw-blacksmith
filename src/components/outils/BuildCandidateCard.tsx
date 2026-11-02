@@ -1,6 +1,6 @@
 import { ReactNode, RefObject, useLayoutEffect, useState } from 'react';
 import { ArrowLeftRight, CheckCircle2 } from 'lucide-react';
-import { ArtifactDetail, RelicDetail, RuneDetail, RUNE_SETS } from '../../types';
+import { ArtifactDetail, RelicDetail, RuneDetail } from '../../types';
 import { BuildCandidate, candidateMetricTotal } from '../../lib/runeBuildOptim';
 import { activeSets } from '../../lib/effects';
 import { EtatRelique } from '../../lib/relicQueue';
@@ -14,6 +14,8 @@ import RelicSlot, { RelicDetailBox } from '../RelicSlot';
 import StatPanel from '../StatPanel';
 import { COMPACT, useMediaQuery } from '../../hooks/useMediaQuery';
 import { Bouton, FlottantAuto } from '../../ui';
+import { useTraduction } from '../../hooks/useLangue';
+import { nomSet } from '../../i18n/jeu';
 
 interface Props {
   rank: number;
@@ -208,6 +210,7 @@ export default function BuildCandidateCard({
   bureau = false,
   colonneTriee = null,
 }: Props) {
+  const jeu = useTraduction().jeu;
   const runes = candidate.runeIds.map((id) => runeById.get(id)).filter((r): r is RuneDetail => !!r);
   const sets = activeSets(runes.map((r) => r.set));
   // ⚠️ Une même rune peut apparaître dans PLUSIEURS candidats affichés (une
@@ -335,7 +338,7 @@ export default function BuildCandidateCard({
   const groupeValeur = 'flex flex-none items-baseline gap-x-1.5';
   const lesSets = sets.map((key, i) => (
     <span key={`${key}-${i}`} className="text-micro text-ink-dim">
-      {RUNE_SETS.find((s) => s.key === key)?.label ?? key}
+      {nomSet(jeu, key)}
     </span>
   ));
   // « Valider » — réserve les 6 runes de CE build (bloquées pour les
@@ -617,7 +620,7 @@ export default function BuildCandidateCard({
         <div className="mt-2 grid grid-cols-[repeat(auto-fit,minmax(72px,1fr))] gap-x-2 gap-y-0.5 rounded border border-border-soft bg-panel2 px-2 py-1.5">
           {comparaison.map((s) => (
             <div key={s.key} className="flex items-baseline justify-between gap-1">
-              <span className="text-nano text-ink-dim">{s.label}</span>
+              <span className="text-nano text-ink-dim">{(jeu.stats as Record<string, string>)[s.key] ?? s.label}</span>
               <span
                 className={`font-mono text-nano tabular-nums ${
                   s.delta > 0 ? 'text-good' : s.delta < 0 ? 'text-bad' : 'text-ink-dimmer'

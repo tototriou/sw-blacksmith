@@ -3,8 +3,9 @@ import { SetDeplieContext } from './setDeplie';
 import SetComboPicker from '../../SetComboPicker';
 import RuneIcon from '../../../RuneIcon';
 import { SelecteurMultiple } from '../../../../ui';
-import { RUNE_SETS } from '../../../../types';
 import { runeSetIconFilter, setsCost } from '../../../../lib/effects';
+import { useTraduction } from '../../../../hooks/useLangue';
+import { nomSet } from '../../../../i18n/jeu';
 
 export interface SetDeRunesCompactProps {
   setPickerSectionRef: RefObject<HTMLDivElement>;
@@ -48,6 +49,7 @@ export interface SetDeRunesCompactProps {
 // reste un set de 2 à choisir) : elle ne se ferme d'elle-même qu'au choix qui
 // remplit les six emplacements, sinon au clic ailleurs ou à Échap.
 export default function SetDeRunesCompact({ setPickerSectionRef, setPickerInvalid, comboSets, onChangeSets }: SetDeRunesCompactProps) {
+  const jeu = useTraduction().jeu;
   const [ouvert, setOuvert] = useState(false);
   const page = useContext(SetDeplieContext);
   const copieGrille = useRef<HTMLDivElement>(null);
@@ -64,7 +66,7 @@ export default function SetDeRunesCompact({ setPickerSectionRef, setPickerInvali
     return () => obs.disconnect();
   }, [reporterEcart]);
   const deplie = page?.deplie === true;
-  const noms = comboSets.map((key) => RUNE_SETS.find((s) => s.key === key)?.label ?? key);
+  const noms = comboSets.map((key) => nomSet(jeu, key));
   const changer = (next: string[]) => {
     onChangeSets(next);
     if (setsCost(next) >= 6 && setsCost(next) > setsCost(comboSets)) setOuvert(false);

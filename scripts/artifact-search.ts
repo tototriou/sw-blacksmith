@@ -33,6 +33,7 @@ import { meilleuresPairesArtefacts, nombreDePaires, type ArtifactSearchParams, t
 import { artifactDamageProfile, aurasPropresDesRunes, computeTotalDamage, defaultDamageSkill, monsterDamageSkills, monsterOffensivePassives, resumeSequenceDeCoups, DEFAULT_DAMAGE_SETUP, type DamageSetup, type SkillDamageProfile } from '../src/lib/damage';
 import { computeStats } from '../src/lib/stats';
 import { artifactSubName } from '../src/lib/effects';
+import { jeuFr } from '../src/i18n/jeu/fr';
 import { ARTIFACT_KINDS, type ArtifactDetail, type ArtifactKind, type ElementKey } from '../src/types';
 
 const libres = process.argv.slice(2).filter((a) => !a.startsWith('--'));
@@ -114,7 +115,8 @@ const params: ArtifactSearchParams = {
   evaluer,
 };
 
-const parSorte = ARTIFACT_KINDS.map(({ key, label }) => {
+const parSorte = ARTIFACT_KINDS.map(({ key }) => {
+  const label = jeuFr.sortesArtefact[key];
   const n = loaded.allArtifacts.filter((a) => a.kind === key).length;
   return `${label} : ${n} en inventaire`;
 }).join(' · ');
@@ -137,7 +139,7 @@ const ms = Date.now() - t0;
 const decrire = (a: ArtifactDetail | null, kind: ArtifactKind) => {
   if (!a) return '(aucun)';
   const quoi = a.intangible ? 'INTANGIBLE' : kind === 'element' ? (a.element ?? '?') : (a.archetype ?? '?');
-  const lignes = a.subs.map((s) => `${artifactSubName(s.code)} ${s.value}`).join(', ');
+  const lignes = a.subs.map((s) => `${artifactSubName(s.code, jeuFr)} ${s.value}`).join(', ');
   return `${quoi} — principale ${a.main.code}/${a.main.value}${lignes ? ` — ${lignes}` : ''}`;
 };
 

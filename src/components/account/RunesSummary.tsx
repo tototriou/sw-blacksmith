@@ -1,10 +1,13 @@
 import { useMemo } from 'react';
 import { RuneDetail, RUNE_SETS } from '../../types';
-import { RARITY_META, RUNE_EFFECT, runeEfficiency } from '../../lib/effects';
+import { RARITY_META, choixEffetRune, runeEfficiency } from '../../lib/effects';
+import { useTraduction } from '../../hooks/useLangue';
+import { nomGrade } from '../../i18n/jeu';
 import { runePotential } from '../../lib/runeOptim';
 import RuneIcon from '../RuneIcon';
 import { Kpi, Panel, BarRow, pct, fmt, CARTE_CHIFFRES_DOIGT } from './SummaryBits';
 import BuildsRapides from './BuildsRapides';
+import { nomSet } from '../../i18n/jeu';
 
 interface Props {
   runes: RuneDetail[];
@@ -52,6 +55,7 @@ const TOP_N = 400;
 // artéfacts — voir SummaryBits.tsx.
 
 export default function RunesSummary({ runes }: Props) {
+  const jeu = useTraduction().jeu;
   // Tout le résumé est calculé en un seul passage, mémoïsé par import.
   const s = useMemo(() => {
     const effs: number[] = [];
@@ -266,7 +270,7 @@ export default function RunesSummary({ runes }: Props) {
                   r.n > 0 && (
                     <div
                       key={r.rarity}
-                      title={`${RARITY_META[r.rarity].label} — ${r.n}`}
+                      title={`${nomGrade(jeu, r.rarity)} — ${r.n}`}
                       style={{ width: `${pct(r.n, s.total)}%`, background: RARITY_META[r.rarity].color }}
                     />
                   )
@@ -282,7 +286,7 @@ export default function RunesSummary({ runes }: Props) {
                     className="inline-block w-2 h-2 rounded-full ring-1 ring-inset ring-black/20"
                     style={{ background: RARITY_META[r.rarity].color }}
                   />
-                  {RARITY_META[r.rarity].label} <b className="text-ink">{r.n}</b>
+                  {nomGrade(jeu, r.rarity)} <b className="text-ink">{r.n}</b>
                 </span>
               ))}
             </div>
@@ -340,7 +344,7 @@ export default function RunesSummary({ runes }: Props) {
             {s.mains.map((m) => (
               <BarRow
                 key={m.code}
-                label={RUNE_EFFECT[m.code]?.label ?? `#${m.code}`}
+                label={choixEffetRune(m.code, jeu)}
                 n={m.n}
                 total={varTotal}
                 max={s.mains[0].n}
@@ -396,7 +400,7 @@ export default function RunesSummary({ runes }: Props) {
               <RuneIcon setKey={set.key} size={26} />
               <div className="min-w-0 flex-1">
                 <div className="flex items-baseline justify-between gap-2">
-                  <span className="text-xs font-bold text-ink truncate">{set.label}</span>
+                  <span className="text-xs font-bold text-ink truncate">{nomSet(jeu, set.key)}</span>
                   <span className="font-mono text-xs text-ink-dim">{agg.n}</span>
                 </div>
                 <div className="font-mono text-micro text-ink-dim">

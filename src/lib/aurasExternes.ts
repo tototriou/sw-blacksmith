@@ -26,7 +26,10 @@
 // leur résultat.
 
 import { STAT_DE_L_AURA, type DamageSetup, type SetAura } from './damage';
-import { RUNE_SETS } from '../types';
+// Texte rédigé en français : les libellés du jeu qu'il cite viennent du
+// lexique français (`jeuFr`), pour que la phrase reste d'une seule langue.
+import { jeuFr } from '../i18n/jeu/fr';
+import { nomSet } from '../i18n/jeu';
 
 export type AuraExterne = NonNullable<DamageSetup['setsAuraExternes']>[number];
 
@@ -44,9 +47,9 @@ export function estSetAura(set: unknown): set is SetAura {
   return typeof set === 'string' && SETS_CONNUS.has(set);
 }
 
-// Nom du set tel que le jeu l'écrit (`RUNE_SETS`, la table de toute l'app).
+// Nom du set tel que le jeu l'écrit, en français (`nomSet`, src/i18n/jeu/).
 export function nomSetAura(set: SetAura): string {
-  return RUNE_SETS.find((s) => s.key === set)?.label ?? set;
+  return nomSet(jeuFr, set);
 }
 
 // Le libellé explicite d'une ligne — même patron pour les cinq sets.

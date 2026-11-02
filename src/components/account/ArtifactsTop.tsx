@@ -2,6 +2,7 @@ import { useMemo, useRef, useState } from 'react';
 import { Heart, Shield, Swords, X } from 'lucide-react';
 import { ArtifactDetail } from '../../types';
 import { ARTIFACT_MAIN, splitArtifactSub } from '../../lib/effects';
+import { useTraduction } from '../../hooks/useLangue';
 import {
   ColonneTop,
   dansGroupe,
@@ -44,6 +45,7 @@ const ICONE_PRINCIPALE: Record<number, { Icone: typeof Heart; couleur: string }>
 };
 
 export default function ArtifactsTop({ artifacts }: { artifacts: ArtifactDetail[] }) {
+  const jeu = useTraduction().jeu;
   const [choisi, setChoisi] = useStickyState<GroupeTop>('artefacts.top.groupe', 'water');
   const effectifs = useMemo(() => effectifsGroupes(artifacts), [artifacts]);
   // Un groupe retenu qui n'a plus d'artéfact (autre compte importé) : le
@@ -133,7 +135,7 @@ export default function ArtifactsTop({ artifacts }: { artifacts: ArtifactDetail[
               key={code}
               actif={principales.includes(code)}
               icone={<Icone size={13} strokeWidth={2.5} aria-hidden className={couleur} />}
-              libelle={ARTIFACT_MAIN[code].label}
+              libelle={jeu.stats[ARTIFACT_MAIN[code].stat]}
               onClick={() => basculerPrincipale(code)}
             />
           );
@@ -286,9 +288,10 @@ function Cellule({
   onBasculer: () => void;
   ficheEnLigne: boolean;
 }) {
+  const jeu = useTraduction().jeu;
   const ancre = useRef<HTMLLIElement>(null);
-  const principale = ARTIFACT_MAIN[art.main.code]?.label ?? '';
-  const texte = splitArtifactSub({ code, value: valeur }).valeur;
+  const principale = ARTIFACT_MAIN[art.main.code] ? jeu.stats[ARTIFACT_MAIN[art.main.code].stat] : '';
+  const texte = splitArtifactSub({ code, value: valeur }, jeu).valeur;
   const icone = ICONE_PRINCIPALE[art.main.code];
   return (
     // ⚠️ `relative` : l'ancre de la fiche flottante. `z-10` quand elle est

@@ -1,6 +1,6 @@
 import { memo, useMemo, useState } from 'react';
 import { X } from 'lucide-react';
-import { ARTIFACT_KINDS, ArtifactDetail, ElementKey, MAX_ARTIFACT_SUBS } from '../../types';
+import { ArtifactDetail, ElementKey, MAX_ARTIFACT_SUBS, sortesArtefact } from '../../types';
 import {
   formatArtifactMain,
   artifactSubName,
@@ -10,6 +10,8 @@ import {
   RARITY_META,
 } from '../../lib/effects';
 import { artifactScore, artifactEfficiency } from '../../lib/artifacts';
+import { useTraduction } from '../../hooks/useLangue';
+import { nomArchetype, nomElement, nomGrade } from '../../i18n/jeu';
 import { ArtifactGlyph } from '../ArtifactIcon';
 import ArtifactFrameIcon from '../ArtifactFrameIcon';
 import ArtifactSubLigne from '../ArtifactSubLigne';
@@ -53,21 +55,13 @@ const PAGE = 60;
 // référence : les libellés ne sont pas réécrits ici.
 const MAIN_ORDER = [100, 101, 102];
 
-const ELEMENTS: { key: ElementKey; label: string }[] = [
-  { key: 'water', label: 'Eau' },
-  { key: 'fire', label: 'Feu' },
-  { key: 'wind', label: 'Vent' },
-  { key: 'light', label: 'Lumière' },
-  { key: 'dark', label: 'Ténèbres' },
-];
-const ARCHETYPES: { key: Archetype; label: string }[] = [
-  { key: 'attack', label: 'Attaque' },
-  { key: 'defense', label: 'Défense' },
-  { key: 'hp', label: 'PV' },
-  { key: 'support', label: 'Support' },
-];
+// L'ordre du jeu ; les noms viennent du lexique (`nomElement`, `nomArchetype`).
+const ELEMENTS: { key: ElementKey }[] = [{ key: 'water' }, { key: 'fire' }, { key: 'wind' }, { key: 'light' }, { key: 'dark' }];
+const ARCHETYPES: { key: Archetype }[] = [{ key: 'attack' }, { key: 'defense' }, { key: 'hp' }, { key: 'support' }];
 
 export default function ArtifactsList({ artifacts, menuOuvert, onFermerMenu }: Props) {
+  const textes = useTraduction();
+  const jeu = textes.jeu;
   const [kind, setKind] = useStickyState<'all' | 'element' | 'archetype'>('artefacts.kind', 'all');
   const [element, setElement] = useStickyState<ElementKey | ''>('artefacts.element', '');
   const [archetype, setArchetype] = useStickyState<Archetype | ''>('artefacts.archetype', '');
@@ -199,8 +193,8 @@ export default function ArtifactsList({ artifacts, menuOuvert, onFermerMenu }: P
     return [...presentes]
       .filter((c) => !poses.has(c))
       .sort((a, b) => artifactSubOrder(a) - artifactSubOrder(b))
-      .map((code) => ({ code, label: artifactSubName(code) }));
-  }, [rows, kind, criteres]);
+      .map((code) => ({ code, label: artifactSubName(code, jeu) }));
+  }, [rows, kind, criteres, jeu]);
 
   // Composition de la liste affichée, pour le rappel d'en-tête sur « Tous ».
   const repartition = useMemo(
@@ -263,7 +257,7 @@ export default function ArtifactsList({ artifacts, menuOuvert, onFermerMenu }: P
             }}
             options={[
               { key: 'all' as const, label: 'Tous' },
-              ...ARTIFACT_KINDS.map((x) => ({ key: x.key, label: x.label })),
+              ...sortesArtefact(textes),
             ]}
           />
         </div>
@@ -316,7 +310,7 @@ export default function ArtifactsList({ artifacts, menuOuvert, onFermerMenu }: P
                   ${hs ? 'opacity-25 cursor-not-allowed' : active ? '' : 'opacity-70 hoverable:opacity-100'}`}
               >
                 <ElementIcon element={e.key} size={15} />
-                {e.label}
+                {nomElement(jeu, e.key)}
               </button>
             );
           })}
@@ -355,7 +349,7 @@ export default function ArtifactsList({ artifacts, menuOuvert, onFermerMenu }: P
                   } ${hs ? 'opacity-25 cursor-not-allowed' : ''}`}
               >
                 <ArtifactGlyph name={a.key} size={15} />
-                {a.label}
+                {nomArchetype(jeu, a.key)}
               </button>
             );
           })}
@@ -392,7 +386,7 @@ export default function ArtifactsList({ artifacts, menuOuvert, onFermerMenu }: P
                     : { borderColor: 'rgb(var(--border))', color: meta.ink }
                 }
               >
-                {meta.label}
+                {nomGrade(jeu, r)}
               </button>
             );
           })}
@@ -425,7 +419,7 @@ export default function ArtifactsList({ artifacts, menuOuvert, onFermerMenu }: P
               { key: '', label: 'Toutes' },
               ...MAIN_ORDER.map((code) => ({
                 key: String(code),
-                label: ARTIFACT_MAIN[code].label,
+                label: jeu.stats[ARTIFACT_MAIN[code].stat],
               })),
             ]}
           />
@@ -442,7 +436,7 @@ export default function ArtifactsList({ artifacts, menuOuvert, onFermerMenu }: P
               options={dispoSubs}
               criteres={criteres}
               max={MAX_ARTIFACT_SUBS}
-              nomDe={artifactSubName}
+              nomDe={(code) => artifactSubName(code, jeu)}
               // Plus large que pour les runes : « Dgts supp. en prop. de ATQ »
               // ne tient pas dans 380 px à côté de ses deux bornes.
               largeurModale="max-w-[520px]"
@@ -611,7 +605,9 @@ const ArtTile = memo(function ArtTile({
   // Codes des propriétés RECHERCHÉES, mis en avant sur la ligne (voir plus bas).
   cherches: Set<number>;
 }) {
-  const meta = RARITY_META[art.rarity] ?? RARITY_META[1];
+  const jeu = useTraduction().jeu;
+  const grade = art.rarity in RARITY_META ? art.rarity : 1;
+  const meta = RARITY_META[grade];
 
   return (
     <div className="rounded-lg border border-border bg-panel">
@@ -622,7 +618,7 @@ const ArtTile = memo(function ArtTile({
           <ArtifactFrameIcon artifact={art} size={46} />
           <div className="min-w-0 flex-1 self-center">
             <div className="text-sm font-bold text-ink leading-tight truncate">
-              {formatArtifactMain(art.main)}
+              {formatArtifactMain(art.main, jeu)}
             </div>
           </div>
           <div className="flex flex-none flex-col items-end gap-1">
@@ -633,7 +629,7 @@ const ArtTile = memo(function ArtTile({
               className="rounded px-1.5 py-px text-micro font-bold uppercase tracking-wide leading-tight"
               style={{ background: meta.bg, color: meta.color }}
             >
-              {meta.label}
+              {nomGrade(jeu, grade)}
             </span>
             {/* La mesure affichée suit le menu ⚙, comme pour les runes. */}
             <span className="flex items-center gap-1 rounded bg-panel2 px-1.5 py-px font-mono text-micro leading-tight tabular-nums text-ink">

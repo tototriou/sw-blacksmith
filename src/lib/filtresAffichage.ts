@@ -13,13 +13,15 @@ import { chiffresMesureRune } from './valeursAffichees';
 import { STATS_AVEC_BASE } from './stats';
 import type { StatKey } from './effects';
 import type { ComptesDeLaVue } from './classementCompact';
+// Libellés de colonnes rédigés en français : la stat vient du lexique français.
+import { jeuFr } from '../i18n/jeu/fr';
 
 /** Le libellé du code : stats de `RECO_STATS`, objectifs d'`OBJECTIVE_LABELS` ; la mesure suit le réglage Efficience / Score SW. */
 export function libelleColonne(colonne: ColonneResultat, metric: OptimMetric): string {
   if (colonne === 'efficience') return metric === 'eff' ? 'Efficience' : 'Score SW';
   if (colonne === 'degats_reels') return 'Dégâts réels';
   if (colonne === 'ehp') return 'PV effectifs';
-  return RECO_STATS.find((s) => s.key === colonne)!.label;
+  return jeuFr.stats[RECO_STATS.find((s) => s.key === colonne)!.key];
 }
 
 /** L'unité que la carte écrit après la valeur : « % » des quatre stats en pourcentage et de l'efficience. */

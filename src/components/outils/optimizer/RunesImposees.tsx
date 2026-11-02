@@ -1,7 +1,8 @@
 import HelpPopover from '../../HelpPopover';
 import { Pastille } from '../../../ui';
 import RuneIcon from '../../RuneIcon';
-import { runeSetIconFilter, RUNE_EFFECT } from '../../../lib/effects';
+import { runeSetIconFilter, choixEffetRune } from '../../../lib/effects';
+import { useTraduction } from '../../../hooks/useLangue';
 import { type Monster, type GearSet } from '../../../types';
 import { type Dispatch, type SetStateAction } from 'react';
 
@@ -18,6 +19,7 @@ export interface RunesImposeesProps {
 }
 
 export default function RunesImposees({ selected, lockedRunes, setLockedRunes, bureau = false }: RunesImposeesProps) {
+  const jeu = useTraduction().jeu;
   return (
     <div>
       <div className="mb-2.5 flex items-center gap-1.5">
@@ -61,7 +63,7 @@ export default function RunesImposees({ selected, lockedRunes, setLockedRunes, b
                   })
                 }
                 icone={<RuneIcon setKey={portee.set} size={13} filter={runeSetIconFilter(verrouille)} />}
-                libelle={`Slot ${slot} · ${RUNE_EFFECT[portee.main.code]?.label ?? portee.main.code}`}
+                libelle={`Slot ${slot} · ${choixEffetRune(portee.main.code, jeu)}`}
                 title={
                   verrouille
                     ? `Libérer l'emplacement ${slot}`

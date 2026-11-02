@@ -4,6 +4,7 @@ import { formatRuneMetric, type RuneMetric } from '../../../hooks/useRuneMetric'
 import { moyenneParRune } from '../../../lib/valeursAffichees';
 import { type StatKey } from '../../../lib/effects';
 import { type DamageSetup, type SetAura } from '../../../lib/damage';
+import { useTraduction } from '../../../hooks/useLangue';
 
 export interface QuasiSuccesProps {
   result: Pick<SearchResult, 'globalNearMiss' | 'nearMissByCondition'>;
@@ -17,6 +18,7 @@ export interface QuasiSuccesProps {
 }
 
 export default function QuasiSucces({ result, runeById, metric, objective, aurasPropresDe, damageSetup, bureau = false }: QuasiSuccesProps) {
+  const jeu = useTraduction().jeu;
   // ⚠️ Même vocabulaire que le palier 2 (`DiagnosticApprofondi`, « −15 suffit ») :
   // un seul réflexe de lecture
   // pour tout l'écran diagnostic, plutôt que deux formulations
@@ -40,7 +42,7 @@ export default function QuasiSucces({ result, runeById, metric, objective, auras
     const nouveauSeuil = s.kind === 'min' ? s.requested - s.shortfall : s.requested + s.shortfall;
     return (
       <span key={`${s.key}-${s.kind}`}>
-        <span className="font-semibold text-ink">{st.label}</span> {s.kind === 'min' ? '−' : '+'}
+        <span className="font-semibold text-ink">{jeu.stats[st.key]}</span> {s.kind === 'min' ? '−' : '+'}
         {s.shortfall}
         {st.suffix} suffirait ({s.kind === 'min' ? '≥' : '≤'} {nouveauSeuil}
         {st.suffix})

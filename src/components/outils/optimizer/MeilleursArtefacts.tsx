@@ -4,6 +4,7 @@ import Segmented from '../../../ui/Segmented';
 import { CRITERE_ARTEFACTS_LABELS } from './constantes';
 import ArtifactFrameIcon from '../../ArtifactFrameIcon';
 import { formatArtifactMain } from '../../../lib/effects';
+import { useTraduction } from '../../../hooks/useLangue';
 import ArtifactSubLigne from '../../ArtifactSubLigne';
 import { type ArtifactDetail, type ArtifactKind } from '../../../types';
 import { type Dispatch, type SetStateAction } from 'react';
@@ -35,6 +36,7 @@ export interface MeilleursArtefactsProps {
 }
 
 export default function MeilleursArtefacts({ modeArtefactsSeuls, etroit, setArtefactsOuverts, artefactsOuverts, critereArtefacts, setCritereArtefacts, setSetupOuvert, sortesFigees, resolvedSkill, sourceSelector, lists, ownValidatedBuild, canValidateDisplayed, handleValidateArtefacts, artefactsProposesDejaReserves, carte = false }: MeilleursArtefactsProps) {
+  const jeu = useTraduction().jeu;
   return (
     <div className={carte ? '' : 'mt-2.5 rounded-lg border border-border-soft bg-panel2/60 px-2 py-1.5'}>
       {(() => {
@@ -219,7 +221,7 @@ export default function MeilleursArtefacts({ modeArtefactsSeuls, etroit, setArte
                     gauche ». Même gabarit que la pastille de sorte de
                     ArtifactLinesEditor : rien de nouveau dans la librairie. */}
                 <div className="flex flex-wrap items-center gap-1.5">
-                  <p className="text-micro font-semibold leading-tight text-ink">{formatArtifactMain(a.main)}</p>
+                  <p className="text-micro font-semibold leading-tight text-ink">{formatArtifactMain(a.main, jeu)}</p>
                   {sortesFigees.includes(a.kind) && (
                     <span className="shrink-0 rounded-full border border-border bg-panel px-1.5 py-px text-nano font-semibold text-ink-dim">
                       figé

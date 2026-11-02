@@ -3,6 +3,7 @@ import { X, ChevronDown, EyeOff } from 'lucide-react';
 // Les compagnons de l'entrée « Ami » de la nav.
 import { IconeAmi } from '../IconesAtelier';
 import { RtaEntry, Monster, sectionLabel, sectionAccent, RTA_UNASSIGNED, RTA_OTHER } from '../../types';
+import { useTraduction } from '../../hooks/useLangue';
 import { RtaVueAmi } from '../../lib/rtaShare';
 import MonsterAvatar from '../MonsterAvatar';
 import RuneIcon from '../RuneIcon';
@@ -116,6 +117,7 @@ function CarteAmi({
 }
 
 export default function RtaFriendView({ vue, onClose }: { vue: RtaVueAmi; onClose: () => void }) {
+  const textes = useTraduction();
   // Un seul détail ouvert à la fois, comme dans la prépa (mais indépendant : ce
   // sont deux listes distinctes à l'écran).
   const [openId, setOpenId] = useState<string | null>(null);
@@ -210,7 +212,7 @@ export default function RtaFriendView({ vue, onClose }: { vue: RtaVueAmi; onClos
           ) : (
             <RuneIcon setKey={key} size={22} className="flex-none" />
           )}
-          <h3 className="font-display text-base tracking-wide">{sectionLabel(key)}</h3>
+          <h3 className="font-display text-base tracking-wide">{sectionLabel(key, textes)}</h3>
           <span className="font-mono text-ink-dimmer text-micro">{items.length}</span>
           <span aria-hidden className="ml-1 h-px flex-1 bg-border-soft" />
         </div>

@@ -2,7 +2,7 @@ import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Search, Plus, Users, Swords, X, Zap, Gauge, Eye, EyeOff, Download, Upload, Check, Scissors, Play, ChevronUp, ChevronDown, Sparkles, CopyPlus } from 'lucide-react';
 // Le chronomètre de l'entrée « Speed tuning » de la nav.
 import { IconeSpeedTuning } from '../IconesAtelier';
-import { ELEMENTS, Monster, SiegeTeam } from '../../types';
+import { Monster, SiegeTeam } from '../../types';
 import { LeadInfo, combatSpeed, leadsDeVitesse, runeSpeedForTarget, SIEGE_TICKS } from '../../lib/speed';
 import {
   simuler,
@@ -79,6 +79,8 @@ import {
   Jeton,
   ZoneCliquable,
 } from '../../ui';
+import { useTraduction } from '../../hooks/useLangue';
+import { nomElement } from '../../i18n/jeu';
 
 // Icône de vitesse du jeu, celle des cartes RTA/Siège. Sert de repère au buff
 // de vitesse dans la grille dédiée.
@@ -1105,6 +1107,7 @@ function CampPanneau({
   onExporterOptimizer,
   raisonExportOptimizer,
 }: CampProps) {
+  const jeu = useTraduction().jeu;
   const adv = camp === 'ennemi';
   const dejaAjoutes = useMemo(() => new Set(lignes.map((l) => String(l.monster.id))), [lignes]);
 
@@ -1193,7 +1196,7 @@ function CampPanneau({
                 .filter((l) => l.element)
                 .map((l) => (
                   <option key={cleDe(l)} value={cleDe(l)}>
-                    +{l.amount}% · {ELEMENTS.find((e) => e.key === l.element)?.label ?? '—'}
+                    +{l.amount}% · {l.element ? nomElement(jeu, l.element) : '—'}
                   </option>
                 ))}
             </optgroup>

@@ -72,8 +72,8 @@ export function testAurasEcranBornes() {
 
   egal(SETS_AURA, Object.keys(STAT_DE_L_AURA), 'les cinq sets sont DÉRIVÉS de STAT_DE_L_AURA, dans son ordre');
   egal(PLAFOND_AURAS_EXTERNES, 15, 'plafond de saisie : 15 (cinq autres monstres à trois sets)');
-  egal(libelleNombreAura('fight'), 'Nombre de sets Fight des autres monstres de l\'équipe', 'libellé explicite, patron de l’utilisateur');
-  egal(libelleNombreAura('tolerance'), 'Nombre de sets Tolerance des autres monstres de l\'équipe', 'même patron pour les cinq sets');
+  egal(libelleNombreAura('fight'), 'Nombre de sets Combat des autres monstres de l\'équipe', 'libellé explicite, patron de l’utilisateur');
+  egal(libelleNombreAura('tolerance'), 'Nombre de sets Tolérance des autres monstres de l\'équipe', 'même patron pour les cinq sets');
 
   const liste = [a('fight', 10), a('accuracy', 3)];
   egal(nombreMaxDeLaLigne(liste, 'fight'), 12, 'Fight : 15 − 3 (les autres lignes)');
@@ -228,7 +228,7 @@ export function testAurasEcranEcho() {
   titre('Auras à l’écran · écho de la fenêtre « Dégâts réels » : externes nommées, sets du build sans nombre');
 
   egal(echoAurasExternes([a('fight', 2), a('accuracy', 1)]),
-    'auras externes : 2 sets Fight, 1 set Accuracy ; les sets d\'aura du build s\'y ajoutent sur chaque résultat',
+    'auras externes : 2 sets Combat, 1 set Précision ; les sets d\'aura du build s\'y ajoutent sur chaque résultat',
     'externes nommées par set, avec leur nombre, dans l’ordre saisi');
   egal(echoAurasExternes([]), 'aucune aura externe ; les sets d\'aura du build comptent sur chaque résultat',
     'aucune externe : le dit, et rappelle les sets du build');

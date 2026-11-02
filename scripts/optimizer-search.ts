@@ -23,6 +23,7 @@ import { printMonsterSummary } from './lib/loadMonster';
 import { resolveArtifacts, toutVerifierDeLaRecette } from './lib/recipeToSearchParams';
 import { chargerRecette } from './lib/chargerRecette';
 import { activeSets, artifactSubName } from '../src/lib/effects';
+import { jeuFr } from '../src/i18n/jeu/fr';
 import { loadMonsterSkills } from './lib/skillsData';
 import { loadMonstersList } from './lib/monstersData';
 import {
@@ -321,7 +322,7 @@ if (recipe.objective === 'degats_reels') {
     // paire retenue soit plus faible qu'attendu, ou qu'il n'y en ait aucune.
     // Le taire ferait chercher la cause ailleurs.
     for (const l of recipe.lignesVerrouillees ?? []) {
-      if (l.min > 0) console.log(`Ligne verrouillée : ${artifactSubName(l.code)} ≥ ${l.min} (cumulé sur la paire).`);
+      if (l.min > 0) console.log(`Ligne verrouillée : ${artifactSubName(l.code, jeuFr)} ≥ ${l.min} (cumulé sur la paire).`);
     }
     if (artefacts.ampliVitPct > 0)
       console.log(`Effet aug. VIT (artéfacts) : +${artefacts.ampliVitPct} % — amplifie le buff VIT s'il est actif.`);

@@ -4,6 +4,7 @@ import { BuildRapide, VIT_BASE_REFERENCE, buildsLesPlusRapides, cleCombo } from 
 import { useBuildsRapides } from '../../hooks/useBuildsRapides';
 import { COMPACT, useMediaQuery } from '../../hooks/useMediaQuery';
 import { useStickyState } from '../../hooks/useStickyState';
+import { useTraduction } from '../../hooks/useLangue';
 import { Bouton, FlottantAuto, Onglets } from '../../ui';
 import RuneWheel from '../RuneWheel';
 import { RuneDetailBox } from '../PieceDetail';
@@ -107,6 +108,7 @@ function CarteBuild({
 // Les builds les plus rapides du compte, par combinaison de sets (le réglage
 // des Paramètres). Voir docs/02-app/compte/feat-runes/resume.md.
 export default function BuildsRapides({ runes, className = '' }: { runes: RuneDetail[]; className?: string }) {
+  const jeu = useTraduction().jeu;
   const reglage = useBuildsRapides();
   // ⚠️ Recalculé à chaque import ou changement de réglage seulement : ~6 ms à
   // 4 000 runes et 10 builds par combinaison, mesuré — pas besoin de Worker.
@@ -176,7 +178,7 @@ export default function BuildsRapides({ runes, className = '' }: { runes: RuneDe
               icone: <SymbolesCombo combo={combo} taille={14} />,
               libelle: (
                 <>
-                  {nomCombo(combo)}
+                  {nomCombo(combo, jeu)}
                   {/* La VIT du #1 se détache du nom : collée, elle se lisait
                       comme la fin du libellé. */}
                   <span className="ml-1 font-mono tabular-nums opacity-70">{builds[0]?.total ?? '—'}</span>
@@ -193,7 +195,7 @@ export default function BuildsRapides({ runes, className = '' }: { runes: RuneDe
                       enfoncé nomme déjà la combinaison. */}
                   <h4 className="mb-1.5 hidden items-center gap-1.5 text-xs font-bold text-ink xl:flex">
                     <SymbolesCombo combo={combo} />
-                    {nomCombo(combo)}
+                    {nomCombo(combo, jeu)}
                   </h4>
                   {builds.length === 0 ? (
                     <p className="text-xs text-ink-dim">Aucun build possible avec tes runes.</p>

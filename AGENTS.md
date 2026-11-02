@@ -57,7 +57,8 @@ src/
   ui/            # la librairie d'interface : TOUT contrôle vient d'ici (Bouton, Champ, Selecteur,
                  # Modale, Flottant, Pastille…) — point d'entrée src/ui/index.ts
   hooks/         # état et persistance (usePersistence, useOptimizerState, useSpeedTune, useLangue…)
-  i18n/          # les textes de l'interface : un dictionnaire par langue (fr.ts source, en.ts), formats
+  i18n/          # les textes de l'interface : un dictionnaire par langue (fr.ts source, en.ts), formats ;
+                 # jeu/ : le vocabulaire du jeu dans chaque langue (sets, stats, effets…)
   lib/           # calcul pur, testé : vitesse (speed.ts), runes, artéfacts, reliques, dégâts réels
                  # (damage.ts), moteur de l'Optimizer (runeBuildOptim.ts), import de compte, session
   workers/       # Web Workers de l'Optimizer (recherche, appariement parallèle, classement, résolution)

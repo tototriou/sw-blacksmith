@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import { DamageSetup, LEADER_SKILL_STATS, LEADER_SKILL_VALEURS, LeaderSkillStat, type SetAura } from '../../lib/damage';
-import { leadIconUrl, STAT_LABEL } from '../siege/LeadPill';
+import { leadIconUrl, nomStatLead } from '../siege/LeadPill';
+import { useTraduction } from '../../hooks/useLangue';
 import { Bouton, BoutonIcone, Jeton, NumberField, Selecteur } from '../../ui';
 import type { RappelBuffDePassif } from '../../lib/buffsDePassif';
 import HelpPopover from '../HelpPopover';
@@ -441,6 +442,7 @@ export function AurasExternesSaisie({
 // (portée/élément) que ce choix utilisateur n'a pas : traité comme portée
 // `'General'`, sans élément, pour obtenir l'icône DE BASE.
 export function LeaderSkillPicker({ setup, maj }: { setup: DamageSetup; maj: (patch: Partial<DamageSetup>) => void }) {
+  const jeu = useTraduction().jeu;
   const lead = setup.leaderSkill;
   const icone = lead ? leadIconUrl({ stat: lead.stat, amount: lead.pct, area: 'General', element: null }) : null;
   const valeurs = lead ? LEADER_SKILL_VALEURS[lead.stat] : [];
@@ -495,7 +497,7 @@ export function LeaderSkillPicker({ setup, maj }: { setup: DamageSetup; maj: (pa
         <option value="">Aucun</option>
         {LEADER_SKILL_STATS.map((stat) => (
           <option key={stat} value={stat}>
-            {STAT_LABEL[stat] ?? stat}
+            {nomStatLead(jeu, stat)}
           </option>
         ))}
       </Selecteur>

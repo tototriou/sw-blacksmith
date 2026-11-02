@@ -1,3 +1,6 @@
+import type { Dictionnaire } from './i18n';
+import { nomSet } from './i18n/jeu';
+
 export type ElementKey = 'fire' | 'water' | 'wind' | 'light' | 'dark' | 'unknown';
 
 export interface MonsterStats {
@@ -69,18 +72,18 @@ export interface Monster {
   skillGroupId?: number | null;
 }
 
+// Le nom d'un élément : `nomElement` (src/i18n/jeu/), dans la langue affichée.
 export interface ElementDef {
   key: ElementKey;
-  label: string;
 }
 
 export const ELEMENTS: ElementDef[] = [
-  { key: 'fire', label: 'Feu' },
-  { key: 'water', label: 'Eau' },
-  { key: 'wind', label: 'Vent' },
-  { key: 'light', label: 'Lumière' },
-  { key: 'dark', label: 'Ténèbres' },
-  { key: 'unknown', label: 'Autre' },
+  { key: 'fire' },
+  { key: 'water' },
+  { key: 'wind' },
+  { key: 'light' },
+  { key: 'dark' },
+  { key: 'unknown' },
 ];
 
 export const STAR_OPTIONS = [1, 2, 3, 4, 5, 6];
@@ -161,10 +164,14 @@ export interface CraftLine {
 // com2us (`type` 1 / 2).
 export type ArtifactKind = 'element' | 'archetype';
 
-export const ARTIFACT_KINDS: { key: ArtifactKind; label: string }[] = [
-  { key: 'element', label: 'Attribut' },
-  { key: 'archetype', label: 'Type' },
-];
+// Leur NOM (« Attribut », « Type ») : `jeu.sortesArtefact`, dans la langue
+// affichée — voir `sortesArtefact`.
+export const ARTIFACT_KINDS: { key: ArtifactKind }[] = [{ key: 'element' }, { key: 'archetype' }];
+
+// Les deux sortes avec leur nom, dans l'ordre d'`ARTIFACT_KINDS`.
+export function sortesArtefact(t: Dictionnaire): { key: ArtifactKind; label: string }[] {
+  return ARTIFACT_KINDS.map(({ key }) => ({ key, label: t.jeu.sortesArtefact[key] }));
+}
 
 // Archétype (le « Type » du jeu). Porté À LA FOIS par un artéfact de type et
 // par le MONSTRE — c'est leur égalité qui décide de l'éligibilité, voir
@@ -260,37 +267,37 @@ export interface GearSet {
  * RTA (Real Time Arena) — préparation des builds runes
  * ----------------------------------------------------------------------- */
 
+// Le nom d'un set : `nomSet` (src/i18n/jeu/), dans la langue affichée.
 export interface RuneSet {
   key: string;
-  label: string;
   accent: string; // couleur d'accent (hex)
 }
 
 // Sets de runes Summoners War. `accent` sert à colorer les sections RTA.
 export const RUNE_SETS: RuneSet[] = [
-  { key: 'swift', label: 'Swift', accent: '#5CC2FF' },
-  { key: 'violent', label: 'Violent', accent: '#E85D3D' },
-  { key: 'despair', label: 'Despair', accent: '#A15FE0' },
-  { key: 'will', label: 'Will', accent: '#5EDB8F' },
-  { key: 'rage', label: 'Rage', accent: '#FF7A52' },
-  { key: 'fatal', label: 'Fatal', accent: '#E0553B' },
-  { key: 'blade', label: 'Blade', accent: '#7CC4FF' },
-  { key: 'energy', label: 'Energy', accent: '#7AE0A0' },
-  { key: 'guard', label: 'Guard', accent: '#8890B8' },
-  { key: 'focus', label: 'Focus', accent: '#59B0E0' },
-  { key: 'endure', label: 'Endure', accent: '#C0A060' },
-  { key: 'vampire', label: 'Vampire', accent: '#C0466A' },
-  { key: 'nemesis', label: 'Nemesis', accent: '#B06BE0' },
-  { key: 'shield', label: 'Shield', accent: '#6FD0E0' },
-  { key: 'revenge', label: 'Revenge', accent: '#E06BA0' },
-  { key: 'destroy', label: 'Destroy', accent: '#C05050' },
-  { key: 'fight', label: 'Fight', accent: '#E0A050' },
-  { key: 'determination', label: 'Determination', accent: '#A0B0D0' },
-  { key: 'enhance', label: 'Enhance', accent: '#60D090' },
-  { key: 'accuracy', label: 'Accuracy', accent: '#70C0E0' },
-  { key: 'tolerance', label: 'Tolerance', accent: '#C0C070' },
-  { key: 'seal', label: 'Seal', accent: '#9070D0' },
-  { key: 'intangible', label: 'Intangible', accent: '#E8C24A' },
+  { key: 'swift', accent: '#5CC2FF' },
+  { key: 'violent', accent: '#E85D3D' },
+  { key: 'despair', accent: '#A15FE0' },
+  { key: 'will', accent: '#5EDB8F' },
+  { key: 'rage', accent: '#FF7A52' },
+  { key: 'fatal', accent: '#E0553B' },
+  { key: 'blade', accent: '#7CC4FF' },
+  { key: 'energy', accent: '#7AE0A0' },
+  { key: 'guard', accent: '#8890B8' },
+  { key: 'focus', accent: '#59B0E0' },
+  { key: 'endure', accent: '#C0A060' },
+  { key: 'vampire', accent: '#C0466A' },
+  { key: 'nemesis', accent: '#B06BE0' },
+  { key: 'shield', accent: '#6FD0E0' },
+  { key: 'revenge', accent: '#E06BA0' },
+  { key: 'destroy', accent: '#C05050' },
+  { key: 'fight', accent: '#E0A050' },
+  { key: 'determination', accent: '#A0B0D0' },
+  { key: 'enhance', accent: '#60D090' },
+  { key: 'accuracy', accent: '#70C0E0' },
+  { key: 'tolerance', accent: '#C0C070' },
+  { key: 'seal', accent: '#9070D0' },
+  { key: 'intangible', accent: '#E8C24A' },
 ];
 
 // Sections spéciales toujours présentes / non liées à un set de runes.
@@ -302,10 +309,12 @@ export const RTA_DEFAULT_SECTIONS: string[] = ['swift', 'violent', 'despair', RT
 
 const RUNE_SET_BY_KEY = new Map(RUNE_SETS.map((s) => [s.key, s]));
 
-export function sectionLabel(key: string): string {
-  if (key === RTA_OTHER) return 'Autre';
-  if (key === RTA_UNASSIGNED) return 'Non classé';
-  return RUNE_SET_BY_KEY.get(key)?.label ?? key;
+// Le nom d'une section de la prépa RTA, dans la langue affichée (`t`) : celui
+// du set, ou « Autre », « Non classé ».
+export function sectionLabel(key: string, t: Dictionnaire): string {
+  if (key === RTA_OTHER) return t.sectionsRta.autre;
+  if (key === RTA_UNASSIGNED) return t.sectionsRta.nonClasse;
+  return nomSet(t.jeu, key);
 }
 
 export function sectionAccent(key: string): string {
@@ -363,15 +372,16 @@ export interface SiegeState {
 // lib/effects.ts → StatKey, et mêmes lignes que le calcul de stats totales).
 export type RecoStatKey = 'hp' | 'atk' | 'def' | 'spd' | 'cr' | 'cd' | 'res' | 'acc';
 
-export const RECO_STATS: { key: RecoStatKey; label: string; suffix: string }[] = [
-  { key: 'hp', label: 'PV', suffix: '' },
-  { key: 'atk', label: 'ATQ', suffix: '' },
-  { key: 'def', label: 'DEF', suffix: '' },
-  { key: 'spd', label: 'VIT', suffix: '' },
-  { key: 'cr', label: 'Taux Crit', suffix: '%' },
-  { key: 'cd', label: 'Dmg Crit', suffix: '%' },
-  { key: 'res', label: 'RES', suffix: '%' },
-  { key: 'acc', label: 'Précision', suffix: '%' },
+// Le nom d'une stat : `jeu.stats[key]` (src/i18n/jeu/), dans la langue affichée.
+export const RECO_STATS: { key: RecoStatKey; suffix: string }[] = [
+  { key: 'hp', suffix: '' },
+  { key: 'atk', suffix: '' },
+  { key: 'def', suffix: '' },
+  { key: 'spd', suffix: '' },
+  { key: 'cr', suffix: '%' },
+  { key: 'cd', suffix: '%' },
+  { key: 'res', suffix: '%' },
+  { key: 'acc', suffix: '%' },
 ];
 
 // Un monstre d'une recommandation. On stocke le **com2usId** (et non l'id local)

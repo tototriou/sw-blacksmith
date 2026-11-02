@@ -19,6 +19,8 @@ import MobileSheet from '../ui/MobileSheet';
 import RtaAmiSection from '../components/rta/RtaAmiSection';
 import { RtaVueAmi } from '../lib/rtaShare';
 import { useStickyState } from '../hooks/useStickyState';
+import { useTraduction } from '../hooks/useLangue';
+import { nomSet } from '../i18n/jeu';
 import { ConfirmDialog } from '../ui/Dialogs';
 import { useRtaCategories } from '../hooks/useRtaCategories';
 import { useRtaBackup } from '../hooks/useRtaBackup';
@@ -76,6 +78,7 @@ export default function RtaPage({
   menuOuvert,
   onFermerMenu,
 }: Props) {
+  const textes = useTraduction();
   const exportDisponible = useMemo(() => importerPrepaRtaOptimizer(sourcesOptimizer).membres.length > 0, [sourcesOptimizer]);
   const raisonExport = !compteCharge ? 'Importe un compte pour exporter vers l’Optimizer.'
     : !exportDisponible ? 'Aucun monstre importable dans la prépa RTA.' : undefined;
@@ -519,7 +522,7 @@ export default function RtaPage({
           ...[RTA_UNASSIGNED, ...runeSections].map((key) => ({
             cle: key,
             icone: RUNE_SETS.some((s) => s.key === key) ? <RuneIcon setKey={key} size={15} /> : undefined,
-            libelle: `${key === RTA_UNASSIGNED ? 'Non classé' : sectionLabel(key)} ${groups[key]?.length ?? 0}`,
+            libelle: `${key === RTA_UNASSIGNED ? 'Non classé' : sectionLabel(key, textes)} ${groups[key]?.length ?? 0}`,
           })),
         ]}
       />
@@ -544,7 +547,7 @@ export default function RtaPage({
           <div key={key} className={horsFiltre(key)}>
             <RtaSection
               sectionKey={key}
-              label={sectionLabel(key)}
+              label={sectionLabel(key, textes)}
               accent={sectionAccent(key)}
               count={groups[key]?.length ?? 0}
               removable={key !== RTA_OTHER}
@@ -573,7 +576,7 @@ export default function RtaPage({
           <option value="">Choisir un set de runes…</option>
           {availableSets.map((s) => (
             <option key={s.key} value={s.key}>
-              {s.label}
+              {nomSet(textes.jeu, s.key)}
             </option>
           ))}
         </Selecteur>

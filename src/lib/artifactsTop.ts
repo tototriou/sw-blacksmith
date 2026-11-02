@@ -12,7 +12,10 @@
 // entre eux sur UNE propriété.
 
 import { ArtifactArchetype, ArtifactDetail, ElementKey } from '../types';
-import { ARTIFACT_SUB, artifactSubKinds, artifactSubName, artifactSubOrder, isArtifactSub } from './effects';
+import { CODES_SOUS_PROPRIETES, artifactSubKinds, artifactSubName, artifactSubOrder, isArtifactSub } from './effects';
+// Texte rédigé en français : les libellés du jeu qu'il cite viennent du
+// lexique français (`jeuFr`), pour que la phrase reste d'une seule langue.
+import { jeuFr } from '../i18n/jeu/fr';
 import { artifactScore } from './artifacts';
 
 // Le groupe montré : un attribut ou un type.
@@ -177,7 +180,7 @@ export function topParPropriete(
   };
   const colonne = (code: number, entete?: string): ColonneTop => ({
     code,
-    entete: entete ?? artifactSubName(code),
+    entete: entete ?? artifactSubName(code, jeuFr),
     court: entete !== undefined,
     cellules: (parCode.get(code) ?? [])
       .sort((x, y) => y.valeur - x.valeur || score(y.art) - score(x.art) || x.art.id - y.art.id)
@@ -193,8 +196,7 @@ export function topParPropriete(
     for (const c of f.colonnes) ranges.add(c.code);
     if (colonnes.length > 0) familles.push({ titre: f.titre, colonnes });
   }
-  const autres = Object.keys(ARTIFACT_SUB)
-    .map(Number)
+  const autres = CODES_SOUS_PROPRIETES
     .filter((code) => possible(code) && !ranges.has(code))
     .sort((a, b) => artifactSubOrder(a) - artifactSubOrder(b))
     .map((code) => colonne(code));

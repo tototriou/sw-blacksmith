@@ -6,20 +6,15 @@ import { CustomLead } from '../hooks/useCustomMonsters';
 import ElementIcon from './ElementIcon';
 import NumberField from '../ui/NumberField';
 import { Bouton, BoutonIcone, Champ, Selecteur } from '../ui';
+import { useTraduction } from '../hooks/useLangue';
+import { nomElement } from '../i18n/jeu';
+import { nomStatLead } from './siege/LeadPill';
 
 const ELEMENT_CHOICES = ELEMENTS.filter((e) => e.key !== 'unknown');
 
-// Types de leader skill (valeurs = libellés SWARFARM).
-const LEAD_STATS = [
-  { value: 'Attack Speed', label: 'Vitesse' },
-  { value: 'Attack Power', label: 'Attaque' },
-  { value: 'HP', label: 'PV' },
-  { value: 'Defense', label: 'Défense' },
-  { value: 'Critical Rate', label: 'Taux crit' },
-  { value: 'Critical DMG', label: 'Dégâts crit' },
-  { value: 'Accuracy', label: 'Précision' },
-  { value: 'Resistance', label: 'Résistance' },
-];
+// Types de leader skill (valeurs = libellés SWARFARM). Leur nom : celui de la
+// stat, comme le jeu l'écrit (`nomStatLead`).
+const LEAD_STATS = ['Attack Speed', 'Attack Power', 'HP', 'Defense', 'Critical Rate', 'Critical DMG', 'Accuracy', 'Resistance'];
 
 interface Props {
   onCreate: (name: string, element: ElementKey, speed: number, lead: CustomLead | null) => void;
@@ -37,6 +32,7 @@ interface Props {
 
 // Bouton + formulaire pour créer un monstre perso (nom, élément, SPD de base).
 export default function CreateMonster({ onCreate, customMonsters, onDelete, sansBouton, ouvert, onOuvert }: Props) {
+  const jeu = useTraduction().jeu;
   // ⚠️ La suppression d'un monstre créé à la main demande une CONFIRMATION : il
   // n'existe nulle part ailleurs. Contrairement à un monstre du jeu, qu'on
   // retrouve dans les données, celui-ci part avec son nom, son élément et sa
@@ -104,7 +100,7 @@ export default function CreateMonster({ onCreate, customMonsters, onDelete, sans
         >
           {ELEMENT_CHOICES.map((el) => (
             <option key={el.key} value={el.key}>
-              {el.label}
+              {nomElement(jeu, el.key)}
             </option>
           ))}
         </Selecteur>
@@ -130,8 +126,8 @@ export default function CreateMonster({ onCreate, customMonsters, onDelete, sans
       >
         <option value="">Lead : aucun</option>
         {LEAD_STATS.map((s) => (
-          <option key={s.value} value={s.value}>
-            Lead {s.label}
+          <option key={s} value={s}>
+            Lead {nomStatLead(jeu, s)}
           </option>
         ))}
       </Selecteur>

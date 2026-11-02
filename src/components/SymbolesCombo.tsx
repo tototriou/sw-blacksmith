@@ -1,4 +1,4 @@
-import { RUNE_SETS } from '../types';
+import { nomSet, type LexiqueJeu } from '../i18n/jeu';
 import { runeSetIconFilter } from '../lib/effects';
 import { BROKEN, ComboVitesse } from '../lib/buildsRapides';
 import RuneIcon from './RuneIcon';
@@ -7,10 +7,10 @@ import RuneIcon from './RuneIcon';
 // rapides » et sa fenêtre de réglage, pour que les deux la disent de la même
 // façon.
 
-const libelleSet = (key: string) => (key === BROKEN ? 'Broken' : RUNE_SETS.find((s) => s.key === key)?.label ?? key);
+const libelleSet = (key: string, jeu: LexiqueJeu) => (key === BROKEN ? 'Broken' : nomSet(jeu, key));
 
 // « Swift + Will ».
-export const nomCombo = (combo: ComboVitesse) => `${libelleSet(combo.quatre)} + ${libelleSet(combo.deux)}`;
+export const nomCombo = (combo: ComboVitesse, jeu: LexiqueJeu) => `${libelleSet(combo.quatre, jeu)} + ${libelleSet(combo.deux, jeu)}`;
 
 // Les symboles des sets de la combinaison, SERRÉS en un groupe : à pas égal
 // avec le texte, les deux icônes et le mot se lisaient comme trois éléments

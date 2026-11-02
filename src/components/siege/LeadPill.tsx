@@ -1,4 +1,7 @@
-import { ELEMENTS, ElementKey, LeaderSkill } from '../../types';
+import { ElementKey, LeaderSkill } from '../../types';
+import { nomElement, type LexiqueJeu } from '../../i18n/jeu';
+import type { StatKey } from '../../lib/effects';
+import { jeuFr } from '../../i18n/jeu/fr';
 import ElementIcon from '../ElementIcon';
 
 // Icônes officielles des leader skills (SWARFARM), servies en local depuis
@@ -26,24 +29,31 @@ export function leadIconUrl(ls: LeaderSkill): string | null {
   return `${ICON_BASE}leader_skill_${attr}${scoped ? `_${ls.area}` : ''}.png`;
 }
 
-// Libellés courts des stats de leader skill.
+// La stat d'un leader skill (nom SWARFARM) → la stat du jeu. Le jeu l'écrit
+// comme la stat d'une rune (« VIT », « Tx critiq. ») : son nom vient du
+// lexique, dans la langue affichée — `nomStatLead`.
 //
-// ⚠️ Exporté : la fiche d'un monstre les affiche aussi, et deux tables de
-// libellés auraient divergé — « Attack Speed » y serait devenu « Vitesse » d'un
-// côté et « VIT » de l'autre pour la même donnée.
-export const STAT_LABEL: Record<string, string> = {
-  'Attack Speed': 'VIT',
-  'Attack Power': 'ATQ',
-  HP: 'PV',
-  Defense: 'DEF',
-  'Critical Rate': 'Taux crit',
-  'Critical DMG': 'DMG crit',
-  Accuracy: 'Précision',
-  Resistance: 'Résistance',
+// ⚠️ Exporté : la fiche d'un monstre l'affiche aussi, et deux tables de
+// libellés auraient divergé pour la même donnée.
+const STAT_DU_LEAD: Record<string, StatKey> = {
+  'Attack Speed': 'spd',
+  'Attack Power': 'atk',
+  HP: 'hp',
+  Defense: 'def',
+  'Critical Rate': 'cr',
+  'Critical DMG': 'cd',
+  Accuracy: 'acc',
+  Resistance: 'res',
 };
 
+export function nomStatLead(jeu: LexiqueJeu, stat: string | null | undefined): string {
+  const cle = STAT_DU_LEAD[stat ?? ''];
+  return cle ? jeu.stats[cle] : stat ?? '';
+}
+
+// Infobulle rédigée en français : l'élément vient du lexique français.
 function elementLabel(el: ElementKey | null): string {
-  return ELEMENTS.find((e) => e.key === el)?.label ?? '—';
+  return el ? nomElement(jeuFr, el) : '—';
 }
 
 // Un lead s'applique-t-il en siège ? C'est une question de PORTÉE, pas de stat :
@@ -58,7 +68,7 @@ export function leadIsActive(ls: LeaderSkill): boolean {
 
 // Infobulle commune à la pastille et au badge.
 function leadTitle(ls: LeaderSkill): string {
-  const stat = STAT_LABEL[ls.stat ?? ''] ?? ls.stat ?? '';
+  const stat = nomStatLead(jeuFr, ls.stat);
   const scope = ls.area === 'Arena' ? ' (arène)' : ls.area === 'Dungeon' ? ' (donjon)' : '';
   return leadIsActive(ls)
     ? `Lead du leader : +${ls.amount}% ${stat}${

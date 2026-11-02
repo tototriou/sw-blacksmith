@@ -5,8 +5,13 @@
 // traduction des libellés français.
 
 import type { Dictionnaire } from './fr';
+import { jeuEn } from './jeu/en';
 
 export const en: Dictionnaire = {
+  jeu: jeuEn,
+
+  sectionsRta: { autre: 'Other', nonClasse: 'Unsorted' },
+
   langue: {
     titre: 'Language',
     auto: 'Auto',

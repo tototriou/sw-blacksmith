@@ -3,6 +3,7 @@ import { Ban } from 'lucide-react';
 import { RelicDetail } from '../types';
 import { formatRelicMain, formatRelicUnique, formatRelicUsage } from '../lib/effects';
 import { ZoneCliquable } from '../ui';
+import { useTraduction } from '../hooks/useLangue';
 
 // Emplacement « Relique » — extrait de [MonsterGear.tsx](src/components/MonsterGear.tsx)
 // à son deuxième usage (carte candidat de l'Optimizer, voir
@@ -30,9 +31,10 @@ export function RelicDetailBox({
   count?: number;
   encadre?: boolean;
 }) {
+  const jeu = useTraduction().jeu;
   return (
     <div className={encadre ? 'rounded-lg border border-border bg-panel/70 p-2.5' : ''}>
-      <div className="text-xs font-bold text-ink">{formatRelicMain(relic.main)}</div>
+      <div className="text-xs font-bold text-ink">{formatRelicMain(relic.main, jeu)}</div>
       {/* ⚠️ **La description seule, sans intitulé.** La propriété unique
           déclenche un effet proportionnel à une stat (« +2 % par tranche de
           27 000 PV »), et cette phrase se suffit : la coiffer d'un « Propriété
@@ -85,6 +87,7 @@ export default function RelicSlot({
   renderOverlay,
   small = false,
 }: RelicSlotProps) {
+  const jeu = useTraduction().jeu;
   const ancre = useRef<HTMLDivElement>(null);
   const taille = small ? 'px-1.5 py-1.5' : 'px-2.5 py-2 compact:px-1.5 compact:py-1.5';
   const texte = small ? 'text-micro' : 'text-xs compact:text-micro';
@@ -135,7 +138,7 @@ export default function RelicSlot({
         }`}
       >
         <div className="label">Relique</div>
-        <div className={`mt-0.5 font-bold text-ink ${texte}`}>{formatRelicMain(relic.main)}</div>
+        <div className={`mt-0.5 font-bold text-ink ${texte}`}>{formatRelicMain(relic.main, jeu)}</div>
       </ZoneCliquable>
       {renderOverlay?.({ current: ancre.current })}
       {marques && marques.length > 0 && (
