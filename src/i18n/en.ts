@@ -490,6 +490,17 @@ export const en: Dictionnaire = {
     filtrerCourt: 'Filter',
     meilleureEfficience: 'best efficiency',
     meilleurScore: 'best score',
+    tris: {
+      grade: { libelle: 'Grade', aide: 'Rarity, then stars' },
+      sub_desc: { libelle: 'Substat', aide: 'The value of the first searched property, grind included' },
+      sub_brut_desc: { libelle: 'Substat before grind', aide: 'The same, grind DEDUCTED: what the rune is worth originally' },
+      level_desc: { libelle: 'Upgrade level', aide: 'The +X' },
+      obtenu: { libelle: 'Obtained', aide: 'Most recently obtained first' },
+      subs_total: { libelle: 'Substat total', aide: 'Sum of the four substats, grinds included' },
+      score: { libelle: 'Score', aide: 'The game score' },
+      eff: { libelle: 'Efficiency', aide: 'Our measure (%)' },
+      slot_asc: { libelle: 'Slot', aide: 'From 1 to 6' },
+    },
   },
 
   courbes: {

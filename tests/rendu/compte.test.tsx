@@ -8,7 +8,7 @@
 import AccountPage from '../../src/pages/AccountPage';
 import type { AccountView } from '../../src/App';
 import type { BoxItem } from '../../src/lib/applyAccount';
-import type { ArtifactDetail, EffectLine, Monster } from '../../src/types';
+import type { ArtifactDetail, EffectLine, Monster, RuneDetail } from '../../src/types';
 import { egal, faussLocalStorage, monstersJson, ok, titre } from '../outils';
 import { runesUtiliseesVides } from '../../src/lib/importAccount';
 import { boutons, onglets, rendre, texteVisible, valeurs } from './outils-rendu';
@@ -54,14 +54,14 @@ export const ARTEFACTS: ArtifactDetail[] = [
   arte(8, { element: 'light', main: e(100, 1500), subs: [e(210, 6, 1), e(214, 4, 0), e(219, 5, 2), e(224, 4, 1)] }),
 ];
 
-export function rendreCompte(sub: 'monstres' | 'artefacts', vue: AccountView): string {
+export function rendreCompte(sub: 'monstres' | 'artefacts' | 'runes', vue: AccountView, runes: RuneDetail[] = []): string {
   faussLocalStorage({});
   return rendre(
     <AccountPage
       sub={sub}
       vue={vue}
       box={BOX}
-      runes={[]}
+      runes={runes}
       artifacts={ARTEFACTS}
       crafts={[]}
       usedRuneIds={runesUtiliseesVides()}

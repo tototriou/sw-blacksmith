@@ -519,6 +519,19 @@ export const fr = {
     filtrerCourt: 'Filtrer',
     meilleureEfficience: 'meilleure efficience',
     meilleurScore: 'meilleur score',
+    // Les entrées du tri de l'inventaire du jeu, avec SES libellés ; les deux
+    // dernières (Efficience, Slot) n'existent que chez nous.
+    tris: {
+      grade: { libelle: 'Grade', aide: 'Rareté, puis étoiles' },
+      sub_desc: { libelle: 'Propriété secondaire', aide: 'La valeur de la 1ʳᵉ propriété cherchée, meule comprise' },
+      sub_brut_desc: { libelle: 'Sous-propriété avant meule', aide: 'La même, meule DÉDUITE : ce que la rune vaut d’origine' },
+      level_desc: { libelle: 'Nv. d’amélioration', aide: 'Le +X' },
+      obtenu: { libelle: 'Obtenu', aide: 'Les plus récemment obtenues d’abord' },
+      subs_total: { libelle: 'Total des sous-prop.', aide: 'Somme des quatre propriétés secondaires, meules comprises' },
+      score: { libelle: 'Score', aide: 'Le score du jeu' },
+      eff: { libelle: 'Efficience', aide: 'Notre mesure (%)' },
+      slot_asc: { libelle: 'Slot', aide: 'Du 1 au 6' },
+    },
   },
 
   // Les courbes de runes (Compte → Courbes) et leur graphe.

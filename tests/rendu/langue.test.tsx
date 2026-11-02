@@ -16,7 +16,9 @@ import { mecaniquesEn } from '../../src/i18n/articles/mecaniques.en';
 import { mecaniquesFr } from '../../src/i18n/articles/mecaniques.fr';
 import { autreForme } from '../../src/lib/monsterForms';
 import type { Monster } from '../../src/types';
-import { egal, monstersJson, ok, titre } from '../outils';
+import { egal, exportSynthetique, monstersJson, ok, titre } from '../outils';
+import { parseAccountInventory } from '../../src/lib/importAccount';
+import { fr } from '../../src/i18n/fr';
 import { rendreApp } from './app.test';
 import { rendreCompte } from './compte.test';
 import { auTelephone, boutons, rendre, texteVisible } from './outils-rendu';
@@ -180,6 +182,12 @@ export function testRenduLangueCompte() {
 
   const top = enAnglais(() => texteVisible(rendreCompte('artefacts', 'resume')));
   ok(top.includes('Damage taken reduction') && top.includes('Other substats'), 'top par propriété : les familles en anglais');
+
+  // Les tris de la liste de runes viennent du dictionnaire, pas de la lib.
+  const runes = parseAccountInventory(exportSynthetique(), fr).runes;
+  const liste = enAnglais(() => texteVisible(rendreCompte('runes', 'liste', runes)));
+  ok(liste.includes('Upgrade level') && liste.includes('Substat total'), 'liste de runes : les tris en anglais');
+  ok(!liste.includes('Nv. d’amélioration'), 'liste de runes : plus de tri en français');
 }
 
 // L'article « Mécaniques » : un par langue, mêmes sections dans le même ordre.
