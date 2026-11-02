@@ -67,7 +67,9 @@ codée porte « Calcul partiel »
   confirmation ([02-app/degats-reels/feat-competences-auxiliaires.md](../02-app/degats-reels/feat-competences-auxiliaires.md)) ;
   la clause de cette auxiliaire (`11016`), « 25% of the target's remaining
   HP as additional damage » contre une cible sous incapacité, n'est pas
-  comptée, alors que la répétition n'a lieu que sur une cible étourdie.
+  comptée, alors que la répétition n'a lieu que sur une cible étourdie :
+  Exploding Hands porte « Calcul partiel » (`CALCUL_PARTIEL_PAR_ID`), qui
+  en sort le jour où ce surplus se compte.
 - **Idée** : répéter le profil du sort retenu, sans récursion, sous
   interrupteur, avec des clés de réglage distinctes de celles du sort. Les
   conditions sur la cible (Hwa, Blood Talon, Heaven's Might, Hunting Hawk)
