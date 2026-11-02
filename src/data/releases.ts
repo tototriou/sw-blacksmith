@@ -60,7 +60,7 @@ export const CHANGE_META: Record<ChangeKind, { label: string; color: string }> =
 // Si une ligne dépasse ~15 mots, c'est qu'elle raconte l'implémentation.
 export const RELEASES: Release[] = [
   {
-    version: null,
+    version: '2.2.2',
     date: '2026-11-02',
     title: 'Des barres d’attaque et des égalités plus justes en speed tuning',
     changes: [
