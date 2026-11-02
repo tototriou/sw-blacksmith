@@ -81,13 +81,14 @@ const PROPRES: AurasPropres = { fight: 1, determination: 1, enhance: 0, accuracy
 // DEF (réglage riche : Réduction de DEF posée au coup 1 de Combo Attack). Puis
 // les tirages : le réglage riche pose tous les effets au coup 1, et un tirage
 // n'en garde qu'un (Virus de 570RM, Empathy, Dimensional Memory) ; Blessing of
-// Curse donne un scénario à Here Come the Ghosts! (Jessica).
+// Curse donne un scénario à Here Come the Ghosts! (Jessica). Puis Divine
+// Judgment (Arella) au tirage : une seule de ses branches après le coup 1.
 // ⚠️ Un écart veut dire qu'une note a changé. Voulu (modèle de dégâts, données
 // SWARFARM régénérées) : relever l'empreinte de nouveau (le message d'échec
 // la donne) et le dire dans le commit. Sinon : un défaut du code commun au
 // calcul avec et sans memo.
 const EMPREINTE_ANCIEN_CALCUL = {
-  contextes: 12426, notes: 310650, sha256: 'fbd5fd63d646ff7acf0d7279f257edad348856a04ea1ae9b639d2fb70b9df4cc',
+  contextes: 12426, notes: 310650, sha256: 'bb84f69df94e686589f909b84dfc6e22fef4117b9aadbc5c9bdb24fac2752790',
 };
 
 // Quatre pièces par sorte, deux principales par sorte : des paires partagent
