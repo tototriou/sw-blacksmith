@@ -186,6 +186,7 @@
   {"sort": 18303, "nom": "Brutal Fists", "porteurs": ["Usha (wind)"], "effets": ["brand"]},
   {"sort": 18304, "nom": "Brutal Fists", "porteurs": ["Danu (light)"], "effets": ["brand"]},
   {"sort": 18305, "nom": "Brutal Fists", "porteurs": ["Vritra (dark)"], "effets": ["brand"]},
+  {"sort": 18429, "nom": "Here Come the Ghosts!", "porteurs": ["Jessica (light)"], "effets": ["brand", "decrease-def"]},
   {"sort": 18722, "nom": "Run!!", "porteurs": ["Yeji and Sapsaree (fire)"], "effets": ["decrease-def"]},
   {"sort": 18725, "nom": "Run!!", "porteurs": ["Damee and Sapsaree (dark)"], "effets": ["decrease-def"]},
   {"sort": 18826, "nom": "Focus Shot", "porteurs": ["Ramael and Judiah (water)"], "effets": ["decrease-def"]},

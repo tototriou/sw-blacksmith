@@ -2270,6 +2270,12 @@ export interface EffetEntreCoupsProfile {
   // Condition de la pose écrite par la donnée ou la prose (« sur coup
   // critique », « en état Thunderer »), affichée après le libellé.
   precision?: string;
+  // L'effet sort d'un TIRAGE au hasard qui ne pose qu'un effet par coup (Virus,
+  // Empathy, Dimensional Memory, Blessing of Curse) : les effets d'un même
+  // tirage se règlent coup par coup, un seul par coup (utilisateur,
+  // 2026-11-02), et `calculerChronologie` n'en pose qu'un après un même coup.
+  // Clé du tirage ; absente dès qu'une source pose l'effet hors tirage.
+  tirage?: string;
 }
 
 export interface ScenarioEffetsEntreCoups {
@@ -3007,11 +3013,15 @@ const RANGS_PAR_NOTE: Readonly<Record<string, readonly number[] | 'dernier'>> = 
 // Une `note` qui pose une CONDITION, pas un rang : affichée à côté du libellé.
 const PRECISION_PAR_NOTE: Readonly<Record<string, string>> = {
   '1 per buff removed': 'un par effet bénéfique converti',
+  // Note de tirage (`NOTES_DE_TIRAGE`) : un seul des effets ainsi notés par coup.
   'one random per hit': 'un seul des effets possibles par coup, au hasard',
   'When used during the Thunderer state': 'en état Thunderer',
   'If enemies have received more damage than allies': 'si les ennemis ont subi au moins autant de dégâts que les alliés',
   'If allies have received more damage than enemies': 'si les alliés ont subi plus de dégâts que les ennemis',
 };
+
+// Notes dont les effets forment un tirage : un seul d'entre eux par coup.
+const NOTES_DE_TIRAGE: ReadonlySet<string> = new Set(['one random per hit']);
 
 interface ExceptionEffetsEntreCoups {
   // Rangs lus dans la PROSE (la donnée n'a pas de note), par identifiant d'effet.
@@ -3166,7 +3176,14 @@ function brutParEffetDesPassifs(detail: DetailMonstre): BrutParEffetCibleProfile
 // your turn » — ni la cible ni l'instant (avant le coup 2 ?) ne sont dits ;
 // Severing Edge et Dimension Shatter (Übel vent, Wieb vent) : les coups en plus
 // sont ceux du passif, après un sort à un coup.
-const EFFETS_ENTRE_COUPS_PAR_PASSIF_PAR_ID: Readonly<Record<number, readonly { effet: string; precision?: string }[]>> = {
+// `tirage` : le passif tire UN effet au hasard par attaque, parmi ceux de son
+// entrée (un seul par coup, `EffetEntreCoupsProfile.tirage`).
+interface EffetPoseParUnPassif {
+  effet: string;
+  precision?: string;
+  tirage?: true;
+}
+const EFFETS_ENTRE_COUPS_PAR_PASSIF_PAR_ID: Readonly<Record<number, readonly EffetPoseParUnPassif[]>> = {
   // Chaser (Loren) : « weakens the enemy's defense for 1 turn with a 75% chance » avec chaque attaque.
   10134: [{ effet: 'Decrease DEF', precision: 'par Chaser' }],
   // Feast of Blood (Cadiz) : « Leaves a Branding Effect for 2 turns when you attack ».
@@ -3197,12 +3214,19 @@ const EFFETS_ENTRE_COUPS_PAR_PASSIF_PAR_ID: Readonly<Record<number, readonly { e
   // … whenever you attack » — le joueur choisit si c'est une Marque ou une
   // Réduction de DEF (utilisateur, 2026-11-02).
   25215: [
-    { effet: 'Brand', precision: 'par Empathy, au hasard parmi les effets du combat' },
-    { effet: 'Decrease DEF', precision: 'par Empathy, au hasard parmi les effets du combat' },
+    { effet: 'Brand', precision: 'par Empathy, au hasard parmi les effets du combat', tirage: true },
+    { effet: 'Decrease DEF', precision: 'par Empathy, au hasard parmi les effets du combat', tirage: true },
   ],
   25715: [
-    { effet: 'Brand', precision: 'par Dimensional Memory, au hasard parmi les effets du combat' },
-    { effet: 'Decrease DEF', precision: 'par Dimensional Memory, au hasard parmi les effets du combat' },
+    { effet: 'Brand', precision: 'par Dimensional Memory, au hasard parmi les effets du combat', tirage: true },
+    { effet: 'Decrease DEF', precision: 'par Dimensional Memory, au hasard parmi les effets du combat', tirage: true },
+  ],
+  // Blessing of Curse (Jessica lumière) : « Grants 1 of the harmful effects
+  // granted on yourself to the target when you attack » — traité comme Empathy
+  // (utilisateur, 2026-11-02) : Marque ou Réduction de DEF, si Jessica la porte.
+  18434: [
+    { effet: 'Brand', precision: 'par Blessing of Curse, si Jessica la porte', tirage: true },
+    { effet: 'Decrease DEF', precision: 'par Blessing of Curse, si Jessica la porte', tirage: true },
   ],
   // ⚠️ Ancient Power (Tesarion, 10011) n'est PAS ici : son Oubli (« Grants
   // Oblivion for 2 turns when you attack the enemy ») est posé à la fin de
@@ -3215,12 +3239,22 @@ const EFFETS_ENTRE_COUPS_PAR_PASSIF_PAR_ID: Readonly<Record<number, readonly { e
 };
 
 // Les effets que les passifs de la fiche posent à chaque attaque.
-function effetsPosesParLesPassifs(detail: DetailMonstre): { effet: string; precision?: string }[] {
-  const out: { effet: string; precision?: string }[] = [];
+// Les effets que les passifs de la fiche posent à chaque attaque ; `tirage`
+// porte la clé du tirage (le passif).
+function effetsPosesParLesPassifs(detail: DetailMonstre): EffetPoseParLesPassifs[] {
+  const out: EffetPoseParLesPassifs[] = [];
   for (const c of detail.competences) {
-    if (c.passif && c.com2usId != null) out.push(...(EFFETS_ENTRE_COUPS_PAR_PASSIF_PAR_ID[c.com2usId] ?? []));
+    if (!c.passif || c.com2usId == null) continue;
+    for (const e of EFFETS_ENTRE_COUPS_PAR_PASSIF_PAR_ID[c.com2usId] ?? []) {
+      out.push({ effet: e.effet, ...(e.precision ? { precision: e.precision } : {}), ...(e.tirage ? { tirage: `passif:${c.com2usId}` } : {}) });
+    }
   }
   return out;
+}
+interface EffetPoseParLesPassifs {
+  effet: string;
+  precision?: string;
+  tirage?: string;
 }
 
 /**
@@ -3234,22 +3268,26 @@ function effetsEntreCoupsDuSort(
   c: Competence,
   coupsMax: number,
   lecteurs: LecteursDeLaCible,
-  parLesPassifs: readonly { effet: string; precision?: string }[] = []
+  parLesPassifs: readonly EffetPoseParLesPassifs[] = []
 ): EffetEntreCoupsProfile[] | undefined {
   if (c.com2usId == null) return undefined;
   const exception = EFFETS_ENTRE_COUPS_EXCEPTIONS_PAR_ID[c.com2usId];
   if (coupsMax < 2 && !exception?.pourLaSuite?.length) return undefined;
-  const sources: { nom: string; coups: readonly number[] | null; precision?: string; passif?: true }[] = [];
+  const sources: { nom: string; coups: readonly number[] | null; precision?: string; passif?: true; tirage?: string }[] = [];
   for (const e of c.effets) {
     if (e.type !== 'Debuff' || e.surSoi || !e.nom) continue;
     const rang = e.note ? RANGS_PAR_NOTE[e.note] : undefined;
     if (rang === 'dernier') continue;
     const precision = [e.surCritique ? 'sur coup critique' : null, e.note ? PRECISION_PAR_NOTE[e.note] : null]
       .filter((p): p is string => !!p).join(', ');
-    sources.push({ nom: e.nom, coups: rang ?? null, ...(precision ? { precision } : {}) });
+    // « one random per hit » (Virus) : les effets ainsi notés forment le tirage du sort.
+    const tirage = e.note && NOTES_DE_TIRAGE.has(e.note) ? `sort:${c.com2usId}` : undefined;
+    sources.push({ nom: e.nom, coups: rang ?? null, ...(precision ? { precision } : {}), ...(tirage ? { tirage } : {}) });
   }
   for (const a of exception?.ajouter ?? []) sources.push({ nom: a.effet, coups: a.coups ?? null });
-  for (const p of parLesPassifs) sources.push({ nom: p.effet, coups: null, ...(p.precision ? { precision: p.precision } : {}), passif: true });
+  for (const p of parLesPassifs) {
+    sources.push({ nom: p.effet, coups: null, ...(p.precision ? { precision: p.precision } : {}), passif: true, ...(p.tirage ? { tirage: p.tirage } : {}) });
+  }
 
   // Plusieurs entrées du même effet : des rangs différents s'unissent (Triple
   // Combo de RYU : coup 1 et coup 2) ; des entrées identiques d'un effet
@@ -3297,11 +3335,15 @@ function effetsEntreCoupsDuSort(
     // une : une seule pose sans condition rend l'effet posable sans elle.
     const conditions = Array.from(new Set(entrees.map((x) => x.precision)));
     const precision = exception?.precision?.[id] ?? (conditions.every((p) => !!p) ? conditions.join(' ; ') : undefined);
+    // Un tirage seulement si TOUTES les sources de l'effet sont le même tirage :
+    // posé aussi hors tirage (le sort lui-même), l'effet se règle seul.
+    const tirage = entrees.every((x) => !!x.tirage && x.tirage === entrees[0].tirage) ? entrees[0].tirage : undefined;
     out.push({
       ...base,
       ...(utiles ? { coups: utiles } : {}),
       ...(nombre > 1 ? { nombre } : {}),
       ...(precision ? { precision } : {}),
+      ...(tirage ? { tirage } : {}),
       ...(exception?.allumeLeBouton?.includes(id) ? { allumeLeBoutonDuSort: true as const } : {}),
       ...(exception?.nombreChoisi?.includes(id) ? { nombreChoisi: true as const } : {}),
       ...(pourLaSuite ? { pourLaSuite: true as const } : {}),
@@ -3443,6 +3485,91 @@ export function rangsDePoseProposes(
     return rangs.filter((n) => zone.has(n));
   }
   return rangs;
+}
+
+/** Un effet proposé et les coups qui peuvent le poser. */
+export interface EffetPropose {
+  effet: EffetEntreCoupsProfile;
+  rangs: number[];
+}
+
+/**
+ * Ce que l'écran règle pour les poses d'un sort, dans l'ordre du profil : un
+ * effet seul (coup de pose au choix), ou un TIRAGE d'au moins deux effets,
+ * réglé coup par coup, un seul effet par coup (`EffetEntreCoupsProfile.tirage`).
+ * Un effet sans rang possible (sort ramené à un coup) disparaît.
+ */
+export type ReglageDesPoses =
+  | { type: 'effet'; propose: EffetPropose }
+  | { type: 'tirage'; cle: string; effets: EffetPropose[]; rangs: number[] };
+
+export function reglagesDesPoses(profile: SkillDamageProfile, setup: DamageSetup): ReglageDesPoses[] {
+  const proposes = (profile.effetsEntreCoups ?? [])
+    .map((effet) => ({ effet, rangs: rangsDePoseProposes(profile, effet, setup) }))
+    .filter((x) => x.rangs.length > 0);
+  const parTirage = new Map<string, EffetPropose[]>();
+  for (const p of proposes) {
+    if (p.effet.tirage) parTirage.set(p.effet.tirage, [...(parTirage.get(p.effet.tirage) ?? []), p]);
+  }
+  const out: ReglageDesPoses[] = [];
+  const vus = new Set<string>();
+  for (const p of proposes) {
+    const groupe = p.effet.tirage ? parTirage.get(p.effet.tirage)! : null;
+    if (!groupe || groupe.length < 2) {
+      out.push({ type: 'effet', propose: p });
+      continue;
+    }
+    if (vus.has(p.effet.tirage!)) continue;
+    vus.add(p.effet.tirage!);
+    const rangs = Array.from(new Set(groupe.flatMap((x) => x.rangs))).sort((a, b) => a - b);
+    out.push({ type: 'tirage', cle: p.effet.tirage!, effets: groupe, rangs });
+  }
+  return out;
+}
+
+/** L'effet du tirage posé après le coup `coup`, ou `null` (aucun). */
+export function effetDuTirageAuCoup(
+  scenario: ScenarioEffetsEntreCoups,
+  effets: readonly EffetPropose[],
+  coup: number
+): string | null {
+  return effets.find((x) => scenario.apresCoup?.[x.effet.id] === coup && x.rangs.includes(coup))?.effet.id ?? null;
+}
+
+/**
+ * Les effets du tirage proposés après le coup `coup` : ceux que ce coup peut
+ * poser et qui ne le sont pas déjà par un coup plus tôt (une seconde pose d'un
+ * effet non cumulable ne change rien).
+ */
+export function effetsDuTirageProposables(
+  scenario: ScenarioEffetsEntreCoups,
+  effets: readonly EffetPropose[],
+  coup: number
+): EffetEntreCoupsProfile[] {
+  return effets
+    .filter((x) => x.rangs.includes(coup))
+    .filter((x) => {
+      const rang = scenario.apresCoup?.[x.effet.id];
+      return rang == null || !x.rangs.includes(rang) || rang >= coup;
+    })
+    .map((x) => x.effet);
+}
+
+/**
+ * Le nouveau `apresCoup` quand le joueur choisit l'effet `id` (ou aucun) après
+ * le coup `coup` d'un tirage : l'effet qu'occupait ce coup n'est plus posé, et
+ * l'effet choisi l'est à ce coup.
+ */
+export function choisirAuCoupDuTirage(
+  scenario: ScenarioEffetsEntreCoups,
+  effets: readonly EffetPropose[],
+  coup: number,
+  id: string | null
+): Record<string, number | null> {
+  const apresCoup: Record<string, number | null> = { ...(scenario.apresCoup ?? {}) };
+  for (const x of effets) if (apresCoup[x.effet.id] === coup) apresCoup[x.effet.id] = null;
+  if (id != null) apresCoup[id] = coup;
+  return apresCoup;
 }
 
 /** Libellé affiché d'un effet posable : le libellé, puis sa condition. */
@@ -7884,10 +8011,17 @@ function calculerChronologie(
   for (let i = 1; i <= coups; i++) {
     resultats.push(setupCoup);
     for (const effet of effetsEntreCoups) {
+    // Un tirage ne pose qu'un effet par coup : deux effets du même tirage
+    // réglés après le même coup (recette importée), seul le premier est posé.
+    const tiragesDuCoup = new Set<string>();
       // Une pose à un rang que le sort n'a pas (recette importée, données
       // régénérées) n'a pas lieu.
       if (scenario.apresCoup?.[effet.id] !== i || (effet.coups && !effet.coups.includes(i))) continue;
       const dejaPresent = presents.has(effet.id);
+      if (effet.tirage) {
+        if (tiragesDuCoup.has(effet.tirage)) continue;
+        tiragesDuCoup.add(effet.tirage);
+      }
       if ((effet.cumulable || !dejaPresent) && !effet.effetCombat) {
         const comptes = { ...(setupCoup.effetsCibleCount ?? {}) };
         // Le nombre que la pose ajoute : celui que le joueur saisit (Critical

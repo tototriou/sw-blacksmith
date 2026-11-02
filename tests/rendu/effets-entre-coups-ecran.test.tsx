@@ -6,7 +6,8 @@
 //
 // Un effet posé par un seul coup se règle par un interrupteur « Posé au
 // coup N » ; un effet posé par plusieurs coups, par un sélecteur limité à eux
-// (jamais un coup qui ne pose rien) ; un sort sans pose possible n'affiche pas
+// (jamais un coup qui ne pose rien) ; les effets d'un même tirage (un seul par
+// coup), par un sélecteur par coup ; un sort sans pose possible n'affiche pas
 // la section. Le calcul de chaque réglage : tests/degats-effets-entre-coups.test.ts.
 
 import DamageSetupCard from '../../src/components/outils/DamageSetupCard';
@@ -26,6 +27,7 @@ const SHAINA = 21912; // Crescent Moon Slash 12602 : Réduction de DEF de Precis
 const XIAO_LIN = 17311; // Water Dragon Attack 8211 : coups au hasard
 const FEI = 17315; // Dark Dragon Attack 8215 : ignore DEF coup par coup
 const KIKI = 25215; // Magical Eye 15105 : Start of Pain
+const STORM = 30013; // 570RM, Virus 19708 : trois effets d'un même tirage, 4 coups
 const SAVANNAH = 23513; // Critical Link 13608 : effets bénéfiques convertis
 
 const SECTION = 'Prendre en compte les débuffs posés entre les coups';
@@ -121,6 +123,25 @@ function verifier(etroit: boolean) {
     `${format} : Critical Link — « Effets bénéfiques convertis »`);
 
   // La condition de la pose suit le libellé.
+
+  // Un tirage (Virus de 570RM) : un sélecteur par coup, un seul effet par coup ;
+  // un effet déjà posé plus tôt n'est plus proposé ensuite.
+  const virus = carte(STORM, 19708, etroit, actif(19708, { 'decrease-def': 1 }));
+  ok(texteVisible(virus).includes('Un seul de ces effets par coup'), `${format} : Virus — « Un seul de ces effets par coup »`);
+  egal(options(virus, 'Réduction de DEF'), null, `${format} : Virus — pas de sélecteur par effet`);
+  egal(optionsDuCoup(virus, 1), ['Aucun', 'Réduction de DEF', 'Réduction de VIT', 'Blocage des effets bénéfiques'],
+    `${format} : Virus — après le coup 1, aucun ou l'un des trois effets`);
+  egal(optionsDuCoup(virus, 2), ['Aucun', 'Réduction de VIT', 'Blocage des effets bénéfiques'],
+    `${format} : Virus — après le coup 2, la Réduction de DEF posée au coup 1 n'est plus proposée`);
+  ok(/aria-label="Effet posé après le coup 1"(?:(?!<\/select>).)*<option(?=[^>]*value="decrease-def")(?=[^>]*selected)/s.test(virus),
+    `${format} : Virus — le coup 1 montre la Réduction de DEF choisie`);
+}
+
+// Les options du sélecteur d'un coup d'un tirage, dans l'ordre.
+function optionsDuCoup(html: string, coup: number): string[] | null {
+  const i = html.indexOf(`aria-label="Effet posé après le coup ${coup}"`);
+  if (i < 0) return null;
+  return [...html.slice(i, html.indexOf('</select>', i)).matchAll(/<option[^>]*>([^<]*)<\/option>/g)].map((m) => m[1]);
   ok(texteVisible(carte(VENDHAN, 18127, etroit, actif(18127))).includes('Marque (en état Thunderer)'), `${format} : Wild Bolt — « Marque (en état Thunderer) »`);
 }
 

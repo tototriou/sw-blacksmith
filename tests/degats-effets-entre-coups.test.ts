@@ -28,6 +28,10 @@ import {
   nomsEffetsPosables,
   notesEffetsEntreCoupsConnues,
   rangsDePoseProposes,
+  reglagesDesPoses,
+  effetDuTirageAuCoup,
+  effetsDuTirageProposables,
+  choisirAuCoupDuTirage,
   resolvedHits,
   type DamageSetup,
   type EffetEntreCoupsProfile,
@@ -176,7 +180,7 @@ export function testInventaireEffetsEntreCoups() {
     if (porteurs.join('|') !== [...a.porteurs].sort().join('|')) ecarts.push(`${id} ${v.nom} : porteurs ${porteurs.join(', ')}`);
   }
   egal(ecarts, [], 'chaque sort de l’inventaire garde ses effets, leurs rangs et ses porteurs');
-  egal(trouve.size, 279, 'témoin : 279 sorts des formes jouables proposent une pose entre leurs coups');
+  egal(trouve.size, 280, 'témoin : 280 sorts des formes jouables proposent une pose entre leurs coups');
 }
 
 /** Chaque effet néfaste du corpus entier a sa traduction dans le calcul. */
@@ -527,6 +531,41 @@ export function testEffetsEntreCoupsMecaniques() {
   ok(proche(scoreComplet(SIN, comboSans), scoreSansEcartDeDef(SIN, comboSans)), 'Sin feu : DEF de la cible plus haute, aucun bonus d’écart');
   ok(scoreComplet(SIN, comboPose) > scoreSansEcartDeDef(SIN, comboPose) + 1, 'Sin feu : la Réduction de DEF posée au coup 1 ouvre l’écart de DEF pour les coups 2 et 3');
   ok(scoreComplet(SIN, { ...comboSans, defBreak: true }) > scoreSansEcartDeDef(SIN, { ...comboSans, defBreak: true }) + 1, 'Sin feu : l’interrupteur Brise DEF ouvre lui aussi l’écart');
+
+  // ── Tirages : un seul effet par coup (utilisateur, 2026-11-02) ──
+  const virus = profil(19708);
+  egal(virus.effetsEntreCoups?.map((e) => e.tirage), ['sort:19708', 'sort:19708', 'sort:19708'], 'Virus de 570RM : ses trois effets forment un tirage');
+  ok(!profil(19707).effetsEntreCoups?.[0].tirage || reglagesDesPoses(profil(19707), CIBLE)[0].type === 'effet',
+    'Virus de 7R1X : un seul effet proposé, réglé comme un effet seul');
+  const reglage = reglagesDesPoses(virus, CIBLE);
+  egal(reglage.map((r) => r.type), ['tirage'], 'Virus de 570RM : un seul réglage, le tirage');
+  const effetsVirus = reglage[0].type === 'tirage' ? reglage[0].effets : [];
+  egal(reglage[0].type === 'tirage' ? reglage[0].rangs : [], [1, 2, 3], 'Virus de 570RM (4 coups) : un choix après chacun des coups 1 à 3');
+  const choix1 = { actif: true, apresCoup: choisirAuCoupDuTirage({}, effetsVirus, 1, 'decrease-def') };
+  egal(effetDuTirageAuCoup(choix1, effetsVirus, 1), 'decrease-def', 'tirage : la Réduction de DEF est posée après le coup 1');
+  egal(effetsDuTirageProposables(choix1, effetsVirus, 2).map((e) => e.id), ['decrease-spd', 'beneficial-effects-blocked'],
+    'tirage : après le coup 2, la Réduction de DEF déjà posée n’est plus proposée');
+  const choix1bis = { actif: true, apresCoup: choisirAuCoupDuTirage(choix1, effetsVirus, 1, 'decrease-spd') };
+  egal([choix1bis.apresCoup['decrease-def'], choix1bis.apresCoup['decrease-spd']], [null, 1], 'tirage : un autre effet choisi au coup 1 remplace le premier');
+  // Calcul : deux effets du même tirage après le même coup (recette importée),
+  // seul le premier du profil est posé.
+  const STORM = 30013;
+  const deuxAuCoup1 = { skillCom2usId: 19708, scenariosEffetsEntreCoups: { 19708: { actif: true, apresCoup: { 'decrease-def': 1, 'decrease-spd': 1 } } } };
+  const unAuCoup1 = { skillCom2usId: 19708, scenariosEffetsEntreCoups: { 19708: { actif: true, apresCoup: { 'decrease-def': 1 } } } };
+  const unPuisUn = { skillCom2usId: 19708, scenariosEffetsEntreCoups: { 19708: { actif: true, apresCoup: { 'decrease-def': 1, 'decrease-spd': 2 } } } };
+  ok(proche(scoreComplet(STORM, deuxAuCoup1), scoreComplet(STORM, unAuCoup1)), 'Virus : deux effets du tirage après le coup 1, un seul est posé');
+  ok(scoreComplet(STORM, unPuisUn) > scoreComplet(STORM, unAuCoup1), 'Virus : un effet par coup, le second au coup 2 compte pour le coup 3 (Backup Code)');
+  // Empathy : la Réduction de DEF que Reelseiden・Flurry pose lui-même sort du
+  // tirage ; la Marque d'Empathy reste seule, réglée comme un effet seul.
+  const flurry = profil(25210);
+  egal(flurry.effetsEntreCoups?.map((e) => [e.id, e.tirage ?? null]), [['decrease-def', null], ['brand', 'passif:25215']],
+    'Reelseiden・Flurry : Réduction de DEF du sort hors tirage, Marque d’Empathy au tirage');
+  egal(reglagesDesPoses(flurry, CIBLE).map((r) => r.type), ['effet', 'effet'], 'Reelseiden・Flurry : deux effets réglés à part');
+  // Blessing of Curse (Jessica lumière) : comme Empathy, Marque ou Réduction de DEF.
+  const fantomes = profil(18429);
+  egal(fantomes.effetsEntreCoups?.map((e) => [e.id, e.tirage ?? null]), [['brand', 'passif:18434'], ['decrease-def', 'passif:18434']],
+    'Here Come the Ghosts! (Jessica) : Marque et Réduction de DEF de Blessing of Curse, au tirage');
+  ok(total(fantomes, avecPose(fantomes, { brand: 1 })) > total(fantomes, CIBLE), 'Here Come the Ghosts! : la Marque transmise au coup 1 majore le coup 2');
 }
 
 // Les stats que la recherche privilégie pour ce sort (`damageRelevantStats`).

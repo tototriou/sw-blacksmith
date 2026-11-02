@@ -74,17 +74,24 @@ prose du passif) ; le libellé nomme le passif :
 | Might · Thunder | Dyeus lumière | Réduction de DEF en état Thunderer (son Étourdissement, sans lecteur, n'est pas proposé) |
 | Blood Talon, Heaven's Might | Hwoarang feu, Taebaek feu | Marque |
 | Nano Vision | Amber eau | Irrécupérable, compté par sa règle brute |
-| Empathy, Dimensional Memory | Übel ténèbres, Wieb ténèbres | Marque ou Réduction de DEF, au choix du joueur (« 1 random harmful effect that was applied in the current battle ») |
+| Empathy, Dimensional Memory | Übel ténèbres, Wieb ténèbres | Marque ou Réduction de DEF, tirées au hasard (« 1 random harmful effect that was applied in the current battle ») : un seul effet par coup |
+| Blessing of Curse | Jessica lumière | Marque ou Réduction de DEF, si Jessica la porte (« Grants 1 of the harmful effects granted on yourself to the target »), comme Empathy (utilisateur, 2026-11-02) : un seul effet par coup |
 
-Ne sont pas retenus : Ancient Power (Tesarion), dont l'Oubli est posé à la fin
-de l'attaque ; King of the Ruins (Manannan), dont les dégâts continus « after
-each hit » touchent les autres ennemis, pas la cible (utilisateur,
-2026-11-02) ; Eagle Deception (Bayek ténèbres) et Eye of the Desert (Salah),
-dont la bête frappe « a random enemy … when you attack on your turn » sans
-dire ni la cible ni l'instant ; Severing Edge et Dimension Shatter (Übel et
-Wieb vent), dont les coups en plus sont ceux du passif ; Blessing of Curse
-(Jessica lumière), qui donne à la cible « 1 of the harmful effects granted on
-yourself », inconnu d'avance.
+Ne sont pas retenus :
+
+- Ancient Power (Tesarion), dont l'Oubli est posé à la fin de l'attaque, et
+  King of the Ruins (Manannan), dont les dégâts continus « after each hit »
+  touchent les autres ennemis, pas la cible (utilisateur, 2026-11-02) ;
+- Eagle Deception (Bayek ténèbres) et Eye of the Desert (Salah), dont la bête
+  frappe « a random enemy … when you attack on your turn » sans dire ni la
+  cible ni l'instant ; le relevé qui le tranche (S2 à deux coups contre une
+  cible seule, coup 2 / coup 1) est dans la
+  [piste](../../05-feuille-de-route/pistes-degats-reels.md#poses-entre-les-coups--buff-posé-par-le-sort-eightfold-poses-au-hasard) ;
+- Severing Edge et Dimension Shatter (Übel et Wieb vent), « attacks the target
+  2 to 3 more times to decrease its Defense » : ces coups du passif
+  (`0.8*{ATK}`) ne sont pas calculés du tout, après un sort à un coup ; leur
+  Réduction de DEF n'a donc rien à majorer
+  ([piste](../../05-feuille-de-route/pistes-degats-reels.md#répétition-du-sort-retenu)).
 
 ## Ce que le calcul lit de la cible
 
@@ -231,6 +238,19 @@ effet proposé :
   les seuls coups de zone) ;
 - un effet non cumulable que la cible peut déjà porter garde son
   interrupteur « déjà présent » ; la Réduction de DEF et la Marque lisent
+- **un tirage** (deux effets au moins d'un même tirage, un seul posé par
+  coup : Virus de 570RM, Empathy, Dimensional Memory, Blessing of Curse) :
+  « Un seul de ces effets par coup », puis un sélecteur par coup, « Après le
+  coup N » : « Aucun » ou l'un des effets que ce coup peut poser, sauf un
+  effet déjà posé par un coup plus tôt (`reglagesDesPoses`,
+  `effetsDuTirageProposables`, `choisirAuCoupDuTirage`). Choisir un effet à
+  un coup retire celui qu'il portait ; le calcul ne pose jamais deux effets
+  d'un même tirage après le même coup (recette importée : le premier du
+  profil). Le joueur choisit ainsi, à chaque coup, si et quel effet est posé
+  (utilisateur, 2026-11-02). Un tirage réduit à un effet utile (Ghost
+  Appearance, Virus de 7R1X et N1X : la Réduction de DEF seule ; la Marque
+  d'Empathy quand le sort pose lui-même la Réduction de DEF) se règle comme
+  un effet seul ;
   « Brise DEF » et « Marque » du réglage ;
 - Critical Link ajoute « Effets bénéfiques convertis » (0 à 10).
 
@@ -354,9 +374,12 @@ interrupteur d'attaque appelée
 - `testEffetsEntreCoupsMecaniques` : coups au hasard, Fei et Katarina,
   séquences et cible secondaire, lecteurs (Yoga Sunburst, Havoc, Kiki, Amber,
   Bullet Assassination, Critical Link, Hairpin, Fatal Mortar Bullet),
-  ralentissement, Empathy, Marque de Shoryuken pour [Hadoken].
-- `testRenduEffetsEntreCoupsEcran` : interrupteur, sélecteur limité, section
-  absente, compteurs, aux deux formats.
+  ralentissement, Empathy, Marque de Shoryuken pour [Hadoken], écart de DEF
+  de Sin feu, tirages (un seul effet par coup : Virus, Empathy, Blessing of
+  Curse).
+- `testRenduEffetsEntreCoupsEcran` : interrupteur, sélecteur limité,
+  sélecteur par coup d'un tirage, section absente, compteurs, aux deux
+  formats.
 
 Tests : [tests/degats-effets-entre-coups.test.ts](../../../tests/degats-effets-entre-coups.test.ts),
 [tests/rendu/effets-entre-coups-ecran.test.tsx](../../../tests/rendu/effets-entre-coups-ecran.test.tsx).

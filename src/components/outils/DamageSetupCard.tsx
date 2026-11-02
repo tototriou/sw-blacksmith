@@ -57,7 +57,11 @@ import {
   resolvedDebuffsCibleCount,
   resolvedEffetsCibleCount,
   resolvedHits,
-  rangsDePoseProposes,
+  reglagesDesPoses,
+  effetDuTirageAuCoup,
+  effetsDuTirageProposables,
+  choisirAuCoupDuTirage,
+  type EffetEntreCoupsProfile,
   libelleEffetEntreCoups,
   coupsAuHasard,
   resolvedBrutParEffetCount,
@@ -1770,12 +1774,10 @@ export default function DamageSetupCard({
             </label>
           )}
           {(() => {
-            // Chaque effet avec les coups qui peuvent le poser (`rangsDePoseProposes`) ;
-            // un effet sans rang possible (sort ramené à un coup) disparaît.
-            const effetsProposes = (resolved.effetsEntreCoups ?? [])
-              .map((effet) => ({ effet, rangs: rangsDePoseProposes(resolved, effet, setup) }))
-              .filter((x) => x.rangs.length > 0);
-            if (effetsProposes.length === 0) return null;
+            // Chaque effet avec les coups qui peuvent le poser, ou les effets d'un
+            // même tirage, réglés coup par coup (`reglagesDesPoses`).
+            const reglages = reglagesDesPoses(resolved, setup);
+            if (reglages.length === 0) return null;
             const scenario = setup.scenariosEffetsEntreCoups?.[resolved.skillCom2usId] ?? {};
             const majScenario = (patch: Partial<typeof scenario>) =>
               maj({
@@ -1784,6 +1786,34 @@ export default function DamageSetupCard({
                   [resolved.skillCom2usId]: { ...scenario, ...patch },
                 },
               });
+            // Ce que la cible porte déjà de cet effet, au départ.
+            const presence = (effet: EffetEntreCoupsProfile) => {
+              const presents = scenario.presentsInitialement ?? [];
+              const initialDerive =
+                effet.effetCombat === 'brand' ? setup.brand : effet.effetCombat === 'defBreak' ? setup.defBreak : false;
+              return (
+                <>
+                  {!effet.cumulable && !effet.effetCombat && (
+                    <Interrupteur
+                      actif={presents.includes(effet.id)}
+                      onChange={(actif) =>
+                        majScenario({
+                          presentsInitialement: actif
+                            ? Array.from(new Set([...presents, effet.id]))
+                            : presents.filter((id) => id !== effet.id),
+                        })
+                      }
+                      libelle="déjà présent"
+                    />
+                  )}
+                  {effet.effetCombat && (
+                    <span className="text-xs text-ink-dim">
+                      {initialDerive ? 'déjà présent et inclus dans le compteur' : 'absent au départ'}
+                    </span>
+                  )}
+                </>
+              );
+            };
             return (
               <div className="space-y-2 rounded-lg border border-border-soft bg-panel2 p-2.5">
                 <Interrupteur
@@ -1793,34 +1823,51 @@ export default function DamageSetupCard({
                 />
                 {scenario.actif && (
                   <div className="space-y-2 border-t border-border-soft pt-2">
-                    {effetsProposes.map(({ effet, rangs }) => {
-                      const presents = scenario.presentsInitialement ?? [];
-                      const initialDerive =
-                        effet.effetCombat === 'brand' ? setup.brand : effet.effetCombat === 'defBreak' ? setup.defBreak : false;
+                    {reglages.map((reglage) => {
+                      if (reglage.type === 'tirage') {
+                        // Un tirage : un seul effet par coup, choisi coup par
+                        // coup — aucun, ou l'un de ceux que ce coup peut poser.
+                        return (
+                          <div key={reglage.cle} className="space-y-1.5">
+                            {reglage.effets.map(({ effet }) => (
+                              <div key={effet.id} className="flex flex-wrap items-center gap-2">
+                                <span className="min-w-40 text-xs text-ink-dim">{libelleEffetEntreCoups(effet)}</span>
+                                {presence(effet)}
+                              </div>
+                            ))}
+                            <p className="text-xs text-ink-dim">Un seul de ces effets par coup :</p>
+                            {reglage.rangs.map((coup) => (
+                              <div key={coup} className="flex flex-wrap items-center gap-2">
+                                <span className="min-w-40 text-xs text-ink-dim">Après le coup {coup}</span>
+                                <Selecteur
+                                  taille="sm"
+                                  pleineLargeur={false}
+                                  value={effetDuTirageAuCoup(scenario, reglage.effets, coup) ?? ''}
+                                  onChange={(e) =>
+                                    majScenario({
+                                      apresCoup: choisirAuCoupDuTirage(scenario, reglage.effets, coup, e.target.value === '' ? null : e.target.value),
+                                    })
+                                  }
+                                  aria-label={`Effet posé après le coup ${coup}`}
+                                >
+                                  <option value="">Aucun</option>
+                                  {effetsDuTirageProposables(scenario, reglage.effets, coup).map((effet) => (
+                                    <option key={effet.id} value={effet.id}>{effet.label}</option>
+                                  ))}
+                                </Selecteur>
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      }
+                      const { effet, rangs } = reglage.propose;
                       const choisi = scenario.apresCoup?.[effet.id];
                       const poserApres = (coup: number | null) =>
                         majScenario({ apresCoup: { ...(scenario.apresCoup ?? {}), [effet.id]: coup } });
                       return (
                         <div key={effet.id} className="flex flex-wrap items-center gap-2">
                           <span className="min-w-40 text-xs text-ink-dim">{libelleEffetEntreCoups(effet)}</span>
-                          {!effet.cumulable && !effet.effetCombat && (
-                            <Interrupteur
-                              actif={presents.includes(effet.id)}
-                              onChange={(actif) =>
-                                majScenario({
-                                  presentsInitialement: actif
-                                    ? Array.from(new Set([...presents, effet.id]))
-                                    : presents.filter((id) => id !== effet.id),
-                                })
-                              }
-                              libelle="déjà présent"
-                            />
-                          )}
-                          {effet.effetCombat && (
-                            <span className="text-xs text-ink-dim">
-                              {initialDerive ? 'déjà présent et inclus dans le compteur' : 'absent au départ'}
-                            </span>
-                          )}
+                          {presence(effet)}
                           {rangs.length === 1 ? (
                             // Un seul coup pose l'effet (prose ou note) : posé ou non.
                             <Interrupteur

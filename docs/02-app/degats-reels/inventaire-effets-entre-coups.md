@@ -8,7 +8,7 @@ est écarté : [feat-poses-entre-les-coups.md](feat-poses-entre-les-coups.md).
 Cette liste est figée par `testInventaireEffetsEntreCoups`
 ([tests/degats-effets-entre-coups.test.ts](../../../tests/degats-effets-entre-coups.test.ts),
 fixture [tests/fixtures/effets-entre-coups-inventaire.json](../../../tests/fixtures/effets-entre-coups-inventaire.json)) :
-279 sorts, 164 lignes ci-dessous (un même nom aux effets identiques sur une
+280 sorts, 165 lignes ci-dessous (un même nom aux effets identiques sur une
 ligne). Un sort que des données régénérées ajoutent ou retirent fait échouer
 le test : relire sa prose, puis mettre à jour la fixture et cette page dans le
 même commit.
@@ -23,7 +23,10 @@ effets nocifs de la cible lu par le sort ou le monstre, compte des seuls
 dégâts continus, VIT de la cible lue (ralentissement), ou bonus « cible sous
 incapacité » du sort (Étourdissement d'Arrow of Water et de Dark Storm).
 Pour un sort à coups au hasard, « chaque coup » suit le nombre de coups qui
-touchent la cible.
+touchent la cible. Les effets d'un même tirage (« un seul des effets possibles
+par coup », « au hasard parmi les effets du combat », « si Jessica la porte »)
+se règlent coup par coup, un seul effet par coup, quand le sort en propose au
+moins deux.
 
 | Sort | Identifiants | Porteurs | Effets proposés |
 | --- | --- | --- | --- |
@@ -105,6 +108,7 @@ touchent la cible.
 | Gust | 1153 | Aeilene vent | Étourdissement — chaque coup |
 | Hairpin: Black Flash | 20315 | Nobara Kugisaki ténèbres | Réduction de DEF — coup 1 |
 | Harpoon Impalement | 17507, 17509 | Eivor feu, Eivor lumière | Marque — coup 1 |
+| Here Come the Ghosts! | 18429 | Jessica lumière | Marque — chaque coup (par Blessing of Curse, si Jessica la porte)<br>Réduction de DEF — chaque coup (par Blessing of Curse, si Jessica la porte) |
 | Horn of the Ancient Beetle | 21715 | Actaeon ténèbres | Marque — chaque coup |
 | Hunting Hawk | 22507 | Hwoarang feu | Marque — chaque coup (par Blood Talon) |
 | Iron Uppercut | 14407, 14408, 14410 | Douglas feu, Kashmir vent, Vancliffe ténèbres | Marque — coup 1 (pour [Mach Punch] enchaîné) |
