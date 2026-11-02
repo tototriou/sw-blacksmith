@@ -21,12 +21,13 @@ import { mapBoxMonsters } from '../../src/lib/applyAccount';
 import type { Monster } from '../../src/types';
 import { egal, exportSynthetique, faussLocalStorage, monstersJson, ok, titre } from '../outils';
 import { auTelephone, bouton, boutons, onglets, rendre, texteVisible, valeurs } from './outils-rendu';
+import { fr } from '../../src/i18n/fr';
 
 const MONSTRES = monstersJson() as Monster[];
 const PAR_COM2US = new Map(MONSTRES.filter((m) => m.com2usId != null).map((m) => [m.com2usId as number, m]));
 const SOURCE = exportSynthetique();
-export const BOX = mapBoxMonsters(parseAccountBox(SOURCE).monsters, PAR_COM2US);
-const INVENTAIRE = parseAccountInventory(SOURCE);
+export const BOX = mapBoxMonsters(parseAccountBox(SOURCE, fr).monsters, PAR_COM2US);
+const INVENTAIRE = parseAccountInventory(SOURCE, fr);
 // Le premier monstre de la box (Devilmon), désigné par son id de monstre.
 export const CHOISI = String(BOX[0].monster.id);
 

@@ -32,7 +32,9 @@ export function resumeBuildsRapides(r: ReglageBuildsRapides, t: Dictionnaire['pa
 // combinaison, et les combinaisons affichées. Chaque geste s'applique tout de
 // suite, comme les autres réglages : il n'y a rien à valider.
 export default function DialogueBuildsRapides({ onClose }: { onClose: () => void }) {
-  const jeu: LexiqueJeu = useTraduction().jeu;
+  const textes = useTraduction();
+  const jeu: LexiqueJeu = textes.jeu;
+  const d = textes.buildsRapides.dialogue;
   const label = (key: string) => nomSet(jeu, key);
   const reglage = useBuildsRapides();
   const [quatre, setQuatre] = useState(SETS_QUATRE[0]);
@@ -52,7 +54,7 @@ export default function DialogueBuildsRapides({ onClose }: { onClose: () => void
       <BoutonIcone
         key={deux}
         cadre
-        libelle={deja ? `${label(quatre)} + ${libelle} : déjà affichée` : `Ajouter ${label(quatre)} + ${libelle}`}
+        libelle={deja ? d.dejaAffichee(label(quatre), libelle) : d.ajouter(label(quatre), libelle)}
         icone={icone}
         disabled={deja}
         onClick={() => ajouter(deux)}
@@ -67,8 +69,8 @@ export default function DialogueBuildsRapides({ onClose }: { onClose: () => void
     <Modale
       onClose={onClose}
       labelledBy="titre-builds-rapides"
-      titre="Builds les plus rapides"
-      sousTitre="Ce que montre le Résumé des runes."
+      titre={textes.buildsRapides.titre}
+      sousTitre={d.sousTitre}
       croix
       largeur="max-w-[520px]"
       // Chaque geste s'applique tout de suite : la croix est la seule sortie,
@@ -76,32 +78,32 @@ export default function DialogueBuildsRapides({ onClose }: { onClose: () => void
       actions={
         <Bouton
           fond="vide"
-          libelle="Rétablir le défaut"
+          libelle={d.retablir}
           disabled={parDefaut}
-          title={parDefaut ? 'Déjà le réglage par défaut' : `Les ${REGLAGE_BUILDS_RAPIDES_DEFAUT.combos.length} combinaisons de départ, ${REGLAGE_BUILDS_RAPIDES_DEFAUT.nombre} builds par combinaison`}
+          title={parDefaut ? d.dejaDefaut : d.defautAide(REGLAGE_BUILDS_RAPIDES_DEFAUT.combos.length, REGLAGE_BUILDS_RAPIDES_DEFAUT.nombre)}
           onClick={() => setReglageBuildsRapides(REGLAGE_BUILDS_RAPIDES_DEFAUT)}
         />
       }
     >
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between gap-3">
-          <span className="text-sm font-semibold text-ink">Builds par combinaison</span>
+          <span className="text-sm font-semibold text-ink">{d.parCombinaison}</span>
           <NumberField
             value={reglage.nombre}
             min={BUILDS_PAR_COMBO_MIN}
             max={BUILDS_PAR_COMBO_MAX}
             onChange={(v) => v != null && ecrire({ nombre: v })}
-            ariaLabel="Builds par combinaison"
+            ariaLabel={d.parCombinaison}
           />
         </div>
 
         {/* ⚠️ L'ajout AVANT la liste : un jeton ajouté allonge la liste, il ne
             doit pas pousser vers le bas les boutons qu'on vient de cliquer. */}
         <div>
-          <p className="label mb-1.5">Ajouter une combinaison</p>
+          <p className="label mb-1.5">{d.ajouterCombinaison}</p>
           <div className="grid grid-cols-[auto_1fr] rounded-lg border border-border bg-panel p-2">
             <div className="pr-3">
-              <p className="mb-1 text-[10.5px] font-semibold uppercase tracking-wide text-ink-dimmer">Set 4 pièces</p>
+              <p className="mb-1 text-[10.5px] font-semibold uppercase tracking-wide text-ink-dimmer">{d.set4}</p>
               <div className="grid grid-cols-3 gap-1">
                 {SETS_QUATRE.map((k) => (
                   <BoutonIcone
@@ -120,7 +122,7 @@ export default function DialogueBuildsRapides({ onClose }: { onClose: () => void
             </div>
             <div className="border-l border-border-soft pl-3">
               <p className="mb-1 text-[10.5px] font-semibold uppercase tracking-wide text-ink-dimmer">
-                Avec {label(quatre)}
+                {d.avec(label(quatre))}
               </p>
               <div className="flex flex-wrap gap-1">
                 {SETS_DEUX.map((k) =>
@@ -129,11 +131,11 @@ export default function DialogueBuildsRapides({ onClose }: { onClose: () => void
                 {/* Broken : pas de symbole de set, le mot. */}
                 <Bouton
                   taille="sm"
-                  libelle="Broken"
+                  libelle={d.broken}
                   title={
                     presentes.has(cleCombo({ quatre, deux: BROKEN }))
-                      ? `${label(quatre)} + Broken : déjà affichée`
-                      : `Ajouter ${label(quatre)} + Broken (2 runes de n'importe quel set)`
+                      ? d.dejaAffichee(label(quatre), d.broken)
+                      : d.ajouterBroken(label(quatre))
                   }
                   disabled={presentes.has(cleCombo({ quatre, deux: BROKEN }))}
                   onClick={() => ajouter(BROKEN)}
@@ -146,9 +148,9 @@ export default function DialogueBuildsRapides({ onClose }: { onClose: () => void
         </div>
 
         <div>
-          <p className="label mb-1.5">Combinaisons affichées ({reglage.combos.length})</p>
+          <p className="label mb-1.5">{d.affichees(reglage.combos.length)}</p>
           {reglage.combos.length === 0 ? (
-            <p className="text-xs text-ink-dim">Aucune : le bloc du Résumé reste vide.</p>
+            <p className="text-xs text-ink-dim">{d.aucune}</p>
           ) : (
             <div className="flex flex-wrap gap-1.5">
               {reglage.combos.map((c) => (
@@ -157,7 +159,7 @@ export default function DialogueBuildsRapides({ onClose }: { onClose: () => void
                   icone={<SymbolesCombo combo={c} taille={14} />}
                   libelle={nomCombo(c, jeu)}
                   onRetirer={() => retirer(c)}
-                  libelleRetrait={`Retirer ${nomCombo(c, jeu)}`}
+                  libelleRetrait={textes.carteRta.retirer(nomCombo(c, jeu))}
                 />
               ))}
             </div>

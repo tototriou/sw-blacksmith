@@ -53,6 +53,9 @@ export type CleSet = keyof typeof sets;
 export const jeuFr = {
   sets,
 
+  // Les objets d'amélioration des runes (sous-pages du Compte).
+  objets: { meules: 'Meules', gemmes: 'Gemmes' },
+
   // Les stats, par clé. Le filtre de runes du jeu écrit « Tx critiq. » et
   // « Dgts critiq. ».
   stats: {

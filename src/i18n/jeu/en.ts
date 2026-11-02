@@ -12,6 +12,7 @@
 import type { LexiqueJeu } from './fr';
 
 export const jeuEn: LexiqueJeu = {
+  objets: { meules: 'Grindstones', gemmes: 'Enchanted Gems' },
   sets: {
     swift: 'Swift',
     violent: 'Violent',

@@ -10,7 +10,8 @@ import {
   RARITY_META,
 } from '../../lib/effects';
 import { artifactScore, artifactEfficiency } from '../../lib/artifacts';
-import { useTraduction } from '../../hooks/useLangue';
+import { useLangue, useTraduction } from '../../hooks/useLangue';
+import { formatNombre } from '../../i18n/format';
 import { nomArchetype, nomElement, nomGrade } from '../../i18n/jeu';
 import { ArtifactGlyph } from '../ArtifactIcon';
 import ArtifactFrameIcon from '../ArtifactFrameIcon';
@@ -62,6 +63,8 @@ const ARCHETYPES: { key: Archetype }[] = [{ key: 'attack' }, { key: 'defense' },
 export default function ArtifactsList({ artifacts, menuOuvert, onFermerMenu }: Props) {
   const textes = useTraduction();
   const jeu = textes.jeu;
+  const a = textes.artefactsCompte;
+  const langue = useLangue();
   const [kind, setKind] = useStickyState<'all' | 'element' | 'archetype'>('artefacts.kind', 'all');
   const [element, setElement] = useStickyState<ElementKey | ''>('artefacts.element', '');
   const [archetype, setArchetype] = useStickyState<Archetype | ''>('artefacts.archetype', '');
@@ -226,7 +229,7 @@ export default function ArtifactsList({ artifacts, menuOuvert, onFermerMenu }: P
             comme un doublon. */}
         <div className="flex flex-wrap items-center gap-2">
           <span className="w-[86px] flex-none label lg:w-auto">
-            Catégorie
+            {a.categorie}
           </span>
           {/* ⚠️ Un contrôle **à cran** (`Segmented`) et non trois pastilles :
               les trois choix s'excluent, alors que des pastilles séparées se
@@ -256,7 +259,7 @@ export default function ArtifactsList({ artifacts, menuOuvert, onFermerMenu }: P
               setPage(0);
             }}
             options={[
-              { key: 'all' as const, label: 'Tous' },
+              { key: 'all' as const, label: a.tous },
               ...sortesArtefact(textes),
             ]}
           />
@@ -269,7 +272,7 @@ export default function ArtifactsList({ artifacts, menuOuvert, onFermerMenu }: P
             le suivant. */}
         <div className="flex flex-wrap items-center gap-2">
           <span className="w-[86px] flex-none label lg:w-auto">
-            Attribut
+            {a.attribut}
           </span>
 
           {/* Chips de valeur : **icône du jeu + libellé**. On reconnaît un
@@ -299,7 +302,7 @@ export default function ArtifactsList({ artifacts, menuOuvert, onFermerMenu }: P
                 key={e.key}
                 data-active={active}
                 disabled={hs}
-                title={hs ? "Change la catégorie pour filtrer par attribut" : undefined}
+                title={hs ? a.changerPourAttribut : undefined}
                 onClick={() => {
                   setElement((cur) => (cur === e.key ? '' : e.key));
                   setArchetype(''); // les deux axes s'excluent
@@ -318,7 +321,7 @@ export default function ArtifactsList({ artifacts, menuOuvert, onFermerMenu }: P
 
         <div className="flex flex-wrap items-center gap-2">
           <span className="w-[86px] flex-none label lg:w-auto">
-            Type
+            {a.type}
           </span>
           {/* ⚠️ Les types restent **neutres**, sans couleur propre. Les quatre
               archétypes n'ont pas de code couleur dans le jeu : en inventer un
@@ -331,7 +334,7 @@ export default function ArtifactsList({ artifacts, menuOuvert, onFermerMenu }: P
               <button
                 key={a.key}
                 disabled={hs}
-                title={hs ? 'Change la catégorie pour filtrer par type' : undefined}
+                title={hs ? textes.artefactsCompte.changerPourType : undefined}
                 onClick={() => {
                   setArchetype((cur) => (cur === a.key ? '' : a.key));
                   setElement(''); // les deux axes s'excluent
@@ -357,7 +360,7 @@ export default function ArtifactsList({ artifacts, menuOuvert, onFermerMenu }: P
 
         {/* Rareté */}
         <div className="flex flex-wrap items-center gap-2">
-          <span className="w-[86px] flex-none label lg:w-auto">Rareté</span>
+          <span className="w-[86px] flex-none label lg:w-auto">{a.rarete}</span>
           {RARITY_ORDER.map((r) => {
             const meta = RARITY_META[r];
             const active = rarities.has(r);
@@ -408,7 +411,7 @@ export default function ArtifactsList({ artifacts, menuOuvert, onFermerMenu }: P
               colonne d'intitulés. L'abréger trahirait le nom du jeu, l'élargir
               décalerait les cinq autres rangées — le repli tient dans la
               hauteur déjà occupée par le contrôle. */}
-          <span className="w-[86px] flex-none label lg:w-auto leading-tight">Stat principale</span>
+          <span className="w-[86px] flex-none label lg:w-auto leading-tight">{a.statPrincipale}</span>
           <Segmented
             value={main}
             onChange={(v) => {
@@ -416,7 +419,7 @@ export default function ArtifactsList({ artifacts, menuOuvert, onFermerMenu }: P
               setPage(0);
             }}
             options={[
-              { key: '', label: 'Toutes' },
+              { key: '', label: a.toutes },
               ...MAIN_ORDER.map((code) => ({
                 key: String(code),
                 label: jeu.stats[ARTIFACT_MAIN[code].stat],
@@ -430,7 +433,7 @@ export default function ArtifactsList({ artifacts, menuOuvert, onFermerMenu }: P
             ⚠️ Les cases sont ORDONNÉES : la 1ʳᵉ trie la liste, la 2ᵉ départage
             les ex æquo, etc. La position porte du sens (voir `Critere`). */}
         <div className="flex flex-wrap items-start gap-2 lg:min-w-[440px] lg:flex-1">
-          <span className="w-[86px] flex-none label lg:w-auto mt-1">Propriété</span>
+          <span className="w-[86px] flex-none label lg:w-auto mt-1">{textes.listeRunes.propriete}</span>
           <div className="min-w-0 flex-1 max-w-[520px]">
             <SubSearchBar
               options={dispoSubs}
@@ -449,8 +452,8 @@ export default function ArtifactsList({ artifacts, menuOuvert, onFermerMenu }: P
                 passent pour des emplacements d'artéfact. */}
             {actifs.length > 1 && (
               <p className="mt-1 text-micro text-ink-dim">
-                <b className="font-mono text-accent">1</b> trie la liste,{' '}
-                <b className="font-mono text-accent">2</b> départage les ex æquo
+                <b className="font-mono text-accent">1</b> {a.trieLaListe}{' '}
+                <b className="font-mono text-accent">2</b> {a.departage}
               </p>
             )}
           </div>
@@ -471,14 +474,12 @@ export default function ArtifactsList({ artifacts, menuOuvert, onFermerMenu }: P
           }}
           disabled={filtresParDefaut}
           title={
-            filtresParDefaut
-              ? 'Aucun filtre posé'
-              : 'Revenir à toutes les catégories, raretés et stats principales — les propriétés recherchées restent'
+            filtresParDefaut ? textes.boxCompte.aucunFiltre : a.effacerAide
           }
           fond="vide"
           trait="aucun"
           taille="sm"
-          libelle="Effacer les filtres"
+          libelle={textes.boxCompte.effacerFiltres}
           className="self-start lg:h-8 lg:self-auto"
         />
     </>
@@ -490,9 +491,9 @@ export default function ArtifactsList({ artifacts, menuOuvert, onFermerMenu }: P
           que la Liste des runes) : le titre de la vue et le nombre d'artéfacts
           de l'INVENTAIRE ; le compte FILTRÉ reste au-dessus des tuiles. */}
       <div className="mb-3 hidden items-center gap-2.5 lg:flex">
-        <h1 className="font-display text-xl tracking-wide text-ink">Liste</h1>
+        <h1 className="font-display text-xl tracking-wide text-ink">{textes.listeRunes.titre}</h1>
         <span className="rounded-full border border-border-soft bg-panel2 px-2 py-0.5 font-mono text-micro text-ink-dim">
-          {artifacts.length.toLocaleString('fr-FR')} artéfact{artifacts.length > 1 ? 's' : ''}
+          {a.compte(formatNombre(artifacts.length, langue), artifacts.length)}
         </span>
       </div>
 
@@ -506,21 +507,21 @@ export default function ArtifactsList({ artifacts, menuOuvert, onFermerMenu }: P
         {filtres}
       </div>
 
-      <MobileSheet ouvert={menuOuvert} onFermer={onFermerMenu} titre="Filtrer mes artéfacts">
+      <MobileSheet ouvert={menuOuvert} onFermer={onFermerMenu} titre={a.filtrer}>
         <div className="flex flex-col gap-3">{filtres}</div>
       </MobileSheet>
 
       <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
         <p className="font-mono text-xs text-ink-dim">
-          {filtered.length} artéfact{filtered.length > 1 ? 's' : ''}
-          {filtered.length !== artifacts.length && ` sur ${artifacts.length}`}
+          {a.compte(String(filtered.length), filtered.length)}
+          {filtered.length !== artifacts.length && a.sur(artifacts.length)}
           {/* ⚠️ Sur « Tous », la liste mêle DEUX inventaires distincts qu'on ne
               monte pas sur les mêmes monstres. Le rappel de composition évite
               de lire un classement commun comme un seul stock — et dit quoi
               filtrer pour ne voir que l'un des deux. */}
           {kind === 'all' && repartition.element > 0 && repartition.archetype > 0 && (
             <span className="ml-1 opacity-70">
-              ({repartition.element} attribut · {repartition.archetype} type)
+              {a.repartition(repartition.element, repartition.archetype)}
             </span>
           )}
           {/* Rappel du filtre actif : sans lui, une liste courte ou vide passe
@@ -528,7 +529,7 @@ export default function ArtifactsList({ artifacts, menuOuvert, onFermerMenu }: P
               exigeante. Même règle que le compteur de l'Optimisation. */}
           {actifs.length > 0 && (
             <span className="ml-1 opacity-70">
-              · triés sur {actifs.length} propriété{actifs.length > 1 ? 's' : ''}
+              {a.triesSur(actifs.length)}
             </span>
           )}
         </p>
@@ -555,9 +556,7 @@ export default function ArtifactsList({ artifacts, menuOuvert, onFermerMenu }: P
           principale se fait tronquer par la bannière. */}
       {filtered.length === 0 && (
         <p className="rounded-xl border border-border bg-panel px-4 py-6 text-center text-sm text-ink-dim">
-          {actifs.length > 0
-            ? `Aucun artéfact n'atteint ${actifs.length > 1 ? 'tous ces minimums' : 'ce minimum'} avec les filtres actuels.`
-            : 'Aucun artéfact ne correspond à ces filtres.'}
+          {actifs.length > 0 ? a.aucunMinimum(actifs.length) : a.aucun}
         </p>
       )}
 

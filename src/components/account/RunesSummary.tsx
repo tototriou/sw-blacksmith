@@ -1,7 +1,8 @@
 import { useMemo } from 'react';
 import { RuneDetail, RUNE_SETS } from '../../types';
 import { RARITY_META, choixEffetRune, runeEfficiency } from '../../lib/effects';
-import { useTraduction } from '../../hooks/useLangue';
+import { useLangue, useTraduction } from '../../hooks/useLangue';
+import { formatNombre } from '../../i18n/format';
 import { nomGrade } from '../../i18n/jeu';
 import { runePotential } from '../../lib/runeOptim';
 import RuneIcon from '../RuneIcon';
@@ -55,7 +56,11 @@ const TOP_N = 400;
 // artéfacts — voir SummaryBits.tsx.
 
 export default function RunesSummary({ runes }: Props) {
-  const jeu = useTraduction().jeu;
+  const textes = useTraduction();
+  const jeu = textes.jeu;
+  const r = textes.resumeRunes;
+  const langue = useLangue();
+  const n = (v: number) => formatNombre(v, langue);
   // Tout le résumé est calculé en un seul passage, mémoïsé par import.
   const s = useMemo(() => {
     const effs: number[] = [];
@@ -153,7 +158,7 @@ export default function RunesSummary({ runes }: Props) {
   if (!s.total) {
     return (
       <p className="rounded-xl border border-border bg-panel px-4 py-6 text-center text-sm text-ink-dim">
-        Aucune rune dans l'inventaire importé.
+        {r.aucune}
       </p>
     );
   }
@@ -170,9 +175,9 @@ export default function RunesSummary({ runes }: Props) {
           le titre de la vue et le nombre de runes, comme les en-têtes de la
           RTA et du Siège. Au doigt, la barre du haut dit déjà la vue. */}
       <div className="hidden items-center gap-2.5 lg:flex">
-        <h1 className="font-display text-xl tracking-wide text-ink">Résumé</h1>
+        <h1 className="font-display text-xl tracking-wide text-ink">{textes.artefactsCompte.resume}</h1>
         <span className="rounded-full border border-border-soft bg-panel2 px-2 py-0.5 font-mono text-micro text-ink-dim">
-          {s.total.toLocaleString('fr-FR')} rune{s.total > 1 ? 's' : ''}
+          {r.compte(n(s.total), s.total)}
         </span>
       </div>
 
@@ -188,16 +193,16 @@ export default function RunesSummary({ runes }: Props) {
         {/* Les tons reprennent la palette du résumé (`--pal-*`), qui suit le
             thème : mêmes teintes qu'avant en sombre, variante assombrie en
             clair. Voir docs/03-developpeur/interface/ § Dataviz. */}
-        <Kpi label="Runes" value={s.total.toLocaleString('fr-FR')} sub={`${s.maxed} au +15`} bandeau premier />
+        <Kpi label={textes.filtresRunes.runes} value={n(s.total)} sub={r.auPlus15(s.maxed)} bandeau premier />
         <Kpi
-          label={s.topN < TOP_N ? 'Eff. moyenne' : `Eff. moyenne · top ${TOP_N}`}
+          label={s.topN < TOP_N ? r.effMoyenne : r.effMoyenneTop(TOP_N)}
           value={`${fmt(s.topMean)} %`}
-          sub={`médiane ${fmt(s.topMedian)} %`}
+          sub={r.mediane(fmt(s.topMedian))}
           tone="rgb(var(--pal-4))"
           bandeau
         />
         <Kpi
-          label="Eff. moyenne · top 100"
+          label={r.effMoyenneTop(100)}
           value={`${fmt(s.top100)} %`}
           /* Deux-points obligatoires : « top 10 126.1 % » se lisait comme un
              seul nombre, « top 10126.1 % ». */
@@ -206,23 +211,23 @@ export default function RunesSummary({ runes }: Props) {
           bandeau
         />
         <Kpi
-          label="Meilleure"
+          label={r.meilleure}
           value={`${fmt(s.best)} %`}
-          sub={`${s.over110} rune(s) ≥ 110 %`}
+          sub={r.plus110(s.over110)}
           tone="rgb(var(--star))"
           bandeau
         />
         <Kpi
           label="≥ 100 %"
-          value={s.over100.toLocaleString('fr-FR')}
-          sub={`${fmt(pct(s.over100, s.total))} % du stock`}
+          value={n(s.over100)}
+          sub={r.duStock(fmt(pct(s.over100, s.total)))}
           tone="rgb(var(--pal-2))"
           bandeau
         />
         <Kpi
-          label="Antiques"
-          value={s.ancient.toLocaleString('fr-FR')}
-          sub={`${fmt(pct(s.ancient, s.total))} % du stock`}
+          label={r.antiques}
+          value={n(s.ancient)}
+          sub={r.duStock(fmt(pct(s.ancient, s.total)))}
           bandeau
         />
       </div>
@@ -235,7 +240,7 @@ export default function RunesSummary({ runes }: Props) {
           d'avant. */}
       <div className="flex flex-col gap-4 lg:grid lg:grid-cols-3">
         {/* ---- Distribution d'efficience -------------------------------- */}
-        <Panel title="Distribution d'efficience" className="lg:order-1">
+        <Panel title={textes.artefactsCompte.distribution} className="lg:order-1">
           <div className="flex flex-col gap-1.5">
             {EFF_BUCKETS.map((b, i) => (
               <BarRow
@@ -251,19 +256,19 @@ export default function RunesSummary({ runes }: Props) {
         </Panel>
 
         {/* ---- Qualité du stock ----------------------------------------- */}
-        <Panel title="Qualité du stock" className="lg:order-2">
+        <Panel title={r.qualite} className="lg:order-2">
           <div className="flex flex-col gap-1.5">
             {/* Quatre mesures indépendantes : quatre teintes de la palette,
                 comme avant. Chaque barre porte son libellé et sa valeur, donc
                 l'identité ne repose jamais sur la couleur seule. */}
-            <BarRow label="Montées au +15" n={s.maxed} total={s.total} max={s.total} color="rgb(var(--star))" />
-            <BarRow label="4 substats révélés" n={s.fourSubs} total={s.total} max={s.total} color="rgb(var(--pal-3))" />
-            <BarRow label="Gemmées" n={s.gemmed} total={s.total} max={s.total} color="rgb(var(--pal-2))" />
-            <BarRow label="Antiques" n={s.ancient} total={s.total} max={s.total} color="rgb(var(--pal-4))" />
+            <BarRow label={r.montees} n={s.maxed} total={s.total} max={s.total} color="rgb(var(--star))" />
+            <BarRow label={r.quatreSubstats} n={s.fourSubs} total={s.total} max={s.total} color="rgb(var(--pal-3))" />
+            <BarRow label={r.gemmees} n={s.gemmed} total={s.total} max={s.total} color="rgb(var(--pal-2))" />
+            <BarRow label={r.antiques} n={s.ancient} total={s.total} max={s.total} color="rgb(var(--pal-4))" />
           </div>
 
           <div className="mt-3 border-t border-border pt-3 flex flex-col gap-1.5">
-            <p className="label">Raretés</p>
+            <p className="label">{textes.artefactsCompte.raretes}</p>
             <div className="flex h-2.5 w-full overflow-hidden rounded-full bg-panel2">
               {s.rarities.map(
                 (r) =>
@@ -294,20 +299,20 @@ export default function RunesSummary({ runes }: Props) {
         </Panel>
 
       {/* ---- Par slot ---------------------------------------------------- */}
-      <Panel title="Par emplacement" className="lg:order-4">
+      <Panel title={r.parEmplacement} className="lg:order-4">
         {/* Au DOIGT : une carte par slot. */}
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 lg:hidden">
           {s.slots.map(({ slot, agg }) => (
             <div key={slot} className="rounded-lg border border-border bg-panel2 px-3 py-2">
               <div className="flex items-baseline justify-between">
-                <span className="label">Slot {slot}</span>
+                <span className="label">{textes.filtresRunes.slot} {slot}</span>
                 <span className="font-mono text-xs text-ink">{agg.n}</span>
               </div>
               <div className="mt-1 font-mono text-xs text-ink-dim">
-                moy. <b className="text-ink">{fmt(avg(agg))} %</b>
+                {r.moy} <b className="text-ink">{fmt(avg(agg))} %</b>
               </div>
               <div className="font-mono text-micro text-ink-dim">
-                max <b className="text-star">{fmt(agg.best)} %</b>
+                {r.max} <b className="text-star">{fmt(agg.best)} %</b>
               </div>
             </div>
           ))}
@@ -329,9 +334,9 @@ export default function RunesSummary({ runes }: Props) {
                 }}
                 aria-hidden
               />
-              <span className="label">Slot {slot}</span>
+              <span className="label">{textes.filtresRunes.slot} {slot}</span>
               <span className="text-center font-mono text-micro text-ink-dim">
-                {agg.n} · max <b className="text-star">{fmt(agg.best)} %</b>
+                {agg.n} · {r.max} <b className="text-star">{fmt(agg.best)} %</b>
               </span>
             </div>
           ))}
@@ -339,7 +344,7 @@ export default function RunesSummary({ runes }: Props) {
       </Panel>
 
         {/* ---- Stats principales (slots 2/4/6) -------------------------- */}
-        <Panel title="Stats principales (slots 2 · 4 · 6)" className="lg:order-5 lg:col-span-2">
+        <Panel title={r.statsPrincipales} className="lg:order-5 lg:col-span-2">
           <div className="flex flex-col gap-1.5">
             {s.mains.map((m) => (
               <BarRow
@@ -358,38 +363,36 @@ export default function RunesSummary({ runes }: Props) {
         </Panel>
 
         {/* ---- Marge de progression ------------------------------------- */}
-        <Panel title="Marge de progression" className="lg:order-3">
+        <Panel title={r.marge} className="lg:order-3">
           <p className="mb-3 text-xs text-ink-dim leading-relaxed">
-            Si chaque rune recevait sa gemme optimale puis sa meule au max, en scénario{' '}
-            <b className="text-ink">légendaire</b>. Sur{' '}
-            <b className="text-ink">tes {s.topN} meilleures runes</b> — mêmes runes des deux côtés,
-            sinon la comparaison ne voudrait rien dire.
+            {r.margeAvant} <b className="text-ink">{textes.artefactsCompte.aucunQuadGras}</b>. {r.margeSur}{' '}
+            <b className="text-ink">{r.margeMeilleures(s.topN)}</b> {r.margeApres}
           </p>
           <div className="grid grid-cols-2 gap-2">
-            <Kpi label="Eff. moyenne" value={`${fmt(s.topMean)} %`} sub="aujourd'hui" />
+            <Kpi label={r.effMoyenne} value={`${fmt(s.topMean)} %`} sub={r.aujourdhui} />
             <Kpi
-              label="Potentiel moyen"
+              label={r.potentiel}
               value={`${fmt(s.topPot)} %`}
-              sub={`+${fmt(s.topPot - s.topMean)} pts`}
+              sub={r.points(fmt(s.topPot - s.topMean))}
               tone="rgb(var(--good))"
             />
             <Kpi
-              label="Meules à poser"
-              value={s.grindTodo.toLocaleString('fr-FR')}
-              sub={`${fmt(pct(s.grindTodo, s.total))} % du stock`}
+              label={r.meulesAPoser}
+              value={n(s.grindTodo)}
+              sub={r.duStock(fmt(pct(s.grindTodo, s.total)))}
               tone="rgb(var(--star))"
             />
             <Kpi
-              label="Gemmes à poser"
-              value={s.gemTodo.toLocaleString('fr-FR')}
-              sub={`${fmt(pct(s.gemTodo, s.total))} % du stock`}
+              label={r.gemmesAPoser}
+              value={n(s.gemTodo)}
+              sub={r.duStock(fmt(pct(s.gemTodo, s.total)))}
               tone="rgb(var(--pal-2))"
             />
           </div>
         </Panel>
 
       {/* ---- Par set ----------------------------------------------------- */}
-      <Panel title={`Par set (${s.sets.length})`} className="lg:order-6 lg:col-span-3">
+      <Panel title={r.parSet(s.sets.length)} className="lg:order-6 lg:col-span-3">
         <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,148px),1fr))] gap-2">
           {s.sets.map(({ set, agg }) => (
             <div
@@ -404,7 +407,7 @@ export default function RunesSummary({ runes }: Props) {
                   <span className="font-mono text-xs text-ink-dim">{agg.n}</span>
                 </div>
                 <div className="font-mono text-micro text-ink-dim">
-                  moy. <b className="text-ink">{fmt(avg(agg))} %</b> · max{' '}
+                  {r.moy} <b className="text-ink">{fmt(avg(agg))} %</b> · {r.max}{' '}
                   <b className="text-star">{fmt(agg.best)} %</b>
                 </div>
               </div>

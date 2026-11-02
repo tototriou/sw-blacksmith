@@ -157,6 +157,9 @@ import { NOM_APP } from './marque';
 import { CLASSE_NOM, SymboleLogo } from './components/Logo';
 
 const DISCORD_INVITE = 'https://discord.gg/R2Fe4GJZET';
+// Adresses affichées telles quelles dans le pied de page, dans toutes les langues.
+const SITE_SWARFARM = 'swarfarm.com';
+const SITE_GITHUB = 'github.com/tototriou';
 
 // Pages dont les actions et les filtres passent dans le panneau mobile
 // (`MobileSheet`), ouvert par le bouton « Options » au-dessus de la barre
@@ -806,7 +809,7 @@ function Application() {
     // objet, donc partagés eux aussi.
     const data = parseAccountSource(text);
     if (!data) {
-      setImportMsg({ ok: false, text: 'Fichier JSON illisible.' });
+      setImportMsg({ ok: false, text: textes.importCompte.illisible });
       return;
     }
     appliquerTout(data, preparerCompte(data), true);
@@ -821,9 +824,9 @@ function Application() {
     compte: ReturnType<typeof preparerCompte>,
     demanderConservation: boolean
   ) {
-    const rtaRes = parseAccountJson(data);
-    const defRes = parseSiegeDefense(data);
-    const offRes = parseSiegeOffense(data);
+    const rtaRes = parseAccountJson(data, textes);
+    const defRes = parseSiegeDefense(data, textes);
+    const offRes = parseSiegeOffense(data, textes);
 
     const rtaItems = rtaRes.units ? mapRtaItems(rtaRes.units, monsterByCom2us) : [];
     const def = mapSiegeTeams(defRes.decks ?? [], monsterByCom2us);
@@ -839,7 +842,7 @@ function Application() {
       setImportMsg({
         ok: false,
         text:
-          rtaRes.error || defRes.error || offRes.error || compte.boxRes.error || 'Rien à importer depuis ce fichier.',
+          rtaRes.error || defRes.error || offRes.error || compte.boxRes.error || textes.importCompte.rien,
       });
       return;
     }
@@ -853,18 +856,16 @@ function Application() {
 
     appliquerCompte(data, compte);
 
+    const ic = textes.importCompte;
     const parts: string[] = [];
-    if (boxItems.length) parts.push(`${boxItems.length} monstres 6★`);
-    if (rtaItems.length) parts.push(`${rtaItems.length} monstres RTA`);
-    if (def.teams.length) parts.push(`${def.teams.length} défenses`);
-    if (off.teams.length) parts.push(`${off.teams.length} attaques`);
+    if (boxItems.length) parts.push(ic.monstres6(boxItems.length));
+    if (rtaItems.length) parts.push(ic.monstresRta(rtaItems.length));
+    if (def.teams.length) parts.push(ic.defenses(def.teams.length));
+    if (off.teams.length) parts.push(ic.attaques(off.teams.length));
     const missing = def.missing + off.missing;
     setImportMsg({
       ok: true,
-      text:
-        `Import : ${parts.join(' · ')}` +
-        (missing > 0 ? ` · ${missing} monstre(s) introuvable(s), à créer à la main` : '') +
-        '.',
+      text: ic.bilan(parts.join(' · ')) + (missing > 0 ? ic.introuvables(missing) : '') + '.',
     });
 
     // La question de la conservation se pose ICI, une fois les données à l'écran
@@ -881,8 +882,8 @@ function Application() {
   // « Mon compte » d'un export déjà parsé — box 6★, inventaire, identité —, lu
   // une fois et partagé par l'import manuel et le dossier SW Exporter.
   function preparerCompte(data: Record<string, any>) {
-    const boxRes = parseAccountBox(data);
-    const invRes = parseAccountInventory(data);
+    const boxRes = parseAccountBox(data, textes);
+    const invRes = parseAccountInventory(data, textes);
     return {
       exporte: parseAccountExportDate(data),
       nomJoueur: parseAccountWizardName(data),
@@ -1069,7 +1070,7 @@ function Application() {
     const r = await (sous ? pont.sauvegarderSous(texte, nom) : pont.sauvegarder(texte, nom));
     if (r?.issue === 'enregistree') {
       empreinteSauvegardeRef.current = empreinteTravail(session);
-      notifier({ message: `Session enregistrée · ${r.etat.nom}` });
+      notifier({ message: textes.donnees.sessionEnregistree(r.etat.nom) });
       return true;
     }
     if (r?.issue === 'echec') setEchecSession(r.message);
@@ -1077,7 +1078,7 @@ function Application() {
   }
   // Pourquoi « Sauvegarder » est désactivé, ou `null` s'il ne l'est pas.
   const sauvegardeIndisponible = accountHydrating
-    ? 'Ton compte se charge encore : la sauvegarde attend qu’il soit relu.'
+    ? textes.donnees.compteEnChargement
     : null;
   const sauvegarderSession = () => void enregistrerSession(false);
   const sauvegarderSessionSous = () => void enregistrerSession(true);
@@ -1792,9 +1793,9 @@ function Application() {
       />
     ) : n.route === 'arene' ? (
       <ComingSoon
-        title="Arène"
+        title={textes.navigation.arene}
         icon={IconeArene}
-        description="Préparation des équipes d'arène classique (offense et défense)."
+        description={textes.donnees.areneBientot}
       />
     ) : n.route === 'compte' ? (
       <AccountPage
@@ -2139,7 +2140,7 @@ function Application() {
             minDroite={largeurMinVolet()}
             taille={volets.taille}
             onTaille={(taille) => setVolets((v) => ({ ...v, taille }))}
-            libelleSeparateur="Redimensionner les deux pages (double-clic : moitié-moitié)"
+            libelleSeparateur={textes.donnees.redimensionner}
           />
         ) : (
           pageDe({ route, rtaSub, siegeTab, accountSub, accountView, toolSub })
@@ -2178,20 +2179,17 @@ function Application() {
               ne doivent pas rivaliser avec le contenu (5.26 au pire). */}
           <div className="space-y-1 text-center text-ink-dimmer max-lg:order-last">
             <p>
-              {selonSupport(
-                'Toutes tes données restent en local dans ton navigateur.',
-                'Toutes tes données restent en local, sur ta machine.'
-              )}
+              {selonSupport(textes.piedDePage.localNavigateur, textes.piedDePage.localMachine)}
             </p>
             <p>
-              Données et images © Com2uS · Source :{' '}
+              {textes.piedDePage.source}{' '}
               <a href="https://swarfarm.com" target="_blank" rel="noreferrer" className="text-accent">
-                swarfarm.com
+                {SITE_SWARFARM}
               </a>
               {/* La mention de la toile — l'app montre des images
                   et des données du jeu, elle dit qu'elle n'est pas officielle. */}
               <span aria-hidden> · </span>
-              <span>Projet non officiel, sans affiliation avec Com2uS.</span>
+              <span>{textes.piedDePage.nonOfficiel}</span>
             </p>
           </div>
           {/* Signature : projet perso, code ouvert, et un contact direct pour les
@@ -2210,15 +2208,15 @@ function Application() {
               target="_blank"
               rel="noreferrer"
               className="inline-flex items-center gap-1.5 text-ink-dim hoverable:text-accent transition"
-              title={`Le code de ${NOM_APP} sur GitHub`}
+              title={textes.piedDePage.code(NOM_APP)}
             >
-              <Github size={13} /> <span className="lg:hidden">GitHub</span>
-              <span className="hidden lg:inline">github.com/tototriou</span>
+              <Github size={13} /> <span className="lg:hidden">{textes.piedDePage.github}</span>
+              <span className="hidden lg:inline">{SITE_GITHUB}</span>
             </a>
             <a
               href="#/releases"
               className="inline-flex items-center gap-1.5 text-ink-dim hoverable:text-accent transition"
-              title="Voir les nouveautés de cette version"
+              title={textes.piedDePage.nouveautes}
             >
               <IconeNouveautes size={13} /> v{__APP_VERSION__}
             </a>
@@ -2229,10 +2227,10 @@ function Application() {
               target="_blank"
               rel="noreferrer"
               className="inline-flex items-center gap-1.5 text-ink-dim hoverable:text-accent transition"
-              title={`Rejoindre le serveur Discord de ${NOM_APP}`}
+              title={textes.piedDePage.discordAide(NOM_APP)}
             >
-              <MessageCircle size={13} /> <span className="lg:hidden">Discord</span>
-              <span className="hidden lg:inline">Rejoindre le Discord</span>
+              <MessageCircle size={13} /> <span className="lg:hidden">{textes.piedDePage.discord}</span>
+              <span className="hidden lg:inline">{textes.piedDePage.rejoindreDiscord}</span>
             </a>
           </p>
         </footer>
@@ -2240,9 +2238,9 @@ function Application() {
 
         {importEnAttente !== null && (
           <ConfirmDialog
-            titre="Remplacer les données présentes ?"
-            message="Cet import va remplacer ta prépa RTA, tes équipes de siège et ta box par le contenu du fichier. Tes recommandations enregistrées ne sont pas touchées."
-            libelleAction="Remplacer"
+            titre={textes.donnees.remplacerTitre}
+            message={textes.donnees.remplacerMessage}
+            libelleAction={textes.sauvegardeRta.remplacer}
             destructif
             onCancel={() => setImportEnAttente(null)}
             onConfirm={() => {
@@ -2268,9 +2266,9 @@ function Application() {
 
         {purgeGlobale && (
           <ConfirmDialog
-            titre="Supprimer toutes tes données ?"
-            message="Prépa RTA, équipes de siège, recommandations, monstres perso et compte importé seront effacés de cet appareil. Cette action est irréversible."
-            libelleAction="Tout supprimer"
+            titre={textes.donnees.supprimerTitre}
+            message={textes.donnees.supprimerMessage}
+            libelleAction={textes.donnees.toutSupprimer}
             destructif
             onCancel={() => setPurgeGlobale(false)}
             onConfirm={clearAllData}
@@ -2279,9 +2277,9 @@ function Application() {
 
         {purgeApresRefus !== null && (
           <ConfirmDialog
-            titre="Ne plus rien garder ?"
-            message="Ce qui est déjà enregistré sur cet appareil sera effacé : prépa RTA, équipes de siège, recommandations et compte importé."
-            libelleAction="Tout effacer"
+            titre={textes.donnees.neRienGarderTitre}
+            message={textes.donnees.neRienGarderMessage}
+            libelleAction={textes.commun.toutEffacer}
             destructif
             onCancel={() => setPurgeApresRefus(null)}
             onConfirm={() => confirmerRefusConservation(purgeApresRefus)}
@@ -2294,14 +2292,14 @@ function Application() {
           <Modale
             onClose={() => setEchecSession(null)}
             labelledBy="echec-session-titre"
-            titre="La session n’a pas été enregistrée"
+            titre={textes.donnees.sessionEchec}
             sousTitre={echecSession}
             icone={
               <span className="mt-0.5 flex-none rounded-lg bg-bad/15 p-2 text-bad">
                 <AlertTriangle size={18} />
               </span>
             }
-            actions={<Bouton onClick={() => setEchecSession(null)} autoFocus ton="accent" fond="doux" libelle="Fermer" />}
+            actions={<Bouton onClick={() => setEchecSession(null)} autoFocus ton="accent" fond="doux" libelle={textes.commun.fermer} />}
           />
         )}
 

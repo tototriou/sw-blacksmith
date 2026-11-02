@@ -509,7 +509,7 @@ export default function testRtaPartage() {
   titre('Consultation depuis un export de compte');
 
   const exportAmi = parseAccountSource(exportSynthetique())!;
-  const unitsAmi = parseAccountJson(exportAmi).units;
+  const unitsAmi = parseAccountJson(exportAmi, fr).units;
   const bestiaireAmi = [monstre('900', 15105, 'Kaki'), monstre('901', 14314, 'Teon')];
 
   const vueCompte = mapRtaVueAmi(unitsAmi, parCom2us(bestiaireAmi), 'Joueur');

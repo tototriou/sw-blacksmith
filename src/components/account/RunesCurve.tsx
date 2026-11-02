@@ -18,6 +18,7 @@ import FiltresRunes from './FiltresRunes';
 import CurveChart, { CurveSeries, OWN_COLOR } from './CurveChart';
 import CurveLegend from './CurveLegend';
 import HelpPopover from '../HelpPopover';
+import { useTraduction } from '../../hooks/useLangue';
 
 interface Props {
   runes: RuneDetail[];
@@ -27,7 +28,14 @@ const DEFAULT_LIMIT = 400; // nb de runes affichées par défaut
 const HERO_COLOR = '#c88cff'; // Potentiel héroïque → violet
 const LEGEND_COLOR = '#f8b24a'; // Potentiel légendaire → orange
 
+// ⚠️ Les clés des courbes masquées, MÉMORISÉES (`runesCurve.hidden`) : elles ne
+// suivent pas la langue, sinon changer de langue réafficherait ce qu'on avait
+// masqué. Le nom affiché vient du dictionnaire.
+const CLE = { actuelle: 'Actuelle', hero: 'Potentiel Héro', legend: 'Potentiel Légend' } as const;
+
 export default function RunesCurve({ runes }: Props) {
+  const textes = useTraduction();
+  const k = textes.courbes;
   // Liste blanche, tout coché par défaut (voir RunesList) : un set/slot coché est
   // affiché, aucun coché = rien.
   const [sets, setSets] = useStickyState<Set<string>>('runesCurve.sets', new Set(runes.map((r) => r.set)));
@@ -90,49 +98,44 @@ export default function RunesCurve({ runes }: Props) {
   // donner leurs runes ouvrirait trois cartes quasi identiques pour une seule
   // question — « quelle est cette rune ? ». (En comparaison, c'est l'inverse :
   // chaque courbe est un compte DIFFÉRENT, donc toutes sont ouvrables.)
-  const allSeries: CurveSeries[] = [
-    { name: 'Actuelle', ...lim(cur), color: OWN_COLOR, own: true },
-    { name: 'Potentiel Héro', effs: lim(hero).effs, color: HERO_COLOR, own: false },
-    { name: 'Potentiel Légend', effs: lim(legend).effs, color: LEGEND_COLOR, own: false },
+  const allSeries: (CurveSeries & { cle: string })[] = [
+    { cle: CLE.actuelle, name: k.actuelle, ...lim(cur), color: OWN_COLOR, own: true },
+    { cle: CLE.hero, name: k.potentielHero, effs: lim(hero).effs, color: HERO_COLOR, own: false },
+    { cle: CLE.legend, name: k.potentielLegend, effs: lim(legend).effs, color: LEGEND_COLOR, own: false },
   ];
-  const visible = allSeries.filter((s) => !hidden.has(s.name));
+  const visible = allSeries.filter((s) => !hidden.has(s.cle));
 
   // Le texte d'aide, passé à HelpPopover (bulle à la souris, panneau montant au
   // doigt). Le titre est rendu par HelpPopover, pas répété ici.
   const aide = (
     <>
         <p>
-          Il classe toutes tes runes, de la meilleure à la moins bonne :{' '}
-          <b className="text-ink">l'efficience (%)</b> en hauteur, le{' '}
-          <b className="text-ink">nombre de runes</b> en largeur. Plus les courbes sont{' '}
-          <i>hautes et étalées</i>, meilleure est ta box.
+          {k.aide1} <b className="text-ink">{k.aide1Gras1}</b> {k.aide1b}{' '}
+          <b className="text-ink">{k.aide1Gras2}</b> {k.aide1c} <i>{k.aide1Italique}</i>{k.aide1d}
         </p>
         <ul className="mt-2 space-y-1.5">
           <li>
-            <span style={{ color: OWN_COLOR }}>●</span> <b className="text-ink">Actuelle</b> —
-            l'efficience de tes runes aujourd'hui.
+            <span style={{ color: OWN_COLOR }}>●</span> <b className="text-ink">{k.actuelle}</b> — {k.aideActuelle}
           </li>
           <li>
-            <span style={{ color: HERO_COLOR }}>●</span> <b className="text-ink">Potentiel Héro</b> — ce
-            que deviendrait ta box si chaque rune recevait sa <b className="text-ink">gemme et ses meules
-            héroïques optimales</b> <span className="text-ink-dim">(tri « Potentiel héroïque » de l'onglet Optimisation)</span>.
+            <span style={{ color: HERO_COLOR }}>●</span> <b className="text-ink">{k.potentielHero}</b> — {k.aideHero}{' '}
+            <b className="text-ink">{k.aideHeroGras}</b> <span className="text-ink-dim">{k.aideHeroTri}</span>.
           </li>
           <li>
-            <span style={{ color: LEGEND_COLOR }}>●</span> <b className="text-ink">Potentiel Légend</b> —
-            la même chose, en <b className="text-ink">légendaire</b>{' '}
-            <span className="text-ink-dim">(tri « Potentiel légendaire »)</span>.
+            <span style={{ color: LEGEND_COLOR }}>●</span> <b className="text-ink">{k.potentielLegend}</b> — {k.aideLegend}{' '}
+            <b className="text-ink">{textes.artefactsCompte.aucunQuadGras}</b>{' '}
+            <span className="text-ink-dim">{k.aideLegendTri}</span>.
           </li>
         </ul>
         <p className="mt-2">
-          Le sélecteur <b className="text-ink">Gemme + meule / Meule seule</b> change les courbes de
-          potentiel : <b className="text-ink">Gemme + meule</b> = gemme optimale puis meules au max ;{' '}
-          <b className="text-ink">Meule seule</b> = on garde les stats actuelles, seules les meules sont
-          poussées. Une rune déjà gemmée garde sa stat gemmée, sauf avec{' '}
-          <b className="text-ink">Autoriser un regemme différent</b>.
+          {k.aideSelecteur} <b className="text-ink">{k.gemmeMeule} / {k.meuleSeule}</b> {k.aideSelecteur2}{' '}
+          <b className="text-ink">{k.gemmeMeule}</b> {k.aideGemmeMeule}{' '}
+          <b className="text-ink">{k.meuleSeule}</b> {k.aideMeuleSeule}{' '}
+          <b className="text-ink">{k.regemme}</b>.
         </p>
         <p className="mt-2">
-          👉 Va dans l'onglet <b className="text-ink">Optimisation</b> pour voir{' '}
-          <b className="text-ink">quelles runes améliorer</b> et augmenter ton efficience.
+          {k.aideOnglet} <b className="text-ink">{k.optimisation}</b> {k.aidePourVoir}{' '}
+          <b className="text-ink">{k.aideAmeliorer}</b> {k.aideFin}
         </p>
     </>
   );
@@ -143,9 +146,9 @@ export default function RunesCurve({ runes }: Props) {
           le titre de la vue et ce qu'elle trace. Au doigt, la barre du haut
           dit déjà la vue. */}
       <div className="mb-3 hidden items-baseline gap-3 lg:flex">
-        <h1 className="font-display text-xl tracking-wide text-ink">Courbes</h1>
+        <h1 className="font-display text-xl tracking-wide text-ink">{k.titre}</h1>
         <span className="text-sm text-ink-dim">
-          {metric === 'eff' ? 'Efficience' : 'Score'} de chaque rune, de la meilleure à la moins bonne.
+          {k.sousTitre(metric === 'eff' ? k.efficience : k.score)}
         </span>
       </div>
 
@@ -189,13 +192,13 @@ export default function RunesCurve({ runes }: Props) {
             options={[
               {
                 key: 'gem',
-                label: 'Gemme + meule',
-                hint: 'Potentiel avec la gemme optimale + les meules',
+                label: k.gemmeMeule,
+                hint: k.gemmeMeuleAide,
               },
               {
                 key: 'grind',
-                label: 'Meule seule',
-                hint: 'Potentiel en gardant les stats actuelles (meules seulement)',
+                label: k.meuleSeule,
+                hint: k.meuleSeuleAide,
               },
             ]}
           />
@@ -206,30 +209,28 @@ export default function RunesCurve({ runes }: Props) {
             actif={regemLibre}
             taille="sm"
             title={
-              withGem
-                ? 'Rune déjà gemmée : compter aussi le regemme de sa ligne gemmée avec une autre stat, absente de la rune'
-                : 'Sans objet en « Meule seule » : aucune gemme n’est comptée'
+              withGem ? k.regemmeAide : k.regemmeSansObjet
             }
             icone={<Gem size={14} />}
-            libelle="Autoriser un regemme différent"
+            libelle={k.regemme}
           />
           <span className="font-mono text-xs text-ink-dim">
-            top {Math.min(cap, total)}
-            {total > cap && ` sur ${total}`}
+            {k.top(Math.min(cap, total))}
+            {total > cap && textes.artefactsCompte.sur(total)}
           </span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="label">Nb de runes</span>
+          <span className="label">{k.nbRunes}</span>
           <NumberField
             value={limit}
             min={1}
             max={total || 1}
             step={10}
             width="w-14"
-            ariaLabel="Nombre de runes"
+            ariaLabel={k.nombreRunes}
             onChange={(v) => setLimit(Math.max(1, v ?? 1))}
           />
-          <Bouton onClick={() => setLimit(total || 1)} taille="sm" libelle="Tout" />
+          <Bouton onClick={() => setLimit(total || 1)} taille="sm" libelle={k.tout} />
         </div>
       </div>
 
@@ -250,14 +251,14 @@ export default function RunesCurve({ runes }: Props) {
             la même verticale que le bouton de plein écran de CurveChart. Libellé
             du bouton et titre du panneau diffèrent volontairement. */}
         <div className="absolute right-2 top-2 z-20">
-          <HelpPopover title="À quoi sert ce graphe ?" ariaLabel="Comment lire ce graphe ?">
+          <HelpPopover title={k.aideTitre} ariaLabel={k.aideBouton}>
             {aide}
           </HelpPopover>
         </div>
 
         <CurveChart
           series={visible}
-          yLabel={metric === 'eff' ? 'Efficience (%)' : 'Score SW'}
+          yLabel={metric === 'eff' ? k.axeEfficience : k.axeScore}
           unit={metric === 'eff' ? '%' : ''}
         />
       </div>
@@ -268,9 +269,9 @@ export default function RunesCurve({ runes }: Props) {
           alourdissaient une zone qui ne sert qu'à identifier et masquer. Aucune
           courbe ne se retire ici (potentiels et « Moi » sont calculés). */}
       <aside className="lg:rounded-xl lg:border lg:border-border-soft lg:bg-panel lg:p-3">
-        <p className="mb-2 hidden label lg:block">Séries</p>
+        <p className="mb-2 hidden label lg:block">{k.series}</p>
         <CurveLegend
-          entrees={allSeries.map((s) => ({ name: s.name, color: s.color }))}
+          entrees={allSeries.map((s) => ({ name: s.name, cle: s.cle, color: s.color }))}
           masquees={hidden}
           onBascule={toggleHidden}
           className="lg:mt-0 lg:flex-col lg:items-stretch lg:gap-1"
