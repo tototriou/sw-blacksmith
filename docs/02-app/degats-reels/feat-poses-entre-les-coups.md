@@ -86,9 +86,12 @@ Ne sont pas retenus :
   King of the Ruins (Manannan), dont les dégâts continus « after each hit »
   touchent les autres ennemis, pas la cible (utilisateur, 2026-11-02) ;
 - Eagle Deception (Bayek ténèbres) et Eye of the Desert (Salah), dont la bête
-  frappe « a random enemy … when you attack on your turn » sans dire ni la
-  cible ni l'instant ; le relevé qui le tranche (S2 à deux coups contre une
-  cible seule, coup 2 / coup 1) est dans la
+  frappe « a random enemy … when you attack on your turn » : ses dégâts sont
+  comptés sur la cible configurée
+  ([feat-passifs-offensifs.md](feat-passifs-offensifs.md)), mais l'instant de
+  sa Réduction de DEF n'est pas dit (avant le coup 2, ou après le sort) ; le
+  relevé qui le tranche (S2 à deux coups contre une cible seule, coup 2 /
+  coup 1) est dans la
   [piste](../../05-feuille-de-route/pistes-degats-reels.md#poses-entre-les-coups--buff-posé-par-le-sort-eightfold-poses-au-hasard) ;
 - Severing Edge et Dimension Shatter (Übel et Wieb vent), « attacks the target
   2 to 3 more times to decrease its Defense » : ces coups du passif
@@ -140,7 +143,8 @@ Fatal Mortar Bullet) vient d'une séquence curée dont les autres groupes sont
 
 Un effet posé au **seul dernier coup** ne change rien au sort et n'est pas
 proposé (Domain Expansion de Megumi, Continuous Summoning Technique de
-Tetsuya, Crushing Swipe de Daisy et Christine : « the last hit decreases… »),
+Tetsuya : « the last hit decreases… » ; Crushing Swipe de Daisy et
+Christine, à deux coups : « the second hit decreases its Defense »),
 sauf s'il vaut pour l'attaque que le sort enchaîne (Shoryuken, plus bas). Le
 Gel de Grinding (Espresso Cookie eau) et de Spinning Tea Spoon (Rosemary eau),
 « attacks once more to freeze them », vient lui aussi au dernier coup. La
@@ -342,7 +346,18 @@ interrupteur d'attaque appelée
   par un coup n'y change rien.
 - **Spear of Thunder** (Asbolus ténèbres, 23415) lit l'écart de VIT, mais ce
   bonus n'est pas compté du tout (formule `1.4*{ATK}` seule) : sa baisse de VIT
-  n'est pas proposée.
+  n'est pas proposée. Spear of Penetration (Agrius feu, 23412) ne lit l'écart
+  de VIT qu'« in boss battles », hors du calcul, qui suppose une cible hors
+  boss ([piste](../../05-feuille-de-route/pistes-degats-reels-stats.md#combat-de-boss)).
+- **Attaque appelée qui ne lit rien** : Phoenix Kick (8113) et les autres
+  déclencheurs de Rolling Punch des Maîtres ivres ; Rolling Punch ignore la
+  DEF, rien de ce qu'ils posent ne change ses dégâts
+  ([feat-attaque-apres-un-sort.md](feat-attaque-apres-un-sort.md#ce-quil-faudra-fournir-pour-un-autre-cas)).
+- **Hors de la règle, qui ne vise que les effets néfastes posés** : le retrait
+  d'un effet bénéfique entre les coups (Massacre d'Eshir, 5664 : « If you
+  successfully remove a beneficial effect, the damage inflicted by the
+  remaining attacks will be increased by 20% » ; Start of Attacking de
+  Barbara, 13611, en « Calcul partiel »).
 - **Écart d'ATQ non compté** : Hellfire Trespass Slayer (Jin Kazama vent,
   22413) et Thunderous Killer Strike (Kai vent, 22913) baissent l'ATQ de la
   cible à chacun de leurs 5 coups et « Deals additional damage in proportion
@@ -362,6 +377,11 @@ interrupteur d'attaque appelée
 - **Coups non comptés** : Cleave (19910) et Exorcism Orb (20510), « the number
   of hits increases up to 6 times », se calculent sur 2 coups
   ([piste](../../05-feuille-de-route/pistes-degats-reels.md#plages-de-coups-à-relever-et-coups--au-hasard-)).
+  Oathbreakers (Aragorn ténèbres, 23815), Spirits of Wolf Warriors (Night
+  Fang ténèbres, 24315) et Explosive Bullet (Anne feu, 10132) se calculent
+  sur un coup alors que leur prose ajoute une phase ; leur baisse de VIT ou
+  leur Étourdissement n'a de toute façon aucun lecteur
+  ([piste](../../05-feuille-de-route/pistes-degats-reels.md#séquences-à-valeur-relevée)).
 - **Enchaînement vers un autre sort** : Energy Ball des Kung Fu Girls vers
   leur S2 ; Twist Kick (Xiao Lin 8216, Hong Hua 8217, Liu Mei 8219), dont la
   baisse de VIT et l'Étourdissement précéderaient les 4 coups de leur
@@ -375,7 +395,9 @@ interrupteur d'attaque appelée
   Sige ; 8021 à 8025) baisse la DEF, puis peut activer Sword of the Supreme
   Sky Wolf, qui « persists until the skill is used » : la compétence suivante
   se choisit au tour suivant, par un sélecteur de suite non codé
-  ([feat-attaque-apres-un-sort.md](feat-attaque-apres-un-sort.md)). Une pose
+  ([feat-attaque-apres-un-sort.md](feat-attaque-apres-un-sort.md#ce-quil-faudra-fournir-pour-un-autre-cas) ;
+  décision : [valeurs-de-jeu-curees.md](valeurs-de-jeu-curees.md), « Samouraïs
+  — tour supplémentaire »). Une pose
   ne vaut qu'entre les coups d'un même sort, et ces suites ne sont pas
   calculées.
 - **Répétition du sort par un passif** : Burning Whip de Hwa (6912) « strikes
