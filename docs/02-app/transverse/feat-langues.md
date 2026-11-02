@@ -55,6 +55,15 @@ un `Segmented` à trois choix.
   `NAV`, `RTA_SUBS`, `SIEGE_SUBS`, `ACCOUNT_SUBS`, `OUTILS_SUBS`, `RESOURCES`. Les choix du thème
   et de la mesure se construisent avec leurs textes (`choixTheme(t)`, `choixMesure(t)`).
 - **Le vocabulaire du jeu** a son propre lexique, `jeu` dans le dictionnaire : voir ci-dessous.
+- **Un long texte suivi s'écrit d'un trait, un par langue** (décision de l'utilisateur) : l'article
+  des Mécaniques vit dans [src/i18n/articles/](../../../src/i18n/articles/)
+  (`mecaniques.fr.tsx`, `mecaniques.en.tsx`), avec ses formules et ses termes mis en avant ; la
+  page n'en garde que la mise en page. Mêmes sections, même ordre, mêmes ancres d'une langue à
+  l'autre. Ces fichiers SONT le texte d'une langue : ils restent hors de `FICHIERS_TRADUITS`.
+- **Le journal des versions** a lui aussi une version par langue : [releases.ts](../../../src/data/releases.ts)
+  en français, [releases.en.ts](../../../src/data/releases.en.ts) en anglais, de même forme
+  entrée pour entrée ; `journal(langue)` rend le bon. Détail :
+  [nouveautes/](../nouveautes/README.md).
 
 ## Le vocabulaire du jeu
 
@@ -106,9 +115,10 @@ jeu dans la langue choisie**, jamais une traduction de l'app. Ils vivent dans
 Les fichiers traduits sont ceux de `FICHIERS_TRADUITS` (`eslint.config.js`) : la navigation
 (barre latérale, carte du compte, recherche, onglets du bas, panneau de navigation mobile), la
 barre du haut, la palette Ctrl K, l'écran partagé, la page et le popover des Paramètres, la date de
-l'export chargé. Dans [App.tsx](../../../src/App.tsx), les destinations de la navigation, le titre
-et le fil d'Ariane de la barre du haut, les actions de la palette et le sélecteur de page d'un
-volet vide.
+l'export chargé ; l'accueil, les Nouveautés (journal compris), Télécharger, les Mécaniques, le
+Bestiaire (filtres, grille, pagination), la fiche d'un monstre et la création d'un monstre. Dans
+[App.tsx](../../../src/App.tsx), les destinations de la navigation, le titre et le fil d'Ariane de
+la barre du haut, les actions de la palette et le sélecteur de page d'un volet vide.
 
 Le **vocabulaire du jeu** suit la langue choisie dans toute l'app : fiches de rune, d'artéfact et
 de relique, inventaires, Optimizer, recommandations de siège, prépa RTA, Bestiaire, fiche d'un
@@ -140,7 +150,12 @@ Un écran qu'on traduit entre dans `FICHIERS_TRADUITS` dans le même commit.
   sans sa valeur dans les deux langues.
 - [rendu/langue.test.tsx](../../../tests/rendu/langue.test.tsx) : le réglage, les Paramètres et
   l'app entière (`#/parametres`) en anglais, puis de retour en français ; la fiche d'une rune
-  dans le vocabulaire du jeu de chaque langue.
+  dans le vocabulaire du jeu de chaque langue ; l'accueil, les Nouveautés, Télécharger, les
+  Mécaniques, le Bestiaire et la fiche d'un monstre en anglais ; les deux articles des Mécaniques,
+  mêmes sections dans le même ordre.
+- [journal-langues.test.ts](../../../tests/journal-langues.test.ts) : le journal anglais a la
+  forme du français (versions, dates, tags, points mis en avant, changements), aucun texte vide ni
+  resté en français.
 - Le rendu serveur n'a pas de navigateur : « Auto » y donne le français, langue des tests
   existants. Un test qui vérifie l'anglais choisit la langue, puis revient à « Auto ».
 - ⚠️ **Un vrai navigateur, lui, a une langue** : tout Chromium piloté par les tests, le banc

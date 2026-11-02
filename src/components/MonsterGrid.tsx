@@ -34,7 +34,8 @@ export default function MonsterGrid({
   allMonsters,
   anime = true,
 }: Props) {
-  const jeu = useTraduction().jeu;
+  const t = useTraduction();
+  const jeu = t.jeu;
   if (monsters.length === 0) return null;
 
   const cartes = monsters.map((m) => (
@@ -53,7 +54,7 @@ export default function MonsterGrid({
         <ElementIcon element={elementDef.key} size={22} />
         <h2 className="font-display text-lg tracking-wide">{nomElement(jeu, elementDef.key)}</h2>
         <span className="font-mono text-ink-dim text-xs ml-auto">
-          {monsters.length} monstre{monsters.length > 1 ? 's' : ''}
+          {t.bestiaire.compte(monsters.length, null)}
         </span>
       </div>
       {/* ⚠️ Gabarit repris de la BOX du compte : colonnes de 104 px, écart

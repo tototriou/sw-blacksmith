@@ -26,6 +26,20 @@ const FICHIERS_TRADUITS = [
   'src/components/TopBar.tsx',
   'src/components/VoletEcran.tsx',
   'src/pages/SettingsPage.tsx',
+  // Lot 3 : les pages ouvertes à tous et le bestiaire. Les articles de
+  // src/i18n/articles/ n'y sont pas : ils SONT le texte d'une langue.
+  'src/components/CreateMonster.tsx',
+  'src/components/FilterBar.tsx',
+  'src/components/MonsterDetailDialog.tsx',
+  'src/components/MonsterGrid.tsx',
+  'src/components/SearchBar.tsx',
+  'src/components/account/Pager.tsx',
+  'src/pages/BestiaryPage.tsx',
+  'src/pages/ComingSoon.tsx',
+  'src/pages/HomePage.tsx',
+  'src/pages/MechanicsPage.tsx',
+  'src/pages/ReleasesPage.tsx',
+  'src/pages/TelechargerPage.tsx',
 ];
 
 export default tseslint.config(

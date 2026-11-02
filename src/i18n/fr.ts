@@ -247,6 +247,171 @@ export const fr = {
     rappel: 'réexporte ton compte',
     rappelSuite: ' pour des chiffres à jour.',
   },
+
+  accueil: {
+    accroche: 'La boîte à outils pour Summoners War.',
+    // La phrase coupée autour du lieu du calcul, mis en gras.
+    promesse: 'Runes, RTA, siège, analyse de compte. Importe ton export SWEX et tout est calculé ',
+    promesseNavigateur: 'dans ton navigateur',
+    promesseMachine: 'sur ta machine',
+    promesseFin: '.',
+    telechargerApplication: "Télécharger l'application",
+    existeEnApplication: 'Existe aussi en application pour Windows et Linux.',
+    tonEspace: 'Ton espace',
+    monstres: (n: number): string => (n > 1 ? 'monstres' : 'monstre'),
+    equipes: (n: number): string => (n > 1 ? 'équipes' : 'équipe'),
+    recos: (n: number): string => (n > 1 ? 'recos' : 'reco'),
+    prepaRta: 'Prépa RTA',
+    defenseSiege: 'Défense de siège',
+    offenseSiege: 'Offense de siège',
+    recommandations: 'Recommandations',
+    commentCaMarche: 'Comment ça marche',
+    etapeExporter: 'Exporte ton compte',
+    etapeExporterTexte: 'Génère un fichier .json de ton compte avec SW Exporter, en lançant le jeu une fois.',
+    etapeDeposer: 'Dépose le fichier',
+    etapeDeposerNavigateur: "Ici même, en haut de page. Rien n'est envoyé : tout se calcule dans ton navigateur.",
+    etapeDeposerMachine: "Ici même, en haut de page. Rien n'est envoyé : tout se calcule sur ta machine.",
+    etapePreparer: 'Prépare et optimise',
+    etapePreparerTexte: "Runes, prépa RTA, équipes de siège et analyse de compte se remplissent d'un seul coup.",
+    fonctionnalites: 'Fonctionnalités',
+    bientot: ' · bientôt',
+    // Les cartes de fonctionnalité : la rubrique, le titre, une phrase.
+    cartes: {
+      rta: { rubrique: 'RTA', titre: 'Préparation RTA', texte: "Classe ta box par set en glisser-déposer et lis l'ordre de tour recalculé selon les leads." },
+      ami: { rubrique: 'RTA', titre: "Prépa d'un ami", texte: "Ouvre la prépa qu'un ami t'a exportée — ou son export SWEX complet — et regarde son classement, ses vitesses et son ordre de tour." },
+      siege: { rubrique: 'Siège', titre: 'Défenses et offenses', texte: 'Compose tes équipes et vérifie tes speed tune sur les ticks 239 et 286.' },
+      recos: { rubrique: 'Partage', titre: 'Recommandations', texte: 'Décris tes decks, partage-les en JSON, et vois ce que ton compte peut jouer.' },
+      runes: { rubrique: 'Compte', titre: 'Analyse de runes', texte: "Résumé chiffré, efficience ou score SW, courbes, et ce que tes meules et gemmes en réserve permettent d'améliorer dès maintenant." },
+      artefacts: { rubrique: 'Compte', titre: "Analyse d'artéfacts", texte: "Le score du jeu et l'efficience de chaque pièce, la distribution de ton stock et le top 10 de chaque propriété." },
+      optimizer: { rubrique: 'Outils', titre: 'Optimiseur de runes', texte: 'Cherche, parmi les runes que tu possèdes déjà, la meilleure combinaison de 6 pour un monstre, un set et des minimums donnés.' },
+      speedTuning: { rubrique: 'Outils', titre: 'Speed tuning', texte: "Tick par tick, vois quel monstre remplit sa barre d'action en premier — ton équipe et celle d'en face, pour savoir qui joue avant qui." },
+      bestiaire: { rubrique: 'Données', titre: 'Bestiaire', texte: 'Recherche et filtres par élément et étoiles naturelles, stats de base à portée de main.' },
+      mecaniques: { rubrique: 'Doc', titre: 'Mécaniques', texte: "Vitesse de combat, barre d'action, équation des dégâts et facteur de défense." },
+      nouveautes: { rubrique: 'Suivi', titre: 'Nouveautés', texte: 'Ce qui change à chaque version : ajouts, corrections et calculs revus.' },
+      arene: { rubrique: 'Arène', titre: 'Arène classique', texte: "Préparation des équipes d'offense et de défense." },
+    },
+    application: {
+      rubrique: 'Application',
+      titre: 'Application de bureau',
+      texte: (app: string) => `${app} dans sa propre fenêtre, pour Windows et Linux, avec la mise à jour proposée à chaque version.`,
+    },
+    pretTitre: 'Prêt à préparer tes équipes ?',
+    pretTexte: 'Importe ton fichier SWEX et retrouve ta box, tes runes, ta prépa RTA et tes équipes de siège en quelques secondes.',
+    importerMonCompte: 'Importer mon compte',
+    voirNouveautes: 'Voir les nouveautés',
+    deposerIci: 'Dépose ton fichier .json ici',
+    cliquerPourParcourir: 'ou clique pour parcourir',
+    exportSwex: 'Export SWEX (.json)',
+    luDansLaPage: 'lu dans la page, jamais envoyé',
+  },
+
+  bestiaire: {
+    titre: 'Bestiaire',
+    totalBase: (n: string) => `${n} monstres`,
+    rechercher: 'Rechercher un monstre par nom…',
+    filtrer: 'Filtrer le bestiaire',
+    // « 12 monstres », « 12 monstres sur 1 403 ».
+    compte: (n: number, total: number | null) =>
+      `${n} monstre${n > 1 ? 's' : ''}${total === null ? '' : ` sur ${total}`}`,
+    aucun: 'Aucun monstre ne correspond à ces filtres.',
+    element: 'Élément',
+    etoiles: 'Étoiles',
+    formes: 'Formes',
+    jouablesSeulement: 'Jouables uniquement',
+    formesEveillees: 'Formes éveillées',
+    triInterne: 'Tri interne',
+    triEtoilesDesc: 'Étoiles ↓ puis nom',
+    triEtoilesAsc: 'Étoiles ↑ puis nom',
+    triNom: 'Nom (A→Z)',
+  },
+
+  // La fiche d'un monstre (bestiaire, box, recherche de la palette).
+  ficheMonstre: {
+    forme: 'Forme du monstre',
+    formeBase: 'Forme de base',
+    formeTransformee: 'Forme transformée',
+    competencesDe: (base: boolean) => `Compétences de la ${base ? 'forme de base' : 'forme transformée'}`,
+    chargement: 'Chargement des compétences…',
+    pourMaxer: (n: number) => `${n} amélioration(s) pour maxer ses compétences.`,
+    creeALaMain: "Ce monstre a été créé à la main : il n'a pas de fiche de compétences.",
+    indisponible: 'Le détail des compétences de ce monstre n’est pas disponible.',
+    passif: 'Passif',
+    zone: 'Zone',
+    coups: (n: number) => `×${n} coups`,
+    rechargement: (tours: number) => `Rechargement : ${tours} tours`,
+    rechargementReduit: (debut: number, fin: number) =>
+      `Rechargement : ${debut} tours, réduit à ${fin} en montant la compétence`,
+    tours: 'tours',
+    ameliorations: (n: number) => `${n} amélioration(s)`,
+  },
+
+  // Créer un monstre absent des données (RTA, siège).
+  creerMonstre: {
+    nom: 'Nom du monstre',
+    vitesseBase: 'Vitesse de base',
+    typeLead: 'Type de lead (optionnel)',
+    leadAucun: 'Lead : aucun',
+    lead: (stat: string) => `Lead ${stat}`,
+    valeurLead: 'Valeur du lead en %',
+    porteeLead: 'Portée du lead',
+    toutesCibles: 'Toutes cibles',
+    memeElement: 'Même élément',
+    creer: 'Créer',
+    mesMonstres: 'Mes monstres perso',
+    supprimer: (nom: string) => `Supprimer ${nom}`,
+    bouton: 'Créer un monstre',
+    boutonAide: "Créer un monstre qui n'existe pas dans les données chargées",
+    boutonCourt: 'Monstre',
+    titre: 'Nouveau monstre',
+    confirmerTitre: (nom: string) => `Supprimer ${nom} ?`,
+    confirmerMessage:
+      "Ce monstre a été créé à la main : il n'existe pas dans les données du jeu et devra être ressaisi en entier. Les équipes qui l'utilisaient perdent leur emplacement.",
+    confirmerAction: 'Supprimer',
+  },
+
+  // La pagination des listes (bestiaire, runes, artéfacts).
+  pagination: {
+    precedente: 'Page précédente',
+    allerA: 'Aller à la page',
+    suivante: 'Page suivante',
+  },
+
+  bientot: {
+    titre: 'Bientôt disponible',
+    texte: 'Cet outil est en cours de construction.',
+  },
+
+  telecharger: {
+    titre: 'Télécharger',
+    intro: (app: string) =>
+      `${app} existe en application de bureau pour Windows et Linux : la même boîte à outils, dans sa propre fenêtre.`,
+    atouts: [
+      { titre: 'Sa propre fenêtre', texte: "Hors du navigateur, à la taille que tu lui donnes, lancée comme n'importe quel logiciel." },
+      { titre: 'La mise à jour proposée', texte: "À chaque nouvelle version, l'application te propose de se mettre à jour. C'est toi qui décides quand." },
+      { titre: '100 % local', texte: "Comme le site : rien n'est envoyé, tout reste sur ta machine." },
+    ],
+    windows: 'Télécharger pour Windows',
+    linux: 'Télécharger pour Linux',
+    // ⚠️ Les libellés de Windows, dans la langue de Windows : celle de l'interface
+    // est la meilleure approximation.
+    avertissementWindows:
+      'Windows peut afficher « Windows a protégé votre ordinateur » : clique sur « Informations complémentaires », puis sur « Exécuter quand même ».',
+    auTelephone: 'À installer depuis un ordinateur Windows ou Linux.',
+    versionProposee: (version: string) => `Version proposée : ${version}`,
+    toutesLesVersions: 'Toutes les versions sur GitHub',
+  },
+
+  nouveautes: {
+    titre: 'Nouveautés',
+    intro: (app: string) => `Ce qui a changé à chaque version de ${app}. La version en cours est rappelée en bas de chaque page.`,
+    voirSurGithub: 'Voir les releases sur GitHub',
+    enPreparation: 'En préparation',
+    versionActuelle: 'Version actuelle',
+    pasPubliee: 'Pas encore publiée',
+    releaseSurGithub: (version: string) => `Release v${version} sur GitHub`,
+    lienGithub: 'GitHub ↗',
+    sortes: { feat: 'Nouveau', fix: 'Correction', docs: 'Doc' },
+  },
 };
 
 export type Dictionnaire = typeof fr;

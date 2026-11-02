@@ -10,11 +10,14 @@
 // La version affichée dans le pied de page vient, elle, de `package.json`
 // (`__APP_VERSION__`, injecté par Vite) : les deux doivent rester alignées.
 
+import type { Langue } from '../i18n/langue';
+import { RELEASES_EN } from './releases.en';
+
 export type ChangeKind = 'feat' | 'fix' | 'docs';
 
 export interface ReleaseChange {
   kind: ChangeKind;
-  scope: string; // « Siège », « Mon compte »… en français, comme l'interface
+  scope: string; // « Siège », « Mon compte »… dans la langue du journal, comme l'interface
   text: string; // ce que ça change POUR LE JOUEUR, pas le détail technique
 }
 
@@ -36,23 +39,30 @@ export interface Release {
   tag?: boolean;
 }
 
-// Ce qu'on affiche à la place du numéro tant qu'il n'est pas tranché.
-export const VERSION_EN_PREPARATION = 'En préparation';
-
-// Libellé d'une version pour l'interface : « v1.4.0 », ou « En préparation ».
+// Libellé d'une version pour l'interface : « v1.4.0 », ou, tant que le numéro
+// n'est pas tranché, `enPreparation` (« En préparation », du dictionnaire).
 // ⚠️ Le « v » est porté ICI et non par l'appelant : préfixé en dur, il donnait
 // « vEn préparation ».
-export function libelleVersion(version: string | null): string {
-  return version === null ? VERSION_EN_PREPARATION : `v${version}`;
+export function libelleVersion(version: string | null, enPreparation: string): string {
+  return version === null ? enPreparation : `v${version}`;
 }
 
-export const CHANGE_META: Record<ChangeKind, { label: string; color: string }> = {
-  feat: { label: 'Nouveau', color: 'text-good' },
-  fix: { label: 'Correction', color: 'text-warn' },
-  docs: { label: 'Doc', color: 'text-ink-dim' },
+// La couleur de chaque sorte de changement ; son nom vient du dictionnaire
+// (`nouveautes.sortes`).
+export const CHANGE_META: Record<ChangeKind, { color: string }> = {
+  feat: { color: 'text-good' },
+  fix: { color: 'text-warn' },
+  docs: { color: 'text-ink-dim' },
 };
 
-// La plus RÉCENTE en premier — c'est l'ordre d'affichage.
+// Le journal dans la langue de l'interface. ⚠️ **Un journal par langue**, de
+// même forme : une version, une ligne ajoutée ici s'ajoute aussi dans
+// releases.en.ts, au même rang (test : `testJournalAligne`).
+export function journal(langue: Langue): Release[] {
+  return langue === 'en' ? RELEASES_EN : RELEASES;
+}
+
+// Le journal en FRANÇAIS, la plus RÉCENTE en premier — c'est l'ordre d'affichage.
 //
 // ⚠️ **Style : une phrase courte, lisible par un joueur.** Ce qui change POUR
 // LUI, jamais comment c'est fait. Pas de nom de fonction, pas de formule, pas de
@@ -67,8 +77,10 @@ export const RELEASES: Release[] = [
     changes: [
       { kind: 'feat', scope: 'Paramètres', text: 'Nouveau réglage « Langue » : Auto, Français ou English.' },
       { kind: 'feat', scope: 'Navigation', text: 'Menus, barre du haut, recherche et Paramètres traduits en anglais.' },
+      { kind: 'feat', scope: 'Ressources', text: 'Accueil, Nouveautés, Bestiaire, Mécaniques et Télécharger en anglais.' },
       { kind: 'feat', scope: 'Jeu', text: 'Sets, stats, effets et artéfacts portent les noms du jeu, en français comme en anglais.' },
       { kind: 'fix', scope: 'Runes', text: '« Tx critiq. » et « Dgts critiq. » comme dans le jeu, et le bon effet du set Sceau.' },
+      { kind: 'fix', scope: 'Bestiaire', text: 'La fiche d’un monstre écrit son type en toutes lettres.' },
     ],
   },
   {

@@ -39,11 +39,12 @@ export default function FilterBar({
   avecTri = true,
   className = 'mt-5 flex flex-col gap-3.5',
 }: Props) {
-  const jeu = useTraduction().jeu;
+  const t = useTraduction();
+  const jeu = t.jeu;
   return (
     <div className={className}>
       <div className="flex flex-wrap items-center gap-2">
-        <span className="label mr-1.5">Élément</span>
+        <span className="label mr-1.5">{t.bestiaire.element}</span>
         {ELEMENTS.map((el) => (
           <Pastille
             key={el.key}
@@ -57,7 +58,7 @@ export default function FilterBar({
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        <span className="label mr-1.5">Étoiles</span>
+        <span className="label mr-1.5">{t.bestiaire.etoiles}</span>
         {STAR_OPTIONS.map((s) => (
           <Pastille
             key={s}
@@ -73,16 +74,16 @@ export default function FilterBar({
           un monstre non éveillé noie ce qu'on vient chercher. Les relâcher
           montre toute la base (`filtrerFormesBestiaire`). */}
       <div className="flex flex-wrap items-center gap-2">
-        <span className="label mr-1.5">Formes</span>
+        <span className="label mr-1.5">{t.bestiaire.formes}</span>
         <Pastille
           actif={filtresFormes.jouablesSeulement}
           onClick={() => basculerFiltreForme('jouablesSeulement')}
-          libelle="Jouables uniquement"
+          libelle={t.bestiaire.jouablesSeulement}
         />
         <Pastille
           actif={filtresFormes.eveilleesSeulement}
           onClick={() => basculerFiltreForme('eveilleesSeulement')}
-          libelle="Formes éveillées"
+          libelle={t.bestiaire.formesEveillees}
         />
       </div>
 
@@ -94,9 +95,10 @@ export default function FilterBar({
 // Le tri, avec son intitulé. Posé dans la barre au doigt, sur la ligne de la
 // pagination à la souris.
 export function TriInterne({ sortMode, setSortMode }: Pick<Props, 'sortMode' | 'setSortMode'>) {
+  const t = useTraduction().bestiaire;
   return (
     <label className="flex items-center gap-2.5">
-      <span className="label">Tri interne</span>
+      <span className="label">{t.triInterne}</span>
       <Selecteur
         taille="md"
         pleineLargeur={false}
@@ -105,9 +107,9 @@ export function TriInterne({ sortMode, setSortMode }: Pick<Props, 'sortMode' | '
         // 32 px à la souris, comme le tri de la Liste des runes.
         className="lg:h-8 lg:py-0 lg:text-xs"
       >
-        <option value="stars_desc">Étoiles ↓ puis nom</option>
-        <option value="stars_asc">Étoiles ↑ puis nom</option>
-        <option value="name_asc">Nom (A→Z)</option>
+        <option value="stars_desc">{t.triEtoilesDesc}</option>
+        <option value="stars_asc">{t.triEtoilesAsc}</option>
+        <option value="name_asc">{t.triNom}</option>
       </Selecteur>
     </label>
   );
