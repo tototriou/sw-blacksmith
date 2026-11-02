@@ -9,8 +9,8 @@ Le cœur de l'outil, dans `simulerOrdre` (speedTune.ts), **testé**
 
 - Simulation tick par tick : chaque tick, tout le monde gagne son ATB ; si au
   moins un a atteint 100, **un seul** prend le tour — barre la plus haute,
-  départagée par la vitesse de combat puis par **l'ordre de l'équipe** (le
-  premier de la liste passe).
+  départagée par la [priorité initiale](feat-deux-camps.md), puis par le
+  camp et l’ordre de placement lorsque cette priorité est égale.
 - ⚠️ **L'ORDRE DE L'ÉQUIPE EST UNE DONNÉE DU CALCUL, pas une présentation**, et
   il **se modifie** : deux flèches sur chaque card, monter / descendre
   (`deplacerDansCamp`, [speedTuneLignes.ts](src/lib/speedTuneLignes.ts)). C'est

@@ -75,6 +75,18 @@ par tick**, qui restent la porte de sortie manuelle.
   > (`pourcentBarre`).
 - Une valeur déjà posée n'est **jamais** réécrite par une relecture (`kitLu`).
 
+### Valeur de barre corrigée pour Belladeon
+
+Le S3 « Mobilize » de **Belladeon 2A** remplit **30 % de barre au niveau 1**
+et soigne **35 % des PV**. La fiche SWARFARM donne aussi 35 dans l'effet de
+barre : `ATB_NIVEAU_1_CONNUS` corrige cet effet à 30, par identifiant de
+compétence (2064), avant les skill-ups. Le kit simple et l'ordre des sorts
+emploient la même correction, sans modifier le soin.
+
+Avec le skill-up « Attack Bar Recovery +10% », le boost atteint **33 %**.
+Belladeon non 2A conserve **30 %**, ses améliorations de soin ne changeant pas
+le remplissage de barre.
+
 ### Ce qu'un sort fait, CIBLE par cible
 
 ⚠️ **La cible compte autant que la valeur.** *Breeze* (Kroa) remplit la barre
@@ -202,6 +214,12 @@ L'outil les **lit et les applique** : [speedTunePassif.ts](src/lib/speedTunePass
   équipe arrivée du siège afficherait une vitesse ici et une autre là-bas. C'est une **estimation**, pas
   une vérité : elle suppose ces buffs posés au moment où le passif compte, et un
   chiffre **saisi n'est jamais écrasé**.
+
+Le gain de Chilling reste exclu de la [priorité initiale de départage](feat-deux-camps.md),
+y compris quand il remplit sa barre dès le premier tick. Le compte de buffs
+reste une estimation fixe pour la simulation : l'ajout, l'expiration ou le
+retrait des buffs en cours de combat, notamment par Tiana, ne le mettent pas
+à jour automatiquement.
 
 #### Le passif sur la card, et l'adversaire de référence
 

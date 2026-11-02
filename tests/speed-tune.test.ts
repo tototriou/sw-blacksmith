@@ -128,7 +128,7 @@ export default function testSpeedTune() {
   {
     // ⚠️ **LE cas qui distingue la règle** : barres ÉGALES, vitesses
     // DIFFÉRENTES. La condition est l'égalité des BARRES, pas des vitesses —
-    // ton monstre passe donc même s'il est plus lent.
+    // la vitesse initiale reste prioritaire sur le camp.
     //
     // Montage : l'adverse à 150 gagne 10,5 %/tick et atteint 105 au tick 10 ;
     // l'allié à 100 en gagne 7, soit 70 au tick 10, plus 35 posés à la main —
@@ -140,7 +140,7 @@ export default function testSpeedTune() {
         { id: 'moi', combat: 100, camp: 'allie', atbMod: { 10: 35 } },
       ])
     );
-    egal(pt[0].id, 'moi', 'à barre égale, ton monstre passe même 50 points plus lent');
+    egal(pt[0].id, 'adverse', 'à barre égale, la vitesse initiale passe avant le camp');
     egal(pt[0].tick, 10, 'et il joue bien au tick où les deux barres se rejoignent');
   }
   {
@@ -161,6 +161,21 @@ export default function testSpeedTune() {
     // trancher.
     const pt = premiersTours(simuler([camp(150), camp(151, 'ennemi')]));
     egal(pt[0].id, '151-ennemi', 'sans égalité de barre, le plus rapide passe');
+  }
+
+  // Relevé Chilling / Rosemary : mêmes barres à 405, priorité initiale 365/405.
+  // Changer le camp ou le placement ne rend pas le gain après buffs initial.
+  {
+    for (const campChilling of ['allie', 'ennemi'] as const) {
+      const chilling: TuneMonstre = { id: 'chilling', combat: 405, gainApresBuffs: 40, camp: campChilling };
+      const rosemary: TuneMonstre = { id: 'rosemary', combat: 405, camp: campChilling === 'allie' ? 'ennemi' : 'allie' };
+      for (const plateau of [[chilling, rosemary], [rosemary, chilling]]) {
+        egal(premiersTours(simuler(plateau))[0].id, 'rosemary',
+          'à barre égale, Rosemary garde sa priorité initiale devant Chilling, quel que soit son camp');
+      }
+      egal(premiersTours(simuler([{ ...chilling, combat: 406 }, rosemary]))[0].id, 'chilling',
+        'la barre plus haute de Chilling passe avant la priorité initiale');
+    }
   }
 
   // Boost de barre d'attaque : +30 % au tick 3 → agit plus tôt (tick 10 vs 15).
@@ -1892,6 +1907,33 @@ export function testSpeedTuneKit() {
     const fiche = (id: number) =>
       JSON.parse(readFileSync(`public/data/skills/${id}.json`, 'utf8')) as DetailMonstre;
     const sortNomme = (id: number, nom: string) => sortsVitesse(fiche(id)).find((s) => s.nom === nom);
+
+    // La vraie fiche 2A confond 35 % de soin et 30 % de barre. La correction
+    // doit tenir avec et sans skill-ups, sans modifier les données de soin.
+    const belladeon = fiche(11034);
+    const original = JSON.stringify(belladeon);
+    const sansSkillUp = {
+      ...belladeon,
+      competences: belladeon.competences.map((c) => ({ ...c, ameliorations: [] })),
+    };
+    const mobilize = sortsVitesse(sansSkillUp).find((s) => s.slot === 3)!;
+    egal(mobilize.effet.atbEquipe, 30, 'Belladeon 2A sans skill-up : 30 % ATB, pas les 35 % du soin');
+    egal(kitVitesse(sansSkillUp).atb, 30, 'Belladeon 2A : le kit simple retient aussi 30 % sans skill-up');
+    egal(kitVitesse(belladeon).atbNiveau1, 30, 'Belladeon 2A : la base reste 30 %');
+    egal(kitVitesse(belladeon).atb, 33, 'Belladeon 2A maxé : 30 × 1,10 = 33 %');
+    egal(kitVitesse(belladeon).atbSkillUp, 3, 'Belladeon 2A : le skill-up ajoute 3 points de barre');
+    egal(sortNomme(11034, 'Mobilize')?.effet.atbEquipe, 33, 'Belladeon 2A : le sort maxé remplit aussi 33 %');
+    egal(kitVitesse(fiche(11014)).atb, 30, 'Belladeon non 2A : le soin ne change pas les 30 % ATB');
+    egal(belladeon.competences.find((c) => c.slot === 3)?.effets.find((e) => e.nom === 'Heal')?.quantite, 35,
+      'Belladeon 2A : les 35 % de soin restent intacts');
+    egal(JSON.stringify(belladeon), original, 'la lecture ne modifie pas la fiche brute');
+    const toursBelladeon = premiersTours(simuler([
+      { id: 'belladeon', combat: 358, camp: 'allie', sort: mobilize.effet },
+      { id: 'allie', combat: 190, camp: 'allie' },
+      { id: 'rina', combat: 285, camp: 'ennemi' },
+    ]));
+    egal(toursBelladeon.slice(0, 3).map((a) => a.id), ['belladeon', 'rina', 'allie'],
+      'avec le vrai Mobilize sans skill-up, Rina coupe : 35 % ferait passer l’allié au tick 5');
 
     const trade = sortNomme(16214, 'Trade');
     egal(trade?.effet.atbEquipe, 23, 'Trade (Conrad) remplit la barre de TOUTE l’équipe, 20 × 1,15 = 23 %');
@@ -3678,7 +3720,67 @@ export function testSpeedTuneModele() {
   const vide: DonneesKit = { kits: new Map(), sorts: new Map(), passifs: new Map() };
   const leads: Leads = { allie: { amount: 28, area: 'General', element: null }, ennemi: null };
 
-  // `uid = camp:id` : le même monstre peut tenir les deux camps.
+  // Relevés en jeu : la priorité à barre égale précède Volonté/Bouclier.
+  // L'écran, l'analyse et sa seconde simulation doivent conserver ce critère.
+  {
+    const ficheChilling = JSON.parse(readFileSync('public/data/skills/20711.json', 'utf8')) as DetailMonstre;
+    const donnees: DonneesKit = {
+      ...vide,
+      passifs: new Map([[20711, passifsVitesse(ficheChilling)]]),
+    };
+    const chilling: Ligne = {
+      ...ligneVierge(monstre(20711, 'Chilling', 101), 'allie'),
+      runeSpeed: 225, swift: true, sets: ['swift', 'will'], cumulsPassif: 2,
+    };
+    const rosemary: Ligne = {
+      ...ligneVierge(monstre(27011, 'Rosemary', 116), 'ennemi'),
+      runeSpeed: 233, swift: true,
+    };
+    const leadsTest: Leads = {
+      allie: { amount: 24, area: 'General', element: null },
+      ennemi: { amount: 33, area: 'General', element: null },
+    };
+    const lignes = [chilling, rosemary];
+    const tune = tuneDe(lignes, leadsTest, donnees, {});
+    egal(tune.map((m) => m.combat), [405, 405], 'relevé : Chilling et Rosemary à 405');
+    egal(tune[0].gainApresBuffs, 40, 'Chilling : +40 pour la barre, exclus de sa priorité initiale');
+    egal(tune[1].gainApresBuffs, 0, 'Rosemary : aucune part de vitesse après buffs');
+    egal(premiersTours(simuler(tune))[0].id, rosemary.uid, 'l’écran donne le premier tour à Rosemary');
+    const analyse = analyseAutomatique(plateauDeLignes(lignes, leadsTest), 0, donnees);
+    egal(analyse.verdict.ok, false, 'l’analyse rejouée donne aussi la coupure par Rosemary');
+    egal(analyse.combats.get(chilling.uid), 405, 'le gain reste inclus dans le remplissage de barre');
+
+    const copie = analyseAutomatique(plateauDeLignes([chilling], leadsTest), 0, donnees);
+    egal(copie.verdict.ok, true, 'la référence copie aussi la priorité de Chilling : son attaque gagne l’égalité initiale');
+
+    const chillAllie = { ...chilling, runeSpeed: 245, cumulsPassif: 1 };
+    const chillAdverse = { ...chilling, uid: 'ennemi:20711', camp: 'ennemi' as const };
+    const leadsMiroir: Leads = { allie: leadsTest.allie, ennemi: leadsTest.allie };
+    const miroir = analyseAutomatique(plateauDeLignes([chillAllie, chillAdverse], leadsMiroir), 0, donnees);
+    egal(miroir.verdict.ok, true, 'le Chilling adverse garde aussi son gain après buffs : 385 +20 passe avant 365 +40');
+
+    const sansLead: Leads = { allie: null, ennemi: null };
+    const rina = { ...ligneVierge(monstre(15311, 'Rina', 99), 'ennemi'), runeSpeed: 96 };
+    for (const [swift, runeSpeed, premier] of [[true, 54, rina.uid], [false, 53, rina.uid], [false, 54, chilling.uid]] as const) {
+      const c = { ...chilling, swift, runeSpeed };
+      const plateau = tuneDe([c, rina], sansLead, donnees, {});
+      egal(premiersTours(simuler(plateau))[0].id, premier,
+        'relevé Rina : Swift +54 et sans Swift +53 perdent l’égalité ; sans Swift +54 dépasse Rina');
+      egal(analyseAutomatique(plateauDeLignes([c, rina], sansLead), 0, donnees).verdict.ok, premier === chilling.uid,
+        'la même ouverture est jugée à l’identique par l’analyse');
+    }
+
+    const ficheShumar = JSON.parse(readFileSync('public/data/skills/10615.json', 'utf8')) as DetailMonstre;
+    const donneesShumar = { ...vide, passifs: new Map([[10615, passifsVitesse(ficheShumar)]]) };
+    const shumar = { ...ligneVierge(monstre(10615, 'Shumar', 115), 'allie'), runeSpeed: 80 };
+    const rinaEgale = { ...rina, runeSpeed: 114 };
+    const plateauShumar = tuneDe([shumar, rinaEgale], sansLead, donneesShumar, {});
+    egal(plateauShumar.map((m) => m.combat), [228, 228], 'Shumar et Rina : 228 de vitesse');
+    egal(plateauShumar[0].gainApresBuffs, 0, 'le gain permanent de Shumar reste dans sa priorité initiale');
+    egal(premiersTours(simuler(plateauShumar))[0].id, shumar.uid, 'Shumar conserve la priorité d’attaque à vitesse initiale égale');
+  }
+
+  // uid = camp:id : le même monstre peut tenir les deux camps.
   {
     const m = monstre(1, 'Bella', 100);
     egal(ligneVierge(m, 'allie').uid, 'allie:1', "l'identifiant porte le camp");
