@@ -19,20 +19,20 @@ export interface RunesImposeesProps {
 }
 
 export default function RunesImposees({ selected, lockedRunes, setLockedRunes, bureau = false }: RunesImposeesProps) {
-  const jeu = useTraduction().jeu;
+  const textes = useTraduction();
+  const jeu = textes.jeu;
+  const v = textes.optimizer.imposees;
+  const c = textes.optimizer.criteres;
   return (
     <div>
       <div className="mb-2.5 flex items-center gap-1.5">
-        <p className="label" data-intitule-conserve>Conserver ces slots dans l'optimisation</p>
-        <HelpPopover title="Conserver ces slots dans l'optimisation">
-          Verrouille un emplacement sur la rune que le monstre porte déjà : la recherche gardera
-          <b className="text-ink"> exactement cette rune</b> et n'optimisera que les autres. Utile pour
-          conserver une rune que tu ne veux pas déruner. Les emplacements laissés libres sont optimisés
-          normalement.
+        <p className="label" data-intitule-conserve>{v.titre}</p>
+        <HelpPopover title={v.titre}>
+          {v.aide}<b className="text-ink">{v.aideGras}</b>{v.aideFin}
         </HelpPopover>
       </div>
       {!selected || selected.gear.runes.length === 0 ? (
-        <p className="text-micro text-ink-dim">Aucune rune équipée sur cet exemplaire — rien à conserver.</p>
+        <p className="text-micro text-ink-dim">{v.aucuneRune}</p>
       ) : (
         <div className={bureau ? 'grid grid-cols-2 gap-x-3 gap-y-1.5' : 'flex flex-wrap gap-1.5'}>
           {[1, 2, 3, 4, 5, 6].map((slot) => {
@@ -43,9 +43,9 @@ export default function RunesImposees({ selected, lockedRunes, setLockedRunes, b
                 <span
                   key={slot}
                   className={`rounded-full border border-border bg-panel2 px-2.5 py-1 text-micro text-ink-dimmer opacity-50${bureau ? ' flex items-center justify-center' : ''}`}
-                  title={`Aucune rune en emplacement ${slot}`}
+                  title={v.emplacementVide(slot)}
                 >
-                  Slot {slot} —
+                  {c.slot(slot)} —
                 </span>
               );
             }
@@ -63,12 +63,8 @@ export default function RunesImposees({ selected, lockedRunes, setLockedRunes, b
                   })
                 }
                 icone={<RuneIcon setKey={portee.set} size={13} filter={runeSetIconFilter(verrouille)} />}
-                libelle={`Slot ${slot} · ${choixEffetRune(portee.main.code, jeu)}`}
-                title={
-                  verrouille
-                    ? `Libérer l'emplacement ${slot}`
-                    : `Imposer cette rune en emplacement ${slot} (le pool de ce slot tombe à 1)`
-                }
+                libelle={`${c.slot(slot)} · ${choixEffetRune(portee.main.code, jeu)}`}
+                title={verrouille ? v.liberer(slot) : v.imposer(slot)}
               />
             );
           })}

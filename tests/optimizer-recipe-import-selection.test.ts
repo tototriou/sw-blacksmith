@@ -44,7 +44,7 @@ export default function testOptimizerRecipeImportSelection() {
   ok(debutDisponibilite !== -1, 'la disponibilité par espèce existe toujours');
   const zoneDisponibilite = source.slice(debutDisponibilite, source.indexOf('\n  }', debutDisponibilite));
   ok(zoneDisponibilite.includes('return exemplaireSuivantEspece(monster, speciesCandidatesBySource(')
-    && zoneDisponibilite.includes('lists.members, lists.activeListId)'),
+    && zoneDisponibilite.includes('lists.members, lists.activeListId, textes)'),
   'le picker passe par exemplaireSuivantEspece avec les candidats de l’espèce et les membres de la liste active');
 
   const debutImportRecipe = source.indexOf('function importRecipe');

@@ -16,9 +16,12 @@ import { mecaniquesEn } from '../../src/i18n/articles/mecaniques.en';
 import { mecaniquesFr } from '../../src/i18n/articles/mecaniques.fr';
 import { autreForme } from '../../src/lib/monsterForms';
 import type { Monster } from '../../src/types';
-import { egal, monstersJson, ok, titre } from '../outils';
+import { egal, exportSynthetique, monstersJson, ok, titre } from '../outils';
+import { parseAccountInventory } from '../../src/lib/importAccount';
+import { fr } from '../../src/i18n/fr';
 import { rendreApp } from './app.test';
 import { rendreCompte } from './compte.test';
+import { AVEC_MONSTRE, rendreOptimizer } from './optimizer.test';
 import { auTelephone, boutons, rendre, texteVisible } from './outils-rendu';
 
 const rien = () => {};
@@ -180,6 +183,29 @@ export function testRenduLangueCompte() {
 
   const top = enAnglais(() => texteVisible(rendreCompte('artefacts', 'resume')));
   ok(top.includes('Damage taken reduction') && top.includes('Other substats'), 'top par propriété : les familles en anglais');
+
+  // Les tris de la liste de runes viennent du dictionnaire, pas de la lib.
+  const runes = parseAccountInventory(exportSynthetique(), fr).runes;
+  const liste = enAnglais(() => texteVisible(rendreCompte('runes', 'liste', runes)));
+  ok(liste.includes('Upgrade level') && liste.includes('Substat total'), 'liste de runes : les tris en anglais');
+  ok(!liste.includes('Nv. d’amélioration'), 'liste de runes : plus de tri en français');
+}
+
+// L'Optimizer, l'écran des critères : au bureau, puis le panneau « Options » du téléphone.
+export function testRenduLangueOptimizer() {
+  titre('rendu · langue — l’Optimizer, l’écran des critères, en anglais');
+  const bureau = enAnglais(() => texteVisible(rendreOptimizer(AVEC_MONSTRE)));
+  for (const attendu of ['Active list', 'Searched rune set', 'Conditions', 'Base stats excluded', 'Search objective', 'Efficiency', 'Real damage', 'Effective HP', 'Speed', 'My monster’s state'])
+    ok(bureau.includes(attendu), `bureau : « ${attendu} »`);
+  for (const absent of ['Liste active', 'Set de runes recherché', 'Objectif de recherche', 'Stats de base exclues', 'État de mon monstre'])
+    ok(!bureau.includes(absent), `bureau : plus de « ${absent} »`);
+
+  const panneau = enAnglais(() => auTelephone(() => rendreOptimizer(AVEC_MONSTRE, true)));
+  const t = texteVisible(panneau);
+  for (const attendu of ['Search depth', 'Low', 'Medium', 'High', 'Extreme', 'Exclude runes already in use'])
+    ok(t.includes(attendu), `téléphone, panneau « Options » : « ${attendu} »`);
+  ok(boutons(panneau).some((b) => b.texte === 'Medium' && !!b.title), 'un préréglage garde son explication en anglais');
+  ok(!t.includes('Profondeur de recherche'), 'téléphone : plus de français dans les réglages avancés');
 }
 
 // L'article « Mécaniques » : un par langue, mêmes sections dans le même ordre.

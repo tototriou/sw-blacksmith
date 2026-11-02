@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import { DamageSetup, LEADER_SKILL_STATS, LEADER_SKILL_VALEURS, LeaderSkillStat, type SetAura } from '../../lib/damage';
 import { leadIconUrl, nomStatLead } from '../siege/LeadPill';
@@ -7,7 +7,7 @@ import { Bouton, BoutonIcone, Jeton, NumberField, Selecteur } from '../../ui';
 import type { RappelBuffDePassif } from '../../lib/buffsDePassif';
 import HelpPopover from '../HelpPopover';
 import EffetVignette from './EffetVignette';
-import { motifLeadAffiche } from '../../lib/equipesOptimizer';
+import { motifLeadAffiche, type MotifLeadOptimizer } from '../../lib/equipesOptimizer';
 import { ATK_BUFF_ICON, DEF_BUFF_ICON, SPD_BUFF_ICON } from '../../lib/damage';
 import {
   PLAFOND_AURAS_EXTERNES,
@@ -75,7 +75,7 @@ export default function EtatMonstre({
   setup: DamageSetup;
   maj: (patch: Partial<DamageSetup>) => void;
   equipe?: boolean;
-  motifLead?: string | null;
+  motifLead?: MotifLeadOptimizer | null;
   etroit: boolean;
   // Passifs du monstre choisi qui posent un buff standard (`rappelsBuffsDePassif`, buffsDePassif.ts) : un rappel, jamais un
   // réglage — le buff reste à allumer à la main dans la boîte ci-dessous.
@@ -88,6 +88,9 @@ export default function EtatMonstre({
   // surlignage appartiennent à l'écran, qui connaît les deux formats.
   onGuiderResPre: () => void;
 }) {
+  const textes = useTraduction();
+  const e = textes.optimizer.etat;
+  const motif = motifLeadAffiche(motifLead);
   return (
     <div className="flex flex-col gap-2">
       <TitreEtatMonstre />
@@ -119,24 +122,24 @@ export default function EtatMonstre({
       <div className="flex flex-wrap items-center gap-1.5 rounded-lg border border-border-soft bg-panel2 px-2 py-1.5 lg:w-20 lg:flex-col 2xl:w-auto 2xl:flex-row">
         <EffetVignette
           icone={ATK_BUFF_ICON}
-          libelle="Buff ATQ"
-          description="Augmente l’ATQ du monstre de 50 %."
+          libelle={e.buffs.atk}
+          description={e.descriptionsBuffs.atk}
           onClick={() => maj({ atkBuff: !setup.atkBuff })}
           actif={setup.atkBuff}
           etroit={etroit}
         />
         <EffetVignette
           icone={DEF_BUFF_ICON}
-          libelle="Buff DEF"
-          description="Augmente la DEF du monstre de 70 %."
+          libelle={e.buffs.def}
+          description={e.descriptionsBuffs.def}
           onClick={() => maj({ defBuff: !setup.defBuff })}
           actif={setup.defBuff}
           etroit={etroit}
         />
         <EffetVignette
           icone={SPD_BUFF_ICON}
-          libelle="Buff VIT"
-          description="Augmente la VIT du monstre de 30 %."
+          libelle={e.buffs.spd}
+          description={e.descriptionsBuffs.spd}
           onClick={() => maj({ spdBuff: !setup.spdBuff })}
           actif={setup.spdBuff}
           etroit={etroit}
@@ -156,7 +159,7 @@ export default function EtatMonstre({
           Ni phrase d'explication du lead d'équipe ni motif « contenu de combat
           non défini » : l'utilisateur ne veut jamais les voir (`motifLeadAffiche`). */}
       {equipe && <p className="h-20 overflow-y-auto text-xs text-ink-dim">
-        {motifLeadAffiche(motifLead) && <span className="block text-warn">{motifLeadAffiche(motifLead)}</span>}
+        {motif && <span className="block text-warn">{textes.optimizer.motifsLead[motif]}</span>}
       </p>}
       {/* ⚠️ **Rappel des buffs posés par un passif** :
           texte `xs` atténué sous la rangée des buffs ; le passif est nommé comme
@@ -184,21 +187,19 @@ export default function EtatMonstre({
 // paragraphe sur le combat (décision de l'utilisateur) ; le téléphone ne la
 // passe pas.
 export function TitreEtatMonstre({ bureau = false }: { bureau?: boolean }) {
+  const e = useTraduction().optimizer.etat;
+  const a = e.aide;
   return (
     <div className="flex items-center gap-1.5">
-      <p className="label">État de mon monstre</p>
-      <HelpPopover title="État de mon monstre">
-        Ce qui rend ton monstre plus fort, <b className="text-ink">quel que soit l&apos;adversaire</b> : buffs
-        reçus, leader skill de l&apos;équipe, compétences d&apos;invocateur{bureau ? '' : <>, sets d&apos;aura des autres
-        monstres</>}. Ces réglages changent ses statistiques, donc les{' '}
-        <b className="text-ink">dégâts supplémentaires</b> que lui apportent des artéfacts proportionnels
-        aux PV, à l&apos;ATQ, à la DEF ou à la VIT.
+      <p className="label">{e.titre}</p>
+      <HelpPopover title={e.titre}>
+        {a.debut}<b className="text-ink">{a.adversaire}</b>{a.reglages}{bureau ? '' : a.auras}{a.changent}
+        <b className="text-ink">{a.degatsSupplementaires}</b>{a.artefacts}
         {!bureau && (
           <>
             <br />
             <br />
-            Ce qui décrit <b className="text-ink">le combat</b> — le sort, la cible, le coup critique — vit dans
-            la fenêtre « Dégâts réels », qui s&apos;ouvre depuis l&apos;objectif de recherche.
+            {a.combatDebut}<b className="text-ink">{a.combat}</b>{a.combatFin}
           </>
         )}
       </HelpPopover>
@@ -212,6 +213,7 @@ export function TitreEtatMonstre({ bureau = false }: { bureau?: boolean }) {
 // elle portait sur la paire représentative de la recherche, que le joueur ne
 // connaît pas, et non sur ses artéfacts. Le calcul, lui, en tient compte.
 export function RappelsEtatMonstre({ rappelsBuffs }: { rappelsBuffs: RappelBuffDePassif[] }) {
+  const e = useTraduction().optimizer.etat;
   return (
     <>
       {rappelsBuffs.length > 0 && (
@@ -222,9 +224,7 @@ export function RappelsEtatMonstre({ rappelsBuffs }: { rappelsBuffs: RappelBuffD
                 icone={r.icone ? <img src={r.icone} alt="" className="h-4 w-4 rounded" loading="lazy" /> : undefined}
                 libelle={r.nom}
               />
-              <span>
-                pose {r.buffs} — « {r.condition} »
-              </span>
+              <span>{e.pose(r.buffs, r.condition)}</span>
             </p>
           ))}
         </div>
@@ -297,6 +297,8 @@ export function AurasExternesSaisie({
   // liraient deux fois la même phrase.
   annonce?: boolean;
 }) {
+  const textes = useTraduction();
+  const au = textes.optimizer.auras;
   const entrees = setup.setsAuraExternes ?? [];
   // Le set dont le champ du nombre est momentanément VIDE (affichage seul).
   const [ligneVide, setLigneVide] = useState<SetAura | null>(null);
@@ -310,8 +312,8 @@ export function AurasExternesSaisie({
   const raisonAjoutImpossible = ajoutPossible
     ? undefined
     : total >= PLAFOND_AURAS_EXTERNES
-      ? `${PLAFOND_AURAS_EXTERNES} sets au total : cinq autres monstres à trois sets`
-      : 'Les cinq sets d’aura ont déjà leur ligne';
+      ? au.plafond(PLAFOND_AURAS_EXTERNES)
+      : au.tousPresents;
 
   return (
     <div
@@ -322,20 +324,22 @@ export function AurasExternesSaisie({
       <div className="grid">
       <div className={`col-start-1 row-start-1 flex items-center justify-between gap-2 ${rappel ? 'invisible' : ''}`}>
         <div className="flex items-center gap-1.5">
-          <span className="text-xs text-ink-dim">Sets d&apos;aura des autres monstres</span>
-          <HelpPopover title="Sets d'aura des autres monstres">
-            Les sets <b className="text-ink">Fight</b>, <b className="text-ink">Determination</b>,{' '}
-            <b className="text-ink">Enhance</b>, <b className="text-ink">Accuracy</b> et{' '}
-            <b className="text-ink">Tolerance</b> portés par les <b className="text-ink">autres</b> monstres de
-            l&apos;équipe : {PLAFOND_AURAS_EXTERNES} au plus, cinq monstres à trois sets.
+          <span className="text-xs text-ink-dim">{au.titre}</span>
+          <HelpPopover title={au.titre}>
+            {au.aide.setsDebut}
+            {au.aide.noms.map((nom, i) => (
+              <Fragment key={nom}>
+                <b className="text-ink">{nom}</b>
+                {i < au.aide.noms.length - 2 ? ', ' : i === au.aide.noms.length - 2 ? au.aide.et : ''}
+              </Fragment>
+            ))}
+            {au.aide.portesPar}<b className="text-ink">{au.aide.autres}</b>{au.aide.equipe(PLAFOND_AURAS_EXTERNES)}
             <br />
             <br />
-            Les sets du monstre optimisé sont <b className="text-ink">comptés automatiquement</b> sur chaque
-            build, même s&apos;ils ne sont pas recherchés : ne les saisis pas ici.
+            {au.aide.optimiseDebut}<b className="text-ink">{au.aide.comptes}</b>{au.aide.optimiseFin}
             <br />
             <br />
-            Fight, Determination et Enhance ajoutent chacun 8 % de l&apos;ATQ, de la DEF ou des PV de base ;
-            Accuracy et Tolerance, 8 points de Précision ou de RES.
+            {au.aide.valeurs}
           </HelpPopover>
         </div>
         <span className="font-mono text-micro tabular-nums text-ink-dim">
@@ -353,7 +357,7 @@ export function AurasExternesSaisie({
             rappel ? 'animate-[apparition_200ms_var(--ease-out)]' : 'invisible'
           }`}
         >
-          Pense à vérifier les sets d&apos;aura externes.
+          {au.rappel}
         </p>
       </div>
       </div>
@@ -363,7 +367,7 @@ export function AurasExternesSaisie({
         taille="sm"
         pleineLargeur
         icone={<Plus size={14} />}
-        libelle="Ajouter un set d'aura"
+        libelle={au.ajouter}
         disabled={!ajoutPossible}
         title={raisonAjoutImpossible}
         onClick={() => ecrire(ajouterAura(entrees))}
@@ -372,7 +376,7 @@ export function AurasExternesSaisie({
       {entrees.length > 0 && (
         <div className="divide-y divide-border">
           {entrees.map((entree, index) => {
-            const libelle = libelleNombreAura(entree.set);
+            const libelle = libelleNombreAura(entree.set, textes);
             return (
               // ⚠️ Clé par POSITION et non par set : changer le set d'une
               // ligne la garde montée, et le menu garde le focus.
@@ -387,11 +391,11 @@ export function AurasExternesSaisie({
                     ecrire(changerSetAura(entrees, entree.set, e.target.value as SetAura));
                   }}
                   taille="sm"
-                  aria-label={`Set d'aura de la ligne ${index + 1}`}
+                  aria-label={au.ligne(index + 1)}
                 >
                   {setsDisponibles(entrees, entree.set).map((set) => (
                     <option key={set} value={set}>
-                      {nomSetAura(set)}
+                      {nomSetAura(set, textes.jeu)}
                     </option>
                   ))}
                 </Selecteur>
@@ -411,7 +415,7 @@ export function AurasExternesSaisie({
                   title={libelle}
                 />
                 <BoutonIcone
-                  libelle={`Retirer les sets ${nomSetAura(entree.set)}`}
+                  libelle={au.retirer(nomSetAura(entree.set, textes.jeu))}
                   icone={<Trash2 size={14} />}
                   ton="danger"
                   onClick={() => {
@@ -442,7 +446,9 @@ export function AurasExternesSaisie({
 // (portée/élément) que ce choix utilisateur n'a pas : traité comme portée
 // `'General'`, sans élément, pour obtenir l'icône DE BASE.
 export function LeaderSkillPicker({ setup, maj }: { setup: DamageSetup; maj: (patch: Partial<DamageSetup>) => void }) {
-  const jeu = useTraduction().jeu;
+  const textes = useTraduction();
+  const jeu = textes.jeu;
+  const l = textes.optimizer.etat.lead;
   const lead = setup.leaderSkill;
   const icone = lead ? leadIconUrl({ stat: lead.stat, amount: lead.pct, area: 'General', element: null }) : null;
   const valeurs = lead ? LEADER_SKILL_VALEURS[lead.stat] : [];
@@ -470,7 +476,7 @@ export function LeaderSkillPicker({ setup, maj }: { setup: DamageSetup; maj: (pa
       {/* « Lead » et non « Leader skill » : le libellé long mangeait la
           largeur d'une carte en colonne étroite, pour un mot que tout joueur
           abrège de toute façon. */}
-      <span className="text-xs text-ink-dim">Lead</span>
+      <span className="text-xs text-ink-dim">{l.titre}</span>
       {/* ⚠️ **La place de l'icône est TENUE, elle aussi.** Rendue sous
           condition, elle poussait le menu de type à droite dès qu'un lead
           était choisi — le même défaut que celui qu'on vient de corriger sur
@@ -492,9 +498,9 @@ export function LeaderSkillPicker({ setup, maj }: { setup: DamageSetup; maj: (pa
           maj({ leaderSkill: stat ? { stat, pct: LEADER_SKILL_VALEURS[stat][0] } : undefined });
         }}
         taille="sm"
-        aria-label="Type de leader skill"
+        aria-label={l.type}
       >
-        <option value="">Aucun</option>
+        <option value="">{l.aucun}</option>
         {LEADER_SKILL_STATS.map((stat) => (
           <option key={stat} value={stat}>
             {nomStatLead(jeu, stat)}
@@ -523,7 +529,7 @@ export function LeaderSkillPicker({ setup, maj }: { setup: DamageSetup; maj: (pa
           value={String(lead.pct)}
           onChange={(e) => maj({ leaderSkill: { stat: lead.stat, pct: Number(e.target.value) } })}
           taille="sm"
-          aria-label="Valeur du leader skill"
+          aria-label={l.valeur}
         >
           {valeurs.map((v) => (
             <option key={v} value={v}>

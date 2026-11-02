@@ -4,6 +4,7 @@ import { COIN_RACCORD, HAUT_FIXE, HAUT_FIXE_RACCORD, PANNEAU, SECTIONS, coinsDuP
 import { type PartieObjectif } from './ObjectifEtRechercherBureau';
 import { SetDeplieContext } from './setDeplie';
 import { configurationBureau, ongletOuvert, LARGEURS_BUREAU, RETRAIT_PANNEAU, type ColonneReglage } from '../../../../lib/optimizerColonnes';
+import { useTraduction } from '../../../../hooks/useLangue';
 
 // Bureau seulement : la largeur du conteneur décide des colonnes et du
 // groupe. Chaque colonne défile seule, ou les deux piles sous le seuil.
@@ -200,11 +201,6 @@ function useSetDeplie(autorise: boolean) {
 }
 
 
-const NOMS = {
-  criteres: { libelle: 'Critères', title: 'Critères de recherche' },
-  artefacts: { libelle: 'Artéfacts', title: 'Artéfacts et relique' },
-  complements: { libelle: 'Options', title: 'Aura, exclusion, avancés' },
-};
 
 // « Rechercher » reste à sa place dans le bloc, sans coller au bas de la pile
 // (décision de l'utilisateur). Le fond du panneau commence au bloc de
@@ -239,6 +235,9 @@ function PileDroite({ groupe, objectif, resultats }: {
 }
 
 export default function PageBureau(props: PageBureauProps) {
+  const o = useTraduction().optimizer;
+  // Le nom court de chaque onglet, et son nom complet en infobulle.
+  const noms = o.onglets;
   const racine = useRef<HTMLDivElement>(null);
   const { largeur, style } = useHauteurVisible(racine);
   const tableau = props.tableau ?? false;
@@ -299,8 +298,8 @@ export default function PageBureau(props: PageBureauProps) {
   );
   // La ligne de base des onglets s'arrête au rayon du coin haut droit du
   // panneau, qui la prolonge en arrondi (`HAUT_FIXE_RACCORD`, `COIN_RACCORD`).
-  const onglets = <Onglets aria-label="Réglages de recherche" valeur={actif ?? 'criteres'} className="pr-[var(--radius-xl)]"
-    options={disposition.groupe.map(cle => ({ cle, ...NOMS[cle] }))} onChange={onOnglet} />;
+  const onglets = <Onglets aria-label={o.reglagesRecherche} valeur={actif ?? 'criteres'} className="pr-[var(--radius-xl)]"
+    options={disposition.groupe.map(cle => ({ cle, ...noms[cle] }))} onChange={onOnglet} />;
   // Comme une colonne fixe, le groupe prend 326 px dans sa piste de 320 :
   // panneau 312 + écart 4 + barre 10, puis 10 px libres jusqu'à la piste
   // suivante. Son tabpanel doit offrir toute cette largeur au défilement.
@@ -309,8 +308,8 @@ export default function PageBureau(props: PageBureauProps) {
       style={disposition.deuxPiles ? undefined : { width: LARGEURS_BUREAU.reglage + 6 }}>
       <div className="flex-none" style={disposition.deuxPiles ? undefined : { width: LARGEURS_BUREAU.reglage - RETRAIT_PANNEAU }}>{onglets}</div>
       {disposition.deuxPiles
-        ? <div role="tabpanel" aria-label={NOMS[actif].title} className={`${PANNEAU} ${COIN_RACCORD}`}>{contenuPile(actif)}</div>
-        : <div role="tabpanel" aria-label={NOMS[actif].title} className="min-h-0 flex-1">
+        ? <div role="tabpanel" aria-label={noms[actif].title} className={`${PANNEAU} ${COIN_RACCORD}`}>{contenuPile(actif)}</div>
+        : <div role="tabpanel" aria-label={noms[actif].title} className="min-h-0 flex-1">
             <Colonne place={LARGEURS_BUREAU.reglage} colonne={actif} raccord surMesure={actif === 'criteres' ? setDeplie.surMesure : undefined}>{contenus[actif]}</Colonne>
           </div>}
     </div>
@@ -318,7 +317,7 @@ export default function PageBureau(props: PageBureauProps) {
   const pistes = disposition.deuxPiles ? [] : [...disposition.colonnes, ...(disposition.groupe.length ? ['groupe'] : [])];
   return (
     <div ref={racine} className="-mx-3 @container" style={style} data-configuration={largeur != null ? disposition.configuration : undefined} data-page-fenetre="">
-      <p className="sr-only" aria-live="polite">{props.rappelAuras ? "Pense à vérifier les sets d'aura externes." : ''}</p>
+      <p className="sr-only" aria-live="polite">{props.rappelAuras ? o.auras.rappel : ''}</p>
       <div className="grid h-full min-h-0 gap-4" style={{ gridTemplateColumns: `${LARGEURS_BUREAU.monstre}px ${pistes.map(() => `${LARGEURS_BUREAU.reglage}px `).join('')}minmax(0,1fr)` }}>
         <Colonne place={LARGEURS_BUREAU.monstre} zone="monstre"><div>{props.liste}</div><div data-zone="exemplaire">{props.exemplaire}</div></Colonne>
         {disposition.colonnes.map(cle => <Colonne key={cle} place={LARGEURS_BUREAU.reglage} colonne={cle} surMesure={cle === 'criteres' ? setDeplie.surMesure : undefined}>{contenus[cle]}</Colonne>)}

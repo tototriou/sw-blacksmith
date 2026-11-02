@@ -26,6 +26,7 @@
 // Skogul et les formes transformées écartées.
 
 import type { DetailMonstre } from './monsterSkills';
+import type { Dictionnaire } from '../i18n/fr';
 
 /** Un buff standard du jeu : ATQ, DEF, VIT (vignettes d'« État de mon monstre ») ou Taux Crit (sans vignette). */
 export type BuffDePassif = 'atk' | 'def' | 'spd' | 'cr';
@@ -95,13 +96,6 @@ export const BUFFS_POSES_PAR_PASSIF_CONNUS: Readonly<Record<number, BuffPoseParP
   // (Azazel, Kazuya Mishima et True Devil Kazuya, formes de boss non obtenables, n'y sont plus : `formesJouables` les écarte.)
 };
 
-/** Les libellés des vignettes d'« État de mon monstre » ; le Taux Crit n'en a pas. */
-export const LIBELLE_BUFF_DE_PASSIF: Readonly<Record<BuffDePassif, string>> = {
-  atk: 'Buff ATQ',
-  def: 'Buff DEF',
-  spd: 'Buff VIT',
-  cr: 'Buff Taux Crit',
-};
 
 /** Ce que la carte rend pour un passif de la table porté par le monstre choisi. */
 export interface RappelBuffDePassif {
@@ -123,7 +117,9 @@ function joindre(libelles: string[], dernier: string): string {
  * Les rappels du monstre dont `detail` est la fiche, dans l'ordre de ses
  * compétences ; `[]` sans fiche ou sans passif de la table. Fonction pure.
  */
-export function rappelsBuffsDePassif(detail: DetailMonstre | null): RappelBuffDePassif[] {
+export function rappelsBuffsDePassif(detail: DetailMonstre | null, t: Dictionnaire): RappelBuffDePassif[] {
+  // Les libellés des vignettes d'« État de mon monstre » ; le Taux Crit n'en a pas.
+  const e = t.optimizer.etat;
   if (!detail) return [];
   const rappels: RappelBuffDePassif[] = [];
   for (const c of detail.competences) {
@@ -134,7 +130,7 @@ export function rappelsBuffsDePassif(detail: DetailMonstre | null): RappelBuffDe
       skillCom2usId: c.com2usId,
       nom: c.nom.replace(/\s*\(Passive\)\s*$/i, ''),
       icone: c.icone,
-      buffs: joindre(entree.buffs.map((b) => LIBELLE_BUFF_DE_PASSIF[b]), entree.mode === 'unParmi' ? 'ou' : 'et'),
+      buffs: joindre(entree.buffs.map((b) => e.buffs[b]), entree.mode === 'unParmi' ? e.ou : e.et),
       condition: entree.condition,
     });
   }

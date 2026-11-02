@@ -2,9 +2,9 @@ import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 're
 import { Download, Search, Square, Upload } from 'lucide-react';
 import { Bouton } from '../../../../ui';
 import Segmented from '../../../../ui/Segmented';
-import { OBJECTIVE_LABELS } from '../../../../lib/runeBuildOptim';
 import ProgressionRecherche, { type ProgressionRechercheProps } from '../ProgressionRecherche';
-import { ResumeCombat, TitreObjectifRecherche, type ObjectifEtActionsProps } from '../ObjectifEtActions';
+import { ResumeCombat, TitreObjectifRecherche, useObjectifs, type ObjectifEtActionsProps } from '../ObjectifEtActions';
+import { useTraduction } from '../../../../hooks/useLangue';
 import { PANNEAU } from './panneau';
 
 export const LARGEUR_OBJECTIF_LARGE_MIN = 328;
@@ -29,6 +29,8 @@ export default function ObjectifEtRechercherBureau({
   cadre = true, partie = 'tout', estimation, messageImport, progression, objective, setObjective, setSetupOuvert, resumeCombat, handleSearch, selected, status,
   comboSets, exportRecipe, importFileRef, importRecipe, setStoppedManually, stop,
 }: ObjectifEtRechercherBureauProps) {
+  const a = useTraduction().optimizer.actions;
+  const objectifs = useObjectifs();
   const enCours = status === 'running';
   const [arretActif, setArretActif] = useState(false);
   useEffect(() => {
@@ -68,9 +70,9 @@ export default function ObjectifEtRechercherBureau({
         pleineLargeur
         onClick={handleSearch}
         disabled={!selected || enCours}
-        title={selected && !enCours && comboSets.length === 0 ? 'Choisis d\'abord un set de runes recherché' : undefined}
+        title={selected && !enCours && comboSets.length === 0 ? a.setDabord : undefined}
         icone={<Search size={16} />}
-        libelle="Rechercher"
+        libelle={a.rechercher}
         className={`col-start-1 row-start-1 ${enCours ? 'invisible' : ''} ${comboSets.length === 0 ? 'opacity-40 cursor-not-allowed' : ''}`}
         {...(enCours ? { 'aria-hidden': true, tabIndex: -1 } : {})}
       />
@@ -84,9 +86,9 @@ export default function ObjectifEtRechercherBureau({
           stop();
         }}
         disabled={!enCours || !arretActif}
-        title="Arrêter la recherche et garder ce qui a déjà été trouvé"
+        title={a.arreterAide}
         icone={<Square size={14} fill="currentColor" />}
-        libelle="Arrêter"
+        libelle={a.arreter}
         className={`col-start-1 row-start-1 ${enCours ? '' : 'invisible'}`}
         {...(enCours ? {} : { 'aria-hidden': true, tabIndex: -1 })}
       />
@@ -95,41 +97,41 @@ export default function ObjectifEtRechercherBureau({
 
   // La progression reste dans le bloc : sa hauteur ne peut faire monter
   // le bouton collé sous le pointeur. Arrêter occupe sa case exacte.
-  if (partie === 'barre') return <div role="group" aria-label="Rechercher" className="flex justify-end">{rechercher}</div>;
+  if (partie === 'barre') return <div role="group" aria-label={a.rechercher} className="flex justify-end">{rechercher}</div>;
   if (partie === 'progression') return <>{messageImport}<ProgressionRecherche status={status} {...progression} compacte /></>;
   const exporter = (
     <Bouton
       onClick={exportRecipe}
       disabled={!selected || comboSets.length === 0}
-      aria-label="Exporter les paramètres de recherche"
-      title="Télécharger les réglages de cette recherche en fichier .json (set, minimums, objectif…) — pour la partager ou la reproduire, jamais tes runes ni ton compte."
+      aria-label={a.exporterLong}
+      title={a.exporterAide}
       icone={<Upload size={14} />}
-      libelle="Exporter"
+      libelle={a.exporter}
     />
   );
   const importer = (
     <Bouton
       onClick={() => importFileRef.current?.click()}
-      aria-label="Importer les paramètres de recherche"
-      title="Reprendre les réglages d'un fichier .json exporté depuis l'Optimizer (le tien ou celui d'un autre joueur)."
+      aria-label={a.importerLong}
+      title={a.importerAide}
       icone={<Download size={14} />}
-      libelle="Importer"
+      libelle={a.importer}
     />
   );
 
 
   return (
-    <section aria-label="Objectif et Rechercher" className={`flex w-full flex-col gap-2 ${cadre ? PANNEAU : ''}`}>
+    <section aria-label={a.objectifEtRechercher} className={`flex w-full flex-col gap-2 ${cadre ? PANNEAU : ''}`}>
       {estimation}
       <div ref={place}>
         <TitreObjectifRecherche />
-        <Segmented options={OBJECTIVE_LABELS} value={objective} onChange={(o) => {
+        <Segmented options={objectifs} value={objective} onChange={(o) => {
           setObjective(o);
           if (o === 'degats_reels') setSetupOuvert(true);
         }} size="lg" colonnes={deuxColonnes ? 2 : undefined} dense={false} />
         <div aria-hidden className="pointer-events-none h-0 overflow-hidden">
           <div ref={copie} className="invisible w-max">
-            <Segmented options={OBJECTIVE_LABELS} value={null} onChange={() => {}} size="lg" dense={false} />
+            <Segmented options={objectifs} value={null} onChange={() => {}} size="lg" dense={false} />
           </div>
         </div>
         {objective === 'degats_reels' && <ResumeCombat resumeCombat={resumeCombat} setSetupOuvert={setSetupOuvert} />}

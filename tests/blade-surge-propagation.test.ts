@@ -369,13 +369,13 @@ export function testBladeSurgeResumeObjectif() {
   ok(!!memo, 'précondition : le mémo du résumé sous l’objectif');
   const corps = memo?.corps ?? [];
   egal(corps.slice(1, 4), [
-    "bouts.push(resolvedSkill ? `S${resolvedSkill.slot} ${resolvedSkill.nom}` : 'Aucun sort exploitable');",
+    'bouts.push(resolvedSkill ? `S${resolvedSkill.slot} ${resolvedSkill.nom}` : os.aucunSort);',
     'const cibleRetenue = resolvedSkill && resumeCibleDegatsRetenue(resolvedSkill, damageSetup);',
     'if (cibleRetenue) bouts.push(cibleRetenue);',
   ], 'le bout suit le sort, lu sur le sort RÉSOLU par la fonction contrôlée ci-dessus');
-  ok(/^bouts\.push\(cible \? `vs /.test(corps[5] ?? ''), '… et précède l’élément visé (« S1 Blade Surge · autres ennemis · vs … »)');
+  ok(/^bouts\.push\(cible \? os\.contre\(/.test(corps[5] ?? ''), '… et précède l’élément visé (« S1 Blade Surge · autres ennemis · vs … »)');
   ok(!/skillCom2usId|cibleDegatsParSort/.test(sansCommentaires(corps.join('\n'))), 'le résumé ne lit ni l’identifiant stocké, ni le champ brut');
-  egal(memo?.deps, '[resolvedSkill, damageSetup, critInterdit, jeu]', 'recalculé quand le réglage change, cran et langue compris');
+  egal(memo?.deps, '[resolvedSkill, damageSetup, critInterdit, jeu, langue, os]', 'recalculé quand le réglage change, cran et langue compris');
   ok(!sansCommentaires(texteEcran).includes('autres ennemis'), 'l’écran n’écrit pas le texte lui-même');
 }
 

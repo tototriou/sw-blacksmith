@@ -94,7 +94,7 @@ export default function RunesList({ runes, menuOuvert, onFermerMenu }: Props) {
   // la même chose »). Les deux entrées côte à côte classaient aussi par la
   // mesure qu'on ne voit pas sur les tuiles, pour un classement presque
   // identique. L'entrée porte le nom de la mesure active (« Score » ou
-  // « Efficience », les libellés de `RUNE_SORTS`).
+  // « Efficience », les libellés de `listeRunes.tris`).
   const autreMesure: RuneSortMode = metric === 'eff' ? 'score' : 'eff';
   const trisProposes = RUNE_SORTS.filter((s) => s.key !== autreMesure);
   // ⚠️ Un tri mémorisé qui n'existe plus (les clés ont changé avec les libellés
@@ -209,13 +209,13 @@ export default function RunesList({ runes, menuOuvert, onFermerMenu }: Props) {
               setSort(e.target.value as RuneSortMode);
               setPage(0);
             }}
-            title={trisProposes.find((s) => s.key === sort)?.hint}
+            title={l.tris[sort].aide}
             pleineLargeur={false}
             className="lg:h-8 lg:py-0 lg:text-xs"
           >
             {trisProposes.map((s) => (
-              <option key={s.key} value={s.key} title={s.hint}>
-                {s.label}
+              <option key={s.key} value={s.key} title={l.tris[s.key].aide}>
+                {l.tris[s.key].libelle}
               </option>
             ))}
           </Selecteur>

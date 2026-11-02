@@ -501,7 +501,7 @@ export function testBladeDancersEcranEtCli() {
   ok(carte.includes('const { defEnnemie: montreDefEnnemie, crit: montreCritProfil } = champsDuCombat(resolved);'),
     'fenêtre : le champ DEF suit `champsDuCombat`');
   const section = sansCommentaires(lireSource('src/components/outils/OptimizerSection.tsx'));
-  ok(/const champs = champsDuCombat\(resolvedSkill\);\s*if \(champs\.defEnnemie\) bouts\.push\(`DEF \$\{damageSetup\.enemyDef/.test(section),
+  ok(/const champs = champsDuCombat\(resolvedSkill\);\s*if \(champs\.defEnnemie\) bouts\.push\(`\$\{jeu\.stats\.def\} \$\{formatNombre\(damageSetup\.enemyDef/.test(section),
     'résumé sous l’objectif : la DEF suit le même prédicat');
 
   titre('Blade Dancers — le sélecteur de l’écran, sous la liste des sorts (DamageSetupCard.tsx)');

@@ -1,6 +1,7 @@
 import type { LeaderSkill, SiegeTeam } from '../types';
 import { completerCriteresImport, type CriteresPartielsOptimizer } from './criteresOptimizer';
 import { equipeApresFiltrageOptimizer, leadEffectifMembreOptimizer } from './equipesOptimizer';
+import { fr } from '../i18n/fr';
 import { exclusionSelectorKey, resolveExclusionEntry, type ExclusionSelector, type ExclusionSourceData } from './optimizerExclusion';
 import { contenuListeValide, enregistrerMemoireMembre, type ContenuListeOptimizer, type StockageOptimizer } from './optimizerMemberStorage';
 import { enregistrerIdentiteMembre } from './optimizerRattachement';
@@ -187,7 +188,7 @@ export function consommerImportOptimizer(
         const membre = acceptes.get(exclusionSelectorKey(selector))!;
         const monstre = resolveExclusionEntry(selector, data)!.monster;
         const effectif = leadEffectifMembreOptimizer(nouveau, listId, selector, monstre.element);
-        if (effectif.type === 'aucun') rapport.messages.push(`${equipe.libelle} — ${membre.libelle} : ${effectif.motif}`);
+        if (effectif.type === 'aucun') rapport.messages.push(`${equipe.libelle} — ${membre.libelle} : ${fr.optimizer.motifsLead[effectif.motif]}`);
       }
     }
   });

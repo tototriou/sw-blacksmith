@@ -6,6 +6,8 @@ import { Champ, Flottant, Jeton } from '../../ui';
 import Segmented from '../../ui/Segmented';
 import { useComboboxNav } from '../../hooks/useComboboxNav';
 import { useNameFilteredResults } from '../../hooks/useNameFilteredResults';
+import { useTraduction } from '../../hooks/useLangue';
+import type { Dictionnaire } from '../../i18n/fr';
 import {
   ExclusionCandidate,
   ExclusionSelector,
@@ -37,18 +39,17 @@ interface Props {
 // Même étiquette que le comptage « Défense N »/« Offense N » déjà utilisé
 // ailleurs (voir ownedBuilds.ts, SOURCE_LABEL) — recalculée ici plutôt que
 // partagée (voir l'en-tête de optimizerExclusion.ts sur ce choix).
-function sourceLabel(sel: ExclusionSelector, data: ExclusionSourceData): string {
-  if (sel.source === 'box') return 'Box';
-  if (sel.source === 'rta') return 'RTA';
+function sourceLabel(sel: ExclusionSelector, data: ExclusionSourceData, o: Dictionnaire['optimizer']): string {
+  if (sel.source === 'box' || sel.source === 'rta') return o.sources[sel.source];
   // ⚠️ `unowned` n'apparaît JAMAIS ici en pratique — ce picker ne propose
   // que des candidats `exclusionCandidatesFor` (box/RTA/siège), jamais un
   // sélecteur `unowned` (voir optimizerExclusion.ts) — branche purement
   // défensive pour l'exhaustivité du type.
-  if (sel.source === 'unowned') return 'Non possédé';
+  if (sel.source === 'unowned') return o.sources.unowned;
   const teams = sel.source === 'siege-defense' ? data.siegeDefenseTeams : data.siegeOffenseTeams;
   const idx = teams.findIndex((t) => t.id === sel.teamId);
-  const base = sel.source === 'siege-defense' ? 'Défenses siège' : 'Offenses siège';
-  return idx === -1 ? base : `${base} · équipe ${idx + 1}`;
+  const base = o.sources[sel.source];
+  return idx === -1 ? base : o.sourceEquipe(base, idx + 1);
 }
 
 // Recherche + sélection multiple de monstres dont les runes ACTUELLES
@@ -57,6 +58,8 @@ function sourceLabel(sel: ExclusionSelector, data: ExclusionSourceData): string 
 // voir optimizerExclusion.ts). Même grammaire de navigation clavier que
 // MonsterGearPicker (choix du monstre à optimiser).
 export default function RuneExclusionPicker({ data, excludeOwnUnitKey, excludeOwnCom2usId, selected, onChange, hauteurBornee = false }: Props) {
+  const o = useTraduction().optimizer;
+  const x = o.exclusion;
   const [activeSource, setActiveSource] = useState<ExclusionSource>('box');
   const [query, setQuery] = useState('');
   const idBase = useId();
@@ -92,7 +95,7 @@ export default function RuneExclusionPicker({ data, excludeOwnUnitKey, excludeOw
   return (
     <div>
       <Segmented
-        options={SOURCE_OPTIONS}
+        options={SOURCE_OPTIONS.map((s) => ({ key: s.key, label: o.sources[s.key] }))}
         value={activeSource}
         onChange={setActiveSource}
         className="mb-2"
@@ -104,7 +107,7 @@ export default function RuneExclusionPicker({ data, excludeOwnUnitKey, excludeOw
           {...nav.inputProps}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Rechercher un monstre à exclure…"
+          placeholder={x.placeholder}
           icone={<Search className="h-4 w-4" />}
         />
 
@@ -113,13 +116,13 @@ export default function RuneExclusionPicker({ data, excludeOwnUnitKey, excludeOw
         {nav.open && (
           <Flottant
             {...nav.listProps}
-            aria-label="Résultats de la recherche"
+            aria-label={o.recherche.resultats}
             rembourrage="aucun"
             className="max-h-[300px] overflow-y-auto"
           >
             {results.length === 0 ? (
               <div className="px-3 py-2 text-ink-dim text-[12.5px]">
-                {candidates.length === 0 ? 'Aucun monstre équipé de runes dans cette source.' : 'Aucun monstre trouvé.'}
+                {candidates.length === 0 ? x.aucunEquipe : o.recherche.aucunTrouve}
               </div>
             ) : (
               results.map((c, i) => {
@@ -142,7 +145,7 @@ export default function RuneExclusionPicker({ data, excludeOwnUnitKey, excludeOw
                   >
                     <ExclusionCandidateRow
                       candidate={c}
-                      suffixe={dejaChoisi && <span className="text-[11px] text-ink-dim flex-none">déjà exclu</span>}
+                      suffixe={dejaChoisi && <span className="text-[11px] text-ink-dim flex-none">{x.dejaExclu}</span>}
                     />
                   </div>
                 );
@@ -164,16 +167,16 @@ export default function RuneExclusionPicker({ data, excludeOwnUnitKey, excludeOw
                 key={key}
                 icone={<MonsterAvatar monster={resolved.monster} size={18} />}
                 libelle={resolved.monster.name}
-                detail={`· ${sourceLabel(sel, data)}`}
+                detail={`· ${sourceLabel(sel, data, o)}`}
                 onRetirer={() => remove(sel)}
-                libelleRetrait="Retirer cette exclusion"
+                libelleRetrait={x.retirer}
               />
             ) : (
               <Jeton
                 key={key}
-                libelle={<span className="italic text-ink-dim">exclusion introuvable ({sourceLabel(sel, data)})</span>}
+                libelle={<span className="italic text-ink-dim">{x.introuvable(sourceLabel(sel, data, o))}</span>}
                 onRetirer={() => remove(sel)}
-                libelleRetrait="Retirer cette exclusion"
+                libelleRetrait={x.retirer}
               />
             );
           })}

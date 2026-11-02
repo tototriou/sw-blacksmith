@@ -4,6 +4,7 @@ import RuneExclusionPicker from '../RuneExclusionPicker';
 import { type ExclusionSourceData, type ExclusionSelector } from '../../../lib/optimizerExclusion';
 import { type Monster, type GearSet } from '../../../types';
 import { type Dispatch, type SetStateAction } from 'react';
+import { useTraduction } from '../../../hooks/useLangue';
 
 export interface ExclusionMonstrePrecisProps {
   exclusionData: ExclusionSourceData;
@@ -17,6 +18,7 @@ export interface ExclusionMonstrePrecisProps {
 }
 
 export default function ExclusionMonstrePrecis({ exclusionData, selectedUnitKey, selected, excludedSelectors, setExcludedSelectors, bureau = false }: ExclusionMonstrePrecisProps) {
+  const c = useTraduction().optimizer.criteres;
   return (
     <div>
       <div className="mb-2.5 flex items-center gap-1.5">
@@ -31,7 +33,7 @@ export default function ExclusionMonstrePrecis({ exclusionData, selectedUnitKey,
               absolu. Léger recalage manuel, propre à cet usage précis. */}
           <GameIcon name="monster" size={13} className="-translate-x-[1.5px]" />
         </IconeInterdite>
-        <span className="text-[12.5px] font-semibold text-ink-dim">Exclure les runes d'un monstre</span>
+        <span className="text-[12.5px] font-semibold text-ink-dim">{c.exclureMonstre}</span>
       </div>
       <RuneExclusionPicker
         data={exclusionData}

@@ -3,7 +3,8 @@ import { ChevronDown, Pencil, Plus, Trash2 } from 'lucide-react';
 import { OptimizerList } from '../../lib/optimizerExclusion';
 import { Bouton, BoutonIcone, ZoneCliquable, ConfirmDialog, Flottant } from '../../ui';
 import type { ContenuListeOptimizer } from '../../lib/optimizerMemberStorage';
-import OptimizerCreateListDialog, { CONTENUS_LISTE_OPTIMIZER } from './OptimizerCreateListDialog';
+import OptimizerCreateListDialog from './OptimizerCreateListDialog';
+import { useTraduction } from '../../hooks/useLangue';
 
 interface Props {
   lists: OptimizerList[];
@@ -28,6 +29,14 @@ interface Props {
 // C au lieu de la repousser (voir docs/03-developpeur/interface/, « un clic ne
 // déplace jamais ce qu'on vient de cliquer »).
 export default function OptimizerListPicker({ lists, activeListId, memberCounts, listContents, onSelect, onCreate, onEdit, onDelete, action, titreSection = false }: Props) {
+  const textes = useTraduction();
+  const o = textes.optimizer;
+  const l = o.listes;
+  // « Nom - Contenu », ou « Sans contenu » pour une liste antérieure.
+  const nomEtContenu = (liste: OptimizerList) => {
+    const contenu = listContents.get(liste.id);
+    return `${liste.name} - ${contenu ? o.contenus[contenu] : l.sansContenu}`;
+  };
   const [open, setOpen] = useState(false);
   const [promptFor, setPromptFor] = useState<'create' | { renameId: string; name: string } | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
@@ -52,14 +61,14 @@ export default function OptimizerListPicker({ lists, activeListId, memberCounts,
       {/* Le menu s'ouvre sous la ligne sans repousser les membres. */}
       <div className={`relative grid items-end gap-2 ${action ? 'grid-cols-[minmax(0,1fr)_auto]' : 'grid-cols-1'}`}>
         <div className="min-w-0">
-          <p className={titreSection ? 'mb-1.5 text-[13.5px] font-bold text-ink' : 'label mb-1.5'}>Liste active</p>
+          <p className={titreSection ? 'mb-1.5 text-[13.5px] font-bold text-ink' : 'label mb-1.5'}>{l.active}</p>
           <Bouton
             pleineLargeur fond="plein" trait="plein"
             onClick={() => setOpen((v) => !v)}
             aria-expanded={open}
             className="[&>span]:w-full"
             libelle={<span className="flex items-center justify-between gap-2">
-              <span className="truncate">{active ? `${active.name} - ${listContents.has(active.id) ? CONTENUS_LISTE_OPTIMIZER[listContents.get(active.id)!] : 'Sans contenu'}` : 'Aucune liste — choisir ou créer'}</span>
+              <span className="truncate">{active ? nomEtContenu(active) : l.aucune}</span>
               <ChevronDown size={14} className={`flex-none text-ink-dim transition-transform ${open ? 'rotate-180' : ''}`} />
             </span>}
           />
@@ -69,42 +78,42 @@ export default function OptimizerListPicker({ lists, activeListId, memberCounts,
         {action && <div ref={actionRef} data-action-liste>{action}</div>}
 
       {open && (
-        <Flottant aria-label="Listes" rembourrage="aucun" className="flex max-h-[320px] flex-col">
+        <Flottant aria-label={l.menu} rembourrage="aucun" className="flex max-h-[320px] flex-col">
           {/* Seules les listes défilent : « Nouvelle liste… » reste au pied. */}
           <div className="min-h-0 flex-1 overflow-y-auto">
           {lists.length === 0 && (
-            <p className="px-3 py-2 text-[12px] text-ink-dim">Aucune liste — crée-en une pour commencer.</p>
+            <p className="px-3 py-2 text-[12px] text-ink-dim">{l.aucuneCreer}</p>
           )}
-          {lists.map((l) => (
+          {lists.map((liste) => (
             <div
-              key={l.id}
-              className={`flex items-center gap-2 px-3 py-2 hoverable:bg-accent-soft/60 ${l.id === activeListId ? 'bg-accent-soft' : ''}`}
+              key={liste.id}
+              className={`flex items-center gap-2 px-3 py-2 hoverable:bg-accent-soft/60 ${liste.id === activeListId ? 'bg-accent-soft' : ''}`}
             >
               <ZoneCliquable imbrique
                 onClick={() => {
-                  onSelect(l.id);
+                  onSelect(liste.id);
                   setOpen(false);
                 }}
                 className="flex min-w-0 flex-1 items-center justify-between gap-2 text-left"
               >
-                <span className="truncate text-[12.5px] font-medium text-ink">{l.name} - {listContents.has(l.id) ? CONTENUS_LISTE_OPTIMIZER[listContents.get(l.id)!] : 'Sans contenu'}</span>
+                <span className="truncate text-[12.5px] font-medium text-ink">{nomEtContenu(liste)}</span>
                 <span className="flex-none text-[10.5px] text-ink-dim">
-                  {memberCounts[l.id] ?? 0} monstre{(memberCounts[l.id] ?? 0) > 1 ? 's' : ''}
+                  {l.monstres(memberCounts[liste.id] ?? 0)}
                 </span>
               </ZoneCliquable>
               <BoutonIcone
-                libelle="Éditer la liste" icone={<Pencil size={13} />}
-                onClick={() => setPromptFor({ renameId: l.id, name: l.name })}
+                libelle={l.editer} icone={<Pencil size={13} />}
+                onClick={() => setPromptFor({ renameId: liste.id, name: liste.name })}
               />
               <BoutonIcone
-                libelle="Supprimer cette liste" icone={<Trash2 size={13} />} ton="danger"
-                onClick={() => setConfirmDeleteId(l.id)}
+                libelle={l.supprimer} icone={<Trash2 size={13} />} ton="danger"
+                onClick={() => setConfirmDeleteId(liste.id)}
               />
             </div>
           ))}
           </div>
           <div className="flex-none border-t border-border-soft">
-            <Bouton pleineLargeur fond="vide" ton="accent" icone={<Plus size={14} />} libelle="Nouvelle liste…"
+            <Bouton pleineLargeur fond="vide" ton="accent" icone={<Plus size={14} />} libelle={l.nouvelleMenu}
               onClick={() => setPromptFor('create')}
             />
           </div>
@@ -114,7 +123,7 @@ export default function OptimizerListPicker({ lists, activeListId, memberCounts,
       {/* Seulement pour une liste antérieure sans contenu : le contenu se
           règle dans « Éditer la liste », hors du flux, donc sans place à réserver. */}
       {active && !listContents.has(active.id) && <p className="mt-1 text-xs text-warn">
-        Sans contenu : aucun lead d’équipe appliqué.
+        {l.sansContenuAvis}
       </p>}
 
       {promptFor === 'create' && <OptimizerCreateListDialog
@@ -136,9 +145,9 @@ export default function OptimizerListPicker({ lists, activeListId, memberCounts,
 
       {deleteTarget && (
         <ConfirmDialog
-          titre={`Supprimer « ${deleteTarget.name} » ?`}
-          message="Ses monstres et ses éventuelles runes validées seront perdus. Les runes elles-mêmes ne sont pas touchées — seule cette liste de travail disparaît."
-          libelleAction="Supprimer"
+          titre={l.supprimerTitre(deleteTarget.name)}
+          message={l.supprimerMessage}
+          libelleAction={textes.commun.supprimer}
           destructif
           onConfirm={() => {
             onDelete(deleteTarget.id);

@@ -22,28 +22,18 @@ export type RuneSortMode =
   | 'eff'
   | 'slot_asc';
 
-export const RUNE_SORTS: { key: RuneSortMode; label: string; hint: string }[] = [
-  { key: 'grade', label: 'Grade', hint: 'Rareté, puis étoiles' },
-  {
-    key: 'sub_desc',
-    label: 'Propriété secondaire',
-    hint: 'La valeur de la 1ʳᵉ propriété cherchée, meule comprise',
-  },
-  {
-    key: 'sub_brut_desc',
-    label: 'Sous-propriété avant meule',
-    hint: 'La même, meule DÉDUITE : ce que la rune vaut d’origine',
-  },
-  { key: 'level_desc', label: 'Nv. d’amélioration', hint: 'Le +X' },
-  { key: 'obtenu', label: 'Obtenu', hint: 'Les plus récemment obtenues d’abord' },
-  {
-    key: 'subs_total',
-    label: 'Total des sous-prop.',
-    hint: 'Somme des quatre propriétés secondaires, meules comprises',
-  },
-  { key: 'score', label: 'Score', hint: 'Le score du jeu' },
-  { key: 'eff', label: 'Efficience', hint: 'Notre mesure (%)' },
-  { key: 'slot_asc', label: 'Slot', hint: 'Du 1 au 6' },
+// L'ordre de la liste ; libellés et aides, dans chaque langue, sous
+// `listeRunes.tris` du dictionnaire (src/i18n/).
+export const RUNE_SORTS: { key: RuneSortMode }[] = [
+  { key: 'grade' },
+  { key: 'sub_desc' },
+  { key: 'sub_brut_desc' },
+  { key: 'level_desc' },
+  { key: 'obtenu' },
+  { key: 'subs_total' },
+  { key: 'score' },
+  { key: 'eff' },
+  { key: 'slot_asc' },
 ];
 
 export const estTriConnu = (k: string): k is RuneSortMode =>

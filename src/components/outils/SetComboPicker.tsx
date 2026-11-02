@@ -58,7 +58,9 @@ const TWO_PIECE = CHOISISSABLES.filter((s) => !FOUR_PIECE_SETS.has(s.key));
 // recherche — le garder replié par défaut ajoutait un clic systématique
 // sans jamais rien cacher d'utile.
 export default function SetComboPicker({ sets, onChange, reserverJetons = false, coffre = false }: Props) {
-  const jeu = useTraduction().jeu;
+  const textes = useTraduction();
+  const jeu = textes.jeu;
+  const s = textes.optimizer.sets;
   const used = setsCost(sets);
   // Dans le coffre, les colonnes suivent la largeur du coffre
   // (`colonnesCoffre`) : la grille se resserre et s'allonge vers le bas. Sa
@@ -100,7 +102,7 @@ export default function SetComboPicker({ sets, onChange, reserverJetons = false,
               icone={<RuneIcon setKey={key} size={14} filter={runeSetIconFilter(false)} />}
               libelle={nomSet(jeu, key)}
               onRetirer={() => onChange(sets.filter((_, j) => j !== i))}
-              libelleRetrait={`Retirer ${nomSet(jeu, key)}`}
+              libelleRetrait={s.retirer(nomSet(jeu, key))}
             />
           );
         })}
@@ -113,19 +115,19 @@ export default function SetComboPicker({ sets, onChange, reserverJetons = false,
           <span aria-hidden className="invisible inline-flex">
             <Jeton
               icone={<RuneIcon setKey="violent" size={14} filter={runeSetIconFilter(false)} />}
-              libelle="Violent"
+              libelle={nomSet(jeu, 'violent')}
               onRetirer={() => {}}
-              libelleRetrait="Retirer"
+              libelleRetrait={textes.commun.retirer}
             />
           </span>
         )}
 
         {full && (
           <span className="rounded-full border border-border bg-panel px-2 py-1 text-micro font-semibold text-ink-dim opacity-40">
-            Plus de place (6 runes)
+            {s.plein}
           </span>
         )}
-        <span className="text-micro tabular-nums text-ink-dim">{used}/6 runes</span>
+        <span className="text-micro tabular-nums text-ink-dim">{s.utilisees(used)}</span>
       </div>
 
       {!full && (
@@ -162,8 +164,8 @@ export default function SetComboPicker({ sets, onChange, reserverJetons = false,
               grille s'allonge vers le bas. Les pistes ne rétrécissent
               jamais : des boutons de 32 px, des écarts de 4 px. */}
           {([
-            ['Set principal', FOUR_PIECE],
-            ['Set secondaire', TWO_PIECE],
+            [s.principal, FOUR_PIECE],
+            [s.secondaire, TWO_PIECE],
           ] as const).map(([groupLabel, group], i) => (
             // Dans le coffre, 4 px de part et d'autre du trait (`colonnesCoffre`
             // en tient compte) : la grille garde ses colonnes plus étroit.

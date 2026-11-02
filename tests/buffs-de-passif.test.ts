@@ -22,12 +22,13 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import {
   BUFFS_POSES_PAR_PASSIF_CONNUS,
-  LIBELLE_BUFF_DE_PASSIF,
   rappelsBuffsDePassif,
 } from '../src/lib/buffsDePassif';
 import { DetailMonstre } from '../src/lib/monsterSkills';
 import { formesJouables } from '../src/lib/monsterForms';
 import { egal, monstersJson, ok, titre } from './outils';
+import { fr } from '../src/i18n/fr';
+import { en } from '../src/i18n/en';
 
 const racine = resolve(new URL('..', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1'));
 const dossierSorts = resolve(racine, 'public/data/skills');
@@ -96,13 +97,13 @@ export function testBuffsDePassifTable() {
 export function testBuffsDePassifRappel() {
   titre('Buffs posés par un passif — le rappel paraît pour un passif de la table, jamais pour un autre');
 
-  egal(rappelsBuffsDePassif(null), [], 'sans fiche, aucun rappel');
+  egal(rappelsBuffsDePassif(null, fr), [], 'sans fiche, aucun rappel');
 
   let avec = 0;
   let sans = 0;
   for (const d of fiches()) {
     const porte = d.competences.filter((c) => c.com2usId != null && BUFFS_POSES_PAR_PASSIF_CONNUS[c.com2usId] != null).map((c) => c.com2usId);
-    const rendus = rappelsBuffsDePassif(d).map((r) => r.skillCom2usId);
+    const rendus = rappelsBuffsDePassif(d, fr).map((r) => r.skillCom2usId);
     if (porte.length > 0) avec++;
     else sans++;
     if (JSON.stringify(rendus) !== JSON.stringify(porte)) {
@@ -111,18 +112,19 @@ export function testBuffsDePassifRappel() {
   }
   ok(avec >= 21, `au moins 21 fiches portent un passif de la table (${avec})`);
   ok(sans > 1000, `les autres fiches (${sans}) n'ont aucun rappel`);
-  egal(rappelsBuffsDePassif(fiche(14412)), [], 'Zaiross (passif hors table) : aucun rappel');
+  egal(rappelsBuffsDePassif(fiche(14412), fr), [], 'Zaiross (passif hors table) : aucun rappel');
 
-  egal(rappelsBuffsDePassif(fiche(11031)), [{
+  egal(rappelsBuffsDePassif(fiche(11031), fr), [{
     skillCom2usId: 2061,
     nom: 'Counterattack',
     icone: fiche(11031).competences.find((c) => c.com2usId === 2061)!.icone,
     buffs: 'Buff ATQ',
     condition: 'when you attack on your turn',
   }], 'Icaru : nom du jeu sans « (Passive) », Buff ATQ, condition de la prose');
-  egal(rappelsBuffsDePassif(fiche(16312)).map((r) => r.buffs), ['Buff ATQ et Buff Taux Crit'], 'Antares : deux buffs, « et »');
-  egal(rappelsBuffsDePassif(fiche(26513)).map((r) => r.buffs), ['Buff ATQ, Buff DEF ou Buff VIT'], 'Espresso Cookie : un parmi trois, « ou »');
-  egal(rappelsBuffsDePassif(fiche(20913)).map((r) => r.nom), ['Evasive Maneuver'], 'Erwin : « Evasive Maneuver(Passive) » sans espace, suffixe retiré');
+  egal(rappelsBuffsDePassif(fiche(16312), fr).map((r) => r.buffs), ['Buff ATQ et Buff Taux Crit'], 'Antares : deux buffs, « et »');
+  egal(rappelsBuffsDePassif(fiche(26513), fr).map((r) => r.buffs), ['Buff ATQ, Buff DEF ou Buff VIT'], 'Espresso Cookie : un parmi trois, « ou »');
+  egal(rappelsBuffsDePassif(fiche(26513), en).map((r) => r.buffs), ['ATK buff, DEF buff or SPD buff'], 'en anglais : libellés et liaison de la langue reçue');
+  egal(rappelsBuffsDePassif(fiche(20913), fr).map((r) => r.nom), ['Evasive Maneuver'], 'Erwin : « Evasive Maneuver(Passive) » sans espace, suffixe retiré');
 }
 
 // Le code seul : un commentaire qui cite un motif ne doit ni faire échouer ni
@@ -148,7 +150,7 @@ export function testBuffsDePassifEcran() {
   titre('Buffs posés par un passif — la carte rend le rappel, aucun calcul ne lit la table');
 
   const carte = source('src/components/outils/EtatMonstre.tsx');
-  const vignettes = carte.indexOf('libelle="Buff VIT"');
+  const vignettes = carte.indexOf('libelle={e.buffs.spd}');
   const rappel = carte.indexOf('{rappelsBuffs.length > 0 && (');
   // Plus de phrase sur l'amplification d'un buff par un artéfact : elle
   // portait sur la paire représentative de la recherche, inconnue du joueur.
@@ -158,14 +160,16 @@ export function testBuffsDePassifEcran() {
     'texte xs atténué, une ligne par passif');
   ok(/<Jeton\s+icone=\{r\.icone \? <img src=\{r\.icone\} alt="" className="h-4 w-4 rounded" loading="lazy" \/> : undefined\}\s+libelle=\{r\.nom\}\s+\/>/.test(carte),
     'le passif est nommé par un Jeton en lecture seule (icône, nom du jeu)');
-  ok(carte.includes('pose {r.buffs} — « {r.condition} »'), 'le texte : buffs posés, puis la condition citée');
-  for (const libelle of [LIBELLE_BUFF_DE_PASSIF.atk, LIBELLE_BUFF_DE_PASSIF.def, LIBELLE_BUFF_DE_PASSIF.spd]) {
-    ok(carte.includes(`libelle="${libelle}"`), `« ${libelle} » est bien le libellé d’une vignette de la carte`);
+  ok(carte.includes('{e.pose(r.buffs, r.condition)}'), 'le texte : buffs posés, puis la condition citée');
+  egal(fr.optimizer.etat.pose('Buff ATQ', 'when you attack'), 'pose Buff ATQ — « when you attack »', '… en français, la condition entre guillemets');
+  // Le rappel et les vignettes lisent le MÊME libellé du dictionnaire.
+  for (const cle of ['atk', 'def', 'spd'] as const) {
+    ok(carte.includes(`libelle={e.buffs.${cle}}`), `« ${fr.optimizer.etat.buffs[cle]} » est bien le libellé d’une vignette de la carte`);
   }
   ok(!/rappelsBuffs[^\n]*(onClick|maj\()/.test(carte), 'le rappel n’allume aucun buff');
 
   const ecran = source('src/components/outils/OptimizerSection.tsx');
-  ok(/skillDetail\?\.com2usId === selectedCom2usId \? rappelsBuffsDePassif\(skillDetail\) : \[\]/.test(ecran),
+  ok(/skillDetail\?\.com2usId === selectedCom2usId \? rappelsBuffsDePassif\(skillDetail, textes\) : \[\]/.test(ecran),
     'l’écran calcule les rappels sur la fiche du monstre CHOISI (garde d’identité pendant le chargement)');
   // Une fois par format : « État de mon monstre » au téléphone, sa forme
   // réduite des essentiels au bureau (`EtatMonstreEssentiels`).

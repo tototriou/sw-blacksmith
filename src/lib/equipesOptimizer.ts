@@ -36,17 +36,27 @@ export const ACTIVITE_LEADS_OPTIMIZER = {
   },
 } as const satisfies Record<ContenuListeOptimizer, Record<PorteeLead, ActiviteLead>>;
 
-// Compatible avec appliquerCriteres ; tout « aucun » porte sa raison.
-export type LeadMembreOptimizer = Exclude<LeadEffectifOptimizer, { type: 'aucun' }> | { type: 'aucun'; motif: string };
-const aucun = (motif: string): LeadMembreOptimizer => ({ type: 'aucun', motif });
+// La raison d'un lead d'équipe sans effet ; sa phrase, dans chaque langue, est
+// sous `optimizer.motifsLead` du dictionnaire.
+export type MotifLeadOptimizer =
+  | 'contenuNonDefini'
+  | 'sansLead'
+  | 'porteeInconnue'
+  | 'porteeInactive'
+  | 'autreElement'
+  | 'statSansEffet'
+  | 'montantInvalide';
 
-// Le motif d'une liste sans contenu de combat. ⚠️ « État de mon monstre » ne
-// l'affiche JAMAIS (décision de l'utilisateur, « Je ne veux jamais le voir ») :
-// la carte passe par `motifLeadAffiche`. Le motif reste porté par le lead
+// Compatible avec appliquerCriteres ; tout « aucun » porte sa raison.
+export type LeadMembreOptimizer = Exclude<LeadEffectifOptimizer, { type: 'aucun' }> | { type: 'aucun'; motif: MotifLeadOptimizer };
+const aucun = (motif: MotifLeadOptimizer): LeadMembreOptimizer => ({ type: 'aucun', motif });
+
+// ⚠️ « État de mon monstre » n'affiche JAMAIS le motif d'une liste sans contenu
+// de combat (décision de l'utilisateur, « Je ne veux jamais le voir ») : la
+// carte passe par `motifLeadAffiche`. Le motif reste porté par le lead
 // effectif (repère ⚠ de la liste, rapport d'import).
-export const MOTIF_CONTENU_NON_DEFINI = 'Le contenu de combat de la liste n’est pas défini : aucun lead d’équipe appliqué.';
-export const motifLeadAffiche = (motif: string | null | undefined): string | null =>
-  motif && motif !== MOTIF_CONTENU_NON_DEFINI ? motif : null;
+export const motifLeadAffiche = (motif: MotifLeadOptimizer | null | undefined): MotifLeadOptimizer | null =>
+  motif && motif !== 'contenuNonDefini' ? motif : null;
 const memeMembre = (a: ExclusionSelector, b: ExclusionSelector): boolean => exclusionSelectorKey(a) === exclusionSelectorKey(b);
 
 export function leadEffectifMembreOptimizer(
@@ -55,17 +65,17 @@ export function leadEffectifMembreOptimizer(
   const equipe = stockage.teams.find(e => e.listId === listId && e.members.some(s => memeMembre(s, selector)));
   if (!equipe) return { type: 'personnel' };
   const contenu = stockage.listContents.get(listId);
-  if (!contenu) return aucun(MOTIF_CONTENU_NON_DEFINI);
+  if (!contenu) return aucun('contenuNonDefini');
   const lead = equipe.lead;
-  if (!lead) return aucun('L’équipe ne porte aucun lead.');
+  if (!lead) return aucun('sansLead');
   const ligne = ACTIVITE_LEADS_OPTIMIZER[contenu] as Record<string, ActiviteLead> | undefined;
   const activite = ligne && Object.prototype.hasOwnProperty.call(ligne, lead.area) ? ligne[lead.area] : undefined;
-  if (!activite) return aucun('L’activité de cette portée de lead n’est pas établie pour ce contenu.');
-  if (activite === 'inactif') return aucun('Cette portée de lead est inactive pour ce contenu.');
-  if (activite === 'element' && (!lead.element || lead.element !== element)) return aucun('Le lead ne concerne pas l’élément de ce membre.');
+  if (!activite) return aucun('porteeInconnue');
+  if (activite === 'inactif') return aucun('porteeInactive');
+  if (activite === 'element' && (!lead.element || lead.element !== element)) return aucun('autreElement');
   // damage.ts : RES et Précision n’entrent pas dans les stats de lead calculées.
-  if (!LEADER_SKILL_STATS.includes(lead.stat as LeaderSkillStat)) return aucun('La statistique de ce lead est conservée, sans effet calculé.');
-  if (!Number.isFinite(lead.amount) || lead.amount < 0) return aucun('Le montant de ce lead est invalide.');
+  if (!LEADER_SKILL_STATS.includes(lead.stat as LeaderSkillStat)) return aucun('statSansEffet');
+  if (!Number.isFinite(lead.amount) || lead.amount < 0) return aucun('montantInvalide');
   return { type: 'equipe', lead: { stat: lead.stat as LeaderSkillStat, pct: lead.amount } };
 }
 

@@ -1,4 +1,5 @@
 import { type ReactNode } from 'react';
+import { useTraduction } from '../../../hooks/useLangue';
 
 export interface ExclusionRunesContenuProps {
   monstrePrecisBlock: ReactNode;
@@ -15,10 +16,11 @@ export interface ExclusionRunesContenuProps {
 // deux EMPILÉS ; « Runes imposées », un mécanisme DISTINCT (verrou, pas
 // exclusion), suit en dernier après un séparateur.
 export default function ExclusionRunesContenu({ monstrePrecisBlock, dejaUtiliseesBlock, runesImposeesBlock, sansAccroche = false }: ExclusionRunesContenuProps) {
+  const c = useTraduction().optimizer.criteres;
   return (
     <>
       {!sansAccroche && (
-        <p className="mb-3 pl-8 text-[11px] text-ink-dim">Deux réglages indépendants, qui se superposent.</p>
+        <p className="mb-3 pl-8 text-[11px] text-ink-dim">{c.deuxReglages}</p>
       )}
 
       {/* ⚠️ `space-y-4` (blocs) et non `flex flex-col` : sous

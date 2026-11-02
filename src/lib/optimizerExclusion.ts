@@ -22,6 +22,7 @@ import { BoxItem } from './applyAccount';
 import { GearSet, Monster, RtaEntry, SiegeTeam } from '../types';
 import { excludedRuneIds } from './runeBuildOptim';
 import { monsterBaseStats } from './stats';
+import type { Dictionnaire } from '../i18n/fr';
 
 export type ExclusionSource = 'box' | 'rta' | 'siege-defense' | 'siege-offense';
 
@@ -358,20 +359,20 @@ export function exemplaireSuivantEspece(
   candidats: Record<ExclusionSource, readonly ExclusionCandidate[]>,
   membres: readonly OptimizerListMember[],
   listeId: string | null,
+  t: Dictionnaire,
 ): DisponibiliteEspece {
+  const deja = t.optimizer.dejaDansLaListe;
   const membresListe = listeId == null ? [] : membres.filter(m => m.listId === listeId);
   const possibles = candidats.box.length > 0 ? candidats.box : SOURCE_OPTIONS.flatMap(o => candidats[o.key]);
   if (possibles.length > 0) {
     const suivant = exemplaireBoxHorsListe(possibles, membresListe);
     if (suivant) return { suivant: suivant.selector, raison: null };
     const n = candidats.box.length;
-    return { suivant: null, raison: n > 1
-      ? `Les ${n} ${monstre.name} de ta Box sont dans la liste`
-      : `${monstre.name} est déjà dans la liste` };
+    return { suivant: null, raison: n > 1 ? deja.tousLesExemplaires(n, monstre.name) : deja.unExemplaire(monstre.name) };
   }
   const suivant: ExclusionSelector = { source: 'unowned', monsterId: String(monstre.id) };
   return membresListe.some(m => exclusionSelectorKey(m.selector) === exclusionSelectorKey(suivant))
-    ? { suivant: null, raison: `${monstre.name} est déjà dans la liste` }
+    ? { suivant: null, raison: deja.unExemplaire(monstre.name) }
     : { suivant, raison: null };
 }
 

@@ -9,6 +9,9 @@ import { tickDanger, tickTeamMessage } from '../src/lib/speed';
 import { libelleSource } from '../src/lib/ownedBuilds';
 import { parseAccountBox, parseAccountJson } from '../src/lib/importAccount';
 import { topParPropriete } from '../src/lib/artifactsTop';
+import { exemplaireSuivantEspece } from '../src/lib/optimizerExclusion';
+import { echoAurasExternes } from '../src/lib/aurasExternes';
+import type { Monster } from '../src/types';
 import { fr } from '../src/i18n/fr';
 import { en } from '../src/i18n/en';
 import { egal, ok, titre } from './outils';
@@ -64,5 +67,18 @@ export function testPartageLangues() {
   ok(
     topParPropriete([], 'water', en)[0].colonnes.map((c) => c.entete).includes('Fire'),
     'top des artéfacts : les en-têtes d’élément viennent du lexique anglais'
+  );
+
+  const lushen = { id: 1, name: 'Lushen' } as Monster;
+  const sansExemplaire = { box: [], rta: [], 'siege-defense': [], 'siege-offense': [] };
+  egal(
+    exemplaireSuivantEspece(lushen, sansExemplaire, [{ listId: 'L', selector: { source: 'unowned', monsterId: '1' } }], 'L', en).raison,
+    'Lushen is already in the list',
+    'Optimizer : espèce déjà dans la liste, en anglais'
+  );
+  egal(
+    echoAurasExternes([{ set: 'fight', nombre: 2 }], en),
+    'external auras: 2 Fight sets; the build’s aura sets add to them on each result',
+    'écho des auras externes : le nom du set vient du lexique anglais'
   );
 }

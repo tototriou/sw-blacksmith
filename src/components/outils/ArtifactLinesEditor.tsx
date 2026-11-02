@@ -47,9 +47,10 @@ function toutesLesLignes(jeu: LexiqueJeu): { code: number; nom: string; sortes: 
 }
 
 function Pastille({ sortes }: { sortes: ArtifactKind[] }) {
+  const v = useTraduction().optimizer.verrous;
   const deux = sortes.length === 2;
   const attribut = sortes[0] === 'element';
-  const libelle = deux ? 'les deux' : attribut ? 'attribut' : 'type';
+  const libelle = deux ? v.lesDeux : attribut ? v.attribut : v.type;
   const teinte = deux
     ? 'bg-panel text-ink-dim border-border'
     : attribut
@@ -93,7 +94,9 @@ export default function ArtifactLinesEditor({
   // posée doit garder son nom, sa pastille et son plafond même si sa sorte
   // vient d'être figée — sinon elle s'afficherait « #308 » sans plus rien dire,
   // au moment précis où l'utilisateur doit décider de la retirer.
-  const jeu = useTraduction().jeu;
+  const textes = useTraduction();
+  const jeu = textes.jeu;
+  const v = textes.optimizer.verrous;
   const catalogueComplet = toutesLesLignes(jeu);
   const parCode = new Map(catalogueComplet.map((l) => [l.code, l]));
   // Proposable seulement si AU MOINS une des sortes qui peuvent la porter
@@ -111,7 +114,7 @@ export default function ArtifactLinesEditor({
   return (
     <div className="flex flex-col gap-1.5">
       <div className="flex items-baseline justify-between gap-2">
-        <span className={`label ${toutFige ? 'text-ink-dimmer' : ''}`}>Sous-propriétés verrouillées</span>
+        <span className={`label ${toutFige ? 'text-ink-dimmer' : ''}`}>{v.titre}</span>
         <span className="font-mono text-nano text-ink-dim tabular-nums">
           {lignes.length} / {MAX_LIGNES}
         </span>
@@ -121,8 +124,7 @@ export default function ArtifactLinesEditor({
           Un contrôle grisé sans raison se lit comme une panne. */}
       {toutFige && (
         <p className="text-nano leading-tight text-ink-dimmer">
-          Les deux emplacements sont sur « Comme équipé » : la paire est déjà décidée, un verrou
-          n&apos;a plus rien à chercher. Mets un emplacement sur « Libre » ou sur une principale pour en poser.
+          {v.toutFige}
         </p>
       )}
 
@@ -174,22 +176,20 @@ export default function ArtifactLinesEditor({
               sansBoutons
               width="w-12"
               suffix="%"
-              ariaLabel={`Minimum pour ${def?.nom ?? ligne.code}`}
+              ariaLabel={v.minimumPour(def?.nom ?? String(ligne.code))}
             />
             <BoutonIcone
               onClick={() => onChange(lignes.filter((l) => l.code !== ligne.code))}
               ton="danger"
               taille="serre"
               icone={<X size={11} />}
-              libelle={`Retirer ${def?.nom ?? ligne.code}`}
+              libelle={v.retirer(def?.nom ?? String(ligne.code))}
             />
             {/* ⚠️ Une ligne devenue sans effet le DIT, et dit quoi en faire.
                 La barrer sans un mot laisserait croire à un bug. */}
             {inerte && (
               <span className="col-span-full text-nano leading-tight text-ink-dimmer">
-                Sans effet : {def?.sortes.length === 2 ? 'les deux emplacements sont figés' : `l’emplacement ${
-                  def?.sortes[0] === 'element' ? 'attribut' : 'type'
-                } est figé`} sur « Comme équipé ». À retirer, ou remets cet emplacement sur « Libre ».
+                {v.sansEffet(def?.sortes.length === 2 ? v.deuxFiges : v.unFige(def?.sortes[0] === 'element' ? v.attribut : v.type))}
               </span>
             )}
             <span
@@ -197,9 +197,9 @@ export default function ArtifactLinesEditor({
             >
               {def?.sortes.length === 2
                 ? exigeLesDeux
-                  ? `max ${plafond} % cumulé — au-delà de ${parPiece} %, les DEUX artéfacts devront la porter`
-                  : `max ${plafond} % en cumulant les deux artéfacts`
-                : `max ${plafond} % · un seul artéfact peut la porter`}
+                  ? v.maxCumuleLesDeux(plafond, parPiece)
+                  : v.maxCumule(plafond)
+                : v.maxUnSeul(plafond)}
             </span>
             {/* ⚠️ **Le verrou somme STRICTEMENT par code.** Deux familles du
                 jeu ont une forme GROUPÉE qui recouvre des formes simples :
@@ -215,9 +215,7 @@ export default function ArtifactLinesEditor({
                 arithmétique d'emplacements à repenser. */}
             {voisins.length > 0 && (
               <span className="col-span-full text-nano leading-tight text-warn">
-                Compte uniquement cette forme. {voisins.map((c) => `« ${nomDe(c)} »`).join(' et ')}{' '}
-                {voisins.length > 1 ? 'valent' : 'vaut'} pareil au calcul des dégâts, mais
-                {voisins.length > 1 ? ' ne seront pas comptées' : ' ne sera pas comptée'} par ce verrou.
+                {v.formeSeule(voisins.map((c) => v.guillemets(nomDe(c))).join(v.et), voisins.length)}
               </span>
             )}
           </div>
@@ -243,7 +241,7 @@ export default function ArtifactLinesEditor({
         surface="panel2"
       >
         <option value="">
-          {plein ? `Les ${MAX_LIGNES} sous-propriétés sont prises` : '+ Sous-propriété…'}
+          {plein ? v.pleines(MAX_LIGNES) : v.ajouter}
         </option>
         {dispo.map((l) => (
           <option key={l.code} value={l.code}>
@@ -260,18 +258,18 @@ export default function ArtifactLinesEditor({
         // découpage le montre PENDANT la saisie.
         <div className="flex flex-wrap items-center gap-x-3 text-nano tabular-nums text-ink-dim">
           <span>
-            sous-propriétés&nbsp;: attribut{' '}
+            {v.budgetAttribut}{' '}
             <b className={budget.attribut > MAX_ARTIFACT_SUBS ? 'text-bad' : 'text-ink'}>
               {budget.attribut}/{MAX_ARTIFACT_SUBS}
             </b>
           </span>
           <span>
-            type{' '}
+            {v.type}{' '}
             <b className={budget.type > MAX_ARTIFACT_SUBS ? 'text-bad' : 'text-ink'}>
               {budget.type}/{MAX_ARTIFACT_SUBS}
             </b>
           </span>
-          {budget.libres > 0 && <span>{budget.libres} à placer</span>}
+          {budget.libres > 0 && <span>{v.aPlacer(budget.libres)}</span>}
         </div>
       )}
 
@@ -283,14 +281,14 @@ export default function ArtifactLinesEditor({
         // voit laquelle bloque, et de combien.
         <div className="flex flex-col gap-1 rounded border border-bad/50 bg-bad-soft/50 px-2 py-1.5">
           <span className="text-xs font-semibold text-bad">
-            Aucune paire d’artéfacts ne satisfait ces sous-propriétés
+            {v.aucunePaire}
           </span>
           {diagnostic.map((d) => (
             <div key={d.code} className="flex items-baseline justify-between gap-2 text-xs">
               <span className="text-ink">{parCode.get(d.code)?.nom ?? `#${d.code}`}</span>
               <span className="flex items-baseline gap-1.5 shrink-0">
                 <span className="text-nano tabular-nums text-ink-dim">
-                  {d.min} % exigé · {d.auMieux} % au mieux
+                  {v.exigeAuMieux(d.min, d.auMieux)}
                 </span>
                 <span className={`font-semibold ${d.atteint ? 'text-good' : 'text-bad'}`}>
                   {d.atteint ? '✓' : '✗'}
@@ -303,8 +301,7 @@ export default function ArtifactLinesEditor({
               les serve ensemble. Le dire, plutôt que laisser croire qu'un « ✓ »
               partout serait contradictoire avec l'échec. */}
           <span className="text-nano text-ink-dimmer">
-            Chaque maximum est mesuré sous-propriété par sous-propriété : deux sous-propriétés
-            atteignables séparément peuvent ne l’être par aucune paire à la fois.
+            {v.chaqueMaximum}
           </span>
         </div>
       )}
@@ -314,8 +311,7 @@ export default function ArtifactLinesEditor({
         // l'inventaire ne suit pas. Ce diagnostic-là se lit sur le balayage,
         // pas sur une déduction (voir `meilleurCumulParLigne`).
         <p className="rounded border border-bad/50 bg-bad-soft/50 px-2 py-1 text-xs text-bad">
-          Ces sous-propriétés ne tiennent pas sur deux artéfacts : chacun n’en porte que{' '}
-          {MAX_ARTIFACT_SUBS}.
+          {v.impossible(MAX_ARTIFACT_SUBS)}
         </p>
       )}
     </div>

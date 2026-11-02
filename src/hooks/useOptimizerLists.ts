@@ -10,6 +10,7 @@ import { loadLocal, saveLocal, usePersistence } from './usePersistence';
 import type { CriteresOptimizer } from '../lib/criteresOptimizer';
 import { synchroniserLeadsMembresOptimizer } from '../lib/equipesOptimizer';
 import { nomNouvelleListeOptimizer } from '../lib/optimizerListNames';
+import { useTraduction } from './useLangue';
 import { identifiantListeImportOccupe } from '../lib/importEquipes';
 import type { ExclusionSourceData } from '../lib/optimizerExclusion';
 import type { OptimMetric } from '../lib/runeOptim';
@@ -185,6 +186,7 @@ function loadState(): State {
 }
 
 export function useOptimizerLists(): UseOptimizerLists {
+  const nomParDefaut = useTraduction().optimizer.listes.nomParDefaut;
   const [state, publierEtat] = useState<State>(loadState);
   const courant = useRef(state);
   // Les gestes groupés doivent lire les écritures déjà envoyées à React.
@@ -265,10 +267,10 @@ export function useOptimizerLists(): UseOptimizerLists {
 
   const createList = useCallback((name: string, contenu: ContenuListeOptimizer) => {
     const id = newId();
-    setState((s) => ({ ...s, lists: [...s.lists, { id, name: name.trim() || nomNouvelleListeOptimizer(s.lists) }], activeListId: id,
+    setState((s) => ({ ...s, lists: [...s.lists, { id, name: name.trim() || nomNouvelleListeOptimizer(s.lists, nomParDefaut) }], activeListId: id,
       memberStorage: { ...s.memberStorage, raw: null, listContents: new Map(s.memberStorage.listContents).set(id, contenu) } }));
     return id;
-  }, [setState]);
+  }, [setState, nomParDefaut]);
 
   const setListContent = useCallback((id: string, contenu: ContenuListeOptimizer) => {
     setState(s => !s.lists.some(l => l.id === id) || !contenuListeValide(contenu) ? s : { ...s,

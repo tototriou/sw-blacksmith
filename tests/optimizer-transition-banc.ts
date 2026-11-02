@@ -14,6 +14,7 @@ import * as imports from '../src/lib/importEquipes';
 import * as sauvegardes from '../src/lib/optimizerBackup';
 import * as colonnesResultats from '../src/lib/colonnesResultats';
 import type { OptimizerState } from '../src/hooks/useOptimizerState';
+import { fr } from '../src/i18n/fr';
 
 export function fonctionDeSource(fichier: string, nom: string, contexte: Record<string, unknown>) {
   const source = ts.createSourceFile(fichier, readFileSync(fichier, 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
@@ -73,6 +74,8 @@ export async function bancOptimizer() {
     // La mesure globale (Efficience / Score SW) est un store externe lu par
     // `useSyncExternalStore`, absent du faux React : sa valeur par défaut.
     './useRuneMetric': { useRuneMetric: () => 'eff' },
+    // La langue est un store externe, absent du faux React : le français.
+    './useLangue': { useTraduction: () => fr },
   };
   for (const [, chemin] of code.matchAll(/require\("([^"]+)"\)/g)) {
     if (!(chemin in modules)) throw new Error(`Dépendance de production non instrumentée : ${chemin}`);

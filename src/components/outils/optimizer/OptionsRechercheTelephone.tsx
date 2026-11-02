@@ -1,5 +1,6 @@
 import { MobileSheet } from '../../../ui';
 import { type ReactNode } from 'react';
+import { useTraduction } from '../../../hooks/useLangue';
 
 export interface OptionsRechercheTelephoneProps {
   menuOuvert: boolean;
@@ -11,8 +12,9 @@ export interface OptionsRechercheTelephoneProps {
 }
 
 export default function OptionsRechercheTelephone({ menuOuvert, onFermerMenu, exclusionRunesTitre, exclusionRunesPanneau, reglagesAvancesTitre, reglagesAvancesPanneau }: OptionsRechercheTelephoneProps) {
+  const c = useTraduction().optimizer.criteres;
   return (
-    <MobileSheet ouvert={menuOuvert} onFermer={onFermerMenu} titre="Options de recherche">
+    <MobileSheet ouvert={menuOuvert} onFermer={onFermerMenu} titre={c.optionsRecherche}>
       {/* ⚠️ `space-y-3` et NON `flex flex-col` : le corps du panneau
           porte `data-tiroir`, et index.css y pose
           `[data-tiroir] .flex-col { align-items: flex-start }` — écrit

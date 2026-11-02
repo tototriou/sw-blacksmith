@@ -1,5 +1,6 @@
 import { type ComponentProps } from 'react';
 import { AurasExternesSaisie } from '../../EtatMonstre';
+import { useTraduction } from '../../../../hooks/useLangue';
 
 // La place de la colonne « Aura, exclusion, avancés », celle d'« Artéfacts et
 // relique » (décision de l'utilisateur) : son panneau en prend 312
@@ -16,7 +17,7 @@ export const LARGEUR_COMPLEMENTS = 320;
 // section ; le rappel, un état, garde son contour et son fond.
 export default function SetsAuraBureau(props: Omit<ComponentProps<typeof AurasExternesSaisie>, 'annonce' | 'sansCadre'>) {
   return (
-    <section aria-label="Sets d'aura des autres monstres" className="flex">
+    <section aria-label={useTraduction().optimizer.auras.titre} className="flex">
       <AurasExternesSaisie {...props} annonce={false} sansCadre />
     </section>
   );

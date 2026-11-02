@@ -9,6 +9,7 @@
 
 import { readFileSync } from 'node:fs';
 import { egal, ok, titre } from './outils';
+import { fr } from '../src/i18n/fr';
 import { DEFAULT_DAMAGE_SETUP, STAT_DE_L_AURA, type SetAura } from '../src/lib/damage';
 import { damageSetupApresChangementMonstre } from '../src/lib/damageSetupTransition';
 import { buildOptimizerRecipe, parseOptimizerRecipe } from '../src/lib/optimizerRecipe';
@@ -72,8 +73,8 @@ export function testAurasEcranBornes() {
 
   egal(SETS_AURA, Object.keys(STAT_DE_L_AURA), 'les cinq sets sont DÉRIVÉS de STAT_DE_L_AURA, dans son ordre');
   egal(PLAFOND_AURAS_EXTERNES, 15, 'plafond de saisie : 15 (cinq autres monstres à trois sets)');
-  egal(libelleNombreAura('fight'), 'Nombre de sets Combat des autres monstres de l\'équipe', 'libellé explicite, patron de l’utilisateur');
-  egal(libelleNombreAura('tolerance'), 'Nombre de sets Tolérance des autres monstres de l\'équipe', 'même patron pour les cinq sets');
+  egal(libelleNombreAura('fight', fr), 'Nombre de sets Combat des autres monstres de l\'équipe', 'libellé explicite, patron de l’utilisateur');
+  egal(libelleNombreAura('tolerance', fr), 'Nombre de sets Tolérance des autres monstres de l\'équipe', 'même patron pour les cinq sets');
 
   const liste = [a('fight', 10), a('accuracy', 3)];
   egal(nombreMaxDeLaLigne(liste, 'fight'), 12, 'Fight : 15 − 3 (les autres lignes)');
@@ -215,7 +216,7 @@ export function testAurasEcranValidationPartagee() {
   for (const fn of ['ajouterAura(entrees)', 'changerNombreAura(entrees, entree.set, v)', 'changerSetAura(entrees, entree.set,', 'retirerAura(entrees, entree.set)']) {
     ok(saisie.includes(`ecrire(${fn}`), `source : écriture par ${fn.split('(')[0]}`);
   }
-  const bouton = saisie.search(/<Bouton\s+trait="pointille"[\s\S]*?libelle="Ajouter un set d'aura"/);
+  const bouton = saisie.search(/<Bouton\s+trait="pointille"[\s\S]*?libelle=\{au\.ajouter\}/);
   const lignes = saisie.indexOf('entrees.map(');
   ok(bouton >= 0 && lignes > bouton, 'source : bouton pointillé « Ajouter un set d’aura » AVANT les lignes (fixe en tête)');
   ok(/disabled=\{!ajoutPossible\}/.test(saisie), 'source : ajout désactivé (jamais retiré) quand il est impossible');
@@ -227,18 +228,18 @@ export function testAurasEcranValidationPartagee() {
 export function testAurasEcranEcho() {
   titre('Auras à l’écran · écho de la fenêtre « Dégâts réels » : externes nommées, sets du build sans nombre');
 
-  egal(echoAurasExternes([a('fight', 2), a('accuracy', 1)]),
+  egal(echoAurasExternes([a('fight', 2), a('accuracy', 1)], fr),
     'auras externes : 2 sets Combat, 1 set Précision ; les sets d\'aura du build s\'y ajoutent sur chaque résultat',
     'externes nommées par set, avec leur nombre, dans l’ordre saisi');
-  egal(echoAurasExternes([]), 'aucune aura externe ; les sets d\'aura du build comptent sur chaque résultat',
+  egal(echoAurasExternes([], fr), 'aucune aura externe ; les sets d\'aura du build comptent sur chaque résultat',
     'aucune externe : le dit, et rappelle les sets du build');
-  egal(echoAurasExternes(undefined), echoAurasExternes([]), 'liste absente : comme vide');
-  ok(!/\d/.test(echoAurasExternes([]).replace(/^.*?;/, '')) && !/\d/.test(echoAurasExternes([a('fight', 3)]).split(';')[1]),
+  egal(echoAurasExternes(undefined, fr), echoAurasExternes([], fr), 'liste absente : comme vide');
+  ok(!/\d/.test(echoAurasExternes([], fr).replace(/^.*?;/, '')) && !/\d/.test(echoAurasExternes([a('fight', 3)], fr).split(';')[1]),
     'la part du build ne porte AUCUN nombre : la fenêtre ne connaît aucun candidat');
 
   const ecran = readFileSync('src/components/outils/OptimizerSection.tsx', 'utf8').replace(/\r\n/g, '\n');
-  const echo = ecran.slice(ecran.indexOf('const echoEtatMonstre = useMemo('), ecran.indexOf('}, [damageSetup]);', ecran.indexOf('const echoEtatMonstre = useMemo(')));
-  ok(echo.includes('echoAurasExternes(damageSetup.setsAuraExternes)'), 'écran : l’écho d’état passe par echoAurasExternes');
+  const echo = ecran.slice(ecran.indexOf('const echoEtatMonstre = useMemo('), ecran.indexOf('}, [damageSetup, textes]);', ecran.indexOf('const echoEtatMonstre = useMemo(')));
+  ok(echo.includes('echoAurasExternes(damageSetup.setsAuraExternes, textes)'), 'écran : l’écho d’état passe par echoAurasExternes');
 }
 
 export function testAurasEcranInterrupteur() {
@@ -331,7 +332,7 @@ export function testAurasEcranRappel() {
   // `aria-live` sous condition d'`annonce` (vrai par défaut) : au bureau, la
   // carte des auras n'est montée que colonne ouverte, la page annonce à sa
   // place (`AnnonceRappelAuras`, plus bas).
-  const message = saisie.match(/<div className="col-start-1 row-start-1 self-center" aria-live=\{annonce \? 'polite' : undefined\}>\s*<p\s+className=\{`text-xs font-semibold text-warn \$\{\s*rappel \? '[^']*' : 'invisible'\s*\}`\}\s*>\s*Pense à vérifier les sets d&apos;aura externes\.\s*<\/p>/);
+  const message = saisie.match(/<div className="col-start-1 row-start-1 self-center" aria-live=\{annonce \? 'polite' : undefined\}>\s*<p\s+className=\{`text-xs font-semibold text-warn \$\{\s*rappel \? '[^']*' : 'invisible'\s*\}`\}\s*>\s*\{au\.rappel\}\s*<\/p>/);
   ok(message !== null, 'rendu : « Pense à vérifier les sets d’aura externes. » dans la MÊME case, toujours rendu, invisible hors rappel (place réservée)');
   ok(/annonce = true,/.test(saisie), 'rendu : la boîte annonce le rappel par défaut (téléphone) ; au bureau, la page : `testRenduOptimizerPageBureauDroite`');
   ok(!/\{rappel &&/.test(saisie), 'rendu : rien n’est monté sous condition du rappel — rien ne bouge quand il paraît');
@@ -376,7 +377,7 @@ export function testAurasEcranGuidage() {
     '« Ajouter un set d’aura » quand Accuracy est le premier set libre : guide');
   ok(!guideVersResPre({ aurasExternes: vide }, { aurasExternes: ajouterAura(vide) }), '« Ajouter un set d’aura » sur une liste vide (ligne Fight) : rien');
   for (const set of ['fight', 'determination', 'enhance'] as const) {
-    ok(!guideVersResPre({ aurasExternes: vide }, { aurasExternes: [a(set, 1)] }), `${nomSetAura(set)} ajouté aux auras externes : rien (aucun réglage associé)`);
+    ok(!guideVersResPre({ aurasExternes: vide }, { aurasExternes: [a(set, 1)] }), `${nomSetAura(set, fr.jeu)} ajouté aux auras externes : rien (aucun réglage associé)`);
   }
   ok(guideVersResPre({ aurasExternes: [a('accuracy', 1)] }, { aurasExternes: [a('accuracy', 1), a('tolerance', 1)] }),
     'Tolerance ajouté à côté d’un Accuracy déjà présent : guide');

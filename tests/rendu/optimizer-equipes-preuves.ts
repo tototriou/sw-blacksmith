@@ -62,13 +62,13 @@ export async function preuvesLeadEquipeOptimizer(b: Banc): Promise<[boolean, str
   verifier(partout('HP', 44), 'retour sur Alpha : la mémoire d’Alpha n’a pas pris le lead de Bêta');
   const changerLead = (lead: NonNullable<UseOptimizerLists['teams'][number]['lead']>) => b.geste(() => b.listes().setTeams(b.listes().teams.map(e => e.id === 'ea' ? { ...e, lead } : e)));
   await changerLead({ stat: 'Attack Speed', amount: 24, area: 'Element', element: 'water' });
-  verifier(partout(null) && b.etat().lireCombatMembre().motif?.includes('élément') === true, 'autre élément : lead personnel « Aucun », raison explicite');
+  verifier(partout(null) && b.etat().lireCombatMembre().motif === 'autreElement', 'autre élément : lead personnel « Aucun », raison explicite');
   verifier([...document.querySelectorAll('section[aria-label="Équipe 1"] button')].some(e => visible(e)
     && e.getAttribute('aria-label') === 'Lead inactif : Le lead ne concerne pas l’élément de ce membre.'), 'lead d’élément inactif : motif sur l’icône de la carte');
   await changerLead({ stat: 'Attack Speed', amount: 24, area: 'Guild', element: null });
   verifier(partout('Attack Speed', 24), 'lead de nouveau actif : le lead personnel le reprend');
   await b.geste(() => b.listes().setListContent('a', 'donjon'));
-  verifier(partout(null) && b.etat().lireCombatMembre().motif?.includes('inactive') === true, 'contenu incompatible : lead inactif, lead personnel « Aucun »');
+  verifier(partout(null) && b.etat().lireCombatMembre().motif === 'porteeInactive', 'contenu incompatible : lead inactif, lead personnel « Aucun »');
   await b.geste(() => b.listes().replaceAfterRevalidation({ ...b.listes(), listContents: new Map([['b', 'guilde']]) }));
   verifier(partout(null) && document.body.textContent!.includes('Sans contenu : aucun lead d’équipe appliqué.'), 'liste historique sans contenu : aucun lead et message visible');
   await b.geste(() => b.listes().setListContent('a', 'guilde'));
