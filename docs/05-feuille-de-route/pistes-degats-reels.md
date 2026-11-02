@@ -64,7 +64,10 @@ codée porte « Calcul partiel »
   « Déclenchements de Hwa et Jackie », « Zeratu — Forbidden Power ») ; la
   répétition d'Elise sous 50 % de PV non plus. Exploding Hands (`11015`) se
   répète par sa compétence auxiliaire, améliorations comprises, sans
-  confirmation ([02-app/degats-reels/feat-competences-auxiliaires.md](../02-app/degats-reels/feat-competences-auxiliaires.md)).
+  confirmation ([02-app/degats-reels/feat-competences-auxiliaires.md](../02-app/degats-reels/feat-competences-auxiliaires.md)) ;
+  la clause de cette auxiliaire (`11016`), « 25% of the target's remaining
+  HP as additional damage » contre une cible sous incapacité, n'est pas
+  comptée, alors que la répétition n'a lieu que sur une cible étourdie.
 - **Idée** : répéter le profil du sort retenu, sans récursion, sous
   interrupteur, avec des clés de réglage distinctes de celles du sort. Les
   conditions sur la cible (Hwa, Blood Talon, Heaven's Might, Hunting Hawk)
@@ -74,7 +77,9 @@ codée porte « Calcul partiel »
   de la S1 : 1,00 → répétition pleine, 0,50 → demi. Burning Swing de Hwa
   sur une cible sans effet néfaste, répétition sur coup 1 : environ 1,15 →
   le dégât continu posé compte. Exploding Hands de Jackie, répétition sur
-  coup 1 : 1,00 → les améliorations portent sur la répétition.
+  coup 1 : 1,00 → les améliorations portent sur la répétition ; contre une
+  cible aux PV connus (PV restants R), le surplus de la répétition comparé à
+  0,25 × R, mitigé ou brut.
 
 ### Attaque sur un autre ennemi après une élimination
 
@@ -158,8 +163,9 @@ codée porte « Calcul partiel »
   (`src/lib/damage.ts`) ne portent ni Sindar's Volley ni Sylvan Volley
   (2 à 5 coups, valeur fournie), ni Wild Shot! (`13306`), Cleave
   (`19910`), Exorcism Orb (`20510`), Blade Dance of the Reaper (`10711`,
-  Stella), Chain Fire, ni les sorts de Lala et de Coco : ils frappent le
-  nombre de coups de la donnée. Les coups au hasard d'un sort se règlent
+  Stella), Chain Fire, Arcane Discharge (`25412`, Freu feu, « Attacks all
+  enemies 2 to 3 times », calculé à 2), ni les sorts de Lala et de Coco :
+  ils frappent le nombre de coups de la donnée. Les coups au hasard d'un sort se règlent
   (`COUPS_AU_HASARD_PAR_ID`), mais pas l'attaque appelée au hasard
   (Rolling Punch), ni les tirs qui choisissent leur cible (Magic Shot,
   Full Burst).

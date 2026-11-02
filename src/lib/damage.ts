@@ -3805,7 +3805,7 @@ export const SORTS_SANS_ATTAQUE_PAR_ID: ReadonlySet<number> = new Set([
 // celui d'avant ; la table dit seulement ce qu'il ne contient pas.
 //
 // Quatre sources, et rien d'autre :
-//   1. les cinq ignore DEF permanents :
+//   1. les quatre ignore DEF permanents :
 //      l'effet `Ignore DEF` est compté sur tout le sort alors que le jeu le
 //      conditionne — trop favorable, gardé avec la mention ;
 //   2. les lignes à profil « calculé » encore incomplètes au code actuel :
@@ -4337,7 +4337,7 @@ const SEQUENCES_DE_COUPS_PAR_ID_CONNUS: Record<number, SequenceCuree> = {
   },
   // Fatal Mortar Bullet — Scarlett (22912). Même forme que ses sœurs ;
   // auxiliaire 13317 `4.5*{ATK}`. Le +25 % par effet sur la cible de la phase
-  // de zone n'est pas compté (`CALCUL_PARTIEL_PAR_ID`).
+  // de zone est compté (`BONUS_PAR_EFFET_CIBLE_PAR_ID_CONNUS[13312]`).
   13312: {
     empreinte: { formule: '3.5*{ATK}', coups: 1, aoe: false },
     groupes: [

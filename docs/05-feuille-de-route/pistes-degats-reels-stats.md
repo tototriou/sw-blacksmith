@@ -62,21 +62,22 @@ les coups. La forme d'une piste et des relevés en jeu est celle de
 
 ### Ignore DEF conditionnel
 
-- **Constat** : cinq sorts comptent l'ignore DEF en permanence et portent
+- **Constat** : quatre sorts comptent l'ignore DEF en permanence et portent
   « Calcul partiel » (`CALCUL_PARTIEL_PAR_ID`, `src/lib/damage.ts`) :
-  Madness Judgement (`13406`, `13410`), Start of Attacking (`13611`), Thunder Strike (`7713`), Sword of Discharge
-  (`6013`) ; calcul trop favorable. Meteor Strike (`19215`) et Black Meteor
-  (`19615`) ignorent la DEF sur tout le sort dès qu'un effet nocif est
-  présent ; Bull's Eye, Wipe Out, Shadow Arrow et Dark Dragon Attack
-  (`8215`, Fei) n'ont qu'un interrupteur pour tout le sort
-  (`CONDITIONS_COMBAT_PAR_ID_CONNUS`).
+  Madness Judgement (`13406`, `13410`), Start of Attacking (`13611`),
+  Thunder Strike (`7713`) ; calcul trop favorable. Meteor Strike (`19215`)
+  et Black Meteor (`19615`) ignorent la DEF sur tout le sort dès qu'un effet
+  nocif est présent ; Bull's Eye, Wipe Out et Shadow Arrow n'ont qu'un
+  interrupteur pour tout le sort (`CONDITIONS_COMBAT_PAR_ID_CONNUS`).
+  (Sword of Discharge, sous l'interrupteur d'Invincibilité, et Dark Dragon
+  Attack de Fei, un interrupteur par coup, sont réglés :
+  [feat-poses-entre-les-coups.md](../02-app/degats-reels/feat-poses-entre-les-coups.md).)
 - **Idée** : Thunder Strike, borne stricte (DEF de la cible sous 50 % de la
-  tienne) ; Start of Attacking, 35 % par effet bénéfique retiré ; Sword of
-  Discharge, sous Invincibilité. Meteor Strike et Black Meteor : « ignore
-  DEF à partir du coup 1, 2, 3, ou aucun ». Fei, Bull's Eye, Wipe Out,
-  Shadow Arrow : un choix coup par coup, la chance affichée près de
-  l'interrupteur. Chaque entrée sort de `CALCUL_PARTIEL_PAR_ID` dans le
-  commit qui la conditionne.
+  tienne) ; Start of Attacking, 35 % par effet bénéfique retiré. Meteor
+  Strike et Black Meteor : « ignore DEF à partir du coup 1, 2, 3, ou
+  aucun ». Bull's Eye, Wipe Out, Shadow Arrow : un choix coup par coup,
+  comme Fei, la chance affichée près de l'interrupteur. Chaque entrée sort
+  de `CALCUL_PARTIEL_PAR_ID` dans le commit qui la conditionne.
 - **Bloque** : un changement de code, et des relevés. Madness Judgement
   contre ~3 000 de DEF, sans puis avec Brise DEF à 100 % de PV, puis 75,
   50, 20 % : PV lus avant ou après l'auto-dégât, et loi linéaire ou non.

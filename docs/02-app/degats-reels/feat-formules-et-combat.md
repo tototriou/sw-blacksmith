@@ -322,10 +322,12 @@ l'écran ne l'écrit jamais lui-même.
 
 - **Affichage seul** : aucun calcul ne lit la table, le total n'en dépend
   pas. Aucune mention sur les cartes de résultats.
-- **Quatre sources, 31 identifiants** : les cinq ignore DEF comptés en
+- **Quatre sources, 29 identifiants** : les quatre ignore DEF comptés en
   permanence alors que le jeu les conditionne (Madness Judgement ×2,
-  Start of Attacking, Thunder Strike, Sword of Discharge —
-  total gardé avec la mention tant que leur condition n'est pas modélisée) ; les sorts
+  Start of Attacking, Thunder Strike —
+  total gardé avec la mention tant que leur condition n'est pas modélisée ;
+  Sword of Discharge de Katarina en est sorti, son Invincibilité étant un
+  interrupteur) ; les sorts
   dont une perte de PV, un bonus selon les PV détruits ou retirés, ou la
   détonation de bombes déjà posées est décidée « comptée » mais pas encore
   codée (« pas encore comptée ») ; les parts que l'utilisateur a décidé de
@@ -335,9 +337,10 @@ l'écran ne l'écrit jamais lui-même.
   l'équilibrage ATQ/DEF d'Internal Force de début de combat sur les deux
   sorts de dégâts de Leona (Justice Strike, Fury of Punishment), le bonus
   de dégâts selon la VIT contre les ennemis plus lents de Summary Justice
-  (Theonia), marqués à la demande de l'utilisateur, et le bonus de 25 % par
-  effet sur la cible de la phase de zone de Fatal Mortar Bullet (Scarlett)
-  — « pas encore compté ».
+  (Theonia), marqués à la demande de l'utilisateur — « pas encore compté ».
+  Le bonus de 25 % par effet sur la cible de la phase de zone de Fatal
+  Mortar Bullet (Scarlett) est sorti de la table : il est compté
+  ([feat-poses-entre-les-coups.md](feat-poses-entre-les-coups.md)).
 - **Écartés parce que le total est complet par décision** : Devil's Bargain
   (la prose se trompe), les détonations de dégâts continus et les bombes à
   retardement (hors total).

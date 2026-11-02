@@ -338,7 +338,7 @@ export function testEffetsEntreCoupsRegle() {
     'Triple Crush (Tesarion) : l’Oubli d’Ancient Power, posé à la fin de l’attaque, n’est pas proposé (utilisateur)');
   egal(profil(5660).effetsEntreCoups?.map((e) => e.id), ['decrease-def'], 'Surprise Attack (Jultan) : sans lecteur, les dégâts continus du passif ne sont pas proposés');
   ok(!profil(10510).effetsEntreCoups?.length,
-    'Spear of Devastation (Manannan) : les dégâts continus de King of the Ruins, qui semblent viser les autres ennemis, ne sont pas proposés (relevé attendu)');
+    'Spear of Devastation (Manannan) : les dégâts continus de King of the Ruins, qui visent les autres ennemis (utilisateur, 2026-11-02), ne sont pas proposés');
   egal(libelleEffetEntreCoups(profil(12101).effetsEntreCoups![0]), 'Réduction de DEF (sur un 5 au dé)', 'Roll Dice : la Réduction de DEF sur un 5 au dé');
   egal(profil(18129).effetsEntreCoups?.map((e) => libelleEffetEntreCoups(e)),
     ['Marque (en état Thunderer)', 'Réduction de DEF (par Might · Thunder, en état Thunderer)'], 'Wild Bolt (Dyeus) : la Marque du sort et la Réduction de DEF du passif');

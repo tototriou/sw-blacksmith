@@ -280,12 +280,25 @@ interrupteur d'attaque appelée
 
 - **Sans dégâts calculés** : Harmless Prank d'Orion (8811), qui pose sans
   frapper ; Rolling Cannon de Christina (13313), qui frappe mais dont la
-  formule (`5.7*{Alive Allies %}*{ATK}`) n'est pas prise en charge.
+  formule (`5.7*{Alive Allies %}*{ATK}`) n'est pas prise en charge ; Shoot
+  n' Slash de Barque vent (10223), sans formule : il enchaîne Backspin Slash,
+  qui baisse la DEF, et Pirate's Strike, qui pose une Marque, à +35 % par
+  effet nocif de la cible. Sa règle est décidée (break DEF de la première
+  frappe pour la seconde, bonus recalculé avant chaque frappe :
+  [valeurs-de-jeu-curees.md](valeurs-de-jeu-curees.md), 2026-09-24), la
+  chaîne n'est pas codée
+  ([piste](../../05-feuille-de-route/pistes-degats-reels.md#chaînes-ordonnées)).
 - **Couvert autrement** : Guilty Sentence (Agrenia feu 23507, Driana vent
   23508, Theonia ténèbres 23510) n'a qu'un coup ; son attaque en plus est une
   attaque auxiliaire qui suit le sort et lit la Réduction de DEF qu'il pose
   par le réglage « Ce sort pose le def break »
   ([feat-passifs-offensifs.md](feat-passifs-offensifs.md#la-réduction-de-défense--avant-nest-pas-après)).
+  De même, Exploding Hands de Jackie ténèbres (11015) n'a qu'un coup, qui
+  étourdit ; son attaque en plus (auxiliaire 11016) se règle par
+  l'interrupteur « l'étourdissement de ce sort réussit ». La clause de
+  l'auxiliaire, « if the enemy is under inability effects, this attack will
+  deal 25% of the target's remaining HP as additional damage », n'est pas
+  comptée ([piste](../../05-feuille-de-route/pistes-degats-reels.md#répétition-du-sort-retenu)).
 - **Préfixe d'enchaînement** : Hunting Hawk (Hwoarang feu, 22507) et
   Roundhouse Kick Combo (Taebaek feu, 23007) frappent d'abord avec Backlash
   ou Triple Kick contre une cible sans effet bénéfique ; ce préfixe n'est pas
@@ -312,14 +325,22 @@ interrupteur d'attaque appelée
   Cette perte n'est d'ailleurs pas comptée (`CALCUL_PARTIEL_PAR_ID`).
 - **Détonation des dégâts continus** : Rage of Helheim (Eivor vent, 17513) et
   Stormy Axe (Astrid vent, 18013) posent des dégâts continus aux coups 1 à 3,
-  que le coup 4 fait exploser ; la détonation est hors du total
-  (`CALCUL_PARTIEL_PAR_ID`), les dégâts continus ne changent donc rien.
+  que le coup 4 fait exploser ; la détonation est hors du total par décision
+  (écartée de `CALCUL_PARTIEL_PAR_ID`, le total étant complet), les dégâts
+  continus ne changent donc rien.
 - **Coups non comptés** : Cleave (19910) et Exorcism Orb (20510), « the number
   of hits increases up to 6 times », se calculent sur 2 coups
   ([piste](../../05-feuille-de-route/pistes-degats-reels.md#plages-de-coups-à-relever-et-coups--au-hasard-)).
-- **Enchaînement vers un autre sort à un coup** (Energy Ball, Wield) : rien
-  n'est posé entre les coups d'un même sort, et ces enchaînements ne sont pas
-  calculés ([piste](../../05-feuille-de-route/pistes-degats-reels.md#chaînes-ordonnées)).
+- **Enchaînement vers un autre sort** : Energy Ball et Wield vers un sort à un
+  coup ; Twist Kick des Kung Fu Girls (Xiao Lin 8216, Hong Hua 8217, Liu Mei
+  8219), dont la baisse de VIT et l'Étourdissement précéderaient les 4 coups
+  de leur [Dragon Attack] (celui de Xiao Lin lit +15 % par effet nocif). Une
+  pose ne vaut qu'entre les coups d'un même sort, et ces enchaînements ne sont
+  pas calculés ([piste](../../05-feuille-de-route/pistes-degats-reels.md#chaînes-ordonnées)).
+- **Répétition du sort par un passif** : Burning Whip de Hwa (6912) « strikes
+  again » ; la répétition n'est pas calculée, l'effet posé par le premier
+  passage n'a donc rien à majorer
+  ([piste](../../05-feuille-de-route/pistes-degats-reels.md#répétition-du-sort-retenu)).
 
 ## Vérification
 
