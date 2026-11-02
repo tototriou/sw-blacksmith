@@ -14,6 +14,7 @@ import {
 } from '../src/lib/recoMatch';
 import { OwnedBuild } from '../src/lib/ownedBuilds';
 import { artifactSubKinds, artifactSubLabel, artifactSubsFor, isArtifactSub } from '../src/lib/effects';
+import { jeuFr } from '../src/i18n/jeu/fr';
 import { cleanArtifacts, decodeRecosJson, encodeRecosJson } from '../src/lib/recoShare';
 import { chercheMonstre } from '../src/lib/recoSearch';
 import { estEveille, estObtenable, formesJouables } from '../src/lib/monsterForms';
@@ -168,8 +169,8 @@ export default function testReco() {
   egal(artifactSubKinds(402), ['archetype'], 'dmg crit par compétence → artéfact de type seul');
   egal(artifactSubKinds(215), ['element', 'archetype'], 'vol de vie → les deux sortes');
 
-  const attribut = artifactSubsFor('element').map((o) => o.code);
-  const type = artifactSubsFor('archetype').map((o) => o.code);
+  const attribut = artifactSubsFor('element', jeuFr).map((o) => o.code);
+  const type = artifactSubsFor('archetype', jeuFr).map((o) => o.code);
   ok(attribut.includes(300) && !attribut.includes(400), "l'attribut propose 300 et jamais 400");
   ok(type.includes(400) && !type.includes(300), 'le type propose 400 et jamais 300');
   ok(attribut.length > 20 && type.length > 20, 'les deux listes sont fournies, pas des restes');
@@ -180,7 +181,7 @@ export default function testReco() {
   // ⚠️ C'est le libellé **du jeu**, relevé sur sa recherche détaillée de
   // sous-propriétés — pas une reformulation « plus claire ». Un joueur qui lit
   // autre chose ici que dans son inventaire ne fait pas le rapprochement.
-  egal(artifactSubLabel(300), 'Aug. des dgts infl. au Feu +X%', 'libellé lisible, valeur en joker');
+  egal(artifactSubLabel(300, jeuFr), 'Aug. des dgts infl. au Feu +X%', 'libellé lisible, valeur en joker');
   ok(!isArtifactSub(999), 'code inexistant refusé');
 
   // ⚠️ L'ORDRE est celui du jeu, pas celui des codes : les dégâts élémentaires

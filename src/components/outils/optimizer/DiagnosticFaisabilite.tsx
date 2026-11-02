@@ -1,5 +1,6 @@
 import { RECO_STATS } from '../../../types';
 import { type StatFeasibility } from '../../../lib/runeBuildOptim';
+import { useTraduction } from '../../../hooks/useLangue';
 
 export interface DiagnosticFaisabiliteProps {
   impossibleFeasibility: StatFeasibility[];
@@ -9,6 +10,7 @@ export interface DiagnosticFaisabiliteProps {
 }
 
 export default function DiagnosticFaisabilite({ impossibleFeasibility, bureau = false }: DiagnosticFaisabiliteProps) {
+  const jeu = useTraduction().jeu;
   return (
     <div className={bureau ? 'mb-3 border-t border-border-soft pt-3' : 'mb-3 rounded-lg border border-border bg-panel p-3'}>
       {impossibleFeasibility.length > 0 ? (
@@ -24,7 +26,7 @@ export default function DiagnosticFaisabilite({ impossibleFeasibility, bureau = 
               const st = RECO_STATS.find((s) => s.key === f.key)!;
               return (
                 <li key={`${f.key}-${f.kind}`} className="text-xs text-ink-dim">
-                  <span className="font-semibold text-ink">{st.label}</span>{' '}
+                  <span className="font-semibold text-ink">{jeu.stats[st.key]}</span>{' '}
                   {f.kind === 'min'
                     ? `minimum demandé ${f.requested}${st.suffix} — maximum atteignable ${f.bound}${st.suffix} avec ce pool, ce set et ces statistiques principales.`
                     : `maximum demandé ${f.requested}${st.suffix} — ${f.bound}${st.suffix} déjà garanti sans la moindre rune (base, artéfacts, bonus de set).`}

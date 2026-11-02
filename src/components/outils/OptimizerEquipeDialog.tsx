@@ -5,9 +5,11 @@ import { LEADER_SKILL_STATS, LEADER_SKILL_VALEURS, type LeaderSkillStat } from '
 import { exclusionSelectorKey, resolveExclusionEntry, exclusionCandidatesFor, SOURCE_OPTIONS, type ExclusionSelector, type ExclusionSourceData } from '../../lib/optimizerExclusion';
 import type { EquipeOptimizer } from '../../lib/optimizerMemberStorage';
 import { creerEquipeOptimizer, modifierEquipeOptimizer, dissoudreEquipeOptimizer, type ContexteEquipesOptimizer } from '../../lib/equipesOptimizer';
-import { STAT_LABEL } from '../siege/LeadPill';
+import { nomStatLead } from '../siege/LeadPill';
 import ExclusionCandidateRow from './ExclusionCandidateRow';
 import { SOUS_LG, useMediaQuery } from '../../hooks/useMediaQuery';
+import { useTraduction } from '../../hooks/useLangue';
+import { nomElement } from '../../i18n/jeu';
 
 export default function OptimizerEquipeDialog({ contexte, listId, equipe, data, onValider, onClose }: {
   contexte: ContexteEquipesOptimizer;
@@ -17,6 +19,7 @@ export default function OptimizerEquipeDialog({ contexte, listId, equipe, data, 
   onValider: (teams: EquipeOptimizer[]) => void;
   onClose: () => void;
 }) {
+  const jeu = useTraduction().jeu;
   // L'éditeur garde un brouillon : la liste ne se regroupe qu'à sa fermeture.
   const [members, setMembers] = useState<ExclusionSelector[]>(() => equipe?.members ?? []);
   const espece = (s: ExclusionSelector) => resolveExclusionEntry(s, data)?.monster;
@@ -77,8 +80,8 @@ export default function OptimizerEquipeDialog({ contexte, listId, equipe, data, 
             if (stat && !LEADER_SKILL_STATS.includes(stat)) return;
             setLead(stat ? { stat, amount: LEADER_SKILL_VALEURS[stat][0], area: lead?.area ?? 'General', element: lead?.element ?? null } : null);
           }}>
-            <option value="">Aucun</option>{LEADER_SKILL_STATS.map(stat => <option key={stat} value={stat}>{STAT_LABEL[stat]}</option>)}
-            {lead?.stat && !LEADER_SKILL_STATS.includes(lead.stat as LeaderSkillStat) && <option value={lead.stat}>{STAT_LABEL[lead.stat] ?? lead.stat} (sans effet calculé)</option>}
+            <option value="">Aucun</option>{LEADER_SKILL_STATS.map(stat => <option key={stat} value={stat}>{nomStatLead(jeu, stat)}</option>)}
+            {lead?.stat && !LEADER_SKILL_STATS.includes(lead.stat as LeaderSkillStat) && <option value={lead.stat}>{nomStatLead(jeu, lead.stat)} (sans effet calculé)</option>}
           </Selecteur>
         </label>
         <label className="flex flex-col gap-1 text-xs text-ink-dim">Valeur
@@ -95,7 +98,7 @@ export default function OptimizerEquipeDialog({ contexte, listId, equipe, data, 
         <label className="flex flex-col gap-1 text-xs text-ink-dim">Élément
           <Selecteur aria-label="Élément du lead de l’équipe" disabled={!lead || lead.area !== 'Element'} value={lead?.area === 'Element' ? lead.element ?? 'fire' : ''} onChange={e => lead && setLead({ ...lead, element: e.target.value as LeaderSkill['element'] })}>
             <option value=""></option>
-            {ELEMENTS.map(el => <option key={el.key} value={el.key}>{el.label}</option>)}
+            {ELEMENTS.map(el => <option key={el.key} value={el.key}>{nomElement(jeu, el.key)}</option>)}
           </Selecteur>
         </label>
       </div>

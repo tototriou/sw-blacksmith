@@ -12,7 +12,15 @@
 // ⚠️ **Les libellés du jeu sont ceux du jeu dans la langue de l'entrée**, jamais
 // une traduction faite par nous.
 
+import { jeuFr } from './jeu/fr';
+
 export const fr = {
+  // Le vocabulaire du jeu : src/i18n/jeu/.
+  jeu: jeuFr,
+
+  // Les sections de la prépa RTA qui ne sont pas un set.
+  sectionsRta: { autre: 'Autre', nonClasse: 'Non classé' },
+
   langue: {
     titre: 'Langue',
     auto: 'Auto',

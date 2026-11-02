@@ -1,5 +1,6 @@
 import { RECO_STATS } from '../../../types';
 import { type BlockingConditionsDiagnosis } from '../../../lib/runeBuildOptim';
+import { useTraduction } from '../../../hooks/useLangue';
 
 export interface DiagnosticApprofondiProps {
   blockingDiagnosis: BlockingConditionsDiagnosis | null;
@@ -9,6 +10,7 @@ export interface DiagnosticApprofondiProps {
 }
 
 export default function DiagnosticApprofondi({ blockingDiagnosis, diagnoseBlockingEnabled, bureau = false }: DiagnosticApprofondiProps) {
+  const jeu = useTraduction().jeu;
   return blockingDiagnosis && blockingDiagnosis.impacts.length > 0 ? (
     <div className={bureau ? 'mb-3 border-t border-border-soft pt-3' : 'mb-3 rounded-lg border border-border bg-panel p-3'}>
       <p className="mb-1.5 text-xs font-semibold text-ink">
@@ -22,13 +24,13 @@ export default function DiagnosticApprofondi({ blockingDiagnosis, diagnoseBlocki
             <li key={`${imp.key}-${imp.kind}`} className="text-xs text-ink-dim">
               {imp.delta == null ? (
                 <>
-                  <span className="font-semibold text-ink">{st.label}</span> ({imp.kind === 'min' ? '≥' : '≤'}{' '}
+                  <span className="font-semibold text-ink">{jeu.stats[st.key]}</span> ({imp.kind === 'min' ? '≥' : '≤'}{' '}
                   {imp.requested}
                   {st.suffix}) : aucun gain, même desserrée entièrement.
                 </>
               ) : (
                 <>
-                  <span className="font-semibold text-ink">{st.label}</span>{' '}
+                  <span className="font-semibold text-ink">{jeu.stats[st.key]}</span>{' '}
                   {imp.kind === 'min' ? `−${imp.delta}` : `+${imp.delta}`}
                   {st.suffix} suffit ({imp.kind === 'min' ? '≥' : '≤'} {imp.threshold}
                   {st.suffix}) : {imp.poolMinSlotAtThreshold} candidat(s).

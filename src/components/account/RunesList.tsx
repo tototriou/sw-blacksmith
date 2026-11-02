@@ -1,6 +1,7 @@
 import { memo, useMemo, useState } from 'react';
 import { RuneDetail } from '../../types';
-import { RUNE_EFFECT, runeEfficiency, runeScore } from '../../lib/effects';
+import { RUNE_EFFECT, choixEffetRune, runeEfficiency, runeScore } from '../../lib/effects';
+import { useTraduction } from '../../hooks/useLangue';
 import SetFilter from './SetFilter';
 import FiltresRunes, { EffacerFiltres } from './FiltresRunes';
 import SlotFilter from './SlotFilter';
@@ -53,13 +54,13 @@ const MAX_SUBS = 4;
 // Propriétés secondaires proposées, dans l'ordre de la table de référence.
 // ⚠️ Toutes les lignes de `RUNE_EFFECT` peuvent être un substat SAUF la VIT
 // plate… qui l'est aussi. On garde donc la table entière : c'est exactement ce
-// qu'une rune peut porter.
-const SUBS_OPTIONS = Object.entries(RUNE_EFFECT).map(([code, def]) => ({
-  code: Number(code),
-  label: def.label,
-}));
+// qu'une rune peut porter. Les codes ici ; les libellés, ceux d'un choix du jeu
+// (« PV + », « PV % »), dans la langue affichée.
+const SUBS_CODES = Object.keys(RUNE_EFFECT).map(Number);
 
 export default function RunesList({ runes, menuOuvert, onFermerMenu }: Props) {
+  const jeu = useTraduction().jeu;
+  const subsOptions = useMemo(() => SUBS_CODES.map((code) => ({ code, label: choixEffetRune(code, jeu) })), [jeu]);
   // ⚠️ **Filtres en LISTE BLANCHE : tout coché par défaut.** Un set/slot coché
   // est AFFICHÉ ; par défaut tous le sont (tout est montré), et n'en cocher aucun
   // revient à ne rien vouloir voir. Défaut sets = tous les sets présents à
@@ -244,10 +245,10 @@ export default function RunesList({ runes, menuOuvert, onFermerMenu }: Props) {
           <span className="w-[86px] flex-none label mt-1">Propriété</span>
           <div className="min-w-0 flex-1 max-w-[480px]">
             <SubSearchBar
-              options={SUBS_OPTIONS}
+              options={subsOptions}
               criteres={criteres}
               max={MAX_SUBS}
-              nomDe={(code) => RUNE_EFFECT[code]?.label ?? `#${code}`}
+              nomDe={(code) => choixEffetRune(code, jeu)}
               onChange={(c) => {
                 setCriteres(c);
                 setPage(0);

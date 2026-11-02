@@ -2,7 +2,8 @@ import HelpPopover from '../../HelpPopover';
 import { LARGEUR_LIBELLE_LISTE, LARGEUR_SELECTEUR_LISTE } from './constantes';
 import { Selecteur, NumberField } from '../../../ui';
 import { RelicMainChoice, DEFAULT_RELIC_MIN_UPGRADE, type ArtifactMainChoice, type RelicUniqueChoice } from '../../../hooks/useOptimizerState';
-import { RELIC_MAIN_OPTIONS, RELIC_UNIQUE, relicUniqueEffectLabel } from '../../../lib/effects';
+import { optionsPrincipaleRelique, RELIC_UNIQUE, relicUniqueEffectLabel } from '../../../lib/effects';
+import { useTraduction } from '../../../hooks/useLangue';
 import { type Dispatch, type SetStateAction } from 'react';
 
 export interface ReliqueProps {
@@ -15,6 +16,7 @@ export interface ReliqueProps {
 }
 
 export default function Relique({ relicMainChoice, setRelicMainChoice, relicUniqueChoice, setRelicUniqueChoice, relicMinUpgrade, setRelicMinUpgrade }: ReliqueProps) {
+  const jeu = useTraduction().jeu;
   return (
     <div className="mt-3 border-t border-border-soft pt-3">
       <div className="flex items-center gap-1">
@@ -45,7 +47,7 @@ export default function Relique({ relicMainChoice, setRelicMainChoice, relicUniq
           >
             <option value="equipped">Comme équipée</option>
             <option value="libre">Libre</option>
-            {RELIC_MAIN_OPTIONS.map((o) => (
+            {optionsPrincipaleRelique(jeu).map((o) => (
               <option key={o.code} value={o.code}>
                 {o.label}
               </option>

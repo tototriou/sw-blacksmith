@@ -6,6 +6,8 @@ import ElementIcon from './ElementIcon';
 import Onglets from '../ui/Onglets';
 import LeadPill from './siege/LeadPill';
 import CollabPortrait from './CollabPortrait';
+import { useTraduction } from '../hooks/useLangue';
+import { nomEffet } from '../i18n/jeu';
 import { libelleCollab } from '../lib/collabPairs';
 import {
   Competence,
@@ -287,6 +289,7 @@ function Stat({
 // Une compétence : son nom, son coefficient, sa description, ses effets et ses
 // montées de niveau.
 function CompetenceBloc({ c }: { c: Competence }) {
+  const jeu = useTraduction().jeu;
   const formule = formuleLisible(c.formule);
   const paliers = paliersRechargement(c);
   return (
@@ -390,7 +393,7 @@ function CompetenceBloc({ c }: { c: Competence }) {
               }`}
             >
               {e.icone && <img src={e.icone} alt="" className="h-3.5 w-3.5" loading="lazy" />}
-              {e.nom}
+              {e.nom ? nomEffet(jeu, e.nom) : null}
               {e.surSoi && <Shield size={10} className="opacity-70" />}
             </span>
           ))}

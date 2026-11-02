@@ -9,9 +9,12 @@ fiche qui fait foi : les règles détaillées et les valeurs chiffrées restent 
 
 ### Runes
 
-- **Set de runes** : famille de runes (Swift, Violent, Despair…) dont l'effet s'active quand le
-  monstre en porte 2 ou 4, selon le set. L'app affiche les noms anglais du jeu.
-  Code : `RUNE_SETS`, `set_id`. À éviter : les noms français (« Rapidité » pour Swift).
+- **Set de runes** : famille de runes (Rapide, Violente, Désespoir… ; Swift, Violent, Despair en
+  anglais) dont l'effet s'active quand le monstre en porte 2 ou 4, selon le set. L'app affiche le
+  nom du jeu dans la langue choisie, relevé en jeu pour le français (« Gardien » pour Guard,
+  « Protection » pour Shield). Code : `RUNE_SETS`, `set_id`, `nomSet`. À éviter : un nom
+  traduit par nous (« Rapidité », « Garde »).
+  → [feat-langues.md](../02-app/transverse/feat-langues.md#le-vocabulaire-du-jeu)
   → [feat-calcul-runes.md](../02-app/compte/feat-calcul-runes.md)
 - **Intangible (rune)** : rune joker, qui compte comme une pièce de n'importe quel set pour le
   compléter. Code : `intangible`, `jokers`. Voir aussi Intangible (artéfact).
@@ -79,8 +82,10 @@ fiche qui fait foi : les règles détaillées et les valeurs chiffrées restent 
   → [feat-bombes.md](../02-app/degats-reels/feat-bombes.md),
   [catalogue-des-passifs.md](../02-app/degats-reels/catalogue-des-passifs.md)
 - **Abréviations des stats** : celles du jeu : PV, ATQ, DEF, VIT, Tx critiq., Dgts critiq., RES,
-  Précision. Code : `StatKey` (`cr`, `cd`…), libellés dans `src/lib/effects.ts`. À éviter :
-  « TC », « DCC », « Taux Crit », « Dmg Crit ».
+  Précision ; dans un filtre ou un sélecteur, « PV + » (valeur fixe) et « PV % », comme le filtre
+  du jeu. En anglais : HP, ATK, DEF, SPD, CRI Rate, CRI Dmg, Resistance, Accuracy. Code : `StatKey`
+  (`cr`, `cd`…), libellés dans le lexique du jeu (`src/i18n/jeu/`). À éviter : « TC », « DCC »,
+  « Taux Crit », « Dmg Crit ».
 
 ### Contenus, équipes, monstres
 

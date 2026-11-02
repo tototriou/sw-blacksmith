@@ -183,6 +183,8 @@ import ObjectifEtRechercherBureau from './optimizer/bureau/ObjectifEtRechercherB
 import ResultatsBureau from './optimizer/bureau/ResultatsBureau';
 import { attenteResultats, type ColonneReglage } from '../../lib/optimizerColonnes';
 import { PREFIXE_FICHIER } from '../../marque';
+import { useTraduction } from '../../hooks/useLangue';
+import { nomElement } from '../../i18n/jeu';
 
 interface Props {
   recommandations?: Reco[];
@@ -360,6 +362,7 @@ const AUCUNE_RECOMMANDATION: Reco[] = [];
 const AUCUNE_CARTE: CarteClassement[] = [];
 
 export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATION, box, runes, artifacts, relics, relicUsageById, optimizer, onImporterEquipe, allMonsters, rtaEntries, siegeDefenseTeams, siegeOffenseTeams, lists, accountName, menuOuvert, onFermerMenu, onOuvrirMenu, onMonstreHorsVue }: Props) {
+  const jeu = useTraduction().jeu;
   const [rapportImport, setRapportImport] = useState<RapportImportOptimizer | null>(null);
   // Zone C du téléphone (« Gérer mes listes »), repliée par défaut.
   const [zoneCOpen, setZoneCOpen] = useState(false);
@@ -615,7 +618,7 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
     const cibleRetenue = resolvedSkill && resumeCibleDegatsRetenue(resolvedSkill, damageSetup);
     if (cibleRetenue) bouts.push(cibleRetenue);
     const cible = ELEMENTS.find((e) => e.key === damageSetup.enemyElement);
-    bouts.push(cible ? `vs ${cible.label}` : 'élément ignoré');
+    bouts.push(cible ? `vs ${nomElement(jeu, cible.key)}` : 'élément ignoré');
     bouts.push(`PV ${damageSetup.enemyHp.toLocaleString('fr-FR')}`);
     // ⚠️ **La DEF et le critique seulement si le sort les CONSOMME**, via le
     // même prédicat que la fenêtre (`champsDuCombat`). Cette ligne affichait
@@ -632,7 +635,7 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
     // visibles, dans « État de mon monstre ». Les répéter en texte alors qu'ils
     // sont réglables trois cartes plus haut ne fait que du bruit.
     return bouts.join(' · ');
-  }, [resolvedSkill, damageSetup, critInterdit]);
+  }, [resolvedSkill, damageSetup, critInterdit, jeu]);
   // Passifs offensifs de CE monstre (Feng Yan, Sia, Roid… — voir
   // docs/02-app/degats-reels/) — indépendants du sort choisi, calculés dès
   // qu'une fiche est chargée, comme `damageSkills`.

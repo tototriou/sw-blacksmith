@@ -19,6 +19,7 @@ import { IconeOffense } from '../IconesAtelier';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ARTIFACT_KINDS,
+  sortesArtefact,
   ArtifactKind,
   LeaderSkill,
   MAX_ARTIFACT_SUBS,
@@ -48,6 +49,8 @@ import {
   MAX_SET_PIECES,
 } from '../../lib/effects';
 import { UseRecoState } from '../../hooks/useSiegeRecos';
+import { useTraduction } from '../../hooks/useLangue';
+import { nomSet } from '../../i18n/jeu';
 import RuneIcon from '../RuneIcon';
 import { STATS_AVEC_BASE } from '../../lib/stats';
 import SetsPortes from '../SetsPortes';
@@ -1416,6 +1419,7 @@ function DeckBlock({
   // Termine l'édition du deck avant sa suppression.
   onSupprime: () => void;
 }) {
+  const jeu = useTraduction().jeu;
   // Supprimer un deck SE DÉFAIT au lieu de se confirmer : immédiat, puis
   // « Deck supprimé · Annuler » le remet à SA place — le dernier deck remplace
   // alors le deck vide laissé derrière lui (voir `decksApresRestauration`).
@@ -1548,7 +1552,7 @@ function DeckBlock({
                     espacement="gap-0.5"
                     affichage="hidden lg:inline-flex"
                     className="flex-none"
-                    title={sets.map((k) => RUNE_SETS.find((s) => s.key === k)?.label ?? k).join(' + ')}
+                    title={sets.map((k) => nomSet(jeu, k)).join(' + ')}
                   />
                 </span>
               );
@@ -1744,7 +1748,7 @@ function DeckBlock({
                   className={`w-max rounded-full border border-border-soft bg-panel2 py-0.5 ${
                     sets.length === 3 ? 'px-0' : 'px-1.5'
                   }`}
-                  title={sets.map((k) => RUNE_SETS.find((s) => s.key === k)?.label ?? k).join(' + ')}
+                  title={sets.map((k) => nomSet(jeu, k)).join(' + ')}
                 />
               );
             })}
@@ -2641,6 +2645,7 @@ export function StatEditor({
   lead: number;
   onSet: (key: RecoStatKey, total: number | null) => void;
 }) {
+  const jeu = useTraduction().jeu;
   // Raccourci « Tick rapide / Tick lent », comme sur les cartes d'équipe du
   // siège : un clic met la VIT de FICHE qui tombe pile sur le tick, totem et
   // lead du deck compris. ⚠️ **Rien n'est stocké** : seule la VIT l'est, et on
@@ -2720,7 +2725,7 @@ export function StatEditor({
             data-stat-reco={st.key}
             className="flex flex-wrap items-center gap-x-2 gap-y-1 border-b border-border/40 py-1 text-micro last:border-0"
           >
-            <span className="w-14 flex-none text-ink-dim">{st.label}</span>
+            <span className="w-14 flex-none text-ink-dim">{jeu.stats[st.key]}</span>
             <span className="flex-none font-mono text-ink-dim tabular-nums">
               {known != null ? fmtStat(known) : '—'}
             </span>
@@ -2880,6 +2885,7 @@ function SetEditor({
   onAddOption: () => void;
   onRemoveOption: (option: number) => void;
 }) {
+  const jeu = useTraduction().jeu;
   // Possibilité VISÉE par les ajouts. Par défaut la dernière — on construit la
   // combinaison en cours. Cliquer une chip d'une autre possibilité la vise, ce
   // qui permet de revenir compléter une combinaison laissée incomplète
@@ -3041,10 +3047,10 @@ function SetEditor({
                   disabled={!fits}
                   title={
                     fits
-                      ? `${st.label} — ${setPieces(st.key)} runes`
-                      : `${st.label} — ${setPieces(st.key)} runes : il ne reste pas la place`
+                      ? `${nomSet(jeu, st.key)} — ${setPieces(st.key)} runes`
+                      : `${nomSet(jeu, st.key)} — ${setPieces(st.key)} runes : il ne reste pas la place`
                   }
-                  aria-label={st.label}
+                  aria-label={nomSet(jeu, st.key)}
                   // ⚠️ `data-cible-fine` : grille serrée d'icônes de set, où une
                   // cible de 44 px déborderait sur la voisine.
                   data-cible-fine
@@ -3089,13 +3095,15 @@ function ArtifactEditor({
   onAdd: (kind: ArtifactKind, code: number) => void;
   onRemove: (kind: ArtifactKind, code: number) => void;
 }) {
+  const textes = useTraduction();
+  const jeu = textes.jeu;
   return (
     <div className="space-y-1.5">
       <span className="label">Artéfacts</span>
-      {ARTIFACT_KINDS.map(({ key, label }) => {
+      {sortesArtefact(textes).map(({ key, label }) => {
         const choisis = artifacts?.[key] ?? [];
         const plein = choisis.length >= MAX_ARTIFACT_SUBS;
-        const dispo = artifactSubsFor(key).filter((o) => !choisis.includes(o.code));
+        const dispo = artifactSubsFor(key, jeu).filter((o) => !choisis.includes(o.code));
         return (
           <div key={key}>
             <div className="flex items-center justify-between gap-2">
@@ -3112,7 +3120,7 @@ function ArtifactEditor({
                     key={code}
                     className="inline-flex items-center gap-1 rounded-full border border-border bg-panel pl-1.5 pr-1 py-0.5"
                   >
-                    <span className="text-micro text-ink">{artifactSubLabel(code)}</span>
+                    <span className="text-micro text-ink">{artifactSubLabel(code, jeu)}</span>
                     <BoutonIcone
                       onClick={() => onRemove(key, code)}
                       ton="danger"
@@ -3167,6 +3175,8 @@ function ArtifactList({
   artifacts: Record<ArtifactKind, number[]>;
   sm: SlotMatch | null;
 }) {
+  const textes = useTraduction();
+  const jeu = textes.jeu;
   const rien = ARTIFACT_KINDS.every(({ key }) => (artifacts?.[key] ?? []).length === 0);
   if (rien) return null;
   // Après analyse seulement : sans build confronté, un ✗ sur chaque ligne
@@ -3177,7 +3187,7 @@ function ArtifactList({
   return (
     <div className="space-y-1">
       <span className="label">Artéfacts</span>
-      {ARTIFACT_KINDS.map(({ key, label }) => {
+      {sortesArtefact(textes).map(({ key, label }) => {
         const codes = artifacts?.[key] ?? [];
         if (codes.length === 0) return null;
         return (
@@ -3206,7 +3216,7 @@ function ArtifactList({
                   }`}
                 >
                   <span className="text-micro text-ink">
-                    {artifactSubLabel(code)}
+                    {artifactSubLabel(code, jeu)}
                   </span>
                   {ok === true && <Check size={10} className="text-good" />}
                   {ok === false && <X size={10} className="text-bad" />}
@@ -3426,6 +3436,8 @@ function StatList({
   monster: Monster | null;
   sm: SlotMatch | null;
 }) {
+  const textes = useTraduction();
+  const jeu = textes.jeu;
   const entries = RECO_STATS.filter((st) => (slot.stats[st.key] ?? 0) > 0);
   const [total, setTotal] = useState(false);
   if (entries.length === 0) {
@@ -3469,7 +3481,7 @@ function StatList({
               text-micro last:border-0 ${rate ? 'bg-bad-soft' : ''}`}
           >
             <span className={`w-14 flex-none ${rate ? 'text-bad font-semibold' : 'text-ink-dim'}`}>
-              {st.label}
+              {jeu.stats[st.key]}
             </span>
             {/* Taux Crit, Dmg Crit, RES et Précision : toujours le total
                 (`STATS_AVEC_BASE`, décision de l'utilisateur pour toute l'app). */}

@@ -31,7 +31,13 @@ export function testLangueResolution() {
 }
 
 // Les clés de `fr` et de `en`, à plat, avec la nature de chaque valeur.
+// ⚠️ Sauf `jeu.effets` : une table OUVERTE, indexée par le nom SWARFARM, vide en
+// anglais (le nom SWARFARM est déjà le nom anglais du jeu). Son test :
+// tests/lexique-jeu.test.ts.
+const TABLES_OUVERTES = new Set(['jeu.effets.']);
+
 function forme(objet: Record<string, unknown>, prefixe = ''): string[] {
+  if (TABLES_OUVERTES.has(prefixe)) return [];
   return Object.entries(objet).flatMap(([cle, v]) =>
     v && typeof v === 'object'
       ? forme(v as Record<string, unknown>, `${prefixe}${cle}.`)

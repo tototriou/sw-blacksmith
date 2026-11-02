@@ -1,5 +1,4 @@
 import { ReactNode, useState } from 'react';
-import { RUNE_SETS } from '../types';
 import { runeSetIconFilter } from '../lib/effects';
 import {
   BROKEN,
@@ -18,10 +17,11 @@ import {
 } from '../hooks/useBuildsRapides';
 import { Bouton, BoutonIcone, Jeton, Modale, NumberField } from '../ui';
 import RuneIcon from './RuneIcon';
+import { nomSet, type LexiqueJeu } from '../i18n/jeu';
 import type { Dictionnaire } from '../i18n';
+import { useTraduction } from '../hooks/useLangue';
 import SymbolesCombo, { nomCombo } from './SymbolesCombo';
 
-const label = (key: string) => RUNE_SETS.find((s) => s.key === key)?.label ?? key;
 
 // Résumé d'une ligne, sous l'intitulé du réglage.
 export function resumeBuildsRapides(r: ReglageBuildsRapides, t: Dictionnaire['parametres']): string {
@@ -32,6 +32,8 @@ export function resumeBuildsRapides(r: ReglageBuildsRapides, t: Dictionnaire['pa
 // combinaison, et les combinaisons affichées. Chaque geste s'applique tout de
 // suite, comme les autres réglages : il n'y a rien à valider.
 export default function DialogueBuildsRapides({ onClose }: { onClose: () => void }) {
+  const jeu: LexiqueJeu = useTraduction().jeu;
+  const label = (key: string) => nomSet(jeu, key);
   const reglage = useBuildsRapides();
   const [quatre, setQuatre] = useState(SETS_QUATRE[0]);
   const presentes = new Set(reglage.combos.map(cleCombo));
@@ -153,9 +155,9 @@ export default function DialogueBuildsRapides({ onClose }: { onClose: () => void
                 <Jeton
                   key={cleCombo(c)}
                   icone={<SymbolesCombo combo={c} taille={14} />}
-                  libelle={nomCombo(c)}
+                  libelle={nomCombo(c, jeu)}
                   onRetirer={() => retirer(c)}
-                  libelleRetrait={`Retirer ${nomCombo(c)}`}
+                  libelleRetrait={`Retirer ${nomCombo(c, jeu)}`}
                 />
               ))}
             </div>

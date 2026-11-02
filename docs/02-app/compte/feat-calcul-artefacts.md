@@ -196,7 +196,8 @@ casse donc plus qu'un affichage.
 
 ### Les libellés sont ceux du JEU
 
-⚠️ `ARTIFACT_SUB` porte les libellés **du jeu**, pas une reformulation : « Drain
+⚠️ Le lexique du jeu (`sousProprietes`, `src/i18n/jeu/`) porte les libellés **du jeu**, dans
+chaque langue, pas une reformulation : « Drain
 de vie » et non « Vol de vie », « Dgts supp. en prop. de ATQ » et non « Dégâts
 add. par X% de l'ATQ », « [Comp.1] Aug. Dgts CRIT » et non « Dmg crit
 Compétence 1 ». Un joueur qui lit autre chose dans SW Blacksmith que dans son
@@ -205,8 +206,10 @@ pour les sortes d'artéfact (voir [feat-artefacts.md](feat-artefacts.md)).
 
 `artifactSubName()` en retire la valeur pour les listes de filtre, où « +X% »
 n'apporte rien. ⚠️ Pas par une expression régulière naïve : la valeur est parfois
-**au milieu** du libellé (« Dgts supp. en prop. des PV : X% ») ou annoncée par ce
-qui la précède (« …, jusqu'à +X% »).
+**au milieu** du libellé (« Dgts supp. en prop. des PV : X% », « Additional Damage
+by X% of HP ») ou annoncée par ce qui la précède (« …, jusqu'à +X% », « …up to
+X% »). Les codes connus, indépendants de la langue : `CODES_SOUS_PROPRIETES`
+(`src/lib/effects.ts`).
 
 ## 4. Stat principale (`pri_effect`)
 

@@ -1,7 +1,8 @@
 import { CONFIGURABLE_SLOTS } from './constantes';
 import { SLOT_MAIN_OPTIONS } from '../../../lib/runeBuildOptim';
 import { Pastille } from '../../../ui';
-import { RUNE_EFFECT } from '../../../lib/effects';
+import { choixEffetRune } from '../../../lib/effects';
+import { useTraduction } from '../../../hooks/useLangue';
 
 export interface StatPrincipaleImposeeProps {
   mainStatsBySlot: Partial<Record<2 | 4 | 6, number[]>>;
@@ -9,6 +10,7 @@ export interface StatPrincipaleImposeeProps {
 }
 
 export default function StatPrincipaleImposee({ mainStatsBySlot, toggleMainStat }: StatPrincipaleImposeeProps) {
+  const jeu = useTraduction().jeu;
   return (
     <div className="mt-4 border-t border-border-soft pt-4">
       <div className="mb-2.5 flex items-center gap-1.5">
@@ -25,7 +27,7 @@ export default function StatPrincipaleImposee({ mainStatsBySlot, toggleMainStat 
                   key={code}
                   actif={active}
                   onClick={() => toggleMainStat(slot, code)}
-                  libelle={RUNE_EFFECT[code]?.label ?? code}
+                  libelle={choixEffetRune(code, jeu)}
                 />
               );
             })}

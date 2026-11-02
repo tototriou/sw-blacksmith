@@ -2,7 +2,7 @@ import { isDeepStrictEqual } from 'node:util';
 import type { ArtifactDetail, RecoDeck } from '../src/types';
 import { appliquerCriteres, baseCompleteCriteres } from '../src/lib/criteresOptimizer';
 import { retrouverDeckCompositionOptimizer } from '../src/lib/deckCompositionOptimizer';
-import { ARTIFACT_SUB, artifactSubKinds } from '../src/lib/effects';
+import { CODES_SOUS_PROPRIETES, artifactSubKinds } from '../src/lib/effects';
 import { paireRespecteLignes } from '../src/lib/artifactOptim';
 import { leadEffectifMembreOptimizer } from '../src/lib/equipesOptimizer';
 import { consommerImportOptimizer } from '../src/lib/importEquipes';
@@ -56,7 +56,7 @@ export function testImportRecoMinimumsFiche() {
 }
 export function testImportRecoLignesPropresEtCommunes() {
   titre('Import recommandation · lignes propres et communes, seuils pour toutes les propriétés reconnues');
-  for (const code of Object.keys(ARTIFACT_SUB).map(Number)) {
+  for (const code of CODES_SOUS_PROPRIETES) {
     const deck = recommandationComposition(), sorte = artifactSubKinds(code)[0];
     deck.slots[0].artifacts[sorte] = [code];
     const { p, stockage, rapport } = consommer(deck);

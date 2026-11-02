@@ -5,11 +5,13 @@
 import { useEffect, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { ChevronLeft, ChevronRight, Maximize2, Minimize2, X } from 'lucide-react';
-import { RuneDetail, RUNE_SETS } from '../../types';
+import { RuneDetail } from '../../types';
 import { RuneDetailBox } from '../PieceDetail';
 import RuneSlotIcon from '../RuneSlotIcon';
 import { useScrollBloque } from '../../hooks/useScrollBloque';
 import { BoutonIcone } from '../../ui';
+import { useTraduction } from '../../hooks/useLangue';
+import { nomSet } from '../../i18n/jeu';
 
 export interface CurveSeries {
   name: string;
@@ -90,6 +92,7 @@ export default function CurveChart({
   yLabel?: string;
   unit?: string; // suffixe des valeurs (graduations et infobulle)
 }) {
+  const jeu = useTraduction().jeu;
   const svgRef = useRef<SVGSVGElement>(null);
   const [hover, setHover] = useState<number | null>(null);
   // Rang cliqué. `null` = fermé.
@@ -705,7 +708,7 @@ export default function CurveChart({
                   />
                   <div className="min-w-0">
                     <div className="truncate text-sm font-bold leading-tight text-ink">
-                      {RUNE_SETS.find((s) => s.key === rune.set)?.label ?? rune.set} ·{' '}
+                      {nomSet(jeu, rune.set)} ·{' '}
                       <span className="text-ink-dim">slot {rune.slot}</span>
                     </div>
                     {/* Le rang n'est PAS répété ici : il vit dans la barre de

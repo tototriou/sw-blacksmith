@@ -7,6 +7,8 @@ import {
   artifactSubName,
 } from '../../lib/effects';
 import { artifactScore, artifactEfficiency, maxRolls, isFullStack } from '../../lib/artifacts';
+import { useTraduction } from '../../hooks/useLangue';
+import { nomGrade } from '../../i18n/jeu';
 import { Kpi, Panel, pct, fmt, CARTE_CHIFFRES_DOIGT } from './SummaryBits';
 import ArtifactsTop from './ArtifactsTop';
 
@@ -122,6 +124,7 @@ function analyse(arts: ArtifactDetail[]) {
 type Analyse = ReturnType<typeof analyse>;
 
 export default function ArtifactsSummary({ artifacts }: Props) {
+  const jeu = useTraduction().jeu;
   const s = useMemo(() => {
     const par = Object.fromEntries(
       KINDS.map((k) => [k.key, analyse(artifacts.filter((a) => a.kind === k.key))])
@@ -251,7 +254,7 @@ export default function ArtifactsSummary({ artifacts }: Props) {
                         r.n > 0 && (
                           <div
                             key={r.rarity}
-                            title={`${RARITY_META[r.rarity].label} — ${r.n}`}
+                            title={`${nomGrade(jeu, r.rarity)} — ${r.n}`}
                             style={{
                               width: `${pct(r.n, a.total)}%`,
                               background: RARITY_META[r.rarity].color,
@@ -269,7 +272,7 @@ export default function ArtifactsSummary({ artifacts }: Props) {
                             className="inline-block w-1.5 h-1.5 rounded-full ring-1 ring-inset ring-black/20"
                             style={{ background: RARITY_META[r.rarity].color }}
                           />
-                          {RARITY_META[r.rarity].label} <b className="text-ink">{r.n}</b>
+                          {nomGrade(jeu, r.rarity)} <b className="text-ink">{r.n}</b>
                         </span>
                       ))}
                   </div>
@@ -283,7 +286,7 @@ export default function ArtifactsSummary({ artifacts }: Props) {
             {[...new Set([...A.mains, ...T.mains].map((m) => m.code))].map((code) => (
               <LigneDouble
                 key={code}
-                label={ARTIFACT_MAIN[code]?.label ?? `#${code}`}
+                label={ARTIFACT_MAIN[code] ? jeu.stats[ARTIFACT_MAIN[code].stat] : `#${code}`}
                 gauche={A.mains.find((m) => m.code === code)?.n ?? 0}
                 droite={T.mains.find((m) => m.code === code)?.n ?? 0}
                 max={Math.max(...A.mains.map((m) => m.n), ...T.mains.map((m) => m.n))}
@@ -330,12 +333,12 @@ export default function ArtifactsSummary({ artifacts }: Props) {
                     <div key={q.code} className="flex items-center gap-2.5">
                       <span
                         className="flex-1 min-w-0 truncate font-mono text-micro text-ink-dim"
-                        title={artifactSubLabel(q.code)}
+                        title={artifactSubLabel(q.code, jeu)}
                       >
                         {/* `artifactSubName` plutôt qu'un `replace` maison : il
                             gère les libellés dont la valeur est au milieu
                             (« Dégâts add. par X% des PV »). */}
-                        {artifactSubName(q.code)}
+                        {artifactSubName(q.code, jeu)}
                       </span>
                       <div className="h-2 w-[64px] flex-none rounded-full bg-panel2 overflow-hidden">
                         <div

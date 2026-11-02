@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 import { GripVertical, X } from 'lucide-react';
 import { Monster, RtaEntry, sectionLabel } from '../../types';
+import { useTraduction } from '../../hooks/useLangue';
 import MonsterAvatar from '../MonsterAvatar';
 import SetsPortes from '../SetsPortes';
 import CategoryRing from './CategoryRing';
@@ -43,6 +44,7 @@ export default function RtaCard({
   showSpeed = true,
   markDesync = true,
 }: Props) {
+  const textes = useTraduction();
   const cardRef = useRef<HTMLDivElement>(null);
   // ⚠️ Le retrait se DÉFAIT au lieu de se confirmer : la
   // croix retire tout de suite, et la page annonce « … retiré de ta prépa ·
@@ -210,7 +212,7 @@ export default function RtaCard({
         >
           {sectionKeys.map((k) => (
             <option key={k} value={k}>
-              {sectionLabel(k)}
+              {sectionLabel(k, textes)}
             </option>
           ))}
         </Selecteur>

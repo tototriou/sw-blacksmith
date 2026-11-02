@@ -2,6 +2,7 @@ import { memo, ReactNode, useCallback, useEffect, useMemo, useRef, useState } fr
 import { RotateCw, AlertTriangle, PackageCheck, Swords, Lock, Hammer, Gem, ChevronDown, Tag } from 'lucide-react';
 import { CraftLine, RuneDetail } from '../../types';
 import { formatRuneEffect, RUNE_EFFECT } from '../../lib/effects';
+import { useTraduction } from '../../hooks/useLangue';
 import { runePotential, RunePotential, runePlan, planNeeds } from '../../lib/runeOptim';
 import {
   PERIMETRES_UTILISES,
@@ -960,6 +961,7 @@ export const OptimTile = memo(function OptimTile({
   // garde sa taille.
   etroit?: boolean;
 }) {
+  const jeu = useTraduction().jeu;
   const ref = useRef<HTMLDivElement>(null);
   const { rune, pot } = row;
   const ancient = rune.rank > 10;
@@ -987,7 +989,7 @@ export const OptimTile = memo(function OptimTile({
         />
         <div className="min-w-0 flex-1">
           <div className={`font-bold text-ink leading-tight truncate ${etroit ? 'text-nano' : 'text-xs'}`}>
-            {formatRuneEffect(rune.main)}
+            {formatRuneEffect(rune.main, jeu)}
           </div>
           <div className={`font-mono text-accent leading-tight ${etroit ? 'text-nano' : 'text-xs'}`}>
             {/* ⚠️ Toute la ligne en BRAISE (`text-accent`, donc la braise
@@ -1065,8 +1067,10 @@ function SubLine({
   // `null` = rien à poser sur cette ligne, ou réserve inconnue → aucun marquage.
   enReserve?: { kind: 'grind' | 'gem'; ok: boolean } | null;
 }) {
+  const jeu = useTraduction().jeu;
   const def = RUNE_EFFECT[code];
-  const label = def ? (def.label.endsWith('%') ? def.label.slice(0, -1) : def.label) : `#${code}`;
+  // La stat seule : la ligne porte déjà le « % » après sa valeur.
+  const label = def ? jeu.stats[def.stat] : `#${code}`;
   const suffix = def?.suffix ?? '';
   return (
     <div className="flex items-center gap-1 leading-tight">
@@ -1132,6 +1136,7 @@ export function OptimPlanBox({
   restreint?: boolean;
   stock?: CraftStock | null;
 }) {
+  const jeu = useTraduction().jeu;
   const metric = useRuneMetric();
   // ⚠️ **Quelle ligne puis-je poser MAINTENANT.** Le plan dit quoi faire, la
   // réserve dit ce qui est à portée : sans le croisement, il faut aller compter
@@ -1160,9 +1165,9 @@ export function OptimPlanBox({
       </div>
 
       {/* stat principale + innée (communes aux deux colonnes) */}
-      <div className="text-sm font-black text-ink leading-tight">{formatRuneEffect(rune.main)}</div>
+      <div className="text-sm font-black text-ink leading-tight">{formatRuneEffect(rune.main, jeu)}</div>
       {rune.innate && (
-        <div className="text-xs font-semibold text-water leading-tight">{formatRuneEffect(rune.innate)}</div>
+        <div className="text-xs font-semibold text-water leading-tight">{formatRuneEffect(rune.innate, jeu)}</div>
       )}
 
       <div className="mt-2 pt-2 border-t border-border/40 grid grid-cols-2 gap-x-4">

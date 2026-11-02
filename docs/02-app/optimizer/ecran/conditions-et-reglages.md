@@ -2,8 +2,8 @@
 
 Ce document décrit les conditions, l'inventaire et les réglages avancés.
 
-7. **Conditions** — les 8 stats (PV, ATQ, DEF, VIT, Taux Crit, Dmg Crit, RES,
-   Précision). Chaque stat porte **deux champs, minimum et maximum**, tous
+7. **Conditions** — les 8 stats (PV, ATQ, DEF, VIT, Tx critiq., Dgts critiq., RES,
+   Précision), nommées comme dans le jeu. Chaque stat porte **deux champs, minimum et maximum**, tous
    deux facultatifs — champ vide = pas de contrainte. Au téléphone, en bas
    de « Critères de recherche », sous le set et les principales ; au bureau,
    une section « Conditions » de 294 px de « Critères », sous le set, au-dessus

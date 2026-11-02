@@ -22,6 +22,9 @@ import {
   emptyRecoSlot,
 } from '../types';
 import { artifactSubKinds, artifactSubLabel, canAddSet, isArtifactSub } from './effects';
+// Les messages et le champ `propriete` du fichier partagé sont rédigés en
+// français : les libellés du jeu viennent du lexique français (`jeuFr`).
+import { jeuFr } from '../i18n/jeu/fr';
 import { NOM_APP } from '../marque';
 import { formatExport, formatReconnu } from './formatsExport';
 
@@ -166,7 +169,7 @@ export function cleanArtifacts(
       if (!artifactSubKinds(code).includes(kind)) {
         warn(
           ctx,
-          `${where} : « ${artifactSubLabel(code)} » n'existe pas sur un artéfact de ${cle} — ignorée.`
+          `${where} : « ${artifactSubLabel(code, jeuFr)} » n'existe pas sur un artéfact de ${cle} — ignorée.`
         );
         continue;
       }
@@ -195,7 +198,7 @@ function artifactsToJson(
   for (const { key } of ARTIFACT_KINDS) {
     const codes = (artifacts?.[key] ?? []).filter(isArtifactSub).slice(0, MAX_ARTIFACT_SUBS);
     if (codes.length) {
-      out[CLE_PAR_KIND[key]] = codes.map((code) => ({ code, propriete: artifactSubLabel(code) }));
+      out[CLE_PAR_KIND[key]] = codes.map((code) => ({ code, propriete: artifactSubLabel(code, jeuFr) }));
     }
   }
   return Object.keys(out).length ? out : undefined;

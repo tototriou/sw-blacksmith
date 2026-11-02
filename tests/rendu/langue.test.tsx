@@ -6,6 +6,8 @@
 // source, le français. Chaque test qui choisit l'anglais revient à « Auto ».
 
 import { SettingsList } from '../../src/components/SettingsMenu';
+import { RuneDetailBox } from '../../src/components/PieceDetail';
+import type { RuneDetail } from '../../src/types';
 import { setChoixLangue } from '../../src/hooks/useLangue';
 import { ok, titre } from '../outils';
 import { rendreApp } from './app.test';
@@ -51,6 +53,31 @@ export function testRenduLangueParametres() {
     ok(!texte.includes(absent), `plus de « ${absent} »`);
   }
   ok(texteVisible(reglages()).includes('Garder mes données'), 'revenu à « Auto » : le français du rendu serveur');
+}
+
+// Une rune Violente légendaire, principale Dgts critiq. — le vocabulaire du jeu
+// s'y lit partout : stat principale, secondaires, grade, effet du set.
+const RUNE: RuneDetail = {
+  id: 1,
+  slot: 2,
+  set: 'violent',
+  rank: 6,
+  rarity: 5,
+  level: 15,
+  main: { code: 10, value: 80 },
+  subs: [{ code: 8, value: 30 }, { code: 9, value: 20 }],
+};
+
+export function testRenduLangueFicheRune() {
+  titre('rendu · langue — la fiche d’une rune, dans le vocabulaire du jeu de chaque langue');
+  const fr = texteVisible(rendre(<RuneDetailBox rune={RUNE} />));
+  for (const attendu of ['Dgts critiq. +80%', 'Légendaire', 'VIT 30', 'Tx critiq. 20%', '4 Set : Chance de tour supplémentaire 22%']) {
+    ok(fr.includes(attendu), `français : « ${attendu} »`);
+  }
+  const en = enAnglais(() => texteVisible(rendre(<RuneDetailBox rune={RUNE} />)));
+  for (const attendu of ['CRI Dmg +80%', 'Legend', 'SPD 30', 'CRI Rate 20%', '4 Set: Get Extra Turn +22%']) {
+    ok(en.includes(attendu), `anglais : « ${attendu} »`);
+  }
 }
 
 export function testRenduLangueApp() {

@@ -67,6 +67,8 @@ export const RELEASES: Release[] = [
     changes: [
       { kind: 'feat', scope: 'Paramètres', text: 'Nouveau réglage « Langue » : Auto, Français ou English.' },
       { kind: 'feat', scope: 'Navigation', text: 'Menus, barre du haut, recherche et Paramètres traduits en anglais.' },
+      { kind: 'feat', scope: 'Jeu', text: 'Sets, stats, effets et artéfacts portent les noms du jeu, en français comme en anglais.' },
+      { kind: 'fix', scope: 'Runes', text: '« Tx critiq. » et « Dgts critiq. » comme dans le jeu, et le bon effet du set Sceau.' },
     ],
   },
   {

@@ -16,6 +16,8 @@ import { X } from 'lucide-react';
 import { BoutonIcone, NumberField, Selecteur } from '../../ui';
 import { ARTIFACT_KINDS, ArtifactKind, MAX_ARTIFACT_SUBS } from '../../types';
 import { artifactSubName, artifactSubsFor } from '../../lib/effects';
+import { useTraduction } from '../../hooks/useLangue';
+import type { LexiqueJeu } from '../../i18n/jeu';
 import { LigneVerrouillee, budgetEmplacements, plafondLigne } from '../../lib/artifactOptim';
 import { ARTIFACT_SUB_MAX } from '../../lib/artifacts';
 import { codesEquivalentsAuVerrou } from '../../lib/damage';
@@ -26,10 +28,10 @@ const MAX_LIGNES = MAX_ARTIFACT_SUBS * 2;
 // Toutes les sous-propriétés proposables, dans l'ordre du JEU (celui de la
 // « Recherche détaillée » en jeu, voir `artifactSubOrder`), sans doublon entre
 // les deux sortes.
-function toutesLesLignes(): { code: number; nom: string; sortes: ArtifactKind[] }[] {
+function toutesLesLignes(jeu: LexiqueJeu): { code: number; nom: string; sortes: ArtifactKind[] }[] {
   const vues = new Map<number, ArtifactKind[]>();
   for (const { key } of ARTIFACT_KINDS) {
-    for (const o of artifactSubsFor(key)) {
+    for (const o of artifactSubsFor(key, jeu)) {
       const deja = vues.get(o.code);
       if (deja) deja.push(key);
       else vues.set(o.code, [key]);
@@ -41,7 +43,7 @@ function toutesLesLignes(): { code: number; nom: string; sortes: ArtifactKind[] 
     // saisie, et exiger une valeur qu'aucun artéfact ne peut porter ne rendrait
     // que « 0 build » sans explication.
     .filter(([code]) => plafondLigne(code) > 0)
-    .map(([code, sortes]) => ({ code, nom: artifactSubName(code), sortes }));
+    .map(([code, sortes]) => ({ code, nom: artifactSubName(code, jeu), sortes }));
 }
 
 function Pastille({ sortes }: { sortes: ArtifactKind[] }) {
@@ -91,7 +93,8 @@ export default function ArtifactLinesEditor({
   // posée doit garder son nom, sa pastille et son plafond même si sa sorte
   // vient d'être figée — sinon elle s'afficherait « #308 » sans plus rien dire,
   // au moment précis où l'utilisateur doit décider de la retirer.
-  const catalogueComplet = toutesLesLignes();
+  const jeu = useTraduction().jeu;
+  const catalogueComplet = toutesLesLignes(jeu);
   const parCode = new Map(catalogueComplet.map((l) => [l.code, l]));
   // Proposable seulement si AU MOINS une des sortes qui peuvent la porter
   // cherche encore.

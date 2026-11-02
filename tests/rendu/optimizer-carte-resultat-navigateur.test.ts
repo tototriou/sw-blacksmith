@@ -30,7 +30,7 @@ const relever = (page: Page) => page.evaluate((): Releve => {
   const entete = carte.firstElementChild!;
   const valeur = [...carte.querySelectorAll('span')].find((s) => /^Efficience moyenne :/.test(s.textContent!.trim()) && s.children.length === 0)!;
   const rang = [...entete.querySelectorAll('span')].find((s) => s.textContent === '#2')!;
-  const set = [...entete.querySelectorAll('span')].find((s) => s.textContent === 'Swift') ?? null;
+  const set = [...entete.querySelectorAll('span')].find((s) => s.textContent === 'Rapide') ?? null;
   const ligneObjectif = [...carte.querySelectorAll('p')].find((p) => /^(PV effectifs|Dégâts)/.test(p.textContent!.trim()));
   const valeurObjectif = ligneObjectif?.querySelector('.text-star') ?? null;
   // La place de l'écart : le frère qui précède la valeur.
@@ -86,12 +86,14 @@ export async function testRenduOptimizerCarteResultatBureau() {
         place: Math.round(zone.clientWidth - parseFloat(zs.paddingLeft) - parseFloat(zs.paddingRight)),
         coupees: cellules.filter((c) => c.scrollWidth > c.clientWidth + 0.5).map((c) => c.textContent),
         lignes, pv: cellules.slice(0, 3).map((c) => c.textContent),
+        colonnes: [...table.querySelectorAll('tr')[0].children].map((c) => Math.round(c.getBoundingClientRect().width)),
+        haute: [...table.querySelectorAll('tr')].sort((a, b) => b.getBoundingClientRect().height - a.getBoundingClientRect().height)[0].textContent,
       };
     });
     // Une ligne repliée grandirait d'un interligne ; seul le trait sous chaque
     // ligne, absent de la dernière, les sépare d'un pixel au plus.
     ok(fiche.largeur === 174 && fiche.table <= fiche.place && fiche.coupees.length === 0 && Math.max(...fiche.lignes) - Math.min(...fiche.lignes) <= 1,
-      `bureau : fiche de stats de 174 px, rien de tronqué ni de replié au pire cas (${fiche.pv.join(' ')} ; table ${fiche.table} px pour ${fiche.place}, lignes ${[...new Set(fiche.lignes)].join('/')} px)`);
+      `bureau : fiche de stats de 174 px, rien de tronqué ni de replié au pire cas (${fiche.pv.join(' ')} ; table ${fiche.table} px pour ${fiche.place}, lignes ${[...new Set(fiche.lignes)].join('/')} px, colonnes ${fiche.colonnes.join('/')} px, la plus haute « ${fiche.haute} »)`);
     const pose = await relever(page);
     ok(pose.debordeCarte.length === 0, `bureau : à 328 px, rien ne sort de la carte (${pose.debordeCarte.slice(0, 3).join(', ') || 'aucun'})`);
 

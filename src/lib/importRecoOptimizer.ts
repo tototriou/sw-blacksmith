@@ -2,6 +2,9 @@ import { ARTIFACT_KINDS, RECO_STATS, type RecoDeck, type RecoSlot } from '../typ
 import type { CriteresPartielsOptimizer } from './criteresOptimizer';
 import { retrouverDeckCompositionOptimizer, selecteurRepliCompositionOptimizer } from './deckCompositionOptimizer';
 import { artifactSubKinds, artifactSubName, isArtifactSub, SET_BONUS, setsCost, MAX_SET_PIECES } from './effects';
+// Texte rédigé en français : les libellés du jeu qu'il cite viennent du
+// lexique français (`jeuFr`), pour que la phrase reste d'une seule langue.
+import { jeuFr } from '../i18n/jeu/fr';
 import type { ImportOptimizer } from './importEquipes';
 import { exclusionSelectorKey, resolveExclusionEntry, type ExclusionSelector, type ExclusionSourceData } from './optimizerExclusion';
 
@@ -40,13 +43,13 @@ function criteresDuSlot(slot: RecoSlot, libelle: string, messages: string[]): Cr
   for (const [code, sortes] of sortesParCode) {
     // Ces seuils incluent les anciennes lignes ; ils ne sont pas les minima de tirage actuels.
     criteres.lignesVerrouillees!.push({ code, min: code === 218 ? 0.1 : 1 });
-    if (sortes.size === 2) messages.push(`${libelle} — ${artifactSubName(code)} : demandée sur les deux pièces ; une présence sur la paire suffit à l’import.`);
+    if (sortes.size === 2) messages.push(`${libelle} — ${artifactSubName(code, jeuFr)} : demandée sur les deux pièces ; une présence sur la paire suffit à l’import.`);
     else {
       const piece = sortes.has('element') ? 'd’attribut' : 'de type';
       const portee = artifactSubKinds(code).length === 2
         ? 'elle peut désormais être portée par l’une ou l’autre pièce'
         : `seule la pièce ${piece} peut porter ce code`;
-      messages.push(`${libelle} — ${artifactSubName(code)} : demandée sur l’artéfact ${piece} ; verrou sur le cumul de la paire, ${portee}.`);
+      messages.push(`${libelle} — ${artifactSubName(code, jeuFr)} : demandée sur l’artéfact ${piece} ; verrou sur le cumul de la paire, ${portee}.`);
     }
   }
   if (criteres.minStats!.res || criteres.minStats!.acc) messages.push(`${libelle} : les minimums RES/Précision viennent de la fiche ; l’Optimizer peut y compter les auras selon son réglage.`);

@@ -5,6 +5,7 @@ import { BASE_TOGGLE_STATS, CAPPED_100 } from './constantes';
 import { Fragment, type Dispatch, type SetStateAction } from 'react';
 import { RotateCcw } from 'lucide-react';
 import { type StatKey } from '../../../lib/effects';
+import { useTraduction } from '../../../hooks/useLangue';
 
 export interface ConditionsProps {
   excludeBase: boolean;
@@ -26,6 +27,7 @@ export interface ConditionsProps {
 }
 
 export default function Conditions({ excludeBase, setExcludeBase, baseOf, artifactFloorOf, minStats, maxStats, setMinStats, setMaxStats, bureau = false }: ConditionsProps) {
+  const jeu = useTraduction().jeu;
   return (
     <div>
       <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
@@ -93,7 +95,7 @@ export default function Conditions({ excludeBase, setExcludeBase, baseOf, artifa
 
           return (
             <Fragment key={st.key}>
-              <span className="text-xs text-ink">{st.label}</span>
+              <span className="text-xs text-ink">{jeu.stats[st.key]}</span>
               <div className="flex items-center gap-1.5">
                 <NumberField
                   value={minDisplayed}
@@ -115,7 +117,7 @@ export default function Conditions({ excludeBase, setExcludeBase, baseOf, artifa
                   placeholder={String(floor)}
                   suffix={st.suffix || undefined}
                   boxWidth="w-24"
-                  ariaLabel={`${st.label} minimum`}
+                  ariaLabel={`${jeu.stats[st.key]} minimum`}
                   title="Minimum"
                 />
                 {!bureau && <span className="hidden sm:inline text-ink-dim text-micro">Min</span>}
@@ -163,7 +165,7 @@ export default function Conditions({ excludeBase, setExcludeBase, baseOf, artifa
                       return next;
                     });
                   }}
-                  ariaLabel={`${st.label} maximum`}
+                  ariaLabel={`${jeu.stats[st.key]} maximum`}
                   title="Maximum"
                 />
                 {!bureau && <span className="hidden sm:inline text-ink-dim text-micro">Max</span>}

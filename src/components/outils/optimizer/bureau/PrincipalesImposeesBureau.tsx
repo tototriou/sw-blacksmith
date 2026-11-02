@@ -1,6 +1,7 @@
 import { CONFIGURABLE_SLOTS } from '../constantes';
 import { SLOT_MAIN_OPTIONS } from '../../../../lib/runeBuildOptim';
-import { RUNE_EFFECT } from '../../../../lib/effects';
+import { choixEffetRune, libelleEffetRune } from '../../../../lib/effects';
+import { useTraduction } from '../../../../hooks/useLangue';
 import { SelecteurMultiple } from '../../../../ui';
 import { type StatPrincipaleImposeeProps } from '../StatPrincipaleImposee';
 
@@ -23,6 +24,7 @@ export const LARGEUR_COLONNE_ETROITE = 177;
 // surface ouverte garde sa place même si le champ s'allonge sous elle
 // (`SelecteurMultiple`), seules les rangées suivantes descendent.
 export default function PrincipalesImposeesBureau({ mainStatsBySlot, toggleMainStat }: StatPrincipaleImposeeProps) {
+  const jeu = useTraduction().jeu;
   return (
     <section aria-label="Statistique principale imposée (slots pairs)" className="flex flex-col">
       <p className="label mb-1.5">Statistique principale imposée (slots pairs)</p>
@@ -39,7 +41,9 @@ export default function PrincipalesImposeesBureau({ mainStatsBySlot, toggleMainS
                   vide="Libre"
                   forme="surbrillance"
                   resumeEntier
-                  options={SLOT_MAIN_OPTIONS[slot].map((code) => ({ valeur: code, libelle: RUNE_EFFECT[code]?.label ?? String(code) }))}
+                  // Fermé, le champ manque de place : la forme réduite, celle d'une
+                  // ligne de rune (« PV% », « Tx critiq. »).
+                  options={SLOT_MAIN_OPTIONS[slot].map((code) => ({ valeur: code, libelle: choixEffetRune(code, jeu), court: libelleEffetRune(code, jeu) }))}
                   valeurs={avant}
                   onChange={(suivantes) => {
                     const change = [...suivantes.filter((c) => !avant.includes(c)), ...avant.filter((c) => !suivantes.includes(c))][0];

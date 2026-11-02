@@ -1,7 +1,8 @@
 import GameIcon from '../../GameIcon';
 import HelpPopover from '../../HelpPopover';
 import { Interrupteur, Selecteur } from '../../../ui';
-import { ARTIFACT_KINDS, type ArtifactKind } from '../../../types';
+import { sortesArtefact, type ArtifactKind } from '../../../types';
+import { useTraduction } from '../../../hooks/useLangue';
 import { LARGEUR_LIBELLE_LISTE, LARGEUR_SELECTEUR_LISTE } from './constantes';
 import { ArtifactMainChoice, type RelicUniqueChoice } from '../../../hooks/useOptimizerState';
 import { ARTIFACT_MAIN_OPTIONS } from '../../../lib/runeBuildOptim';
@@ -35,6 +36,7 @@ export interface ArtefactsEtReliquesProps {
 }
 
 export default function ArtefactsEtReliques({ optimiserArtefacts, setOptimiserArtefacts, artifactMainByKind, setArtifactMainByKind, lignesVerrouillees, setLignesVerrouillees, diagnosticVerrous, sortesFigees, blocArtefactsSeuls, relicMainChoice, setRelicMainChoice, relicUniqueChoice, setRelicUniqueChoice, relicMinUpgrade, setRelicMinUpgrade, bureau = false }: ArtefactsEtReliquesProps) {
+  const textes = useTraduction();
   return (
     <div className={bureau ? '' : 'rounded-xl border border-border bg-panel p-3'}>
       <div className="mb-3 flex flex-wrap items-center gap-2">
@@ -88,7 +90,7 @@ export default function ArtefactsEtReliques({ optimiserArtefacts, setOptimiserAr
         // Le retour à la ligne reste permis : une police plus large repasse
         // Type dessous au lieu de déborder du panneau.
         <div className={bureau ? 'flex flex-wrap items-center justify-between gap-x-2 gap-y-1' : 'flex flex-wrap gap-3'}>
-          {ARTIFACT_KINDS.map(({ key, label }) => (
+          {sortesArtefact(textes).map(({ key, label }) => (
             <div key={key} className={`flex items-center ${bureau ? 'gap-1' : 'gap-1.5'}`}>
               <span className={`text-xs text-ink ${bureau ? '' : LARGEUR_LIBELLE_LISTE}`}>{label}</span>
               {/* ⚠️ **`'libre'`, parce que c'est ce que le MOTEUR fait**

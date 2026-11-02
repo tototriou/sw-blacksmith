@@ -9,6 +9,7 @@ import { ArtifactDetail, EffectLine } from '../src/types';
 import { dansGroupe, effectifsGroupes, FamilleTop, GROUPES_TOP, TITRE_AUTRES, topParPropriete } from '../src/lib/artifactsTop';
 import { parseAccountInventory } from '../src/lib/importAccount';
 import { artifactSubName } from '../src/lib/effects';
+import { jeuFr } from '../src/i18n/jeu/fr';
 import { egal, exportReel, ignore, ok, titre } from './outils';
 
 const e = (code: number, value: number, rolls = 0): EffectLine => ({ code, value, rolls });
@@ -122,7 +123,7 @@ export default function testArtefactsTop() {
   egal(colonnesDe(familles, 'Dégâts supplémentaires en proportion de'), ['PV', 'ATQ', 'DEF', 'VIT'], 'dégâts proportionnels : PV, ATQ, DEF, VIT');
   const autres = familles[familles.length - 1].colonnes;
   ok(
-    autres.every((c) => !c.court && c.entete === artifactSubName(c.code)),
+    autres.every((c) => !c.court && c.entete === artifactSubName(c.code, jeuFr)),
     'sans élément propre, la colonne porte le nom complet de sa propriété'
   );
   egal(autres.slice(0, 3).map((c) => c.code), [206, 210, 214], 'les autres : dans l’ordre du jeu (aug. VIT, bombe, CRIT reçus…)');

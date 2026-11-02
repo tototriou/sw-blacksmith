@@ -3,6 +3,8 @@ import { ElementDef, Monster } from '../types';
 import MonsterCard from './MonsterCard';
 import ElementIcon from './ElementIcon';
 import { jumeauDeCollab } from '../lib/monsterForms';
+import { useTraduction } from '../hooks/useLangue';
+import { nomElement } from '../i18n/jeu';
 
 interface Props {
   elementDef: ElementDef;
@@ -32,6 +34,7 @@ export default function MonsterGrid({
   allMonsters,
   anime = true,
 }: Props) {
+  const jeu = useTraduction().jeu;
   if (monsters.length === 0) return null;
 
   const cartes = monsters.map((m) => (
@@ -48,7 +51,7 @@ export default function MonsterGrid({
     <section className="mt-9">
       <div className="flex items-center gap-3 pb-2.5 mb-4 border-b border-border">
         <ElementIcon element={elementDef.key} size={22} />
-        <h2 className="font-display text-lg tracking-wide">{elementDef.label}</h2>
+        <h2 className="font-display text-lg tracking-wide">{nomElement(jeu, elementDef.key)}</h2>
         <span className="font-mono text-ink-dim text-xs ml-auto">
           {monsters.length} monstre{monsters.length > 1 ? 's' : ''}
         </span>

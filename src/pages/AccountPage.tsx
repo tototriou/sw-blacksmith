@@ -21,6 +21,8 @@ import { ELEMENT_FILTER_STYLES } from '../components/elementStyles';
 import RunesSection from '../components/account/RunesSection';
 import ArtifactsSection from '../components/account/ArtifactsSection';
 import { useStickyState } from '../hooks/useStickyState';
+import { useTraduction } from '../hooks/useLangue';
+import { nomElement } from '../i18n/jeu';
 import Segmented from '../ui/Segmented';
 import { MonsterSortMode, comparateurMonstres } from '../lib/monsterSort';
 import {
@@ -83,6 +85,7 @@ function MonsterBoxSection({
   menuOuvert: boolean;
   onFermerMenu: () => void;
 }) {
+  const jeu = useTraduction().jeu;
   const [query, setQuery] = useStickyState('box.query', '');
   // ⚠️ **Liste BLANCHE, tout coché par défaut** — même règle que les filtres de
   // runes : une pastille cochée est AFFICHÉE, n'en cocher aucune revient à ne
@@ -237,7 +240,7 @@ function MonsterBoxSection({
               couleurs={ELEMENT_FILTER_STYLES[el.key]}
               onClick={() => toggleElement(el.key)}
               icone={<ElementIcon element={el.key} size={15} />}
-              libelle={el.label}
+              libelle={nomElement(jeu, el.key)}
             />
           ))}
         </div>

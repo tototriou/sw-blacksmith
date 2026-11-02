@@ -4,7 +4,9 @@ import { CheckCircle2, Trash2, Unlock } from 'lucide-react';
 import OptimizerLeadInactif, { MotifHorsFlux } from '../OptimizerLeadInactif';
 import { resolveExclusionEntry, exclusionSelectorKey, findValidatedBuild, runesManquantesDuBuild, artefactsManquantsDuBuild, type OptimizerList, type OptimizerListMember, type ExclusionSourceData, type ExclusionSelector } from '../../../lib/optimizerExclusion';
 import { leadEffectifMembreOptimizer } from '../../../lib/equipesOptimizer';
-import LeadPill, { STAT_LABEL } from '../../siege/LeadPill';
+import LeadPill, { nomStatLead } from '../../siege/LeadPill';
+import { useTraduction } from '../../../hooks/useLangue';
+import { nomZoneLead } from '../../../i18n/jeu';
 import MonsterAvatar from '../../MonsterAvatar';
 import IconeInterdite from '../../IconeInterdite';
 import { WHEEL_IMG } from '../../RuneWheel';
@@ -46,6 +48,7 @@ export interface MonstresDeLaListeProps {
 }
 
 export default function MonstresDeLaListe({ activeList, activeMembers, setEquipeOuverte, lists, optimizer, exclusionData, artifacts, rapportZoneC, groupesMembres, runeById, artifactById, choisirMembreDeLaListe, membreChoisi, setReleaseConfirm, setReleaseArtifactsConfirm, setRemoveMemberConfirm, rappelAuras, listHasValidated, setReleaseAllConfirm, enTete }: MonstresDeLaListeProps) {
+  const jeu = useTraduction().jeu;
   // Au téléphone, le titre nomme la liste et son compte ; au bureau
   // (`enTete`), aucun titre : « Liste active » nomme la liste juste au-dessus.
   const titre = (
@@ -100,7 +103,7 @@ export default function MonstresDeLaListe({ activeList, activeMembers, setEquipe
             {g.equipe && <div className="grid grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-x-1 py-0.5">
               {/* Lead, numéro et leader se lisent sur une seule ligne. */}
               <span className="flex h-7 items-center whitespace-nowrap">
-                {g.equipe.lead ? <LeadPill ls={g.equipe.lead} titre={`Lead de l’équipe : +${g.equipe.lead.amount} % ${STAT_LABEL[g.equipe.lead.stat ?? ''] ?? g.equipe.lead.stat ?? ''} · ${g.equipe.lead.area === 'Guild' ? 'Guilde' : g.equipe.lead.area === 'Dungeon' ? 'Donjon' : g.equipe.lead.area === 'Arena' ? 'Arène' : g.equipe.lead.area === 'Element' ? 'Élément' : 'Général'}`} /> : <span className="text-xs text-ink-dim">Sans lead</span>}
+                {g.equipe.lead ? <LeadPill ls={g.equipe.lead} titre={`Lead de l’équipe : +${g.equipe.lead.amount} % ${nomStatLead(jeu, g.equipe.lead.stat)} · ${nomZoneLead(jeu, g.equipe.lead.area)}`} /> : <span className="text-xs text-ink-dim">Sans lead</span>}
               </span>
               <span title={`Équipe ${numero + 1}${g.equipe.leader ? ` · Leader : ${resolveExclusionEntry(g.equipe.leader, exclusionData)?.monster.name ?? 'Introuvable'}` : ''}`} className="min-w-0 truncate text-xs font-semibold text-ink">Équipe {numero + 1}
                 {g.equipe.leader && <span className="ml-1 font-normal text-ink-dim">· Leader : {resolveExclusionEntry(g.equipe.leader, exclusionData)?.monster.name ?? 'Introuvable'}</span>}
