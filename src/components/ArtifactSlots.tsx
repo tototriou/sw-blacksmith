@@ -75,7 +75,7 @@ export default function ArtifactSlots({
           return (
             <div
               key={key}
-              title={`Aucun artéfact ${label.toLowerCase()} équipé`}
+              title={textes.pieces.aucunArtefact(label.toLowerCase())}
               className="relative inline-flex items-center justify-center rounded opacity-40"
               style={{ width: frame, height: frame }}
             >
@@ -102,7 +102,7 @@ export default function ArtifactSlots({
                 rembourrage de bouton l'aurait décalé de son emplacement. */}
             <ZoneCliquable
               onClick={() => onSelectArtifact?.(a, i)}
-              title={`Voir l'artéfact ${label.toLowerCase()}`}
+              title={textes.pieces.voirArtefact(label.toLowerCase())}
               // ⚠️ `data-cible-fine` : sans lui, `min-height: 40px` (cibles
               // tactiles, index.css) gagne contre la hauteur fixée ici et
               // étire le cadre — un carré de jeu, pas une cible libre à

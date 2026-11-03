@@ -12,6 +12,7 @@
 import { app, BrowserWindow, shell } from 'electron';
 import { join } from 'node:path';
 import { estAdresseInterne, ouvrableDehors } from './protocole';
+import { textesBureau } from './textes';
 
 export interface OptionsNavigation {
   urlDev?: string;
@@ -51,7 +52,7 @@ export function brancherNavigation(fenetre: BrowserWindow, options: OptionsNavig
       return;
     }
     element.setSaveDialogOptions({
-      title: 'Enregistrer le fichier',
+      title: textesBureau().enregistrerFichier,
       defaultPath: join(app.getPath('downloads'), element.getFilename()),
     });
   });

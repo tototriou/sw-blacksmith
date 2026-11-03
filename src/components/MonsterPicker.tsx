@@ -4,6 +4,7 @@ import { Monster } from '../types';
 import MonsterAvatar from './MonsterAvatar';
 import { formesJouables } from '../lib/monsterForms';
 import { useComboboxNav } from '../hooks/useComboboxNav';
+import { useTraduction } from '../hooks/useLangue';
 import { Champ, Flottant } from '../ui';
 
 interface Props {
@@ -33,6 +34,7 @@ const MAX_RESULTS = 25;
 // surligné, Échap pour fermer.
 export default function MonsterPicker({ monsters, onPick, excludeIds, placeholder, ariaLabel, jetonFocus }: Props) {
   const [query, setQuery] = useState('');
+  const c = useTraduction().controles;
   // ⚠️ Plusieurs pickers coexistent (un par slot d'équipe de siège) : les `id`
   // ARIA doivent être uniques, sinon `aria-activedescendant` désigne l'option
   // d'un autre champ.
@@ -79,7 +81,7 @@ export default function MonsterPicker({ monsters, onPick, excludeIds, placeholde
         {...nav.inputProps}
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        placeholder={placeholder ?? 'Rechercher…'}
+        placeholder={placeholder ?? c.rechercher}
         aria-label={ariaLabel}
         icone={<Search size={16} />}
         // ⚠️ `bg-panel` plutôt que le `panel2` par défaut de `Champ` — même
@@ -94,12 +96,12 @@ export default function MonsterPicker({ monsters, onPick, excludeIds, placeholde
       {nav.open && (
         <Flottant
           {...nav.listProps}
-          aria-label="Résultats de la recherche"
+          aria-label={c.resultatsRecherche}
           rembourrage="aucun"
           className="max-h-[300px] overflow-y-auto"
         >
           {results.length === 0 ? (
-            <div className="px-3 py-2 text-ink-dim text-xs">Aucun monstre trouvé.</div>
+            <div className="px-3 py-2 text-ink-dim text-xs">{c.aucunMonstre}</div>
           ) : (
             results.map((m, i) => {
               const estActif = i === nav.actif;
@@ -119,7 +121,7 @@ export default function MonsterPicker({ monsters, onPick, excludeIds, placeholde
                       même monstre (voir MonsterAvatar). */}
                   <MonsterAvatar monster={m} size={28} />
                   <span className="text-sm font-medium truncate flex-1">{m.name}</span>
-                  <span className="font-mono text-micro text-ink-dim">SPD {m.stats.speed ?? '—'}</span>
+                  <span className="font-mono text-micro text-ink-dim">{c.vitesseCourte} {m.stats.speed ?? '—'}</span>
                   <Plus size={14} className={`flex-none ${estActif ? 'text-accent' : 'text-ink-dim'}`} />
                 </div>
               );

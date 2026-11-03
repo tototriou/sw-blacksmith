@@ -56,9 +56,9 @@
 
 - Un texte nouveau s'écrit dans `fr.ts` **et** dans `en.ts`, dans le même commit
   ([définition de fini](../../03-developpeur/definition-de-fini.md)).
-- La règle ESLint locale `swblacksmith/texte-en-dur` refuse un texte écrit en dur dans les
-  fichiers traduits ; leur liste (`FICHIERS_TRADUITS`, `eslint.config.js`) grandit écran par
-  écran jusqu'à couvrir `src/` ([qualite-code.md](../../03-developpeur/qualite-code.md)).
+- La règle ESLint locale `swblacksmith/texte-en-dur` refuse un texte écrit en dur dans tout
+  `src/`, sauf `src/i18n/` et la vue de développement des gabarits de l'Optimizer
+  (`eslint.config.js`, [qualite-code.md](../../03-developpeur/qualite-code.md)).
 - Le rendu serveur des tests n'a pas de navigateur : « Auto » y donne le français, et les tests
   existants se lisent en français ; un test qui vérifie l'anglais choisit la langue, puis revient à
   « Auto ».

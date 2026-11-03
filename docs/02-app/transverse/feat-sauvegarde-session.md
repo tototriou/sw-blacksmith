@@ -101,13 +101,14 @@ testé).
 - **Après l'écriture**, la notification « Session enregistrée · <nom>.json »
   (`useNotifier`). **Un échec** (dossier disparu, accès refusé, disque
   plein…) ouvre une modale « La session n'a pas été enregistrée » avec la
-  cause et « Fermer » ; la session en cours ne change pas. La cause : celle
-  de l'écriture (`messageEchec` ; un dossier de session disparu renvoie vers
+  cause et « Fermer » ; la session en cours ne change pas. Le bureau rend le
+  MOTIF de l'échec et le code d'erreur du système (`codeErreur`) ; la page
+  rédige la cause dans sa langue (`messageEchecSession`, src/lib/bureau.ts) :
+  celle de l'écriture (un dossier de session disparu renvoie vers
   « Sauvegarder sous… »), ou, quand le dossier SW Blacksmith ne peut pas
   recevoir `sessions`, « Le dossier SW Blacksmith ne peut pas recevoir la
   session : <raison>. Choisis-en un autre dans Paramètres › « Dossier SW
-  Blacksmith ». » (`messageEchecDossier`) — « Sauvegarder sous… »
-  échouerait pareil.
+  Blacksmith ». » — « Sauvegarder sous… » échouerait pareil.
 - **Écriture sûre** (`ecrireSansRisque`) : un fichier temporaire caché dans
   le même dossier, vidé sur le disque, puis renommé par-dessus l'ancien
   (renommage retenté cinq fois sur `EPERM`, `EBUSY`, `EACCES`). Un échec

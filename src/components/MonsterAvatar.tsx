@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Crown } from 'lucide-react';
+import { useTraduction } from '../hooks/useLangue';
 import { LeaderSkill, Monster } from '../types';
 import ElementIcon from './ElementIcon';
 import CollabPortrait from './CollabPortrait';
@@ -99,6 +100,7 @@ export default function MonsterAvatar({
   couronne?: boolean;
 }) {
   const [imageCassee, setImageCassee] = useState(false);
+  const textes = useTraduction();
   const nom = monster?.name || fallback || '?';
   const el = monster?.element ?? 'unknown';
   const enDiv = gabarit === 'div';
@@ -172,7 +174,7 @@ export default function MonsterAvatar({
           className="absolute -bottom-1 -right-1 flex h-5 min-w-[20px] items-center justify-center
                      rounded-full border border-accent bg-accent-soft px-1 font-mono text-micro
                      font-bold text-ink shadow-[0_1px_3px_rgba(0,0,0,0.6)]"
-          title={`${exemplaires} exemplaires`}
+          title={textes.controles.exemplaires(exemplaires)}
         >
           ×{exemplaires}
         </span>

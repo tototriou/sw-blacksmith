@@ -30,6 +30,13 @@ import { CASSIE as CASSIE_DEGATS, CROSS_FIRE as CROSS_FIRE_DEGATS, carte as cart
 import { formuleLisible } from '../../src/lib/monsterSkills';
 import { CRIT_MODES, IGNORE_DEF_A_PARTIR_DU_COUP_PAR_ID, calculPartielDuSort, cransDeLaRegleIgnoreDef, monsterDamageSkills, monsterModificateursVit, resumeSequenceDeCoups } from '../../src/lib/damage';
 import { phraseDegats } from '../../src/i18n/phrasesDegats';
+import BlocApplication, { presentationSwex } from '../../src/components/BlocApplication';
+import { annonce as annonceMiseAJour } from '../../src/components/MiseAJourBureau';
+import { messageExportSwex } from '../../src/components/SuiviSwex';
+import NumberField from '../../src/ui/NumberField';
+import { BandeauNotification } from '../../src/ui/Notification';
+import RelicSlot from '../../src/components/RelicSlot';
+import MobileNotice from '../../src/components/MobileNotice';
 import { loadMonsterSkills } from '../../scripts/lib/skillsData';
 import { validateRecosImport } from '../../src/lib/recoShare';
 import ProgressionRecherche from '../../src/components/outils/optimizer/ProgressionRecherche';
@@ -306,6 +313,31 @@ export function testRenduLangueDegatsReels() {
   egal(cransDeLaRegleIgnoreDef(IGNORE_DEF_A_PARTIR_DU_COUP_PAR_ID[14811], en).map((c) => c.libelle),
     ['From the 2nd hit', 'From the 3rd hit', 'From the 4th hit', 'From the 5th hit', 'From the 6th hit', '7th hit only'], 'les crans d’ignore DEF');
   egal(CRIT_MODES.map((m) => en.degats.critModes[m]), ['Critical', 'Non-critical'], 'les modes critiques');
+}
+
+// L'app de bureau et les contrôles partagés en anglais : le bloc
+// « Application », la notification de mise à jour, le suivi de SW Exporter,
+// les contrôles de src/ui/ et les pièces d'un monstre.
+export function testRenduLangueBureauControles() {
+  titre('rendu · langue — l’app de bureau et les contrôles partagés, en anglais');
+  const bloc = texteVisible(enAnglais(() => rendre(<BlocApplication classeCarte="" />)));
+  for (const morceau of ['SW Exporter folder', 'Summoner', 'Check', 'New versions are checked at launch.', 'Choose the folder where SW Exporter saves its exports'])
+    ok(bloc.includes(morceau), `le bloc « Application » : « ${morceau} »`);
+  ok(!/Dossier SW Exporter|Invocateur|Rechercher|cherchées/.test(bloc), 'le bloc « Application » : aucun texte français resté');
+  egal(presentationSwex({ dossier: 'C:/x', fichier: null, exports: [], dernierLu: null, introuvable: true }, en).invocateur,
+    'Folder not found: check it still exists, or choose another one.', 'SW Exporter : dossier introuvable');
+  egal(annonceMiseAJour({ phase: 'prete', version: '2.3.0' }, en)?.message, 'Update ready', 'la notification de mise à jour');
+  egal(annonceMiseAJour({ phase: 'disponible', version: '2.3.0' }, en)?.libelleAction, 'Update', 'son action');
+  egal(messageExportSwex('Ayla', true, en), 'Ayla’s account loaded from SW Exporter', 'le suivi de SW Exporter');
+  egal(messageExportSwex(null, false, fr), 'Compte mis à jour depuis SW Exporter', 'en français : la phrase d’avant');
+  const champ = enAnglais(() => rendre(<NumberField value={3} onChange={() => {}} />));
+  ok(champ.includes('aria-label="Decrease"') && champ.includes('aria-label="Increase"'), 'un champ numérique');
+  const bandeau = enAnglais(() => rendre(<BandeauNotification annonce={{ message: 'x', action: () => {} }} onFermer={() => {}} />));
+  ok(bandeau.includes('Close the notification') && bandeau.includes('Cancel'), 'une notification et son action par défaut');
+  const relique = enAnglais(() => rendre(<RelicSlot relic={undefined} />));
+  ok(texteVisible(relique).includes('Relic') && relique.includes('No relic equipped'), 'une relique absente');
+  const avis = texteVisible(enAnglais(() => rendre(<MobileNotice />)));
+  ok(avis.includes('The curves and the Optimizer are easier to read on a large screen.'), 'l’avertissement du téléphone');
 }
 
 // Les phrases curées de damage.ts à l'écran anglais (src/i18n/phrasesDegats.ts) :

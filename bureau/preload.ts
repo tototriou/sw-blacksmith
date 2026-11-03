@@ -16,6 +16,9 @@ contextBridge.exposeInMainWorld(
     // Les couleurs du thème, pour habiller la fenêtre. Le
     // processus principal les vérifie avant de s'en servir.
     couleurs: (c: { fond: string; barre: string; symboles: string }) => ipcRenderer.send('bureau:couleurs', c),
+    // La langue de l'app, au chargement et à chaque changement : les boîtes
+    // du système que le processus principal ouvre la suivent (bureau/textes.ts).
+    langue: (langue: string) => ipcRenderer.send('bureau:langue', langue),
     // Le nombre de cœurs PHYSIQUES de la machine (voir bureau/coeurs.ts), ou
     // `null` s'il n'a pas pu être lu : la recherche de runes en dérive son
     // nombre de Workers.
