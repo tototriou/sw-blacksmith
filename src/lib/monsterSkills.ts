@@ -6,6 +6,8 @@
 // lui-même rendrait cette bascule invasive — ici, elle tient dans cette
 // fonction.
 
+import type { LexiqueJeu } from '../i18n/jeu';
+
 export interface EffetCompetence {
   nom: string | null;
   type: string | null; // « Buff », « Debuff », « Other »…
@@ -105,17 +107,18 @@ export async function chargerDetail(com2usId: number | null): Promise<DetailMons
 // reste : la réécrire (« 360 % de l'ATQ ») ferait perdre la forme que le joueur
 // retrouve sur les sites de référence, et introduirait une source d'erreur sur
 // les formules composées (« 3.6*{ATK} + 0.5*{DEF} »).
-const STAT_FR: Record<string, string> = {
-  ATK: 'ATQ',
-  DEF: 'DEF',
-  HP: 'PV',
-  SPD: 'VIT',
+// Les noms de stats du jeu, dans la langue du lexique.
+const STAT_DE_FORMULE: Record<string, keyof LexiqueJeu['stats']> = {
+  ATK: 'atk',
+  DEF: 'def',
+  HP: 'hp',
+  SPD: 'spd',
 };
 
-export function formuleLisible(formule: string | null): string | null {
+export function formuleLisible(formule: string | null, jeu: LexiqueJeu): string | null {
   if (!formule) return null;
   return formule
-    .replace(/\{(\w+)\}/g, (_, s) => STAT_FR[s] ?? s)
+    .replace(/\{(\w+)\}/g, (_, s) => (STAT_DE_FORMULE[s] ? jeu.stats[STAT_DE_FORMULE[s]] : s))
     .replace(/\*/g, ' × ')
     .replace(/\s+/g, ' ')
     .trim();

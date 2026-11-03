@@ -26,6 +26,9 @@ import { ETAT_EQUIPE, rendreSpeedTune } from './speed-tune.test';
 import { en } from '../../src/i18n/en';
 import { OptionsFusion, SousTitreFusion, titreChoixFusion } from '../../src/components/siege/ChoixFusionRecos';
 import { messageFusion } from '../../src/lib/recoFusion';
+import { CASSIE as CASSIE_DEGATS, CROSS_FIRE as CROSS_FIRE_DEGATS, carte as carteDegats } from './attaque-conjointe-ecran.test';
+import { formuleLisible } from '../../src/lib/monsterSkills';
+import { CRIT_MODES, IGNORE_DEF_A_PARTIR_DU_COUP_PAR_ID, cransDeLaRegleIgnoreDef, resumeSequenceDeCoups } from '../../src/lib/damage';
 import { validateRecosImport } from '../../src/lib/recoShare';
 import ProgressionRecherche from '../../src/components/outils/optimizer/ProgressionRecherche';
 import PaginationResultats from '../../src/components/outils/optimizer/PaginationResultats';
@@ -282,6 +285,25 @@ export function testRenduLangueFusionRecos() {
     'Merge: 2 decks added, 1 deck enriched with 3 defenses · 1 recommendation added separately. Nothing was removed or changed.', 'le message après la fusion');
   const lu = validateRecosImport(JSON.stringify({ format: 'swblacksmith/recommandations', version: 5, recommandations: [{ nom: 'R', source: 42, decks: [{ monstres: [{ com2usId: 1 }] }] }] }), en);
   ok(lu.warnings.some((w) => w.includes('“source” is not text — ignored.')), 'la provenance illisible, signalée en anglais');
+}
+
+// L'objectif « Dégâts réels » en anglais : la carte, les libellés et résumés
+// que damage.ts rédige pour elle, la formule dans les stats du jeu anglais.
+export function testRenduLangueDegatsReels() {
+  titre('rendu · langue — les dégâts réels, en anglais');
+  const html = enAnglais(() => carteDegats(CASSIE_DEGATS, CROSS_FIRE_DEGATS, false));
+  const t = texteVisible(html);
+  for (const morceau of ['Skill used', 'Active effects', 'Opponent', 'Target element', 'Ignore', 'Critical hit', 'Non-critical', 'Joint attack'])
+    ok(t.includes(morceau), `la carte : « ${morceau} »`);
+  ok(html.includes('aria-label="Joint attack — off"'), 'la vignette dit son état en anglais');
+  ok(/× ATK/.test(t) && !/ATQ/.test(t), 'la formule du sort dans les stats du jeu anglais');
+  ok(!/Compétence utilisée|Adversaire|Effets actifs|Élément visé|Coup critique/.test(t), 'aucun texte français resté en dur');
+  egal(formuleLisible('3.6*{ATK} + 0.5*{HP}', en.jeu), '3.6 × ATK + 0.5 × HP', 'formule : stats du jeu anglais');
+  egal(formuleLisible('3.6*{ATK} + 0.5*{HP}', fr.jeu), '3.6 × ATQ + 0.5 × PV', 'formule : stats du jeu français, inchangées');
+  egal(resumeSequenceDeCoups([{ coups: 2, zone: false }, { coups: 1, zone: true }], en), '2 hits · Single target, then 1 hit · AoE', 'une séquence de coups');
+  egal(cransDeLaRegleIgnoreDef(IGNORE_DEF_A_PARTIR_DU_COUP_PAR_ID[14811], en).map((c) => c.libelle),
+    ['From the 2nd hit', 'From the 3rd hit', 'From the 4th hit', 'From the 5th hit', 'From the 6th hit', '7th hit only'], 'les crans d’ignore DEF');
+  egal(CRIT_MODES.map((m) => en.degats.critModes[m]), ['Critical', 'Non-critical'], 'les modes critiques');
 }
 
 // L'article « Mécaniques » : un par langue, mêmes sections dans le même ordre.

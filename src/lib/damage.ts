@@ -21,6 +21,7 @@
 
 import type { Competence, DetailMonstre } from './monsterSkills';
 import type { SummonerSkills } from './competencesInvocateur';
+import type { Dictionnaire } from '../i18n/fr';
 export type { SummonerSkills } from './competencesInvocateur';
 import type { ArtifactDetail, ElementKey } from '../types';
 import { StatRow } from './stats';
@@ -228,10 +229,9 @@ export const LEADER_SKILL_VALEURS: Record<LeaderSkillStat, number[]> = {
 // Il n'existe volontairement aucun état « aucune » : il ne correspond à aucune
 // situation du jeu et sous-estimerait silencieusement toutes les statistiques.
 
-export const SUMMONER_SKILLS_LABELS: { key: SummonerSkills; label: string }[] = [
-  { key: 'normal', label: 'Contenu normal' },
-  { key: 'guilde', label: 'Contenu de guilde' },
-];
+// Les deux valeurs, dans l'ordre d'affichage ; leurs libellés sont sous
+// `degats.contenusInvocateur` du dictionnaire.
+export const SUMMONER_SKILLS: SummonerSkills[] = ['normal', 'guilde'];
 
 // Onglet « Combat » — s'applique partout.
 const COMBAT_PCT = { atk: 20, def: 20, hp: 20, spd: 15 } as const;
@@ -3724,8 +3724,9 @@ export function cibleSecondairePriseEnCharge(skillCom2usId: number): boolean {
  * (optimizer-search.ts), pour qu'ils ne puissent pas se contredire. Ne dépend
  * que de la donnée, jamais de la cible choisie.
  */
-export function resumeSequenceDeCoups(sequence: readonly Pick<GroupeDeCoups, 'coups' | 'zone'>[]): string {
-  return sequence.map((g) => `${g.coups} coup${g.coups > 1 ? 's' : ''} · ${g.zone ? 'Zone' : 'Cible unique'}`).join(', puis ');
+export function resumeSequenceDeCoups(sequence: readonly Pick<GroupeDeCoups, 'coups' | 'zone'>[], t: Dictionnaire): string {
+  const r = t.degats.resume;
+  return sequence.map((g) => `${r.coups(g.coups, false)} · ${g.zone ? r.zone : r.cibleUnique}`).join(r.puisSequence);
 }
 
 // ── Attaques conjointes ──────────────────────────────────────────────────
@@ -3943,13 +3944,12 @@ export function vignettePendantTourAllie(profile: ProfilPourLaPorte, setup: Regl
  * la seule `interrupteurAttaqueConjointe`, et `vignettePendantTourAllie` pour
  * un S1 des familles placé pendant le tour d'un allié.
  */
-export function mentionAttaqueConjointe(profile: ProfilPourLaPorte, setup: ReglagePourLaPorte): string | null {
+export function mentionAttaqueConjointe(profile: ProfilPourLaPorte, setup: ReglagePourLaPorte, t: Dictionnaire): string | null {
   const interrupteur = interrupteurAttaqueConjointe(profile, setup);
   if (!interrupteur?.allume) return null;
-  if (interrupteur.cas === 'appele-par-un-allie') return 'attaque conjointe (appelée par un allié)';
-  return vignettePendantTourAllie(profile, setup)?.allume
-    ? 'attaque conjointe (un monstre de l’autre famille au combat, pendant le tour d’un allié)'
-    : 'attaque conjointe (un monstre de l’autre famille au combat)';
+  const c = t.degats.conjointe;
+  if (interrupteur.cas === 'appele-par-un-allie') return c.appelee;
+  return vignettePendantTourAllie(profile, setup)?.allume ? c.familleTourAllie : c.famille;
 }
 
 /**
@@ -5094,10 +5094,8 @@ export type CritMode = 'crit' | 'normal';
 
 // Ordre d'AFFICHAGE : le défaut d'abord (voir `DEFAULT_DAMAGE_SETUP.critMode`,
 // ci-dessous : `'crit'`). N'affecte QUE `Segmented`, pas le type `CritMode`.
-export const CRIT_MODE_LABELS: { key: CritMode; label: string }[] = [
-  { key: 'crit', label: 'Critique' },
-  { key: 'normal', label: 'Non critique' },
-];
+// Libellés : `degats.critModes` du dictionnaire.
+export const CRIT_MODES: CritMode[] = ['crit', 'normal'];
 
 // ⚠️ Sérialisable et STABLE : ce réglage part dans `OptimizerRecipe` (fichier
 // partagé entre joueurs) et traverse le Web Worker. Aucune valeur dérivée
@@ -5120,19 +5118,12 @@ export const STAT_DE_L_AURA: Readonly<Record<SetAura, 'atk' | 'def' | 'hp' | 'ac
 // reçoit que ses coups de zone.
 export type CibleDegats = 'visee' | 'secondaire';
 
-// Le bout que le résumé sous l'objectif (`resumeCombat`, OptimizerSection.tsx)
-// ajoute après le sort quand la cible retenue est un autre ennemi
-// (`resumeCibleDegatsRetenue`). Écrit ici une seule fois : le libellé du cran
-// ci-dessous s'en déduit, les deux textes ne peuvent pas diverger
-const CIBLE_SECONDAIRE_RESUME = 'autres ennemis';
-
 // Les deux crans, libellés retenus par l'utilisateur : la cible visée d'abord, le défaut. Partagés par le
 // `Segmented` de « Compétence utilisée » (DamageSetupCard.tsx) et la ligne du
 // sort du CLI (optimizer-search.ts) : une seule écriture des libellés.
-export const CIBLE_DEGATS_LABELS: { key: CibleDegats; label: string }[] = [
-  { key: 'visee', label: 'Dégâts sur la cible visée' },
-  { key: 'secondaire', label: `Dégâts sur les ${CIBLE_SECONDAIRE_RESUME}` },
-];
+// Libellés : `degats.cibles` du dictionnaire ; le résumé sous l'objectif dit
+// la cible secondaire par `degats.cibleSecondaireResume`.
+export const CIBLES_DEGATS: CibleDegats[] = ['visee', 'secondaire'];
 
 export interface DamageSetup {
   // `null` = « le sort par défaut » (voir `defaultDamageSkill`) : une recette
@@ -5605,8 +5596,8 @@ export function cibleDegatsRetenue(profile: SkillDamageProfile, setup: DamageSet
  * défaut, et pour tout sort sans coup de zone curé. `profile` est le sort
  * RÉSOLU, jamais celui que désigne l'identifiant stocké.
  */
-export function resumeCibleDegatsRetenue(profile: SkillDamageProfile, setup: DamageSetup): string | null {
-  return cibleDegatsRetenue(profile, setup) === 'secondaire' ? CIBLE_SECONDAIRE_RESUME : null;
+export function resumeCibleDegatsRetenue(profile: SkillDamageProfile, setup: DamageSetup, t: Dictionnaire): string | null {
+  return cibleDegatsRetenue(profile, setup) === 'secondaire' ? t.degats.cibleSecondaireResume : null;
 }
 
 /**
@@ -5652,9 +5643,9 @@ export interface CranIgnoreDef {
  * ⚠️ Source UNIQUE de ces libellés : le sélecteur de l'écran, le résumé du
  * sort et la ligne du CLI les lisent ici (`resumeIgnoreDefRetenu`).
  */
-export function cransIgnoreDefAPartirDuCoup(profile: SkillDamageProfile): CranIgnoreDef[] | null {
+export function cransIgnoreDefAPartirDuCoup(profile: SkillDamageProfile, t: Dictionnaire): CranIgnoreDef[] | null {
   const regle = profile.ignoreDefAPartirDuCoup;
-  return regle ? cransDeLaRegleIgnoreDef(regle) : null;
+  return regle ? cransDeLaRegleIgnoreDef(regle, t) : null;
 }
 
 /**
@@ -5664,12 +5655,18 @@ export function cransIgnoreDefAPartirDuCoup(profile: SkillDamageProfile): CranIg
  * (`validerDamageSetup`, optimizerRecipe.ts) les dérivent d'ici : une valeur
  * que l'écran ne peut pas écrire, la recette ne l'accepte pas.
  */
-export function cransDeLaRegleIgnoreDef(regle: IgnoreDefAPartirDuCoupProfile): CranIgnoreDef[] {
-  const crans: CranIgnoreDef[] = regle.dernierCoupInconditionnel === null ? [{ rang: null, libelle: 'Aucun' }] : [];
-  for (const rang of regle.rangsPermis) {
-    crans.push({ rang, libelle: rang === regle.dernierCoupInconditionnel ? `${rang}ᵉ coup seul` : `Dès le ${rang}ᵉ coup` });
-  }
-  return crans;
+export function cransDeLaRegleIgnoreDef(regle: IgnoreDefAPartirDuCoupProfile, t: Dictionnaire): CranIgnoreDef[] {
+  const c = t.degats.crans;
+  return rangsDeLaRegleIgnoreDef(regle).map((rang) => ({
+    rang,
+    libelle: rang === null ? c.aucun : rang === regle.dernierCoupInconditionnel ? c.seul(rang) : c.desLe(rang),
+  }));
+}
+
+// Les rangs seuls, dans l'ordre des crans : `null` (« aucun ») d'abord quand la
+// règle n'a pas de coup inconditionnel. Ce que la recette accepte.
+export function rangsDeLaRegleIgnoreDef(regle: IgnoreDefAPartirDuCoupProfile): (number | null)[] {
+  return [...(regle.dernierCoupInconditionnel === null ? [null] : []), ...regle.rangsPermis];
 }
 
 /**
@@ -5678,9 +5675,9 @@ export function cransDeLaRegleIgnoreDef(regle: IgnoreDefAPartirDuCoupProfile): C
  * crans y retombe sur le défaut du sort —, ou `null` pour un sort sans cette
  * règle. L'écran montre ce que le calcul applique, jamais la valeur stockée.
  */
-export function cranIgnoreDefRetenu(profile: SkillDamageProfile, setup: DamageSetup): CranIgnoreDef | null {
+export function cranIgnoreDefRetenu(profile: SkillDamageProfile, setup: DamageSetup, t: Dictionnaire): CranIgnoreDef | null {
   const rang = resolvedPremierCoupIgnoreDef(profile, setup);
-  return cransIgnoreDefAPartirDuCoup(profile)?.find((c) => c.rang === rang) ?? null;
+  return cransIgnoreDefAPartirDuCoup(profile, t)?.find((c) => c.rang === rang) ?? null;
 }
 
 /**
@@ -5688,10 +5685,10 @@ export function cranIgnoreDefRetenu(profile: SkillDamageProfile, setup: DamageSe
  * « … : aucun », « … : 7ᵉ coup seul » —, ou `null` pour un sort sans cette
  * règle. UNE phrase pour le résumé du sort à l'écran et la ligne du CLI.
  */
-export function resumeIgnoreDefRetenu(profile: SkillDamageProfile, setup: DamageSetup): string | null {
-  const cran = cranIgnoreDefRetenu(profile, setup);
+export function resumeIgnoreDefRetenu(profile: SkillDamageProfile, setup: DamageSetup, t: Dictionnaire): string | null {
+  const cran = cranIgnoreDefRetenu(profile, setup, t);
   if (!cran) return null;
-  return `Ignore la DEF : ${cran.libelle.charAt(0).toLowerCase()}${cran.libelle.slice(1)}`;
+  return t.degats.ignoreDefRetenu(`${cran.libelle.charAt(0).toLowerCase()}${cran.libelle.slice(1)}`);
 }
 
 /**

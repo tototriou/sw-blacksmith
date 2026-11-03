@@ -143,8 +143,8 @@ retenue.
 - **Écran** : sous la
   liste de « Compétence utilisée », au même endroit que le champ des coups
   variables, un `Segmented` à deux crans — « Dégâts sur la cible visée »
-  (défaut) et « Dégâts sur les autres ennemis » (`CIBLE_DEGATS_LABELS`,
-  libellés partagés avec le CLI) — n’apparaît que si
+  (défaut) et « Dégâts sur les autres ennemis » (`CIBLES_DEGATS`, libellés
+  `degats.cibles` du dictionnaire, partagés avec le CLI) — n’apparaît que si
   `cibleSecondairePriseEnCharge` le permet pour le sort choisi. Le cran
   allumé est la cible que retient le calcul (`cibleDegatsRetenue`) ; le
   choisir n’écrit que la clé de ce sort. Le résumé des sorts donne la

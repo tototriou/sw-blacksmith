@@ -14,7 +14,7 @@
 // à connaître la base du monstre pour le réinterpréter, une source d'erreur
 // de plus, pas de moins.
 import { BuildRequirement, Objective, SLOT_FILTER_PRESETS, SLOT_MAIN_OPTIONS } from './runeBuildOptim';
-import { DamageSetup, IGNORE_DEF_A_PARTIR_DU_COUP_PAR_ID, LEADER_SKILL_STATS, cibleSecondairePriseEnCharge, cransDeLaRegleIgnoreDef } from './damage';
+import { DamageSetup, IGNORE_DEF_A_PARTIR_DU_COUP_PAR_ID, LEADER_SKILL_STATS, cibleSecondairePriseEnCharge, rangsDeLaRegleIgnoreDef } from './damage';
 import { erreurAurasExternes } from './aurasExternes';
 import { AutoExclusionScope, ExclusionSelector } from './optimizerExclusion';
 import { ArtifactKind, RUNE_SETS } from '../types';
@@ -456,7 +456,7 @@ function validerDamageSetup(value: unknown): ErreurRecette | null {
       if (!regle) {
         return erreur(path, (a) => a.sansIgnoreDef);
       }
-      const permis = cransDeLaRegleIgnoreDef(regle).map((c) => c.rang);
+      const permis = rangsDeLaRegleIgnoreDef(regle);
       if (!permis.includes(rang as number | null)) {
         return erreur(path, (a) => a.valeursPermises(permis.map((r) => (r === null ? 'null' : String(r))).join(', ')));
       }

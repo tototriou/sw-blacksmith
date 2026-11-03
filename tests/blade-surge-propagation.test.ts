@@ -21,7 +21,7 @@ import ts from 'typescript';
 import { egal, ok, titre } from './outils';
 import {
   AUCUNE_AURA_PROPRE,
-  CIBLE_DEGATS_LABELS,
+  CIBLES_DEGATS,
   DEFAULT_DAMAGE_SETUP,
   type DamageSetup,
   type SkillDamageProfile,
@@ -199,10 +199,8 @@ function fonctionDe(source: ts.SourceFile, nom: string): ts.FunctionDeclaration 
 export function testBladeSurgeEcran() {
   titre('Blade Surge · écran — deux crans sous « Compétence utilisée », seulement pour un sort qui le permet');
 
-  egal(CIBLE_DEGATS_LABELS, [
-    { key: 'visee', label: 'Dégâts sur la cible visée' },
-    { key: 'secondaire', label: 'Dégâts sur les autres ennemis' },
-  ], 'les deux crans, libellés retenus par l’utilisateur (n° 8), la cible visée d’abord');
+  egal(CIBLES_DEGATS.map((key) => fr.degats.cibles[key]), ['Dégâts sur la cible visée', 'Dégâts sur les autres ennemis'],
+    'les deux crans, libellés retenus par l’utilisateur (n° 8), la cible visée d’abord');
   egal(DEFAULT_DAMAGE_SETUP.cibleDegatsParSort, undefined, 'défaut : aucune clé, donc la cible visée, premier cran');
 
   const texte = lireSource('src/components/outils/DamageSetupCard.tsx');
@@ -214,13 +212,13 @@ export function testBladeSurgeEcran() {
     'garde en tête : aucun cran pour un sort sans coup de zone curé — la table de capacité même du parseur');
   const rendu = instructions.slice(1).join('\n');
   ok(/<Segmented<CibleDegats>/.test(rendu), 'un Segmented de la librairie, rien de custom');
-  ok(/options=\{CIBLE_DEGATS_LABELS\}/.test(rendu), 'ses deux crans : les libellés partagés avec le CLI');
+  ok(/options=\{CIBLES_DEGATS\.map\(\(key\) => \(\{ key, label: t\.degats\.cibles\[key\] \}\)\)\}/.test(rendu), 'ses deux crans : les libellés partagés avec le CLI');
   ok(/value=\{cibleDegatsRetenue\(profile, setup\)\}/.test(rendu), 'cran allumé : la cible que retient le calcul');
   ok(/onChange=\{\(v\) => maj\(\{ cibleDegatsParSort: \{ \.\.\.\(setup\.cibleDegatsParSort \?\? \{\}\), \[profile\.skillCom2usId\]: v \} \}\)\}/.test(rendu),
     'écriture : la clé du sort affiché, celles des autres sorts conservées');
 
   const code = sansCommentaires(texte);
-  ok(/\{champCoupsVariables\(resolved, setup, maj\)\}\s*\{champCibleDegats\(resolved, setup, maj\)\}/.test(code),
+  ok(/\{champCoupsVariables\(resolved, setup, maj, textes\)\}\s*\{champCibleDegats\(resolved, setup, maj, textes\)\}/.test(code),
     'place : sous la liste des sorts, juste après le champ des coups variables — ce qui apparaît pousse vers le bas, la case cliquée ne bouge pas');
   egal((code.match(/champCibleDegats\(/g) ?? []).length, 2, 'un seul point d’appel, plus la déclaration');
   egal((code.match(/cibleDegatsParSort/g) ?? []).length, 2, 'la carte n’écrit le champ qu’à cet endroit');
@@ -231,11 +229,11 @@ export function testBladeSurgeEcran() {
   const resume = fonctionDe(source, 'resumeSort')?.getText(source) ?? '';
   ok(resume.length > 0, 'précondition : le résumé des sorts');
   ok(!/cibleDegats/.test(resume), 'résumé du sort : ne lit jamais la cible choisie — le texte au-dessus des crans ne bouge pas');
-  ok(/const sequence = p\.sequenceDeCoups;/.test(resume) && /resumeSequenceDeCoups\(sequence\)/.test(resume),
+  ok(/const sequence = p\.sequenceDeCoups;/.test(resume) && /resumeSequenceDeCoups\(sequence, t\)/.test(resume),
     'résumé du sort : la séquence curée, par la fonction partagée avec le CLI');
-  ok(/sequence\.map\(\(g\) => formuleLisible\(g\.formule\)\)\.join\(' puis '\)/.test(resume),
+  ok(/sequence\.map\(\(g\) => formuleLisible\(g\.formule, t\.jeu\)\)\.join\(r\.puisFormule\)/.test(resume) && fr.degats.resume.puisFormule === ' puis ',
     'ratio : la formule de chaque groupe, dans l’ordre des coups');
-  egal(resumeSequenceDeCoups(bladeSurgeDeLapis().sequenceDeCoups ?? []), '2 coups · Cible unique, puis 1 coup · Zone',
+  egal(resumeSequenceDeCoups(bladeSurgeDeLapis().sequenceDeCoups ?? [], fr), '2 coups · Cible unique, puis 1 coup · Zone',
     'Blade Surge : la séquence entière — l’ancien « 2 coups · Cible unique » oubliait le coup de zone');
 }
 
@@ -294,10 +292,10 @@ export function testBladeSurgePariteEcranCli() {
 
   // La ligne du sort du CLI : la séquence et la cible, avec les textes de l'écran.
   const cli = sansCommentaires(lireSource('scripts/optimizer-search.ts'));
-  ok(/const sequence = profile\.sequenceDeCoups;/.test(cli) && cli.includes('${sequence ? resumeSequenceDeCoups(sequence) : `${coupsAffiches.dependDuBuild ? `${coupsAffiches.hits} à ${coupsAffiches.max}` : coupsAffiches.hits} coup(s)`}'),
+  ok(/const sequence = profile\.sequenceDeCoups;/.test(cli) && cli.includes('${sequence ? resumeSequenceDeCoups(sequence, fr) : `${coupsAffiches.dependDuBuild ? `${coupsAffiches.hits} à ${coupsAffiches.max}` : coupsAffiches.hits} coup(s)`}'),
     'ligne du CLI : la séquence entière, par la fonction du résumé de l’écran');
   ok(cli.includes('${!sequence && profile.aoe ? \', zone\' : \'\'}'), 'ligne du CLI : la portée du sort seulement hors séquence (la donnée ne décrit pas la séquence)');
-  ok(/const cibleCalculee = cibleSecondairePriseEnCharge\(profile\.skillCom2usId\)\s*\?\s*CIBLE_DEGATS_LABELS\.find\(\(c\) => c\.key === cibleDegatsRetenue\(profile, s\)\)\?\.label\s*:\s*undefined;/.test(cli)
+  ok(/const cibleCalculee = cibleSecondairePriseEnCharge\(profile\.skillCom2usId\)\s*\?\s*fr\.degats\.cibles\[cibleDegatsRetenue\(profile, s\)\]\s*:\s*undefined;/.test(cli)
     && cli.includes('${cibleCalculee ? `${cibleCalculee} — ` : \'\'}'),
     'ligne du CLI : la cible calculée, avec le libellé du cran de l’écran, pour un sort qui le permet');
 }
@@ -326,13 +324,13 @@ export function testBladeSurgeResumeObjectif() {
   // l'identifiant stocké.
   const bout = (setup: DamageSetup) => {
     const resolu = resolveDamageSkill(sorts, setup.skillCom2usId);
-    return resolu ? resumeCibleDegatsRetenue(resolu, setup) : null;
+    return resolu ? resumeCibleDegatsRetenue(resolu, setup, fr) : null;
   };
 
   // Présent : le cran secondaire, sur le sort qui le permet.
   const texte = bout(SECONDAIRE);
   egal(texte, 'autres ennemis', 'cran « Dégâts sur les autres ennemis » sur Blade Surge : le bout présent');
-  egal(CIBLE_DEGATS_LABELS.find((c) => c.key === 'secondaire')?.label, `Dégâts sur les ${texte}`,
+  egal(fr.degats.cibles.secondaire, `Dégâts sur les ${texte}`,
     'le bout est la fin du libellé du cran : un seul texte, jamais une seconde écriture');
 
   // Absent : la cible visée, choisie ou par défaut.
@@ -371,12 +369,12 @@ export function testBladeSurgeResumeObjectif() {
   const corps = memo?.corps ?? [];
   egal(corps.slice(1, 4), [
     'bouts.push(resolvedSkill ? `S${resolvedSkill.slot} ${resolvedSkill.nom}` : os.aucunSort);',
-    'const cibleRetenue = resolvedSkill && resumeCibleDegatsRetenue(resolvedSkill, damageSetup);',
+    'const cibleRetenue = resolvedSkill && resumeCibleDegatsRetenue(resolvedSkill, damageSetup, textes);',
     'if (cibleRetenue) bouts.push(cibleRetenue);',
   ], 'le bout suit le sort, lu sur le sort RÉSOLU par la fonction contrôlée ci-dessus');
   ok(/^bouts\.push\(cible \? os\.contre\(/.test(corps[5] ?? ''), '… et précède l’élément visé (« S1 Blade Surge · autres ennemis · vs … »)');
   ok(!/skillCom2usId|cibleDegatsParSort/.test(sansCommentaires(corps.join('\n'))), 'le résumé ne lit ni l’identifiant stocké, ni le champ brut');
-  egal(memo?.deps, '[resolvedSkill, damageSetup, critInterdit, jeu, langue, os]', 'recalculé quand le réglage change, cran et langue compris');
+  egal(memo?.deps, '[resolvedSkill, damageSetup, critInterdit, jeu, langue, os, textes]', 'recalculé quand le réglage change, cran et langue compris');
   ok(!sansCommentaires(texteEcran).includes('autres ennemis'), 'l’écran n’écrit pas le texte lui-même');
 }
 
@@ -384,10 +382,10 @@ export function testBladeSurgeLigneArtifactSearch() {
   titre('Blade Surge · script de diagnostic des artéfacts — la ligne du sort dit la séquence curée, comme le CLI');
 
   const script = sansCommentaires(lireSource('scripts/artifact-search.ts'));
-  ok(/const sequence = sort\.sequenceDeCoups;/.test(script) && script.includes('${sequence ? resumeSequenceDeCoups(sequence) : `${sort.hits} coup(s)`}'),
+  ok(/const sequence = sort\.sequenceDeCoups;/.test(script) && script.includes('${sequence ? resumeSequenceDeCoups(sequence, fr) : `${sort.hits} coup(s)`}'),
     'ligne « Sort : … » : la séquence entière, par la fonction du résumé de l’écran et de la ligne du CLI');
   ok(script.includes('${!sequence && sort.aoe ? \', zone\' : \'\'}'), '… la portée seulement hors séquence (la donnée ne décrit pas la séquence)');
   egal((script.match(/coup\(s\)/g) ?? []).length, 1, '« coup(s) » ne reste que dans le repli hors séquence');
-  egal(resumeSequenceDeCoups(bladeSurgeDeLapis().sequenceDeCoups ?? []), '2 coups · Cible unique, puis 1 coup · Zone',
+  egal(resumeSequenceDeCoups(bladeSurgeDeLapis().sequenceDeCoups ?? [], fr), '2 coups · Cible unique, puis 1 coup · Zone',
     'Blade Surge de Lapis : la ligne écrit la séquence, pas « 2 coup(s) »');
 }

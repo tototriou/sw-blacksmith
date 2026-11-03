@@ -252,10 +252,13 @@ export function testResumeConditionDef() {
   titre('Résumé des comparaisons de DEF — effet et borne lus sur l’entrée (DamageSetupCard.tsx)');
   const source = carte();
   ok(/function effetCondition\(/.test(source), 'un seul producteur de l’effet d’une condition');
-  ok(source.includes("if (condition.critiqueGaranti) return 'critique garanti';"),
+  ok(source.includes('if (condition.critiqueGaranti) return c.critiqueGaranti;') && fr.degats.condition.critiqueGaranti === 'critique garanti',
     'critique garanti lu sur l’entrée (Jaara, Varus disaient « ignore DEF »)');
-  ok(source.includes("return `${effetCondition(condition)} si la DEF cible ${condition.inclusif ? '≤' : '<'} ${condition.ratio}× ta DEF`;") &&
-    source.includes("return `${effetCondition(condition)} si la DEF cible ${condition.inclusif ? '≤' : '<'} ${condition.ratio}× ton ATQ`;"),
+  ok(source.includes("const op = 'inclusif' in condition && condition.inclusif ? '≤' : '<';") &&
+    source.includes('return c.defCibleSousDef(effetCondition(condition, t), op, condition.ratio);') &&
+    source.includes('return c.defCibleSousAtk(effetCondition(condition, t), op, condition.ratio);') &&
+    fr.degats.condition.defCibleSousDef('critique garanti', '≤', 1.5) === 'critique garanti si la DEF cible ≤ 1.5× ta DEF' &&
+    fr.degats.condition.defCibleSousAtk('ignore DEF', '<', 2) === 'ignore DEF si la DEF cible < 2× ton ATQ',
     'comparaisons de DEF : effet et borne (≤ ou <) lus sur l’entrée');
   ok(!source.includes('`ignore DEF si la DEF cible ≤'), 'plus de texte de comparaison de DEF figé sur « ignore DEF » et « ≤ »');
 }
@@ -263,9 +266,9 @@ export function testResumeConditionDef() {
 export function testResumeConditionDebuff() {
   titre('Résumé « débuff sur la cible » — l’effet lu sur l’entrée (DamageSetupCard.tsx)');
   const source = carte();
-  ok(source.includes("return `${effetCondition(condition)} si la cible a un débuff`;"),
+  ok(source.includes('return c.debuffCible(effetCondition(condition, t));') && fr.degats.condition.debuffCible('ignore DEF') === 'ignore DEF si la cible a un débuff',
     'débuff sur la cible : l’effet suit l’entrée (Triss : ignore DEF ; Yuji, Rick : critique garanti)');
   ok(!source.includes("'ignore DEF si la cible a un débuff'"), 'plus de texte figé sur « ignore DEF »');
-  ok(source.includes("condition.critiqueGaranti ? ' (critique garanti)'"),
+  ok(source.includes('condition.critiqueGaranti ? d.condition.suffixeCritique') && fr.degats.condition.suffixeCritique === ' (critique garanti)',
     'interrupteur « débuff présent » : le libellé dit « critique garanti » pour Yuji et Rick');
 }

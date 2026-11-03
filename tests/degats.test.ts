@@ -38,7 +38,7 @@ import {
   MIRIAM_AMPLIFY_PCT,
   MIRINAE_BONUS_PCT,
   SPD_BUFF_PCT,
-  SUMMONER_SKILLS_LABELS,
+  SUMMONER_SKILLS,
   TRANSMISSION_BONUS_PCT,
   VELASKA_PCT_PAR_PV_PERDU,
   SkillDamageProfile,
@@ -381,7 +381,7 @@ export default function testDegats() {
   // ⚠️ Les compétences d'invocateur portent sur la stat de BASE (comme le
   // totem de vitesse), pas sur le total runé — un build à grosse ATQ runée
   // n'en tire pas plus qu'un build nu de même base.
-  egal(SUMMONER_SKILLS_LABELS.map((option) => option.key), ['normal', 'guilde'], 'seuls les deux états réels sont proposés, sans « Aucune »');
+  egal(SUMMONER_SKILLS, ['normal', 'guilde'], 'seuls les deux états réels sont proposés, sans « Aucune »');
   egal(
     summonerSkillBonus('normal', 'fire'),
     { pct: { atk: 41, def: 20, hp: 20, spd: 15 }, cdPoints: 25 },

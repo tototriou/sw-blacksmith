@@ -298,7 +298,7 @@ function CompetenceBloc({ c }: { c: Competence }) {
   const t = useTraduction();
   const jeu = t.jeu;
   const f = t.ficheMonstre;
-  const formule = formuleLisible(c.formule);
+  const formule = formuleLisible(c.formule, jeu);
   const paliers = paliersRechargement(c);
   return (
     <div className="rounded-lg border border-border bg-panel2 p-2.5">

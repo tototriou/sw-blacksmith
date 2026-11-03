@@ -35,6 +35,7 @@ import { computeStats } from '../src/lib/stats';
 import { artifactSubName } from '../src/lib/effects';
 import { jeuFr } from '../src/i18n/jeu/fr';
 import { ARTIFACT_KINDS, type ArtifactDetail, type ArtifactKind, type ElementKey } from '../src/types';
+import { fr } from '../src/i18n/fr';
 
 const libres = process.argv.slice(2).filter((a) => !a.startsWith('--'));
 const [exportPath, monsterName] = libres;
@@ -125,7 +126,7 @@ const parSorte = ARTIFACT_KINDS.map(({ key }) => {
 // et `aoe` ne décrivent que la donnée, jamais la séquence.
 const sequence = sort.sequenceDeCoups;
 console.log(
-  `\nSort : ${sort.nom} (slot ${sort.slot}, ${sequence ? resumeSequenceDeCoups(sequence) : `${sort.hits} coup(s)`}` +
+  `\nSort : ${sort.nom} (slot ${sort.slot}, ${sequence ? resumeSequenceDeCoups(sequence, fr) : `${sort.hits} coup(s)`}` +
     `${!sequence && sort.aoe ? ', zone' : ''}${sort.bombe ? ', BOMBE' : ''})`
 );
 console.log(`Cible : ${setup.enemyDef} DEF · élément visé : ${setup.enemyElement ?? 'ignoré'} · critique : ${setup.critMode}`);

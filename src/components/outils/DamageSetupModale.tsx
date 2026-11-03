@@ -1,6 +1,7 @@
 import { ComponentProps } from 'react';
 import { Modale } from '../../ui/Dialogs';
 import DamageSetupCard from './DamageSetupCard';
+import { useTraduction } from '../../hooks/useLangue';
 
 // La description du combat — sort visé, adversaire, coup critique, effets —
 // ouverte PAR-DESSUS l'écran d'optimisation.
@@ -43,12 +44,13 @@ export default function DamageSetupModale({
    */
   echoEtatMonstre: string;
 } & ComponentProps<typeof DamageSetupCard>) {
+  const d = useTraduction().degats;
   return (
     <Modale
       onClose={onClose}
       labelledBy="damage-setup-modale"
-      titre="Dégâts réels"
-      sousTitre={`Décris le coup à évaluer : le sort, l'adversaire, et comment traiter le critique. — ${echoEtatMonstre}`}
+      titre={d.titre}
+      sousTitre={d.sousTitre(echoEtatMonstre)}
       croix
       // ⚠️ Les 400 px du défaut réduiraient la grille d'effets à une colonne :
       // « Effets actifs » aligne une douzaine de vignettes, et « Adversaire »

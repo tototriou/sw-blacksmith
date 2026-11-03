@@ -71,7 +71,7 @@ export function testProsesSortAuClic() {
   // Deux `title=` : celui de la prose et celui de « Calcul
   // partiel » — deux titres de bulle, aucun survol.
   egal((sorts.match(/\btitle=/g) ?? []).length, 2, 'cases de sort : deux `title=`, ceux des deux HelpPopover (titres de bulle, pas un survol)');
-  ok(/<HelpPopover title=\{s\.nom\} ariaLabel=\{`Description de \$\{s\.nom\}`\}>\s*\{s\.description\}\s*<\/HelpPopover>/.test(sorts),
+  ok(/<HelpPopover title=\{s\.nom\} ariaLabel=\{d\.competence\.description\(s\.nom\)\}>\s*\{s\.description\}\s*<\/HelpPopover>/.test(sorts),
     '« ? » : HelpPopover (bulle à la souris, panneau montant au doigt) au nom du sort, prose du jeu telle quelle');
   ok(/actionTitre=\{\s*s\.description \|\| partiel \? \(/.test(sorts) && /\{s\.description && \(\s*<HelpPopover title=\{s\.nom\}/.test(sorts)
     && /<\/div>\s*\) : undefined\s*\}/.test(sorts),
@@ -86,7 +86,7 @@ export function testEffetsActifsInfobulle() {
   titre('« Effets actifs » — l’infobulle dérivée des descriptions des vignettes');
 
   const carte = sansCommentaires(lire('src/components/outils/DamageSetupCard.tsx'));
-  const bulle = carte.match(/<HelpPopover title="Effets actifs">([\s\S]*?)<\/HelpPopover>/)?.[1] ?? '';
+  const bulle = carte.match(/<HelpPopover title=\{d\.effets\.titre\}>([\s\S]*?)<\/HelpPopover>/)?.[1] ?? '';
   ok(bulle.length > 0, 'précondition : l’infobulle « Effets actifs »');
   ok(/\{effetsActifs\.map\(\(e\) => \(\s*<li key=\{e\.cle\}>\s*<b className="text-ink">\{e\.libelle\}<\/b> — \{e\.description\}\s*<\/li>\s*\)\)\}/.test(bulle),
     'infobulle : une ligne par effet de `effetsActifs`, le libellé et la description de sa vignette');
@@ -104,8 +104,8 @@ export function testEffetsActifsInfobulle() {
     'liste : les onze effets, dans l’ordre d’affichage (« Attaque conjointe » puis « Pendant le tour d’un allié » en dernier, sans déplacer les autres)');
   // Dix descriptions simples ; celle d'« Attaque conjointe » est un ternaire
   // (deux cas), comptée à part.
-  egal([...construction.matchAll(/description:\s*'[^']+'/g)].length, 10, 'liste : une description écrite par effet, une seule fois');
-  egal([...construction.matchAll(/description:\s*interrupteurConjointe\.cas === 'familles-cooperatives'\s*\?\s*'[^']+'\s*:\s*'[^']+'/g)].length, 1,
+  egal([...construction.matchAll(/description:\s*d\.effets\.\w+,/g)].length, 10, 'liste : une description écrite par effet, une seule fois');
+  egal([...construction.matchAll(/description:\s*interrupteurConjointe\.cas === 'familles-cooperatives'\s*\?\s*d\.effets\.conjointeFamilles\s*:\s*d\.effets\.conjointeAppelee/g)].length, 1,
     'liste : « Attaque conjointe » a deux descriptions, une par cas de l’interrupteur');
   egal(construction.match(/\b(209|224|225)\b/g) ?? [], [], 'liste : aucune description ne cite de numéro d’artéfact');
   // « Attaque conjointe » : la condition est la porte de damage.ts, et le
