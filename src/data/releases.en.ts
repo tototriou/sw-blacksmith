@@ -26,6 +26,7 @@ export const RELEASES_EN: Release[] = [
       { kind: 'feat', scope: 'Real damage', text: 'The objective’s window in English: skill, active effects, passives, opponent and critical hit.' },
       { kind: 'feat', scope: 'Real damage', text: 'Each monster’s counters, conditions, help texts and “Partial calculation” notes in English.' },
       { kind: 'feat', scope: 'Application', text: 'The desktop app in English: updates, SW Exporter, session saving and system windows; the installer follows the Windows language.' },
+      { kind: 'feat', scope: 'Interface', text: 'The last texts left in French are now in English: fields, notifications, artifact and relic cards, rune wheel.' },
       { kind: 'feat', scope: 'Game', text: 'Sets, stats, effects and artifacts use the game’s names, in French and in English.' },
       { kind: 'fix', scope: 'Runes', text: 'French stat names match the game, and the Seal set shows its real effect.' },
       { kind: 'fix', scope: 'Bestiary', text: 'A monster’s sheet spells out its type.' },

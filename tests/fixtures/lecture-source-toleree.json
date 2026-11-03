@@ -760,14 +760,28 @@
       "cible": "src/components/RuneIcon.tsx",
       "occurrences": 1,
       "statut": "exception",
-      "justification": "Nom de fichier passé à ESLint par --stdin-filename, avec un code écrit dans le test : le fichier n'est pas lu, son chemin dit seulement qu'il n'est pas encore dans la liste des fichiers traduits."
+      "justification": "Nom de fichier passé à ESLint par --stdin-filename, avec un code écrit dans le test : le fichier n'est pas lu, son chemin montre que la règle couvre tout src/, même un fichier sans texte jusqu'ici."
     },
     {
       "fichier": "tests/langue.test.ts",
       "cible": "src/components/TopBar.tsx",
       "occurrences": 1,
       "statut": "exception",
-      "justification": "Nom de fichier passé à ESLint par --stdin-filename, avec un code écrit dans le test : le fichier n'est pas lu, son chemin le place dans la liste des fichiers traduits, où la règle texte-en-dur s'applique."
+      "justification": "Nom de fichier passé à ESLint par --stdin-filename, avec un code écrit dans le test : le fichier n'est pas lu, son chemin le place sous la règle texte-en-dur."
+    },
+    {
+      "fichier": "tests/langue.test.ts",
+      "cible": "src/components/outils/optimizer/gabarits/VueGabarits.tsx",
+      "occurrences": 1,
+      "statut": "exception",
+      "justification": "Nom de fichier passé à ESLint par --stdin-filename, avec un code écrit dans le test : le fichier n'est pas lu, son chemin montre que la vue de développement des gabarits est hors de la règle texte-en-dur."
+    },
+    {
+      "fichier": "tests/langue.test.ts",
+      "cible": "src/i18n/articles/mecaniques.fr.tsx",
+      "occurrences": 1,
+      "statut": "exception",
+      "justification": "Nom de fichier passé à ESLint par --stdin-filename, avec un code écrit dans le test : le fichier n'est pas lu, son chemin montre que src/i18n/ est hors de la règle texte-en-dur."
     },
     {
       "fichier": "tests/lecture-source.test.ts",

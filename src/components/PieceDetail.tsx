@@ -419,8 +419,8 @@ export function RuneDetailBox({
       title={
         aDeLaMeule
           ? total
-            ? 'Voir le détail (valeur d’origine + meule)'
-            : 'Voir les valeurs totales, meule comprise'
+            ? textes.pieces.voirDetailMeule
+            : textes.pieces.voirTotalMeule
           : undefined
       }
       lignes={rune.subs.map((s, i) => {
@@ -534,7 +534,7 @@ export function ArtifactDetailBox({
               className={`flex-none rounded px-1 font-mono text-micro font-bold tabular-nums ${
                 procs > 0 ? 'bg-good/20 text-good' : 'bg-ink-dim/15 text-ink-dim'
               }`}
-              title={`${procs} amélioration${procs > 1 ? 's' : ''} sur cette ligne`}
+              title={textes.pieces.ameliorations(procs)}
             >
               {procs}
             </span>

@@ -123,5 +123,7 @@ export function testLangueTexteEnDur() {
   ];
   for (const code of permis) egal(lint(fichier, code), [], `permis : ${code.slice(20, 75)}`);
 
-  egal(lint('src/components/RuneIcon.tsx', enDur[0]), [], 'un fichier pas encore traduit n’est pas visé');
+  egal(lint('src/components/RuneIcon.tsx', enDur[0]).length, 1, 'tout src/ est visé, même un fichier sans texte jusqu’ici');
+  egal(lint('src/i18n/articles/mecaniques.fr.tsx', enDur[0]), [], 'src/i18n/ hors de la règle : il EST le texte d’une langue');
+  egal(lint('src/components/outils/optimizer/gabarits/VueGabarits.tsx', enDur[0]), [], 'la vue de développement des gabarits, restée en français, hors de la règle');
 }

@@ -460,7 +460,7 @@ export function useOptimizerLists(): UseOptimizerLists {
       const modifiees = teams.filter(e => !s.memberStorage.teams.some(ancienne => JSON.stringify(ancienne) === JSON.stringify(e)));
       const horsListe = modifiees.some((e) => !s.lists.some((l) => l.id === e.listId)
         || e.members.some((sel) => !s.members.some((m) => cleMemoireMembre(m.listId, m.selector) === cleMemoireMembre(e.listId, sel))));
-      const rapport = [...r.rapport, ...(horsListe ? ['Équipe non écrite : membre absent de la liste.'] : [])];
+      const rapport = [...r.rapport, ...(horsListe ? [textesVivants.current.optimizer.stockage.equipeMembreAbsent] : [])];
       return { ...s, memberStorage: { ...s.memberStorage, teams: rapport.length ? s.memberStorage.teams : structuredClone(r.teams),
         raw: rapport.length ? s.memberStorage.raw : null, rapport: [...s.memberStorage.rapport, ...rapport] } };
     });

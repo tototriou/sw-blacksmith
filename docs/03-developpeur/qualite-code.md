@@ -36,9 +36,9 @@ texte du code suffit à vérifier :
 | un attribut `type="number"` | `no-restricted-syntax` | `NumberField` de `src/ui/` |
 | `localStorage.setItem` | `no-restricted-properties` | `saveLocal` ([persistance.md](../02-app/transverse/feat-import-compte/persistance.md)) ; permis dans `usePersistence.ts` et les hooks des clés de réglage (`useTheme`, `useLangue`, `useOvercapDisplay`, `useRuneMetric`, `useAdversaireReference`, `useBuildsRapides`) |
 
-Dans les fichiers traduits — la liste `FICHIERS_TRADUITS` d'`eslint.config.js`, qui grandit
-écran par écran jusqu'à couvrir `src/` —, la règle locale `swblacksmith/texte-en-dur`
-(`scripts/lib/regleTexteEnDur.mjs`) est en erreur :
+Dans tout `src/` (`FICHIERS_TRADUITS` d'`eslint.config.js`), sauf `src/i18n/` et la vue de
+développement des gabarits de l'Optimizer (`HORS_TRADUCTION`), la règle locale
+`swblacksmith/texte-en-dur` (`scripts/lib/regleTexteEnDur.mjs`) est en erreur :
 
 | Refusé | À la place |
 | --- | --- |

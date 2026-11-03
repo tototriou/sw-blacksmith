@@ -1,5 +1,6 @@
 import { ReactNode, useRef } from 'react';
 import { COMPACT, useMediaQuery } from '../hooks/useMediaQuery';
+import { useTraduction } from '../hooks/useLangue';
 import { RuneDetail } from '../types';
 import { RARITY_FILTER } from '../lib/effects';
 import RuneIcon from './RuneIcon';
@@ -93,6 +94,7 @@ const SCALE_MOBILE = 0.72;
 export default function RuneWheel({ runes, scale, isSelected, onSelectRune, renderOverlay }: RuneWheelProps) {
   const refs = useRef<(HTMLDivElement | null)[]>([]);
   const petitEcran = useMediaQuery(COMPACT);
+  const p = useTraduction().pieces;
   const echelle = scale ?? (petitEcran ? SCALE_MOBILE : 1);
 
   const wheelW = Math.round(BASE_WHEEL_W * echelle);
@@ -138,7 +140,7 @@ export default function RuneWheel({ runes, scale, isSelected, onSelectRune, rend
                 par-dessus le premier. */}
             <ZoneCliquable
               onClick={() => onSelectRune?.(r, i)}
-              title={`Slot ${r.slot}${ancient ? ' · antique' : ''} · voir le détail`}
+              title={p.slotRune(r.slot, !!ancient)}
               // ⚠️ `data-cible-fine` : sans lui, `min-height: 40px` (cibles
               // tactiles, index.css) gagne contre la hauteur du cadre
               // (`inset-0` sur son emplacement de la roue) et décale la rune

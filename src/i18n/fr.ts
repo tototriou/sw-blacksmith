@@ -440,6 +440,49 @@ export const fr = {
     confirmer: 'Confirmer',
   },
 
+  // Les contrôles de src/ui/ et les composants partagés par plusieurs écrans.
+  controles: {
+    trierCroissant: 'Trier du plus petit au plus grand',
+    trierDecroissant: 'Trier du plus grand au plus petit',
+    diminuer: 'Diminuer',
+    augmenter: 'Augmenter',
+    fermerNotification: 'Fermer la notification',
+    rechercher: 'Rechercher…',
+    resultatsRecherche: 'Résultats de la recherche',
+    aucunMonstre: 'Aucun monstre trouvé.',
+    vitesseCourte: 'SPD',
+    exemplaires: (n: number) => `${n} exemplaires`,
+    voirFiche: (nom: string) => `Voir la fiche de ${nom}`,
+    avertissementMobile: {
+      debut: 'Les ',
+      courbes: 'courbes',
+      milieu: " et l'",
+      optimiseur: 'optimiseur',
+      fin: ' se lisent plus confortablement sur un grand écran.',
+      masquer: 'Masquer cet avertissement',
+    },
+  },
+
+  // Les pièces d'un monstre : artéfacts, relique, roue des runes, stats.
+  pieces: {
+    aucunArtefact: (sorte: string) => `Aucun artéfact ${sorte} équipé`,
+    voirArtefact: (sorte: string) => `Voir l'artéfact ${sorte}`,
+    proprieteModifiee: 'Propriété modifiée',
+    voirDetailMeule: 'Voir le détail (valeur d’origine + meule)',
+    voirTotalMeule: 'Voir les valeurs totales, meule comprise',
+    ameliorations: (n: number) => `${n} amélioration${n > 1 ? 's' : ''} sur cette ligne`,
+    relique: 'Relique',
+    reliqueEnAttente: 'Relique : en attente',
+    enAttente: 'en attente',
+    aucuneRelique: 'Aucune relique équipée',
+    voirRelique: 'Voir la relique',
+    uniqueSansEffet: (type: number) => `Propriété unique n° ${type} — l'export ne dit pas ce qu'elle déclenche`,
+    slotRune: (slot: number, antique: boolean) => `Slot ${slot}${antique ? ' · antique' : ''} · voir le détail`,
+    afficherBaseBonus: 'Afficher base + bonus',
+    afficherTotal: 'Afficher le total',
+    spdCible: (spd: string) => `Il faut ${spd} de SPD sur les runes pour coller à l'ordre de tour`,
+  },
+
   // L'application de bureau : le bloc « Application » des Réglages, la
   // notification de mise à jour, le suivi de SW Exporter.
   application: {
