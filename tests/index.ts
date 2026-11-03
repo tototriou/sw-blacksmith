@@ -28,7 +28,7 @@ import { testRenduRtaExportOptimizer, testRenduTelephoneRtaExportOptimizer, test
   testRenduTelephoneRecoExportOptimizer, testRenduOptimizerImportRecommandation, testRenduTelephoneOptimizerImportRecommandation,
   testOptimizerImportRtaRecoBranchement } from './rendu/rta-reco-export.test';
 import { testRenduSiegeExportOptimizer, testRenduTelephoneSiegeExportOptimizer, testOptimizerImportSiegeBranchement } from './rendu/siege-export.test';
-import { testRenduSpeedTuneExportOptimizer, testRenduTelephoneSpeedTuneExportOptimizer, testOptimizerImportSpeedTuneBranchement, testRenduSpeedTuneExportAppOptimizer, testRenduTelephoneSpeedTuneExportAppOptimizer } from './rendu/speed-tune-export.test';
+import { testRenduSpeedTuneResetAtbApp, testRenduTelephoneSpeedTuneResetAtbApp, testRenduSpeedTuneExportOptimizer, testRenduTelephoneSpeedTuneExportOptimizer, testOptimizerImportSpeedTuneBranchement, testRenduSpeedTuneExportAppOptimizer, testRenduTelephoneSpeedTuneExportAppOptimizer } from './rendu/speed-tune-export.test';
 import { testOptimizerImportActionDemontee, testOptimizerImportEcrituresGroupees, testOptimizerImportReverificationEnAttente, testOptimizerImportCollision, testRenduOptimizerImportDefenses, testRenduTelephoneOptimizerImportDefenses,
   testRenduOptimizerImportOffense, testRenduTelephoneOptimizerImportOffense, testRenduOptimizerImportRta,
   testRenduTelephoneOptimizerImportRta, testRenduOptimizerImportIndisponible, testRenduTelephoneOptimizerImportIndisponible, testRenduOptimizerImportRapportPartage, testRenduOptimizerImportDisponibiliteMemoisee } from './rendu/optimizer-import.test';
@@ -328,7 +328,7 @@ import testMonstreTri from './monstre-tri.test';
 import testMonstreFormes from './monstre-formes.test';
 import testCurationFormesJouables from './curation-formes-jouables.test';
 import testInventaireCompetences from './inventaire-competences.test';
-import testDonneesAuxiliaires from './donnees-auxiliaires.test';
+import testDonneesAuxiliaires, { testDonneesFastPaceGeneration } from './donnees-auxiliaires.test';
 import testDegatsAutreForme from './degats-autre-forme.test';
 import testDegatsAttaquesAuxiliaires from './degats-attaques-auxiliaires.test';
 import testStockage from './stockage.test';
@@ -353,7 +353,7 @@ import { testRecoFusionCorrespondance, testRecoFusionDecks, testRecoFusionChef, 
 import { testRenduRecoFusionChoix, testRenduRecoFusionStockage } from './rendu/reco-fusion.test';
 import testSiegePartage from './siege-partage.test';
 import testMarque from './marque.test';
-import testSpeedTune, { testSpeedTuneDeck, testSpeedTuneChaine, testSpeedTuneKit, testSpeedTuneSequence, testSpeedTuneReference, testSpeedTunePassif, testSpeedTuneAuto, testSpeedTuneModele } from './speed-tune.test';
+import testSpeedTune, { testSpeedTuneDeck, testSpeedTuneChaine, testSpeedTuneKit, testSpeedTuneResetAtb, testSpeedTuneSequence, testSpeedTuneReference, testSpeedTunePassif, testSpeedTuneAuto, testSpeedTuneModele } from './speed-tune.test';
 import { testRenduSiegeDefense, testRenduSiegeOffense, testRenduSiegeEnTete, testRenduSiegeEdition } from './rendu/siege.test';
 import { testRenduUiBouton, testRenduUiEtats, testRenduUiMenu, testRenduUiSelecteurMultiple, testRenduUiNotification, testRenduUiOnglets, testRenduPalette } from './rendu/ui.test';
 import { testRenduUiSelecteurTab, testRenduTelephoneUiSelecteurListe, testRenduUiFlottantBoiteQuiDefile, testRenduUiSegmentedDeuxLignes } from './rendu/ui-flottants.test';
@@ -520,6 +520,7 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testSpeedTuneDeck', testSpeedTuneDeck],
   ['testSpeedTuneChaine', testSpeedTuneChaine],
   ['testSpeedTuneKit', testSpeedTuneKit],
+  ['testSpeedTuneResetAtb', testSpeedTuneResetAtb],
   ['testSpeedTuneSequence', testSpeedTuneSequence],
   ['testSpeedTuneReference', testSpeedTuneReference],
   ['testSpeedTunePassif', testSpeedTunePassif],
@@ -709,6 +710,7 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testCurationFormesJouables', testCurationFormesJouables],
   ['testInventaireCompetences', testInventaireCompetences],
   ['testDonneesAuxiliaires', testDonneesAuxiliaires],
+  ['testDonneesFastPaceGeneration', testDonneesFastPaceGeneration],
   ['testCouleursCourbes', testCouleursCourbes],
   ['testRechargement', testRechargement],
   ['testCollabPaires', testCollabPaires],
@@ -1073,6 +1075,8 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testRenduSpeedTuneExportOptimizer', testRenduSpeedTuneExportOptimizer],
   ['testRenduTelephoneSpeedTuneExportOptimizer', testRenduTelephoneSpeedTuneExportOptimizer],
   ['testRenduSpeedTuneExportAppOptimizer', testRenduSpeedTuneExportAppOptimizer],
+  ['testRenduSpeedTuneResetAtbApp', testRenduSpeedTuneResetAtbApp],
+  ['testRenduTelephoneSpeedTuneResetAtbApp', testRenduTelephoneSpeedTuneResetAtbApp],
   ['testRenduTelephoneSpeedTuneExportAppOptimizer', testRenduTelephoneSpeedTuneExportAppOptimizer],
   ['testOptimizerImportEcrituresGroupees', testOptimizerImportEcrituresGroupees],
   ['testOptimizerImportReverificationEnAttente', testOptimizerImportReverificationEnAttente],

@@ -27,10 +27,11 @@ const CONDITION =
 
 // ⚠️ Ce qu'on ne connaît QUE par relevé en jeu : les données ne le chiffrent pas.
 // Mieux vaut une valeur assumée « relevée à la main » qu'un trou silencieux.
-const RELEVE_EN_JEU: Record<string, { valeur: number; pourcent: boolean; plafond: number | null }> = {
+const RELEVE_EN_JEU: Record<string, { valeur: number; pourcent: boolean; plafond: number | null; apresBuffs?: boolean }> = {
   // Chilling / Jack-o'-lantern : « Your Attack Speed increases according to the
-  // number of beneficial effects currently on you » — mesuré à +20 par buff.
-  'The Cunning (Passive)': { valeur: 20, pourcent: false, plafond: null },
+  // number of beneficial effects currently on you » — modèle +20 par buff,
+  // contrôlé à +40 avec Volonté + Bouclier. Ce gain suit le classement initial.
+  'The Cunning (Passive)': { valeur: 20, pourcent: false, plafond: null, apresBuffs: true },
 };
 
 // ⚠️ Trous DÉFINITIFS : aucune valeur, ni dans les fiches ni en jeu (vérifié le
@@ -62,6 +63,9 @@ export interface GainVitesse {
   // les deux sous-comptait Elsharion de tous les buffs de ses alliés.
   cumulEquipe: boolean;
   releve: boolean; // valeur absente des données, relevée à la main
+  // Gain activé par les buffs posés après le classement initial : il remplit
+  // la barre, mais ne départage pas une égalité. Absent : le gain reste initial.
+  apresBuffs?: boolean;
 }
 
 export interface PassifVitesse {

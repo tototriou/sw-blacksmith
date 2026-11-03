@@ -22,6 +22,22 @@ const EFFET_REJOUE = 'Additional Turn';
 const EFFET_ATB_MOINS = 'Decrease ATB';
 const EFFET_SPD_MOINS = 'Decrease ATK SPD';
 
+// Mobilize de Belladeon 2A : la prose distingue 30 % de barre et 35 % de soin,
+// mais l'effet Increase ATB de SWARFARM porte aussi 35. La correction se fait
+// avant les skill-ups et se partage entre le kit simple et l'ordre des sorts.
+const ATB_NIVEAU_1_CONNUS = new Map<number, number>([[2064, 30]]);
+const atbNiveau1De = (c: Competence, e: Competence['effets'][number]): number =>
+  (c.com2usId != null ? ATB_NIVEAU_1_CONNUS.get(c.com2usId) : undefined) ?? e.quantite ?? 0;
+
+// Effets globaux dont les drapeaux SWARFARM ne décrivent pas la portée.
+// Curation par identifiant, après balayage des 1 007 compétences ATB :
+// Returned Dice remet les deux camps à zéro ; Fast Pace les fixe à 100.
+// Le buff de Tablo exclut le lanceur, celui de Fast Pace vise un seul allié.
+const ATB_GLOBAUX_CONNUS = new Map<number, EffetSort>([
+  [12114, { atbTousAZero: true, buffEquipe: BUFF_SPD_JEU, buffEquipeSansSoi: true }],
+  [10243010, { atbTousAZero: true, atbTous: 100, buffAllie: BUFF_SPD_JEU }],
+]);
+
 // Le ralenti du jeu vaut −30 % de vitesse, comme le buff en vaut +30 ; les
 // données SWARFARM ne donnent là encore que sa DURÉE en tours.
 export const RALENTI_SPD_JEU = 30;
@@ -112,6 +128,9 @@ export interface SortVitesse {
   // Vrai si la compétence ne touche ni la barre ni la vitesse (elle reste
   // proposable : c'est un tour où l'on ne fait rien pour le tune).
   neutre: boolean;
+  // Option d’un arbre de compétences non connu par le kit de base : le joueur
+  // doit la sélectionner, l’analyse ne peut pas présumer de son évolution.
+  optionArbre?: boolean;
   // Remplissage d'équipe dont la valeur DÉPEND DU COMBAT, à désigner : `n`
   // paliers de `pas` %, `n` de 0 à `max`. `retrait` : n buffs retirés à
   // l'adverse (Blade Fan : 15 % chacun, trois au plus) ; `pourcent` : n % de
@@ -258,7 +277,7 @@ export function kitVitesse(detail: DetailMonstre | null): KitVitesse {
       if (e.nom === EFFET_ATB) {
         // Au choix : zéro par défaut, et l'analyse simple n'a pas le choix.
         if (atbSousCondition || auChoixDe(c)) continue;
-        const niveau1 = e.quantite ?? 0;
+        const niveau1 = atbNiveau1De(c, e);
         const valeur = maxee(niveau1, bonusSkillUp(c));
         if (valeur > out.atb) {
           out.atb = valeur;
@@ -279,6 +298,8 @@ export function kitVitesse(detail: DetailMonstre | null): KitVitesse {
 
 // Ce qu'une compétence fait à la barre et à la vitesse, cible par cible.
 function lireEffet(c: Competence): { effet: EffetSort; atbNiveau1: number; atbSkillUp: number; chance: number | null } {
+  const global = c.com2usId != null ? ATB_GLOBAUX_CONNUS.get(c.com2usId) : undefined;
+  if (global) return { effet: { ...global }, atbNiveau1: global.atbTous ?? 0, atbSkillUp: 0, chance: null };
   const effet: EffetSort = {};
   let atbNiveau1 = 0;
   let chance: number | null = null;
@@ -308,7 +329,8 @@ function lireEffet(c: Competence): { effet: EffetSort; atbNiveau1: number; atbSk
         // sorts qui remplissent la barre entièrement (ex. Rabbit's Agility de
         // Dova). Stocker 0 rendrait le champ falsy et la simulation ignorerait
         // complètement le remplissage.
-        const qEff = q === 0 ? 100 : q;
+        const niveau1 = atbNiveau1De(c, e);
+        const qEff = niveau1 === 0 ? 100 : niveau1;
         const v = maxee(qEff, skillUp);
         atbNiveau1 = Math.max(atbNiveau1, qEff);
         if (atbDeZone(c, e)) effet.atbEquipe = Math.max(effet.atbEquipe ?? 0, v);
@@ -360,7 +382,7 @@ export function sortsVitesse(detail: DetailMonstre | null): SortVitesse[] {
     const { effet, atbNiveau1, atbSkillUp, chance } = lireEffet(c);
     const auChoix = auChoixDe(c);
     const effetAtb = c.effets.find((e) => e.nom === EFFET_ATB);
-    const valeur = effetAtb ? maxee(effetAtb.quantite ?? 0, bonusSkillUp(c)) : 0;
+    const valeur = effetAtb ? maxee(atbNiveau1De(c, effetAtb), bonusSkillUp(c)) : 0;
     const atbAuChoix: SortVitesse['atbAuChoix'] =
       !auChoix || !effetAtb
         ? undefined
@@ -382,6 +404,7 @@ export function sortsVitesse(detail: DetailMonstre | null): SortVitesse[] {
       atbSkillUp,
       chance,
       neutre,
+      ...(c.com2usId === 10243010 ? { optionArbre: true } : {}),
       // ⚠️ `bonus && aoe` suffit : un effet BÉNÉFIQUE de zone va sur les alliés,
       // que le lanceur en profite (`surSoi`) ou non. Exclure `surSoi` faisait
       // manquer les buffs d'équipe les plus courants au comptage du passif.

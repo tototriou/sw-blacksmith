@@ -60,6 +60,17 @@ export const CHANGE_META: Record<ChangeKind, { label: string; color: string }> =
 // Si une ligne dépasse ~15 mots, c'est qu'elle raconte l'implémentation.
 export const RELEASES: Release[] = [
   {
+    version: '2.2.2',
+    date: '2026-11-02',
+    title: 'Des barres d’attaque et des égalités plus justes en speed tuning',
+    changes: [
+      { kind: 'fix', scope: 'Speed tuning', text: 'Belladeon 2A remplit 30 % de barre sans skill-up, et 33 % une fois maxé.' },
+      { kind: 'fix', scope: 'Speed tuning', text: 'À barre égale, le gain de Chilling lié aux buffs ne change plus sa priorité initiale.' },
+      { kind: 'fix', scope: 'Speed tuning', text: 'Tablo remet toutes les barres à zéro ; Fast Pace les fixe à 100 %.' },
+      { kind: 'fix', scope: 'Speed tuning', text: 'Les réductions manuelles de barre acceptent jusqu’à −999 %.' },
+    ],
+  },
+  {
     version: '2.2.1',
     date: '2026-11-01',
     title: 'Réimporter une recommandation la complète, et un speed tuning plus juste',
