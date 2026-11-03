@@ -22,9 +22,11 @@ import { fr } from '../../src/i18n/fr';
 import { rendreApp } from './app.test';
 import { rendreCompte } from './compte.test';
 import { AVEC_MONSTRE, rendreOptimizer } from './optimizer.test';
+import { ETAT_EQUIPE, rendreSpeedTune } from './speed-tune.test';
+import { en } from '../../src/i18n/en';
 import ProgressionRecherche from '../../src/components/outils/optimizer/ProgressionRecherche';
 import PaginationResultats from '../../src/components/outils/optimizer/PaginationResultats';
-import { auTelephone, boutons, rendre, texteVisible } from './outils-rendu';
+import { auTelephone, boutons, rendre, texteVisible, valeurs } from './outils-rendu';
 
 const rien = () => {};
 const MONSTRES = monstersJson() as Monster[];
@@ -223,6 +225,40 @@ export function testRenduLangueOptimizerResultats() {
   const pages = enAnglais(() => rendre(
     <PaginationResultats setResultsPage={() => {}} resultsPage={1} pageDraft={null} setPageDraft={() => {}} totalResultsPages={3} />));
   ok(boutons(pages).some((b) => b.texte === 'Next page' || b.ariaLabel === 'Next page'), 'pagination : « Next page »');
+}
+
+// Le speed tuning en anglais : la règle, les deux camps, les tableaux et les
+// grilles. Les mêmes états que les tests français (speed-tune.test.tsx).
+export function testRenduLangueSpeedTuning() {
+  titre('rendu · langue — le speed tuning, en anglais');
+  const vide = enAnglais(() => rendreSpeedTune());
+  const tv = texteVisible(vide);
+  // `texteVisible` sépare chaque nœud d'une espace : « 7% ; » vient de la balise qui met la formule en valeur.
+  ok(tv.startsWith('Speed tuning Each tick, the attack bar fills by speed × 7% ; only one monster acts per tick. Add your monsters and the opposing ones to see who moves first.'), 'le titre et la règle des ticks');
+  ok(tv.includes('Combat speed needed to act at tick · speed tune reference 3 477 4 358'), 'le repère des ticks');
+  ok(tv.includes('Your team Lead None +33%') && tv.includes('Opponent Lead None +33%'), 'les deux camps et leurs leads');
+  ok(valeurs(vide, 'aria-label').includes('Speed lead — Your team') && valeurs(vide, 'placeholder').includes('Add an opposing monster…'), 'le lead nommé, la recherche d’ajout');
+  ok(boutons(vide).filter((b) => b.texte === 'Import a siege deck').every((b) => b.desactive && b.title === en.speedTuning.importDeck.vide), 'l’import de deck, désactivé et pourquoi');
+  ok(tv.endsWith('Add at least one monster to see the attack bars fill and the turn order.'), 'ce qu’il faut faire');
+
+  const html = enAnglais(() => rendreSpeedTune(ETAT_EQUIPE()));
+  const t = texteVisible(html);
+  const b = boutons(html);
+  const nomme = (n: string) => b.find((x) => x.ariaLabel === n);
+  ok(t.includes('Galleon base 108 Runes Set SPD buff effect 331 combat'), 'la carte d’un monstre');
+  ok(nomme('Swift set worn by Galleon')?.presse === true && nomme('Swift set worn by Galleon')?.title === en.speedTuning.camp.setAide, 'le set Swift, porté et expliqué');
+  ok(!!nomme('Move Veromos up: at equal speed, it will move earlier') && nomme('Galleon already moves first at equal speed')?.desactive === true, 'monter / descendre');
+  ok(!!nomme('Copy Galleon to the opponent') && !!nomme('Copy Lushen to your team') && !!nomme('Remove Lushen'), 'copier, retirer');
+  ok(t.includes('Skill order Show Add monsters to your team to build an order.'), 'l’ordre des sorts');
+  ok(b.find((x) => x.texte === 'Analyze')?.title === en.speedTuning.analyse.analyserAide, '« Analyze » et ce qu’il écrit');
+  ok(t.includes('Attack bar per tick · % filled over 40 ticks — highlighted cell = this monster takes its turn (the bar goes back to 0)'), 'le tableau des barres');
+  ok(t.includes('Veromos 20.230%/tick') && t.includes('Lushen opp 17.430%/tick'), 'la barre par tick, l’adversaire marqué');
+  ok(t.includes('Your team acts Opponent acts Only one monster per tick; the number gives the turn order.'), 'la légende');
+  ok(t.includes('Attack bar change · at a given tick') && t.includes('Speed buff · SPD icon = +30% buff in one click'), 'les deux grilles');
+  ok(b.find((x) => x.ariaLabel === 'Galleon — tick 3 — +30% buff')?.presse === true && valeurs(html, 'aria-label').includes('Your whole team — tick 1'), 'les cases des grilles');
+  ok(t.endsWith('Turn order 1 Veromos tick 4 → 2 Galleon tick 5 → 3 Belladeon tick 6 → 4 Lushen tick 7'), 'l’ordre de tour');
+  ok(!/Ton équipe|Ajoute|Ordre de tour|Barre d'action/.test(t + tv), 'aucun texte français resté en dur');
+  egal([1, 2, 3, 4, 11, 12, 13, 21, 22, 112].map(en.speedTuning.ordreSorts.tour), ['1st turn', '2nd turn', '3rd turn', '4th turn', '11th turn', '12th turn', '13th turn', '21st turn', '22nd turn', '112th turn'], 'les rangs des tours en anglais');
 }
 
 // L'article « Mécaniques » : un par langue, mêmes sections dans le même ordre.
