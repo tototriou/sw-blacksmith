@@ -30,6 +30,36 @@ export const RELEASES_EN: Release[] = [
     ],
   },
   {
+    version: '2.2.2',
+    date: '2026-11-02',
+    title: 'Fairer attack bars and ties in speed tuning',
+    changes: [
+      { kind: 'fix', scope: 'Speed tuning', text: 'Belladeon 2A fills 30% of the bar without skill-ups, and 33% once maxed.' },
+      { kind: 'fix', scope: 'Speed tuning', text: 'On equal bars, Chilling’s buff-based gain no longer changes its initial priority.' },
+      { kind: 'fix', scope: 'Speed tuning', text: 'Tablo resets every bar to zero; Fast Pace sets them to 100%.' },
+      { kind: 'fix', scope: 'Speed tuning', text: 'Manual bar reductions accept down to −999%.' },
+    ],
+  },
+  {
+    version: '2.2.1',
+    date: '2026-11-01',
+    title: 'Reimporting a recommendation completes it, and a fairer speed tuning',
+    highlights: [
+      'Reimporting a recommendation completes it instead of duplicating it',
+      'Speed tuning: team bar boosts and skill-ups fixed',
+    ],
+    changes: [
+      { kind: 'feat', scope: 'Recommendations', text: 'A file that extends one of your recommendations can be merged into it: new decks and defenses only.' },
+      { kind: 'fix', scope: 'Recommendations', text: 'Defense view: without an active lead in siege, monster order no longer splits a defense.' },
+      { kind: 'fix', scope: 'Optimizer', text: 'In cards, “Filter the display” can exclude base stats, like the table.' },
+      { kind: 'fix', scope: 'Speed tuning', text: 'Importing a deck puts the skill order back in speed order.' },
+      { kind: 'feat', scope: 'Speed tuning', text: 'Mihyang’s Blade Fan: choose how many buffs it removes (0 to 3).' },
+      { kind: 'feat', scope: 'Speed tuning', text: 'Barbara’s Start of Attacking: choose the team’s attack bar boost (0 to 50%).' },
+      { kind: 'fix', scope: 'Speed tuning', text: 'Skill-ups on attack bar fills multiply the value instead of adding to it.' },
+      { kind: 'fix', scope: 'Speed tuning', text: 'Conrad, Death Knight, Mephisto and Demon fill the whole team’s attack bar.' },
+    ],
+  },
+  {
     version: '2.2.0',
     date: '2026-10-29',
     title: 'A redesigned Optimizer, and joint attacks count in real damage',

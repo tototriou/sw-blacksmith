@@ -6,6 +6,7 @@ import { runesUtiliseesVides } from '../../src/lib/importAccount';
 import { reinitialiserSticky } from '../../src/hooks/useStickyState';
 import { setPersistence } from '../../src/hooks/usePersistence';
 import type { GearSet, Monster, SiegeTeam } from '../../src/types';
+import type { DetailMonstre } from '../../src/lib/monsterSkills';
 
 const gear: GearSet = { base: { hp: 10000, atk: 800, def: 700, spd: 100, cr: 15, cd: 50, res: 15, acc: 0 }, runes: [], artifacts: [] };
 const monstres: Monster[] = [1, 2, 3].map(id => ({ id, com2usId: 10200 + id, name: `Allié ${id}`, element: 'water', archetype: 'attack',
@@ -24,12 +25,12 @@ const modale = () => document.querySelector<HTMLElement>('[aria-labelledby="spee
 const visible = (e: Element) => e.getBoundingClientRect().width > 0 && getComputedStyle(e).visibility !== 'hidden';
 const bouton = (racine: Element, texte: string) => [...racine.querySelectorAll<HTMLButtonElement>('button')].find(b => visible(b) && (b.textContent?.trim() === texte || b.getAttribute('aria-label') === texte));
 
-async function ouvrirParPalette() {
+async function ouvrirParPalette(recherche = 'Allié') {
   await geste(() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true, bubbles: true })));
   const champ = document.querySelector<HTMLInputElement>('[aria-label="Rechercher une page, un monstre, une action"]');
   if (!champ) throw new Error('Palette d’App absente.');
   await geste(() => {
-    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(champ, 'Allié');
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(champ, recherche);
     champ.dispatchEvent(new Event('input', { bubbles: true }));
   });
   const choix = [...document.querySelectorAll<HTMLButtonElement>('#palette-liste [role="option"]')].find(b => b.textContent?.includes('Speed tuning ·'));
@@ -38,8 +39,12 @@ async function ouvrirParPalette() {
   await attendre(() => !!modale() && !!bouton(modale()!, "Exporter vers l'Optimizer") && !bouton(modale()!, "Exporter vers l'Optimizer")!.disabled);
 }
 
-export async function scenario(): Promise<[boolean, string][]> {
+export async function scenario(reset?: { monstres: Monster[]; details: DetailMonstre[] }): Promise<[boolean, string][]> {
   const preuves: [boolean, string][] = [], verifier = (v: boolean, m: string) => preuves.push([v, m]);
+  if (reset) {
+    monstres.splice(0, monstres.length, ...reset.monstres);
+    equipe.slots = monstres.map((m, i) => ({ monsterId: String(m.id), runeSpeed: [250, 220, 150][i], tick: 0, sets: ['swift'], gear }));
+  }
   localStorage.clear(); reinitialiserSticky(''); setPersistence(true);
   localStorage.setItem('swblacksmith-siege-offense-v1', JSON.stringify({ teams: [equipe] }));
   const enregistre = await saveAccount({ box: monstres.map(m => ({ unitId: Number(m.id), com2usId: m.com2usId!, stars: 6, level: 40, gear })),
@@ -52,6 +57,8 @@ export async function scenario(): Promise<[boolean, string][]> {
       reponse.json = async () => ({ monsters: monstres, meta: { source: 'live' } });
       return reponse;
     }
+    const detail = reset?.details.find(d => String(url).endsWith('data/skills/' + d.com2usId + '.json'));
+    if (detail) return new Response(JSON.stringify(detail));
     return new Response('{}', { status: 404 });
   };
   location.hash = '#/outils/optimizer';
@@ -59,6 +66,44 @@ export async function scenario(): Promise<[boolean, string][]> {
   try {
     await geste(() => racine.render(<App />));
     await attendre(() => [...document.querySelectorAll('button')].some(b => b.textContent?.trim() === 'Importer une équipe'));
+    if (reset) {
+      await ouvrirParPalette('Tablo');
+      await geste(() => bouton(modale()!, 'Analyser')!.click());
+      const choixHomu = () => modale()!.querySelector<HTMLButtonElement>('button[title="Sort lancé par Homunculus(Support)"]');
+      await attendre(() => !!choixHomu() && !!bouton(modale()!, 'Returned Dice'));
+      verifier(!bouton(modale()!, 'Fast Pace'), 'le chemin Fast Pace n’est pas supposé par défaut');
+      await geste(() => choixHomu()!.click());
+      const option = [...document.querySelectorAll<HTMLButtonElement>('[role="listbox"][aria-label="Sort lancé par Homunculus(Support)"] [role="option"]')].find(b => b.textContent?.includes('Fast Pace'))!;
+      verifier(!!option, 'Fast Pace est disponible dans le choix du S3');
+      await geste(() => option.click());
+      await attendre(() => !!bouton(modale()!, 'Fast Pace') && !!bouton(modale()!, 'Returned Dice'));
+      const tablo = bouton(modale()!, 'Returned Dice')!;
+      const fast = bouton(modale()!, 'Fast Pace')!;
+      verifier(tablo.title.includes('barres de tous à 0 %') && tablo.title.includes('autres alliés') && !tablo.title.includes('non compté'), 'Tablo : remise à zéro et buff des autres alliés annoncés et comptés dans App');
+      verifier(fast.title.includes('barres de tous à 0 %') && fast.title.includes('+100 % barre des deux camps') && fast.title.includes('buff VIT 1 allié'), 'Fast Pace disponible avec ses trois effets dans App');
+      const cible = modale()!.querySelector<HTMLSelectElement>('[aria-label="Allié visé par le sort de Homunculus(Support)"]')!;
+      const rina = [...cible.options].find(o => o.textContent?.includes('Rina'))!;
+      await geste(() => { cible.value = rina.value; cible.dispatchEvent(new Event('change', { bubbles: true })); });
+      verifier(modale()!.querySelector<HTMLSelectElement>('[aria-label="Allié visé par le sort de Homunculus(Support)"]')!.value === rina.value, 'le buff de Fast Pace peut viser Rina dans l’ordre des sorts');
+      const casesTablo = () => [...modale()!.querySelectorAll<HTMLInputElement>('input[aria-label="Tablo — tick 5"]')];
+      verifier(casesTablo().length === 2, 'les grilles exposent Tablo dans les deux camps, référence comprise');
+      const photo = () => [...modale()!.querySelectorAll<HTMLInputElement>('input[aria-label^="Tablo — tick "]')].map(c => c.value).join('|');
+      const avant = photo();
+      await geste(() => bouton(modale()!, 'Relancer')!.click());
+      verifier(photo() === avant, 'relancer dans App ne décale ni ne double les cases automatiques sur l’adverse');
+      for (let i = 0; i < 2; i++) {
+        await geste(() => {
+          const champ = casesTablo()[i];
+          Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(champ, '-999');
+          champ.dispatchEvent(new Event('input', { bubbles: true }));
+          champ.dispatchEvent(new FocusEvent('focusout', { bubbles: true }));
+        });
+        verifier(casesTablo()[i].value === '-999', (i === 0 ? 'allié' : 'ennemi') + ' : −999 % conservé après saisie et sortie du champ');
+      }
+      await geste(() => bouton(modale()!, 'Relancer')!.click());
+      verifier(casesTablo()[1].value === '-999', 'relancer conserve la réduction adverse saisie manuellement');
+      return preuves;
+    }
     for (const accepte of [true, false]) {
       await ouvrirParPalette();
       verifier(location.hash === '#/outils/optimizer' && !!modale(), `${accepte ? 'accepté' : 'refusé'} : modale ouverte par App sur la route Optimizer`);

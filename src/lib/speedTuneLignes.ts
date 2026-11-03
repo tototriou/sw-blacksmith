@@ -17,6 +17,7 @@ import { PassifVitesse, pointsDeGain } from './speedTunePassif';
 import {
   ChoixSorts,
   DonneesKit,
+  ModsAuto,
   EntreeAuto,
   cumulsEstimes,
   sortRetenu,
@@ -33,6 +34,7 @@ export interface Ligne {
   runeSpeed: number | null;
   camp: Camp;
   atbMod: ModParTick;
+  atbAuto?: ModParTick; // cases adverses issues de l’analyse, recalculables
   speedMod: ModParTick;
   // Bonus d'artéfact « augmente l'effet du buff de vitesse » (%). Renseigné pour
   // les alliés seulement (on ne connaît pas les artéfacts d'en face).
@@ -124,6 +126,7 @@ export const entreeDe = (l: Ligne): EntreeAuto => ({
   // face : elle écrit celles de ton camp, les lui redonner compterait deux fois
   // ce que les sorts posent. Voir `EntreeAuto`.
   atbMod: l.atbMod,
+  atbAuto: l.atbAuto,
   speedMod: l.speedMod,
 });
 
@@ -279,6 +282,7 @@ export function tuneDe(lignes: Ligne[], leads: Leads, d: DonneesKit, choix: Choi
     out.push({
       id: l.uid,
       combat: c,
+      gainApresBuffs: passifDe(l, d)?.gain?.apresBuffs ? gainPassifDe(l, d) : 0,
       camp: l.camp,
       atbMod: l.atbMod,
       speedMod: l.speedMod,
@@ -411,14 +415,29 @@ export function majMod(m: ModParTick, tick: number, v: number | null): ModParTic
   return next;
 }
 
+// Une correction explicite devient manuelle, même si elle reprend le même
+// chiffre qu'une case automatique : la relance doit respecter ce choix.
+export function modifierMod(
+  l: Ligne,
+  champ: 'atbMod' | 'speedMod',
+  tick: number,
+  v: number | null
+): Ligne {
+  return {
+    ...aLaMain(l),
+    [champ]: majMod(l[champ], tick, v),
+    ...(champ === 'atbMod' && l.atbAuto ? { atbAuto: majMod(l.atbAuto, tick, null) } : {}),
+  };
+}
+
 // Ce que l'analyse a écrit, reporté sur les lignes.
 export function appliquerMods(
   lignes: Ligne[],
-  mods: Map<string, { atbMod: ModParTick; speedMod: ModParTick }>
+  mods: Map<string, ModsAuto>
 ): Ligne[] {
   return lignes.map((l) => {
     const m = mods.get(l.uid);
-    return m ? { ...l, atbMod: m.atbMod, speedMod: m.speedMod } : l;
+    return m ? { ...l, ...m } : l;
   });
 }
 
@@ -442,5 +461,21 @@ export function estimerCumuls(lignes: Ligne[], d: DonneesKit): Ligne[] {
 // Les sorts choisis d'un camp s'en vont avec sa composition : rangés par
 // monstre, ils survivraient sinon à un import et rejoueraient le choix fait pour
 // l'équipe précédente.
-export const oublierCamp = (m: Record<string, string>, camp: Camp) =>
+export const oublierCamp = <T>(m: Record<string, T>, camp: Camp): Record<string, T> =>
   Object.fromEntries(Object.entries(m).filter(([uid]) => !uid.startsWith(`${camp}:`)));
+
+// L'ordre voulu (« Ordre des sorts ») après l'import d'un deck dans `camp`.
+//
+// ⚠️ **Importer dans « Ton équipe » rend l'ordre aux VITESSES.** Rangé à la
+// main (`range`), il ne suivait plus que la composition : les monstres du deck
+// entraient en fin de liste dans l'ordre de leurs slots, leader en tête, et un
+// monstre lent passait « premier » — l'analyse poussée jugeait alors un ordre
+// que personne n'a choisi pour cette équipe. Le rangement portait sur l'équipe
+// précédente, il s'en va avec elle. L'ordre ne range que des alliés : un import
+// en face n'y touche pas.
+export function ordreApresImport(
+  camp: Camp,
+  ordre: { voulu: string[]; range: boolean }
+): { voulu: string[]; range: boolean } {
+  return camp === 'allie' ? { voulu: [], range: false } : ordre;
+}

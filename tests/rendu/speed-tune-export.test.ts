@@ -1,4 +1,6 @@
 import { readFileSync } from 'node:fs';
+import type { Monster } from '../../src/types';
+import type { DetailMonstre } from '../../src/lib/monsterSkills';
 import { navigateurOptimizer } from './optimizer-navigable-banc';
 import { ok, titre } from '../outils';
 
@@ -66,3 +68,22 @@ export function testOptimizerImportSpeedTuneBranchement() {
   ok(app.includes("const importerEquipe = avecNavigationImportOptimizer(optimizer.importerEquipe, () => {\n    window.location.hash = '#/outils/optimizer';\n  }, setRapportExportOptimizer);"),
     'action externe : rapport global sans condition de route');
 }
+
+async function verifierResetAtbApp(telephone: boolean) {
+  titre('App · remises à zéro ATB et Fast Pace · ' + (telephone ? 'téléphone' : 'bureau'));
+  const corpus = JSON.parse(readFileSync('public/data/monsters.json', 'utf8')) as { monsters: Monster[] };
+  const reset = {
+    monstres: [21314, 1000214, 15311].map(id => corpus.monsters.find(m => m.com2usId === id)!),
+    details: [21314, 1000214, 15311].map(id => JSON.parse(readFileSync('public/data/skills/' + id + '.json', 'utf8')) as DetailMonstre),
+  };
+  const { browser, page } = await navigateurOptimizer(telephone, 'tests/rendu/speed-tune-export-app-banc.tsx');
+  try {
+    const preuves = await page.evaluate((reset) => (globalThis as unknown as {
+      bancOptimizer: { scenario: (reset: { monstres: Monster[]; details: DetailMonstre[] }) => Promise<[boolean, string][]> };
+    }).bancOptimizer.scenario(reset), reset);
+    ok(preuves.length > 0, 'vrai App monté avec les fiches de Tablo et de l’Homunculus lumière');
+    for (const [condition, texte] of preuves) ok(condition, texte);
+  } finally { await browser.close(); }
+}
+export const testRenduSpeedTuneResetAtbApp = () => verifierResetAtbApp(false);
+export const testRenduTelephoneSpeedTuneResetAtbApp = () => verifierResetAtbApp(true);

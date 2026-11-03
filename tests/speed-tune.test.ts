@@ -29,7 +29,7 @@ import {
 } from '../src/lib/speedTune';
 import { deckPourSpeedTune } from '../src/lib/speedTuneDeck';
 import { LeadInfo, leadsDeVitesse } from '../src/lib/speed';
-import { kitVitesse, sortsVitesse, SortVitesse, BUFF_SPD_JEU } from '../src/lib/speedTuneKit';
+import { effetAuChoix, kitVitesse, pourcentBarre, sortsVitesse, SortVitesse, BUFF_SPD_JEU } from '../src/lib/speedTuneKit';
 import { PassifVitesse } from '../src/lib/speedTunePassif';
 import { passifsVitesse, pointsDeGain } from '../src/lib/speedTunePassif';
 import {
@@ -46,7 +46,9 @@ import {
   ligneVierge,
   plateauDeLignes,
   majMod,
+  modifierMod,
   oublierCamp,
+  ordreApresImport,
   plusRapideAllie,
   tuneDe,
   type Leads,
@@ -127,7 +129,7 @@ export default function testSpeedTune() {
   {
     // ⚠️ **LE cas qui distingue la règle** : barres ÉGALES, vitesses
     // DIFFÉRENTES. La condition est l'égalité des BARRES, pas des vitesses —
-    // ton monstre passe donc même s'il est plus lent.
+    // la vitesse initiale reste prioritaire sur le camp.
     //
     // Montage : l'adverse à 150 gagne 10,5 %/tick et atteint 105 au tick 10 ;
     // l'allié à 100 en gagne 7, soit 70 au tick 10, plus 35 posés à la main —
@@ -139,7 +141,7 @@ export default function testSpeedTune() {
         { id: 'moi', combat: 100, camp: 'allie', atbMod: { 10: 35 } },
       ])
     );
-    egal(pt[0].id, 'moi', 'à barre égale, ton monstre passe même 50 points plus lent');
+    egal(pt[0].id, 'adverse', 'à barre égale, la vitesse initiale passe avant le camp');
     egal(pt[0].tick, 10, 'et il joue bien au tick où les deux barres se rejoignent');
   }
   {
@@ -160,6 +162,21 @@ export default function testSpeedTune() {
     // trancher.
     const pt = premiersTours(simuler([camp(150), camp(151, 'ennemi')]));
     egal(pt[0].id, '151-ennemi', 'sans égalité de barre, le plus rapide passe');
+  }
+
+  // Relevé Chilling / Rosemary : mêmes barres à 405, priorité initiale 365/405.
+  // Changer le camp ou le placement ne rend pas le gain après buffs initial.
+  {
+    for (const campChilling of ['allie', 'ennemi'] as const) {
+      const chilling: TuneMonstre = { id: 'chilling', combat: 405, gainApresBuffs: 40, camp: campChilling };
+      const rosemary: TuneMonstre = { id: 'rosemary', combat: 405, camp: campChilling === 'allie' ? 'ennemi' : 'allie' };
+      for (const plateau of [[chilling, rosemary], [rosemary, chilling]]) {
+        egal(premiersTours(simuler(plateau))[0].id, 'rosemary',
+          'à barre égale, Rosemary garde sa priorité initiale devant Chilling, quel que soit son camp');
+      }
+      egal(premiersTours(simuler([{ ...chilling, combat: 406 }, rosemary]))[0].id, 'chilling',
+        'la barre plus haute de Chilling passe avant la priorité initiale');
+    }
   }
 
   // Boost de barre d'attaque : +30 % au tick 3 → agit plus tôt (tick 10 vs 15).
@@ -1820,9 +1837,11 @@ export function testSpeedTuneKit() {
     egal(k.atbCompetence, 'Grosse', "et c'est bien elle qui est nommée");
   }
 
-  // ⚠️ SKILL-UPS : la valeur de SWARFARM est celle du NIVEAU 1. Le Tailwind de
-  // Bernard 2A remplit 30 % au niveau 1 et 45 % maxé (+5 puis +10) — c'est maxé
-  // qu'on le joue, et l'écran doit dire que le chiffre le suppose.
+  // ⚠️ SKILL-UPS : la valeur de SWARFARM est celle du NIVEAU 1, et les
+  // « Attack Bar Recovery +N% » la MULTIPLIENT (règle donnée par l'utilisateur,
+  // pas un relevé). Le Tailwind de Bernard 2A remplit 30 % au niveau 1 et
+  // 34,5 % maxé (30 × 1,15) — les additionner donnait 45. ⚠️ Fige l'hypothèse
+  // « sommées puis appliquées une fois » : composées, elles donneraient 34,65.
   {
     const k = kitVitesse(
       detail([
@@ -1832,9 +1851,10 @@ export function testSpeedTuneKit() {
         ]),
       ])
     );
-    egal(k.atb, 45, 'Tailwind maxé remplit 45 % de barre, pas 30');
+    egal(k.atb, 34.5, 'Tailwind maxé remplit 30 × 1,15 = 34,5 % de barre (hypothèse : skill-ups sommés), pas 45');
     egal(k.atbNiveau1, 30, 'la valeur du niveau 1 reste lisible');
-    egal(k.atbSkillUp, 15, "ce que les skill-ups ajoutent est isolé (pour l'annoncer à l'écran)");
+    egal(k.atbSkillUp, 4.5, "les POINTS que les skill-ups ajoutent sont isolés (pour l'annoncer à l'écran)");
+    egal(pourcentBarre(k.atb), '34,5', "l'écran l'écrit au dixième, virgule décimale");
   }
 
   // Une amélioration qui ne touche pas la barre ne change rien.
@@ -1865,7 +1885,8 @@ export function testSpeedTuneKit() {
       'Petite, Grosse, Frappe, Cri',
       'toutes les compétences non passives sont proposées'
     );
-    egal(sorts[1].effet.atbEquipe, 35, 'la valeur proposée est celle de la compétence maxée');
+    egal(sorts[1].effet.atbEquipe, 31.5, 'la valeur proposée est celle de la compétence maxée (30 × 1,05)');
+    egal(sorts[1].atbSkillUp, 1.5, 'et ce que ses skill-ups ajoutent, en points de barre');
     egal(sorts[2].effet.atbSoi, 50, 'un remplissage sur SOI est rangé comme tel, pas comme un boost de camp');
     egal(sorts[2].effet.atbEquipe, undefined, "et il ne compte pas pour l'équipe");
     egal(sorts[3].effet.buffEquipe, BUFF_SPD_JEU, 'le buff de vitesse figure dans la liste');
@@ -1877,6 +1898,82 @@ export function testSpeedTuneKit() {
     const k = kitVitesse(detail([comp('Cri du prédateur', [effet('Increase ATK SPD', 2, true)])]));
     egal(k.buff, BUFF_SPD_JEU, 'buff de vitesse de zone → +30 % (valeur du jeu)');
     egal(k.buffCompetence, 'Cri du prédateur', 'la compétence source est nommée');
+  }
+
+  // ⚠️ Fiches SWARFARM infidèles (`ATB_DE_ZONE_CONNUS`) : la prose dit « all
+  // allies », l'effet porte `aoe: false`. Chaque entrée se vérifie sur la VRAIE
+  // fiche — retirée de la table, le boost repart sur un seul allié et ce bloc
+  // échoue.
+  {
+    const fiche = (id: number) =>
+      JSON.parse(readFileSync(`public/data/skills/${id}.json`, 'utf8')) as DetailMonstre;
+    const sortNomme = (id: number, nom: string) => sortsVitesse(fiche(id)).find((s) => s.nom === nom);
+
+    // La vraie fiche 2A confond 35 % de soin et 30 % de barre. La correction
+    // doit tenir avec et sans skill-ups, sans modifier les données de soin.
+    const belladeon = fiche(11034);
+    const original = JSON.stringify(belladeon);
+    const sansSkillUp = {
+      ...belladeon,
+      competences: belladeon.competences.map((c) => ({ ...c, ameliorations: [] })),
+    };
+    const mobilize = sortsVitesse(sansSkillUp).find((s) => s.slot === 3)!;
+    egal(mobilize.effet.atbEquipe, 30, 'Belladeon 2A sans skill-up : 30 % ATB, pas les 35 % du soin');
+    egal(kitVitesse(sansSkillUp).atb, 30, 'Belladeon 2A : le kit simple retient aussi 30 % sans skill-up');
+    egal(kitVitesse(belladeon).atbNiveau1, 30, 'Belladeon 2A : la base reste 30 %');
+    egal(kitVitesse(belladeon).atb, 33, 'Belladeon 2A maxé : 30 × 1,10 = 33 %');
+    egal(kitVitesse(belladeon).atbSkillUp, 3, 'Belladeon 2A : le skill-up ajoute 3 points de barre');
+    egal(sortNomme(11034, 'Mobilize')?.effet.atbEquipe, 33, 'Belladeon 2A : le sort maxé remplit aussi 33 %');
+    egal(kitVitesse(fiche(11014)).atb, 30, 'Belladeon non 2A : le soin ne change pas les 30 % ATB');
+    egal(belladeon.competences.find((c) => c.slot === 3)?.effets.find((e) => e.nom === 'Heal')?.quantite, 35,
+      'Belladeon 2A : les 35 % de soin restent intacts');
+    egal(JSON.stringify(belladeon), original, 'la lecture ne modifie pas la fiche brute');
+    const toursBelladeon = premiersTours(simuler([
+      { id: 'belladeon', combat: 358, camp: 'allie', sort: mobilize.effet },
+      { id: 'allie', combat: 190, camp: 'allie' },
+      { id: 'rina', combat: 285, camp: 'ennemi' },
+    ]));
+    egal(toursBelladeon.slice(0, 3).map((a) => a.id), ['belladeon', 'rina', 'allie'],
+      'avec le vrai Mobilize sans skill-up, Rina coupe : 35 % ferait passer l’allié au tick 5');
+
+    const trade = sortNomme(16214, 'Trade');
+    egal(trade?.effet.atbEquipe, 23, 'Trade (Conrad) remplit la barre de TOUTE l’équipe, 20 × 1,15 = 23 %');
+    egal(trade?.effet.atbAllie, undefined, 'et pas celle d’un seul allié');
+    egal(kitVitesse(fiche(16214)).atb, 23, "l'analyse simple le voit comme boost d'équipe");
+    egal(kitVitesse(fiche(16204)).atb, 23, 'Death Knight, qui porte le même sort, aussi');
+
+    const marche = sortNomme(23113, "Devil's Bargain");
+    egal(marche?.effet.atbEquipe, 20, 'Devil’s Bargain (Mephisto) remplit la barre de toute l’équipe, 20 %');
+    egal(kitVitesse(fiche(23103)).atb, 20, 'Demon, qui porte le même sort, aussi');
+
+    // La règle générale tient toujours : un sort de même nom absent de la table
+    // (autre identifiant) reste un boost sur UN allié.
+    const [autre] = sortsVitesse(detail([comp('Trade', [effet('Increase ATB', 20, false, false)])]));
+    egal(autre.effet.atbAllie, 20, 'hors de la table, `aoe: false` reste un boost sur un seul allié');
+
+    // Remplissages AU CHOIX (`ATB_AU_CHOIX_CONNUS`), ZÉRO par défaut. Retiré de
+    // la table, chaque sort repartirait compté d'office : Blade Fan en boost
+    // d'un seul allié à 15 %, Start of Attacking à +50 % pour l'équipe.
+    //
+    // Blade Fan (Mihyang) : 15 % à TOUTE l'équipe par buff retiré, trois au plus.
+    const lames = sortNomme(18311, 'Blade Fan');
+    egal(JSON.stringify(lames?.atbAuChoix), '{"pas":15,"max":3,"unite":"retrait"}', 'Blade Fan remplit 15 % par buff retiré, trois au plus');
+    egal(lames?.effet.atbAllie, undefined, 'sans retrait désigné, il ne remplit la barre de personne');
+    egal(lames?.effet.atbEquipe, undefined, 'ni celle de l’équipe');
+    ok(kitVitesse(fiche(18311)).atbCompetence !== 'Blade Fan', "l'analyse simple, sans le choix, ne le compte pas");
+    egal(effetAuChoix(lames!, 0).atbEquipe, undefined, '0 retrait : rien');
+    egal(effetAuChoix(lames!, 1).atbEquipe, 15, '1 retrait : +15 % à l’équipe');
+    egal(effetAuChoix(lames!, 3).atbEquipe, 45, '3 retraits : +45 %');
+    egal(effetAuChoix(lames!, 4).atbEquipe, 45, 'au-delà de trois : borné');
+
+    // Start of Attacking (Barbara) : de 0 à 50 % pour TOUTE l'équipe, lanceur
+    // compris (règle donnée par l'utilisateur, malgré « other allies »).
+    const charge = sortNomme(23511, 'Start of Attacking');
+    egal(JSON.stringify(charge?.atbAuChoix), '{"pas":1,"max":50,"unite":"pourcent"}', 'Start of Attacking se règle de 0 à 50 %');
+    egal(charge?.effet.atbEquipe, undefined, 'sans valeur désignée, il ne remplit rien — plus de +50 % d’office');
+    egal(kitVitesse(fiche(23511)).atb, 0, "l'analyse simple ne le compte plus");
+    egal(effetAuChoix(charge!, 30).atbEquipe, 30, '30 % désignés : +30 % à toute l’équipe');
+    egal(effetAuChoix(charge!, 70).atbEquipe, 50, 'au-delà de 50 : borné');
   }
 }
 
@@ -2805,6 +2902,42 @@ export function testSpeedTuneAuto() {
     );
   }
 
+  // ⚠️ **Remplissage d'équipe AU CHOIX** (Blade Fan : par buff retiré ; Start
+  // of Attacking : un pourcentage) : la valeur se désigne par tour
+  // (`choix.atbChoisi`, en paliers). Zéro par défaut : sans désignation,
+  // l'analyse n'écrit rien.
+  {
+    const sortAuChoix = (nom: string, atbAuChoix: SortVitesse['atbAuChoix']): SortVitesse => ({
+      nom, slot: 3, icone: null, effet: {}, rejoue: false, cooldown: 0,
+      atbNiveau1: 0, atbSkillUp: 0, chance: null, neutre: false, buffsEquipe: 0, atbAuChoix,
+    });
+    const donnees: DonneesKit = {
+      kits: new Map(),
+      sorts: new Map([[100, [
+        sortAuChoix('Lames', { pas: 15, max: 3, unite: 'retrait' }),
+        sortAuChoix('Charge', { pas: 1, max: 50, unite: 'pourcent' }),
+      ]]]),
+      passifs: new Map(),
+    };
+    const equipe: EntreeAuto[] = [
+      { id: 'a', monster: monstre(100, 'Lanceur', 100), runeSpeed: 160 },
+      { id: 'b', monster: monstre(101, 'Autre', 100), runeSpeed: 90 },
+    ];
+    const barreDe = (sort: string, atbChoisi?: Record<string, number>) => {
+      const r = analyseAutomatique(equipe, 0, donnees, { choix: { sort: { a: sort, b: '' }, atbChoisi } });
+      // Sans rechargement, le sort repart à chaque tour du lanceur : on lit les
+      // valeurs DISTINCTES écrites pour l'autre allié.
+      return [...new Set(Object.values(r.mods.get('b')?.atbMod ?? {}))];
+    };
+    egal(barreDe('Lames').join(','), '', 'aucun retrait désigné → rien n’est écrit pour l’équipe');
+    egal(barreDe('Lames', { a: 2 }).join(','), '30', 'deux buffs retirés → +30 % de barre à l’équipe');
+    egal(barreDe('Lames', { a: 9 }).join(','), '45', 'borné à trois retraits : +45 % au plus');
+    egal(barreDe('Lames', { 'a#2': 3 }).join(','), '', 'la valeur appartient au TOUR : celle du 2ᵉ ne vaut pas pour le 1ᵉʳ');
+    egal(barreDe('Charge').join(','), '', 'Start of Attacking sans valeur désignée → rien');
+    egal(barreDe('Charge', { a: 35 }).join(','), '35', '35 % désignés → +35 % de barre à l’équipe');
+    egal(barreDe('Charge', { a: 80 }).join(','), '50', 'borné à 50 %');
+  }
+
   // ⚠️ **SUR QUI les buffs se comptent — Chilling contre Elsharion.**
   //
   // Les deux passifs gagnent de la vitesse « par buff », et le jeu les distingue
@@ -3588,7 +3721,67 @@ export function testSpeedTuneModele() {
   const vide: DonneesKit = { kits: new Map(), sorts: new Map(), passifs: new Map() };
   const leads: Leads = { allie: { amount: 28, area: 'General', element: null }, ennemi: null };
 
-  // `uid = camp:id` : le même monstre peut tenir les deux camps.
+  // Relevés en jeu : la priorité à barre égale précède Volonté/Bouclier.
+  // L'écran, l'analyse et sa seconde simulation doivent conserver ce critère.
+  {
+    const ficheChilling = JSON.parse(readFileSync('public/data/skills/20711.json', 'utf8')) as DetailMonstre;
+    const donnees: DonneesKit = {
+      ...vide,
+      passifs: new Map([[20711, passifsVitesse(ficheChilling)]]),
+    };
+    const chilling: Ligne = {
+      ...ligneVierge(monstre(20711, 'Chilling', 101), 'allie'),
+      runeSpeed: 225, swift: true, sets: ['swift', 'will'], cumulsPassif: 2,
+    };
+    const rosemary: Ligne = {
+      ...ligneVierge(monstre(27011, 'Rosemary', 116), 'ennemi'),
+      runeSpeed: 233, swift: true,
+    };
+    const leadsTest: Leads = {
+      allie: { amount: 24, area: 'General', element: null },
+      ennemi: { amount: 33, area: 'General', element: null },
+    };
+    const lignes = [chilling, rosemary];
+    const tune = tuneDe(lignes, leadsTest, donnees, {});
+    egal(tune.map((m) => m.combat), [405, 405], 'relevé : Chilling et Rosemary à 405');
+    egal(tune[0].gainApresBuffs, 40, 'Chilling : +40 pour la barre, exclus de sa priorité initiale');
+    egal(tune[1].gainApresBuffs, 0, 'Rosemary : aucune part de vitesse après buffs');
+    egal(premiersTours(simuler(tune))[0].id, rosemary.uid, 'l’écran donne le premier tour à Rosemary');
+    const analyse = analyseAutomatique(plateauDeLignes(lignes, leadsTest), 0, donnees);
+    egal(analyse.verdict.ok, false, 'l’analyse rejouée donne aussi la coupure par Rosemary');
+    egal(analyse.combats.get(chilling.uid), 405, 'le gain reste inclus dans le remplissage de barre');
+
+    const copie = analyseAutomatique(plateauDeLignes([chilling], leadsTest), 0, donnees);
+    egal(copie.verdict.ok, true, 'la référence copie aussi la priorité de Chilling : son attaque gagne l’égalité initiale');
+
+    const chillAllie = { ...chilling, runeSpeed: 245, cumulsPassif: 1 };
+    const chillAdverse = { ...chilling, uid: 'ennemi:20711', camp: 'ennemi' as const };
+    const leadsMiroir: Leads = { allie: leadsTest.allie, ennemi: leadsTest.allie };
+    const miroir = analyseAutomatique(plateauDeLignes([chillAllie, chillAdverse], leadsMiroir), 0, donnees);
+    egal(miroir.verdict.ok, true, 'le Chilling adverse garde aussi son gain après buffs : 385 +20 passe avant 365 +40');
+
+    const sansLead: Leads = { allie: null, ennemi: null };
+    const rina = { ...ligneVierge(monstre(15311, 'Rina', 99), 'ennemi'), runeSpeed: 96 };
+    for (const [swift, runeSpeed, premier] of [[true, 54, rina.uid], [false, 53, rina.uid], [false, 54, chilling.uid]] as const) {
+      const c = { ...chilling, swift, runeSpeed };
+      const plateau = tuneDe([c, rina], sansLead, donnees, {});
+      egal(premiersTours(simuler(plateau))[0].id, premier,
+        'relevé Rina : Swift +54 et sans Swift +53 perdent l’égalité ; sans Swift +54 dépasse Rina');
+      egal(analyseAutomatique(plateauDeLignes([c, rina], sansLead), 0, donnees).verdict.ok, premier === chilling.uid,
+        'la même ouverture est jugée à l’identique par l’analyse');
+    }
+
+    const ficheShumar = JSON.parse(readFileSync('public/data/skills/10615.json', 'utf8')) as DetailMonstre;
+    const donneesShumar = { ...vide, passifs: new Map([[10615, passifsVitesse(ficheShumar)]]) };
+    const shumar = { ...ligneVierge(monstre(10615, 'Shumar', 115), 'allie'), runeSpeed: 80 };
+    const rinaEgale = { ...rina, runeSpeed: 114 };
+    const plateauShumar = tuneDe([shumar, rinaEgale], sansLead, donneesShumar, {});
+    egal(plateauShumar.map((m) => m.combat), [228, 228], 'Shumar et Rina : 228 de vitesse');
+    egal(plateauShumar[0].gainApresBuffs, 0, 'le gain permanent de Shumar reste dans sa priorité initiale');
+    egal(premiersTours(simuler(plateauShumar))[0].id, shumar.uid, 'Shumar conserve la priorité d’attaque à vitesse initiale égale');
+  }
+
+  // uid = camp:id : le même monstre peut tenir les deux camps.
   {
     const m = monstre(1, 'Bella', 100);
     egal(ligneVierge(m, 'allie').uid, 'allie:1', "l'identifiant porte le camp");
@@ -3939,6 +4132,17 @@ export function testSpeedTuneModele() {
     egal(JSON.stringify(oublierCamp(choix, 'allie')), '{"ennemi:2":"B"}', "l'import d'un deck oublie les sorts du camp");
   }
 
+  // L'ordre rangé à la main s'en va avec « Ton équipe » : sinon le deck suivant
+  // y entrait dans l'ordre de ses slots, et son leader passait « premier »
+  // quelle que soit sa vitesse.
+  {
+    const range = { voulu: ['allie:3', 'allie:1#2', 'allie:1'], range: true };
+    const apres = ordreApresImport('allie', range);
+    egal(apres.range, false, "importer dans « Ton équipe » rend l'ordre aux vitesses");
+    egal(apres.voulu.length, 0, "et vide l'ordre de l'équipe précédente, tours ajoutés compris");
+    egal(ordreApresImport('ennemi', range), range, "un import en face ne touche pas l'ordre de « Ton équipe »");
+  }
+
   // Une vitesse de combat inconnue (base absente) ne casse rien.
   {
     const sansBase: Ligne = ligneVierge({ id: 9, com2usId: 9, name: '?', stats: {} } as unknown as Monster, 'allie');
@@ -3978,5 +4182,77 @@ export function testSpeedTuneModele() {
     egal(estimerCumuls([chilling], donnees)[0].cumulsPassif, 1, 'un compte saisi reste intact');
     const vierge = { ...chilling, cumulsPassif: undefined };
     egal(estimerCumuls([vierge], donnees)[0].cumulsPassif, 1, "une case jamais touchée reçoit l'estimation (Volonté)");
+  }
+}
+
+export function testSpeedTuneResetAtb() {
+  titre('Speed tuning — remise à zéro exacte, Tablo et Fast Pace');
+  const fiche = (id: number): DetailMonstre => JSON.parse(readFileSync('public/data/skills/' + id + '.json', 'utf8'));
+  const tablo = sortsVitesse(fiche(21314)).find(s => s.nom === 'Returned Dice')!;
+  const fast = sortsVitesse(fiche(1000214)).find(s => s.nom === 'Fast Pace')!;
+  egal(tablo.effet, { atbTousAZero: true, buffEquipe: 30, buffEquipeSansSoi: true }, 'Returned Dice : zéro sur les deux camps, buff sur les autres alliés (portée confirmée par la fiche)');
+  egal([tablo.cooldown, tablo.chance, tablo.neutre], [5, null, false], 'Tablo : recharge maxée à cinq tours, remise à zéro garantie');
+  egal(fast.effet, { atbTousAZero: true, atbTous: 100, buffAllie: 30 }, 'Fast Pace : zéro, puis +100 sur les deux camps, buff ciblé');
+  egal([fast.cooldown, fast.chance, fast.neutre], [4, null, false], 'Fast Pace : recharge maxée à quatre tours, sans chance inventée');
+  ok(fast.optionArbre === true, 'Fast Pace est une option à choisir, pas le chemin supposé de tous les Homunculus lumière');
+  ok(sortsVitesse(fiche(1000204)).some(s => s.nom === 'Fast Pace'), 'Fast Pace aussi disponible sur la forme non éveillée lumière');
+  ok(!sortsVitesse(fiche(1000215)).some(s => s.nom === 'Fast Pace'), 'Fast Pace absent de l’Homunculus ténèbres');
+  for (const camp of ['allie', 'ennemi'] as const) {
+    const adverse = camp === 'allie' ? 'ennemi' : 'allie';
+    const plateau: TuneMonstre[] = [
+      { id: 'lanceur', combat: 2000, camp, sort: { ...tablo.effet, cooldown: 5 } },
+      { id: 'partenaire', combat: 1600, camp },
+      { id: 'adverse', combat: 1800, camp: adverse },
+    ];
+    const sim = simuler(plateau, 2);
+    egal(sim.lignes.filter(l => l.id !== 'lanceur').map(l => l.trajectoire[0]), [0, 0], camp + ' : toutes les jauges retombent exactement à zéro, même au-dessus de 100');
+    egal(sim.actions.map(a => a.id), ['lanceur', 'partenaire'], camp + ' : le buff des autres alliés départage le deuxième tick');
+    egal(sim.lignes.map(l => l.effetSpeed[2] ?? 0), [0, 30, 0], camp + ' : Tablo ne reçoit pas son propre buff, ni l’adverse');
+    const tresHaut = simuler(plateau.map(m => ({ ...m, combat: m.combat * 10 })), 1);
+    egal(tresHaut.lignes.find(l => l.id === 'adverse')!.trajectoire[0], 0, camp + ' : remise à zéro exacte même à 1260 %, sans sentinelle −999');
+    const rempli = simuler(plateau.map(m => m.id === 'lanceur' ? { ...m, sort: { ...fast.effet, cibleAllie: 'partenaire', cooldown: 4 } } : m), 2);
+    egal(rempli.lignes.filter(l => l.id !== 'lanceur').map(l => l.trajectoire[0]), [100, 100], camp + ' : Fast Pace fixe les deux camps à 100, sans conserver le surplus');
+    egal(rempli.lignes.find(l => l.id === 'lanceur')!.effetAtb[1], 100, camp + ' : le lanceur reçoit lui aussi les 100 points après sa remise à zéro');
+    egal(rempli.lignes.map(l => l.effetSpeed[2] ?? 0), [0, 30, 0], camp + ' : seul l’allié ciblé reçoit le buff de Fast Pace');
+    const surSoi = simuler([{ ...plateau[0], sort: { ...fast.effet, cibleAllie: 'lanceur', cooldown: 4 } }, ...plateau.slice(1)], 2);
+    egal(surSoi.lignes.map(l => l.effetSpeed[2] ?? 0), [30, 0, 0], camp + ' : Fast Pace permet aussi de se viser soi-même');
+  }
+  const modifie = (v: number) => simuler([{ id: 'cible', combat: 200, camp: 'allie', atbMod: { 8: v } }], 8).lignes[0].trajectoire[7];
+  egal(modifie(-100), 12, 'une jauge à 112 % conserve 12 % après −100 points');
+  egal(modifie(-999), 0, '−999 points vident cette jauge sans passer sous zéro');
+
+  const corpus = JSON.parse(readFileSync('public/data/monsters.json', 'utf8')) as { monsters: Monster[] };
+  const monstres = new Map(corpus.monsters.map(m => [m.com2usId, m]));
+  const donnees: DonneesKit = { kits: new Map(), sorts: new Map(), passifs: new Map() };
+  for (const id of [21314, 1000214]) {
+    donnees.kits.set(id, kitVitesse(fiche(id)));
+    donnees.sorts.set(id, sortsVitesse(fiche(id)));
+  }
+  egal(sortRetenu({ id: 'homu', monster: monstres.get(1000214)!, runeSpeed: 220 }, donnees), null, 'l’analyse simple ne présume pas du chemin Fast Pace');
+  for (const [id, nom] of [[21314, 'Returned Dice'], [1000214, 'Fast Pace']] as const) {
+    const lignes = [
+      { ...ligneVierge(monstres.get(id)!, 'allie'), runeSpeed: 250 },
+      { ...ligneVierge(monstres.get(15311)!, 'allie'), runeSpeed: 160 },
+      { ...ligneVierge(monstres.get(15311)!, 'ennemi'), runeSpeed: 220, atbMod: { 2: -20 } },
+    ];
+    const choix = { sort: { [lignes[0].uid]: nom, [lignes[1].uid]: '' }, cible: { [lignes[0].uid]: lignes[1].uid } };
+    const leads = { allie: null, ennemi: null };
+    const analyser = (ls: Ligne[]) => analyseAutomatique(plateauDeLignes(ls, leads), 0, donnees, { choix, horizon: 15 });
+    const premier = analyser(lignes);
+    const ennemi = premier.mods.get(lignes[2].uid)!;
+    ok(!!ennemi?.atbAuto && Object.keys(ennemi.atbAuto).length > 0, nom + ' : les effets globaux sont écrits sur un vrai adverse');
+    egal(ennemi?.atbMod[2], -20, nom + ' : la correction manuelle adverse reste à son tick');
+    const appliquees = appliquerMods(lignes, premier.mods);
+    const simulation = simuler(tuneDe(appliquees, leads, donnees, choix), 15);
+    egal(premiersTours(simulation).filter(a => a.camp === 'allie').map(a => ({ id: a.id, tick: a.tick })), premier.ordre, nom + ' : analyse et tableau affichent le même ordre');
+    const relance = analyser(appliquees);
+    egal([...relance.mods], [...premier.mods], nom + ' : relancer ne déplace ni ne double les effets adverses');
+    const retire = analyseAutomatique(plateauDeLignes(appliquees, leads), 0, donnees, { choix: { sort: { ...choix.sort, [lignes[0].uid]: '' } }, horizon: 15 });
+    egal(retire.mods.get(lignes[2].uid)?.atbMod, { 2: -20 }, nom + ' : retirer le sort efface seulement ses cases automatiques adverses');
+    const tick = Number(Object.keys(ennemi.atbAuto!)[0]);
+    const corrigee = modifierMod(appliquees[2], 'atbMod', tick, 0);
+    egal(corrigee.atbAuto?.[tick], undefined, nom + ' : une saisie de zéro cesse d’être une case automatique');
+    const manuel = analyser([appliquees[0], appliquees[1], corrigee]);
+    egal(manuel.mods.get(lignes[2].uid)?.atbMod[tick] ?? corrigee.atbMod[tick], 0, nom + ' : la relance conserve le zéro saisi explicitement');
   }
 }

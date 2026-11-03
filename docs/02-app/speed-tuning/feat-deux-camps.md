@@ -145,29 +145,37 @@ compétences emploient le mot, aucune n'est parmi les 112. La règle garde l'ave
 ⚠️ Sans description (fiche incomplète), aucune condition ne peut être lue : le
 boost reste annoncé. On ne suppose pas une condition qu'on n'a pas vue.
 
-### ⚠️ À barre égale, l'attaquant passe devant
+### À barre égale, priorité fixée à l'ouverture
 
-Quand plusieurs monstres atteignent 100 % de barre au même tick, un seul prend le
-tour. Le départage se fait dans cet ordre :
+Quand plusieurs monstres atteignent 100 % de barre au même tick, un seul prend
+le tour. Le départage suit cet ordre :
 
 1. la **barre** la plus haute ;
-2. le **camp** — à barre égale, **ton équipe passe devant** ;
-3. la **vitesse de combat** la plus haute ;
-4. l'**ordre de placement**.
+2. la **vitesse de combat avant les buffs de départ** la plus haute ;
+3. le **camp attaquant**, si ces vitesses initiales sont égales ;
+4. l'**ordre de placement** dans le camp.
 
-⚠️ **La condition est l'égalité des BARRES, pas des vitesses.** À barre égale,
-ton monstre passe **même s'il est plus lent** — la vitesse ne départage donc plus
-qu'entre monstres du même camp. Mais une barre adverse plus haute l'emporte
-toujours : le camp ne passe jamais devant la barre.
+Le gain de Chilling activé par Volonté/Bouclier remplit sa barre, mais ne
+modifie pas le classement initial. Le moteur le transporte dans
+`gainApresBuffs` et le retire seulement de la vitesse de départage.
+Les gains permanents, comme les +15 de Shumar, restent dans cette vitesse.
+Un buff VIT ou un ralenti reçu pendant le combat ne reclasse pas non plus
+les priorités initiales.
 
-⚠️ **Sans ce critère**, le départage s'arrêterait à l'ordre de placement : le
-tour partirait à l'adverse dès qu'il se trouve placé avant dans le tableau.
-Deux Elsharion à la même barre, et l'ordre de jeu dépendrait de l'ordre des
-lignes à l'écran.
+**Contrôles en arène, totem +15 %, deux buffs sur Chilling :**
 
-⚠️ **« Ton équipe » est tenue pour l'ATTAQUANT** : c'est le cadre de l'outil, où
-l'on prépare son attaque. Modéliser une défense demanderait de rendre ce rôle
-réglable — le point de branchement serait le tri de `simuler`, et lui seul.
+| Chilling | Adversaire | Premier tour |
+| --- | --- | --- |
+| Swift +54, sans lead : 170 +40 | Rina sans Swift +96 : 210 | Rina |
+| Sans Swift +53, sans lead : 170 +40 | Même Rina : 210 | Rina |
+| Sans Swift +54, sans lead : 171 +40 | Même Rina : 210 | Chilling |
+| Swift +225, lead 24 % : 365 +40 | Rosemary Swift +233, lead 33 % : 405 | Rosemary |
+
+Source de la règle de classement avant les buffs :
+[SWCalc, Speed Calculation](https://swcalc.cz/game-mechanics).
+Le départage compte dans le tableau, l'analyse automatique et la référence
+copiée en face. Les solveurs conservent le gain après buffs quand ils changent
+la vitesse de runes : ce gain ne devient pas une vitesse initiale.
 
 ⚠️ **Ton équipe et « En face » se distinguent à la COULEUR, pas à la position.**
 `good` pour le tien, `bad` pour l'adverse — la sémantique de l'app, où `bad` dit

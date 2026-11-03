@@ -28,7 +28,7 @@ import { testRenduRtaExportOptimizer, testRenduTelephoneRtaExportOptimizer, test
   testRenduTelephoneRecoExportOptimizer, testRenduOptimizerImportRecommandation, testRenduTelephoneOptimizerImportRecommandation,
   testOptimizerImportRtaRecoBranchement } from './rendu/rta-reco-export.test';
 import { testRenduSiegeExportOptimizer, testRenduTelephoneSiegeExportOptimizer, testOptimizerImportSiegeBranchement } from './rendu/siege-export.test';
-import { testRenduSpeedTuneExportOptimizer, testRenduTelephoneSpeedTuneExportOptimizer, testOptimizerImportSpeedTuneBranchement, testRenduSpeedTuneExportAppOptimizer, testRenduTelephoneSpeedTuneExportAppOptimizer } from './rendu/speed-tune-export.test';
+import { testRenduSpeedTuneResetAtbApp, testRenduTelephoneSpeedTuneResetAtbApp, testRenduSpeedTuneExportOptimizer, testRenduTelephoneSpeedTuneExportOptimizer, testOptimizerImportSpeedTuneBranchement, testRenduSpeedTuneExportAppOptimizer, testRenduTelephoneSpeedTuneExportAppOptimizer } from './rendu/speed-tune-export.test';
 import { testOptimizerImportActionDemontee, testOptimizerImportEcrituresGroupees, testOptimizerImportReverificationEnAttente, testOptimizerImportCollision, testRenduOptimizerImportDefenses, testRenduTelephoneOptimizerImportDefenses,
   testRenduOptimizerImportOffense, testRenduTelephoneOptimizerImportOffense, testRenduOptimizerImportRta,
   testRenduTelephoneOptimizerImportRta, testRenduOptimizerImportIndisponible, testRenduTelephoneOptimizerImportIndisponible, testRenduOptimizerImportRapportPartage, testRenduOptimizerImportDisponibiliteMemoisee } from './rendu/optimizer-import.test';
@@ -328,7 +328,7 @@ import testMonstreTri from './monstre-tri.test';
 import testMonstreFormes from './monstre-formes.test';
 import testCurationFormesJouables from './curation-formes-jouables.test';
 import testInventaireCompetences from './inventaire-competences.test';
-import testDonneesAuxiliaires from './donnees-auxiliaires.test';
+import testDonneesAuxiliaires, { testDonneesFastPaceGeneration } from './donnees-auxiliaires.test';
 import testDegatsAutreForme from './degats-autre-forme.test';
 import testDegatsAttaquesAuxiliaires from './degats-attaques-auxiliaires.test';
 import testStockage from './stockage.test';
@@ -349,15 +349,17 @@ import testSiegeStatut from './siege-statut.test';
 import testSiegePastille from './siege-pastille.test';
 import testSiegeSlotSuivant from './siege-slot-suivant.test';
 import testRecoDefenses from './reco-defenses.test';
+import { testRecoFusionCorrespondance, testRecoFusionDecks, testRecoFusionChef, testRecoFusionImport, testRecoFusionSource } from './reco-fusion.test';
+import { testRenduRecoFusionChoix, testRenduRecoFusionStockage } from './rendu/reco-fusion.test';
 import testSiegePartage from './siege-partage.test';
 import testMarque from './marque.test';
-import testSpeedTune, { testSpeedTuneDeck, testSpeedTuneChaine, testSpeedTuneKit, testSpeedTuneSequence, testSpeedTuneReference, testSpeedTunePassif, testSpeedTuneAuto, testSpeedTuneModele } from './speed-tune.test';
+import testSpeedTune, { testSpeedTuneDeck, testSpeedTuneChaine, testSpeedTuneKit, testSpeedTuneResetAtb, testSpeedTuneSequence, testSpeedTuneReference, testSpeedTunePassif, testSpeedTuneAuto, testSpeedTuneModele } from './speed-tune.test';
 import { testRenduSiegeDefense, testRenduSiegeOffense, testRenduSiegeEnTete, testRenduSiegeEdition } from './rendu/siege.test';
 import { testRenduUiBouton, testRenduUiEtats, testRenduUiMenu, testRenduUiSelecteurMultiple, testRenduUiNotification, testRenduUiOnglets, testRenduPalette } from './rendu/ui.test';
 import { testRenduUiSelecteurTab, testRenduTelephoneUiSelecteurListe, testRenduUiFlottantBoiteQuiDefile, testRenduUiSegmentedDeuxLignes } from './rendu/ui-flottants.test';
 import { testPalette } from './palette.test';
 import { testLangueResolution, testLangueDictionnaires, testLangueFormats, testLangueReglage, testLangueTexteEnDur } from './langue.test';
-import { testRenduLangueReglage, testRenduLangueParametres, testRenduLangueApp, testRenduLangueFicheRune, testRenduLanguePagesPubliques, testRenduMecaniquesLangues, testRenduLangueRtaSiege, testRenduLangueCompte, testRenduLangueOptimizer, testRenduLangueOptimizerResultats, testRenduLangueSpeedTuning } from './rendu/langue.test';
+import { testRenduLangueReglage, testRenduLangueParametres, testRenduLangueApp, testRenduLangueFicheRune, testRenduLanguePagesPubliques, testRenduMecaniquesLangues, testRenduLangueRtaSiege, testRenduLangueCompte, testRenduLangueOptimizer, testRenduLangueOptimizerResultats, testRenduLangueSpeedTuning, testRenduLangueFusionRecos } from './rendu/langue.test';
 import { testLexiqueJeuCouverture, testLexiqueJeuLibelles } from './lexique-jeu.test';
 import { testRenduAppRoutes, testRenduAppNavigation, testRenduAppMobile, testRenduAppFil, testRenduAppLiensMorts } from './rendu/app.test';
 import { testEcranPartageMediaQueryVolet, testEcranPartageMemePage, testRenduEcranPartageApp,
@@ -523,6 +525,7 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testSpeedTuneDeck', testSpeedTuneDeck],
   ['testSpeedTuneChaine', testSpeedTuneChaine],
   ['testSpeedTuneKit', testSpeedTuneKit],
+  ['testSpeedTuneResetAtb', testSpeedTuneResetAtb],
   ['testSpeedTuneSequence', testSpeedTuneSequence],
   ['testSpeedTuneReference', testSpeedTuneReference],
   ['testSpeedTunePassif', testSpeedTunePassif],
@@ -532,6 +535,13 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testSiegePastille', testSiegePastille],
   ['testSiegeSlotSuivant', testSiegeSlotSuivant],
   ['testRecoDefenses', testRecoDefenses],
+  ['testRecoFusionCorrespondance', testRecoFusionCorrespondance],
+  ['testRecoFusionDecks', testRecoFusionDecks],
+  ['testRecoFusionChef', testRecoFusionChef],
+  ['testRecoFusionImport', testRecoFusionImport],
+  ['testRecoFusionSource', testRecoFusionSource],
+  ['testRenduRecoFusionChoix', testRenduRecoFusionChoix],
+  ['testRenduRecoFusionStockage', testRenduRecoFusionStockage],
   ['testSiegePartage', testSiegePartage],
   ['testMarque', testMarque],
   ['testRenduSiegeDefense', testRenduSiegeDefense],
@@ -651,6 +661,7 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testRenduLangueOptimizer', testRenduLangueOptimizer],
   ['testRenduLangueOptimizerResultats', testRenduLangueOptimizerResultats],
   ['testRenduLangueSpeedTuning', testRenduLangueSpeedTuning],
+  ['testRenduLangueFusionRecos', testRenduLangueFusionRecos],
   ['testLexiqueJeuCouverture', testLexiqueJeuCouverture],
   ['testLexiqueJeuLibelles', testLexiqueJeuLibelles],
   ['testRenduAppRoutes', testRenduAppRoutes],
@@ -725,6 +736,7 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testCurationFormesJouables', testCurationFormesJouables],
   ['testInventaireCompetences', testInventaireCompetences],
   ['testDonneesAuxiliaires', testDonneesAuxiliaires],
+  ['testDonneesFastPaceGeneration', testDonneesFastPaceGeneration],
   ['testCouleursCourbes', testCouleursCourbes],
   ['testRechargement', testRechargement],
   ['testCollabPaires', testCollabPaires],
@@ -1089,6 +1101,8 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testRenduSpeedTuneExportOptimizer', testRenduSpeedTuneExportOptimizer],
   ['testRenduTelephoneSpeedTuneExportOptimizer', testRenduTelephoneSpeedTuneExportOptimizer],
   ['testRenduSpeedTuneExportAppOptimizer', testRenduSpeedTuneExportAppOptimizer],
+  ['testRenduSpeedTuneResetAtbApp', testRenduSpeedTuneResetAtbApp],
+  ['testRenduTelephoneSpeedTuneResetAtbApp', testRenduTelephoneSpeedTuneResetAtbApp],
   ['testRenduTelephoneSpeedTuneExportAppOptimizer', testRenduTelephoneSpeedTuneExportAppOptimizer],
   ['testOptimizerImportEcrituresGroupees', testOptimizerImportEcrituresGroupees],
   ['testOptimizerImportReverificationEnAttente', testOptimizerImportReverificationEnAttente],
