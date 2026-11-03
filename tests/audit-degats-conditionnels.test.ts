@@ -1667,8 +1667,8 @@ function testHomonymesParIdentifiant() {
   egal(monsterBonusStatFixe(fiche(10735)), { cr: 20, cd: 0 }, 'Gorgo (10735, 1865) : +20 points de TC, aucun point de DC');
   ok(fiche(47305).competences.some((c) => c.com2usId === 1880 && c.nom === 'Charge (Passive)'), 'témoin : 47305 porte 1880, « Charge (Passive) »');
   egal(monsterBonusStatFixe(fiche(47305)), null, 'Warbear 2A (47305, 1880, homonyme non jouable) : plus de bonus de TC');
-  ok(monsterModificateursVit(fiche(47305)).every((m) => m.skillCom2usId !== 1880), '1880 : plus affiché parmi les modificateurs toujours actifs');
-  ok(monsterModificateursVit(fiche(10735)).some((m) => m.skillCom2usId === 1865), '1865 : toujours affiché pour Gorgo');
+  ok(monsterModificateursVit(fiche(47305), fr).every((m) => m.skillCom2usId !== 1880), '1880 : plus affiché parmi les modificateurs toujours actifs');
+  ok(monsterModificateursVit(fiche(10735), fr).some((m) => m.skillCom2usId === 1865), '1865 : toujours affiché pour Gorgo');
 }
 
 // La table `STATS_COMBAT_PAR_ID_CONNUS` est écrite à

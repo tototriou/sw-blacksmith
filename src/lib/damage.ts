@@ -779,8 +779,9 @@ export interface ModificateurVitAffichage {
   detail: string;
 }
 
-export function monsterModificateursVit(detail: DetailMonstre | null): ModificateurVitAffichage[] {
+export function monsterModificateursVit(detail: DetailMonstre | null, t: Dictionnaire): ModificateurVitAffichage[] {
   if (!detail) return [];
+  const m = t.degats.modificateurs;
   const out: ModificateurVitAffichage[] = [];
   for (const c of detail.competences) {
     if (!c.passif || c.com2usId == null) continue;
@@ -790,7 +791,7 @@ export function monsterModificateursVit(detail: DetailMonstre | null): Modificat
         nom: c.nom,
         description: c.description,
         icone: c.icone,
-        detail: 'toujours actif — critique garanti si plus rapide que la cible',
+        detail: m.critiqueSiPlusRapide,
       });
     }
     const atqSeuil = BONUS_SI_ATQ_SEUIL_CONNUS[c.nom];
@@ -800,7 +801,7 @@ export function monsterModificateursVit(detail: DetailMonstre | null): Modificat
         nom: c.nom,
         description: c.description,
         icone: c.icone,
-        detail: `toujours actif — +${atqSeuil.pct} % de dégâts si ton ATQ totale (avec lead) atteint ${atqSeuil.seuil}`,
+        detail: m.atqSeuil(atqSeuil.pct, atqSeuil.seuil),
       });
     }
     const bonus = BONUS_DEGATS_SELON_VIT_CONNUS[c.nom];
@@ -810,7 +811,7 @@ export function monsterModificateursVit(detail: DetailMonstre | null): Modificat
         nom: c.nom,
         description: c.description,
         icone: c.icone,
-        detail: `toujours actif — jusqu'à +${bonus.pctMax} % de dégâts à ${bonus.ecartMax} pts d'écart de VIT`,
+        detail: m.selonVit(bonus.pctMax, bonus.ecartMax),
       });
     }
     const critVit = CRIT_RATE_SELON_VIT_CONNUS[c.nom];
@@ -820,7 +821,7 @@ export function monsterModificateursVit(detail: DetailMonstre | null): Modificat
         nom: c.nom,
         description: c.description,
         icone: c.icone,
-        detail: `toujours actif — +1 pt de Taux Crit tous les ${critVit.ptsParVit} pts de VIT, le surplus au-delà de 100 % se reverse en Dgts Crit`,
+        detail: m.critSelonVit(critVit.ptsParVit),
       });
     }
     const statFixe = bonusStatFixeDe(c);
@@ -830,7 +831,7 @@ export function monsterModificateursVit(detail: DetailMonstre | null): Modificat
         nom: c.nom,
         description: c.description,
         icone: c.icone,
-        detail: `toujours actif — +${statFixe.cr} pts de Taux Crit, +${statFixe.cd} pts de Dgts Crit`,
+        detail: m.statFixe(statFixe.cr, statFixe.cd),
       });
     }
     const selonCr = BONUS_DEGATS_SELON_CR_CONNUS[c.nom];
@@ -840,7 +841,7 @@ export function monsterModificateursVit(detail: DetailMonstre | null): Modificat
         nom: c.nom,
         description: c.description,
         icone: c.icone,
-        detail: `toujours actif — +${selonCr.ratio} % de dégâts par point de Taux Crit`,
+        detail: m.selonCr(selonCr.ratio),
       });
     }
     const selonDef = BONUS_DEGATS_SELON_DEF_CONNUS[c.nom];
@@ -850,7 +851,7 @@ export function monsterModificateursVit(detail: DetailMonstre | null): Modificat
         nom: c.nom,
         description: c.description,
         icone: c.icone,
-        detail: `toujours actif — jusqu'à +${selonDef.pctMax} % de dégâts à ${selonDef.defMax} DEF`,
+        detail: m.selonDef(selonDef.pctMax, selonDef.defMax),
       });
     }
     // ⚠️ Malgré son nom, cette fonction affiche tout modificateur MONSTRE-WIDE
@@ -865,7 +866,7 @@ export function monsterModificateursVit(detail: DetailMonstre | null): Modificat
         nom: c.nom,
         description: c.description,
         icone: c.icone,
-        detail: `toujours actif — +${ciblePvMax.pct} % des PV max de la cible ajoutés au multiplicateur`,
+        detail: m.ciblePvMax(ciblePvMax.pct),
       });
     }
     const ecartDef = BONUS_ECART_DEF_CONNUS[c.nom];
@@ -875,7 +876,7 @@ export function monsterModificateursVit(detail: DetailMonstre | null): Modificat
         nom: c.nom,
         description: c.description,
         icone: c.icone,
-        detail: `toujours actif — +${ecartDef.coeff * 100} % de l'écart de DEF (toi − cible) ajoutés au multiplicateur, à chaque coup`,
+        detail: m.ecartDef(ecartDef.coeff * 100),
       });
     }
     const maxHpPropre = BONUS_FIXE_MAXHP_PROPRE_CONNUS[c.nom];
@@ -885,7 +886,7 @@ export function monsterModificateursVit(detail: DetailMonstre | null): Modificat
         nom: c.nom,
         description: c.description,
         icone: c.icone,
-        detail: `toujours actif — +${maxHpPropre.pct} % de tes PV max, UNE FOIS par sort (pas par coup)`,
+        detail: m.maxHpPropre(maxHpPropre.pct),
       });
     }
   }

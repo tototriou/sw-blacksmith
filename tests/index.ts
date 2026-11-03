@@ -126,6 +126,7 @@ import { testProsesSortAuClic, testEffetsActifsInfobulle } from './proses-sort.t
 import { testProseStatsCombat, testProseStatsCombatCarte, testProseStatsCombatPassifMasque } from './prose-stats-combat.test';
 import { testBuffsDePassifTable, testBuffsDePassifRappel, testBuffsDePassifEcran } from './buffs-de-passif.test';
 import { testCalculPartielTable, testCalculPartielAffichage, testCalculPartielEcran } from './calcul-partiel.test';
+import { testCouverturePhrasesDegats } from './phrases-degats.test';
 import testArtifactConditionFloor from './artifact-condition-floor.test';
 import { testArtefactsFichePoints, testArtefactsFicheConqueteTenacite, testArtefactsFicheCache } from './artifact-fiche.test';
 import { testArtefactsFicheDifferentiel } from './artifact-fiche-recherche.test';
@@ -359,7 +360,7 @@ import { testRenduUiBouton, testRenduUiEtats, testRenduUiMenu, testRenduUiSelect
 import { testRenduUiSelecteurTab, testRenduTelephoneUiSelecteurListe, testRenduUiFlottantBoiteQuiDefile, testRenduUiSegmentedDeuxLignes } from './rendu/ui-flottants.test';
 import { testPalette } from './palette.test';
 import { testLangueResolution, testLangueDictionnaires, testLangueFormats, testLangueReglage, testLangueTexteEnDur } from './langue.test';
-import { testRenduLangueReglage, testRenduLangueParametres, testRenduLangueApp, testRenduLangueFicheRune, testRenduLanguePagesPubliques, testRenduMecaniquesLangues, testRenduLangueRtaSiege, testRenduLangueCompte, testRenduLangueOptimizer, testRenduLangueOptimizerResultats, testRenduLangueSpeedTuning, testRenduLangueFusionRecos, testRenduLangueDegatsReels } from './rendu/langue.test';
+import { testRenduLangueReglage, testRenduLangueParametres, testRenduLangueApp, testRenduLangueFicheRune, testRenduLanguePagesPubliques, testRenduMecaniquesLangues, testRenduLangueRtaSiege, testRenduLangueCompte, testRenduLangueOptimizer, testRenduLangueOptimizerResultats, testRenduLangueSpeedTuning, testRenduLangueFusionRecos, testRenduLangueDegatsReels, testRenduLanguePhrasesDegats } from './rendu/langue.test';
 import { testLexiqueJeuCouverture, testLexiqueJeuLibelles } from './lexique-jeu.test';
 import { testRenduAppRoutes, testRenduAppNavigation, testRenduAppMobile, testRenduAppFil, testRenduAppLiensMorts } from './rendu/app.test';
 import { testEcranPartageMediaQueryVolet, testEcranPartageMemePage, testRenduEcranPartageApp,
@@ -663,6 +664,7 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testRenduLangueSpeedTuning', testRenduLangueSpeedTuning],
   ['testRenduLangueFusionRecos', testRenduLangueFusionRecos],
   ['testRenduLangueDegatsReels', testRenduLangueDegatsReels],
+  ['testRenduLanguePhrasesDegats', testRenduLanguePhrasesDegats],
   ['testLexiqueJeuCouverture', testLexiqueJeuCouverture],
   ['testLexiqueJeuLibelles', testLexiqueJeuLibelles],
   ['testRenduAppRoutes', testRenduAppRoutes],
@@ -1056,6 +1058,7 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testCalculPartielTable', testCalculPartielTable],
   ['testCalculPartielAffichage', testCalculPartielAffichage],
   ['testCalculPartielEcran', testCalculPartielEcran],
+  ['testCouverturePhrasesDegats', testCouverturePhrasesDegats],
   ['testMeules', testMeules],
   ['testArtefacts', testArtefacts],
   ['testArtefactsTop', testArtefactsTop],

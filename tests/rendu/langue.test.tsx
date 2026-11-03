@@ -28,7 +28,9 @@ import { OptionsFusion, SousTitreFusion, titreChoixFusion } from '../../src/comp
 import { messageFusion } from '../../src/lib/recoFusion';
 import { CASSIE as CASSIE_DEGATS, CROSS_FIRE as CROSS_FIRE_DEGATS, carte as carteDegats } from './attaque-conjointe-ecran.test';
 import { formuleLisible } from '../../src/lib/monsterSkills';
-import { CRIT_MODES, IGNORE_DEF_A_PARTIR_DU_COUP_PAR_ID, cransDeLaRegleIgnoreDef, resumeSequenceDeCoups } from '../../src/lib/damage';
+import { CRIT_MODES, IGNORE_DEF_A_PARTIR_DU_COUP_PAR_ID, calculPartielDuSort, cransDeLaRegleIgnoreDef, monsterDamageSkills, monsterModificateursVit, resumeSequenceDeCoups } from '../../src/lib/damage';
+import { phraseDegats } from '../../src/i18n/phrasesDegats';
+import { loadMonsterSkills } from '../../scripts/lib/skillsData';
 import { validateRecosImport } from '../../src/lib/recoShare';
 import ProgressionRecherche from '../../src/components/outils/optimizer/ProgressionRecherche';
 import PaginationResultats from '../../src/components/outils/optimizer/PaginationResultats';
@@ -304,6 +306,30 @@ export function testRenduLangueDegatsReels() {
   egal(cransDeLaRegleIgnoreDef(IGNORE_DEF_A_PARTIR_DU_COUP_PAR_ID[14811], en).map((c) => c.libelle),
     ['From the 2nd hit', 'From the 3rd hit', 'From the 4th hit', 'From the 5th hit', 'From the 6th hit', '7th hit only'], 'les crans d’ignore DEF');
   egal(CRIT_MODES.map((m) => en.degats.critModes[m]), ['Critical', 'Non-critical'], 'les modes critiques');
+}
+
+// Les phrases curées de damage.ts à l'écran anglais (src/i18n/phrasesDegats.ts) :
+// un compteur, un « Calcul partiel », la raison d'un sort refusé, un
+// modificateur toujours actif. La couverture de toute la table :
+// tests/phrases-degats.test.ts.
+export function testRenduLanguePhrasesDegats() {
+  titre('rendu · langue — les phrases curées des dégâts réels, en anglais');
+  const compteur = texteVisible(enAnglais(() => carteDegats(20805, 11605, false)));
+  ok(compteur.includes('Attacks received before this skill') && !compteur.includes('Attaques reçues'), 'Hammer Punch (Frankenstein) : le compteur curé en anglais');
+  // La phrase du « Calcul partiel » ne se rend qu'à l'ouverture de sa bulle :
+  // l'étiquette se voit ici, la phrase passe par `phraseDegats` (branchement :
+  // testCalculPartielEcran).
+  ok(texteVisible(enAnglais(() => carteDegats(23101, 13406, false))).includes(en.degats.competence.partiel), 'Madness Judgement (Belial) : l’étiquette « Calcul partiel » en anglais');
+  const madness = monsterDamageSkills(loadMonsterSkills(23101)).find((s) => s.skillCom2usId === 13406);
+  egal(madness && phraseDegats(calculPartielDuSort(madness) ?? '', 'en'),
+    'Ignore DEF is counted in full, at all times; the in-game share, which grows as your HP drop, isn’t modeled yet.', 'Madness Judgement : la phrase du « Calcul partiel » en anglais');
+  const refus = texteVisible(enAnglais(() => carteDegats(11903, 0, false)));
+  ok(refus.includes('Formula not supported by the damage calculation.') && !refus.includes('Formule non prise en charge'), 'un sort refusé : sa raison en anglais');
+  egal(monsterModificateursVit(loadMonsterSkills(26113), en).map((m) => m.detail), ['always active — up to +50% damage at a 50 SPD gap'],
+    'Sonia : le modificateur toujours actif en anglais');
+  egal(monsterModificateursVit(loadMonsterSkills(26113), fr).map((m) => m.detail), ['toujours actif — jusqu\'à +50 % de dégâts à 50 pts d\'écart de VIT'],
+    'Sonia : en français, la phrase d’avant');
+  ok(texteVisible(carteDegats(20805, 11605, false)).includes('Attaques reçues avant ce sort'), 'en français, la phrase curée reste telle quelle');
 }
 
 // L'article « Mécaniques » : un par langue, mêmes sections dans le même ordre.

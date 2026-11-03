@@ -185,6 +185,7 @@ import { useLangue, useTraduction } from '../../hooks/useLangue';
 import type { Dictionnaire } from '../../i18n/fr';
 import { formatNombre } from '../../i18n/format';
 import { nomElement } from '../../i18n/jeu';
+import { phraseDegats } from '../../i18n/phrasesDegats';
 
 interface Props {
   recommandations?: Reco[];
@@ -614,7 +615,7 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
    */
   const resumeCombat = useMemo(() => {
     const bouts: string[] = [];
-    bouts.push(resolvedSkill ? `S${resolvedSkill.slot} ${resolvedSkill.nom}` : os.aucunSort);
+    bouts.push(resolvedSkill ? `S${resolvedSkill.slot} ${phraseDegats(resolvedSkill.nom, textes.codeLangue)}` : os.aucunSort);
     // La cible calculée d'un sort à coup de zone curé (Blade Surge), quand ce
     // n'est pas la cible visée : celle que RETIENT le calcul pour le sort
     // RÉSOLU, même règle que le reste de cette ligne.
@@ -760,7 +761,7 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
   );
   // Affichage seul (icône/nom/description) des deux modificateurs VIT
   // ci-dessus, pour « Passifs offensifs » — voir `DamageSetupCard.tsx`.
-  const modificateursVit = useMemo(() => monsterModificateursVit(skillDetail), [skillDetail]);
+  const modificateursVit = useMemo(() => monsterModificateursVit(skillDetail, textes), [skillDetail, textes]);
   // Stats que le pré-filtrage doit privilégier — `undefined` hors de cet
   // objectif, auquel cas le moteur retombe sur `OBJECTIVE_RELEVANT_STATS`
   // (comportement strictement inchangé pour les cinq autres objectifs).
