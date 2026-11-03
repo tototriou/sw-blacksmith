@@ -4,6 +4,7 @@
 // la fusion d'un import : le chef, le lead actif en siège.
 
 import { cleEquipe, leadActifEnSiege, vueDefenses, type MonstresConnus } from '../src/lib/recoDefenses';
+import { idCanoniqueCollab } from '../src/lib/monsterForms';
 import type { ElementKey, LeaderSkill, Monster, Reco, RecoCounter, RecoDeck } from '../src/types';
 import { egal, monstersJson, ok, titre } from './outils';
 
@@ -56,7 +57,16 @@ export default function testRecoDefenses() {
   egal(cle('Solveig', 'Adriana', 'Odin'), cle('Solveig', 'Odin', 'Adriana'), 'Solveig-Adriana-Odin et Solveig-Odin-Adriana : même équipe (chef Solveig)');
   ok(cle('Solveig', 'Adriana', 'Odin') !== cle('Odin', 'Adriana', 'Solveig'), 'Solveig-Adriana-Odin et Odin-Adriana-Solveig : deux équipes, le lead actif diffère');
   egal(cle('Kinki', 'Windy', 'Lulu'), cle('Windy', 'Lulu', 'Kinki'), 'Kinki-Windy-Lulu et Windy-Lulu-Kinki : même équipe, aucun lead actif en siège');
-  egal(cle('Solveig', 'Adriana', 'Odin'), `#${monstreExemple('Solveig').com2usId}|${[ex('Adriana'), ex('Odin')].map((x) => `#${x.com2usId}`).sort().join('+')}`, 'avec chef : « chef | les deux autres triés »');
+  // Solveig et Adriana ont un jumeau de collaboration (Eivor, Pure Vanilla
+  // Cookie) : la clé porte l'identifiant commun de la paire.
+  const id = (nom: string) => `#${idCanoniqueCollab(monstreExemple(nom).com2usId!, monstreExemple(nom).jumeauCollab)}`;
+  egal(cle('Solveig', 'Adriana', 'Odin'), `${id('Solveig')}|${[id('Adriana'), id('Odin')].sort().join('+')}`, 'avec chef : « chef | les deux autres triés »');
+  const jumeau = (nom: string) => {
+    const j = MONSTRES.find((x) => x.com2usId === monstreExemple(nom).jumeauCollab)!;
+    return m(j.com2usId, j.name);
+  };
+  egal(cleEquipe([jumeau('Solveig'), jumeau('Adriana'), ex('Odin')], connusReels), cle('Solveig', 'Odin', 'Adriana'),
+    'Eivor-Pure Vanilla Cookie-Odin : la même équipe que Solveig-Odin-Adriana');
   egal(cle('Kinki', 'Windy', 'Lulu'), `|${['Kinki', 'Windy', 'Lulu'].map((n) => `#${ex(n).com2usId}`).sort().join('+')}`, 'sans chef : « | les trois triés »');
 
   // Lead d'élément : ⚠️ monstres CONSTRUITS — dans les données, un lead

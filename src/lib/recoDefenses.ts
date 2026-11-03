@@ -13,9 +13,10 @@
 // trois monstres dans n'importe quel ordre. Le chef est le premier monstre
 // quand son lead est actif en siège : c'est lui seul qui change l'équipe en
 // jeu. Un monstre sans identifiant (saisi à la main) se reconnaît à son nom,
-// sans casse.
+// sans casse ; une collaboration, à sa version SW.
 
 import type { ElementKey, LeaderSkill, Monster, Reco, RecoCounter } from '../types';
+import { idCanoniqueCollab } from './monsterForms';
 
 // Les deux vues de la page : Attaque (deck → défenses battues, où l'on
 // modifie) et Défense (défense → offenses qui la battent, en lecture seule).
@@ -46,16 +47,20 @@ export interface VueDefenses {
 
 // Exportée pour la fusion d'un import (recoFusion.ts) : un monstre de défense
 // s'y reconnaît de la même façon.
-export function cleMonstre(m: { com2usId: number | null; name: string }): string {
-  if (m.com2usId != null) return `#${m.com2usId}`;
+//
+// ⚠️ Une collaboration et sa version SW (Satoru Gojo, Werner) ont la même clé
+// (`idCanoniqueCollab`) : c'est le même monstre, donc la même équipe en jeu.
+export function cleMonstre(m: { com2usId: number | null; name: string }, connus?: MonstresConnus): string {
+  if (m.com2usId != null) return `#${idCanoniqueCollab(m.com2usId, connus?.get(m.com2usId)?.jumeauCollab)}`;
   const nom = m.name.trim().toLowerCase();
   return nom ? `@${nom}` : '';
 }
 
-// Les monstres connus des données chargées, par `com2usId` : seuls leur leader
-// skill et leur élément servent à la clé. Un paramètre, pas un import : le
-// calcul reste pur, et l'écran passe l'index qu'il a déjà (`monsterByCom2us`).
-export type MonstresConnus = ReadonlyMap<number, Pick<Monster, 'element' | 'leaderSkill'>>;
+// Les monstres connus des données chargées, par `com2usId` : leur leader skill
+// et leur élément servent à reconnaître le chef, leur jumeau de collaboration à
+// reconnaître le monstre. Un paramètre, pas un import : le calcul reste pur, et
+// l'écran passe l'index qu'il a déjà (`monsterByCom2us`).
+export type MonstresConnus = ReadonlyMap<number, Pick<Monster, 'element' | 'leaderSkill' | 'jumeauCollab'>>;
 
 // Une leader skill est-elle active EN SIÈGE (contenu de guilde) pour cette
 // équipe ? Même règle de portée que `siegeLeadFor` (speed.ts) pour la vitesse,
@@ -111,7 +116,7 @@ export function cleEquipe(
   monsters: readonly { com2usId: number | null; name: string }[],
   connus: MonstresConnus,
 ): string | null {
-  const cles = monsters.map(cleMonstre);
+  const cles = monsters.map((m) => cleMonstre(m, connus));
   if (cles.every((c) => c === '')) return null;
   const tries = (l: string[]) => l.filter(Boolean).sort().join('+');
   if (premierEstChef(monsters, connus)) {
