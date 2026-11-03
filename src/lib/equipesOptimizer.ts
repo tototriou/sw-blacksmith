@@ -1,4 +1,5 @@
 import type { ElementKey, LeaderSkill } from '../types';
+import type { Dictionnaire } from '../i18n/fr';
 import { appliquerCriteres, baseCompleteCriteres, type LeadEffectifOptimizer } from './criteresOptimizer';
 import { LEADER_SKILL_STATS, type DamageSetup, type LeaderSkillStat } from './damage';
 import { exclusionSelectorKey, resolveExclusionEntry, type ExclusionSelector, type ExclusionSourceData } from './optimizerExclusion';
@@ -36,17 +37,27 @@ export const ACTIVITE_LEADS_OPTIMIZER = {
   },
 } as const satisfies Record<ContenuListeOptimizer, Record<PorteeLead, ActiviteLead>>;
 
-// Compatible avec appliquerCriteres ; tout « aucun » porte sa raison.
-export type LeadMembreOptimizer = Exclude<LeadEffectifOptimizer, { type: 'aucun' }> | { type: 'aucun'; motif: string };
-const aucun = (motif: string): LeadMembreOptimizer => ({ type: 'aucun', motif });
+// La raison d'un lead d'équipe sans effet ; sa phrase, dans chaque langue, est
+// sous `optimizer.motifsLead` du dictionnaire.
+export type MotifLeadOptimizer =
+  | 'contenuNonDefini'
+  | 'sansLead'
+  | 'porteeInconnue'
+  | 'porteeInactive'
+  | 'autreElement'
+  | 'statSansEffet'
+  | 'montantInvalide';
 
-// Le motif d'une liste sans contenu de combat. ⚠️ « État de mon monstre » ne
-// l'affiche JAMAIS (décision de l'utilisateur, « Je ne veux jamais le voir ») :
-// la carte passe par `motifLeadAffiche`. Le motif reste porté par le lead
+// Compatible avec appliquerCriteres ; tout « aucun » porte sa raison.
+export type LeadMembreOptimizer = Exclude<LeadEffectifOptimizer, { type: 'aucun' }> | { type: 'aucun'; motif: MotifLeadOptimizer };
+const aucun = (motif: MotifLeadOptimizer): LeadMembreOptimizer => ({ type: 'aucun', motif });
+
+// ⚠️ « État de mon monstre » n'affiche JAMAIS le motif d'une liste sans contenu
+// de combat (décision de l'utilisateur, « Je ne veux jamais le voir ») : la
+// carte passe par `motifLeadAffiche`. Le motif reste porté par le lead
 // effectif (repère ⚠ de la liste, rapport d'import).
-export const MOTIF_CONTENU_NON_DEFINI = 'Le contenu de combat de la liste n’est pas défini : aucun lead d’équipe appliqué.';
-export const motifLeadAffiche = (motif: string | null | undefined): string | null =>
-  motif && motif !== MOTIF_CONTENU_NON_DEFINI ? motif : null;
+export const motifLeadAffiche = (motif: MotifLeadOptimizer | null | undefined): MotifLeadOptimizer | null =>
+  motif && motif !== 'contenuNonDefini' ? motif : null;
 const memeMembre = (a: ExclusionSelector, b: ExclusionSelector): boolean => exclusionSelectorKey(a) === exclusionSelectorKey(b);
 
 export function leadEffectifMembreOptimizer(
@@ -55,17 +66,17 @@ export function leadEffectifMembreOptimizer(
   const equipe = stockage.teams.find(e => e.listId === listId && e.members.some(s => memeMembre(s, selector)));
   if (!equipe) return { type: 'personnel' };
   const contenu = stockage.listContents.get(listId);
-  if (!contenu) return aucun(MOTIF_CONTENU_NON_DEFINI);
+  if (!contenu) return aucun('contenuNonDefini');
   const lead = equipe.lead;
-  if (!lead) return aucun('L’équipe ne porte aucun lead.');
+  if (!lead) return aucun('sansLead');
   const ligne = ACTIVITE_LEADS_OPTIMIZER[contenu] as Record<string, ActiviteLead> | undefined;
   const activite = ligne && Object.prototype.hasOwnProperty.call(ligne, lead.area) ? ligne[lead.area] : undefined;
-  if (!activite) return aucun('L’activité de cette portée de lead n’est pas établie pour ce contenu.');
-  if (activite === 'inactif') return aucun('Cette portée de lead est inactive pour ce contenu.');
-  if (activite === 'element' && (!lead.element || lead.element !== element)) return aucun('Le lead ne concerne pas l’élément de ce membre.');
+  if (!activite) return aucun('porteeInconnue');
+  if (activite === 'inactif') return aucun('porteeInactive');
+  if (activite === 'element' && (!lead.element || lead.element !== element)) return aucun('autreElement');
   // damage.ts : RES et Précision n’entrent pas dans les stats de lead calculées.
-  if (!LEADER_SKILL_STATS.includes(lead.stat as LeaderSkillStat)) return aucun('La statistique de ce lead est conservée, sans effet calculé.');
-  if (!Number.isFinite(lead.amount) || lead.amount < 0) return aucun('Le montant de ce lead est invalide.');
+  if (!LEADER_SKILL_STATS.includes(lead.stat as LeaderSkillStat)) return aucun('statSansEffet');
+  if (!Number.isFinite(lead.amount) || lead.amount < 0) return aucun('montantInvalide');
   return { type: 'equipe', lead: { stat: lead.stat as LeaderSkillStat, pct: lead.amount } };
 }
 
@@ -80,7 +91,7 @@ export const memeLeadOptimizer = (a: DamageSetup, b: DamageSetup): boolean =>
  */
 export function synchroniserLeadsMembresOptimizer(
   stockage: Pick<StockageOptimizer, 'teams' | 'listContents' | 'members' | 'memories' | 'identities'>,
-  listId: string, data: ExclusionSourceData
+  listId: string, data: ExclusionSourceData, t: Dictionnaire
 ): { memories: StockageOptimizer['memories']; ecrits: ExclusionSelector[] } {
   let memories = stockage.memories;
   const ecrits: ExclusionSelector[] = [];
@@ -93,7 +104,7 @@ export function synchroniserLeadsMembresOptimizer(
     const suivante = appliquerCriteres(memoire?.criteres ?? baseCompleteCriteres(resolu.gear),
       leadEffectifMembreOptimizer(stockage, listId, selector, resolu.monster.element));
     if (memoire && memeLeadOptimizer(memoire.criteres.damageSetup, suivante.damageSetup)) continue;
-    const ecriture = enregistrerMemoireMembre(memories, { listId, selector, com2usId }, suivante, data);
+    const ecriture = enregistrerMemoireMembre(memories, { listId, selector, com2usId }, suivante, data, t);
     if (ecriture.rapport.length) continue;
     memories = ecriture.memories;
     ecrits.push(selector);
@@ -114,83 +125,86 @@ export interface ResultatEquipesOptimizer {
   rapport: string[];
 }
 
-function accepterEquipes(contexte: ContexteEquipesOptimizer, teams: EquipeOptimizer[]): ResultatEquipesOptimizer {
-  const validation = validerEquipesOptimizer(teams);
+function accepterEquipes(contexte: ContexteEquipesOptimizer, teams: EquipeOptimizer[], t: Dictionnaire): ResultatEquipesOptimizer {
+  const validation = validerEquipesOptimizer(teams, t);
   if (validation.rejets.length) return { teams: contexte.teams, rapport: validation.rapport };
   for (const equipe of teams) {
     if (!contexte.lists.some(l => l.id === equipe.listId)
       || equipe.members.some(s => !contexte.members.some(m => m.listId === equipe.listId && memeMembre(m.selector, s)))) {
-      return { teams: contexte.teams, rapport: ['Équipe refusée : la liste ou un de ses membres est introuvable.'] };
+      return { teams: contexte.teams, rapport: [t.optimizer.rapportsEquipe.listeIntrouvable] };
     }
   }
   // Les données acceptées sont détachées : un éditeur ne peut muter le stockage reçu.
   return { teams: structuredClone(validation.teams), rapport: [] };
 }
 
-export function creerEquipeOptimizer(contexte: ContexteEquipesOptimizer, creation: CreationEquipeOptimizer): ResultatEquipesOptimizer {
+export function creerEquipeOptimizer(contexte: ContexteEquipesOptimizer, creation: CreationEquipeOptimizer, t: Dictionnaire): ResultatEquipesOptimizer {
   const equipe: EquipeOptimizer = { ...creation, lead: creation.lead ?? null };
   // Une création ne revérifie pas les références des équipes conservées :
   // une liste ou un membre ancien disparu ne doit pas bloquer la nouvelle équipe.
-  const resultat = accepterEquipes(contexte, [equipe]);
+  const resultat = accepterEquipes(contexte, [equipe], t);
   if (resultat.rapport.length) return resultat;
   if (contexte.teams.some(e => e.id === equipe.id
     || (e.listId === equipe.listId && e.members.some(s => equipe.members.some(m => memeMembre(s, m)))))) {
-    return { teams: contexte.teams, rapport: ['Équipe refusée : identifiant ou membre déjà affecté.'] };
+    return { teams: contexte.teams, rapport: [t.optimizer.rapportsEquipe.dejaAffecte] };
   }
   return { teams: [...contexte.teams, ...resultat.teams], rapport: [] };
 }
 
 export function ajouterMembreEquipeOptimizer(
-  contexte: ContexteEquipesOptimizer, equipeId: string, selector: ExclusionSelector
+  contexte: ContexteEquipesOptimizer, equipeId: string, selector: ExclusionSelector, t: Dictionnaire
 ): ResultatEquipesOptimizer {
   const equipe = contexte.teams.find(e => e.id === equipeId);
-  if (!equipe) return { teams: contexte.teams, rapport: ['Équipe introuvable : aucun membre ajouté.'] };
-  return modifierEquipeOptimizer(contexte, { ...equipe, members: [...equipe.members, selector] });
+  if (!equipe) return { teams: contexte.teams, rapport: [t.optimizer.rapportsEquipe.introuvableAjout] };
+  return modifierEquipeOptimizer(contexte, { ...equipe, members: [...equipe.members, selector] }, t);
 }
 
 /** Valider seulement la cible, tout en contrôlant les collisions avec les équipes conservées. */
-export function modifierEquipeOptimizer(contexte: ContexteEquipesOptimizer, equipe: EquipeOptimizer): ResultatEquipesOptimizer {
+export function modifierEquipeOptimizer(contexte: ContexteEquipesOptimizer, equipe: EquipeOptimizer, t: Dictionnaire): ResultatEquipesOptimizer {
   if (!contexte.teams.some(e => e.id === equipe.id && e.listId === equipe.listId)) {
-    return { teams: contexte.teams, rapport: ['Équipe introuvable : aucun changement.'] };
+    return { teams: contexte.teams, rapport: [t.optimizer.rapportsEquipe.introuvable] };
   }
-  const resultat = creerEquipeOptimizer({ ...contexte, teams: contexte.teams.filter(e => e.id !== equipe.id) }, equipe);
+  const resultat = creerEquipeOptimizer({ ...contexte, teams: contexte.teams.filter(e => e.id !== equipe.id) }, equipe, t);
   if (resultat.rapport.length) return { teams: contexte.teams, rapport: resultat.rapport };
   const valide = resultat.teams.find(e => e.id === equipe.id)!;
   return { teams: contexte.teams.map(e => e.id === equipe.id ? valide : e), rapport: [] };
 }
 
 export function retirerMembreEquipeOptimizer(
-  teams: EquipeOptimizer[], equipeId: string, selector: ExclusionSelector
+  teams: EquipeOptimizer[], equipeId: string, selector: ExclusionSelector, t: Dictionnaire
 ): ResultatEquipesOptimizer {
+  const r = t.optimizer.rapportsEquipe;
   const equipe = teams.find(e => e.id === equipeId);
-  if (!equipe || !equipe.members.some(s => memeMembre(s, selector))) return { teams, rapport: ['Équipe ou membre introuvable : aucun changement.'] };
+  if (!equipe || !equipe.members.some(s => memeMembre(s, selector))) return { teams, rapport: [r.membreIntrouvable] };
   const members = equipe.members.filter(s => !memeMembre(s, selector));
-  if (members.length < 2) return { teams: teams.filter(e => e.id !== equipeId), rapport: ['Équipe dissoute : moins de deux membres.'] };
+  if (members.length < 2) return { teams: teams.filter(e => e.id !== equipeId), rapport: [r.dissouteMoinsDeDeux] };
   const { leader, ...reste } = equipe;
   const nouvelle = { ...reste, members, ...(leader && !memeMembre(leader, selector) ? { leader } : {}) };
   return { teams: structuredClone(teams.map(e => e.id === equipeId ? nouvelle : e)), rapport: [] };
 }
 
-export function delierMembreOptimizer(teams: EquipeOptimizer[], listId: string, selector: ExclusionSelector): ResultatEquipesOptimizer {
+export function delierMembreOptimizer(teams: EquipeOptimizer[], listId: string, selector: ExclusionSelector, t: Dictionnaire): ResultatEquipesOptimizer {
   const equipe = teams.find(e => e.listId === listId && e.members.some(s => memeMembre(s, selector)));
-  return equipe ? retirerMembreEquipeOptimizer(teams, equipe.id, selector) : { teams, rapport: ['Ce membre n’est lié à aucune équipe.'] };
+  return equipe ? retirerMembreEquipeOptimizer(teams, equipe.id, selector, t) : { teams, rapport: [t.optimizer.rapportsEquipe.sansEquipe] };
 }
 
-export function dissoudreEquipeOptimizer(teams: EquipeOptimizer[], equipeId: string): ResultatEquipesOptimizer {
+export function dissoudreEquipeOptimizer(teams: EquipeOptimizer[], equipeId: string, t: Dictionnaire): ResultatEquipesOptimizer {
+  const r = t.optimizer.rapportsEquipe;
   return teams.some(e => e.id === equipeId)
-    ? { teams: teams.filter(e => e.id !== equipeId), rapport: ['Équipe dissoute ; ses membres restent dans la liste.'] }
-    : { teams, rapport: ['Équipe introuvable : aucune dissolution.'] };
+    ? { teams: teams.filter(e => e.id !== equipeId), rapport: [r.dissoute] }
+    : { teams, rapport: [r.introuvableDissolution] };
 }
 
 export function equipeApresFiltrageOptimizer(
-  contexte: ContexteEquipesOptimizer, creation: CreationEquipeOptimizer
+  contexte: ContexteEquipesOptimizer, creation: CreationEquipeOptimizer, t: Dictionnaire
 ): { equipe: EquipeOptimizer | null; rapport: string[] } {
+  const r = t.optimizer.rapportsEquipe;
   const nombre = creation.members.length;
   if (nombre < 2 || nombre > 5) {
-    const raison = nombre === 0 ? 'Aucun membre après filtrage.' : nombre === 1 ? 'Un seul membre après filtrage.' : 'Plus de cinq membres après filtrage.';
-    return { equipe: null, rapport: [`${raison} Aucune équipe créée ; le lead de la source n’est appliqué à personne.`] };
+    const raison = nombre === 0 ? r.aucunMembre : nombre === 1 ? r.unSeulMembre : r.plusDeCinq;
+    return { equipe: null, rapport: [`${raison} ${r.aucuneEquipeCreee}`] };
   }
-  const resultat = creerEquipeOptimizer(contexte, creation);
-  if (resultat.rapport.length) return { equipe: null, rapport: [...resultat.rapport, 'Aucune équipe créée ; le lead de la source n’est appliqué à personne.'] };
+  const resultat = creerEquipeOptimizer(contexte, creation, t);
+  if (resultat.rapport.length) return { equipe: null, rapport: [...resultat.rapport, r.aucuneEquipeCreee] };
   return { equipe: resultat.teams.find(e => e.id === creation.id)!, rapport: [] };
 }

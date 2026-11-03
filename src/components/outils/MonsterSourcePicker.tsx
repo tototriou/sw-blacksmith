@@ -8,6 +8,7 @@ import { Monster } from '../../types';
 import { formesJouables } from '../../lib/monsterForms';
 import MonsterAvatar from '../MonsterAvatar';
 import ExclusionCandidateRow from './ExclusionCandidateRow';
+import { useTraduction } from '../../hooks/useLangue';
 
 // ⚠️ **Deux modes, UN SEUL composant** (voir
 // docs/02-app/optimizer/,
@@ -53,6 +54,7 @@ export default function MonsterSourcePicker(props: Props) {
 function AccountPicker({ candidates, onPick, placeholder }: AccountModeProps) {
   const [query, setQuery] = useState('');
   const idBase = useId();
+  const rech = useTraduction().optimizer.recherche;
 
   const results = useNameFilteredResults(candidates, query);
 
@@ -70,20 +72,20 @@ function AccountPicker({ candidates, onPick, placeholder }: AccountModeProps) {
         {...nav.inputProps}
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        placeholder={placeholder ?? 'Rechercher un monstre…'}
+        placeholder={placeholder ?? rech.placeholder}
         icone={<Search className="h-4 w-4" />}
       />
 
       {nav.open && (
         <Flottant
           {...nav.listProps}
-          aria-label="Résultats de la recherche"
+          aria-label={rech.resultats}
           rembourrage="aucun"
           className="max-h-[300px] overflow-y-auto"
         >
           {results.length === 0 ? (
             <div className="px-3 py-2 text-ink-dim text-[12.5px]">
-              {candidates.length === 0 ? 'Aucun monstre dans cette source.' : 'Aucun monstre trouvé.'}
+              {candidates.length === 0 ? rech.aucunDansSource : rech.aucunTrouve}
             </div>
           ) : (
             results.map((c, i) => {
@@ -119,6 +121,7 @@ function AccountPicker({ candidates, onPick, placeholder }: AccountModeProps) {
 function BestiaryPicker({ candidates, onPick, placeholder, disponibilite }: BestiaryModeProps) {
   const [query, setQuery] = useState('');
   const idBase = useId();
+  const rech = useTraduction().optimizer.recherche;
 
   const jouables = useMemo(() => formesJouables(candidates), [candidates]);
   // `useNameFilteredResults` est générique sur `{ monster: Monster }` (déjà
@@ -142,19 +145,19 @@ function BestiaryPicker({ candidates, onPick, placeholder, disponibilite }: Best
         {...nav.inputProps}
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        placeholder={placeholder ?? 'Rechercher un monstre…'}
+        placeholder={placeholder ?? rech.placeholder}
         icone={<Search className="h-4 w-4" />}
       />
 
       {nav.open && (
         <Flottant
           {...nav.listProps}
-          aria-label="Résultats de la recherche"
+          aria-label={rech.resultats}
           rembourrage="aucun"
           className="max-h-[300px] overflow-y-auto"
         >
           {results.length === 0 ? (
-            <div className="px-3 py-2 text-ink-dim text-[12.5px]">Aucun monstre trouvé.</div>
+            <div className="px-3 py-2 text-ink-dim text-[12.5px]">{rech.aucunTrouve}</div>
           ) : (
             results.map((r, i) => {
               const estActif = i === nav.actif;

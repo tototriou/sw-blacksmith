@@ -7,6 +7,9 @@ import {
   artifactSubName,
 } from '../../lib/effects';
 import { artifactScore, artifactEfficiency, maxRolls, isFullStack } from '../../lib/artifacts';
+import { useLangue, useTraduction } from '../../hooks/useLangue';
+import { formatNombre } from '../../i18n/format';
+import { nomGrade } from '../../i18n/jeu';
 import { Kpi, Panel, pct, fmt, CARTE_CHIFFRES_DOIGT } from './SummaryBits';
 import ArtifactsTop from './ArtifactsTop';
 
@@ -46,9 +49,10 @@ const TOP_N = 100;
 // 300-399 contre 400-499, aucun recouvrement) : il faut les distinguer. Mais
 // répéter chaque panneau deux fois doublait la hauteur de la page, et le résumé
 // doit tenir d'un coup d'œil — d'où deux colonnes dans le MÊME tableau.
-const KINDS: { key: ArtifactKind; label: string; tone: string }[] = [
-  { key: 'element', label: 'Attribut', tone: 'rgb(var(--pal-3))' },
-  { key: 'archetype', label: 'Type', tone: 'rgb(var(--pal-4))' },
+// Le nom de chaque sorte : `artefactsCompte.sortes` du dictionnaire.
+const KINDS: { key: ArtifactKind; tone: string }[] = [
+  { key: 'element', tone: 'rgb(var(--pal-3))' },
+  { key: 'archetype', tone: 'rgb(var(--pal-4))' },
 ];
 
 const moyenne = (xs: number[]) => (xs.length ? xs.reduce((x, y) => x + y, 0) / xs.length : 0);
@@ -122,6 +126,11 @@ function analyse(arts: ArtifactDetail[]) {
 type Analyse = ReturnType<typeof analyse>;
 
 export default function ArtifactsSummary({ artifacts }: Props) {
+  const textes = useTraduction();
+  const jeu = textes.jeu;
+  const ac = textes.artefactsCompte;
+  const langue = useLangue();
+  const n = (v: number) => formatNombre(v, langue);
   const s = useMemo(() => {
     const par = Object.fromEntries(
       KINDS.map((k) => [k.key, analyse(artifacts.filter((a) => a.kind === k.key))])
@@ -132,7 +141,7 @@ export default function ArtifactsSummary({ artifacts }: Props) {
   if (!s.total) {
     return (
       <p className="rounded-xl border border-border bg-panel px-4 py-6 text-center text-sm text-ink-dim">
-        Aucun artéfact dans l'inventaire importé.
+        {ac.aucunInventaire}
       </p>
     );
   }
@@ -149,9 +158,9 @@ export default function ArtifactsSummary({ artifacts }: Props) {
           même gabarit que le Résumé des runes) : « Résumé » et le nombre
           d'artéfacts. Au doigt, la barre du haut dit déjà la vue. */}
       <div className="hidden items-center gap-2.5 lg:flex">
-        <h1 className="font-display text-xl tracking-wide text-ink">Résumé</h1>
+        <h1 className="font-display text-xl tracking-wide text-ink">{ac.resume}</h1>
         <span className="rounded-full border border-border-soft bg-panel2 px-2 py-0.5 font-mono text-micro text-ink-dim">
-          {s.total.toLocaleString('fr-FR')} artéfact{s.total > 1 ? 's' : ''}
+          {ac.compte(n(s.total), s.total)}
         </span>
       </div>
 
@@ -165,41 +174,37 @@ export default function ArtifactsSummary({ artifacts }: Props) {
                    ${CARTE_CHIFFRES_DOIGT}`}
       >
         <Kpi
-          label="Artéfacts"
-          value={s.total.toLocaleString('fr-FR')}
-          sub={
-            aMonter > 0
-              ? `${A.total} attribut · ${T.total} type · ${aMonter} à monter`
-              : `${A.total} attribut · ${T.total} type`
-          }
+          label={ac.titre}
+          value={n(s.total)}
+          sub={ac.parSorte(A.total, T.total) + (aMonter > 0 ? ac.aMonter(aMonter) : '')}
           bandeau
           premier
         />
         <Kpi
-          label={`Eff. moy. · Attribut`}
+          label={ac.effMoyenne(ac.sortes.element)}
           value={`${fmt(A.topMean)} %`}
-          sub={A.topN < TOP_N ? `sur ${A.topN}` : `top ${TOP_N} · méd. ${fmt(A.topMedian)} %`}
+          sub={A.topN < TOP_N ? ac.surN(A.topN) : ac.topMediane(TOP_N, fmt(A.topMedian))}
           tone={KINDS[0].tone}
           bandeau
         />
         <Kpi
-          label={`Eff. moy. · Type`}
+          label={ac.effMoyenne(ac.sortes.archetype)}
           value={`${fmt(T.topMean)} %`}
-          sub={T.topN < TOP_N ? `sur ${T.topN}` : `top ${TOP_N} · méd. ${fmt(T.topMedian)} %`}
+          sub={T.topN < TOP_N ? ac.surN(T.topN) : ac.topMediane(TOP_N, fmt(T.topMedian))}
           tone={KINDS[1].tone}
           bandeau
         />
         <Kpi
-          label="Meilleur score"
-          value={Math.max(A.bestScore, T.bestScore).toLocaleString('fr-FR')}
-          sub={`attribut ${A.bestScore} · type ${T.bestScore}`}
+          label={ac.meilleurScore}
+          value={n(Math.max(A.bestScore, T.bestScore))}
+          sub={ac.scoresParSorte(A.bestScore, T.bestScore)}
           tone="rgb(var(--star))"
           bandeau
         />
         <Kpi
-          label="≥ 90 % d'eff."
-          value={(A.over90 + T.over90).toLocaleString('fr-FR')}
-          sub={`${A.over90} attribut · ${T.over90} type`}
+          label={ac.plus90}
+          value={n(A.over90 + T.over90)}
+          sub={ac.parSorte(A.over90, T.over90)}
           tone="rgb(var(--pal-2))"
           bandeau
         />
@@ -207,9 +212,9 @@ export default function ArtifactsSummary({ artifacts }: Props) {
             avait été rebaptisé « rolls concentrés », ce qui obligeait à
             demander ce que ça voulait dire. */}
         <Kpi
-          label="Quad rolls"
-          value={(A.fullStack + T.fullStack).toLocaleString('fr-FR')}
-          sub={`${A.fullStack} attribut · ${T.fullStack} type`}
+          label={ac.quadRolls}
+          value={n(A.fullStack + T.fullStack)}
+          sub={ac.parSorte(A.fullStack, T.fullStack)}
           tone="rgb(var(--star))"
           bandeau
         />
@@ -217,7 +222,7 @@ export default function ArtifactsSummary({ artifacts }: Props) {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* ---- Distribution : les deux sortes DANS le même tableau -------- */}
-        <Panel title="Distribution d'efficience">
+        <Panel title={ac.distribution}>
           <Deux />
           <div className="mt-1.5 flex flex-col gap-1.5">
             {EFF_BUCKETS.map((b, i) => (
@@ -233,7 +238,7 @@ export default function ArtifactsSummary({ artifacts }: Props) {
         </Panel>
 
         {/* ---- Raretés ---------------------------------------------------- */}
-        <Panel title="Raretés">
+        <Panel title={ac.raretes}>
           <div className="flex flex-col gap-3">
             {KINDS.map((k) => {
               const a = s.par[k.key];
@@ -241,7 +246,7 @@ export default function ArtifactsSummary({ artifacts }: Props) {
                 <div key={k.key}>
                   <div className="mb-1 flex items-baseline justify-between">
                     <span className="label" style={{ color: k.tone }}>
-                      {k.label}
+                      {ac.sortes[k.key]}
                     </span>
                     <span className="font-mono text-micro text-ink-dim">{a.total}</span>
                   </div>
@@ -251,7 +256,7 @@ export default function ArtifactsSummary({ artifacts }: Props) {
                         r.n > 0 && (
                           <div
                             key={r.rarity}
-                            title={`${RARITY_META[r.rarity].label} — ${r.n}`}
+                            title={`${nomGrade(jeu, r.rarity)} — ${r.n}`}
                             style={{
                               width: `${pct(r.n, a.total)}%`,
                               background: RARITY_META[r.rarity].color,
@@ -269,7 +274,7 @@ export default function ArtifactsSummary({ artifacts }: Props) {
                             className="inline-block w-1.5 h-1.5 rounded-full ring-1 ring-inset ring-black/20"
                             style={{ background: RARITY_META[r.rarity].color }}
                           />
-                          {RARITY_META[r.rarity].label} <b className="text-ink">{r.n}</b>
+                          {nomGrade(jeu, r.rarity)} <b className="text-ink">{r.n}</b>
                         </span>
                       ))}
                   </div>
@@ -279,11 +284,11 @@ export default function ArtifactsSummary({ artifacts }: Props) {
           </div>
 
           <div className="mt-3 border-t border-border pt-3 flex flex-col gap-1.5">
-            <p className="label">Stats principales</p>
+            <p className="label">{ac.statsPrincipales}</p>
             {[...new Set([...A.mains, ...T.mains].map((m) => m.code))].map((code) => (
               <LigneDouble
                 key={code}
-                label={ARTIFACT_MAIN[code]?.label ?? `#${code}`}
+                label={ARTIFACT_MAIN[code] ? jeu.stats[ARTIFACT_MAIN[code].stat] : `#${code}`}
                 gauche={A.mains.find((m) => m.code === code)?.n ?? 0}
                 droite={T.mains.find((m) => m.code === code)?.n ?? 0}
                 max={Math.max(...A.mains.map((m) => m.n), ...T.mains.map((m) => m.n))}
@@ -302,12 +307,10 @@ export default function ArtifactsSummary({ artifacts }: Props) {
           lieu d'être éparpillée. Ce panneau dit SUR QUOI ils sont tombés.
           ⚠️ Deux colonnes disjointes — les propriétés d'attribut et de type
           n'ont aucun recouvrement. */}
-      <Panel title="Quad rolls · sur quelle propriété">
+      <Panel title={ac.quadRollsPropriete}>
         {A.fullStack + T.fullStack === 0 ? (
           <p className="text-xs text-ink-dim">
-            Aucun quad roll dans l'inventaire. Il faut un artéfact{' '}
-            <b>légendaire</b> dont les 4 améliorations tombent sur la même
-            propriété — c'est rare.
+            {ac.aucunQuadAvant} <b>{ac.aucunQuadGras}</b> {ac.aucunQuadApres}
           </p>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-6 gap-y-1.5">
@@ -317,10 +320,10 @@ export default function ArtifactsSummary({ artifacts }: Props) {
                 <div key={k.key} className="flex flex-col gap-1.5">
                   <div className="mb-0.5 flex items-baseline justify-between">
                     <span className="label" style={{ color: k.tone }}>
-                      {k.label}
+                      {ac.sortes[k.key]}
                     </span>
                     <span className="font-mono text-micro text-ink-dim">
-                      {a.fullStack} quad roll{a.fullStack > 1 ? 's' : ''}
+                      {ac.nQuadRolls(a.fullStack)}
                     </span>
                   </div>
                   {a.quads.length === 0 && (
@@ -330,12 +333,12 @@ export default function ArtifactsSummary({ artifacts }: Props) {
                     <div key={q.code} className="flex items-center gap-2.5">
                       <span
                         className="flex-1 min-w-0 truncate font-mono text-micro text-ink-dim"
-                        title={artifactSubLabel(q.code)}
+                        title={artifactSubLabel(q.code, jeu)}
                       >
                         {/* `artifactSubName` plutôt qu'un `replace` maison : il
                             gère les libellés dont la valeur est au milieu
                             (« Dégâts add. par X% des PV »). */}
-                        {artifactSubName(q.code)}
+                        {artifactSubName(q.code, jeu)}
                       </span>
                       <div className="h-2 w-[64px] flex-none rounded-full bg-panel2 overflow-hidden">
                         <div
@@ -366,6 +369,7 @@ export default function ArtifactsSummary({ artifacts }: Props) {
 // En-tête des lignes doubles : dit une fois quelle colonne est quoi, au lieu de
 // répéter les libellés sur chaque ligne.
 function Deux() {
+  const sortes = useTraduction().artefactsCompte.sortes;
   return (
     <div className="flex items-center gap-2.5 pb-1 border-b border-border/60">
       <span className="w-[86px] flex-none" />
@@ -376,7 +380,7 @@ function Deux() {
           className="w-[52px] flex-none text-right label"
           style={{ color: k.tone }}
         >
-          {k.label}
+          {sortes[k.key]}
         </span>
       ))}
     </div>
@@ -396,6 +400,8 @@ function LigneDouble({
   droite: number;
   max: number;
 }) {
+  const sortes = useTraduction().artefactsCompte.sortes;
+  const langue = useLangue();
   return (
     <div className="flex items-center gap-2.5">
       <span className="w-[86px] flex-none font-mono text-micro text-ink-dim truncate" title={label}>
@@ -411,22 +417,22 @@ function LigneDouble({
         <div
           className="h-full transition-all"
           style={{ width: `${max ? (gauche / (max * 2)) * 100 : 0}%`, background: KINDS[0].tone }}
-          title={`${KINDS[0].label} — ${gauche}`}
+          title={`${sortes.element} — ${gauche}`}
         />
         <div
           className="h-full transition-all"
           style={{ width: `${max ? (droite / (max * 2)) * 100 : 0}%`, background: KINDS[1].tone }}
-          title={`${KINDS[1].label} — ${droite}`}
+          title={`${sortes.archetype} — ${droite}`}
         />
       </div>
       {/* ⚠️ Le NOMBRE seul, pas la part : la longueur de barre dit déjà la
           proportion. Répéter « 25,8 % » à côté d'une barre au quart plein
           encode deux fois la même information et alourdit la ligne. */}
       <span className="w-[52px] flex-none text-right font-mono text-micro text-ink tabular-nums">
-        {gauche.toLocaleString('fr-FR')}
+        {formatNombre(gauche, langue)}
       </span>
       <span className="w-[52px] flex-none text-right font-mono text-micro text-ink tabular-nums">
-        {droite.toLocaleString('fr-FR')}
+        {formatNombre(droite, langue)}
       </span>
     </div>
   );

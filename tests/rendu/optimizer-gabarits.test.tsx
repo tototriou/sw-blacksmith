@@ -17,14 +17,15 @@ import EtatMonstreEssentiels from '../../src/components/outils/optimizer/bureau/
 import { ADRESSE_GABARITS, estAdresseGabarits } from '../../src/lib/optimizerGabarits';
 import { parseAccountInventory } from '../../src/lib/importAccount';
 import { DEFAULT_DAMAGE_SETUP } from '../../src/lib/damage';
-import { MOTIF_CONTENU_NON_DEFINI } from '../../src/lib/equipesOptimizer';
+import type { MotifLeadOptimizer } from '../../src/lib/equipesOptimizer';
 import type { Monster } from '../../src/types';
 import { egal, exportSynthetique, faussLocalStorage, monstersJson, ok, titre } from '../outils';
 import { bouton, boutons, rendre, texteVisible } from './outils-rendu';
 import { BOX, CHOISI } from './optimizer.test';
+import { fr } from '../../src/i18n/fr';
 
 const MONSTRES = monstersJson() as Monster[];
-const INVENTAIRE = parseAccountInventory(exportSynthetique());
+const INVENTAIRE = parseAccountInventory(exportSynthetique(), fr);
 const rien = () => {};
 const ref = { current: null };
 
@@ -44,8 +45,8 @@ export function testRenduOptimizerGabaritsComposants() {
   egal((libres.match(/type="checkbox"/g) ?? []).length, 0, 'principales : aucune case (forme 2, surbrillance)');
   egal((libres.match(/aria-pressed="false"/g) ?? []).length, 14, 'principales : chaque principale possible est une valeur de la liste (4 + 5 + 5)');
   const choisies = rendre(<PrincipalesImposeesBureau mainStatsBySlot={{ 4: [9, 10] }} toggleMainStat={rien} />);
-  ok(!!bouton(choisies, 'Slot 4 : Taux Crit, Dmg Crit'), 'principales choisies : le slot résume ses choix');
-  egal(boutons(choisies).filter((b) => b.presse).map((b) => b.texte), ['Taux Crit', 'Dmg Crit'], 'principales choisies : en surbrillance dans la liste');
+  ok(!!bouton(choisies, 'Slot 4 : Tx critiq., Dgts critiq.'), 'principales choisies : le slot résume ses choix');
+  egal(boutons(choisies).filter((b) => b.presse).map((b) => b.texte), ['Tx critiq.', 'Dgts critiq.'], 'principales choisies : en surbrillance dans la liste');
   ok(texteVisible(libres).includes('Statistique principale imposée (slots pairs)'), 'principales : le titre de l\'app');
   egal((libres.match(/data-resume-entier/g) ?? []).length, 3, 'principales : chaque champ fermé montre tout son résumé (resumeEntier)');
   egal((libres.match(/data-reserve-resume/g) ?? []).length, 0, 'principales : aucune hauteur réservée pour toutes les options');
@@ -56,7 +57,7 @@ export function testRenduOptimizerGabaritsComposants() {
   // Le set compact : fermé sur les sets choisis, la grille d'ajout dans la surface.
   const sansSet = rendre(<SetDeRunesCompact setPickerSectionRef={ref} setPickerInvalid={false} comboSets={[]} onChangeSets={rien} />);
   ok(!!bouton(sansSet, 'Set de runes recherché : Aucun'), 'set : sans choix, la liste dit « Aucun »');
-  ok(!!bouton(sansSet, 'Swift') && !!bouton(sansSet, 'Fight'), 'set : la grille d\'ajout d\'aujourd\'hui est dans la surface (Set principal, Set secondaire)');
+  ok(!!bouton(sansSet, 'Rapide') && !!bouton(sansSet, 'Combat'), 'set : la grille d\'ajout d\'aujourd\'hui est dans la surface (Set principal, Set secondaire)');
   ok(!texteVisible(sansSet).includes('Critères de recherche'), 'set : au bureau, sans le titre « Critères de recherche » du téléphone (la colonne situe la section)');
   const message = 'Sélectionne au moins un set avant de lancer la recherche.';
   // Le message se met sur la ligne du titre : aucune ligne réservée sous la liste.
@@ -78,7 +79,7 @@ export function testRenduOptimizerGabaritsComposants() {
   // est posé à droite du titre, sur sa ligne.)
   const aDroiteDuTitre = (html: string) => texteVisible(/Set de runes recherché<\/p>(<span[^>]*>[^<]*<\/span>)?/.exec(html)?.[1] ?? '');
   const deplieViolent = deplie(false, ['violent']);
-  ok(!bouton(deplieViolent, 'Set de runes recherché : Violent') && !!bouton(deplieViolent, 'Retirer Violent') && !!bouton(deplieViolent, 'Swift')
+  ok(!bouton(deplieViolent, 'Set de runes recherché : Violente') && !!bouton(deplieViolent, 'Retirer Violente') && !!bouton(deplieViolent, 'Rapide')
     && aDroiteDuTitre(deplieViolent) === '' && (texteVisible(deplieViolent).match(/4\/6 runes/g) ?? []).length === 1
     && aDroiteDuTitre(rendre(<SetDeRunesCompact setPickerSectionRef={ref} setPickerInvalid={false} comboSets={['violent']} onChangeSets={rien} />)) === '',
   'set déplié : la grille du téléphone à la place de la liste, son compte le seul, rien à droite du titre (compact : rien non plus)');
@@ -89,14 +90,14 @@ export function testRenduOptimizerGabaritsComposants() {
   'set déplié : coffre en creux, sur toute sa largeur, principal sur 3 colonnes et secondaire sur 4 avant mesure');
   ok(aDroiteDuTitre(deplie(true, [])) === message, 'set déplié refusé : le message à droite du titre');
   const repete = rendre(<SetDeRunesCompact setPickerSectionRef={ref} setPickerInvalid={false} comboSets={['blade', 'blade', 'fight']} onChangeSets={rien} />);
-  ok(!!bouton(repete, 'Set de runes recherché : Blade, Blade, Fight'), 'set : un même set choisi deux fois se résume deux fois');
-  ok(!!bouton(repete, 'Retirer Blade') && texteVisible(repete).includes('6/6 runes'), 'set : chaque set choisi garde sa croix de retrait');
+  ok(!!bouton(repete, 'Set de runes recherché : Lame, Lame, Combat'), 'set : un même set choisi deux fois se résume deux fois');
+  ok(!!bouton(repete, 'Retirer Lame') && texteVisible(repete).includes('6/6 runes'), 'set : chaque set choisi garde sa croix de retrait');
 
   // Les conditions : les libellés d'aujourd'hui, dans sa carte, en variante bureau.
   const conditionsHtml = rendre(<ConditionsBureau excludeBase setExcludeBase={rien} baseOf={() => 0} artifactFloorOf={() => 0}
     minStats={{}} maxStats={{}} setMinStats={rien} setMaxStats={rien} />);
   const conditions = texteVisible(conditionsHtml);
-  ok(['Conditions', 'Stats de base exclues', 'Taux Crit', 'Réinitialiser les conditions'].every((t) => conditions.includes(t)), 'conditions : les libellés d\'aujourd\'hui');
+  ok(['Conditions', 'Stats de base exclues', 'Tx critiq.', 'Réinitialiser les conditions'].every((t) => conditions.includes(t)), 'conditions : les libellés d\'aujourd\'hui');
   ok(/grid-cols-\[auto_auto_auto\]/.test(conditionsHtml) && !/minmax\(90px,auto\)/.test(conditionsHtml), 'conditions : variante bureau, la colonne des libellés à la largeur du plus long');
 
   // État de mon monstre : buffs et lead, sans les sets d'aura.
@@ -105,12 +106,12 @@ export function testRenduOptimizerGabaritsComposants() {
   ok(['Buff ATQ', 'Buff DEF', 'Buff VIT'].every((b) => !!bouton(etat, b)), 'état : les trois buffs');
   ok(/aria-label="Type de leader skill"/.test(etat), 'état : le choix du lead');
   ok(!texteVisible(etat).includes('Sets d\'aura des autres monstres'), 'état : les sets d\'aura n\'y sont plus');
-  const membre = (motif: string) => texteVisible(rendre(<EtatMonstreEssentiels setup={DEFAULT_DAMAGE_SETUP} maj={rien} etroit={false} equipe motifLead={motif}
+  const membre = (motif: MotifLeadOptimizer) => texteVisible(rendre(<EtatMonstreEssentiels setup={DEFAULT_DAMAGE_SETUP} maj={rien} etroit={false} equipe motifLead={motif}
     rappelsBuffs={[]} />));
   const inactive = 'Cette portée de lead est inactive pour ce contenu.';
-  ok(membre(inactive).includes(inactive), 'état d\'un membre d\'équipe : le motif du lead inactif');
-  ok(!membre(inactive).includes('Lead effectif de l’équipe'), 'état d\'un membre d\'équipe : aucune phrase d\'explication du lead d\'équipe');
-  ok(!membre(MOTIF_CONTENU_NON_DEFINI).includes('n’est pas défini'), 'état d\'un membre d\'équipe : jamais le motif « contenu de combat non défini »');
+  ok(membre('porteeInactive').includes(inactive), 'état d\'un membre d\'équipe : le motif du lead inactif');
+  ok(!membre('porteeInactive').includes('Lead effectif de l’équipe'), 'état d\'un membre d\'équipe : aucune phrase d\'explication du lead d\'équipe');
+  ok(!membre('contenuNonDefini').includes('n’est pas défini'), 'état d\'un membre d\'équipe : jamais le motif « contenu de combat non défini »');
 }
 
 function BancVue() {
@@ -159,7 +160,7 @@ export function testRenduOptimizerGabaritsVue() {
 
   // Les états qui partent de l'état réel.
   const setReel = html.split('data-gabarit="set"')[1].split('data-etat="reel"')[1].split('data-etat=')[0];
-  ok(!!bouton(setReel, 'Set de runes recherché : Violent'), 'set « de l\'Optimizer » : le set de l\'état réel');
+  ok(!!bouton(setReel, 'Set de runes recherché : Violente'), 'set « de l\'Optimizer » : le set de l\'état réel');
 }
 
 export function testRenduOptimizerGabaritsAdresse() {

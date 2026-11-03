@@ -236,6 +236,11 @@ décochant.
   Libre »), son infobulle le résumé complet, tronqué à l'écran (sauf
   `resumeEntier`, plus bas).
 - `onChange` reçoit les valeurs cochées dans l'ordre des options.
+- **Une option peut porter une forme RÉDUITE** (`court`) : le champ fermé, qui
+  manque de place, l'écrit (« PV% ») et la surface ouverte garde le libellé
+  entier (« PV % »), comme le jeu, en toutes lettres quand il y a la place.
+  Né des principales imposées du bureau, dont les cinq libellés du jeu ne
+  tenaient plus sur deux lignes.
 
 Deux axes de STRUCTURE, nés de son second usage, le set de runes recherché :
 son choix est un **multiensemble** (deux fois le même set), qu'une case par
@@ -267,13 +272,14 @@ remplit les six emplacements. Sans eux, la liste gère seule son ouverture.
 
 Un axe de RÉSUMÉ, né des principales du bureau : **`resumeEntier`** fait
 montrer au champ fermé toutes les valeurs choisies, à la ligne entre deux
-valeurs (chacune insécable : « Taux Crit » ne se coupe pas), rien de tronqué.
+valeurs (chacune insécable : « Tx critiq. » ne se coupe pas), rien de tronqué.
 
 - ⚠️ **Le champ prend la hauteur de ce qu'il montre** (une ligne pour
-  « Libre », deux quand les choix l'exigent), **et la surface ne descend
+  « Libre », plusieurs quand les choix l'exigent — trois pour les cinq
+  principales d'un slot), **et la surface ne descend
   jamais sous le doigt** : ouverte, elle se pose à la hauteur qu'avait le
   champ à l'ouverture (mesurée au seul changement d'ouverture) et y reste.
-  Un choix qui fait passer le champ à deux lignes l'allonge sous elle ;
+  Un choix qui fait passer le champ à une ligne de plus l'allonge sous elle ;
   fermée, la liste montre tout. Ce qui suit le champ descend : la règle
   protège la cible du clic, pas ce qui est dessous. Les rangées restent
   compactes : aucune hauteur réservée pour les options non choisies.

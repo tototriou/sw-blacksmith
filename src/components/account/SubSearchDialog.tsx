@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Modale } from '../../ui/Dialogs';
 import Bouton from '../../ui/Bouton';
+import { useTraduction } from '../../hooks/useLangue';
 
 // Un critère de recherche : une propriété et son intervalle.
 //
@@ -49,6 +50,8 @@ export default function SubSearchDialog({
   onValider: (c: Critere[]) => void;
   onClose: () => void;
 }) {
+  const textes = useTraduction();
+  const s = textes.filtresRunes;
   // ⚠️ Brouillon LOCAL : la modale se valide par « OK » ou s'abandonne. Écrire
   // directement dans l'état de la page ferait filtrer la liste derrière à chaque
   // frappe, et « Annuler » ne voudrait plus rien dire.
@@ -102,7 +105,7 @@ export default function SubSearchDialog({
           qu'on est en train de faire, pas une phrase à lire. */}
       <div className="mb-2 flex items-baseline gap-2">
         <h2 id="sub-search-titre" className="text-sm font-bold text-ink">
-          Sous-propriétés
+          {s.sousProprietes}
         </h2>
         <span className="ml-auto flex-none font-mono text-micro text-ink-dim">
           {brouillon.length}/{max}
@@ -160,14 +163,14 @@ export default function SubSearchDialog({
                     « Min », comme s'il n'était pas rempli. */}
                 <Borne
                   valeur={c?.min || undefined}
-                  placeholder="Min"
+                  placeholder={s.min}
                   disabled={bloque}
                   onChange={(v) => poserBorne(o.code, 'min', v)}
                 />
                 <span className="font-mono text-micro text-ink-dim">~</span>
                 <Borne
                   valeur={c?.max}
-                  placeholder="Max"
+                  placeholder={s.max}
                   disabled={bloque}
                   onChange={(v) => poserBorne(o.code, 'max', v)}
                 />
@@ -188,9 +191,9 @@ export default function SubSearchDialog({
           className="text-xs text-ink-dim underline transition hoverable:text-bad
                      disabled:cursor-not-allowed disabled:no-underline disabled:opacity-30"
         >
-          Réinitialiser
+          {s.reinitialiser}
         </button>
-        <Bouton onClick={onClose} fond="plein" taille="sm" libelle="Annuler" className="ml-auto" />
+        <Bouton onClick={onClose} fond="plein" taille="sm" libelle={textes.commun.annuler} className="ml-auto" />
         {/* ⚠️ PAS d'`autoFocus` ici : le bouton est en bas d'une liste de 40
             propriétés, et le navigateur défile jusqu'à l'élément focalisé —
             la modale s'ouvrait donc tout en bas, sur ses boutons, la liste
@@ -200,7 +203,7 @@ export default function SubSearchDialog({
           ton="accent"
           fond="doux"
           taille="sm"
-          libelle="OK"
+          libelle={s.ok}
         />
       </div>
     </Modale>

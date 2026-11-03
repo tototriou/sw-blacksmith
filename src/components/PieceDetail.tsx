@@ -13,7 +13,9 @@ import {
 } from '../lib/effects';
 import { artifactScore, artifactEfficiency } from '../lib/artifacts';
 import { COMPACT, useMediaQuery } from '../hooks/useMediaQuery';
-import { RUNE_METRICS, formatRuneMetric, useRuneMetric } from '../hooks/useRuneMetric';
+import { choixMesure, formatRuneMetric, useRuneMetric } from '../hooks/useRuneMetric';
+import { useTraduction } from '../hooks/useLangue';
+import { bonusSet, nomArchetype, nomElement, nomGrade, type LexiqueJeu } from '../i18n/jeu';
 import { ZoneCliquable } from '../ui';
 
 // Détail d'une PIÈCE ÉQUIPÉE — une rune, un artéfact —, façon jeu.
@@ -352,11 +354,14 @@ export function RuneDetailBox({
 }) {
   const auDoigt = useMediaQuery(COMPACT);
   const resserre = compact ?? auDoigt;
-  const rarity = RARITY_META[rune.rarity] ?? RARITY_META[1];
+  const textes = useTraduction();
+  const jeu = textes.jeu;
+  const grade = rune.rarity in RARITY_META ? rune.rarity : 1;
+  const rarity = RARITY_META[grade];
   const bonus = SET_BONUS[rune.set];
   const ancient = rune.rank > 10;
   const metric = useRuneMetric();
-  const metricHint = RUNE_METRICS.find((m) => m.key === metric)?.hint;
+  const metricHint = choixMesure(textes).find((m) => m.key === metric)?.hint;
 
   // ── Détail / total, au clic ─────────────────────────────────────────────
   //
@@ -380,11 +385,11 @@ export function RuneDetailBox({
       etroit={etroit}
       encadre={encadre}
       imbrique={imbrique}
-      principale={formatRuneEffect(rune.main)}
-      secondaire={rune.innate ? formatRuneEffect(rune.innate) : undefined}
+      principale={formatRuneEffect(rune.main, jeu)}
+      secondaire={rune.innate ? formatRuneEffect(rune.innate, jeu) : undefined}
       rarete={{
-        label: rarity.label,
-        labelCourt: rarity.court,
+        label: nomGrade(jeu, grade),
+        labelCourt: nomGrade(jeu, grade, true),
         bg: rarity.bg,
         color: rarity.color,
         marque: ancient ? <AncientMark size={resserre ? 10 : 12} color={rarity.color} /> : undefined,
@@ -420,11 +425,8 @@ export function RuneDetailBox({
       }
       lignes={rune.subs.map((s, i) => {
         const def = RUNE_EFFECT[s.code];
-        const label = def
-          ? def.label.endsWith('%')
-            ? def.label.slice(0, -1)
-            : def.label
-          : `#${s.code}`;
+        // La stat seule : la ligne porte déjà le « % » après sa valeur.
+        const label = def ? jeu.stats[def.stat] : `#${s.code}`;
         const suffix = def?.suffix ?? '';
         const grind = s.grind ?? 0;
         const base = s.value - grind;
@@ -456,26 +458,20 @@ export function RuneDetailBox({
           </Ligne>
         );
       })}
-      pied={bonus ? `${bonus.pieces} Set : ${bonus.label}` : undefined}
+      pied={bonus ? jeu.piedSet(bonus.pieces, bonusSet(jeu, rune.set) ?? '') : undefined}
     />
   );
 }
 
 // ── Artéfact ────────────────────────────────────────────────────────────────
 
-// Libellé de la catégorie d'artéfact, pour la ligne du bas. Les noms du JEU :
-// **Attribut** et **Type** — `element` / `archetype` ne sont que les clés des
-// données com2us et ne doivent pas remonter à l'écran.
-const ELEMENT_FR: Record<string, string> = {
-  fire: 'Feu', water: 'Eau', wind: 'Vent', light: 'Lumière', dark: 'Ténèbres', unknown: '—',
-};
-const ARCHETYPE_FR: Record<string, string> = {
-  attack: 'Attaque', defense: 'Défense', hp: 'PV', support: 'Support',
-};
-function artifactTypeLabel(a: ArtifactDetail): string {
+// Libellé de la catégorie d'artéfact, pour la ligne du bas. Les noms du JEU
+// (« Attribut · Feu », « Type · Support ») — `element` / `archetype` ne sont que
+// les clés des données com2us et ne doivent pas remonter à l'écran.
+function artifactTypeLabel(a: ArtifactDetail, jeu: LexiqueJeu): string {
   return a.kind === 'element'
-    ? `Attribut · ${ELEMENT_FR[a.element ?? 'unknown'] ?? '—'}`
-    : `Type · ${ARCHETYPE_FR[a.archetype ?? ''] ?? '—'}`;
+    ? `${jeu.sortesArtefact.element} · ${a.element && a.element !== 'unknown' ? nomElement(jeu, a.element) : '—'}`
+    : `${jeu.sortesArtefact.archetype} · ${nomArchetype(jeu, a.archetype)}`;
 }
 
 export function ArtifactDetailBox({
@@ -490,17 +486,20 @@ export function ArtifactDetailBox({
 }) {
   const auDoigt = useMediaQuery(COMPACT);
   const resserre = compact ?? auDoigt;
-  const rarity = RARITY_META[artifact.rarity] ?? RARITY_META[1];
+  const textes = useTraduction();
+  const jeu = textes.jeu;
+  const grade = artifact.rarity in RARITY_META ? artifact.rarity : 1;
+  const rarity = RARITY_META[grade];
   // Réglage global (menu ⚙), partagé avec les runes — pas un état local.
   const metric = useRuneMetric();
-  const metricHint = RUNE_METRICS.find((m) => m.key === metric)?.hint;
+  const metricHint = choixMesure(textes).find((m) => m.key === metric)?.hint;
 
   return (
     <PieceDetailBox
       resserre={resserre}
       encadre={encadre}
-      principale={formatArtifactMain(artifact.main)}
-      rarete={{ label: rarity.label, bg: rarity.bg, color: rarity.color }}
+      principale={formatArtifactMain(artifact.main, jeu)}
+      rarete={{ label: nomGrade(jeu, grade), bg: rarity.bg, color: rarity.color }}
       // ⚠️ Le même libellé que pour une rune (« Efficience » / « Score SW »), et
       // non une jauge muette suivie d'un nombre : les deux mesures sont la même
       // somme à un facteur près (docs/02-app/compte/ §3), et rien ne
@@ -525,7 +524,7 @@ export function ArtifactDetailBox({
       // au-dessus.
       lignes={artifact.subs.map((s, j) => {
         const procs = s.rolls ?? 0;
-        const { avant, valeur, apres } = splitArtifactSub(s);
+        const { avant, valeur, apres } = splitArtifactSub(s, jeu);
         return (
           <Ligne key={j} resserre={resserre}>
             {/* Pastille de procs : verte dès qu'une amélioration est tombée,
@@ -550,7 +549,7 @@ export function ArtifactDetailBox({
           </Ligne>
         );
       })}
-      pied={artifactTypeLabel(artifact)}
+      pied={artifactTypeLabel(artifact, jeu)}
     />
   );
 }

@@ -25,6 +25,13 @@ const MONSTERS_JSON = fileURLToPath(new URL('../public/data/monsters.json', impo
 const OUT_DIR = fileURLToPath(new URL('../public/data/skills/', import.meta.url));
 const MAX_PAGES = 60;
 
+// SWARFARM ne rattache pas Fast Pace à l'Homunculus lumière (used_on vide).
+// Cette option de son arbre doit rester sélectionnable après régénération.
+const COMPETENCES_SUPPLEMENTAIRES = new Map([
+  [1000204, [10243010]],
+  [1000214, [10243010]],
+]);
+
 // Icône d'effet / de compétence, servie par SWARFARM.
 const skillIcon = (f) => (f ? `https://swarfarm.com/static/herders/images/skills/${f}` : null);
 const effectIcon = (f) => (f ? `https://swarfarm.com/static/herders/images/buffs/${f}` : null);
@@ -184,6 +191,17 @@ async function main() {
     rattachees.set(cible, l);
   }
 
+  // Valider les options avant de toucher aux fiches déjà présentes.
+  const supplementsParMonstre = new Map();
+  for (const [com2usId, options] of COMPETENCES_SUPPLEMENTAIRES) {
+    if (!idsConnus.has(com2usId) || !monstres.has(com2usId)) continue;
+    supplementsParMonstre.set(com2usId, options.map((com2us) => {
+      const c = [...skills.values()].find((s) => s.com2usId === com2us);
+      if (!c) throw new Error(`Compétence supplémentaire absente : ${com2us}`);
+      return c.id;
+    }));
+  }
+
   // ⚠️ Répertoire VIDÉ avant écriture : un monstre retiré de SWARFARM laisserait
   // sinon son fichier derrière lui, et l'app servirait indéfiniment des données
   // qui n'existent plus.
@@ -194,8 +212,10 @@ async function main() {
   let sansSkill = 0;
   for (const [com2usId, info] of monstres) {
     if (!idsConnus.has(com2usId)) continue;
-    const listees = new Set(info.skills);
-    const detail = info.skills
+    const supplements = supplementsParMonstre.get(com2usId) ?? [];
+    const ids = [...new Set([...info.skills, ...supplements])];
+    const listees = new Set(ids);
+    const detail = ids
       .map((id) => skills.get(id))
       .filter(Boolean)
       .map((c) => {

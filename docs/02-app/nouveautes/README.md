@@ -4,8 +4,24 @@ Journal des versions, **destiné aux joueurs** : ce qui a changé, version par
 version. Rangé sous **Ressources**, à côté du Bestiaire et des Mécaniques.
 
 Fichiers : [ReleasesPage.tsx](src/pages/ReleasesPage.tsx) ·
-[releases.ts](src/data/releases.ts) (le contenu) · [App.tsx](src/App.tsx) (route
-et pied de page).
+[releases.ts](src/data/releases.ts) (le contenu, en français) ·
+[releases.en.ts](src/data/releases.en.ts) (le même, en anglais) ·
+[App.tsx](src/App.tsx) (route et pied de page).
+
+## Un journal par langue
+
+⚠️ **Le journal existe en français ET en anglais** (décision de l'utilisateur) :
+`RELEASES` dans releases.ts, `RELEASES_EN` dans releases.en.ts, de **même forme
+entrée pour entrée** — mêmes versions, dates, tags, même nombre de points mis en
+avant, mêmes changements dans le même ordre ; seuls les textes changent.
+`journal(langue)` rend celui de la langue affichée (page, bandeau de l'accueil).
+Une version ou une ligne ajoutée à l'un s'ajoute à l'autre, au même rang :
+`testJournalAligne` ([journal-langues.test.ts](tests/journal-langues.test.ts))
+refuse un journal désaligné, un texte vide ou resté en français. Les mots du jeu
+sont ceux de chaque langue (Swift / Rapide) ; les noms de monstres et de sorts
+restent tels quels. Le numéro de version et l'alignement avec `package.json` ne
+se lisent que dans le français (`testAlignementVersion`) : l'anglais suit par
+construction.
 
 ## Pourquoi une page dans l'app
 
@@ -178,7 +194,8 @@ release tient le rôle que `main` tient d'ordinaire.
 2. **Développer dessus**, commits conventionnels (`feat(scope):`, `fix(scope):`,
    `docs(spec):`).
 3. **Dès le début**, ajouter l'entrée **en tête** de
-   [`src/data/releases.ts`](src/data/releases.ts) — c'est ce que les joueurs
+   [`src/data/releases.ts`](src/data/releases.ts) **et** de sa version anglaise
+   [`src/data/releases.en.ts`](src/data/releases.en.ts) — c'est ce que les joueurs
    liront sur la page **Nouveautés** — avec **`version: null`** : le numéro
    n'est pas encore tranché, la page affiche « En préparation » et masque le
    lien « GitHub ↗ » qui mènerait à un **404**.
@@ -186,7 +203,7 @@ release tient le rôle que `main` tient d'ordinaire.
    - **choisir le numéro** d'après ce que contient la branche (voir la table de
      numérotation ci-dessous) ;
    - l'écrire dans `version` de [`package.json`](package.json) **et** dans
-     l'entrée de `releases.ts`, à la place du `null` ;
+     l'entrée de `releases.ts` et de `releases.en.ts`, à la place du `null` ;
    - vérifier `npx tsc --noEmit`, `npm run lint`, `npm test` et `npm run build`.
 
    ⚠️ **ENTIÈREMENT avant d’ouvrir la PR, et l’ordre n’est pas indicatif.**

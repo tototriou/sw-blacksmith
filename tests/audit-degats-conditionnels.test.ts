@@ -41,6 +41,7 @@ import { StatKey } from '../src/lib/effects';
 import { StatRow, computeStats, monsterBaseStats } from '../src/lib/stats';
 import { ArtifactDetail, RuneDetail } from '../src/types';
 import { egal, monstersJson, ok, titre } from './outils';
+import { fr } from '../src/i18n/fr';
 
 const racine = resolve(new URL('..', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1'));
 const dossierSorts = resolve(racine, 'public/data/skills');
@@ -1299,7 +1300,7 @@ export default function testAuditDegatsConditionnels() {
     ignoreArtifacts: true,
     artifactMainByKind: {},
   });
-  const relue = parseOptimizerRecipe(JSON.stringify(recette)).recipe;
+  const relue = parseOptimizerRecipe(JSON.stringify(recette), fr).recipe;
   egal(relue?.damageSetup, recette.damageSetup, 'UI/recette : le scénario survit à l’export/import');
   const contexteCli = buildRealDamageContext(recette, 14713, []);
   ok(contexteCli != null, 'CLI : le contexte de dégâts réels est reconstruit');
@@ -1319,7 +1320,7 @@ export default function testAuditDegatsConditionnels() {
   };
   const contexteKassandra = buildRealDamageContext(recetteKassandra, 27613, []);
   ok(contexteKassandra != null, 'CLI : le contexte Kassandra avec buffs propres est reconstruit');
-  egal(parseOptimizerRecipe(JSON.stringify(recetteKassandra)).recipe?.damageSetup, recetteKassandra.damageSetup,
+  egal(parseOptimizerRecipe(JSON.stringify(recetteKassandra), fr).recipe?.damageSetup, recetteKassandra.damageSetup,
     'recette récente : le marqueur autres buffs propres traverse l’export/import');
   egal(resolvedBuffsPropresCount(17408, contexteKassandra!.setup), 3,
     'CLI : la recette conserve deux autres buffs et le buff DEF actif');
@@ -1365,14 +1366,14 @@ export default function testAuditDegatsConditionnels() {
   delete ancienneRecette.damageSetup.buffsAlliesCount;
   delete ancienneRecette.damageSetup.atkDebuff;
   delete ancienneRecette.damageSetup.effetsCibleCountAutres;
-  const ancienneRelue = parseOptimizerRecipe(JSON.stringify(ancienneRecette)).recipe;
+  const ancienneRelue = parseOptimizerRecipe(JSON.stringify(ancienneRecette), fr).recipe;
   ok(ancienneRelue?.damageSetup != null, 'ancienne recette sans nouveaux champs toujours lisible');
   ok(!ancienneRelue?.damageSetup?.scenariosEffetsEntreCoups, 'ancienne recette : aucun scénario implicite');
   egal(ancienneRelue?.damageSetup?.buffsPropresCountAutres, undefined,
     'ancienne recette : l’absence du marqueur conserve le compteur inclusif');
   const ancienneKassandra = JSON.parse(JSON.stringify(recetteKassandra));
   delete ancienneKassandra.damageSetup.buffsPropresCountAutres;
-  const ancienneKassandraRelue = parseOptimizerRecipe(JSON.stringify(ancienneKassandra)).recipe;
+  const ancienneKassandraRelue = parseOptimizerRecipe(JSON.stringify(ancienneKassandra), fr).recipe;
   egal(resolvedBuffsPropresCount(17408, ancienneKassandraRelue!.damageSetup!), 2,
     'ancienne recette Kassandra : buff DEF déjà inclus dans le total de deux');
   const ancienCompteur = { ...setupAudit, effetsCibleCountAutres: undefined, effetsCibleCount: { 6907: 2 }, defBreak: true };
@@ -1393,16 +1394,16 @@ export default function testAuditDegatsConditionnels() {
   );
   const recetteAvantDegats = JSON.parse(JSON.stringify(recette));
   delete recetteAvantDegats.damageSetup;
-  ok(parseOptimizerRecipe(JSON.stringify(recetteAvantDegats)).recipe != null, 'recette antérieure au réglage de dégâts toujours lisible');
+  ok(parseOptimizerRecipe(JSON.stringify(recetteAvantDegats), fr).recipe != null, 'recette antérieure au réglage de dégâts toujours lisible');
   const recetteObjectifLegacy = { ...recetteAvantDegats, objective: 'speed_nuker' };
-  ok(parseOptimizerRecipe(JSON.stringify(recetteObjectifLegacy)).recipe != null, 'ancien objectif speed_nuker accepté pour migration');
+  ok(parseOptimizerRecipe(JSON.stringify(recetteObjectifLegacy), fr).recipe != null, 'ancien objectif speed_nuker accepté pour migration');
   const recetteArtefactLegacy = { ...recetteAvantDegats, artifactMainByKind: { element: 'none' } };
-  ok(parseOptimizerRecipe(JSON.stringify(recetteArtefactLegacy)).recipe != null, 'ancien choix d’artéfact none accepté pour migration');
+  ok(parseOptimizerRecipe(JSON.stringify(recetteArtefactLegacy), fr).recipe != null, 'ancien choix d’artéfact none accepté pour migration');
 
   const verifierRefus = (path: string, modifier: (copie: any) => void) => {
     const copie = JSON.parse(JSON.stringify(recette));
     modifier(copie);
-    const resultat = parseOptimizerRecipe(JSON.stringify(copie));
+    const resultat = parseOptimizerRecipe(JSON.stringify(copie), fr);
     ok(resultat.recipe == null, `recette invalide refusée : ${path}`);
     ok(resultat.error?.includes(path) === true, `erreur lisible et localisée : ${path}`);
   };

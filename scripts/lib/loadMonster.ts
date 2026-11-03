@@ -33,6 +33,7 @@ import { runeEfficiency, formatRelicUnique } from '../../src/lib/effects';
 import { ArtifactDetail, GearSet, Monster, RelicDetail, RtaEntry, RuneDetail, SiegeTeam } from '../../src/types';
 import { loadDeckMonster, DeckMonsterArgs } from './deckMonster';
 import { loadMonstersList } from './monstersData';
+import { fr } from '../../src/i18n/fr';
 
 export interface LoadedMonster {
   unitId: number;
@@ -112,7 +113,7 @@ function libelleMonstre(monsterName: string, com2usId?: number): string {
 export function loadBoxMonster(exportPath: string, monsterName: string, com2usId?: number): LoadedMonster {
   const data = parseAccountSource(readFileSync(exportPath, 'utf8'))!;
   const nameByCom2us = loadMonsterNames();
-  const { monsters: box, error } = parseAccountBox(data);
+  const { monsters: box, error } = parseAccountBox(data, fr);
   if (error) console.error('Erreur parse box :', error);
 
   const candidates = exemplairesDuMonstre(box, monsterName, nameByCom2us, com2usId).filter((b) => b.gear);
@@ -120,7 +121,7 @@ export function loadBoxMonster(exportPath: string, monsterName: string, com2usId
   const scoreOf = (b: (typeof candidates)[number]) => (b.gear!.runes ?? []).reduce((s, r) => s + runeEfficiency(r), 0);
   const best = candidates.reduce((a, b) => (scoreOf(b) > scoreOf(a) ? b : a));
 
-  const { runes: allRunes, artifacts: allArtifacts, relics: allRelics } = parseAccountInventory(data);
+  const { runes: allRunes, artifacts: allArtifacts, relics: allRelics } = parseAccountInventory(data, fr);
   return { unitId: best.unitId, com2usId: best.com2usId, monsterName, gear: best.gear!, allRunes, allArtifacts, allRelics };
 }
 
@@ -144,14 +145,14 @@ export function loadBoxMonster(exportPath: string, monsterName: string, com2usId
 export function loadBoxItemsForExclusion(exportPath: string): BoxItem[] {
   const data = parseAccountSource(readFileSync(exportPath, 'utf8'))!;
   const byCom2us = loadAllMonstersByCom2us();
-  const { monsters: box } = parseAccountBox(data);
+  const { monsters: box } = parseAccountBox(data, fr);
   return mapBoxMonsters(box, byCom2us);
 }
 
 export function loadRtaEntriesForExclusion(exportPath: string): Record<string, RtaEntry> {
   const data = parseAccountSource(readFileSync(exportPath, 'utf8'))!;
   const byCom2us = loadAllMonstersByCom2us();
-  const { units, error } = parseAccountJson(data);
+  const { units, error } = parseAccountJson(data, fr);
   if (error) return {};
   const items = mapRtaItems(units, byCom2us);
   const entries: Record<string, RtaEntry> = {};
@@ -165,7 +166,7 @@ export function loadRtaEntriesForExclusion(exportPath: string): Record<string, R
 export function loadSiegeTeamsForExclusion(exportPath: string, defense: boolean): SiegeTeam[] {
   const data = parseAccountSource(readFileSync(exportPath, 'utf8'))!;
   const byCom2us = loadAllMonstersByCom2us();
-  const { decks, error } = defense ? parseSiegeDefense(data) : parseSiegeOffense(data);
+  const { decks, error } = defense ? parseSiegeDefense(data, fr) : parseSiegeOffense(data, fr);
   if (error) return [];
   const { teams } = mapSiegeTeams(decks, byCom2us);
   return teams.map((t, i) => ({
@@ -184,7 +185,7 @@ export function loadRtaMonster(exportPath: string, monsterName: string, com2usId
   const data = parseAccountSource(readFileSync(exportPath, 'utf8'))!;
   const nameByCom2us = loadMonsterNames();
   const speedByCom2us = loadMonsterSpeeds();
-  const { units, error } = parseAccountJson(data);
+  const { units, error } = parseAccountJson(data, fr);
   if (error) throw new Error(`Erreur parse RTA : ${error}`);
 
   const candidates = exemplairesDuMonstre(units, monsterName, nameByCom2us, com2usId).filter((u) => u.gear);
@@ -193,7 +194,7 @@ export function loadRtaMonster(exportPath: string, monsterName: string, com2usId
   const speedOf = (u: (typeof candidates)[number]) => runeSpeedOf(u.flatRuneSpeed, u.swift, baseSpd);
   const best = candidates.reduce((a, b) => (speedOf(b) > speedOf(a) ? b : a));
 
-  const { runes: allRunes, artifacts: allArtifacts, relics: allRelics } = parseAccountInventory(data);
+  const { runes: allRunes, artifacts: allArtifacts, relics: allRelics } = parseAccountInventory(data, fr);
   // `ImportedUnit` n'expose pas l'unitId (non nécessaire à `mapRtaItems`) —
   // absent, pas un problème pour lancer une recherche (seul `gear` compte),
   // seulement pour l'affichage de traçabilité.
@@ -213,7 +214,7 @@ export function loadSiegeMonster(args: DeckMonsterArgs): LoadedMonster {
   // ⚠️ `loadDeckMonster` ne remonte pas l'inventaire d'artéfacts : on le relit
   // ici depuis le même export, plutôt que de laisser un champ vide qui ferait
   // silencieusement chercher parmi RIEN.
-  const { artifacts: allArtifacts, relics: allRelics } = parseAccountInventory(parseAccountSource(readFileSync(args.exportPath, 'utf8'))!);
+  const { artifacts: allArtifacts, relics: allRelics } = parseAccountInventory(parseAccountSource(readFileSync(args.exportPath, 'utf8'))!, fr);
   // `SiegeImportedSlot` n'expose pas l'unitId (voir importAccount.ts) — même
   // absence, même raison que `loadRtaMonster` ci-dessus : sans effet sur la
   // recherche elle-même, seulement sur l'affichage de traçabilité.

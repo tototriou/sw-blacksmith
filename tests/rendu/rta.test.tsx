@@ -92,9 +92,9 @@ export function testRenduRtaPrepa() {
   ok(!!bouton(html, 'Catégorie'), 'bouton de création « Catégorie »');
 
   // Sections : Non classé, les sets, Autre ; leurs compteurs ; leur suppression.
-  for (const s of ['Non classé', 'Swift', 'Violent', 'Despair', 'Autre']) ok(t.includes(s), `section « ${s} »`);
+  for (const s of ['Non classé', 'Rapide', 'Violente', 'Désespoir', 'Autre']) ok(t.includes(s), `section « ${s} »`);
   const suppr = boutons(html).filter((b) => b.ariaLabel === 'Supprimer la section (les monstres reviennent en Non classé)' || b.title === 'Supprimer la section (les monstres reviennent en Non classé)');
-  egal(suppr.length, 3, 'trois sections supprimables (Swift, Violent, Despair) — « Autre » ne l\'est pas');
+  egal(suppr.length, 3, 'trois sections supprimables (Rapide, Violente, Désespoir) — « Autre » ne l\'est pas');
   ok(t.includes('Glisse des monstres ici'), 'une section vide invite à y glisser des monstres');
 
   // Cartes : chaque monstre, son retrait, son sélecteur de section.
@@ -112,7 +112,7 @@ export function testRenduRtaPrepa() {
 
   // Ordre de tour.
   ok(t.includes('Ordre de tour') && t.includes('par vitesse combat totale'), '« Ordre de tour · par vitesse combat totale »');
-  ok(t.includes('Lead SPD'), 'rangée « Lead SPD »');
+  ok(t.includes('Lead VIT'), 'rangée « Lead VIT »');
   ok(!!bouton(html, 'Sans lead'), 'bouton « Sans lead »');
   egal(valeurs(html, 'placeholder').filter((v) => v === '+ runes').length, 3, 'un champ « + runes » par monstre de l\'ordre de tour');
   ok(!!bouton(html, 'Surligner les changements'), 'bouton « Surligner les changements »');

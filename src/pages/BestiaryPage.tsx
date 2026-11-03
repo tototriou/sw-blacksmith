@@ -12,6 +12,8 @@ import MonsterDetailDialog from '../components/MonsterDetailDialog';
 import Pager from '../components/account/Pager';
 import { ELEMENTS, STAR_OPTIONS, ElementKey, Monster } from '../types';
 import { LoadState } from '../hooks/useMonsters';
+import { useLangue, useTraduction } from '../hooks/useLangue';
+import { formatNombre } from '../i18n/format';
 import {
   FiltresFormes,
   autreForme,
@@ -39,6 +41,8 @@ interface Props {
 const PAGE = 60;
 
 export default function BestiaryPage({ monsters, menuOuvert, onFermerMenu }: Props) {
+  const t = useTraduction().bestiaire;
+  const langue = useLangue();
   const [query, setQuery] = useState('');
   // ⚠️ **Liste BLANCHE, tout coché par défaut** — même règle que les filtres de
   // runes : une pastille cochée est AFFICHÉE, n'en cocher aucune revient à ne
@@ -176,9 +180,9 @@ export default function BestiaryPage({ monsters, menuOuvert, onFermerMenu }: Pro
           maquette) : « Bestiaire » et le nombre de monstres de la base. Au
           doigt, la barre du haut dit déjà la page. */}
       <div className="mb-4 hidden items-center gap-2.5 lg:flex">
-        <h1 className="font-display text-xl tracking-wide text-ink">Bestiaire</h1>
+        <h1 className="font-display text-xl tracking-wide text-ink">{t.titre}</h1>
         <span className="rounded-full border border-border-soft bg-panel2 px-2 py-0.5 font-mono text-micro text-ink-dim">
-          {totalBase.toLocaleString('fr-FR')} monstres
+          {t.totalBase(formatNombre(totalBase, langue))}
         </span>
       </div>
 
@@ -199,7 +203,7 @@ export default function BestiaryPage({ monsters, menuOuvert, onFermerMenu }: Pro
           icone={<Search size={15} />}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Rechercher un monstre par nom…"
+          placeholder={t.rechercher}
           classNameConteneur="hidden lg:block lg:w-72"
         />
         <div className="hidden lg:block">
@@ -218,7 +222,7 @@ export default function BestiaryPage({ monsters, menuOuvert, onFermerMenu }: Pro
         </div>
       </div>
 
-      <MobileSheet ouvert={menuOuvert} onFermer={onFermerMenu} titre="Filtrer le bestiaire">
+      <MobileSheet ouvert={menuOuvert} onFermer={onFermerMenu} titre={t.filtrer}>
         <FilterBar
           activeElements={activeElements}
           toggleElement={toggleElement}
@@ -252,8 +256,7 @@ export default function BestiaryPage({ monsters, menuOuvert, onFermerMenu }: Pro
             <TriInterne sortMode={sortMode} setSortMode={setSortMode} />
           </div>
           <p className="font-mono text-xs text-ink-dim lg:mr-auto">
-            {totalShown} monstre{totalShown > 1 ? 's' : ''}
-            {totalShown !== totalBase && ` sur ${totalBase}`}
+            {t.compte(totalShown, totalShown !== totalBase ? totalBase : null)}
           </p>
           <Pager page={safePage} pageCount={pageCount} onChange={setPage} />
         </div>
@@ -262,7 +265,7 @@ export default function BestiaryPage({ monsters, menuOuvert, onFermerMenu }: Pro
       {totalShown === 0 ? (
         <div className="text-center py-16 text-ink-dim">
           <IconeBestiaire className="mx-auto mb-3 opacity-40" />
-          Aucun monstre ne correspond à ces filtres.
+          {t.aucun}
         </div>
       ) : (
         ELEMENTS.map((el) => (

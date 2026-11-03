@@ -46,6 +46,7 @@ import {
   resumeSequenceDeCoups,
   skillDamageProfile,
 } from '../src/lib/damage';
+import { fr } from '../src/i18n/fr';
 
 const racine = resolve(new URL('..', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1'));
 const DOSSIER_SORTS = resolve(racine, 'public/data/skills');
@@ -122,7 +123,7 @@ export function testDegatsSequencesApi() {
           ] },
         `${s.id} sur ${forme} : profil = donnée (empreinte ${JSON.stringify(s.donnee)}), séquence = ${s.phase1} × ATQ mono-cible puis ${s.phase2} × ATQ en zone`,
       );
-      egal(resumeSequenceDeCoups(p.sequenceDeCoups ?? []), '1 coup · Cible unique, puis 1 coup · Zone', `${s.id} sur ${forme} : résumé de la séquence`);
+      egal(resumeSequenceDeCoups(p.sequenceDeCoups ?? [], fr), '1 coup · Cible unique, puis 1 coup · Zone', `${s.id} sur ${forme} : résumé de la séquence`);
       ok(!p.hitsRange, `${s.id} sur ${forme} : pas de coups variables (non modélisés pour une séquence)`);
       // Effets entre les coups : seule Fatal Mortar Bullet (Scarlett) pose avant
       // sa phase de zone ; Undefeated Warrior pose dans la sienne, la dernière

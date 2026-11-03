@@ -28,7 +28,8 @@ import {
 type Icone = (props: { size?: number; className?: string }) => ReactNode;
 import ElementIcon from '../components/ElementIcon';
 import { ElementKey } from '../types';
-import { RELEASES, libelleVersion } from '../data/releases';
+import { journal, libelleVersion } from '../data/releases';
+import { useLangue, useTraduction } from '../hooks/useLangue';
 import { Bouton } from '../ui';
 import { NOM_APP } from '../marque';
 import { estBureau, selonSupport } from '../lib/bureau';
@@ -103,10 +104,13 @@ interface Props {
 // section (les couleurs de l'accueil restent ici, le menu est neutre),
 // bouton principal plein.
 export default function HomePage({ stats, onImport }: Props) {
-  // ⚠️ La dernière version PUBLIÉE, pas `RELEASES[0]` : une version en
+  const t = useTraduction();
+  const a = t.accueil;
+  // ⚠️ La dernière version PUBLIÉE, pas la tête du journal : une version en
   // préparation est en tête du journal sans être en ligne. L'annoncer ici
   // promettrait au visiteur des nouveautés qu'il ne trouvera pas dans l'app.
-  const derniere = RELEASES.find((r) => r.version !== null) ?? RELEASES[0];
+  const versions = journal(useLangue());
+  const derniere = versions.find((r) => r.version !== null) ?? versions[0];
   const aDesDonnees = stats.rta > 0 || stats.defense > 0 || stats.offense > 0 || stats.recos > 0;
   // Le bouton du dernier appel ouvre le sélecteur de fichier, comme la zone de
   // dépôt du héros — même `onImport`, donc un seul chemin d'import.
@@ -139,12 +143,12 @@ export default function HomePage({ stats, onImport }: Props) {
           </div>
 
           <p className="mt-3 max-w-lg font-display text-[clamp(18px,2.4vw,26px)] leading-tight tracking-wide text-ink">
-            La boîte à outils pour Summoners&nbsp;War.
+            {a.accroche}
           </p>
 
           <p className="mt-3 max-w-lg text-base leading-relaxed text-ink-dim">
-            Runes, RTA, siège, analyse de compte. Importe ton export SWEX et tout est calculé{' '}
-            <b className="text-ink">{selonSupport('dans ton navigateur', 'sur ta machine')}</b>.
+            {a.promesse}
+            <b className="text-ink">{selonSupport(a.promesseNavigateur, a.promesseMachine)}</b>{a.promesseFin}
           </p>
 
           {/* L'application de bureau : sur le SITE seulement — dans l'app, on l'a déjà. */}
@@ -178,12 +182,12 @@ export default function HomePage({ stats, onImport }: Props) {
           {/* ⚠️ Titre NEUTRE : ce bloc apparaît dès le premier import, pas
               seulement au retour. « Reprends où tu en étais » accueillait donc
               un débutant en lui parlant d'un passé qu'il n'a pas. */}
-          <SectionTitle icon={LayoutGrid} title="Ton espace" />
+          <SectionTitle icon={LayoutGrid} title={a.tonEspace} />
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            <Resume href="#/rta" icon={IconeRta} accent={COULEUR_SECTION.rta} value={stats.rta} unit={stats.rta > 1 ? 'monstres' : 'monstre'} label="Prépa RTA" />
-            <Resume href="#/siege/defense" icon={IconeDefense} accent={COULEUR_SIEGE_SUB.defense} value={stats.defense} unit={stats.defense > 1 ? 'équipes' : 'équipe'} label="Défense de siège" />
-            <Resume href="#/siege/offense" icon={IconeOffense} accent={COULEUR_SIEGE_SUB.offense} value={stats.offense} unit={stats.offense > 1 ? 'équipes' : 'équipe'} label="Offense de siège" />
-            <Resume href="#/siege/recommandations" icon={IconeRecos} accent={COULEUR_SIEGE_SUB.recos} value={stats.recos} unit={stats.recos > 1 ? 'recos' : 'reco'} label="Recommandations" />
+            <Resume href="#/rta" icon={IconeRta} accent={COULEUR_SECTION.rta} value={stats.rta} unit={a.monstres(stats.rta)} label={a.prepaRta} />
+            <Resume href="#/siege/defense" icon={IconeDefense} accent={COULEUR_SIEGE_SUB.defense} value={stats.defense} unit={a.equipes(stats.defense)} label={a.defenseSiege} />
+            <Resume href="#/siege/offense" icon={IconeOffense} accent={COULEUR_SIEGE_SUB.offense} value={stats.offense} unit={a.equipes(stats.offense)} label={a.offenseSiege} />
+            <Resume href="#/siege/recommandations" icon={IconeRecos} accent={COULEUR_SIEGE_SUB.recos} value={stats.recos} unit={a.recos(stats.recos)} label={a.recommandations} />
           </div>
         </motion.section>
       )}
@@ -192,7 +196,7 @@ export default function HomePage({ stats, onImport }: Props) {
 
       {/* ---- Comment ça marche -------------------------------------------- */}
       <motion.section variants={item} id="comment" className="py-12 max-lg:py-6">
-        <h2 className="font-display text-[26px] tracking-wide mb-6 max-lg:mb-4">Comment ça marche</h2>
+        <h2 className="font-display text-[26px] tracking-wide mb-6 max-lg:mb-4">{a.commentCaMarche}</h2>
         {/* ⚠️ UNE carte, trois étapes séparées par des filets (la maquette) :
             une séquence qu'on lit de gauche à droite, pas trois cartes
             indépendantes. Empilées sous `md`, le filet passe en haut. */}
@@ -203,26 +207,23 @@ export default function HomePage({ stats, onImport }: Props) {
             // importer = flèche vers le BAS. Convention de l'app.
             icon={Upload}
             accent="#5B9DE0"
-            title="Exporte ton compte"
-            desc="Génère un fichier .json de ton compte avec SW Exporter, en lançant le jeu une fois."
+            title={a.etapeExporter}
+            desc={a.etapeExporterTexte}
             lien={{ href: SW_EXPORTER, label: 'SW Exporter' }}
           />
           <Etape
             n="02"
             icon={Download}
             accent="#5EDB8F"
-            title="Dépose le fichier"
-            desc={selonSupport(
-              "Ici même, en haut de page. Rien n'est envoyé : tout se calcule dans ton navigateur.",
-              "Ici même, en haut de page. Rien n'est envoyé : tout se calcule sur ta machine."
-            )}
+            title={a.etapeDeposer}
+            desc={selonSupport(a.etapeDeposerNavigateur, a.etapeDeposerMachine)}
           />
           <Etape
             n="03"
             icon={Sparkles}
             accent="#F2C24C"
-            title="Prépare et optimise"
-            desc="Runes, prépa RTA, équipes de siège et analyse de compte se remplissent d'un seul coup."
+            title={a.etapePreparer}
+            desc={a.etapePreparerTexte}
           />
         </div>
       </motion.section>
@@ -231,35 +232,32 @@ export default function HomePage({ stats, onImport }: Props) {
 
       {/* ---- Fonctionnalités ---------------------------------------------- */}
       <motion.section variants={item} id="features" className="py-12 max-lg:py-6">
-        <h2 className="font-display text-[26px] tracking-wide mb-6 max-lg:mb-4">Fonctionnalités</h2>
+        <h2 className="font-display text-[26px] tracking-wide mb-6 max-lg:mb-4">{a.fonctionnalites}</h2>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <Feature href="#/rta" icon={IconeRta} accent={COULEUR_SECTION.rta} kicker="RTA" title="Préparation RTA" body="Classe ta box par set en glisser-déposer et lis l'ordre de tour recalculé selon les leads." />
-          <Feature href="#/rta/ami" icon={IconeAmi} accent={COULEUR_RTA_SUB.ami} kicker="RTA" title="Prépa d'un ami" body="Ouvre la prépa qu'un ami t'a exportée — ou son export SWEX complet — et regarde son classement, ses vitesses et son ordre de tour." />
-          <Feature href="#/siege/defense" icon={IconeSiege} accent={COULEUR_SECTION.siege} kicker="Siège" title="Défenses et offenses" body="Compose tes équipes et vérifie tes speed tune sur les ticks 239 et 286." />
-          <Feature href="#/siege/recommandations" icon={IconeRecos} accent={COULEUR_SIEGE_SUB.recos} kicker="Partage" title="Recommandations" body="Décris tes decks, partage-les en JSON, et vois ce que ton compte peut jouer." />
-          <Feature href="#/compte/runes" icon={IconeRunes} accent={COULEUR_COMPTE_SUB.runes} kicker="Compte" title="Analyse de runes" body="Résumé chiffré, efficience ou score SW, courbes, et ce que tes meules et gemmes en réserve permettent d'améliorer dès maintenant." />
-          <Feature href="#/compte/artefacts" icon={IconeArtefacts} accent={COULEUR_COMPTE_SUB.artefacts} kicker="Compte" title="Analyse d'artéfacts" body="Le score du jeu et l'efficience de chaque pièce, la distribution de ton stock et le top 10 de chaque propriété." />
-          <Feature href="#/outils/optimizer" icon={IconeOptimizer} accent={COULEUR_SECTION.outils} kicker="Outils" title="Optimiseur de runes" body="Cherche, parmi les runes que tu possèdes déjà, la meilleure combinaison de 6 pour un monstre, un set et des minimums donnés." />
-          <Feature href="#/outils/speed-tuning" icon={IconeSpeedTuning} accent={COULEUR_SECTION.outils} kicker="Outils" title="Speed tuning" body="Tick par tick, vois quel monstre remplit sa barre d'action en premier — ton équipe et celle d'en face, pour savoir qui joue avant qui." />
-          <Feature href="#/bestiary" icon={IconeBestiaire} accent={COULEUR_SECTION.bestiary} kicker="Données" title="Bestiaire" body="Recherche et filtres par élément et étoiles naturelles, stats de base à portée de main." />
-          <Feature href="#/mecaniques" icon={IconeMecaniques} accent={COULEUR_SECTION.mecaniques} kicker="Doc" title="Mécaniques" body="Vitesse de combat, barre d'action, équation des dégâts et facteur de défense." />
-          <Feature href="#/releases" icon={IconeNouveautes} accent={COULEUR_SECTION.releases} kicker="Suivi" title="Nouveautés" body="Ce qui change à chaque version : ajouts, corrections et calculs revus." />
+          <Feature href="#/rta" icon={IconeRta} accent={COULEUR_SECTION.rta} carte={a.cartes.rta} />
+          <Feature href="#/rta/ami" icon={IconeAmi} accent={COULEUR_RTA_SUB.ami} carte={a.cartes.ami} />
+          <Feature href="#/siege/defense" icon={IconeSiege} accent={COULEUR_SECTION.siege} carte={a.cartes.siege} />
+          <Feature href="#/siege/recommandations" icon={IconeRecos} accent={COULEUR_SIEGE_SUB.recos} carte={a.cartes.recos} />
+          <Feature href="#/compte/runes" icon={IconeRunes} accent={COULEUR_COMPTE_SUB.runes} carte={a.cartes.runes} />
+          <Feature href="#/compte/artefacts" icon={IconeArtefacts} accent={COULEUR_COMPTE_SUB.artefacts} carte={a.cartes.artefacts} />
+          <Feature href="#/outils/optimizer" icon={IconeOptimizer} accent={COULEUR_SECTION.outils} carte={a.cartes.optimizer} />
+          <Feature href="#/outils/speed-tuning" icon={IconeSpeedTuning} accent={COULEUR_SECTION.outils} carte={a.cartes.speedTuning} />
+          <Feature href="#/bestiary" icon={IconeBestiaire} accent={COULEUR_SECTION.bestiary} carte={a.cartes.bestiaire} />
+          <Feature href="#/mecaniques" icon={IconeMecaniques} accent={COULEUR_SECTION.mecaniques} carte={a.cartes.mecaniques} />
+          <Feature href="#/releases" icon={IconeNouveautes} accent={COULEUR_SECTION.releases} carte={a.cartes.nouveautes} />
           {/* Site seulement (application de bureau) : comme
               l'entrée de la navigation, dans l'ordre de la navigation. */}
           {!estBureau() && (
-            <Feature href="#/telecharger" icon={IconeTelecharger} accent={COULEUR_SECTION.telecharger} kicker="Application" title="Application de bureau" body={`${NOM_APP} dans sa propre fenêtre, pour Windows et Linux, avec la mise à jour proposée à chaque version.`} />
+            <Feature href="#/telecharger" icon={IconeTelecharger} accent={COULEUR_SECTION.telecharger} carte={{ ...a.application, texte: a.application.texte(NOM_APP) }} />
           )}
-          <Feature href="#/arene" icon={IconeArene} accent={COULEUR_SECTION.arene} kicker="Arène" title="Arène classique" body="Préparation des équipes d'offense et de défense." soon />
+          <Feature href="#/arene" icon={IconeArene} accent={COULEUR_SECTION.arene} carte={a.cartes.arene} bientot={a.bientot} />
         </div>
       </motion.section>
 
       {/* ---- Dernier appel -------------------------------------------------- */}
       <motion.section variants={item} className="py-12 max-w-xl max-lg:py-6">
-        <h2 className="font-display text-[26px] tracking-wide">Prêt à préparer tes équipes ?</h2>
-        <p className="mt-2 text-sm leading-relaxed text-ink-dim">
-          Importe ton fichier SWEX et retrouve ta box, tes runes, ta prépa RTA et tes équipes de siège
-          en quelques secondes.
-        </p>
+        <h2 className="font-display text-[26px] tracking-wide">{a.pretTitre}</h2>
+        <p className="mt-2 text-sm leading-relaxed text-ink-dim">{a.pretTexte}</p>
         {/* ⚠️ Il ouvre le sélecteur de fichier, il ne renvoie PAS à la zone de
             dépôt. C'était un lien `#depot` : avec le routage par hash il ne
             faisait rien de visible, et un bouton d'appel à l'action qui ne
@@ -271,7 +269,7 @@ export default function HomePage({ stats, onImport }: Props) {
             ton="accent"
             fond="plein"
             icone={<Download size={15} />}
-            libelle="Importer mon compte"
+            libelle={a.importerMonCompte}
             onClick={() => ctaRef.current?.click()}
           />
         </div>
@@ -298,11 +296,11 @@ export default function HomePage({ stats, onImport }: Props) {
             4,4:1 en Forge (3,97 au survol, sur `panel2`) ; l'encre tient
             10,3:1 au pire. */}
         <span className="label rounded-full bg-accent/15 px-2 py-0.5 text-ink">
-          {libelleVersion(derniere.version)}
+          {libelleVersion(derniere.version, t.nouveautes.enPreparation)}
         </span>
         <span className="text-sm font-semibold text-ink">{derniere.title}</span>
         <span className="ml-auto inline-flex items-center gap-1 text-xs text-ink-dim">
-          Voir les nouveautés <ArrowRight size={13} />
+          {a.voirNouveautes} <ArrowRight size={13} />
         </span>
       </motion.a>
     </motion.div>
@@ -322,6 +320,7 @@ export default function HomePage({ stats, onImport }: Props) {
 // ⚠️ **Au téléphone, une ligne d'information** (en lien vers la page) : rien
 // ne s'installe sur un téléphone. Deux formats, deux contenus (`lg:`).
 function LienApplication() {
+  const a = useTraduction().accueil;
   return (
     <>
       <div className="mt-5 hidden lg:block">
@@ -334,11 +333,11 @@ function LienApplication() {
               <LogoLinux size={13} />
             </span>
           }
-          libelle="Télécharger l'application"
+          libelle={a.telechargerApplication}
         />
       </div>
       <a href="#/telecharger" className="mt-3 inline-block text-sm text-accent hoverable:text-ink transition lg:hidden">
-        Existe aussi en application pour Windows et Linux.
+        {a.existeEnApplication}
       </a>
     </>
   );
@@ -350,6 +349,7 @@ function LienApplication() {
 // dans la barre de nav. Glisser-déposer ET clic — on ne sait pas lequel le
 // visiteur tentera, et n'en proposer qu'un en laisse la moitié dehors.
 function Dropzone({ onImport }: { onImport: (text: string) => void }) {
+  const a = useTraduction().accueil;
   const ref = useRef<HTMLInputElement>(null);
   const [survol, setSurvol] = useState(false);
 
@@ -387,13 +387,13 @@ function Dropzone({ onImport }: { onImport: (text: string) => void }) {
       <span className="flex h-12 w-12 items-center justify-center rounded-xl border border-border-soft bg-accent/10 text-accent">
         <Download size={22} />
       </span>
-      <div className="text-md font-semibold text-ink">Dépose ton fichier .json ici</div>
-      <div className="text-sm text-ink-dim">ou clique pour parcourir</div>
+      <div className="text-md font-semibold text-ink">{a.deposerIci}</div>
+      <div className="text-sm text-ink-dim">{a.cliquerPourParcourir}</div>
       <span className="mt-1 rounded-full border border-border-soft bg-panel2 px-2.5 py-1 label">
-        Export SWEX (.json)
+        {a.exportSwex}
       </span>
       <span className="mt-1 inline-flex items-center gap-1.5 text-micro text-ink-dim">
-        <ShieldCheck size={12} /> lu dans la page, jamais envoyé
+        <ShieldCheck size={12} /> {a.luDansLaPage}
       </span>
       <input
         ref={ref}
@@ -546,38 +546,35 @@ function Etape({
   );
 }
 
-// Carte de fonctionnalité : compacte (kicker · titre · une phrase). Les grandes
+// Carte de fonctionnalité : compacte (rubrique · titre · une phrase). Les grandes
 // cartes de 260 px repoussaient tout le reste de la page hors de l'écran.
+// `bientot` : la mention d'une section pas encore ouverte (« · bientôt »).
 function Feature({
   href,
   icon,
   accent,
-  kicker,
-  title,
-  body,
-  soon,
+  carte,
+  bientot,
 }: {
   href: string;
   icon: Icone;
   accent: string;
-  kicker: string;
-  title: string;
-  body: string;
-  soon?: boolean;
+  carte: { rubrique: string; titre: string; texte: string };
+  bientot?: string;
 }) {
   return (
     <a
       href={href}
-      className={`group relative flex flex-col overflow-hidden p-4 max-lg:p-3 ${CARTE_LIEN} ${soon ? 'opacity-70' : ''}`}
+      className={`group relative flex flex-col overflow-hidden p-4 max-lg:p-3 ${CARTE_LIEN} ${bientot ? 'opacity-70' : ''}`}
     >
       <Halo accent={accent} />
       <Tuile icon={icon} accent={accent} />
       <div className="mt-3 label">
-        {kicker}
-        {soon && ' · bientôt'}
+        {carte.rubrique}
+        {bientot}
       </div>
-      <div className="mt-0.5 text-sm font-semibold text-ink">{title}</div>
-      <p className="mt-1.5 text-xs leading-relaxed text-ink-dim">{body}</p>
+      <div className="mt-0.5 text-sm font-semibold text-ink">{carte.titre}</div>
+      <p className="mt-1.5 text-xs leading-relaxed text-ink-dim">{carte.texte}</p>
     </a>
   );
 }

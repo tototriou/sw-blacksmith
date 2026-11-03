@@ -4,6 +4,7 @@ import { Bouton } from '../../ui';
 import SetFilter from './SetFilter';
 import SlotFilter from './SlotFilter';
 import AncientFilter, { AncientFilter as AncientFilterValue } from './AncientFilter';
+import { useTraduction } from '../../hooks/useLangue';
 
 // ⚠️ **Les filtres des runes À LA SOURIS, tous VISIBLES, sur une ligne** :
 // sets · emplacements ·
@@ -41,6 +42,7 @@ export default function FiltresRunes({
   // les répète pas ici.
   antiques?: boolean;
 }) {
+  const textes = useTraduction();
   return (
     <div className="flex flex-wrap items-center gap-x-4 gap-y-2" data-filtres-ligne>
       <SetFilter runes={runes} value={sets} onChange={onSets} />
@@ -49,7 +51,7 @@ export default function FiltresRunes({
           l'Optimisation donne déjà à ce filtre. */}
       {antiques && (
         <div className="flex items-center gap-1">
-          <span className="label mr-1">Runes</span>
+          <span className="label mr-1">{textes.filtresRunes.runes}</span>
           <AncientFilter value={ancient} onChange={onAncient} />
         </div>
       )}
@@ -96,6 +98,7 @@ export function EffacerFiltres({
   antiques?: boolean;
   className?: string;
 }) {
+  const textes = useTraduction();
   const present = useMemo(() => {
     const s = new Set(runes.map((r) => r.set));
     return RUNE_SETS.filter((rs) => s.has(rs.key));
@@ -113,11 +116,11 @@ export function EffacerFiltres({
         if (antiques) onAncient('all');
       }}
       disabled={parDefaut}
-      title={parDefaut ? 'Aucun filtre posé' : 'Revenir à tous les sets, tous les emplacements et toutes les runes'}
+      title={parDefaut ? textes.boxCompte.aucunFiltre : textes.filtresRunes.effacerAide}
       fond="vide"
       trait="aucun"
       taille="sm"
-      libelle="Effacer les filtres"
+      libelle={textes.boxCompte.effacerFiltres}
       className={className}
     />
   );

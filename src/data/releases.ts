@@ -10,11 +10,14 @@
 // La version affichée dans le pied de page vient, elle, de `package.json`
 // (`__APP_VERSION__`, injecté par Vite) : les deux doivent rester alignées.
 
+import type { Langue } from '../i18n/langue';
+import { RELEASES_EN } from './releases.en';
+
 export type ChangeKind = 'feat' | 'fix' | 'docs';
 
 export interface ReleaseChange {
   kind: ChangeKind;
-  scope: string; // « Siège », « Mon compte »… en français, comme l'interface
+  scope: string; // « Siège », « Mon compte »… dans la langue du journal, comme l'interface
   text: string; // ce que ça change POUR LE JOUEUR, pas le détail technique
 }
 
@@ -36,29 +39,69 @@ export interface Release {
   tag?: boolean;
 }
 
-// Ce qu'on affiche à la place du numéro tant qu'il n'est pas tranché.
-export const VERSION_EN_PREPARATION = 'En préparation';
-
-// Libellé d'une version pour l'interface : « v1.4.0 », ou « En préparation ».
+// Libellé d'une version pour l'interface : « v1.4.0 », ou, tant que le numéro
+// n'est pas tranché, `enPreparation` (« En préparation », du dictionnaire).
 // ⚠️ Le « v » est porté ICI et non par l'appelant : préfixé en dur, il donnait
 // « vEn préparation ».
-export function libelleVersion(version: string | null): string {
-  return version === null ? VERSION_EN_PREPARATION : `v${version}`;
+export function libelleVersion(version: string | null, enPreparation: string): string {
+  return version === null ? enPreparation : `v${version}`;
 }
 
-export const CHANGE_META: Record<ChangeKind, { label: string; color: string }> = {
-  feat: { label: 'Nouveau', color: 'text-good' },
-  fix: { label: 'Correction', color: 'text-warn' },
-  docs: { label: 'Doc', color: 'text-ink-dim' },
+// La couleur de chaque sorte de changement ; son nom vient du dictionnaire
+// (`nouveautes.sortes`).
+export const CHANGE_META: Record<ChangeKind, { color: string }> = {
+  feat: { color: 'text-good' },
+  fix: { color: 'text-warn' },
+  docs: { color: 'text-ink-dim' },
 };
 
-// La plus RÉCENTE en premier — c'est l'ordre d'affichage.
+// Le journal dans la langue de l'interface. ⚠️ **Un journal par langue**, de
+// même forme : une version, une ligne ajoutée ici s'ajoute aussi dans
+// releases.en.ts, au même rang (test : `testJournalAligne`).
+export function journal(langue: Langue): Release[] {
+  return langue === 'en' ? RELEASES_EN : RELEASES;
+}
+
+// Le journal en FRANÇAIS, la plus RÉCENTE en premier — c'est l'ordre d'affichage.
 //
 // ⚠️ **Style : une phrase courte, lisible par un joueur.** Ce qui change POUR
 // LUI, jamais comment c'est fait. Pas de nom de fonction, pas de formule, pas de
 // détail d'implémentation — tout ça vit dans les commits et dans `docs/`.
 // Si une ligne dépasse ~15 mots, c'est qu'elle raconte l'implémentation.
 export const RELEASES: Release[] = [
+  {
+    version: null,
+    date: '2026-10-31',
+    title: 'SW Blacksmith en anglais',
+    highlights: ['L’app s’affiche en français ou en anglais, dans la langue de ton navigateur'],
+    changes: [
+      { kind: 'feat', scope: 'Paramètres', text: 'Nouveau réglage « Langue » : Auto, Français ou English.' },
+      { kind: 'feat', scope: 'Navigation', text: 'Menus, barre du haut, recherche et Paramètres traduits en anglais.' },
+      { kind: 'feat', scope: 'Ressources', text: 'Accueil, Nouveautés, Bestiaire, Mécaniques et Télécharger en anglais.' },
+      { kind: 'feat', scope: 'RTA', text: 'La prépa, ses catégories, l’ordre de tour et la prépa d’un ami en anglais.' },
+      { kind: 'feat', scope: 'Siège', text: 'Équipes de défense et d’offense, recommandations et rapports d’import en anglais.' },
+      { kind: 'feat', scope: 'Compte', text: 'Box, runes, artéfacts, courbes, comparaison et optimisation en anglais, comme l’import d’un compte.' },
+      { kind: 'feat', scope: 'Optimizer', text: 'L’écran des critères en anglais : listes et équipes, état du monstre, set, conditions, artéfacts, relique et réglages avancés.' },
+      { kind: 'feat', scope: 'Optimizer', text: 'Résultats, filtres, diagnostics, point de sauvegarde et imports d’équipes ou de recettes en anglais.' },
+      { kind: 'feat', scope: 'Speed tuning', text: 'Les deux camps, l’ordre des sorts, l’analyse, les tableaux de ticks et les grilles en anglais.' },
+      { kind: 'feat', scope: 'Dégâts réels', text: 'La fenêtre de l’objectif en anglais : sort, effets actifs, passifs, adversaire et coup critique.' },
+      { kind: 'feat', scope: 'Jeu', text: 'Sets, stats, effets et artéfacts portent les noms du jeu, en français comme en anglais.' },
+      { kind: 'fix', scope: 'Runes', text: '« Tx critiq. » et « Dgts critiq. » comme dans le jeu, et le bon effet du set Sceau.' },
+      { kind: 'fix', scope: 'Bestiaire', text: 'La fiche d’un monstre écrit son type en toutes lettres.' },
+      { kind: 'fix', scope: 'Siège', text: 'L’analyse d’une recommandation nomme le set manquant comme le jeu, et la vitesse s’écrit « VIT ».' },
+    ],
+  },
+  {
+    version: '2.2.2',
+    date: '2026-11-02',
+    title: 'Des barres d’attaque et des égalités plus justes en speed tuning',
+    changes: [
+      { kind: 'fix', scope: 'Speed tuning', text: 'Belladeon 2A remplit 30 % de barre sans skill-up, et 33 % une fois maxé.' },
+      { kind: 'fix', scope: 'Speed tuning', text: 'À barre égale, le gain de Chilling lié aux buffs ne change plus sa priorité initiale.' },
+      { kind: 'fix', scope: 'Speed tuning', text: 'Tablo remet toutes les barres à zéro ; Fast Pace les fixe à 100 %.' },
+      { kind: 'fix', scope: 'Speed tuning', text: 'Les réductions manuelles de barre acceptent jusqu’à −999 %.' },
+    ],
+  },
   {
     version: '2.2.1',
     date: '2026-11-01',

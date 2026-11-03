@@ -26,17 +26,17 @@ export function testRenduBuildsRapides() {
   const t = texteVisible(html);
   ok(t.startsWith('Builds les plus rapides Choisir les combinaisons'), 'le titre et le bouton de choix');
   // 100 + (4×20 + 42 + 2×10) + 25 = 267.
-  ok(t.includes('Swift + Will 267 Violent + Broken — Swift + Will #1 Eff.'), 'les onglets, avec la VIT de leur #1, puis chaque combinaison sous son titre');
+  ok(t.includes('Rapide + Volonté 267 Violente + Broken — Rapide + Volonté #1 Eff.'), 'les onglets, avec la VIT de leur #1, puis chaque combinaison sous son titre');
   ok(t.includes('267 VIT Base 100 Runes +142'), 'la VIT totale (bonus Swift compris) et son détail');
   ok(!t.includes('Bonus'), 'pas de case Bonus');
   egal((t.match(/#\d/g) ?? []).length, 1, 'un seul build : les runes sont prises par le #1');
-  ok(t.endsWith('Violent + Broken Aucun build possible avec tes runes.'), 'une combinaison impossible le dit');
+  ok(t.endsWith('Violente + Broken Aucun build possible avec tes runes.'), 'une combinaison impossible le dit');
   // Les deux régimes sont du CSS : les onglets disparaissent à partir de `xl`,
   // et sous `xl` seule la combinaison choisie reste — ici la première.
   ok(/role="tablist"[^>]*aria-label="Combinaison affichée"[^>]*class="[^"]*xl:hidden/.test(html), 'de vrais onglets (`Onglets`), qui s’effacent à partir de xl');
   const combos = onglets(html);
-  egal(combos.map((o) => o.texte), ['Swift + Will 267', 'Violent + Broken —'], 'un onglet par combinaison, avec la VIT de son #1');
-  egal(combos.filter((o) => o.ouvert).map((o) => o.texte), ['Swift + Will 267'], 'la première ouverte par défaut');
+  egal(combos.map((o) => o.texte), ['Rapide + Volonté 267', 'Violente + Broken —'], 'un onglet par combinaison, avec la VIT de son #1');
+  egal(combos.filter((o) => o.ouvert).map((o) => o.texte), ['Rapide + Volonté 267'], 'la première ouverte par défaut');
   egal((html.match(/<section class="hidden xl:block"/g) ?? []).length, 1, 'sous xl, la seconde combinaison est masquée, pas la première');
 
   setReglageBuildsRapides({ combos: [], nombre: 5 });

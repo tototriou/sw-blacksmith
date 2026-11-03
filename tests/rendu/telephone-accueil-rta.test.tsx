@@ -72,10 +72,10 @@ export function testRenduTelephoneRta() {
   const t = texteVisible(ferme);
   egal((ferme.match(/role="dialog"/g) ?? []).length, 0, 'panneau « Options » fermé : aucun dialogue');
   // Au doigt, on ne glisse pas : chaque carte porte le choix de sa section.
-  for (const carte of ['Galleon 108 Non classé Swift Violent Despair Autre', 'Chasun 251 Non classé Swift Violent Despair Autre', 'Veromos 190 Non classé Swift Violent Despair Autre'])
+  for (const carte of ['Galleon 108 Non classé Rapide Violente Désespoir Autre', 'Chasun 251 Non classé Rapide Violente Désespoir Autre', 'Veromos 190 Non classé Rapide Violente Désespoir Autre'])
     ok(t.includes(carte), `carte « ${carte.split(' ')[0]} » : vitesse et choix de section`);
-  ok(t.includes('Despair 0 Glisse des monstres ici') && t.includes('Ajouter une section'), 'sections vides et ajout de section');
-  ok(t.includes('Ordre de tour par vitesse combat totale Lead SPD +33% +28% +24% +21% +19% Sans lead'), 'ordre de tour et leads');
+  ok(t.includes('Désespoir 0 Glisse des monstres ici') && t.includes('Ajouter une section'), 'sections vides et ajout de section');
+  ok(t.includes('Ordre de tour par vitesse combat totale Lead VIT +33% +28% +24% +21% +19% Sans lead'), 'ordre de tour et leads');
   ok(t.endsWith('1 Chasun 267 2 Veromos 205 3 Galleon 125'), 'l\'ordre de tour, rang et vitesse');
 
   const ouvert = rendreRta('prepa', true);
@@ -100,7 +100,7 @@ export function testRenduTelephoneRtaFiltre() {
   const sections = onglets(html);
   egal(
     sections.map((o) => o.texte),
-    ['Tous 3', 'Non classé 1', 'Swift 1', 'Violent 1', 'Despair 0', 'Autre 0'],
+    ['Tous 3', 'Non classé 1', 'Rapide 1', 'Violente 1', 'Désespoir 0', 'Autre 0'],
     '« Tous », « Non classé », puis chaque section, avec son nombre de monstres'
   );
   egal(sections.filter((o) => o.ouvert).map((o) => o.texte), ['Tous 3'], '« Tous » ouvert par défaut');

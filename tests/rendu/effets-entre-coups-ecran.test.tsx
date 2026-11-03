@@ -12,6 +12,7 @@
 import DamageSetupCard from '../../src/components/outils/DamageSetupCard';
 import { DEFAULT_DAMAGE_SETUP, monsterDamageSkills, resolveDamageSkill, type DamageSetup } from '../../src/lib/damage';
 import { loadMonsterSkills } from '../../scripts/lib/skillsData';
+import { setChoixLangue } from '../../src/hooks/useLangue';
 import { egal, ok, titre } from '../outils';
 import { rendre, texteVisible } from './outils-rendu';
 
@@ -149,4 +150,39 @@ export function testRenduEffetsEntreCoupsEcran() {
   verifier(false);
   titre('rendu · poses entre les coups — interrupteur ou sélecteur (téléphone)');
   verifier(true);
+}
+
+// En anglais : les textes de la section et des compteurs du sort, et le nom
+// SWARFARM des effets (le français garde les libellés de l'app).
+export function testRenduEffetsEntreCoupsAnglais() {
+  titre('rendu · poses entre les coups — en anglais');
+  setChoixLangue('en');
+  try {
+    const cichlid = texteVisible(carte(CICHLID, 10413, false, actif(10413)));
+    ok(cichlid.includes('Count the debuffs applied between hits') && cichlid.includes('Applied on hit 2'),
+      'Crushed Hopes : la section et « Applied on hit 2 »');
+    egal(optionsAria(carte(RYU_TENEBRES, 13915, false, actif(13915)), 'When it lands: Decrease DEF'), ['Never lands', 'After hit 4', 'After hit 5'],
+      'PPK Combo : le sélecteur, nommé par l’effet SWARFARM');
+    ok(texteVisible(carte(SHAINA, 12602, false, actif(12602))).includes('Decrease DEF (from Precision)'), 'Crescent Moon Slash : « Decrease DEF (from Precision) »');
+    ok(texteVisible(carte(VENDHAN, 18127, false, actif(18127))).includes('Brand (in the Thunderer state)'), 'Wild Bolt : « Brand (in the Thunderer state) »');
+    ok(texteVisible(carte(XIAO_LIN, 8211, false)).includes('Hits that strike the target (random hits, 1 to 4)'), 'Water Dragon Attack : les coups au hasard');
+    const fei = texteVisible(carte(FEI, 8215, false));
+    ok(fei.includes('Hits that ignore DEF:') && fei.includes('Hit 4'), 'Dark Dragon Attack : un interrupteur par coup');
+    ok(texteVisible(carte(KIKI, 15105, false)).includes('Start of Pain: harmful effects on the target (0 to 2)'), 'Magical Eye : le compteur de Start of Pain');
+    ok(texteVisible(carte(SAVANNAH, 13608, false, actif(13608))).includes('Beneficial effects converted'), 'Critical Link : les effets convertis');
+    const virus = carte(STORM, 19708, false, actif(19708, { 'decrease-def': 1 }));
+    ok(texteVisible(virus).includes('Only one of these effects per hit:'), 'Virus : un seul effet par coup');
+    egal(optionsAria(virus, 'Effect applied after hit 1'), ['None', 'Decrease DEF', 'Decrease ATK SPD', 'Beneficial Effects Blocked'], 'Virus : les effets du coup 1');
+    const tout = [cichlid, texteVisible(virus), fei, texteVisible(carte(KIKI, 15105, false))].join(' ');
+    ok(!/Posé au coup|Après le coup|Un seul de ces effets|Coups qui|convertis|néfastes|Réduction de|Aucun/.test(tout), 'aucun texte français resté en dur');
+  } finally {
+    setChoixLangue('auto');
+  }
+}
+
+// Les options d'un sélecteur désigné par son `aria-label`, dans l'ordre.
+function optionsAria(html: string, aria: string): string[] | null {
+  const i = html.indexOf(`aria-label="${aria}"`);
+  if (i < 0) return null;
+  return [...html.slice(i, html.indexOf('</select>', i)).matchAll(/<option[^>]*>([^<]*)<\/option>/g)].map((m) => m[1]);
 }

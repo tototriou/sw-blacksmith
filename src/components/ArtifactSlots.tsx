@@ -1,6 +1,7 @@
 import { ReactNode, useRef } from 'react';
 import { Ban } from 'lucide-react';
-import { ARTIFACT_KINDS, ArtifactDetail } from '../types';
+import { ArtifactDetail, sortesArtefact } from '../types';
+import { useTraduction } from '../hooks/useLangue';
 import ArtifactIcon from './ArtifactIcon';
 import { COMPACT, useMediaQuery } from '../hooks/useMediaQuery';
 import { ZoneCliquable } from '../ui';
@@ -48,6 +49,7 @@ export default function ArtifactSlots({
   onSelectArtifact,
   renderOverlay,
 }: ArtifactSlotsProps) {
+  const textes = useTraduction();
   const refs = useRef<(HTMLDivElement | null)[]>([]);
   // ⚠️ **0,72 sous `sm`** — la même échelle que la roue de runes (RuneWheel) :
   // les deux blocs se lisent côte à côte, les réduire inégalement les
@@ -66,7 +68,7 @@ export default function ArtifactSlots({
 
   return (
     <div className="flex flex-col gap-1.5 compact:gap-1">
-      {ARTIFACT_KINDS.map(({ key, label }, slotIdx) => {
+      {sortesArtefact(textes).map(({ key, label }, slotIdx) => {
         const i = artifacts.findIndex((a) => a.kind === key);
         const a = i >= 0 ? artifacts[i] : null;
         if (!a) {

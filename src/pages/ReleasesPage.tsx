@@ -1,21 +1,25 @@
 import { Tag, ExternalLink } from 'lucide-react';
-import { RELEASES, CHANGE_META, ChangeKind, libelleVersion } from '../data/releases';
+import { CHANGE_META, ChangeKind, journal, libelleVersion } from '../data/releases';
+import { useLangue, useTraduction } from '../hooks/useLangue';
+import { formatDate } from '../i18n/format';
+import type { Langue } from '../i18n/langue';
 import { NOM_APP } from '../marque';
 
 const REPO = 'https://github.com/tototriou/sw-forge';
 
-// Date ISO → « 9 août 2026 ».
-function formatDate(iso: string): string {
+// Date ISO → « 9 août 2026 » (« August 9, 2026 » en anglais).
+function dateDeVersion(iso: string, langue: Langue): string {
   const d = new Date(`${iso}T00:00:00`);
-  return Number.isNaN(d.getTime())
-    ? iso
-    : d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+  return Number.isNaN(d.getTime()) ? iso : formatDate(d, langue);
 }
 
 // Ordre d'affichage des changements : nouveautés, puis corrections, puis doc.
 const ORDER: ChangeKind[] = ['feat', 'fix', 'docs'];
 
 export default function ReleasesPage() {
+  const langue = useLangue();
+  const t = useTraduction().nouveautes;
+  const versions = journal(langue);
   // ⚠️ Colonne BORNÉE : c'est une liste de textes courts qu'on lit de haut en
   // bas, pas un tableau à parcourir. Étalée sur toute la largeur, chaque entrée
   // devenait une ligne isolée au milieu du vide.
@@ -23,19 +27,19 @@ export default function ReleasesPage() {
     <div className="mx-auto max-w-[900px]">
       {/* Encre unie, plus de dégradé. */}
       <h1 className="font-display font-black text-[clamp(28px,4vw,42px)] text-ink mb-2">
-        Nouveautés
+        {t.titre}
       </h1>
       <p className="text-ink-dim text-sm leading-relaxed mb-6 max-w-2xl">
         {/* Un GABARIT, pas du texte coupé par `{NOM_APP}` : l'inventaire de
             l'interface relève ainsi la phrase entière (rebranding R2). */}
-        {`Ce qui a changé à chaque version de ${NOM_APP}. La version en cours est rappelée en bas de chaque page.`}{' '}
+        {t.intro(NOM_APP)}{' '}
         <a
           href={`${REPO}/releases`}
           target="_blank"
           rel="noreferrer"
           className="inline-flex items-center gap-1 text-accent hoverable:text-ink transition"
         >
-          Voir les releases sur GitHub <ExternalLink size={12} />
+          {t.voirSurGithub} <ExternalLink size={12} />
         </a>
       </p>
 
@@ -50,7 +54,7 @@ export default function ReleasesPage() {
           statut · date reste AU-DESSUS du titre, faute de place pour deux
           colonnes. */}
       <div>
-        {RELEASES.map((r, i) => (
+        {versions.map((r, i) => (
           <section
             key={r.version ?? 'en-preparation'}
             className="border-t border-border-soft py-5
@@ -59,22 +63,22 @@ export default function ReleasesPage() {
             <div className="flex items-baseline gap-2.5 flex-wrap mb-1 lg:row-span-3 lg:mb-0 lg:flex-col lg:items-start lg:gap-1.5">
               <h2 className="font-display text-lg tracking-wide flex items-center gap-1.5">
                 <Tag size={15} className={i === 0 ? 'text-star' : 'text-ink-dim'} />
-                {libelleVersion(r.version)}
+                {libelleVersion(r.version, t.enPreparation)}
               </h2>
               {/* ⚠️ « Version actuelle » désigne celle qui TOURNE. Une version
                   en préparation est en tête de liste sans être déployée : la
                   dire actuelle ferait croire au joueur qu'il l'utilise déjà. */}
               {i === 0 && r.version !== null && (
                 <span className="rounded-full bg-star/15 px-2 py-0.5 label text-star">
-                  Version actuelle
+                  {t.versionActuelle}
                 </span>
               )}
               {r.version === null && (
                 <span className="rounded-full bg-ink-dim/15 px-2 py-0.5 label text-ink-dim">
-                  Pas encore publiée
+                  {t.pasPubliee}
                 </span>
               )}
-              <span className="font-mono text-micro text-ink-dim">{formatDate(r.date)}</span>
+              <span className="font-mono text-micro text-ink-dim">{dateDeVersion(r.date, langue)}</span>
               {/* ⚠️ Le lien n'apparaît QUE si un tag Git correspond. Il était
                   écrit inconditionnellement : la 1.0.0, publiée avant que le
                   dépôt existe, menait à un 404. Un lien mort est pire que pas
@@ -86,9 +90,9 @@ export default function ReleasesPage() {
                   target="_blank"
                   rel="noreferrer"
                   className="ml-auto font-mono text-micro text-ink-dim hoverable:text-ink transition lg:ml-0"
-                  title={`Release v${r.version} sur GitHub`}
+                  title={t.releaseSurGithub(r.version)}
                 >
-                  GitHub ↗
+                  {t.lienGithub}
                 </a>
               )}
             </div>
@@ -114,7 +118,7 @@ export default function ReleasesPage() {
                     <span
                       className={`label ${CHANGE_META[c.kind].color}`}
                     >
-                      {CHANGE_META[c.kind].label}
+                      {t.sortes[c.kind]}
                     </span>
                     <span className="label">
                       {c.scope}

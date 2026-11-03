@@ -274,6 +274,15 @@ des lecteurs (« Start of Pain : effets néfastes sur la cible (0 à 2) »,
 « Effets de dégâts continus sur la cible »…) s'affichent avec les autres
 réglages du sort.
 
+Chaque effet s'affiche sous son nom, suivi de ses conditions de pose
+(`libelleEffetEntreCoups`) : en français, le libellé de l'app
+(`EFFETS_POSABLES_PAR_NOM`) ; en anglais, le nom SWARFARM de l'effet, celui du
+client anglais du jeu (« Decrease DEF », « Brand », « Stun » ; utilisateur,
+2026-11-03). Une condition (« sur coup critique », « en état Thunderer »,
+« par Precision ») est un code, `PrecisionPose`, que le dictionnaire dit dans
+la langue choisie (`degats.entreCoups.precisions`) ; un nom de sort, de passif
+ou de monstre y reste celui de SWARFARM.
+
 ## Le calcul
 
 Rien n'est jamais supposé posé : sans scénario actif, ou actif sans réussite,
@@ -429,6 +438,8 @@ interrupteur d'attaque appelée
 - `testRenduEffetsEntreCoupsEcran` : interrupteur, sélecteur limité,
   sélecteur par coup d'un tirage, section absente, compteurs, aux deux
   formats.
+- `testRenduEffetsEntreCoupsAnglais` : les mêmes textes en anglais, effets
+  sous leur nom SWARFARM, aucun texte français resté.
 
 Tests : [tests/degats-effets-entre-coups.test.ts](../../../tests/degats-effets-entre-coups.test.ts),
 [tests/rendu/effets-entre-coups-ecran.test.tsx](../../../tests/rendu/effets-entre-coups-ecran.test.tsx).

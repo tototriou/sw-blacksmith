@@ -36,6 +36,7 @@ import {
 import { computeStats, statsParPaire, type StatRow } from '../src/lib/stats';
 import { mainsPourCeCompte } from '../src/lib/optimizerRecipe';
 import { formatArtifactSub, splitArtifactSub, valeurArtefactPropre } from '../src/lib/effects';
+import { jeuFr } from '../src/i18n/jeu/fr';
 import { egal, ok, titre } from './outils';
 
 const attribut = (element: ElementKey, main = 101, sub = 0): ArtifactDetail => ({
@@ -517,14 +518,14 @@ export default function testArtefactOptim() {
     egal(valeurArtefactPropre(1.4), 1.4, 'une décimale RÉELLE est préservée, pas arrondie à l’unité');
     // Le libellé complet ne doit plus porter la traîne.
     ok(
-      !formatArtifactSub({ code: 218, value: 1.4000000000000001 }).includes('0000'),
+      !formatArtifactSub({ code: 218, value: 1.4000000000000001 }, jeuFr).includes('0000'),
       'le libellé affiché ne montre plus « 1.4000000000000001 »'
     );
     // ⚠️ Et le découpage autour de la valeur doit suivre : bâti sur la valeur
     // BRUTE, son motif ne matcherait plus la chaîne nettoyée, et la ligne
     // perdrait sa teinte de valeur en silence.
     egal(
-      splitArtifactSub({ code: 218, value: 1.4000000000000001 }).valeur,
+      splitArtifactSub({ code: 218, value: 1.4000000000000001 }, jeuFr).valeur,
       '1.4%',
       'le découpage retrouve la valeur nettoyée dans le texte'
     );

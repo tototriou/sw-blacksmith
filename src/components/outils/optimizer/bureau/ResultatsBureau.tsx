@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import type { AttenteResultats } from '../../../../lib/optimizerColonnes';
+import { useTraduction } from '../../../../hooks/useLangue';
 
 export type { AttenteResultats };
 
@@ -29,6 +30,7 @@ export const LARGEUR_RESULTATS_MIN = 328;
 export default function ResultatsBureau({ attente, children }: { attente: AttenteResultats | null; children?: ReactNode }) {
   const boite = useRef<HTMLElement>(null);
   const [tenue, setTenue] = useState(0);
+  const r = useTraduction().optimizer.resultats;
   useLayoutEffect(() => {
     if (attente === 'sans-carte') return;
     if (attente != null) { setTenue(0); return; }
@@ -43,7 +45,7 @@ export default function ResultatsBureau({ attente, children }: { attente: Attent
   return (
     <section
       ref={boite}
-      aria-label="Résultats"
+      aria-label={r.titre}
       style={{ minWidth: `min(${LARGEUR_RESULTATS_MIN}px, 100%)` }}
       className="w-full"
     >
@@ -52,10 +54,10 @@ export default function ResultatsBureau({ attente, children }: { attente: Attent
         // telle quelle au contenu de l'attente.
         <div className="flex min-h-[134px] flex-col gap-2" style={attente === 'sans-carte' && tenue > 0 ? { minHeight: tenue } : undefined}>
           <p className={`label ${attente === 'sans-carte' ? 'invisible' : ''}`} aria-hidden={attente === 'sans-carte' || undefined}>
-            {attente === 'sans-monstre' ? 'Choisis un monstre pour préparer la recherche.' : 'Aucune recherche lancée pour ce monstre.'}
+            {attente === 'sans-monstre' ? r.sansMonstre : r.sansRecherche}
           </p>
           <div className="flex flex-1 items-center justify-center rounded-lg border border-dashed border-border-soft px-3 text-center text-xs text-ink-dim">
-            Les builds trouvés s&apos;afficheront ici.
+            {r.ici}
           </div>
         </div>
       ) : (

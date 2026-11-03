@@ -194,9 +194,11 @@ De haut en bas :
        retire à l'adverse »).
      - **Ce qui est saisi À LA MAIN sur eux est repris** : c'est une saisie, pas
        une déduction, et l'ignorer déplacerait leur tour.
-     - ⚠️ **Aucune grille n'est écrite sur un adverse RÉEL** : l'analyse n'y pose
-       rien, et lui renvoyer une grille vide effacerait la saisie de
-       l'utilisateur. L'adversaire de **référence**, lui, en reçoit une — il est
+     - **Les effets globaux de Tablo et de Fast Pace écrivent aussi sur les
+       adverses réels**, sans effacer leurs cases manuelles. Les cases adverses
+       produites par l'analyse sont recalculées à la relance et retirées quand
+       le sort ne les produit plus. Sans effet global, aucune grille n'est
+       écrite sur un adverse réel. L'adversaire de **référence**, lui, en reçoit une — il est
        là pour être vérifié comme les autres.
      - ⚠️ **L'ordre d'affichage est conservé** dans l'entrée du moteur : c'est lui
        qui départage deux barres pleines à vitesse égale (`placement`). Trier par
@@ -260,7 +262,8 @@ De haut en bas :
    équipe » / « Tout en face »** (écrit la même valeur sur tous ses monstres au
    tick visé), puis une ligne par monstre. Cellules = `NumberField sansBoutons`
    (axe dense de la lib, voir [../../03-developpeur/interface/](../../03-developpeur/interface/)) ;
-   valeur **positive pour remplir, négative pour vider** (la barre reste ≥ 0),
+   valeur **positive pour remplir, négative pour vider**, de **−999 à +100 %**
+   (la barre reste ≥ 0 ; −100 points ne vide pas une jauge supérieure à 100 %),
    la cellule prenant le **ton** de sa valeur — vert pour un gain, rouge pour un
    retrait (axe `ton` de `NumberField`) — et portant son **`%`** (axe `suffix`) :
    ce sont des pourcentages de barre, pas des points ;

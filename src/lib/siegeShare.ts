@@ -21,6 +21,7 @@ import { NOM_APP, PREFIXE_FICHIER } from '../marque';
 import { formatExport, formatReconnu } from './formatsExport';
 import { jourLocal } from './telechargement';
 import { cleanGear } from './equipementPartage';
+import type { Dictionnaire } from '../i18n/fr';
 
 // ⚠️ Un IDENTIFIANT de format, pas le nom de l'app. Il s'écrivait
 // `sw-forge/siege-equipes` : cet ancien identifiant reste relu, sans quoi les
@@ -126,28 +127,28 @@ export type LectureSiege =
 // Lit un fichier d'équipes. ⚠️ Le contenu vient d'un tiers : rien n'est cru sur
 // parole, et un fichier hors format est REFUSÉ en entier, avec la raison —
 // jamais appliqué à moitié.
-export function lireEquipes(texte: string, monsters: Monster[]): LectureSiege {
+export function lireEquipes(texte: string, monsters: Monster[], t: Dictionnaire): LectureSiege {
   let brut: unknown;
   try {
     brut = JSON.parse(texte);
   } catch {
-    return { ok: false, erreur: "Ce fichier n'est pas du JSON." };
+    return { ok: false, erreur: t.partage.siege.pasJson };
   }
   const o = brut as Partial<FichierSiege> | null;
   if (!o || typeof o !== 'object' || !formatReconnu(o.format, 'siege-equipes')) {
-    return { ok: false, erreur: `Ce fichier n'est pas un export d'équipes de siège ${NOM_APP}.` };
+    return { ok: false, erreur: t.partage.siege.autreFormat(NOM_APP) };
   }
   // Deux refus distincts : une version absente ou illisible est un fichier
   // abîmé — le dire « plus récent » enverrait chercher une mise à jour qui
   // n'existe pas.
   if (typeof o.version !== 'number' || !Number.isFinite(o.version)) {
-    return { ok: false, erreur: 'Export d’équipes abîmé : version illisible.' };
+    return { ok: false, erreur: t.partage.siege.versionIllisible };
   }
   if (o.version > VERSION_SIEGE) {
-    return { ok: false, erreur: `Ce fichier vient d’une version plus récente de ${NOM_APP}.` };
+    return { ok: false, erreur: t.partage.siege.plusRecent(NOM_APP) };
   }
   if (!Array.isArray(o.equipes)) {
-    return { ok: false, erreur: 'Le fichier ne contient aucune liste d’équipes.' };
+    return { ok: false, erreur: t.partage.siege.sansEquipes };
   }
   const parCom2us = new Map<number, Monster>();
   for (const m of monsters) if (m.com2usId != null && !parCom2us.has(m.com2usId)) parCom2us.set(m.com2usId, m);
@@ -168,7 +169,7 @@ export function lireEquipes(texte: string, monsters: Monster[]): LectureSiege {
         if (id != null && !m) inconnus.push(typeof mx?.nom === 'string' && mx.nom ? mx.nom : `#${id}`);
         // Un équipement abîmé est ignoré, pas le fichier : la composition reste
         // lisible sans lui.
-        const gearPartage = m ? cleanGear(mx?.equipement, avertir, `Équipe ${ie + 1}, ${m.name}`) : undefined;
+        const gearPartage = m ? cleanGear(mx?.equipement, avertir, t.partage.siege.equipe(ie + 1, m.name), t) : undefined;
         if (gearPartage) avecRunes++;
         return {
           monsterId: m ? String(m.id) : null,

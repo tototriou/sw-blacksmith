@@ -5,6 +5,7 @@ import { normaliserCompetencesInvocateur } from './competencesInvocateur';
 import { rattacherStockageOptimizer } from './optimizerRattachement';
 import { bornesAvecMesure, bornesBienFormees, triDesResultats, type ColonneResultat } from './colonnesResultats';
 import type { OptimMetric } from './runeOptim';
+import type { Dictionnaire } from '../i18n/fr';
 export type { RapportReverificationOptimizer } from './optimizerRattachement';
 import {
   exclusionSelectorKey, resolveExclusionEntry,
@@ -73,7 +74,7 @@ function sansReglagesRetires(c: CriteresOptimizer): CriteresOptimizer {
   return copie as unknown as CriteresOptimizer;
 }
 
-function criteresValides(v: unknown): v is CriteresOptimizer {
+function criteresValides(v: unknown, t: Dictionnaire): v is CriteresOptimizer {
   if (!objet(v)) return false;
   // Tous les champs personnels restent obligatoires, y compris ceux ignorés
   // par une recette, sauf ceux arrivés après coup (`CHAMPS_AJOUTES`).
@@ -95,7 +96,7 @@ function criteresValides(v: unknown): v is CriteresOptimizer {
     artifactMainByKind: v.artifactMainByKind, relicMainChoice: v.relicMainChoice, relicUniqueChoice: v.relicUniqueChoice,
     lignesVerrouillees: v.lignesVerrouillees,
     requirement: { sets: v.comboSets, minStats: v.minStats, maxStats: v.maxStats, mainStats: v.mainStatsBySlot, lockedRunes: v.lockedRunes },
-  }));
+  }), t);
   return lu.recipe !== null && !lu.avertissements?.length;
 }
 
@@ -108,19 +109,20 @@ function leadValide(v: unknown): v is LeaderSkill | null {
 }
 
 /** Valide seulement la forme : aucune équipe ne disparaît parce que les listes sont illisibles. */
-export function validerEquipesOptimizer(valeur: unknown): { teams: EquipeOptimizer[]; rejets: unknown[]; rapport: string[] } {
+export function validerEquipesOptimizer(valeur: unknown, t: Dictionnaire): { teams: EquipeOptimizer[]; rejets: unknown[]; rapport: string[] } {
+  const r = t.optimizer.stockage;
   const teams: EquipeOptimizer[] = [], rejets: unknown[] = [], rapport: string[] = [];
-  if (!Array.isArray(valeur)) return { teams, rejets: valeur === undefined ? [] : [valeur], rapport: ['Les équipes de l’Optimizer sont illisibles.'] };
+  if (!Array.isArray(valeur)) return { teams, rejets: valeur === undefined ? [] : [valeur], rapport: [r.equipesIllisibles] };
   const ids = new Set<string>(), affectes = new Set<string>();
   for (const [index, v] of valeur.entries()) {
     if (!objet(v) || !texte(v.id) || !texte(v.listId) || !Array.isArray(v.members) || v.members.length < 2 || v.members.length > 5
       || !v.members.every(selecteurValide) || !leadValide(v.lead)
       || (v.leader !== undefined && (!selecteurValide(v.leader) || !v.members.some((s) => exclusionSelectorKey(s) === exclusionSelectorKey(v.leader as ExclusionSelector))))) {
-      rejets.push(v); rapport.push(`Équipe ${index + 1} malformée : ignorée.`); continue;
+      rejets.push(v); rapport.push(r.equipeMalformee(index + 1)); continue;
     }
     const cles = v.members.map((s) => cleMemoireMembre(v.listId as string, s));
     if (ids.has(v.id) || new Set(cles).size !== cles.length || cles.some((k) => affectes.has(k))) {
-      rejets.push(v); rapport.push(`Équipe ${index + 1} : identifiant ou membre déjà affecté, ignorée.`); continue;
+      rejets.push(v); rapport.push(r.equipeDejaAffectee(index + 1)); continue;
     }
     ids.add(v.id); cles.forEach((k) => affectes.add(k));
     teams.push({ id: v.id, listId: v.listId, members: v.members, lead: v.lead,
@@ -136,29 +138,30 @@ export function ecrireMembresOptimizer(donnees: DonneesMembresOptimizer): string
     listContents: [...donnees.listContents].map(([listId, contenu]) => ({ listId, contenu })),
     ...(donnees.rejets.memories.length || donnees.rejets.teams.length || donnees.rejets.listContents.length || donnees.rejets.identities?.length ? { rejets: donnees.rejets } : {}) });
 }
-export function lireMembresOptimizer(brut: string | null): DonneesMembresOptimizer & { rapport: string[] } {
+export function lireMembresOptimizer(brut: string | null, t: Dictionnaire): DonneesMembresOptimizer & { rapport: string[] } {
+  const r = t.optimizer.stockage;
   const memories = new Map<string, MemoireMembreOptimizer>(), rapport: string[] = [];
   const identities = new Map<string, IdentiteMembreOptimizer>();
   const listContents = new Map<string, ContenuListeOptimizer>();
   const rejets: DonneesMembresOptimizer['rejets'] = { memories: [], teams: [], listContents: [] };
   if (brut === null) return { identities, memories, listContents, teams: [], rejets, rapport };
   let v: unknown;
-  try { v = JSON.parse(brut); } catch { return { identities, memories, listContents, teams: [], rejets, rapport: ['Le stockage des membres de l’Optimizer est illisible.'] }; }
-  if (!objet(v)) return { identities, memories, listContents, teams: [], rejets: { memories: [v], teams: [], listContents: [] }, rapport: ['Le stockage des membres de l’Optimizer est malformé.'] };
+  try { v = JSON.parse(brut); } catch { return { identities, memories, listContents, teams: [], rejets, rapport: [r.illisible] }; }
+  if (!objet(v)) return { identities, memories, listContents, teams: [], rejets: { memories: [v], teams: [], listContents: [] }, rapport: [r.malforme] };
   // Ne jamais revalider la section des rejets : un doublon devenu seul ne doit
   // pas se réactiver parce qu'une autre entrée a été supprimée entre-temps.
   if (objet(v.rejets)) {
     for (const genre of ['memories', 'teams', 'listContents'] as const) {
       const valeurs = v.rejets[genre];
       rejets[genre] = Array.isArray(valeurs) ? valeurs : valeurs === undefined ? [] : [valeurs];
-      for (const [index] of rejets[genre].entries()) rapport.push(`${genre === 'memories' ? 'Mémoire' : genre === 'teams' ? 'Équipe' : 'Contenu de liste'} rejeté(e) ${index + 1} conservé(e) sans application.`);
+      for (const [index] of rejets[genre].entries()) rapport.push(r.rejetConserve(r.genres[genre], index + 1));
     }
   } else if (v.rejets !== undefined) {
-    rejets.memories.push(v.rejets); rapport.push('La section des rejets est malformée : conservée sans application.');
+    rejets.memories.push(v.rejets); rapport.push(r.rejetsMalformes);
   }
   if (objet(v.rejets) && v.rejets.identities !== undefined) {
     rejets.identities = Array.isArray(v.rejets.identities) ? v.rejets.identities : [v.rejets.identities];
-    rapport.push('Identités rejetées conservées sans application.');
+    rapport.push(r.identitesRejetees);
   }
   if (v.identities !== undefined) {
     const valeurs = Array.isArray(v.identities) ? v.identities : [v.identities];
@@ -167,35 +170,35 @@ export function lireMembresOptimizer(brut: string | null): DonneesMembresOptimiz
       if (!Array.isArray(v.identities) || !Array.isArray(paire) || paire.length !== 2 || !objet(m)
         || !texte(m.listId) || !selecteurValide(m.selector) || !entierPositif(m.com2usId)
         || paire[0] !== cleMemoireMembre(m.listId, m.selector) || identities.has(paire[0])) {
-        (rejets.identities ??= []).push(paire); rapport.push('Identité malformée ou dupliquée : conservée sans application.');
+        (rejets.identities ??= []).push(paire); rapport.push(r.identiteMalformee);
       } else identities.set(paire[0], { listId: m.listId, selector: m.selector, com2usId: m.com2usId });
     }
   }
   if (!Array.isArray(v.memories)) {
     if (v.memories !== undefined) rejets.memories.push(v.memories);
-    rapport.push('L’index des mémoires est illisible.');
+    rapport.push(r.indexMemoires);
   }
   else for (const [index, paire] of v.memories.entries()) {
     const m = Array.isArray(paire) ? paire[1] : undefined;
     if (!Array.isArray(paire) || paire.length !== 2 || !texte(paire[0]) || !objet(m) || !texte(m.listId)
-      || !selecteurValide(m.selector) || !entierPositif(m.com2usId) || !criteresValides(m.criteres)
+      || !selecteurValide(m.selector) || !entierPositif(m.com2usId) || !criteresValides(m.criteres, t)
       || paire[0] !== cleMemoireMembre(m.listId, m.selector) || memories.has(paire[0])) {
-      rejets.memories.push(paire); rapport.push(`Mémoire ${index + 1} malformée ou dupliquée : ignorée.`); continue;
+      rejets.memories.push(paire); rapport.push(r.memoireMalformee(index + 1)); continue;
     }
     const criteres = { ...sansReglagesRetires(m.criteres), damageSetup: normaliserCompetencesInvocateur(m.criteres.damageSetup) };
     memories.set(paire[0], { listId: m.listId, selector: m.selector, com2usId: m.com2usId, criteres });
   }
-  const equipes = validerEquipesOptimizer(v.teams);
+  const equipes = validerEquipesOptimizer(v.teams, t);
   rejets.teams.push(...equipes.rejets);
   // Aucun défaut ni validation contre les listes : un stockage historique ou
   // des listes illisibles ne permettent pas de déduire le contenu de combat.
   if (v.listContents !== undefined && !Array.isArray(v.listContents)) {
     rejets.listContents.push(v.listContents);
-    rapport.push('L’index des contenus de liste est illisible : conservé sans application.');
+    rapport.push(r.indexContenus);
   } else if (Array.isArray(v.listContents)) for (const [index, entree] of v.listContents.entries()) {
     if (!objet(entree) || !texte(entree.listId) || !contenuListeValide(entree.contenu) || listContents.has(entree.listId)) {
       rejets.listContents.push(entree);
-      rapport.push(`Contenu de liste ${index + 1} malformé ou dupliqué : conservé sans application.`);
+      rapport.push(r.contenuMalforme(index + 1));
     } else listContents.set(entree.listId, entree.contenu);
   }
   return { identities, memories, listContents, teams: equipes.teams, rejets, rapport: [...rapport, ...equipes.rapport] };
@@ -224,13 +227,13 @@ export function lireMemoireMembre(memories: DonneesMembresOptimizer['memories'],
 }
 
 export function enregistrerMemoireMembre(memories: DonneesMembresOptimizer['memories'], membre: Omit<MemoireMembreOptimizer, 'criteres'>,
-  criteres: CriteresOptimizer, data: ExclusionSourceData): { memories: DonneesMembresOptimizer['memories']; rapport: string[] } {
+  criteres: CriteresOptimizer, data: ExclusionSourceData, t: Dictionnaire): { memories: DonneesMembresOptimizer['memories']; rapport: string[] } {
   const cle = cleMemoireMembre(membre.listId, membre.selector), ancienne = memories.get(cle);
   if (!entierPositif(membre.com2usId) || resolveExclusionEntry(membre.selector, data)?.monster.com2usId !== membre.com2usId
     || (ancienne && ancienne.com2usId !== membre.com2usId)) {
-    return { memories, rapport: ['Mémoire conservée sans modification : l’espèce du membre ne correspond pas.'] };
+    return { memories, rapport: [t.optimizer.stockage.especeDifferente] };
   }
-  if (!criteresValides(criteres)) return { memories, rapport: ['Mémoire non écrite : critères malformés.'] };
+  if (!criteresValides(criteres, t)) return { memories, rapport: [t.optimizer.stockage.criteresMalformes] };
   const copie = new Map(memories);
   copie.set(cle, { ...membre, selector: { ...membre.selector }, criteres: photoCriteres(criteres, { type: 'personnel' }) });
   return { memories: copie, rapport: [] };
@@ -255,7 +258,7 @@ export function memoiresAvecMesureDesBornes(memories: DonneesMembresOptimizer['m
 }
 
 /** Même revérification pure pour un réimport et la reprise d'un état sauvegardé. */
-export function reverifierStockageOptimizer(stockage: StockageOptimizer, data: ExclusionSourceData, runeIds: Set<number>, artifactIds?: Set<number>):
+export function reverifierStockageOptimizer(stockage: StockageOptimizer, data: ExclusionSourceData, runeIds: Set<number>, t: Dictionnaire, artifactIds?: Set<number>):
   ReturnType<typeof rattacherStockageOptimizer> {
-  return rattacherStockageOptimizer(stockage, data, runeIds, artifactIds);
+  return rattacherStockageOptimizer(stockage, data, runeIds, t, artifactIds);
 }

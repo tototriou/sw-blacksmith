@@ -25,9 +25,14 @@
 
 import { ArtifactDetail, BaseStats, GearSet, Monster, RelicDetail } from '../types';
 import { RUNE_EFFECT, ARTIFACT_MAIN, RELIC_MAIN, StatKey, SET_STAT_BONUS, activeSets } from './effects';
+import { jeuFr } from '../i18n/jeu/fr';
 
 export interface StatRow {
   key: StatKey;
+  // ⚠️ Le libellé FRANÇAIS du jeu (`jeuFr.stats`), gardé parce que le moteur
+  // de l'Optimizer s'en sert pour reconnaître une ligne (colonnes compactes,
+  // candidatsCompacts.ts). L'AFFICHAGE ne le lit pas : il nomme la stat par
+  // `jeu.stats[key]`, dans la langue choisie.
   label: string;
   base: number;
   bonus: number;
@@ -45,15 +50,15 @@ export interface StatRow {
  */
 export const STATS_AVEC_BASE: ReadonlySet<StatKey> = new Set<StatKey>(['hp', 'atk', 'def', 'spd']);
 
-const ROWS: { key: StatKey; label: string; suffix: string }[] = [
-  { key: 'hp', label: 'PV', suffix: '' },
-  { key: 'atk', label: 'ATQ', suffix: '' },
-  { key: 'def', label: 'DEF', suffix: '' },
-  { key: 'spd', label: 'VIT', suffix: '' },
-  { key: 'cr', label: 'Taux Crit', suffix: '%' },
-  { key: 'cd', label: 'Dmg Crit', suffix: '%' },
-  { key: 'res', label: 'RES', suffix: '%' },
-  { key: 'acc', label: 'Précision', suffix: '%' },
+const ROWS: { key: StatKey; suffix: string }[] = [
+  { key: 'hp', suffix: '' },
+  { key: 'atk', suffix: '' },
+  { key: 'def', suffix: '' },
+  { key: 'spd', suffix: '' },
+  { key: 'cr', suffix: '%' },
+  { key: 'cd', suffix: '%' },
+  { key: 'res', suffix: '%' },
+  { key: 'acc', suffix: '%' },
 ];
 
 export function computeStats(gear: GearSet): StatRow[] {
@@ -141,7 +146,7 @@ function terminerStats({ flat, pct, baseVal, sets }: AccumulationStats, relic: R
     }
   }
 
-  return ROWS.map(({ key, label, suffix }) => {
+  return ROWS.map(({ key, suffix }) => {
     let total: number;
     if (key === 'hp' || key === 'atk' || key === 'def') {
       // Le bonus en % est arrondi AU SUPÉRIEUR avant d'être ajouté.
@@ -149,7 +154,7 @@ function terminerStats({ flat, pct, baseVal, sets }: AccumulationStats, relic: R
     } else {
       total = baseVal[key] + flat[key];
     }
-    return { key, label, base: baseVal[key], bonus: total - baseVal[key], total, suffix };
+    return { key, label: jeuFr.stats[key], base: baseVal[key], bonus: total - baseVal[key], total, suffix };
   });
 }
 

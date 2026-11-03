@@ -18,6 +18,7 @@ import { encodeRecosJson, SOURCE_MAX, validateRecosImport } from '../src/lib/rec
 import type { Monster, Reco, RecoCounter, RecoDeck, RecoPayload, RecoSlot } from '../src/types';
 import { egal, ok, titre } from './outils';
 import { connusReels, monstreExemple } from './reco-defenses.test';
+import { fr } from '../src/i18n/fr';
 
 // Index FICTIF : 1, 4 et 40 ont un lead de Guilde (actif en siège) ; 2, 3, 5 à
 // 12 n'en ont pas. Les autres identifiants sont absents des données : leur lead
@@ -204,14 +205,14 @@ export function testRecoFusionImport() {
   egal(fus.recos[0].origin, 'mine', 'une recommandation fusionnée garde son origine');
   egal(fus.recos[0].decks.length, 2, 'le deck nouveau est ajouté');
   egal(fus.bilan, { decksAjoutes: 1, decksEnrichis: 1, defensesAjoutees: 1, decksInchanges: 0, recosAjoutees: 1, recosFusionnees: 1 }, 'bilan de l\'import');
-  egal(messageFusion(fus.bilan), 'Fusion : 1 deck ajouté, 1 deck enrichi de 1 défense · 1 recommandation ajoutée à part. Rien n\'a été retiré ni modifié.', 'message après la fusion');
+  egal(messageFusion(fus.bilan, fr), 'Fusion : 1 deck ajouté, 1 deck enrichi de 1 défense · 1 recommandation ajoutée à part. Rien n\'a été retiré ni modifié.', 'message après la fusion');
   egal(
-    messageFusion({ decksAjoutes: 0, decksEnrichis: 0, defensesAjoutees: 0, decksInchanges: 3, recosAjoutees: 0, recosFusionnees: 1 }),
+    messageFusion({ decksAjoutes: 0, decksEnrichis: 0, defensesAjoutees: 0, decksInchanges: 3, recosAjoutees: 0, recosFusionnees: 1 }, fr),
     'Fusion : rien de nouveau, tous ses decks et leurs défenses étaient déjà là. Rien n\'a été retiré ni modifié.',
     'message quand le fichier n\'apporte rien',
   );
-  egal(apercuFusion({ decksAjoutes: 3, decksEnrichis: 2, defensesAjoutees: 5, decksInchanges: 0 }), '3 decks nouveaux, à la fin ; 2 decks que tu as déjà gagnent 5 défenses visées.', 'aperçu avant de choisir');
-  egal(apercuFusion({ decksAjoutes: 0, decksEnrichis: 0, defensesAjoutees: 0, decksInchanges: 1 }), 'Rien de nouveau : tous ses decks et leurs défenses y sont déjà.', 'aperçu quand rien n\'est nouveau');
+  egal(apercuFusion({ decksAjoutes: 3, decksEnrichis: 2, defensesAjoutees: 5, decksInchanges: 0 }, fr), '3 decks nouveaux, à la fin ; 2 decks que tu as déjà gagnent 5 défenses visées.', 'aperçu avant de choisir');
+  egal(apercuFusion({ decksAjoutes: 0, decksEnrichis: 0, defensesAjoutees: 0, decksInchanges: 1 }, fr), 'Rien de nouveau : tous ses decks et leurs défenses y sont déjà.', 'aperçu quand rien n\'est nouveau');
 }
 
 export function testRecoFusionSource() {
@@ -219,13 +220,13 @@ export function testRecoFusionSource() {
   const r = reco({ source: '  outil:abc  ', decks: [deck([1, 2, 3])] });
   const json = encodeRecosJson([r]);
   ok(json.includes('"source": "outil:abc"'), 'écrite à l\'export, trimée');
-  const lu = validateRecosImport(json);
+  const lu = validateRecosImport(json, fr);
   egal(lu.recos?.[0].source, 'outil:abc', 'relue à l\'import');
   egal(lu.warnings, [], 'aucun avertissement : un champ en plus, pas une version de plus');
   ok(!encodeRecosJson([{ ...r, source: undefined }]).includes('"source"'), 'absente : la clé n\'est pas écrite');
 
   const brut = (source: unknown) =>
-    validateRecosImport(JSON.stringify({ format: 'swblacksmith/recommandations', version: 5, recommandations: [{ nom: 'R', source, decks: [{ monstres: [{ com2usId: 1 }] }] }] }));
+    validateRecosImport(JSON.stringify({ format: 'swblacksmith/recommandations', version: 5, recommandations: [{ nom: 'R', source, decks: [{ monstres: [{ com2usId: 1 }] }] }] }), fr);
   const pasTexte = brut(42);
   egal(pasTexte.recos?.[0].source, undefined, 'source qui n\'est pas un texte : ignorée');
   ok(pasTexte.warnings.some((w) => w.includes('« source » n\'est pas un texte')), '… et signalée');

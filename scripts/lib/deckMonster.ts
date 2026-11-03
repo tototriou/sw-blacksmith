@@ -8,6 +8,7 @@ import { readFileSync } from 'fs';
 import { parseAccountSource, parseAccountInventory, parseSiegeOffense, parseSiegeDefense } from '../../src/lib/importAccount';
 import { GearSet } from '../../src/types';
 import { loadMonstersList } from './monstersData';
+import { fr } from '../../src/i18n/fr';
 
 export interface DeckMonsterArgs {
   exportPath: string;
@@ -47,7 +48,7 @@ export function loadDeckMonster({ exportPath, deckId, monsterName, defense }: De
   const nameByCom2us = new Map<number, string>();
   for (const mon of loadMonstersList()) if (mon.com2usId != null) nameByCom2us.set(mon.com2usId, mon.name);
 
-  const { decks, error } = defense ? parseSiegeDefense(data) : parseSiegeOffense(data);
+  const { decks, error } = defense ? parseSiegeDefense(data, fr) : parseSiegeOffense(data, fr);
   if (error) console.error('Erreur parse siège :', error);
 
   const deck = decks.find((d) => d.deckId === deckId);
@@ -66,6 +67,6 @@ export function loadDeckMonster({ exportPath, deckId, monsterName, defense }: De
   }
 
   const gear: GearSet = slot.gear;
-  const { runes: allRunes, relics: allRelics } = parseAccountInventory(data);
+  const { runes: allRunes, relics: allRelics } = parseAccountInventory(data, fr);
   return { data, deck, gear, allRunes, allRelics, com2usId: slot.com2usId };
 }

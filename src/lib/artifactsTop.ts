@@ -12,7 +12,11 @@
 // entre eux sur UNE propriété.
 
 import { ArtifactArchetype, ArtifactDetail, ElementKey } from '../types';
-import { ARTIFACT_SUB, artifactSubKinds, artifactSubName, artifactSubOrder, isArtifactSub } from './effects';
+import { CODES_SOUS_PROPRIETES, artifactSubKinds, artifactSubName, artifactSubOrder, isArtifactSub } from './effects';
+// Titres et en-têtes dans la langue reçue (`t`) : les libellés du jeu qu'ils
+// citent viennent du lexique de cette langue.
+import type { Dictionnaire } from '../i18n/fr';
+import { nomElement } from '../i18n/jeu';
 import { artifactScore } from './artifacts';
 
 // Le groupe montré : un attribut ou un type.
@@ -20,16 +24,17 @@ export type GroupeTop = Exclude<ElementKey, 'unknown'> | ArtifactArchetype;
 
 const ELEMENTS_TOP: GroupeTop[] = ['water', 'fire', 'wind', 'light', 'dark'];
 
-export const GROUPES_TOP: { key: GroupeTop; label: string }[] = [
-  { key: 'water', label: 'Eau' },
-  { key: 'fire', label: 'Feu' },
-  { key: 'wind', label: 'Vent' },
-  { key: 'light', label: 'Lumière' },
-  { key: 'dark', label: 'Ténèbres' },
-  { key: 'attack', label: 'Attaque' },
-  { key: 'defense', label: 'Défense' },
-  { key: 'hp', label: 'PV' },
-  { key: 'support', label: 'Support' },
+// Le nom d'un groupe vient du lexique du jeu (`nomElement`, `nomArchetype`).
+export const GROUPES_TOP: { key: GroupeTop }[] = [
+  { key: 'water' },
+  { key: 'fire' },
+  { key: 'wind' },
+  { key: 'light' },
+  { key: 'dark' },
+  { key: 'attack' },
+  { key: 'defense' },
+  { key: 'hp' },
+  { key: 'support' },
 ];
 
 export const TAILLE_TOP = 10;
@@ -57,56 +62,64 @@ export function dansGroupe(art: ArtifactDetail, groupe: GroupeTop): boolean {
 // colonnes le nom noyait ce qui les distingue. Une colonne sans élément
 // propre (`entete` absent) prend le nom complet de la propriété
 // (`artifactSubName`), sur plusieurs lignes.
+// Titres et en-têtes se lisent dans la langue de `t` : les familles portent
+// une CLÉ (`artefactsCompte.familles`), les en-têtes une fonction du dictionnaire.
+type Entete = (t: Dictionnaire) => string;
+type CleFamille = keyof Dictionnaire['artefactsCompte']['familles'];
 interface FamilleDef {
-  titre: string;
-  colonnes: { code: number; entete?: string }[];
+  titre: CleFamille;
+  colonnes: { code: number; entete?: Entete }[];
 }
 
-const PAR_ELEMENT = (base: number) => [
-  { code: base, entete: 'Feu' },
-  { code: base + 1, entete: 'Eau' },
-  { code: base + 2, entete: 'Vent' },
-  { code: base + 3, entete: 'Lumière' },
-  { code: base + 4, entete: 'Ténèbres' },
-];
+const PAR_ELEMENT = (base: number) =>
+  (['fire', 'water', 'wind', 'light', 'dark'] as const).map((el, i) => ({
+    code: base + i,
+    entete: (t: Dictionnaire) => nomElement(t.jeu, el),
+  }));
 
 const PAR_COMPETENCE = (base: number, n: number) =>
-  Array.from({ length: n }, (_, i) => ({ code: base + i, entete: `[Comp.${i + 1}]` }));
+  Array.from({ length: n }, (_, i) => ({ code: base + i, entete: (t: Dictionnaire) => t.artefactsCompte.competence(String(i + 1)) }));
+
+const stat = (cle: 'hp' | 'atk' | 'def' | 'spd'): Entete => (t) => t.jeu.stats[cle];
 
 // ⚠️ **Les dégâts REÇUS d'abord**, puis les infligés — l'inverse de la
 // recherche du jeu, à dessein : c'est la ligne qu'on cherche d'abord sur un
 // artéfact d'attribut (choix de Thomas). Le reste suit l'ordre du jeu.
 const FAMILLES: FamilleDef[] = [
-  { titre: 'Réduction des dégâts reçus', colonnes: PAR_ELEMENT(305) },
-  { titre: 'Augmentation des dégâts infligés', colonnes: PAR_ELEMENT(300) },
+  { titre: 'recus', colonnes: PAR_ELEMENT(305) },
+  { titre: 'infliges', colonnes: PAR_ELEMENT(300) },
   {
-    titre: 'Augmentation des dégâts critiques',
-    colonnes: [...PAR_COMPETENCE(400, 4), { code: 410, entete: '[Comp.3/4]' }, { code: 411, entete: '1re attaque' }],
-  },
-  { titre: 'Augmentation des soins', colonnes: PAR_COMPETENCE(404, 3) },
-  { titre: 'Augmentation de la précision', colonnes: PAR_COMPETENCE(407, 3) },
-  {
-    titre: 'Effet de renforcement',
+    titre: 'critiques',
     colonnes: [
-      { code: 226, entete: 'ATQ/DEF' },
-      { code: 204, entete: 'ATQ' },
-      { code: 205, entete: 'DEF' },
+      ...PAR_COMPETENCE(400, 4),
+      { code: 410, entete: (t) => t.artefactsCompte.competence('3/4') },
+      { code: 411, entete: (t) => t.artefactsCompte.premiereAttaque },
+    ],
+  },
+  { titre: 'soins', colonnes: PAR_COMPETENCE(404, 3) },
+  { titre: 'precision', colonnes: PAR_COMPETENCE(407, 3) },
+  {
+    titre: 'renforcement',
+    colonnes: [
+      { code: 226, entete: (t) => `${t.jeu.stats.atk}/${t.jeu.stats.def}` },
+      { code: 204, entete: stat('atk') },
+      { code: 205, entete: stat('def') },
     ],
   },
   {
-    titre: 'Dégâts supplémentaires en proportion de',
+    titre: 'proportion',
     colonnes: [
-      { code: 218, entete: 'PV' },
-      { code: 219, entete: 'ATQ' },
-      { code: 220, entete: 'DEF' },
-      { code: 221, entete: 'VIT' },
+      { code: 218, entete: stat('hp') },
+      { code: 219, entete: stat('atk') },
+      { code: 220, entete: stat('def') },
+      { code: 221, entete: stat('spd') },
     ],
   },
-  { titre: 'Dégâts critiques selon la cible', colonnes: [{ code: 222 }, { code: 223 }, { code: 224 }] },
+  { titre: 'cible', colonnes: [{ code: 222 }, { code: 223 }, { code: 224 }] },
 ];
 
-// Tout le reste tombe ici, comme sous « Autres sous-propriétés » dans le jeu.
-export const TITRE_AUTRES = 'Autres sous-propriétés';
+// Tout le reste tombe sous « Autres sous-propriétés », comme dans le jeu
+// (`artefactsCompte.familles.autres`).
 
 export interface CelluleTop {
   art: ArtifactDetail;
@@ -152,6 +165,7 @@ export const dePrincipale = (art: ArtifactDetail, principales: readonly number[]
 export function topParPropriete(
   artifacts: ArtifactDetail[],
   groupe: GroupeTop,
+  t: Dictionnaire,
   principales: readonly number[] | null = null,
   taille = TAILLE_TOP
 ): FamilleTop[] {
@@ -175,9 +189,9 @@ export function topParPropriete(
     if (s === undefined) scores.set(a, (s = artifactScore(a)));
     return s;
   };
-  const colonne = (code: number, entete?: string): ColonneTop => ({
+  const colonne = (code: number, entete?: Entete): ColonneTop => ({
     code,
-    entete: entete ?? artifactSubName(code),
+    entete: entete ? entete(t) : artifactSubName(code, t.jeu),
     court: entete !== undefined,
     cellules: (parCode.get(code) ?? [])
       .sort((x, y) => y.valeur - x.valeur || score(y.art) - score(x.art) || x.art.id - y.art.id)
@@ -191,14 +205,13 @@ export function topParPropriete(
   for (const f of FAMILLES) {
     const colonnes = f.colonnes.filter((c) => possible(c.code)).map((c) => colonne(c.code, c.entete));
     for (const c of f.colonnes) ranges.add(c.code);
-    if (colonnes.length > 0) familles.push({ titre: f.titre, colonnes });
+    if (colonnes.length > 0) familles.push({ titre: t.artefactsCompte.familles[f.titre], colonnes });
   }
-  const autres = Object.keys(ARTIFACT_SUB)
-    .map(Number)
+  const autres = CODES_SOUS_PROPRIETES
     .filter((code) => possible(code) && !ranges.has(code))
     .sort((a, b) => artifactSubOrder(a) - artifactSubOrder(b))
     .map((code) => colonne(code));
-  if (autres.length > 0) familles.push({ titre: TITRE_AUTRES, colonnes: autres });
+  if (autres.length > 0) familles.push({ titre: t.artefactsCompte.familles.autres, colonnes: autres });
   return familles;
 }
 

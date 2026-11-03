@@ -21,12 +21,13 @@ import { mapBoxMonsters } from '../../src/lib/applyAccount';
 import type { Monster } from '../../src/types';
 import { egal, exportSynthetique, faussLocalStorage, monstersJson, ok, titre } from '../outils';
 import { auTelephone, bouton, boutons, onglets, rendre, texteVisible, valeurs } from './outils-rendu';
+import { fr } from '../../src/i18n/fr';
 
 const MONSTRES = monstersJson() as Monster[];
 const PAR_COM2US = new Map(MONSTRES.filter((m) => m.com2usId != null).map((m) => [m.com2usId as number, m]));
 const SOURCE = exportSynthetique();
-export const BOX = mapBoxMonsters(parseAccountBox(SOURCE).monsters, PAR_COM2US);
-const INVENTAIRE = parseAccountInventory(SOURCE);
+export const BOX = mapBoxMonsters(parseAccountBox(SOURCE, fr).monsters, PAR_COM2US);
+const INVENTAIRE = parseAccountInventory(SOURCE, fr);
 // Le premier monstre de la box (Devilmon), désigné par son id de monstre.
 export const CHOISI = String(BOX[0].monster.id);
 
@@ -68,7 +69,7 @@ export function rendreOptimizer(etat: EtatBanc = {}, menuOuvert = false, stockag
 export const AVEC_MONSTRE = { selectedId: CHOISI, comboSets: ['violent'] };
 
 const SOURCES = 'Box RTA Défenses siège Offenses siège';
-const STATS_CONDITIONS = ['PV', 'ATQ', 'DEF', 'VIT', 'Taux Crit', 'Dmg Crit', 'RES', 'Précision'];
+const STATS_CONDITIONS = ['PV', 'ATQ', 'DEF', 'VIT', 'Tx critiq.', 'Dgts critiq.', 'RES', 'Précision'];
 const PALIERS = ['Bas', 'Moyen', 'Haut', 'Extrême'];
 const ongletsBureau = (html: string) => onglets(html).map(o => [o.texte, o.ouvert]);
 
@@ -147,26 +148,26 @@ export function testRenduOptimizerMonstre() {
   const t = texteVisible(html);
   const b = boutons(html);
   ok(/data-monstre-actif[^>]*>[\s\S]{0,400}?Devilmon/.test(html), 'le monstre choisi, sur la rangée du titre de la liste');
-  // Taux Crit, Dmg Crit, RES et Précision s'écrivent toujours en total (`STATS_AVEC_BASE`).
-  ok(t.includes('PV 1 500 +180 ATQ 700 +160 DEF 500 — VIT 101 +80 Taux Crit 15% Dmg Crit 113% RES 78% Précision 7%'),
+  // Tx critiq., Dgts critiq., RES et Précision s'écrivent toujours en total (`STATS_AVEC_BASE`).
+  ok(t.includes('PV 1 500 +180 ATQ 700 +160 DEF 500 — VIT 101 +80 Tx critiq. 15% Dgts critiq. 113% RES 78% Précision 7%'),
     'ses stats : base et bonus de l\'équipement pour PV, ATQ, DEF et VIT, le total pour les autres');
   ok(t.includes('Relique PV +11%'), 'sa relique');
   ok(bouton(html, 'Build validé')?.desactive === true, 'Build validé indisponible sans build réservé');
   // Déplié (rendu serveur), le titre ne porte pas le compte ; la grille, sous
   // le jeton du set choisi, porte le sien.
-  ok(t.includes('Set de runes recherché Violent 4/6 runes Set principal Set secondaire') && !bouton(html, 'Set de runes recherché : Violent'),
+  ok(t.includes('Set de runes recherché Violente 4/6 runes Set principal Set secondaire') && !bouton(html, 'Set de runes recherché : Violente'),
     'le set choisi et son coût en runes, dans la grille dépliée');
-  ok(!!b.find((x) => x.ariaLabel === 'Retirer Violent'), 'retirer le set choisi');
-  for (const set of ['Swift', 'Despair', 'Rage', 'Fatal', 'Vampire'])
+  ok(!!b.find((x) => x.ariaLabel === 'Retirer Violente'), 'retirer le set choisi');
+  for (const set of ['Rapide', 'Désespoir', 'Rage', 'Fatale', 'Vampire'])
     ok(b.find((x) => x.ariaLabel === set)?.desactive === true, `${set} (4 pièces) désactivé : il ne reste pas la place`);
-  for (const set of ['Will', 'Blade', 'Energy', 'Guard', 'Focus', 'Seal'])
+  for (const set of ['Volonté', 'Lame', 'Énergie', 'Gardien', 'Focus', 'Sceau'])
     ok(b.find((x) => x.ariaLabel === set)?.desactive === false, `${set} (2 pièces) encore possible`);
   ok(t.includes('Statistique principale imposée (slots pairs)') && ['Slot 2 : Libre', 'Slot 4 : Libre', 'Slot 6 : Libre'].every((n) => !!bouton(html, n)),
     'la statistique principale imposée, une liste par slot');
   ok(t.includes('Conditions Stats de base exclues'), 'les conditions, stats de base exclues');
   ok(
     // Variante bureau : « Min » et « Max » en en-têtes de colonnes, une fois.
-    t.includes('Min Max PV ATQ DEF VIT Taux Crit % % Dmg Crit % % RES % % Précision % %'),
+    t.includes('Min Max PV ATQ DEF VIT Tx critiq. % % Dgts critiq. % % RES % % Précision % %'),
     `un minimum et un maximum pour chacune des huit stats, sous les en-têtes Min et Max (${STATS_CONDITIONS.join(', ')})`,
   );
   ok(!!bouton(html, 'Réinitialiser les conditions'), 'réinitialiser les conditions');
@@ -232,7 +233,7 @@ export function testRenduTelephoneOptimizer() {
   ok(b.some((x) => x.ariaLabel === 'Fermer'), 'le panneau se ferme');
   ok(t.includes("Exclure les runes d'un monstre"), "l'exclusion des runes d'un monstre");
   ok(b.some((x) => x.ariaLabel === 'Exclure les runes déjà utilisées'), 'l\'interrupteur « Exclure les runes déjà utilisées »');
-  ok(t.includes("Conserver ces slots dans l'optimisation Slot 1 · ATQ Slot 2 · VIT Slot 3 — Slot 4 · Dmg Crit Slot 5 — Slot 6 · RES"), 'les runes imposées, slot par slot');
+  ok(t.includes("Conserver ces slots dans l'optimisation Slot 1 · ATQ + Slot 2 · VIT Slot 3 — Slot 4 · Dgts critiq. Slot 5 — Slot 6 · RES"), 'les runes imposées, slot par slot');
   // Le panneau masque les intitulés (`[data-tiroir] .label`) ; celui-ci reste.
   ok(/data-intitule-conserve[^>]*>Conserver ces slots dans l(&#x27;|&#39;|')optimisation/.test(html), 'les runes imposées gardent leur intitulé dans le panneau');
   ok(t.includes('Réglages avancés Profondeur de recherche') && t.includes('Pool de runes = 8'), 'les réglages avancés et le pool');

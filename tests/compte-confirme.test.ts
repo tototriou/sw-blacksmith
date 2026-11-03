@@ -16,6 +16,7 @@ import { ResultatArtefacts, classementResolu, cleBuild, compositionDePage, compt
   pagesDesResultats } from '../src/lib/artifactQueue';
 import { StatRow } from '../src/lib/stats';
 import { egal, ok, titre } from './outils';
+import { fr } from '../src/i18n/fr';
 
 const PAGE = 20;
 const OPTIONS: OptionsDeClassement = { aurasPropresDe: aurasPropresParRunes(new Map()) };
@@ -210,7 +211,7 @@ export function testCompteConfirme() {
       if (c < avant) baisses++;
       avant = c;
       const affichables = classementResolu(r, cache, 'atk', OPTIONS).length;
-      const t = compteAffichable({ trouves, recus: r.length, affichables, modeRecherche: true }).compte;
+      const t = compteAffichable({ trouves, recus: r.length, affichables, modeRecherche: true }, fr).compte;
       if (t < avantTrouvees) baissesTrouvees++;
       avantTrouvees = t;
       const suivant = r.find((x) => !cache.has(cleBuild(x)));

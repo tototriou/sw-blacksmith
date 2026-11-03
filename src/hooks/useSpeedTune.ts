@@ -37,7 +37,7 @@ import {
   ligneReference as ligneReferenceDe,
   ligneVierge,
   lignesDeDeck,
-  majMod,
+  modifierMod,
   oublierCamp,
   ordreApresImport,
   passifActifDe as passifActifDeLigne,
@@ -59,6 +59,7 @@ import { teamSummary } from '../lib/recoFromSiege';
 import { formesJouables } from '../lib/monsterForms';
 import { useAdversaireReference } from './useAdversaireReference';
 import { useStickyState } from './useStickyState';
+import { useTraduction } from './useLangue';
 
 // Un deck proposé à l'import : une équipe de siège et le camp d'où elle vient.
 export interface DeckDispo {
@@ -101,6 +102,7 @@ export function useSpeedTune({
   // DEPUIS un deck. ⚠️ Une PROP, pas un message stocké : voir l'effet plus bas.
   deckInitial?: DeckInitial | null;
 }) {
+  const equipeVide = useTraduction().siege.equipeVide;
   // ⚠️ **TOUTES les clés collantes de l'outil portent ce préfixe**, sans
   // exception : c'est lui qui permet de tout réinitialiser d'un coup quand on
   // importe le JSON d'un AUTRE compte (voir App.tsx). Une clé ajoutée en dehors
@@ -270,13 +272,13 @@ export function useSpeedTune({
           .map((sl) => (sl.monsterId ? monsterById.get(sl.monsterId) : null))
           .filter((m): m is Monster => !!m);
         if (monstres.length === 0) return;
-        out.push({ cle: `${source}:${i}`, source, team, libelle: teamSummary(team, monsterById), monstres });
+        out.push({ cle: `${source}:${i}`, source, team, libelle: teamSummary(team, monsterById, equipeVide), monstres });
       });
     };
     ajouter('defense', siegeDefenseTeams);
     ajouter('offense', siegeOffenseTeams);
     return out;
-  }, [siegeDefenseTeams, siegeOffenseTeams, monsterById]);
+  }, [siegeDefenseTeams, siegeOffenseTeams, monsterById, equipeVide]);
 
   function ajouter(camp: Camp, id: string) {
     const uid = uidDe(camp, id);
@@ -439,11 +441,11 @@ export function useSpeedTune({
   // dépendre. Seule une case VIDE (`null`) rend la main à la compétence.
   function setMod(champ: ChampMod, uid: string, tick: number, v: number | null) {
     setLignes((prev) =>
-      prev.map((l) => (l.uid === uid ? { ...aLaMain(l), [champ]: majMod(l[champ], tick, v) } : l))
+      prev.map((l) => (l.uid === uid ? modifierMod(l, champ, tick, v) : l))
     );
   }
   function setModEquipe(champ: ChampMod, camp: Camp, tick: number, v: number | null) {
-    setLignes((prev) => prev.map((l) => (l.camp === camp ? { ...l, [champ]: majMod(l[champ], tick, v) } : l)));
+    setLignes((prev) => prev.map((l) => (l.camp === camp ? modifierMod(l, champ, tick, v) : l)));
   }
 
   const leadDe = (camp: Camp) => leadDeCamp(leads, camp);
@@ -573,7 +575,7 @@ export function useSpeedTune({
     setLignes((prev) =>
       prev.map((l) => {
         const mods = resultat.mods.get(l.uid);
-        return mods ? { ...l, atbMod: mods.atbMod, speedMod: mods.speedMod } : l;
+        return mods ? { ...l, ...mods } : l;
       })
     );
 

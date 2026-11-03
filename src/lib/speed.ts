@@ -1,4 +1,5 @@
 import { ElementKey, Monster } from '../types';
+import type { Dictionnaire } from '../i18n/fr';
 
 // Calcul de vitesse partagé (RTA, Siège, Arène…), pour rester cohérent partout.
 
@@ -14,9 +15,10 @@ export const TOTEM_SPEED = 15;
 export const SPEED_LEADS = [33, 28, 24, 21, 19];
 
 // Ticks de vitesse de siège (vitesse de combat cible).
-export const SIEGE_TICKS: { key: string; label: string; value: number }[] = [
-  { key: 'fast', label: 'Rapide', value: 286 },
-  { key: 'slow', label: 'Lent', value: 239 },
+// Le nom affiché d'un tick vient du dictionnaire (`siege.ticks[key]`).
+export const SIEGE_TICKS: { key: 'fast' | 'slow'; value: number }[] = [
+  { key: 'fast', value: 286 },
+  { key: 'slow', value: 239 },
 ];
 
 // Zone de danger d'un tick : raté de peu (juste en dessous), ou dépassé de trop
@@ -69,30 +71,30 @@ export interface TickFaute {
   danger: ReturnType<typeof tickDanger>;
 }
 
-function fautePhrase(nom: string, d: NonNullable<ReturnType<typeof tickDanger>>): string {
-  if (d.kind === 'below') return `${nom} n'atteint pas le tick ${d.tick}`;
+function fautePhrase(nom: string, d: NonNullable<ReturnType<typeof tickDanger>>, t: Dictionnaire): string {
+  const m = t.siege.fautes;
+  if (d.kind === 'below') return m.nAtteintPas(nom, d.tick);
   const suivant = SIEGE_TICKS.map((t) => t.value)
     .sort((a, b) => a - b)
     .find((v) => v > d.tick);
   // ⚠️ Dépasser un tick sans atteindre le suivant, c'est être trop rapide pour
   // l'un et trop lent pour l'autre. Ne citer que le tick franchi laisserait
   // croire qu'il faut ralentir, alors qu'accélérer est souvent le bon geste.
-  return suivant
-    ? `${nom} dépasse le tick ${d.tick} sans atteindre le ${suivant}`
-    : `${nom} dépasse le tick ${d.tick}`;
+  return suivant ? m.depasseSans(nom, d.tick, suivant) : m.depasse(nom, d.tick);
 }
 
 // « A n'atteint pas le tick 286, B dépasse le tick 286 et C n'atteint pas le
 // tick 239. » — la virgule sépare, « et » ferme, comme à l'oral.
-function enumerer(morceaux: string[]): string {
+function enumerer(morceaux: string[], et: string): string {
   if (morceaux.length <= 1) return morceaux[0] ?? '';
-  return `${morceaux.slice(0, -1).join(', ')} et ${morceaux[morceaux.length - 1]}`;
+  return `${morceaux.slice(0, -1).join(', ')} ${et} ${morceaux[morceaux.length - 1]}`;
 }
 
-export function tickTeamMessage(fautes: TickFaute[]): string | null {
+// Le message, dans la langue de `t`.
+export function tickTeamMessage(fautes: TickFaute[], t: Dictionnaire): string | null {
   const actives = fautes.filter((f) => f.danger) as { nom: string; danger: NonNullable<ReturnType<typeof tickDanger>> }[];
   if (actives.length === 0) return null;
-  return `${enumerer(actives.map((f) => fautePhrase(f.nom, f.danger)))}.`;
+  return `${enumerer(actives.map((f) => fautePhrase(f.nom, f.danger, t)), t.siege.fautes.et)}.`;
 }
 
 // Bonus du set Swift : +25 % de la vitesse de BASE.

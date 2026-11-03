@@ -22,7 +22,7 @@ import {
   artifactPairAllowed,
   eligibleArtifacts,
 } from './artifacts';
-import { ARTIFACT_MAIN, ARTIFACT_SUB, StatKey, artifactSubKinds, valeurArtefactPropre } from './effects';
+import { ARTIFACT_MAIN, CODES_SOUS_PROPRIETES, StatKey, artifactSubKinds, valeurArtefactPropre } from './effects';
 // ⚠️ Seule dépendance de ce module vers `damage` : le CODE de l'amplification
 // de VIT, pour ne pas en faire une seconde constante à tenir à jour. Aucune
 // logique de dégâts n'entre ici — l'évaluateur reste fourni par l'appelant.
@@ -344,8 +344,7 @@ export function analyserPertinence(params: ArtifactSearchParams): Pertinence {
       ? { id: 0, kind, element: params.porteur.element, level: 15, rarity: 5, main: { code: 101, value: 0 }, subs }
       : { id: 0, kind, archetype: params.porteur.archetype ?? undefined, level: 15, rarity: 5, main: { code: 101, value: 0 }, subs };
 
-  for (const brut of Object.keys(ARTIFACT_SUB)) {
-    const code = Number(brut);
+  for (const code of CODES_SOUS_PROPRIETES) {
     const plafond = ARTIFACT_SUB_MAX[code];
     // Une ligne sans fourchette connue (203, 207, 211-213 : inobtenables) n'a
     // pas de valeur de sonde crédible — laissée hors dominance.

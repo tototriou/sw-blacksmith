@@ -246,7 +246,8 @@ crans, dans la fenêtre comme dans le résumé sous l'objectif.
 positifs (sans zéro de tête), dont chaque clé désigne un des six sorts et
 chaque valeur un de ses crans — variante A `null`, 2 ou 3 ; variante B un
 entier de 2 à 7, jamais `null`. Ces valeurs sont dérivées de la même règle
-curée que les crans de l'écran (`cransDeLaRegleIgnoreDef`). Toute autre
+curée que les crans de l'écran (`rangsDeLaRegleIgnoreDef`, que
+`cransDeLaRegleIgnoreDef` libelle dans la langue de l'écran). Toute autre
 valeur (coup 1, 9ᵉ coup, 0, « aucun » en variante B, texte…), et la clé d'un
 sort sans cette règle (Lushen S3, autre monstre), font **refuser** la
 recette avec le chemin exact (`damageSetup.premierCoupIgnoreDefParSort.<identifiant>`),

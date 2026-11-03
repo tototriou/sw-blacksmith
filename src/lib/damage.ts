@@ -21,6 +21,7 @@
 
 import type { Competence, DetailMonstre } from './monsterSkills';
 import type { SummonerSkills } from './competencesInvocateur';
+import type { Dictionnaire } from '../i18n/fr';
 export type { SummonerSkills } from './competencesInvocateur';
 import type { ArtifactDetail, ElementKey } from '../types';
 import { StatRow } from './stats';
@@ -231,10 +232,9 @@ export const LEADER_SKILL_VALEURS: Record<LeaderSkillStat, number[]> = {
 // Il n'existe volontairement aucun état « aucune » : il ne correspond à aucune
 // situation du jeu et sous-estimerait silencieusement toutes les statistiques.
 
-export const SUMMONER_SKILLS_LABELS: { key: SummonerSkills; label: string }[] = [
-  { key: 'normal', label: 'Contenu normal' },
-  { key: 'guilde', label: 'Contenu de guilde' },
-];
+// Les deux valeurs, dans l'ordre d'affichage ; leurs libellés sont sous
+// `degats.contenusInvocateur` du dictionnaire.
+export const SUMMONER_SKILLS: SummonerSkills[] = ['normal', 'guilde'];
 
 // Onglet « Combat » — s'applique partout.
 const COMBAT_PCT = { atk: 20, def: 20, hp: 20, spd: 15 } as const;
@@ -2240,6 +2240,26 @@ function coupsParTranche(atk: number, atkBase: number | undefined, tranchePct: n
   return Math.min(coupsMax, Math.max(0, tranches));
 }
 
+// Une condition de pose, en code : ses mots sont sous
+// `degats.entreCoups.precisions` du dictionnaire. Un nom (sort, passif,
+// monstre) reste celui de SWARFARM, dans toutes les langues.
+export type PrecisionPose =
+  | {
+      cle:
+        | 'surCritique'
+        | 'unParEffetConverti'
+        | 'unSeulAuHasard'
+        | 'etatThunderer'
+        | 'ennemisPlusTouches'
+        | 'alliesPlusTouches'
+        | 'allumeIncapacite'
+        | 'surUnCinq'
+        | 'auHasardDuCombat';
+    }
+  | { cle: 'pourEnchaine'; sort: string }
+  | { cle: 'parPassif'; passif: string }
+  | { cle: 'siPorteur'; monstre: string };
+
 export interface EffetEntreCoupsProfile {
   id: string;
   label: string;
@@ -2267,9 +2287,11 @@ export interface EffetEntreCoupsProfile {
   // (`passifsOffensifs[sort]`) : Arrow of Water et Dark Storm, « +50 % si la
   // cible est sous un effet d'incapacité », après un Étourdissement posé.
   allumeLeBoutonDuSort?: true;
-  // Condition de la pose écrite par la donnée ou la prose (« sur coup
-  // critique », « en état Thunderer »), affichée après le libellé.
-  precision?: string;
+  // Conditions de la pose écrites par la donnée ou la prose (« sur coup
+  // critique », « en état Thunderer »), affichées après le libellé : une par
+  // source de l'effet, chacune en plusieurs parties. Des codes, que l'écran
+  // dit dans sa langue (`libelleEffetEntreCoups`).
+  precision?: readonly (readonly PrecisionPose[])[];
   // L'effet sort d'un TIRAGE qui ne pose qu'un effet par coup — au hasard
   // (Virus, Ghost Appearance, Roll Dice, Empathy, Dimensional Memory, Blessing
   // of Curse) ou selon la branche d'une condition (Divine Judgment) : les
@@ -3016,13 +3038,13 @@ const RANGS_PAR_NOTE: Readonly<Record<string, readonly number[] | 'dernier'>> = 
 };
 
 // Une `note` qui pose une CONDITION, pas un rang : affichée à côté du libellé.
-const PRECISION_PAR_NOTE: Readonly<Record<string, string>> = {
-  '1 per buff removed': 'un par effet bénéfique converti',
+const PRECISION_PAR_NOTE: Readonly<Record<string, PrecisionPose>> = {
+  '1 per buff removed': { cle: 'unParEffetConverti' },
   // Note de tirage (`NOTES_DE_TIRAGE`) : un seul des effets ainsi notés par coup.
-  'one random per hit': 'un seul des effets possibles par coup, au hasard',
-  'When used during the Thunderer state': 'en état Thunderer',
-  'If enemies have received more damage than allies': 'si les ennemis ont subi au moins autant de dégâts que les alliés',
-  'If allies have received more damage than enemies': 'si les alliés ont subi plus de dégâts que les ennemis',
+  'one random per hit': { cle: 'unSeulAuHasard' },
+  'When used during the Thunderer state': { cle: 'etatThunderer' },
+  'If enemies have received more damage than allies': { cle: 'ennemisPlusTouches' },
+  'If allies have received more damage than enemies': { cle: 'alliesPlusTouches' },
 };
 
 // Notes dont les effets forment un tirage : un seul d'entre eux par coup. Un
@@ -3046,7 +3068,7 @@ interface ExceptionEffetsEntreCoups {
   // Effets que seule la prose porte : nom d'effet SWARFARM, rangs.
   ajouter?: readonly { effet: string; coups?: readonly number[] }[];
   // Condition que seule la prose écrit, par identifiant d'effet.
-  precision?: Readonly<Record<string, string>>;
+  precision?: Readonly<Record<string, readonly PrecisionPose[]>>;
   // Effets qui allument l'interrupteur propre au sort pour les coups suivants
   // (`EffetEntreCoupsProfile.allumeLeBoutonDuSort`) : proposés même sans
   // lecteur du compte des effets nocifs.
@@ -3070,12 +3092,12 @@ const EFFETS_ENTRE_COUPS_EXCEPTIONS_PAR_ID: Readonly<Record<number, ExceptionEff
   // will be activated in succession » — la Marque est posée (ou non) AVANT que le
   // S1 enchaîné frappe : interrupteur « Marque posée » (utilisateur, 2026-10-03,
   // valeurs-de-jeu-curees.md, « Marque de la S2, puis S1 enchaîné »).
-  13907: { pourLaSuite: ['brand'], precision: { brand: 'pour [Hadoken] enchaîné' } }, // RYU feu
-  13908: { pourLaSuite: ['brand'], precision: { brand: 'pour [Hadoken] enchaîné' } }, // RYU vent
-  13910: { pourLaSuite: ['brand'], precision: { brand: 'pour [Hadoken] enchaîné' } }, // RYU ténèbres
-  14407: { pourLaSuite: ['brand'], precision: { brand: 'pour [Mach Punch] enchaîné' } }, // Douglas
-  14408: { pourLaSuite: ['brand'], precision: { brand: 'pour [Mach Punch] enchaîné' } }, // Kashmir
-  14410: { pourLaSuite: ['brand'], precision: { brand: 'pour [Mach Punch] enchaîné' } }, // Vancliffe
+  13907: { pourLaSuite: ['brand'], precision: { brand: [{ cle: 'pourEnchaine', sort: 'Hadoken' }] } }, // RYU feu
+  13908: { pourLaSuite: ['brand'], precision: { brand: [{ cle: 'pourEnchaine', sort: 'Hadoken' }] } }, // RYU vent
+  13910: { pourLaSuite: ['brand'], precision: { brand: [{ cle: 'pourEnchaine', sort: 'Hadoken' }] } }, // RYU ténèbres
+  14407: { pourLaSuite: ['brand'], precision: { brand: [{ cle: 'pourEnchaine', sort: 'Mach Punch' }] } }, // Douglas
+  14408: { pourLaSuite: ['brand'], precision: { brand: [{ cle: 'pourEnchaine', sort: 'Mach Punch' }] } }, // Kashmir
+  14410: { pourLaSuite: ['brand'], precision: { brand: [{ cle: 'pourEnchaine', sort: 'Mach Punch' }] } }, // Vancliffe
   // Critical Link (Savannah, Narsha) : « The beast's attack changes all
   // beneficial effects granted on the target to Continuous Damage » (note « 1
   // per buff removed ») — au coup 1, autant de dégâts continus que d'effets
@@ -3086,8 +3108,8 @@ const EFFETS_ENTRE_COUPS_EXCEPTIONS_PAR_ID: Readonly<Record<number, ExceptionEff
   // to stun the enemy. The damage increases by 50% if the target is under
   // inability effects » — l'Étourdissement d'un coup allume le +50 %
   // (`BONUS_CONDITIONNEL_AUDIT_*`, interrupteur du sort) des coups suivants.
-  6811: { allumeLeBouton: ['stun'], precision: { stun: 'allume le +50 % contre une cible sous incapacité' } }, // Arrow of Water — Sharron
-  2910: { allumeLeBouton: ['stun'], precision: { stun: 'allume le +50 % contre une cible sous incapacité' } }, // Dark Storm — Grogen
+  6811: { allumeLeBouton: ['stun'], precision: { stun: [{ cle: 'allumeIncapacite' }] } }, // Arrow of Water — Sharron
+  2910: { allumeLeBouton: ['stun'], precision: { stun: [{ cle: 'allumeIncapacite' }] } }, // Dark Storm — Grogen
   // Undefeated Warrior (Kuna, séquence) : « You sequentially attack all enemies
   // and decrease their Defense » — la Réduction de DEF est posée par la phase
   // de zone, la dernière : rien entre les coups.
@@ -3095,15 +3117,15 @@ const EFFETS_ENTRE_COUPS_EXCEPTIONS_PAR_ID: Readonly<Record<number, ExceptionEff
   // Ghost Appearance (Smokey, Misty) : « Each hit has a 50% chance to cast one
   // random effect among weaken the Defense, weaken the Attack Power or disturb
   // recovery », comme Virus — la note qui le dit manque.
-  11507: { precision: { 'decrease-def': 'un seul des effets possibles par coup, au hasard' }, tirage: ['decrease-def'] },
-  11509: { precision: { 'decrease-def': 'un seul des effets possibles par coup, au hasard' }, tirage: ['decrease-def'] },
+  11507: { precision: { 'decrease-def': [{ cle: 'unSeulAuHasard' }] }, tirage: ['decrease-def'] },
+  11509: { precision: { 'decrease-def': [{ cle: 'unSeulAuHasard' }] }, tirage: ['decrease-def'] },
   // Roll Dice (Reno, Ludo, Morris, Tablo, Monte) : « grants an effect according
   // to each number you get … 5: Decrease DEF » — un dé par coup.
-  12101: { precision: { 'decrease-def': 'sur un 5 au dé' }, tirage: ['decrease-def'] },
-  12102: { precision: { 'decrease-def': 'sur un 5 au dé' }, tirage: ['decrease-def'] },
-  12103: { precision: { 'decrease-def': 'sur un 5 au dé' }, tirage: ['decrease-def'] },
-  12104: { precision: { 'decrease-def': 'sur un 5 au dé' }, tirage: ['decrease-def'] },
-  12105: { precision: { 'decrease-def': 'sur un 5 au dé' }, tirage: ['decrease-def'] },
+  12101: { precision: { 'decrease-def': [{ cle: 'surUnCinq' }] }, tirage: ['decrease-def'] },
+  12102: { precision: { 'decrease-def': [{ cle: 'surUnCinq' }] }, tirage: ['decrease-def'] },
+  12103: { precision: { 'decrease-def': [{ cle: 'surUnCinq' }] }, tirage: ['decrease-def'] },
+  12104: { precision: { 'decrease-def': [{ cle: 'surUnCinq' }] }, tirage: ['decrease-def'] },
+  12105: { precision: { 'decrease-def': [{ cle: 'surUnCinq' }] }, tirage: ['decrease-def'] },
   // Fatal Mortar Bullet (Scarlett, séquence) : « Attacks the enemy with a cannon
   // gun and weakens the Defense and leaves a Branding effect … Afterwards,
   // attacks all enemies » — Réduction de DEF et Marque au coup 1, comme la note
@@ -3135,8 +3157,8 @@ const EFFETS_ENTRE_COUPS_EXCEPTIONS_PAR_ID: Readonly<Record<number, ExceptionEff
   18009: { ajouter: [{ effet: 'Brand', coups: [1] }], coups: { stun: [1] } }, // Berghild
   // Wild Bolt (Vendhan, Dyeus) : « When used during the Thunderer state, leaves
   // a Branding effect » — la note qui le dit ne figure que sur Chakra (18128).
-  18127: { precision: { brand: 'en état Thunderer' } }, // Vendhan
-  18129: { precision: { brand: 'en état Thunderer' } }, // Dyeus
+  18127: { precision: { brand: [{ cle: 'etatThunderer' }] } }, // Vendhan
+  18129: { precision: { brand: [{ cle: 'etatThunderer' }] } }, // Dyeus
   // Whirlpool / Water Dragon Surge (Tanjiro, Azure Dragon Swordsman) : « Attacks
   // all enemies to Freeze them for 1 turn. Deals additional damage 2 more
   // times to targets with harmful effects » — le Gel du coup 1 donne les deux
@@ -3198,53 +3220,53 @@ function brutParEffetDesPassifs(detail: DetailMonstre): BrutParEffetCibleProfile
 // entrée (un seul par coup, `EffetEntreCoupsProfile.tirage`).
 interface EffetPoseParUnPassif {
   effet: string;
-  precision?: string;
+  precision?: readonly PrecisionPose[];
   tirage?: true;
 }
 const EFFETS_ENTRE_COUPS_PAR_PASSIF_PAR_ID: Readonly<Record<number, readonly EffetPoseParUnPassif[]>> = {
   // Chaser (Loren) : « weakens the enemy's defense for 1 turn with a 75% chance » avec chaque attaque.
-  10134: [{ effet: 'Decrease DEF', precision: 'par Chaser' }],
+  10134: [{ effet: 'Decrease DEF', precision: [{ cle: 'parPassif', passif: 'Chaser' }] }],
   // Feast of Blood (Cadiz) : « Leaves a Branding Effect for 2 turns when you attack ».
-  6515: [{ effet: 'Brand', precision: 'par Feast of Blood' }],
+  6515: [{ effet: 'Brand', precision: [{ cle: 'parPassif', passif: 'Feast of Blood' }] }],
   // Precision (Shaina) : « Weakens the enemy's Defense for 1 turn with every attack ».
-  12612: [{ effet: 'Decrease DEF', precision: 'par Precision' }],
+  12612: [{ effet: 'Decrease DEF', precision: [{ cle: 'parPassif', passif: 'Precision' }] }],
   // Contaminated Blood (Jultan) : « inflicts Continuous Damage for 1 turn with a
   // 50% chance and decreases the Defense for 1 turn with every attack ».
-  5665: [{ effet: 'Decrease DEF', precision: 'par Contaminated Blood' }, { effet: 'Continuous DMG', precision: 'par Contaminated Blood' }],
+  5665: [{ effet: 'Decrease DEF', precision: [{ cle: 'parPassif', passif: 'Contaminated Blood' }] }, { effet: 'Continuous DMG', precision: [{ cle: 'parPassif', passif: 'Contaminated Blood' }] }],
   // Wild Chase (Narsha) : « decreases the enemy's Defense for 1 turn with each attack ».
-  13614: [{ effet: 'Decrease DEF', precision: 'par Wild Chase' }],
+  13614: [{ effet: 'Decrease DEF', precision: [{ cle: 'parPassif', passif: 'Wild Chase' }] }],
   // Might · Thunder (Dyeus) : « Stuns the enemy … whenever you attack the enemy.
   // While under the Thunderer state, decreases the enemy's Defense ».
   18134: [
-    { effet: 'Decrease DEF', precision: 'par Might · Thunder, en état Thunderer' },
-    { effet: 'Stun', precision: 'par Might · Thunder' },
+    { effet: 'Decrease DEF', precision: [{ cle: 'parPassif', passif: 'Might · Thunder' }, { cle: 'etatThunderer' }] },
+    { effet: 'Stun', precision: [{ cle: 'parPassif', passif: 'Might · Thunder' }] },
   ],
   // Blood Talon (Hwoarang) et Heaven's Might (Taebaek) : « Leaves a Branding
   // effect for 2 turns with a 30% chance on each attack ».
-  22512: [{ effet: 'Brand', precision: 'par Blood Talon' }],
-  23012: [{ effet: 'Brand', precision: 'par Heaven’s Might' }],
+  22512: [{ effet: 'Brand', precision: [{ cle: 'parPassif', passif: 'Blood Talon' }] }],
+  23012: [{ effet: 'Brand', precision: [{ cle: 'parPassif', passif: 'Heaven’s Might' }] }],
   // Nano Vision (Amber) : « Each attack disturbs the enemy's HP recovery for 1
   // turn » — compté par sa propre règle brute (4 % des PV max de la cible par
   // effet nocif).
-  15911: [{ effet: 'Unrecoverable', precision: 'par Nano Vision' }],
+  15911: [{ effet: 'Unrecoverable', precision: [{ cle: 'parPassif', passif: 'Nano Vision' }] }],
   // Empathy (Übel ténèbres) et Dimensional Memory (Wieb ténèbres) : « Grants 1
   // random harmful effect that was applied in the current battle on the enemy
   // … whenever you attack » — le joueur choisit si c'est une Marque ou une
   // Réduction de DEF (utilisateur, 2026-11-02).
   25215: [
-    { effet: 'Brand', precision: 'par Empathy, au hasard parmi les effets du combat', tirage: true },
-    { effet: 'Decrease DEF', precision: 'par Empathy, au hasard parmi les effets du combat', tirage: true },
+    { effet: 'Brand', precision: [{ cle: 'parPassif', passif: 'Empathy' }, { cle: 'auHasardDuCombat' }], tirage: true },
+    { effet: 'Decrease DEF', precision: [{ cle: 'parPassif', passif: 'Empathy' }, { cle: 'auHasardDuCombat' }], tirage: true },
   ],
   25715: [
-    { effet: 'Brand', precision: 'par Dimensional Memory, au hasard parmi les effets du combat', tirage: true },
-    { effet: 'Decrease DEF', precision: 'par Dimensional Memory, au hasard parmi les effets du combat', tirage: true },
+    { effet: 'Brand', precision: [{ cle: 'parPassif', passif: 'Dimensional Memory' }, { cle: 'auHasardDuCombat' }], tirage: true },
+    { effet: 'Decrease DEF', precision: [{ cle: 'parPassif', passif: 'Dimensional Memory' }, { cle: 'auHasardDuCombat' }], tirage: true },
   ],
   // Blessing of Curse (Jessica lumière) : « Grants 1 of the harmful effects
   // granted on yourself to the target when you attack » — traité comme Empathy
   // (utilisateur, 2026-11-02) : Marque ou Réduction de DEF, si Jessica la porte.
   18434: [
-    { effet: 'Brand', precision: 'par Blessing of Curse, si Jessica la porte', tirage: true },
-    { effet: 'Decrease DEF', precision: 'par Blessing of Curse, si Jessica la porte', tirage: true },
+    { effet: 'Brand', precision: [{ cle: 'parPassif', passif: 'Blessing of Curse' }, { cle: 'siPorteur', monstre: 'Jessica' }], tirage: true },
+    { effet: 'Decrease DEF', precision: [{ cle: 'parPassif', passif: 'Blessing of Curse' }, { cle: 'siPorteur', monstre: 'Jessica' }], tirage: true },
   ],
   // ⚠️ Ancient Power (Tesarion, 10011) n'est PAS ici : son Oubli (« Grants
   // Oblivion for 2 turns when you attack the enemy ») est posé à la fin de
@@ -3270,7 +3292,7 @@ function effetsPosesParLesPassifs(detail: DetailMonstre): EffetPoseParLesPassifs
 }
 interface EffetPoseParLesPassifs {
   effet: string;
-  precision?: string;
+  precision?: readonly PrecisionPose[];
   tirage?: string;
 }
 
@@ -3290,16 +3312,16 @@ function effetsEntreCoupsDuSort(
   if (c.com2usId == null) return undefined;
   const exception = EFFETS_ENTRE_COUPS_EXCEPTIONS_PAR_ID[c.com2usId];
   if (coupsMax < 2 && !exception?.pourLaSuite?.length) return undefined;
-  const sources: { nom: string; coups: readonly number[] | null; precision?: string; passif?: true; tirage?: string }[] = [];
+  const sources: { nom: string; coups: readonly number[] | null; precision?: readonly PrecisionPose[]; passif?: true; tirage?: string }[] = [];
   for (const e of c.effets) {
     if (e.type !== 'Debuff' || e.surSoi || !e.nom) continue;
     const rang = e.note ? RANGS_PAR_NOTE[e.note] : undefined;
     if (rang === 'dernier') continue;
-    const precision = [e.surCritique ? 'sur coup critique' : null, e.note ? PRECISION_PAR_NOTE[e.note] : null]
-      .filter((p): p is string => !!p).join(', ');
+    const precision = [e.surCritique ? ({ cle: 'surCritique' } as const) : null, e.note ? PRECISION_PAR_NOTE[e.note] : null]
+      .filter((p): p is PrecisionPose => !!p);
     // « one random per hit » (Virus) : les effets ainsi notés forment le tirage du sort.
     const tirage = e.note && NOTES_DE_TIRAGE.has(e.note) ? `sort:${c.com2usId}` : undefined;
-    sources.push({ nom: e.nom, coups: rang ?? null, ...(precision ? { precision } : {}), ...(tirage ? { tirage } : {}) });
+    sources.push({ nom: e.nom, coups: rang ?? null, ...(precision.length > 0 ? { precision } : {}), ...(tirage ? { tirage } : {}) });
   }
   for (const a of exception?.ajouter ?? []) sources.push({ nom: a.effet, coups: a.coups ?? null });
   for (const p of parLesPassifs) {
@@ -3350,8 +3372,12 @@ function effetsEntreCoupsDuSort(
     const nombre = base.cumulable && memes ? entrees.length : 1;
     // Une condition ne s'affiche que si TOUTES les sources de l'effet en ont
     // une : une seule pose sans condition rend l'effet posable sans elle.
-    const conditions = Array.from(new Set(entrees.map((x) => x.precision)));
-    const precision = exception?.precision?.[id] ?? (conditions.every((p) => !!p) ? conditions.join(' ; ') : undefined);
+    // Deux sources de même condition n'en font qu'une (comparées par leur code).
+    const conditions = Array.from(new Map(entrees.map((x) => [JSON.stringify(x.precision ?? null), x.precision])).values());
+    const exceptionPrecision = exception?.precision?.[id];
+    const precision = exceptionPrecision
+      ? [exceptionPrecision]
+      : conditions.every((p): p is readonly PrecisionPose[] => !!p) ? conditions : undefined;
     // Un tirage seulement si TOUTES les sources de l'effet sont le même tirage :
     // posé aussi hors tirage (le sort lui-même), l'effet se règle seul.
     const tirage = exception?.tirage?.includes(id)
@@ -3594,9 +3620,40 @@ export function choisirAuCoupDuTirage(
   return apresCoup;
 }
 
-/** Libellé affiché d'un effet posable : le libellé, puis sa condition. */
-export function libelleEffetEntreCoups(effet: EffetEntreCoupsProfile): string {
-  return effet.precision ? `${effet.label} (${effet.precision})` : effet.label;
+// Le nom SWARFARM d'un effet posable, par son identifiant : le nom du client
+// anglais du jeu.
+const NOM_SWARFARM_EFFET_POSABLE: ReadonlyMap<string, string> = new Map(
+  Object.entries(EFFETS_POSABLES_PAR_NOM).map(([nom, e]) => [e.id, nom])
+);
+
+/**
+ * Nom affiché d'un effet posable, sans sa condition : le libellé de l'app en
+ * français, le nom SWARFARM en anglais (décision de l'utilisateur, 2026-11-03).
+ */
+export function nomEffetEntreCoups(effet: Pick<EffetEntreCoupsProfile, 'id' | 'label'>, t: Dictionnaire): string {
+  return t.degats.entreCoups.nomEffet(effet.label, NOM_SWARFARM_EFFET_POSABLE.get(effet.id) ?? effet.label);
+}
+
+function direPrecisionPose(p: PrecisionPose, t: Dictionnaire): string {
+  const d = t.degats.entreCoups.precisions;
+  switch (p.cle) {
+    case 'pourEnchaine':
+      return d.pourEnchaine(p.sort);
+    case 'parPassif':
+      return d.parPassif(p.passif);
+    case 'siPorteur':
+      return d.siPorteur(p.monstre);
+    default:
+      return d[p.cle];
+  }
+}
+
+/** Libellé affiché d'un effet posable : son nom, puis ses conditions. */
+export function libelleEffetEntreCoups(effet: EffetEntreCoupsProfile, t: Dictionnaire): string {
+  const nom = nomEffetEntreCoups(effet, t);
+  if (!effet.precision) return nom;
+  const d = t.degats.entreCoups;
+  return d.avecPrecision(nom, effet.precision.map((c) => c.map((p) => direPrecisionPose(p, t)).join(d.entreParties)).join(d.entreConditions));
 }
 
 // Formule exacte confirmée par l'utilisateur, avec démonstration algébrique :
@@ -4615,8 +4672,9 @@ export function cibleSecondairePriseEnCharge(skillCom2usId: number): boolean {
  * (optimizer-search.ts), pour qu'ils ne puissent pas se contredire. Ne dépend
  * que de la donnée, jamais de la cible choisie.
  */
-export function resumeSequenceDeCoups(sequence: readonly Pick<GroupeDeCoups, 'coups' | 'zone'>[]): string {
-  return sequence.map((g) => `${g.coups} coup${g.coups > 1 ? 's' : ''} · ${g.zone ? 'Zone' : 'Cible unique'}`).join(', puis ');
+export function resumeSequenceDeCoups(sequence: readonly Pick<GroupeDeCoups, 'coups' | 'zone'>[], t: Dictionnaire): string {
+  const r = t.degats.resume;
+  return sequence.map((g) => `${r.coups(g.coups, false)} · ${g.zone ? r.zone : r.cibleUnique}`).join(r.puisSequence);
 }
 
 // ── Attaques conjointes ──────────────────────────────────────────────────
@@ -4834,13 +4892,12 @@ export function vignettePendantTourAllie(profile: ProfilPourLaPorte, setup: Regl
  * la seule `interrupteurAttaqueConjointe`, et `vignettePendantTourAllie` pour
  * un S1 des familles placé pendant le tour d'un allié.
  */
-export function mentionAttaqueConjointe(profile: ProfilPourLaPorte, setup: ReglagePourLaPorte): string | null {
+export function mentionAttaqueConjointe(profile: ProfilPourLaPorte, setup: ReglagePourLaPorte, t: Dictionnaire): string | null {
   const interrupteur = interrupteurAttaqueConjointe(profile, setup);
   if (!interrupteur?.allume) return null;
-  if (interrupteur.cas === 'appele-par-un-allie') return 'attaque conjointe (appelée par un allié)';
-  return vignettePendantTourAllie(profile, setup)?.allume
-    ? 'attaque conjointe (un monstre de l’autre famille au combat, pendant le tour d’un allié)'
-    : 'attaque conjointe (un monstre de l’autre famille au combat)';
+  const c = t.degats.conjointe;
+  if (interrupteur.cas === 'appele-par-un-allie') return c.appelee;
+  return vignettePendantTourAllie(profile, setup)?.allume ? c.familleTourAllie : c.famille;
 }
 
 /**
@@ -6029,10 +6086,8 @@ export type CritMode = 'crit' | 'normal';
 
 // Ordre d'AFFICHAGE : le défaut d'abord (voir `DEFAULT_DAMAGE_SETUP.critMode`,
 // ci-dessous : `'crit'`). N'affecte QUE `Segmented`, pas le type `CritMode`.
-export const CRIT_MODE_LABELS: { key: CritMode; label: string }[] = [
-  { key: 'crit', label: 'Critique' },
-  { key: 'normal', label: 'Non critique' },
-];
+// Libellés : `degats.critModes` du dictionnaire.
+export const CRIT_MODES: CritMode[] = ['crit', 'normal'];
 
 // ⚠️ Sérialisable et STABLE : ce réglage part dans `OptimizerRecipe` (fichier
 // partagé entre joueurs) et traverse le Web Worker. Aucune valeur dérivée
@@ -6055,19 +6110,12 @@ export const STAT_DE_L_AURA: Readonly<Record<SetAura, 'atk' | 'def' | 'hp' | 'ac
 // reçoit que ses coups de zone.
 export type CibleDegats = 'visee' | 'secondaire';
 
-// Le bout que le résumé sous l'objectif (`resumeCombat`, OptimizerSection.tsx)
-// ajoute après le sort quand la cible retenue est un autre ennemi
-// (`resumeCibleDegatsRetenue`). Écrit ici une seule fois : le libellé du cran
-// ci-dessous s'en déduit, les deux textes ne peuvent pas diverger
-const CIBLE_SECONDAIRE_RESUME = 'autres ennemis';
-
 // Les deux crans, libellés retenus par l'utilisateur : la cible visée d'abord, le défaut. Partagés par le
 // `Segmented` de « Compétence utilisée » (DamageSetupCard.tsx) et la ligne du
 // sort du CLI (optimizer-search.ts) : une seule écriture des libellés.
-export const CIBLE_DEGATS_LABELS: { key: CibleDegats; label: string }[] = [
-  { key: 'visee', label: 'Dégâts sur la cible visée' },
-  { key: 'secondaire', label: `Dégâts sur les ${CIBLE_SECONDAIRE_RESUME}` },
-];
+// Libellés : `degats.cibles` du dictionnaire ; le résumé sous l'objectif dit
+// la cible secondaire par `degats.cibleSecondaireResume`.
+export const CIBLES_DEGATS: CibleDegats[] = ['visee', 'secondaire'];
 
 export interface DamageSetup {
   // `null` = « le sort par défaut » (voir `defaultDamageSkill`) : une recette
@@ -6565,8 +6613,8 @@ export function cibleDegatsRetenue(profile: SkillDamageProfile, setup: DamageSet
  * défaut, et pour tout sort sans coup de zone curé. `profile` est le sort
  * RÉSOLU, jamais celui que désigne l'identifiant stocké.
  */
-export function resumeCibleDegatsRetenue(profile: SkillDamageProfile, setup: DamageSetup): string | null {
-  return cibleDegatsRetenue(profile, setup) === 'secondaire' ? CIBLE_SECONDAIRE_RESUME : null;
+export function resumeCibleDegatsRetenue(profile: SkillDamageProfile, setup: DamageSetup, t: Dictionnaire): string | null {
+  return cibleDegatsRetenue(profile, setup) === 'secondaire' ? t.degats.cibleSecondaireResume : null;
 }
 
 /**
@@ -6612,9 +6660,9 @@ export interface CranIgnoreDef {
  * ⚠️ Source UNIQUE de ces libellés : le sélecteur de l'écran, le résumé du
  * sort et la ligne du CLI les lisent ici (`resumeIgnoreDefRetenu`).
  */
-export function cransIgnoreDefAPartirDuCoup(profile: SkillDamageProfile): CranIgnoreDef[] | null {
+export function cransIgnoreDefAPartirDuCoup(profile: SkillDamageProfile, t: Dictionnaire): CranIgnoreDef[] | null {
   const regle = profile.ignoreDefAPartirDuCoup;
-  return regle ? cransDeLaRegleIgnoreDef(regle) : null;
+  return regle ? cransDeLaRegleIgnoreDef(regle, t) : null;
 }
 
 /**
@@ -6624,12 +6672,18 @@ export function cransIgnoreDefAPartirDuCoup(profile: SkillDamageProfile): CranIg
  * (`validerDamageSetup`, optimizerRecipe.ts) les dérivent d'ici : une valeur
  * que l'écran ne peut pas écrire, la recette ne l'accepte pas.
  */
-export function cransDeLaRegleIgnoreDef(regle: IgnoreDefAPartirDuCoupProfile): CranIgnoreDef[] {
-  const crans: CranIgnoreDef[] = regle.dernierCoupInconditionnel === null ? [{ rang: null, libelle: 'Aucun' }] : [];
-  for (const rang of regle.rangsPermis) {
-    crans.push({ rang, libelle: rang === regle.dernierCoupInconditionnel ? `${rang}ᵉ coup seul` : `Dès le ${rang}ᵉ coup` });
-  }
-  return crans;
+export function cransDeLaRegleIgnoreDef(regle: IgnoreDefAPartirDuCoupProfile, t: Dictionnaire): CranIgnoreDef[] {
+  const c = t.degats.crans;
+  return rangsDeLaRegleIgnoreDef(regle).map((rang) => ({
+    rang,
+    libelle: rang === null ? c.aucun : rang === regle.dernierCoupInconditionnel ? c.seul(rang) : c.desLe(rang),
+  }));
+}
+
+// Les rangs seuls, dans l'ordre des crans : `null` (« aucun ») d'abord quand la
+// règle n'a pas de coup inconditionnel. Ce que la recette accepte.
+export function rangsDeLaRegleIgnoreDef(regle: IgnoreDefAPartirDuCoupProfile): (number | null)[] {
+  return [...(regle.dernierCoupInconditionnel === null ? [null] : []), ...regle.rangsPermis];
 }
 
 /**
@@ -6638,9 +6692,9 @@ export function cransDeLaRegleIgnoreDef(regle: IgnoreDefAPartirDuCoupProfile): C
  * crans y retombe sur le défaut du sort —, ou `null` pour un sort sans cette
  * règle. L'écran montre ce que le calcul applique, jamais la valeur stockée.
  */
-export function cranIgnoreDefRetenu(profile: SkillDamageProfile, setup: DamageSetup): CranIgnoreDef | null {
+export function cranIgnoreDefRetenu(profile: SkillDamageProfile, setup: DamageSetup, t: Dictionnaire): CranIgnoreDef | null {
   const rang = resolvedPremierCoupIgnoreDef(profile, setup);
-  return cransIgnoreDefAPartirDuCoup(profile)?.find((c) => c.rang === rang) ?? null;
+  return cransIgnoreDefAPartirDuCoup(profile, t)?.find((c) => c.rang === rang) ?? null;
 }
 
 /**
@@ -6648,10 +6702,10 @@ export function cranIgnoreDefRetenu(profile: SkillDamageProfile, setup: DamageSe
  * « … : aucun », « … : 7ᵉ coup seul » —, ou `null` pour un sort sans cette
  * règle. UNE phrase pour le résumé du sort à l'écran et la ligne du CLI.
  */
-export function resumeIgnoreDefRetenu(profile: SkillDamageProfile, setup: DamageSetup): string | null {
-  const cran = cranIgnoreDefRetenu(profile, setup);
+export function resumeIgnoreDefRetenu(profile: SkillDamageProfile, setup: DamageSetup, t: Dictionnaire): string | null {
+  const cran = cranIgnoreDefRetenu(profile, setup, t);
   if (!cran) return null;
-  return `Ignore la DEF : ${cran.libelle.charAt(0).toLowerCase()}${cran.libelle.slice(1)}`;
+  return t.degats.ignoreDefRetenu(`${cran.libelle.charAt(0).toLowerCase()}${cran.libelle.slice(1)}`);
 }
 
 /**

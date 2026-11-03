@@ -17,6 +17,7 @@ import {
 import { recipeToRelicIntent } from '../scripts/lib/recipeToSearchParams';
 import { LoadedMonster } from '../scripts/lib/loadMonster';
 import { DEFAULT_DAMAGE_SETUP } from '../src/lib/damage';
+import { fr } from '../src/i18n/fr';
 
 const REGLE_PREMIER_BOX = 'boxCandidates[0]?.selector ?? unownedSelectorIfNoneOwned';
 const REGLE_FAUTIVE = /boxCandidates\.length === 1 \? boxCandidates\[0\]\.selector : unowned/;
@@ -44,7 +45,7 @@ export default function testOptimizerRecipeImportSelection() {
   ok(debutDisponibilite !== -1, 'la disponibilité par espèce existe toujours');
   const zoneDisponibilite = source.slice(debutDisponibilite, source.indexOf('\n  }', debutDisponibilite));
   ok(zoneDisponibilite.includes('return exemplaireSuivantEspece(monster, speciesCandidatesBySource(')
-    && zoneDisponibilite.includes('lists.members, lists.activeListId)'),
+    && zoneDisponibilite.includes('lists.members, lists.activeListId, textes)'),
   'le picker passe par exemplaireSuivantEspece avec les candidats de l’espèce et les membres de la liste active');
 
   const debutImportRecipe = source.indexOf('function importRecipe');
@@ -120,7 +121,7 @@ function testRecetteRelique() {
   // CLAUDE.md).
   {
     const ancienne = recetteDeBase();
-    const relue = parseOptimizerRecipe(JSON.stringify(ancienne)).recipe;
+    const relue = parseOptimizerRecipe(JSON.stringify(ancienne), fr).recipe;
     ok(relue !== null, 'une recette sans les trois champs reste un fichier VALIDE');
     egal(relue?.relicMainChoice, undefined, "… relicMainChoice reste absent — le défaut se calcule au LECTEUR, jamais ici");
     egal(relue?.relicUniqueChoice, undefined, '… relicUniqueChoice aussi');
@@ -130,20 +131,20 @@ function testRecetteRelique() {
   // Valeur inconnue → rejet (comme le reste du parseur).
   {
     const invalideMain = { ...recetteDeBase(), relicMainChoice: 'jamais-vu' };
-    ok(parseOptimizerRecipe(JSON.stringify(invalideMain)).recipe === null, 'relicMainChoice inconnu : recette rejetée');
+    ok(parseOptimizerRecipe(JSON.stringify(invalideMain), fr).recipe === null, 'relicMainChoice inconnu : recette rejetée');
 
     const invalideType = { ...recetteDeBase(), relicUniqueChoice: 999 };
-    ok(parseOptimizerRecipe(JSON.stringify(invalideType)).recipe === null, 'relicUniqueChoice hors des 16 types connus : recette rejetée');
+    ok(parseOptimizerRecipe(JSON.stringify(invalideType), fr).recipe === null, 'relicUniqueChoice hors des 16 types connus : recette rejetée');
   }
 
   // Le seuil est un FILTRE D'ENTRÉE, jamais un critère : hors bornes, il
   // est NORMALISÉ plutôt que rejeté — seul champ de ce parseur à l'être.
   {
     const tropBas = { ...recetteDeBase(), relicMinUpgrade: -1 };
-    egal(parseOptimizerRecipe(JSON.stringify(tropBas)).recipe?.relicMinUpgrade, 0, 'seuil -1 → normalisé à 0');
+    egal(parseOptimizerRecipe(JSON.stringify(tropBas), fr).recipe?.relicMinUpgrade, 0, 'seuil -1 → normalisé à 0');
 
     const tropHaut = { ...recetteDeBase(), relicMinUpgrade: 99 };
-    egal(parseOptimizerRecipe(JSON.stringify(tropHaut)).recipe?.relicMinUpgrade, 15, 'seuil 99 → normalisé à 15');
+    egal(parseOptimizerRecipe(JSON.stringify(tropHaut), fr).recipe?.relicMinUpgrade, 15, 'seuil 99 → normalisé à 15');
   }
 
   // « Comme équipée » ne se partage pas — même règle que

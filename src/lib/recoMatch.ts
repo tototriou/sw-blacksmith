@@ -10,6 +10,9 @@ import { ARTIFACT_KINDS, ArtifactKind, Reco, RecoDeck, RecoSlot, RecoStatKey, RE
 import { OwnedBuild, OwnedTeam, indexBuildsByCom2us } from './ownedBuilds';
 import { computeStats } from './stats';
 import { activeSets, artifactSubLabel } from './effects';
+// Texte rédigé en français : les libellés du jeu qu'il cite viennent du
+// lexique français (`jeuFr`), pour que la phrase reste d'une seule langue.
+import { jeuFr } from '../i18n/jeu/fr';
 
 // Les règles de composition de sets (coût, combinaisons possibles) vivent dans
 // effects.ts, avec le reste des règles de sets — voir `canAddSet` / `setsCost`.
@@ -149,7 +152,7 @@ function checksFor(
     const actual = totals ? totals[def.key] : null;
     out.push({
       key: def.key,
-      label: def.label,
+      label: jeuFr.stats[def.key],
       suffix: def.suffix,
       required,
       actual,
@@ -179,7 +182,7 @@ function artifactChecksFor(slot: RecoSlot, build: OwnedBuild | null): ArtifactCh
     if (codes.length === 0) continue;
     const portes = build ? subsPortes(build, key) : null;
     for (const code of codes) {
-      out.push({ kind: key, code, label: artifactSubLabel(code), ok: portes?.has(code) ?? false });
+      out.push({ kind: key, code, label: artifactSubLabel(code, jeuFr), ok: portes?.has(code) ?? false });
     }
   }
   return out;

@@ -11,6 +11,7 @@ import { etatReliqueDuBuild } from '../src/lib/relicQueue';
 import { buildRealDamageContext } from '../scripts/lib/realDamageCli';
 import { buildOptimizerRecipe } from '../src/lib/optimizerRecipe';
 import { ok, titre } from './outils';
+import { fr } from '../src/i18n/fr';
 
 type Critere = StatKey | Objective;
 const BASE = { hp: 10000, atk: 1000, def: 600, spd: 100, cr: 30, cd: 75, res: 15, acc: 0 };
@@ -93,7 +94,7 @@ function publication(index: ClassementCompact, base: BuildCandidate[], cache: Re
   const indexComptes = index.comptes();
   if (indexComptes.confirmes !== comptes.confirmees || indexComptes.total !== attendu.length) throw new Error(`ARRÊT oracle comptes : ${cas}`);
   ok(true, `${cas} : notes et comptes identiques`);
-  const affichable = compteAffichable({ trouves: base.length, recus: base.length, affichables: attendu.length, modeRecherche: false });
+  const affichable = compteAffichable({ trouves: base.length, recus: base.length, affichables: attendu.length, modeRecherche: false }, fr);
   ok(affichable.compte === indexComptes.total, `${cas} : compte affichable`);
   for (const debut of [0, 3, Math.max(0, attendu.length - 7), attendu.length]) {
     comparer(index.page(debut, 7).map((i) => index.magasin.candidat(i)), attendu.slice(debut, debut + 7), `${cas}, page ${debut}`);

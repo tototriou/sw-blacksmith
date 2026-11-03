@@ -332,7 +332,8 @@ mêmes validations que la création manuelle.
 
 `leadEffectifMembreOptimizer` rend un `LeadEffectifOptimizer` : hors équipe,
 `personnel` ; dans une équipe, `equipe` avec `{stat, pct}` si le lead est actif,
-sinon `aucun` avec un motif. La donnée du jeu reste entière dans l’équipe.
+sinon `aucun` avec un motif — un code (`MotifLeadOptimizer`), dont la phrase vient du
+dictionnaire à l'affichage. La donnée du jeu reste entière dans l’équipe.
 
 **Le lead d’équipe écrase le lead personnel de ses membres.** Rejoindre une
 équipe, changer son lead ou le contenu de la liste écrit le lead effectif du

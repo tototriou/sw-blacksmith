@@ -35,6 +35,7 @@ import type { LigneVerrouillee } from '../../src/lib/artifactOptim';
 import { chargerRecette, ModeChargement } from './chargerRecette';
 import { recipeToRelicIntent } from './recipeToSearchParams';
 import { buildRealDamageContext } from './realDamageCli';
+import { fr } from '../../src/i18n/fr';
 
 export interface OracleCandidate extends BuildCandidate {
   rid?: number;
@@ -406,7 +407,7 @@ export function chargerPointOracle(argv: readonly string[]): PointOracle {
     const charge = loadCase(casEffectif);
     const { gear } = charge;
     const data = parseAccountSource(readFileSync(exportPath, 'utf8'))!;
-    const { relics } = parseAccountInventory(data);
+    const { relics } = parseAccountInventory(data, fr);
     const contexte = resoudreContexteRelique({ mode: 'recherche', ...option }, gear.relic, relics);
     // `casEffectif` ne porte pas `relic` : `relicContext` reste absent des
     // params — l'oracle l'efface de toute façon sur chacun de ses runs.
@@ -441,7 +442,7 @@ export function chargerPointOracle(argv: readonly string[]): PointOracle {
       : { type: 'box' };
   const chargee = chargerRecette(exportPath, recipePath, mode);
   const data = parseAccountSource(readFileSync(exportPath, 'utf8'))!;
-  const { relics } = parseAccountInventory(data);
+  const { relics } = parseAccountInventory(data, fr);
   const contexte = resoudreContexteRelique(recipeToRelicIntent(chargee.recipe, chargee.loaded), chargee.loaded.gear.relic, relics);
   let params = chargee.params;
   if (paireArg != null) {

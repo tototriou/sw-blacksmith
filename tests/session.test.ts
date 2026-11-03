@@ -36,17 +36,18 @@ import {
   travailNonSauvegarde,
 } from '../src/lib/session';
 import { egal, exportReel, exportSynthetique, ignore, ok, titre } from './outils';
+import { fr } from '../src/i18n/fr';
 
 // Le compte stocké, construit par les mêmes extracteurs que l'import.
 function compteDe(texte: string): StoredAccount {
   const data = parseAccountSource(texte)!;
-  const inv = parseAccountInventory(data);
+  const inv = parseAccountInventory(data, fr);
   return {
     schema: ACCOUNT_SCHEMA,
     savedAt: 1_790_000_000_000,
     exportedAt: parseAccountExportDate(data),
     wizardName: parseAccountWizardName(data),
-    box: parseAccountBox(data).monsters ?? [],
+    box: parseAccountBox(data, fr).monsters ?? [],
     runes: inv.runes ?? [],
     artifacts: inv.artifacts ?? [],
     relics: inv.relics ?? [],

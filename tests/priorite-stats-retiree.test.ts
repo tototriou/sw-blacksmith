@@ -9,6 +9,7 @@ import { recipeToSearchParams } from '../scripts/lib/recipeToSearchParams';
 import { LoadedMonster } from '../scripts/lib/loadMonster';
 import { SETS_JOKER, mulberry32, randomPool } from '../scripts/lib/randomPool';
 import { egal, ok, titre } from './outils';
+import { fr } from '../src/i18n/fr';
 
 const BASE: BaseStats = { hp: 8000, atk: 500, def: 400, spd: 100, cr: 15, cd: 50, res: 15, acc: 0 };
 const EXIGENCE: BuildRequirement = { sets: ['violent'], minStats: { spd: 200, cr: 80, cd: 150 } };
@@ -31,11 +32,11 @@ function recette(preset: SlotFilterPresetKey): OptimizerRecipe {
 
 function recetteAncienne() {
   const actuelle = recette('haut');
-  const reference = parseOptimizerRecipe(JSON.stringify(actuelle));
+  const reference = parseOptimizerRecipe(JSON.stringify(actuelle), fr);
   ok(reference.recipe !== null, 'recette de référence lisible');
   ok(!('adaptiveTrancheWeighting' in actuelle), 'nouvelle recette : champ retiré absent');
   for (const champ of [true, false]) {
-    const lue = parseOptimizerRecipe(JSON.stringify({ ...actuelle, adaptiveTrancheWeighting: champ }));
+    const lue = parseOptimizerRecipe(JSON.stringify({ ...actuelle, adaptiveTrancheWeighting: champ }), fr);
     ok(lue.recipe !== null && lue.error === undefined, `recette ancienne (${champ}) : importée sans erreur`);
     ok(lue.avertissements === undefined, `recette ancienne (${champ}) : aucun avertissement`);
     egal(lue.recipe, reference.recipe, `recette ancienne (${champ}) : mêmes valeurs utiles, champ retiré absent`);

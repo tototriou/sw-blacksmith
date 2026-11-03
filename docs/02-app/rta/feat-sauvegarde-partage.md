@@ -106,7 +106,7 @@ monstres absents, ou des monstres dépouillés de leur étiquette. **Une seule c
 par instantané**, un seul geste — vrai pour le point manuel comme pour celui de
 l'import.
 
-À la restauration, `seeded` passe à **vrai** : sans ça « Lead SPD » se
+À la restauration, `seeded` passe à **vrai** : sans ça « Lead VIT » se
 réamorcerait par-dessus ce qu'on vient de restaurer, et réapparaîtrait
 précisément chez qui l'avait supprimée avant de sauvegarder.
 

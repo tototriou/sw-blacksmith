@@ -13,13 +13,15 @@ import { chiffresMesureRune } from './valeursAffichees';
 import { STATS_AVEC_BASE } from './stats';
 import type { StatKey } from './effects';
 import type { ComptesDeLaVue } from './classementCompact';
+// Libellés de colonnes rédigés en français : la stat vient du lexique français.
+import type { Dictionnaire } from '../i18n/fr';
+import { formatNombre } from '../i18n/format';
 
 /** Le libellé du code : stats de `RECO_STATS`, objectifs d'`OBJECTIVE_LABELS` ; la mesure suit le réglage Efficience / Score SW. */
-export function libelleColonne(colonne: ColonneResultat, metric: OptimMetric): string {
-  if (colonne === 'efficience') return metric === 'eff' ? 'Efficience' : 'Score SW';
-  if (colonne === 'degats_reels') return 'Dégâts réels';
-  if (colonne === 'ehp') return 'PV effectifs';
-  return RECO_STATS.find((s) => s.key === colonne)!.label;
+export function libelleColonne(colonne: ColonneResultat, metric: OptimMetric, t: Dictionnaire): string {
+  if (colonne === 'efficience') return metric === 'eff' ? t.optimizer.objectifs.efficience : t.optimizer.resultats.scoreSw;
+  if (colonne === 'degats_reels' || colonne === 'ehp') return t.optimizer.objectifs[colonne];
+  return t.jeu.stats[RECO_STATS.find((s) => s.key === colonne)!.key];
 }
 
 /** L'unité que la carte écrit après la valeur : « % » des quatre stats en pourcentage et de l'efficience. */
@@ -68,15 +70,15 @@ export function depuisAffichage(colonne: ColonneResultat, affiche: number, base:
 }
 
 /** Une valeur de colonne écrite comme la carte : séparateur de milliers, une décimale pour l'efficience. */
-export function texteValeurColonne(colonne: ColonneResultat, valeur: number | null, metric: OptimMetric): string {
+export function texteValeurColonne(colonne: ColonneResultat, valeur: number | null, metric: OptimMetric, t: Dictionnaire): string {
   if (valeur === null || Number.isNaN(valeur)) return '—';
-  const nombre = colonne === 'efficience' ? chiffresMesureRune(valeur, metric) : Math.round(valeur).toLocaleString('fr-FR');
+  const nombre = colonne === 'efficience' ? chiffresMesureRune(valeur, metric) : formatNombre(Math.round(valeur), t.codeLangue);
   return `${nombre}${suffixeColonne(colonne, metric)}`;
 }
 
 /** Une borne écrite pour le résumé comme la carte écrit la valeur : « 220 », « 85% », « 150 000 ». */
-function texteBorne(colonne: ColonneResultat, v: number, metric: OptimMetric): string {
-  return `${v.toLocaleString('fr-FR')}${suffixeColonne(colonne, metric)}`;
+function texteBorne(colonne: ColonneResultat, v: number, metric: OptimMetric, t: Dictionnaire): string {
+  return `${formatNombre(v, t.codeLangue)}${suffixeColonne(colonne, metric)}`;
 }
 
 /** Les colonnes bornées (au moins un côté posé), dans l'ordre des colonnes. */
@@ -95,16 +97,14 @@ export function colonneContradictoire(bornes: BornesResultats, colonne: ColonneR
  * ≤ 100% ». Une borne sur une colonne indisponible (Dégâts réels sans sort
  * calculable) est dite inactive : elle ne masque rien.
  */
-export function resumeDesBornes(bornes: BornesResultats, metric: OptimMetric, disponible: (c: ColonneResultat) => boolean): string {
+export function resumeDesBornes(bornes: BornesResultats, metric: OptimMetric, disponible: (c: ColonneResultat) => boolean, t: Dictionnaire): string {
   return colonnesBornees(bornes).map((c) => {
     const { min, max } = bornes[c]!;
-    const nom = libelleColonne(c, metric), f = (v: number) => texteBorne(c, v, metric);
+    const nom = libelleColonne(c, metric, t), f = (v: number) => texteBorne(c, v, metric, t);
     const texte = min !== null && max !== null ? `${f(min)} ≤ ${nom} ≤ ${f(max)}` : min !== null ? `${nom} ≥ ${f(min)}` : `${nom} ≤ ${f(max!)}`;
-    return disponible(c) ? texte : `${texte} (inactive)`;
+    return disponible(c) ? texte : t.optimizer.resultats.borneInactive(texte);
   }).join(' · ');
 }
-
-const pluriel = (n: number, mot: string) => `${n.toLocaleString('fr-FR')} ${mot}${n > 1 ? 's' : ''}`;
 
 /**
  * La ligne de comptes sous les bornes de la vue : visibles, masquées (vérifiées
@@ -112,10 +112,13 @@ const pluriel = (n: number, mot: string) => `${n.toLocaleString('fr-FR')} ${mot}
  * valeur incalculable sous une borne). Sans borne active : « Aucun filtre ».
  * `court` : le téléphone, où « indéterminées » s'abrège.
  */
-export function ligneDesComptes(comptes: ComptesDeLaVue | null, actives: number, court = false): string {
-  if (!actives || !comptes) return 'Aucun filtre';
-  const parts = [pluriel(comptes.visiblesConfirmes, 'visible'), pluriel(comptes.masquesConfirmes + comptes.masquesNonVerifies, 'masquée')];
-  if (comptes.potentielsNonVerifies) parts.push(`${comptes.potentielsNonVerifies.toLocaleString('fr-FR')} à vérifier`);
-  if (comptes.indeterminesNumeriques) parts.push(court ? `${comptes.indeterminesNumeriques.toLocaleString('fr-FR')} ind.` : pluriel(comptes.indeterminesNumeriques, 'indéterminée'));
-  return `Filtres : ${parts.join(' · ')}`;
+export function ligneDesComptes(comptes: ComptesDeLaVue | null, actives: number, court: boolean, t: Dictionnaire): string {
+  const r = t.optimizer.resultats.comptes;
+  if (!actives || !comptes) return r.aucunFiltre;
+  const n = (v: number) => formatNombre(v, t.codeLangue);
+  const parts = [r.visibles(comptes.visiblesConfirmes, n(comptes.visiblesConfirmes)),
+    r.masquees(comptes.masquesConfirmes + comptes.masquesNonVerifies, n(comptes.masquesConfirmes + comptes.masquesNonVerifies))];
+  if (comptes.potentielsNonVerifies) parts.push(r.aVerifier(n(comptes.potentielsNonVerifies)));
+  if (comptes.indeterminesNumeriques) parts.push(court ? r.indeterminesCourt(n(comptes.indeterminesNumeriques)) : r.indetermines(comptes.indeterminesNumeriques, n(comptes.indeterminesNumeriques)));
+  return r.filtres(parts.join(' · '));
 }

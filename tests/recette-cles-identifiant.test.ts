@@ -15,13 +15,14 @@ import {
   cransDeLaRegleIgnoreDef,
 } from '../src/lib/damage';
 import { buildOptimizerRecipe, parseOptimizerRecipe } from '../src/lib/optimizerRecipe';
+import { fr } from '../src/i18n/fr';
 
 const LAPIS = 19811;
 const BLADE_SURGE_LAPIS = 10616;
 const BLADE_DANCER = 14808;
 
 // Les quinze champs : [nom, valeur d'une entrée valide pour la clé].
-const RANG_VALIDE = cransDeLaRegleIgnoreDef(IGNORE_DEF_A_PARTIR_DU_COUP_PAR_ID[BLADE_DANCER]).map((c) => c.rang).find((r) => r !== null) ?? null;
+const RANG_VALIDE = cransDeLaRegleIgnoreDef(IGNORE_DEF_A_PARTIR_DU_COUP_PAR_ID[BLADE_DANCER], fr).map((c) => c.rang).find((r) => r !== null) ?? null;
 const CHAMPS: [string, unknown, number][] = [
   // Sept champs entiers de `validerRecordNumerique`.
   ['coupsPersonnalises', 1, BLADE_SURGE_LAPIS],
@@ -62,7 +63,7 @@ export function testRecetteClesIdentifiant() {
     )
   );
   const avec = (champ: string, cle: string, valeur: unknown) =>
-    parseOptimizerRecipe(JSON.stringify({ ...base, damageSetup: { ...base.damageSetup, [champ]: { [cle]: valeur } } }));
+    parseOptimizerRecipe(JSON.stringify({ ...base, damageSetup: { ...base.damageSetup, [champ]: { [cle]: valeur } } }), fr);
 
   ok(RANG_VALIDE !== null, 'le rang valide de premierCoupIgnoreDefParSort existe (variante à rang non nul)');
   for (const [champ, valeur, id] of CHAMPS) {

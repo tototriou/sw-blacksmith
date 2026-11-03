@@ -14,7 +14,7 @@
 // à connaître la base du monstre pour le réinterpréter, une source d'erreur
 // de plus, pas de moins.
 import { BuildRequirement, Objective, SLOT_FILTER_PRESETS, SLOT_MAIN_OPTIONS } from './runeBuildOptim';
-import { DamageSetup, IGNORE_DEF_A_PARTIR_DU_COUP_PAR_ID, LEADER_SKILL_STATS, cibleSecondairePriseEnCharge, cransDeLaRegleIgnoreDef, ignoreDefParCoupChoisi } from './damage';
+import { DamageSetup, IGNORE_DEF_A_PARTIR_DU_COUP_PAR_ID, LEADER_SKILL_STATS, cibleSecondairePriseEnCharge, ignoreDefParCoupChoisi, rangsDeLaRegleIgnoreDef } from './damage';
 import { erreurAurasExternes } from './aurasExternes';
 import { AutoExclusionScope, ExclusionSelector } from './optimizerExclusion';
 import { ArtifactKind, RUNE_SETS } from '../types';
@@ -23,6 +23,15 @@ import { LigneVerrouillee } from './artifactOptim';
 import { RuneMetric } from '../hooks/useRuneMetric';
 import { RELIC_UNIQUE, setsCost } from './effects';
 import { lireCompetencesInvocateur, normaliserCompetencesInvocateur } from './competencesInvocateur';
+import type { Dictionnaire } from '../i18n/fr';
+
+// Une recette refusée : le chemin du champ fautif et ce qu'il devait être,
+// rédigé dans la langue reçue par `parseOptimizerRecipe` (jamais ici).
+export type AttenteRecette = (a: Dictionnaire['optimizer']['recetteInvalide']['attentes']) => string;
+export interface ErreurRecette {
+  chemin: string;
+  attente: AttenteRecette;
+}
 
 export const OPTIMIZER_RECIPE_VERSION = 1;
 
@@ -217,8 +226,6 @@ export interface RecipeValidationResult {
 // refusée, jamais changée en silence. Toute autre valeur inconnue reste
 // refusée (`validerDamageSetup`).
 const CRIT_MODE_SUPPRIME = 'moyenne';
-export const AVERTISSEMENT_CRIT_MOYENNE =
-  "damageSetup.critMode : « moyenne » → « crit » — le mode critique « Moyenne » n'existe plus, la recette est passée en « Critique ».";
 
 const OBJECTIFS_ACCEPTES = new Set(['efficience', 'ehp', 'vitesse', 'degats_reels', 'speed_nuker', 'degats']);
 const METRIQUES_ACCEPTEES = new Set(['eff', 'score']);
@@ -235,13 +242,13 @@ function estObjet(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-function erreur(path: string, attente: string): string {
-  return `Fichier invalide : ${path} ${attente}.`;
+function erreur(chemin: string, attente: AttenteRecette): ErreurRecette {
+  return { chemin, attente };
 }
 
-function validerNombre(value: unknown, path: string, entier = false): string | null {
+function validerNombre(value: unknown, path: string, entier = false): ErreurRecette | null {
   if (typeof value !== 'number' || !Number.isFinite(value) || (entier && !Number.isInteger(value))) {
-    return erreur(path, entier ? 'doit être un nombre entier fini' : 'doit être un nombre fini');
+    return erreur(path, entier ? (a) => a.entierFini : (a) => a.nombreFini);
   }
   return null;
 }
@@ -253,42 +260,42 @@ function estIdentifiantDeCompetence(cle: string): boolean {
   return /^[1-9]\d*$/.test(cle);
 }
 
-function validerRecordNumerique(value: unknown, path: string, entier = false): string | null {
+function validerRecordNumerique(value: unknown, path: string, entier = false): ErreurRecette | null {
   if (value === undefined) return null;
-  if (!estObjet(value)) return erreur(path, 'doit être un objet indexé par identifiant de compétence');
+  if (!estObjet(value)) return erreur(path, (a) => a.objetParCompetence);
   for (const [id, n] of Object.entries(value)) {
-    if (!estIdentifiantDeCompetence(id)) return erreur(`${path}.${id}`, "utilise un identifiant de compétence invalide");
+    if (!estIdentifiantDeCompetence(id)) return erreur(`${path}.${id}`, (a) => a.identifiantCompetence);
     const e = validerNombre(n, `${path}.${id}`, entier);
     if (e) return e;
-    if ((n as number) < 0) return erreur(`${path}.${id}`, 'doit être positif ou nul');
+    if ((n as number) < 0) return erreur(`${path}.${id}`, (a) => a.positif);
   }
   return null;
 }
 
-function validerRecordBooleen(value: unknown, path: string): string | null {
+function validerRecordBooleen(value: unknown, path: string): ErreurRecette | null {
   if (value === undefined) return null;
-  if (!estObjet(value)) return erreur(path, 'doit être un objet indexé par identifiant de compétence');
+  if (!estObjet(value)) return erreur(path, (a) => a.objetParCompetence);
   for (const [id, actif] of Object.entries(value)) {
-    if (!estIdentifiantDeCompetence(id)) return erreur(`${path}.${id}`, "utilise un identifiant de compétence invalide");
-    if (typeof actif !== 'boolean') return erreur(`${path}.${id}`, 'doit être un booléen');
+    if (!estIdentifiantDeCompetence(id)) return erreur(`${path}.${id}`, (a) => a.identifiantCompetence);
+    if (typeof actif !== 'boolean') return erreur(`${path}.${id}`, (a) => a.booleen);
   }
   return null;
 }
 
-function validerStats(value: unknown, path: string): string | null {
-  if (!estObjet(value)) return erreur(path, 'doit être un objet de statistiques');
+function validerStats(value: unknown, path: string): ErreurRecette | null {
+  if (!estObjet(value)) return erreur(path, (a) => a.objetStats);
   for (const [stat, n] of Object.entries(value)) {
-    if (!STATS_ACCEPTEES.has(stat)) return erreur(`${path}.${stat}`, 'désigne une statistique inconnue');
+    if (!STATS_ACCEPTEES.has(stat)) return erreur(`${path}.${stat}`, (a) => a.statInconnue);
     const e = validerNombre(n, `${path}.${stat}`);
     if (e) return e;
-    if ((n as number) < 0) return erreur(`${path}.${stat}`, 'doit être positif ou nul');
+    if ((n as number) < 0) return erreur(`${path}.${stat}`, (a) => a.positif);
   }
   return null;
 }
 
-function validerDamageSetup(value: unknown): string | null {
+function validerDamageSetup(value: unknown): ErreurRecette | null {
   if (value === undefined) return null; // compatibilité : recettes antérieures aux dégâts réels
-  if (!estObjet(value)) return erreur('damageSetup', 'doit être un objet');
+  if (!estObjet(value)) return erreur('damageSetup', (a) => a.objet);
 
   const setup = value;
   // ⚠️ L'ancien `setsAura` comptait l'équipe ENTIÈRE, monstre optimisé
@@ -297,13 +304,9 @@ function validerDamageSetup(value: unknown): string | null {
   // vide, il ne dit rien et reste accepté — `parseOptimizerRecipe` le retire
   // alors ; non vide, il est refusé plutôt que réinterprété en silence.
   if (setup.setsAura !== undefined) {
-    if (!Array.isArray(setup.setsAura)) return erreur('damageSetup.setsAura', 'doit être une liste');
+    if (!Array.isArray(setup.setsAura)) return erreur('damageSetup.setsAura', (a) => a.liste);
     if (setup.setsAura.length > 0) {
-      return erreur(
-        'damageSetup.setsAura',
-        "est l'ancien total d'auras de l'équipe, monstre optimisé inclus, qui ne peut pas être converti en auras des autres monstres : " +
-          'retirer ce champ et saisir les auras des autres monstres dans damageSetup.setsAuraExternes'
-      );
+      return erreur('damageSetup.setsAura', (a) => a.ancienSetsAura);
     }
   }
   // Une ligne par set, entier de 1 à 15, somme ≤ 15 (cinq autres monstres à
@@ -330,43 +333,43 @@ function validerDamageSetup(value: unknown): string | null {
   // au lieu d'additionner — revue externe de la v1.14.0.
   if (setup.leaderSkill !== undefined) {
     const lead = setup.leaderSkill;
-    if (!estObjet(lead)) return erreur('damageSetup.leaderSkill', 'doit être un objet');
+    if (!estObjet(lead)) return erreur('damageSetup.leaderSkill', (a) => a.objet);
     if (!(LEADER_SKILL_STATS as readonly unknown[]).includes(lead.stat)) {
-      return erreur('damageSetup.leaderSkill.stat', 'contient une stat de lead inconnue');
+      return erreur('damageSetup.leaderSkill.stat', (a) => a.statLead);
     }
     const e = validerNombre(lead.pct, 'damageSetup.leaderSkill.pct');
     if (e) return e;
   }
   for (const champ of ['ownHpPct', 'livingAlliesPct', 'sacrificeReservePct', 'enemyDestroyedHpPct']) {
     if (setup[champ] !== undefined && ((setup[champ] as number) < 0 || (setup[champ] as number) > 100)) {
-      return erreur(`damageSetup.${champ}`, 'doit être compris entre 0 et 100');
+      return erreur(`damageSetup.${champ}`, (a) => a.entre0et100);
     }
   }
   if (
     setup.aliveEnemies !== undefined &&
     (!Number.isInteger(setup.aliveEnemies) || (setup.aliveEnemies as number) < 1 || (setup.aliveEnemies as number) > 4)
   ) {
-    return erreur('damageSetup.aliveEnemies', 'doit être un entier compris entre 1 et 4');
+    return erreur('damageSetup.aliveEnemies', (a) => a.entre1et4);
   }
   for (const champ of [
     'atkBuff', 'defBuff', 'spdBuff', 'defBreak', 'defBreakParLeSort', 'attaqueConjointe', 'pendantTourAllie', 'brand', 'effetsCibleCountAutres', 'buffsPropresCountAutres', 'atkDebuff', 'defDebuff', 'spdDebuff', 'euldongActif', 'mirinaeActif',
     'deborahActif', 'miriamActif', 'transmissionActif', 'velaskaActif', 'enemyHpNotDestroyed',
   ]) {
-    if (setup[champ] !== undefined && typeof setup[champ] !== 'boolean') return erreur(`damageSetup.${champ}`, 'doit être un booléen');
+    if (setup[champ] !== undefined && typeof setup[champ] !== 'boolean') return erreur(`damageSetup.${champ}`, (a) => a.booleen);
   }
   // `CRIT_MODE_SUPPRIME` reste accepté ICI uniquement pour être converti par
   // `parseOptimizerRecipe`, avec son avertissement.
   if (setup.critMode !== undefined && ![CRIT_MODE_SUPPRIME, 'crit', 'normal'].includes(String(setup.critMode))) {
-    return erreur('damageSetup.critMode', 'contient un mode de critique inconnu');
+    return erreur('damageSetup.critMode', (a) => a.modeCritique);
   }
   // ⚠️ « aucune » n'existe plus dans l'écran ni dans `SummonerSkills`, mais
   // reste accepté ICI uniquement pour migrer une recette déjà exportée. Le
   // lecteur traduit aussi l'ancien mode « combat » vers « normal ».
   if (lireCompetencesInvocateur(setup.summonerSkills) === null) {
-    return erreur('damageSetup.summonerSkills', "contient un mode de compétences d'invocateur inconnu");
+    return erreur('damageSetup.summonerSkills', (a) => a.modeInvocateur);
   }
   if (setup.enemyElement !== undefined && setup.enemyElement !== null && !['fire', 'water', 'wind', 'light', 'dark'].includes(String(setup.enemyElement))) {
-    return erreur('damageSetup.enemyElement', 'contient un élément inconnu');
+    return erreur('damageSetup.enemyElement', (a) => a.element);
   }
 
   for (const champ of ['coupsPersonnalises', 'effetsCibleCount', 'buffsCibleCount', 'buffsPropresCount', 'buffsAlliesCount', 'compteurPersonnalise', 'effetsPropresCount']) {
@@ -389,52 +392,52 @@ function validerDamageSetup(value: unknown): string | null {
   // appliqué en silence à un sort sans cette capacité.
   if (setup.cibleDegatsParSort !== undefined) {
     if (!estObjet(setup.cibleDegatsParSort)) {
-      return erreur('damageSetup.cibleDegatsParSort', 'doit être un objet indexé par identifiant de compétence');
+      return erreur('damageSetup.cibleDegatsParSort', (a) => a.objetParCompetence);
     }
     for (const [skillId, cible] of Object.entries(setup.cibleDegatsParSort)) {
       const path = `damageSetup.cibleDegatsParSort.${skillId}`;
       // « 010616 » passerait la table de capacité (`Number` le ramène à
       // 10616) : la règle de clé la refuse d'abord.
-      if (!estIdentifiantDeCompetence(skillId)) return erreur(path, "utilise un identifiant de compétence invalide");
-      if (cible !== 'visee' && cible !== 'secondaire') return erreur(path, 'doit valoir « visee » ou « secondaire »');
+      if (!estIdentifiantDeCompetence(skillId)) return erreur(path, (a) => a.identifiantCompetence);
+      if (cible !== 'visee' && cible !== 'secondaire') return erreur(path, (a) => a.cible);
       if (!cibleSecondairePriseEnCharge(Number(skillId))) {
-        return erreur(path, 'désigne un sort sans coup de zone curé, dont la cible calculée ne se choisit pas');
+        return erreur(path, (a) => a.sansCoupDeZone);
       }
     }
   }
 
   if (setup.scenariosEffetsEntreCoups !== undefined) {
     if (!estObjet(setup.scenariosEffetsEntreCoups)) {
-      return erreur('damageSetup.scenariosEffetsEntreCoups', 'doit être un objet indexé par identifiant de compétence');
+      return erreur('damageSetup.scenariosEffetsEntreCoups', (a) => a.objetParCompetence);
     }
     for (const [skillId, scenarioBrut] of Object.entries(setup.scenariosEffetsEntreCoups)) {
       const path = `damageSetup.scenariosEffetsEntreCoups.${skillId}`;
-      if (!estIdentifiantDeCompetence(skillId)) return erreur(path, "utilise un identifiant de compétence invalide");
-      if (!estObjet(scenarioBrut)) return erreur(path, 'doit être un objet');
-      if (scenarioBrut.actif !== undefined && typeof scenarioBrut.actif !== 'boolean') return erreur(`${path}.actif`, 'doit être un booléen');
+      if (!estIdentifiantDeCompetence(skillId)) return erreur(path, (a) => a.identifiantCompetence);
+      if (!estObjet(scenarioBrut)) return erreur(path, (a) => a.objet);
+      if (scenarioBrut.actif !== undefined && typeof scenarioBrut.actif !== 'boolean') return erreur(`${path}.actif`, (a) => a.booleen);
       if (
         scenarioBrut.presentsInitialement !== undefined &&
         (!Array.isArray(scenarioBrut.presentsInitialement) || scenarioBrut.presentsInitialement.some((effet) => typeof effet !== 'string'))
       ) {
-        return erreur(`${path}.presentsInitialement`, 'doit être une liste de noms d’effets');
+        return erreur(`${path}.presentsInitialement`, (a) => a.listeEffets);
       }
       if (scenarioBrut.apresCoup !== undefined) {
-        if (!estObjet(scenarioBrut.apresCoup)) return erreur(`${path}.apresCoup`, 'doit être un objet indexé par effet');
+        if (!estObjet(scenarioBrut.apresCoup)) return erreur(`${path}.apresCoup`, (a) => a.objetParEffet);
         for (const [effet, coup] of Object.entries(scenarioBrut.apresCoup)) {
           if (coup === null) continue;
           const e = validerNombre(coup, `${path}.apresCoup.${effet}`, true);
           if (e) return e;
-          if ((coup as number) < 1) return erreur(`${path}.apresCoup.${effet}`, 'doit être supérieur ou égal à 1');
+          if ((coup as number) < 1) return erreur(`${path}.apresCoup.${effet}`, (a) => a.auMoins1);
         }
       }
       // Nombre d'effets posés, pour un effet dont le joueur le saisit
       // (Critical Link : un dégât continu par effet bénéfique converti).
       if (scenarioBrut.nombres !== undefined) {
-        if (!estObjet(scenarioBrut.nombres)) return erreur(`${path}.nombres`, 'doit être un objet indexé par effet');
+        if (!estObjet(scenarioBrut.nombres)) return erreur(`${path}.nombres`, (a) => a.objetParEffet);
         for (const [effet, nombre] of Object.entries(scenarioBrut.nombres)) {
           const e = validerNombre(nombre, `${path}.nombres.${effet}`, true);
           if (e) return e;
-          if ((nombre as number) < 0) return erreur(`${path}.nombres.${effet}`, 'doit être positif ou nul');
+          if ((nombre as number) < 0) return erreur(`${path}.nombres.${effet}`, (a) => a.positif);
         }
       }
     }
@@ -450,22 +453,22 @@ function validerDamageSetup(value: unknown): string | null {
   // qui n'arrive pas par une recette.
   if (setup.premierCoupIgnoreDefParSort !== undefined) {
     if (!estObjet(setup.premierCoupIgnoreDefParSort)) {
-      return erreur('damageSetup.premierCoupIgnoreDefParSort', 'doit être un objet indexé par identifiant de compétence');
+      return erreur('damageSetup.premierCoupIgnoreDefParSort', (a) => a.objetParCompetence);
     }
     for (const [skillId, rang] of Object.entries(setup.premierCoupIgnoreDefParSort)) {
       const path = `damageSetup.premierCoupIgnoreDefParSort.${skillId}`;
       // « 014808 » désignerait bien un sort de la table : la règle de clé
       // le refuse d'abord.
-      if (!estIdentifiantDeCompetence(skillId)) return erreur(path, "utilise un identifiant de compétence invalide");
+      if (!estIdentifiantDeCompetence(skillId)) return erreur(path, (a) => a.identifiantCompetence);
       const regle = IGNORE_DEF_A_PARTIR_DU_COUP_PAR_ID[Number(skillId)];
       // Le message ne compte ni ne nomme les sorts de la table : il resterait
       // faux dès une entrée de plus.
       if (!regle) {
-        return erreur(path, "désigne un sort sans réglage d'ignore DEF par coup");
+        return erreur(path, (a) => a.sansIgnoreDef);
       }
-      const permis = cransDeLaRegleIgnoreDef(regle).map((c) => c.rang);
+      const permis = rangsDeLaRegleIgnoreDef(regle);
       if (!permis.includes(rang as number | null)) {
-        return erreur(path, `doit valoir ${permis.map((r) => (r === null ? 'null' : String(r))).join(', ')} pour ce sort`);
+        return erreur(path, (a) => a.valeursPermises(permis.map((r) => (r === null ? 'null' : String(r))).join(', ')));
       }
     }
   }
@@ -475,14 +478,14 @@ function validerDamageSetup(value: unknown): string | null {
   // (le nombre de coups sur la cible se règle à part) et n'a pas lieu au calcul.
   if (setup.coupsIgnorantDefParSort !== undefined) {
     if (!estObjet(setup.coupsIgnorantDefParSort)) {
-      return erreur('damageSetup.coupsIgnorantDefParSort', 'doit être un objet indexé par identifiant de compétence');
+      return erreur('damageSetup.coupsIgnorantDefParSort', (a) => a.objetParCompetence);
     }
     for (const [skillId, rangs] of Object.entries(setup.coupsIgnorantDefParSort)) {
       const path = `damageSetup.coupsIgnorantDefParSort.${skillId}`;
-      if (!estIdentifiantDeCompetence(skillId)) return erreur(path, "utilise un identifiant de compétence invalide");
-      if (!ignoreDefParCoupChoisi(Number(skillId))) return erreur(path, "désigne un sort sans ignore DEF choisi coup par coup");
+      if (!estIdentifiantDeCompetence(skillId)) return erreur(path, (a) => a.identifiantCompetence);
+      if (!ignoreDefParCoupChoisi(Number(skillId))) return erreur(path, (a) => a.sansIgnoreDefCoupParCoup);
       if (!Array.isArray(rangs) || rangs.some((r) => !Number.isInteger(r) || (r as number) < 1)) {
-        return erreur(path, 'doit être une liste de rangs de coup entiers, à partir de 1');
+        return erreur(path, (a) => a.listeRangsCoups);
       }
     }
   }
@@ -493,76 +496,78 @@ function validerDamageSetup(value: unknown): string | null {
 // planter, seulement échouer proprement — même esprit que validateRtaImport
 // (rtaShare.ts), une discipline déjà établie ailleurs dans l'app pour tout
 // import de fichier utilisateur.
-export function parseOptimizerRecipe(text: string): RecipeValidationResult {
+export function parseOptimizerRecipe(text: string, t: Dictionnaire): RecipeValidationResult {
+  const m = t.optimizer.recetteInvalide;
+  const echec = (e: ErreurRecette): RecipeValidationResult => ({ recipe: null, error: m.champ(e.chemin, e.attente(m.attentes)) });
   let data: unknown;
   try {
     data = JSON.parse(text);
   } catch {
-    return { recipe: null, error: "Fichier illisible : ce n'est pas du JSON valide." };
+    return { recipe: null, error: m.pasJson };
   }
   if (!estObjet(data)) {
-    return { recipe: null, error: 'Fichier invalide : objet JSON attendu.' };
+    return { recipe: null, error: m.objetAttendu };
   }
   const d = data;
   if (d.version !== OPTIMIZER_RECIPE_VERSION) {
-    return { recipe: null, error: `Version de recette non prise en charge : ${String(d.version)}.` };
+    return { recipe: null, error: m.version(String(d.version)) };
   }
   if (typeof d.monsterCom2usId !== 'number' || !Number.isInteger(d.monsterCom2usId) || !estObjet(d.requirement)) {
-    return { recipe: null, error: 'Fichier invalide : champs obligatoires manquants.' };
+    return { recipe: null, error: m.champsManquants };
   }
-  if (!OBJECTIFS_ACCEPTES.has(String(d.objective))) return { recipe: null, error: erreur('objective', 'contient une valeur inconnue') };
-  if (!METRIQUES_ACCEPTEES.has(String(d.metric))) return { recipe: null, error: erreur('metric', 'contient une valeur inconnue') };
+  if (!OBJECTIFS_ACCEPTES.has(String(d.objective))) return echec(erreur('objective', (a) => a.valeurInconnue));
+  if (!METRIQUES_ACCEPTEES.has(String(d.metric))) return echec(erreur('metric', (a) => a.valeurInconnue));
   if (!PRESETS_ACCEPTES.has(String(d.slotFilterPreset))) {
-    return { recipe: null, error: erreur('slotFilterPreset', 'contient une valeur inconnue') };
+    return echec(erreur('slotFilterPreset', (a) => a.valeurInconnue));
   }
 
   const requirement = d.requirement;
   if (!Array.isArray(requirement.sets) || requirement.sets.some((set) => typeof set !== 'string' || !SETS_ACCEPTES.has(set))) {
-    return { recipe: null, error: erreur('requirement.sets', 'doit être une liste de sets connus') };
+    return echec(erreur('requirement.sets', (a) => a.setsConnus));
   }
   if (setsCost(requirement.sets as string[]) > 6) {
-    return { recipe: null, error: erreur('requirement.sets', 'demande plus de six runes') };
+    return echec(erreur('requirement.sets', (a) => a.plusDeSix));
   }
   const minStatsErreur = validerStats(requirement.minStats, 'requirement.minStats');
-  if (minStatsErreur) return { recipe: null, error: minStatsErreur };
+  if (minStatsErreur) return echec(minStatsErreur);
   if (requirement.maxStats !== undefined) {
     const maxStatsErreur = validerStats(requirement.maxStats, 'requirement.maxStats');
-    if (maxStatsErreur) return { recipe: null, error: maxStatsErreur };
+    if (maxStatsErreur) return echec(maxStatsErreur);
   }
   if (requirement.mainStats !== undefined) {
-    if (!estObjet(requirement.mainStats)) return { recipe: null, error: erreur('requirement.mainStats', 'doit être un objet') };
+    if (!estObjet(requirement.mainStats)) return echec(erreur('requirement.mainStats', (a) => a.objet));
     for (const [slot, codes] of Object.entries(requirement.mainStats)) {
       if (!['2', '4', '6'].includes(slot) || !Array.isArray(codes) || codes.some((code) => typeof code !== 'number' || !SLOT_MAIN_OPTIONS[Number(slot) as 2 | 4 | 6].includes(code))) {
-        return { recipe: null, error: erreur(`requirement.mainStats.${slot}`, 'contient une statistique principale invalide') };
+        return echec(erreur(`requirement.mainStats.${slot}`, (a) => a.principale));
       }
     }
   }
   if (requirement.lockedRunes !== undefined) {
-    if (!estObjet(requirement.lockedRunes)) return { recipe: null, error: erreur('requirement.lockedRunes', 'doit être un objet') };
+    if (!estObjet(requirement.lockedRunes)) return echec(erreur('requirement.lockedRunes', (a) => a.objet));
     for (const [slot, runeId] of Object.entries(requirement.lockedRunes)) {
       if (!/^[1-6]$/.test(slot) || typeof runeId !== 'number' || !Number.isInteger(runeId) || runeId <= 0) {
-        return { recipe: null, error: erreur(`requirement.lockedRunes.${slot}`, 'contient un identifiant de rune invalide') };
+        return echec(erreur(`requirement.lockedRunes.${slot}`, (a) => a.rune));
       }
     }
   }
 
   for (const champ of ['exhaustiveSearch', 'excludeUsedRunes', 'ignoreArtifacts', 'compterAurasResPre', 'verifierToutesLesCombinaisons']) {
-    if (d[champ] !== undefined && typeof d[champ] !== 'boolean') return { recipe: null, error: erreur(champ, 'doit être un booléen') };
+    if (d[champ] !== undefined && typeof d[champ] !== 'boolean') return echec(erreur(champ, (a) => a.booleen));
   }
   if (d.excludeUsedScope !== undefined && !['rta', 'siege-defense', 'box'].includes(String(d.excludeUsedScope))) {
-    return { recipe: null, error: erreur('excludeUsedScope', "contient un périmètre d'exclusion inconnu") };
+    return echec(erreur('excludeUsedScope', (a) => a.perimetre));
   }
   if (d.excludedSelectors !== undefined && !Array.isArray(d.excludedSelectors)) {
-    return { recipe: null, error: erreur('excludedSelectors', 'doit être une liste') };
+    return echec(erreur('excludedSelectors', (a) => a.liste));
   }
-  if (!estObjet(d.artifactMainByKind)) return { recipe: null, error: erreur('artifactMainByKind', 'doit être un objet') };
+  if (!estObjet(d.artifactMainByKind)) return echec(erreur('artifactMainByKind', (a) => a.objet));
   for (const [kind, choix] of Object.entries(d.artifactMainByKind)) {
     if (!['element', 'archetype'].includes(kind) || !CHOIX_ARTEFACT_ACCEPTES.has(choix)) {
-      return { recipe: null, error: erreur(`artifactMainByKind.${kind}`, "contient un choix d'artéfact invalide") };
+      return echec(erreur(`artifactMainByKind.${kind}`, (a) => a.choixArtefact));
     }
   }
   if (d.lignesVerrouillees !== undefined) {
-    if (!Array.isArray(d.lignesVerrouillees)) return { recipe: null, error: erreur('lignesVerrouillees', 'doit être une liste') };
+    if (!Array.isArray(d.lignesVerrouillees)) return echec(erreur('lignesVerrouillees', (a) => a.liste));
     for (const [index, ligne] of d.lignesVerrouillees.entries()) {
       if (
         !estObjet(ligne) ||
@@ -571,25 +576,25 @@ export function parseOptimizerRecipe(text: string): RecipeValidationResult {
         (ligne.code as number) <= 0 ||
         (ligne.min as number) < 0
       ) {
-        return { recipe: null, error: erreur(`lignesVerrouillees.${index}`, 'doit contenir un code entier et un minimum numérique') };
+        return echec(erreur(`lignesVerrouillees.${index}`, (a) => a.ligneVerrou));
       }
     }
   }
   const damageSetupErreur = validerDamageSetup(d.damageSetup);
-  if (damageSetupErreur) return { recipe: null, error: damageSetupErreur };
+  if (damageSetupErreur) return echec(damageSetupErreur);
   if (d.relicMainChoice !== undefined && !CHOIX_RELIC_MAIN_ACCEPTES.has(d.relicMainChoice)) {
-    return { recipe: null, error: erreur('relicMainChoice', 'contient un choix de relique invalide') };
+    return echec(erreur('relicMainChoice', (a) => a.choixRelique));
   }
   if (
     d.relicUniqueChoice !== undefined &&
     d.relicUniqueChoice !== 'libre' &&
     (typeof d.relicUniqueChoice !== 'number' || !RELIC_UNIQUE_TYPES_ACCEPTES.has(d.relicUniqueChoice))
   ) {
-    return { recipe: null, error: erreur('relicUniqueChoice', 'contient un type de propriété unique inconnu') };
+    return echec(erreur('relicUniqueChoice', (a) => a.typeUnique));
   }
   if (d.relicMinUpgrade !== undefined) {
     const e = validerNombre(d.relicMinUpgrade, 'relicMinUpgrade', true);
-    if (e) return { recipe: null, error: e };
+    if (e) return echec(e);
   }
   // Compatibilité arrière : l'ancien cran « aucune » décrivait une situation
   // impossible en jeu. Une recette qui le porte repart donc sur le défaut
@@ -599,7 +604,7 @@ export function parseOptimizerRecipe(text: string): RecipeValidationResult {
   // `validerDamageSetup`), est retiré : aucune clé hors de `DamageSetup` ne
   // survit à l'import ni ne repart dans l'export suivant.
   // L'ancien mode critique « Moyenne » devient « Critique », DIT par un
-  // avertissement (voir `AVERTISSEMENT_CRIT_MOYENNE`) : même normalisation
+  // avertissement (`optimizer.recetteInvalide.critMoyenne` du dictionnaire) : même normalisation
   // centrale, pour l'écran comme pour le CLI.
   const avertissements: string[] = [];
   // Le réglage de rétention retiré ne doit survivre ni à l'import ni à un
@@ -611,7 +616,7 @@ export function parseOptimizerRecipe(text: string): RecipeValidationResult {
     let setup = setupLu;
     if (setup.critMode === CRIT_MODE_SUPPRIME) {
       setup = { ...setup, critMode: 'crit' };
-      avertissements.push(AVERTISSEMENT_CRIT_MOYENNE);
+      avertissements.push(m.critMoyenne);
     }
     normalisee = {
       ...sansPriorite,

@@ -41,6 +41,8 @@ import { StatKey } from '../src/lib/effects';
 import { DetailMonstre } from '../src/lib/monsterSkills';
 import { formesJouables } from '../src/lib/monsterForms';
 import { StatRow } from '../src/lib/stats';
+import { fr } from '../src/i18n/fr';
+import { en } from '../src/i18n/en';
 import { egal, monstersJson, ok, titre } from './outils';
 
 const racine = resolve(new URL('..', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1'));
@@ -219,7 +221,7 @@ export function testEffetsEntreCoupsRegle() {
   const ppk = profil(13915);
   const ppkDef = ppk.effetsEntreCoups!.find((e) => e.id === 'decrease-def')!;
   egal(rangsDePoseProposes(ppk, ppkDef, CIBLE), [4, 5], 'PPK Combo : après le coup 4 ou 5 seulement');
-  egal(libelleEffetEntreCoups(ppkDef), 'Réduction de DEF', 'PPK Combo : la note « 5th hit if removed buff » pose une condition que la prose n’a pas (la prose fait foi)');
+  egal(libelleEffetEntreCoups(ppkDef, fr), 'Réduction de DEF', 'PPK Combo : la note « 5th hit if removed buff » pose une condition que la prose n’a pas (la prose fait foi)');
   const ppkSans = total(ppk, CIBLE);
   egal(total(ppk, avecPose(ppk, { 'decrease-def': 1 })), ppkSans, 'PPK Combo : une pose après le coup 1 est ignorée');
   ok(total(ppk, avecPose(ppk, { 'decrease-def': 4 })) > ppkSans, 'PPK Combo : posée après le coup 4, les coups 5 et 6 la subissent');
@@ -254,9 +256,9 @@ export function testEffetsEntreCoupsRegle() {
   egal(profil(3454).effetsEntreCoups?.map(signature), ['decrease-def@1'], 'Blackout Kick (Sia) : la Réduction d’ATQ du coup 2 ne compte pour rien');
 
   // Précisions : coup critique (donnée), état Thunderer (note ou prose).
-  egal(libelleEffetEntreCoups(profil(1212).effetsEntreCoups![0]), 'Réduction de DEF (sur coup critique)', 'Triple Attack (Cogma) : sur coup critique');
+  egal(libelleEffetEntreCoups(profil(1212).effetsEntreCoups![0], fr), 'Réduction de DEF (sur coup critique)', 'Triple Attack (Cogma) : sur coup critique');
   for (const id of [18127, 18128, 18129]) {
-    egal(libelleEffetEntreCoups(profil(id).effetsEntreCoups![0]), 'Marque (en état Thunderer)', `Wild Bolt ${id} : en état Thunderer`);
+    egal(libelleEffetEntreCoups(profil(id).effetsEntreCoups![0], fr), 'Marque (en état Thunderer)', `Wild Bolt ${id} : en état Thunderer`);
   }
 
   // Deux dégâts continus par coup (Meteor Strike, Black Meteor) : `nombre: 2`.
@@ -304,7 +306,7 @@ export function testEffetsEntreCoupsRegle() {
   // (utilisateur, 2026-11-02) ; ses coups au hasard se règlent à part.
   const xiaoLin = profil(8211);
   egal(rangsDePoseProposes(xiaoLin, xiaoLin.effetsEntreCoups![0], CIBLE), [1, 2, 3], 'Water Dragon Attack : après le coup 1, 2 ou 3');
-  egal(libelleEffetEntreCoups(profil(11507).effetsEntreCoups![0]), 'Réduction de DEF (un seul des effets possibles par coup, au hasard)',
+  egal(libelleEffetEntreCoups(profil(11507).effetsEntreCoups![0], fr), 'Réduction de DEF (un seul des effets possibles par coup, au hasard)',
     'Ghost Appearance : un seul effet au hasard par coup, comme Virus');
 
   // Séquence curée : Fatal Mortar Bullet (Scarlett) pose Réduction de DEF et
@@ -336,16 +338,21 @@ export function testEffetsEntreCoupsRegle() {
 
   // Effets posés par un PASSIF à chaque attaque.
   const shaina = profil(12602);
-  egal(shaina.effetsEntreCoups?.map((e) => libelleEffetEntreCoups(e)), ['Réduction de DEF (par Precision)'], 'Crescent Moon Slash (Shaina) : la Réduction de DEF de Precision');
+  egal(shaina.effetsEntreCoups?.map((e) => libelleEffetEntreCoups(e, fr)), ['Réduction de DEF (par Precision)'], 'Crescent Moon Slash (Shaina) : la Réduction de DEF de Precision');
   ok(total(shaina, avecPose(shaina, { 'decrease-def': 1 })) > total(shaina, CIBLE), 'Crescent Moon Slash : posée au coup 1, le coup 2 la subit');
   egal(profil(10007).effetsEntreCoups?.map((e) => e.id), ['decrease-def'],
     'Triple Crush (Tesarion) : l’Oubli d’Ancient Power, posé à la fin de l’attaque, n’est pas proposé (utilisateur)');
   egal(profil(5660).effetsEntreCoups?.map((e) => e.id), ['decrease-def'], 'Surprise Attack (Jultan) : sans lecteur, les dégâts continus du passif ne sont pas proposés');
   ok(!profil(10510).effetsEntreCoups?.length,
     'Spear of Devastation (Manannan) : les dégâts continus de King of the Ruins, qui visent les autres ennemis (utilisateur, 2026-11-02), ne sont pas proposés');
-  egal(libelleEffetEntreCoups(profil(12101).effetsEntreCoups![0]), 'Réduction de DEF (sur un 5 au dé)', 'Roll Dice : la Réduction de DEF sur un 5 au dé');
-  egal(profil(18129).effetsEntreCoups?.map((e) => libelleEffetEntreCoups(e)),
+  egal(libelleEffetEntreCoups(profil(12101).effetsEntreCoups![0], fr), 'Réduction de DEF (sur un 5 au dé)', 'Roll Dice : la Réduction de DEF sur un 5 au dé');
+  egal(profil(18129).effetsEntreCoups?.map((e) => libelleEffetEntreCoups(e, fr)),
     ['Marque (en état Thunderer)', 'Réduction de DEF (par Might · Thunder, en état Thunderer)'], 'Wild Bolt (Dyeus) : la Marque du sort et la Réduction de DEF du passif');
+  // En anglais : le nom SWARFARM de l'effet, ses conditions dans la langue.
+  egal(profil(18129).effetsEntreCoups?.map((e) => libelleEffetEntreCoups(e, en)),
+    ['Brand (in the Thunderer state)', 'Decrease DEF (from Might · Thunder, in the Thunderer state)'], 'Wild Bolt (Dyeus), en anglais');
+  egal(libelleEffetEntreCoups(profil(12101).effetsEntreCoups![0], en), 'Decrease DEF (on a dice roll of 5)', 'Roll Dice, en anglais');
+  egal(libelleEffetEntreCoups(profil(1212).effetsEntreCoups![0], en), 'Decrease DEF (on critical hit)', 'Triple Attack (Cogma), en anglais');
 
   // Scratch (Raoq) : 1 à 10 coups saisis, la réduction de DEF à chaque coup.
   const scratch = profil(2052);

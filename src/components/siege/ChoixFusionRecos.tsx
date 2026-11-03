@@ -2,6 +2,8 @@ import { Combine, CopyPlus } from 'lucide-react';
 import { Modale, Option } from '../../ui';
 import type { Reco, RecoPayload } from '../../types';
 import { apercuFusion, type BilanFusion } from '../../lib/recoFusion';
+import { useTraduction } from '../../hooks/useLangue';
+import type { Dictionnaire } from '../../i18n/fr';
 
 // Choix posé à l'import quand le fichier complète une recommandation qu'on a
 // déjà : la fusionner, ou l'ajouter à part comme avant. Spec :
@@ -19,33 +21,31 @@ import { apercuFusion, type BilanFusion } from '../../lib/recoFusion';
 
 type Paire = { entrante: RecoPayload; existante: Reco };
 
-// Espaces insécables : un guillemet ne se retrouve jamais seul en bout de ligne.
-// Écrites par leur code : un caractère invisible dans le source se confond avec
-// une espace ordinaire (et ESLint le refuse).
-const INSECABLE = String.fromCharCode(0xa0);
-const nom = (r: { name: string }) => `«${INSECABLE}${r.name || 'Recommandation'}${INSECABLE}»`;
+// Le nom cité entre guillemets ; en français, des espaces insécables tiennent
+// le guillemet à son nom (`recos.fusion.nomCite`).
+const nom = (r: { name: string }, t: Dictionnaire) => t.recos.fusion.nomCite(r.name || t.partage.reco.nomParDefaut);
 
-export function titreChoixFusion(paires: Paire[]): string {
-  return paires.length === 1
-    ? 'Ce fichier complète une de tes recommandations'
-    : 'Ce fichier complète tes recommandations';
+export function titreChoixFusion(paires: Paire[], t: Dictionnaire): string {
+  return paires.length === 1 ? t.recos.fusion.titreUne : t.recos.fusion.titrePlusieurs;
 }
 
 // Le sous-titre et les options, rendus à part de la coquille : la `Modale` se
 // monte dans `<body>` et ne rend rien côté serveur, ses tests de rendu passent
 // par ces deux-là.
 export function SousTitreFusion({ paires }: { paires: Paire[] }) {
+  const t = useTraduction();
+  const f = t.recos.fusion;
   return (
     <>
       {paires.map(({ entrante, existante }, i) => (
         <span key={i} className="block">
-          {nom(entrante)} prolonge ta recommandation <b className="text-ink">{nom(existante)}</b>.
+          {nom(entrante, t)}{f.prolonge}<b className="text-ink">{nom(existante, t)}</b>{f.point}
         </span>
       ))}
       {/* Dire ce qui n'est PAS touché : sans cette ligne, on ferme par
           précaution un choix qu'on voulait faire. (Pas en `noteFinale` : elle
           se pose sous des boutons d'action, que ce dialogue n'a pas.) */}
-      <span className="mt-1.5 block">Dans les deux cas, rien de ce que tu as n'est retiré ni réécrit.</span>
+      <span className="mt-1.5 block">{f.rienRetire}</span>
     </>
   );
 }
@@ -59,6 +59,8 @@ export function OptionsFusion({
   apercu: BilanFusion;
   onChoisir: (fusionner: boolean) => void;
 }) {
+  const t = useTraduction();
+  const f = t.recos.fusion;
   return (
     <div className="flex flex-col gap-2">
       <Option
@@ -68,19 +70,15 @@ export function OptionsFusion({
         data-choix-fusion="fusionner"
         autoFocus
         icone={<Combine size={16} />}
-        titre={une ? 'Fusionner dans la recommandation existante' : 'Fusionner dans les recommandations existantes'}
-        description={`${apercuFusion(apercu)} Tes builds, tes consignes et tes retouches restent tels quels.`}
+        titre={une ? f.fusionnerUne : f.fusionnerPlusieurs}
+        description={f.fusionnerDetail(apercuFusion(apercu, t))}
       />
       <Option
         onClick={() => onChoisir(false)}
         data-choix-fusion="a-part"
         icone={<CopyPlus size={16} />}
-        titre="Ajouter à part"
-        description={
-          une
-            ? 'Le fichier devient une recommandation de plus, à côté de la tienne.'
-            : 'Chaque recommandation du fichier vient en plus, à côté des tiennes.'
-        }
+        titre={f.aPart}
+        description={une ? f.aPartUne : f.aPartPlusieurs}
       />
     </div>
   );
@@ -99,13 +97,14 @@ export default function ChoixFusionRecos({
   onChoisir: (fusionner: boolean) => void;
   onAnnuler: () => void;
 }) {
+  const t = useTraduction();
   return (
     <Modale
       onClose={onAnnuler}
       labelledBy="fusion-recos-titre"
       largeur="max-w-[480px]"
       croix
-      titre={titreChoixFusion(paires)}
+      titre={titreChoixFusion(paires, t)}
       sousTitre={<SousTitreFusion paires={paires} />}
     >
       <OptionsFusion une={paires.length === 1} apercu={apercu} onChoisir={onChoisir} />

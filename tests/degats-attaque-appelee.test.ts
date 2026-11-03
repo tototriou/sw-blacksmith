@@ -62,6 +62,7 @@ import { buildOptimizerRecipe, parseOptimizerRecipe, type OptimizerRecipe } from
 import { buildRealDamageContext } from '../scripts/lib/realDamageCli';
 import { resolveObjectiveStats } from '../scripts/lib/recipeToSearchParams';
 import type { LoadedMonster } from '../scripts/lib/loadMonster';
+import { fr } from '../src/i18n/fr';
 
 const racine = resolve(new URL('..', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1'));
 const DOSSIER_SORTS = resolve(racine, 'public/data/skills');
@@ -696,7 +697,7 @@ export function testAttaqueAppeleeParSortCooperatif() {
     ignoreArtifacts: false,
     artifactMainByKind: {},
   });
-  const lue = parseOptimizerRecipe(JSON.stringify(recette));
+  const lue = parseOptimizerRecipe(JSON.stringify(recette), fr);
   ok(lue.recipe != null, `recette relue sans erreur${lue.error ? ` — ${lue.error}` : ''}`);
   if (!lue.recipe) return;
   egal(lue.recipe.damageSetup.skillCom2usId, ATTACK_COMMAND, 'aller-retour : skillCom2usId 10912 conservé tel quel');

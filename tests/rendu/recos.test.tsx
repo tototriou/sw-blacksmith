@@ -306,7 +306,7 @@ export function testRenduRecosTicks() {
   // Toutes les possibilités de runage en Swift : il se speed tune.
   const swift = editeur({ setOptions: [['swift', 'energy'], ['swift', 'will']] });
   ok(
-    tick(swift, 'Tick rapide').desactive && tick(swift, 'Tick rapide').title === 'Runage Swift : il se speed tune, il ne vise pas de tick',
+    tick(swift, 'Tick rapide').desactive && tick(swift, 'Tick rapide').title === 'Runage Rapide : il se speed tune, il ne vise pas de tick',
     'Swift partout : désactivé, et pourquoi'
   );
   ok(!tick(editeur({ setOptions: [['swift', 'energy'], ['violent', 'will']] }), 'Tick rapide').desactive, 'une option sans Swift suffit : actif');

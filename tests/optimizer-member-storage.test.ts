@@ -15,6 +15,7 @@ import type { ExclusionSelector, ExclusionSourceData } from '../src/lib/optimize
 import type { GearSet, Monster } from '../src/types';
 import { egal, faussLocalStorage, ok, titre } from './outils';
 import { monterListesOptimizer } from './optimizer-lists-harness';
+import { fr } from '../src/i18n/fr';
 
 const box: ExclusionSelector = { source: 'box', unitKey: '11' };
 const rta: ExclusionSelector = { source: 'rta', monsterId: '1' };
@@ -44,7 +45,7 @@ function installer(brut = ecrireMembresOptimizer(stockage()), listes = JSON.stri
 
 export function testMemoireOptimizerJson() {
   titre('Mémoire des membres · aller-retour JSON');
-  const s = stockage(), lu = lireMembresOptimizer(ecrireMembresOptimizer(s));
+  const s = stockage(), lu = lireMembresOptimizer(ecrireMembresOptimizer(s), fr);
   ok(lu.memories instanceof Map, 'la relecture rend une Map');
   egal([...lu.memories], [...s.memories], 'toutes les paires, identités et critères sont conservés');
   ok(isDeepStrictEqual(lu.teams, s.teams), 'les équipes, le leader et le lead reviennent');
@@ -54,12 +55,12 @@ export function testMemoireOptimizerJson() {
 export function testMemoireOptimizerCopie() {
   titre('Mémoire des membres · nouvelle Map à chaque écriture');
   const s = stockage(), photo = baseCompleteCriteres(undefined);
-  const r = enregistrerMemoireMembre(s.memories, { listId: 'l1', selector: box, com2usId: 10001 }, photo, compte());
+  const r = enregistrerMemoireMembre(s.memories, { listId: 'l1', selector: box, com2usId: 10001 }, photo, compte(), fr);
   ok(r.memories !== s.memories, 'nouvelle référence de Map');
   egal(s.memories.get('l1|box:11')?.criteres.minStats.spd, 200, 'la Map précédente reste intacte');
   photo.minStats.spd = 123;
   egal(r.memories.get('l1|box:11')?.criteres.minStats, {}, 'la photo est copiée en profondeur');
-  const autre = enregistrerMemoireMembre(r.memories, { listId: 'l2', selector: box, com2usId: 10001 }, photo, compte());
+  const autre = enregistrerMemoireMembre(r.memories, { listId: 'l2', selector: box, com2usId: 10001 }, photo, compte(), fr);
   egal(autre.memories.get('l1|box:11')?.criteres.minStats, {}, 'le même sélecteur dans une autre liste ne modifie pas la première');
 }
 export function testMemoireOptimizerLecteurListes() {
@@ -105,13 +106,13 @@ export function testEquipeOptimizerValidation() {
     ['portée inconnue', { ...equipe, lead: { ...equipe.lead, area: 'Inconnue' } }],
     ['slot invalide', { ...equipe, members: [box, { ...siege, slotIndex: -1 }] }],
   ];
-  for (const [nom, v] of variantes) { const r = validerEquipesOptimizer([v]); egal(r.teams.length, 0, `${nom} : refus`); egal(r.rapport.length, 1, `${nom} : signalé`); }
-  const conflit = validerEquipesOptimizer([equipe, { ...equipe, id: 'e2' }]);
+  for (const [nom, v] of variantes) { const r = validerEquipesOptimizer([v], fr); egal(r.teams.length, 0, `${nom} : refus`); egal(r.rapport.length, 1, `${nom} : signalé`); }
+  const conflit = validerEquipesOptimizer([equipe, { ...equipe, id: 'e2' }], fr);
   egal(conflit.teams.length, 1, 'un membre dans une seule équipe par liste');
-  egal(validerEquipesOptimizer([equipe, { ...equipe, id: 'e2', listId: 'l2' }]).teams.length, 2, 'les listes restent indépendantes');
+  egal(validerEquipesOptimizer([equipe, { ...equipe, id: 'e2', listId: 'l2' }], fr).teams.length, 2, 'les listes restent indépendantes');
   const { leader: _leader, ...sans } = equipe;
-  egal(validerEquipesOptimizer([sans]).teams.length, 1, 'équipe sans contenu ni leader acceptée');
-  egal(validerEquipesOptimizer([{ ...sans, lead: { stat: 'Resistance', amount: 40, area: 'General', element: null } }]).teams.length, 1, 'lead RES conservé sans calcul d’effet');
+  egal(validerEquipesOptimizer([sans], fr).teams.length, 1, 'équipe sans contenu ni leader acceptée');
+  egal(validerEquipesOptimizer([{ ...sans, lead: { stat: 'Resistance', amount: 40, area: 'General', element: null } }], fr).teams.length, 1, 'lead RES conservé sans calcul d’effet');
 }
 export function testMemoireOptimizerConservationSession() {
   titre('Mémoire des membres · refus du disque → session → activation → rechargement');
@@ -124,7 +125,7 @@ export function testMemoireOptimizerConservationSession() {
   const session = lireSession(ecrireSession(composerSession(sourceSession({ [CLE]: lireTravail(CLE)! }))));
   ok(session.ok, 'le miroir fournit une session lisible');
   if (!session.ok) return;
-  egal(lireMembresOptimizer(session.session.stockage[CLE]!).memories.get('l1|box:11')?.criteres.minStats.spd, 245, 'la session contient la dernière saisie');
+  egal(lireMembresOptimizer(session.session.stockage[CLE]!, fr).memories.get('l1|box:11')?.criteres.minStats.spd, 245, 'la session contient la dernière saisie');
   setPersistence(true); h.render();
   const recharge = monterListesOptimizer().render();
   egal(recharge.memories.get('l1|box:11')?.criteres.minStats.spd, 245, 'activation puis nouveau chargement : saisie conservée');
@@ -158,7 +159,7 @@ export async function testMemoireOptimizerEffacement() {
 export function testMemoireOptimizerReimport() {
   titre('Revérification · membre rattaché, mémoire et équipe conservées');
   const s = stockage(), data = compte(); data.siegeDefenseTeams = [];
-  const r = reverifierStockageOptimizer(s, data, new Set([1, 2, 3, 4, 5, 6]));
+  const r = reverifierStockageOptimizer(s, data, new Set([1, 2, 3, 4, 5, 6]), fr);
   // Les anciennes attentes de retrait et dissolution deviennent un rattachement.
   egal(r.rapport.membresRetires, 0, 'le membre introuvable reste conservé');
   egal(r.rapport.buildsRetires, 0, 'le build suit le rattachement');
@@ -169,7 +170,7 @@ export function testMemoireOptimizerReimport() {
   egal(lireMemoireMembre(r.stockage.memories, 'l1', siege, data), null, 'aucune application au sélecteur introuvable');
   const h = (installer(), setPersistence(true), monterListesOptimizer()); h.render().replaceAfterRevalidation(r.stockage);
   const lu = h.render(); egal(lu.teams, r.stockage.teams, 'le hook applique le rattachement'); egal(lu.memories.size, 3, 'le hook conserve les mémoires');
-  const vide = reverifierStockageOptimizer(s, { ...data, box: [] }, new Set());
+  const vide = reverifierStockageOptimizer(s, { ...data, box: [] }, new Set(), fr);
   ok(vide.rapport.compteVide && vide.stockage === s, 'compte vide : aucune purge');
   setPersistence(false);
 }
@@ -181,26 +182,26 @@ export function testMemoireOptimizerEspeceSelecteur() {
   data.rtaEntries['1'].gear = { ...gear, base: { ...gear.base, spd: 120 } };
   egal(lireMemoireMembre(s.memories, 'l1', siege, data)?.minStats.spd, 200, 'autre copie, même espèce : mémoire du slot appliquée');
   egal(lireMemoireMembre(s.memories, 'l1', rta, data)?.minStats.spd, 200, 'autre copie, même espèce : mémoire RTA appliquée');
-  const r = reverifierStockageOptimizer(s, data, new Set([1, 2, 3, 4, 5, 6]));
+  const r = reverifierStockageOptimizer(s, data, new Set([1, 2, 3, 4, 5, 6]), fr);
   egal(r.rapport.memoiresSuivantSelecteur, ['l1|rta:1', 'l1|siege-defense:d1:0'], 'le rapport dit quelles mémoires suivent le sélecteur');
   // La limite (une autre copie de la même espèce reprend la mémoire) est dite
   // par la spec, pas répétée par mémoire à chaque réimport.
   egal(r.rapport.messages, [], 'aucun message pour une mémoire qui suit son sélecteur');
   data.monsterById.set('1', { ...monstre, com2usId: 20002 });
   egal(lireMemoireMembre(s.memories, 'l1', siege, data), null, 'autre espèce : aucune application');
-  const change = reverifierStockageOptimizer(s, data, new Set([1, 2, 3, 4, 5, 6]));
+  const change = reverifierStockageOptimizer(s, data, new Set([1, 2, 3, 4, 5, 6]), fr);
   egal(change.rapport.memoiresInactives.length, 2, 'autre espèce RTA et siège : mémoires signalées inactives');
   egal(change.stockage.memories.size, 3, 'aucune mémoire perdue lors du changement d’espèce');
   egal(change.stockage.validated, s.validated, 'la validation des builds au réimport reste inchangée');
-  const refuse = enregistrerMemoireMembre(s.memories, { listId: 'l1', selector: siege, com2usId: 20002 }, baseCompleteCriteres(undefined), data);
+  const refuse = enregistrerMemoireMembre(s.memories, { listId: 'l1', selector: siege, com2usId: 20002 }, baseCompleteCriteres(undefined), data, fr);
   ok(refuse.memories === s.memories && refuse.rapport.length === 1, 'l’écriture ne remplace pas la mémoire d’une autre espèce');
-  const fausseIdentite = enregistrerMemoireMembre(new Map(), { listId: 'l1', selector: siege, com2usId: 10001 }, baseCompleteCriteres(undefined), data);
+  const fausseIdentite = enregistrerMemoireMembre(new Map(), { listId: 'l1', selector: siege, com2usId: 10001 }, baseCompleteCriteres(undefined), data, fr);
   egal(fausseIdentite.memories.size, 0, 'identité du propriétaire périmée : aucune écriture');
 }
 export function testMemoireOptimizerBranchement() {
   titre('Revérification · branchement du réimport');
   const source = readFileSync(resolve(process.cwd(), 'src/App.tsx'), 'utf8');
-  ok(source.includes('reverifierStockageOptimizer(stockageAvantImportRef.current ?? optimizerLists, data, runeIds, new Set(artifacts.map(a => a.id)))'), 'App appelle le producteur commun après acquisition sur le compte présent, avec l’inventaire des artéfacts');
+  ok(source.includes('reverifierStockageOptimizer(stockageAvantImportRef.current ?? optimizerLists, data, runeIds, textes, new Set(artifacts.map(a => a.id)))'), 'App appelle le producteur commun après acquisition sur le compte présent, avec l’inventaire des artéfacts');
   ok(source.includes('optimizerLists.replaceAfterRevalidation(resultat.stockage)'), 'App applique les quatre catégories ensemble');
   ok(source.includes("resultat.rapport.messages.join(' ')"), 'App affiche le rapport commun');
 }
@@ -209,7 +210,7 @@ export function testEquipeOptimizerMembreRetire() {
   titre('Revérification · équipe et leader suivent le membre rattaché');
   const s = stockage(), data = compte();
   s.teams[0].members.push(rta); data.siegeDefenseTeams = [];
-  const r = reverifierStockageOptimizer(s, data, new Set([1, 2, 3, 4, 5, 6]));
+  const r = reverifierStockageOptimizer(s, data, new Set([1, 2, 3, 4, 5, 6]), fr);
   egal(r.stockage.teams[0]?.members, [box, { source: 'unowned', monsterId: '1' }, rta], 'les trois membres restent dans l’équipe');
   egal(r.stockage.teams[0].leader, { source: 'unowned', monsterId: '1' }, 'leader conservé sous sa nouvelle référence');
   egal(r.stockage.teams[0]?.lead, s.teams[0].lead, 'le lead éditable de l’équipe reste conservé');
@@ -259,19 +260,19 @@ export function testMemoireOptimizerReimportBrutPreserve() {
       : Reflect.get(cible, cle),
   });
   try {
-    const identique = reverifierStockageOptimizer(lu, compte(), new Set([1, 2, 3, 4, 5, 6]));
+    const identique = reverifierStockageOptimizer(lu, compte(), new Set([1, 2, 3, 4, 5, 6]), fr);
     lu.replaceAfterRevalidation(identique.stockage); lu = h.render();
     ok(mem.get(CLE) === initial, 'réimport identique : octets bruts conservés, y compris les entrées écartées');
     ok(lireTravail(CLE) === initial, 'réimport identique : le miroir conserve aussi le brut');
     egal(ecritures, 0, 'réimport identique : aucune réécriture des clés de stockage');
     const data = compte(); data.siegeDefenseTeams = [];
-    const modifie = reverifierStockageOptimizer(lu, data, new Set([1, 2, 3, 4, 5, 6]));
+    const modifie = reverifierStockageOptimizer(lu, data, new Set([1, 2, 3, 4, 5, 6]), fr);
     lu.replaceAfterRevalidation(modifie.stockage); lu = h.render();
     const reecrit = JSON.parse(mem.get(CLE)!);
     egal(reecrit.rejets.memories, [brut.memories[3]], 'réimport modifié : mémoire rejetée conservée telle quelle');
     egal(reecrit.rejets.teams, [brut.teams[1]], 'réimport modifié : équipe rejetée conservée telle quelle');
     ok(mem.get(CLE) !== initial, 'une modification réelle autorise la réécriture');
-    const prochain = reverifierStockageOptimizer(lu, data, new Set([1, 2, 3, 4, 5, 6]));
+    const prochain = reverifierStockageOptimizer(lu, data, new Set([1, 2, 3, 4, 5, 6]), fr);
     ok(!prochain.rapport.messages.some((m) => m.includes('malformée')), 'les rejets déjà annoncés ne sont pas répétés après réécriture');
   } finally { globalThis.localStorage = initialStorage; setPersistence(false); }
 }
@@ -292,7 +293,7 @@ export function testEquipeOptimizerTextesStricts() {
     ['leader.unitKey', { ...equipe, leader: { source: 'box', unitKey: ['11'] } }],
   ];
   for (const [nom, v] of variantes) {
-    const lu = lireMembresOptimizer(JSON.stringify({ memories: [], teams: [v] }));
+    const lu = lireMembresOptimizer(JSON.stringify({ memories: [], teams: [v] }), fr);
     egal(lu.teams.length, 0, `${nom} : équipe écartée`);
     egal(lu.rapport, ['Équipe 1 malformée : ignorée.'], `${nom} : rejet annoncé au chargement`);
   }

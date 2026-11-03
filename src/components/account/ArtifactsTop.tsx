@@ -2,6 +2,9 @@ import { useMemo, useRef, useState } from 'react';
 import { Heart, Shield, Swords, X } from 'lucide-react';
 import { ArtifactDetail } from '../../types';
 import { ARTIFACT_MAIN, splitArtifactSub } from '../../lib/effects';
+import { useLangue, useTraduction } from '../../hooks/useLangue';
+import { formatNombre } from '../../i18n/format';
+import { nomArchetype, nomElement } from '../../i18n/jeu';
 import {
   ColonneTop,
   dansGroupe,
@@ -44,6 +47,10 @@ const ICONE_PRINCIPALE: Record<number, { Icone: typeof Heart; couleur: string }>
 };
 
 export default function ArtifactsTop({ artifacts }: { artifacts: ArtifactDetail[] }) {
+  const textes = useTraduction();
+  const jeu = textes.jeu;
+  const ac = textes.artefactsCompte;
+  const langue = useLangue();
   const [choisi, setChoisi] = useStickyState<GroupeTop>('artefacts.top.groupe', 'water');
   const effectifs = useMemo(() => effectifsGroupes(artifacts), [artifacts]);
   // Un groupe retenu qui n'a plus d'artéfact (autre compte importé) : le
@@ -57,7 +64,7 @@ export default function ArtifactsTop({ artifacts }: { artifacts: ArtifactDetail[
     setPrincipales((p) => (p.includes(code) ? p.filter((c) => c !== code) : [...p, code]));
     setOuverte(null);
   };
-  const familles = useMemo(() => topParPropriete(artifacts, groupe, principales), [artifacts, groupe, principales]);
+  const familles = useMemo(() => topParPropriete(artifacts, groupe, textes, principales), [artifacts, groupe, textes, principales]);
   // L'effectif AFFICHÉ : le groupe, réduit aux stats principales cochées.
   const effectif = useMemo(
     () => artifacts.filter((a) => dansGroupe(a, groupe) && dePrincipale(a, principales)).length,
@@ -74,7 +81,7 @@ export default function ArtifactsTop({ artifacts }: { artifacts: ArtifactDetail[
   if (artifacts.length === 0) {
     return (
       <p className="rounded-xl border border-border bg-panel px-4 py-6 text-center text-sm text-ink-dim">
-        Aucun artéfact dans l'inventaire importé.
+        {ac.aucunInventaire}
       </p>
     );
   }
@@ -86,10 +93,10 @@ export default function ArtifactsTop({ artifacts }: { artifacts: ArtifactDetail[
           (`label`) que les intitulés des cartes au-dessus. */}
       <div className="flex items-center gap-2.5">
         <h3 id="top-artefacts-titre" className="label">
-          Top {TAILLE_TOP} par propriété
+          {ac.topParPropriete(TAILLE_TOP)}
         </h3>
         <span className="rounded-full border border-border-soft bg-panel2 px-2 py-0.5 font-mono text-micro text-ink-dim">
-          {effectif.toLocaleString('fr-FR')} artéfact{effectif > 1 ? 's' : ''}
+          {ac.compte(formatNombre(effectif, langue), effectif)}
         </span>
       </div>
 
@@ -97,7 +104,7 @@ export default function ArtifactsTop({ artifacts }: { artifacts: ArtifactDetail[
           ouvert, et il coiffe les tableaux du dessous. Un groupe vide reste
           affiché, désactivé, avec sa raison. */}
       <Onglets
-        aria-label="Attribut ou type des artéfacts"
+        aria-label={ac.groupeTop}
         valeur={groupe}
         onChange={(g) => {
           setChoisi(g);
@@ -107,14 +114,14 @@ export default function ArtifactsTop({ artifacts }: { artifacts: ArtifactDetail[
           const vide = effectifs[g.key] === 0;
           return {
             cle: g.key,
-            libelle: g.label,
+            libelle: estGroupeElement(g.key) ? nomElement(jeu, g.key) : nomArchetype(jeu, g.key),
             icone: estGroupeElement(g.key) ? (
               <ElementIcon element={g.key} size={15} />
             ) : (
               <ArtifactGlyph name={g.key} size={15} />
             ),
             desactive: vide,
-            title: vide ? 'Aucun artéfact de ce groupe dans l’inventaire' : undefined,
+            title: vide ? ac.groupeVide : undefined,
           };
         })}
       />
@@ -124,8 +131,8 @@ export default function ArtifactsTop({ artifacts }: { artifacts: ArtifactDetail[
           ⚠️ Trois pastilles À BASCULE, cumulables — et non un contrôle à
           cran : on veut pouvoir garder PV et DEF ensemble. Chacune porte
           l'icône de la cellule, en couleur : le lien se fait sans lire. */}
-      <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Stats principales affichées">
-        <span className="label leading-tight">Stat principale</span>
+      <div className="flex flex-wrap items-center gap-2" role="group" aria-label={ac.principalesAffichees}>
+        <span className="label leading-tight">{ac.statPrincipale}</span>
         {PRINCIPALES.map((code) => {
           const { Icone, couleur } = ICONE_PRINCIPALE[code];
           return (
@@ -133,7 +140,7 @@ export default function ArtifactsTop({ artifacts }: { artifacts: ArtifactDetail[
               key={code}
               actif={principales.includes(code)}
               icone={<Icone size={13} strokeWidth={2.5} aria-hidden className={couleur} />}
-              libelle={ARTIFACT_MAIN[code].label}
+              libelle={jeu.stats[ARTIFACT_MAIN[code].stat]}
               onClick={() => basculerPrincipale(code)}
             />
           );
@@ -141,8 +148,7 @@ export default function ArtifactsTop({ artifacts }: { artifacts: ArtifactDetail[
       </div>
 
       <p className="text-xs text-ink-dim">
-        Les {TAILLE_TOP} meilleures valeurs de chaque propriété secondaire, intangibles compris. L’icône donne la stat
-        principale ; une valeur ouvre la fiche de l’artéfact.
+        {ac.topExplication(TAILLE_TOP)}
       </p>
 
       {/* Les tableaux prennent leur largeur, pas celle de la page : ils se
@@ -223,6 +229,7 @@ function Colonne({
   onBasculer: (cle: string) => void;
   ficheEnLigne: boolean;
 }) {
+  const aucun = useTraduction().artefactsCompte.aucunArtefact;
   return (
     // Largeur FIXE et serrée : « +21% », son icône et la marque d'intangible
     // tiennent en 4,5 rem ; un nom complet de propriété demande 7 rem, sur
@@ -258,10 +265,10 @@ function Colonne({
           <li
             key={`vide-${i}`}
             className="flex h-5 items-center px-1 text-ink-dimmer"
-            title="Aucun artéfact"
+            title={aucun}
             data-case-vide
           >
-            <X size={11} strokeWidth={2.5} aria-label="Aucun artéfact" />
+            <X size={11} strokeWidth={2.5} aria-label={aucun} />
           </li>
         ))}
       </ol>
@@ -286,9 +293,11 @@ function Cellule({
   onBasculer: () => void;
   ficheEnLigne: boolean;
 }) {
+  const textes = useTraduction();
+  const jeu = textes.jeu;
   const ancre = useRef<HTMLLIElement>(null);
-  const principale = ARTIFACT_MAIN[art.main.code]?.label ?? '';
-  const texte = splitArtifactSub({ code, value: valeur }).valeur;
+  const principale = ARTIFACT_MAIN[art.main.code] ? jeu.stats[ARTIFACT_MAIN[art.main.code].stat] : '';
+  const texte = splitArtifactSub({ code, value: valeur }, jeu).valeur;
   const icone = ICONE_PRINCIPALE[art.main.code];
   return (
     // ⚠️ `relative` : l'ancre de la fiche flottante. `z-10` quand elle est
@@ -297,7 +306,7 @@ function Cellule({
       <ZoneCliquable
         onClick={onBasculer}
         aria-expanded={ouverte}
-        title={`n° ${rang} · principale ${principale}${art.intangible ? ' · intangible' : ''}`}
+        title={textes.artefactsCompte.celluleAide(rang, principale, !!art.intangible)}
         className={`flex h-5 w-full items-center gap-1 rounded px-1 font-mono text-xs tabular-nums transition-colors ${
           ouverte ? 'bg-accent-soft text-ink' : 'text-ink hoverable:bg-panel2'
         }`}

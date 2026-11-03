@@ -15,6 +15,7 @@ import { BuildCandidate, OptionsDeClassement, aurasPropresParRunes, sortCandidat
 import { ResultatArtefacts, classementResolu, cleBuild, compteAffichable } from '../src/lib/artifactQueue';
 import { StatRow } from '../src/lib/stats';
 import { egal, ok, titre } from './outils';
+import { fr } from '../src/i18n/fr';
 
 const OPTIONS: OptionsDeClassement = { aurasPropresDe: aurasPropresParRunes(new Map()) };
 
@@ -39,7 +40,7 @@ function compter(
   const base = sortCandidates(recus, 'atk', OPTIONS);
   const parBuild = new Map<string, ResultatArtefacts>(cache.map(([c, conforme]) => [cleBuild(c), resultat(conforme)]));
   const affichees = classementResolu(base, parBuild, 'atk', OPTIONS);
-  return compteAffichable({ trouves, recus: base.length, affichables: affichees.length, modeRecherche });
+  return compteAffichable({ trouves, recus: base.length, affichables: affichees.length, modeRecherche }, fr);
 }
 
 const RAISON_RECHERCHE_1 =
@@ -98,7 +99,7 @@ export function testCompteAffichable() {
   const ecran = readFileSync('src/components/outils/OptimizerSection.tsx', 'utf8');
   ok(/const trouvesParLeMoteur = result \? result\.nombre : progress\?\.phase === 'pairing' \? progress\.found : recus;/.test(ecran),
     'écran : le compte du moteur (bilan, ou `progress.found` pendant l’appariement)');
-  ok(/const compteAffiche = compteAffichable\(\{\s*trouves: trouvesParLeMoteur,\s*recus,\s*affichables: instantane\?\.comptes\.affichables \?\? 0,\s*modeRecherche: relicContextRecherche\?\.mode === 'recherche',\s*\}\)/.test(ecran),
+  ok(/const compteAffiche = compteAffichable\(\{\s*trouves: trouvesParLeMoteur,\s*recus,\s*affichables: instantane\?\.comptes\.affichables \?\? 0,\s*modeRecherche: relicContextRecherche\?\.mode === 'recherche',\s*\}, textes\)/.test(ecran),
     'écran : `compteAffiche` part du moteur et des deux comptes de l’instantané (reçus, affichables)');
   egal((ecran.match(/compteAffichable\(/g) ?? []).length, 1, 'écran : un seul appel à `compteAffichable`');
   egal((ecran.match(/progress\.found/g) ?? []).length, 1, 'écran : `progress.found` n’est lu qu’une fois, au compte du moteur');

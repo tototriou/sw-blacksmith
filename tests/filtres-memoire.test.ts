@@ -7,6 +7,7 @@ import type { ExclusionSelector } from '../src/lib/optimizerExclusion';
 import { avecBorne, etatDesBornes, type BornesResultats } from '../src/lib/filtresResultats';
 import { COLONNES_SELON_MESURE, bornesAvecMesure, bornesBienFormees, bornesMisesDeCote, bornesSousMesure } from '../src/lib/colonnesResultats';
 import { egal, ok, titre } from './outils';
+import { fr } from '../src/i18n/fr';
 
 // Les filtres d'affichage des résultats (sens du tri, bornes par colonne)
 // suivent le membre comme le tri : critères personnels, mémoire, session.
@@ -16,7 +17,7 @@ const box: ExclusionSelector = { source: 'box', unitKey: '11' };
 function stockage(criteres: Record<string, unknown>) {
   return JSON.stringify({ memories: [[cleMemoireMembre('l1', box), { listId: 'l1', selector: box, com2usId: 10001, criteres }]], teams: [], listContents: [] });
 }
-const lire = (criteres: Record<string, unknown>) => lireMembresOptimizer(stockage(criteres));
+const lire = (criteres: Record<string, unknown>) => lireMembresOptimizer(stockage(criteres), fr);
 
 export function testFiltresResultatsMemoire() {
   titre('Filtres d’affichage des résultats — critères personnels, mémoire de membre, session');
@@ -106,14 +107,14 @@ export function testFiltresResultatsChangementDeMesure() {
   const lu = lireMembresOptimizer(JSON.stringify({ memories: [
     [cleMemoireMembre('l1', box), { listId: 'l1', selector: box, com2usId: 10001, criteres: { ...base, bornesResultats: ancienne } }],
     [cleMemoireMembre('l1', autre), { listId: 'l1', selector: autre, com2usId: 10002, criteres: { ...base, bornesResultats: posees } }],
-  ], teams: [], listContents: [] }));
+  ], teams: [], listContents: [] }), fr);
   egal([lu.rapport, lu.memories.size], [[], 2], 'mémoires avec et sans mesure : relues');
   const memoires = memoiresAvecMesureDesBornes(lu.memories, 'eff');
   egal(memoires.get(cleMemoireMembre('l1', box))?.criteres.bornesResultats.efficience, { min: 120, max: null, mesure: 'eff' },
     'changement de mesure : la mémoire d’avant prend la mesure qui s’achève');
   ok(memoires.get(cleMemoireMembre('l1', autre)) === lu.memories.get(cleMemoireMembre('l1', autre)), '… la mémoire déjà fixée reste la même');
   ok(memoiresAvecMesureDesBornes(memoires, 'score') === memoires, 'tout fixé : les mêmes mémoires (même objet)');
-  const relues = lireMembresOptimizer(ecrireMembresOptimizer({ ...lu, memories: memoires }));
+  const relues = lireMembresOptimizer(ecrireMembresOptimizer({ ...lu, memories: memoires }), fr);
   egal(relues.memories.get(cleMemoireMembre('l1', box))?.criteres.bornesResultats.efficience?.mesure, 'eff', 'la mesure s’écrit et se relit');
   for (const [cas, bornes] of [['mesure inconnue', { efficience: { min: 1, max: null, mesure: 'pct' } }], ['mesure sur VIT', { spd: { min: 1, max: null, mesure: 'eff' } }]] as const) {
     ok(!bornesBienFormees(bornes) && lire({ ...base, bornesResultats: bornes }).memories.size === 0, `mémoire refusée : ${cas}`);

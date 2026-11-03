@@ -9,6 +9,7 @@ import { collectOwnedBuilds, collectOwnedTeams, countCopiesByCom2us } from '../s
 import { contexteConfrontationReco, matchDeck, matchReco } from '../src/lib/recoMatch';
 import { deckComposition, gearComposition, recommandationComposition, sourcesComposition, stockageComposition } from './import-composition-fixtures';
 import { egal, ok, titre } from './outils';
+import { fr } from '../src/i18n/fr';
 
 function contexteEcran(data: ExclusionSourceData) {
   const args = { box: data.box, rta: Object.values(data.rtaEntries), defense: data.siegeDefenseTeams,
@@ -16,8 +17,8 @@ function contexteEcran(data: ExclusionSourceData) {
   return contexteConfrontationReco(collectOwnedBuilds(args), collectOwnedTeams(args), countCopiesByCom2us(data.box));
 }
 const consommer = (data: ExclusionSourceData, ids = [1, 1, 2]) => {
-  const p = importerRecoOptimizer(recommandationComposition(ids), data);
-  return { p, ...consommerImportOptimizer(stockageComposition(), null, p, data, 'nouvelle') };
+  const p = importerRecoOptimizer(recommandationComposition(ids), data, fr);
+  return { p, ...consommerImportOptimizer(stockageComposition(), null, p, data, 'nouvelle', fr) };
 };
 
 export function testImportRecoSorteUniqueSignalee() {
@@ -28,7 +29,7 @@ export function testImportRecoSorteUniqueSignalee() {
     const art: ArtifactDetail = { id: 1, kind: demande === 'element' ? 'archetype' : 'element', element: 'fire', archetype: 'attack',
       rarity: 5, level: 15, main: { code: 101, value: 100 }, subs: [{ code: 206, value: 1 }] };
     data.siegeOffenseTeams[0].slots[1].gear!.artifacts = [art];
-    const p = importerRecoOptimizer(deck, data), r = consommerImportOptimizer(stockageComposition(), null, p, data, 'nouvelle');
+    const p = importerRecoOptimizer(deck, data, fr), r = consommerImportOptimizer(stockageComposition(), null, p, data, 'nouvelle', fr);
     const match = matchDeck(deck, contexteEcran(data));
     egal(match.status, 'ko', 'la recommandation refuse la propriété sur l’autre sorte');
     ok(paireRespecteLignes([art], [...r.stockage.memories.values()][0].criteres.lignesVerrouillees), 'le verrou importé l’accepte sur cette pièce');
@@ -36,7 +37,7 @@ export function testImportRecoSorteUniqueSignalee() {
     ok(r.rapport.messages.some(m => m.includes(demande === 'element' ? 'artéfact d’attribut' : 'artéfact de type')), 'sorte demandée nommée au rapport');
   }
   const deck = recommandationComposition(); deck.slots[0].artifacts.element = [300];
-  const p = importerRecoOptimizer(deck, sourcesComposition());
+  const p = importerRecoOptimizer(deck, sourcesComposition(), fr);
   ok(p.messages.some(m => m.includes('seule la pièce d’attribut')), 'propriété propre à l’attribut : compatibilité du jeu conservée');
   ok(!p.messages.some(m => m.includes('l’une ou l’autre pièce')), 'aucune compatibilité fictive pour une propriété propre');
 }

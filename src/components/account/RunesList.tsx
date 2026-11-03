@@ -1,6 +1,8 @@
 import { memo, useMemo, useState } from 'react';
 import { RuneDetail } from '../../types';
-import { RUNE_EFFECT, runeEfficiency, runeScore } from '../../lib/effects';
+import { RUNE_EFFECT, choixEffetRune, runeEfficiency, runeScore } from '../../lib/effects';
+import { useLangue, useTraduction } from '../../hooks/useLangue';
+import { formatNombre } from '../../i18n/format';
 import SetFilter from './SetFilter';
 import FiltresRunes, { EffacerFiltres } from './FiltresRunes';
 import SlotFilter from './SlotFilter';
@@ -53,13 +55,16 @@ const MAX_SUBS = 4;
 // Propriétés secondaires proposées, dans l'ordre de la table de référence.
 // ⚠️ Toutes les lignes de `RUNE_EFFECT` peuvent être un substat SAUF la VIT
 // plate… qui l'est aussi. On garde donc la table entière : c'est exactement ce
-// qu'une rune peut porter.
-const SUBS_OPTIONS = Object.entries(RUNE_EFFECT).map(([code, def]) => ({
-  code: Number(code),
-  label: def.label,
-}));
+// qu'une rune peut porter. Les codes ici ; les libellés, ceux d'un choix du jeu
+// (« PV + », « PV % »), dans la langue affichée.
+const SUBS_CODES = Object.keys(RUNE_EFFECT).map(Number);
 
 export default function RunesList({ runes, menuOuvert, onFermerMenu }: Props) {
+  const textes = useTraduction();
+  const jeu = textes.jeu;
+  const l = textes.listeRunes;
+  const langue = useLangue();
+  const subsOptions = useMemo(() => SUBS_CODES.map((code) => ({ code, label: choixEffetRune(code, jeu) })), [jeu]);
   // ⚠️ **Filtres en LISTE BLANCHE : tout coché par défaut.** Un set/slot coché
   // est AFFICHÉ ; par défaut tous le sont (tout est montré), et n'en cocher aucun
   // revient à ne rien vouloir voir. Défaut sets = tous les sets présents à
@@ -89,7 +94,7 @@ export default function RunesList({ runes, menuOuvert, onFermerMenu }: Props) {
   // la même chose »). Les deux entrées côte à côte classaient aussi par la
   // mesure qu'on ne voit pas sur les tuiles, pour un classement presque
   // identique. L'entrée porte le nom de la mesure active (« Score » ou
-  // « Efficience », les libellés de `RUNE_SORTS`).
+  // « Efficience », les libellés de `listeRunes.tris`).
   const autreMesure: RuneSortMode = metric === 'eff' ? 'score' : 'eff';
   const trisProposes = RUNE_SORTS.filter((s) => s.key !== autreMesure);
   // ⚠️ Un tri mémorisé qui n'existe plus (les clés ont changé avec les libellés
@@ -192,7 +197,7 @@ export default function RunesList({ runes, menuOuvert, onFermerMenu }: Props) {
             propriété »). Dans le PANNEAU mobile, `data-tri-bloc` le remontait
             déjà en tête (voir index.css) — trier vient avant filtrer. */}
         <div data-tri-bloc className="flex items-center gap-2 flex-wrap">
-          <span className="w-[86px] flex-none label">Trier par</span>
+          <span className="w-[86px] flex-none label">{l.trierPar}</span>
           {/* ⚠️ **Une liste DÉROULANTE, pas des onglets** : neuf entrées en
               `Segmented` faisaient ~920 px, essayé puis défait par le mainteneur (« ça
               fait peut-être un peu gros »). L'Optimisation, cinq
@@ -204,13 +209,13 @@ export default function RunesList({ runes, menuOuvert, onFermerMenu }: Props) {
               setSort(e.target.value as RuneSortMode);
               setPage(0);
             }}
-            title={trisProposes.find((s) => s.key === sort)?.hint}
+            title={l.tris[sort].aide}
             pleineLargeur={false}
             className="lg:h-8 lg:py-0 lg:text-xs"
           >
             {trisProposes.map((s) => (
-              <option key={s.key} value={s.key} title={s.hint}>
-                {s.label}
+              <option key={s.key} value={s.key} title={l.tris[s.key].aide}>
+                {l.tris[s.key].libelle}
               </option>
             ))}
           </Selecteur>
@@ -227,7 +232,7 @@ export default function RunesList({ runes, menuOuvert, onFermerMenu }: Props) {
               le dire ici évite de croire que le tri est cassé. */}
           {(sort === 'sub_desc' || sort === 'sub_brut_desc') && !premierCode && (
             <span className="text-xs text-warn">
-              Choisis une propriété ci-dessous pour trier dessus.
+              {l.choisirPropriete}
             </span>
           )}
         </div>
@@ -241,13 +246,13 @@ export default function RunesList({ runes, menuOuvert, onFermerMenu }: Props) {
             ⚠️ Les cases sont ORDONNÉES : la 1ʳᵉ sert aussi de clé aux deux tris
             « propriété secondaire ». La position porte donc du sens. */}
         <div className="flex flex-wrap items-start gap-2">
-          <span className="w-[86px] flex-none label mt-1">Propriété</span>
+          <span className="w-[86px] flex-none label mt-1">{l.propriete}</span>
           <div className="min-w-0 flex-1 max-w-[480px]">
             <SubSearchBar
-              options={SUBS_OPTIONS}
+              options={subsOptions}
               criteres={criteres}
               max={MAX_SUBS}
-              nomDe={(code) => RUNE_EFFECT[code]?.label ?? `#${code}`}
+              nomDe={(code) => choixEffetRune(code, jeu)}
               onChange={(c) => {
                 setCriteres(c);
                 setPage(0);
@@ -268,9 +273,9 @@ export default function RunesList({ runes, menuOuvert, onFermerMenu }: Props) {
           FILTRÉ reste au-dessus des tuiles. Au doigt, la barre du haut dit
           déjà la vue. */}
       <div className="mb-3 hidden items-center gap-2.5 lg:flex">
-        <h1 className="font-display text-xl tracking-wide text-ink">Liste</h1>
+        <h1 className="font-display text-xl tracking-wide text-ink">{l.titre}</h1>
         <span className="rounded-full border border-border-soft bg-panel2 px-2 py-0.5 font-mono text-micro text-ink-dim">
-          {runes.length.toLocaleString('fr-FR')} rune{runes.length > 1 ? 's' : ''}
+          {textes.resumeRunes.compte(formatNombre(runes.length, langue), runes.length)}
         </span>
       </div>
 
@@ -288,7 +293,7 @@ export default function RunesList({ runes, menuOuvert, onFermerMenu }: Props) {
         {blocPropriete}
       </div>
 
-      <MobileSheet ouvert={menuOuvert} onFermer={onFermerMenu} titre="Filtrer mes runes">
+      <MobileSheet ouvert={menuOuvert} onFermer={onFermerMenu} titre={l.filtrer}>
         {/* ⚠️ `data-filtres-runes` : dans le PANNEAU, les contrôles prennent toute
             la largeur (voir index.css). Les mêmes blocs servent au desktop
             (ci-dessus, hors tiroir), où ils restent compacts — d'où le
@@ -300,9 +305,9 @@ export default function RunesList({ runes, menuOuvert, onFermerMenu }: Props) {
             maintenant celui du DOM : la règle d'index.css qui remontait le
             tri (`order: -1`) est retirée. */}
         <div className="flex flex-col gap-3" data-filtres-runes>
-          <span className="label">Trier</span>
+          <span className="label">{l.trier}</span>
           {blocTri}
-          <span className="label mt-2 border-t border-border-soft pt-3">Filtrer</span>
+          <span className="label mt-2 border-t border-border-soft pt-3">{l.filtrerCourt}</span>
           {filtresEnsemble}
           {blocPropriete}
           <EffacerFiltres
@@ -319,12 +324,12 @@ export default function RunesList({ runes, menuOuvert, onFermerMenu }: Props) {
 
       <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
         <p className="font-mono text-xs text-ink-dim">
-          {filtered.length} rune{filtered.length > 1 ? 's' : ''}
-          {filtered.length !== runes.length && ` sur ${runes.length}`}
+          {textes.resumeRunes.compte(String(filtered.length), filtered.length)}
+          {filtered.length !== runes.length && textes.artefactsCompte.sur(runes.length)}
           {filtered.length > 0 && (
             <>
               {' '}
-              · meilleur{metric === 'eff' ? 'e efficience' : ' score'}{' '}
+              · {metric === 'eff' ? l.meilleureEfficience : l.meilleurScore}{' '}
               <b className="text-star">{metric === 'eff' ? `${best.toFixed(1)}%` : best}</b>
             </>
           )}

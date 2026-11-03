@@ -55,6 +55,10 @@ export type ModParTick = Record<number, number>;
 // barre d'un adverse, ce qui aide tout autant à passer devant lui.
 export interface EffetSort {
   // Barre d'action, en % (positif = on remplit).
+  // Affectation exacte avant les remplissages : une réduction de 100 points
+  // laisserait du surplus sur une jauge supérieure à 100 (Tablo, Fast Pace).
+  atbTousAZero?: boolean;
+  atbTous?: number; // les deux camps, lanceur compris, après la remise à zéro
   atbEquipe?: number; // tout son camp, lui compris
   atbAllie?: number; // UN allié : celui dont la barre est la plus basse
   // ⚠️ **L'allié VISÉ**, quand on le désigne. Certains sorts laissent le joueur
@@ -71,6 +75,7 @@ export interface EffetSort {
   atbEnnemiTous?: boolean; // le retrait touche tout le camp adverse
   // Vitesse, en % (le jeu : +30 en buff, −30 en ralenti).
   buffEquipe?: number;
+  buffEquipeSansSoi?: boolean;
   buffSoi?: number;
   // ⚠️ **Le buff de vitesse posé sur l'allié VISÉ** — la même cible que
   // `atbAllie`, parce que c'est le même sort. Rabbit's Agility remplit une barre
@@ -101,6 +106,10 @@ export interface EffetSort {
 export interface TuneMonstre {
   id: string;
   combat: number;
+  // Part de combat activée après les buffs de départ (Chilling). La retirer
+  // pour le départage conserve une priorité initiale même si la vitesse est
+  // modifiée par les solveurs ; elle reste comptée pour remplir la barre.
+  gainApresBuffs?: number;
   camp: Camp;
   atbMod?: ModParTick;
   speedMod?: ModParTick;
@@ -194,8 +203,8 @@ export interface Simulation {
 // modificateurs par tick. Contrairement à une lecture « premier tour », le
 // monstre qui agit NE SORT PAS : sa barre **repart de 0** (le surplus au-dessus
 // de 100 n'est pas conservé) et se remplit à nouveau — il peut donc rejouer.
-// ⚠️ Départage à BARRE ÉGALE : l'attaquant d'abord. Voir le tri dans `simuler`
-// — c'est le seul endroit où le camp entre dans l'ordre de jeu.
+// Le camp départage seulement une égalité de barre ET de vitesse initiale.
+// Voir le tri dans simuler.
 const rangCamp = (c: Camp): number => (c === 'allie' ? 0 : 1);
 
 // Cela donne l'enchaînement des tours sur toute la durée. Voir
@@ -204,8 +213,8 @@ const rangCamp = (c: Camp): number => (c === 'allie' ? 0 : 1);
 // À chaque tick : chaque monstre gagne `atbParTick(combat × (1 + buffActif))`,
 // puis reçoit sa modification de barre (`atbMod`), sans jamais descendre sous 0.
 // Si au moins un a atteint 100, UN SEUL prend le tour — barre la plus haute,
-// départagée par le CAMP (à barre égale, l'attaquant joue en premier), puis par
-// la vitesse de combat, puis par l'ordre de placement.
+// départagée par la vitesse initiale avant buffs, puis par le camp et
+// l'ordre de placement.
 //
 // ⚠️ Ce N'EST PAS un tri par vitesse : trois monstres pleins au même tick jouent
 // aux ticks n, n+1, n+2. Un boost d'ATB ou un buff de vitesse posé tôt peut
@@ -218,13 +227,15 @@ const rangCamp = (c: Camp): number => (c === 'allie' ? 0 : 1);
 // équipe tunée parce qu'elle aura freiné l'adverse : le jour où le retrait
 // rate, se voit résisté, ou tombe sur un monstre déjà passé, l'équipe se coupe.
 // Les monstres doivent jouer les uns après les autres SANS ça — donc la
-// simulation du tune ne voit jamais ces effets, et les grilles n'en montrent
+// simulation du tune écarte ces retraits ordinaires, et les grilles n'en montrent
 // aucune trace (ce qui est affiché est exactement ce qui est calculé).
 //
 // Ce que l'utilisateur pose LUI-MÊME dans une case de grille reste intact :
 // c'est une saisie, pas une déduction.
 export function sansReductionAdverse(e: EffetSort): EffetSort {
   const copie = { ...e };
+  // Une remise à zéro des deux camps est un effet garanti et indivisible,
+  // pas un retrait adverse résistible : Tablo et Fast Pace la conservent.
   delete copie.atbEnnemi;
   delete copie.atbEnnemiTous;
   delete copie.ralenti;
@@ -316,28 +327,14 @@ export function simuler(monstres: TuneMonstre[], horizon = HORIZON_TICKS): Simul
 
     const prets = etat.filter((m) => m.atb >= 100);
     if (prets.length === 0) continue;
-    // ⚠️ **À BARRE ÉGALE, L'ATTAQUANT PASSE DEVANT** — c'est la règle du jeu, et
-    // elle manquait. Le départage s'arrêtait à l'ordre de placement : deux
-    // monstres à la même barre étaient donc tranchés par leur position dans le
-    // tableau. Le tour partait à l'adverse dès qu'il se trouvait placé avant, et
-    // le défaut n'apparaissait qu'une fois sur deux — d'où un bug « pas
-    // reproductible à chaque fois ».
-    //
-    // ⚠️ **Le camp passe avant la VITESSE, jamais avant la BARRE.** La condition
-    // de la règle est l'égalité des barres, et elle seule : à barre égale ton
-    // monstre passe même s'il est plus LENT, mais une barre adverse plus haute
-    // l'emporte toujours. La vitesse ne départage donc plus qu'entre monstres du
-    // même camp.
-    //
-    // ⚠️ **« Ton équipe » est tenue pour l'ATTAQUANT.** C'est le cadre de
-    // l'outil — on y prépare son attaque. Modéliser une défense demanderait de
-    // rendre ce rôle réglable ; c'est ici, et nulle part ailleurs, qu'il faudrait
-    // le brancher.
+    // À barre égale, le classement précède les buffs de départ : Chilling
+    // conserve sa vitesse initiale sans le gain de Volonté/Bouclier. Le camp
+    // puis le placement ne départagent que des vitesses initiales égales.
     prets.sort(
       (a, b) =>
         b.atb - a.atb ||
+        (b.combat - (b.gainApresBuffs ?? 0)) - (a.combat - (a.gainApresBuffs ?? 0)) ||
         rangCamp(a.camp) - rangCamp(b.camp) ||
-        b.combat - a.combat ||
         a.placement - b.placement
     );
     const gagnant = prets[0];
@@ -378,6 +375,10 @@ export function simuler(monstres: TuneMonstre[], horizon = HORIZON_TICKS): Simul
       }
       const camp = gagnant.camp;
       const adverse: Camp = camp === 'allie' ? 'ennemi' : 'allie';
+      // L'affectation précède tout remplissage, même si la barre dépasse 999.
+      // Le delta exact permet aussi de rejouer cet effet dans les grilles.
+      if (sort.atbTousAZero) for (const m of etat) ajouter(m, -m.atb);
+      if (sort.atbTous) for (const m of etat) ajouter(m, sort.atbTous);
       if (sort.atbEquipe) for (const m of etat) if (m.camp === camp) ajouter(m, sort.atbEquipe);
       if (sort.atbSoi) ajouter(gagnant, sort.atbSoi);
       // La cible d'un sort « sur un allié », résolue UNE FOIS : la barre et le
@@ -411,7 +412,12 @@ export function simuler(monstres: TuneMonstre[], horizon = HORIZON_TICKS): Simul
             : [];
         for (const m of cibles) ajouter(m, -sort.atbEnnemi);
       }
-      if (sort.buffEquipe && sort.buffEquipe > buffCamp[camp]) buffCamp[camp] = sort.buffEquipe;
+      if (sort.buffEquipe) {
+        if (sort.buffEquipeSansSoi) {
+          for (const m of etat) if (m.camp === camp && m !== gagnant)
+            buffIndiv[m.id] = Math.max(buffIndiv[m.id] ?? 0, sort.buffEquipe);
+        } else if (sort.buffEquipe > buffCamp[camp]) buffCamp[camp] = sort.buffEquipe;
+      }
       if (sort.buffSoi && sort.buffSoi > (buffIndiv[gagnant.id] ?? 0)) buffIndiv[gagnant.id] = sort.buffSoi;
       if (sort.buffAllie && cibleAlliee && sort.buffAllie > (buffIndiv[cibleAlliee.id] ?? 0))
         buffIndiv[cibleAlliee.id] = sort.buffAllie;

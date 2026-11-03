@@ -6,6 +6,7 @@ import { compterAvecRunes, exporterEquipes, lireEquipes, nomFichierSiege, FORMAT
 import { collectOwnedBuilds, collectOwnedTeams } from '../src/lib/ownedBuilds';
 import { equipeContient, normaliser } from '../src/components/siege/rechercheEquipe';
 import type { GearSet, Monster, SiegeSlot, SiegeTeam } from '../src/types';
+import { fr } from '../src/i18n/fr';
 import { egal, monstersJson, ok, titre } from './outils';
 
 const MONSTRES = monstersJson() as Monster[];
@@ -43,7 +44,7 @@ export default function testSiegePartage() {
   ok(!texte.includes('gear'), 'le détail des runes ne part pas');
 
   // Aller-retour : la composition revient, sur les ids LOCAUX du lecteur.
-  const lu = lireEquipes(texte, MONSTRES);
+  const lu = lireEquipes(texte, MONSTRES, fr);
   ok(lu.ok, 'le fichier exporté se relit');
   if (lu.ok) {
     egal(lu.cote, 'offense', 'le côté est relu');
@@ -54,12 +55,12 @@ export default function testSiegePartage() {
 
   // Monstre absent des données du lecteur : emplacement vide, nommé.
   const sansLushen = MONSTRES.filter((m) => m.com2usId !== lushen.com2usId);
-  const lu2 = lireEquipes(texte, sansLushen);
+  const lu2 = lireEquipes(texte, sansLushen, fr);
   ok(lu2.ok && lu2.equipes[0].slots[0].monsterId === null && lu2.inconnus.includes('Lushen'), 'un monstre inconnu laisse son emplacement vide, et il est nommé');
 
   // Refus en entier, avec la raison.
   const refus = (t: string, attendu: string, quoi: string) => {
-    const r = lireEquipes(t, MONSTRES);
+    const r = lireEquipes(t, MONSTRES, fr);
     ok(!r.ok && r.erreur.includes(attendu), `refusé : ${quoi}`);
   };
   refus('pas du json', 'pas du JSON', 'pas du JSON');
@@ -89,7 +90,7 @@ export default function testSiegePartage() {
   egal(JSON.parse(fichierRunes).equipes[0].monstres[0].equipement, gear, 'avec les runes : l’équipement du monstre part sous « equipement »');
   ok(!('equipement' in JSON.parse(fichierRunes).equipes[0].monstres[1]), 'un monstre sans équipement connu n’en emporte pas');
 
-  const luRunes = lireEquipes(fichierRunes, MONSTRES);
+  const luRunes = lireEquipes(fichierRunes, MONSTRES, fr);
   ok(luRunes.ok, 'le fichier avec runes se relit');
   if (luRunes.ok) {
     const slot = luRunes.equipes[0].slots[0] as SiegeSlot;
@@ -111,12 +112,12 @@ export default function testSiegePartage() {
   // Un équipement abîmé est ignoré, pas le fichier.
   const abime = JSON.parse(fichierRunes);
   abime.equipes[0].monstres[0].equipement = { runes: 'pas une liste', artifacts: [{}] };
-  const luAbime = lireEquipes(JSON.stringify(abime), MONSTRES);
+  const luAbime = lireEquipes(JSON.stringify(abime), MONSTRES, fr);
   ok(luAbime.ok && luAbime.equipes[0].slots[0].gearPartage === undefined && luAbime.equipes[0].slots[0].monsterId !== null, 'un équipement illisible est ignoré, le monstre reste');
   // Une relique sans identifiant : ignorée, et le rapport le dit.
   const reliqueSansId = JSON.parse(fichierRunes);
   reliqueSansId.equipes[0].monstres[0].equipement.relic = { main: { code: 101, value: 10 } };
-  const luRelique = lireEquipes(JSON.stringify(reliqueSansId), MONSTRES);
+  const luRelique = lireEquipes(JSON.stringify(reliqueSansId), MONSTRES, fr);
   ok(luRelique.ok && luRelique.avertissements.some((a) => a.includes('relique')) && !luRelique.equipes[0].slots[0].gearPartage?.relic, 'une relique sans identifiant est ignorée, avec un avertissement');
 
   // Préfixe `swblacksmith-` ; le

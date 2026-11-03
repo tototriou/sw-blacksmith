@@ -114,7 +114,7 @@ export function testRenduNouveautes() {
   const liens = valeurs(html, 'href');
   ok(t.startsWith('Nouveautés Ce qui a changé à chaque version de SW Blacksmith. La version en cours est rappelée en bas de chaque page. Voir les releases sur GitHub'), 'le titre, l\'introduction, le lien GitHub');
   ok(liens.includes('https://github.com/tototriou/sw-forge/releases'), 'le lien vers toutes les releases');
-  for (const r of RELEASES) ok(t.includes(`${libelleVersion(r.version)}`) && t.includes(r.title), `version ${libelleVersion(r.version)} : numéro et titre`);
+  for (const r of RELEASES) ok(t.includes(`${libelleVersion(r.version, 'En préparation')}`) && t.includes(r.title), `version ${libelleVersion(r.version, 'En préparation')} : numéro et titre`);
   const enTete = RELEASES[0];
   if (enTete.version === null) ok(t.includes('En préparation Pas encore publiée'), 'la version en préparation, dite non publiée');
   else ok(t.includes('Version actuelle'), 'la version en tête, dite actuelle');

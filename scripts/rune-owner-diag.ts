@@ -36,6 +36,7 @@
 
 import { readFileSync } from 'fs';
 import { parseAccountSource, parseAccountBox } from '../src/lib/importAccount';
+import { fr } from '../src/i18n/fr';
 
 const [exportPath, idsArg] = process.argv.slice(2);
 const ids = new Set(idsArg.split(',').map((s) => Number(s.trim())));
@@ -46,7 +47,7 @@ const monstersRaw = JSON.parse(readFileSync('public/data/monsters.json', 'utf8')
 const monstersList = Array.isArray(monstersRaw) ? monstersRaw : monstersRaw.monsters;
 const nameByCom2us = new Map<number, string>(monstersList.map((m: any) => [m.com2usId, m.name]));
 
-const { monsters: box, error } = parseAccountBox(data);
+const { monsters: box, error } = parseAccountBox(data, fr);
 if (error) console.error('Erreur box :', error);
 
 for (const id of ids) {

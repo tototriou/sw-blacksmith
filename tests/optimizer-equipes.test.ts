@@ -10,6 +10,7 @@ import {
 import type { ExclusionSelector } from '../src/lib/optimizerExclusion';
 import { cleMemoireMembre, type ContenuListeOptimizer, type EquipeOptimizer, type StockageOptimizer } from '../src/lib/optimizerMemberStorage';
 import { sourcesComposition, stockageComposition } from './import-composition-fixtures';
+import { fr } from '../src/i18n/fr';
 
 const membres: ExclusionSelector[] = Array.from({ length: 6 }, (_, i) => ({ source: 'box', unitKey: String(i) }));
 const lead: LeaderSkill = { stat: 'Attack Speed', amount: 24, area: 'General', element: null };
@@ -51,7 +52,7 @@ export const verificationsOptimizerEquipesActivite: [string, () => void][] = cas
       if (attendu === 'oui') egal(effectif, { type: 'equipe', lead: { stat, pct: 24 } }, `${stat} : lead actif`);
       else {
         egal(effectif.type, 'aucun', `${stat} : aucun lead`);
-        ok(effectif.type === 'aucun' && effectif.motif.includes('inactive'), `${stat} : motif explicite`);
+        ok(effectif.type === 'aucun' && effectif.motif === 'porteeInactive', `${stat} : motif explicite`);
       }
     }
   }]);
@@ -66,11 +67,11 @@ export function testOptimizerEquipesElementsEtLeadPersonnel() {
   const meme = leadEffectifMembreOptimizer(stockageLead([e]), 'l1', membres[0], 'fire');
   egal(resolvedLeaderSkill(appliquerCriteres(personnel, meme).damageSetup), { stat: 'Attack Speed', pct: 24 }, 'même élément : superposition du lead');
   const autre = leadEffectifMembreOptimizer(stockageLead([e]), 'l1', membres[0], 'water');
-  ok(autre.type === 'aucun' && autre.motif.includes('élément'), 'élément différent : aucun avec motif');
+  ok(autre.type === 'aucun' && autre.motif === 'autreElement', 'élément différent : aucun avec motif');
   egal(resolvedLeaderSkill(appliquerCriteres(personnel, autre).damageSetup), null, 'aucun repli sur le moderne ou le legacy personnel');
   egal(leadEffectifMembreOptimizer(stockageLead([e]), 'l2', membres[0], 'fire'), { type: 'personnel' }, 'autre liste : lead personnel');
   egal(leadEffectifMembreOptimizer(stockageLead([e]), 'l1', membres[3], 'fire'), { type: 'personnel' }, 'membre hors équipe : personnel');
-  const delie = delierMembreOptimizer([e], 'l1', membres[0]);
+  const delie = delierMembreOptimizer([e], 'l1', membres[0], fr);
   egal(resolvedLeaderSkill(appliquerCriteres(personnel, leadEffectifMembreOptimizer(stockageLead(delie.teams), 'l1', membres[0], 'fire')).damageSetup), { stat: 'HP', pct: 33 }, 'délié : le membre suit de nouveau ses critères personnels');
   egal(personnel, initial, 'les critères personnels ne sont jamais modifiés');
 }
@@ -80,8 +81,8 @@ export function testOptimizerEquipesLeadsNonCalculablesEtHorsListe() {
   for (const stat of ['Accuracy', 'Resistance', 'Inconnue', null]) {
     const e = equipe({ ...lead, stat });
     const effectif = leadEffectifMembreOptimizer(stockageLead([e]), 'l1', membres[0], 'fire');
-    ok(effectif.type === 'aucun' && effectif.motif.includes('sans effet calculé'), `${stat} : aucun avec motif`);
-    const cree = creerEquipeOptimizer(contexte(), e);
+    ok(effectif.type === 'aucun' && effectif.motif === 'statSansEffet', `${stat} : aucun avec motif`);
+    const cree = creerEquipeOptimizer(contexte(), e, fr);
     egal(cree.teams[0].lead, e.lead, `${stat} : donnée entière conservée`);
   }
   const e = equipe({ ...lead, amount: 27 });
@@ -90,12 +91,12 @@ export function testOptimizerEquipesLeadsNonCalculablesEtHorsListe() {
   for (const amount of [NaN, Infinity, -1]) {
     e.lead!.amount = amount;
     const resultat = leadEffectifMembreOptimizer(stockageLead([e]), 'l1', membres[0], 'fire');
-    ok(resultat.type === 'aucun' && resultat.motif.includes('montant'), 'montant invalide : aucun avec motif');
+    ok(resultat.type === 'aucun' && resultat.motif === 'montantInvalide', 'montant invalide : aucun avec motif');
   }
   for (const area of ['Inconnue', 'toString']) {
     e.lead = { ...lead, area };
     const resultat = leadEffectifMembreOptimizer(stockageLead([e]), 'l1', membres[0], 'fire');
-    ok(resultat.type === 'aucun' && resultat.motif.includes('pas établie'), `${area} : portée inconnue sans effet`);
+    ok(resultat.type === 'aucun' && resultat.motif === 'porteeInconnue', `${area} : portée inconnue sans effet`);
   }
   ok(leadEffectifMembreOptimizer(stockageLead([equipe(null)]), 'l1', membres[0], 'fire').type === 'aucun', 'équipe sans lead : aucun');
 }
@@ -104,7 +105,7 @@ export const verificationsOptimizerEquipesCardinalites: [string, () => void][] =
   [`testOptimizerEquipesCardinalite${nombre}`, () => {
     titre(`Optimizer · cardinalité après filtrage ${nombre}`);
     const c = contexte();
-    const resultat = equipeApresFiltrageOptimizer(c, { id: 'e1', listId: 'l1', members: membres.slice(0, nombre), lead });
+    const resultat = equipeApresFiltrageOptimizer(c, { id: 'e1', listId: 'l1', members: membres.slice(0, nombre), lead }, fr);
     egal(resultat.equipe !== null, nombre >= 2 && nombre <= 5, 'équipe créée seulement de 2 à 5 membres');
     if (resultat.equipe) {
       egal(resultat.equipe.members.length, nombre, 'tous les membres sont liés');
@@ -113,7 +114,7 @@ export const verificationsOptimizerEquipesCardinalites: [string, () => void][] =
       egal(resultat.rapport, [], 'aucun refus');
     } else {
       ok(resultat.rapport.some(m => m.includes('lead de la source n’est appliqué à personne')), 'absence d’équipe et de lead explicitement rapportée');
-      const direct = creerEquipeOptimizer(c, { id: 'e1', listId: 'l1', members: membres.slice(0, nombre), lead });
+      const direct = creerEquipeOptimizer(c, { id: 'e1', listId: 'l1', members: membres.slice(0, nombre), lead }, fr);
       egal(direct.teams, [], 'création manuelle hors cardinalité refusée');
       ok(direct.rapport.length > 0, 'refus de cardinalité explicite');
       for (const membre of membres.slice(0, nombre)) egal(leadEffectifMembreOptimizer(stockageLead([]), 'l1', membre, 'fire'), { type: 'personnel' }, 'sans équipe : aucun lead de source superposé');
@@ -124,15 +125,15 @@ export const verificationsOptimizerEquipesCardinalites: [string, () => void][] =
 export function testOptimizerEquipesOperationsEtExclusivite() {
   titre('Optimizer · opérations pures, cardinalités et appartenance');
   const c = contexte();
-  const cree = creerEquipeOptimizer(c, { id: 'e1', listId: 'l1', members: membres.slice(0, 2) });
+  const cree = creerEquipeOptimizer(c, { id: 'e1', listId: 'l1', members: membres.slice(0, 2) }, fr);
   egal(cree.rapport, [], 'création sans leader');
   egal(cree.teams[0].lead, null, 'lead facultatif');
-  const complet = creerEquipeOptimizer(c, { ...equipe(), members: membres.slice(0, 5), leader: membres[0] });
+  const complet = creerEquipeOptimizer(c, { ...equipe(), members: membres.slice(0, 5), leader: membres[0] }, fr);
   egal(complet.rapport, [], 'cinq membres et leader valides');
   const initial = structuredClone(complet.teams);
-  const ajout = ajouterMembreEquipeOptimizer({ ...c, teams: cree.teams }, 'e1', membres[2]);
+  const ajout = ajouterMembreEquipeOptimizer({ ...c, teams: cree.teams }, 'e1', membres[2], fr);
   egal(ajout.teams[0].members.length, 3, 'ajout du troisième membre');
-  const six = ajouterMembreEquipeOptimizer({ ...c, teams: complet.teams }, 'e1', membres[5]);
+  const six = ajouterMembreEquipeOptimizer({ ...c, teams: complet.teams }, 'e1', membres[5], fr);
   egal(six.teams, initial, 'sixième membre refusé sans perte'); ok(six.rapport.length > 0, 'sixième membre : rapport');
   const lie = { ...c, teams: cree.teams };
   for (const creation of [
@@ -143,26 +144,26 @@ export function testOptimizerEquipesOperationsEtExclusivite() {
     { ...equipe(), members: [membres[2], { source: 'box' as const, unitKey: 'absent' }], id: 'e2' },
     { ...equipe(), listId: 'absente', id: 'e2' },
   ]) {
-    const refus = creerEquipeOptimizer(lie, creation);
+    const refus = creerEquipeOptimizer(lie, creation, fr);
     egal(refus.teams, cree.teams, 'création invalide : équipes initiales conservées'); ok(refus.rapport.length > 0, 'refus dit');
   }
-  ok(ajouterMembreEquipeOptimizer(lie, 'e1', membres[0]).rapport.length > 0, 'ajout du même membre refusé');
-  ok(ajouterMembreEquipeOptimizer({ ...c, teams: [equipe(), { ...equipe(), id: 'e2', members: membres.slice(2, 4) }] }, 'e1', membres[2]).rapport.length > 0, 'ajout depuis une autre équipe refusé');
-  const autreListe = creerEquipeOptimizer(lie, { ...equipe(), id: 'e2', listId: 'l2' });
+  ok(ajouterMembreEquipeOptimizer(lie, 'e1', membres[0], fr).rapport.length > 0, 'ajout du même membre refusé');
+  ok(ajouterMembreEquipeOptimizer({ ...c, teams: [equipe(), { ...equipe(), id: 'e2', members: membres.slice(2, 4) }] }, 'e1', membres[2], fr).rapport.length > 0, 'ajout depuis une autre équipe refusé');
+  const autreListe = creerEquipeOptimizer(lie, { ...equipe(), id: 'e2', listId: 'l2' }, fr);
   egal(autreListe.teams.length, 2, 'même sélecteur dans deux listes : indépendant');
-  const retire = retirerMembreEquipeOptimizer(complet.teams, 'e1', { ...membres[0] });
+  const retire = retirerMembreEquipeOptimizer(complet.teams, 'e1', { ...membres[0] }, fr);
   egal(retire.teams[0].members.length, 4, 'retrait d’un membre');
   egal(retire.teams[0].leader, undefined, 'leader retiré sans remplacement');
   egal(complet.teams, initial, 'retrait et ajout ne mutent pas les entrées');
-  egal(dissoudreEquipeOptimizer(complet.teams, 'e1').teams, [], 'dissolution');
+  egal(dissoudreEquipeOptimizer(complet.teams, 'e1', fr).teams, [], 'dissolution');
   egal(c.members.length, 12, 'membres des listes intacts après dissolution');
-  const inconnue = ajouterMembreEquipeOptimizer(lie, 'absente', membres[2]);
+  const inconnue = ajouterMembreEquipeOptimizer(lie, 'absente', membres[2], fr);
   egal(inconnue.teams, cree.teams, 'équipe absente : aucun ajout');
   ok(inconnue.rapport.length > 0, 'équipe absente : dit');
-  ok(delierMembreOptimizer(cree.teams, 'l1', membres[5]).rapport.length > 0, 'délier un membre absent : dit');
-  ok(dissoudreEquipeOptimizer(cree.teams, 'absente').rapport.length > 0, 'dissoudre une équipe absente : dit');
+  ok(delierMembreOptimizer(cree.teams, 'l1', membres[5], fr).rapport.length > 0, 'délier un membre absent : dit');
+  ok(dissoudreEquipeOptimizer(cree.teams, 'absente', fr).rapport.length > 0, 'dissoudre une équipe absente : dit');
   const source = { ...equipe(), leader: membres[0] };
-  const copie = creerEquipeOptimizer(c, source);
+  const copie = creerEquipeOptimizer(c, source, fr);
   const avant = structuredClone(source);
   if (copie.teams[0].members[0].source === 'box') copie.teams[0].members[0].unitKey = 'modifie';
   copie.teams[0].lead!.amount = 99;
@@ -174,10 +175,10 @@ export function testOptimizerEquipesRetraitEquipeDeDeux() {
   titre('Optimizer · retrait d’une équipe de deux et dissolution ciblée');
   const teams = [equipe(), { ...equipe(), id: 'e2', listId: 'l2' }];
   const initial = structuredClone(teams);
-  const retire = retirerMembreEquipeOptimizer(teams, 'e1', membres[0]);
+  const retire = retirerMembreEquipeOptimizer(teams, 'e1', membres[0], fr);
   egal(retire.teams, [teams[1]], 'équipe de deux dissoute ; autre liste préservée');
   ok(retire.rapport.some(m => m.includes('moins de deux')), 'dissolution explicitement rapportée');
-  egal(delierMembreOptimizer(teams, 'l1', membres[0]), retire, 'délier utilise la même règle');
+  egal(delierMembreOptimizer(teams, 'l1', membres[0], fr), retire, 'délier utilise la même règle');
   egal(teams, initial, 'équipes initiales intactes');
 }
 
@@ -186,16 +187,16 @@ export function testOptimizerEquipesCreationAvecOrphelines() {
   const ancienne = { ...equipe(), id: 'orpheline', listId: 'absente' };
   const c = contexte([ancienne]);
   const creation = { ...equipe(), id: 'nouvelle' };
-  const r = creerEquipeOptimizer(c, creation);
+  const r = creerEquipeOptimizer(c, creation, fr);
   egal(r.rapport, [], 'liste ancienne absente sans blocage de la création');
   egal(r.teams.length, 2, 'nouvelle équipe ajoutée');
   ok(r.teams[0] === ancienne, 'équipe ancienne conservée par référence');
-  const collisionId = creerEquipeOptimizer(c, { ...creation, id: ancienne.id });
+  const collisionId = creerEquipeOptimizer(c, { ...creation, id: ancienne.id }, fr);
   ok(collisionId.teams === c.teams && collisionId.rapport.length > 0, 'identifiant réservé même par une équipe orpheline');
   const membreAbsent = { ...ancienne, listId: 'l1', members: [membres[0], { source: 'box' as const, unitKey: 'absent' }] };
-  const conflit = creerEquipeOptimizer(contexte([membreAbsent]), creation);
+  const conflit = creerEquipeOptimizer(contexte([membreAbsent]), creation, fr);
   ok(conflit.rapport.some(m => m.includes('déjà affecté')), 'membre existant réservé malgré un coéquipier absent');
-  const independante = creerEquipeOptimizer(contexte([membreAbsent]), { ...creation, members: membres.slice(2, 4) });
+  const independante = creerEquipeOptimizer(contexte([membreAbsent]), { ...creation, members: membres.slice(2, 4) }, fr);
   egal(independante.rapport, [], 'membre ancien absent sans blocage d’une équipe indépendante');
   ok(independante.teams[0] === membreAbsent, 'équipe avec membre absent conservée telle quelle');
 }
@@ -207,11 +208,11 @@ export function testOptimizerEquipesAjoutEquipeOrphelineNeBloquePasEquipeSaine()
     { ...equipe(), id: 'ancienne', members: [membres[4], { source: 'box' as const, unitKey: 'absent' }] },
   ]) {
     const saine = equipe(), c = contexte([orpheline, saine]);
-    const r = ajouterMembreEquipeOptimizer(c, saine.id, membres[2]);
+    const r = ajouterMembreEquipeOptimizer(c, saine.id, membres[2], fr);
     egal(r.rapport, [], 'ajout accepté sur la cible saine');
     egal(r.teams[1].members, membres.slice(0, 3), 'membre ajouté à la bonne équipe');
     ok(r.teams[0] === orpheline, 'équipe orpheline conservée telle quelle');
-    const conflit = ajouterMembreEquipeOptimizer(c, saine.id, membres[4]);
+    const conflit = ajouterMembreEquipeOptimizer(c, saine.id, membres[4], fr);
     if (orpheline.listId === saine.listId) ok(conflit.rapport.length > 0 && conflit.teams === c.teams, 'exclusivité contre une équipe orpheline maintenue');
   }
 }
@@ -232,7 +233,7 @@ export function testOptimizerEquipesSynchronisationLeadPersonnel() {
       { id: 'e2', listId: 'l2', members: [box(1), box(2)], lead: { ...lead } }],
     listContents: new Map<string, ContenuListeOptimizer>([['l1', 'guilde'], ['l2', 'guilde']]) };
   const avant = structuredClone(stockage);
-  const r = synchroniserLeadsMembresOptimizer(stockage, 'l1', data);
+  const r = synchroniserLeadsMembresOptimizer(stockage, 'l1', data, fr);
   const setup = (n: number, listId = 'l1') => r.memories.get(cleMemoireMembre(listId, box(n)))?.criteres.damageSetup;
   egal(setup(1)?.leaderSkill, { stat: 'Attack Speed', pct: 24 }, 'même élément : le lead d’équipe écrase le lead personnel');
   egal(setup(1)?.leaderSpeedPct, undefined, 'ancien champ de VIT effacé avec lui');
@@ -245,8 +246,8 @@ export function testOptimizerEquipesSynchronisationLeadPersonnel() {
   egal(r.ecrits, [box(1), box(2), box(3)], 'membres écrits, dans l’ordre de l’équipe');
   ok(!r.memories.has(cleMemoireMembre('l2', box(1))), 'une autre liste n’est pas synchronisée');
   egal(stockage, avant, 'stockage reçu jamais modifié');
-  const encore = synchroniserLeadsMembresOptimizer({ ...stockage, memories: r.memories }, 'l1', data);
+  const encore = synchroniserLeadsMembresOptimizer({ ...stockage, memories: r.memories }, 'l1', data, fr);
   ok(encore.memories === r.memories && encore.ecrits.length === 0, 'seconde synchronisation sans écriture ni nouvelle référence');
-  const depart = synchroniserLeadsMembresOptimizer({ ...stockage, memories: r.memories, teams: stockage.teams.slice(1) }, 'l1', data);
+  const depart = synchroniserLeadsMembresOptimizer({ ...stockage, memories: r.memories, teams: stockage.teams.slice(1) }, 'l1', data, fr);
   ok(depart.memories === r.memories && setup(1)?.leaderSkill?.pct === 24, 'quitter l’équipe ne restaure rien : le dernier lead d’équipe reste');
 }

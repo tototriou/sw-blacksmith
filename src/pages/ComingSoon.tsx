@@ -1,5 +1,6 @@
 import { ReactNode } from 'react';
 import { motion } from 'framer-motion';
+import { useTraduction } from '../hooks/useLangue';
 
 interface Props {
   title: string;
@@ -11,6 +12,7 @@ interface Props {
 
 // Page placeholder pour les outils à venir (Siège, Arène…).
 export default function ComingSoon({ title, icon: Icon, description }: Props) {
+  const t = useTraduction();
   return (
     <div className="mt-4">
       <motion.div
@@ -22,8 +24,8 @@ export default function ComingSoon({ title, icon: Icon, description }: Props) {
         <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-panel2 border border-border mb-5">
           <Icon size={28} className="text-ink-dim" />
         </div>
-        <h2 className="font-display text-[22px] tracking-wide mb-2">Bientôt disponible</h2>
-        <p className="text-ink-dim text-sm max-w-md leading-relaxed">Cet outil est en cours de construction.</p>
+        <h2 className="font-display text-[22px] tracking-wide mb-2">{t.bientot.titre}</h2>
+        <p className="text-ink-dim text-sm max-w-md leading-relaxed">{t.bientot.texte}</p>
       </motion.div>
     </div>
   );

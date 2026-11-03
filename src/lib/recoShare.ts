@@ -22,6 +22,9 @@ import {
   emptyRecoSlot,
 } from '../types';
 import { artifactSubKinds, artifactSubLabel, canAddSet, isArtifactSub } from './effects';
+// Les messages suivent la langue reçue (`t`) ; le champ `propriete` du fichier
+// partagé reste en français, la langue du fichier (`fr.jeu`).
+import { fr, type Dictionnaire } from '../i18n/fr';
 import { NOM_APP } from '../marque';
 import { formatExport, formatReconnu } from './formatsExport';
 
@@ -53,21 +56,26 @@ function warn(ctx: Issues, msg: string) {
 }
 
 // Stats : seules les clés connues, valeurs numériques > 0.
-function cleanStats(raw: unknown, ctx: Issues, where: string): Partial<Record<RecoStatKey, number>> {
+function cleanStats(
+  raw: unknown,
+  ctx: Issues,
+  where: string,
+  t: Dictionnaire
+): Partial<Record<RecoStatKey, number>> {
   const out: Partial<Record<RecoStatKey, number>> = {};
   if (raw == null) return out;
   if (typeof raw !== 'object') {
-    warn(ctx, `${where} : « stats » n'est pas un objet — ignoré.`);
+    warn(ctx, t.partage.reco.statsPasObjet(where));
     return out;
   }
   for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
     if (!STAT_KEYS.has(k)) {
-      warn(ctx, `${where} : stat inconnue « ${k} » ignorée.`);
+      warn(ctx, t.partage.reco.statInconnue(where, k));
       continue;
     }
     const n = Number(v);
     if (!Number.isFinite(n) || n <= 0) {
-      warn(ctx, `${where} : valeur invalide pour « ${k} » (${String(v)}) — ignorée.`);
+      warn(ctx, t.partage.reco.valeurInvalide(where, k, String(v)));
       continue;
     }
     out[k as RecoStatKey] = Math.ceil(n);
@@ -80,18 +88,18 @@ function cleanStats(raw: unknown, ctx: Issues, where: string): Partial<Record<Re
 //   - `["violent","nemesis"]`        → ancienne forme, une seule possibilité ;
 //   - `[["violent","nemesis"], […]]` → forme actuelle, plusieurs possibilités.
 // On renvoie toujours **au moins une** possibilité (éventuellement vide).
-export function cleanSetOptions(raw: unknown, ctx: Issues, where: string): string[][] {
+export function cleanSetOptions(raw: unknown, ctx: Issues, where: string, t: Dictionnaire): string[][] {
   if (raw == null) return [[]];
   if (!Array.isArray(raw)) {
-    warn(ctx, `${where} : « sets » n'est pas une liste — ignoré.`);
+    warn(ctx, t.partage.reco.setsPasListe(where));
     return [[]];
   }
   // Forme historique : une liste de clés → une seule possibilité.
-  if (raw.every((x) => typeof x === 'string')) return [cleanSets(raw, ctx, where)];
+  if (raw.every((x) => typeof x === 'string')) return [cleanSets(raw, ctx, where, t)];
 
   const out: string[][] = [];
   for (const opt of raw) {
-    const combi = cleanSets(opt, ctx, where);
+    const combi = cleanSets(opt, ctx, where, t);
     // Doublons écartés : deux fois la même possibilité n'apporte rien et
     // brouillerait l'affichage « A ou B ».
     if (!out.some((o) => o.length === combi.length && o.every((k, i) => k === combi[i]))) {
@@ -103,20 +111,20 @@ export function cleanSetOptions(raw: unknown, ctx: Issues, where: string): strin
 
 // Sets : seules les clés connues, et une combinaison qui tient dans 6 runes
 // (un fichier JSON édité à la main pourrait demander 4+4).
-function cleanSets(raw: unknown, ctx: Issues, where: string): string[] {
+function cleanSets(raw: unknown, ctx: Issues, where: string, t: Dictionnaire): string[] {
   if (raw == null) return [];
   if (!Array.isArray(raw)) {
-    warn(ctx, `${where} : « sets » n'est pas une liste — ignoré.`);
+    warn(ctx, t.partage.reco.setsPasListe(where));
     return [];
   }
   const out: string[] = [];
   for (const k of raw) {
     if (typeof k !== 'string' || !SET_KEYS.has(k)) {
-      warn(ctx, `${where} : set inconnu « ${String(k)} » ignoré.`);
+      warn(ctx, t.partage.reco.setInconnu(where, String(k)));
       continue;
     }
     if (!canAddSet(out, k)) {
-      warn(ctx, `${where} : set « ${k} » ignoré, la combinaison dépasserait 6 runes.`);
+      warn(ctx, t.partage.reco.setDeTrop(where, k));
       continue;
     }
     out.push(k);
@@ -135,23 +143,24 @@ function cleanSets(raw: unknown, ctx: Issues, where: string): string[] {
 export function cleanArtifacts(
   raw: unknown,
   ctx: Issues,
-  where: string
+  where: string,
+  t: Dictionnaire
 ): Record<ArtifactKind, number[]> {
   const out = emptyRecoArtifacts();
   if (raw == null) return out;
   if (typeof raw !== 'object') {
-    warn(ctx, `${where} : « artefacts » n'est pas un objet — ignoré.`);
+    warn(ctx, t.partage.reco.artefactsPasObjet(where));
     return out;
   }
   for (const [cle, valeur] of Object.entries(raw as Record<string, unknown>)) {
     // Clés françaises du fichier, ou clés internes pour un fichier bricolé.
     const kind = KIND_PAR_CLE[cle] ?? (cle === 'element' || cle === 'archetype' ? (cle as ArtifactKind) : null);
     if (!kind) {
-      warn(ctx, `${where} : sorte d'artéfact inconnue « ${cle} » ignorée.`);
+      warn(ctx, t.partage.reco.sorteInconnue(where, cle));
       continue;
     }
     if (!Array.isArray(valeur)) {
-      warn(ctx, `${where} : « artefacts.${cle} » n'est pas une liste — ignoré.`);
+      warn(ctx, t.partage.reco.sortePasListe(where, cle));
       continue;
     }
     for (const v of valeur) {
@@ -160,19 +169,16 @@ export function cleanArtifacts(
       // il peut avoir été modifié à la main, le code fait seul autorité.
       const code = Number(v && typeof v === 'object' ? (v as Record<string, unknown>).code : v);
       if (!isArtifactSub(code)) {
-        warn(ctx, `${where} : propriété d'artéfact inconnue « ${String(v)} » ignorée.`);
+        warn(ctx, t.partage.reco.proprieteInconnue(where, String(v)));
         continue;
       }
       if (!artifactSubKinds(code).includes(kind)) {
-        warn(
-          ctx,
-          `${where} : « ${artifactSubLabel(code)} » n'existe pas sur un artéfact de ${cle} — ignorée.`
-        );
+        warn(ctx, t.partage.reco.proprieteMauvaiseSorte(where, artifactSubLabel(code, t.jeu), cle));
         continue;
       }
       if (out[kind].includes(code)) continue;
       if (out[kind].length >= MAX_ARTIFACT_SUBS) {
-        warn(ctx, `${where} : plus de ${MAX_ARTIFACT_SUBS} propriétés sur l'artéfact de ${cle} — surplus ignoré.`);
+        warn(ctx, t.partage.reco.proprietesDeTrop(where, MAX_ARTIFACT_SUBS, cle));
         break;
       }
       out[kind].push(code);
@@ -195,7 +201,7 @@ function artifactsToJson(
   for (const { key } of ARTIFACT_KINDS) {
     const codes = (artifacts?.[key] ?? []).filter(isArtifactSub).slice(0, MAX_ARTIFACT_SUBS);
     if (codes.length) {
-      out[CLE_PAR_KIND[key]] = codes.map((code) => ({ code, propriete: artifactSubLabel(code) }));
+      out[CLE_PAR_KIND[key]] = codes.map((code) => ({ code, propriete: artifactSubLabel(code, fr.jeu) }));
     }
   }
   return Object.keys(out).length ? out : undefined;
@@ -221,13 +227,13 @@ function counterListToJson(counters: RecoCounter[] | undefined): { fort_contre?:
 
 // Lecture d'une défense adverse. Tolérante comme le reste : clés françaises ou
 // anglaises, entrées invalides ignorées plutôt que bloquantes.
-function jsonToCounter(raw: unknown, ctx: Issues, where: string): RecoCounter | null {
+function jsonToCounter(raw: unknown, ctx: Issues, where: string, t: Dictionnaire): RecoCounter | null {
   const o = (raw ?? {}) as Record<string, unknown>;
   const bruts = (
     Array.isArray(o.monstres) ? o.monstres : Array.isArray(o.monsters) ? o.monsters : []
   ) as unknown[];
   if (bruts.length > 3) {
-    warn(ctx, `${where} : ${bruts.length} monstres — seuls les 3 premiers sont gardés.`);
+    warn(ctx, t.partage.reco.troisPremiers(where, bruts.length));
   }
   const monsters = [0, 1, 2].map((i) => {
     const m = (bruts[i] ?? null) as Record<string, unknown> | null;
@@ -235,7 +241,7 @@ function jsonToCounter(raw: unknown, ctx: Issues, where: string): RecoCounter | 
     const id = Number(m.com2usId);
     const valide = Number.isFinite(id) && id > 0;
     if (m.com2usId != null && !valide) {
-      warn(ctx, `${where} : « com2usId » invalide (${String(m.com2usId)}) — monstre ignoré.`);
+      warn(ctx, t.partage.reco.idInvalideMonstre(where, String(m.com2usId)));
     }
     const nom = m.nom ?? m.name;
     return {
@@ -245,7 +251,7 @@ function jsonToCounter(raw: unknown, ctx: Issues, where: string): RecoCounter | 
   });
   // Aucun monstre lisible → rien à montrer, on n'ajoute pas un bloc vide.
   if (!monsters.some((m) => m.com2usId != null)) return null;
-  return { monsters, note: cleanText(o.note ?? o.consignes, COUNTER_NOTE_MAX, ctx, where) };
+  return { monsters, note: cleanText(o.note ?? o.consignes, COUNTER_NOTE_MAX, ctx, where, t) };
 }
 
 // Texte borné, en signalant la troncature.
@@ -253,14 +259,14 @@ function jsonToCounter(raw: unknown, ctx: Issues, where: string): RecoCounter | 
 // ⚠️ **Trimé** : les espaces de tête et de queue ne veulent rien dire, et
 // voyageaient jusque dans le fichier partagé. Le trim vient AVANT la troncature,
 // sinon « …texte  » compterait ses espaces dans le maximum.
-function cleanText(raw: unknown, max: number, ctx: Issues, where: string): string {
+function cleanText(raw: unknown, max: number, ctx: Issues, where: string, t: Dictionnaire): string {
   if (typeof raw !== 'string') return '';
-  const t = raw.trim();
-  if (t.length > max) {
-    warn(ctx, `${where} : texte tronqué à ${max} caractères.`);
-    return t.slice(0, max);
+  const texte = raw.trim();
+  if (texte.length > max) {
+    warn(ctx, t.partage.reco.texteTronque(where, max));
+    return texte.slice(0, max);
   }
-  return t;
+  return texte;
 }
 
 // Pendant de `cleanText` pour l'ÉCRITURE : trim puis borne, sans rapport
@@ -302,24 +308,26 @@ export const COUNTER_NOTE_MAX = 200;
 // reconnaîtrait plus rien et pourrait en confondre deux.
 export const SOURCE_MAX = 200;
 
-function cleanSource(raw: unknown, ctx: Issues, where: string): string | undefined {
+function cleanSource(raw: unknown, ctx: Issues, where: string, t: Dictionnaire): string | undefined {
   if (raw == null) return undefined;
   if (typeof raw !== 'string') {
-    warn(ctx, `${where} : « source » n'est pas un texte — ignorée.`);
+    warn(ctx, t.partage.reco.sourcePasTexte(where));
     return undefined;
   }
-  const t = raw.trim();
-  if (t.length > SOURCE_MAX) {
-    warn(ctx, `${where} : « source » de plus de ${SOURCE_MAX} caractères — ignorée.`);
+  const source = raw.trim();
+  if (source.length > SOURCE_MAX) {
+    warn(ctx, t.partage.reco.sourceTropLongue(where, SOURCE_MAX));
     return undefined;
   }
-  return t || undefined;
+  return source || undefined;
 }
 
 // Clés en clair (français, comme l'interface) pour qu'un joueur puisse ouvrir
 // le fichier, le relire et le corriger sans décodeur.
 function recoToJson(r: Reco) {
-  const out = noIssues(); // à l'écriture les données viennent de l'app : rien à signaler
+  // À l'écriture les données viennent de l'app : rien à signaler, les messages
+  // (en français, la langue du fichier) ne sont jamais lus.
+  const out = noIssues();
   return {
     nom: texteSortant(r.name, 60),
     auteur: texteSortant(r.author, 40),
@@ -343,9 +351,9 @@ function recoToJson(r: Reco) {
             : {
                 com2usId: sl.com2usId,
                 nom: texteSortant(sl.name, 40),
-                sets: cleanSetOptions(sl.setOptions, out, ''),
+                sets: cleanSetOptions(sl.setOptions, out, '', fr),
                 artefacts: artifactsToJson(sl.artifacts),
-                stats: cleanStats(sl.stats, out, ''),
+                stats: cleanStats(sl.stats, out, '', fr),
               }
         ),
       })),
@@ -370,10 +378,10 @@ export function encodeRecosJson(recos: Reco[]): string {
 // Lecture tolérante d'un slot au format lisible. Les clés anglaises (celles du
 // modèle interne) sont acceptées en plus des françaises : un fichier bricolé à
 // partir des types passe quand même.
-function jsonToSlot(raw: unknown, ctx: Issues, where: string): RecoSlot {
+function jsonToSlot(raw: unknown, ctx: Issues, where: string, t: Dictionnaire): RecoSlot {
   if (raw == null) return emptyRecoSlot();
   if (typeof raw !== 'object') {
-    warn(ctx, `${where} : entrée invalide — slot laissé vide.`);
+    warn(ctx, t.partage.reco.slotInvalide(where));
     return emptyRecoSlot();
   }
   const o = raw as Record<string, unknown>;
@@ -382,18 +390,18 @@ function jsonToSlot(raw: unknown, ctx: Issues, where: string): RecoSlot {
   const id = Number(rawId);
   const valide = Number.isFinite(id) && id > 0;
   if (rawId != null && !valide) {
-    warn(ctx, `${where} : « com2usId » invalide (${String(rawId)}) — slot laissé vide.`);
+    warn(ctx, t.partage.reco.idInvalideSlot(where, String(rawId)));
   }
   return {
     com2usId: valide ? Math.round(id) : null,
     name: typeof nom === 'string' ? nom.trim().slice(0, 40) : '',
-    stats: cleanStats(o.stats, ctx, where),
-    setOptions: cleanSetOptions(o.sets, ctx, where),
-    artifacts: cleanArtifacts(o.artefacts ?? o.artifacts, ctx, where),
+    stats: cleanStats(o.stats, ctx, where, t),
+    setOptions: cleanSetOptions(o.sets, ctx, where, t),
+    artifacts: cleanArtifacts(o.artefacts ?? o.artifacts, ctx, where, t),
   };
 }
 
-function jsonToDeck(raw: unknown, ctx: Issues, where: string): RecoDeck {
+function jsonToDeck(raw: unknown, ctx: Issues, where: string, t: Dictionnaire): RecoDeck {
   const o = (raw ?? {}) as Record<string, unknown>;
   const nom = o.nom ?? o.name;
   const note = o.consignes ?? o.note;
@@ -403,99 +411,96 @@ function jsonToDeck(raw: unknown, ctx: Issues, where: string): RecoDeck {
     Array.isArray(o.monstres) ? o.monstres : Array.isArray(o.slots) ? o.slots : []
   ) as unknown[];
   if (slots.length > 3) {
-    warn(ctx, `${label} : ${slots.length} monstres — seuls les 3 premiers sont gardés.`);
+    warn(ctx, t.partage.reco.troisPremiers(label, slots.length));
   }
   // Défenses visées — absentes des fichiers ≤ v4, qui n'en exigent donc aucune.
   const bruts = (
     Array.isArray(o.fort_contre) ? o.fort_contre : Array.isArray(o.counters) ? o.counters : []
   ) as unknown[];
   const counters = bruts
-    .map((c, i) => jsonToCounter(c, ctx, `${label}, défense visée ${i + 1}`))
+    .map((c, i) => jsonToCounter(c, ctx, t.partage.reco.defenseVisee(label, i + 1), t))
     .filter((c): c is RecoCounter => c !== null);
 
   return {
     name,
-    note: cleanText(note, DECK_NOTE_MAX, ctx, label),
-    slots: [0, 1, 2].map((i) => jsonToSlot(slots[i], ctx, `${label}, monstre ${i + 1}`)),
+    note: cleanText(note, DECK_NOTE_MAX, ctx, label, t),
+    slots: [0, 1, 2].map((i) => jsonToSlot(slots[i], ctx, t.partage.reco.monstre(label, i + 1), t)),
     counters,
   };
 }
 
 // Décode un fichier JSON de recommandations. Renvoie null si ce n'est pas un
 // export reconnaissable (on n'essaie pas de deviner n'importe quelle structure).
-export function decodeRecosJson(text: string, ctx: Issues = noIssues()): RecoPayload[] | null {
+// Les messages sont écrits dans la langue de `t`.
+export function decodeRecosJson(text: string, t: Dictionnaire, ctx: Issues = noIssues()): RecoPayload[] | null {
   let obj: Record<string, unknown>;
   try {
     obj = JSON.parse(text) as Record<string, unknown>;
   } catch (e) {
-    ctx.errors.push(`JSON invalide : ${(e as Error).message}`);
+    ctx.errors.push(t.partage.jsonInvalide((e as Error).message));
     return null;
   }
   if (!obj || typeof obj !== 'object' || Array.isArray(obj)) {
-    ctx.errors.push("Le JSON doit être un objet contenant une clé « recommandations ».");
+    ctx.errors.push(t.partage.reco.objetAttendu);
     return null;
   }
   if (typeof obj.format === 'string' && !formatReconnu(obj.format, 'recommandations')) {
-    warn(ctx, `Format déclaré « ${obj.format} » (attendu « ${JSON_FORMAT} ») — lecture tentée quand même.`);
+    warn(ctx, t.partage.reco.autreFormat(obj.format, JSON_FORMAT));
   }
   // Fichier d'une version antérieure : lu sans perte, mais on le dit.
   const version = Number(obj.version);
   if (Number.isFinite(version) && version < JSON_VERSION) {
-    warn(
-      ctx,
-      `Fichier au format v${version} (actuel : v${JSON_VERSION}). Il a été lu sans perte — ` +
-        `réexporte-le depuis ${NOM_APP} pour le mettre à jour.`
-    );
+    warn(ctx, t.partage.reco.versionAncienne(version, JSON_VERSION, NOM_APP));
   }
   const list = (
     Array.isArray(obj.recommandations) ? obj.recommandations : Array.isArray(obj.recos) ? obj.recos : null
   ) as unknown[] | null;
   if (!list) {
-    ctx.errors.push(`Clé « recommandations » absente ou invalide : ce n'est pas un export ${NOM_APP}.`);
+    ctx.errors.push(t.partage.reco.recosAbsentes(NOM_APP));
     return null;
   }
   if (list.length === 0) {
-    ctx.errors.push('Le fichier ne contient aucune recommandation.');
+    ctx.errors.push(t.partage.reco.aucuneReco);
     return null;
   }
 
   const out: RecoPayload[] = [];
   list.forEach((raw, ri) => {
     if (!raw || typeof raw !== 'object') {
-      warn(ctx, `Recommandation ${ri + 1} ignorée : entrée invalide.`);
+      warn(ctx, t.partage.reco.recoInvalide(ri + 1));
       return;
     }
     const r = raw as Record<string, unknown>;
     const nom = r.nom ?? r.name;
-    const name = typeof nom === 'string' && nom.trim() ? nom.trim().slice(0, 60) : 'Recommandation';
+    const name = typeof nom === 'string' && nom.trim() ? nom.trim().slice(0, 60) : t.partage.reco.nomParDefaut;
     const label = `« ${name} »`;
     const rawDecks = Array.isArray(r.decks) ? r.decks : [];
-    if (rawDecks.length === 0) warn(ctx, `${label} : aucune liste « decks ».`);
+    if (rawDecks.length === 0) warn(ctx, t.partage.reco.sansDecks(label));
     const decks = rawDecks
-      .map((d, di) => jsonToDeck(d, ctx, `${label}, deck ${di + 1}`))
+      .map((d, di) => jsonToDeck(d, ctx, t.partage.reco.deck(label, di + 1), t))
       .filter((d) => {
         if (d.slots.some((s) => s.com2usId != null)) return true;
-        warn(ctx, `${label} : un deck sans aucun monstre a été ignoré.`);
+        warn(ctx, t.partage.reco.deckVide(label));
         return false;
       });
     if (decks.length === 0) {
-      warn(ctx, `${label} ignorée : aucun deck exploitable.`);
+      warn(ctx, t.partage.reco.sansDeckUtile(label));
       return;
     }
     const auteur = r.auteur ?? r.author;
     const consignes = r.consignes ?? r.note;
-    const source = cleanSource(r.source, ctx, label);
+    const source = cleanSource(r.source, ctx, label, t);
     out.push({
       name,
       author: typeof auteur === 'string' ? auteur.trim().slice(0, 40) : '',
-      note: cleanText(consignes, NOTE_MAX, ctx, label),
+      note: cleanText(consignes, NOTE_MAX, ctx, label, t),
       decks,
       ...(source ? { source } : {}),
     });
   });
 
   if (out.length === 0) {
-    ctx.errors.push('Aucune recommandation exploitable dans ce fichier.');
+    ctx.errors.push(t.partage.reco.aucuneUtile);
     return null;
   }
   return out;
@@ -512,26 +517,24 @@ export interface ImportReport extends Issues {
 
 // **Validateur d'import** — JSON uniquement (fichier `.json` ou texte collé).
 // Rend compte de ce qu'il a lu : erreurs bloquantes ET corrections appliquées
-// (clés inconnues, valeurs hors bornes, decks vides…).
-export function validateRecosImport(text: string): ImportReport {
+// (clés inconnues, valeurs hors bornes, decks vides…), dans la langue de `t`.
+export function validateRecosImport(text: string, t: Dictionnaire): ImportReport {
   const ctx = noIssues();
   const empty: ImportReport = { ...ctx, recos: null, counts: { recos: 0, decks: 0, monstres: 0 } };
 
-  const t = text.trim();
-  if (!t) {
-    ctx.errors.push('Contenu vide.');
+  const texte = text.trim();
+  if (!texte) {
+    ctx.errors.push(t.partage.contenuVide);
     return { ...empty, ...ctx };
   }
   // Message explicite plutôt qu'une erreur de parseur cryptique si on colle
   // autre chose qu'un JSON.
-  if (!t.startsWith('{') && !t.startsWith('[')) {
-    ctx.errors.push(
-      "Attendu un JSON de recommandations (fichier .json d'export ou son contenu collé)."
-    );
+  if (!texte.startsWith('{') && !texte.startsWith('[')) {
+    ctx.errors.push(t.partage.reco.attenduRecos);
     return { ...empty, ...ctx };
   }
 
-  const recos = decodeRecosJson(t, ctx);
+  const recos = decodeRecosJson(texte, t, ctx);
   if (!recos) return { ...empty, ...ctx };
 
   const decks = recos.reduce((n, r) => n + r.decks.length, 0);

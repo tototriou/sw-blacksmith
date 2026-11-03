@@ -38,7 +38,7 @@ export function testRenduTelecharger() {
   ok(t.includes('À installer depuis un ordinateur Windows ou Linux.'), 'au téléphone : la ligne à la place des boutons');
 
   const derniere = RELEASES.find((r) => r.version !== null) ?? RELEASES[0];
-  ok(t.includes(`Version proposée : ${libelleVersion(derniere.version)}`), `la version proposée : ${libelleVersion(derniere.version)}`);
+  ok(t.includes(`Version proposée : ${libelleVersion(derniere.version, 'En préparation')}`), `la version proposée : ${libelleVersion(derniere.version, 'En préparation')}`);
   const github = ancres.find((a) => a.texte === 'Toutes les versions sur GitHub');
   ok(github?.href === `${DEPOT}/releases` && github.nouvelOnglet, '« Toutes les versions sur GitHub », nouvel onglet');
 }

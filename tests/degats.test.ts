@@ -38,7 +38,7 @@ import {
   MIRIAM_AMPLIFY_PCT,
   MIRINAE_BONUS_PCT,
   SPD_BUFF_PCT,
-  SUMMONER_SKILLS_LABELS,
+  SUMMONER_SKILLS,
   TRANSMISSION_BONUS_PCT,
   VELASKA_PCT_PAR_PV_PERDU,
   SkillDamageProfile,
@@ -91,6 +91,7 @@ import {
   summonerSkillBonus,
   type PassifOffensifProfile,
 } from '../src/lib/damage';
+import { fr } from '../src/i18n/fr';
 
 const racine = resolve(new URL('..', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1'));
 const DOSSIER_SORTS = resolve(racine, 'public/data/skills');
@@ -380,7 +381,7 @@ export default function testDegats() {
   // ⚠️ Les compétences d'invocateur portent sur la stat de BASE (comme le
   // totem de vitesse), pas sur le total runé — un build à grosse ATQ runée
   // n'en tire pas plus qu'un build nu de même base.
-  egal(SUMMONER_SKILLS_LABELS.map((option) => option.key), ['normal', 'guilde'], 'seuls les deux états réels sont proposés, sans « Aucune »');
+  egal(SUMMONER_SKILLS, ['normal', 'guilde'], 'seuls les deux états réels sont proposés, sans « Aucune »');
   egal(
     summonerSkillBonus('normal', 'fire'),
     { pct: { atk: 41, def: 20, hp: 20, spd: 15 }, cdPoints: 25 },
@@ -2954,7 +2955,7 @@ export default function testDegats() {
     ignoreArtifacts: false,
     artifactMainByKind: {},
   });
-  const relue = parseOptimizerRecipe(JSON.stringify(recette)).recipe;
+  const relue = parseOptimizerRecipe(JSON.stringify(recette), fr).recipe;
   egal(relue?.damageSetup, recette.damageSetup, 'le réglage survit à un aller-retour export/import de recette');
 
   // Le cran « aucune » a existé dans des recettes déjà partagées. Il reste
@@ -2964,13 +2965,13 @@ export default function testDegats() {
   const recetteLegacySansInvocateur = JSON.parse(JSON.stringify(recette));
   recetteLegacySansInvocateur.damageSetup.summonerSkills = 'aucune';
   egal(
-    parseOptimizerRecipe(JSON.stringify(recetteLegacySansInvocateur)).recipe?.damageSetup.summonerSkills,
+    parseOptimizerRecipe(JSON.stringify(recetteLegacySansInvocateur), fr).recipe?.damageSetup.summonerSkills,
     'normal',
     'ancienne recette « Aucune » : normalisée vers Combat à l’import'
   );
   delete recetteLegacySansInvocateur.damageSetup.summonerSkills;
   egal(
-    parseOptimizerRecipe(JSON.stringify(recetteLegacySansInvocateur)).recipe?.damageSetup.summonerSkills,
+    parseOptimizerRecipe(JSON.stringify(recetteLegacySansInvocateur), fr).recipe?.damageSetup.summonerSkills,
     'normal',
     'ancienne recette sans réglage d’invocateur : Combat reste la valeur par défaut'
   );

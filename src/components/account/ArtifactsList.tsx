@@ -1,6 +1,6 @@
 import { memo, useMemo, useState } from 'react';
 import { X } from 'lucide-react';
-import { ARTIFACT_KINDS, ArtifactDetail, ElementKey, MAX_ARTIFACT_SUBS } from '../../types';
+import { ArtifactDetail, ElementKey, MAX_ARTIFACT_SUBS, sortesArtefact } from '../../types';
 import {
   formatArtifactMain,
   artifactSubName,
@@ -10,6 +10,9 @@ import {
   RARITY_META,
 } from '../../lib/effects';
 import { artifactScore, artifactEfficiency } from '../../lib/artifacts';
+import { useLangue, useTraduction } from '../../hooks/useLangue';
+import { formatNombre } from '../../i18n/format';
+import { nomArchetype, nomElement, nomGrade } from '../../i18n/jeu';
 import { ArtifactGlyph } from '../ArtifactIcon';
 import ArtifactFrameIcon from '../ArtifactFrameIcon';
 import ArtifactSubLigne from '../ArtifactSubLigne';
@@ -53,21 +56,15 @@ const PAGE = 60;
 // référence : les libellés ne sont pas réécrits ici.
 const MAIN_ORDER = [100, 101, 102];
 
-const ELEMENTS: { key: ElementKey; label: string }[] = [
-  { key: 'water', label: 'Eau' },
-  { key: 'fire', label: 'Feu' },
-  { key: 'wind', label: 'Vent' },
-  { key: 'light', label: 'Lumière' },
-  { key: 'dark', label: 'Ténèbres' },
-];
-const ARCHETYPES: { key: Archetype; label: string }[] = [
-  { key: 'attack', label: 'Attaque' },
-  { key: 'defense', label: 'Défense' },
-  { key: 'hp', label: 'PV' },
-  { key: 'support', label: 'Support' },
-];
+// L'ordre du jeu ; les noms viennent du lexique (`nomElement`, `nomArchetype`).
+const ELEMENTS: { key: ElementKey }[] = [{ key: 'water' }, { key: 'fire' }, { key: 'wind' }, { key: 'light' }, { key: 'dark' }];
+const ARCHETYPES: { key: Archetype }[] = [{ key: 'attack' }, { key: 'defense' }, { key: 'hp' }, { key: 'support' }];
 
 export default function ArtifactsList({ artifacts, menuOuvert, onFermerMenu }: Props) {
+  const textes = useTraduction();
+  const jeu = textes.jeu;
+  const a = textes.artefactsCompte;
+  const langue = useLangue();
   const [kind, setKind] = useStickyState<'all' | 'element' | 'archetype'>('artefacts.kind', 'all');
   const [element, setElement] = useStickyState<ElementKey | ''>('artefacts.element', '');
   const [archetype, setArchetype] = useStickyState<Archetype | ''>('artefacts.archetype', '');
@@ -199,8 +196,8 @@ export default function ArtifactsList({ artifacts, menuOuvert, onFermerMenu }: P
     return [...presentes]
       .filter((c) => !poses.has(c))
       .sort((a, b) => artifactSubOrder(a) - artifactSubOrder(b))
-      .map((code) => ({ code, label: artifactSubName(code) }));
-  }, [rows, kind, criteres]);
+      .map((code) => ({ code, label: artifactSubName(code, jeu) }));
+  }, [rows, kind, criteres, jeu]);
 
   // Composition de la liste affichée, pour le rappel d'en-tête sur « Tous ».
   const repartition = useMemo(
@@ -232,7 +229,7 @@ export default function ArtifactsList({ artifacts, menuOuvert, onFermerMenu }: P
             comme un doublon. */}
         <div className="flex flex-wrap items-center gap-2">
           <span className="w-[86px] flex-none label lg:w-auto">
-            Catégorie
+            {a.categorie}
           </span>
           {/* ⚠️ Un contrôle **à cran** (`Segmented`) et non trois pastilles :
               les trois choix s'excluent, alors que des pastilles séparées se
@@ -262,8 +259,8 @@ export default function ArtifactsList({ artifacts, menuOuvert, onFermerMenu }: P
               setPage(0);
             }}
             options={[
-              { key: 'all' as const, label: 'Tous' },
-              ...ARTIFACT_KINDS.map((x) => ({ key: x.key, label: x.label })),
+              { key: 'all' as const, label: a.tous },
+              ...sortesArtefact(textes),
             ]}
           />
         </div>
@@ -275,7 +272,7 @@ export default function ArtifactsList({ artifacts, menuOuvert, onFermerMenu }: P
             le suivant. */}
         <div className="flex flex-wrap items-center gap-2">
           <span className="w-[86px] flex-none label lg:w-auto">
-            Attribut
+            {a.attribut}
           </span>
 
           {/* Chips de valeur : **icône du jeu + libellé**. On reconnaît un
@@ -305,7 +302,7 @@ export default function ArtifactsList({ artifacts, menuOuvert, onFermerMenu }: P
                 key={e.key}
                 data-active={active}
                 disabled={hs}
-                title={hs ? "Change la catégorie pour filtrer par attribut" : undefined}
+                title={hs ? a.changerPourAttribut : undefined}
                 onClick={() => {
                   setElement((cur) => (cur === e.key ? '' : e.key));
                   setArchetype(''); // les deux axes s'excluent
@@ -316,7 +313,7 @@ export default function ArtifactsList({ artifacts, menuOuvert, onFermerMenu }: P
                   ${hs ? 'opacity-25 cursor-not-allowed' : active ? '' : 'opacity-70 hoverable:opacity-100'}`}
               >
                 <ElementIcon element={e.key} size={15} />
-                {e.label}
+                {nomElement(jeu, e.key)}
               </button>
             );
           })}
@@ -324,7 +321,7 @@ export default function ArtifactsList({ artifacts, menuOuvert, onFermerMenu }: P
 
         <div className="flex flex-wrap items-center gap-2">
           <span className="w-[86px] flex-none label lg:w-auto">
-            Type
+            {a.type}
           </span>
           {/* ⚠️ Les types restent **neutres**, sans couleur propre. Les quatre
               archétypes n'ont pas de code couleur dans le jeu : en inventer un
@@ -337,7 +334,7 @@ export default function ArtifactsList({ artifacts, menuOuvert, onFermerMenu }: P
               <button
                 key={a.key}
                 disabled={hs}
-                title={hs ? 'Change la catégorie pour filtrer par type' : undefined}
+                title={hs ? textes.artefactsCompte.changerPourType : undefined}
                 onClick={() => {
                   setArchetype((cur) => (cur === a.key ? '' : a.key));
                   setElement(''); // les deux axes s'excluent
@@ -355,7 +352,7 @@ export default function ArtifactsList({ artifacts, menuOuvert, onFermerMenu }: P
                   } ${hs ? 'opacity-25 cursor-not-allowed' : ''}`}
               >
                 <ArtifactGlyph name={a.key} size={15} />
-                {a.label}
+                {nomArchetype(jeu, a.key)}
               </button>
             );
           })}
@@ -363,7 +360,7 @@ export default function ArtifactsList({ artifacts, menuOuvert, onFermerMenu }: P
 
         {/* Rareté */}
         <div className="flex flex-wrap items-center gap-2">
-          <span className="w-[86px] flex-none label lg:w-auto">Rareté</span>
+          <span className="w-[86px] flex-none label lg:w-auto">{a.rarete}</span>
           {RARITY_ORDER.map((r) => {
             const meta = RARITY_META[r];
             const active = rarities.has(r);
@@ -392,7 +389,7 @@ export default function ArtifactsList({ artifacts, menuOuvert, onFermerMenu }: P
                     : { borderColor: 'rgb(var(--border))', color: meta.ink }
                 }
               >
-                {meta.label}
+                {nomGrade(jeu, r)}
               </button>
             );
           })}
@@ -414,7 +411,7 @@ export default function ArtifactsList({ artifacts, menuOuvert, onFermerMenu }: P
               colonne d'intitulés. L'abréger trahirait le nom du jeu, l'élargir
               décalerait les cinq autres rangées — le repli tient dans la
               hauteur déjà occupée par le contrôle. */}
-          <span className="w-[86px] flex-none label lg:w-auto leading-tight">Stat principale</span>
+          <span className="w-[86px] flex-none label lg:w-auto leading-tight">{a.statPrincipale}</span>
           <Segmented
             value={main}
             onChange={(v) => {
@@ -422,10 +419,10 @@ export default function ArtifactsList({ artifacts, menuOuvert, onFermerMenu }: P
               setPage(0);
             }}
             options={[
-              { key: '', label: 'Toutes' },
+              { key: '', label: a.toutes },
               ...MAIN_ORDER.map((code) => ({
                 key: String(code),
-                label: ARTIFACT_MAIN[code].label,
+                label: jeu.stats[ARTIFACT_MAIN[code].stat],
               })),
             ]}
           />
@@ -436,13 +433,13 @@ export default function ArtifactsList({ artifacts, menuOuvert, onFermerMenu }: P
             ⚠️ Les cases sont ORDONNÉES : la 1ʳᵉ trie la liste, la 2ᵉ départage
             les ex æquo, etc. La position porte du sens (voir `Critere`). */}
         <div className="flex flex-wrap items-start gap-2 lg:min-w-[440px] lg:flex-1">
-          <span className="w-[86px] flex-none label lg:w-auto mt-1">Propriété</span>
+          <span className="w-[86px] flex-none label lg:w-auto mt-1">{textes.listeRunes.propriete}</span>
           <div className="min-w-0 flex-1 max-w-[520px]">
             <SubSearchBar
               options={dispoSubs}
               criteres={criteres}
               max={MAX_ARTIFACT_SUBS}
-              nomDe={artifactSubName}
+              nomDe={(code) => artifactSubName(code, jeu)}
               // Plus large que pour les runes : « Dgts supp. en prop. de ATQ »
               // ne tient pas dans 380 px à côté de ses deux bornes.
               largeurModale="max-w-[520px]"
@@ -455,8 +452,8 @@ export default function ArtifactsList({ artifacts, menuOuvert, onFermerMenu }: P
                 passent pour des emplacements d'artéfact. */}
             {actifs.length > 1 && (
               <p className="mt-1 text-micro text-ink-dim">
-                <b className="font-mono text-accent">1</b> trie la liste,{' '}
-                <b className="font-mono text-accent">2</b> départage les ex æquo
+                <b className="font-mono text-accent">1</b> {a.trieLaListe}{' '}
+                <b className="font-mono text-accent">2</b> {a.departage}
               </p>
             )}
           </div>
@@ -477,14 +474,12 @@ export default function ArtifactsList({ artifacts, menuOuvert, onFermerMenu }: P
           }}
           disabled={filtresParDefaut}
           title={
-            filtresParDefaut
-              ? 'Aucun filtre posé'
-              : 'Revenir à toutes les catégories, raretés et stats principales — les propriétés recherchées restent'
+            filtresParDefaut ? textes.boxCompte.aucunFiltre : a.effacerAide
           }
           fond="vide"
           trait="aucun"
           taille="sm"
-          libelle="Effacer les filtres"
+          libelle={textes.boxCompte.effacerFiltres}
           className="self-start lg:h-8 lg:self-auto"
         />
     </>
@@ -496,9 +491,9 @@ export default function ArtifactsList({ artifacts, menuOuvert, onFermerMenu }: P
           que la Liste des runes) : le titre de la vue et le nombre d'artéfacts
           de l'INVENTAIRE ; le compte FILTRÉ reste au-dessus des tuiles. */}
       <div className="mb-3 hidden items-center gap-2.5 lg:flex">
-        <h1 className="font-display text-xl tracking-wide text-ink">Liste</h1>
+        <h1 className="font-display text-xl tracking-wide text-ink">{textes.listeRunes.titre}</h1>
         <span className="rounded-full border border-border-soft bg-panel2 px-2 py-0.5 font-mono text-micro text-ink-dim">
-          {artifacts.length.toLocaleString('fr-FR')} artéfact{artifacts.length > 1 ? 's' : ''}
+          {a.compte(formatNombre(artifacts.length, langue), artifacts.length)}
         </span>
       </div>
 
@@ -512,21 +507,21 @@ export default function ArtifactsList({ artifacts, menuOuvert, onFermerMenu }: P
         {filtres}
       </div>
 
-      <MobileSheet ouvert={menuOuvert} onFermer={onFermerMenu} titre="Filtrer mes artéfacts">
+      <MobileSheet ouvert={menuOuvert} onFermer={onFermerMenu} titre={a.filtrer}>
         <div className="flex flex-col gap-3">{filtres}</div>
       </MobileSheet>
 
       <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
         <p className="font-mono text-xs text-ink-dim">
-          {filtered.length} artéfact{filtered.length > 1 ? 's' : ''}
-          {filtered.length !== artifacts.length && ` sur ${artifacts.length}`}
+          {a.compte(String(filtered.length), filtered.length)}
+          {filtered.length !== artifacts.length && a.sur(artifacts.length)}
           {/* ⚠️ Sur « Tous », la liste mêle DEUX inventaires distincts qu'on ne
               monte pas sur les mêmes monstres. Le rappel de composition évite
               de lire un classement commun comme un seul stock — et dit quoi
               filtrer pour ne voir que l'un des deux. */}
           {kind === 'all' && repartition.element > 0 && repartition.archetype > 0 && (
             <span className="ml-1 opacity-70">
-              ({repartition.element} attribut · {repartition.archetype} type)
+              {a.repartition(repartition.element, repartition.archetype)}
             </span>
           )}
           {/* Rappel du filtre actif : sans lui, une liste courte ou vide passe
@@ -534,7 +529,7 @@ export default function ArtifactsList({ artifacts, menuOuvert, onFermerMenu }: P
               exigeante. Même règle que le compteur de l'Optimisation. */}
           {actifs.length > 0 && (
             <span className="ml-1 opacity-70">
-              · triés sur {actifs.length} propriété{actifs.length > 1 ? 's' : ''}
+              {a.triesSur(actifs.length)}
             </span>
           )}
         </p>
@@ -561,9 +556,7 @@ export default function ArtifactsList({ artifacts, menuOuvert, onFermerMenu }: P
           principale se fait tronquer par la bannière. */}
       {filtered.length === 0 && (
         <p className="rounded-xl border border-border bg-panel px-4 py-6 text-center text-sm text-ink-dim">
-          {actifs.length > 0
-            ? `Aucun artéfact n'atteint ${actifs.length > 1 ? 'tous ces minimums' : 'ce minimum'} avec les filtres actuels.`
-            : 'Aucun artéfact ne correspond à ces filtres.'}
+          {actifs.length > 0 ? a.aucunMinimum(actifs.length) : a.aucun}
         </p>
       )}
 
@@ -611,7 +604,9 @@ const ArtTile = memo(function ArtTile({
   // Codes des propriétés RECHERCHÉES, mis en avant sur la ligne (voir plus bas).
   cherches: Set<number>;
 }) {
-  const meta = RARITY_META[art.rarity] ?? RARITY_META[1];
+  const jeu = useTraduction().jeu;
+  const grade = art.rarity in RARITY_META ? art.rarity : 1;
+  const meta = RARITY_META[grade];
 
   return (
     <div className="rounded-lg border border-border bg-panel">
@@ -622,7 +617,7 @@ const ArtTile = memo(function ArtTile({
           <ArtifactFrameIcon artifact={art} size={46} />
           <div className="min-w-0 flex-1 self-center">
             <div className="text-sm font-bold text-ink leading-tight truncate">
-              {formatArtifactMain(art.main)}
+              {formatArtifactMain(art.main, jeu)}
             </div>
           </div>
           <div className="flex flex-none flex-col items-end gap-1">
@@ -633,7 +628,7 @@ const ArtTile = memo(function ArtTile({
               className="rounded px-1.5 py-px text-micro font-bold uppercase tracking-wide leading-tight"
               style={{ background: meta.bg, color: meta.color }}
             >
-              {meta.label}
+              {nomGrade(jeu, grade)}
             </span>
             {/* La mesure affichée suit le menu ⚙, comme pour les runes. */}
             <span className="flex items-center gap-1 rounded bg-panel2 px-1.5 py-px font-mono text-micro leading-tight tabular-nums text-ink">

@@ -22,6 +22,7 @@ import {
   idsCalculPartiel,
   monsterDamageSkills,
 } from '../src/lib/damage';
+import { fr } from '../src/i18n/fr';
 
 const racine = resolve(new URL('..', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1'));
 const dossierSorts = resolve(racine, 'public/data/skills');
@@ -200,9 +201,10 @@ export function testCalculPartielEcran() {
   ok(sorts.length > 0, 'précondition : la liste des cases de sort');
   ok(/const partiel = calculPartielDuSort\(s\);/.test(sorts), 'la phrase vient de `calculPartielDuSort`, jamais écrite dans l’écran');
   const action = sorts.slice(sorts.indexOf('actionTitre={'), sorts.indexOf('description={', sorts.indexOf('actionTitre={')));
-  ok(/\{partiel && \(\s*<>\s*<Jeton libelle="Calcul partiel" \/>\s*<HelpPopover title="Calcul partiel" ariaLabel=\{`Ce que le calcul de \$\{s\.nom\} ne compte pas`\}>\s*\{partiel\}\s*<\/HelpPopover>\s*<\/>\s*\)\}/.test(action),
+  ok(/\{partiel && \(\s*<>\s*<Jeton libelle=\{d\.competence\.partiel\} \/>\s*<HelpPopover title=\{d\.competence\.partiel\} ariaLabel=\{d\.competence\.partielAria\(s\.nom\)\}>\s*\{partiel\}\s*<\/HelpPopover>\s*<\/>\s*\)\}/.test(action)
+    && fr.degats.competence.partiel === 'Calcul partiel',
     'étiquette : un `Jeton` (src/ui) « Calcul partiel » suivi de SON « ? » (`HelpPopover`), dans l’axe `actionTitre`');
-  ok(action.indexOf('Description de') >= 0 && action.indexOf('Description de') < action.indexOf('Calcul partiel'),
+  ok(action.indexOf('d.competence.description') >= 0 && action.indexOf('d.competence.description') < action.indexOf('d.competence.partiel'),
     'le « ? » de la prose reste juste à droite du nom ; l’étiquette vient après');
   const titreDeLaCase = sorts.slice(sorts.indexOf('titre={'), sorts.indexOf('actionTitre={'));
   ok(titreDeLaCase.length > 0 && !/partiel/i.test(titreDeLaCase), 'jamais dans `titre`, qui est dans le bouton de la case');
@@ -210,8 +212,8 @@ export function testCalculPartielEcran() {
 
   // Aucune mention sur les cartes de résultats (forme écartée par l'utilisateur).
   const fichiers = ['src/components/outils/OptimizerSection.tsx', 'src/components/outils/DamageSetupModale.tsx', 'src/components/outils/EtatMonstre.tsx'];
-  for (const f of fichiers) ok(!/Calcul partiel|calculPartielDuSort/.test(sansCommentaires(lire(f))), `${f} : aucune mention « Calcul partiel »`);
-  egal((carte.match(/Calcul partiel/g) ?? []).length, 2, 'DamageSetupCard : « Calcul partiel » deux fois — l’étiquette et le titre de sa bulle');
+  for (const f of fichiers) ok(!/Calcul partiel|calculPartielDuSort|competence\.partiel/.test(sansCommentaires(lire(f))), `${f} : aucune mention « Calcul partiel »`);
+  egal((carte.match(/d\.competence\.partiel\b(?!Aria)/g) ?? []).length, 2, 'DamageSetupCard : « Calcul partiel » deux fois — l’étiquette et le titre de sa bulle');
 
   // Aucun calcul ne lit la table.
   const damage = sansCommentaires(lire('src/lib/damage.ts'));

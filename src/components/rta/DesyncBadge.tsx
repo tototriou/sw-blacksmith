@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { BoutonIcone, FlottantAuto } from '../../ui';
+import { useTraduction } from '../../hooks/useLangue';
 
 // Avertissement « vitesse modifiée à la main » : triangle orange, et le détail
 // **au CLIC**, pas au survol.
@@ -16,6 +17,7 @@ export default function DesyncBadge({
   ecart: { attendu: number; saisi: number };
   size?: number;
 }) {
+  const d = useTraduction().desync;
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLSpanElement>(null);
 
@@ -51,7 +53,7 @@ export default function DesyncBadge({
           setOpen((v) => !v);
         }}
         aria-expanded={open}
-        libelle="Vitesse modifiée à la main"
+        libelle={d.titre}
         // Le panneau qui s'ouvre au clic EST l'explication : une infobulle
         // native ferait doublon, et s'afficherait par-dessus lui.
         sansInfobulle
@@ -80,11 +82,10 @@ export default function DesyncBadge({
           className="text-left text-micro leading-relaxed text-ink-dim"
           onClick={(e) => e.stopPropagation()}
         >
-          <span className="mb-1 block font-semibold text-warn">Runes plus à jour</span>
-          Les runes affichées ne correspondent plus à la vitesse demandée dans l'ordre de tour : elles
-          donnent <b className="text-ink">{ecart.attendu}</b> de SPD, alors qu'il en faut{' '}
-          <b className="text-bad">{ecart.saisi}</b>. Cette vitesse demandée apparaît{' '}
-          <b className="text-bad">en rouge</b> sur la ligne VIT de la fiche.
+          <span className="mb-1 block font-semibold text-warn">{d.perime}</span>
+          {d.avant} <b className="text-ink">{ecart.attendu}</b> {d.milieu}{' '}
+          <b className="text-bad">{ecart.saisi}</b>. {d.apres}{' '}
+          <b className="text-bad">{d.enRouge}</b> {d.fin}
         </div>
       </FlottantAuto>
     </span>

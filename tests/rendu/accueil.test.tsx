@@ -94,7 +94,7 @@ export function testRenduAccueil() {
   // Quoi de neuf : la dernière version PUBLIÉE, son titre, le lien.
   const derniere = RELEASES.find((r) => r.version !== null) ?? RELEASES[0];
   const bandeau = tous.find((l) => l.href === '#/releases' && l.texte.includes('Voir les nouveautés'));
-  ok(!!bandeau && bandeau.texte === `${libelleVersion(derniere.version)} ${derniere.title} Voir les nouveautés`, `bandeau « ${libelleVersion(derniere.version)} · ${derniere.title} » → #/releases`);
+  ok(!!bandeau && bandeau.texte === `${libelleVersion(derniere.version, 'En préparation')} ${derniere.title} Voir les nouveautés`, `bandeau « ${libelleVersion(derniere.version, 'En préparation')} · ${derniere.title} » → #/releases`);
 }
 
 // Application de bureau : le lien du héros vers
