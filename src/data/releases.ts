@@ -92,6 +92,7 @@ export const RELEASES: Release[] = [
       { kind: 'fix', scope: 'Runes', text: '« Tx critiq. » et « Dgts critiq. » comme dans le jeu, et le bon effet du set Sceau.' },
       { kind: 'fix', scope: 'Bestiaire', text: 'La fiche d’un monstre écrit son type en toutes lettres.' },
       { kind: 'fix', scope: 'Siège', text: 'L’analyse d’une recommandation nomme le set manquant comme le jeu, et la vitesse s’écrit « VIT ».' },
+      { kind: 'fix', scope: 'Recommandations', text: 'Une collab vaut sa version SW : ton Werner joue le deck noté Satoru Gojo.' },
     ],
   },
   {

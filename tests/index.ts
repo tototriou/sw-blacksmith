@@ -48,6 +48,7 @@ import { testRenduOptimizerPointGestes, testRenduTelephoneOptimizerPointGestes, 
   testRenduOptimizerPointSansMemoireListeSupprimee, testRenduTelephoneOptimizerPointSansMemoireListeSupprimee } from './rendu/optimizer-backup.test';
 import { verificationsImportReco } from './import-reco.test';
 import { verificationsImportRecoCopies } from './import-reco-copies.test';
+import { verificationsRecoCollab } from './reco-collab.test';
 import testNavigation from './navigation.test';
 import testBancSelection from './banc-selection.test';
 import { testNavigationAdresses, testNavigationAdressesDefauts, testNavigationVuesCompte } from './navigation-adresses.test';
@@ -867,6 +868,7 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ...verificationsImportSpeedTune,
   ...verificationsImportReco,
   ...verificationsImportRecoCopies,
+  ...verificationsRecoCollab,
   ...verificationsOptimizerEquipesCardinalites,
   ['testOptimizerEquipesElementsEtLeadPersonnel', testOptimizerEquipesElementsEtLeadPersonnel],
   ['testOptimizerEquipesSynchronisationLeadPersonnel', testOptimizerEquipesSynchronisationLeadPersonnel],

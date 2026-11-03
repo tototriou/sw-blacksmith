@@ -31,6 +31,7 @@ export const RELEASES_EN: Release[] = [
       { kind: 'fix', scope: 'Runes', text: 'French stat names match the game, and the Seal set shows its real effect.' },
       { kind: 'fix', scope: 'Bestiary', text: 'A monster’s sheet spells out its type.' },
       { kind: 'fix', scope: 'Siege', text: 'A recommendation’s analysis names the missing set as the game does.' },
+      { kind: 'fix', scope: 'Recommendations', text: 'A collab counts as its SW version: your Werner plays a deck listing Satoru Gojo.' },
     ],
   },
   {
