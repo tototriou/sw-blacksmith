@@ -201,7 +201,7 @@ export function testCalculPartielEcran() {
   ok(sorts.length > 0, 'précondition : la liste des cases de sort');
   ok(/const partiel = calculPartielDuSort\(s\);/.test(sorts), 'la phrase vient de `calculPartielDuSort`, jamais écrite dans l’écran');
   const action = sorts.slice(sorts.indexOf('actionTitre={'), sorts.indexOf('description={', sorts.indexOf('actionTitre={')));
-  ok(/\{partiel && \(\s*<>\s*<Jeton libelle=\{d\.competence\.partiel\} \/>\s*<HelpPopover title=\{d\.competence\.partiel\} ariaLabel=\{d\.competence\.partielAria\(s\.nom\)\}>\s*\{partiel\}\s*<\/HelpPopover>\s*<\/>\s*\)\}/.test(action)
+  ok(/\{partiel && \(\s*<>\s*<Jeton libelle=\{d\.competence\.partiel\} \/>\s*<HelpPopover title=\{d\.competence\.partiel\} ariaLabel=\{d\.competence\.partielAria\(ph\(s\.nom\)\)\}>\s*\{ph\(partiel\)\}\s*<\/HelpPopover>\s*<\/>\s*\)\}/.test(action)
     && fr.degats.competence.partiel === 'Calcul partiel',
     'étiquette : un `Jeton` (src/ui) « Calcul partiel » suivi de SON « ? » (`HelpPopover`), dans l’axe `actionTitre`');
   ok(action.indexOf('d.competence.description') >= 0 && action.indexOf('d.competence.description') < action.indexOf('d.competence.partiel'),

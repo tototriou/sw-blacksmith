@@ -368,7 +368,7 @@ export function testBladeSurgeResumeObjectif() {
   ok(!!memo, 'précondition : le mémo du résumé sous l’objectif');
   const corps = memo?.corps ?? [];
   egal(corps.slice(1, 4), [
-    'bouts.push(resolvedSkill ? `S${resolvedSkill.slot} ${resolvedSkill.nom}` : os.aucunSort);',
+    'bouts.push(resolvedSkill ? `S${resolvedSkill.slot} ${phraseDegats(resolvedSkill.nom, textes.codeLangue)}` : os.aucunSort);',
     'const cibleRetenue = resolvedSkill && resumeCibleDegatsRetenue(resolvedSkill, damageSetup, textes);',
     'if (cibleRetenue) bouts.push(cibleRetenue);',
   ], 'le bout suit le sort, lu sur le sort RÉSOLU par la fonction contrôlée ci-dessus');

@@ -34,6 +34,7 @@ Tout le calcul vit dans `src/lib/damage.ts` ; on choisit le document selon la r�
 | une compétence auxiliaire de SWARFARM (`Competence.auxiliaires`, `formuleRetenue`) | [feat-competences-auxiliaires.md](feat-competences-auxiliaires.md) |
 | un modificateur monstre-wide d'un passif (compteur, effets sur la cible, sacrifice…) | [catalogue-des-passifs.md](catalogue-des-passifs.md) |
 | une valeur de jeu curée à la main, et sa source | [valeurs-de-jeu-curees.md](valeurs-de-jeu-curees.md) |
+| une phrase curée affichée (libellé, condition, aide, raison d'un refus, « Calcul partiel ») : son anglais, dans le même commit | [../transverse/feat-langues.md](../transverse/feat-langues.md) (`src/i18n/phrasesDegats.ts`) |
 | l'écran de l'objectif « Dégâts réels » (`src/components/outils/DamageSetupCard.tsx`, `src/components/outils/DamageSetupModale.tsx`) | [../optimizer/ecran/objectif-de-recherche.md](../optimizer/ecran/objectif-de-recherche.md) |
 
 ## Destinations

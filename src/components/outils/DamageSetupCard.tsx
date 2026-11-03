@@ -84,6 +84,7 @@ import { ELEMENTS, type ElementKey } from '../../types';
 import HelpPopover from '../HelpPopover';
 import { useTraduction } from '../../hooks/useLangue';
 import { nomElement } from '../../i18n/jeu';
+import { phraseDegats } from '../../i18n/phrasesDegats';
 import type { Dictionnaire } from '../../i18n/fr';
 
 // Réglage de l'objectif « Dégâts réels » — voir docs/02-app/degats-reels/
@@ -226,7 +227,7 @@ function resumeCondition(condition: ConditionMonstreProfile['condition'], t: Dic
     return c.siAtkDepasse(c.coupsEnPlus(condition.coupsEnPlus));
   }
   if (condition.coupsEnPlus && condition.type === 'manuel') {
-    return c.avecEffet(condition.libelle, c.coupsEnPlus(condition.coupsEnPlus));
+    return c.avecEffet(phraseDegats(condition.libelle, t.codeLangue), c.coupsEnPlus(condition.coupsEnPlus));
   }
   switch (condition.type) {
     case 'buffCiblePresent':
@@ -264,11 +265,11 @@ function resumeCondition(condition: ConditionMonstreProfile['condition'], t: Dic
     case 'defBreakPresent':
       return c.defBreak;
     case 'manuel':
-      return condition.libelle;
+      return phraseDegats(condition.libelle, t.codeLangue);
     case 'ignoreDefParStack':
-      return c.ignoreDefParStack(condition.pctParStack, condition.label.toLowerCase());
+      return c.ignoreDefParStack(condition.pctParStack, phraseDegats(condition.label, t.codeLangue).toLowerCase());
     case 'compteurMin':
-      return c.compteurMin(condition.min, condition.label.toLowerCase());
+      return c.compteurMin(condition.min, phraseDegats(condition.label, t.codeLangue).toLowerCase());
   }
 }
 
@@ -434,6 +435,8 @@ export default function DamageSetupCard({
   const textes = useTraduction();
   const jeu = textes.jeu;
   const d = textes.degats;
+  // Une phrase curée de damage.ts, dans la langue de l'écran.
+  const ph = (fr: string) => phraseDegats(fr, textes.codeLangue);
   const maj = (patch: Partial<DamageSetup>) => setSetup((prev) => ({ ...prev, ...patch }));
   // Au doigt, les champs de l'adversaire s'empilent : une largeur commune de
   // libellé (celle du plus long, « PV restants ») les aligne.
@@ -718,7 +721,7 @@ export default function DamageSetupCard({
                 titre={
                   <>
                     <span className="font-mono text-micro text-ink-dim">S{s.slot}</span>
-                    {s.nom}
+                    {ph(s.nom)}
                   </>
                 }
                 // ⚠️ **La prose du sort au CLIC, pas au survol** : un `title`
@@ -740,15 +743,15 @@ export default function DamageSetupCard({
                   s.description || partiel ? (
                     <div className="flex items-center gap-1.5">
                       {s.description && (
-                        <HelpPopover title={s.nom} ariaLabel={d.competence.description(s.nom)}>
+                        <HelpPopover title={ph(s.nom)} ariaLabel={d.competence.description(ph(s.nom))}>
                           {s.description}
                         </HelpPopover>
                       )}
                       {partiel && (
                         <>
                           <Jeton libelle={d.competence.partiel} />
-                          <HelpPopover title={d.competence.partiel} ariaLabel={d.competence.partielAria(s.nom)}>
-                            {partiel}
+                          <HelpPopover title={d.competence.partiel} ariaLabel={d.competence.partielAria(ph(s.nom))}>
+                            {ph(partiel)}
                           </HelpPopover>
                         </>
                       )}
@@ -774,7 +777,7 @@ export default function DamageSetupCard({
                       );
                     })()
                   ) : (
-                    s.raison
+                    ph(s.raison)
                   )
                 }
               />
@@ -788,7 +791,7 @@ export default function DamageSetupCard({
             du sort dont il modifie directement la formule. */}
         {resolved.bonusCoefficientParCompteur && (
           <div className="mt-1 flex items-center gap-2">
-            <span className="text-xs text-ink-dim">{resolved.bonusCoefficientParCompteur.label}</span>
+            <span className="text-xs text-ink-dim">{ph(resolved.bonusCoefficientParCompteur.label)}</span>
             <NumberField
               value={setup.compteurPersonnalise?.[resolved.skillCom2usId] ?? 0}
               onChange={(v) =>
@@ -800,13 +803,13 @@ export default function DamageSetupCard({
               max={9999}
               boxWidth="w-24"
               title={d.competence.inconnu}
-              ariaLabel={resolved.bonusCoefficientParCompteur.label}
+              ariaLabel={ph(resolved.bonusCoefficientParCompteur.label)}
             />
           </div>
         )}
         {resolved.bonusStackPropre && (
           <label className="mt-1 flex items-center gap-2">
-            <span className="text-xs text-ink-dim">{resolved.bonusStackPropre.label}</span>
+            <span className="text-xs text-ink-dim">{ph(resolved.bonusStackPropre.label)}</span>
             <NumberField
               value={setup.stackPersonnalise?.[resolved.skillCom2usId] ?? 0}
               onChange={(v) =>
@@ -822,8 +825,8 @@ export default function DamageSetupCard({
               step={resolved.bonusStackPropre.triggerStep}
               suffix={resolved.bonusStackPropre.suffix}
               boxWidth="w-24"
-              title={d.competence.zeroParDefaut(resolved.bonusStackPropre.aide)}
-              ariaLabel={resolved.bonusStackPropre.label}
+              title={d.competence.zeroParDefaut(ph(resolved.bonusStackPropre.aide))}
+              ariaLabel={ph(resolved.bonusStackPropre.label)}
             />
           </label>
         )}
@@ -998,7 +1001,7 @@ export default function DamageSetupCard({
                   <p className="mt-1 text-xs leading-snug text-ink-dim">{bonusDegatsStack.description}</p>
                 )}
                 <label className="mt-1 flex items-center gap-2">
-                  <span className="text-xs text-ink-dim">{bonusDegatsStack.label}</span>
+                  <span className="text-xs text-ink-dim">{ph(bonusDegatsStack.label)}</span>
                   <NumberField
                     value={resolvedStackTrigger(bonusDegatsStack, setup)}
                     onChange={(v) =>
@@ -1014,8 +1017,8 @@ export default function DamageSetupCard({
                     max={bonusDegatsStack.triggerMax}
                     suffix={bonusDegatsStack.suffix}
                     boxWidth="w-28"
-                    title={d.passifs.stackAide(bonusDegatsStack.aide)}
-                    ariaLabel={d.passifs.stackAria(bonusDegatsStack.label)}
+                    title={d.passifs.stackAide(ph(bonusDegatsStack.aide))}
+                    ariaLabel={d.passifs.stackAria(ph(bonusDegatsStack.label))}
                   />
                   <span className="text-xs text-ink-dim">{d.passifs.stackResultat(resolvedStackPct(bonusDegatsStack, setup))}</span>
                 </label>
@@ -1045,10 +1048,10 @@ export default function DamageSetupCard({
                     ) : undefined
                   }
                   libelle={`${bonusDegatsConditionnel.nom.replace(/\s*\(Passive\)\s*$/i, '')} (+${bonusDegatsConditionnel.pct} %)`}
-                  title={`${bonusDegatsConditionnel.condition}${d.etat(bonusDegatsConditionnelActif(bonusDegatsConditionnel, setup))}`}
+                  title={`${ph(bonusDegatsConditionnel.condition)}${d.etat(bonusDegatsConditionnelActif(bonusDegatsConditionnel, setup))}`}
                 />
                 <p className="mt-1 text-xs leading-snug text-ink-dim">
-                  {d.passifs.seDeclencheSi(bonusDegatsConditionnel.condition)}
+                  {d.passifs.seDeclencheSi(ph(bonusDegatsConditionnel.condition))}
                 </p>
                 {bonusDegatsConditionnel.description && (
                   <p className="mt-1 text-xs leading-snug text-ink-dim">{bonusDegatsConditionnel.description}</p>
@@ -1201,7 +1204,7 @@ export default function DamageSetupCard({
               </div>
             )}
             {passifsSuivants.map((p) => {
-              const nom = p.nom.replace(/\s*\(Passive\)\s*$/i, '');
+              const nom = ph(p.nom).replace(/\s*\(Passive\)\s*$/i, '');
               const icone = p.profile.icone ? (
                 <img src={p.profile.icone} alt="" className="h-4 w-4 rounded" loading="lazy" />
               ) : undefined;
@@ -1240,7 +1243,7 @@ export default function DamageSetupCard({
                     {resume}
                     {p.categorie.type === 'defBreak' && (
                       <p className="mt-1 text-xs leading-snug text-ink-dim">
-                        {d.passifs.seDeclencheSi(p.categorie.condition)}
+                        {d.passifs.seDeclencheSi(ph(p.categorie.condition))}
                       </p>
                     )}
                     {p.bonusPvCible && (
@@ -1274,7 +1277,8 @@ export default function DamageSetupCard({
                 : cat.type === 'bonus'
                   ? `${nom} (+${cat.pct} %)`
                   : nom;
-              const condition = `${cat.condition[0].toUpperCase()}${cat.condition.slice(1)}`;
+              const conditionCuree = ph(cat.condition);
+              const condition = `${conditionCuree[0].toUpperCase()}${conditionCuree.slice(1)}`;
               // ⚠️ `dejaInclus` (Dominic) : le ratio affiché ci-dessus EST déjà
               // le cas majoré — décocher ne l'ajoute pas, il le RETIRE (voir
               // computeTotalDamage, damage.ts). Texte distinct, sinon « Dégâts
@@ -1282,10 +1286,10 @@ export default function DamageSetupCard({
               // le ratio, lui, est encore le cas de base.
               const texteCondition =
                 cat.type === 'bonus' && cat.dejaInclus
-                  ? d.passifs.dejaInclus(cat.condition, ((100 + cat.pct) / 100).toFixed(2).replace(/\.?0+$/, ''))
+                  ? d.passifs.dejaInclus(conditionCuree, ((100 + cat.pct) / 100).toFixed(2).replace(/\.?0+$/, ''))
                   : cat.type === 'bonus'
-                    ? d.passifs.bonusSi(cat.pct, cat.condition)
-                    : d.passifs.seDeclencheSi(cat.condition);
+                    ? d.passifs.bonusSi(cat.pct, conditionCuree)
+                    : d.passifs.seDeclencheSi(conditionCuree);
               return (
                 <div key={p.skillCom2usId}>
                   <PassifInterrupteur
@@ -1400,7 +1404,7 @@ export default function DamageSetupCard({
               let nomme: ReactNode = null;
               let reglage: ReactNode = null;
               if (profile.source === 'debuffsInverses') {
-                nomme = <Jeton icone={icone} libelle={nom} detail={profile.label} />;
+                nomme = <Jeton icone={icone} libelle={nom} detail={ph(profile.label)} />;
                 reglage = (
                   <div className="mt-1.5 flex flex-wrap gap-2">
                     <Interrupteur actif={setup.atkDebuff ?? false} onChange={(v) => maj({ atkDebuff: v })} libelle={d.statsCombat.malusAtq} />
@@ -1409,10 +1413,10 @@ export default function DamageSetupCard({
                   </div>
                 );
               } else if (profile.source === 'toujours') {
-                nomme = <Jeton icone={icone} libelle={nom} detail={d.statsCombat.toujoursActif(profile.label)} />;
+                nomme = <Jeton icone={icone} libelle={nom} detail={d.statsCombat.toujoursActif(ph(profile.label))} />;
               } else if (profile.source === 'toggle') {
                 if (profile.togglePartageCondition && clesToggleDejaAffichees.has(profile.skillCom2usId)) {
-                  nomme = <Jeton icone={icone} libelle={nom} detail={d.statsCombat.pilote(profile.label)} />;
+                  nomme = <Jeton icone={icone} libelle={nom} detail={d.statsCombat.pilote(ph(profile.label))} />;
                 } else {
                   nomme = nomDuPassif;
                   reglage = (
@@ -1421,8 +1425,8 @@ export default function DamageSetupCard({
                         actif={setup.statsCombatActives?.[profile.skillCom2usId] ?? false}
                         onChange={(v) => maj({ statsCombatActives: { ...(setup.statsCombatActives ?? {}), [profile.skillCom2usId]: v } })}
                         icone={nomDuPassif ? undefined : icone}
-                        libelle={profile.label}
-                        title={`${profile.label}${d.etat(!!setup.statsCombatActives?.[profile.skillCom2usId])}`}
+                        libelle={ph(profile.label)}
+                        title={`${ph(profile.label)}${d.etat(!!setup.statsCombatActives?.[profile.skillCom2usId])}`}
                       />
                     </div>
                   );
@@ -1449,7 +1453,7 @@ export default function DamageSetupCard({
                 nomme = nomDuPassif;
                 reglage = (
                   <label className={`${nomDuPassif ? 'mt-1 ' : ''}flex flex-wrap items-center gap-2`}>
-                    <span className="text-xs text-ink-dim">{profile.label}</span>
+                    <span className="text-xs text-ink-dim">{ph(profile.label)}</span>
                     <NumberField
                       value={profile.source === 'buffsPropres'
                         ? Math.min(profile.max ?? 10, resolvedBuffsPropresCount(profile.skillCom2usId, setup))
@@ -1459,7 +1463,7 @@ export default function DamageSetupCard({
                       max={profile.source === 'buffsPropres' ? Math.min(10, profile.max ?? 10) : profile.max}
                       step={1}
                       boxWidth="w-24"
-                      ariaLabel={profile.label}
+                      ariaLabel={ph(profile.label)}
                     />
                   </label>
                 );
@@ -1957,8 +1961,8 @@ export default function DamageSetupCard({
                     actif={actif}
                     onChange={(v) => maj({ passifsOffensifs: { ...(setup.passifsOffensifs ?? {}), [key]: v } })}
                     icone={icone ? <img src={icone} alt="" className="h-4 w-4 rounded" loading="lazy" /> : undefined}
-                    libelle={condition.coupsEnPlus ? `${condition.libelle} (${effet})` : `${nom} (${effet})`}
-                    title={`${condition.libelle}${d.etat(actif)}`}
+                    libelle={condition.coupsEnPlus ? `${ph(condition.libelle)} (${effet})` : `${nom} (${effet})`}
+                    title={`${ph(condition.libelle)}${d.etat(actif)}`}
                   />
                   {(condition.chanceParBuffPropre || condition.chanceParDebuffCible) && (
                     <label className="flex flex-wrap items-center gap-2 pl-2">
@@ -1998,7 +2002,7 @@ export default function DamageSetupCard({
                   max={condition.max}
                   step={1}
                   boxWidth="w-24"
-                  ariaLabel={condition.label}
+                  ariaLabel={ph(condition.label)}
                 />
               </label>;
             })}
@@ -2012,7 +2016,7 @@ export default function DamageSetupCard({
               onChange={(v) => maj({ passifsOffensifs: { ...(setup.passifsOffensifs ?? {}), [resolved.skillCom2usId]: v } })}
               icone={resolved.icone ? <img src={resolved.icone} alt="" className="h-4 w-4 rounded" loading="lazy" /> : undefined}
               libelle={`${resolved.nom} (+${resolved.bonusConditionnelPropre.pct} %)`}
-              title={`${resolved.bonusConditionnelPropre.condition}${d.etat(bonusConditionnelPropreActif(resolved, setup))}`}
+              title={`${ph(resolved.bonusConditionnelPropre.condition)}${d.etat(bonusConditionnelPropreActif(resolved, setup))}`}
             />
           )}
           {/* Pour un sort dont la formule lit `{Relative SPD}` (« Ta VIT −

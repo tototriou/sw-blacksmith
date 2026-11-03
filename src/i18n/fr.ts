@@ -2958,6 +2958,20 @@ export const fr = {
         `Le ratio ci-dessus suppose déjà que ${condition} — décoché par défaut, la contribution retombe au cas de base (÷ ${diviseur}).`,
       bonusSi: (pct: number, condition: string) => `Dégâts de base toujours comptés ; +${pct} % si ${condition}.`,
     },
+    // Les modificateurs toujours actifs d'un monstre (`monsterModificateursVit`).
+    modificateurs: {
+      critiqueSiPlusRapide: 'toujours actif — critique garanti si plus rapide que la cible',
+      atqSeuil: (pct: number, seuil: number) => `toujours actif — +${pct} % de dégâts si ton ATQ totale (avec lead) atteint ${seuil}`,
+      selonVit: (pctMax: number, ecartMax: number) => `toujours actif — jusqu'à +${pctMax} % de dégâts à ${ecartMax} pts d'écart de VIT`,
+      critSelonVit: (ptsParVit: number) =>
+        `toujours actif — +1 pt de Taux Crit tous les ${ptsParVit} pts de VIT, le surplus au-delà de 100 % se reverse en Dgts Crit`,
+      statFixe: (cr: number, cd: number) => `toujours actif — +${cr} pts de Taux Crit, +${cd} pts de Dgts Crit`,
+      selonCr: (ratio: number) => `toujours actif — +${ratio} % de dégâts par point de Taux Crit`,
+      selonDef: (pctMax: number, defMax: number) => `toujours actif — jusqu'à +${pctMax} % de dégâts à ${defMax} DEF`,
+      ciblePvMax: (pct: number) => `toujours actif — +${pct} % des PV max de la cible ajoutés au multiplicateur`,
+      ecartDef: (pct: number) => `toujours actif — +${pct} % de l'écart de DEF (toi − cible) ajoutés au multiplicateur, à chaque coup`,
+      maxHpPropre: (pct: number) => `toujours actif — +${pct} % de tes PV max, UNE FOIS par sort (pas par coup)`,
+    },
     contexte: {
       titre: 'Contexte du combat',
       mesPv: 'Mes PV actuels',
@@ -3016,8 +3030,6 @@ export const fr = {
       aucunEffet: 'Aucun',
       convertis: 'Effets bénéfiques convertis',
       convertisAria: (effet: string) => `Nombre d'effets bénéfiques convertis : ${effet}`,
-      // Le nom d'un effet : celui de l'app (`label`), ou celui de SWARFARM.
-      nomEffet: (app: string, _swarfarm: string) => app,
       avecPrecision: (nom: string, precision: string) => `${nom} (${precision})`,
       entreParties: ', ',
       entreConditions: ' ; ',

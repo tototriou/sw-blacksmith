@@ -618,10 +618,10 @@ export function testDegatsTempestEcran() {
   );
   ok(carte.includes('{texteJeu}') && carte.includes('<p className="mt-1 text-xs leading-snug text-ink-dim">{p.description}</p>'), 'la prose du jeu du passif reste affichée sous l’interrupteur');
   ok(
-    carte.includes('<HelpPopover title={s.nom} ariaLabel={d.competence.description(s.nom)}>'),
+    carte.includes('<HelpPopover title={ph(s.nom)} ariaLabel={d.competence.description(ph(s.nom))}>'),
     'la prose de chaque sort, Tempest compris, reste au « ? » de sa case'
   );
-  ok(carte.includes("const nom = p.nom.replace(/\\s*\\(Passive\\)\\s*$/i, '');"), 'nom affiché : celui du jeu, sans « (Passive) »');
+  ok(carte.includes("const nom = ph(p.nom).replace(/\\s*\\(Passive\\)\\s*$/i, '');"), 'nom affiché : celui du jeu, sans « (Passive) »');
   ok(carte.includes('const actif = setup.passifsOffensifs?.[p.skillCom2usId] ?? false;'), 'interrupteur éteint tant que rien n’est saisi');
 
   const teshar = fiche(TESHAR);

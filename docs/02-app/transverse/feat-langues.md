@@ -64,6 +64,15 @@ un `Segmented` à trois choix.
   en français, [releases.en.ts](../../../src/data/releases.en.ts) en anglais, de même forme
   entrée pour entrée ; `journal(langue)` rend le bon. Détail :
   [nouveautes/](../nouveautes/README.md).
+- **Les phrases curées des dégâts réels** (compteurs, conditions, aides, raisons d'un sort
+  refusé, textes du « Calcul partiel ») restent écrites en français dans les tables de
+  [damage.ts](../../../src/lib/damage.ts), leur source unique. Leur anglais vit dans
+  [phrasesDegats.ts](../../../src/i18n/phrasesDegats.ts), **indexé par la phrase française**, et
+  l'écran les affiche par `phraseDegats(phrase, langue)` ; une phrase sans entrée (un nom de sort,
+  déjà celui du jeu anglais) s'affiche telle quelle. ⚠️ Une phrase curée ajoutée ou réécrite prend
+  son entrée dans le même commit : `testCouverturePhrasesDegats` refuse une phrase sans
+  traduction, comme une entrée dont la phrase n'existe plus. Une phrase qui porte une valeur s'écrit
+  dans le dictionnaire (`degats.modificateurs`) ou, faute de mieux, par un motif de `phraseDegats`.
 
 ## Le vocabulaire du jeu
 
@@ -161,11 +170,12 @@ de sauvegarde des listes, l'import d'une équipe et les rapports d'import, de st
 rattachement, les erreurs d'une recette importée ; le speed tuning, en page comme en modale (les
 deux camps, l'ordre des sorts, l'analyse, les tableaux de ticks et les grilles) ; l'objectif
 « Dégâts réels » (sa fenêtre, ses effets actifs, ses passifs, l'adversaire, le coup critique, et
-les libellés et résumés que `damage.ts` rédige pour elle). Une formule de sort s'écrit avec les
+les libellés et résumés que `damage.ts` rédige pour elle, et ses phrases curées). Une formule de sort s'écrit avec les
 stats du jeu dans la langue choisie (`formuleLisible`). Les effets posés entre les coups
-s'appellent en anglais par leur nom SWARFARM (« Decrease DEF », « Brand ») et gardent en français
-les libellés de l'app (décision de l'utilisateur, 2026-11-03) ; leurs conditions de pose sont des
-codes (`PrecisionPose`) dits par le dictionnaire (`libelleEffetEntreCoups`). Restent en français dans l'Optimizer : la
+s'appellent en anglais par leur nom SWARFARM (« Decrease DEF », « Brand », entrées de
+`phrasesDegats.ts`) et gardent en français les libellés de l'app (décision de l'utilisateur,
+2026-11-03) ; leurs conditions de pose, qui portent un nom de passif ou de sort, sont des codes
+(`PrecisionPose`) dits par le dictionnaire (`libelleEffetEntreCoups`). Restent en français dans l'Optimizer : la
 description du combat « Dégâts réels », la vue de développement des gabarits, et les messages
 de la console (pannes de Worker, protocole de la file, erreurs internes du moteur), que l'écran
 remplace par une phrase traduite.
@@ -209,7 +219,12 @@ Un écran qu'on traduit entre dans `FICHIERS_TRADUITS` dans le même commit.
   anglais ; le speed tuning (règle, camps, tableaux, grilles, ordre de tour) en anglais, et les
   rangs anglais d'un tour (« 1st », « 2nd », « 11th ») ; la fusion d'une recommandation importée
   (dialogue, aperçu, message, provenance illisible) en anglais ; les dégâts réels (la carte, sa
-  formule, une séquence de coups, les crans d'ignore DEF, les modes critiques) en anglais.
+  formule, une séquence de coups, les crans d'ignore DEF, les modes critiques) en anglais, et ses
+  phrases curées (un compteur, l'étiquette du « Calcul partiel », la raison d'un sort refusé, un
+  modificateur toujours actif).
+- [phrases-degats.test.ts](../../../tests/phrases-degats.test.ts) : chaque phrase curée affichée de
+  `damage.ts` a sa traduction anglaise, aucune entrée ne survit à sa phrase, aucune traduction
+  n'est restée en français.
 - [rendu/effets-entre-coups-ecran.test.tsx](../../../tests/rendu/effets-entre-coups-ecran.test.tsx) :
   les poses entre les coups (section, sélecteurs, tirages, compteurs du sort) en anglais, effets
   sous leur nom SWARFARM ; [degats-effets-entre-coups.test.ts](../../../tests/degats-effets-entre-coups.test.ts) :
