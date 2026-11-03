@@ -1347,6 +1347,41 @@ export const fr = {
       `${n} monstre(s) inconnu(s) des données chargées (id ${ids}) : affichés sans portrait et non confrontés.`,
     importees: (recos: number, decks: number, monstres: number) =>
       `${recos} recommandation(s) · ${decks} deck(s) · ${monstres} monstre(s) importés.`,
+    importAnnule: 'Import annulé : rien n’a été ajouté.',
+    // Un fichier qui complète une recommandation qu'on a déjà (ChoixFusionRecos, recoFusion.ts).
+    fusion: {
+      titreUne: 'Ce fichier complète une de tes recommandations',
+      titrePlusieurs: 'Ce fichier complète tes recommandations',
+      // Espaces insécables : un guillemet ne se retrouve jamais seul en bout de ligne.
+      nomCite: (nom: string) => `«\u00a0${nom}\u00a0»`,
+      prolonge: ' prolonge ta recommandation ',
+      point: '.',
+      rienRetire: "Dans les deux cas, rien de ce que tu as n'est retiré ni réécrit.",
+      fusionnerUne: 'Fusionner dans la recommandation existante',
+      fusionnerPlusieurs: 'Fusionner dans les recommandations existantes',
+      fusionnerDetail: (apercu: string) => `${apercu} Tes builds, tes consignes et tes retouches restent tels quels.`,
+      aPart: 'Ajouter à part',
+      aPartUne: 'Le fichier devient une recommandation de plus, à côté de la tienne.',
+      aPartPlusieurs: 'Chaque recommandation du fichier vient en plus, à côté des tiennes.',
+      // Ce que ferait la fusion, dit avant de choisir.
+      apercu: {
+        decksNouveaux: (n: number) => `${n} deck${n > 1 ? 's' : ''} ${n > 1 ? 'nouveaux' : 'nouveau'}, à la fin`,
+        decksEnrichis: (n: number, defenses: number) =>
+          `${n} deck${n > 1 ? 's' : ''} que tu as déjà ${n > 1 ? 'gagnent' : 'gagne'} ${defenses} défense${defenses > 1 ? 's' : ''} ${defenses > 1 ? 'visées' : 'visée'}`,
+        phrase: (parties: string[]) => `${parties.join(' ; ')}.`,
+        rien: 'Rien de nouveau : tous ses decks et leurs défenses y sont déjà.',
+      },
+      // Ce qui est arrivé, puis ce qui n'est pas touché.
+      message: {
+        decksAjoutes: (n: number) => `${n} deck${n > 1 ? 's' : ''} ajouté${n > 1 ? 's' : ''}`,
+        decksEnrichis: (n: number, defenses: number) =>
+          `${n} deck${n > 1 ? 's' : ''} enrichi${n > 1 ? 's' : ''} de ${defenses} défense${defenses > 1 ? 's' : ''}`,
+        rien: 'rien de nouveau, tous ses decks et leurs défenses étaient déjà là',
+        aPart: (n: number) => ` · ${n} recommandation${n > 1 ? 's' : ''} ajoutée${n > 1 ? 's' : ''} à part`,
+        phrase: (parties: string[], aPart: string) =>
+          `Fusion : ${parties.join(', ')}${aPart}. Rien n'a été retiré ni modifié.`,
+      },
+    },
     creer: 'Créer une recommandation',
     importerAide: "Charger un fichier .json reçu d'un ami",
     toutExporter: 'Tout exporter',
@@ -1647,6 +1682,8 @@ export const fr = {
       sansDecks: (ou: string) => `${ou} : aucune liste « decks ».`,
       deckVide: (ou: string) => `${ou} : un deck sans aucun monstre a été ignoré.`,
       sansDeckUtile: (ou: string) => `${ou} ignorée : aucun deck exploitable.`,
+      sourcePasTexte: (ou: string) => `${ou} : « source » n'est pas un texte — ignorée.`,
+      sourceTropLongue: (ou: string, max: number) => `${ou} : « source » de plus de ${max} caractères — ignorée.`,
       aucuneUtile: 'Aucune recommandation exploitable dans ce fichier.',
       attenduRecos: "Attendu un JSON de recommandations (fichier .json d'export ou son contenu collé).",
     },
@@ -2228,6 +2265,13 @@ export const fr = {
       enVerification: (n: string) => `${n} combinaison(s) en vérification…`,
       filtrer: "Filtrer l'affichage",
       filtresAide: 'Masque des builds déjà trouvés ; ne relance pas la recherche.',
+      // « Stats de base exclues » des filtres : les libellés de `conditions`, cette aide-ci.
+      baseExclueFiltresAria: 'Stats de base exclues des filtres PV/ATQ/DEF/VIT',
+      aideBaseFiltres: {
+        active: " : activé, la borne porte sur ce que l'équipement apporte ",
+        desactive: ' du monstre. Désactivé, elle porte sur le total. ',
+        toujoursTotal: ' restent toujours en total. Affichage seulement : les conditions de recherche gardent leur propre réglage.',
+      },
       effacerFiltres: 'Effacer les filtres',
       colonneIndisponible: 'Aucun sort calculable pour ce monstre',
       borneAffichee: (colonne: string, cote: 'min' | 'max') => `${colonne} ${cote === 'min' ? 'minimum' : 'maximum'} affiché`,
@@ -2560,16 +2604,22 @@ export const fr = {
     },
     // Ce qu'un sort fait, en une ligne : les morceaux se joignent par « · ».
     sort: {
-      barreEquipe: (n: number) => `+${n} % barre équipe`,
-      barreAllie: (n: number) => `+${n} % barre 1 allié`,
-      barreSoi: (n: number) => `+${n} % sa barre`,
+      barresAZero: 'barres de tous à 0 %',
+      barreTous: (n: string) => `+${n} % barre des deux camps`,
+      barreEquipe: (n: string) => `+${n} % barre équipe`,
+      barreAllie: (n: string) => `+${n} % barre 1 allié`,
+      barreSoi: (n: string) => `+${n} % sa barre`,
+      barreParRetrait: (n: string) => `+${n} % barre équipe par buff retiré`,
+      barreJusqua: (max: number) => `jusqu'à +${max} % barre équipe`,
       barreAdverse: (n: number, tous: boolean) => `−${n} % barre adv${tous ? ' (tous)' : ''} (non compté)`,
       buffEquipe: 'buff VIT équipe',
+      buffAutresAllies: 'buff VIT des autres alliés',
       buffSoi: 'buff VIT sur soi',
       buffAllie: 'buff VIT 1 allié',
       ralenti: (tous: boolean) => `ralenti adv${tous ? ' (tous)' : ''} (non compté)`,
       rejoue: 'rejoue',
       recharge: (n: number) => `recharge ${n} tours`,
+      optionArbre: 'option de l’arbre',
       sansEffet: 'sans effet sur la vitesse',
     },
     ordreSorts: {
@@ -2589,6 +2639,12 @@ export const fr = {
       retirerTour: (rang: number, nom: string) => `Retirer le ${rang}ᵉ tour de ${nom} de l'ordre`,
       rejoueAide: 'Cette compétence lui rend son tour : il rejoue aussitôt, au même tick.',
       puis: 'puis : ',
+      // Un sort dont le remplissage d'équipe dépend du combat (Blade Fan, Start of Attacking).
+      buffsRetires: 'buffs retirés',
+      buffsRetiresAria: (nom: string) => `Buffs retirés par le sort de ${nom}`,
+      optionRetrait: (n: number, barre: string) => `${n} (+${barre} % équipe)`,
+      barreEquipe: 'barre équipe',
+      barreEquipeAria: (nom: string) => `Barre rendue à l'équipe par le sort de ${nom}`,
     },
     analyse: {
       titre: 'Analyse',
@@ -2674,7 +2730,7 @@ export const fr = {
       cumulsAria: (nom: string) => `Déclenchements du passif de ${nom}`,
       gainVit: (n: number) => `+${n} VIT`,
       valeurInconnue: 'valeur inconnue — à poser à la main dans les grilles',
-      skillUp: (competence: string | null, atb: number, skillUp: number, niveau1: number) =>
+      skillUp: (competence: string | null, atb: string, skillUp: string, niveau1: string) =>
         `⚠ « ${competence ?? ''} » compte MAXÉE : ${atb} % de barre, dont +${skillUp} % de skill-up — sans les skill-up, ${niveau1} %.`,
       ajouterAdverse: 'Ajouter un monstre adverse…',
       ajouterEquipe: 'Ajouter un monstre à ton équipe…',

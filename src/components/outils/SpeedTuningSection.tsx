@@ -80,6 +80,7 @@ import {
 } from '../../ui';
 import { useTraduction } from '../../hooks/useLangue';
 import { nomElement } from '../../i18n/jeu';
+import { formatNombre } from '../../i18n/format';
 import type { Dictionnaire } from '../../i18n/fr';
 
 // Icône de vitesse du jeu, celle des cartes RTA/Siège. Sert de repère au buff
@@ -135,6 +136,11 @@ export function RegleTicks() {
 // vidée, un ralenti) — « +-50 » serait illisible.
 const signe = (v: number) => (v > 0 ? `+${v}` : `−${Math.abs(v)}`);
 
+// Un pourcentage de barre au dixième, comme `pourcentBarre`, mais dans la
+// langue de l'écran : « 34,5 » en français, « 34.5 » en anglais.
+const barre = (n: number, t: Dictionnaire) =>
+  formatNombre(Math.round(n * 10) / 10, t.codeLangue, { maximumFractionDigits: 1 });
+
 // Ce qu'un sort fait, en une ligne, pour le menu de l'analyse poussée. Un sort
 // sans effet sur la vitesse reste proposable — c'est un tour où l'on ne fait
 // rien pour le tune, et c'est une information.
@@ -142,18 +148,23 @@ function libelleSort(x: SortVitesse, t: Dictionnaire): string {
   const s = t.speedTuning.sort;
   const bouts: string[] = [];
   const e = x.effet;
-  if (e.atbEquipe) bouts.push(s.barreEquipe(e.atbEquipe));
-  if (e.atbAllie) bouts.push(s.barreAllie(e.atbAllie));
-  if (e.atbSoi) bouts.push(s.barreSoi(e.atbSoi));
+  if (e.atbTousAZero) bouts.push(s.barresAZero);
+  if (e.atbTous) bouts.push(s.barreTous(barre(e.atbTous, t)));
+  if (e.atbEquipe) bouts.push(s.barreEquipe(barre(e.atbEquipe, t)));
+  if (e.atbAllie) bouts.push(s.barreAllie(barre(e.atbAllie, t)));
+  if (e.atbSoi) bouts.push(s.barreSoi(barre(e.atbSoi, t)));
+  if (x.atbAuChoix?.unite === 'retrait') bouts.push(s.barreParRetrait(barre(x.atbAuChoix.pas, t)));
+  if (x.atbAuChoix?.unite === 'pourcent') bouts.push(s.barreJusqua(x.atbAuChoix.max));
   // ⚠️ Annoncé, mais annoncé comme NON COMPTÉ : le tune se juge sans ce qu'on
   // retire à l'adverse (voir `sansReductionAdverse`). Le taire laisserait croire
   // que le calcul en tient compte.
   if (e.atbEnnemi)
     bouts.push(s.barreAdverse(e.atbEnnemi, !!e.atbEnnemiTous));
-  if (e.buffEquipe) bouts.push(s.buffEquipe);
+  if (e.buffEquipe) bouts.push(e.buffEquipeSansSoi ? s.buffAutresAllies : s.buffEquipe);
   if (e.buffSoi) bouts.push(s.buffSoi);
   if (e.buffAllie) bouts.push(s.buffAllie);
   if (e.ralenti) bouts.push(s.ralenti(!!e.ralentiTous));
+  if (x.optionArbre) bouts.push(s.optionArbre);
   if (x.rejoue) bouts.push(s.rejoue);
   if (x.cooldown > 0) bouts.push(s.recharge(x.cooldown));
   if (x.chance != null) bouts.push(`${x.chance} %`);
@@ -254,6 +265,7 @@ export default function SpeedTuningSection({
     basculerSwift,
     chaine,
     choisirCible,
+    choisirAtb,
     ajouterOccurrence,
     retirerOccurrence,
     choisirSecond,
@@ -261,6 +273,7 @@ export default function SpeedTuningSection({
     choixSorts,
     cibleFenetre,
     cibleSort,
+    atbChoisi,
     combatDe,
     decks,
     deplacer,
@@ -692,6 +705,47 @@ export default function SpeedTuningSection({
                                             </option>
                                           ))}
                                       </Selecteur>
+                                    </label>
+                                  )}
+                                  {/* ⚠️ Un sort dont le remplissage d'équipe DÉPEND
+                                      DU COMBAT : buffs retirés (Blade Fan), PV
+                                      ôtés à l'ennemi (Start of Attacking). Le
+                                      défaut est zéro — un speed tune ne l'attend
+                                      pas ; on désigne ce qu'on veut tester. */}
+                                  {sortDeLaLigne?.atbAuChoix?.unite === 'retrait' && (
+                                    <label className="flex items-center gap-1.5">
+                                      <span className="text-micro uppercase tracking-wide text-ink-dimmer">
+                                        {st.ordreSorts.buffsRetires}
+                                      </span>
+                                      <Selecteur
+                                        taille="sm"
+                                        pleineLargeur={false}
+                                        value={String(atbChoisi[cle] ?? 0)}
+                                        onChange={(e) => choisirAtb(cle, Number(e.target.value))}
+                                        aria-label={st.ordreSorts.buffsRetiresAria(l.monster.name)}
+                                      >
+                                        {Array.from({ length: sortDeLaLigne.atbAuChoix.max + 1 }, (_, n) => (
+                                          <option key={n} value={n}>
+                                            {st.ordreSorts.optionRetrait(n, barre(n * sortDeLaLigne.atbAuChoix!.pas, textes))}
+                                          </option>
+                                        ))}
+                                      </Selecteur>
+                                    </label>
+                                  )}
+                                  {sortDeLaLigne?.atbAuChoix?.unite === 'pourcent' && (
+                                    <label className="flex items-center gap-1.5">
+                                      <span className="text-micro uppercase tracking-wide text-ink-dimmer">
+                                        {st.ordreSorts.barreEquipe}
+                                      </span>
+                                      <NumberField
+                                        value={atbChoisi[cle] ?? 0}
+                                        onChange={(v) => choisirAtb(cle, v ?? 0)}
+                                        min={0}
+                                        max={sortDeLaLigne.atbAuChoix.max}
+                                        step={5}
+                                        suffix="%"
+                                        ariaLabel={st.ordreSorts.barreEquipeAria(l.monster.name)}
+                                      />
                                     </label>
                                   )}
                                   {/* ⚠️ Sa compétence lui REND son tour (Kroa) : il
@@ -1459,12 +1513,17 @@ function CampPanneau({
                   )}
 
                   {/* ⚠️ Le gain de barre retenu suppose la compétence MONTÉE
-                      (Tailwind de Bernard : 30 % au niveau 1, 45 % maxé). On le
+                      (Tailwind de Bernard : 30 % au niveau 1, 34,5 % maxé). On le
                       dit à l'écran : autrement on règle sa vitesse sur un gain
                       qu'on n'a pas encore. */}
                   {kit.atbSkillUp > 0 && (
                     <p className="mt-1.5 text-micro leading-snug text-warn">
-                      {c.skillUp(kit.atbCompetence, kit.atb, kit.atbSkillUp, kit.atbNiveau1)}
+                      {c.skillUp(
+                        kit.atbCompetence,
+                        barre(kit.atb, textes),
+                        barre(kit.atbSkillUp, textes),
+                        barre(kit.atbNiveau1, textes)
+                      )}
                     </p>
                   )}
                 </div>
@@ -1579,7 +1638,7 @@ function GrilleMod({
       </div>
     ) : (
       // Boost d'ATB : positif pour remplir, négatif pour vider (la barre ne
-      // descend jamais sous 0, garanti par la simulation). Bornes ±100.
+      // descend jamais sous 0, garanti par la simulation). De −999 à +100 %.
       //
       // ⚠️ La cellule porte le TON de sa valeur : une grille mêle des gains et
       // des pertes, et le signe seul — en mono 12 px, au milieu de quarante
@@ -1589,7 +1648,7 @@ function GrilleMod({
         value={value}
         onChange={onChange}
         allowEmpty
-        min={-100}
+        min={-999}
         max={100}
         // ⚠️ Élargi d'un cran avec le suffixe : « −100 % » doit tenir sans que
         // le champ ne rétrécisse le chiffre. La colonne fait 92 px, on y est.

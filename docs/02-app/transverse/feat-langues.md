@@ -202,7 +202,8 @@ Un écran qu'on traduit entre dans `FICHIERS_TRADUITS` dans le même commit.
   artéfacts, le pied de page en anglais ; l'Optimizer, écran des critères au bureau et panneau
   « Options » du téléphone, en anglais ; ses résultats (progression, refus, pagination) en
   anglais ; le speed tuning (règle, camps, tableaux, grilles, ordre de tour) en anglais, et les
-  rangs anglais d'un tour (« 1st », « 2nd », « 11th »).
+  rangs anglais d'un tour (« 1st », « 2nd », « 11th ») ; la fusion d'une recommandation importée
+  (dialogue, aperçu, message, provenance illisible) en anglais.
 - [partage-langues.test.ts](../../../tests/partage-langues.test.ts) : les messages de `src/lib/`
   (imports, statut d'équipe, alerte de tick, source d'un build, import d'un compte, top des
   artéfacts, espèce déjà dans la liste, écho des auras externes, recette refusée, raison du zéro

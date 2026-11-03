@@ -7,7 +7,7 @@
 
 import { SettingsList } from '../../src/components/SettingsMenu';
 import { RuneDetailBox } from '../../src/components/PieceDetail';
-import type { RuneDetail } from '../../src/types';
+import type { Reco, RecoPayload, RuneDetail } from '../../src/types';
 import { setChoixLangue } from '../../src/hooks/useLangue';
 import MechanicsPage from '../../src/pages/MechanicsPage';
 import BestiaryPage from '../../src/pages/BestiaryPage';
@@ -24,6 +24,9 @@ import { rendreCompte } from './compte.test';
 import { AVEC_MONSTRE, rendreOptimizer } from './optimizer.test';
 import { ETAT_EQUIPE, rendreSpeedTune } from './speed-tune.test';
 import { en } from '../../src/i18n/en';
+import { OptionsFusion, SousTitreFusion, titreChoixFusion } from '../../src/components/siege/ChoixFusionRecos';
+import { messageFusion } from '../../src/lib/recoFusion';
+import { validateRecosImport } from '../../src/lib/recoShare';
 import ProgressionRecherche from '../../src/components/outils/optimizer/ProgressionRecherche';
 import PaginationResultats from '../../src/components/outils/optimizer/PaginationResultats';
 import { auTelephone, boutons, rendre, texteVisible, valeurs } from './outils-rendu';
@@ -259,6 +262,26 @@ export function testRenduLangueSpeedTuning() {
   ok(t.endsWith('Turn order 1 Veromos tick 4 → 2 Galleon tick 5 → 3 Belladeon tick 6 → 4 Lushen tick 7'), 'l’ordre de tour');
   ok(!/Ton équipe|Ajoute|Ordre de tour|Barre d'action/.test(t + tv), 'aucun texte français resté en dur');
   egal([1, 2, 3, 4, 11, 12, 13, 21, 22, 112].map(en.speedTuning.ordreSorts.tour), ['1st turn', '2nd turn', '3rd turn', '4th turn', '11th turn', '12th turn', '13th turn', '21st turn', '22nd turn', '112th turn'], 'les rangs des tours en anglais');
+}
+
+// La fusion d'une recommandation importée en anglais : le dialogue, l'aperçu,
+// le message après coup et l'avertissement d'une provenance illisible.
+export function testRenduLangueFusionRecos() {
+  titre('rendu · langue — la fusion d’une recommandation, en anglais');
+  const existante: Reco = { id: 'r1', origin: 'imported', name: 'My offs', author: 'A', note: '', decks: [] };
+  const entrante: RecoPayload = { name: 'Offs', author: 'A', note: '', decks: [] };
+  const paires = [{ entrante, existante }];
+  egal(titreChoixFusion(paires, en), 'This file completes one of your recommendations', 'le titre');
+  const sous = enAnglais(() => texteVisible(rendre(<SousTitreFusion paires={paires} />)));
+  ok(sous.includes('“Offs” extends your recommendation “My offs” .') && sous.includes('Either way, nothing you have is removed or rewritten.'), 'le sous-titre');
+  const options = enAnglais(() => boutons(rendre(
+    <OptionsFusion une apercu={{ decksAjoutes: 1, decksEnrichis: 2, defensesAjoutees: 1, decksInchanges: 0 }} onChoisir={() => {}} />)));
+  ok(options.some((b) => b.texte.startsWith('Merge into the existing recommendation') && b.texte.includes('1 new deck, at the end; 2 decks you already have gain 1 targeted defense.')), 'fusionner, avec l’aperçu');
+  ok(options.some((b) => b.texte.startsWith('Add separately')), 'ajouter à part');
+  egal(messageFusion({ decksAjoutes: 2, decksEnrichis: 1, defensesAjoutees: 3, decksInchanges: 0, recosAjoutees: 1, recosFusionnees: 1 }, en),
+    'Merge: 2 decks added, 1 deck enriched with 3 defenses · 1 recommendation added separately. Nothing was removed or changed.', 'le message après la fusion');
+  const lu = validateRecosImport(JSON.stringify({ format: 'swblacksmith/recommandations', version: 5, recommandations: [{ nom: 'R', source: 42, decks: [{ monstres: [{ com2usId: 1 }] }] }] }), en);
+  ok(lu.warnings.some((w) => w.includes('“source” is not text — ignored.')), 'la provenance illisible, signalée en anglais');
 }
 
 // L'article « Mécaniques » : un par langue, mêmes sections dans le même ordre.

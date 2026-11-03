@@ -31,18 +31,61 @@ par tick**, qui restent la porte de sortie manuelle.
   que sa **durée**). ⚠️ Un « remplit **TA** barre » (`surSoi`) ou un boost sur
   **un** allié est **écarté** : le modèle applique l'effet à tout le camp, les y
   verser gonflerait l'équipe entière.
+- ⚠️ **Le drapeau `aoe` ment parfois** : *Trade* (Conrad, Death Knight) et
+  *Devil's Bargain* (Mephisto, Demon) remplissent la barre de « **all allies** »
+  selon leur prose, mais SWARFARM marque l'effet `aoe: false` — l'outil donnait
+  donc le boost à **un seul** allié, et l'analyse simple ne le voyait pas.
+  `ATB_DE_ZONE_CONNUS` ([speedTuneKit.ts](src/lib/speedTuneKit.ts)) les
+  rattrape **par identifiant de compétence** : c'est une table d'exceptions aux
+  données, pas une liste blanche — la règle reste le drapeau. Elle sort d'un
+  balayage des 380 compétences « Increase ATB » du corpus contre leur prose ;
+  chaque entrée est testée sur la vraie fiche.
+- ⚠️ **Un remplissage qui DÉPEND DU COMBAT ne se compte pas d'office** : il
+  porte `atbAuChoix` au lieu d'un `atbEquipe`, et ne vaut que pour la valeur
+  désignée dans l'ordre des sorts — **zéro par défaut** (`effetAuChoix`). Table
+  `ATB_AU_CHOIX_CONNUS`, par identifiant : la prose ne se lit pas sans se
+  tromper, et les bornes ne sont pas toutes en donnée.
+
+  | Sort | Monstre | Se règle | Sans la table |
+  |---|---|---|---|
+  | *Blade Fan* | Mihyang | 0 à 3 buffs retirés, 15 % chacun (`retrait`) | +15 % sur un seul allié, à chaque tour |
+  | *Start of Attacking* | Barbara | 0 à 50 % (`pourcent`), selon les PV ôtés | +50 % à toute l'équipe, d'office |
+
+  ⚠️ *Start of Attacking* dit « **other** allies » : il est compté pour **toute
+  l'équipe, lanceur compris** — règle donnée par l'utilisateur, pas un relevé.
 - **Les compétences PASSIVES sont écartées** : elles partent sur une condition
   (quand il est attaqué, à la mort d'un allié…), pas au tour du monstre.
 - **La plus forte l'emporte** quand plusieurs compétences remplissent la barre :
   c'est celle qu'on joue pour lancer le combo.
 - ⚠️ **SKILL-UPS : la compétence compte MAXÉE.** La valeur de SWARFARM est celle
-  du **niveau 1** ; les améliorations « Attack Bar Recovery +N% » s'y ajoutent —
-  le **Tailwind de Bernard 2A** remplit **30 %** au niveau 1 et **45 %** maxé
-  (+5 puis +10). Même convention que les rechargements (`paliersCooldown`) : on
-  joue maxé. **L'écran le DIT** — une ligne d'avertissement sur la card («
-  Tailwind compte MAXÉE : 45 %, dont +15 % de skill-up ») — sans quoi on
-  règlerait sa vitesse sur un gain qu'on n'a pas encore.
+  du **niveau 1** ; les améliorations « Attack Bar Recovery +N% » la
+  **MULTIPLIENT**, elles ne s'y ajoutent pas (comme pour les soins) — le
+  **Trade de Conrad** remplit **20 %** au niveau 1 et **23 %** maxé (20 × 1,15),
+  le **Tailwind de Bernard 2A** **30 %** et **34,5 %** (+5 puis +10). Même
+  convention que les rechargements (`paliersCooldown`) : on joue maxé. **L'écran
+  le DIT** — une ligne d'avertissement sur la card (« Tailwind compte MAXÉE :
+  34,5 %, dont +4,5 % de skill-up »), au dixième — sans quoi on règlerait sa
+  vitesse sur un gain qu'on n'a pas encore.
+
+  > ⚠️ **Règle donnée par l'utilisateur, pas encore relevée en jeu.** Les
+  > additionner surestimait chaque boost monté (Conrad à 35 %, Bernard à 45 %).
+  > Hypothèse retenue : les améliorations se **somment**, puis multiplient une
+  > fois ; composées une à une, elles donneraient 23,15 % et 34,65 %. La
+  > simulation garde la valeur exacte, seul l'affichage arrondit
+  > (`pourcentBarre`).
 - Une valeur déjà posée n'est **jamais** réécrite par une relecture (`kitLu`).
+
+### Valeur de barre corrigée pour Belladeon
+
+Le S3 « Mobilize » de **Belladeon 2A** remplit **30 % de barre au niveau 1**
+et soigne **35 % des PV**. La fiche SWARFARM donne aussi 35 dans l'effet de
+barre : `ATB_NIVEAU_1_CONNUS` corrige cet effet à 30, par identifiant de
+compétence (2064), avant les skill-ups. Le kit simple et l'ordre des sorts
+emploient la même correction, sans modifier le soin.
+
+Avec le skill-up « Attack Bar Recovery +10% », le boost atteint **33 %**.
+Belladeon non 2A conserve **30 %**, ses améliorations de soin ne changeant pas
+le remplissage de barre.
 
 ### Ce qu'un sort fait, CIBLE par cible
 
@@ -54,11 +97,13 @@ aide tout autant à passer devant lui. D'où `EffetSort`
 
 | Champ | Ce que ça fait |
 |---|---|
+| `atbTousAZero` | Remet exactement à **0 %** les jauges des deux camps, avant les remplissages |
+| `atbTous` | Ajoute des points de barre aux **deux camps**, lanceur compris |
 | `atbEquipe` | +% de barre à **tout son camp**, lui compris |
 | `atbAllie` | +% de barre à **UN** allié : celui dont la barre est la plus basse |
 | `atbSoi` | +% sur **sa** barre |
 | `atbEnnemi` / `atbEnnemiTous` | −% de barre à l'adverse (le plus avancé), ou à tous |
-| `buffEquipe` / `buffSoi` | +30 % de vitesse, à partir du tick **suivant** |
+| `buffEquipe` / `buffSoi` | +30 % de vitesse, à partir du tick **suivant** ; `buffEquipeSansSoi` exclut le lanceur |
 | `buffAllie` | +30 % de vitesse à l'allié **visé** — la même cible qu'`atbAllie` |
 | `ralenti` / `ralentiTous` | −30 % de vitesse sur l'adverse (le plus avancé, ou tous) |
 
@@ -100,7 +145,7 @@ aide tout autant à passer devant lui. D'où `EffetSort`
   systématiquement « celui qui l'a la plus basse » et se rendrait à lui-même un
   boost dont personne ne compte. Se viser soi-même est un **geste**, pas le
   défaut.
-- ⚠️ **Un retrait de barre et un ralenti ne sont JAMAIS appliqués
+- ⚠️ **Un retrait de barre adverse ordinaire et un ralenti ne sont pas appliqués
   automatiquement** — voir « Ce qu'on retire à l'adverse » ci-dessous. Le moteur
   sait les jouer (`atbEnnemi`, `ralenti`, sur l'adverse le plus AVANCÉ, celui
   qu'un joueur vise), mais l'analyse les coupe du sort avant de le lui donner
@@ -112,6 +157,43 @@ aide tout autant à passer devant lui. D'où `EffetSort`
   appliqué **comme s'il passait**. Un speed tune se règle sur le cas où le sort
   fait ce qu'on attend ; le taux figure dans le menu pour qu'on sache sur quoi
   l'on parie.
+
+### Jauges fixées sur les deux camps
+
+Une affectation à 0 % se distingue d'un retrait de 100 points : une jauge à
+140 % doit devenir **0 %**, et non 40 %. Le moteur remet d'abord les barres à
+zéro, puis applique les remplissages du sort. Les cases manuelles restent
+prioritaires, y compris une case à 0 qui annule l'effet.
+
+Deux compétences sont curées par identifiant dans `ATB_GLOBAUX_CONNUS`, car
+les drapeaux SWARFARM ne décrivent pas leur portée complète :
+
+| Compétence | Barre des deux camps | Buff de vitesse |
+|---|---|---|
+| *Returned Dice* (Tablo, 12114) | **0 %** pour tous, Tablo compris | +30 % sur les **autres alliés**, sans Tablo |
+| *Fast Pace* (Homunculus lumière, 10243010) | Remise à zéro puis **+100 points pour tous**, lanceur compris | +30 % sur l'**allié ciblé**, qui peut être le lanceur |
+
+La portée de Tablo vient de sa fiche ; celle de Fast Pace est donnée par la
+[fiche API SWARFARM](https://swarfarm.com/api/v2/skills/1719/), et son
+application « zéro puis +100 » est la règle demandée par l'utilisateur,
+sans relevé en jeu associé. Aucune de ces affectations ne conserve le surplus
+de barre antérieur. Les rechargements maxés sont respectivement de **5** et
+**4** tours du lanceur.
+
+Ces effets globaux garantis sont **conservés dans l'analyse**, y compris sur
+les vrais adverses : en retrancher la moitié adverse changerait le sort.
+L'analyse écrit leur delta exact dans les grilles au tick suivant le lanceur.
+Elle identifie les cases adverses qu'elle produit pour les recalculer à la
+relance et les enlever si le sort change. Une case corrigée à la main perd
+ce statut automatique ; elle est ensuite conservée.
+
+*Fast Pace* figure parmi les compétences sélectionnables des deux formes de
+l'Homunculus lumière, en complément du S3 initial *Protection Field*. Ce choix
+est explicite : l'analyse ne retient pas cette option par défaut, car elle
+ne connaît pas le chemin d'évolution du monstre. Le
+[générateur de compétences](../../../scripts/fetch-skills.mjs) rattache cette
+option même quand SWARFARM la fournit sans monstre associé ; l'Homunculus
+ténèbres ne la reçoit pas.
 
 ### Tour supplémentaire (« rejoue »)
 
@@ -171,6 +253,12 @@ L'outil les **lit et les applique** : [speedTunePassif.ts](src/lib/speedTunePass
   équipe arrivée du siège afficherait une vitesse ici et une autre là-bas. C'est une **estimation**, pas
   une vérité : elle suppose ces buffs posés au moment où le passif compte, et un
   chiffre **saisi n'est jamais écrasé**.
+
+Le gain de Chilling reste exclu de la [priorité initiale de départage](feat-deux-camps.md),
+y compris quand il remplit sa barre dès le premier tick. Le compte de buffs
+reste une estimation fixe pour la simulation : l'ajout, l'expiration ou le
+retrait des buffs en cours de combat, notamment par Tiana, ne le mettent pas
+à jour automatiquement.
 
 #### Le passif sur la card, et l'adversaire de référence
 
@@ -301,8 +389,10 @@ après tick.
 
 ### Ce qu'on retire à l'adverse
 
-⚠️ **Aucun retrait de barre ni ralenti n'entre dans le calcul du tune, jamais,
-et même quand le sort est DÉSIGNÉ à la main.** Un speed tune, c'est ce qui tient
+⚠️ **Les retraits de barre adverses ordinaires et les ralentis ne sont pas
+comptés, même quand le sort est DÉSIGNÉ à la main.** Les affectations garanties
+des deux camps de Tablo et de Fast Pace suivent la règle des
+[jauges fixées sur les deux camps](#jauges-fixées-sur-les-deux-camps). Un speed tune, c'est ce qui tient
 quand on n'a rien enlevé à l'autre : les monstres doivent jouer les uns après
 les autres **sans ça**. Compter le −30 % de barre d'une Madeleine Cookie revient
 à déclarer l'équipe tunée parce qu'elle aura freiné l'adverse — et le jour où le
@@ -318,7 +408,7 @@ avec la règle « on affiche exactement ce qui est calculé » ; le menu de l'or
 des sorts, lui, annonce l'effet suivi de **« (non compté) »**, pour qu'on ne
 croie pas qu'il pèse.
 
-⚠️ **La seule réduction qui compte est celle que l'utilisateur ÉCRIT lui-même**
+⚠️ **Une réduction ordinaire compte quand l'utilisateur l'ÉCRIT lui-même**
 dans la grille du modificateur de barre d'attaque : c'est une saisie, pas une
 déduction, et le moteur l'applique telle quelle.
 
