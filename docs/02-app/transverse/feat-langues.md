@@ -176,7 +176,7 @@ partagés de `src/ui/` et les pièces d'un monstre (artéfacts, relique, roue de
 l'application de bureau (le bloc « Application » des Réglages, la notification de mise à jour, le
 suivi de SW Exporter, les échecs de sauvegarde de session, et les boîtes du système qu'elle ouvre,
 dans la langue de l'app : [bureau/](../bureau/README.md)), dont l'installeur Windows suit la langue
-de Windows. Une formule de sort s'écrit avec les
+de Windows ; le README du dépôt ([README.en.md](../../../README.en.md)). Une formule de sort s'écrit avec les
 stats du jeu dans la langue choisie (`formuleLisible`). Restent en français dans l'Optimizer : la
 description du combat « Dégâts réels », la vue de développement des gabarits, et les messages
 de la console (pannes de Worker, protocole de la file, erreurs internes du moteur), que l'écran

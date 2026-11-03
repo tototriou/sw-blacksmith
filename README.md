@@ -1,9 +1,11 @@
 # SW Blacksmith
 
+*Français · [English](README.en.md)*
+
 Une boîte à outils pour Summoners War.
 
 **En ligne : https://sw-forge.vercel.app** — et en application de bureau (Windows, Linux), depuis
-la page Télécharger du site.
+la page Télécharger du site. L'app existe en français et en anglais.
 
 SW Blacksmith aide à préparer ses contenus compétitifs : composer ses équipes de siège et vérifier
 leur speed tuning, classer ses monstres pour la RTA, analyser ses runes et son compte, chercher le
