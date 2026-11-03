@@ -45,6 +45,7 @@ import { recipeToSearchParams } from '../scripts/lib/recipeToSearchParams';
 import { buildRealDamageContext } from '../scripts/lib/realDamageCli';
 import { type LoadedMonster } from '../scripts/lib/loadMonster';
 import { egal, ok, titre } from './outils';
+import { fr } from '../src/i18n/fr';
 
 const racine = resolve(new URL('..', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1'));
 const dossierSorts = resolve(racine, 'public/data/skills');
@@ -283,7 +284,7 @@ function recetteCordelia(premierCoupIgnoreDefParSort?: Record<number, number | n
 export function testBladeDancersRecette() {
   titre('Blade Dancers — recette : `premierCoupIgnoreDefParSort` validé à l’import');
 
-  const lire = (value: unknown) => parseOptimizerRecipe(JSON.stringify(value));
+  const lire = (value: unknown) => parseOptimizerRecipe(JSON.stringify(value), fr);
   const base = recetteCordelia({ 14808: 2 });
   const avecChamp = (champ: unknown) => lire({ ...base, damageSetup: { ...base.damageSetup, premierCoupIgnoreDefParSort: champ } });
   // `erreur` écrit « <chemin> <attente> » : l'espace final exige le chemin exact.
@@ -399,12 +400,12 @@ export function testBladeDancersRecette() {
   // le CLI la lisent par le MÊME parseur, qui la refuse avec son chemin.
   ok(refuse(lire(recetteCordelia({ 14808: 9 })), `${CHEMIN}.14808`), 'une recette au rang hors crans est refusée à la lecture');
   const chargeur = readFileSync(resolve(racine, 'scripts/lib/chargerRecette.ts'), 'utf8');
-  ok(chargeur.includes("parseOptimizerRecipe(readFileSync(cheminRecette, 'utf8'))"), 'CLI : la recette passe par `parseOptimizerRecipe`');
+  ok(chargeur.includes("parseOptimizerRecipe(readFileSync(cheminRecette, 'utf8'), fr)"), 'CLI : la recette passe par `parseOptimizerRecipe`');
   // L'écran : l'import pose `damageSetup` entier, sans reset ultérieur ; le
   // contexte de calcul et l'export le reprennent entier.
   const ecran = readFileSync(resolve(racine, 'src/components/outils/OptimizerSection.tsx'), 'utf8').replace(/\r\n/g, '\n');
   // La ligne lit aussi les `avertissements` du parseur.
-  ok(ecran.includes('const { recipe, error, avertissements } = parseOptimizerRecipe(text);'), 'écran : la recette passe par le même `parseOptimizerRecipe`');
+  ok(ecran.includes('const { recipe, error, avertissements } = parseOptimizerRecipe(text, textes);'), 'écran : la recette passe par le même `parseOptimizerRecipe`');
   ok(ecran.includes('poserCriteresAutomatiques({ damageSetup: recipe.damageSetup ?? DEFAULT_DAMAGE_SETUP,'), 'écran : l’import de recette restaure damageSetup entier, rang compris');
   ok(/profile: resolvedSkill,\n\s*setup: damageSetup,\n/.test(ecran), 'écran : le contexte de calcul reçoit damageSetup entier, comme le CLI');
   ok(/buildOptimizerRecipe\(\{[\s\S]*?\n\s*damageSetup,\n/.test(ecran), 'écran : l’export emporte damageSetup entier');

@@ -12,6 +12,10 @@ import { topParPropriete } from '../src/lib/artifactsTop';
 import { exemplaireSuivantEspece } from '../src/lib/optimizerExclusion';
 import { echoAurasExternes } from '../src/lib/aurasExternes';
 import type { Monster } from '../src/types';
+import { parseOptimizerRecipe } from '../src/lib/optimizerRecipe';
+import { compteAffichable } from '../src/lib/artifactQueue';
+import { importerPrepaRtaOptimizer } from '../src/lib/importEquipes';
+import { ligneDesComptes } from '../src/lib/filtresAffichage';
 import { fr } from '../src/i18n/fr';
 import { en } from '../src/i18n/en';
 import { egal, ok, titre } from './outils';
@@ -80,5 +84,24 @@ export function testPartageLangues() {
     echoAurasExternes([{ set: 'fight', nombre: 2 }], en),
     'external auras: 2 Fight sets; the build’s aura sets add to them on each result',
     'écho des auras externes : le nom du set vient du lexique anglais'
+  );
+
+  egal(parseOptimizerRecipe('pas du json', en).error, 'Unreadable file: this is not valid JSON.', 'recette : fichier illisible, en anglais');
+  egal(
+    parseOptimizerRecipe(JSON.stringify({ version: 1, monsterCom2usId: 1, requirement: {}, objective: 'inconnu' }), en).error,
+    'Invalid file: objective contains an unknown value.',
+    'recette : le champ fautif et son attente, en anglais'
+  );
+  egal(
+    compteAffichable({ trouves: 2, recus: 2, affichables: 0, modeRecherche: false }, en).raison,
+    '2 combinations found by the search were discarded: no real artifact pair meets all the conditions.',
+    'raison du zéro confirmé : en anglais'
+  );
+  egal(importerPrepaRtaOptimizer({ box: [], rtaEntries: {}, siegeDefenseTeams: [], siegeOffenseTeams: [], monsterById: new Map() }, en).nomListe,
+    'RTA prep', 'import d’équipe : le nom de la liste créée suit la langue');
+  egal(
+    ligneDesComptes({ visiblesConfirmes: 1200, masquesConfirmes: 3, masquesNonVerifies: 0, potentielsNonVerifies: 0, indeterminesNumeriques: 0 } as never, 1, false, en),
+    'Filters: 1,200 visible · 3 hidden',
+    'filtres d’affichage : la ligne des comptes, nombres compris, en anglais'
   );
 }

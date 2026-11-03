@@ -10,7 +10,7 @@ import { appliquerCriteres, baseCompleteCriteres, criteresApresChangementEspece,
 import { rattacherProprietaireCriteres, validerProprietaireCriteres, type ProprietaireCriteresOptimizer } from '../lib/optimizerCriteriaOwner';
 import { cleMemoireMembre, type StockageOptimizer, type RapportReverificationOptimizer } from '../lib/optimizerMemberStorage';
 import type { UseOptimizerLists } from './useOptimizerLists';
-import { consommerImportOptimizer, type ImportOptimizer, type RapportImportOptimizer } from '../lib/importEquipes';
+import { consommerImportOptimizer, type ProducteurImportOptimizer, type RapportImportOptimizer } from '../lib/importEquipes';
 import { preparerRepriseOptimizer } from '../lib/optimizerBackup';
 import { AutoExclusionScope, ExclusionSelector, ExclusionSource, resolveExclusionEntry, type ExclusionSourceData } from '../lib/optimizerExclusion';
 import { ArtifactKind, type LeaderSkill } from '../types';
@@ -126,7 +126,7 @@ export interface OptimizerState {
   effacerProprietaireCriteres: () => void;
   choisirMembre: (listId: string, selector: ExclusionSelector) => CriteresOptimizer | null;
   reprendrePoint: (artifactIds: Set<number>) => void;
-  importerEquipe: (produire: (data: ExclusionSourceData) => ImportOptimizer) => RapportImportOptimizer;
+  importerEquipe: (produire: ProducteurImportOptimizer) => RapportImportOptimizer;
   capturerMembre: (listId: string, selector: ExclusionSelector) => void;
   poserTriRecherche: (tri: OptimizerSortKey) => void;
   poserCriteresAutomatiques: (patch: Partial<CriteresOptimizer> | ((courants: CriteresOptimizer) => Partial<CriteresOptimizer>)) => void;
@@ -590,7 +590,7 @@ export function useOptimizerState(contexte?: ContexteMembresOptimizer): Optimize
     return restaurerMembre(listId, selector, true);
   }
 
-  function importerEquipe(produire: (data: ExclusionSourceData) => ImportOptimizer): RapportImportOptimizer {
+  function importerEquipe(produire: ProducteurImportOptimizer): RapportImportOptimizer {
     const v = vivant.current, c = v.contexte;
     if (!c) throw new Error('Import impossible sans le contexte des listes.');
     // Le réimport publie une photo préparée avant le remplacement du compte :
@@ -598,7 +598,8 @@ export function useOptimizerState(contexte?: ContexteMembresOptimizer): Optimize
     if (c.reverificationEnAttente?.()) return { listeCreee: null, membresImportes: 0, equipesCreees: 0,
       ignores: [], equipesNonCreees: [], messages: [messages().importEnAttente] };
     const courant = c.lists.lireStockageCourant();
-    const resultat = consommerImportOptimizer(courant, courant.activeListId, produire(c.data), c.data, 'import');
+    const t = textesVivants.current;
+    const resultat = consommerImportOptimizer(courant, courant.activeListId, produire(c.data, t), c.data, 'import', t);
     if (!resultat.rapport.listeCreee) return resultat.rapport;
     const listId = resultat.rapport.listeCreee.id;
     if (!c.lists.ajouterParImport(resultat.stockage, listId)) return { ...resultat.rapport,
@@ -618,7 +619,7 @@ export function useOptimizerState(contexte?: ContexteMembresOptimizer): Optimize
   function reprendrePoint(artifactIds: Set<number>) {
     const v = vivant.current, c = v.contexte;
     if (!c?.lists.point) return;
-    const reprise = preparerRepriseOptimizer(c.lists.point, c.data, c.runeIds, artifactIds);
+    const reprise = preparerRepriseOptimizer(c.lists.point, c.data, c.runeIds, artifactIds, textesVivants.current);
     effacerProprietaireCriteres();
     c.lists.remplacerParPoint(reprise);
     // Le même geste doit juger la photo reprise, avant le prochain rendu.
@@ -709,7 +710,7 @@ export function useOptimizerState(contexte?: ContexteMembresOptimizer): Optimize
     // reste celle de l'équipe ; un premier choix est global.
     const nouveau: LeaderSkill | null = lead ? { stat: lead.stat, amount: lead.pct,
       area: equipe.lead?.area ?? 'General', element: equipe.lead?.element ?? null } : null;
-    const resultat = modifierEquipeOptimizer(c.lists, { ...equipe, lead: nouveau });
+    const resultat = modifierEquipeOptimizer(c.lists, { ...equipe, lead: nouveau }, textesVivants.current);
     if (resultat.rapport.length) setRapportCriteres(resultat.rapport);
     else c.lists.setTeams(resultat.teams);
   }

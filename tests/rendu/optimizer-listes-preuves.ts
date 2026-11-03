@@ -3,6 +3,7 @@ import type { UseOptimizerLists } from '../../src/hooks/useOptimizerLists';
 import { cleMemoireMembre } from '../../src/lib/optimizerMemberStorage';
 import { buildOptimizerRecipe, parseOptimizerRecipe } from '../../src/lib/optimizerRecipe';
 import { DEFAULT_DAMAGE_SETUP } from '../../src/lib/damage';
+import { fr } from '../../src/i18n/fr';
 
 interface Banc {
   etat: () => OptimizerState;
@@ -128,7 +129,7 @@ export async function preuvesCompetencesListeOptimizer(b: Banc): Promise<[boolea
       const exporter = [...document.querySelectorAll<HTMLButtonElement>('button')].find(e => visible(e)
         && [...e.querySelectorAll('span')].some(s => visible(s) && ['Exporter', 'Exporter les paramètres de recherche'].includes(s.textContent?.trim() ?? '')))!;
       await b.geste(() => exporter.click());
-      const recette = parseOptimizerRecipe(await textes[0]).recipe;
+      const recette = parseOptimizerRecipe(await textes[0], fr).recipe;
       verifier(recette?.damageSetup.summonerSkills === mode, `${etape} : vrai export sous le même mode effectif que l’écran`);
     } finally { URL.createObjectURL = creerUrl; HTMLAnchorElement.prototype.click = cliquer; }
     verifier(JSON.stringify([...b.listes().memories]) === memorise, `${etape} : mémoires conservées intactes`);

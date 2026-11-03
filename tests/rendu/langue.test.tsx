@@ -22,6 +22,8 @@ import { fr } from '../../src/i18n/fr';
 import { rendreApp } from './app.test';
 import { rendreCompte } from './compte.test';
 import { AVEC_MONSTRE, rendreOptimizer } from './optimizer.test';
+import ProgressionRecherche from '../../src/components/outils/optimizer/ProgressionRecherche';
+import PaginationResultats from '../../src/components/outils/optimizer/PaginationResultats';
 import { auTelephone, boutons, rendre, texteVisible } from './outils-rendu';
 
 const rien = () => {};
@@ -206,6 +208,21 @@ export function testRenduLangueOptimizer() {
     ok(t.includes(attendu), `téléphone, panneau « Options » : « ${attendu} »`);
   ok(boutons(panneau).some((b) => b.texte === 'Medium' && !!b.title), 'un préréglage garde son explication en anglais');
   ok(!t.includes('Profondeur de recherche'), 'téléphone : plus de français dans les réglages avancés');
+}
+
+// L'Optimizer, les résultats : progression, refus, pagination.
+export function testRenduLangueOptimizerResultats() {
+  titre('rendu · langue — l’Optimizer, les résultats, en anglais');
+  const progression = enAnglais(() => texteVisible(rendre(
+    <ProgressionRecherche status="running" progress={{ phase: 'pairing', explored: 1234, totalPairs: 5678, pct: 0.2 } as never} refusal={null} compteAffiche={{ compte: 42 }} />)));
+  ok(progression.includes('1,234 / 5,678 combinations examined · 42 found'), 'progression : la phrase et les nombres de l’anglais');
+  ok(progression.includes('Wait for the search to finish'), 'progression : l’invitation à attendre');
+  const refus = enAnglais(() => texteVisible(rendre(
+    <ProgressionRecherche status="refused" progress={null} refusal={{ motif: 'relique-pool-vide', vide: 'seuil' }} compteAffiche={{ compte: 0 }} />)));
+  ok(refus.includes('No eligible relic: lower the minimum level.'), 'refus : la raison en anglais');
+  const pages = enAnglais(() => rendre(
+    <PaginationResultats setResultsPage={() => {}} resultsPage={1} pageDraft={null} setPageDraft={() => {}} totalResultsPages={3} />));
+  ok(boutons(pages).some((b) => b.texte === 'Next page' || b.ariaLabel === 'Next page'), 'pagination : « Next page »');
 }
 
 // L'article « Mécaniques » : un par langue, mêmes sections dans le même ordre.

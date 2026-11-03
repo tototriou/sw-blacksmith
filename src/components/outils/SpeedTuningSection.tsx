@@ -232,6 +232,7 @@ export default function SpeedTuningSection({
   deckInitial,
   entete = true,
 }: Props) {
+  const textes = useTraduction();
   // ⚠️ **Ce composant NE CALCULE RIEN.** Tout le métier — vitesses, sorts,
   // analyse, adversaire de référence — vit dans `useSpeedTune` et les libs
   // qu'il appelle. Ne restent ici que le rendu et ce qui n'a de sens qu'à
@@ -341,10 +342,10 @@ export default function SpeedTuningSection({
   const raisonExportOptimizer = useMemo(() => {
     if (!compteCharge) return 'Charge un compte pour exporter vers l’Optimizer.';
     if (!onImporterEquipe || !sourcesOptimizer) return 'Export vers l’Optimizer indisponible.';
-    return importerSpeedTuneOptimizer(lignes, leadAllie, sourcesOptimizer, deckInitial ?? undefined).membres.length
+    return importerSpeedTuneOptimizer(lignes, leadAllie, sourcesOptimizer, textes, deckInitial ?? undefined).membres.length
       ? undefined : 'Aucun monstre importable dans ton équipe : choisis un monstre et sa vitesse de runes.';
-  }, [compteCharge, onImporterEquipe, sourcesOptimizer, lignes, leadAllie, deckInitial]);
-  const exporterOptimizer = () => onImporterEquipe?.(data => importerSpeedTuneOptimizer(lignes, leadAllie, data, deckInitial ?? undefined));
+  }, [compteCharge, onImporterEquipe, sourcesOptimizer, lignes, leadAllie, deckInitial, textes]);
+  const exporterOptimizer = () => onImporterEquipe?.((data, t) => importerSpeedTuneOptimizer(lignes, leadAllie, data, t, deckInitial ?? undefined));
 
   function besoin(l: Ligne, combatCible: number | null, arteCible: number | null, arteActuel: number) {
     const runes = combatCible == null ? null : runesPour(l, combatCible);

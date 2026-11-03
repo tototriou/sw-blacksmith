@@ -58,8 +58,8 @@ export default function OptimizerEquipeDialog({ contexte, listId, equipe, data, 
       : members.find(memeEspece);
   function appliquer() {
     const proposition = { id, listId, members, lead, ...(leaderRetenu ? { leader: leaderRetenu } : {}) };
-    const resultat = equipe && members.length < 2 ? dissoudreEquipeOptimizer(contexte.teams, equipe.id)
-      : equipe ? modifierEquipeOptimizer(contexte, proposition) : creerEquipeOptimizer(contexte, proposition);
+    const resultat = equipe && members.length < 2 ? dissoudreEquipeOptimizer(contexte.teams, equipe.id, textes)
+      : equipe ? modifierEquipeOptimizer(contexte, proposition, textes) : creerEquipeOptimizer(contexte, proposition, textes);
     if (resultat.teams === contexte.teams) { setRapport(resultat.rapport); return; }
     onValider(resultat.teams); onClose();
   }
@@ -114,7 +114,7 @@ export default function OptimizerEquipeDialog({ contexte, listId, equipe, data, 
     sousTitre={q.sousTitre}
     corpsFixeBas={telephone ? undefined : <div className="space-y-3">{champsLead}</div>}
     actions={<>
-      {equipe && <Bouton libelle={q.delier} onClick={() => { onValider(dissoudreEquipeOptimizer(contexte.teams, equipe.id).teams); onClose(); }} />}
+      {equipe && <Bouton libelle={q.delier} onClick={() => { onValider(dissoudreEquipeOptimizer(contexte.teams, equipe.id, textes).teams); onClose(); }} />}
       <Bouton libelle={textes.commun.annuler} fond="plein" onClick={onClose} />
       <Bouton libelle={equipe ? o.listes.enregistrer : q.lierAction} ton="accent" fond="doux" disabled={creationImpossible || members.length > 5 || (!equipe && members.length < 2)} onClick={appliquer} />
     </>}>

@@ -4,6 +4,7 @@ import type { ExclusionSelector } from '../../src/lib/optimizerExclusion';
 import { cleMemoireMembre } from '../../src/lib/optimizerMemberStorage';
 import { retirerMembreEquipeOptimizer } from '../../src/lib/equipesOptimizer';
 import { editerContenuListe } from './optimizer-listes-preuves';
+import { fr } from '../../src/i18n/fr';
 
 interface Banc {
   etat: () => OptimizerState;
@@ -75,7 +76,7 @@ export async function preuvesLeadEquipeOptimizer(b: Banc): Promise<[boolean, str
   await changerLead({ stat: 'Resistance', amount: 41, area: 'General', element: null });
   verifier(partout(null) && document.body.textContent!.includes('sans effet calculé'), 'lead de RES conservé et affiché, sans effet calculé ni lead personnel');
   await changerLead({ stat: 'Attack Speed', amount: 24, area: 'Guild', element: null });
-  await b.geste(() => b.listes().setTeams(retirerMembreEquipeOptimizer(b.listes().teams, 'ea', b.premier).teams));
+  await b.geste(() => b.listes().setTeams(retirerMembreEquipeOptimizer(b.listes().teams, 'ea', b.premier, fr).teams));
   verifier(b.listes().teams.length === 1 && b.listes().teams[0].id === 'eb', 'retirer un membre d’une équipe de deux dissout seulement cette équipe');
   verifier(partout('Attack Speed', 24) && porte(memoire(b.second), 'Attack Speed', 24), 'quitter l’équipe garde le dernier lead d’équipe : rien n’est restauré');
   return preuves;

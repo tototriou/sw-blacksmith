@@ -83,8 +83,8 @@ export default function RecoBoard({
   const r = textes.recos;
   const disponibilitesExport = useMemo(() => new Map(recos.state.recos.map(reco => [reco.id,
     reco.decks.map(deck => !compteCharge ? r.exportSansCompte
-      : importerRecoOptimizer(deck, sourcesOptimizer).membres.length ? undefined : r.exportDeckVide)
-  ])), [r, recos.state.recos, sourcesOptimizer, compteCharge]);
+      : importerRecoOptimizer(deck, sourcesOptimizer, textes).membres.length ? undefined : r.exportDeckVide)
+  ])), [r, recos.state.recos, sourcesOptimizer, compteCharge, textes]);
   // Mémorisée comme l'était le filtre qu'elle remplace : on retrouve la vue
   // qu'on avait choisie. Clé NEUVE — l'ancienne (`recos.filter`) portait une
   // origine, pas une vue.
@@ -860,7 +860,7 @@ export default function RecoBoard({
             <div key={reco.id} ref={i === list.length - 1 ? lastRef : undefined}>
               <RecoCard
                 raisonsExportOptimizer={disponibilitesExport.get(reco.id)!}
-                onExporterDeckOptimizer={deck => onImporterEquipe(data => importerRecoOptimizer(deck, data))}
+                onExporterDeckOptimizer={deck => onImporterEquipe((data, t) => importerRecoOptimizer(deck, data, t))}
                 reco={reco}
                 index={i}
                 monsters={monsters}

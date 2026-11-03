@@ -13,10 +13,11 @@ import { contexteConfrontationReco, matchDeck } from '../src/lib/recoMatch';
 import { computeStats } from '../src/lib/stats';
 import { deckComposition, gearComposition, recommandationComposition, sourcesComposition, stockageComposition } from './import-composition-fixtures';
 import { egal, ok, titre } from './outils';
+import { fr } from '../src/i18n/fr';
 
 const consommer = (deck: RecoDeck, data = sourcesComposition()) => {
-  const p = importerRecoOptimizer(deck, data);
-  return { p, ...consommerImportOptimizer(stockageComposition(), null, p, data, 'nouvelle') };
+  const p = importerRecoOptimizer(deck, data, fr);
+  return { p, ...consommerImportOptimizer(stockageComposition(), null, p, data, 'nouvelle', fr) };
 };
 function confrontation(deck: RecoDeck, data: ExclusionSourceData) {
   const args = { box: data.box, rta: Object.values(data.rtaEntries), defense: data.siegeDefenseTeams,
@@ -47,7 +48,7 @@ export function testImportRecoMinimumsFiche() {
   ok(isDeepStrictEqual(photo.minStats, { hp: 10000, atk: 700, def: 600, spd: 301, cr: 15, cd: 50, res: 15 }), 'totaux de fiche sans soustraction de base ; zéro non exigé');
   egal(p.membres[0].criteres.vitesse, { minimum: 301 }, 'VIT portée par le critère extensible');
   deck.slots[1].stats = { acc: 80, hp: 0, atk: -1 };
-  const q = importerRecoOptimizer(deck, data);
+  const q = importerRecoOptimizer(deck, data, fr);
   egal(q.membres[1].criteres.minStats, { acc: 80 }, 'Précision importée, minimums non positifs non exigés');
   ok(rapport.messages.some(m => m.includes('auras')), 'écart RES/Précision signalé');
   const attendu = baseCompleteCriteres(gear); attendu.minStats = photo.minStats;
@@ -65,7 +66,7 @@ export function testImportRecoLignesPropresEtCommunes() {
     egal(rapport.membresImportes, 3, 'aucun membre perdu lors de la pose d’un verrou');
   }
   const deck = recommandationComposition(); deck.slots[0].artifacts = { element: [300, 218], archetype: [400, 206] };
-  egal(importerRecoOptimizer(deck, sourcesComposition()).membres[0].criteres.lignesVerrouillees,
+  egal(importerRecoOptimizer(deck, sourcesComposition(), fr).membres[0].criteres.lignesVerrouillees,
     [{ code: 300, min: 1 }, { code: 218, min: 0.1 }, { code: 400, min: 1 }, { code: 206, min: 1 }], 'lignes propres et communes importées ensemble');
 }
 export function testImportRecoPresenceSurPaire() {
@@ -99,7 +100,7 @@ export function testImportRecoValeursSansSource() {
   egal(rapport.messages.filter(m => m.includes('non import')).length, 8, 'chaque valeur sans conversion établie figure au rapport');
   for (const sets of [['intangible'], ['violent', 'swift']]) {
     deck.slots[0].setOptions = [sets];
-    egal(importerRecoOptimizer(deck, sourcesComposition()).membres[0].criteres.comboSets, [], 'joker demandé ou coût excessif non inventé');
+    egal(importerRecoOptimizer(deck, sourcesComposition(), fr).membres[0].criteres.comboSets, [], 'joker demandé ou coût excessif non inventé');
   }
 }
 function filtre(nombre: 0 | 1) {
@@ -143,7 +144,7 @@ export function testImportRecoCompositionRetrouvee() {
   const match = confrontation(deck, data), retrouve = retrouverDeckCompositionOptimizer({ type: 'recommandation', deck }, data);
   egal(match.team, 'Offense 2', 'la meilleure offense est la seconde, pas la première ni une défense');
   egal(retrouve?.team.id, 'o2', 'fonction commune conserve le deck choisi par la confrontation');
-  const p = importerRecoOptimizer(deck, data);
+  const p = importerRecoOptimizer(deck, data, fr);
   egal(p.membres.map(m => exclusionSelectorKey(m.selector)), ['siege-offense:o2:1', 'siege-offense:o2:2', 'siege-offense:o2:0'], 'slots de l’offense retenue, attribués par espèce');
   p.membres.forEach((m, i) => ok(resolveExclusionEntry(m.selector, data)!.gear === match.slots[i].owned!.gear, 'espèces sans répétition : build du slot confronté'));
 }
@@ -151,13 +152,13 @@ export function testImportRecoCompositionAmbigue() {
   titre('Import recommandation · première offense à égalité');
   const data = sourcesComposition(), deck = recommandationComposition(); data.siegeOffenseTeams.push(deckComposition('o2'));
   egal(retrouverDeckCompositionOptimizer({ type: 'recommandation', deck }, data)?.team.id, 'o1', 'fonction commune garde la première à égalité');
-  egal(importerRecoOptimizer(deck, data).membres[0].selector, { source: 'siege-offense', teamId: 'o1', slotIndex: 1 }, 'appelant recommandation conserve la première offense');
+  egal(importerRecoOptimizer(deck, data, fr).membres[0].selector, { source: 'siege-offense', teamId: 'o1', slotIndex: 1 }, 'appelant recommandation conserve la première offense');
 }
 export function testImportRecoCompositionModifiee() {
   titre('Import recommandation · composition modifiée, repli offense puis Box');
   const data = sourcesComposition(), deck = recommandationComposition([1, 2, 4]);
   egal(retrouverDeckCompositionOptimizer({ type: 'recommandation', deck }, data), null, 'aucune offense ne réunit la composition modifiée');
-  egal(importerRecoOptimizer(deck, data).membres.map(m => exclusionSelectorKey(m.selector)), ['siege-offense:o1:1', 'siege-offense:o1:2', 'box:box-4'], 'offense par espèce sinon Box');
+  egal(importerRecoOptimizer(deck, data, fr).membres.map(m => exclusionSelectorKey(m.selector)), ['siege-offense:o1:1', 'siege-offense:o1:2', 'box:box-4'], 'offense par espèce sinon Box');
 }
 function repli(source: 'box' | 'rta' | 'siege-defense' | 'unowned') {
   const data = sourcesComposition(), deck = recommandationComposition(); data.siegeOffenseTeams = [];
@@ -165,7 +166,7 @@ function repli(source: 'box' | 'rta' | 'siege-defense' | 'unowned') {
   if (source !== 'box' && source !== 'rta') data.rtaEntries = {};
   if (source === 'siege-defense') data.siegeDefenseTeams = [deckComposition('d1')];
   if (source === 'unowned') data.siegeDefenseTeams = [];
-  egal(importerRecoOptimizer(deck, data).membres[0].selector.source, source, 'source réelle choisie seulement après les offenses');
+  egal(importerRecoOptimizer(deck, data, fr).membres[0].selector.source, source, 'source réelle choisie seulement après les offenses');
   const { rapport } = consommer(deck, data); egal(rapport.membresImportes, 3, 'sélecteur accepté par le consommateur');
 }
 export function testImportRecoRepliBox() { titre('Import recommandation · espèce absente des offenses, en Box'); repli('box'); }
@@ -183,12 +184,12 @@ export function testImportRecoAbsentePartout() { titre('Import recommandation ·
 export function testImportRecoPureteEtExemplaireInutilisable() {
   titre('Import recommandation · pureté et exemplaire réel inutilisable');
   const data = sourcesComposition(), deck = recommandationComposition(); deck.slots[0].setOptions = [['swift']];
-  const avant = structuredClone({ data, deck }), p = importerRecoOptimizer(deck, data);
+  const avant = structuredClone({ data, deck }), p = importerRecoOptimizer(deck, data, fr);
   ok(isDeepStrictEqual({ data, deck }, avant), 'aucune mutation des intrants');
   p.membres[0].criteres.comboSets!.push('will'); p.equipes[0].lead!.amount = 1;
   ok(isDeepStrictEqual({ data, deck }, avant), 'critères et lead détachés des intrants');
   data.siegeOffenseTeams = []; data.siegeDefenseTeams = []; data.rtaEntries = {}; delete data.box[0].gear;
-  const q = importerRecoOptimizer(deck, data);
+  const q = importerRecoOptimizer(deck, data, fr);
   ok(q.membres.every(m => m.com2usId !== 1001), 'espèce réelle sans équipement résolvable jamais convertie en unowned');
   egal(q.ignores.length, 1, 'raison explicite pour l’exemplaire inutilisable');
 }

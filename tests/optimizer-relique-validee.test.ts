@@ -4,6 +4,7 @@ import type { ExclusionSelector } from '../src/lib/optimizerExclusion';
 import { monterListesOptimizer } from './optimizer-lists-harness';
 import { donneesPointOptimizer } from './optimizer-backup.test';
 import { egal, faussLocalStorage, ok, titre } from './outils';
+import { fr } from '../src/i18n/fr';
 
 const LISTES = 'swblacksmith-optimizer-lists-v1';
 const membre: ExclusionSelector = { source: 'box', unitKey: '11' };
@@ -37,9 +38,9 @@ export function testOptimizerReliqueValideePoint() {
   const s = donneesPointOptimizer();
   s.validated[0] = { ...s.validated[0], reliqueId: 701 };
   const p = photographierPointOptimizer(s, null, new Date('2026-10-28T12:00:00Z'));
-  egal(lirePointOptimizer(JSON.stringify(p)).point?.historique.validated[0].reliqueId, 701, 'relique conservée par le point');
+  egal(lirePointOptimizer(JSON.stringify(p), fr).point?.historique.validated[0].reliqueId, 701, 'relique conservée par le point');
   for (const reliqueId of ['701', -1, 1.5]) {
     const abime = { ...p, historique: { ...p.historique, validated: [{ ...p.historique.validated[0], reliqueId }] } };
-    ok(lirePointOptimizer(JSON.stringify(abime)).point === null, `relique ${JSON.stringify(reliqueId)} : point refusé comme tout identifiant abîmé`);
+    ok(lirePointOptimizer(JSON.stringify(abime), fr).point === null, `relique ${JSON.stringify(reliqueId)} : point refusé comme tout identifiant abîmé`);
   }
 }

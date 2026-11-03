@@ -48,6 +48,7 @@ import { buildOptimizerRecipe, parseOptimizerRecipe } from '../src/lib/optimizer
 import { buildRealDamageContext } from '../scripts/lib/realDamageCli';
 import { resolveObjectiveStats } from '../scripts/lib/recipeToSearchParams';
 import { LoadedMonster } from '../scripts/lib/loadMonster';
+import { fr } from '../src/i18n/fr';
 
 const racine = resolve(new URL('..', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1'));
 const DOSSIER_SORTS = resolve(racine, 'public/data/skills');
@@ -529,7 +530,7 @@ export function testDegatsTempestRecette() {
     ignoreArtifacts: false,
     artifactMainByKind: {},
   });
-  const lue = parseOptimizerRecipe(JSON.stringify(recette));
+  const lue = parseOptimizerRecipe(JSON.stringify(recette), fr);
   ok(lue.recipe != null, `recette relue sans erreur${lue.error ? ` — ${lue.error}` : ''}`);
   if (!lue.recipe) return;
   egal(lue.recipe.damageSetup.skillCom2usId, TEMPEST, 'aller-retour : skillCom2usId 3213 conservé tel quel');

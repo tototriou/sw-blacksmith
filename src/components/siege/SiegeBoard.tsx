@@ -12,6 +12,7 @@ import { ConfirmDialog } from '../../ui/Dialogs';
 import MobileSheet from '../../ui/MobileSheet';
 import { BarreActions, Bouton, Interrupteur, Jeton, useNotifier } from '../../ui';
 import { useTraduction } from '../../hooks/useLangue';
+import type { Dictionnaire } from '../../i18n/fr';
 import MonsterPicker from '../MonsterPicker';
 import MonsterAvatar from '../MonsterAvatar';
 import { equipeContient } from './rechercheEquipe';
@@ -67,17 +68,17 @@ export default function SiegeBoard({
 }: Props) {
   const textes = useTraduction();
   const b = textes.siege.board;
-  const produireEquipe = useCallback((teamId: string, data: ExclusionSourceData) => side === 'defense'
-    ? importerDefensesSiegeOptimizer({ ...data, siegeDefenseTeams: data.siegeDefenseTeams.filter(t => t.id === teamId) })
-    : importerOffenseSiegeOptimizer(teamId, data), [side]);
+  const produireEquipe = useCallback((teamId: string, data: ExclusionSourceData, t: Dictionnaire) => side === 'defense'
+    ? importerDefensesSiegeOptimizer({ ...data, siegeDefenseTeams: data.siegeDefenseTeams.filter(e => e.id === teamId) }, t)
+    : importerOffenseSiegeOptimizer(teamId, data, t), [side]);
   const disponibiliteExport = useMemo(() => {
     const raisonCompte = b.exportSansCompte;
     const equipes = new Map(siege.state.teams.map(t => [t.id, !compteCharge ? raisonCompte
-      : produireEquipe(t.id, sourcesOptimizer).membres.length ? undefined : b.exportEquipeVide]));
-    const defenses = !compteCharge ? raisonCompte : importerDefensesSiegeOptimizer(sourcesOptimizer).membres.length
+      : produireEquipe(t.id, sourcesOptimizer, textes).membres.length ? undefined : b.exportEquipeVide]));
+    const defenses = !compteCharge ? raisonCompte : importerDefensesSiegeOptimizer(sourcesOptimizer, textes).membres.length
       ? undefined : b.exportDefensesVides;
     return { equipes, defenses };
-  }, [b, compteCharge, produireEquipe, siege.state.teams, sourcesOptimizer]);
+  }, [b, compteCharge, produireEquipe, siege.state.teams, sourcesOptimizer, textes]);
   const exporterDefensesOptimizer = () => onImporterEquipe(importerDefensesSiegeOptimizer);
   // ⚠️ **Éteint par défaut** : les équipes s'affichent telles quelles, et c'est
   // un geste délibéré qui demande la vérification. Tout ce que l'app calcule
@@ -600,7 +601,7 @@ export default function SiegeBoard({
             >
             <SiegeTeam
               team={team}
-              onExporterOptimizer={() => onImporterEquipe(data => produireEquipe(team.id, data))}
+              onExporterOptimizer={() => onImporterEquipe((data, t) => produireEquipe(team.id, data, t))}
               raisonExportOptimizer={disponibiliteExport.equipes.get(team.id)}
               index={rang}
               monsters={monsters}

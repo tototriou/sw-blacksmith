@@ -14,6 +14,8 @@ import type { FormeResultats } from '../../../hooks/useFormeResultats';
 import FiltresResultats, { BoutonEffacerFiltres } from './FiltresResultats';
 import type { TriResultats } from './TetesDeTri';
 import { INVISIBLE_AVEC_LE_TABLEAU, VISIBLE_AVEC_LE_TABLEAU } from './TableauResultats';
+import { useLangue, useTraduction } from '../../../hooks/useLangue';
+import { formatNombre } from '../../../i18n/format';
 
 /** Les filtres d'affichage tels que l'en-tête les pose et les dit. */
 export interface FiltresEntete {
@@ -63,34 +65,33 @@ export default function EnteteResultats({ result, compteConfirmes, avecFile, tri
   // compte des trouvées (`compteAffiche`, celui de la ligne de progression)
   // suit tant qu'il en reste à vérifier : une fois tout vérifié, les deux
   // nombres sont égaux et le « sur M » se retire, comme sans file.
+  const textes = useTraduction();
+  const langue = useLangue();
+  const r = textes.optimizer.resultats;
+  const n = (v: number) => formatNombre(v, langue);
   const resteAVerifier = !result || compteConfirmes.nonVerifies > 0;
-  const confirmees = `${compteConfirmes.confirmees.toLocaleString('fr-FR')} combinaison(s) confirmée(s)`
-    + (avecFile && resteAVerifier ? ` sur ${compteAffiche.compte.toLocaleString('fr-FR')} trouvée(s)` : '');
+  const confirmees = r.confirmees(n(compteConfirmes.confirmees))
+    + (avecFile && resteAVerifier ? r.surTrouvees(n(compteAffiche.compte)) : '');
   const compte = (
     <p className="label">
       {result
         ? compteConfirmes.aucune
-          ? 'Aucune combinaison ne répond à ces critères'
+          ? r.aucune
           : confirmees
-        : `${confirmees} pour l'instant — recherche en cours…`}
+        : r.enCours(confirmees)}
     </p>
   );
   // Seulement quand une file vérifie : sans elle, confirmées et trouvées sont
   // le même nombre.
   const aide = avecFile && !compteConfirmes.aucune && (
-    <HelpPopover title="Combinaisons confirmées">
-      Une combinaison est <b className="text-ink">confirmée</b> quand ses artéfacts et sa relique ont
-      été vérifiés avec les pièces de ton inventaire : elle tient vraiment toutes les conditions.
+    <HelpPopover title={r.aideConfirmees.titre}>
+      {r.aideConfirmees.debut}<b className="text-ink">{r.aideConfirmees.confirmee}</b>{r.aideConfirmees.suite}
       <br />
       <br />
-      Le nombre « trouvée(s) » compte tout ce que la recherche a retenu stat par stat : une
-      estimation optimiste, pas encore vérifiée. Une partie de ces combinaisons est
-      écartée à la vérification.
+      {r.aideConfirmees.trouvees}
       <br />
       <br />
-      Les combinaisons affichées sont vérifiées en premier, avec leur meilleur équipement ; toutes
-      les autres sont ensuite confirmées en fond. « Vérifier toutes les combinaisons trouvées », dans
-      les réglages avancés, cherche le meilleur équipement de chacune.
+      {r.aideConfirmees.ordre}
     </HelpPopover>
   );
   // Masqués seulement quand tout est vérifié sans aucune confirmée : le tri et
@@ -110,22 +111,22 @@ export default function EnteteResultats({ result, compteConfirmes, avecFile, tri
         taille="sm"
         surface="panel"
         pleineLargeur={false}
-        aria-label="Trier les résultats"
+        aria-label={r.trierResultats}
       >
-        <optgroup label="Stats">
+        <optgroup label={r.groupeStats}>
           {COLONNES_RESULTATS.slice(0, 8).map((c) => (
             <option key={c} value={c}>
-              Trier par {libelleColonne(c, metric)}
+              {r.trierPar(libelleColonne(c, metric, textes))}
             </option>
           ))}
         </optgroup>
-        <optgroup label="Objectifs">
+        <optgroup label={r.groupeObjectifs}>
           {/* ⚠️ « Dégâts réels » n'est proposé que si un sort est
               réellement calculable pour ce monstre. Vitesse n'est pas un
               tri : la colonne VIT, dans le groupe « Stats ». */}
           {COLONNES_RESULTATS.slice(8).filter(disponible).map((c) => (
             <option key={c} value={c}>
-              {libelleColonne(c, metric)}
+              {libelleColonne(c, metric, textes)}
             </option>
           ))}
         </optgroup>
@@ -145,9 +146,9 @@ export default function EnteteResultats({ result, compteConfirmes, avecFile, tri
   const ligneFile = avecFile || interrompu;
   const tonLigne = interrompu ? 'text-bad' : 'text-ink-dim';
   const enVerification = interrompu
-    ? 'Classement interrompu : relance la recherche pour agir sur ces résultats.'
+    ? r.interrompu
     : enAttente > 0
-      ? `${enAttente.toLocaleString('fr-FR')} combinaison(s) en vérification…`
+      ? r.enVerification(n(enAttente))
       : ' ';
 
   // ── Filtres d'affichage ────────────────────────────────────────────────
@@ -163,15 +164,15 @@ export default function EnteteResultats({ result, compteConfirmes, avecFile, tri
     return () => { document.removeEventListener('mousedown', dehors); document.removeEventListener('keydown', clavier); };
   }, [ouvert, bureau]);
   const posees = filtres ? colonnesBornees(filtres.bornes).length : 0;
-  const libelleFiltrer = `Filtrer l'affichage${posees ? ` (${posees})` : ''}`;
+  const libelleFiltrer = `${r.filtrer}${posees ? ` (${posees})` : ''}`;
   const grille = filtres && (
     <FiltresResultats bornes={filtres.bornes} poserBorne={filtres.poserBorne} effacer={filtres.effacer} metric={metric} disponible={disponible} />
   );
   // Ligne de comptes TOUJOURS présente (« Aucun filtre » sans borne) : poser
   // une borne n'ajoute pas de ligne au-dessus des cartes, et rien ne descend.
   const actives = filtres?.filtre?.bornes.actives.length ?? 0;
-  const resume = filtres ? resumeDesBornes(filtres.bornes, metric, disponible) : '';
-  const comptes = ligneDesComptes(filtres?.filtre?.comptes ?? null, actives, !bureau);
+  const resume = filtres ? resumeDesBornes(filtres.bornes, metric, disponible, textes) : '';
+  const comptes = ligneDesComptes(filtres?.filtre?.comptes ?? null, actives, !bureau, textes);
 
   const boutonFiltrerBureau = filtres && reglable && (
     // Sous le tableau large, sa ligne de bornes remplace le flottant : le
@@ -188,8 +189,8 @@ export default function EnteteResultats({ result, compteConfirmes, avecFile, tri
         onClick={() => setOuvert((o) => !o)}
       />
       {ouvert && (
-        <Flottant rembourrage="md" ancrage="dessous" cote="droite" largeur="w-auto" role="dialog" aria-label="Filtrer l'affichage">
-          <p className="label mb-1">Filtrer l&apos;affichage</p>
+        <Flottant rembourrage="md" ancrage="dessous" cote="droite" largeur="w-auto" role="dialog" aria-label={r.filtrer}>
+          <p className="label mb-1">{r.filtrer}</p>
           {grille}
         </Flottant>
       )}
@@ -220,7 +221,7 @@ export default function EnteteResultats({ result, compteConfirmes, avecFile, tri
               <div className="ml-auto flex flex-wrap items-center justify-end gap-x-2 gap-y-1">
                 {setForme && (
                   <Segmented<FormeResultats>
-                    options={[{ key: 'cartes', label: 'Cartes' }, { key: 'tableau', label: 'Tableau' }]}
+                    options={[{ key: 'cartes', label: r.cartes }, { key: 'tableau', label: r.tableau }]}
                     value={forme}
                     onChange={setForme}
                     disabled={interrompu}
@@ -240,8 +241,8 @@ export default function EnteteResultats({ result, compteConfirmes, avecFile, tri
                     <div className={`col-start-1 row-start-1 ${forme === 'tableau' ? VISIBLE_AVEC_LE_TABLEAU : 'invisible'}`}>
                       <Segmented<'total' | 'bonus'>
                         options={[
-                          { key: 'total', label: 'Stats totales', hint: 'Les valeurs complètes. Affichage seulement.' },
-                          { key: 'bonus', label: 'Stats bonus', hint: 'PV, ATQ, DEF et VIT sans la base du monstre. Affichage seulement.' },
+                          { key: 'total', label: r.statsTotales, hint: r.statsTotalesAide },
+                          { key: 'bonus', label: r.statsBonus, hint: r.statsBonusAide },
                         ]}
                         value={bonus ? 'bonus' : 'total'}
                         onChange={(v) => setBonus(v === 'bonus')}
@@ -281,7 +282,7 @@ export default function EnteteResultats({ result, compteConfirmes, avecFile, tri
                 <Bouton taille="md" pleineLargeur icone={<Filter size={15} />} libelle={libelleFiltrer}
                   disabled={interrompu} onClick={() => setOuvert(true)} />
               </div>
-              <MobileSheet ouvert={ouvert} onFermer={() => setOuvert(false)} titre="Filtrer l'affichage">
+              <MobileSheet ouvert={ouvert} onFermer={() => setOuvert(false)} titre={r.filtrer}>
                 {grille}
               </MobileSheet>
             </>

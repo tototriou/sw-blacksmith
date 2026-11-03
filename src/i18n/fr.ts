@@ -13,8 +13,13 @@
 // une traduction faite par nous.
 
 import { jeuFr } from './jeu/fr';
+import type { Langue } from './langue';
 
 export const fr = {
+  // La langue du dictionnaire : une lib qui écrit un nombre la passe à
+  // `formatNombre` (src/i18n/format.ts).
+  codeLangue: 'fr' as Langue,
+
   // Le vocabulaire du jeu : src/i18n/jeu/.
   jeu: jeuFr,
 
@@ -2182,6 +2187,355 @@ export const fr = {
       tropEtroit: 'Trop étroit pour le tableau : cartes affichées',
       buildNumero: (n: number) => `Build n° ${n}`,
       creerEtValider: 'Créer et valider',
+    },
+    // Les résultats : en-tête, tri, filtres d'affichage, tableau, progression,
+    // diagnostics sur 0 résultat. Les nombres arrivent déjà formatés.
+    resultats: {
+      titre: 'Résultats',
+      sansMonstre: 'Choisis un monstre pour préparer la recherche.',
+      sansRecherche: 'Aucune recherche lancée pour ce monstre.',
+      ici: "Les builds trouvés s'afficheront ici.",
+      scoreSw: 'Score SW',
+      // Pourquoi aucune combinaison n'est confirmée alors que la recherche en a trouvé.
+      ecartees: (n: number, texte: string, avecRelique: boolean) =>
+        `${texte} ${n === 1 ? 'combinaison trouvée par la recherche a été écartée' : 'combinaisons trouvées par la recherche ont été écartées'} : ${
+          avecRelique
+            ? "aucune paire d'artéfacts ni relique réelles ne tient toutes les conditions."
+            : "aucune paire d'artéfacts réelle ne tient toutes les conditions."
+        }`,
+      confirmees: (n: string) => `${n} combinaison(s) confirmée(s)`,
+      surTrouvees: (n: string) => ` sur ${n} trouvée(s)`,
+      aucune: 'Aucune combinaison ne répond à ces critères',
+      enCours: (confirmees: string) => `${confirmees} pour l'instant — recherche en cours…`,
+      aideConfirmees: {
+        titre: 'Combinaisons confirmées',
+        debut: 'Une combinaison est ',
+        confirmee: 'confirmée',
+        suite:
+          ' quand ses artéfacts et sa relique ont été vérifiés avec les pièces de ton inventaire : elle tient vraiment toutes les conditions.',
+        trouvees:
+          'Le nombre « trouvée(s) » compte tout ce que la recherche a retenu stat par stat : une estimation optimiste, pas encore vérifiée. Une partie de ces combinaisons est écartée à la vérification.',
+        ordre:
+          'Les combinaisons affichées sont vérifiées en premier, avec leur meilleur équipement ; toutes les autres sont ensuite confirmées en fond. « Vérifier toutes les combinaisons trouvées », dans les réglages avancés, cherche le meilleur équipement de chacune.',
+      },
+      trierResultats: 'Trier les résultats',
+      groupeStats: 'Stats',
+      groupeObjectifs: 'Objectifs',
+      trierPar: (colonne: string) => `Trier par ${colonne}`,
+      trie: (sens: 'asc' | 'desc') => `, tri ${sens === 'desc' ? 'décroissant' : 'croissant'}`,
+      bornePosee: ', borne posée',
+      interrompu: 'Classement interrompu : relance la recherche pour agir sur ces résultats.',
+      enVerification: (n: string) => `${n} combinaison(s) en vérification…`,
+      filtrer: "Filtrer l'affichage",
+      filtresAide: 'Masque des builds déjà trouvés ; ne relance pas la recherche.',
+      effacerFiltres: 'Effacer les filtres',
+      colonneIndisponible: 'Aucun sort calculable pour ce monstre',
+      borneAffichee: (colonne: string, cote: 'min' | 'max') => `${colonne} ${cote === 'min' ? 'minimum' : 'maximum'} affiché`,
+      borneInactive: (texte: string) => `${texte} (inactive)`,
+      comptes: {
+        aucunFiltre: 'Aucun filtre',
+        visibles: (n: number, texte: string) => `${texte} visible${n > 1 ? 's' : ''}`,
+        masquees: (n: number, texte: string) => `${texte} masquée${n > 1 ? 's' : ''}`,
+        aVerifier: (texte: string) => `${texte} à vérifier`,
+        indeterminesCourt: (texte: string) => `${texte} ind.`,
+        indetermines: (n: number, texte: string) => `${texte} indéterminée${n > 1 ? 's' : ''}`,
+        filtres: (parts: string) => `Filtres : ${parts}`,
+      },
+      cartes: 'Cartes',
+      tableau: 'Tableau',
+      statsTotales: 'Stats totales',
+      statsTotalesAide: 'Les valeurs complètes. Affichage seulement.',
+      statsBonus: 'Stats bonus',
+      statsBonusAide: 'PV, ATQ, DEF et VIT sans la base du monstre. Affichage seulement.',
+      detailBuild: (n: number) => `Détail du build n° ${n}`,
+      verification: 'Vérification…',
+      pagination: {
+        precedente: 'Page précédente',
+        page: 'Page',
+        allerA: 'Aller à la page',
+        suivante: 'Page suivante',
+      },
+      progression: {
+        moitie: (moitie: string) => `Préparation — moitié ${moitie} :`,
+        runes: (lues: string, total: string) => `${lues} / ${total} runes`,
+        enAttente: 'en attente…',
+        preparation: 'Préparation…',
+        examinees: (examinees: string, total: string, trouvees: string) =>
+          `${examinees} / ${total} combinaisons examinées · ${trouvees} trouvée(s)`,
+        attendez: 'Attendez la fin de la recherche pour être sûr de trouver votre build optimal.',
+        echec: 'La recherche a échoué. Réessaie avec des critères moins stricts.',
+        // Le refus d'une recherche sans relique éligible, par code de `RelicVide`.
+        refus: {
+          seuil: 'Aucune relique éligible : abaisse le niveau minimum.',
+          principale: 'Aucune relique de cette principale dans ton inventaire.',
+          type: 'Aucune relique de cette propriété unique dans ton inventaire.',
+          inventaire: "Aucune relique dans le compte importé : réimporte le compte, ou coupe l'optimisation d'artéfacts et reliques.",
+          equipee: 'Ce monstre ne porte pas de relique.',
+        },
+      },
+      troncature: {
+        memoire: (gardes: string, trouves: string) =>
+          `Arrêt : mémoire — ${gardes} builds gardés sur ${trouves} trouvés. Resserre tes critères pour un résultat complet.`,
+        arretee: (n: string) => `Recherche arrêtée après examen de ${n} combinaisons — voici le meilleur trouvé jusque-là.`,
+        interrompue: (n: string) =>
+          `Recherche interrompue après examen de ${n} combinaisons — resserre tes critères pour un résultat exhaustif.`,
+      },
+      diagnostic: {
+        titre: (n: number) => `Diagnostic approfondi — pool le plus restreint : ${n} candidat(s) actuellement.`,
+        aucunGain: ' : aucun gain, même desserrée entièrement.',
+        suffit: (seuil: string, n: number | null) => ` suffit (${seuil}) : ${n} candidat(s).`,
+        indice: 'Un indice, pas une preuve — basé sur le pré-filtrage sûr, pas sur une recherche complète.',
+        astuce:
+          'Astuce : active le diagnostic approfondi (Réglages avancés) pour identifier quelle condition libère le plus de candidats.',
+      },
+      faisabilite: {
+        horsDePortee: (n: number) =>
+          `${n === 1 ? 'Une condition est' : `${n} conditions sont`} mathématiquement hors de portée, quel que soit le runage choisi :`,
+        minimum: (demande: string, borne: string) =>
+          `minimum demandé ${demande} — maximum atteignable ${borne} avec ce pool, ce set et ces statistiques principales.`,
+        maximum: (demande: string, borne: string) =>
+          `maximum demandé ${demande} — ${borne} déjà garanti sans la moindre rune (base, artéfacts, bonus de set).`,
+        aucuneDebut:
+          "Aucune condition n'est, à elle seule, mathématiquement hors de portée — le blocage vient probablement de leur ",
+        combinaison: 'combinaison',
+        aucuneFin:
+          " (rare qu'un seul build satisfasse tout à la fois), ou de la profondeur de la recherche elle-même. Essaie de desserrer une condition, ou une profondeur de recherche plus grande (Réglages avancés).",
+      },
+      // Le quasi-succès : le vocabulaire est « suffirait », jamais « manque ».
+      quasi: {
+        efficienceMoyenne: 'Efficience moyenne',
+        scoreMoyen: 'Score moyen',
+        pvEffectifs: (n: string) => `, PV effectifs ${n}`,
+        suffirait: (seuil: string) => ` suffirait (${seuil})`,
+        titre: 'Quoi ajuster pour trouver des builds',
+        plusProche: 'Build le plus proche, toutes conditions confondues :',
+        parCondition: 'Par condition (satisfait tout le reste, ne manque que celle-ci) :',
+        limite:
+          'Ne voit que ce que la recherche a réellement exploré avant troncature — une paire encore plus proche, jamais atteinte, resterait invisible.',
+      },
+    },
+    // La carte d'un build trouvé.
+    carte: {
+      reliqueSansEffet: 'relique sans effet sur ce tri',
+      reliqueExclue: 'relique équipée exclue par le filtre',
+      moyenne: (libelle: string, valeur: string) => `${libelle} : ${valeur}`,
+      comparer: 'Comparer',
+      runeReservee: 'Rune déjà réservée',
+      degats: 'Dégâts',
+      tueLaCible: 'tue la cible',
+      partPv: (pct: number) => `${pct} % des PV`,
+    },
+    // Le point de sauvegarde de toutes les listes.
+    sauvegarde: {
+      titre: 'Point de sauvegarde des listes',
+      actions: 'Actions de la liste',
+      annonce: (listes: number, membres: number, date: string) =>
+        `Point de sauvegarde : ${listes} liste(s) · ${membres} membre(s) · ${date}`,
+      aucun: 'Aucun point de sauvegarde.',
+      sauvegarder: 'Sauvegarder',
+      sauvegarderAide: 'Les listes sont déjà conservées automatiquement. Pose un point pour essayer et revenir ici.',
+      reprendre: 'Reprendre',
+      reprendreAide: 'Revenir au point de sauvegarde de toutes les listes.',
+      illisible: 'Le point est illisible : reprise impossible.',
+      annonceAria: 'Annonce du point de sauvegarde',
+      remplacerTitre: 'Remplacer le point de sauvegarde ?',
+      remplacer: 'Remplacer',
+      lePointDu: (date: string, listes: number) => `Le point du ${date} (${listes} liste(s))`,
+      lePointIllisible: 'Le point conservé mais illisible',
+      remplacerMessage: (point: string) =>
+        `${point} sera remplacé par tes listes actuelles. Tu ne pourras plus revenir à cet ancien point.`,
+      reprendreTitre: 'Revenir au point de sauvegarde ?',
+      pointIllisible: 'Point de sauvegarde illisible : conservé sans reprise. Tu peux le remplacer après confirmation.',
+      compteVide: 'Compte vide : les données du point sont reprises sans revérification.',
+      reprendreMessage: (date: string, listes: number) =>
+        `Toutes tes listes actuelles seront remplacées par le point du ${date} (${listes} liste(s)). Les listes, membres, builds validés, critères mémorisés, équipes et contenus créés ou modifiés depuis ce point seront perdus. Le point de sauvegarde reste disponible.`,
+    },
+    // Les rapports des équipes de l'Optimizer (création, modification, import).
+    rapportsEquipe: {
+      listeIntrouvable: 'Équipe refusée : la liste ou un de ses membres est introuvable.',
+      dejaAffecte: 'Équipe refusée : identifiant ou membre déjà affecté.',
+      introuvableAjout: 'Équipe introuvable : aucun membre ajouté.',
+      introuvable: 'Équipe introuvable : aucun changement.',
+      membreIntrouvable: 'Équipe ou membre introuvable : aucun changement.',
+      dissouteMoinsDeDeux: 'Équipe dissoute : moins de deux membres.',
+      sansEquipe: 'Ce membre n’est lié à aucune équipe.',
+      dissoute: 'Équipe dissoute ; ses membres restent dans la liste.',
+      introuvableDissolution: 'Équipe introuvable : aucune dissolution.',
+      aucunMembre: 'Aucun membre après filtrage.',
+      unSeulMembre: 'Un seul membre après filtrage.',
+      plusDeCinq: 'Plus de cinq membres après filtrage.',
+      aucuneEquipeCreee: 'Aucune équipe créée ; le lead de la source n’est appliqué à personne.',
+    },
+    // La lecture du stockage des membres (mémoires, équipes, contenus, rejets).
+    stockage: {
+      equipesIllisibles: 'Les équipes de l’Optimizer sont illisibles.',
+      equipeMalformee: (n: number) => `Équipe ${n} malformée : ignorée.`,
+      equipeDejaAffectee: (n: number) => `Équipe ${n} : identifiant ou membre déjà affecté, ignorée.`,
+      illisible: 'Le stockage des membres de l’Optimizer est illisible.',
+      malforme: 'Le stockage des membres de l’Optimizer est malformé.',
+      genres: { memories: 'Mémoire', teams: 'Équipe', listContents: 'Contenu de liste' },
+      rejetConserve: (genre: string, n: number) => `${genre} rejeté(e) ${n} conservé(e) sans application.`,
+      rejetsMalformes: 'La section des rejets est malformée : conservée sans application.',
+      identitesRejetees: 'Identités rejetées conservées sans application.',
+      identiteMalformee: 'Identité malformée ou dupliquée : conservée sans application.',
+      indexMemoires: 'L’index des mémoires est illisible.',
+      memoireMalformee: (n: number) => `Mémoire ${n} malformée ou dupliquée : ignorée.`,
+      indexContenus: 'L’index des contenus de liste est illisible : conservé sans application.',
+      contenuMalforme: (n: number) => `Contenu de liste ${n} malformé ou dupliqué : conservé sans application.`,
+      especeDifferente: 'Mémoire conservée sans modification : l’espèce du membre ne correspond pas.',
+      criteresMalformes: 'Mémoire non écrite : critères malformés.',
+      memoireMembreAbsent: 'Mémoire non écrite : membre absent de la liste.',
+      equipeMembreAbsent: 'Équipe non écrite : membre absent de la liste.',
+    },
+    // La revérification des listes contre un compte réimporté.
+    rattachement: {
+      listeIntrouvable: 'Liste introuvable',
+      monstre: 'Monstre',
+      identiteAcquise: (liste: string, nom: string) =>
+        `« ${liste} » — ${nom} : identité inconnue avant le réimport, espèce acquise depuis le nouveau compte.`,
+      membreConserve: (liste: string, cle: string) =>
+        `« ${liste} » — membre ${cle} conservé : espèce inconnue et référence introuvable.`,
+      especeAbsente: (liste: string, com2usId: number) =>
+        `« ${liste} » — espèce ${com2usId} conservée : absente du bestiaire, rattachement impossible.`,
+      rattache: (liste: string, nom: string, avant: string, apres: string) =>
+        `« ${liste} » — ${nom} : rattaché de ${avant} à ${apres} ; identité, mémoire, équipe et build conservés.`,
+      collision: (genre: 'memories' | 'identities', cle: string) =>
+        `Entrée ${genre === 'memories' ? 'de mémoire' : 'd’identité'} en collision conservée sans application : ${cle}.`,
+      et: ' et ',
+      buildConserve: (liste: string, nom: string, absences: string) =>
+        `« ${liste} » — ${nom} : build conservé, ${absences} du compte, sans réservation pour ces pièces.`,
+      memoireInactive: (liste: string) =>
+        `Mémoire d’un membre de « ${liste} » conservée sans application : membre absent ou espèce différente.`,
+    },
+    // Les conversions d'équipes vers l'Optimizer (siège, prépa RTA, deck
+    // recommandé, speed tuning) et leur consommation dans une nouvelle liste.
+    // Les noms de liste et d'équipe prennent la langue du moment de l'import.
+    importsEquipe: {
+      defenses: 'Défenses de siège',
+      defense: (n: number) => `Défense ${n}`,
+      offense: 'Offense de siège',
+      offenseIntrouvable: 'Deck d’offense introuvable : aucun membre importé.',
+      prepaRta: 'Prépa RTA',
+      monstreInconnu: 'Monstre inconnu.',
+      identiteInutilisable: 'Identité d’espèce inutilisable.',
+      exemplaireIntrouvable: 'Exemplaire introuvable ou d’une autre espèce.',
+      vitesseNonImportee: (nom: string) => `${nom} : vitesse non importée, VIT de fiche non établie.`,
+      aucunSet: (nom: string) => `${nom} : aucun set sélectionné ; choisir un set avant de rechercher.`,
+      contenuInconnu: 'Import refusé : contenu de combat de la liste inconnu.',
+      equipeImportee: 'Équipe importée',
+      doublon: 'Exemplaire en doublon : première occurrence conservée.',
+      exemplaireAbsent: 'Exemplaire introuvable.',
+      identiteDifferente: 'Identité d’espèce différente ou inutilisable.',
+      lead: (stat: string, montant: number, zone: string) => `${stat} ${montant} % (${zone})`,
+      statInconnue: 'statistique inconnue',
+      aucunLead: 'aucun',
+      leadNonApplique: (equipe: string, lead: string, raisons: string) => `${equipe} — lead de la source : ${lead}. ${raisons}`,
+      leadInactif: (equipe: string, membre: string, motif: string) => `${equipe} — ${membre} : ${motif}`,
+      importVide: 'Import vide : aucune liste créée.',
+      reco: {
+        deckRecommande: 'Deck recommandé',
+        espece: (com2usId: number) => `Espèce ${com2usId}`,
+        monstreInconnu: 'Monstre inconnu ou identité d’espèce inutilisable.',
+        repliCompte: (nom: string) =>
+          `${nom} : aucun slot distinct disponible dans l’offense retenue ; repli dans le compte en excluant les exemplaires déjà pris.`,
+        aucunExemplaire: 'Aucun exemplaire distinct résolvable disponible dans le compte.',
+        autreExemplaire: (nom: string) =>
+          `${nom} : l’exemplaire importé diffère de celui jugé par la confrontation ; les critères sont attribués au slot distinct choisi pour l’import.`,
+        minimumNonImporte: (nom: string, stat: string) => `${nom} : minimum ${stat} non importé, statistique ou valeur non établie.`,
+        runageNonImporte: (nom: string) => `${nom} : premier runage non importé, combinaison non représentable.`,
+        premierRunage: (nom: string) => `${nom} : seul le premier runage recommandé est importé.`,
+        proprieteNonImportee: (nom: string, code: number, sorte: string) =>
+          `${nom} : propriété d’artéfact ${code} (${sorte}) non importée, code ou sorte non établi.`,
+        deuxPieces: (nom: string, propriete: string) =>
+          `${nom} — ${propriete} : demandée sur les deux pièces ; une présence sur la paire suffit à l’import.`,
+        pieceAttribut: 'd’attribut',
+        pieceType: 'de type',
+        porteeLibre: 'elle peut désormais être portée par l’une ou l’autre pièce',
+        porteeSeule: (piece: string) => `seule la pièce ${piece} peut porter ce code`,
+        unePiece: (nom: string, propriete: string, piece: string, portee: string) =>
+          `${nom} — ${propriete} : demandée sur l’artéfact ${piece} ; verrou sur le cumul de la paire, ${portee}.`,
+        resPreFiche: (nom: string) =>
+          `${nom} : les minimums RES/Précision viennent de la fiche ; l’Optimizer peut y compter les auras selon son réglage.`,
+      },
+      speedTune: {
+        nomListe: 'Speed tuning',
+        avertissement: 'La VIT minimum de fiche ne garantit pas l’ordre des tours ; les fenêtres de l’analyse ne sont pas importées.',
+        deckIntrouvable: 'Deck d’origine introuvable : exemplaire non établi.',
+        sansEquipement: 'Exemplaire réel sans équipement résolvable.',
+        horsDeck: (nom: string) => `${nom} : absent des slots disponibles du deck d’origine ; exemplaire choisi dans le compte.`,
+        vitesseNonSaisie: 'Vitesse non saisie ou VIT de fiche non établie.',
+        effetVitInvalide: (nom: string, propriete: string) => `${nom} : ${propriete} non importé, valeur invalide.`,
+        tonEquipe: 'Ton équipe',
+      },
+    },
+    // Une recette (« Importer les paramètres de recherche ») refusée ou convertie,
+    // pour l'écran comme pour le CLI : le chemin du champ, puis son attente.
+    recetteInvalide: {
+      pasJson: "Fichier illisible : ce n'est pas du JSON valide.",
+      objetAttendu: 'Fichier invalide : objet JSON attendu.',
+      version: (version: string) => `Version de recette non prise en charge : ${version}.`,
+      champsManquants: 'Fichier invalide : champs obligatoires manquants.',
+      champ: (chemin: string, attente: string) => `Fichier invalide : ${chemin} ${attente}.`,
+      critMoyenne:
+        "damageSetup.critMode : « moyenne » → « crit » — le mode critique « Moyenne » n'existe plus, la recette est passée en « Critique ».",
+      attentes: {
+        entierFini: 'doit être un nombre entier fini',
+        nombreFini: 'doit être un nombre fini',
+        objetParCompetence: 'doit être un objet indexé par identifiant de compétence',
+        identifiantCompetence: 'utilise un identifiant de compétence invalide',
+        positif: 'doit être positif ou nul',
+        booleen: 'doit être un booléen',
+        objetStats: 'doit être un objet de statistiques',
+        statInconnue: 'désigne une statistique inconnue',
+        objet: 'doit être un objet',
+        liste: 'doit être une liste',
+        ancienSetsAura:
+          "est l'ancien total d'auras de l'équipe, monstre optimisé inclus, qui ne peut pas être converti en auras des autres monstres : retirer ce champ et saisir les auras des autres monstres dans damageSetup.setsAuraExternes",
+        statLead: 'contient une stat de lead inconnue',
+        entre0et100: 'doit être compris entre 0 et 100',
+        entre1et4: 'doit être un entier compris entre 1 et 4',
+        modeCritique: 'contient un mode de critique inconnu',
+        modeInvocateur: "contient un mode de compétences d'invocateur inconnu",
+        element: 'contient un élément inconnu',
+        cible: 'doit valoir « visee » ou « secondaire »',
+        sansCoupDeZone: 'désigne un sort sans coup de zone curé, dont la cible calculée ne se choisit pas',
+        listeEffets: 'doit être une liste de noms d’effets',
+        objetParEffet: 'doit être un objet indexé par effet',
+        auMoins1: 'doit être supérieur ou égal à 1',
+        sansIgnoreDef: "désigne un sort sans réglage d'ignore DEF par coup",
+        valeursPermises: (valeurs: string) => `doit valoir ${valeurs} pour ce sort`,
+        valeurInconnue: 'contient une valeur inconnue',
+        setsConnus: 'doit être une liste de sets connus',
+        plusDeSix: 'demande plus de six runes',
+        principale: 'contient une statistique principale invalide',
+        rune: 'contient un identifiant de rune invalide',
+        perimetre: "contient un périmètre d'exclusion inconnu",
+        choixArtefact: "contient un choix d'artéfact invalide",
+        ligneVerrou: 'doit contenir un code entier et un minimum numérique',
+        choixRelique: 'contient un choix de relique invalide',
+        typeUnique: 'contient un type de propriété unique inconnu',
+        setRepete: 'set inconnu ou répété',
+        entierDe1A: (max: number) => `doit être un entier de 1 à ${max}`,
+        sommeMax: (max: number) => `la somme ne doit pas dépasser ${max}`,
+      },
+    },
+    // « Importer une équipe » et le rapport d'un export vers l'Optimizer.
+    importEquipe: {
+      importer: 'Importer une équipe',
+      creee: 'Liste créée',
+      aide: 'Créer une nouvelle liste depuis le siège, la prépa RTA ou un deck recommandé.',
+      aucuneSource:
+        'Aucune source utilisable dans les défenses de siège, les offenses de siège, la prépa RTA ou les recommandations.',
+      fermer: 'Fermer les sources d’import',
+      sources: 'Sources d’import',
+      importerSource: (nom: string) => `${nom} — importer dans une nouvelle liste.`,
+      sourceVide: 'Aucun membre résolvable dans cette source.',
+      exportVersOptimizer: "Export vers l'Optimizer",
+      rapport: 'Rapport d’import',
+      listeCreee: (nom: string, monstres: number, equipes: number) =>
+        `Liste « ${nom} » créée : ${monstres} monstre(s), ${equipes} équipe(s).`,
+      aucuneListe: 'Aucune liste créée.',
+      ignore: (libelle: string, raison: string) => `${libelle} : ${raison}`,
     },
   },
 };

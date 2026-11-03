@@ -15,6 +15,7 @@ import {
   cransDeLaRegleIgnoreDef,
 } from '../src/lib/damage';
 import { buildOptimizerRecipe, parseOptimizerRecipe } from '../src/lib/optimizerRecipe';
+import { fr } from '../src/i18n/fr';
 
 const LAPIS = 19811;
 const BLADE_SURGE_LAPIS = 10616;
@@ -61,7 +62,7 @@ export function testRecetteClesIdentifiant() {
     )
   );
   const avec = (champ: string, cle: string, valeur: unknown) =>
-    parseOptimizerRecipe(JSON.stringify({ ...base, damageSetup: { ...base.damageSetup, [champ]: { [cle]: valeur } } }));
+    parseOptimizerRecipe(JSON.stringify({ ...base, damageSetup: { ...base.damageSetup, [champ]: { [cle]: valeur } } }), fr);
 
   ok(RANG_VALIDE !== null, 'le rang valide de premierCoupIgnoreDefParSort existe (variante à rang non nul)');
   for (const [champ, valeur, id] of CHAMPS) {

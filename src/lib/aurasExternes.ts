@@ -28,6 +28,7 @@
 import { STAT_DE_L_AURA, type DamageSetup, type SetAura } from './damage';
 import { nomSet, type LexiqueJeu } from '../i18n/jeu';
 import type { Dictionnaire } from '../i18n/fr';
+import type { ErreurRecette } from './optimizerRecipe';
 
 export type AuraExterne = NonNullable<DamageSetup['setsAuraExternes']>[number];
 
@@ -66,26 +67,26 @@ export function sommeAurasExternes(entrees: readonly AuraExterne[] | undefined):
  * `.0.nombre`) : la recette le préfixe de `damageSetup.setsAuraExternes`.
  * Absente (`undefined`), la liste vaut zéro aura et reste acceptée.
  */
-export function erreurAurasExternes(value: unknown): { chemin: string; attente: string } | null {
+export function erreurAurasExternes(value: unknown): ErreurRecette | null {
   if (value === undefined) return null;
-  if (!Array.isArray(value)) return { chemin: '', attente: 'doit être une liste' };
+  if (!Array.isArray(value)) return { chemin: '', attente: (a) => a.liste };
   const vus = new Set<string>();
   let somme = 0;
   for (const [index, entree] of value.entries()) {
     const chemin = `.${index}`;
     if (typeof entree !== 'object' || entree === null || Array.isArray(entree)) {
-      return { chemin, attente: 'doit être un objet' };
+      return { chemin, attente: (a) => a.objet };
     }
     const { set, nombre } = entree as Record<string, unknown>;
-    if (!estSetAura(set) || vus.has(set)) return { chemin: `${chemin}.set`, attente: 'set inconnu ou répété' };
+    if (!estSetAura(set) || vus.has(set)) return { chemin: `${chemin}.set`, attente: (a) => a.setRepete };
     vus.add(set);
     if (typeof nombre !== 'number' || !Number.isInteger(nombre) || nombre < 1 || nombre > PLAFOND_AURAS_EXTERNES) {
-      return { chemin: `${chemin}.nombre`, attente: `doit être un entier de 1 à ${PLAFOND_AURAS_EXTERNES}` };
+      return { chemin: `${chemin}.nombre`, attente: (a) => a.entierDe1A(PLAFOND_AURAS_EXTERNES) };
     }
     somme += nombre;
   }
   if (somme > PLAFOND_AURAS_EXTERNES) {
-    return { chemin: '', attente: `la somme ne doit pas dépasser ${PLAFOND_AURAS_EXTERNES}` };
+    return { chemin: '', attente: (a) => a.sommeMax(PLAFOND_AURAS_EXTERNES) };
   }
   return null;
 }

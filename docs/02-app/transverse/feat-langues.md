@@ -106,8 +106,19 @@ jeu dans la langue choisie**, jamais une traduction de l'app. Ils vivent dans
   des artéfacts par propriété (`topParPropriete`), raison d'une espèce déjà dans la liste de
   l'Optimizer (`exemplaireSuivantEspece`), rappel d'un passif qui pose un buff
   (`rappelsBuffsDePassif`), écho et libellé des sets d'aura externes (`echoAurasExternes`,
-  `libelleNombreAura`), nom par défaut d'une liste (`nomNouvelleListeOptimizer`). Le calcul reste
-  pur ; un test ou un script passe `fr`. Les **fichiers partagés**
+  `libelleNombreAura`), nom par défaut d'une liste (`nomNouvelleListeOptimizer`), rapports des
+  équipes, du stockage des membres, du rattachement et du point de sauvegarde
+  (`equipesOptimizer.ts`, `optimizerMemberStorage.ts`, `optimizerRattachement.ts`,
+  `optimizerBackup.ts`), conversions d'équipes vers l'Optimizer (`importEquipes.ts`,
+  `importRecoOptimizer.ts`, `importSpeedTuneOptimizer.ts` : le producteur reçoit le dictionnaire
+  du consommateur, `ProducteurImportOptimizer`), raison du zéro confirmé (`compteAffichable`),
+  libellés et comptes des filtres d'affichage (`filtresAffichage.ts`). Le calcul reste pur ; un
+  test ou un script passe `fr`. Un nombre écrit par une lib passe par `formatNombre` avec la
+  langue du dictionnaire (`codeLangue`).
+- **Une recette refusée** : les validateurs rendent un chemin et une attente — une fonction du
+  dictionnaire (`ErreurRecette`, optimizerRecipe.ts ; `erreurAurasExternes` pareil) — et
+  `parseOptimizerRecipe(texte, t)` compose le message dans la langue reçue, pour l'écran comme
+  pour le CLI (`chargerRecette` passe `fr`). Les **fichiers partagés**
   restent en français, la langue du fichier : clés, champ `propriete` d'une recommandation
   (`fr.jeu`). Un libellé que `src/lib/` fabrique comme une donnée (« Défense 3 », la source d'un
   build) se traduit à l'affichage par `libelleSource`.
@@ -144,9 +155,13 @@ question de conservation, les fenêtres de dialogue communes et [App.tsx](../../
 entier (pied de page, remplacement et suppression des données, session) ; l'Optimizer, écran
 des critères (listes et équipes, recherche du monstre, état du monstre et sets d'aura, set,
 principales imposées, conditions, artéfacts, relique, sous-propriétés verrouillées, meilleurs
-artéfacts, réglages avancés, exclusion, validation et libération). Restent en français dans
-l'Optimizer : résultats, diagnostics, imports et exports (lot suivant), la description du combat
-« Dégâts réels », et la vue de développement des gabarits.
+artéfacts, réglages avancés, exclusion, validation et libération), ses résultats (cartes,
+tableau, tri, filtres d'affichage, pagination, progression, quasi-succès, diagnostics), le point
+de sauvegarde des listes, l'import d'une équipe et les rapports d'import, de stockage et de
+rattachement, les erreurs d'une recette importée. Restent en français dans l'Optimizer : la
+description du combat « Dégâts réels », la vue de développement des gabarits, et les messages
+de la console (pannes de Worker, protocole de la file, erreurs internes du moteur), que l'écran
+remplace par une phrase traduite.
 
 Le **vocabulaire du jeu** suit la langue choisie dans toute l'app : fiches de rune, d'artéfact et
 de relique, inventaires, Optimizer, recommandations de siège, prépa RTA, Bestiaire, fiche d'un
@@ -183,10 +198,12 @@ Un écran qu'on traduit entre dans `FICHIERS_TRADUITS` dans le même commit.
   mêmes sections dans le même ordre ; la RTA (prépa, prépa d'un ami) et le Siège (défense,
   offense, recommandations) en anglais ; le Compte vide, la box, le résumé et le top des
   artéfacts, le pied de page en anglais ; l'Optimizer, écran des critères au bureau et panneau
-  « Options » du téléphone, en anglais.
+  « Options » du téléphone, en anglais ; ses résultats (progression, refus, pagination) en
+  anglais.
 - [partage-langues.test.ts](../../../tests/partage-langues.test.ts) : les messages de `src/lib/`
   (imports, statut d'équipe, alerte de tick, source d'un build, import d'un compte, top des
-  artéfacts, espèce déjà dans la liste, écho des auras externes) dans la langue reçue.
+  artéfacts, espèce déjà dans la liste, écho des auras externes, recette refusée, raison du zéro
+  confirmé, nom d'une liste importée, ligne des filtres d'affichage) dans la langue reçue.
 - [journal-langues.test.ts](../../../tests/journal-langues.test.ts) : le journal anglais a la
   forme du français (versions, dates, tags, points mis en avant, changements), aucun texte vide ni
   resté en français.

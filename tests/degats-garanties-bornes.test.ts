@@ -35,6 +35,7 @@ import { BuildCandidate, objectiveScore } from '../src/lib/runeBuildOptim';
 import { StatKey } from '../src/lib/effects';
 import { StatRow } from '../src/lib/stats';
 import { egal, ok, titre } from './outils';
+import { fr } from '../src/i18n/fr';
 
 const racine = resolve(new URL('..', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1'));
 const DOSSIER_SORTS = resolve(racine, 'public/data/skills');
@@ -174,7 +175,7 @@ export function testGarantieYujiRick() {
   // Le moteur et la recette : le scénario traverse l'export/import, le
   // score du moteur est celui de l'écran.
   const { recette, ctx } = contexte(30413, scenario1);
-  egal(parseOptimizerRecipe(JSON.stringify(recette)).recipe?.damageSetup?.scenariosEffetsEntreCoups,
+  egal(parseOptimizerRecipe(JSON.stringify(recette), fr).recipe?.damageSetup?.scenariosEffetsEntreCoups,
     scenario1.scenariosEffetsEntreCoups, 'recette : le scénario « decrease-def » survit à l’export/import');
   egal(objectiveScore(candidat, 'degats_reels', AUCUNE_AURA_PROPRE, ctx),
     computeSkillDamage(p, build, scenario1, AUCUNE_AURA_PROPRE, 'wind'),

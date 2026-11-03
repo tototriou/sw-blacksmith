@@ -1,6 +1,7 @@
 import { comptePeutJuger, exclusionCandidatesFor, exclusionSelectorKey, resolveExclusionEntry, revalidateBuilds,
   type ExclusionSelector, type ExclusionSource, type ExclusionSourceData } from './optimizerExclusion';
 import { cleMemoireMembre, type ContenuListeOptimizer, type IdentiteMembreOptimizer, type StockageOptimizer } from './optimizerMemberStorage';
+import type { Dictionnaire } from '../i18n/fr';
 
 export interface RattachementMembreOptimizer {
   listId: string;
@@ -48,17 +49,19 @@ const ORDRES: Record<ContenuListeOptimizer | 'absent', readonly ExclusionSource[
 };
 
 /** Préserver chaque membre ; les clés migrent simultanément, y compris en cas de permutation. */
-export function rattacherStockageOptimizer(stockage: StockageOptimizer, data: ExclusionSourceData, runeIds: Set<number>, artifactIds?: Set<number>) {
+export function rattacherStockageOptimizer(stockage: StockageOptimizer, data: ExclusionSourceData, runeIds: Set<number>, t: Dictionnaire, artifactIds?: Set<number>) {
+  const m = t.optimizer.rattachement;
   const rapport: RapportReverificationOptimizer = { compteVide: false, membresRetires: 0, buildsRetires: 0,
     rattachements: [], identitesAcquises: [], buildsIncomplets: [], memoiresInactives: [], memoiresSuivantSelecteur: [],
     equipesModifiees: [], equipesDissoutes: [], messages: [] };
   if (!comptePeutJuger(data, runeIds)) { rapport.compteVide = true; return { stockage, rapport }; }
   const acquis = acquerirIdentitesMembres(stockage, data);
   const noms = new Map(stockage.lists.map(l => [l.id, l.name]));
+  const liste = (id: string) => noms.get(id) ?? m.listeIntrouvable;
   for (const [cle, identite] of acquis.identities) if (!stockage.identities.has(cle)) {
     rapport.identitesAcquises.push(cle);
-    const nom = resolveExclusionEntry(identite.selector, data)?.monster.name ?? 'Monstre';
-    rapport.messages.push(`« ${noms.get(identite.listId) ?? 'Liste introuvable'} » — ${nom} : identité inconnue avant le réimport, espèce acquise depuis le nouveau compte.`);
+    const nom = resolveExclusionEntry(identite.selector, data)?.monster.name ?? m.monstre;
+    rapport.messages.push(m.identiteAcquise(liste(identite.listId), nom));
   }
   const prises = new Map<string, Set<string>>();
   const clesGardees = new Set<string>();
@@ -122,17 +125,17 @@ export function rattacherStockageOptimizer(stockage: StockageOptimizer, data: Ex
     const cle = cleMemoireMembre(membre.listId, membre.selector), identite = acquis.identities.get(cle);
     if (clesGardees.has(cle)) return membre;
     if (!identite) {
-      rapport.messages.push(`« ${noms.get(membre.listId) ?? 'Liste introuvable'} » — membre ${exclusionSelectorKey(membre.selector)} conservé : espèce inconnue et référence introuvable.`);
+      rapport.messages.push(m.membreConserve(liste(membre.listId), exclusionSelectorKey(membre.selector)));
       return membre;
     }
     const selector = migrations.get(cle);
     if (!selector) {
-      rapport.messages.push(`« ${noms.get(membre.listId) ?? 'Liste introuvable'} » — espèce ${identite.com2usId} conservée : absente du bestiaire, rattachement impossible.`);
+      rapport.messages.push(m.especeAbsente(liste(membre.listId), identite.com2usId));
       return membre;
     }
     const monstre = [...data.monsterById.values()].find(m => m.com2usId === identite.com2usId);
     rapport.rattachements.push({ listId: membre.listId, avant: membre.selector, apres: selector, com2usId: identite.com2usId });
-    rapport.messages.push(`« ${noms.get(membre.listId) ?? 'Liste introuvable'} » — ${monstre?.name ?? identite.com2usId} : rattaché de ${exclusionSelectorKey(membre.selector)} à ${exclusionSelectorKey(selector)} ; identité, mémoire, équipe et build conservés.`);
+    rapport.messages.push(m.rattache(liste(membre.listId), String(monstre?.name ?? identite.com2usId), exclusionSelectorKey(membre.selector), exclusionSelectorKey(selector)));
     return { ...membre, selector };
   });
   const migrer = (listId: string, selector: ExclusionSelector) => migrations.get(cleMemoireMembre(listId, selector)) ?? selector;
@@ -147,7 +150,7 @@ export function rattacherStockageOptimizer(stockage: StockageOptimizer, data: Ex
       const selector = migrer(valeur.listId, valeur.selector), destination = cleMemoireMembre(valeur.listId, selector);
       if (resultat.has(destination)) {
         rejets[genre] = [...(rejets[genre] ?? []), [cle, valeur]];
-        rapport.messages.push(`Entrée ${genre === 'memories' ? 'de mémoire' : 'd’identité'} en collision conservée sans application : ${cle}.`);
+        rapport.messages.push(m.collision(genre, cle));
       } else resultat.set(destination, selector === valeur.selector ? valeur : { ...valeur, selector });
     }
     return resultat;
@@ -168,15 +171,15 @@ export function rattacherStockageOptimizer(stockage: StockageOptimizer, data: Ex
   for (const build of validated) if (build.runesManquantes?.length || build.artefactsManquants?.length) {
     const cle = cleMemoireMembre(build.listId, build.selector);
     rapport.buildsIncomplets.push(cle);
-    const absences = [build.runesManquantes?.length ? `${build.runesManquantes.length} rune(s) absente(s)` : '',
-      build.artefactsManquants?.length ? `${build.artefactsManquants.length} artéfact(s) absent(s)` : ''].filter(Boolean).join(' et ');
-    rapport.messages.push(`« ${noms.get(build.listId) ?? 'Liste introuvable'} » — ${resolveExclusionEntry(build.selector, data)?.monster.name ?? exclusionSelectorKey(build.selector)} : build conservé, ${absences} du compte, sans réservation pour ces pièces.`);
+    const absences = [build.runesManquantes?.length ? t.optimizer.zoneC.runesAbsentes(build.runesManquantes.length) : '',
+      build.artefactsManquants?.length ? t.optimizer.zoneC.artefactsAbsents(build.artefactsManquants.length) : ''].filter(Boolean).join(m.et);
+    rapport.messages.push(m.buildConserve(liste(build.listId), resolveExclusionEntry(build.selector, data)?.monster.name ?? exclusionSelectorKey(build.selector), absences));
   }
   const clesMembres = new Set(members.map(m => cleMemoireMembre(m.listId, m.selector)));
   for (const [cle, memoire] of memories) {
     if (!noms.has(memoire.listId) || !clesMembres.has(cle) || resolveExclusionEntry(memoire.selector, data)?.monster.com2usId !== memoire.com2usId) {
       rapport.memoiresInactives.push(cle);
-      rapport.messages.push(`Mémoire d’un membre de « ${noms.get(memoire.listId) ?? 'Liste introuvable'} » conservée sans application : membre absent ou espèce différente.`);
+      rapport.messages.push(m.memoireInactive(liste(memoire.listId)));
     } else if (memoire.selector.source === 'rta' || memoire.selector.source.startsWith('siege-')) rapport.memoiresSuivantSelecteur.push(cle);
   }
   const modifie = acquis !== stockage || migrations.size || validated.some((b, i) => b !== stockage.validated[i]);

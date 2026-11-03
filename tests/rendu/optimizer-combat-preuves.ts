@@ -5,6 +5,7 @@ import { cleMemoireMembre } from '../../src/lib/optimizerMemberStorage';
 import { parseOptimizerRecipe } from '../../src/lib/optimizerRecipe';
 import { resolvedLeaderSkill } from '../../src/lib/damage';
 import { boutonListeActive, editerContenuListe } from './optimizer-listes-preuves';
+import { fr } from '../../src/i18n/fr';
 
 interface Banc {
   etat: () => OptimizerState;
@@ -49,7 +50,7 @@ export async function preuvesRecetteLeadEquipe(b: Banc): Promise<[boolean, strin
     verifier(textes.length === 1, 'export réel : un JSON produit par le clic');
     texte = await textes[0];
   } finally { URL.createObjectURL = creerUrl; HTMLAnchorElement.prototype.click = cliquerLien; }
-  const { recipe } = parseOptimizerRecipe(texte);
+  const { recipe } = parseOptimizerRecipe(texte, fr);
   verifier(b.etat().damageSetup.leaderSkill?.stat === 'Attack Speed' && b.etat().damageSetup.leaderSkill?.pct === 24
     && b.etat().damageSetup.leaderSpeedPct === undefined, 'lier : le lead d’équipe a écrasé le lead personnel');
   verifier(recipe?.damageSetup?.leaderSkill?.stat === 'Attack Speed' && recipe.damageSetup.leaderSkill.pct === 24

@@ -79,7 +79,7 @@ export default function RtaPage({
   onFermerMenu,
 }: Props) {
   const textes = useTraduction();
-  const exportDisponible = useMemo(() => importerPrepaRtaOptimizer(sourcesOptimizer).membres.length > 0, [sourcesOptimizer]);
+  const exportDisponible = useMemo(() => importerPrepaRtaOptimizer(sourcesOptimizer, textes).membres.length > 0, [sourcesOptimizer, textes]);
   const raisonExport = !compteCharge ? textes.rta.exportSansCompte
     : !exportDisponible ? textes.rta.exportSansMonstre : undefined;
   const exporterOptimizer = () => onImporterEquipe(importerPrepaRtaOptimizer);

@@ -11,6 +11,7 @@ import { combatSpeed, type LeadInfo } from '../src/lib/speed';
 import { ligneVierge, type Ligne } from '../src/lib/speedTuneLignes';
 import { computeStats } from '../src/lib/stats';
 import { egal, ok, titre } from './outils';
+import { fr } from '../src/i18n/fr';
 
 const lead: LeadInfo = { amount: 30, area: 'Element', element: 'fire' };
 function monstre(id: number): Monster {
@@ -38,11 +39,11 @@ function stockage(): StockageOptimizer {
   return { identities: new Map(), lists: [], members: [], validated: [], memories: new Map(), teams: [], listContents: new Map(), rejets: { memories: [], teams: [], listContents: [] } };
 }
 const consommer = (p: ReturnType<typeof importerSpeedTuneOptimizer>, data: ExclusionSourceData) =>
-  consommerImportOptimizer(stockage(), null, p, data, 'nouvelle');
+  consommerImportOptimizer(stockage(), null, p, data, 'nouvelle', fr);
 
 function identiteFiche(swift: boolean) {
   const data = sources(), build = gear(swift), fiche = computeStats(build).find(s => s.key === 'spd')!;
-  const l = ligne(1, swift, fiche.bonus), p = importerSpeedTuneOptimizer([l], null, data), r = consommer(p, data);
+  const l = ligne(1, swift, fiche.bonus), p = importerSpeedTuneOptimizer([l], null, data, fr), r = consommer(p, data);
   egal(p.membres[0].criteres.vitesse, { minimum: fiche.total }, 'minimum identique à la fiche réelle computeStats');
   egal(fiche.total, swift ? 227 : 201, 'Swift à plat inclus exactement une fois dans la saisie');
   const photo = r.stockage.memories.get(cleMemoireMembre('nouvelle', p.membres[0].selector))!.criteres;
@@ -63,13 +64,13 @@ export function testImportSpeedTuneEcartSwift() {
   egal(avec.total, 227, 'fiche Swift réelle à 227'); egal(sans.total, 227, 'même fiche sans Swift');
   egal(combatSpeed(101, avec.bonus, 0, true), 242, 'combat avec Swift, lead 0');
   egal(combatSpeed(101, sans.bonus, 0, false), 243, 'combat sans Swift, lead 0 : un point d’écart');
-  const p = importerSpeedTuneOptimizer([ligne(1, true, 126), ligne(2, false, 126)], null, sources());
+  const p = importerSpeedTuneOptimizer([ligne(1, true, 126), ligne(2, false, 126)], null, sources(), fr);
   egal(p.membres.map(m => m.criteres.vitesse?.minimum), [227, 227], 'minimum de fiche identique malgré l’écart de combat');
   ok(p.messages.some(m => m.includes('ne garantit pas l’ordre')), 'absence de garantie d’ordre dite au rapport');
 }
 export function testImportSpeedTuneLigne206() {
   titre('Import speed tuning · seuil 206 saisi sur le cumul de la paire');
-  const data = sources(), l = { ...ligne(1), artefactBuff: 10 }, p = importerSpeedTuneOptimizer([l], lead, data);
+  const data = sources(), l = { ...ligne(1), artefactBuff: 10 }, p = importerSpeedTuneOptimizer([l], lead, data, fr);
   const verrou = p.membres[0].criteres.lignesVerrouillees;
   egal(verrou, [{ code: 206, min: 10 }], 'valeur saisie, sans minimum de présence inventé');
   const art = (value: number, kind: 'element' | 'archetype'): ArtifactDetail => ({ id: value, kind, element: 'fire', archetype: 'attack',
@@ -79,14 +80,14 @@ export function testImportSpeedTuneLigne206() {
   const r = consommer(p, data);
   egal([...r.stockage.memories.values()][0].criteres.lignesVerrouillees, verrou, 'verrou transmis au consommateur');
   for (const valeur of [null, 0, -1, NaN, Infinity]) {
-    const q = importerSpeedTuneOptimizer([{ ...l, artefactBuff: valeur }], null, data);
+    const q = importerSpeedTuneOptimizer([{ ...l, artefactBuff: valeur }], null, data, fr);
     egal(q.membres[0].criteres.lignesVerrouillees, undefined, 'valeur absente, nulle ou invalide sans verrou');
     if (valeur !== null && valeur !== 0) ok(q.messages.some(m => m.includes('valeur invalide')), 'amplification invalide signalée');
   }
 }
 export function testImportSpeedTuneLeadElement() {
   titre('Import speed tuning · lead du camp, Guilde et membre d’un autre élément');
-  const data = sources(), p = importerSpeedTuneOptimizer([ligne(1), ligne(2)], lead, data), r = consommer(p, data);
+  const data = sources(), p = importerSpeedTuneOptimizer([ligne(1), ligne(2)], lead, data, fr), r = consommer(p, data);
   egal(r.rapport.equipesCreees, 1, 'une équipe de deux membres');
   egal(p.contenu, 'guilde', 'contenu Guilde proposé');
   egal(r.stockage.listContents.get('nouvelle'), 'guilde', 'contenu Guilde stocké pour la liste');
@@ -106,7 +107,7 @@ export function testImportSpeedTuneLignesIgnorees() {
   const lignes = [ligne(1, false, null), ligne(2, false, NaN), ligne(3, false, -1), ligne(4, false, Infinity),
     ligne(99), { ...ligne(5), monster: { ...monstre(5), com2usId: 9999 } },
     { ...ligne(6), monster: { ...monstre(6), stats: { ...monstre(6).stats, speed: null } } }, ligne(7, false, 0)];
-  const p = importerSpeedTuneOptimizer(lignes, lead, data), r = consommer(p, data);
+  const p = importerSpeedTuneOptimizer(lignes, lead, data, fr), r = consommer(p, data);
   egal(p.ignores.length, 7, 'sept lignes invalides ignorées par le producteur');
   egal(r.rapport.ignores.length, 7, 'compte et raisons transmis au rapport');
   ok(p.ignores.every(m => m.raison.length > 0), 'chaque ligne ignorée porte sa raison');
@@ -114,7 +115,7 @@ export function testImportSpeedTuneLignesIgnorees() {
   egal(p.membres[0].selector, { source: 'unowned', monsterId: '7' }, 'espèce absente du compte : unowned');
 }
 function cardinalite(nombre: number) {
-  const data = sources(), p = importerSpeedTuneOptimizer(Array.from({ length: nombre }, (_, i) => ligne(i + 1)), lead, data), r = consommer(p, data);
+  const data = sources(), p = importerSpeedTuneOptimizer(Array.from({ length: nombre }, (_, i) => ligne(i + 1)), lead, data, fr), r = consommer(p, data);
   egal(r.rapport.membresImportes, nombre, 'tous les membres retenus sont importés');
   egal(r.rapport.equipesCreees, 0, 'aucune équipe hors de 2 à 5 membres');
   egal(r.rapport.listeCreee !== null, nombre > 0, 'liste créée seulement si non vide');
@@ -132,21 +133,21 @@ export function testImportSpeedTuneAvecDeckOrigine() {
   titre('Import speed tuning · exemplaires du deck d’origine facultatif');
   for (const source of ['defense', 'offense'] as const) {
     const data = sources(), origine = { source, teamId: source === 'defense' ? 'd1' : 'o1' };
-    const p = importerSpeedTuneOptimizer([ligne(2), ligne(1, true, 126)], lead, data, origine), r = consommer(p, data);
+    const p = importerSpeedTuneOptimizer([ligne(2), ligne(1, true, 126)], lead, data, fr, origine), r = consommer(p, data);
     const prefixe = source === 'defense' ? 'siege-defense' : 'siege-offense';
     egal(p.membres.map(m => exclusionSelectorKey(m.selector)), [`${prefixe}:${origine.teamId}:1`, `${prefixe}:${origine.teamId}:0`], 'slots retrouvés par espèce après déplacement des lignes');
     egal(p.equipes[0].leader, p.membres[1].selector, 'leader du slot 0, pas première ligne');
     egal([...r.stockage.memories.values()].map(m => m.criteres.relicMainChoice), ['equipped', 'equipped'], 'défaut de relique du deck, pas de la Box');
     egal(p.membres.map(m => m.criteres.vitesse?.minimum), [201, 227], 'saisies actuelles, pas vitesses 999 du deck');
     egal(p.equipes[0].lead?.amount, 30, 'lead du camp actuel, pas team.lead = 99');
-    const absent = importerSpeedTuneOptimizer([ligne(1)], lead, data, { source, teamId: 'absent' });
+    const absent = importerSpeedTuneOptimizer([ligne(1)], lead, data, fr, { source, teamId: 'absent' });
     egal(absent.membres.length, 0, 'deck disparu sans remplacement Box'); egal(absent.ignores.length, 1, 'deck disparu signalé');
-    const ajout = importerSpeedTuneOptimizer([ligne(4)], lead, data, origine);
+    const ajout = importerSpeedTuneOptimizer([ligne(4)], lead, data, fr, origine);
     egal(ajout.membres[0].selector, { source: 'box', unitKey: 'box-4' }, 'nouvelle espèce absente du deck : règle du compte');
     ok(ajout.messages.some(m => m.includes('deck d’origine')), 'repli explicitement signalé');
     const team = source === 'defense' ? data.siegeDefenseTeams[0] : data.siegeOffenseTeams[0];
     delete team.slots[0].gear;
-    const invalide = importerSpeedTuneOptimizer([ligne(1)], lead, data, origine);
+    const invalide = importerSpeedTuneOptimizer([ligne(1)], lead, data, fr, origine);
     // Un slot sans équipement (monstre placé à la main) se résout aux stats de
     // base de son espèce : il reste le slot du deck, jamais une copie Box.
     egal(invalide.membres.map(m => m.selector), [{ source: source === 'defense' ? 'siege-defense' : 'siege-offense', teamId: team.id, slotIndex: 0 }],
@@ -157,10 +158,10 @@ export function testImportSpeedTuneSansDeckOrigine() {
   titre('Import speed tuning · premier exemplaire Box, RTA, défense puis offense');
   const data = sources();
   data.box.unshift({ ...data.box[0], key: 'premier', gear: { ...gear(), runes: [] } });
-  egal(importerSpeedTuneOptimizer([ligne(1)], null, data).membres[0].selector, { source: 'box', unitKey: 'premier' }, 'première copie Box même sans rune');
+  egal(importerSpeedTuneOptimizer([ligne(1)], null, data, fr).membres[0].selector, { source: 'box', unitKey: 'premier' }, 'première copie Box même sans rune');
   for (const attendu of ['box:box-1', 'rta:1', 'siege-defense:d1:0', 'siege-offense:o1:0', 'unowned:1']) {
     if (attendu === 'box:box-1') data.box.shift();
-    const p = importerSpeedTuneOptimizer([ligne(1)], null, data);
+    const p = importerSpeedTuneOptimizer([ligne(1)], null, data, fr);
     egal(exclusionSelectorKey(p.membres[0].selector), attendu, 'ordre de repli stable');
     if (attendu.startsWith('box:')) data.box = data.box.filter(b => b.monster.com2usId !== 1001);
     else if (attendu.startsWith('rta:')) data.rtaEntries = {};
@@ -168,18 +169,18 @@ export function testImportSpeedTuneSansDeckOrigine() {
     else if (attendu.startsWith('siege-offense:')) data.siegeOffenseTeams = [];
   }
   data.box = [{ key: 'sans-gear', monster: monstre(1), stars: 6, level: 40 }];
-  const p = importerSpeedTuneOptimizer([ligne(1)], null, data);
+  const p = importerSpeedTuneOptimizer([ligne(1)], null, data, fr);
   egal(p.membres.length, 0, 'espèce possédée sans exemplaire résolvable jamais convertie en unowned');
   egal(p.ignores.length, 1, 'exemplaire non résolvable signalé');
 }
 export function testImportSpeedTuneCopiesDeckEtReverification() {
   titre('Import speed tuning · copies du deck et cardinalité après revérification');
   const data = sources(); data.siegeOffenseTeams = [deck('copies', [1, 2, 1])];
-  const p = importerSpeedTuneOptimizer([ligne(1), ligne(2), ligne(1)], lead, data, { source: 'offense', teamId: '0' });
+  const p = importerSpeedTuneOptimizer([ligne(1), ligne(2), ligne(1)], lead, data, fr, { source: 'offense', teamId: '0' });
   egal(p.membres.map(m => exclusionSelectorKey(m.selector)), ['siege-offense:copies:0', 'siege-offense:copies:1', 'siege-offense:copies:2'],
     'identifiant numérique historique et copies attribuées aux slots dans leur ordre');
   egal(consommer(p, data).rapport.membresImportes, 3, 'copies de même espèce conservées par le consommateur');
-  const q = importerSpeedTuneOptimizer([ligne(1), ligne(2)], lead, data);
+  const q = importerSpeedTuneOptimizer([ligne(1), ligne(2)], lead, data, fr);
   data.box = data.box.filter(b => b.key !== 'box-2');
   const r = consommer(q, data);
   egal(r.rapport.membresImportes, 1, 'exemplaire disparu depuis la proposition : ignoré');
@@ -193,7 +194,7 @@ export function testImportSpeedTunePureteEtAnalyse() {
   Object.defineProperty(l, 'speedMod', { get: () => { throw new Error('Lecture de l’analyse VIT'); } });
   Object.defineProperty(l, 'cumulsPassif', { get: () => { throw new Error('Lecture du passif'); } });
   const avant = structuredClone(data), leadAvant = { ...lead };
-  const p = importerSpeedTuneOptimizer([l, { ...ligne(2), camp: 'ennemi' }], lead, data);
+  const p = importerSpeedTuneOptimizer([l, { ...ligne(2), camp: 'ennemi' }], lead, data, fr);
   egal(p.membres.length, 1, 'ligne alliée masquée conservée ; adversaire exclu');
   ok(isDeepStrictEqual(data, avant), 'aucune mutation des sources'); egal(lead, leadAvant, 'aucune mutation du lead');
   p.equipes[0].lead!.amount = 1; p.membres[0].criteres.comboSets!.push('violent');
@@ -203,7 +204,7 @@ export function testImportSpeedTunePureteEtAnalyse() {
 export function testImportSpeedTuneCompositionRetrouvee() {
   titre('Import speed tuning · composition exacte du camp, hors ordre et adversaires');
   const data = sources(); data.siegeDefenseTeams = [];
-  const p = importerSpeedTuneOptimizer([ligne(3), ligne(1), ligne(2), { ...ligne(4), camp: 'ennemi' }], lead, data);
+  const p = importerSpeedTuneOptimizer([ligne(3), ligne(1), ligne(2), { ...ligne(4), camp: 'ennemi' }], lead, data, fr);
   egal(p.membres.map(m => exclusionSelectorKey(m.selector)), ['siege-offense:o1:2', 'siege-offense:o1:0', 'siege-offense:o1:1'],
     'camp complet retrouvé dans l’offense, avant les copies Box');
   egal(p.equipes[0].leader, p.membres[1].selector, 'leader du deck retrouvé, même après permutation');
@@ -213,39 +214,39 @@ export function testImportSpeedTuneCompositionRetrouvee() {
 export function testImportSpeedTuneCompositionAmbigue() {
   titre('Import speed tuning · première composition exacte, défense puis offense');
   const data = sources(); data.siegeDefenseTeams.push(deck('d2'));
-  const p = importerSpeedTuneOptimizer([ligne(1), ligne(2), ligne(3)], lead, data);
+  const p = importerSpeedTuneOptimizer([ligne(1), ligne(2), ligne(3)], lead, data, fr);
   egal(p.membres.map(m => exclusionSelectorKey(m.selector)), ['siege-defense:d1:0', 'siege-defense:d1:1', 'siege-defense:d1:2'],
     'premier deck, pas la seconde défense ni l’offense');
   data.siegeDefenseTeams = [];
   data.siegeOffenseTeams.push(deck('o2'));
-  egal(importerSpeedTuneOptimizer([ligne(1), ligne(2), ligne(3)], lead, data).membres[0].selector,
+  egal(importerSpeedTuneOptimizer([ligne(1), ligne(2), ligne(3)], lead, data, fr).membres[0].selector,
     { source: 'siege-offense', teamId: 'o1', slotIndex: 0 }, 'première offense entre deux identiques');
 }
 export function testImportSpeedTuneCompositionModifiee() {
   titre('Import speed tuning · composition modifiée ou incomplète, repli Box');
   const data = sources();
   for (const ids of [[1, 2, 4], [1, 2], [1, 2, 3, 4]]) {
-    const p = importerSpeedTuneOptimizer(ids.map(id => ligne(id)), lead, data);
+    const p = importerSpeedTuneOptimizer(ids.map(id => ligne(id)), lead, data, fr);
     egal(p.membres.map(m => m.selector), ids.map(id => ({ source: 'box', unitKey: `box-${id}` })),
       'ni sous-ensemble ni sur-ensemble du deck ne conserve sa provenance');
     egal(p.equipes[0].leader, undefined, 'pas de leader de deck inventé');
   }
-  const p = importerSpeedTuneOptimizer([ligne(1), ligne(2), ligne(3), ligne(99, false, null)], lead, data);
+  const p = importerSpeedTuneOptimizer([ligne(1), ligne(2), ligne(3), ligne(99, false, null)], lead, data, fr);
   egal(p.membres[0].selector, { source: 'box', unitKey: 'box-1' }, 'composition évaluée avant filtrage des lignes invalides');
-  const q = importerSpeedTuneOptimizer([ligne(1), ligne(2), ligne(3, false, null)], lead, data);
+  const q = importerSpeedTuneOptimizer([ligne(1), ligne(2), ligne(3, false, null)], lead, data, fr);
   egal(q.membres[0].selector, { source: 'siege-defense', teamId: 'd1', slotIndex: 0 }, 'vitesse absente ne change pas la composition du camp');
 }
 export function testImportSpeedTuneCompositionCopies() {
   titre('Import speed tuning · composition exacte avec copies et slots sans équipement');
   const data = sources(); data.siegeDefenseTeams = [deck('copies', [1, 2, 1])]; data.siegeOffenseTeams = [];
-  const p = importerSpeedTuneOptimizer([ligne(1), ligne(1), ligne(2)], lead, data);
+  const p = importerSpeedTuneOptimizer([ligne(1), ligne(1), ligne(2)], lead, data, fr);
   egal(p.membres.map(m => exclusionSelectorKey(m.selector)), ['siege-defense:copies:0', 'siege-defense:copies:2', 'siege-defense:copies:1'],
     'copies distinctes consommées dans l’ordre des slots');
   egal(consommer(p, data).rapport.membresImportes, 3, 'trois exemplaires conservés');
-  const modifie = importerSpeedTuneOptimizer([ligne(1), ligne(2), ligne(2)], lead, data);
+  const modifie = importerSpeedTuneOptimizer([ligne(1), ligne(2), ligne(2)], lead, data, fr);
   ok(modifie.membres.every(m => m.selector.source === 'box'), 'multiplicités différentes refusées malgré les mêmes espèces');
   delete data.siegeDefenseTeams[0].slots[0].gear;
-  const invalide = importerSpeedTuneOptimizer([ligne(1), ligne(1), ligne(2)], lead, data);
+  const invalide = importerSpeedTuneOptimizer([ligne(1), ligne(1), ligne(2)], lead, data, fr);
   egal(invalide.ignores.length, 0, 'slot du deck retrouvé sans équipement gardé, aux stats de base de son espèce');
   ok(invalide.membres.length === 3 && invalide.membres.every(m => m.selector.source === 'siege-defense'), 'aucune copie Box substituée au slot sans équipement');
 }

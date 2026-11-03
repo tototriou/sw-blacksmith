@@ -38,9 +38,9 @@ export function testOptimizerImportSiegeBranchement() {
   for (const prop of ['onImporterEquipe={importerEquipe}', 'sourcesOptimizer={optimizerData}', 'compteCharge={box.length > 0 || runes.length > 0}']) ok(montage.includes(prop), `App → SiegePage : ${prop}`);
   const debutBoard = page.indexOf('<SiegeBoard'), finBoard = page.indexOf('/>', debutBoard);
   ok(debutBoard >= 0 && finBoard > debutBoard && page.slice(debutBoard, finBoard).includes('{...boardProps}'), 'SiegePage relaie les props à SiegeBoard');
-  ok(board.includes('onExporterOptimizer={() => onImporterEquipe(data => produireEquipe(team.id, data))}'), 'SiegeBoard relaie la seule action aux cartes');
-  ok(board.includes("? importerDefensesSiegeOptimizer({ ...data, siegeDefenseTeams: data.siegeDefenseTeams.filter(t => t.id === teamId) })")
-    && board.includes(': importerOffenseSiegeOptimizer(teamId, data)'), 'producteurs existants : une défense ou une offense ciblée');
+  ok(board.includes('onExporterOptimizer={() => onImporterEquipe((data, t) => produireEquipe(team.id, data, t))}'), 'SiegeBoard relaie la seule action aux cartes');
+  ok(board.includes("? importerDefensesSiegeOptimizer({ ...data, siegeDefenseTeams: data.siegeDefenseTeams.filter(e => e.id === teamId) }, t)")
+    && board.includes(': importerOffenseSiegeOptimizer(teamId, data, t)'), 'producteurs existants : une défense ou une offense ciblée');
   ok(board.includes('const exporterDefensesOptimizer = () => onImporterEquipe(importerDefensesSiegeOptimizer);'), 'page Défense : toutes les défenses, sans filtre d’affichage');
   ok(app.includes('}, setRapportExportOptimizer);')
     && app.includes('<OptimizerImportRapport rapport={rapportExportOptimizer}'), 'rapport porté par App, conservé après navigation et rendu');

@@ -65,7 +65,7 @@ function recette(setsAuraExternes: unknown, sets: string[] = []) {
     excludeUsedRunes: false, excludeUsedScope: 'box', excludedSelectors: [],
     ignoreArtifacts: false, artifactMainByKind: {},
   });
-  return parseOptimizerRecipe(JSON.stringify({ ...base, damageSetup: { ...base.damageSetup, setsAuraExternes } }));
+  return parseOptimizerRecipe(JSON.stringify({ ...base, damageSetup: { ...base.damageSetup, setsAuraExternes } }), fr);
 }
 
 export function testAurasEcranBornes() {
@@ -191,7 +191,7 @@ export function testAurasEcranValidationPartagee() {
     ['fight', 'pas une liste'],
   ] as [unknown, string][]) {
     const e = erreurAurasExternes(invalide);
-    ok(e !== null && recette(invalide).error === `Fichier invalide : damageSetup.setsAuraExternes${e.chemin} ${e.attente}.`,
+    ok(e !== null && recette(invalide).error === `Fichier invalide : damageSetup.setsAuraExternes${e.chemin} ${e.attente(fr.optimizer.recetteInvalide.attentes)}.`,
       `même refus, même chemin à l’écran et dans la recette : ${motif}`);
   }
   egal(erreurAurasExternes(undefined), null, 'liste absente : zéro aura, acceptée');

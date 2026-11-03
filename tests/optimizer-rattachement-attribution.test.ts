@@ -5,6 +5,7 @@ import { cleMemoireMembre, reverifierStockageOptimizer, type StockageOptimizer }
 import { validerProprietaireCriteres } from '../src/lib/optimizerCriteriaOwner';
 import { baseCompleteCriteres } from '../src/lib/criteresOptimizer';
 import { egal, ok, titre } from './outils';
+import { fr } from '../src/i18n/fr';
 
 export function testOptimizerRattachementReferenceConservee() {
   titre('Rattachement · espèce absente du bestiaire, sa référence conservée bloque toute autre attribution');
@@ -30,7 +31,7 @@ export function testOptimizerRattachementReferenceConservee() {
       })), validated: [a, b].map((selector, i) => ({ listId: 'l', selector, runeIds: Array.from({ length: 6 }, (_, j) => 1 + j + i * 6) })),
       teams: [{ id: 'e', listId: 'l', members: [a, b], leader: a, lead: null }], listContents: new Map([['l', 'guilde']]),
       rejets: { memories: [], teams: [], listContents: [] } };
-    const avant = structuredClone(stockage), resultat = reverifierStockageOptimizer(stockage, compte, new Set(Array.from({ length: 12 }, (_, i) => i + 1)));
+    const avant = structuredClone(stockage), resultat = reverifierStockageOptimizer(stockage, compte, new Set(Array.from({ length: 12 }, (_, i) => i + 1)), fr);
     const suivant = resultat.stockage, destinationB: ExclusionSelector = { source: 'unowned', monsterId: '2' };
     egal(suivant.members.map(m => m.selector), ordre.map(s => s === a ? a : destinationB), 'A garde sa référence et B ne la prend pas, quel que soit leur ordre');
     egal(new Set(suivant.members.map(m => exclusionSelectorKey(m.selector))).size, 2, 'deux références distinctes dans la liste');
