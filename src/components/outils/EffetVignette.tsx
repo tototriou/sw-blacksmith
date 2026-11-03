@@ -1,5 +1,6 @@
 import { Check } from 'lucide-react';
 import { Vignette } from '../../ui';
+import { useTraduction } from '../../hooks/useLangue';
 
 // Un effet actif, sous forme de vignette où l'ICÔNE EST LE CONTRÔLE — pas une
 // icône décorative à côté d'une case à cocher.
@@ -31,13 +32,14 @@ export default function EffetVignette({
   // reste du format étroit (fond renforcé, coche masquée), qui est celui du doigt.
   largeur?: string;
 }) {
+  const etat = useTraduction().degats.effets.etatVignette;
   return (
     <Vignette
       choisi={actif}
       onClick={onClick}
       // Au format étroit, vignettes plus serrées : plus d'effets par rangée.
       largeur={largeur ?? (etroit ? 'w-14' : 'w-16')}
-      aria-label={`${libelle} — ${actif ? 'actif' : 'inactif'}`}
+      aria-label={etat(libelle, actif)}
       // ⚠️ `libelle` est tronqué (`truncate`, `Vignette.tsx`) à cette largeur
       // fixe — « Ce sort pose le def break » devient « Ce sort... », illisible
       // sans un moyen de retrouver le texte complet. `title` affiche le

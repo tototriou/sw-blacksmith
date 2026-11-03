@@ -22,7 +22,7 @@ const BLADE_SURGE_LAPIS = 10616;
 const BLADE_DANCER = 14808;
 
 // Les quatorze champs : [nom, valeur d'une entrée valide pour la clé].
-const RANG_VALIDE = cransDeLaRegleIgnoreDef(IGNORE_DEF_A_PARTIR_DU_COUP_PAR_ID[BLADE_DANCER]).map((c) => c.rang).find((r) => r !== null) ?? null;
+const RANG_VALIDE = cransDeLaRegleIgnoreDef(IGNORE_DEF_A_PARTIR_DU_COUP_PAR_ID[BLADE_DANCER], fr).map((c) => c.rang).find((r) => r !== null) ?? null;
 const CHAMPS: [string, unknown, number][] = [
   // Sept champs entiers de `validerRecordNumerique`.
   ['coupsPersonnalises', 1, BLADE_SURGE_LAPIS],

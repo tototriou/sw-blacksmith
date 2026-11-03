@@ -81,8 +81,6 @@ import {
   resolveDamageSkill,
   resumeCibleDegatsRetenue,
   champsDuCombat,
-  CRIT_MODE_LABELS,
-  SUMMONER_SKILLS_LABELS,
   type DamageSetup,
   artifactDamageProfile,
 } from '../../lib/damage';
@@ -597,7 +595,7 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
       damageSetup.defBuff && os.etatBuffs.def,
       damageSetup.spdBuff && os.etatBuffs.spd,
       damageSetup.leaderSkill && `lead ${damageSetup.leaderSkill.stat} +${damageSetup.leaderSkill.pct} %`,
-      SUMMONER_SKILLS_LABELS.find((s) => s.key === damageSetup.summonerSkills)?.label,
+      damageSetup.summonerSkills && textes.degats.contenusInvocateur[damageSetup.summonerSkills],
     ].filter(Boolean);
     return os.etatMonstre(bouts.length > 0 ? bouts.join(' · ') : os.etatVide, echoAurasExternes(damageSetup.setsAuraExternes, textes));
   }, [damageSetup, textes, os]);
@@ -620,7 +618,7 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
     // La cible calculée d'un sort à coup de zone curé (Blade Surge), quand ce
     // n'est pas la cible visée : celle que RETIENT le calcul pour le sort
     // RÉSOLU, même règle que le reste de cette ligne.
-    const cibleRetenue = resolvedSkill && resumeCibleDegatsRetenue(resolvedSkill, damageSetup);
+    const cibleRetenue = resolvedSkill && resumeCibleDegatsRetenue(resolvedSkill, damageSetup, textes);
     if (cibleRetenue) bouts.push(cibleRetenue);
     const cible = ELEMENTS.find((e) => e.key === damageSetup.enemyElement);
     bouts.push(cible ? os.contre(nomElement(jeu, cible.key)) : os.elementIgnore);
@@ -632,7 +630,7 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
     const champs = champsDuCombat(resolvedSkill);
     if (champs.defEnnemie) bouts.push(`${jeu.stats.def} ${formatNombre(damageSetup.enemyDef, langue)}`);
     if (champs.crit && !critInterdit) {
-      bouts.push(CRIT_MODE_LABELS.find((c) => c.key === damageSetup.critMode)?.label ?? damageSetup.critMode);
+      bouts.push(textes.degats.critModes[damageSetup.critMode] ?? damageSetup.critMode);
     }
     if (critInterdit) bouts.push(os.critiqueImpossible);
     // ⚠️ **Plus de buffs ici.** Cette ligne résume la FENÊTRE qu'elle rouvre,
@@ -640,7 +638,7 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
     // visibles, dans « État de mon monstre ». Les répéter en texte alors qu'ils
     // sont réglables trois cartes plus haut ne fait que du bruit.
     return bouts.join(' · ');
-  }, [resolvedSkill, damageSetup, critInterdit, jeu, langue, os]);
+  }, [resolvedSkill, damageSetup, critInterdit, jeu, langue, os, textes]);
   // Passifs offensifs de CE monstre (Feng Yan, Sia, Roid… — voir
   // docs/02-app/degats-reels/) — indépendants du sort choisi, calculés dès
   // qu'une fiche est chargée, comme `damageSkills`.

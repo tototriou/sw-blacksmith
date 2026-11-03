@@ -14,7 +14,7 @@ import { tmpdir } from 'os';
 import { join, resolve } from 'path';
 import { egal, ok, titre, monstersJson } from './outils';
 import { buildOptimizerRecipe, parseOptimizerRecipe } from '../src/lib/optimizerRecipe';
-import { CRIT_MODE_LABELS, DEFAULT_DAMAGE_SETUP } from '../src/lib/damage';
+import { CRIT_MODES, DEFAULT_DAMAGE_SETUP } from '../src/lib/damage';
 import { chargerRecette } from '../scripts/lib/chargerRecette';
 import { classeMessageImport, delaiEffacementImport } from '../src/lib/messageImport';
 import { fr } from '../src/i18n/fr';
@@ -45,7 +45,7 @@ function recetteBrute(critMode: unknown, monsterCom2usId = 14104, monsterName = 
 export function testCritiqueMoyenneImport() {
   titre('Coup critique — « Moyenne » supprimé : conversion à l’import, refus du reste, export');
 
-  egal(CRIT_MODE_LABELS.map((c) => c.key), ['crit', 'normal'], 'deux modes proposés : Critique, Non critique');
+  egal(CRIT_MODES.map((c) => fr.degats.critModes[c]), ['Critique', 'Non critique'], 'deux modes proposés : Critique, Non critique');
 
   const lue = parseOptimizerRecipe(JSON.stringify(recetteBrute('moyenne')), fr);
   ok(lue.recipe !== null, '« moyenne » : la recette est lue, jamais refusée');

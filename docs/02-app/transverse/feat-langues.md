@@ -159,8 +159,10 @@ artéfacts, réglages avancés, exclusion, validation et libération), ses résu
 tableau, tri, filtres d'affichage, pagination, progression, quasi-succès, diagnostics), le point
 de sauvegarde des listes, l'import d'une équipe et les rapports d'import, de stockage et de
 rattachement, les erreurs d'une recette importée ; le speed tuning, en page comme en modale (les
-deux camps, l'ordre des sorts, l'analyse, les tableaux de ticks et les grilles). Restent en
-français dans l'Optimizer : la
+deux camps, l'ordre des sorts, l'analyse, les tableaux de ticks et les grilles) ; l'objectif
+« Dégâts réels » (sa fenêtre, ses effets actifs, ses passifs, l'adversaire, le coup critique, et
+les libellés et résumés que `damage.ts` rédige pour elle). Une formule de sort s'écrit avec les
+stats du jeu dans la langue choisie (`formuleLisible`). Restent en français dans l'Optimizer : la
 description du combat « Dégâts réels », la vue de développement des gabarits, et les messages
 de la console (pannes de Worker, protocole de la file, erreurs internes du moteur), que l'écran
 remplace par une phrase traduite.
@@ -203,7 +205,8 @@ Un écran qu'on traduit entre dans `FICHIERS_TRADUITS` dans le même commit.
   « Options » du téléphone, en anglais ; ses résultats (progression, refus, pagination) en
   anglais ; le speed tuning (règle, camps, tableaux, grilles, ordre de tour) en anglais, et les
   rangs anglais d'un tour (« 1st », « 2nd », « 11th ») ; la fusion d'une recommandation importée
-  (dialogue, aperçu, message, provenance illisible) en anglais.
+  (dialogue, aperçu, message, provenance illisible) en anglais ; les dégâts réels (la carte, sa
+  formule, une séquence de coups, les crans d'ignore DEF, les modes critiques) en anglais.
 - [partage-langues.test.ts](../../../tests/partage-langues.test.ts) : les messages de `src/lib/`
   (imports, statut d'équipe, alerte de tick, source d'un build, import d'un compte, top des
   artéfacts, espèce déjà dans la liste, écho des auras externes, recette refusée, raison du zéro

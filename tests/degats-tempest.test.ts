@@ -597,7 +597,9 @@ export function testDegatsTempestEcran() {
     carte.includes("const apresSort = cat.type === 'conditionnel' && p.slotsDeclencheurs != null;"),
     'passif qui frappe après certains sorts = conditionnel à slots déclencheurs curés'
   );
-  ok(/apresSort\s*\?\s*`\$\{nom\} \(S\$\{p\.profile\.slot\}\) se déclenche \$\{p\.avantLeSort \? 'avant' : 'après'\} ce sort`/.test(carte),
+  ok(/apresSort\s*\?\s*d\.passifs\.apresSort\(nom, p\.profile\.slot, !!p\.avantLeSort\)/.test(carte)
+    && fr.degats.passifs.apresSort('Tempest', 3, false) === 'Tempest (S3) se déclenche après ce sort'
+    && fr.degats.passifs.apresSort('Tempest', 3, true) === 'Tempest (S3) se déclenche avant ce sort',
     'son interrupteur s’intitule « <nom> (S<slot>) se déclenche après ce sort » (« avant » pour une attaque qui précède le sort)');
   ok(
     carte.includes('{!apresSort && <p className="mt-1 text-xs leading-snug text-ink-dim">{texteCondition}</p>}'),
@@ -607,7 +609,7 @@ export function testDegatsTempestEcran() {
   // interrupteur-là — un `title` ne s'ouvre jamais au doigt ; la condition du
   // jeu reste dans la prose du passif (sous l'interrupteur, et au « ? » de 11bis).
   ok(
-    carte.includes("title={apresSort ? undefined : `${condition}${actif ? ' (activé)' : ' — désactivé par défaut'}`}"),
+    carte.includes('title={apresSort ? undefined : `${condition}${d.etat(actif)}`}'),
     'l’interrupteur « se déclenche après ce sort » n’a plus de survol (`title`), les autres interrupteurs de passif gardent le leur'
   );
   ok(
@@ -616,7 +618,7 @@ export function testDegatsTempestEcran() {
   );
   ok(carte.includes('{texteJeu}') && carte.includes('<p className="mt-1 text-xs leading-snug text-ink-dim">{p.description}</p>'), 'la prose du jeu du passif reste affichée sous l’interrupteur');
   ok(
-    carte.includes('<HelpPopover title={s.nom} ariaLabel={`Description de ${s.nom}`}>'),
+    carte.includes('<HelpPopover title={s.nom} ariaLabel={d.competence.description(s.nom)}>'),
     'la prose de chaque sort, Tempest compris, reste au « ? » de sa case'
   );
   ok(carte.includes("const nom = p.nom.replace(/\\s*\\(Passive\\)\\s*$/i, '');"), 'nom affiché : celui du jeu, sans « (Passive) »');

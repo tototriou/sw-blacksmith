@@ -133,6 +133,10 @@ const FICHIERS_TRADUITS = [
   // Lot 7a : le speed tuning (page et modale ouverte depuis un deck).
   'src/components/outils/SpeedTuneModale.tsx',
   'src/components/outils/SpeedTuningSection.tsx',
+  // Lot 7b-1 : l'objectif « Dégâts réels », sa fenêtre et ses vignettes d'effet.
+  'src/components/outils/DamageSetupCard.tsx',
+  'src/components/outils/DamageSetupModale.tsx',
+  'src/components/outils/EffetVignette.tsx',
 ];
 
 export default tseslint.config(
