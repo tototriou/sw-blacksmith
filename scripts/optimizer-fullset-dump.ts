@@ -12,13 +12,14 @@ import { parseOptimizerRecipe } from '../src/lib/optimizerRecipe';
 import { loadBoxMonster, loadSiegeMonster, printMonsterSummary } from './lib/loadMonster';
 import { recipeToSearchParams } from './lib/recipeToSearchParams';
 import { runSearchToCompletion } from './lib/runSearch';
+import { fr } from '../src/i18n/fr';
 
 const [exportPath, recipePath, deckIdArg] = process.argv.slice(2);
 if (!exportPath || !recipePath) {
   console.error('Usage: optimizer-fullset-dump.ts <export.json> <recipe.json> [deckId]');
   process.exit(1);
 }
-const { recipe, error, avertissements } = parseOptimizerRecipe(readFileSync(recipePath, 'utf8'));
+const { recipe, error, avertissements } = parseOptimizerRecipe(readFileSync(recipePath, 'utf8'), fr);
 for (const a of avertissements ?? []) console.warn(`⚠️ ${a}`);
 if (!recipe) {
   console.error(`Recette invalide : ${error}`);

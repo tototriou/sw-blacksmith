@@ -41,6 +41,7 @@ import { computeStats } from '../src/lib/stats';
 import { buildRealDamageContext } from '../scripts/lib/realDamageCli';
 import { loadMonstersList } from '../scripts/lib/monstersData';
 import { loadMonsterSkills } from '../scripts/lib/skillsData';
+import { fr } from '../src/i18n/fr';
 
 const LAPIS = 19811;
 const BLADE_SURGE_LAPIS = 10616;
@@ -79,7 +80,7 @@ function bladeSurgeDeLapis(): SkillDamageProfile {
 export function testBladeSurgeRecette() {
   titre('Blade Surge · recette — cibleDegatsParSort validé, refusé avec son chemin, aller-retour et resets');
 
-  const lire = (valeur: unknown) => parseOptimizerRecipe(JSON.stringify(valeur));
+  const lire = (valeur: unknown) => parseOptimizerRecipe(JSON.stringify(valeur), fr);
   const avecCible = (cibleDegatsParSort: unknown) =>
     lire({ ...recette(SECONDAIRE), damageSetup: { ...SECONDAIRE, cibleDegatsParSort } });
   // `erreur` écrit « <chemin> <attente> » : l'espace final exige le chemin
@@ -252,7 +253,7 @@ export function testBladeSurgePariteEcranCli() {
     effTotal: 0,
     stats: computeStats({ base: { hp: 10000, atk: 1000, def: 600, spd: 100, cr: 15, cd: 50, res: 15, acc: 0 }, runes: [], artifacts: [] }),
   };
-  const relire = (setup: DamageSetup) => parseOptimizerRecipe(JSON.stringify(recette(setup))).recipe;
+  const relire = (setup: DamageSetup) => parseOptimizerRecipe(JSON.stringify(recette(setup)), fr).recipe;
   // Le CLI : `chargerRecette` lit la recette par `parseOptimizerRecipe`, puis
   // `buildRealDamageContext` transmet son `damageSetup` entier au score.
   const scoreCli = (setup: DamageSetup) => {

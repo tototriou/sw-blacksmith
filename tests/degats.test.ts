@@ -91,6 +91,7 @@ import {
   summonerSkillBonus,
   type PassifOffensifProfile,
 } from '../src/lib/damage';
+import { fr } from '../src/i18n/fr';
 
 const racine = resolve(new URL('..', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1'));
 const DOSSIER_SORTS = resolve(racine, 'public/data/skills');
@@ -2947,7 +2948,7 @@ export default function testDegats() {
     ignoreArtifacts: false,
     artifactMainByKind: {},
   });
-  const relue = parseOptimizerRecipe(JSON.stringify(recette)).recipe;
+  const relue = parseOptimizerRecipe(JSON.stringify(recette), fr).recipe;
   egal(relue?.damageSetup, recette.damageSetup, 'le réglage survit à un aller-retour export/import de recette');
 
   // Le cran « aucune » a existé dans des recettes déjà partagées. Il reste
@@ -2957,13 +2958,13 @@ export default function testDegats() {
   const recetteLegacySansInvocateur = JSON.parse(JSON.stringify(recette));
   recetteLegacySansInvocateur.damageSetup.summonerSkills = 'aucune';
   egal(
-    parseOptimizerRecipe(JSON.stringify(recetteLegacySansInvocateur)).recipe?.damageSetup.summonerSkills,
+    parseOptimizerRecipe(JSON.stringify(recetteLegacySansInvocateur), fr).recipe?.damageSetup.summonerSkills,
     'normal',
     'ancienne recette « Aucune » : normalisée vers Combat à l’import'
   );
   delete recetteLegacySansInvocateur.damageSetup.summonerSkills;
   egal(
-    parseOptimizerRecipe(JSON.stringify(recetteLegacySansInvocateur)).recipe?.damageSetup.summonerSkills,
+    parseOptimizerRecipe(JSON.stringify(recetteLegacySansInvocateur), fr).recipe?.damageSetup.summonerSkills,
     'normal',
     'ancienne recette sans réglage d’invocateur : Combat reste la valeur par défaut'
   );

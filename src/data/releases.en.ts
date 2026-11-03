@@ -21,6 +21,7 @@ export const RELEASES_EN: Release[] = [
       { kind: 'feat', scope: 'Siege', text: 'Defense and offense teams, recommendations and import reports in English.' },
       { kind: 'feat', scope: 'Account', text: 'Box, runes, artifacts, curves, comparison and optimization in English, as is the account import.' },
       { kind: 'feat', scope: 'Optimizer', text: 'The criteria screen in English: lists and teams, monster state, set, conditions, artifacts, relic and advanced settings.' },
+      { kind: 'feat', scope: 'Optimizer', text: 'Results, filters, diagnostics, save point and team or recipe imports in English.' },
       { kind: 'feat', scope: 'Game', text: 'Sets, stats, effects and artifacts use the game’s names, in French and in English.' },
       { kind: 'fix', scope: 'Runes', text: 'French stat names match the game, and the Seal set shows its real effect.' },
       { kind: 'fix', scope: 'Bestiary', text: 'A monster’s sheet spells out its type.' },

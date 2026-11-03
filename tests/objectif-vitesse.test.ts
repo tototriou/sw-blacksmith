@@ -9,6 +9,7 @@ import EnteteResultats from '../src/components/outils/optimizer/EnteteResultats'
 import { classerPourLaPage, fixtureClassementCombat } from './classement-fixture';
 import { rendre } from './rendu/outils-rendu';
 import { egal, ok, titre } from './outils';
+import { fr } from '../src/i18n/fr';
 
 /**
  * L'objectif de recherche Vitesse reste ; son tri est la colonne VIT. La note
@@ -43,7 +44,7 @@ export function testObjectifVitesseMigration() {
 
   // Mémoire de membre et session : un tri « vitesse » enregistré se relit VIT.
   const criteres = { ...baseCompleteCriteres(undefined), sortBy: 'vitesse' };
-  const lu = lireMembresOptimizer(JSON.stringify({ memories: [['l1|box:11', { listId: 'l1', selector: { source: 'box', unitKey: '11' }, com2usId: 10001, criteres }]], teams: [] }));
+  const lu = lireMembresOptimizer(JSON.stringify({ memories: [['l1|box:11', { listId: 'l1', selector: { source: 'box', unitKey: '11' }, com2usId: 10001, criteres }]], teams: [] }), fr);
   egal(lu.memories.get('l1|box:11')?.criteres.sortBy, 'spd', 'mémoire de membre : « vitesse » relu VIT, la mémoire reste valide');
   egal(lu.rapport, [], 'mémoire de membre : relecture silencieuse (même ordre)');
 

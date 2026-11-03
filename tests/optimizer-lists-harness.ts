@@ -25,7 +25,8 @@ export function monterListesOptimizer() {
       if (!(place in valeurs)) valeurs[place] = { current: initial };
       return valeurs[place] as { current: T };
     },
-    useSyncExternalStore(_subscribe: unknown, snapshot: () => boolean) { return snapshot(); },
+    // Comme le rendu serveur des autres tests : la langue « Auto » y est le français.
+    useSyncExternalStore<T>(_subscribe: unknown, snapshot: () => T, serveur?: () => T) { return (serveur ?? snapshot)(); },
     useEffect(effet: () => void, deps?: readonly unknown[]) {
       const place = index++, ancien = dependances[place];
       if (!ancien || !deps || deps.some((d, i) => !Object.is(d, ancien[i]))) effets.push(effet);

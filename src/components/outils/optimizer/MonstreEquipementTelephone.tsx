@@ -7,8 +7,8 @@ import Segmented from '../../../ui/Segmented';
 import MonsterGear, { type Selected } from '../../MonsterGear';
 import { type Monster, type GearSet } from '../../../types';
 import { type RefObject, type Dispatch, type SetStateAction, type ReactNode } from 'react';
-import { type ExclusionSourceData, type ExclusionSource } from '../../../lib/optimizerExclusion';
-import { type ImportOptimizer, type RapportImportOptimizer } from '../../../lib/importEquipes';
+import { type ExclusionSource } from '../../../lib/optimizerExclusion';
+import { type ProducteurImportOptimizer, type RapportImportOptimizer } from '../../../lib/importEquipes';
 import { EMPTY_GEAR } from './constantes';
 import { useTraduction } from '../../../hooks/useLangue';
 
@@ -20,7 +20,7 @@ export interface MonstreEquipementTelephoneProps {
   selected: { monster: Monster; gear: GearSet; } | null;
   selectionAffichee: { monster: Monster; gear: GearSet; } | null;
   sourcesImport: SourceImportOptimizer[];
-  importerDepuisEcran: (produire: (data: ExclusionSourceData) => ImportOptimizer) => RapportImportOptimizer;
+  importerDepuisEcran: (produire: ProducteurImportOptimizer) => RapportImportOptimizer;
   rapportImport: RapportImportOptimizer | null;
   setZoneCOpen: Dispatch<SetStateAction<boolean>>;
   zoneCOpen: boolean;

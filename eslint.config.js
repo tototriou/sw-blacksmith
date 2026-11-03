@@ -110,6 +110,26 @@ const FICHIERS_TRADUITS = [
   'src/components/outils/optimizer/bureau/ReglagesAvancesBureau.tsx',
   'src/components/outils/optimizer/bureau/SetDeRunesCompact.tsx',
   'src/components/outils/optimizer/bureau/SetsAuraBureau.tsx',
+  // Lot 6b : les résultats, la progression, les diagnostics, le point de
+  // sauvegarde et l'import d'une équipe.
+  'src/components/outils/BuildCandidateCard.tsx',
+  'src/components/outils/OptimizerBackupBar.tsx',
+  'src/components/outils/OptimizerImportButton.tsx',
+  'src/components/outils/OptimizerImportRapport.tsx',
+  'src/components/outils/optimizer/AvisRechercheTronquee.tsx',
+  'src/components/outils/optimizer/DiagnosticApprofondi.tsx',
+  'src/components/outils/optimizer/DiagnosticFaisabilite.tsx',
+  'src/components/outils/optimizer/DiagnosticsSansResultat.tsx',
+  'src/components/outils/optimizer/EnteteResultats.tsx',
+  'src/components/outils/optimizer/FiltresResultats.tsx',
+  'src/components/outils/optimizer/GrilleResultats.tsx',
+  'src/components/outils/optimizer/MessageImportRecette.tsx',
+  'src/components/outils/optimizer/PaginationResultats.tsx',
+  'src/components/outils/optimizer/ProgressionRecherche.tsx',
+  'src/components/outils/optimizer/QuasiSucces.tsx',
+  'src/components/outils/optimizer/TableauResultats.tsx',
+  'src/components/outils/optimizer/TetesDeTri.tsx',
+  'src/components/outils/optimizer/bureau/ResultatsBureau.tsx',
 ];
 
 export default tseslint.config(

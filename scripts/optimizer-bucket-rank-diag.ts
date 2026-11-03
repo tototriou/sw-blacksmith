@@ -45,6 +45,7 @@ import { loadBoxMonster, printMonsterSummary } from './lib/loadMonster';
 import { recipeToSearchParams } from './lib/recipeToSearchParams';
 import { prepareSearch, buildBuckets } from '../src/lib/runeBuildOptim';
 import { drain } from './lib/drain';
+import { fr } from '../src/i18n/fr';
 
 const [exportPath, recipePath, runeIdArg] = process.argv.slice(2);
 if (!exportPath || !recipePath || !runeIdArg) {
@@ -53,7 +54,7 @@ if (!exportPath || !recipePath || !runeIdArg) {
 }
 const targetRuneId = Number(runeIdArg);
 
-const { recipe, error, avertissements } = parseOptimizerRecipe(readFileSync(recipePath, 'utf8'));
+const { recipe, error, avertissements } = parseOptimizerRecipe(readFileSync(recipePath, 'utf8'), fr);
 for (const a of avertissements ?? []) console.warn(`⚠️ ${a}`);
 if (!recipe) {
   console.error(`Recette invalide : ${error}`);

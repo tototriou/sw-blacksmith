@@ -34,6 +34,7 @@ import { BuildCandidate, objectiveScore } from '../src/lib/runeBuildOptim';
 import { StatKey } from '../src/lib/effects';
 import { StatRow } from '../src/lib/stats';
 import { egal, ok, titre } from './outils';
+import { fr } from '../src/i18n/fr';
 
 const racine = resolve(new URL('..', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1'));
 const DOSSIER_SORTS = resolve(racine, 'public/data/skills');
@@ -143,7 +144,7 @@ export function testVitCiriBirgitta() {
 
   // La recette transporte le compteur, à l'identique.
   const recette = recetteDe(29314, { ...base, skillCom2usId: 19004, stackPersonnalise: { 19014: 3 } });
-  egal(parseOptimizerRecipe(JSON.stringify(recette)).recipe?.damageSetup?.stackPersonnalise, { 19014: 3 },
+  egal(parseOptimizerRecipe(JSON.stringify(recette), fr).recipe?.damageSetup?.stackPersonnalise, { 19014: 3 },
     'recette : le compteur de Flash Step survit à l’export puis à la relecture');
 }
 
@@ -178,7 +179,7 @@ export function testTheoniaAtqCible() {
   ok(proche(score(34215, { ...setup, enemyAtk: 999 }), 2 * score(34215, { ...setup, enemyAtk: 1000 })),
     '23515 Theonia — moteur : ATQ ennemie 999 → score ×2 ; 1 000 → aucun bonus');
   const recette = recetteDe(34215, { ...setup, enemyAtk: 1234 });
-  egal(parseOptimizerRecipe(JSON.stringify(recette)).recipe?.damageSetup?.enemyAtk, 1234,
+  egal(parseOptimizerRecipe(JSON.stringify(recette), fr).recipe?.damageSetup?.enemyAtk, 1234,
     'recette : l’ATQ ennemie saisie survit à l’export puis à la relecture');
 
   // Une recette SANS `enemyAtk` (ancienne recette) prend la valeur que
@@ -200,7 +201,7 @@ export function testTheoniaAtqCible() {
     egal('enemyAtk' in sansChamp, false, `${sort} ${nom} — la recette de test ne porte pas le champ enemyAtk`);
     const avec1000 = { ...base, skillCom2usId: sort, enemyAtk: 1000 };
     // L'ancienne recette passe par l'export JSON puis la relecture, comme à l'import.
-    const relue = parseOptimizerRecipe(JSON.stringify(recetteDe(forme, sansChamp as DamageSetup))).recipe;
+    const relue = parseOptimizerRecipe(JSON.stringify(recetteDe(forme, sansChamp as DamageSetup)), fr).recipe;
     egal(relue?.damageSetup?.enemyAtk, undefined, `${sort} ${nom} — relue, la recette n'a toujours pas de enemyAtk`);
     const scoreSans = (valeurs: Partial<Record<StatKey, number>>) => {
       const ctx = buildRealDamageContext(relue!, forme, []);

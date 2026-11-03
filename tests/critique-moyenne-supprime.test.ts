@@ -13,10 +13,11 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join, resolve } from 'path';
 import { egal, ok, titre, monstersJson } from './outils';
-import { AVERTISSEMENT_CRIT_MOYENNE, buildOptimizerRecipe, parseOptimizerRecipe } from '../src/lib/optimizerRecipe';
+import { buildOptimizerRecipe, parseOptimizerRecipe } from '../src/lib/optimizerRecipe';
 import { CRIT_MODE_LABELS, DEFAULT_DAMAGE_SETUP } from '../src/lib/damage';
 import { chargerRecette } from '../scripts/lib/chargerRecette';
 import { classeMessageImport, delaiEffacementImport } from '../src/lib/messageImport';
+import { fr } from '../src/i18n/fr';
 
 const racine = resolve(new URL('..', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1'));
 // Monstre de l'export miniature (unité 101), résolu par son nom comme le CLI.
@@ -46,12 +47,12 @@ export function testCritiqueMoyenneImport() {
 
   egal(CRIT_MODE_LABELS.map((c) => c.key), ['crit', 'normal'], 'deux modes proposés : Critique, Non critique');
 
-  const lue = parseOptimizerRecipe(JSON.stringify(recetteBrute('moyenne')));
+  const lue = parseOptimizerRecipe(JSON.stringify(recetteBrute('moyenne')), fr);
   ok(lue.recipe !== null, '« moyenne » : la recette est lue, jamais refusée');
   egal(lue.recipe?.damageSetup.critMode, 'crit', '« moyenne » est converti en « crit » (Critique, le défaut)');
-  egal(lue.avertissements, [AVERTISSEMENT_CRIT_MOYENNE], '… avec UN avertissement');
+  egal(lue.avertissements, [fr.optimizer.recetteInvalide.critMoyenne], '… avec UN avertissement');
   ok(
-    ['damageSetup.critMode', '« moyenne »', '« crit »'].every((morceau) => AVERTISSEMENT_CRIT_MOYENNE.includes(morceau)),
+    ['damageSetup.critMode', '« moyenne »', '« crit »'].every((morceau) => fr.optimizer.recetteInvalide.critMoyenne.includes(morceau)),
     'l’avertissement nomme le chemin du champ, l’ancienne et la nouvelle valeur'
   );
   egal(
@@ -61,15 +62,15 @@ export function testCritiqueMoyenneImport() {
   );
 
   for (const valeur of ['crit', 'normal'] as const) {
-    const r = parseOptimizerRecipe(JSON.stringify(recetteBrute(valeur)));
+    const r = parseOptimizerRecipe(JSON.stringify(recetteBrute(valeur)), fr);
     egal([r.recipe?.damageSetup.critMode, r.avertissements], [valeur, undefined], `« ${valeur} » : lu tel quel, sans avertissement`);
   }
   const sansMode = recetteBrute(undefined);
-  const rSans = parseOptimizerRecipe(JSON.stringify(sansMode));
+  const rSans = parseOptimizerRecipe(JSON.stringify(sansMode), fr);
   egal([rSans.recipe !== null, rSans.avertissements], [true, undefined], 'mode absent : recette lue, sans avertissement');
 
   for (const inconnue of ['Moyenne', 'moyen', 'esperance', '', 1]) {
-    const r = parseOptimizerRecipe(JSON.stringify(recetteBrute(inconnue)));
+    const r = parseOptimizerRecipe(JSON.stringify(recetteBrute(inconnue)), fr);
     ok(
       r.recipe === null && (r.error ?? '').includes('damageSetup.critMode'),
       `valeur inconnue ${JSON.stringify(inconnue)} : refusée avec son chemin (${r.error ?? 'acceptée'})`
@@ -135,7 +136,7 @@ export function testCritiqueMoyenneEcranEtCli() {
   const fin = source.indexOf('\n  }\n', debut);
   const importRecipe = source.slice(debut, fin);
   ok(debut !== -1 && fin > debut, 'la fonction importRecipe existe (sinon ce test contrôle la mauvaise fonction)');
-  ok(importRecipe.includes('const { recipe, error, avertissements } = parseOptimizerRecipe(text);'), 'écran : les avertissements du parseur sont lus');
+  ok(importRecipe.includes('const { recipe, error, avertissements } = parseOptimizerRecipe(text, textes);'), 'écran : les avertissements du parseur sont lus');
   ok(/\+ \(avertissements \?\? \[\]\)\.map\(\(a\) => ` \$\{a\}`\)\.join\(''\);/.test(importRecipe), 'écran : chacun est ajouté au message d’import');
   egal((importRecipe.match(/\$\{suffixeLocks\}/g) ?? []).length, 2, 'écran : le message qui les porte est affiché dans les deux branches de l’import');
 
@@ -152,8 +153,8 @@ export function testCritiqueMoyenneEcranEtCli() {
     writeFileSync(cheminCrit, JSON.stringify(recetteBrute('crit', COM2US_MINIATURE, espece.name)));
     const moyenne = chargerRecette(compte, cheminMoyenne);
     const crit = chargerRecette(compte, cheminCrit);
-    ok(moyenne.avertissements.includes(AVERTISSEMENT_CRIT_MOYENNE), 'CLI : l’avertissement de conversion est rendu par chargerRecette');
-    ok(!crit.avertissements.includes(AVERTISSEMENT_CRIT_MOYENNE), 'CLI : rien de tel pour une recette en « crit »');
+    ok(moyenne.avertissements.includes(fr.optimizer.recetteInvalide.critMoyenne), 'CLI : l’avertissement de conversion est rendu par chargerRecette');
+    ok(!crit.avertissements.includes(fr.optimizer.recetteInvalide.critMoyenne), 'CLI : rien de tel pour une recette en « crit »');
     egal(moyenne.recipe, crit.recipe, 'CLI : la recette convertie est celle en « crit »');
     egal(JSON.stringify(moyenne.params), JSON.stringify(crit.params), 'CLI : les paramètres de recherche sont ceux de « crit »');
   } finally {

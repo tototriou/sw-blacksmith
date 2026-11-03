@@ -82,6 +82,7 @@ export const RELEASES: Release[] = [
       { kind: 'feat', scope: 'Siège', text: 'Équipes de défense et d’offense, recommandations et rapports d’import en anglais.' },
       { kind: 'feat', scope: 'Compte', text: 'Box, runes, artéfacts, courbes, comparaison et optimisation en anglais, comme l’import d’un compte.' },
       { kind: 'feat', scope: 'Optimizer', text: 'L’écran des critères en anglais : listes et équipes, état du monstre, set, conditions, artéfacts, relique et réglages avancés.' },
+      { kind: 'feat', scope: 'Optimizer', text: 'Résultats, filtres, diagnostics, point de sauvegarde et imports d’équipes ou de recettes en anglais.' },
       { kind: 'feat', scope: 'Jeu', text: 'Sets, stats, effets et artéfacts portent les noms du jeu, en français comme en anglais.' },
       { kind: 'fix', scope: 'Runes', text: '« Tx critiq. » et « Dgts critiq. » comme dans le jeu, et le bon effet du set Sceau.' },
       { kind: 'fix', scope: 'Bestiaire', text: 'La fiche d’un monstre écrit son type en toutes lettres.' },

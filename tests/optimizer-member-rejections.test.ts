@@ -6,6 +6,7 @@ import type { ExclusionSelector, ExclusionSourceData } from '../src/lib/optimize
 import type { Monster } from '../src/types';
 import { egal, faussLocalStorage, ok, titre } from './outils';
 import { monterListesOptimizer } from './optimizer-lists-harness';
+import { fr } from '../src/i18n/fr';
 
 const box: ExclusionSelector = { source: 'box', unitKey: '11' };
 const autre: ExclusionSelector = { source: 'box', unitKey: '99' };
@@ -54,7 +55,7 @@ export async function testMemoireOptimizerRejetsConserves() {
     lu.setTeams([valide as typeof lu.teams[number]]); lu = h.render(); conserves('setTeams');
     lu.removeMember('l1', box); lu = h.render(); conserves('retrait d’un autre membre');
     const data = compte(); data.siegeDefenseTeams = [];
-    lu.replaceAfterRevalidation(reverifierStockageOptimizer(lu, data, new Set([1])).stockage);
+    lu.replaceAfterRevalidation(reverifierStockageOptimizer(lu, data, new Set([1]), fr).stockage);
     lu = h.render(); conserves('réimport avec changement');
     h = monterListesOptimizer(); lu = h.render();
     egal(lu.memories.size, 0, 'aucune mémoire rejetée réactivée au rechargement');
@@ -83,9 +84,9 @@ export async function testMemoireOptimizerRejetsConserves() {
       ok(cible.get(CLE)!.includes('invalide') && cible.get(CLE)!.includes('opaque'), `${geste} le membre visé : les autres rejets restent intacts`);
     }
     const paire = ['l1|box:11', { listId: 'l1', selector: box, com2usId: 10001, criteres: baseCompleteCriteres(undefined) }];
-    const doublons = lireMembresOptimizer(JSON.stringify({ memories: [paire, paire], teams: [valide, valide] }));
+    const doublons = lireMembresOptimizer(JSON.stringify({ memories: [paire, paire], teams: [valide, valide] }), fr);
     const sansValides = ecrireMembresOptimizer({ ...doublons, memories: new Map(), teams: [] });
-    const apresDoublons = lireMembresOptimizer(sansValides);
+    const apresDoublons = lireMembresOptimizer(sansValides, fr);
     egal(apresDoublons.memories.size, 0, 'une mémoire rejetée comme doublon ne se réactive pas quand la valide disparaît');
     egal(apresDoublons.teams.length, 0, 'une équipe rejetée comme doublon ne se réactive pas quand la valide disparaît');
     ok(sansValides.includes('l1|box:11') && sansValides.includes('valide'), 'les valeurs brutes des doublons restent enregistrées');
@@ -97,7 +98,7 @@ export function testMemoireOptimizerTextesCriteresStricts() {
   const base = baseCompleteCriteres(undefined);
   for (const champ of ['sortBy', 'critereArtefacts'] as const) {
     const paire = ['l1|box:11', { listId: 'l1', selector: box, com2usId: 10001, criteres: { ...base, [champ]: [base[champ]] } }];
-    const lu = lireMembresOptimizer(JSON.stringify({ memories: [paire], teams: [] }));
+    const lu = lireMembresOptimizer(JSON.stringify({ memories: [paire], teams: [] }), fr);
     egal(lu.memories.size, 0, `${champ} : mémoire écartée`);
     egal(lu.rapport, ['Mémoire 1 malformée ou dupliquée : ignorée.'], `${champ} : rejet signalé`);
     ok(lireMemoireMembre(lu.memories, 'l1', box, compte()) === null, `${champ} : aucune application`);

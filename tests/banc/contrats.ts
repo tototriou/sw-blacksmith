@@ -6,6 +6,7 @@ import { configurationBureau } from '../../src/lib/optimizerColonnes';
 import { egal, ok } from '../outils';
 import { ECRANS, preparationPour, taillesPour } from './ecrans';
 import { ecransPourFichiers } from './selection';
+import { fr } from '../../src/i18n/fr';
 
 export function verifierContratsBanc() {
   const optimizer = ECRANS.find((e) => e.id === 'optimizer')!;
@@ -43,7 +44,7 @@ export function verifierContratsBanc() {
       for (const etape of prep) {
         if (!('importer' in etape)) continue;
         const fichier = `tests/fixtures/${etape.fichier}`;
-        const recette = parseOptimizerRecipe(readFileSync(fichier, 'utf8'));
+        const recette = parseOptimizerRecipe(readFileSync(fichier, 'utf8'), fr);
         ok(!!recette.recipe, `${st.id} : recette valide (${recette.error ?? 'acceptée'})`);
         egal(ecransPourFichiers([fichier]).ecrans.map((e) => e.id), ['optimizer'], 'la recette sélectionne l’Optimizer');
         ok(!!etape.confirme, 'import de recette : confirmation explicite exigée');

@@ -1,7 +1,7 @@
 import type { LeaderSkill, SiegeTeam } from '../types';
 import { completerCriteresImport, type CriteresPartielsOptimizer } from './criteresOptimizer';
 import { equipeApresFiltrageOptimizer, leadEffectifMembreOptimizer } from './equipesOptimizer';
-import { fr } from '../i18n/fr';
+import type { Dictionnaire } from '../i18n/fr';
 import { exclusionSelectorKey, resolveExclusionEntry, type ExclusionSelector, type ExclusionSourceData } from './optimizerExclusion';
 import { contenuListeValide, enregistrerMemoireMembre, type ContenuListeOptimizer, type StockageOptimizer } from './optimizerMemberStorage';
 import { enregistrerIdentiteMembre } from './optimizerRattachement';
@@ -31,6 +31,10 @@ export interface ImportOptimizer {
   ignores: MonstreIgnoreImportOptimizer[];
   messages: string[];
 }
+// Un producteur d'import : il reçoit les sources du geste et le dictionnaire
+// du consommateur, dans lequel il rédige noms et messages.
+export type ProducteurImportOptimizer = (data: ExclusionSourceData, t: Dictionnaire) => ImportOptimizer;
+
 export interface RapportImportOptimizer {
   listeCreee: { id: string; name: string } | null;
   membresImportes: number;
@@ -45,14 +49,15 @@ const identiteValide = (id: number | null): id is number => id !== null && Numbe
 
 function ajouterMembre(
   resultat: ImportOptimizer, selector: ExclusionSelector, monsterId: string, runeSpeed: number | null,
-  data: ExclusionSourceData
+  data: ExclusionSourceData, t: Dictionnaire
 ): void {
+  const m = t.optimizer.importsEquipe;
   const monstre = data.monsterById.get(monsterId);
   const libelle = monstre?.name ?? monsterId;
   const resolu = resolveExclusionEntry(selector, data);
   if (!monstre || !identiteValide(monstre.com2usId) || !resolu || resolu.monster.com2usId !== monstre.com2usId) {
-    const raison = !monstre ? 'Monstre inconnu.' : !identiteValide(monstre.com2usId)
-      ? 'Identité d’espèce inutilisable.' : 'Exemplaire introuvable ou d’une autre espèce.';
+    const raison = !monstre ? m.monstreInconnu : !identiteValide(monstre.com2usId)
+      ? m.identiteInutilisable : m.exemplaireIntrouvable;
     resultat.ignores.push({ selector, libelle, raison });
     return;
   }
@@ -63,15 +68,15 @@ function ajouterMembre(
     if (base !== null && Number.isFinite(base) && base >= 0 && Number.isFinite(runeSpeed) && runeSpeed >= 0 && Number.isFinite(minimum)) {
       // runeSpeed contient déjà Swift à plat ; ni le lead ni le tick ne décrivent la fiche.
       criteres.vitesse = { minimum };
-    } else resultat.messages.push(`${libelle} : vitesse non importée, VIT de fiche non établie.`);
+    } else resultat.messages.push(m.vitesseNonImportee(libelle));
   }
   resultat.membres.push({ selector: { ...selector }, com2usId: monstre.com2usId, libelle, criteres });
 }
 
-function ajouterDeck(resultat: ImportOptimizer, team: SiegeTeam, source: 'siege-defense' | 'siege-offense', libelle: string, data: ExclusionSourceData): void {
+function ajouterDeck(resultat: ImportOptimizer, team: SiegeTeam, source: 'siege-defense' | 'siege-offense', libelle: string, data: ExclusionSourceData, t: Dictionnaire): void {
   const debut = resultat.membres.length;
   team.slots.forEach((slot, slotIndex) => {
-    if (slot.monsterId !== null) ajouterMembre(resultat, { source, teamId: team.id, slotIndex }, slot.monsterId, slot.runeSpeed, data);
+    if (slot.monsterId !== null) ajouterMembre(resultat, { source, teamId: team.id, slotIndex }, slot.monsterId, slot.runeSpeed, data, t);
   });
   const members = resultat.membres.slice(debut).map(m => m.selector);
   const leader = members.find(s => (s.source === 'siege-defense' || s.source === 'siege-offense') && s.slotIndex === 0);
@@ -80,24 +85,28 @@ function ajouterDeck(resultat: ImportOptimizer, team: SiegeTeam, source: 'siege-
     lead: structuredClone(monstreLeader?.leaderSkill ?? null) });
 }
 
-export function importerDefensesSiegeOptimizer(data: ExclusionSourceData): ImportOptimizer {
-  const resultat = vide('Défenses de siège', 'guilde');
-  data.siegeDefenseTeams.forEach((team, i) => ajouterDeck(resultat, team, 'siege-defense', `Défense ${i + 1}`, data));
+// Les producteurs reçoivent le dictionnaire du consommateur (`produire(data, t)`) :
+// le nom de la liste prend la langue du moment de sa création.
+export function importerDefensesSiegeOptimizer(data: ExclusionSourceData, t: Dictionnaire): ImportOptimizer {
+  const m = t.optimizer.importsEquipe;
+  const resultat = vide(m.defenses, 'guilde');
+  data.siegeDefenseTeams.forEach((team, i) => ajouterDeck(resultat, team, 'siege-defense', m.defense(i + 1), data, t));
   return resultat;
 }
 
-export function importerOffenseSiegeOptimizer(teamId: string, data: ExclusionSourceData): ImportOptimizer {
-  const resultat = vide('Offense de siège', 'guilde');
-  const team = data.siegeOffenseTeams.find(t => t.id === teamId);
-  if (team) ajouterDeck(resultat, team, 'siege-offense', 'Offense de siège', data);
-  else resultat.messages.push('Deck d’offense introuvable : aucun membre importé.');
+export function importerOffenseSiegeOptimizer(teamId: string, data: ExclusionSourceData, t: Dictionnaire): ImportOptimizer {
+  const m = t.optimizer.importsEquipe;
+  const resultat = vide(m.offense, 'guilde');
+  const team = data.siegeOffenseTeams.find(e => e.id === teamId);
+  if (team) ajouterDeck(resultat, team, 'siege-offense', m.offense, data, t);
+  else resultat.messages.push(m.offenseIntrouvable);
   return resultat;
 }
 
-export function importerPrepaRtaOptimizer(data: ExclusionSourceData): ImportOptimizer {
-  const resultat = vide('Prépa RTA', 'arene');
+export function importerPrepaRtaOptimizer(data: ExclusionSourceData, t: Dictionnaire): ImportOptimizer {
+  const resultat = vide(t.optimizer.importsEquipe.prepaRta, 'arene');
   for (const entry of Object.values(data.rtaEntries)) {
-    ajouterMembre(resultat, { source: 'rta', monsterId: entry.monsterId }, entry.monsterId, entry.runeSpeed, data);
+    ajouterMembre(resultat, { source: 'rta', monsterId: entry.monsterId }, entry.monsterId, entry.runeSpeed, data, t);
   }
   return resultat;
 }
@@ -132,16 +141,17 @@ export function identifiantListeImportOccupe(stockage: StockageOptimizer, id: st
 
 export function consommerImportOptimizer(
   stockage: StockageOptimizer, activeListId: string | null, proposition: ImportOptimizer,
-  data: ExclusionSourceData, idPropose: string
+  data: ExclusionSourceData, idPropose: string, t: Dictionnaire
 ): { stockage: StockageOptimizer; activeListId: string | null; rapport: RapportImportOptimizer } {
+  const m = t.optimizer.importsEquipe;
   const rapport: RapportImportOptimizer = { listeCreee: null, membresImportes: 0, equipesCreees: 0,
     ignores: structuredClone(proposition.ignores), equipesNonCreees: [], messages: [...proposition.messages] };
   if (!contenuListeValide(proposition.contenu)) {
-    rapport.messages.push('Import refusé : contenu de combat de la liste inconnu.');
+    rapport.messages.push(m.contenuInconnu);
     return { stockage, activeListId, rapport };
   }
   const listId = suffixer(idPropose.trim() || 'import', identifiantsOccupes(stockage, 'listId'));
-  const name = suffixer(proposition.nomListe.trim() || 'Équipe importée', new Set(stockage.lists.map(l => l.name)));
+  const name = suffixer(proposition.nomListe.trim() || m.equipeImportee, new Set(stockage.lists.map(l => l.name)));
   const acceptes = new Map<string, MembreImportOptimizer>(), vus = new Set<string>();
   let memories = stockage.memories;
   let identities = stockage.identities;
@@ -149,13 +159,13 @@ export function consommerImportOptimizer(
     const cle = exclusionSelectorKey(membre.selector);
     const resolu = resolveExclusionEntry(membre.selector, data);
     let raison: string | undefined;
-    if (vus.has(cle)) raison = 'Exemplaire en doublon : première occurrence conservée.';
-    else if (!resolu) raison = 'Exemplaire introuvable.';
-    else if (!identiteValide(membre.com2usId) || resolu.monster.com2usId !== membre.com2usId) raison = 'Identité d’espèce différente ou inutilisable.';
+    if (vus.has(cle)) raison = m.doublon;
+    else if (!resolu) raison = m.exemplaireAbsent;
+    else if (!identiteValide(membre.com2usId) || resolu.monster.com2usId !== membre.com2usId) raison = m.identiteDifferente;
     vus.add(cle);
     if (!raison && resolu) {
       const ecriture = enregistrerMemoireMembre(memories, { listId, selector: membre.selector, com2usId: membre.com2usId },
-        completerCriteresImport(membre.criteres, resolu.gear), data);
+        completerCriteresImport(membre.criteres, resolu.gear), data, t);
       if (ecriture.rapport.length) raison = ecriture.rapport.join(' ');
       else {
         memories = ecriture.memories;
@@ -175,11 +185,11 @@ export function consommerImportOptimizer(
     const leader = equipe.leader && members.find(s => exclusionSelectorKey(s) === exclusionSelectorKey(equipe.leader!));
     const id = suffixer(`${listId}:equipe:${i + 1}`, idsEquipes);
     const creation = equipeApresFiltrageOptimizer(nouveau, { id, listId, members,
-      ...(leader ? { leader } : {}), lead: equipe.lead });
+      ...(leader ? { leader } : {}), lead: equipe.lead }, t);
     if (!creation.equipe) {
       rapport.equipesNonCreees.push({ libelle: equipe.libelle, lead: structuredClone(equipe.lead), raisons: creation.rapport });
-      const lead = equipe.lead ? `${equipe.lead.stat ?? 'statistique inconnue'} ${equipe.lead.amount} % (${equipe.lead.area})` : 'aucun';
-      rapport.messages.push(`${equipe.libelle} — lead de la source : ${lead}. ${creation.rapport.join(' ')}`);
+      const lead = equipe.lead ? m.lead(equipe.lead.stat ?? m.statInconnue, equipe.lead.amount, equipe.lead.area) : m.aucunLead;
+      rapport.messages.push(m.leadNonApplique(equipe.libelle, lead, creation.rapport.join(' ')));
     } else {
       nouveau.teams.push(creation.equipe);
       idsEquipes.add(id);
@@ -188,12 +198,12 @@ export function consommerImportOptimizer(
         const membre = acceptes.get(exclusionSelectorKey(selector))!;
         const monstre = resolveExclusionEntry(selector, data)!.monster;
         const effectif = leadEffectifMembreOptimizer(nouveau, listId, selector, monstre.element);
-        if (effectif.type === 'aucun') rapport.messages.push(`${equipe.libelle} — ${membre.libelle} : ${fr.optimizer.motifsLead[effectif.motif]}`);
+        if (effectif.type === 'aucun') rapport.messages.push(m.leadInactif(equipe.libelle, membre.libelle, t.optimizer.motifsLead[effectif.motif]));
       }
     }
   });
   if (!acceptes.size) {
-    rapport.messages.push('Import vide : aucune liste créée.');
+    rapport.messages.push(m.importVide);
     return { stockage, activeListId, rapport };
   }
   rapport.listeCreee = { id: listId, name };

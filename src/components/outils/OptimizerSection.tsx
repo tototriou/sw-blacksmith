@@ -184,6 +184,7 @@ import ResultatsBureau from './optimizer/bureau/ResultatsBureau';
 import { attenteResultats, type ColonneReglage } from '../../lib/optimizerColonnes';
 import { PREFIXE_FICHIER } from '../../marque';
 import { useLangue, useTraduction } from '../../hooks/useLangue';
+import type { Dictionnaire } from '../../i18n/fr';
 import { formatNombre } from '../../i18n/format';
 import { nomElement } from '../../i18n/jeu';
 
@@ -906,18 +907,18 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
     ...exclusionData.siegeOffenseTeams.map((team, i) => ({
       groupe: os.import.offenses, libelle: os.import.offense(i + 1),
       nom: `${os.import.offenseDeSiege(i + 1)} · ${team.slots.map(s => s.monsterId && exclusionData.monsterById.get(s.monsterId)?.name).filter(Boolean).join(', ') || os.import.deckVide}`,
-      produire: (courantes: ExclusionSourceData) => importerOffenseSiegeOptimizer(team.id, courantes),
+      produire: (courantes: ExclusionSourceData, t: Dictionnaire) => importerOffenseSiegeOptimizer(team.id, courantes, t),
     })),
     ...recommandations.flatMap((reco, ri) => reco.decks.map((deck, di) => ({
       groupe: os.import.recommandations, libelle: `${reco.name || os.import.recommandation(ri + 1)} · ${os.import.deck(di + 1)}`,
       nom: `${os.import.recommandation(ri + 1)} · ${reco.name || os.import.sansNom} · ${os.import.deck(di + 1)} · ${deck.slots.map(s => s.com2usId != null && [...exclusionData.monsterById.values()].find(m => m.com2usId === s.com2usId)?.name || s.name).filter(Boolean).join(', ') || os.import.deckVide}`,
-      produire: (courantes: ExclusionSourceData) => importerRecoOptimizer(deck, courantes),
+      produire: (courantes: ExclusionSourceData, t: Dictionnaire) => importerRecoOptimizer(deck, courantes, t),
     }))),
   ].map(source => {
-    const { membres } = source.produire(exclusionData);
+    const { membres } = source.produire(exclusionData, textes);
     return { ...source, utilisable: membres.length > 0,
       monstres: membres.flatMap(m => resolveExclusionEntry(m.selector, exclusionData)?.monster ?? []) };
-  }), [exclusionData, recommandations, os]);
+  }), [exclusionData, recommandations, os, textes]);
 
   // Candidats de compte pour l'ESPÈCE COURANTE, un tableau par source —
   // pilote À LA FOIS l'état actif/grisé/désactivé de chaque puce et le contenu de la désambiguïsation d'exemplaire (zone
@@ -1672,7 +1673,7 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
       dejaPorte: memesPieces,
       coutVerrousPct,
     };
-  }, [artifactParams, selected, evaluateursFiche, optimiserArtefacts, sortesFigees, lignesVerrouillees, critereArtefacts]);
+  }, [artifactParams, selected, evaluateursFiche, optimiserArtefacts, sortesFigees, lignesVerrouillees, critereArtefacts, os]);
 
   /**
    * Pourquoi aucune paire ne satisfait les verrous — OBSERVÉ, jamais déduit.
@@ -2045,7 +2046,7 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
 
   function importRecipe(file: File) {
     file.text().then((text) => {
-      const { recipe, error, avertissements } = parseOptimizerRecipe(text);
+      const { recipe, error, avertissements } = parseOptimizerRecipe(text, textes);
       if (!recipe) {
         setImportMsg({ text: os.recette.refuse(error ?? ''), error: true });
         return;
@@ -2325,7 +2326,7 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
     recus,
     affichables: instantane?.comptes.affichables ?? 0,
     modeRecherche: relicContextRecherche?.mode === 'recherche',
-  });
+  }, textes);
   // Le compte des CONFIRMÉES : les builds de cette recherche résolus ET
   // conformes — un compte qui ne baisse jamais pendant une recherche. Seule
   // source de l'en-tête, du nombre de pages et des contrôles masqués sous
@@ -3025,7 +3026,7 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
     if (f.vide === 'bornes-contradictoires') {
       const c = f.bornes.contradictoires[0], b = instantane!.vue.bornes?.[c];
       const nombre = (v: number | null | undefined) => (v == null ? '' : formatNombre(v, langue));
-      return os.vueVideBornes(libelleColonne(c, mesureDesCartes), nombre(b?.min), nombre(b?.max));
+      return os.vueVideBornes(libelleColonne(c, mesureDesCartes, textes), nombre(b?.min), nombre(b?.max));
     }
     return os.vueVide;
   })();

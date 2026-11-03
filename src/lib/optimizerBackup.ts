@@ -1,5 +1,6 @@
 import { exclusionSelectorKey, type ExclusionSelector, type ExclusionSourceData, type OptimizerList, type OptimizerListMember, type ValidatedBuild } from './optimizerExclusion';
 import { ecrireMembresOptimizer, lireMembresOptimizer, reverifierStockageOptimizer, selecteurValide, type StockageOptimizer } from './optimizerMemberStorage';
+import type { Dictionnaire } from '../i18n/fr';
 
 export const OPTIMIZER_BACKUP_STORAGE_KEY = 'swblacksmith-optimizer-backup-v1';
 export interface SelectionPointOptimizer { listId: string; selector: ExclusionSelector }
@@ -30,9 +31,9 @@ export function photographierPointOptimizer(stockage: StockageOptimizer & { acti
 
 export type LecturePointOptimizer = { point: PointOptimizer | null; rapport: string[] };
 /** Refuser une photo historique abîmée évite de remplacer le travail par une lecture partielle. */
-export function lirePointOptimizer(brut: string | null): LecturePointOptimizer {
+export function lirePointOptimizer(brut: string | null, t: Dictionnaire): LecturePointOptimizer {
   if (brut === null) return { point: null, rapport: [] };
-  const refus = { point: null, rapport: ['Point de sauvegarde illisible : conservé sans reprise. Tu peux le remplacer après confirmation.'] };
+  const refus = { point: null, rapport: [t.optimizer.sauvegarde.pointIllisible] };
   let v: unknown;
   try { v = JSON.parse(brut); } catch { return refus; }
   if (!objet(v) || v.version !== 1 || typeof v.date !== 'string' || !Number.isFinite(Date.parse(v.date))
@@ -71,12 +72,12 @@ export function lirePointOptimizer(brut: string | null): LecturePointOptimizer {
 }
 
 /** Tout préparer avant de publier : lecture, rattachement et sélection utilisent la même photo. */
-export function preparerRepriseOptimizer(point: PointOptimizer, data: ExclusionSourceData, runeIds: Set<number>, artifactIds: Set<number>) {
-  const lu = lireMembresOptimizer(point.membres);
-  const resultat = reverifierStockageOptimizer({ ...lu, ...point.historique }, data, runeIds, artifactIds);
+export function preparerRepriseOptimizer(point: PointOptimizer, data: ExclusionSourceData, runeIds: Set<number>, artifactIds: Set<number>, t: Dictionnaire) {
+  const lu = lireMembresOptimizer(point.membres, t);
+  const resultat = reverifierStockageOptimizer({ ...lu, ...point.historique }, data, runeIds, t, artifactIds);
   const selection = point.selection ? { ...point.selection, selector: resultat.rapport.rattachements.find(r =>
     r.listId === point.selection!.listId && exclusionSelectorKey(r.avant) === exclusionSelectorKey(point.selection!.selector))?.apres ?? point.selection.selector } : null;
   return { ...resultat, activeListId: point.historique.activeListId, selection, brutMembres: resultat.stockage.memories === lu.memories
     && resultat.stockage.identities === lu.identities && resultat.stockage.teams === lu.teams && resultat.stockage.rejets === lu.rejets ? point.membres : null,
-    messages: [...lu.rapport, ...(resultat.rapport.compteVide ? ['Compte vide : les données du point sont reprises sans revérification.'] : resultat.rapport.messages)] };
+    messages: [...lu.rapport, ...(resultat.rapport.compteVide ? [t.optimizer.sauvegarde.compteVide] : resultat.rapport.messages)] };
 }

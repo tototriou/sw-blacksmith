@@ -58,6 +58,7 @@ import {
 } from '../src/lib/damage';
 import { buildOptimizerRecipe, parseOptimizerRecipe } from '../src/lib/optimizerRecipe';
 import { clesProseDejaRendue, renduStatsCombat } from '../src/lib/proseStatsCombat';
+import { fr } from '../src/i18n/fr';
 
 const racine = resolve(new URL('..', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1'));
 const DOSSIER_SORTS = resolve(racine, 'public/data/skills');
@@ -455,7 +456,7 @@ export function testMecanismesIgnoreDefDepuisUnCoup() {
       excludeUsedRunes: false, excludeUsedScope: 'box', excludedSelectors: [],
       ignoreArtifacts: true, artifactMainByKind: {},
     });
-    const lire = (champ: unknown) => parseOptimizerRecipe(JSON.stringify({ ...base, damageSetup: { ...base.damageSetup, premierCoupIgnoreDefParSort: champ } }));
+    const lire = (champ: unknown) => parseOptimizerRecipe(JSON.stringify({ ...base, damageSetup: { ...base.damageSetup, premierCoupIgnoreDefParSort: champ } }), fr);
     for (const f of FIXTURES_IGNORE) {
       for (const rang of f.crans) {
         egal(lire({ [f.id]: rang }).recipe?.damageSetup.premierCoupIgnoreDefParSort, { [f.id]: rang }, `recette : ${f.id} cran ${rang ?? 'aucun'} accepté, transporté tel quel`);

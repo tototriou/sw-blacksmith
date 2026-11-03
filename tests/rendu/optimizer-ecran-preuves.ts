@@ -8,9 +8,9 @@ import type { UseOptimizerLists } from '../../src/hooks/useOptimizerLists';
 import type { ExclusionSelector } from '../../src/lib/optimizerExclusion';
 import { buildOptimizerRecipe } from '../../src/lib/optimizerRecipe';
 import { DEFAULT_DAMAGE_SETUP } from '../../src/lib/damage';
-import { AVERTISSEMENT_CRIT_MOYENNE } from '../../src/lib/optimizerRecipe';
 import { attendreDemandeTest, observerRechercheTest } from './optimizer-classement-banc';
 import type { DemandeDeRecherche } from '../../src/workers/runeBuildOptim.worker';
+import { fr } from '../../src/i18n/fr';
 
 export interface BancEcran {
   etat: () => OptimizerState;
@@ -415,10 +415,10 @@ export async function preuvesMessageImport(b: BancEcran): Promise<Preuves> {
       ?? [...document.querySelectorAll<HTMLElement>('p[role="status"]')].filter(visible).pop();
   };
   const ordinaire = await importer(recette('crit'));
-  preuves.push([!!ordinaire && ordinaire.classList.contains('text-good') && !ordinaire.textContent?.includes(AVERTISSEMENT_CRIT_MOYENNE),
+  preuves.push([!!ordinaire && ordinaire.classList.contains('text-good') && !ordinaire.textContent?.includes(fr.optimizer.recetteInvalide.critMoyenne),
     `import ordinaire : message au token de succès (${ordinaire?.className} · ${ordinaire?.textContent})`]);
   const converti = await importer(recette('moyenne'));
-  preuves.push([!!converti && converti.classList.contains('text-warn') && !!converti.textContent?.includes(AVERTISSEMENT_CRIT_MOYENNE),
+  preuves.push([!!converti && converti.classList.contains('text-warn') && !!converti.textContent?.includes(fr.optimizer.recetteInvalide.critMoyenne),
     `import converti : message au token d’avertissement, qui cite la conversion (${converti?.className})`]);
   // Une recette qui porte l'ancien réglage à vrai s'importe comme une autre
   // et n'active rien.

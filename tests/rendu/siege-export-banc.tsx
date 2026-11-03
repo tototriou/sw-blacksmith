@@ -45,14 +45,14 @@ function Banc() {
     window.addEventListener('hashchange', naviguer);
     return () => window.removeEventListener('hashchange', naviguer);
   }, []);
-  const importer = avecNavigationImportOptimizer(produire => etat.importerEquipe(courantes => {
+  const importer = avecNavigationImportOptimizer(produire => etat.importerEquipe((courantes, t) => {
     if (refus === 'collision') {
       const uuid = Object.getOwnPropertyDescriptor(crypto, 'randomUUID');
       Object.defineProperty(crypto, 'randomUUID', { configurable: true, value: () => 'import' });
       try { const active = listes.activeListId; listes.createList('Concurrente', 'donjon'); listes.setActiveListId(active); }
       finally { if (uuid) Object.defineProperty(crypto, 'randomUUID', uuid); else delete (crypto as Partial<Crypto>).randomUUID; }
     }
-    return produire(refus === 'vide' ? { ...courantes, siegeDefenseTeams: [], siegeOffenseTeams: [] } : courantes);
+    return produire(refus === 'vide' ? { ...courantes, siegeDefenseTeams: [], siegeOffenseTeams: [] } : courantes, t);
   }), () => { location.hash = '#/outils/optimizer'; }, setRapport);
   return <>
     {route === '#/outils/optimizer' ? <OptimizerSection box={box} runes={[]} artifacts={[]} relics={[]} relicUsageById={{}}

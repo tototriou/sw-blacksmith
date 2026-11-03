@@ -13,6 +13,7 @@ import { loadSiegeMonster, printMonsterSummary } from './lib/loadMonster';
 import { runeContribution } from '../src/lib/runeBuildOptim';
 import { runeEfficiency } from '../src/lib/effects';
 import { RuneDetail, BaseStats } from '../src/types';
+import { fr } from '../src/i18n/fr';
 
 const [exportPath, recipePath, deckIdArg, slotArg] = process.argv.slice(2);
 if (!exportPath || !recipePath || !deckIdArg || !slotArg) {
@@ -21,7 +22,7 @@ if (!exportPath || !recipePath || !deckIdArg || !slotArg) {
 }
 const slot = Number(slotArg);
 
-const { recipe, error, avertissements } = parseOptimizerRecipe(readFileSync(recipePath, 'utf8'));
+const { recipe, error, avertissements } = parseOptimizerRecipe(readFileSync(recipePath, 'utf8'), fr);
 for (const a of avertissements ?? []) console.warn(`⚠️ ${a}`);
 if (!recipe) {
   console.error(`Recette invalide : ${error}`);

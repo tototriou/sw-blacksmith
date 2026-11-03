@@ -165,7 +165,7 @@ champ (`undefined`).
 - **Ancienne valeur à normaliser** : dans `parseOptimizerRecipe`, que l'écran
   et `chargerRecette` lisent tous deux, une seule fois pour les deux. Y vivent
   déjà le mode critique supprimé (avec l'avertissement
-  `AVERTISSEMENT_CRIT_MOYENNE`), l'ancien cran « aucune » de `summonerSkills`,
+  `optimizer.recetteInvalide.critMoyenne` du dictionnaire), l'ancien cran « aucune » de `summonerSkills`,
   l'ancien `setsAura` (retiré s'il est vide, refusé sinon) et le seuil de
   relique ramené dans ses bornes.
 - **Renommage ou inversion d'un champ EXISTANT** : traduire explicitement

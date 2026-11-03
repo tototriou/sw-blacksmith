@@ -32,6 +32,7 @@ import { buildOptimizerRecipe, parseOptimizerRecipe, type OptimizerRecipe } from
 import { chargerRecette } from '../scripts/lib/chargerRecette';
 import { buildRealDamageContext } from '../scripts/lib/realDamageCli';
 import { loadMonsterSkills } from '../scripts/lib/skillsData';
+import { fr } from '../src/i18n/fr';
 
 const racine = resolve(new URL('..', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1'));
 const lireSource = (fichier: string) => readFileSync(resolve(racine, fichier), 'utf8').replace(/\r\n/g, '\n');
@@ -60,7 +61,7 @@ function recette(setup: DamageSetup, monsterName = 'Cassie', monsterCom2usId = C
   });
 }
 
-const lire = (valeur: unknown) => parseOptimizerRecipe(JSON.stringify(valeur));
+const lire = (valeur: unknown) => parseOptimizerRecipe(JSON.stringify(valeur), fr);
 const refuse = (resultat: ReturnType<typeof lire>, chemin: string) =>
   resultat.recipe === null && !!resultat.error?.includes(`${chemin} `);
 
