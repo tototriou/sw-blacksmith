@@ -86,6 +86,7 @@ export const RELEASES: Release[] = [
       { kind: 'feat', scope: 'Speed tuning', text: 'Les deux camps, l’ordre des sorts, l’analyse, les tableaux de ticks et les grilles en anglais.' },
       { kind: 'feat', scope: 'Dégâts réels', text: 'La fenêtre de l’objectif en anglais : sort, effets actifs, passifs, adversaire et coup critique.' },
       { kind: 'feat', scope: 'Dégâts réels', text: 'Les compteurs, conditions, aides et textes du « Calcul partiel » propres à chaque monstre en anglais.' },
+      { kind: 'feat', scope: 'Application', text: 'L’application de bureau en anglais : mise à jour, SW Exporter, sauvegarde de session et fenêtres du système ; l’installeur suit la langue de Windows.' },
       { kind: 'feat', scope: 'Jeu', text: 'Sets, stats, effets et artéfacts portent les noms du jeu, en français comme en anglais.' },
       { kind: 'fix', scope: 'Runes', text: '« Tx critiq. » et « Dgts critiq. » comme dans le jeu, et le bon effet du set Sceau.' },
       { kind: 'fix', scope: 'Bestiaire', text: 'La fiche d’un monstre écrit son type en toutes lettres.' },

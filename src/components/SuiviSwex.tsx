@@ -1,4 +1,6 @@
 import { useEffect, useRef } from 'react';
+import { useTraduction } from '../hooks/useLangue';
+import type { Dictionnaire } from '../i18n/fr';
 import { swex } from '../lib/bureau';
 import { useNotifier } from '../ui/Notification';
 
@@ -26,6 +28,10 @@ export default function SuiviSwex({
   sansCompte: boolean;
 }) {
   const notifier = useNotifier();
+  // La langue au moment de la notification, sans réabonner le suivi.
+  const textes = useTraduction();
+  const textesVivants = useRef(textes);
+  textesVivants.current = textes;
   // La DERNIÈRE version des deux : `appliquer` lit l'index des monstres, qui
   // change ; l'abonnement, lui, ne se refait pas à chaque rendu.
   const appliquerRef = useRef(appliquer);
@@ -43,7 +49,7 @@ export default function SuiviSwex({
       // changement du fichier le redonnera.
       if (!r.ok) return;
       s.lu(exp.modifie);
-      if (exp.nouveau || complet) notifier({ message: messageExportSwex(r.nom, complet) });
+      if (exp.nouveau || complet) notifier({ message: messageExportSwex(r.nom, complet, textesVivants.current) });
     });
     s.pret(sansCompteRef.current);
     return desabonner;
@@ -54,7 +60,6 @@ export default function SuiviSwex({
 
 // L'annonce d'un export appliqué : chargé en entier (choix d'un invocateur),
 // ou « Mon compte » mis à jour.
-export function messageExportSwex(nom: string | null, complet: boolean): string {
-  const qui = nom ? `Compte de ${nom}` : 'Compte';
-  return complet ? `${qui} chargé depuis SW Exporter` : `${qui} mis à jour depuis SW Exporter`;
+export function messageExportSwex(nom: string | null, complet: boolean, t: Dictionnaire): string {
+  return complet ? t.application.exportCharge(nom) : t.application.exportMisAJour(nom);
 }

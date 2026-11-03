@@ -112,7 +112,7 @@ import MiseAJourBureau from './components/MiseAJourBureau';
 import SuiviSwex from './components/SuiviSwex';
 import ChangementCompteDialog from './components/ChangementCompteDialog';
 import { GardeChangementCompte } from './hooks/useEtatSwex';
-import { estBureau, selonSupport, sessionBureau } from './lib/bureau';
+import { estBureau, messageEchecSession, selonSupport, sessionBureau, type EchecSession } from './lib/bureau';
 import {
   COULEUR_SECTION,
   COULEUR_RTA_SUB,
@@ -577,7 +577,7 @@ function Application() {
   // le message d'une écriture qui a échoué.
   const sessionEnCours = useSessionEnCours();
   const notifier = useNotifier();
-  const [echecSession, setEchecSession] = useState<string | null>(null);
+  const [echecSession, setEchecSession] = useState<EchecSession | null>(null);
 
   // Panneau d'actions de la page, sous `lg`. ⚠️ L'état vit ICI parce que le
   // bouton (barre d'onglets) et le contenu (la page) sont deux sous-arbres
@@ -1073,7 +1073,7 @@ function Application() {
       notifier({ message: textes.donnees.sessionEnregistree(r.etat.nom) });
       return true;
     }
-    if (r?.issue === 'echec') setEchecSession(r.message);
+    if (r?.issue === 'echec') setEchecSession(r);
     return false;
   }
   // Pourquoi « Sauvegarder » est désactivé, ou `null` s'il ne l'est pas.
@@ -2293,7 +2293,7 @@ function Application() {
             onClose={() => setEchecSession(null)}
             labelledBy="echec-session-titre"
             titre={textes.donnees.sessionEchec}
-            sousTitre={echecSession}
+            sousTitre={messageEchecSession(echecSession, textes)}
             icone={
               <span className="mt-0.5 flex-none rounded-lg bg-bad/15 p-2 text-bad">
                 <AlertTriangle size={18} />

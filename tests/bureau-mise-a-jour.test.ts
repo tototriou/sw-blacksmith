@@ -10,6 +10,7 @@ import { join } from 'node:path';
 import { presentationMiseAJour } from '../src/components/BlocApplication';
 import { TELECHARGEMENTS } from '../src/lib/bureau';
 import { egal, ok, titre } from './outils';
+import { fr } from '../src/i18n/fr';
 
 export default function testBureauMiseAJour() {
   titre('bureau · mise à jour — le bloc « Application », phase par phase');
@@ -26,20 +27,20 @@ export default function testBureauMiseAJour() {
     [{ phase: 'echec', version: v }, 'Réessayer', true],
   ];
   for (const [etat, libelle, actif] of cas) {
-    const p = presentationMiseAJour(etat);
+    const p = presentationMiseAJour(etat, fr);
     const nom = etat?.phase ?? 'rien reçu';
     egal(p.libelle, libelle, `${nom} : « ${libelle} »`);
     egal(!!p.action, actif, `${nom} : bouton ${actif ? 'actif' : 'désactivé — mais affiché'}`);
     ok(p.texte.length > 0, `${nom} : une ligne d'explication (hauteur constante)`);
   }
-  ok(presentationMiseAJour({ phase: 'disponible', version: v }).texte.includes(v), 'disponible : la version est dite');
-  ok(presentationMiseAJour({ phase: 'prete', version: v }).texte.includes('fermeture'), 'prête : installée à la fermeture, dit');
+  ok(presentationMiseAJour({ phase: 'disponible', version: v }, fr).texte.includes(v), 'disponible : la version est dite');
+  ok(presentationMiseAJour({ phase: 'prete', version: v }, fr).texte.includes('fermeture'), 'prête : installée à la fermeture, dit');
 
   titre('bureau · mise à jour — rien sans un clic');
   // Aucune phase ne télécharge d'elle-même : seules « disponible » et
   // « echec » mènent à un téléchargement, et seulement par leur bouton.
   const versTelechargement = cas.filter(([e]) => {
-    const p = presentationMiseAJour(e);
+    const p = presentationMiseAJour(e, fr);
     return p.libelle === 'Mettre à jour' || p.libelle === 'Réessayer';
   });
   egal(versTelechargement.map(([e]) => e?.phase), ['disponible', 'echec'], 'seuls « disponible » et « echec » proposent de télécharger');

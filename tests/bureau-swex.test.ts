@@ -10,6 +10,7 @@ import { aDonner, exportsDuDossier, lireNomExport, lireReglage } from '../bureau
 import { presentationSwex } from '../src/components/BlocApplication';
 import { messageExportSwex } from '../src/components/SuiviSwex';
 import { egal, ok, titre } from './outils';
+import { fr } from '../src/i18n/fr';
 
 export default function testBureauSwex() {
   titre('bureau · SW Exporter — reconnaître un export de compte');
@@ -42,7 +43,7 @@ export default function testBureauSwex() {
   egal(aDonner(1000, 1000, true), { donner: true, nouveau: false }, 'déjà lu, page SANS compte : redonné en silence');
 
   titre('bureau · SW Exporter — ce que montre le bloc « Application »');
-  const aucun = presentationSwex(null);
+  const aucun = presentationSwex(null, fr);
   ok(aucun.options.length === 0 && aucun.invocateur === 'Aucun dossier choisi.', 'sans dossier : sélecteur vide, « Aucun dossier choisi. »');
   const etat = {
     dossier: 'C:\\SWEX',
@@ -55,17 +56,17 @@ export default function testBureauSwex() {
     dernierLu: 2000,
     introuvable: false,
   };
-  egal(presentationSwex(etat).options.map((o) => o.libelle), ['tototriou', 'Sam (1)', 'Sam (2)'], 'deux homonymes : l’identifiant les sépare');
-  ok(presentationSwex(etat).invocateur.endsWith('— lu.'), 'export suivi déjà appliqué : « — lu. »');
-  ok(presentationSwex({ ...etat, dernierLu: 1000 }).invocateur.endsWith('lecture en cours…'), 'export plus récent que le dernier lu : « lecture en cours… »');
-  egal(presentationSwex({ ...etat, fichier: null }).invocateur, 'Choisis l’invocateur à suivre.', 'dossier choisi, invocateur non');
-  egal(presentationSwex({ ...etat, exports: [] }).invocateur, 'Aucun export de compte à la racine de ce dossier.', 'dossier sans export');
-  ok(presentationSwex({ ...etat, introuvable: true }).invocateur.startsWith('Dossier introuvable'), 'dossier disparu : dit');
+  egal(presentationSwex(etat, fr).options.map((o) => o.libelle), ['tototriou', 'Sam (1)', 'Sam (2)'], 'deux homonymes : l’identifiant les sépare');
+  ok(presentationSwex(etat, fr).invocateur.endsWith('— lu.'), 'export suivi déjà appliqué : « — lu. »');
+  ok(presentationSwex({ ...etat, dernierLu: 1000 }, fr).invocateur.endsWith('lecture en cours…'), 'export plus récent que le dernier lu : « lecture en cours… »');
+  egal(presentationSwex({ ...etat, fichier: null }, fr).invocateur, 'Choisis l’invocateur à suivre.', 'dossier choisi, invocateur non');
+  egal(presentationSwex({ ...etat, exports: [] }, fr).invocateur, 'Aucun export de compte à la racine de ce dossier.', 'dossier sans export');
+  ok(presentationSwex({ ...etat, introuvable: true }, fr).invocateur.startsWith('Dossier introuvable'), 'dossier disparu : dit');
 
   titre('bureau · SW Exporter — l’annonce d’un export appliqué');
-  egal(messageExportSwex('Sam', true), 'Compte de Sam chargé depuis SW Exporter', 'après un choix : chargé');
-  egal(messageExportSwex('Sam', false), 'Compte de Sam mis à jour depuis SW Exporter', 'export suivant : mis à jour');
-  egal(messageExportSwex(null, false), 'Compte mis à jour depuis SW Exporter', 'sans nom de joueur');
+  egal(messageExportSwex('Sam', true, fr), 'Compte de Sam chargé depuis SW Exporter', 'après un choix : chargé');
+  egal(messageExportSwex('Sam', false, fr), 'Compte de Sam mis à jour depuis SW Exporter', 'export suivant : mis à jour');
+  egal(messageExportSwex(null, false, fr), 'Compte mis à jour depuis SW Exporter', 'sans nom de joueur');
 
   // ⚠️ Le marquage `complet` vit dans le processus principal, qu'aucun test
   // unitaire n'atteint sans Electron : un contrôle de source ici. La garde

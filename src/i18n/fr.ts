@@ -440,6 +440,44 @@ export const fr = {
     confirmer: 'Confirmer',
   },
 
+  // L'application de bureau : le bloc « Application » des Réglages, la
+  // notification de mise à jour, le suivi de SW Exporter.
+  application: {
+    version: (v: string) => `Version ${v}`,
+    rechercher: 'Rechercher',
+    recherche: 'Recherche…',
+    mettreAJour: 'Mettre à jour',
+    telechargement: 'Téléchargement…',
+    redemarrer: 'Redémarrer',
+    reessayer: 'Réessayer',
+    aucune: 'Les nouvelles versions sont cherchées au lancement.',
+    enRecherche: "Recherche d'une nouvelle version…",
+    aJour: 'Tu as la dernière version.',
+    injoignable: 'Impossible de vérifier : pas de connexion ?',
+    disponible: (v: string) => `Nouvelle version ${v} disponible.`,
+    enTelechargement: (v: string) => `Téléchargement de la version ${v}…`,
+    prete: (v: string) => `Version ${v} prête : installée au redémarrage, ou à la fermeture de l'app.`,
+    echec: "Le téléchargement n'a pas abouti.",
+    notifDisponible: (v: string) => `Nouvelle version ${v} disponible`,
+    notifTelechargement: 'Téléchargement de la mise à jour…',
+    notifPrete: 'Mise à jour prête',
+    notifEchec: "La mise à jour n'a pas pu être téléchargée",
+    dossierSwex: 'Dossier SW Exporter',
+    retirerSwex: 'Ne plus suivre de dossier SW Exporter',
+    choisir: 'Choisir…',
+    invocateur: 'Invocateur',
+    invocateurAria: 'Invocateur à suivre',
+    swexSansDossier: 'Choisis le dossier où SW Exporter enregistre ses exports : « Mon compte » suivra chaque nouvel export.',
+    swexAucunDossier: 'Aucun dossier choisi.',
+    swexIntrouvable: 'Dossier introuvable : vérifie qu’il existe encore, ou choisis-en un autre.',
+    swexAucunExport: 'Aucun export de compte à la racine de ce dossier.',
+    swexChoisirInvocateur: 'Choisis l’invocateur à suivre.',
+    swexLu: (date: string) => `Export du ${date} — lu.`,
+    swexEnLecture: (date: string) => `Export du ${date} — lecture en cours…`,
+    exportCharge: (nom: string | null) => `${nom ? `Compte de ${nom}` : 'Compte'} chargé depuis SW Exporter`,
+    exportMisAJour: (nom: string | null) => `${nom ? `Compte de ${nom}` : 'Compte'} mis à jour depuis SW Exporter`,
+  },
+
   // L'import d'un export de compte SWEX : bouton, messages de src/lib/importAccount.ts
   // et bilan de l'import.
   importCompte: {
@@ -880,6 +918,23 @@ export const fr = {
     sessionEnregistree: (nom: string | null) => `Session enregistrée${nom ? ` · ${nom}` : ''}`,
     compteEnChargement: 'Ton compte se charge encore : la sauvegarde attend qu’il soit relu.',
     sessionEchec: 'La session n’a pas été enregistrée',
+    // Pourquoi l'écriture a échoué, selon le motif et le code d'erreur du
+    // système que rend l'app de bureau (`messageEchecSession`, src/lib/bureau.ts).
+    echecSession: {
+      pasUneSession: 'Ce n’est pas une session.',
+      introuvable: 'Le dossier de la session n’existe plus. « Sauvegarder sous… » l’enregistre dans le dossier SW Blacksmith.',
+      refus: 'Ce dossier refuse l’écriture, ou le fichier est ouvert ailleurs.',
+      occupe: 'Le fichier est ouvert par un autre programme.',
+      disquePlein: 'Le disque est plein.',
+      lectureSeule: 'Ce disque est en lecture seule.',
+      autre: (code: string | null) => `L’écriture a échoué${code ? ` (${code})` : ''}.`,
+      dossier: (raison: string) =>
+        `Le dossier SW Blacksmith ne peut pas recevoir la session : ${raison}. Choisis-en un autre dans Paramètres › « Dossier SW Blacksmith ».`,
+      raisonDisquePlein: 'le disque est plein',
+      raisonLectureSeule: 'ce disque est en lecture seule',
+      raisonRefus: 'il refuse l’écriture',
+      raisonIntrouvable: 'il est introuvable ou inaccessible',
+    },
     areneBientot: "Préparation des équipes d'arène classique (offense et défense).",
     redimensionner: 'Redimensionner les deux pages (double-clic : moitié-moitié)',
     remplacerTitre: 'Remplacer les données présentes ?',

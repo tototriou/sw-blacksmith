@@ -26,16 +26,16 @@ import {
   EtatSession,
   lireDossierRetenu,
   lireSessionRetenue,
-  messageEchec,
-  messageEchecDossier,
+  codeErreur,
   nomProposeValide,
   texteSessionValide,
 } from './sessionPur';
+import { textesBureau } from './textes';
 
 export type IssueSession =
   | { issue: 'enregistree'; etat: EtatSession }
   | { issue: 'annulee' }
-  | { issue: 'echec'; message: string };
+  | { issue: 'echec'; motif: 'pas-une-session' | 'ecriture' | 'dossier'; code: string | null };
 
 // Mode preuve : aucune boîte ne s'ouvre. Le dossier SW Blacksmith « choisi »
 // est `dossier` ; « Sauvegarder sous… » rend `<dossier>/sessions/<n>-<nom>`.
@@ -119,8 +119,8 @@ export function brancherSession(fenetre: BrowserWindow, preuve?: PreuveSession) 
   async function demanderDossier(): Promise<string | null> {
     if (preuve) return preuve.dossier;
     const r = await dialog.showOpenDialog(fenetre, {
-      title: 'Dossier SW Blacksmith',
-      buttonLabel: 'Choisir ce dossier',
+      title: textesBureau().dossierSwblacksmith,
+      buttonLabel: textesBureau().choisirCeDossier,
       defaultPath: dossier ?? app.getPath('documents'),
       properties: ['openDirectory', 'createDirectory', 'promptToCreate'],
     });
@@ -134,10 +134,11 @@ export function brancherSession(fenetre: BrowserWindow, preuve?: PreuveSession) 
       preuve.choix += 1;
       return join(sessions, `${preuve.choix}-${nomPropose}`);
     }
+    const t = textesBureau();
     const r = await dialog.showSaveDialog(fenetre, {
-      title: 'Sauvegarder la session sous',
+      title: t.sauvegarderSous,
       defaultPath: join(sessions, nomPropose),
-      filters: [{ name: 'Session SW Blacksmith', extensions: ['json'] }],
+      filters: [{ name: t.filtreSession, extensions: ['json'] }],
       properties: ['showOverwriteConfirmation'],
     });
     if (r.canceled || !r.filePath) return null;
@@ -146,10 +147,10 @@ export function brancherSession(fenetre: BrowserWindow, preuve?: PreuveSession) 
       // Le défaut ne perd rien : « Annuler ».
       const { response } = await dialog.showMessageBox(fenetre, {
         type: 'warning',
-        title: 'Sauvegarder la session sous',
-        message: `« ${basename(chemin)} » existe déjà.`,
-        detail: 'Le remplacer efface la session qu’il contient.',
-        buttons: ['Annuler', 'Remplacer'],
+        title: t.sauvegarderSous,
+        message: t.existeDeja(basename(chemin)),
+        detail: t.remplacerEfface,
+        buttons: [t.annuler, t.remplacer],
         defaultId: 0,
         cancelId: 0,
       });
@@ -166,7 +167,7 @@ export function brancherSession(fenetre: BrowserWindow, preuve?: PreuveSession) 
   ): Promise<IssueSession | null> {
     if (!deLaPage(e)) return null;
     if (!texteSessionValide(texte) || !nomProposeValide(nomPropose)) {
-      return { issue: 'echec', message: 'Ce n’est pas une session.' };
+      return { issue: 'echec', motif: 'pas-une-session', code: null };
     }
     if (occupe) return { issue: 'annulee' };
     occupe = true;
@@ -185,7 +186,7 @@ export function brancherSession(fenetre: BrowserWindow, preuve?: PreuveSession) 
         try {
           mkdirSync(sessions, { recursive: true });
         } catch (err) {
-          return { issue: 'echec', message: messageEchecDossier((err as NodeJS.ErrnoException).code) };
+          return { issue: 'echec', motif: 'dossier', code: codeErreur(err) };
         }
         chemin = sous ? await demanderFichier(sessions, nomPropose) : cheminLibre(sessions, nomPropose, existsSync);
         if (!chemin) return { issue: 'annulee' };
@@ -194,7 +195,7 @@ export function brancherSession(fenetre: BrowserWindow, preuve?: PreuveSession) 
         await ecrireSansRisque(chemin, texte);
       } catch (err) {
         // Échec : la session en cours ne change pas.
-        return { issue: 'echec', message: messageEchec((err as NodeJS.ErrnoException).code) };
+        return { issue: 'echec', motif: 'ecriture', code: codeErreur(err) };
       }
       if (chemin !== courante) {
         courante = chemin;

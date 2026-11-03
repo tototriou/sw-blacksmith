@@ -66,8 +66,13 @@ nsis:
   # … et la copie de l'installeur gardée pour la mise à jour (113 Mo), que
   # electron-builder laisse derrière lui.
   include: bureau/installeur.nsh
-  installerLanguages: [fr_FR]
-  language: "1036"
+  # Français et anglais, selon la langue de Windows, sans sélecteur : le
+  # français pour un Windows français, l'anglais (1033) pour tout autre. Le
+  # désinstalleur suit la même langue.
+  multiLanguageInstaller: true
+  displayLanguageSelector: false
+  installerLanguages: [fr_FR, en_US]
+  language: "1033"
   shortcutName: SW Blacksmith
   # ⚠️ SANS numéro de version : l'accueil du site télécharge
   # `…/releases/latest/download/SW-Blacksmith-Setup.exe`, la seule adresse
