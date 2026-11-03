@@ -2752,6 +2752,19 @@ export const en: Dictionnaire = {
         `The ratio above already assumes that ${condition} — unticked by default, the contribution falls back to the base case (÷ ${diviseur}).`,
       bonusSi: (pct: number, condition: string) => `Base damage always counted; +${pct}% if ${condition}.`,
     },
+    modificateurs: {
+      critiqueSiPlusRapide: 'always active — guaranteed critical hit if faster than the target',
+      atqSeuil: (pct: number, seuil: number) => `always active — +${pct}% damage if your total ATK (with lead) reaches ${seuil}`,
+      selonVit: (pctMax: number, ecartMax: number) => `always active — up to +${pctMax}% damage at a ${ecartMax} SPD gap`,
+      critSelonVit: (ptsParVit: number) =>
+        `always active — +1 CRI Rate point per ${ptsParVit} SPD, any excess beyond 100% carries over to CRI Dmg`,
+      statFixe: (cr: number, cd: number) => `always active — +${cr} CRI Rate points, +${cd} CRI Dmg points`,
+      selonCr: (ratio: number) => `always active — +${ratio}% damage per CRI Rate point`,
+      selonDef: (pctMax: number, defMax: number) => `always active — up to +${pctMax}% damage at ${defMax} DEF`,
+      ciblePvMax: (pct: number) => `always active — +${pct}% of the target’s MAX HP added to the multiplier`,
+      ecartDef: (pct: number) => `always active — +${pct}% of the DEF gap (you − target) added to the multiplier, on every hit`,
+      maxHpPropre: (pct: number) => `always active — +${pct}% of your MAX HP, ONCE per skill (not per hit)`,
+    },
     contexte: {
       titre: 'Battle context',
       mesPv: 'My current HP',

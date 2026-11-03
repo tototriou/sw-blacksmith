@@ -71,9 +71,9 @@ export function testProsesSortAuClic() {
   // Deux `title=` : celui de la prose et celui de « Calcul
   // partiel » — deux titres de bulle, aucun survol.
   egal((sorts.match(/\btitle=/g) ?? []).length, 2, 'cases de sort : deux `title=`, ceux des deux HelpPopover (titres de bulle, pas un survol)');
-  ok(/<HelpPopover title=\{s\.nom\} ariaLabel=\{d\.competence\.description\(s\.nom\)\}>\s*\{s\.description\}\s*<\/HelpPopover>/.test(sorts),
+  ok(/<HelpPopover title=\{ph\(s\.nom\)\} ariaLabel=\{d\.competence\.description\(ph\(s\.nom\)\)\}>\s*\{s\.description\}\s*<\/HelpPopover>/.test(sorts),
     '« ? » : HelpPopover (bulle à la souris, panneau montant au doigt) au nom du sort, prose du jeu telle quelle');
-  ok(/actionTitre=\{\s*s\.description \|\| partiel \? \(/.test(sorts) && /\{s\.description && \(\s*<HelpPopover title=\{s\.nom\}/.test(sorts)
+  ok(/actionTitre=\{\s*s\.description \|\| partiel \? \(/.test(sorts) && /\{s\.description && \(\s*<HelpPopover title=\{ph\(s\.nom\)\}/.test(sorts)
     && /<\/div>\s*\) : undefined\s*\}/.test(sorts),
     '« ? » : posé par l’axe `actionTitre`, sous la seule condition d’une prose (ou d’un calcul partiel) — un sort refusé garde le sien');
   const titreDeLaCase = entre(sorts, 'titre={', 'actionTitre={');

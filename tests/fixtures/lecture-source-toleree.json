@@ -960,6 +960,13 @@
       "statut": "stock"
     },
     {
+      "fichier": "tests/phrases-degats.test.ts",
+      "cible": "src/lib/damage.ts",
+      "occurrences": 1,
+      "statut": "exception",
+      "justification": "Relevé des phrases curées affichées, dans des tables que damage.ts n'exporte pas, pour exiger la traduction anglaise de chacune ; l'affichage traduit est testé par rendu."
+    },
+    {
       "fichier": "tests/pre-commit.test.ts",
       "cible": "src/a.ts",
       "occurrences": 1,

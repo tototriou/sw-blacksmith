@@ -59,7 +59,8 @@ src/
   hooks/         # état et persistance (usePersistence, useOptimizerState, useSpeedTune, useLangue…)
   i18n/          # les textes de l'interface : un dictionnaire par langue (fr.ts source, en.ts), formats ;
                  # jeu/ : le vocabulaire du jeu dans chaque langue (sets, stats, effets…) ;
-                 # articles/ : les longs textes suivis, un par langue (Mécaniques)
+                 # articles/ : les longs textes suivis, un par langue (Mécaniques) ;
+                 # phrasesDegats.ts : l'anglais des phrases curées des dégâts réels
   lib/           # calcul pur, testé : vitesse (speed.ts), runes, artéfacts, reliques, dégâts réels
                  # (damage.ts), moteur de l'Optimizer (runeBuildOptim.ts), import de compte, session
   workers/       # Web Workers de l'Optimizer (recherche, appariement parallèle, classement, résolution)

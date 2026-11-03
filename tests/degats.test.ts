@@ -1215,11 +1215,11 @@ export default function testDegats() {
   // `monsterModificateursVit` — AFFICHAGE seul (icône/nom/description) des
   // deux modificateurs, pour qu'ils apparaissent dans « Passifs offensifs »
   // comme Feng Yan/Dominic — signalé absent par l'utilisateur.
-  const modifSonia = monsterModificateursVit(sonia);
+  const modifSonia = monsterModificateursVit(sonia, fr);
   egal(modifSonia.length, 1, 'Sonia : un seul modificateur affiché (Evasion)');
   egal(modifSonia[0]?.nom, 'Evasion (Passive)', 'nom exact du passif, pour l’icône/la recherche SWARFARM');
   ok(modifSonia[0]?.detail.includes('+50 %'), 'le détail affiché mentionne le plafond');
-  const modifRigna = monsterModificateursVit(rigna);
+  const modifRigna = monsterModificateursVit(rigna, fr);
   egal(modifRigna.length, 1, 'Rigna : un seul modificateur affiché (Speed Difference)');
   ok(modifRigna[0]?.detail.includes('critique garanti'), 'le détail affiché de Rigna mentionne le critique, pas un bonus de dégâts');
 
@@ -1385,8 +1385,8 @@ export default function testDegats() {
     Math.abs(britaAvecLeadSousLeSeuil / britaSansLeadMemeReglage - 2) < 1e-9,
     '632 points de runes ATQ SOUS le seuil sans lead, mais un lead ATQ +15 % pousse au-delà — le seuil est franchi, +100 % (×2)'
   );
-  egal(monsterModificateursVit(fiche(LUSHEN)).length, 0, 'Lushen : aucun modificateur');
-  egal(monsterModificateursVit(null).length, 0, 'fiche absente : liste vide, jamais une exception');
+  egal(monsterModificateursVit(fiche(LUSHEN), fr).length, 0, 'Lushen : aucun modificateur');
+  egal(monsterModificateursVit(null, fr).length, 0, 'fiche absente : liste vide, jamais une exception');
 
   titre('Dégâts réels — catalogue « passifs non implémentés », paliers et bonus confirmés');
 
