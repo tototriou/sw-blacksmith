@@ -130,6 +130,9 @@ const FICHIERS_TRADUITS = [
   'src/components/outils/optimizer/TableauResultats.tsx',
   'src/components/outils/optimizer/TetesDeTri.tsx',
   'src/components/outils/optimizer/bureau/ResultatsBureau.tsx',
+  // Lot 7a : le speed tuning (page et modale ouverte depuis un deck).
+  'src/components/outils/SpeedTuneModale.tsx',
+  'src/components/outils/SpeedTuningSection.tsx',
 ];
 
 export default tseslint.config(

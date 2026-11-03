@@ -158,7 +158,9 @@ principales imposées, conditions, artéfacts, relique, sous-propriétés verrou
 artéfacts, réglages avancés, exclusion, validation et libération), ses résultats (cartes,
 tableau, tri, filtres d'affichage, pagination, progression, quasi-succès, diagnostics), le point
 de sauvegarde des listes, l'import d'une équipe et les rapports d'import, de stockage et de
-rattachement, les erreurs d'une recette importée. Restent en français dans l'Optimizer : la
+rattachement, les erreurs d'une recette importée ; le speed tuning, en page comme en modale (les
+deux camps, l'ordre des sorts, l'analyse, les tableaux de ticks et les grilles). Restent en
+français dans l'Optimizer : la
 description du combat « Dégâts réels », la vue de développement des gabarits, et les messages
 de la console (pannes de Worker, protocole de la file, erreurs internes du moteur), que l'écran
 remplace par une phrase traduite.
@@ -199,7 +201,8 @@ Un écran qu'on traduit entre dans `FICHIERS_TRADUITS` dans le même commit.
   offense, recommandations) en anglais ; le Compte vide, la box, le résumé et le top des
   artéfacts, le pied de page en anglais ; l'Optimizer, écran des critères au bureau et panneau
   « Options » du téléphone, en anglais ; ses résultats (progression, refus, pagination) en
-  anglais.
+  anglais ; le speed tuning (règle, camps, tableaux, grilles, ordre de tour) en anglais, et les
+  rangs anglais d'un tour (« 1st », « 2nd », « 11th »).
 - [partage-langues.test.ts](../../../tests/partage-langues.test.ts) : les messages de `src/lib/`
   (imports, statut d'équipe, alerte de tick, source d'un build, import d'un compte, top des
   artéfacts, espèce déjà dans la liste, écho des auras externes, recette refusée, raison du zéro

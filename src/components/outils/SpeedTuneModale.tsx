@@ -1,9 +1,10 @@
 import { Monster, SiegeTeam } from '../../types';
 import { DeckInitial } from '../../hooks/useSpeedTune';
 import { Modale } from '../../ui/Dialogs';
-import SpeedTuningSection, { REGLE_TICKS } from './SpeedTuningSection';
+import SpeedTuningSection, { RegleTicks } from './SpeedTuningSection';
 import type { ActionImportOptimizer } from '../../lib/actionImportOptimizer';
 import type { ExclusionSourceData } from '../../lib/optimizerExclusion';
+import { useTraduction } from '../../hooks/useLangue';
 
 interface Props {
   onImporterEquipe: ActionImportOptimizer;
@@ -38,12 +39,13 @@ export default function SpeedTuneModale({
   siegeOffenseTeams,
   onClose,
 }: Props) {
+  const st = useTraduction().speedTuning;
   return (
     <Modale
       onClose={onClose}
       labelledBy="speed-tune-modale"
-      titre="Speed tuning"
-      sousTitre={REGLE_TICKS}
+      titre={st.titre}
+      sousTitre={<RegleTicks />}
       croix
       // ⚠️ Un tableau de ticks est LARGE (11 colonnes et autant de monstres) :
       // les 400 px du défaut le réduiraient à une bande à faire défiler des deux
