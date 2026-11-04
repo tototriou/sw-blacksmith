@@ -18,8 +18,9 @@ const racine = resolve(new URL('..', import.meta.url).pathname.replace(/^\/([A-Z
 
 // Les propriétés dont l'écran affiche la valeur, et la table « Calcul partiel ».
 const PROPRIETES_AFFICHEES = new Set(['label', 'condition', 'libelle', 'aide', 'raison', 'detail']);
-// Des noms de compétences du jeu, déjà ceux du jeu anglais : rien à traduire.
-const NOMS_DU_JEU = new Set(['Fierce Attack!', 'Attack Instinct', 'Dark Guardian', 'Rankyaku', 'Accelerando']);
+// Des noms de compétences du jeu, déjà ceux du jeu anglais, et des effets dont
+// le libellé de l'app est le nom SWARFARM : rien à traduire.
+const NOMS_DU_JEU = new Set(['Fierce Attack!', 'Attack Instinct', 'Dark Guardian', 'Rankyaku', 'Accelerando', 'Silence', 'Suppression']);
 // La valeur d'exemple d'une phrase à gabarit (`${profil.nom} se déclenche…`).
 const EXEMPLE = 'Tempest (Passive)';
 

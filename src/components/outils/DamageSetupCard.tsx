@@ -8,6 +8,7 @@ import {
   BonusDegatsStackableProfile,
   BonusMonstreParEffetProfile,
   BonusMonstreParEffetPropreProfile,
+  type SourceEffetCible,
   CombatStatProfile,
   ConditionMonstreProfile,
   BonusSacrificeProfile,
@@ -56,6 +57,15 @@ import {
   resolvedDebuffsCibleCount,
   resolvedEffetsCibleCount,
   resolvedHits,
+  reglagesDesPoses,
+  effetDuTirageAuCoup,
+  effetsDuTirageProposables,
+  choisirAuCoupDuTirage,
+  type EffetEntreCoupsProfile,
+  libelleEffetEntreCoups,
+  nomEffetEntreCoups,
+  coupsAuHasard,
+  resolvedBrutParEffetCount,
   resolvedPvActuelsAvantSacrificePctMonstre,
   resolvedStackPct,
   resolvedStackTrigger,
@@ -192,7 +202,7 @@ interface Props {
 // Libellé FR de `bonusParEffetCible.source`/`monsterBonusParEffetCible(...).source`
 // — factorisé, utilisé aux trois emplacements qui affichent ce type d'effet
 // (résumé du sort, libellé du champ, infobulle/aria-label).
-function libelleSourceEffet(source: 'buffs' | 'debuffs' | 'buffsEtDebuffs', t: Dictionnaire): string {
+function libelleSourceEffet(source: SourceEffetCible, t: Dictionnaire): string {
   return t.degats.sourceEffet[source];
 }
 
@@ -350,7 +360,9 @@ function champCoupsVariables(
   return (
     <div className="mt-1 flex items-center gap-2">
       <span className="text-xs text-ink-dim">
-        {t.degats.resume.coupsVariables(profile.hitsRange.min, profile.hitsRange.max)}
+        {coupsAuHasard(profile.skillCom2usId)
+          ? t.degats.resume.coupsAuHasard(profile.hitsRange.min, profile.hitsRange.max)
+          : t.degats.resume.coupsVariables(profile.hitsRange.min, profile.hitsRange.max)}
       </span>
       <NumberField
         value={resolvedHits(profile, setup)}
@@ -851,6 +863,34 @@ export default function DamageSetupCard({
             </Selecteur>
           </label>
         )}
+        {/* Fei : chaque coup ignore la DEF par sa propre chance — un
+            interrupteur par coup retenu, aucun coché par défaut. Posé sous
+            la liste, comme le sélecteur ci-dessus : cocher ne déplace rien. */}
+        {resolved.ignoreDefParCoupChoisi && (() => {
+          const coches = setup.coupsIgnorantDefParSort?.[resolved.skillCom2usId] ?? [];
+          return (
+            <div className="mt-1 flex flex-wrap items-center gap-2">
+              <span className="text-xs text-ink-dim">{d.coupsIgnorantDef.titre}</span>
+              {Array.from({ length: resolvedHits(resolved, setup) }, (_, i) => i + 1).map((n) => (
+                <Interrupteur
+                  key={n}
+                  actif={coches.includes(n)}
+                  onChange={(actif) =>
+                    maj({
+                      coupsIgnorantDefParSort: {
+                        ...(setup.coupsIgnorantDefParSort ?? {}),
+                        [resolved.skillCom2usId]: actif
+                          ? Array.from(new Set([...coches, n])).sort((a, b) => a - b)
+                          : coches.filter((x) => x !== n),
+                      },
+                    })
+                  }
+                  libelle={d.coupsIgnorantDef.coup(n)}
+                />
+              ))}
+            </div>
+          );
+        })()}
       </div>
 
       {/* ⚠️ **Presque toujours indépendant du sort choisi ci-dessus** — un
@@ -1601,7 +1641,9 @@ export default function DamageSetupCard({
                       [resolved.skillCom2usId]: Math.max(
                         0,
                         (v ?? 0) -
-                          (resolved.bonusParEffetCible?.source === 'buffs' || setup.effetsCibleCountAutres !== true
+                          (resolved.bonusParEffetCible?.source === 'buffs' ||
+                            resolved.bonusParEffetCible?.source === 'degatsContinus' ||
+                            setup.effetsCibleCountAutres !== true
                             ? 0 : Number(setup.defBreak) + Number(setup.brand))
                       ),
                     },
@@ -1615,6 +1657,46 @@ export default function DamageSetupCard({
               </label>
             )
           )}
+          {/* Dégâts bruts selon les effets nocifs de la cible (Havoc, Bullet
+              Assassination ; Start of Pain de Kiki, Nano Vision d'Amber sur
+              chacun de leurs sorts) : la présence en interrupteur, sinon un
+              compteur borné. Saisie sous la clé de la règle (le sort, ou le
+              passif pour tout le monstre). */}
+          {resolved.brutParEffetCible && (() => {
+            const brut = resolved.brutParEffetCible;
+            const b = d.brutParEffet;
+            const base = b.base[brut.base];
+            const dot = brut.source === 'degatsContinus';
+            if (brut.maxCount === 1) {
+              return (
+                <PassifInterrupteur
+                  icone={resolved.icone ? <img src={resolved.icone} alt="" className="h-4 w-4 rounded" loading="lazy" /> : undefined}
+                  actif={resolvedBrutParEffetCount(brut, setup) > 0}
+                  onChange={(v) => maj({ passifsOffensifs: { ...(setup.passifsOffensifs ?? {}), [brut.cle]: v } })}
+                  libelle={b.presence(brut.nom, brut.pct, base)}
+                  title={setup.defBreak || setup.brand ? d.passifs.autoBriseMarque : d.passifs.nefastesCible}
+                />
+              );
+            }
+            const explicites = brut.source === 'debuffs' && setup.effetsCibleCountAutres === true
+              ? Number(!!setup.defBreak) + Number(!!setup.brand) : 0;
+            return (
+              <label className="flex items-center gap-2">
+                <span className="text-xs text-ink-dim">{b.compte(brut.nom, dot, brut.maxCount ?? null)}</span>
+                <NumberField
+                  value={resolvedBrutParEffetCount(brut, setup)}
+                  max={brut.maxCount ?? 10}
+                  min={0}
+                  onChange={(v) =>
+                    maj({ effetsCibleCount: { ...(setup.effetsCibleCount ?? {}), [brut.cle]: Math.max(0, (v ?? 0) - explicites) } })
+                  }
+                  boxWidth="w-24"
+                  title={b.compteAide(brut.pct, base, dot)}
+                  ariaLabel={b.compteAria(brut.nom, dot)}
+                />
+              </label>
+            );
+          })()}
           {resolved.bonusParEffetPropre && (
             <label className="flex items-center gap-2">
               <span className="text-xs text-ink-dim">
@@ -1686,7 +1768,11 @@ export default function DamageSetupCard({
               />
             </label>
           )}
-          {resolved.effetsEntreCoups && resolved.effetsEntreCoups.length > 0 && resolvedHits(resolved, setup) > 1 && (() => {
+          {(() => {
+            // Chaque effet avec les coups qui peuvent le poser, ou les effets d'un
+            // même tirage, réglés coup par coup (`reglagesDesPoses`).
+            const reglages = reglagesDesPoses(resolved, setup);
+            if (reglages.length === 0) return null;
             const scenario = setup.scenariosEffetsEntreCoups?.[resolved.skillCom2usId] ?? {};
             const majScenario = (patch: Partial<typeof scenario>) =>
               maj({
@@ -1695,6 +1781,34 @@ export default function DamageSetupCard({
                   [resolved.skillCom2usId]: { ...scenario, ...patch },
                 },
               });
+            // Ce que la cible porte déjà de cet effet, au départ.
+            const presence = (effet: EffetEntreCoupsProfile) => {
+              const presents = scenario.presentsInitialement ?? [];
+              const initialDerive =
+                effet.effetCombat === 'brand' ? setup.brand : effet.effetCombat === 'defBreak' ? setup.defBreak : false;
+              return (
+                <>
+                  {!effet.cumulable && !effet.effetCombat && (
+                    <Interrupteur
+                      actif={presents.includes(effet.id)}
+                      onChange={(actif) =>
+                        majScenario({
+                          presentsInitialement: actif
+                            ? Array.from(new Set([...presents, effet.id]))
+                            : presents.filter((id) => id !== effet.id),
+                        })
+                      }
+                      libelle={d.entreCoups.dejaPresent}
+                    />
+                  )}
+                  {effet.effetCombat && (
+                    <span className="text-xs text-ink-dim">
+                      {initialDerive ? d.entreCoups.dejaInclus : d.entreCoups.absent}
+                    </span>
+                  )}
+                </>
+              );
+            };
             return (
               <div className="space-y-2 rounded-lg border border-border-soft bg-panel2 p-2.5">
                 <Interrupteur
@@ -1704,50 +1818,88 @@ export default function DamageSetupCard({
                 />
                 {scenario.actif && (
                   <div className="space-y-2 border-t border-border-soft pt-2">
-                    {resolved.effetsEntreCoups.map((effet) => {
-                      const presents = scenario.presentsInitialement ?? [];
-                      const initialDerive =
-                        effet.effetCombat === 'brand' ? setup.brand : effet.effetCombat === 'defBreak' ? setup.defBreak : false;
+                    {reglages.map((reglage) => {
+                      if (reglage.type === 'tirage') {
+                        // Un tirage : un seul effet par coup, choisi coup par
+                        // coup — aucun, ou l'un de ceux que ce coup peut poser.
+                        return (
+                          <div key={reglage.cle} className="space-y-1.5">
+                            {reglage.effets.map(({ effet }) => (
+                              <div key={effet.id} className="flex flex-wrap items-center gap-2">
+                                <span className="min-w-40 text-xs text-ink-dim">{libelleEffetEntreCoups(effet, textes)}</span>
+                                {presence(effet)}
+                              </div>
+                            ))}
+                            <p className="text-xs text-ink-dim">{d.entreCoups.unSeulParCoup}</p>
+                            {reglage.rangs.map((coup) => (
+                              <div key={coup} className="flex flex-wrap items-center gap-2">
+                                <span className="min-w-40 text-xs text-ink-dim">{d.entreCoups.apresCoup(coup)}</span>
+                                <Selecteur
+                                  taille="sm"
+                                  pleineLargeur={false}
+                                  value={effetDuTirageAuCoup(scenario, reglage.effets, coup) ?? ''}
+                                  onChange={(e) =>
+                                    majScenario({
+                                      apresCoup: choisirAuCoupDuTirage(scenario, reglage.effets, coup, e.target.value === '' ? null : e.target.value),
+                                    })
+                                  }
+                                  aria-label={d.entreCoups.effetApresCoupAria(coup)}
+                                >
+                                  <option value="">{d.entreCoups.aucunEffet}</option>
+                                  {effetsDuTirageProposables(scenario, reglage.effets, coup).map((effet) => (
+                                    <option key={effet.id} value={effet.id}>{nomEffetEntreCoups(effet, textes)}</option>
+                                  ))}
+                                </Selecteur>
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      }
+                      const { effet, rangs } = reglage.propose;
+                      const choisi = scenario.apresCoup?.[effet.id];
+                      const poserApres = (coup: number | null) =>
+                        majScenario({ apresCoup: { ...(scenario.apresCoup ?? {}), [effet.id]: coup } });
                       return (
                         <div key={effet.id} className="flex flex-wrap items-center gap-2">
-                          <span className="min-w-40 text-xs text-ink-dim">{ph(effet.label)}</span>
-                          {!effet.cumulable && !effet.effetCombat && (
+                          <span className="min-w-40 text-xs text-ink-dim">{libelleEffetEntreCoups(effet, textes)}</span>
+                          {presence(effet)}
+                          {rangs.length === 1 ? (
+                            // Un seul coup pose l'effet (prose ou note) : posé ou non.
                             <Interrupteur
-                              actif={presents.includes(effet.id)}
-                              onChange={(actif) =>
-                                majScenario({
-                                  presentsInitialement: actif
-                                    ? Array.from(new Set([...presents, effet.id]))
-                                    : presents.filter((id) => id !== effet.id),
-                                })
-                              }
-                              libelle={d.entreCoups.dejaPresent}
+                              actif={choisi === rangs[0]}
+                              onChange={(actif) => poserApres(actif ? rangs[0] : null)}
+                              libelle={d.entreCoups.poseAuCoup(rangs[0])}
                             />
+                          ) : (
+                            <Selecteur
+                              taille="sm"
+                              pleineLargeur={false}
+                              value={choisi != null && rangs.includes(choisi) ? choisi : ''}
+                              onChange={(e) => poserApres(e.target.value === '' ? null : Number(e.target.value))}
+                              aria-label={d.entreCoups.momentAria(nomEffetEntreCoups(effet, textes))}
+                            >
+                              <option value="">{d.entreCoups.aucuneReussite}</option>
+                              {rangs.map((hit) => (
+                                <option key={hit} value={hit}>{d.entreCoups.apresCoup(hit)}</option>
+                              ))}
+                            </Selecteur>
                           )}
-                          {effet.effetCombat && (
-                            <span className="text-xs text-ink-dim">
-                              {initialDerive ? d.entreCoups.dejaInclus : d.entreCoups.absent}
-                            </span>
+                          {/* Critical Link : la bête convertit chaque effet
+                              bénéfique de la cible en un dégât continu — le
+                              joueur dit combien, 0 par défaut. */}
+                          {effet.nombreChoisi && (
+                            <label className="flex items-center gap-2">
+                              <span className="text-xs text-ink-dim">{d.entreCoups.convertis}</span>
+                              <NumberField
+                                value={scenario.nombres?.[effet.id] ?? 0}
+                                onChange={(v) => majScenario({ nombres: { ...(scenario.nombres ?? {}), [effet.id]: Math.max(0, v ?? 0) } })}
+                                min={0}
+                                max={10}
+                                boxWidth="w-16"
+                                ariaLabel={d.entreCoups.convertisAria(nomEffetEntreCoups(effet, textes))}
+                              />
+                            </label>
                           )}
-                          <Selecteur
-                            taille="sm"
-                            pleineLargeur={false}
-                            value={scenario.apresCoup?.[effet.id] ?? ''}
-                            onChange={(e) =>
-                              majScenario({
-                                apresCoup: {
-                                  ...(scenario.apresCoup ?? {}),
-                                  [effet.id]: e.target.value === '' ? null : Number(e.target.value),
-                                },
-                              })
-                            }
-                            aria-label={d.entreCoups.momentAria(ph(effet.label))}
-                          >
-                            <option value="">{d.entreCoups.aucuneReussite}</option>
-                            {Array.from({ length: resolvedHits(resolved, setup) - 1 }, (_, i) => i + 1).map((hit) => (
-                              <option key={hit} value={hit}>{d.entreCoups.apresCoup(hit)}</option>
-                            ))}
-                          </Selecteur>
                         </div>
                       );
                     })}

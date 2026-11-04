@@ -21,7 +21,7 @@ const LAPIS = 19811;
 const BLADE_SURGE_LAPIS = 10616;
 const BLADE_DANCER = 14808;
 
-// Les quatorze champs : [nom, valeur d'une entrée valide pour la clé].
+// Les quinze champs : [nom, valeur d'une entrée valide pour la clé].
 const RANG_VALIDE = cransDeLaRegleIgnoreDef(IGNORE_DEF_A_PARTIR_DU_COUP_PAR_ID[BLADE_DANCER], fr).map((c) => c.rang).find((r) => r !== null) ?? null;
 const CHAMPS: [string, unknown, number][] = [
   // Sept champs entiers de `validerRecordNumerique`.
@@ -38,16 +38,17 @@ const CHAMPS: [string, unknown, number][] = [
   // Deux champs de `validerRecordBooleen`.
   ['passifsOffensifs', true, BLADE_SURGE_LAPIS],
   ['statsCombatActives', true, BLADE_SURGE_LAPIS],
-  // Les trois champs à validation propre.
+  // Les quatre champs à validation propre.
   ['scenariosEffetsEntreCoups', { actif: true }, BLADE_SURGE_LAPIS],
   ['cibleDegatsParSort', 'secondaire', BLADE_SURGE_LAPIS],
   ['premierCoupIgnoreDefParSort', RANG_VALIDE, BLADE_DANCER],
+  ['coupsIgnorantDefParSort', [1, 3], 8215], // Dark Dragon Attack (Fei)
 ];
 
 const SOURCE = readFileSync(new URL('../src/lib/optimizerRecipe.ts', import.meta.url), 'utf8');
 
 export function testRecetteClesIdentifiant() {
-  titre('Recette — une seule règle de clé d’identifiant de compétence, quatorze champs');
+  titre('Recette — une seule règle de clé d’identifiant de compétence, quinze champs');
 
   const base = JSON.parse(
     JSON.stringify(
@@ -77,12 +78,12 @@ export function testRecetteClesIdentifiant() {
     ok(nulle.recipe === null, `${champ} : « 0 » refusé`);
   }
 
-  // Garde de source : cinq sites d'appel (les neuf champs des deux tableaux
-  // passent par `validerRecordNumerique`), et les deux tableaux de champs du
-  // parseur contenus dans la liste de ce test.
+  // Garde de source : six sites d'appel (les neuf champs des deux tableaux
+  // passent par `validerRecordNumerique` ; le sixième, `coupsIgnorantDefParSort`),
+  // et les deux tableaux de champs du parseur contenus dans la liste de ce test.
   const appels = (SOURCE.match(/estIdentifiantDeCompetence\(/g) ?? []).length
     - (SOURCE.match(/function estIdentifiantDeCompetence\(/g) ?? []).length;
-  egal(appels, 5, 'cinq sites d’appel de estIdentifiantDeCompetence( dans optimizerRecipe.ts');
+  egal(appels, 6, 'six sites d’appel de estIdentifiantDeCompetence( dans optimizerRecipe.ts');
 
   const tableaux = [...SOURCE.matchAll(/for \(const champ of \[([^\]]*)\]\) \{\s*const e = validerRecordNumerique/g)];
   egal(tableaux.length, 2, 'deux tableaux de champs passent par validerRecordNumerique');
@@ -90,7 +91,7 @@ export function testRecetteClesIdentifiant() {
   const dansParseur = tableaux.flatMap((m) => [...m[1].matchAll(/'([^']+)'/g)].map((x) => x[1]));
   egal(dansParseur.length, 9, 'neuf champs dans les deux tableaux du parseur');
   egal(dansParseur.filter((nom) => !listes.has(nom)), [], 'chaque champ des tableaux du parseur est dans la liste du test');
-  egal(CHAMPS.length, 14, 'quatorze champs dans la liste du test');
+  egal(CHAMPS.length, 15, 'quinze champs dans la liste du test');
 
   // Le seul test de clé du fichier : plus aucune règle écrite à la main.
   egal((SOURCE.match(/\/\^\\d\+\$\/|\/\^\[1-9\]/g) ?? []).length, 1, 'une seule expression de clé dans optimizerRecipe.ts');

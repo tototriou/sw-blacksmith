@@ -44,18 +44,16 @@ codée porte « Calcul partiel »
 ### Compétence active appelée par un sort
 
 - **Constat** : `ATTAQUES_APPELEES_PAR_DECLENCHEUR` (`src/lib/damage.ts`)
-  ne porte que les deux sorts coopératifs sans dégâts propres qui appellent
-  le S1 ; aucune attaque appelée après un sort qui frappe n'est curée, et
-  aucun effet posé par un déclencheur n'est modélisé
+  ne porte, après un sort qui frappe, que le S1 enchaîné de Shoryuken et
+  d'Iron Uppercut ; les autres amorces acceptées (Drunken Kick, Phoenix
+  Kick, Stork Kick, Snake Punch) ne sont pas curées, et aucun buff posé par
+  un déclencheur n'est modélisé
   ([02-app/degats-reels/feat-attaque-apres-un-sort.md § Ce qu’il faudra fournir pour un autre cas](../02-app/degats-reels/feat-attaque-apres-un-sort.md#ce-quil-faudra-fournir-pour-un-autre-cas)).
 - **Idée** : l'interrupteur d'une attaque appelée sous un en-tête à part,
   « Attaques déclenchées ». Seal Punch (`8111`) gardé : son Rolling Punch
   se calcule sans la VIT posée, l'écart (environ 0,5 %) dit à l'écran.
   Fire! de Bella suit son S1, S2 ou S4, interrupteur allumé par défaut.
-  Après Shoryuken et Iron Uppercut (`13907`, `13908`, `13910`, `14407`,
-  `14408`, `14410`), un interrupteur « Marque posée après la S2 » pour le
-  S1 enchaîné, au lieu d'un relevé. Tiger Punch (`8112`) : le buff d'ATQ
-  posé avant l'attaque appelée.
+  Tiger Punch (`8112`) : le buff d'ATQ posé avant l'attaque appelée.
 - **Bloque** : un changement de code.
 
 ### Répétition du sort retenu
@@ -64,9 +62,18 @@ codée porte « Calcul partiel »
   aucune entrée dans `src/lib/damage.ts`, alors que leurs valeurs sont
   fournies ([02-app/degats-reels/](../02-app/degats-reels/),
   « Déclenchements de Hwa et Jackie », « Zeratu — Forbidden Power ») ; la
-  répétition d'Elise sous 50 % de PV non plus. Exploding Hands (`11015`) se
+  répétition d'Elise sous 50 % de PV non plus, ni Chain Effect (`18132`,
+  Vendhan feu : « uses the same skill again with reduced damage », taux non
+  donné), ni les coups en plus de Severing Edge et Dimension Shatter
+  (`25213`, `25713`, Übel et Wieb vent : « attacks the target 2 to 3 more
+  times », `0.8*{ATK}`). Exploding Hands (`11015`) se
   répète par sa compétence auxiliaire, améliorations comprises, sans
-  confirmation ([02-app/degats-reels/feat-competences-auxiliaires.md](../02-app/degats-reels/feat-competences-auxiliaires.md)).
+  confirmation ([02-app/degats-reels/feat-competences-auxiliaires.md](../02-app/degats-reels/feat-competences-auxiliaires.md)) ;
+  la clause de cette auxiliaire (`11016`), « 25% of the target's remaining
+  HP as additional damage » contre une cible sous incapacité, n'est pas
+  comptée, alors que la répétition n'a lieu que sur une cible étourdie :
+  Exploding Hands porte « Calcul partiel » (`CALCUL_PARTIEL_PAR_ID`), qui
+  en sort le jour où ce surplus se compte.
 - **Idée** : répéter le profil du sort retenu, sans récursion, sous
   interrupteur, avec des clés de réglage distinctes de celles du sort. Les
   conditions sur la cible (Hwa, Blood Talon, Heaven's Might, Hunting Hawk)
@@ -76,7 +83,9 @@ codée porte « Calcul partiel »
   de la S1 : 1,00 → répétition pleine, 0,50 → demi. Burning Swing de Hwa
   sur une cible sans effet néfaste, répétition sur coup 1 : environ 1,15 →
   le dégât continu posé compte. Exploding Hands de Jackie, répétition sur
-  coup 1 : 1,00 → les améliorations portent sur la répétition.
+  coup 1 : 1,00 → les améliorations portent sur la répétition ; contre une
+  cible aux PV connus (PV restants R), le surplus de la répétition comparé à
+  0,25 × R, mitigé ou brut.
 
 ### Attaque sur un autre ennemi après une élimination
 
@@ -99,7 +108,16 @@ codée porte « Calcul partiel »
   Backlash quand la cible n'a aucun effet bénéfique, et Trinity Claymore
   (`22515`) enchaîne Backlash, Hunting Hawk puis trois coups ; Taebaek
   ténèbres, son jumeau, porte Roundhouse Kick Combo (`23010`) et Endless
-  Kick Combo (`23015`). Shoot n' Slash de Barque (`10223`, sans formule)
+  Kick Combo (`23015`). Les versions feu, Hunting Hawk (`22507`, Hwoarang) et
+  Roundhouse Kick Combo (`23007`, Taebaek), frappent de même d'abord avec
+  Backlash ou Triple Kick contre une cible sans effet bénéfique : la Marque
+  que leur passif (Blood Talon, Heaven's Might) pose pendant ce préfixe
+  vaudrait pour leurs trois coups, alors que le calcul ne propose que la pose
+  après leur coup 1 ([02-app/degats-reels/feat-poses-entre-les-coups.md](../02-app/degats-reels/feat-poses-entre-les-coups.md)).
+  Leur passif lance aussi, contre une cible sous effet bénéfique, « [Hunting
+  Hawk] / [Roundhouse Kick Combo] … in succession after the attack »
+  (auxiliaires `22516` et `23016`, 3 coups, `{ATK}`), que rien ne calcule.
+  Shoot n' Slash de Barque (`10223`, sans formule)
   enchaîne Backspin Slash et Pirate's Strike.
 - **Idée** : ce que décide chaque chaîne
   ([02-app/degats-reels/](../02-app/degats-reels/)). Kung Fu Girls :
@@ -154,12 +172,14 @@ codée porte « Calcul partiel »
   (`src/lib/damage.ts`) ne portent ni Sindar's Volley ni Sylvan Volley
   (2 à 5 coups, valeur fournie), ni Wild Shot! (`13306`), Cleave
   (`19910`), Exorcism Orb (`20510`), Blade Dance of the Reaper (`10711`,
-  Stella), Chain Fire, ni les sorts de Lala et de Coco : ils frappent le
-  nombre de coups de la donnée. Les coups portés à « un ennemi au hasard »
-  (Rolling Punch, Kacey, Zenitsu, Qilin Slasher, Katarina) comptent tous
-  sur la cible configurée : calcul trop favorable.
-- **Idée** : un compteur borné où l'on choisit combien de coups touchent
-  la cible. Le défaut d'une plage est son minimum. Stella : coups selon la
+  Stella), Chain Fire, Arcane Discharge (`25412`, Freu feu, « Attacks all
+  enemies 2 to 3 times », calculé à 2), ni les sorts de Lala et de Coco :
+  ils frappent le nombre de coups de la donnée. Les coups au hasard d'un sort se règlent
+  (`COUPS_AU_HASARD_PAR_ID`), mais pas l'attaque appelée au hasard
+  (Rolling Punch), ni les tirs qui choisissent leur cible (Magic Shot,
+  Full Burst).
+- **Idée** : un compteur borné. Le défaut d'une plage est son minimum.
+  Stella : coups selon la
   VIT totale de combat ([02-app/degats-reels/](../02-app/degats-reels/)).
   Chain Fire : salves de deux flèches, compteur par pas de 2. Lala : un
   sélecteur de 0 à 5 [Attack!], son S3 sans coup propre. Coco : compteur des
@@ -169,18 +189,7 @@ codée porte « Calcul partiel »
   2 puis 1 ennemi vivant, coups reçus par un ennemi : une table, ou une
   somme constante répartie. Cleave et Exorcism Orb : la règle du nombre de
   coups, à tester d'abord en jeu, puis ATQ sous la DEF, à 1,5 fois, à 2
-  fois. Hors inventaire : Crow Hunt et Rat Hunt sous Immunité.
-
-### Crow Hunt de Prilea : deux coups annoncés pour un
-
-- **Constat** : Crow Hunt (`1618`, Prilea `10513`) « attack the enemy
-  target 2 times » porte `coups: 1` ; `COUPS_FIXES_CORRIGES_PAR_ID`
-  (`src/lib/damage.ts`) est vide, le calcul compte un coup. Ses homonymes
-  jouables `1607` et `1609` portent `coups: 4`
-  (`tests/degats-coups-saisis.test.ts`).
-- **Idée** : l'entrée `1618: 2` dans `COUPS_FIXES_CORRIGES_PAR_ID`.
-- **Bloque** : un relevé, les nombres de dégâts affichés sur la cible :
-  deux → 2 coups, un → la donnée dit vrai.
+  fois. Hors inventaire : Rat Hunt sous Immunité.
 
 ### Séquences à valeur relevée
 
@@ -189,15 +198,14 @@ codée porte « Calcul partiel »
   (`23115`, Duke), ni Oathbreakers (`23815`, Aragorn) et Spirits of Wolf
   Warriors (`24315`, Night Fang), ni Triple Combo (`13913`, RYU vent) et
   Triple Crush (`14413`, Kashmir), chaque paire de jumeaux de même prose,
-  ni Explosive Bullet ou Tempest Sword (`10613`) : leur phase que la donnée
-  ne chiffre pas manque au total. (Le coup en plus de Guilty Sentence
+  ni Explosive Bullet : leur phase que la donnée ne chiffre pas manque au
+  total. (Le coup en plus de Guilty Sentence
   s'ajoute sur interrupteur :
   [02-app/degats-reels/feat-competences-auxiliaires.md](../02-app/degats-reels/feat-competences-auxiliaires.md).)
 - **Idée** : une séquence curée par sort
   ([02-app/degats-reels/feat-sequences-de-coups.md § La séquence curée — une table par identifiant](../02-app/degats-reels/feat-sequences-de-coups.md#la-séquence-curée--une-table-par-identifiant)).
-  Tempest Sword : troisième coup au ratio des deux premiers (valeur
-  fournie). Un effet posé entre deux groupes se règle par le
-  choix « après quel coup ».
+  Un effet posé entre deux groupes se règle par le choix « après quel
+  coup ».
 - **Bloque** : des relevés, chacun sur la cible visée ; une mesure vaut
   pour une paire de jumeaux. Shoulder Smash ou Triple Break Combo, coup 3
   / coup 1 (deux nombres seulement → la zone exclut la cible).
@@ -233,43 +241,42 @@ codée porte « Calcul partiel »
   (±1 %) malgré B → copie ; sinon recalcul par cible ; Crush : D_B critique
   → copie, et la ligne 224 porte-t-elle sur son coup principal ?
 
-### Poses entre les coups : rang, buff posé par le sort, Eightfold
+### Poses entre les coups : buff posé par le sort, Eightfold, poses au hasard
 
-- **Constat** : le sélecteur de pose propose tous les rangs, même un coup
-  qui ne pose rien (Crushed Hopes `10413`, `EFFETS_ENTRE_COUPS_PAR_ID_CONNUS`,
-  `src/lib/damage.ts`). Eightfold (`21607`, `21609`, `22207`, `22209`) ne
-  compte pas son +50 % quand la jauge d'attaque de la cible est à 0. La
-  Marque d'Axe Technique of the Mercenary Queen (`18007`, `18009`) n'est que
-  dans la prose : non curée.
-- **Idée** : ne proposer que les coups qui posent l'effet. Eightfold : à
-  partir du coup choisi, comme l'ignore DEF des Blade Dancers
-  ([02-app/degats-reels/](../02-app/degats-reels/)). Un buff que le sort se
-  pose : un interrupteur allumé par défaut quand ce sort est choisi.
-  Hairpin: Black Flash et Exorcist Shuriken Formation (`20315`, `20915`,
-  Nobara et Aya ténèbres) : +100 % au seul coup 2 si la cible porte un
-  effet nocif, comme le disent la donnée et la prose.
+- **Constat** : Eightfold (`21607`, `21609`, `22207`, `22209`) ne compte pas
+  son +50 % quand la jauge d'attaque de la cible est à 0. Un effet posé au
+  dernier coup n'est proposé que pour le S1 enchaîné de Shoryuken et d'Iron
+  Uppercut, pas pour un passif qui suit le sort. Les effets que pose une bête
+  ou un disque « on a random enemy … when you attack on your turn » (Eagle
+  Deception `17315`, Eye of the Desert `17815`) ne sont pas proposés : ni la
+  cible ni l'instant ne sont dits. Un critique « si plus rapide » d'un
+  passif reste jugé sur la VIT adverse du réglage, même après un
+  ralentissement posé : il ne rend donc pas un ralentissement proposable
+  (`lecteursDuMonstre`).
+- **Idée** : Eightfold : à partir du coup choisi, comme l'ignore DEF des
+  Blade Dancers ([02-app/degats-reels/](../02-app/degats-reels/)). Un buff
+  que le sort se pose : un interrupteur allumé par défaut quand ce sort est
+  choisi.
 - **Bloque** : un changement de code, et des relevés. Buff posé par le
   sort : la prose le place avant l'attaque ; un relevé (monstre déjà sous
   ce buff puis sans, environ 1,00 → actif avant) seulement en cas de doute.
-  Barbara contre ~3 000 de DEF et 4 buffs : coup 2 / coup 1 très au-dessus
-  de 1 → la cavalière est le coup 2 ; Savannah sous k débuffs : environ
-  1 + 0,15k. Solveig ou Berghild : l'icône de Marque après le sort. Hellfire sans puis
+  Savannah sous k débuffs : environ 1 + 0,15k. Hellfire sans puis
   avec Brise DEF (~1 500 de DEF) : environ 1 → la Brise DEF précède le
-  coup, environ 2,36 → après.
+  coup, environ 2,36 → après. Bayek ténèbres ou Salah, S2 à deux coups contre
+  une cible seule à ~3 000 de DEF, coups non critiques : coup 2 / coup 1
+  environ 2,7 → la Réduction de DEF de la bête précède le coup 2, environ 1
+  → elle le suit.
 
 ### Comptes propres et jauge absorbée
 
-- **Constat** : aucun compte propre des dégâts continus sur la cible
-  (Yoga Sunburst `14213`, Chemical Gas Spray `14713`), ni des effets
-  retirés aux alliés, ni de la jauge d'attaque absorbée (Xiana, Theodora)
-  n'existe dans `src/lib/damage.ts`.
-- **Idée** : un compteur propre « dégâts continus sur la cible », +50 % par
-  dégât continu, la prose faisant foi
-  ([02-app/degats-reels/](../02-app/degats-reels/), « DHALSIM,
-  Jarrett ») ; les autres comptes sur le même modèle.
-- **Bloque** : des relevés. Yoga Sunburst et Chemical Gas Spray, coup 2 /
-  coup 1 après un dégât continu posé par le coup 1 : 1,3 à 1,5 → ceux du
-  sort comptent. Satoru Gojo ou Werner, alliés portant 0, 1, 2 puis 4
+- **Constat** : aucun compte des effets retirés aux alliés, ni de la jauge
+  d'attaque absorbée (Xiana, Theodora) n'existe dans `src/lib/damage.ts`.
+  (Les dégâts continus de la cible, eux, se comptent : `SourceEffetCible`
+  `'degatsContinus'`.)
+- **Idée** : les comptes sur le modèle du compteur de dégâts continus. Chaque
+  lecteur ajouté rend proposables, sans autre curation, les effets nocifs que
+  le sort pose entre ses coups (`effetsEntreCoupsDuSort`).
+- **Bloque** : des relevés. Satoru Gojo ou Werner, alliés portant 0, 1, 2 puis 4
   effets néfastes. Xiana et Theodora, jauge de la cible vers 0 puis à 30 %
   ou plus. Bayek ou Omar eau, deux cibles de même DEF et de PV très
   différents. Eshir contre 0, 1 puis 3 buffs. Yuji et Rick eau et lumière,
@@ -295,16 +302,6 @@ codée porte « Calcul partiel »
   lancer. Coup k / coup 1 constant → aucune escalade ; croissance régulière
   → l'incrément. Pour Baleygr, compter aussi les coups selon le nombre de
   Connaissances.
-
-### Effets entre coups hors inventaire
-
-- **Constat** : `EFFETS_ENTRE_COUPS_CONNUS` et
-  `EFFETS_ENTRE_COUPS_PAR_ID_CONNUS` (`src/lib/damage.ts`) ne portent que
-  des sorts examinés un par un ; deux familles hors de l'inventaire de
-  l'audit, de l'ordre de 200 et de 80 sorts, restent à trier.
-- **Idée** : les trier par un balayage du corpus, puis curer par
-  identifiant ce qui pèse sur un total.
-- **Bloque** : le triage, à refaire sur `public/data/skills/`.
 
 ## Ajouter une piste
 

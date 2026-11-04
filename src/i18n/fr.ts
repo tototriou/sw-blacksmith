@@ -2646,6 +2646,8 @@ export const fr = {
         auMoins1: 'doit être supérieur ou égal à 1',
         sansIgnoreDef: "désigne un sort sans réglage d'ignore DEF par coup",
         valeursPermises: (valeurs: string) => `doit valoir ${valeurs} pour ce sort`,
+        sansIgnoreDefCoupParCoup: 'désigne un sort sans ignore DEF choisi coup par coup',
+        listeRangsCoups: 'doit être une liste de rangs de coup entiers, à partir de 1',
         valeurInconnue: 'contient une valeur inconnue',
         setsConnus: 'doit être une liste de sets connus',
         plusDeSix: 'demande plus de six runes',
@@ -2899,8 +2901,29 @@ export const fr = {
       critDamage: (pts: number) => `+${pts} pts de Dgts Crit`,
       charges: (pct: number) => `jusqu’à +${pct} % par charges`,
       coupsVariables: (min: number, max: number) => `Coups réellement infligés (variable en jeu, ${min} à ${max}) :`,
+      coupsAuHasard: (min: number, max: number) => `Coups qui touchent la cible (coups au hasard, ${min} à ${max}) :`,
     },
-    sourceEffet: { buffs: 'bénéfiques', debuffs: 'néfastes', buffsEtDebuffs: 'bénéfiques et néfastes' },
+    sourceEffet: {
+      buffs: 'bénéfiques',
+      debuffs: 'néfastes',
+      buffsEtDebuffs: 'bénéfiques et néfastes',
+      degatsContinus: 'de dégâts continus',
+    },
+    // Un sort dont chaque coup ignore la DEF par sa propre chance (Fei).
+    coupsIgnorantDef: {
+      titre: 'Coups qui ignorent la DEF :',
+      coup: (n: number) => `Coup ${n}`,
+    },
+    // Dégâts bruts selon les effets nocifs de la cible (Havoc, Start of Pain…).
+    brutParEffet: {
+      base: { pvMaxPropre: 'de tes PV max', pvMaxCible: 'des PV max de la cible' },
+      presence: (nom: string, pct: number, base: string) => `${nom} : la cible porte un effet néfaste (+${pct} % ${base})`,
+      compte: (nom: string, dot: boolean, max: number | null) =>
+        `${nom} : ${dot ? 'dégâts continus' : 'effets néfastes'} sur la cible${max ? ` (0 à ${max})` : ''}`,
+      compteAide: (pct: number, base: string, dot: boolean) =>
+        `+${pct} % ${base} en dégâts bruts par ${dot ? 'dégât continu' : 'effet néfaste'}, à chaque coup — 0 par défaut`,
+      compteAria: (nom: string, dot: boolean) => `Nombre de ${dot ? 'dégâts continus' : 'effets néfastes'} sur la cible (${nom})`,
+    },
     // Une condition de combat, dite en clair.
     condition: {
       critiqueGaranti: 'critique garanti',
@@ -3099,6 +3122,30 @@ export const fr = {
       aucuneReussite: 'Aucune réussite',
       apresCoup: (n: number) => `Après le coup ${n}`,
       aide: 'Une réapplication non cumulable ne rajoute pas de débuff ; un dégât continu réussi en ajoute un.',
+      poseAuCoup: (n: number) => `Posé au coup ${n}`,
+      unSeulParCoup: 'Un seul de ces effets par coup :',
+      effetApresCoupAria: (n: number) => `Effet posé après le coup ${n}`,
+      aucunEffet: 'Aucun',
+      convertis: 'Effets bénéfiques convertis',
+      convertisAria: (effet: string) => `Nombre d'effets bénéfiques convertis : ${effet}`,
+      avecPrecision: (nom: string, precision: string) => `${nom} (${precision})`,
+      entreParties: ', ',
+      entreConditions: ' ; ',
+      // Les conditions d'une pose (`PrecisionPose`, damage.ts).
+      precisions: {
+        surCritique: 'sur coup critique',
+        unParEffetConverti: 'un par effet bénéfique converti',
+        unSeulAuHasard: 'un seul des effets possibles par coup, au hasard',
+        etatThunderer: 'en état Thunderer',
+        ennemisPlusTouches: 'si les ennemis ont subi au moins autant de dégâts que les alliés',
+        alliesPlusTouches: 'si les alliés ont subi plus de dégâts que les ennemis',
+        allumeIncapacite: 'allume le +50 % contre une cible sous incapacité',
+        surUnCinq: 'sur un 5 au dé',
+        auHasardDuCombat: 'au hasard parmi les effets du combat',
+        pourEnchaine: (sort: string) => `pour [${sort}] enchaîné`,
+        parPassif: (passif: string) => `par ${passif}`,
+        siPorteur: (monstre: string) => `si ${monstre} la porte`,
+      },
     },
     critique: {
       titre: 'Coup critique',

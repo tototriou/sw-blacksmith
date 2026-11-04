@@ -43,7 +43,6 @@ const ATTENDUS: [number, string, 'ignore-def' | 'pas-encore-codee' | 'non-calcul
   [13410, 'Madness Judgement', 'ignore-def'],
   [13611, 'Start of Attacking', 'ignore-def'],
   [7713, 'Thunder Strike', 'ignore-def'],
-  [6013, 'Sword of Discharge', 'ignore-def'],
   [11912, 'Hellfire', 'pas-encore-codee'],
   [6015, 'Ragnarok', 'pas-encore-codee'],
   [15114, 'Time of Destruction', 'pas-encore-codee'],
@@ -69,7 +68,9 @@ const ATTENDUS: [number, string, 'ignore-def' | 'pas-encore-codee' | 'non-calcul
   [12520, 'Justice Strike', 'non-modelisee'],
   [12510, 'Fury of Punishment', 'non-modelisee'],
   [23515, 'Summary Justice', 'non-modelisee'],
-  [13312, 'Fatal Mortar Bullet', 'non-modelisee'],
+  [22413, 'Hellfire Trespass Slayer', 'non-modelisee'],
+  [22913, 'Thunderous Killer Strike', 'non-modelisee'],
+  [11015, 'Exploding Hands', 'non-modelisee'],
 ];
 
 // Lignes « calculé » écartées : total complet par décision.
@@ -88,6 +89,10 @@ const ECARTES: [number, string][] = [
   [8905, 'Firecracker'],
   [10217, 'Bombardment — bombe à retardement hors total'],
   [10220, 'Bombardment'],
+  // Comptés en entier depuis le 2026-11-02 : l'ignore DEF de Katarina sous son
+  // interrupteur « sous Invincibilité », le +25 % par effet de Scarlett.
+  [6013, 'Sword of Discharge — ignore DEF sous interrupteur « Katarina est sous Invincibilité »'],
+  [13312, 'Fatal Mortar Bullet — +25 % par effet sur la cible, phase de zone, compté'],
 ];
 
 // Thunder Strike 7713 : porté par Copper éveillé (16513), que le second éveil
@@ -101,13 +106,13 @@ function porteurs(id: number) {
 }
 
 export function testCalculPartielTable() {
-  titre('Calcul partiel — la table par identifiant : cinq ignore DEF comptés, parts décidées pas encore codées, parts non calculées, parts non modélisées');
+  titre('Calcul partiel — la table par identifiant : quatre ignore DEF comptés, parts décidées pas encore codées, parts non calculées, parts non modélisées');
 
   const ids = idsCalculPartiel();
-  egal(ids.length, 31, '31 entrées : 5 (ignore DEF compté) + 15 (part décidée, pas encore codée) + 7 (part non calculée) + 4 (part non modélisée)');
+  egal(ids.length, 32, '32 entrées : 4 (ignore DEF compté) + 15 (part décidée, pas encore codée) + 7 (part non calculée) + 6 (part non modélisée)');
   egal([...ids].sort((a, b) => a - b), ATTENDUS.map(([id]) => id).sort((a, b) => a - b), 'exactement les identifiants attendus');
-  egal(ATTENDUS.filter(([, , s]) => s === 'ignore-def').length, 5, 'cinq ignore DEF permanents');
-  egal(ATTENDUS.filter(([, , s]) => s === 'non-modelisee').length, 4, 'quatre parts non modélisées (Leona ×2, Theonia, Scarlett)');
+  egal(ATTENDUS.filter(([, , s]) => s === 'ignore-def').length, 4, 'quatre ignore DEF permanents');
+  egal(ATTENDUS.filter(([, , s]) => s === 'non-modelisee').length, 6, 'six parts non modélisées (Leona ×2, Theonia, Jin Kazama et Kai vent, Jackie)');
   for (const [id, raison] of ECARTES) ok(!ids.includes(id), `${id} écarté de la table : ${raison}`);
 
   const catalogue = monstersJson();

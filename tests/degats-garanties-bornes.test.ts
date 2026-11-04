@@ -134,8 +134,8 @@ export function testGarantieYujiRick() {
       `${sort} ${nom} — la prose porte la garantie et la réduction de DEF du coup 1`);
     egal(p.conditionsCombat, [{ type: 'debuffCiblePresent', critiqueGaranti: true }],
       `${sort} ${nom} — condition « débuff sur la cible » qui garantit le critique`);
-    egal(p.effetsEntreCoups, [{ id: 'decrease-def', label: 'Réduction de DEF', cumulable: false, effetCombat: 'defBreak' }],
-      `${sort} ${nom} — réduction de DEF posable entre les coups, comptée comme débuff ET comme Brise DEF pour le coup 2`);
+    egal(p.effetsEntreCoups, [{ id: 'decrease-def', label: 'Réduction de DEF', cumulable: false, effetCombat: 'defBreak', coups: [1] }],
+      `${sort} ${nom} — réduction de DEF posable au coup 1 seul (prose), comptée comme débuff ET comme Brise DEF pour le coup 2`);
 
     const element = forme % 10 === 2 ? 'fire' : forme % 10 === 3 ? 'wind' : 'dark';
     const total = (s: Partial<DamageSetup>) =>

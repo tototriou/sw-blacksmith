@@ -177,7 +177,11 @@ l'application de bureau (le bloc « Application » des Réglages, la notificatio
 suivi de SW Exporter, les échecs de sauvegarde de session, et les boîtes du système qu'elle ouvre,
 dans la langue de l'app : [bureau/](../bureau/README.md)), dont l'installeur Windows suit la langue
 de Windows ; le README du dépôt ([README.en.md](../../../README.en.md)). Une formule de sort s'écrit avec les
-stats du jeu dans la langue choisie (`formuleLisible`). Restent en français dans l'Optimizer : la
+stats du jeu dans la langue choisie (`formuleLisible`). Les effets posés entre les coups
+s'appellent en anglais par leur nom SWARFARM (« Decrease DEF », « Brand », entrées de
+`phrasesDegats.ts`) et gardent en français les libellés de l'app (décision de l'utilisateur,
+2026-11-03) ; leurs conditions de pose, qui portent un nom de passif ou de sort, sont des codes
+(`PrecisionPose`) dits par le dictionnaire (`libelleEffetEntreCoups`). Restent en français dans l'Optimizer : la
 description du combat « Dégâts réels », la vue de développement des gabarits, et les messages
 de la console (pannes de Worker, protocole de la file, erreurs internes du moteur), que l'écran
 remplace par une phrase traduite.
@@ -233,6 +237,10 @@ Un fichier nouveau de `src/` est sous la règle d'office ; une zone n'en sort qu
 - [phrases-degats.test.ts](../../../tests/phrases-degats.test.ts) : chaque phrase curée affichée de
   `damage.ts` a sa traduction anglaise, aucune entrée ne survit à sa phrase, aucune traduction
   n'est restée en français.
+- [rendu/effets-entre-coups-ecran.test.tsx](../../../tests/rendu/effets-entre-coups-ecran.test.tsx) :
+  les poses entre les coups (section, sélecteurs, tirages, compteurs du sort) en anglais, effets
+  sous leur nom SWARFARM ; [degats-effets-entre-coups.test.ts](../../../tests/degats-effets-entre-coups.test.ts) :
+  le libellé d'un effet posable et de ses conditions dans chaque langue.
 - [partage-langues.test.ts](../../../tests/partage-langues.test.ts) : les messages de `src/lib/`
   (imports, statut d'équipe, alerte de tick, source d'un build, import d'un compte, top des
   artéfacts, espèce déjà dans la liste, écho des auras externes, recette refusée, raison du zéro

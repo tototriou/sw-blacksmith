@@ -79,7 +79,7 @@ l’utilisateur a donné l’ordre (2026-10-17).
 | Identifiant · sort · formes | Empreinte (`formule`, `coups`, `aoe`) | Groupe 1 | Groupe 2 (auxiliaire) |
 | --- | --- | --- | --- |
 | `13311` Fatal Extinctive Bullet · Abigail `22911` | `3.5*{ATK}`, 1, non | `3.5*{ATK}` ×1, mono-cible | `4.5*{ATK}` ×1, zone (13316) |
-| `13312` Fatal Mortar Bullet · Scarlett `22912` | `3.5*{ATK}`, 1, non | `3.5*{ATK}` ×1, mono-cible | `4.5*{ATK}` ×1, zone (13317) ; le +25 % par effet sur la cible n’est pas compté (« Calcul partiel ») |
+| `13312` Fatal Mortar Bullet · Scarlett `22912` | `3.5*{ATK}`, 1, non | `3.5*{ATK}` ×1, mono-cible, sans lecture des effets de la cible | `4.5*{ATK}` ×1, zone (13317), +25 % par effet bénéfique ou néfaste sur la cible |
 | `13314` Fatal Armor Bullet · Emily `22914` | `3.5*{ATK}`, 1, non | `3.5*{ATK}` ×1, mono-cible | `4.5*{ATK}` ×1, zone (13319) |
 | `14113` Head Press · M. BISON `24213` (`24203` non éveillé) | `4.0*{ATK}`, 2, non | `4.0*{ATK}` ×1, mono-cible | `5.2*{ATK}` ×1, zone (14116) |
 | `14613` Great Sword of the End · Sagar `24713` (`24703` non éveillé) | `4.0*{ATK}`, 2, oui | `4.0*{ATK}` ×1, mono-cible | `5.2*{ATK}` ×1, zone (14616) |
@@ -94,6 +94,26 @@ Les lignes d’artéfact et la cible secondaire suivent les règles par groupe
 ci-dessous, appliquées par le calcul générique : 224 sur la phase 1, 411 sur
 le premier coup du tour, le cran « Dégâts sur les autres ennemis » calcule
 la seule phase de zone.
+
+### Séquences de l’utilisateur
+
+Valeurs de l’utilisateur (2026-11-02, [valeurs-de-jeu-curees.md](valeurs-de-jeu-curees.md)),
+chaque coup au ratio de la donnée. Elles disent la portée de chaque coup, ou
+le seul coup qui lit les effets de la cible : un groupe `horsLecteurs` ne lit
+ni bonus par effet, ni dégâts bruts par effet, ni la condition « la cible
+porte un effet nocif » ([feat-poses-entre-les-coups.md](feat-poses-entre-les-coups.md#ce-que-le-calcul-lit-de-la-cible)).
+
+| Identifiant · sort · formes | Empreinte | Groupe 1 | Groupe 2 |
+| --- | --- | --- | --- |
+| `13915` PPK Combo · RYU ténèbres, `14415` Chain Combo Attack · Vancliffe | `1.1*{ATK}`, 6, non | ×4, mono-cible | ×2, zone |
+| `10613` Tempest Sword · Lupinus | `{ATK} + 0.06*{Target MAX HP}`, 2, oui | ×2, mono-cible | ×1, zone (le 3ᵉ coup, même ratio) |
+| `13608`, `13609` Critical Link · Savannah, Narsha | `{ATK}*({SPD} + 120)/100`, 2, non | ×1, la bête, `horsLecteurs` | ×1, le cavalier, +15 % par effet néfaste |
+| `20315` Hairpin: Black Flash · Nobara ténèbres, `20915` Exorcist Shuriken Formation · Aya ténèbres | `3.6*{ATK}`, 2, non | ×1, `horsLecteurs` | ×1, +100 % si un effet néfaste |
+| `22714` Bullet Assassination · Nina lumière, `23214` Shining Butterfly · Shasha lumière | `1.1*{ATK}`, 4, non | ×3, zone, `horsLecteurs` | ×1, zone, +25 % des PV max de la cible si un effet néfaste |
+
+PPK Combo, Chain Combo Attack et Tempest Sword proposent la cible secondaire ;
+une séquence toute de zone (Bullet Assassination) ne la propose pas : la
+cible visée et les autres ennemis y reçoivent les mêmes coups.
 
 ⚠️ **Non établi, nommé** : les skillups de la fiche (+25 % pour Abigail,
 Scarlett et Emily, +15 % pour M. BISON et Sagar, +20 % pour Kuna)
@@ -196,11 +216,13 @@ avant chaque coup.
 
 ## Ce qu’une séquence n’admet pas
 
-Une séquence n’admet ni coups variables (`hitsRange`) ni effets entre coups
-(`effetsEntreCoups`), et ses porteurs n’ont aucun passif offensif : rien de
-cela n’est modélisé pour une séquence. Le test vérifie sur le corpus qu’aucun
-porteur n’en a besoin ; un porteur futur qui en aurait besoin le fera échouer
-et demandera une curation.
+Une séquence n’admet pas de coups variables (`hitsRange`), et ses porteurs
+n’ont aucun passif offensif : rien de cela n’est modélisé pour une séquence.
+Le test vérifie sur le corpus qu’aucun porteur n’en a besoin ; un porteur
+futur qui en aurait besoin le fera échouer et demandera une curation. Les
+effets posés entre les coups, eux, valent pour une séquence : sous scénario,
+chaque coup d’un groupe lit l’état qui le précède, la cible secondaire jamais
+([feat-poses-entre-les-coups.md](feat-poses-entre-les-coups.md)).
 
 `hits` et `aoe` du profil gardent la donnée SWARFARM (celle de l’empreinte ;
 pour Blade Surge, deux coups mono-cible) et ne servent plus au calcul de ce

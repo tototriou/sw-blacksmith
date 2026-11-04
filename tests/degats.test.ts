@@ -2685,6 +2685,13 @@ export default function testDegats() {
     const setupInverse: DamageSetup = { ...setup, enemyDef: 5000 };
     const avecInverse = computeSkillDamageDetail(neutre, st, setupInverse, AUCUNE_AURA_PROPRE, null, undefined, ARTIFACT_DAMAGE_NEUTRE, { bonusEcartDef: { coeff: 0.5 } });
     egal(avecInverse.total, 2000, 'DEF cible plus haute que la sienne : aucun bonus, jamais une pénalité (max(0, …))');
+    // Sous Réduction de DEF, l'écart se prend sur la DEF RÉDUITE de la cible
+    // (utilisateur, 2026-11-02) : 1000 − 400 × 0,3 = 880, ajout 440 ; avec
+    // Deborah, 1000 − 400 × 0,09 = 964, ajout 482.
+    const sousBrise = computeSkillDamageDetail(neutre, st, { ...setup, defBreak: true }, AUCUNE_AURA_PROPRE, null, undefined, ARTIFACT_DAMAGE_NEUTRE, { bonusEcartDef: { coeff: 0.5 } });
+    ok(Math.abs(sousBrise.total - 2440) < 1e-9, `Sin sous Brise DEF : l’écart se prend sur la DEF réduite de 70 % (+440 ; ${sousBrise.total})`);
+    const sousBriseDeborah = computeSkillDamageDetail(neutre, st, { ...setup, defBreak: true, deborahActif: true }, AUCUNE_AURA_PROPRE, null, undefined, ARTIFACT_DAMAGE_NEUTRE, { bonusEcartDef: { coeff: 0.5 } });
+    ok(Math.abs(sousBriseDeborah.total - 2482) < 1e-9, `Sin sous Brise DEF amplifiée par Deborah : DEF réduite de 91 % (+482 ; ${sousBriseDeborah.total})`);
   }
 
   // Sickle Blade (Bayek Vent)/Sand Blade (Desert Warrior Vent, Shahat) —
