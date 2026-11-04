@@ -422,7 +422,7 @@ import { testIndicateurSauvegarde } from './indicateur-sauvegarde.test';
 import { testRestauration } from './restauration.test';
 import testSkillAdapters from './skill-adapters.test';
 import { testSelectionFichiersInventaire, testSelectionFichiersChargeur, testSelectionFichiersCasReels, testSelectionFichiersTailwind, testSelectionFichiersGit } from './selection.test';
-import { testExecutionProuveeCas, testExecutionProuveeEmplacement, testExecutionProuveePointEntree } from './execution.test';
+import { testExecutionProuveeCas, testExecutionProuveeEmplacement, testExecutionProuveePointEntree, testExecutionTasDeLaSuite } from './execution.test';
 
 // Chaque vérification sous son NOM, dans l'ordre d'exécution.
 //
@@ -1240,6 +1240,7 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testExecutionProuveeCas', testExecutionProuveeCas],
   ['testExecutionProuveeEmplacement', testExecutionProuveeEmplacement],
   ['testExecutionProuveePointEntree', testExecutionProuveePointEntree],
+  ['testExecutionTasDeLaSuite', testExecutionTasDeLaSuite],
 ];
 
 // Un filtre passé en argument : on compare sur le nom mis à plat (sans tirets ni

@@ -421,6 +421,13 @@ d'avance ; c'est l'usage qui le mesure.
   [index.ts](index.ts). ⚠️ `egal` compare par `JSON.stringify` : deux `Map` ou
   deux `Set` différents s'y écrivent `{}` et passent pour égaux — comparer
   leur contenu converti en tableau.
+- ⚠️ **Ce processus unique reçoit un tas de 8 Go** (`--max-old-space-size`,
+  posé par [run.mjs](run.mjs)) : au tas par défaut de Node, environ 4 Go, les
+  entrées de l'appariement parallèle montaient jusqu'à 3,9 Go, et un
+  dépassement coupe la suite entière sans bilan. Une entrée lourde garde
+  quand même ses données à la taille de ce qu'elle vérifie : les espaces de
+  [appariement-parallele.test.ts](appariement-parallele.test.ts) sont bornés
+  à 250 000 paires.
 - **esbuild**, déjà présent comme dépendance de Vite, bundle `index.ts` ; Node
   exécute le résultat. C'est tout ce que fait [run.mjs](run.mjs), qui reprend à
   la main ce que Vite injecte (`import.meta.env`, `__APP_VERSION__`).

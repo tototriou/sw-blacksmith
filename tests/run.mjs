@@ -37,6 +37,7 @@ for (let i = 0; i < args.length; i++) {
   if (args[i] === '--depuis' || args[i] === '--plage') { i++; continue; }
   transmis.push(args[i]);
 }
+const TAS_MAX_MO = 8192;
 const silencieux = options.silencieux && !options.lister;
 const avecSelection = options.depuis !== undefined || options.plage !== undefined;
 const fin = (code) => { rmSync(dossier, { recursive: true, force: true }); process.exit(code); };
@@ -75,7 +76,10 @@ const code = await new Promise((resolve) => {
   // Les arguments sont transmis au bundle : ils servent à ne lancer QUE les
   // vérifications qui touchent la zone modifiée (voir tests/index.ts et
   // CLAUDE.md). Sans argument, tout tourne.
-  const p = spawn(process.execPath, [sortie, ...transmis], { stdio: 'inherit' });
+  // Toute la suite tourne dans ce seul processus : le tas par défaut de Node
+  // (environ 4 Go) laissait peu de marge aux entrées les plus lourdes, et un
+  // dépassement arrête la suite entière sans bilan.
+  const p = spawn(process.execPath, [`--max-old-space-size=${TAS_MAX_MO}`, sortie, ...transmis], { stdio: 'inherit' });
   p.on('close', resolve);
 });
 
