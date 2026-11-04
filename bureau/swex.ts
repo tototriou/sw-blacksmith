@@ -22,6 +22,7 @@ import { app, BrowserWindow, dialog, ipcMain } from 'electron';
 import { FSWatcher, promises, readdirSync, readFileSync, statSync, watch, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { aDonner, ExportCompte, exportsDuDossier, lireReglage, ReglageSwex } from './swexPur';
+import { textesBureau } from './textes';
 
 export interface EtatSwex {
   dossier: string | null;
@@ -175,7 +176,7 @@ export function brancherSwex(fenetre: BrowserWindow, preuve?: PreuveSwex) {
     if (preuve) dossier = preuve.dossier;
     else {
       const r = await dialog.showOpenDialog(fenetre, {
-        title: 'Dossier SW Exporter',
+        title: textesBureau().dossierSwex,
         properties: ['openDirectory'],
         defaultPath: reglage.dossier ?? app.getPath('desktop'),
       });

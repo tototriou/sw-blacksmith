@@ -1,6 +1,7 @@
 import { ReactNode } from 'react';
 import { X } from 'lucide-react';
 import BoutonIcone from './BoutonIcone';
+import { useTraduction } from '../hooks/useLangue';
 
 // JETON : une pilule qui NOMME un choix déjà posé, avec une croix pour le
 // retirer. Un set ajouté à un combo, un monstre exclu d'une recherche — ce qui
@@ -32,6 +33,7 @@ export interface JetonProps {
 }
 
 export default function Jeton({ icone, libelle, detail, onRetirer, libelleRetrait, className = '' }: JetonProps) {
+  const retirer = useTraduction().commun.retirer;
   return (
     <span
       className={`inline-flex items-center gap-1.5 rounded-full border border-border bg-panel2
@@ -44,7 +46,7 @@ export default function Jeton({ icone, libelle, detail, onRetirer, libelleRetrai
         <BoutonIcone
           taille="serre"
           ton="neutre"
-          libelle={libelleRetrait ?? 'Retirer'}
+          libelle={libelleRetrait ?? retirer}
           icone={<X size={12} />}
           onClick={onRetirer}
           className="hoverable:text-bad"

@@ -2,6 +2,7 @@ import { createContext, ReactNode, useCallback, useContext, useEffect, useRef, u
 import { Check, X } from 'lucide-react';
 import Bouton from './Bouton';
 import BoutonIcone from './BoutonIcone';
+import { useTraduction } from '../hooks/useLangue';
 
 // Notification « … · Annuler » (la
 // maquette) — voir docs/03-developpeur/interface/ § Notification « Annuler ».
@@ -86,6 +87,7 @@ export function BandeauNotification({
   // Survol ou focus : la notification reste tant qu'on y est.
   onRetenir?: (retenue: boolean) => void;
 }) {
+  const textes = useTraduction();
   return (
     <div
       role="status"
@@ -113,14 +115,14 @@ export function BandeauNotification({
           ton="accent"
           fond="vide"
           trait="aucun"
-          libelle={annonce.libelleAction ?? 'Annuler'}
+          libelle={annonce.libelleAction ?? textes.commun.annuler}
           onClick={() => {
             annonce.action?.();
             onFermer();
           }}
         />
       )}
-      <BoutonIcone taille="serre" libelle="Fermer la notification" icone={<X size={13} />} onClick={onFermer} />
+      <BoutonIcone taille="serre" libelle={textes.controles.fermerNotification} icone={<X size={13} />} onClick={onFermer} />
     </div>
   );
 }

@@ -5,12 +5,15 @@
 // ⚠️ **Sur le site, tout ceci est inerte** : `estBureau()` y vaut `false`, et
 // rien n'est posé ni écouté. Le site ne change pas.
 
+import type { Dictionnaire } from '../i18n/fr';
+
 // L'objet exposé par le préchargement (bureau/preload.ts), seul pont vers le
 // processus principal.
 interface PontBureau {
   bureau: true;
   plateforme: string;
   couleurs: (c: { fond: string; barre: string; symboles: string }) => void;
+  langue: (langue: string) => void;
   coeursPhysiques: () => Promise<unknown>;
   miseAJour: {
     etat: () => Promise<EtatMiseAJour | null>;
@@ -52,7 +55,45 @@ export interface EtatSession {
 export type IssueSession =
   | { issue: 'enregistree'; etat: EtatSession }
   | { issue: 'annulee' }
-  | { issue: 'echec'; message: string };
+  | EchecSession;
+// Un échec rendu par le bureau : son motif et le code d'erreur du système.
+// Le message se rédige ici, dans la langue de l'app (`messageEchecSession`).
+export type EchecSession = { issue: 'echec'; motif: 'pas-une-session' | 'ecriture' | 'dossier'; code: string | null };
+
+// Le message d'un échec de sauvegarde. Le dossier SW Blacksmith inaccessible
+// (`dossier`) renvoie vers les Paramètres : « Sauvegarder sous… » échouerait
+// pareil ; un dossier de session disparu (`ENOENT`), vers « Sauvegarder sous… ».
+export function messageEchecSession(echec: EchecSession, t: Dictionnaire): string {
+  const e = t.donnees.echecSession;
+  const { code } = echec;
+  if (echec.motif === 'pas-une-session') return e.pasUneSession;
+  if (echec.motif === 'dossier') {
+    return e.dossier(
+      code === 'ENOSPC'
+        ? e.raisonDisquePlein
+        : code === 'EROFS'
+          ? e.raisonLectureSeule
+          : code === 'EACCES' || code === 'EPERM'
+            ? e.raisonRefus
+            : e.raisonIntrouvable
+    );
+  }
+  switch (code) {
+    case 'ENOENT':
+      return e.introuvable;
+    case 'EACCES':
+    case 'EPERM':
+      return e.refus;
+    case 'EBUSY':
+      return e.occupe;
+    case 'ENOSPC':
+      return e.disquePlein;
+    case 'EROFS':
+      return e.lectureSeule;
+    default:
+      return e.autre(code);
+  }
+}
 
 // Le pont de la session en cours, ou `null` sur le site (qui télécharge
 // toujours un fichier daté).
@@ -195,7 +236,9 @@ function envoyerCouleurs(p: PontBureau) {
 // À appeler une fois au démarrage (main.tsx). Dans l'app : pose
 // `html[data-bureau]` (index.css en fait la barre de la fenêtre) et envoie
 // les couleurs du thème au processus principal, puis à chaque changement —
-// choix du menu ⚙ (`data-theme`) ou thème du système en mode Auto.
+// choix du menu ⚙ (`data-theme`) ou thème du système en mode Auto. Envoie
+// de même la langue de l'app (`html[lang]`, posée par useLangue) : les boîtes
+// du système que le bureau ouvre la suivent.
 export function habillerBureau() {
   const p = pont();
   if (!p) return;
@@ -203,5 +246,7 @@ export function habillerBureau() {
   racine.setAttribute('data-bureau', p.plateforme);
   envoyerCouleurs(p);
   new MutationObserver(() => envoyerCouleurs(p)).observe(racine, { attributes: true, attributeFilter: ['data-theme'] });
+  p.langue(racine.lang);
+  new MutationObserver(() => p.langue(racine.lang)).observe(racine, { attributes: true, attributeFilter: ['lang'] });
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => envoyerCouleurs(p));
 }

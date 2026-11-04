@@ -9,135 +9,13 @@ import reactHooks from 'eslint-plugin-react-hooks';
 import tseslint from 'typescript-eslint';
 import { pluginSwblacksmith } from './scripts/lib/regleTexteEnDur.mjs';
 
-// Les fichiers dont les textes viennent du dictionnaire (src/i18n/) : la règle
-// `swblacksmith/texte-en-dur` y refuse tout texte écrit en dur. ⚠️ La liste
-// grandit à mesure que les écrans sont traduits, jusqu'à couvrir `src/` entier
-// (docs/02-app/transverse/feat-langues.md).
-const FICHIERS_TRADUITS = [
-  'src/components/AccountFreshness.tsx',
-  'src/components/DrapeauLangue.tsx',
-  'src/components/MobileNavSheet.tsx',
-  'src/components/MobileTabs.tsx',
-  'src/components/Palette.tsx',
-  'src/components/SettingsMenu.tsx',
-  'src/components/Sidebar.tsx',
-  'src/components/SidebarCompte.tsx',
-  'src/components/SidebarSearch.tsx',
-  'src/components/TopBar.tsx',
-  'src/components/VoletEcran.tsx',
-  'src/pages/SettingsPage.tsx',
-  // Lot 3 : les pages ouvertes à tous et le bestiaire. Les articles de
-  // src/i18n/articles/ n'y sont pas : ils SONT le texte d'une langue.
-  'src/components/CreateMonster.tsx',
-  'src/components/FilterBar.tsx',
-  'src/components/MonsterDetailDialog.tsx',
-  'src/components/MonsterGrid.tsx',
-  'src/components/SearchBar.tsx',
-  'src/components/account/Pager.tsx',
-  'src/pages/BestiaryPage.tsx',
-  'src/pages/ComingSoon.tsx',
-  'src/pages/HomePage.tsx',
-  'src/pages/MechanicsPage.tsx',
-  'src/pages/ReleasesPage.tsx',
-  'src/pages/TelechargerPage.tsx',
-  // Lot 4 : la RTA et le Siège.
-  'src/components/rta/*.tsx',
-  'src/components/siege/*.tsx',
-  'src/components/siege/pastilleStatut.ts',
-  'src/pages/RtaPage.tsx',
-  'src/pages/SiegePage.tsx',
-  // Lot 5 : le Compte, l'import et les données ; App.tsx en entier.
-  'src/App.tsx',
-  'src/components/AccountImportControl.tsx',
-  'src/components/ChangementCompteDialog.tsx',
-  'src/components/DialogueBuildsRapides.tsx',
-  'src/components/InventaireIcon.tsx',
-  'src/components/account/*.tsx',
-  'src/pages/AccountPage.tsx',
-  'src/ui/Dialogs.tsx',
-  // Lot 6a : l'Optimizer, l'écran des critères (listes, équipes, état du
-  // monstre, set, conditions, artéfacts, relique, réglages avancés). La vue de
-  // développement des gabarits reste en français.
-  'src/pages/OutilsPage.tsx',
-  'src/components/outils/ArtifactLinesEditor.tsx',
-  'src/components/outils/EtatMonstre.tsx',
-  'src/components/outils/ExclusionCandidateRow.tsx',
-  'src/components/outils/MonsterSourcePicker.tsx',
-  'src/components/outils/OptimizerCreateListDialog.tsx',
-  'src/components/outils/OptimizerEquipeDialog.tsx',
-  'src/components/outils/OptimizerLeadInactif.tsx',
-  'src/components/outils/OptimizerListPicker.tsx',
-  'src/components/outils/OptimizerSection.tsx',
-  'src/components/outils/RuneExclusionPicker.tsx',
-  'src/components/outils/SetComboPicker.tsx',
-  'src/components/outils/optimizer/ArtefactsEtReliques.tsx',
-  'src/components/outils/optimizer/BandeauBuildValide.tsx',
-  'src/components/outils/optimizer/BoutonValiderBuild.tsx',
-  'src/components/outils/optimizer/CarteEtatMonstre.tsx',
-  'src/components/outils/optimizer/ChoixExemplaire.tsx',
-  'src/components/outils/optimizer/Conditions.tsx',
-  'src/components/outils/optimizer/ConfirmationsLiberation.tsx',
-  'src/components/outils/optimizer/CriteresRecherche.tsx',
-  'src/components/outils/optimizer/EstimationPool.tsx',
-  'src/components/outils/optimizer/ExclusionMonstrePrecis.tsx',
-  'src/components/outils/optimizer/ExclusionRunesContenu.tsx',
-  'src/components/outils/optimizer/ExemplaireEtFiche.tsx',
-  'src/components/outils/optimizer/MeilleursArtefacts.tsx',
-  'src/components/outils/optimizer/MonstreEquipement.tsx',
-  'src/components/outils/optimizer/MonstreEquipementTelephone.tsx',
-  'src/components/outils/optimizer/MonstresDeLaListe.tsx',
-  'src/components/outils/optimizer/ObjectifEtActions.tsx',
-  'src/components/outils/optimizer/OptionsRechercheTelephone.tsx',
-  'src/components/outils/optimizer/ReglagesAvancesContenu.tsx',
-  'src/components/outils/optimizer/Relique.tsx',
-  'src/components/outils/optimizer/RunesDejaUtilisees.tsx',
-  'src/components/outils/optimizer/RunesImposees.tsx',
-  'src/components/outils/optimizer/SelecteurListes.tsx',
-  'src/components/outils/optimizer/SetDeRunes.tsx',
-  'src/components/outils/optimizer/StatPrincipaleImposee.tsx',
-  'src/components/outils/optimizer/TitreExclusionRunes.tsx',
-  'src/components/outils/optimizer/TitreReglagesAvances.tsx',
-  'src/components/outils/optimizer/bureau/ArtefactsEtReliqueBureau.tsx',
-  'src/components/outils/optimizer/bureau/ConditionsBureau.tsx',
-  'src/components/outils/optimizer/bureau/EtatMonstreEssentiels.tsx',
-  'src/components/outils/optimizer/bureau/ExclusionRunesBureau.tsx',
-  'src/components/outils/optimizer/bureau/ExemplaireBureau.tsx',
-  'src/components/outils/optimizer/bureau/ListeDeTravailBureau.tsx',
-  'src/components/outils/optimizer/bureau/MeilleursArtefactsBureau.tsx',
-  'src/components/outils/optimizer/bureau/ObjectifEtRechercherBureau.tsx',
-  'src/components/outils/optimizer/bureau/PageBureau.tsx',
-  'src/components/outils/optimizer/bureau/PrincipalesImposeesBureau.tsx',
-  'src/components/outils/optimizer/bureau/ReglagesAvancesBureau.tsx',
-  'src/components/outils/optimizer/bureau/SetDeRunesCompact.tsx',
-  'src/components/outils/optimizer/bureau/SetsAuraBureau.tsx',
-  // Lot 6b : les résultats, la progression, les diagnostics, le point de
-  // sauvegarde et l'import d'une équipe.
-  'src/components/outils/BuildCandidateCard.tsx',
-  'src/components/outils/OptimizerBackupBar.tsx',
-  'src/components/outils/OptimizerImportButton.tsx',
-  'src/components/outils/OptimizerImportRapport.tsx',
-  'src/components/outils/optimizer/AvisRechercheTronquee.tsx',
-  'src/components/outils/optimizer/DiagnosticApprofondi.tsx',
-  'src/components/outils/optimizer/DiagnosticFaisabilite.tsx',
-  'src/components/outils/optimizer/DiagnosticsSansResultat.tsx',
-  'src/components/outils/optimizer/EnteteResultats.tsx',
-  'src/components/outils/optimizer/FiltresResultats.tsx',
-  'src/components/outils/optimizer/GrilleResultats.tsx',
-  'src/components/outils/optimizer/MessageImportRecette.tsx',
-  'src/components/outils/optimizer/PaginationResultats.tsx',
-  'src/components/outils/optimizer/ProgressionRecherche.tsx',
-  'src/components/outils/optimizer/QuasiSucces.tsx',
-  'src/components/outils/optimizer/TableauResultats.tsx',
-  'src/components/outils/optimizer/TetesDeTri.tsx',
-  'src/components/outils/optimizer/bureau/ResultatsBureau.tsx',
-  // Lot 7a : le speed tuning (page et modale ouverte depuis un deck).
-  'src/components/outils/SpeedTuneModale.tsx',
-  'src/components/outils/SpeedTuningSection.tsx',
-  // Lot 7b-1 : l'objectif « Dégâts réels », sa fenêtre et ses vignettes d'effet.
-  'src/components/outils/DamageSetupCard.tsx',
-  'src/components/outils/DamageSetupModale.tsx',
-  'src/components/outils/EffetVignette.tsx',
-];
+// La règle `swblacksmith/texte-en-dur` couvre tout src/ : un texte affiché
+// vient du dictionnaire (src/i18n/). Hors de la règle, deux zones seulement :
+// src/i18n/ lui-même (les dictionnaires et les articles SONT le texte d'une
+// langue), et la vue de développement des gabarits de l'Optimizer, restée en
+// français par décision (docs/02-app/transverse/feat-langues.md).
+const FICHIERS_TRADUITS = ['src/**/*.{ts,tsx}'];
+const HORS_TRADUCTION = ['src/i18n/**', 'src/components/outils/optimizer/gabarits/**'];
 
 export default tseslint.config(
   {
@@ -226,6 +104,7 @@ export default tseslint.config(
   },
   {
     files: FICHIERS_TRADUITS,
+    ignores: HORS_TRADUCTION,
     plugins: { swblacksmith: pluginSwblacksmith },
     rules: { 'swblacksmith/texte-en-dur': 'error' },
   },

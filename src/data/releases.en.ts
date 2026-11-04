@@ -25,6 +25,8 @@ export const RELEASES_EN: Release[] = [
       { kind: 'feat', scope: 'Speed tuning', text: 'Both sides, the skill order, the analysis, the tick tables and the grids in English.' },
       { kind: 'feat', scope: 'Real damage', text: 'The objective’s window in English: skill, active effects, passives, opponent and critical hit.' },
       { kind: 'feat', scope: 'Real damage', text: 'Each monster’s counters, conditions, help texts and “Partial calculation” notes in English.' },
+      { kind: 'feat', scope: 'Application', text: 'The desktop app in English: updates, SW Exporter, session saving and system windows; the installer follows the Windows language.' },
+      { kind: 'feat', scope: 'Interface', text: 'The last texts left in French are now in English: fields, notifications, artifact and relic cards, rune wheel.' },
       { kind: 'feat', scope: 'Real damage', text: 'Debuffs applied between hits can be set on every multi-hit skill that applies them, hit by hit, random rolls included.' },
       { kind: 'feat', scope: 'Real damage', text: 'Random hits (Splash, Water Dragon Attack…), Fei’s hit-by-hit DEF ignore and Katarina’s Invincibility can be set in the window.' },
       { kind: 'fix', scope: 'Real damage', text: 'Crow Hunt, Lightning Storm, Tempest Sword and Splash count their hits as in the game.' },
@@ -32,6 +34,7 @@ export const RELEASES_EN: Release[] = [
       { kind: 'fix', scope: 'Runes', text: 'French stat names match the game, and the Seal set shows its real effect.' },
       { kind: 'fix', scope: 'Bestiary', text: 'A monster’s sheet spells out its type.' },
       { kind: 'fix', scope: 'Siege', text: 'A recommendation’s analysis names the missing set as the game does.' },
+      { kind: 'fix', scope: 'Recommendations', text: 'A collab counts as its SW version: your Werner plays a deck listing Satoru Gojo.' },
     ],
   },
   {

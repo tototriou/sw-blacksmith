@@ -126,6 +126,17 @@ export function jumeauDeCollab(m: Monster, monsters: Monster[]): Monster | null 
   return monsters.find((x) => x.com2usId === m.jumeauCollab && x !== m) ?? null;
 }
 
+// L'identifiant commun aux deux faces d'une collaboration : le `com2usId` le
+// plus PETIT de la paire, celui que garde `sansDoublonDeCollab`. Satoru Gojo et
+// Werner rendent le même ; un monstre sans jumeau rend le sien.
+//
+// ⚠️ C'est la clé de tout ce qui demande « est-ce le même monstre ? » — la
+// possession, une équipe, une recherche : posséder Werner, c'est posséder le
+// Gojo qu'une recommandation demande.
+export function idCanoniqueCollab(com2usId: number, jumeauCollab: number | null | undefined): number {
+  return jumeauCollab != null ? Math.min(com2usId, jumeauCollab) : com2usId;
+}
+
 // ⚠️ **Une paire de COLLABORATION n'occupe qu'UNE carte.** Satoru Gojo et
 // Werner sont le même monstre : deux cartes laisseraient croire à deux
 // recrutements possibles, et on chercherait lequel prendre.

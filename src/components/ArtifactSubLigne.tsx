@@ -27,7 +27,8 @@ export default function ArtifactSubLigne({
    */
   vise?: boolean;
 }) {
-  const jeu = useTraduction().jeu;
+  const textes = useTraduction();
+  const jeu = textes.jeu;
   const procs = sub.rolls ?? 0;
   const { avant, valeur, apres } = splitArtifactSub(sub, jeu);
   return (
@@ -62,7 +63,7 @@ export default function ArtifactSubLigne({
       </span>
       {/* Substat MODIFIÉ (converti dans le jeu). */}
       {sub.enchant && (
-        <span className="mt-0.5 flex-none" title="Propriété modifiée">
+        <span className="mt-0.5 flex-none" title={textes.pieces.proprieteModifiee}>
           <RotateCw size={9} className="text-orange-400" />
         </span>
       )}

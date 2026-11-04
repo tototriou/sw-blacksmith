@@ -40,7 +40,8 @@ export default function SidebarCompte({
   // clic utilisateur.
   onImport: (texte: string) => void;
 }) {
-  const t = useTraduction().carteCompte;
+  const textes = useTraduction();
+  const t = textes.carteCompte;
   const langue = useLangue();
   const fichier = useRef<HTMLInputElement>(null);
 
@@ -64,7 +65,7 @@ export default function SidebarCompte({
   // Sans dossier, et sur le site : la carte importe, comme
   // avant.
   const { etat, choisirInvocateur } = useEtatSwex();
-  const invocateurs = etat?.dossier && !etat.introuvable ? presentationSwex(etat).options : [];
+  const invocateurs = etat?.dossier && !etat.introuvable ? presentationSwex(etat, textes).options : [];
 
   const classeCarte = `flex w-full items-center rounded-xl border border-border-soft bg-panel text-left
                     transition-colors hoverable:bg-panel2 ${

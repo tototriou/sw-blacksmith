@@ -4,6 +4,7 @@ import { X } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { LargeurVolet, SOUS_LG, useMediaQuery } from '../hooks/useMediaQuery';
 import { useScrollBloque } from '../hooks/useScrollBloque';
+import { useTraduction } from '../hooks/useLangue';
 import { BoutonIcone } from '../ui';
 import { HAUTEUR_ONGLETS } from '../lib/layout';
 
@@ -90,6 +91,7 @@ export default function MobileSheet({
   // qu'aucun panneau ne soit visible pour l'expliquer. Il suffisait d'ouvrir le
   // panneau sur un écran étroit puis d'élargir la fenêtre.
   const sousLg = useMediaQuery(SOUS_LG);
+  const fermer = useTraduction().commun.fermer;
   const visible = ouvert && sousLg;
   // ⚠️ **Ouvert depuis un volet étroit de l'écran partagé, le panneau existe
   // AU BUREAU** : la page y a sa mise en page de téléphone, et `sousLg` répond
@@ -266,7 +268,7 @@ export default function MobileSheet({
                   bande de titre. */}
               <BoutonIcone
                 onClick={onFermer}
-                libelle="Fermer"
+                libelle={fermer}
                 icone={<X size={16} />}
                 data-cible-fine
                 className="ml-auto hoverable:bg-panel2"

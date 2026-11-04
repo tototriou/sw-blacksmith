@@ -37,8 +37,9 @@ d'écriture : [documentation.md](documentation.md).
 - **Chaque texte affiché existe dans toutes les langues** : écrit dans `src/i18n/fr.ts` et dans
   `src/i18n/en.ts`, jamais en dur dans un composant ; un terme du jeu reprend le libellé officiel
   du client dans chaque langue ([feat-langues.md](../02-app/transverse/feat-langues.md)).
-- **Un écran traduit entre dans `FICHIERS_TRADUITS`** (`eslint.config.js`), où la règle
-  `swblacksmith/texte-en-dur` refuse un texte écrit en dur.
+- **Tout `src/` est sous la règle `swblacksmith/texte-en-dur`** (`eslint.config.js`), qui refuse un
+  texte écrit en dur dans le JSX ; un texte rédigé dans une fonction lui échappe : il reçoit `t`
+  comme les autres, et un test de rendu le vérifie dans chaque langue.
 
 ## Les tests
 

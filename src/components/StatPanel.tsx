@@ -59,7 +59,8 @@ const PAS_NORMAL = 'py-1 compact:py-0.5';
 const PAS_SERRE = 'py-0.5 leading-snug';
 
 export default function StatPanel({ stats, spdCible = null, serre = false, ligneMiseEnAvant = null }: Props) {
-  const jeu = useTraduction().jeu;
+  const textes = useTraduction();
+  const jeu = textes.jeu;
   const pasLigne = serre ? PAS_SERRE : PAS_NORMAL;
   // ⚠️ État LOCAL à l'instance : chaque panneau (fiche pleine page, ou
   // chacune des cartes de résultat de l'Optimizer) bascule indépendamment
@@ -75,7 +76,7 @@ export default function StatPanel({ stats, spdCible = null, serre = false, ligne
     <ZoneCliquable
       imbrique
       onClick={() => setShowTotal((v) => !v)}
-      title={showTotal ? 'Afficher base + bonus' : 'Afficher le total'}
+      title={showTotal ? textes.pieces.afficherBaseBonus : textes.pieces.afficherTotal}
       aria-pressed={showTotal}
       // ⚠️ Rembourrage réduit au doigt : le panneau porte HUIT lignes, et
       // chaque pixel de marge s'y multiplie par huit.
@@ -135,7 +136,7 @@ export default function StatPanel({ stats, spdCible = null, serre = false, ligne
                         <span
                           // Rouge d'ÉTAT, celui qu'annonce `DesyncBadge` (RTA).
                           className="ml-1.5 inline-flex items-center gap-0.5 text-bad"
-                          title={`Il faut ${fmt(spdCible)} de SPD sur les runes pour coller à l'ordre de tour`}
+                          title={textes.pieces.spdCible(fmt(spdCible))}
                         >
                           <ArrowRight size={11} className="flex-none" />
                           {fmt(spdCible)}

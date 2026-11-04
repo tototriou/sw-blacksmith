@@ -17,6 +17,7 @@ import { brancherSession } from './session';
 import { brancherSwex } from './swex';
 import { brancherCoeurs } from './coeurs';
 import { SCHEMA, URL_ACCUEIL, cheminDuFichier } from './protocole';
+import { definirLangue, langueDuSysteme } from './textes';
 import { lancerPreuve, lancerPreuveConservation, lancerPreuveSession, lancerPreuveSwex, TemoinsPreuve } from './preuve';
 
 // Les couleurs des deux thèmes, LUES dans `src/index.css` à la compilation
@@ -48,6 +49,9 @@ const URL_DEV = process.env.SWBLACKSMITH_DEV_URL;
 // `ready`, sinon le chemin est déjà fixé.
 const DOSSIER_PREUVE = process.env.SWBLACKSMITH_PREUVE;
 if (DOSSIER_PREUVE) app.setPath('userData', join(DOSSIER_PREUVE, 'donnees'));
+// ⚠️ La preuve cherche les libellés FRANÇAIS de l'app : sa page parle
+// français quelle que soit la langue du système (`navigator.languages`).
+if (DOSSIER_PREUVE) app.commandLine.appendSwitch('lang', 'fr-FR');
 
 // ⚠️ **Une seule instance par dossier de données.** Deux processus sur le
 // même dossier se disputeraient le stockage local et IndexedDB (le second
@@ -139,6 +143,13 @@ function creerFenetre(preuve: TemoinsPreuve | undefined): BrowserWindow {
     fenetre.setBackgroundColor(c.fond);
   });
 
+  // La page envoie sa langue (src/lib/bureau.ts), au chargement et à chaque
+  // changement : les boîtes du système la suivent (textes.ts).
+  ipcMain.on('bureau:langue', (evenement, brut) => {
+    if (evenement.sender !== fenetre.webContents) return;
+    definirLangue(brut);
+  });
+
   // Mémorisé à la fermeture : la taille « normale » (pas celle d'agrandie),
   // et l'état agrandi à part — rouvrir agrandie, puis restaurer, rend la
   // taille d'avant.
@@ -171,6 +182,8 @@ void app.whenReady().then(() => {
   // Pas de menu : celui d'Electron (File, Edit, View…) est en
   // anglais et n'apporte rien ici.
   Menu.setApplicationMenu(null);
+  // Avant que la page envoie la sienne : la langue du système.
+  definirLangue(langueDuSysteme(app.getLocale()));
   protocol.handle(SCHEMA, (requete) => {
     const fichier = cheminDuFichier(requete.url, RACINE);
     if (!fichier) return new Response('Introuvable', { status: 404 });

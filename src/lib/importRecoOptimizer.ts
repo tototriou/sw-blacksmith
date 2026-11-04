@@ -4,6 +4,7 @@ import { retrouverDeckCompositionOptimizer, selecteurRepliCompositionOptimizer }
 import { artifactSubKinds, artifactSubName, isArtifactSub, SET_BONUS, setsCost, MAX_SET_PIECES } from './effects';
 import type { Dictionnaire } from '../i18n/fr';
 import type { ImportOptimizer } from './importEquipes';
+import { idCanoniqueCollab } from './monsterForms';
 import { exclusionSelectorKey, resolveExclusionEntry, type ExclusionSelector, type ExclusionSourceData } from './optimizerExclusion';
 
 function criteresDuSlot(slot: RecoSlot, libelle: string, messages: string[], t: Dictionnaire): CriteresPartielsOptimizer {
@@ -72,14 +73,25 @@ export function importerRecoOptimizer(deck: RecoDeck, data: ExclusionSourceData,
       ignorer(m.monstreInconnu);
       return;
     }
+    // ⚠️ Une collaboration et sa version SW sont le même monstre : un Werner
+    // possédé sert le Gojo du deck, comme la confrontation l'a jugé.
+    const cible = idCanoniqueCollab(slot.com2usId, monstre.jumeauCollab);
+    const memeMonstre = (fiche: { com2usId: number | null; jumeauCollab?: number | null } | undefined) =>
+      fiche?.com2usId != null && idCanoniqueCollab(fiche.com2usId, fiche.jumeauCollab) === cible;
     const slotIndex = offenseRetenue?.team.slots.findIndex((s, i) => !slotsUtilises.has(i) && s.monsterId !== null
-        && data.monsterById.get(s.monsterId)?.com2usId === slot.com2usId);
+        && memeMonstre(data.monsterById.get(s.monsterId)));
     if (offenseRetenue && slotIndex !== undefined && slotIndex >= 0) {
       slotsUtilises.add(slotIndex);
       selector = { source: offenseRetenue.source, teamId: offenseRetenue.team.id, slotIndex };
     } else {
       if (offenseRetenue) resultat.messages.push(m.repliCompte(libelle));
-      const choisi = selecteurRepliCompositionOptimizer(String(monstre.id), slot.com2usId, data, 'offense', selecteursPris);
+      let choisi = selecteurRepliCompositionOptimizer(String(monstre.id), slot.com2usId, data, 'offense', selecteursPris);
+      const jumeau = monstre.jumeauCollab != null
+        ? [...data.monsterById.values()].find(x => x.com2usId === monstre.jumeauCollab) : undefined;
+      if ((!choisi || choisi.source === 'unowned') && jumeau?.com2usId != null) {
+        const autre = selecteurRepliCompositionOptimizer(String(jumeau.id), jumeau.com2usId, data, 'offense', selecteursPris);
+        if (autre && autre.source !== 'unowned') choisi = autre;
+      }
       if (!choisi) {
         ignorer(m.aucunExemplaire);
         return;
@@ -87,7 +99,7 @@ export function importerRecoOptimizer(deck: RecoDeck, data: ExclusionSourceData,
       selector = choisi;
     }
     const resolu = resolveExclusionEntry(selector, data);
-    if (!resolu || resolu.monster.com2usId !== slot.com2usId) {
+    if (!resolu || resolu.monster.com2usId == null || !memeMonstre(resolu.monster)) {
       ignorer(t.optimizer.importsEquipe.exemplaireIntrouvable);
       return;
     }
@@ -95,12 +107,13 @@ export function importerRecoOptimizer(deck: RecoDeck, data: ExclusionSourceData,
     if (retrouve) {
       // collectOwnedTeams garde le dernier slot résolvable de chaque espèce.
       const slotJuge = retrouve.team.slots.reduce((dernier, s, i) => s.gear && s.monsterId !== null
-        && data.monsterById.get(s.monsterId)?.com2usId === slot.com2usId ? i : dernier, -1);
+        && memeMonstre(data.monsterById.get(s.monsterId)) ? i : dernier, -1);
       if (slotJuge >= 0 && exclusionSelectorKey(selector) !== exclusionSelectorKey({ source: retrouve.source, teamId: retrouve.team.id, slotIndex: slotJuge })) {
         resultat.messages.push(m.autreExemplaire(libelle));
       }
     }
-    resultat.membres.push({ selector: { ...selector }, com2usId: slot.com2usId, libelle,
+    // L'identité du membre est celle du monstre résolu : Werner, même pour le Gojo du deck.
+    resultat.membres.push({ selector: { ...selector }, com2usId: resolu.monster.com2usId, libelle,
       criteres: criteresDuSlot(slot, libelle, resultat.messages, t) });
     if (index === 0) leader = { ...selector };
   });

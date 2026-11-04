@@ -10,6 +10,7 @@ import { ARTIFACT_KINDS, ArtifactKind, Reco, RecoDeck, RecoSlot, RecoStatKey, RE
 import { OwnedBuild, OwnedTeam, indexBuildsByCom2us } from './ownedBuilds';
 import { computeStats } from './stats';
 import { activeSets, artifactSubLabel } from './effects';
+import { idCanoniqueCollab } from './monsterForms';
 // Texte rédigé en français : les libellés du jeu qu'il cite viennent du
 // lexique français (`jeuFr`), pour que la phrase reste d'une seule langue.
 import { jeuFr } from '../i18n/jeu/fr';
@@ -247,14 +248,45 @@ export interface MatchContext {
   // Exemplaires 6★ réellement possédés (box seule) → « combien de fois puis-je
   // monter ce deck en parallèle ». Absent = information indisponible.
   copies6?: Map<number, number>;
+  // `com2usId` → identifiant commun de sa paire de collaboration
+  // (`idCanoniqueCollab`). Les trois index ci-dessus sont alors rangés sous cet
+  // identifiant. Absent : chaque monstre n'est que lui-même.
+  canonique?: Map<number, number>;
 }
+
+const cleDe = (ctx: Pick<MatchContext, 'canonique'>, id: number) => ctx.canonique?.get(id) ?? id;
 
 // L'écran et les conversions confrontent les mêmes builds et équipes,
 // sans retirer un camp ni modifier la réserve de copies.
+//
+// ⚠️ **Une collaboration et sa version SW sont le même monstre** : un deck qui
+// demande Satoru Gojo est jouable avec un Werner, et deux exemplaires de l'un et
+// de l'autre font deux exemplaires. Les paires viennent des monstres possédés —
+// un monstre qu'on n'a sous aucune de ses faces n'a rien à confronter.
 export function contexteConfrontationReco(
   builds: OwnedBuild[], teams: OwnedTeam[], copies6: Map<number, number>
 ): MatchContext {
-  return { builds: indexBuildsByCom2us(builds), teams, copies6 };
+  const canonique = new Map<number, number>();
+  const monstres = [...builds, ...teams.flatMap((t) => [...t.builds.values()])].map((b) => b.monster);
+  for (const { com2usId, jumeauCollab } of monstres) {
+    if (com2usId == null || jumeauCollab == null) continue;
+    const id = idCanoniqueCollab(com2usId, jumeauCollab);
+    canonique.set(com2usId, id).set(jumeauCollab, id);
+  }
+  const cle = (id: number) => canonique.get(id) ?? id;
+
+  const parCle = new Map<number, OwnedBuild[]>();
+  for (const [id, liste] of indexBuildsByCom2us(builds)) {
+    parCle.set(cle(id), [...(parCle.get(cle(id)) ?? []), ...liste]);
+  }
+  const copies = new Map<number, number>();
+  for (const [id, n] of copies6) copies.set(cle(id), (copies.get(cle(id)) ?? 0) + n);
+  return {
+    builds: parCle,
+    teams: teams.map((t) => ({ ...t, builds: new Map([...t.builds].map(([id, b]) => [cle(id), b])) })),
+    copies6: copies,
+    canonique,
+  };
 }
 
 // Combien de fois ce deck peut être monté EN PARALLÈLE avec la réserve 6★.
@@ -270,12 +302,18 @@ export function contexteConfrontationReco(
 // Renvoie `null` quand l'information n'est pas disponible (aucune box importée)
 // ou que le deck est vide — un « 0 » se lirait « tu ne peux pas le monter »,
 // ce qui est une tout autre affirmation que « je ne sais pas ».
-export function deckCopies(deck: RecoDeck, copies6: Map<number, number> | undefined): number | null {
+//
+// `canonique` : celui du contexte — Gojo et Werner dans un même deck demandent
+// deux exemplaires du même monstre.
+export function deckCopies(
+  deck: RecoDeck, copies6: Map<number, number> | undefined, canonique?: Map<number, number>
+): number | null {
   if (!copies6) return null;
   const besoins = new Map<number, number>();
   for (const slot of deck.slots) {
     if (slot.com2usId == null) continue;
-    besoins.set(slot.com2usId, (besoins.get(slot.com2usId) ?? 0) + 1);
+    const id = cleDe({ canonique }, slot.com2usId);
+    besoins.set(id, (besoins.get(id) ?? 0) + 1);
   }
   if (besoins.size === 0) return null;
   let min = Infinity;
@@ -302,12 +340,12 @@ export function matchDeck(deck: RecoDeck, ctx: MatchContext): DeckMatch {
     };
   }
 
-  const copiesOf = (id: number | null) => (id == null ? 0 : (ctx.builds.get(id) ?? []).length);
+  const copiesOf = (id: number | null) => (id == null ? 0 : (ctx.builds.get(cleDe(ctx, id)) ?? []).length);
   // Combien de fois ce deck est montable en parallèle avec la réserve 6★.
   // ⚠️ Calculé une fois pour les trois sorties ci-dessous : il ne dépend pas du
   // statut. Savoir qu'on peut monter un deck trois fois reste utile même s'il
   // faut le reruner.
-  const copies = deckCopies(deck, ctx.copies6);
+  const copies = deckCopies(deck, ctx.copies6, ctx.canonique);
 
   // 1. Monstres indisponibles → bloquant, on n'ira pas plus loin.
   if (filledSlots.some((s) => copiesOf(s.com2usId) === 0)) {
@@ -316,7 +354,7 @@ export function matchDeck(deck: RecoDeck, ctx: MatchContext): DeckMatch {
   }
 
   // 2. Équipes existantes qui réunissent TOUS les monstres du deck.
-  const candidates = ctx.teams.filter((t) => filledSlots.every((s) => t.builds.has(s.com2usId!)));
+  const candidates = ctx.teams.filter((t) => filledSlots.every((s) => t.builds.has(cleDe(ctx, s.com2usId!))));
   if (candidates.length === 0) {
     const slots = deck.slots.map((s) => checkSlot(s, null, copiesOf(s.com2usId)));
     return { status: 'nodeck', slots, okCount: 0, filled: filledSlots.length, team: null, copies };
@@ -326,7 +364,7 @@ export function matchDeck(deck: RecoDeck, ctx: MatchContext): DeckMatch {
   let best: { slots: SlotMatch[]; okCount: number; team: string; score: number } | null = null;
   for (const team of candidates) {
     const slots = deck.slots.map((s) =>
-      checkSlot(s, s.com2usId != null ? team.builds.get(s.com2usId) ?? null : null, copiesOf(s.com2usId))
+      checkSlot(s, s.com2usId != null ? team.builds.get(cleDe(ctx, s.com2usId)) ?? null : null, copiesOf(s.com2usId))
     );
     const okCount = slots.filter((x) => x.status === 'ok').length;
     // Départage fin : nombre de critères atteints (stats ET propriétés

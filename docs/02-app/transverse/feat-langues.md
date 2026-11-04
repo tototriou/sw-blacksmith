@@ -59,7 +59,7 @@ un `Segmented` à trois choix.
   des Mécaniques vit dans [src/i18n/articles/](../../../src/i18n/articles/)
   (`mecaniques.fr.tsx`, `mecaniques.en.tsx`), avec ses formules et ses termes mis en avant ; la
   page n'en garde que la mise en page. Mêmes sections, même ordre, mêmes ancres d'une langue à
-  l'autre. Ces fichiers SONT le texte d'une langue : ils restent hors de `FICHIERS_TRADUITS`.
+  l'autre. Ces fichiers SONT le texte d'une langue : ils restent hors de la règle (`HORS_TRADUCTION`).
 - **Le journal des versions** a lui aussi une version par langue : [releases.ts](../../../src/data/releases.ts)
   en français, [releases.en.ts](../../../src/data/releases.en.ts) en anglais, de même forme
   entrée pour entrée ; `journal(langue)` rend le bon. Détail :
@@ -152,7 +152,8 @@ jeu dans la langue choisie**, jamais une traduction de l'app. Ils vivent dans
 
 ## Ce qui est traduit
 
-Les fichiers traduits sont ceux de `FICHIERS_TRADUITS` (`eslint.config.js`) : la navigation
+Tout `src/` est sous la règle `swblacksmith/texte-en-dur` (`FICHIERS_TRADUITS`, `eslint.config.js`),
+sauf `src/i18n/` et la vue de développement des gabarits (`HORS_TRADUCTION`). Sont traduits : la navigation
 (barre latérale, carte du compte, recherche, onglets du bas, panneau de navigation mobile), la
 barre du haut, la palette Ctrl K, l'écran partagé, la page et le popover des Paramètres, la date de
 l'export chargé ; l'accueil, les Nouveautés (journal compris), Télécharger, les Mécaniques, le
@@ -170,7 +171,12 @@ de sauvegarde des listes, l'import d'une équipe et les rapports d'import, de st
 rattachement, les erreurs d'une recette importée ; le speed tuning, en page comme en modale (les
 deux camps, l'ordre des sorts, l'analyse, les tableaux de ticks et les grilles) ; l'objectif
 « Dégâts réels » (sa fenêtre, ses effets actifs, ses passifs, l'adversaire, le coup critique, et
-les libellés et résumés que `damage.ts` rédige pour elle, et ses phrases curées). Une formule de sort s'écrit avec les
+les libellés et résumés que `damage.ts` rédige pour elle, et ses phrases curées) ; les contrôles
+partagés de `src/ui/` et les pièces d'un monstre (artéfacts, relique, roue des runes, stats) ;
+l'application de bureau (le bloc « Application » des Réglages, la notification de mise à jour, le
+suivi de SW Exporter, les échecs de sauvegarde de session, et les boîtes du système qu'elle ouvre,
+dans la langue de l'app : [bureau/](../bureau/README.md)), dont l'installeur Windows suit la langue
+de Windows ; le README du dépôt ([README.en.md](../../../README.en.md)). Une formule de sort s'écrit avec les
 stats du jeu dans la langue choisie (`formuleLisible`). Les effets posés entre les coups
 s'appellent en anglais par leur nom SWARFARM (« Decrease DEF », « Brand », entrées de
 `phrasesDegats.ts`) et gardent en français les libellés de l'app (décision de l'utilisateur,
@@ -184,20 +190,24 @@ Le **vocabulaire du jeu** suit la langue choisie dans toute l'app : fiches de ru
 de relique, inventaires, Optimizer, recommandations de siège, prépa RTA, Bestiaire, fiche d'un
 monstre.
 
-Les autres textes des écrans s'affichent encore en français, quelle que soit la langue choisie.
+⚠️ La règle ne voit que le JSX et ses attributs : un texte rédigé dans une fonction (`src/lib/`, un
+`switch` qui rend des phrases) lui échappe. Il passe par le dictionnaire de la même façon — la
+fonction reçoit `t` —, et un test de rendu dans les deux langues le vérifie. Reste à traduire : le
+vocabulaire des reliques (stats et propriété unique, `src/lib/effects.ts`).
 
 ## Écrire un texte nouveau
 
 1. L'ajouter à `fr.ts`, dans la zone de son écran, puis à `en.ts` : `tsc` refuse tant qu'une
    langue n'a pas la clé.
-2. L'afficher par `useTraduction()`. Dans un fichier traduit, un texte en dur est refusé par la
+2. L'afficher par `useTraduction()`. Dans `src/`, un texte en dur est refusé par la
    règle ESLint `swblacksmith/texte-en-dur` : texte entre balises, chaîne en enfant
    (`{ok ? 'Oui' : 'Non'}`), ou dans un attribut qui s'affiche (`title`, `aria-label`,
    `placeholder`, `alt`, `libelle`, `label`, `hint`, `titre`, `invite`, `aide`). Un symbole, un
    nombre, une classe passent. Détail : [qualite-code.md](../../03-developpeur/qualite-code.md).
 3. Un terme du jeu reprend le libellé officiel du client dans chaque langue, jamais une traduction.
 
-Un écran qu'on traduit entre dans `FICHIERS_TRADUITS` dans le même commit.
+Un fichier nouveau de `src/` est sous la règle d'office ; une zone n'en sort que par
+`HORS_TRADUCTION`, sur décision.
 
 ## Tests
 
@@ -221,7 +231,9 @@ Un écran qu'on traduit entre dans `FICHIERS_TRADUITS` dans le même commit.
   (dialogue, aperçu, message, provenance illisible) en anglais ; les dégâts réels (la carte, sa
   formule, une séquence de coups, les crans d'ignore DEF, les modes critiques) en anglais, et ses
   phrases curées (un compteur, l'étiquette du « Calcul partiel », la raison d'un sort refusé, un
-  modificateur toujours actif).
+  modificateur toujours actif) ; le bloc « Application » du bureau, sa notification de mise à
+  jour, le suivi de SW Exporter, un champ numérique, une notification, une relique absente et
+  l'avertissement du téléphone en anglais.
 - [phrases-degats.test.ts](../../../tests/phrases-degats.test.ts) : chaque phrase curée affichée de
   `damage.ts` a sa traduction anglaise, aucune entrée ne survit à sa phrase, aucune traduction
   n'est restée en français.
