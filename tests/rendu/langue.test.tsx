@@ -136,7 +136,7 @@ export function testRenduLanguePagesPubliques() {
   for (const absent of ['Comment ça marche', 'Fonctionnalités', 'Dépose ton fichier']) ok(!accueil.includes(absent), `accueil : plus de « ${absent} »`);
 
   const nouveautes = enAnglais(() => texteVisible(rendreApp('#/releases')));
-  for (const attendu of ['What changed in each version', 'SW Blacksmith in English', 'Not yet released', 'A redesigned Optimizer'])
+  for (const attendu of ['What changed in each version', 'SW Blacksmith in English', 'Current version', 'A redesigned Optimizer'])
     ok(nouveautes.includes(attendu), `Nouveautés : « ${attendu} »`);
   ok(!nouveautes.includes('Version actuelle') && !nouveautes.includes('Un Optimizer repensé'), 'Nouveautés : le journal anglais, pas le français');
   ok(/October 29, 2026/.test(nouveautes), 'Nouveautés : les dates au format anglais');
