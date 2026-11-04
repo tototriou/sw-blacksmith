@@ -31,6 +31,10 @@ import { PREFIXE_FICHIER } from '../../marque';
 import { selonSupport } from '../../lib/bureau';
 import { jourLocal, telechargerTexte } from '../../lib/telechargement';
 import type { ElementMenu } from '../../ui';
+import { useLangue, useTraduction } from '../../hooks/useLangue';
+import type { Dictionnaire } from '../../i18n/fr';
+import type { Langue } from '../../i18n/langue';
+import { formatDate } from '../../i18n/format';
 
 /* --------------------------------------------------------------------------
  * Sauvegarder · Reprendre · Réinitialiser · Exporter · Importer
@@ -87,18 +91,19 @@ interface Props {
 
 // « il y a 3 minutes », « hier à 14:32 » — repère plus parlant qu'une date ISO
 // pour dire de quand date le point de retour.
-function depuis(iso: string): string {
+function depuis(iso: string, t: Dictionnaire, langue: Langue): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '';
+  const s = t.sauvegardeRta;
   const min = Math.floor((Date.now() - d.getTime()) / 60000);
-  if (min < 1) return "à l'instant";
-  if (min < 60) return `il y a ${min} min`;
+  if (min < 1) return s.instant;
+  if (min < 60) return s.minutes(min);
   const h = Math.floor(min / 60);
-  if (h < 24) return `il y a ${h} h`;
+  if (h < 24) return s.heures(h);
   const j = Math.floor(h / 24);
-  if (j === 1) return 'hier';
-  if (j < 30) return `il y a ${j} jours`;
-  return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+  if (j === 1) return s.hier;
+  if (j < 30) return s.jours(j);
+  return formatDate(d, langue, { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
 // Réglages communs aux cinq actions de cette barre.
@@ -136,6 +141,9 @@ export default function RtaBackupBar({
   entreesEnPlus = [],
 }: Props) {
   const enMenu = disposition === 'menu';
+  const textes = useTraduction();
+  const langue = useLangue();
+  const s = textes.sauvegardeRta;
   const [msg, setMsg] = useState<{ text: string; error?: boolean } | null>(null);
   // Rapport de validation : NON éphémère, il y a quelque chose à lire.
   const [report, setReport] = useState<ImportReport | null>(null);
@@ -176,7 +184,7 @@ export default function RtaBackupBar({
 
   function sauvegarder() {
     backup.sauvegarder(rta.state, cats.categories);
-    setMsg({ text: 'Point de sauvegarde posé.' });
+    setMsg({ text: s.posee });
   }
 
   function reprendre() {
@@ -186,7 +194,7 @@ export default function RtaBackupBar({
     cats.replaceAll(
       backup.backup.categories.map((c) => ({ label: c.label, color: c.color, members: c.members }))
     );
-    setMsg({ text: 'Prépa restaurée au dernier point de sauvegarde.' });
+    setMsg({ text: s.restauree });
   }
 
   // Retour à la prépa **telle que l'import de compte l'a produite**.
@@ -200,7 +208,7 @@ export default function RtaBackupBar({
     cats.replaceAll(
       backup.importe.categories.map((c) => ({ label: c.label, color: c.color, members: c.members }))
     );
-    setMsg({ text: 'Prépa remise dans l’état de ton dernier import de compte.' });
+    setMsg({ text: s.reinitialisee });
   }
 
   // Combien de monstres emporteraient réellement leur équipement ? Sert à ne pas
@@ -213,7 +221,7 @@ export default function RtaBackupBar({
   function exporter(niveau: NiveauPartage) {
     const { partageables, perso } = comptePartageable(rta.state, monsterById);
     if (partageables === 0) {
-      setMsg({ text: 'Rien à exporter : ta prépa est vide.', error: true });
+      setMsg({ text: s.rienAExporter, error: true });
       return;
     }
     const snap = toSnapshot(rta.state, cats.categories, monsterById, { niveau });
@@ -228,19 +236,12 @@ export default function RtaBackupBar({
     };
     const fichier = `${PREFIXE_FICHIER}-prepa-rta-${suffixe[niveau]}-${jourLocal()}.json`;
     telechargerTexte(fichier, encodeSnapshot(snap));
-    const dit: Record<NiveauPartage, string> = {
-      complet: 'avec les runes et artéfacts',
-      vitesses: 'ordre de tour, vitesses et sets',
-      ordre: 'ordre de tour seul',
-    };
     // ⚠️ Le nom du fichier est REPRIS dans le message : c'est lui qu'on ira
     // chercher dans ses téléchargements. Les monstres perso PARTENT désormais
     // (décrits en entier), mais on le dit : ils s'afficheront sans portrait chez
     // le lecteur, qui ne les a pas dans ses données.
     setMsg({
-      text:
-        `${partageables} monstre(s) exporté(s) ${dit[niveau]} · ${fichier}` +
-        (perso > 0 ? ` · dont ${perso} monstre(s) perso, affiché(s) sans portrait.` : ''),
+      text: s.exporte(partageables, s.niveaux[niveau], fichier) + (perso > 0 ? s.dontPerso(perso) : ''),
     });
   }
 
@@ -248,7 +249,7 @@ export default function RtaBackupBar({
   // n'est plus ici : elle a son écran (RtaAmiSection.tsx). Le validateur, lui,
   // reste commun aux deux — c'est le même format.
   function lireFichier(text: string) {
-    const rep = validateRtaImport(text);
+    const rep = validateRtaImport(text, textes);
     setReport(rep);
     if (!rep.snapshot) return; // erreurs bloquantes : rien à faire
 
@@ -258,9 +259,7 @@ export default function RtaBackupBar({
     const { inconnus } = appliquer(rep.snapshot, monsterByCom2us, rta.state);
     if (inconnus.length > 0) {
       rep.warnings.push(
-        `${inconnus.length} monstre(s) absent(s) des données chargées (id ${inconnus
-          .slice(0, 5)
-          .join(', ')}${inconnus.length > 5 ? '…' : ''}) : non repris.`
+        s.absents(inconnus.length, `${inconnus.slice(0, 5).join(', ')}${inconnus.length > 5 ? '…' : ''}`)
       );
       setReport({ ...rep });
     }
@@ -274,12 +273,12 @@ export default function RtaBackupBar({
     const perso = rep.snapshot.entries.filter((e) => e.com2usId == null && e.perso).length;
     const retenus = Object.keys(state.entries).length + perso;
     if (retenus === 0) {
-      setMsg({ text: "Aucun monstre de ce fichier n'existe dans les données chargées.", error: true });
+      setMsg({ text: s.aucunConnu, error: true });
       return;
     }
     setAConfirmer({
       snapshot: rep.snapshot,
-      resume: `${retenus} monstre(s)`,
+      resume: s.monstres(retenus),
       perso,
     });
   }
@@ -288,7 +287,9 @@ export default function RtaBackupBar({
     fileRef.current?.click();
   }
 
-  const dateBackup = backup.backup ? depuis(backup.backup.date) : '';
+  const dateBackup = backup.backup ? depuis(backup.backup.date, textes, langue) : '';
+  const dateImport = backup.importe ? depuis(backup.importe.date, textes, langue) : '';
+  const aideImporter = selonSupport(s.importerAideNavigateur, s.importerAideAppareil);
 
   return (
     // ⚠️ `data-passe-grille` : dans le panneau mobile, ce conteneur et celui
@@ -308,49 +309,42 @@ export default function RtaBackupBar({
         // libellés, désactivations, infobulles — à une précision près :
         // « Importer » devient « Importer une prépa », voisin d'autres gestes.
         <BarreActions
-          libelleMenu="Plus d'actions"
+          libelleMenu={s.plusActions}
           toujours={[
             {
               cle: 'exporter',
-              libelle: 'Exporter',
-              'aria-label': 'Exporter',
+              libelle: textes.commun.exporter,
+              'aria-label': textes.commun.exporter,
               icone: <Upload size={14} />,
               onClick: () => setExportAChoisir(true),
               disabled: vide,
-              title: 'Télécharger ta prépa en fichier .json, pour la partager ou la garder de côté',
+              title: s.exporterAide,
             },
           ]}
           autres={[
               {
                 cle: 'sauvegarder',
-                libelle: 'Sauvegarder',
+                libelle: s.sauvegarder,
                 icone: <Save size={14} />,
                 onClick: () => (backup.backup ? setEcraserAConfirmer(true) : sauvegarder()),
                 disabled: vide,
-                title: vide
-                  ? 'Ajoute des monstres avant de poser un point de sauvegarde'
-                  : 'Fige la prépa actuelle comme point de retour. Ta prépa est déjà conservée automatiquement : ceci sert à pouvoir revenir en arrière après des essais.',
+                title: vide ? s.sauvegarderVide : s.sauvegarderAide,
               },
               {
                 cle: 'reprendre',
-                libelle: 'Reprendre',
+                libelle: s.reprendre,
                 icone: <RotateCcw size={14} />,
                 onClick: () => setReprendreAConfirmer(true),
                 disabled: !backup.backup,
-                title: backup.backup
-                  ? `Revenir au point de sauvegarde (${dateBackup})`
-                  : "Aucun point de sauvegarde : clique d'abord sur « Sauvegarder »",
+                title: backup.backup ? s.reprendreAide(dateBackup) : s.reprendreSans,
               },
               {
                 cle: 'importer',
-                libelle: 'Importer une prépa',
+                libelle: s.importerPrepa,
                 icone: <Download size={14} />,
                 onClick: ouvrirFichier,
                 // Dans l'app de bureau, la prépa vient d'un autre APPAREIL.
-                title: selonSupport(
-                  "Reprendre une prépa exportée : une archive, ou celle d'un autre navigateur. Elle remplacera la tienne.",
-                  "Reprendre une prépa exportée : une archive, ou celle d'un autre appareil. Elle remplacera la tienne."
-                ),
+                title: aideImporter,
               },
               ...entreesEnPlus.filter((e) => !e.danger),
               // ⚠️ N'apparaît QUE si un compte a été importé — comme dans la barre.
@@ -358,12 +352,10 @@ export default function RtaBackupBar({
                 ? [
                     {
                       cle: 'reinitialiser',
-                      libelle: 'Réinitialiser',
+                      libelle: s.reinitialiser,
                       icone: <History size={14} />,
                       onClick: () => setResetAConfirmer(true),
-                      title: `Remettre la prépa dans l'état de ton dernier import de compte (${depuis(
-                        backup.importe.date
-                      )})`,
+                      title: s.reinitialiserAide(dateImport),
                       danger: true,
                     },
                   ]
@@ -413,28 +405,20 @@ export default function RtaBackupBar({
           {...ACTION}
           onClick={() => (backup.backup ? setEcraserAConfirmer(true) : sauvegarder())}
           disabled={vide}
-          aria-label="Sauvegarder"
+          aria-label={s.sauvegarder}
           icone={<Save size={14} />}
-          libelle="Sauvegarder"
-          title={
-            vide
-              ? 'Ajoute des monstres avant de poser un point de sauvegarde'
-              : 'Fige la prépa actuelle comme point de retour. Ta prépa est déjà conservée automatiquement : ceci sert à pouvoir revenir en arrière après des essais.'
-          }
+          libelle={s.sauvegarder}
+          title={vide ? s.sauvegarderVide : s.sauvegarderAide}
         />
 
         <Bouton
           {...ACTION}
           onClick={() => setReprendreAConfirmer(true)}
           disabled={!backup.backup}
-          aria-label="Reprendre"
+          aria-label={s.reprendre}
           icone={<RotateCcw size={14} />}
-          libelle="Reprendre"
-          title={
-            backup.backup
-              ? `Revenir au point de sauvegarde (${dateBackup})`
-              : "Aucun point de sauvegarde : clique d'abord sur « Sauvegarder »"
-          }
+          libelle={s.reprendre}
+          title={backup.backup ? s.reprendreAide(dateBackup) : s.reprendreSans}
         />
 
         {/* ⚠️ N'apparaît QUE si un compte a été importé : sans point d'import,
@@ -444,12 +428,10 @@ export default function RtaBackupBar({
           <Bouton
             {...ACTION}
             onClick={() => setResetAConfirmer(true)}
-            aria-label="Réinitialiser"
+            aria-label={s.reinitialiser}
             icone={<History size={14} />}
-            libelle="Réinitialiser"
-            title={`Remettre la prépa dans l'état de ton dernier import de compte (${depuis(
-              backup.importe.date
-            )})`}
+            libelle={s.reinitialiser}
+            title={s.reinitialiserAide(dateImport)}
           />
         )}
 
@@ -469,10 +451,10 @@ export default function RtaBackupBar({
           {...ACTION}
           onClick={() => setExportAChoisir(true)}
           disabled={vide}
-          aria-label="Exporter"
+          aria-label={textes.commun.exporter}
           icone={<Upload size={14} />}
-          libelle="Exporter"
-          title="Télécharger ta prépa en fichier .json, pour la partager ou la garder de côté"
+          libelle={textes.commun.exporter}
+          title={s.exporterAide}
         />
 
         {/* ⚠️ DEUX boutons pour un même format de fichier, parce que ce sont
@@ -483,13 +465,10 @@ export default function RtaBackupBar({
         <Bouton
           {...ACTION}
           onClick={ouvrirFichier}
-          aria-label="Importer"
+          aria-label={textes.commun.importer}
           icone={<Download size={14} />}
-          libelle="Importer"
-          title={selonSupport(
-            "Reprendre une prépa exportée : une archive, ou celle d'un autre navigateur. Elle remplacera la tienne.",
-            "Reprendre une prépa exportée : une archive, ou celle d'un autre appareil. Elle remplacera la tienne."
-          )}
+          libelle={textes.commun.importer}
+          title={aideImporter}
         />
       </div>
       </div>
@@ -511,7 +490,7 @@ export default function RtaBackupBar({
               QUAND le point a été posé, pour décider si l'on peut y revenir
               sans perdre le travail de la session. Le compte, lui, se lit sur
               la prépa elle-même, juste en dessous. */}
-          Point de sauvegarde · {dateBackup}
+          {s.pointDeSauvegarde(dateBackup)}
         </p>
       )}
 
@@ -547,15 +526,14 @@ export default function RtaBackupBar({
       {/* Écraser un point existant : c'est une perte, donc on confirme. */}
       {ecraserAConfirmer && (
         <ConfirmDialog
-          titre="Remplacer le point de sauvegarde ?"
+          titre={s.ecraserTitre}
           message={
             <>
-              Le point posé <b className="text-ink">{dateBackup}</b> (
-              {Object.keys(backup.backup?.state.entries ?? {}).length} monstre(s)) sera remplacé par
-              ta prépa actuelle ({nbMonstres} monstre(s)). Tu ne pourras plus y revenir.
+              {s.ecraserAvant} <b className="text-ink">{dateBackup}</b>{' '}
+              {s.ecraserApres(Object.keys(backup.backup?.state.entries ?? {}).length, nbMonstres)}
             </>
           }
-          libelleAction="Remplacer"
+          libelleAction={s.remplacer}
           destructif
           onCancel={() => setEcraserAConfirmer(false)}
           onConfirm={() => {
@@ -567,15 +545,15 @@ export default function RtaBackupBar({
 
       {reprendreAConfirmer && backup.backup && (
         <ConfirmDialog
-          titre="Revenir au point de sauvegarde ?"
+          titre={s.reprendreTitre}
           message={
             <>
-              Ta prépa actuelle ({nbMonstres} monstre(s)) sera remplacée par celle sauvegardée{' '}
-              <b className="text-ink">{dateBackup}</b> (
-              {Object.keys(backup.backup.state.entries).length} monstre(s)). Les catégories suivent.
+              {s.reprendreAvant(nbMonstres)}{' '}
+              <b className="text-ink">{dateBackup}</b>{' '}
+              {s.reprendreApres(Object.keys(backup.backup.state.entries).length)}
             </>
           }
-          libelleAction="Reprendre"
+          libelleAction={s.reprendre}
           destructif
           onCancel={() => setReprendreAConfirmer(false)}
           onConfirm={() => {
@@ -592,32 +570,25 @@ export default function RtaBackupBar({
           garder ce travail. */}
       {resetAConfirmer && backup.importe && (
         <ConfirmDialog
-          titre="Revenir à l'état de ton import de compte ?"
+          titre={s.resetTitre}
           message={
             <>
-              Ta prépa actuelle ({nbMonstres} monstre(s)) et ses catégories seront remplacées par
-              celles issues de ton import du{' '}
-              <b className="text-ink">{depuis(backup.importe.date)}</b> (
-              {Object.keys(backup.importe.state.entries).length} monstre(s)).{' '}
-              <b className="text-ink">
-                Tout le classement que tu as fait depuis sera perdu
-              </b>{' '}
-              — monstres ajoutés à la main, sections modifiées, catégories.
+              {s.resetAvant(nbMonstres)}{' '}
+              <b className="text-ink">{dateImport}</b>{' '}
+              {s.resetApres(Object.keys(backup.importe.state.entries).length)}{' '}
+              <b className="text-ink">{s.resetPerte}</b>{' '}
+              {s.resetPerteDetail}
               {backup.backup && (
                 <>
                   {' '}
-                  Ton point de sauvegarde du <b className="text-ink">{dateBackup}</b> reste en place,
-                  mais il pointe vers un classement d'avant ce retour en arrière.
+                  {s.resetSauvegardeAvant} <b className="text-ink">{dateBackup}</b> {s.resetSauvegardeApres}
                 </>
               )}
               <br />
-              <span className="text-ink-dim">
-                Pour garder ton travail actuel, annule et utilise « Exporter » : c'est le seul moyen
-                de le retrouver ensuite.
-              </span>
+              <span className="text-ink-dim">{s.resetConseil}</span>
             </>
           }
-          libelleAction="Réinitialiser"
+          libelleAction={s.reinitialiser}
           destructif
           onCancel={() => setResetAConfirmer(false)}
           onConfirm={() => {
@@ -629,42 +600,32 @@ export default function RtaBackupBar({
 
       {aConfirmer && (
         <ConfirmDialog
-          titre="Remplacer ta prépa par ce fichier ?"
+          titre={s.importTitre}
           message={
             <>
-              La prépa du fichier ({aConfirmer.resume}) remplacera la tienne ({nbMonstres}{' '}
-              monstre(s)) et ses catégories.{' '}
+              {s.importRemplace(aConfirmer.resume, nbMonstres)}{' '}
               {backup.backup ? (
-                <>
-                  Ton point de sauvegarde n'est pas touché : tu pourras revenir en arrière avec
-                  « Reprendre ».
-                </>
+                s.importSauvegardeIntacte
               ) : (
                 <>
-                  <b className="text-ink">
-                    Tu n'as aucun point de sauvegarde : ton classement actuel sera perdu.
-                  </b>{' '}
-                  Annule et clique « Sauvegarder » d'abord si tu veux pouvoir y revenir.
+                  <b className="text-ink">{s.importSansSauvegarde}</b> {s.importConseil}
                 </>
               )}{' '}
-              Les runes de tes propres monstres ne changent pas.
+              {s.importRunes}
               {aConfirmer.perso > 0 && (
                 <>
                   {' '}
-                  {aConfirmer.perso} monstre(s) perso du fichier seront{' '}
-                  <b className="text-ink">recréés</b> dans ta liste.
+                  {s.importPersoAvant(aConfirmer.perso)} <b className="text-ink">{s.importPersoGras}</b>{' '}
+                  {s.importPersoApres}
                 </>
               )}
               {/* Si l'intention était de regarder la prépa d'un ami, ce dialogue
                   est le dernier endroit où le dire — après, c'est remplacé. */}
               <br />
-              <span className="text-ink-dim">
-                Pour seulement la regarder sans rien changer, annule et ouvre-la depuis
-                « RTA · Ami ».
-              </span>
+              <span className="text-ink-dim">{s.importConsulter}</span>
             </>
           }
-          libelleAction="Remplacer ma prépa"
+          libelleAction={s.remplacerMaPrepa}
           destructif
           onCancel={() => setAConfirmer(null)}
           onConfirm={() => {
@@ -690,7 +651,7 @@ export default function RtaBackupBar({
             );
             rta.replaceAll(state);
             cats.replaceAll(categories);
-            setMsg({ text: `Prépa reprise · ${aConfirmer.resume}.` });
+            setMsg({ text: s.reprise(aConfirmer.resume) });
             setAConfirmer(null);
           }}
         />
@@ -733,6 +694,7 @@ function ChoixExport({
   onChoisir: (niveau: NiveauPartage) => void;
   onAnnuler: () => void;
 }) {
+  const c = useTraduction().sauvegardeRta.choix;
   const options: {
     cle: NiveauPartage;
     icone: typeof Eye;
@@ -744,25 +706,22 @@ function ChoixExport({
     {
       cle: 'complet',
       icone: Eye,
-      titre: 'Tout : ta prépa, tes runes et tes artéfacts',
-      detail:
-        'Il voit ton classement par section et le détail de chaque rune, substats compris.',
+      titre: c.completTitre,
+      detail: c.completDetail,
       compte: avecRunes,
       desactive: avecRunes === 0,
     },
     {
       cle: 'vitesses',
       icone: Gauge,
-      titre: 'Ordre de tour : vitesses et sets',
-      detail:
-        "Il voit ton ordre de tour avec la vitesse et les sets de chaque monstre, mais pas le détail de tes runes ni ton classement par section.",
+      titre: c.vitessesTitre,
+      detail: c.vitessesDetail,
     },
     {
       cle: 'ordre',
       icone: EyeOff,
-      titre: 'Ordre de tour seul',
-      detail:
-        "Il voit seulement qui passe avant qui, en vignettes numérotées. Pas de vitesses, pas de sets, pas de sections.",
+      titre: c.ordreTitre,
+      detail: c.ordreDetail,
     },
   ];
 
@@ -781,18 +740,16 @@ function ChoixExport({
       labelledBy="export-rta-titre"
       largeur="max-w-[460px]"
       croix
-      titre="Que veux-tu partager ?"
+      titre={c.titre}
       sousTitre={
         <>
-          Tes sections et tes catégories sont toujours incluses. La question porte sur ce que tu
-          laisses voir de <b className="text-ink">ton runage</b>.
+          {c.sousTitre} <b className="text-ink">{c.sousTitreGras}</b>.
         </>
       }
     >
         {avecRunes === 0 && (
           <p className="mb-3 rounded-lg border border-border bg-panel2 px-3 py-2 text-micro leading-relaxed text-ink-dim">
-            Aucun de tes monstres ne porte de runes connues — importe ton compte pour pouvoir les
-            partager.
+            {c.sansRunes}
           </p>
         )}
 
@@ -822,10 +779,7 @@ function ChoixExport({
             sort en choisissant, ou en refermant. Deux sorties pour la même
             chose obligeaient à se demander laquelle valait quoi. */}
         <p className="mt-3 text-micro leading-relaxed text-ink-dim">
-          Le <b className="text-ink">classement par section</b> part avec le détail des runes :
-          ranger un monstre dans « Swift » en dit autant que l'icône. Et la vitesse de base étant
-          publique, donner la vitesse totale revient à donner celle des runes — c'est pourquoi le
-          dernier niveau ne transmet que l'ordre.
+          {c.noteAvant} <b className="text-ink">{c.noteGras}</b> {c.noteApres}
         </p>
     </Modale>
   );

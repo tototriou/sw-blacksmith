@@ -46,6 +46,7 @@ import {
   resumeSequenceDeCoups,
   skillDamageProfile,
 } from '../src/lib/damage';
+import { fr } from '../src/i18n/fr';
 
 const racine = resolve(new URL('..', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1'));
 const DOSSIER_SORTS = resolve(racine, 'public/data/skills');
@@ -122,8 +123,13 @@ export function testDegatsSequencesApi() {
           ] },
         `${s.id} sur ${forme} : profil = donnée (empreinte ${JSON.stringify(s.donnee)}), séquence = ${s.phase1} × ATQ mono-cible puis ${s.phase2} × ATQ en zone`,
       );
-      egal(resumeSequenceDeCoups(p.sequenceDeCoups ?? []), '1 coup · Cible unique, puis 1 coup · Zone', `${s.id} sur ${forme} : résumé de la séquence`);
-      ok(!p.hitsRange && !p.effetsEntreCoups, `${s.id} sur ${forme} : ni coups variables ni effets entre coups (non modélisés pour une séquence)`);
+      egal(resumeSequenceDeCoups(p.sequenceDeCoups ?? [], fr), '1 coup · Cible unique, puis 1 coup · Zone', `${s.id} sur ${forme} : résumé de la séquence`);
+      ok(!p.hitsRange, `${s.id} sur ${forme} : pas de coups variables (non modélisés pour une séquence)`);
+      // Effets entre les coups : seule Fatal Mortar Bullet (Scarlett) pose avant
+      // sa phase de zone ; Undefeated Warrior pose dans la sienne, la dernière
+      // (tests/degats-effets-entre-coups.test.ts).
+      egal(p.effetsEntreCoups?.map((e) => e.id) ?? [], s.id === 13312 ? ['decrease-def', 'brand'] : [],
+        `${s.id} sur ${forme} : effets posés avant la dernière phase`);
       egal(monsterOffensivePassives(fiche(forme)).length, 0, `${forme} : aucun passif offensif`);
 
       const calcul = (x: DamageSetup, art: ArtifactDamageProfile = ARTIFACT_DAMAGE_NEUTRE) =>
@@ -296,7 +302,9 @@ export function testDegatsPorteesParLaProse() {
       const sans = total(p, crit, ARTIFACT_DAMAGE_NEUTRE);
       ok(proche(total(p, crit, a224), sans), `${e.id} sur ${forme} : un artéfact 224 ne change pas le total critique`);
       // Sans 224, rien d'autre ne bouge : le profil forcé mono-cible donne le même total.
-      const monoCible = { ...p, aoe: false };
+      // Sans séquence : Bullet Assassination et Shining Butterfly en ont une
+      // (son dernier coup seul lit les effets de la cible), toute de zone.
+      const monoCible = { ...p, aoe: false, sequenceDeCoups: undefined };
       ok(proche(total(monoCible, crit, ARTIFACT_DAMAGE_NEUTRE), sans), `${e.id} sur ${forme} : sans artéfact, la portée ne change aucun total`);
       ok(proche(total(p, { ...base, critMode: 'normal' }, a224), total(monoCible, { ...base, critMode: 'normal' }, a224)), `${e.id} sur ${forme} : hors critique, la portée ne change aucun total`);
       // Témoin : mono-cible, la ligne 224 aurait compté.

@@ -84,7 +84,7 @@ Idéale avec beaucoup d'équipes (import offense ~50).
 - Poignée de drag (`GripVertical`) + (si leader) couronne + hexagone image/initiales.
 - Nom + (si leader) **pastille de lead** (voir ci-dessous).
 - **Vitesse de combat** en gros (voir [feat-speed-tick.md](feat-speed-tick.md)).
-- Champ **« SPD : »** (vitesse des runes, Swift déjà inclus).
+- Champ **« VIT : »** (« SPD: » en anglais ; vitesse des runes, Rapide déjà inclus).
 - Croix de retrait → vide le slot.
 - **Sélecteur de position** (« 1 · Leader / 2 / 3 ») = repli tactile : intervertit
   avec le slot cible.

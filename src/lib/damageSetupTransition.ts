@@ -23,7 +23,7 @@ export const DAMAGE_SETUP_CLASSIFICATION = {
   buffsAlliesCount: 'sort', atkDebuff: 'contexte', defDebuff: 'contexte',
   spdDebuff: 'contexte', compteurPersonnalise: 'sort',
   effetsPropresCount: 'sort', scenariosEffetsEntreCoups: 'sort',
-  premierCoupIgnoreDefParSort: 'sort',
+  premierCoupIgnoreDefParSort: 'sort', coupsIgnorantDefParSort: 'sort',
   pvActuelsAvantSacrificePct: 'sort',
 } as const satisfies Record<keyof DamageSetup, 'contexte' | 'sort' | 'legacy-contexte' | 'legacy-sort'>;
 

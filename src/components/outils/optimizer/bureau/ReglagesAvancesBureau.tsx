@@ -1,4 +1,5 @@
 import { type ReactNode } from 'react';
+import { useTraduction } from '../../../../hooks/useLangue';
 
 // « Réglages avancés », au bureau : EN LIGNE dans la colonne repliable « Aura,
 // exclusion, avancés », section de son panneau, jamais repliée derrière un
@@ -14,7 +15,7 @@ import { type ReactNode } from 'react';
 // approfondi sur 0 résultat » est appelé à partir) passe sans retouche ici.
 export default function ReglagesAvancesBureau({ children }: { children: ReactNode }) {
   return (
-    <section aria-label="Réglages avancés">
+    <section aria-label={useTraduction().optimizer.criteres.reglagesAvances}>
       {children}
     </section>
   );

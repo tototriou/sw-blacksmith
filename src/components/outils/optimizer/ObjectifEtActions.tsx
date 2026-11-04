@@ -6,6 +6,13 @@ import { Swords, Pencil, Search, Upload, Download, Square } from 'lucide-react';
 import { type Dispatch, type SetStateAction, type RefObject } from 'react';
 import { type Monster, type GearSet } from '../../../types';
 import { type BuildOptimStatus } from '../../../hooks/useBuildOptimSearch';
+import { useTraduction } from '../../../hooks/useLangue';
+
+/** Les objectifs dans leur ordre, nommés dans la langue de l'interface. */
+export function useObjectifs() {
+  const noms = useTraduction().optimizer.objectifs;
+  return OBJECTIVE_LABELS.map((o) => ({ key: o.key, label: noms[o.key] }));
+}
 
 export interface ObjectifEtActionsProps {
   objective: Objective;
@@ -26,12 +33,13 @@ export interface ObjectifEtActionsProps {
 // Le titre de l'objectif et son aide, partagés avec le bloc « Objectif et
 // Rechercher » du bureau (bureau/ObjectifEtRechercherBureau.tsx).
 export function TitreObjectifRecherche() {
+  const o = useTraduction().optimizer;
+  const a = o.actions;
   return (
     <div className="mb-1.5 flex items-center gap-1.5">
-      <p className="label">Objectif de recherche</p>
-      <HelpPopover title="Objectif de recherche">
-        Ce que la recherche maximise. <b className="text-ink">Dégâts réels</b> : les dégâts d&apos;un sort
-        précis contre l&apos;adversaire décrit.
+      <p className="label">{a.objectif}</p>
+      <HelpPopover title={a.objectif}>
+        {a.objectifAide}<b className="text-ink">{o.objectifs.degats_reels}</b>{a.objectifAideFin}
       </HelpPopover>
     </div>
   );
@@ -42,11 +50,12 @@ export function TitreObjectifRecherche() {
 // place n'est pas réservée (décision de l'utilisateur) : il paraît sous les
 // objectifs, jamais au-dessus du clic.
 export function ResumeCombat({ resumeCombat, setSetupOuvert }: { resumeCombat: string; setSetupOuvert: Dispatch<SetStateAction<boolean>> }) {
+  const a = useTraduction().optimizer.actions;
   return (
     <ZoneCliquable
       onClick={() => setSetupOuvert(true)}
       className="mt-2.5 flex w-full items-center gap-1.5 rounded-lg border border-border-soft bg-panel2 px-2 py-1.5 text-left"
-      aria-label="Modifier la description du combat"
+      aria-label={a.modifierCombat}
     >
       <Swords size={13} className="flex-none text-ink-dim" />
       <span className="text-micro leading-tight text-ink-dim">{resumeCombat}</span>
@@ -56,6 +65,8 @@ export function ResumeCombat({ resumeCombat, setSetupOuvert }: { resumeCombat: s
 }
 
 export default function ObjectifEtActions({ objective, setObjective, setSetupOuvert, resumeCombat, handleSearch, selected, status, comboSets, exportRecipe, importFileRef, importRecipe, setStoppedManually, stop }: ObjectifEtActionsProps) {
+  const a = useTraduction().optimizer.actions;
+  const objectifs = useObjectifs();
   return (
     <div className="rounded-xl border border-border bg-panel p-3 shadow-lg">
       {/* ⚠️ **L'objectif vit avec le bouton qui lance la recherche**, plus
@@ -77,7 +88,7 @@ export default function ObjectifEtActions({ objective, setObjective, setSetupOuv
             critique jamais choisis. Le geste devient explicite — cet objectif
             ne se choisit plus sans voir ses hypothèses. */}
         <Segmented
-          options={OBJECTIVE_LABELS}
+          options={objectifs}
           value={objective}
           onChange={(o) => {
             setObjective(o);
@@ -110,9 +121,9 @@ export default function ObjectifEtActions({ objective, setObjective, setSetupOuv
         ton="accent"
         onClick={handleSearch}
         disabled={!selected || status === 'running'}
-        title={selected && status !== 'running' && comboSets.length === 0 ? 'Choisis d\'abord un set de runes recherché' : undefined}
+        title={selected && status !== 'running' && comboSets.length === 0 ? a.setDabord : undefined}
         icone={<Search size={15} />}
-        libelle={status === 'running' ? 'Recherche…' : 'Rechercher'}
+        libelle={status === 'running' ? a.rechercheEnCours : a.rechercher}
         className={comboSets.length === 0 ? 'opacity-40 cursor-not-allowed' : ''}
       />
 
@@ -124,10 +135,10 @@ export default function ObjectifEtActions({ objective, setObjective, setSetupOuv
       <Bouton
         onClick={exportRecipe}
         disabled={!selected || comboSets.length === 0}
-        title="Télécharger les réglages de cette recherche en fichier .json (set, minimums, objectif…) — pour la partager ou la reproduire, jamais tes runes ni ton compte."
+        title={a.exporterAide}
         icone={<Upload size={14} />}
-        libelle="Exporter les paramètres de recherche"
-        libelleCourt="Exporter"
+        libelle={a.exporterLong}
+        libelleCourt={a.exporter}
       />
 
       {/* Reprend une recette importée (fichier reçu d'un autre joueur, ou
@@ -137,10 +148,10 @@ export default function ObjectifEtActions({ objective, setObjective, setSetupOuv
           les modifier à la main un par un. */}
       <Bouton
         onClick={() => importFileRef.current?.click()}
-        title="Reprendre les réglages d'un fichier .json exporté depuis l'Optimizer (le tien ou celui d'un autre joueur)."
+        title={a.importerAide}
         icone={<Download size={14} />}
-        libelle="Importer les paramètres de recherche"
-        libelleCourt="Importer"
+        libelle={a.importerLong}
+        libelleCourt={a.importer}
       />
       <input
         ref={importFileRef}
@@ -162,9 +173,9 @@ export default function ObjectifEtActions({ objective, setObjective, setSetupOuv
             setStoppedManually(true);
             stop();
           }}
-          title="Arrêter la recherche et garder ce qui a déjà été trouvé"
+          title={a.arreterAide}
           icone={<Square size={13} />}
-          libelle="Arrêter"
+          libelle={a.arreter}
         />
       )}
       </div>

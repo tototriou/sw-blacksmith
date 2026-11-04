@@ -285,7 +285,9 @@ la table, le résolveur et l'UI : la multiplication de
 - **Martial Arts Specialist/Martial Artist, Sin** : « additional
   damage proportionate to your Defense if your Defense is higher than the
   opponent » — confirmé 50 % de l'écart, à CHAQUE coup, jamais négatif
-  (`max(0, DEF − DEF cible)`).
+  (`max(0, DEF − DEF cible)`). Sous Réduction de DEF, la DEF de la cible est
+  sa DEF réduite (Deborah comprise), réglée ou posée entre les coups de Combo
+  Attack (utilisateur, 2026-11-02).
 
 ## Sacrifice, comptes d'effets et bouton de sort
 - **Calculated Sacrifice/Onimusha, Fuuki** : « Decreases your

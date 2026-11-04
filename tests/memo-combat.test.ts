@@ -68,13 +68,27 @@ const PROPRES: AurasPropres = { fight: 1, determination: 1, enhance: 0, accuracy
 // mêmes entrées et ces mêmes données ; le code courant la rend à l'identique.
 // Relevée de nouveau le 2026-10-29 après l'actualisation SWARFARM (52 monstres
 // ajoutés, compétences rafraîchies), sans changement de code : 12 170 → 12 426
-// contextes.
+// contextes. Relevée de nouveau le 2026-11-02 : les poses entre les coups
+// dérivées de la donnée (`effetsEntreCoupsDuSort`, damage.ts) donnent un
+// scénario au réglage riche de bien plus de sorts (séquences curées, effets
+// posés par un passif à chaque attaque compris). Les corrections de
+// l'utilisateur du même jour changent aussi des notes du réglage par défaut :
+// coups de Crow Hunt, Lightning Storm, Splash et Splash Splash, 3ᵉ coup de
+// Tempest Sword, ignore DEF de Fei et de Katarina sous interrupteur, dégâts
+// bruts de Kiki et d'Amber, lecteurs de Yoga Sunburst, Havoc, Critical Link,
+// Fatal Mortar Bullet, Bullet Assassination et Hairpin. Puis l'écart de DEF de
+// Martial Arts Specialist (Sin feu), pris sur la DEF réduite sous Réduction de
+// DEF (réglage riche : Réduction de DEF posée au coup 1 de Combo Attack). Puis
+// les tirages : le réglage riche pose tous les effets au coup 1, et un tirage
+// n'en garde qu'un (Virus de 570RM, Empathy, Dimensional Memory) ; Blessing of
+// Curse donne un scénario à Here Come the Ghosts! (Jessica). Puis Divine
+// Judgment (Arella) au tirage : une seule de ses branches après le coup 1.
 // ⚠️ Un écart veut dire qu'une note a changé. Voulu (modèle de dégâts, données
 // SWARFARM régénérées) : relever l'empreinte de nouveau (le message d'échec
 // la donne) et le dire dans le commit. Sinon : un défaut du code commun au
 // calcul avec et sans memo.
 const EMPREINTE_ANCIEN_CALCUL = {
-  contextes: 12426, notes: 310650, sha256: 'b20cf0953bb872f25bc79702a7ba31920f77a5e8b0fb95de192fa9822e9968f6',
+  contextes: 12426, notes: 310650, sha256: 'bb84f69df94e686589f909b84dfc6e22fef4117b9aadbc5c9bdb24fac2752790',
 };
 
 // Quatre pièces par sorte, deux principales par sorte : des paires partagent

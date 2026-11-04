@@ -12,6 +12,7 @@ import {
 import RtaFriendView from './RtaFriendView';
 import RtaValidationReport from './RtaValidationReport';
 import Bouton from '../../ui/Bouton';
+import { useTraduction } from '../../hooks/useLangue';
 
 /* --------------------------------------------------------------------------
  * Sous-onglet « Ami » — consulter la prépa de quelqu'un d'autre
@@ -60,6 +61,8 @@ export default function RtaAmiSection({
   onFermer: () => void;
   monsters: Monster[];
 }) {
+  const textes = useTraduction();
+  const a = textes.rtaAmi;
   const [msg, setMsg] = useState<{ text: string; error?: boolean } | null>(null);
   // Rapport de validation : NON éphémère, il y a quelque chose à lire.
   const [report, setReport] = useState<ImportReport | null>(null);
@@ -82,30 +85,25 @@ export default function RtaAmiSection({
   // import de compte (`parseAccountJson` → `mapRtaVueAmi`).
   function lireCompte(data: any) {
     setReport(null); // un export de compte ne produit pas de rapport de validation
-    const res = parseAccountJson(data);
+    const res = parseAccountJson(data, textes);
     if (!res.units || res.units.length === 0) {
       setMsg({
-        text:
-          res.error ??
-          "Cet export de compte ne contient aucun monstre en RTA — son auteur n'a rien runé en arène du monde.",
+        text: res.error ?? a.compteSansRta,
         error: true,
       });
       return;
     }
     const lue = mapRtaVueAmi(res.units, monsterByCom2us, parseAccountWizardName(data));
     if (lue.entries.length === 0) {
-      setMsg({ text: "Aucun monstre de ce compte n'existe dans les données chargées.", error: true });
+      setMsg({ text: a.compteInconnu, error: true });
       return;
     }
     onOuvrir(lue);
-    const auteur = lue.auteur ? ` de ${lue.auteur}` : '';
     setMsg({
       text:
-        `Box RTA${auteur} ouverte · ${lue.entries.length} monstre(s), runes incluses.` +
-        (lue.inconnus.length > 0
-          ? ` ${lue.inconnus.length} monstre(s) absent(s) des données chargées ne sont pas affichés.`
-          : '') +
-        " Ta prépa n'a pas bougé.",
+        a.boxOuverte(lue.auteur, lue.entries.length) +
+        (lue.inconnus.length > 0 ? a.absentsMasques(lue.inconnus.length) : '') +
+        a.prepaIntacte,
     });
   }
 
@@ -120,7 +118,7 @@ export default function RtaAmiSection({
       return;
     }
 
-    const rep = validateRtaImport(text);
+    const rep = validateRtaImport(text, textes);
     setReport(rep);
     if (!rep.snapshot) return; // erreurs bloquantes : rien à afficher
 
@@ -130,29 +128,17 @@ export default function RtaAmiSection({
     // auteur.
     if (lue.inconnus.length > 0) {
       rep.warnings.push(
-        `${lue.inconnus.length} monstre(s) absent(s) des données chargées (id ${lue.inconnus
-          .slice(0, 5)
-          .join(', ')}${lue.inconnus.length > 5 ? '…' : ''}) : non affichés.`
+        a.absents(lue.inconnus.length, `${lue.inconnus.slice(0, 5).join(', ')}${lue.inconnus.length > 5 ? '…' : ''}`)
       );
       setReport({ ...rep });
     }
     if (lue.entries.length === 0) {
-      setMsg({ text: "Aucun monstre de ce fichier n'existe dans les données chargées.", error: true });
+      setMsg({ text: textes.sauvegardeRta.aucunConnu, error: true });
       return;
     }
 
     onOuvrir(lue);
-    const auteur = lue.auteur ? ` de ${lue.auteur}` : '';
-    const contenu = {
-      complet: ', runes incluses',
-      vitesses: ', ordre de tour et sets',
-      ordre: ', ordre de tour seul',
-    } as const;
-    setMsg({
-      text: `Prépa${auteur} ouverte · ${lue.entries.length} monstre(s)${
-        contenu[lue.niveau]
-      }. Ta prépa n'a pas bougé.`,
-    });
+    setMsg({ text: a.prepaOuverte(lue.auteur, lue.entries.length, a.contenu[lue.niveau]) });
   }
 
   // ⚠️ Le bouton est le MÊME qu'une prépa soit ouverte ou non — seul son libellé
@@ -163,8 +149,8 @@ export default function RtaAmiSection({
     <Bouton
       onClick={() => fichier.current?.click()}
       icone={<IconeAmi size={14} />}
-      libelle={vue ? 'Ouvrir une autre prépa' : "Ouvrir la prépa d'un ami"}
-      title="Ouvrir un .json en lecture : une prépa exportée, ou un export SWEX complet dont on ne lira que la box RTA. Ta prépa n'est pas touchée."
+      libelle={vue ? a.ouvrirAutre : a.ouvrir}
+      title={a.ouvrirAide}
     />
   );
 
@@ -208,13 +194,11 @@ export default function RtaAmiSection({
            écran large, où une ligne pleine largeur ferait quinze mots de long. */
         <div className="mt-10 flex flex-col items-center text-center text-ink-dim">
           <IconeAmi size={34} className="mb-3 opacity-70" />
-          <p className="text-base font-semibold text-ink">Aucune prépa consultée</p>
+          <p className="text-base font-semibold text-ink">{a.videTitre}</p>
           <p className="mt-1 max-w-sm text-sm">
-            Ouvre le <b className="text-ink">.json</b> qu'un ami t'a partagé : sa prépa exportée
-            (bouton « Exporter », dans « Ma prépa ») <b className="text-ink">ou son export SWEX
-            complet</b>, dont seule la box RTA est lue. Tu verras son classement, ses vitesses et
-            son ordre de tour. <b className="text-ink">Ta prépa n'est pas touchée</b>, rien n'est
-            comparé à tes monstres et rien n'est conservé.
+            {a.vide1} <b className="text-ink">{a.extension}</b> {a.vide2} <b className="text-ink">{a.vide3}</b>
+            {a.vide4} <b className="text-ink">{a.vide5}</b>
+            {a.vide6}
           </p>
           <div className="mt-4">{bouton}</div>
           {msg && (

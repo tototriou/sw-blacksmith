@@ -19,6 +19,7 @@ import {
 import { ArtifactArchetype, ArtifactDetail, ElementKey } from '../src/types';
 import { readFileSync } from 'node:fs';
 import { egal, ok, titre, ignore, exportReel } from './outils';
+import { fr } from '../src/i18n/fr';
 
 // Artéfact minimal, pour éprouver la formule sans dépendre d'un export.
 const art = (subs: [number, number][], rarity = 5): ArtifactDetail => ({
@@ -206,7 +207,7 @@ export default function testArtefacts() {
     return;
   }
 
-  const { artifacts } = parseAccountInventory(JSON.parse(brut));
+  const { artifacts } = parseAccountInventory(JSON.parse(brut), fr);
   ok(artifacts.length > 0, `inventaire réel lu (${artifacts.length} artéfacts)`);
 
   // Aucun code de substat ne doit manquer à la table : un code non couvert est

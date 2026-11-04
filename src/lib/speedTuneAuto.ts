@@ -67,8 +67,12 @@ export interface EntreeAuto {
   // Ce que l'utilisateur a posé À LA MAIN dans les grilles. ⚠️ **Lu pour le camp
   // d'EN FACE seulement** : l'analyse ÉCRIT les grilles de ton camp, les lui
   // redonner en entrée compterait deux fois ce que les sorts posent. Celles d'en
-  // face, elle n'y touche jamais — et les ignorer déplaçait le tour de l'adverse.
+  // face, seules les cases manuelles sont reprises ; les effets globaux des
+  // sorts sont recalculés, sans rejouer les cases de l’analyse précédente.
   atbMod?: ModParTick;
+  // Cases écrites par une précédente analyse sur un adverse : elles sont
+  // recalculées, sans confondre leur valeur avec une correction manuelle.
+  atbAuto?: ModParTick;
   speedMod?: ModParTick;
 }
 
@@ -77,6 +81,12 @@ export interface DonneesKit {
   kits: Map<number, KitVitesse>;
   sorts: Map<number, SortVitesse[]>;
   passifs: Map<number, PassifVitesse[]>;
+}
+
+export interface ModsAuto {
+  atbMod: ModParTick;
+  speedMod: ModParTick;
+  atbAuto?: ModParTick;
 }
 
 export interface ResultatAuto {
@@ -93,7 +103,7 @@ export interface ResultatAuto {
   // (déjà décalé d'un tick, voir plus bas). L'outil s'en sert pour remplir ses
   // cases : c'est la MÊME source que le verdict, donc les deux ne peuvent pas
   // se contredire.
-  mods: Map<string, { atbMod: ModParTick; speedMod: ModParTick }>;
+  mods: Map<string, ModsAuto>;
   // ⚠️ **Le verdict repose sur une CIBLE que l'app a choisie à ta place.** Au
   // moins un sort retenu ne touche qu'UN allié (`atbAllie` / `buffAllie`) et
   // personne ne lui a désigné de cible : l'analyse retombe alors sur « la barre
@@ -137,7 +147,7 @@ const passifDe = (e: EntreeAuto, d: DonneesKit): PassifVitesse | null => {
 // l'outil, où l'on avait choisi le sort à la main, disait l'inverse.
 function valeurPourLeTune(x: SortVitesse): number {
   const e = x.effet;
-  if (e.atbEquipe) return 6;
+  if (e.atbEquipe || e.atbTous) return 6;
   if (e.buffEquipe) return 5;
   if (x.rejoue) return 4;
   if (e.buffSoi || e.atbSoi) return 3;
@@ -154,8 +164,8 @@ function valeurPourLeTune(x: SortVitesse): number {
 // n'avait alors ni sa barre remplie ni son buff de vitesse.
 function poidsDansLeRang(x: SortVitesse): number {
   const e = x.effet;
-  // Une seule de ces trois cases est remplie : le rang a déjà tranché la cible.
-  const barre = e.atbEquipe ?? e.atbAllie ?? e.atbSoi ?? 0;
+  // La cible du remplissage est déjà départagée par le rang.
+  const barre = e.atbTous ?? e.atbEquipe ?? e.atbAllie ?? e.atbSoi ?? 0;
   // Un buff de vitesse EN PLUS vaut mieux que le même remplissage sans lui.
   const buff = e.buffEquipe ?? e.buffSoi ?? e.buffAllie ?? 0;
   return barre + buff;
@@ -173,7 +183,7 @@ function meilleurSort(liste: SortVitesse[], exclu?: string): SortVitesse | null 
     // défaut déclarait l'équipe speed tune sur un coup de dé. On peut toujours
     // le choisir à la main dans l'ordre des sorts, en connaissance de cause (le
     // menu affiche le taux).
-    if (x.chance != null) continue;
+    if (x.chance != null || x.optionArbre) continue;
     const v = valeurPourLeTune(x);
     if (v === 0) continue;
     const p = poidsDansLeRang(x);
@@ -399,6 +409,14 @@ export function analyseAutomatique(
     if (c != null && c > 0) combats.set(e.id, c);
   }
 
+  // Le gain dépendant des buffs n'entre pas dans la priorité fixée avant eux.
+  // Les gains permanents restent inclus, comme celui de Shumar.
+  const gainApresBuffsDe = (e: EntreeAuto): number => {
+    if (!passifDe(e, donnees)?.gain?.apresBuffs) return 0;
+    const base = combatSpeed(e.monster.stats.speed, e.runeSpeed, e.lead ?? lead, e.swift ?? false);
+    return base == null ? 0 : combats.get(e.id)! - base;
+  };
+
   // L'amplification de buff est une affaire de camp, elle aussi.
   const ampli = ampliCamp(allies, donnees);
   const ampliAdverse = ampliCamp(adverses, donnees);
@@ -428,10 +446,13 @@ export function analyseAutomatique(
         return {
           id: e.id,
           combat: combats.get(e.id)!,
+          gainApresBuffs: gainApresBuffsDe(e),
           camp: 'ennemi' as Camp,
           artefactBuff: (e.artefactBuff ?? 0) + ampliAdverse,
           ampliBuff: ampliAdverse,
-          atbMod: e.atbMod,
+          atbMod: Object.fromEntries(
+            Object.entries(e.atbMod ?? {}).filter(([t, v]) => e.atbAuto?.[Number(t)] !== v)
+          ),
           speedMod: e.speedMod,
         };
       }
@@ -469,6 +490,7 @@ export function analyseAutomatique(
       return {
         id: e.id,
         combat: combats.get(e.id)!,
+        gainApresBuffs: gainApresBuffsDe(e),
         camp: 'allie' as Camp,
         artefactBuff: (e.artefactBuff ?? 0) + ampli,
         ampliBuff: ampli,
@@ -486,6 +508,7 @@ export function analyseAutomatique(
     avecSorts.push({
       id: idReference ?? `ref:${modele.id}`,
       combat: combats.get(modele.id)!,
+      gainApresBuffs: gainApresBuffsDe(modele),
       camp: 'ennemi',
       artefactBuff: modele.artefactBuff ?? 0,
       // Il est en face : il ne reçoit pas l'amplification de l'équipe.
@@ -501,10 +524,13 @@ export function analyseAutomatique(
   // lanceur. C'est exactement ce que fait l'écran — les deux doivent coïncider.
   const pose = simuler(avecSorts, horizon);
   const parId = new Map(pose.lignes.map((l) => [l.id, l]));
+  const automatiques = new Map<string, ModParTick>();
   const final: TuneMonstre[] = avecSorts.map((m) => {
     const l = parId.get(m.id);
-    const atbMod: ModParTick = {};
-    const speedMod: ModParTick = {};
+    const atbMod: ModParTick = { ...m.atbMod };
+    const atbAuto: ModParTick = {};
+    automatiques.set(m.id, atbAuto);
+    const speedMod: ModParTick = { ...m.speedMod };
     if (l) {
       for (const [tick, v] of Object.entries(l.effetAtb)) {
         const t = Number(tick);
@@ -520,13 +546,17 @@ export function analyseAutomatique(
         // mauvais côté.
         const saisi = m.atbMod?.[t] !== undefined;
         const cible = saisi ? t : t + 1;
-        if (v !== 0 && cible <= horizon) atbMod[cible] = v;
+        if (v !== 0 && cible <= horizon && (saisi || m.atbMod?.[cible] === undefined)) {
+          atbMod[cible] = v;
+          if (!saisi) atbAuto[cible] = v;
+        }
       }
       for (const [tick, v] of Object.entries(l.effetSpeed)) if (v !== 0) speedMod[Number(tick)] = v;
     }
     return {
       id: m.id,
       combat: m.combat,
+      gainApresBuffs: m.gainApresBuffs,
       camp: m.camp,
       artefactBuff: m.artefactBuff,
       ampliBuff: m.ampliBuff,
@@ -537,19 +567,25 @@ export function analyseAutomatique(
   });
 
   const verdict = diagnostiquerChaine(final, horizon);
-  // ⚠️ **Aucune grille n'est écrite sur un adverse RÉEL.** L'analyse n'y pose
-  // rien (il ne lance pas son kit) : lui renvoyer une grille vide effacerait ce
-  // que l'utilisateur y a saisi à la main. L'adversaire de RÉFÉRENCE, lui, en
-  // reçoit une — il est là pour être vérifié comme les autres.
+  // Les effets globaux écrivent aussi sur les adverses réels. Leurs cases
+  // manuelles sont conservées ; les cases automatiques sont identifiées pour
+  // être recalculées ou effacées à la prochaine analyse. Sans effet global,
+  // un adverse réel ne reçoit aucune écriture et garde sa grille intacte.
   // ⚠️ La RÉFÉRENCE n'est pas un adverse réel : elle vit dans le camp d'en face
   // mais c'est l'outil qui la pose, et elle doit rester vérifiable comme les
   // autres. Elle garde donc sa grille.
   const reels = new Set(adverses.filter((e) => e.id !== idReference).map((e) => e.id));
-  const mods = new Map(
-    final
-      .filter((m) => !reels.has(m.id))
-      .map((m) => [m.id, { atbMod: m.atbMod ?? {}, speedMod: m.speedMod ?? {} }])
-  );
+  const anciennesCases = new Set(adverses.filter((e) => Object.keys(e.atbAuto ?? {}).length > 0).map((e) => e.id));
+  const mods = new Map<string, ModsAuto>();
+  for (const m of final) {
+    const atbAuto = automatiques.get(m.id) ?? {};
+    if (reels.has(m.id) && Object.keys(atbAuto).length === 0 && !anciennesCases.has(m.id)) continue;
+    mods.set(m.id, {
+      atbMod: m.atbMod ?? {},
+      speedMod: m.speedMod ?? {},
+      ...(reels.has(m.id) ? { atbAuto } : {}),
+    });
+  }
   return {
     mods,
     combats,

@@ -9,6 +9,7 @@ import type { ExclusionSelector, ExclusionSourceData } from '../src/lib/optimize
 import { lireTravail, purgeDonneesConservees, setPersistence } from '../src/hooks/usePersistence';
 import { egal, faussLocalStorage, ok, titre } from './outils';
 import { monterListesOptimizer } from './optimizer-lists-harness';
+import { fr } from '../src/i18n/fr';
 
 const a: ExclusionSelector = { source: 'box', unitKey: 'a' };
 const b: ExclusionSelector = { source: 'box', unitKey: 'b' };
@@ -29,12 +30,12 @@ function installer(brut: string, listes = JSON.stringify(historique)) {
 export function testOptimizerContenuListeJsonEtAncienStockage() {
   titre('Contenu de liste · aller-retour JSON et stockage historique');
   const ancien = JSON.stringify({ memories: [], teams: [{ ...equipe, contenu: 'siege' }] });
-  const lu = lireMembresOptimizer(ancien);
+  const lu = lireMembresOptimizer(ancien, fr);
   egal(lu.teams, [equipe], 'l’équipe historique est relue, contenu retiré');
   egal(lu.rapport, [], 'aucun rejet ajouté au stockage historique valide');
   egal(lu.listContents.size, 0, 'aucun contenu inventé depuis l’équipe');
   lu.listContents = new Map([['l1', 'guilde'], ['l2', 'donjon'], ['l3', 'arene']]);
-  const relu = lireMembresOptimizer(ecrireMembresOptimizer(lu));
+  const relu = lireMembresOptimizer(ecrireMembresOptimizer(lu), fr);
   ok(isDeepStrictEqual(relu.listContents, lu.listContents), 'trois contenus indexés par liste conservés');
   egal(relu.teams, [equipe], 'membres et lead restent entiers');
   installer(ecrireMembresOptimizer(lu), '{');
@@ -46,7 +47,7 @@ export function testOptimizerContenuListeSansContenu() {
   titre('Contenu de liste · absence de contenu et aucun repli personnel');
   const lu = { teams: [equipe], listContents: new Map<string, ContenuListeOptimizer>() };
   const effectif = leadEffectifMembreOptimizer(lu, 'l1', a, 'fire');
-  ok(effectif.type === 'aucun' && effectif.motif.includes('n’est pas défini'), 'contenu absent : motif explicite');
+  ok(effectif.type === 'aucun' && effectif.motif === 'contenuNonDefini', 'contenu absent : motif explicite');
   const personnel = baseCompleteCriteres(undefined);
   personnel.damageSetup.leaderSkill = { stat: 'HP', pct: 33 }; personnel.damageSetup.leaderSpeedPct = 19;
   egal(appliquerCriteres(personnel, effectif).damageSetup.leaderSkill, undefined, 'aucun lead personnel moderne en repli');
@@ -62,7 +63,7 @@ export const verificationsOptimizerContenuListeElements: [string, () => void][] 
     const lu = { teams, listContents: new Map<string, ContenuListeOptimizer>([['l1', contenu], ['l2', 'guilde']]) };
     egal(leadEffectifMembreOptimizer(lu, 'l1', a, 'fire'), { type: 'equipe', lead: { stat: 'Attack Speed', pct: 24 } }, 'élément identique actif');
     const autre = leadEffectifMembreOptimizer(lu, 'l1', a, 'water');
-    ok(autre.type === 'aucun' && autre.motif.includes('élément'), 'autre élément sans effet avec motif');
+    ok(autre.type === 'aucun' && autre.motif === 'autreElement', 'autre élément sans effet avec motif');
     teams.forEach(e => { e.lead = { ...e.lead!, area: 'Guild', element: 'fire' }; });
     egal(leadEffectifMembreOptimizer(lu, 'l1', a, 'fire').type, contenu === 'guilde' ? 'equipe' : 'aucun', 'contenu de la liste du membre lu');
     egal(leadEffectifMembreOptimizer(lu, 'l2', a, 'fire').type, 'equipe', 'même sélecteur dans une autre liste : son contenu propre');
@@ -83,7 +84,7 @@ export function testOptimizerContenuListeRejetsConserves() {
     egal([...lu.listContents], [['l2', 'donjon']], 'inconnu, tableau et doublon écartés');
     egal(lu.rapportStockage.length, 3, 'chaque contenu rejeté est annoncé');
     egal(disque.get(CLE), initial, 'brut intact au chargement');
-    const avant = reverifierStockageOptimizer(lu, compte(), new Set());
+    const avant = reverifierStockageOptimizer(lu, compte(), new Set(), fr);
     ok(avant.stockage === lu, 'revérification identique : même stockage');
     lu.replaceAfterRevalidation(avant.stockage); lu = h.render();
     egal(disque.get(CLE), initial, 'revérification identique : mêmes octets');
@@ -92,28 +93,28 @@ export function testOptimizerContenuListeRejetsConserves() {
     lu.writeMemory({ listId: 'l1', selector: a, com2usId: 101 }, baseCompleteCriteres(undefined), compte()); lu = h.render();
     egal(JSON.parse(disque.get(CLE)!).rejets.listContents, [rejete, opaque, doublon], 'écriture acceptée d’un membre : tous les contenus rejetés restent');
     const data = compte(); data.box = data.box.slice(0, 1);
-    const r = reverifierStockageOptimizer(lu, data, new Set());
+    const r = reverifierStockageOptimizer(lu, data, new Set(), fr);
     egal(r.stockage.teams[0].members, [a, { source: 'unowned', monsterId: '1' }], 'ancienne attente de dissolution remplacée : équipe conservée par rattachement');
     ok(isDeepStrictEqual(r.stockage.listContents, lu.listContents), 'revérification modifiée : contenus inchangés');
     lu.replaceAfterRevalidation(r.stockage); lu = h.render();
-    const relu = lireMembresOptimizer(disque.get(CLE)!);
+    const relu = lireMembresOptimizer(disque.get(CLE)!, fr);
     egal([...relu.listContents], [['l2', 'donjon']], 'contenu valide relu après le remplacement');
     egal(relu.rejets.listContents, [rejete, opaque, doublon], 'rejets relus à part sans perte');
     ok(!relu.listContents.has('l1'), 'contenu inconnu jamais réactivé');
-    const sansValide = lireMembresOptimizer(ecrireMembresOptimizer({ ...relu, listContents: new Map() }));
+    const sansValide = lireMembresOptimizer(ecrireMembresOptimizer({ ...relu, listContents: new Map() }), fr);
     egal(sansValide.listContents.size, 0, 'doublon rejeté jamais réactivé après retrait du valide');
-    const vide = reverifierStockageOptimizer(lu, { ...compte(), box: [] }, new Set());
+    const vide = reverifierStockageOptimizer(lu, { ...compte(), box: [] }, new Set(), fr);
     ok(vide.stockage === lu, 'compte vide : aucune purge de contenu');
   } finally { setPersistence(false); }
   for (const contenu of [null, ['guilde'], { nom: 'guilde' }, 1, 'siege', 'rta']) {
     const entree = { listId: 'l1', contenu };
-    const lu = lireMembresOptimizer(JSON.stringify({ memories: [], teams: [], listContents: [entree] }));
+    const lu = lireMembresOptimizer(JSON.stringify({ memories: [], teams: [], listContents: [entree] }), fr);
     egal(lu.listContents.size, 0, 'contenu non admis sans conversion implicite');
     egal(lu.rejets.listContents, [entree], 'valeur brute conservée');
   }
   const index = { l1: 'guilde' };
-  const lu = lireMembresOptimizer(JSON.stringify({ memories: [], teams: [], listContents: index }));
-  egal(lireMembresOptimizer(ecrireMembresOptimizer(lu)).rejets.listContents, [index], 'index malformé conservé à la relecture');
+  const lu = lireMembresOptimizer(JSON.stringify({ memories: [], teams: [], listContents: index }), fr);
+  egal(lireMembresOptimizer(ecrireMembresOptimizer(lu), fr).rejets.listContents, [index], 'index malformé conservé à la relecture');
 }
 
 export async function testOptimizerContenuListeSuppressionEtSession() {
@@ -129,7 +130,7 @@ export async function testOptimizerContenuListeSuppressionEtSession() {
     lu.deleteList('l1'); lu = h.render();
     egal([...lu.listContents], [['l2', 'arene']], 'supprimer une liste retire seulement son contenu');
     egal(lu.rejets.listContents, [{ listId: 'l2', contenu: 'inconnu' }, { listId: ['l1'], contenu: null }], 'rejets ciblés retirés, autre liste et cible opaque conservées');
-    const relu = lireMembresOptimizer(disque.get(CLE)!);
+    const relu = lireMembresOptimizer(disque.get(CLE)!, fr);
     egal([...relu.listContents], [['l2', 'arene']], 'suppression persistée');
     egal(lireTravail(CLE), disque.get(CLE), 'miroir de session synchronisé');
     await purgeDonneesConservees();
@@ -141,19 +142,19 @@ export async function testOptimizerContenuListeSuppressionEtSession() {
 export function testOptimizerContenuListeImportPreserveEtCollisions() {
   titre('Contenu de liste · import préserve les contenus et réserve les cibles orphelines');
   const stockage = { ...historique, ...lireMembresOptimizer(JSON.stringify({ memories: [], teams: [],
-    listContents: [{ listId: 'orpheline', contenu: 'donjon' }], rejets: { listContents: [{ listId: 'rejete', contenu: 'inconnu' }] } })) };
+    listContents: [{ listId: 'orpheline', contenu: 'donjon' }], rejets: { listContents: [{ listId: 'rejete', contenu: 'inconnu' }] } }), fr) };
   const proposition: ImportOptimizer = { nomListe: 'Import', contenu: 'guilde', membres: [{ selector: a, com2usId: 101, libelle: 'Monstre test', criteres: {} }], equipes: [], ignores: [], messages: [] };
   for (const id of ['orpheline', 'rejete']) {
     const avant = structuredClone(stockage);
-    const r = consommerImportOptimizer(stockage, 'l1', proposition, compte(), id);
+    const r = consommerImportOptimizer(stockage, 'l1', proposition, compte(), id, fr);
     egal(r.activeListId, `${id} (2)`, 'identifiant occupé suffixé');
     egal([...r.stockage.listContents], [['orpheline', 'donjon'], [`${id} (2)`, 'guilde']], 'contenu orphelin conservé et contenu importé ajouté');
     ok(r.stockage.rejets === stockage.rejets, 'rejets intacts');
     ok(isDeepStrictEqual(stockage, avant), 'aucune mutation du stockage initial');
   }
-  const invalide = consommerImportOptimizer(stockage, 'l1', { ...proposition, contenu: 'inconnu' as ContenuListeOptimizer }, compte(), 'nouvelle');
+  const invalide = consommerImportOptimizer(stockage, 'l1', { ...proposition, contenu: 'inconnu' as ContenuListeOptimizer }, compte(), 'nouvelle', fr);
   ok(invalide.stockage === stockage && invalide.rapport.messages.some(m => m.includes('contenu')), 'contenu d’import inconnu refusé explicitement sans mutation');
-  const vide = consommerImportOptimizer(stockage, 'l1', { ...proposition, membres: [] }, compte(), 'nouvelle');
+  const vide = consommerImportOptimizer(stockage, 'l1', { ...proposition, membres: [] }, compte(), 'nouvelle', fr);
   ok(vide.stockage === stockage, 'import vide : aucun contenu ajouté');
 }
 
@@ -168,12 +169,12 @@ export function testOptimizerContenuListeCreationEtModification() {
       const id = lu.createList(contenu, contenu); lu = h.render();
       egal(lu.activeListId, id, 'nouvelle liste active');
       egal(lu.listContents.get(id), contenu, 'contenu choisi stocké dès la création');
-      egal(lireMembresOptimizer(disque.get(CLE)!).listContents.get(id), contenu, 'contenu de création relu sur disque');
+      egal(lireMembresOptimizer(disque.get(CLE)!, fr).listContents.get(id), contenu, 'contenu de création relu sur disque');
     }
     lu.setListContent('l1', 'donjon'); lu = h.render();
     egal(lu.listContents.get('l1'), 'donjon', 'contenu historique défini explicitement');
     lu.setListContent('l1', 'arene'); lu = h.render();
-    egal(lireMembresOptimizer(disque.get(CLE)!).listContents.get('l1'), 'arene', 'modification persistée');
+    egal(lireMembresOptimizer(disque.get(CLE)!, fr).listContents.get('l1'), 'arene', 'modification persistée');
     egal(JSON.stringify({ teams: lu.teams, memories: [...lu.memories], rejets: lu.rejets }), initial, 'équipes, critères personnels et rejets intacts');
     lu.editList('l1', '  Liste éditée  ', 'guilde'); lu = h.render();
     egal(lu.lists.find(l => l.id === 'l1')?.name, 'Liste éditée', 'édition : nom choisi');

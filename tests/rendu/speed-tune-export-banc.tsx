@@ -46,14 +46,14 @@ function Banc() {
   }, []);
   const importerFlottant = avecNavigationImportOptimizer(produire => {
     appels++;
-    return etat.importerEquipe(courantes => {
+    return etat.importerEquipe((courantes, t) => {
       if (refus === 'collision') {
         const uuid = Object.getOwnPropertyDescriptor(crypto, 'randomUUID');
         Object.defineProperty(crypto, 'randomUUID', { configurable: true, value: () => 'import' });
         try { const active = listes.activeListId; listes.createList('Concurrente', 'donjon'); listes.setActiveListId(active); }
         finally { if (uuid) Object.defineProperty(crypto, 'randomUUID', uuid); else delete (crypto as Partial<Crypto>).randomUUID; }
       }
-      return produire(refus === 'vide' ? { ...courantes, monsterById: new Map() } : courantes);
+      return produire(refus === 'vide' ? { ...courantes, monsterById: new Map() } : courantes, t);
     });
   }, () => { location.hash = '#/outils/optimizer'; });
   const exporterEquipe: OptimizerState['importerEquipe'] = produire => {

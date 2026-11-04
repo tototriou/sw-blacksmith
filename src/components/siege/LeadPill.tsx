@@ -1,4 +1,8 @@
-import { ELEMENTS, ElementKey, LeaderSkill } from '../../types';
+import { ElementKey, LeaderSkill } from '../../types';
+import { nomElement, type LexiqueJeu } from '../../i18n/jeu';
+import type { StatKey } from '../../lib/effects';
+import type { Dictionnaire } from '../../i18n/fr';
+import { useTraduction } from '../../hooks/useLangue';
 import ElementIcon from '../ElementIcon';
 
 // Icônes officielles des leader skills (SWARFARM), servies en local depuis
@@ -26,24 +30,35 @@ export function leadIconUrl(ls: LeaderSkill): string | null {
   return `${ICON_BASE}leader_skill_${attr}${scoped ? `_${ls.area}` : ''}.png`;
 }
 
-// Libellés courts des stats de leader skill.
+// La stat d'un leader skill (nom SWARFARM) → la stat du jeu. Le jeu l'écrit
+// comme la stat d'une rune (« VIT », « Tx critiq. ») : son nom vient du
+// lexique, dans la langue affichée — `nomStatLead`.
 //
-// ⚠️ Exporté : la fiche d'un monstre les affiche aussi, et deux tables de
-// libellés auraient divergé — « Attack Speed » y serait devenu « Vitesse » d'un
-// côté et « VIT » de l'autre pour la même donnée.
-export const STAT_LABEL: Record<string, string> = {
-  'Attack Speed': 'VIT',
-  'Attack Power': 'ATQ',
-  HP: 'PV',
-  Defense: 'DEF',
-  'Critical Rate': 'Taux crit',
-  'Critical DMG': 'DMG crit',
-  Accuracy: 'Précision',
-  Resistance: 'Résistance',
+// ⚠️ Exporté : la fiche d'un monstre l'affiche aussi, et deux tables de
+// libellés auraient divergé pour la même donnée.
+const STAT_DU_LEAD: Record<string, StatKey> = {
+  'Attack Speed': 'spd',
+  'Attack Power': 'atk',
+  HP: 'hp',
+  Defense: 'def',
+  'Critical Rate': 'cr',
+  'Critical DMG': 'cd',
+  Accuracy: 'acc',
+  Resistance: 'res',
 };
 
-function elementLabel(el: ElementKey | null): string {
-  return ELEMENTS.find((e) => e.key === el)?.label ?? '—';
+export function nomStatLead(jeu: LexiqueJeu, stat: string | null | undefined): string {
+  const cle = STAT_DU_LEAD[stat ?? ''];
+  return cle ? jeu.stats[cle] : stat ?? '';
+}
+
+function elementLabel(jeu: LexiqueJeu, el: ElementKey | null): string {
+  return el ? nomElement(jeu, el) : '—';
+}
+
+// « (arène) », « (donjon) » : la portée d'un lead qui ne compte pas en siège.
+function portee(ls: LeaderSkill, t: Dictionnaire): string {
+  return ls.area === 'Arena' ? t.lead.arene : ls.area === 'Dungeon' ? t.lead.donjon : '';
 }
 
 // Un lead s'applique-t-il en siège ? C'est une question de PORTÉE, pas de stat :
@@ -56,15 +71,12 @@ export function leadIsActive(ls: LeaderSkill): boolean {
   return ls.area === 'General' || ls.area === 'Guild' || ls.area === 'Element';
 }
 
-// Infobulle commune à la pastille et au badge.
-function leadTitle(ls: LeaderSkill): string {
-  const stat = STAT_LABEL[ls.stat ?? ''] ?? ls.stat ?? '';
-  const scope = ls.area === 'Arena' ? ' (arène)' : ls.area === 'Dungeon' ? ' (donjon)' : '';
+// Infobulle commune à la pastille et au badge, dans la langue de `t`.
+function leadTitle(ls: LeaderSkill, t: Dictionnaire): string {
+  const stat = nomStatLead(t.jeu, ls.stat);
   return leadIsActive(ls)
-    ? `Lead du leader : +${ls.amount}% ${stat}${
-        ls.area === 'Element' ? ` — alliés ${elementLabel(ls.element)} uniquement` : ''
-      }`
-    : `Lead +${ls.amount}% ${stat}${scope} — sans effet en siège`;
+    ? t.lead.actif(ls.amount, stat, ls.area === 'Element' ? elementLabel(t.jeu, ls.element) : null)
+    : t.lead.inactif(ls.amount, stat, portee(ls, t));
 }
 
 // Badge posé SUR le portrait du leader (coin bas-gauche), là où la place manque
@@ -72,6 +84,7 @@ function leadTitle(ls: LeaderSkill): string {
 // jeu marque déjà le leader ET dit quel est son lead. Le montant reste dans
 // l'infobulle. Voir docs/02-app/siege/.
 export function LeadBadge({ ls, size = 22 }: { ls: LeaderSkill; size?: number }) {
+  const textes = useTraduction();
   const icon = leadIconUrl(ls);
   if (!icon) return null;
   return (
@@ -79,7 +92,7 @@ export function LeadBadge({ ls, size = 22 }: { ls: LeaderSkill; size?: number })
       // Pastille d'un portrait : repère pour le banc (voir MonsterAvatar).
       data-pastille="lead"
       className="absolute -bottom-1.5 -left-1.5 inline-flex items-center"
-      title={leadTitle(ls)}
+      title={leadTitle(ls, textes)}
     >
       <img
         src={icon}
@@ -136,13 +149,14 @@ export default function LeadPill({
   /** Contexte autre que le siège : l'appelant donne l'activité propre à sa liste. */
   titre?: string;
 }) {
-  const scope = ls.area === 'Arena' ? ' (arène)' : ls.area === 'Dungeon' ? ' (donjon)' : '';
+  const textes = useTraduction();
+  const scope = portee(ls, textes);
   const icon = leadIconUrl(ls);
   const lg = size === 'lg';
 
   return (
     <span
-      title={titre ?? leadTitle(ls)}
+      title={titre ?? leadTitle(ls, textes)}
       className={`items-center gap-1 font-bold leading-none
         ${pleineLargeur ? 'flex w-full justify-center' : 'inline-flex'}
         ${lg ? 'rounded-xl py-1.5 pl-1.5 pr-3 text-base' : 'rounded-full py-0.5 pl-0.5 pr-2 text-xs'}

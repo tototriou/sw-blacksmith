@@ -58,6 +58,7 @@ import {
 } from '../src/lib/damage';
 import { buildOptimizerRecipe, parseOptimizerRecipe } from '../src/lib/optimizerRecipe';
 import { clesProseDejaRendue, renduStatsCombat } from '../src/lib/proseStatsCombat';
+import { fr } from '../src/i18n/fr';
 
 const racine = resolve(new URL('..', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1'));
 const DOSSIER_SORTS = resolve(racine, 'public/data/skills');
@@ -169,7 +170,7 @@ export function testMecanismesSequenceDeCoups() {
     egal(cibleDegatsRetenue(p, secondaire(normal, id)), 'secondaire', `${nom} : clé « secondaire », la capacité vient du profil (un groupe de zone)`);
     ok(proche(calcul(p, normal).total, ATQ * tout * SKILLUP * df), `${nom}, cible visée : ${(ATQ * tout * SKILLUP * df).toFixed(2)} = 2 000 × ${tout.toFixed(1)} × 1,30 × FacteurDéf`);
     ok(proche(calcul(p, secondaire(normal, id)).total, ATQ * zone * SKILLUP * df), `${nom}, autres ennemis : ${(ATQ * zone * SKILLUP * df).toFixed(2)} = 2 000 × ${zone.toFixed(1)} × 1,30 × FacteurDéf (les seuls groupes de zone)`);
-    egal(resumeSequenceDeCoups(p.sequenceDeCoups!), groupes.map((g) => `${g.coups} coup${g.coups > 1 ? 's' : ''} · ${g.zone ? 'Zone' : 'Cible unique'}`).join(', puis '),
+    egal(resumeSequenceDeCoups(p.sequenceDeCoups!, fr), groupes.map((g) => `${g.coups} coup${g.coups > 1 ? 's' : ''} · ${g.zone ? 'Zone' : 'Cible unique'}`).join(', puis '),
       `${nom} : le résumé dit la séquence entière, dans l’ordre`);
 
     titre(`Séquence de coups — fixture ${nom} : 224 selon la portée, 400 sur tous les coups, 411 selon le rang du tour`);
@@ -415,14 +416,14 @@ export function testMecanismesIgnoreDefDepuisUnCoup() {
 
       egal([p.hits, p.ignoreDef, p.ignoreDefAPartirDuCoup === f.regle], [f.regle.coups, false, true], `${f.id} : ${f.regle.coups} coups, plus d’ignore DEF sur TOUS les coups malgré l’effet « Ignore DEF », règle portée par le profil`);
       egal(resolvedPremierCoupIgnoreDef(p, SETUP), f.defaut, `${f.id} : défaut sans choix = ${f.defaut === null ? 'aucun ignore DEF' : `${f.defaut}ᵉ coup seul`}`);
-      egal((cransIgnoreDefAPartirDuCoup(p) ?? []).map((c) => c.rang), f.crans, `${f.id} : crans de l’écran dérivés de la règle`);
-      egal((cransIgnoreDefAPartirDuCoup(p) ?? []).map((c) => c.libelle),
+      egal((cransIgnoreDefAPartirDuCoup(p, fr) ?? []).map((c) => c.rang), f.crans, `${f.id} : crans de l’écran dérivés de la règle`);
+      egal((cransIgnoreDefAPartirDuCoup(p, fr) ?? []).map((c) => c.libelle),
         f.id === ID_C ? ['Dès le 2ᵉ coup', 'Dès le 3ᵉ coup', 'Dès le 4ᵉ coup', '5ᵉ coup seul'] : ['Aucun', 'Dès le 3ᵉ coup', 'Dès le 4ᵉ coup'],
         `${f.id} : libellés dérivés de la règle`);
       for (const rang of f.crans) {
         const recu = computeSkillDamage(p, BUILD, avec(rang), AUCUNE_AURA_PROPRE);
         ok(proche(recu, attendu(rang)), `${f.id} rang ${rang ?? 'aucun'} : ${recu.toFixed(2)} = ${attendu(rang).toFixed(2)} attendus coup par coup`);
-        egal(cranIgnoreDefRetenu(p, avec(rang))?.rang, rang, `${f.id} rang ${rang ?? 'aucun'} : le cran montré est celui du calcul`);
+        egal(cranIgnoreDefRetenu(p, avec(rang), fr)?.rang, rang, `${f.id} rang ${rang ?? 'aucun'} : le cran montré est celui du calcul`);
       }
       ok(proche(computeSkillDamage(p, BUILD, SETUP, AUCUNE_AURA_PROPRE), attendu(f.defaut)), `${f.id} : le défaut vaut son cran (${attendu(f.defaut).toFixed(2)})`);
       // Valeurs non permises : retombée sur le défaut, jamais un coup 1 qui ignore.
@@ -431,10 +432,10 @@ export function testMecanismesIgnoreDefDepuisUnCoup() {
       }
       if (f.id === ID_E) {
         egal(resolvedPremierCoupIgnoreDef(p, avec(2)), null, `${f.id} : le rang 2 n’est pas permis (rangs 3 et 4 seulement), retombe sur « aucun »`);
-        egal(resumeIgnoreDefRetenu(p, avec(null)), 'Ignore la DEF : aucun', `${f.id} : phrase « aucun »`);
+        egal(resumeIgnoreDefRetenu(p, avec(null), fr), 'Ignore la DEF : aucun', `${f.id} : phrase « aucun »`);
       } else {
-        egal(resumeIgnoreDefRetenu(p, avec(3)), 'Ignore la DEF : dès le 3ᵉ coup', `${f.id} : phrase « dès le 3ᵉ coup »`);
-        egal(resumeIgnoreDefRetenu(p, SETUP), 'Ignore la DEF : 5ᵉ coup seul', `${f.id} : phrase du défaut`);
+        egal(resumeIgnoreDefRetenu(p, avec(3), fr), 'Ignore la DEF : dès le 3ᵉ coup', `${f.id} : phrase « dès le 3ᵉ coup »`);
+        egal(resumeIgnoreDefRetenu(p, SETUP, fr), 'Ignore la DEF : 5ᵉ coup seul', `${f.id} : phrase du défaut`);
       }
       // 411 : le coup 1 seulement, qui n'ignore jamais ; les PV s'enchaînent d'un tronçon à l'autre.
       const critique: DamageSetup = { ...avec(f.crans.find((r) => r !== null) ?? null), critMode: 'crit' };
@@ -455,7 +456,7 @@ export function testMecanismesIgnoreDefDepuisUnCoup() {
       excludeUsedRunes: false, excludeUsedScope: 'box', excludedSelectors: [],
       ignoreArtifacts: true, artifactMainByKind: {},
     });
-    const lire = (champ: unknown) => parseOptimizerRecipe(JSON.stringify({ ...base, damageSetup: { ...base.damageSetup, premierCoupIgnoreDefParSort: champ } }));
+    const lire = (champ: unknown) => parseOptimizerRecipe(JSON.stringify({ ...base, damageSetup: { ...base.damageSetup, premierCoupIgnoreDefParSort: champ } }), fr);
     for (const f of FIXTURES_IGNORE) {
       for (const rang of f.crans) {
         egal(lire({ [f.id]: rang }).recipe?.damageSetup.premierCoupIgnoreDefParSort, { [f.id]: rang }, `recette : ${f.id} cran ${rang ?? 'aucun'} accepté, transporté tel quel`);
@@ -536,9 +537,12 @@ export function testMecanismesPassifMasqueEtStatsDeCombat() {
   // 15716/15717/15720 : avant leurs sorts de dégâts) et les passifs hors tour
   // choisissables seuls (Psamathe 11911, Hollyberry Cookie 16211, Manon 16711),
   // 2026-10-17. L'attaque en Menace accompagne tous les sorts de dégâts de
-  // son monstre : jamais masquée en pratique.
-  const MASQUABLES = [3213, 11016, 11911, 15716, 15717, 15720, 16211, 16711, 23517];
-  const MASQUES = ['11016', '11911', '16211', '16711', '23517', '3213'];
+  // son monstre : jamais masquée en pratique. Le S1 enchaîné de RYU
+  // ([Hadoken] 13902, 13903, 13905) et de Striker ([Mach Punch] 14402, 14403,
+  // 14405) ne suit que Shoryuken et Iron Uppercut (attaques appelées,
+  // utilisateur, 2026-11-02) : masqué après les autres sorts.
+  const MASQUABLES = [3213, 11016, 11911, 13902, 13903, 13905, 14402, 14403, 14405, 15716, 15717, 15720, 16211, 16711, 23517];
+  const MASQUES = ['11016', '11911', '13902', '13903', '13905', '14402', '14403', '14405', '16211', '16711', '23517', '3213'];
   egal([...masquables].sort((a, b) => a - b), MASQUABLES, 'corpus : Tempest et les attaques à auxiliaire sont les seuls masquables par construction (slots déclencheurs, choix comme sort)');
   egal([...masques].sort(), MASQUES, 'corpus : sur tous les sorts proposés par toutes les formes, seuls ceux-là sont effectivement masqués');
   // Flash Step (19014) et Turning Slash (19414) partagent

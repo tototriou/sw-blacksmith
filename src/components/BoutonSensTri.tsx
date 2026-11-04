@@ -1,4 +1,5 @@
 import { ArrowDownWideNarrow, ArrowUpNarrowWide } from 'lucide-react';
+import { useTraduction } from '../hooks/useLangue';
 import { SensTri } from '../lib/tri';
 import BoutonIcone from '../ui/BoutonIcone';
 
@@ -23,11 +24,12 @@ export default function BoutonSensTri({
   onChange: (sens: SensTri) => void;
   className?: string;
 }) {
+  const c = useTraduction().controles;
   const desc = sens === 'desc';
   return (
     <BoutonIcone
       onClick={() => onChange(desc ? 'asc' : 'desc')}
-      libelle={desc ? 'Trier du plus petit au plus grand' : 'Trier du plus grand au plus petit'}
+      libelle={desc ? c.trierCroissant : c.trierDecroissant}
       icone={desc ? <ArrowDownWideNarrow size={15} /> : <ArrowUpNarrowWide size={15} />}
       // Cadré : il vit à côté d'une liste déroulante, donc au milieu de
       // contrôles cadrés. Nu, il se lisait comme une icône décorative.

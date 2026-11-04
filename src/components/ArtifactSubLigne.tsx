@@ -1,6 +1,7 @@
 import { RotateCw } from 'lucide-react';
 import { EffectLine } from '../types';
 import { splitArtifactSub } from '../lib/effects';
+import { useTraduction } from '../hooks/useLangue';
 
 // Une sous-propriété d'artéfact, rendue comme dans le jeu : le nombre de procs
 // à gauche, le libellé avec sa VALEUR EN GRAS, et le marqueur des propriétés
@@ -26,8 +27,10 @@ export default function ArtifactSubLigne({
    */
   vise?: boolean;
 }) {
+  const textes = useTraduction();
+  const jeu = textes.jeu;
   const procs = sub.rolls ?? 0;
-  const { avant, valeur, apres } = splitArtifactSub(sub);
+  const { avant, valeur, apres } = splitArtifactSub(sub, jeu);
   return (
     <div
       // ⚠️ Marges négatives + `pl-[2px]`, et AUCUNE marge verticale : le liseré
@@ -60,7 +63,7 @@ export default function ArtifactSubLigne({
       </span>
       {/* Substat MODIFIÉ (converti dans le jeu). */}
       {sub.enchant && (
-        <span className="mt-0.5 flex-none" title="Propriété modifiée">
+        <span className="mt-0.5 flex-none" title={textes.pieces.proprieteModifiee}>
           <RotateCw size={9} className="text-orange-400" />
         </span>
       )}

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { BoutonIcone } from '../../ui';
+import { useTraduction } from '../../hooks/useLangue';
 
 // Pagination compacte, partagée par TOUTES les listes paginées (runes,
 // artéfacts, optimisation) pour borner le DOM — une seule page rendue à la fois.
@@ -23,6 +24,7 @@ export default function Pager({
   // Saisie en cours, séparée de la page réelle : on doit pouvoir vider le champ
   // ou taper « 12 » sans sauter à la page 1 au premier chiffre.
   const [draft, setDraft] = useState(String(page + 1));
+  const t = useTraduction().pagination;
 
   // Resynchronisation quand la page change ailleurs (filtre, tri, flèches).
   useEffect(() => setDraft(String(page + 1)), [page]);
@@ -58,7 +60,7 @@ export default function Pager({
         cadre
         zoneEtendue
         icone={<ChevronLeft size={15} />}
-        libelle="Page précédente"
+        libelle={t.precedente}
       />
 
       <input
@@ -74,8 +76,8 @@ export default function Pager({
           if (e.key === 'Escape') setDraft(String(page + 1));
         }}
         onBlur={commit}
-        aria-label="Aller à la page"
-        title="Aller à la page"
+        aria-label={t.allerA}
+        title={t.allerA}
         className="w-9 h-7 rounded-lg border border-border bg-panel text-center tabular-nums text-ink
                    outline-none transition focus:border-accent"
       />
@@ -87,7 +89,7 @@ export default function Pager({
         cadre
         zoneEtendue
         icone={<ChevronRight size={15} />}
-        libelle="Page suivante"
+        libelle={t.suivante}
       />
     </div>
   );

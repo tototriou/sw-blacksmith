@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 import { GripVertical, X } from 'lucide-react';
 import { Monster, RtaEntry, sectionLabel } from '../../types';
+import { useTraduction } from '../../hooks/useLangue';
 import MonsterAvatar from '../MonsterAvatar';
 import SetsPortes from '../SetsPortes';
 import CategoryRing from './CategoryRing';
@@ -43,6 +44,7 @@ export default function RtaCard({
   showSpeed = true,
   markDesync = true,
 }: Props) {
+  const textes = useTraduction();
   const cardRef = useRef<HTMLDivElement>(null);
   // ⚠️ Le retrait se DÉFAIT au lieu de se confirmer : la
   // croix retire tout de suite, et la page annonce « … retiré de ta prépa ·
@@ -112,8 +114,8 @@ export default function RtaCard({
         onDragStart={handleDragStart}
         onDragEnd={onDragEnd}
         className="text-ink-dim hoverable:text-ink coarse:hidden"
-        title="Glisser vers une section"
-        aria-label="Déplacer"
+        title={textes.carteRta.glisser}
+        aria-label={textes.commun.deplacer}
       >
         <GripVertical size={14} />
       </ZoneCliquable>
@@ -129,7 +131,7 @@ export default function RtaCard({
         classeTaille="w-[50px] h-[50px] compact:w-[42px] compact:h-[42px]"
         className={hasGear ? 'cursor-pointer' : ''}
         onClick={toggle}
-        titre={hasGear ? 'Voir le détail des runes' : undefined}
+        titre={hasGear ? textes.carteRta.voirRunes : undefined}
         classeInitiales="text-sm"
         tailleElement={16}
       />
@@ -141,7 +143,7 @@ export default function RtaCard({
           // `gap-1` partout, la somme des écarts débordait de la carte.
           className={`flex items-center gap-1 compact:gap-0.5 ${hasGear ? 'cursor-pointer' : ''}`}
           onClick={toggle}
-          title={hasGear ? "Voir le détail de l'équipement" : undefined}
+          title={hasGear ? textes.carteRta.voirEquipement : undefined}
         >
           {/* Nom en orange quand les runes ne suivent plus la vitesse demandée :
               on repère les monstres à re-runer sans ouvrir chaque fiche.
@@ -169,7 +171,7 @@ export default function RtaCard({
           </span>
           {showSpeed && (
             <>
-              <img src={SPD_ICON} alt="SPD" width={15} height={15} className="flex-none" />
+              <img src={SPD_ICON} alt={textes.jeu.stats.spd} width={15} height={15} className="flex-none" />
               <span
                 className={`font-mono text-sm font-black leading-none compact:flex-1 max-lg:flex-none max-lg:text-base ${
                   desync && markDesync ? 'text-warn' : 'text-ink'
@@ -199,7 +201,7 @@ export default function RtaCard({
         <Selecteur
           value={entry.section}
           onChange={(e) => onMove(String(monster.id), e.target.value)}
-          title="Déplacer vers une section"
+          title={textes.carteRta.deplacerVers}
           taille="dense"
           // ⚠️ La carte est déjà en `panel2` : le sélecteur y prend `panel` pour
           // s'en détacher. Voir la prop `surface`.
@@ -210,7 +212,7 @@ export default function RtaCard({
         >
           {sectionKeys.map((k) => (
             <option key={k} value={k}>
-              {sectionLabel(k)}
+              {sectionLabel(k, textes)}
             </option>
           ))}
         </Selecteur>
@@ -228,7 +230,7 @@ export default function RtaCard({
           rien à rater. */}
       <BoutonIcone
         onClick={() => onRemove(String(monster.id))}
-        libelle={`Retirer ${monster.name}`}
+        libelle={textes.carteRta.retirer(monster.name)}
         taille="serre"
         ton="danger"
         // ⚠️ `fond="plein"` et non un `bg-` dans le `className` : c'est le fond

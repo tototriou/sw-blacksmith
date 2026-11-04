@@ -32,6 +32,7 @@ import { buildOptimizerRecipe, parseOptimizerRecipe, type OptimizerRecipe } from
 import { chargerRecette } from '../scripts/lib/chargerRecette';
 import { buildRealDamageContext } from '../scripts/lib/realDamageCli';
 import { loadMonsterSkills } from '../scripts/lib/skillsData';
+import { fr } from '../src/i18n/fr';
 
 const racine = resolve(new URL('..', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1'));
 const lireSource = (fichier: string) => readFileSync(resolve(racine, fichier), 'utf8').replace(/\r\n/g, '\n');
@@ -60,7 +61,7 @@ function recette(setup: DamageSetup, monsterName = 'Cassie', monsterCom2usId = C
   });
 }
 
-const lire = (valeur: unknown) => parseOptimizerRecipe(JSON.stringify(valeur));
+const lire = (valeur: unknown) => parseOptimizerRecipe(JSON.stringify(valeur), fr);
 const refuse = (resultat: ReturnType<typeof lire>, chemin: string) =>
   resultat.recipe === null && !!resultat.error?.includes(`${chemin} `);
 
@@ -206,10 +207,10 @@ export function testAttaquesConjointesRecetteCli() {
   egal(familleSans && familleSans.profile.skillCom2usId, TRIPLE_STRIKE, 'CLI, famille : le contexte calcule Triple Strike');
   egal(familleSans && contexteAttaqueConjointe(familleSans.profile, familleSans.setup, 'sort-choisi'), 'propre',
     'fige une décision de l’utilisateur (2026-10-16) : CLI, famille, recette sans le champ : conjoint (allumé par défaut)');
-  egal(familleSans && mentionAttaqueConjointe(familleSans.profile, familleSans.setup), 'attaque conjointe (un monstre de l’autre famille au combat)',
+  egal(familleSans && mentionAttaqueConjointe(familleSans.profile, familleSans.setup, fr), 'attaque conjointe (un monstre de l’autre famille au combat)',
     'CLI, famille, recette sans le champ : la ligne du sort dit l’attaque conjointe');
   egal(familleEteinte && contexteAttaqueConjointe(triple, familleEteinte.setup, 'sort-choisi'), null, 'CLI, famille éteinte : non conjoint');
-  egal(familleEteinte && mentionAttaqueConjointe(triple, familleEteinte.setup), null, 'CLI, famille éteinte : la ligne du sort n’en dit rien');
+  egal(familleEteinte && mentionAttaqueConjointe(triple, familleEteinte.setup, fr), null, 'CLI, famille éteinte : la ligne du sort n’en dit rien');
 
   // S1 d'une famille pendant le tour d'un allié, au CLI : le contexte du sort
   // le range hors du tour du monstre, et la ligne du sort le dit.
@@ -218,7 +219,7 @@ export function testAttaquesConjointesRecetteCli() {
   egal(s1TourAllie && s1TourAllie.profile.skillCom2usId, RETURNING_BOOMERANG, 'CLI, S1 de famille : le contexte calcule Returning Boomerang');
   egal(s1TourAllie && contexteAttaqueConjointe(s1TourAllie.profile, s1TourAllie.setup, 'sort-choisi'), 'appelee-par-allie',
     'fige une décision de l’utilisateur (2026-10-16) : CLI, S1 de famille, recette pendant le tour d’un allié : appelé par un allié');
-  egal(s1TourAllie && mentionAttaqueConjointe(s1TourAllie.profile, s1TourAllie.setup), 'attaque conjointe (un monstre de l’autre famille au combat, pendant le tour d’un allié)',
+  egal(s1TourAllie && mentionAttaqueConjointe(s1TourAllie.profile, s1TourAllie.setup, fr), 'attaque conjointe (un monstre de l’autre famille au combat, pendant le tour d’un allié)',
     'CLI, S1 de famille pendant le tour d’un allié : la ligne du sort le dit');
 
   // Le vrai `chargerRecette`, sur l'export miniature dont l'unité 101 devient
@@ -247,7 +248,7 @@ export function testAttaquesConjointesRecetteCli() {
   // La ligne du sort : affichée quand le réglage agit, par la porte, jamais
   // par une seconde expression de la règle.
   const cli = sansCommentaires(lireSource('scripts/optimizer-search.ts'));
-  ok(cli.includes('const mentionConjointe = mentionAttaqueConjointe(profile, s);') && cli.includes('${mentionConjointe ? ` — ${mentionConjointe}` : \'\'}'),
+  ok(cli.includes('const mentionConjointe = mentionAttaqueConjointe(profile, s, fr);') && cli.includes('${mentionConjointe ? ` — ${mentionConjointe}` : \'\'}'),
     'ligne du CLI : « attaque conjointe » affiché par la porte (`mentionAttaqueConjointe`, testée dans degats-attaques-conjointes), défaut des familles compris');
   ok(!/attaqueConjointe/.test(cli), 'ligne du CLI : le champ n’est jamais lu directement, seulement par la porte');
   ok(!/pendantTourAllie/.test(cli), 'ligne du CLI : la seconde vignette non plus, seulement par la porte');

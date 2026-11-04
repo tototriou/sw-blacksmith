@@ -44,16 +44,23 @@ export function normalise(s: string): string {
     .trim();
 }
 
-// Le nom affiché d'un monstre référencé par `com2usId` : celui du bestiaire s'il
-// est chargé, sinon le nom figé au moment du partage (repli déjà utilisé partout
-// ailleurs pour les monstres absents des données).
-function nomDe(
+// Les noms sous lesquels on cherche un monstre référencé par `com2usId`, déjà
+// normalisés : celui du bestiaire s'il est chargé, sinon le nom figé au moment
+// du partage (repli déjà utilisé partout ailleurs pour les monstres absents des
+// données).
+//
+// ⚠️ **Et celui de son jumeau de collaboration** : Satoru Gojo et Werner sont le
+// même monstre, et chercher « Werner » doit trouver le deck noté Gojo — celui
+// qui a recruté l'un ne connaît pas forcément le nom de l'autre.
+function nomsDe(
   com2usId: number | null,
   fallback: string,
   monsterByCom2us: Map<number, Monster>
-): string {
-  if (com2usId == null) return fallback;
-  return monsterByCom2us.get(com2usId)?.name ?? fallback;
+): string[] {
+  if (com2usId == null) return [''];
+  const fiche = monsterByCom2us.get(com2usId);
+  const jumeau = fiche?.jumeauCollab != null ? monsterByCom2us.get(fiche.jumeauCollab) : undefined;
+  return [fiche?.name ?? fallback, ...(jumeau ? [jumeau.name] : [])].map(normalise);
 }
 
 // Toutes les recherches sont-elles satisfaites par cette composition, et à
@@ -66,12 +73,12 @@ function nomDe(
 //
 // Renvoie les positions occupées, ou `null` si un seul terme n'est pas trouvé.
 function positionsSiToutes(
-  noms: string[], // noms des monstres de la composition, dans l'ordre des positions
+  noms: string[][], // noms de chaque monstre de la composition, dans l'ordre des positions
   termes: string[]
 ): number[] | null {
   const positions = new Set<number>();
   for (const t of termes) {
-    const i = noms.findIndex((n, k) => n.includes(t) && !positions.has(k));
+    const i = noms.findIndex((n, k) => n.some((x) => x.includes(t)) && !positions.has(k));
     // ⚠️ Une position déjà prise ne compte pas deux fois : chercher deux fois le
     // même nom exigerait deux monstres, or une composition n'en a que trois.
     // Sans ça, « chloe chloe » passerait sur un deck avec une seule Chloé.
@@ -104,17 +111,13 @@ function chercheDansDeck(
   const dansOffense = mode !== 'defense';
   const dansDefense = mode !== 'offense';
 
-  const nomsSlots = deck.slots.map((sl) =>
-    sl.com2usId == null ? '' : normalise(nomDe(sl.com2usId, sl.name, monsterByCom2us))
-  );
+  const nomsSlots = deck.slots.map((sl) => nomsDe(sl.com2usId, sl.name, monsterByCom2us));
   const slots = dansOffense ? positionsSiToutes(nomsSlots, termes) ?? [] : [];
 
   const counters: number[] = [];
   if (dansDefense) {
     deck.counters.forEach((c, i) => {
-      const noms = c.monsters.map((m) =>
-        m.com2usId == null ? '' : normalise(nomDe(m.com2usId, m.name, monsterByCom2us))
-      );
+      const noms = c.monsters.map((m) => nomsDe(m.com2usId, m.name, monsterByCom2us));
       if (positionsSiToutes(noms, termes)) counters.push(i);
     });
   }

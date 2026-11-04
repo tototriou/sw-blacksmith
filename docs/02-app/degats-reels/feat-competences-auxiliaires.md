@@ -143,6 +143,12 @@ sort ».
 l'attaque en plus ; un relevé de la répétition d'Exploding Hands sur son
 premier coup tranche (1,00 → oui).
 
+⚠️ **Non compté** : l'auxiliaire d'Exploding Hands inflige en plus « 25% of
+the target's remaining HP » à une cible sous incapacité, ce qu'elle est
+toujours quand l'attaque en plus a lieu. Ce surplus n'est pas dans le total :
+Exploding Hands porte « Calcul partiel »
+([feat-formules-et-combat.md](feat-formules-et-combat.md#calcul-partiel--létiquette-par-identifiant)).
+
 ## Les passifs qui frappent hors du tour, choisis seuls
 
 Trois passifs n'ont de formule que par leur auxiliaire et frappent hors du

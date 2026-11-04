@@ -1,7 +1,9 @@
 import IconeInterdite from '../../IconeInterdite';
 import GameIcon from '../../GameIcon';
+import { useTraduction } from '../../../hooks/useLangue';
 
 export default function TitreExclusionRunes() {
+  const c = useTraduction().optimizer.criteres;
   return (
     <>
       {/* Icône « Runes » de Mon compte (même GameIcon que le menu),
@@ -11,7 +13,7 @@ export default function TitreExclusionRunes() {
       <IconeInterdite taille={22}>
         <GameIcon name="rune" size={13} />
       </IconeInterdite>
-      <p className="text-[13.5px] font-bold text-ink">Exclusion de runes</p>
+      <p className="text-[13.5px] font-bold text-ink">{c.exclusionRunes}</p>
     </>
   );
 }

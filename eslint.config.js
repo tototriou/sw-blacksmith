@@ -7,6 +7,15 @@ import js from '@eslint/js';
 import globals from 'globals';
 import reactHooks from 'eslint-plugin-react-hooks';
 import tseslint from 'typescript-eslint';
+import { pluginSwblacksmith } from './scripts/lib/regleTexteEnDur.mjs';
+
+// La règle `swblacksmith/texte-en-dur` couvre tout src/ : un texte affiché
+// vient du dictionnaire (src/i18n/). Hors de la règle, deux zones seulement :
+// src/i18n/ lui-même (les dictionnaires et les articles SONT le texte d'une
+// langue), et la vue de développement des gabarits de l'Optimizer, restée en
+// français par décision (docs/02-app/transverse/feat-langues.md).
+const FICHIERS_TRADUITS = ['src/**/*.{ts,tsx}'];
+const HORS_TRADUCTION = ['src/i18n/**', 'src/components/outils/optimizer/gabarits/**'];
 
 export default tseslint.config(
   {
@@ -84,6 +93,7 @@ export default tseslint.config(
     files: [
       'src/hooks/usePersistence.ts',
       'src/hooks/useTheme.ts',
+      'src/hooks/useLangue.ts',
       'src/hooks/useOvercapDisplay.ts',
       'src/hooks/useRuneMetric.ts',
       'src/hooks/useAdversaireReference.ts',
@@ -91,6 +101,12 @@ export default tseslint.config(
       'src/hooks/useFormeResultats.ts',
     ],
     rules: { 'no-restricted-properties': 'off' },
+  },
+  {
+    files: FICHIERS_TRADUITS,
+    ignores: HORS_TRADUCTION,
+    plugins: { swblacksmith: pluginSwblacksmith },
+    rules: { 'swblacksmith/texte-en-dur': 'error' },
   },
   {
     files: ['bureau/**/*.ts', 'scripts/**/*.{ts,mjs,js}', 'tests/**/*.{ts,tsx,mjs}', '.claude/**/*.mjs', '*.{js,mjs,ts}'],

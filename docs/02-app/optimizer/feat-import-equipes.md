@@ -274,6 +274,10 @@ par slot distinct. Quand le sélecteur importé diffère de celui jugé par la
 confrontation, y compris si elle retenait une défense, le rapport le dit.
 `unowned` ne sert que si l’espèce est absente de toutes les sources ; un
 sélecteur non possédé déjà pris ne se réutilise pas non plus.
+Une collaboration et sa version SW (`jumeauCollab`) sont la même espèce, comme
+pour la confrontation : un Werner possédé sert le Satoru Gojo du deck, dans
+l’offense retenue comme au repli, et le membre prend l’identité du monstre
+possédé. `unowned` ne sert que si aucune des deux faces n’est possédée.
 Une espèce possédée sans équipement résolvable est ignorée, jamais déclarée
 non possédée ; des copies épuisées sont ignorées avec raison. Un slot existant
 mais sans équipement résolvable du deck retenu n’est pas remplacé par la Box.

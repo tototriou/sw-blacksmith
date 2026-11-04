@@ -10,6 +10,7 @@ import { useSiegeRecos } from '../../src/hooks/useSiegeRecos';
 import type { Reco, RecoPayload } from '../../src/types';
 import { egal, faussLocalStorage, ok, titre } from '../outils';
 import { boutons, rendre, texteVisible } from './outils-rendu';
+import { fr } from '../../src/i18n/fr';
 
 const existante: Reco = { id: 'r1', origin: 'imported', name: 'Mes offs', author: 'A', note: '', decks: [] };
 const entrante: RecoPayload = { name: 'Offs — 06/11/2026', author: 'A', note: '', decks: [] };
@@ -17,8 +18,8 @@ const entrante: RecoPayload = { name: 'Offs — 06/11/2026', author: 'A', note: 
 export function testRenduRecoFusionChoix() {
   titre('rendu · Siège · Recommandations — choix « fusionner » ou « ajouter à part » à l\'import');
   const paires = [{ entrante, existante }];
-  egal(titreChoixFusion(paires), 'Ce fichier complète une de tes recommandations', 'titre, une recommandation');
-  egal(titreChoixFusion([...paires, ...paires]), 'Ce fichier complète tes recommandations', 'titre, plusieurs');
+  egal(titreChoixFusion(paires, fr), 'Ce fichier complète une de tes recommandations', 'titre, une recommandation');
+  egal(titreChoixFusion([...paires, ...paires], fr), 'Ce fichier complète tes recommandations', 'titre, plusieurs');
 
   const sous = texteVisible(rendre(<SousTitreFusion paires={paires} />));
   // `texteVisible` met une espace à chaque balise (le nom est en gras).

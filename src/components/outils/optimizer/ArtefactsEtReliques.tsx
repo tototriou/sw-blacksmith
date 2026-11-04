@@ -1,10 +1,12 @@
 import GameIcon from '../../GameIcon';
 import HelpPopover from '../../HelpPopover';
 import { Interrupteur, Selecteur } from '../../../ui';
-import { ARTIFACT_KINDS, type ArtifactKind } from '../../../types';
+import { sortesArtefact, type ArtifactKind } from '../../../types';
+import { useTraduction } from '../../../hooks/useLangue';
 import { LARGEUR_LIBELLE_LISTE, LARGEUR_SELECTEUR_LISTE } from './constantes';
 import { ArtifactMainChoice, type RelicUniqueChoice } from '../../../hooks/useOptimizerState';
-import { ARTIFACT_MAIN_OPTIONS } from '../../../lib/runeBuildOptim';
+import { ARTIFACT_MAIN_OPTIONS, ARTIFACT_MAIN_VALUE } from '../../../lib/runeBuildOptim';
+import { formatArtifactMain } from '../../../lib/effects';
 import ArtifactLinesEditor from '../ArtifactLinesEditor';
 import Relique from './Relique';
 import { type Dispatch, type SetStateAction, type ReactNode } from 'react';
@@ -35,6 +37,8 @@ export interface ArtefactsEtReliquesProps {
 }
 
 export default function ArtefactsEtReliques({ optimiserArtefacts, setOptimiserArtefacts, artifactMainByKind, setArtifactMainByKind, lignesVerrouillees, setLignesVerrouillees, diagnosticVerrous, sortesFigees, blocArtefactsSeuls, relicMainChoice, setRelicMainChoice, relicUniqueChoice, setRelicUniqueChoice, relicMinUpgrade, setRelicMinUpgrade, bureau = false }: ArtefactsEtReliquesProps) {
+  const textes = useTraduction();
+  const a = textes.optimizer.artefacts;
   return (
     <div className={bureau ? '' : 'rounded-xl border border-border bg-panel p-3'}>
       <div className="mb-3 flex flex-wrap items-center gap-2">
@@ -47,35 +51,29 @@ export default function ArtefactsEtReliques({ optimiserArtefacts, setOptimiserAr
         {/* ⚠️ Titre étendu à la relique (voir le bloc « Relique »
             ci-dessous) : le titre suit l'interrupteur, qui porte déjà les
             deux mots — à confirmer par l'utilisateur au premier rendu. */}
-        <p className="text-[13.5px] font-bold text-ink">Artéfacts et relique</p>
-        <HelpPopover title="Artéfacts et relique">
-          <b className="text-ink">« Libre »</b> cherche parmi tous tes artéfacts équipables ; une{' '}
-          <b className="text-ink">principale</b> restreint la recherche à ceux qui la portent.{' '}
-          <b className="text-ink">« Comme équipé »</b> conserve la pièce entière portée sur le
-          build affiché ci-dessus, sans rien chercher.
+        <p className="text-[13.5px] font-bold text-ink">{a.titre}</p>
+        <HelpPopover title={a.titre}>
+          <b className="text-ink">{a.aide.libre}</b>{a.aide.libreSuite}<b className="text-ink">{a.aide.principale}</b>{a.aide.principaleSuite}
+          <b className="text-ink">{a.aide.commeEquipe}</b>{a.aide.commeEquipeSuite}
           <br />
           <br />
-          La paire retenue suit le <b className="text-ink">tri</b> affiché — trier par PV effectifs ne choisit
-          pas les mêmes artéfacts que trier par dégâts.
+          {a.aide.paire}<b className="text-ink">{a.aide.tri}</b>{a.aide.triSuite}
         </HelpPopover>
         {/* `ml-auto` plutôt qu'un `justify-between` sur la rangée : le titre
             et son aide restent collés, l'interrupteur part à droite — même
             lecture qu'avant, dans le gabarit d'en-tête de carte. */}
         <div className="ml-auto flex items-center gap-1.5">
-          <span className="text-xs font-semibold text-ink-dim">Activer l&apos;optimisation d&apos;artéfacts et reliques</span>
-          <HelpPopover title="Activer l&apos;optimisation d&apos;artéfacts et reliques">
-            Activé (défaut), chaque build reçoit la meilleure paire d&apos;artéfacts ET la meilleure relique
-            parmi les tiennes, selon les réglages ci-dessous.
+          <span className="text-xs font-semibold text-ink-dim">{a.activer}</span>
+          <HelpPopover title={a.activer}>
+            {a.activerAide}
             <br />
             <br />
-            Désactivé, le monstre <b className="text-ink">garde les artéfacts et la relique qu&apos;il porte</b>,
-            statistiques comprises — on cesse simplement d&apos;en chercher d&apos;autres. Utile pour composer un
-            runage autour des pièces déjà en place.
+            {a.desactiveDebut}<b className="text-ink">{a.desactiveGras}</b>{a.desactiveFin}
           </HelpPopover>
           <Interrupteur
             actif={optimiserArtefacts}
             onChange={setOptimiserArtefacts}
-            aria-label="Activer l'optimisation d'artéfacts et reliques"
+            aria-label={a.activer}
           />
         </div>
       </div>
@@ -88,7 +86,7 @@ export default function ArtefactsEtReliques({ optimiserArtefacts, setOptimiserAr
         // Le retour à la ligne reste permis : une police plus large repasse
         // Type dessous au lieu de déborder du panneau.
         <div className={bureau ? 'flex flex-wrap items-center justify-between gap-x-2 gap-y-1' : 'flex flex-wrap gap-3'}>
-          {ARTIFACT_KINDS.map(({ key, label }) => (
+          {sortesArtefact(textes).map(({ key, label }) => (
             <div key={key} className={`flex items-center ${bureau ? 'gap-1' : 'gap-1.5'}`}>
               <span className={`text-xs text-ink ${bureau ? '' : LARGEUR_LIBELLE_LISTE}`}>{label}</span>
               {/* ⚠️ **`'libre'`, parce que c'est ce que le MOTEUR fait**
@@ -123,14 +121,14 @@ export default function ArtefactsEtReliques({ optimiserArtefacts, setOptimiserAr
                     de l'utilisateur), il peut se lire « la principale, comme
                     équipé » : c'est l'aide de la carte qui dit qu'il garde la
                     pièce entière. */}
-                <option value="equipped">Comme équipé</option>
+                <option value="equipped">{a.commeEquipe}</option>
                 {/* ⚠️ « Libre » n’a de sens qu’avec une recherche d’artéfacts : il n’a
                     été ajouté qu’une fois celle-ci construite, pour ne pas laisser
                     une option morte dans le sélecteur. */}
-                <option value="libre">Libre</option>
+                <option value="libre">{a.libre}</option>
                 {ARTIFACT_MAIN_OPTIONS.map((o) => (
                   <option key={o.code} value={o.code}>
-                    {o.label}
+                    {formatArtifactMain({ code: o.code, value: ARTIFACT_MAIN_VALUE[o.code] }, textes.jeu)}
                   </option>
                 ))}
                 {/* ⚠️ Pas de « Aucun ». Retiré : vider UN emplacement pendant

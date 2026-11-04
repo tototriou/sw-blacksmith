@@ -378,7 +378,7 @@ désigne un chemin sous `src/` (lecture, `join`, `new URL`…). Un test qui lit
 par cette lecture, donc chaque usage est déclaré dans
 [fixtures/lecture-source-toleree.json](fixtures/lecture-source-toleree.json),
 une entrée par (fichier, cible) : `stock` (figé sur `54f8c6d6`, 179
-identités) ou `exception` (justification obligatoire, 27).
+identités) ou `exception` (justification obligatoire, 37).
 
 - **Un usage absent de la liste, un nombre d'occurrences trop petit ou trop
   grand, une entrée qui ne correspond plus : échec.** Le décompte baisse dans

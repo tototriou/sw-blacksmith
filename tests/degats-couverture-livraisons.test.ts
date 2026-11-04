@@ -228,7 +228,6 @@ const IGNORE_DEF_PAR_SORT: [number, string, number, number, boolean, number, num
   [200, "Bull's Eye Roger", 15613, 7003, true, 1500, 720, 4098],
   [200, "Bull's Eye Walkers", 15614, 7004, true, 1500, 720, 4098],
   [200, "Bull's Eye Jamie", 15615, 7005, true, 1500, 720, 4098],
-  [200, 'Dark Dragon Attack Fei', 17315, 8215, true, 1500, 2800, 15937],
   [201, 'Shadow Arrow Bethony', 15415, 6815, true, 1500, 818, 4658],
   [203, 'Torrent Ragdoll', 16615, 7810, true, 1500, 1100, 6261],
   [205, 'Guard Crush Sonia', 26113, 15908, false, 600, 1330, 3831],
@@ -259,6 +258,18 @@ export function testCouvertureIgnoreDefIdentifiants() {
     egal(total({ enemyDef: def, ...actif }), total({ enemyDef: 0 }),
       `${etiquette} : condition remplie, le total égale celui d'une DEF nulle`);
   }
+
+  // Fei (200) : l'ignore DEF se coche coup par coup (`coupsIgnorantDefParSort`,
+  // tests/degats-effets-entre-coups.test.ts) ; ses quatre coups cochés, la DEF
+  // de la cible ne compte plus.
+  const fei = profilDe(17315, 8215);
+  const totalFei = (setup: Partial<DamageSetup>) => computeSkillDamage(fei, build, { ...base, ...setup }, AUCUNE_AURA_PROPRE);
+  const tousLesCoups = { coupsIgnorantDefParSort: { 8215: [1, 2, 3, 4] } };
+  egal(arrondi(totalFei({ enemyDef: 1500 })), 2800, '200 — Dark Dragon Attack Fei (8215, forme 17315) : aucun coup coché, DEF de la cible 1500');
+  egal(arrondi(totalFei({ enemyDef: 1500, ...tousLesCoups })), 15937,
+    '200 — Dark Dragon Attack Fei : les quatre coups cochés, la DEF de la cible ne compte plus');
+  egal(totalFei({ enemyDef: 1500, ...tousLesCoups }), totalFei({ enemyDef: 0 }),
+    '200 — Dark Dragon Attack Fei : les quatre coups cochés, le total égale celui d\'une DEF nulle');
 
   // Isael (215) : ignore 50 % de la DEF d'une cible endormie (prose seule).
   const isael = profilDe(13315, 5315);

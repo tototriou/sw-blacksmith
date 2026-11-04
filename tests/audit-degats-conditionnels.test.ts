@@ -41,6 +41,7 @@ import { StatKey } from '../src/lib/effects';
 import { StatRow, computeStats, monsterBaseStats } from '../src/lib/stats';
 import { ArtifactDetail, RuneDetail } from '../src/types';
 import { egal, monstersJson, ok, titre } from './outils';
+import { fr } from '../src/i18n/fr';
 
 const racine = resolve(new URL('..', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1'));
 const dossierSorts = resolve(racine, 'public/data/skills');
@@ -457,44 +458,9 @@ export default function testAuditDegatsConditionnels() {
     }, AUCUNE_AURA_PROPRE);
   ok(ceciliaNu < ceciliaApres(2) && ceciliaApres(2) < ceciliaApres(1), 'Cecilia : la DEF change après le coup choisi');
 
-  // Le relevé exhaustif des profils éligibles est figé. Une nouvelle entrée
-  // exige une décision de curation, jamais une inclusion par ressemblance.
-  const effetsEntreCoupsAttendus = new Set([
-    'Arcane Burst',
-    'Blackout Kick', // Sia 3454 seul, par identifiant
-    'Chain Attack',
-    'Crushed Hopes', // Cichlid 10413
-    'Death Blow',
-    'Divergent Fist', // Yuji S2 — curé comme effet entre les coups
-    'Double Strike', // Melissa 12608
-    'Fast Link', // Barbara, Masha, Xiana 13606/13607/13610
-    'Full Burst',
-    'Ghost Slash',
-    'Gouge',
-    'Gust',
-    'Harpoon Impalement', // Eivor 17507/17509
-    'Mach Crush',
-    'Panda Supremacy',
-    'Phantom Light', // Shihwa S3 2212
-    'Rain of Stones',
-    'Reelseiden・Flurry', // Übel 25206/25210
-    'Sequential Attack',
-    'Shadow Blade',
-    'Shinryuken',
-    'Shockwave Fist', // Rick S2 — curé comme celui de Yuji S2
-    'Triple Crush',
-    'Water Dragon Attack',
-    'Weakness Shot', // Carlos, Dominic, Benedict 15507/15508/15509
-    "Will-o'-the-Wisp",
-  ]);
-  const effetsEntreCoupsTrouves = new Set<string>();
-  for (const fichier of readdirSync(dossierSorts)) {
-    const detail: DetailMonstre = JSON.parse(readFileSync(resolve(dossierSorts, fichier), 'utf8'));
-    for (const p of monsterDamageSkills(detail)) {
-      if (estPrisEnCharge(p) && p.effetsEntreCoups?.length) effetsEntreCoupsTrouves.add(p.nom);
-    }
-  }
-  egal([...effetsEntreCoupsTrouves].sort(), [...effetsEntreCoupsAttendus].sort(), 'corpus complet des profils inter-coups curés');
+  // Le relevé exhaustif des sorts qui proposent une pose entre leurs coups est
+  // figé, sort par sort, par `testInventaireEffetsEntreCoups`
+  // (tests/degats-effets-entre-coups.test.ts).
 
   const baekdu = profilDe(18514, 9314);
   ok(baekdu.variables.includes('Target SPD'), 'Target SPD est accepté par le parseur');
@@ -1334,7 +1300,7 @@ export default function testAuditDegatsConditionnels() {
     ignoreArtifacts: true,
     artifactMainByKind: {},
   });
-  const relue = parseOptimizerRecipe(JSON.stringify(recette)).recipe;
+  const relue = parseOptimizerRecipe(JSON.stringify(recette), fr).recipe;
   egal(relue?.damageSetup, recette.damageSetup, 'UI/recette : le scénario survit à l’export/import');
   const contexteCli = buildRealDamageContext(recette, 14713, []);
   ok(contexteCli != null, 'CLI : le contexte de dégâts réels est reconstruit');
@@ -1354,7 +1320,7 @@ export default function testAuditDegatsConditionnels() {
   };
   const contexteKassandra = buildRealDamageContext(recetteKassandra, 27613, []);
   ok(contexteKassandra != null, 'CLI : le contexte Kassandra avec buffs propres est reconstruit');
-  egal(parseOptimizerRecipe(JSON.stringify(recetteKassandra)).recipe?.damageSetup, recetteKassandra.damageSetup,
+  egal(parseOptimizerRecipe(JSON.stringify(recetteKassandra), fr).recipe?.damageSetup, recetteKassandra.damageSetup,
     'recette récente : le marqueur autres buffs propres traverse l’export/import');
   egal(resolvedBuffsPropresCount(17408, contexteKassandra!.setup), 3,
     'CLI : la recette conserve deux autres buffs et le buff DEF actif');
@@ -1400,14 +1366,14 @@ export default function testAuditDegatsConditionnels() {
   delete ancienneRecette.damageSetup.buffsAlliesCount;
   delete ancienneRecette.damageSetup.atkDebuff;
   delete ancienneRecette.damageSetup.effetsCibleCountAutres;
-  const ancienneRelue = parseOptimizerRecipe(JSON.stringify(ancienneRecette)).recipe;
+  const ancienneRelue = parseOptimizerRecipe(JSON.stringify(ancienneRecette), fr).recipe;
   ok(ancienneRelue?.damageSetup != null, 'ancienne recette sans nouveaux champs toujours lisible');
   ok(!ancienneRelue?.damageSetup?.scenariosEffetsEntreCoups, 'ancienne recette : aucun scénario implicite');
   egal(ancienneRelue?.damageSetup?.buffsPropresCountAutres, undefined,
     'ancienne recette : l’absence du marqueur conserve le compteur inclusif');
   const ancienneKassandra = JSON.parse(JSON.stringify(recetteKassandra));
   delete ancienneKassandra.damageSetup.buffsPropresCountAutres;
-  const ancienneKassandraRelue = parseOptimizerRecipe(JSON.stringify(ancienneKassandra)).recipe;
+  const ancienneKassandraRelue = parseOptimizerRecipe(JSON.stringify(ancienneKassandra), fr).recipe;
   egal(resolvedBuffsPropresCount(17408, ancienneKassandraRelue!.damageSetup!), 2,
     'ancienne recette Kassandra : buff DEF déjà inclus dans le total de deux');
   const ancienCompteur = { ...setupAudit, effetsCibleCountAutres: undefined, effetsCibleCount: { 6907: 2 }, defBreak: true };
@@ -1428,16 +1394,16 @@ export default function testAuditDegatsConditionnels() {
   );
   const recetteAvantDegats = JSON.parse(JSON.stringify(recette));
   delete recetteAvantDegats.damageSetup;
-  ok(parseOptimizerRecipe(JSON.stringify(recetteAvantDegats)).recipe != null, 'recette antérieure au réglage de dégâts toujours lisible');
+  ok(parseOptimizerRecipe(JSON.stringify(recetteAvantDegats), fr).recipe != null, 'recette antérieure au réglage de dégâts toujours lisible');
   const recetteObjectifLegacy = { ...recetteAvantDegats, objective: 'speed_nuker' };
-  ok(parseOptimizerRecipe(JSON.stringify(recetteObjectifLegacy)).recipe != null, 'ancien objectif speed_nuker accepté pour migration');
+  ok(parseOptimizerRecipe(JSON.stringify(recetteObjectifLegacy), fr).recipe != null, 'ancien objectif speed_nuker accepté pour migration');
   const recetteArtefactLegacy = { ...recetteAvantDegats, artifactMainByKind: { element: 'none' } };
-  ok(parseOptimizerRecipe(JSON.stringify(recetteArtefactLegacy)).recipe != null, 'ancien choix d’artéfact none accepté pour migration');
+  ok(parseOptimizerRecipe(JSON.stringify(recetteArtefactLegacy), fr).recipe != null, 'ancien choix d’artéfact none accepté pour migration');
 
   const verifierRefus = (path: string, modifier: (copie: any) => void) => {
     const copie = JSON.parse(JSON.stringify(recette));
     modifier(copie);
-    const resultat = parseOptimizerRecipe(JSON.stringify(copie));
+    const resultat = parseOptimizerRecipe(JSON.stringify(copie), fr);
     ok(resultat.recipe == null, `recette invalide refusée : ${path}`);
     ok(resultat.error?.includes(path) === true, `erreur lisible et localisée : ${path}`);
   };
@@ -1562,9 +1528,10 @@ function testSuiteDuSortVoitLesPosesP4b() {
 }
 
 // Treize sorts dont la donnée
-// pose un `Decrease DEF` ou une `Brand` sur un coup précis sont curés PAR
-// IDENTIFIANT dans `EFFETS_ENTRE_COUPS_PAR_ID_CONNUS`, jamais par nom : un
-// nom (« Blackout Kick ») a des homonymes au texte différent. Chaque entrée a
+// pose un `Decrease DEF` ou une `Brand` sur un coup précis, lus PAR
+// IDENTIFIANT (`effetsEntreCoupsDuSort`, rang de la note ou exception de la
+// prose), jamais par nom : un nom (« Blackout Kick ») a des homonymes au
+// texte différent. Chaque entrée a
 // son test : l'effet de la donnée, aucun changement sans scénario, et la pose
 // après le coup qui la fait réellement (coup 1, sauf Cichlid : coup 2) vaut
 // « les coups d'avant sans l'effet, les suivants avec ». Les ratios sont
@@ -1586,7 +1553,8 @@ function testEffetsEntreCoups322() {
     [27714, 17509, 'brand', 'brand', 1, 1.125], // Eivor
     [12134, 3454, 'decrease-def', 'defBreak', 1, 1.682], // Sia — note « First hit »
     [36011, 25206, 'decrease-def', 'defBreak', 1, 1.682], // Übel — note « 1st hit », en zone
-    [36015, 25210, 'decrease-def', 'defBreak', 1, 1.682], // Übel
+    // (25210, Übel ténèbres : son passif Empathy pose aussi Marque ou Réduction
+    // de DEF à chaque attaque — tests/degats-effets-entre-coups.test.ts.)
   ];
   const cible = { ...setupAudit, enemyDef: 1500 };
   const total = (p: SkillDamageProfile, setup: DamageSetup) => computeSkillDamage(p, buildAudit, setup, AUCUNE_AURA_PROPRE);
@@ -1598,6 +1566,7 @@ function testEffetsEntreCoups322() {
     egal(p.effetsEntreCoups?.length, 1, `${nom} : un seul effet curé (Brise DEF ou Marque, rien d'autre)`);
     egal(p.effetsEntreCoups?.[0]?.id, effet, `${nom} : effet de la donnée`);
     egal(p.effetsEntreCoups?.[0]?.effetCombat, effetCombat, `${nom} : change l'état de la cible (${effetCombat})`);
+    egal(p.effetsEntreCoups?.[0]?.coups, [poseur], `${nom} : seul le coup ${poseur} pose l'effet`);
     ok(coups > 1, `${nom} : sort à plusieurs coups`);
 
     const sans = total(p, cible);
@@ -1666,8 +1635,8 @@ function testHomonymesParIdentifiant() {
   egal(monsterBonusStatFixe(fiche(10735)), { cr: 20, cd: 0 }, 'Gorgo (10735, 1865) : +20 points de TC, aucun point de DC');
   ok(fiche(47305).competences.some((c) => c.com2usId === 1880 && c.nom === 'Charge (Passive)'), 'témoin : 47305 porte 1880, « Charge (Passive) »');
   egal(monsterBonusStatFixe(fiche(47305)), null, 'Warbear 2A (47305, 1880, homonyme non jouable) : plus de bonus de TC');
-  ok(monsterModificateursVit(fiche(47305)).every((m) => m.skillCom2usId !== 1880), '1880 : plus affiché parmi les modificateurs toujours actifs');
-  ok(monsterModificateursVit(fiche(10735)).some((m) => m.skillCom2usId === 1865), '1865 : toujours affiché pour Gorgo');
+  ok(monsterModificateursVit(fiche(47305), fr).every((m) => m.skillCom2usId !== 1880), '1880 : plus affiché parmi les modificateurs toujours actifs');
+  ok(monsterModificateursVit(fiche(10735), fr).some((m) => m.skillCom2usId === 1865), '1865 : toujours affiché pour Gorgo');
 }
 
 // La table `STATS_COMBAT_PAR_ID_CONNUS` est écrite à

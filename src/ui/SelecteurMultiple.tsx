@@ -46,7 +46,7 @@ import Flottant from './Flottant';
 // Un axe de RÉSUMÉ, né des principales du bureau : `resumeEntier` fait montrer
 // au champ fermé TOUTES les valeurs choisies, à la ligne entre deux valeurs
 // (jamais au milieu d'une), rien de tronqué. Le champ prend la hauteur de ce
-// qu'il montre : une ligne pour « Libre », deux quand les choix l'exigent.
+// qu'il montre : une ligne pour « Libre », plusieurs quand les choix l'exigent.
 // ⚠️ **La surface ouverte ne descend jamais sous le doigt** : elle se pose à
 // la hauteur qu'avait le champ À L'OUVERTURE, et y reste tant qu'elle est
 // ouverte. Un choix qui fait passer le champ à deux lignes l'allonge SOUS la
@@ -64,6 +64,10 @@ import Flottant from './Flottant';
 export interface OptionChoixMultiple<V extends string | number> {
   valeur: V;
   libelle: string;
+  // Forme RÉDUITE du libellé, pour le champ fermé qui manque de place (« PV% »
+  // pour « PV % ») ; la surface ouverte montre toujours `libelle`. Absente : le
+  // libellé.
+  court?: string;
   // Désactivée, jamais retirée : son `title` dit pourquoi.
   disabled?: boolean;
   title?: string;
@@ -96,7 +100,7 @@ export interface SelecteurMultipleProps<V extends string | number> {
 }
 
 // Les libellés séparés par « , » ; chacun insécable, la ligne ne se coupe
-// qu'entre deux valeurs (« Taux Crit » ne se lit jamais « Taux » / « Crit »).
+// qu'entre deux valeurs (« Tx critiq. » ne se lit jamais « Tx » / « critiq. »).
 function ValeursALaLigne({ libelles }: { libelles: string[] }) {
   return libelles.map((l, i) => (
     <span key={l}>
@@ -172,7 +176,7 @@ export default function SelecteurMultiple<V extends string | number>({
   }, [ouvert]);
 
   const choisies = options.filter((o) => valeurs.includes(o.valeur));
-  const texte = resume ? resume.texte : choisies.length > 0 ? choisies.map((o) => o.libelle).join(', ') : vide;
+  const texte = resume ? resume.texte : choisies.length > 0 ? choisies.map((o) => o.court ?? o.libelle).join(', ') : vide;
 
   function basculer(valeur: V) {
     const suivantes = valeurs.includes(valeur) ? valeurs.filter((v) => v !== valeur) : [...valeurs, valeur];
@@ -227,7 +231,7 @@ export default function SelecteurMultiple<V extends string | number>({
           <span className="flex min-w-0 items-center gap-1 overflow-hidden">{resume.visuel}</span>
         ) : resumeEntier ? (
           <span data-resume-entier className={`min-w-0 flex-1 ${choisies.length > 0 ? 'text-ink' : 'text-ink-dim'}`}>
-            {choisies.length > 0 ? <ValeursALaLigne libelles={choisies.map((o) => o.libelle)} /> : vide}
+            {choisies.length > 0 ? <ValeursALaLigne libelles={choisies.map((o) => o.court ?? o.libelle)} /> : vide}
           </span>
         ) : (
           <span className={`min-w-0 truncate ${choisies.length > 0 ? 'text-ink' : 'text-ink-dim'}`}>{texte}</span>

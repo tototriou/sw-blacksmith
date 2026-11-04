@@ -3,6 +3,7 @@ import { DEFAULT_DAMAGE_SETUP } from '../src/lib/damage';
 import { buildOptimizerRecipe, parseOptimizerRecipe } from '../src/lib/optimizerRecipe';
 import { buildRealDamageContext } from '../scripts/lib/realDamageCli';
 import { egal, ok, titre } from './outils';
+import { fr } from '../src/i18n/fr';
 
 export function testOptimizerCompetencesContenu() {
   titre('Optimizer · compétences effectives selon le contenu et recette au CLI');
@@ -19,7 +20,7 @@ export function testOptimizerCompetencesContenu() {
         requirement: { sets: ['swift'], minStats: {} }, objective: 'degats_reels', metric: 'eff', slotFilterPreset: 'moyen',
         exhaustiveSearch: false, excludeUsedRunes: false, excludeUsedScope: 'box',
         excludedSelectors: [], ignoreArtifacts: false, artifactMainByKind: {} });
-      const relue = parseOptimizerRecipe(JSON.stringify(recette)).recipe!;
+      const relue = parseOptimizerRecipe(JSON.stringify(recette), fr).recipe!;
       egal(relue.damageSetup.summonerSkills, combat.summonerSkills, 'recette : valeur effectuelle relue');
       const cli = buildRealDamageContext(relue, 14104, []);
       ok(!!cli, 'CLI : contexte réel construit depuis la recette');

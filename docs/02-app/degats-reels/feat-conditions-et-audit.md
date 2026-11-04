@@ -15,9 +15,9 @@ Pour un sort multi-coups éligible, chaque coup lit l’état qui le précède. 
 effets choisis sont appliqués après ce coup, puis les coups suivants utilisent
 le compteur de débuffs, la Marque et la DEF actualisés. Une Marque, un DEF
 break ou un autre effet non cumulable déjà présent est identifié et ne
-réaugmente pas le compteur ; un DoT reste cumulable. Les profils concernés
-sont curés par identifiant quand leur nom possède un homonyme différent.
-Mach Crush d'Akhamamir 2A (`10013`) garde son exception, relue à chaque
+réaugmente pas le compteur ; un DoT reste cumulable. Les sorts éligibles, les
+coups qui posent et le réglage à l'écran :
+[feat-poses-entre-les-coups.md](feat-poses-entre-les-coups.md). Mach Crush d'Akhamamir 2A (`10013`) garde son exception, relue à chaque
 coup : exactement un débuff vaut +50 %, sinon +30 % par débuff
 (`exactementUnPct`, `BONUS_PAR_EFFET_CIBLE_PAR_ID_CONNUS`).
 
@@ -246,26 +246,19 @@ Mirinae, Price of Pain ou les autres bonus généraux ; seule Marque les
 augmente. Sur Lamiella, ces restrictions ne concernent que la réserve : la
 partie `1,2 × ATQ` reste une attaque ordinaire.
 
-Treize sorts de plus entrent dans le cadre des poses entre les coups, **par
-identifiant** et jamais par nom (« Blackout Kick » a des homonymes au texte
-différent), chacun avec l'effet de sa donnée (`Decrease DEF` → Brise DEF,
-`Brand` → Marque) : Crushed Hopes 10413 (Cichlid, coup 2), Double Strike 12608
-(Melissa), Fast Link 13606, 13607 et 13610 (Barbara, Masha, Xiana ; coup de
-la bête), Weakness Shot 15507 à 15509 (Carlos, Dominic, Benedict ; Marque),
-Harpoon Impalement 17507 et 17509 (Eivor ; Marque), Blackout Kick 3454 (Sia)
-et Reelseiden・Flurry 25206 et 25210 (Übel). Sans pose choisie le total ne
-change pas ; posé après le coup qui le pose, l'effet ne majore que les coups
-suivants (sort seul, DEF cible 1 500 : ×1,455 pour Cichlid, ×1,682 pour les
-Brise DEF du coup 1, ×1,188 pour Weakness Shot, ×1,125 pour Eivor). Le
-sélecteur propose toujours tous les rangs, y compris un coup qui ne pose rien ;
-ne proposer que les coups qui posent l'effet (Cichlid : [valeurs curées](valeurs-de-jeu-curees.md), « Crushed
-Hopes de Cichlid ») reste à coder
-([05-feuille-de-route/pistes-degats-reels.md § Poses entre les coups : rang, buff posé par le sort, Eightfold](../../05-feuille-de-route/pistes-degats-reels.md#poses-entre-les-coups--rang-buff-posé-par-le-sort-eightfold)).
-Les autres effets de ces sorts
-(Decrease ATK, Étourdissement, Irrécupérable) ne sont pas curés ; Solveig et
-Berghild (18007, 18009 : la Marque n'est que dans la prose) attendent un
-relevé en jeu. Test : `testEffetsEntreCoups322`
-(`tests/audit-degats-conditionnels.test.ts`).
+Douze sorts à un seul coup poseur servent de témoins chiffrés, chacun avec
+l'effet de sa donnée (`Decrease DEF` → Brise DEF, `Brand` → Marque) : Crushed
+Hopes 10413 (Cichlid, coup 2), Double Strike 12608 (Melissa), Fast Link 13606,
+13607 et 13610 (Barbara, Masha, Xiana ; coup de la bête), Weakness Shot 15507
+à 15509 (Carlos, Dominic, Benedict ; Marque), Harpoon Impalement 17507 et
+17509 (Eivor ; Marque), Blackout Kick 3454 (Sia) et Reelseiden・Flurry 25206
+(Übel eau ; celui d'Übel ténèbres, 25210, reçoit aussi les poses de son
+passif Empathy). Sans pose choisie le total ne change pas ; posé après le coup
+qui le pose, l'effet ne majore que les coups suivants (sort seul, DEF cible
+1 500 : ×1,455 pour Cichlid, ×1,682 pour les Brise DEF du coup 1, ×1,188 pour
+Weakness Shot, ×1,125 pour Eivor). Test : `testEffetsEntreCoups322`
+(`tests/audit-degats-conditionnels.test.ts`). L'ensemble des sorts et de leurs
+coups poseurs : [inventaire-effets-entre-coups.md](inventaire-effets-entre-coups.md).
 
 Une contribution qui **suit** le sort — passif qui frappe après lui, attaque
 appelée, Tempest — lit l'état de la cible **après le dernier coup** du sort,
@@ -330,10 +323,12 @@ et `COUPS_FIXES_CORRIGES_PAR_ID` le sont par **identifiant de compétence**, et
 l'identifiant l'emporte (`plageDeCoupsDe`, `coupsFixesCorrigesDe`, lues par
 `skillDamageProfile` ET `monsterOffensivePassives`). Une entrée passe par
 identifiant quand un homonyme **jouable** a une autre mécanique : une entrée
-par nom s'étendrait à lui en silence. `COUPS_FIXES_CORRIGES_PAR_ID` est vide :
-Crow Hunt de Prilea (1618) attend un relevé en jeu
-([05-feuille-de-route/pistes-degats-reels.md § Crow Hunt de Prilea : deux coups annoncés pour un](../../05-feuille-de-route/pistes-degats-reels.md#crow-hunt-de-prilea--deux-coups-annoncés-pour-un)), ses homonymes
-jouables 1607 et 1609 portent `coups: 4`.
+par nom s'étendrait à lui en silence. `COUPS_FIXES_CORRIGES_PAR_ID` porte
+deux valeurs de l'utilisateur (2026-11-02,
+[valeurs-de-jeu-curees.md](valeurs-de-jeu-curees.md)) : Crow Hunt de Prilea
+(1618) frappe **2 coups** pour `coups: 1` (ses homonymes jouables 1607 et 1609
+gardent `coups: 4`), Lightning Storm de Yennefer (19113) **un seul** pour
+`coups: 2`.
 
 | Sort · identifiant · formes | Plage | Clé | Citation |
 | --- | --- | --- | --- |
@@ -359,8 +354,9 @@ minimum.
 
 Stormfist de Mayasura (18306…) : coups selon l'ATQ, valeur de
 l'utilisateur dans [valeurs-de-jeu-curees.md](valeurs-de-jeu-curees.md).
-Non couverts : Crow Hunt (relevé attendu, ci-dessus), Lala, Coco, Stella,
-Cleave, les coups tirés au hasard
+Les coups tirés au hasard d'un sort se règlent à part (coups qui touchent la
+cible, [feat-poses-entre-les-coups.md](feat-poses-entre-les-coups.md)).
+Non couverts : Lala, Coco, Stella, Cleave, l'attaque appelée au hasard
 ([05-feuille-de-route/pistes-degats-reels.md § Plages de coups à relever et coups « au hasard](../../05-feuille-de-route/pistes-degats-reels.md#plages-de-coups-à-relever-et-coups--au-hasard-)).
 Test : `testDegatsCoupsSaisis`
 (`node tests/run.mjs coupssaisis`).

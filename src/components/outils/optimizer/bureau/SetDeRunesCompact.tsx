@@ -3,8 +3,9 @@ import { SetDeplieContext } from './setDeplie';
 import SetComboPicker from '../../SetComboPicker';
 import RuneIcon from '../../../RuneIcon';
 import { SelecteurMultiple } from '../../../../ui';
-import { RUNE_SETS } from '../../../../types';
 import { runeSetIconFilter, setsCost } from '../../../../lib/effects';
+import { useTraduction } from '../../../../hooks/useLangue';
+import { nomSet } from '../../../../i18n/jeu';
 
 export interface SetDeRunesCompactProps {
   setPickerSectionRef: RefObject<HTMLDivElement>;
@@ -48,6 +49,9 @@ export interface SetDeRunesCompactProps {
 // reste un set de 2 à choisir) : elle ne se ferme d'elle-même qu'au choix qui
 // remplit les six emplacements, sinon au clic ailleurs ou à Échap.
 export default function SetDeRunesCompact({ setPickerSectionRef, setPickerInvalid, comboSets, onChangeSets }: SetDeRunesCompactProps) {
+  const textes = useTraduction();
+  const jeu = textes.jeu;
+  const c = textes.optimizer.criteres;
   const [ouvert, setOuvert] = useState(false);
   const page = useContext(SetDeplieContext);
   const copieGrille = useRef<HTMLDivElement>(null);
@@ -64,13 +68,13 @@ export default function SetDeRunesCompact({ setPickerSectionRef, setPickerInvali
     return () => obs.disconnect();
   }, [reporterEcart]);
   const deplie = page?.deplie === true;
-  const noms = comboSets.map((key) => RUNE_SETS.find((s) => s.key === key)?.label ?? key);
+  const noms = comboSets.map((key) => nomSet(jeu, key));
   const changer = (next: string[]) => {
     onChangeSets(next);
     if (setsCost(next) >= 6 && setsCost(next) > setsCost(comboSets)) setOuvert(false);
   };
   return (
-    <section aria-label="Critères de recherche" data-set-optimizer={deplie ? 'deplie' : 'compact'}>
+    <section aria-label={c.titre} data-set-optimizer={deplie ? 'deplie' : 'compact'}>
       <div
         ref={setPickerSectionRef}
         className={setPickerInvalid ? 'rounded-lg border border-bad bg-bad/15 p-2 -m-2 transition' : 'transition'}
@@ -79,17 +83,17 @@ export default function SetDeRunesCompact({ setPickerSectionRef, setPickerInvali
             dans la section la plus étroite (155 px, en deux piles), il passe
             dessous plutôt que de déborder. */}
         <div className="mb-1.5 flex flex-wrap items-baseline justify-between gap-x-2">
-          <p className="label flex-none">Set de runes recherché</p>
+          <p className="label flex-none">{c.setRecherche}</p>
           {setPickerInvalid ? (
-            <span className="min-w-0 flex-[1_1_120px] text-right text-micro font-semibold text-bad">Sélectionne au moins un set avant de lancer la recherche.</span>
+            <span className="min-w-0 flex-[1_1_120px] text-right text-micro font-semibold text-bad">{c.setRequis}</span>
           ) : null}
         </div>
         {deplie ? (
           <SetComboPicker sets={comboSets} onChange={onChangeSets} reserverJetons coffre />
         ) : (
         <SelecteurMultiple
-          libelle="Set de runes recherché"
-          vide="Aucun"
+          libelle={c.setRecherche}
+          vide={c.aucun}
           resume={
             comboSets.length > 0
               ? {
@@ -117,7 +121,7 @@ export default function SetDeRunesCompact({ setPickerSectionRef, setPickerInvali
           <div className="invisible">
             <div ref={copieGrille}><SetComboPicker sets={[]} onChange={() => {}} reserverJetons coffre /></div>
             <div ref={copieListe}>
-              <SelecteurMultiple libelle="Set de runes recherché" vide="Aucun" surface={null} />
+              <SelecteurMultiple libelle={c.setRecherche} vide={c.aucun} surface={null} />
             </div>
           </div>
         </div>

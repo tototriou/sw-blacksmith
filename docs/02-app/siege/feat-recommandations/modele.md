@@ -100,7 +100,12 @@ Règles de la vue Défense :
   - avec chef : même chef et mêmes deux autres monstres, dans n'importe quel
     ordre (clé `chef|les deux autres triés`) ;
   - sans chef : mêmes trois monstres, dans n'importe quel ordre (clé
-    `|les trois triés`).
+    `|les trois triés`) ;
+  - une collaboration et sa version SW sont le **même monstre** : leur clé
+    est l'identifiant commun de la paire (`idCanoniqueCollab`,
+    [monsterForms.ts](../../../../src/lib/monsterForms.ts)), si bien
+    qu'Eivor-Pure Vanilla Cookie-Odin et Solveig-Adriana-Odin sont une seule
+    défense, et un seul deck à la fusion.
 
   Solveig-Adriana-Odin et Solveig-Odin-Adriana : une seule défense (chef
   Solveig). Odin-Adriana-Solveig en est une autre (chef Odin). Kinki-Windy-Lulu

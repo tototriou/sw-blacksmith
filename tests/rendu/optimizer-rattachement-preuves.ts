@@ -6,6 +6,7 @@ import { exclusionSelectorKey, otherValidatedRuneIds, type ExclusionSelector, ty
 import { cleMemoireMembre, reverifierStockageOptimizer } from '../../src/lib/optimizerMemberStorage';
 import { baseCompleteCriteres } from '../../src/lib/criteresOptimizer';
 import { acquerirIdentitesMembres } from '../../src/lib/optimizerRattachement';
+import { fr } from '../../src/i18n/fr';
 
 interface Contexte {
   etat: () => OptimizerState;
@@ -30,7 +31,7 @@ export async function preuvesRattachementOptimizer(c: Contexte, demonte = false)
   if (demonte) await c.geste(() => c.afficher(false));
   const nouveau = { ...c.data(), box: c.data().box.filter(b => b.key !== '11') };
   const runes = c.runes().slice(0, -1), ids = new Set(runes.map(r => r.id));
-  const resultat = reverifierStockageOptimizer(origine, nouveau, ids);
+  const resultat = reverifierStockageOptimizer(origine, nouveau, ids, fr);
   await c.geste(() => {
     c.changerBox(nouveau.box); c.changerRunes(runes);
     c.listes().replaceAfterRevalidation(resultat.stockage);

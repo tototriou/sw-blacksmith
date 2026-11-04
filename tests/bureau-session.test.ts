@@ -19,12 +19,15 @@ import {
   FORMAT_FICHIER_SESSION,
   lireDossierRetenu,
   lireSessionRetenue,
-  messageEchec,
-  messageEchecDossier,
+  codeErreur,
   nomProposeValide,
   texteSessionValide,
 } from '../bureau/sessionPur';
 import { presentationDossierSwblacksmith } from '../src/components/SettingsMenu';
+import { fr } from '../src/i18n/fr';
+import { en } from '../src/i18n/en';
+import { messageEchecSession, type EchecSession } from '../src/lib/bureau';
+import { definirLangue, langueDuSysteme, textesBureau, TEXTES_BUREAU } from '../bureau/textes';
 import { FORMAT_SESSION, nomFichierSession } from '../src/lib/session';
 import { egal, ok, titre } from './outils';
 
@@ -45,8 +48,8 @@ export default async function testBureauSession() {
   egal(lireDossierRetenu({ dossier: 'Documents' }), null, 'un chemin relatif : refusé');
   egal(lireDossierRetenu({ dossier: null }), null, 'retiré : rien');
   egal(dossierSessions(racine), join(racine, 'sessions'), 'les sessions vont dans son sous-dossier « sessions »');
-  ok(presentationDossierSwblacksmith(null).includes('sous-dossier « sessions »'), 'Paramètres, sans dossier : ce qu’il sert à faire');
-  egal(presentationDossierSwblacksmith(etatDe(null, racine)), racine, 'Paramètres, avec : le chemin');
+  ok(presentationDossierSwblacksmith(null, fr.parametres).includes('sous-dossier « sessions »'), 'Paramètres, sans dossier : ce qu’il sert à faire');
+  egal(presentationDossierSwblacksmith(etatDe(null, racine), fr.parametres), racine, 'Paramètres, avec : le chemin');
   const pris = new Set([join(racine, 'a.json'), join(racine, 'a (2).json')]);
   egal(cheminLibre(racine, 'b.json', (c) => pris.has(c)), join(racine, 'b.json'), 'nom libre : tel quel');
   egal(cheminLibre(racine, 'a.json', (c) => pris.has(c)), join(racine, 'a (3).json'), 'nom pris : le premier numéro libre, jamais d’écrasement');
@@ -83,17 +86,35 @@ export default async function testBureauSession() {
   ok(!confirmationApresExtension(join(racine, 'ancienne.json'), existe), 'tapé avec l’extension : la boîte a déjà confirmé');
   ok(!confirmationApresExtension(join(racine, 'neuve'), existe), 'tapé sans extension, rien n’existe : aucune confirmation');
 
-  titre('bureau · session en cours — le message d’échec');
-  ok(messageEchec('ENOENT').includes('Sauvegarder sous'), 'dossier disparu : « Sauvegarder sous… » est la sortie');
-  ok(messageEchec('ENOSPC') === 'Le disque est plein.', 'disque plein');
-  ok(messageEchec('EINVAL') === 'L’écriture a échoué (EINVAL).', 'code inconnu : cité');
-  ok(messageEchec(undefined) === 'L’écriture a échoué.', 'sans code : rien à citer');
+  titre('bureau · session en cours — le message d’échec, rédigé par la page dans sa langue');
+  const ecriture = (code: string | null): EchecSession => ({ issue: 'echec', motif: 'ecriture', code });
+  ok(messageEchecSession(ecriture('ENOENT'), fr).includes('Sauvegarder sous'), 'dossier disparu : « Sauvegarder sous… » est la sortie');
+  ok(messageEchecSession(ecriture('ENOSPC'), fr) === 'Le disque est plein.', 'disque plein');
+  ok(messageEchecSession(ecriture('EINVAL'), fr) === 'L’écriture a échoué (EINVAL).', 'code inconnu : cité');
+  ok(messageEchecSession(ecriture(null), fr) === 'L’écriture a échoué.', 'sans code : rien à citer');
+  egal(messageEchecSession({ issue: 'echec', motif: 'pas-une-session', code: null }, fr), 'Ce n’est pas une session.', 'pas une session');
+  egal(codeErreur(Object.assign(new Error('x'), { code: 'EBUSY' })), 'EBUSY', 'le bureau rend le code du système');
+  egal(codeErreur(new Error('x')), null, 'sans code : `null`');
   // Le dossier SW Blacksmith inaccessible : « Sauvegarder sous… » échouerait
   // pareil, le message renvoie vers les Paramètres.
-  for (const code of ['ENOENT', 'EACCES', 'EROFS', 'ENOSPC', undefined]) {
-    const m = messageEchecDossier(code);
+  for (const code of ['ENOENT', 'EACCES', 'EROFS', 'ENOSPC', null]) {
+    const m = messageEchecSession({ issue: 'echec', motif: 'dossier', code }, fr);
     ok(m.includes('Paramètres › « Dossier SW Blacksmith »') && !m.includes('Sauvegarder sous'), `dossier inaccessible (${code ?? 'sans code'}) : la sortie est de choisir un autre dossier`);
   }
+  egal(messageEchecSession(ecriture('ENOSPC'), en), 'The disk is full.', 'en anglais : disque plein');
+  ok(messageEchecSession({ issue: 'echec', motif: 'dossier', code: 'EROFS' }, en).includes('Settings › “SW Blacksmith folder”'), 'en anglais : la sortie vers les Paramètres');
+
+  titre('bureau · les boîtes du système dans la langue de l’app');
+  egal(Object.keys(TEXTES_BUREAU.en).sort(), Object.keys(TEXTES_BUREAU.fr).sort(), 'les mêmes textes dans chaque langue');
+  egal([langueDuSysteme('fr-FR'), langueDuSysteme('fr'), langueDuSysteme('en-US'), langueDuSysteme('de')], ['fr', 'fr', 'en', 'en'], 'avant la page : fr* → français, sinon anglais');
+  definirLangue('en');
+  egal(textesBureau().sauvegarderSous, 'Save the session as', 'la page passe en anglais : les boîtes suivent');
+  egal(textesBureau().existeDeja('a.json'), '“a.json” already exists.', 'un nom de fichier cité en anglais');
+  definirLangue('de');
+  egal(textesBureau().annuler, 'Cancel', 'une langue inconnue est ignorée');
+  definirLangue('fr');
+  egal([textesBureau().sauvegarderSous, textesBureau().existeDeja('a.json'), textesBureau().annuler, textesBureau().remplacer],
+    ['Sauvegarder la session sous', '« a.json » existe déjà.', 'Annuler', 'Remplacer'], 'en français : les textes d’avant');
 
   titre('bureau · session en cours — l’écriture ne laisse jamais un fichier à moitié écrit');
   const bac = mkdtempSync(join(tmpdir(), 'swblacksmith-session-'));

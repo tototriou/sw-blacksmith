@@ -7,6 +7,7 @@ import type { BornesResultats } from '../../../lib/filtresResultats';
 import type { OptimMetric } from '../../../lib/runeOptim';
 import type { StatKey } from '../../../lib/effects';
 import { colonneContradictoire, decimalesColonne, depuisAffichage, libelleColonne, suffixeColonne, versAffichage } from '../../../lib/filtresAffichage';
+import { useTraduction } from '../../../hooks/useLangue';
 
 // « Filtrer l'affichage » : une borne minimum et une borne maximum par colonne
 // des résultats, la grille de `Conditions` (libellé, Min, Max, `NumberField`).
@@ -16,7 +17,6 @@ import { colonneContradictoire, decimalesColonne, depuisAffichage, libelleColonn
 // la grille ressemble trait pour trait : la phrase fixe le dit, et la grille
 // vit dans l'en-tête des résultats, jamais dans « Critères de recherche ».
 
-export const RAISON_COLONNE_INDISPONIBLE = 'Aucun sort calculable pour ce monstre';
 
 export interface FiltresResultatsProps {
   bornes: BornesResultats;
@@ -34,6 +34,7 @@ export interface FiltresResultatsProps {
 }
 
 export function BoutonEffacerFiltres({ effacer, actif }: { effacer: () => void; actif: boolean }) {
+  const r = useTraduction().optimizer.resultats;
   return (
     <Bouton
       fond="vide"
@@ -42,42 +43,44 @@ export function BoutonEffacerFiltres({ effacer, actif }: { effacer: () => void; 
       onClick={effacer}
       disabled={!actif}
       icone={<RotateCcw size={13} />}
-      libelle="Effacer les filtres"
+      libelle={r.effacerFiltres}
     />
   );
 }
 
 export default function FiltresResultats({ bornes, poserBorne, effacer, metric, disponible, enBonus = false, setBonus, base = {} }: FiltresResultatsProps) {
+  const textes = useTraduction();
+  const r = textes.optimizer.resultats;
+  const k = textes.optimizer.conditions;
   const actif = COLONNES_RESULTATS.some((c) => bornes[c]?.min != null || bornes[c]?.max != null);
   return (
     <div>
-      <p className="mb-2 text-xs text-ink-dim">Masque des builds déjà trouvés ; ne relance pas la recherche.</p>
+      <p className="mb-2 text-xs text-ink-dim">{r.filtresAide}</p>
       {setBonus && (
         // Le même interrupteur que « Conditions », à la même place au-dessus de la grille.
         <div className="mb-2 flex items-center gap-1.5">
-          <span className="text-xs font-semibold text-ink-dim">Stats de base exclues</span>
-          <HelpPopover title="Stats de base exclues">
-            <b className="text-ink">PV/ATQ/DEF/VIT</b> : activé, la borne porte sur ce que l'équipement apporte{' '}
-            <b className="text-ink">au-dessus de la base</b> du monstre. Désactivé, elle porte sur le total.{' '}
-            <b className="text-ink">Taux Crit/Dgts Crit/RES/Précision</b> restent toujours en total. Affichage
-            seulement : les conditions de recherche gardent leur propre réglage.
+          <span className="text-xs font-semibold text-ink-dim">{k.baseExclue}</span>
+          <HelpPopover title={k.baseExclue}>
+            <b className="text-ink">{k.aideBase.statsDeBase}</b>{r.aideBaseFiltres.active}
+            <b className="text-ink">{k.aideBase.auDessus}</b>{r.aideBaseFiltres.desactive}
+            <b className="text-ink">{k.aideBase.statsTotales}</b>{r.aideBaseFiltres.toujoursTotal}
           </HelpPopover>
-          <Interrupteur actif={enBonus} onChange={setBonus} aria-label="Stats de base exclues des filtres PV/ATQ/DEF/VIT" />
+          <Interrupteur actif={enBonus} onChange={setBonus} aria-label={r.baseExclueFiltresAria} />
         </div>
       )}
       {/* `w-fit` : la grille garde ses colonnes serrées, comme `Conditions`. */}
       <div className="grid w-fit grid-cols-[minmax(76px,auto)_auto_auto] items-center gap-x-2 gap-y-1.5 lg:gap-x-3">
         <span aria-hidden />
         {/* Pas `.label` : le panneau du téléphone (`data-tiroir`) le masque, et la grille se décalerait. */}
-        <span className="text-center text-micro font-semibold uppercase tracking-wider text-ink-dim">Min</span>
-        <span className="text-center text-micro font-semibold uppercase tracking-wider text-ink-dim">Max</span>
+        <span className="text-center text-micro font-semibold uppercase tracking-wider text-ink-dim">{textes.optimizer.conditions.min}</span>
+        <span className="text-center text-micro font-semibold uppercase tracking-wider text-ink-dim">{textes.optimizer.conditions.max}</span>
         {COLONNES_RESULTATS.map((c) => {
           const libre = disponible(c);
-          const nom = libelleColonne(c, metric);
+          const nom = libelleColonne(c, metric, textes);
           const ton = libre && colonneContradictoire(bornes, c) ? 'bad' : 'neutre';
           return (
             <Fragment key={c}>
-              <span className={`text-xs ${libre ? 'text-ink' : 'text-ink-dimmer'}`} title={libre ? undefined : RAISON_COLONNE_INDISPONIBLE}>
+              <span className={`text-xs ${libre ? 'text-ink' : 'text-ink-dimmer'}`} title={libre ? undefined : r.colonneIndisponible}>
                 {nom}
               </span>
               {(['min', 'max'] as const).map((cote) => {
@@ -99,8 +102,8 @@ export default function FiltresResultats({ bornes, poserBorne, effacer, metric, 
                     suffix={suffixeColonne(c, metric) || undefined}
                     // Six chiffres et le suffixe sans rogner (« 150000 »).
                     boxWidth="w-28"
-                    ariaLabel={`${nom} ${cote === 'min' ? 'minimum' : 'maximum'} affiché`}
-                    title={libre ? (cote === 'min' ? 'Minimum' : 'Maximum') : RAISON_COLONNE_INDISPONIBLE}
+                    ariaLabel={r.borneAffichee(nom, cote)}
+                    title={libre ? (cote === 'min' ? k.minimum : k.maximum) : r.colonneIndisponible}
                   />
                 );
               })}

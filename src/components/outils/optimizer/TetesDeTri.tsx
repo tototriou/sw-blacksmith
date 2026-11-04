@@ -4,7 +4,8 @@ import { COLONNES_RESULTATS, type ColonneResultat } from '../../../lib/colonnesR
 import type { SensTri } from '../../../lib/tri';
 import type { OptimMetric } from '../../../lib/runeOptim';
 import { libelleColonne } from '../../../lib/filtresAffichage';
-import { RAISON_COLONNE_INDISPONIBLE } from './FiltresResultats';
+import { useTraduction } from '../../../hooks/useLangue';
+import type { Dictionnaire } from '../../../i18n/fr';
 
 // Les têtes de tri des résultats : la bande de onze têtes au-dessus des cartes
 // (bureau) et les en-têtes du tableau. Un clic trie la colonne en décroissant ;
@@ -28,9 +29,10 @@ export function triApresClic(courant: TriResultats, colonne: ColonneResultat): T
   return courant.tri === colonne ? { tri: colonne, sens: courant.sens === 'desc' ? 'asc' : 'desc' } : { tri: colonne, sens: 'desc' };
 }
 
-export function nomTete(colonne: ColonneResultat, metric: OptimMetric, courant: TriResultats, bornee: boolean): string {
-  const triee = courant.tri === colonne ? `, tri ${courant.sens === 'desc' ? 'décroissant' : 'croissant'}` : '';
-  return `${libelleColonne(colonne, metric)}${triee}${bornee ? ', borne posée' : ''}`;
+export function nomTete(colonne: ColonneResultat, metric: OptimMetric, courant: TriResultats, bornee: boolean, t: Dictionnaire): string {
+  const r = t.optimizer.resultats;
+  const triee = courant.tri === colonne ? r.trie(courant.sens) : '';
+  return `${libelleColonne(colonne, metric, t)}${triee}${bornee ? r.bornePosee : ''}`;
 }
 
 // 16 px (décision de l'utilisateur) : une flèche nette sur la colonne triée,
@@ -57,8 +59,10 @@ export interface BandeDeTriProps {
 
 /** La bande du bureau, au-dessus des cartes : des `Bouton`, pas des `Pastille` — elles trient, elles ne filtrent pas. */
 export default function BandeDeTri({ courant, trier, metric, disponible, bornee, inactif = false }: BandeDeTriProps) {
+  const textes = useTraduction();
+  const r = textes.optimizer.resultats;
   return (
-    <div className="mb-2 flex flex-wrap gap-1" role="group" aria-label="Trier les résultats">
+    <div className="mb-2 flex flex-wrap gap-1" role="group" aria-label={r.trierResultats}>
       {COLONNES_RESULTATS.map((c) => {
         const libre = disponible(c);
         return (
@@ -67,12 +71,12 @@ export default function BandeDeTri({ courant, trier, metric, disponible, bornee,
             taille="sm"
             actif={courant.tri === c}
             disabled={inactif || !libre}
-            title={libre ? undefined : RAISON_COLONNE_INDISPONIBLE}
-            aria-label={nomTete(c, metric, courant, bornee(c))}
+            title={libre ? undefined : r.colonneIndisponible}
+            aria-label={nomTete(c, metric, courant, bornee(c), textes)}
             onClick={() => trier(triApresClic(courant, c))}
             libelle={
               <span className="inline-flex items-center gap-1">
-                {libelleColonne(c, metric)}
+                {libelleColonne(c, metric, textes)}
                 <IconeSens colonne={c} courant={courant} />
                 <MarqueBorne bornee={bornee(c)} />
               </span>

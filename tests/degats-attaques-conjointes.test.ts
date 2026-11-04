@@ -47,6 +47,7 @@ import { parametresArtefactsFiche } from '../src/lib/artifactFiche';
 import { evaluerPourRegime, type DegatsContext } from '../src/lib/artifactEvaluation';
 import type { OptimizerRecipe } from '../src/lib/optimizerRecipe';
 import { buildRealDamageContext } from '../scripts/lib/realDamageCli';
+import { fr } from '../src/i18n/fr';
 
 const racine = resolve(new URL('..', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1'));
 const DOSSIER_SORTS = resolve(racine, 'public/data/skills');
@@ -297,17 +298,17 @@ export function testAttaquesConjointesPorte() {
   egal(interrupteurAttaqueConjointe({ slot: 3, passif: true }, eteint), null, 'passif : non proposé');
 
   // La mention de la ligne du CLI : par l'interrupteur, défaut compris.
-  egal(mentionAttaqueConjointe(famille(2), eteint), 'attaque conjointe (un monstre de l’autre famille au combat)', 'CLI, famille, champ absent : la ligne dit l’attaque conjointe (défaut allumé)');
-  egal(mentionAttaqueConjointe(famille(2), eteintExplicite), null, 'CLI, famille éteinte : rien');
-  egal(mentionAttaqueConjointe(s1, allume), 'attaque conjointe (appelée par un allié)', 'CLI, S1 ordinaire allumé : appelé par un allié');
-  egal(mentionAttaqueConjointe(s1, eteint), null, 'CLI, S1 ordinaire, champ absent : rien');
-  egal(mentionAttaqueConjointe({ ...s2, sortCooperatif: true }, eteint), null, 'CLI, sort coopératif : rien (pas d’interrupteur)');
-  egal(mentionAttaqueConjointe(famille(1), { pendantTourAllie: true }), 'attaque conjointe (un monstre de l’autre famille au combat, pendant le tour d’un allié)',
+  egal(mentionAttaqueConjointe(famille(2), eteint, fr), 'attaque conjointe (un monstre de l’autre famille au combat)', 'CLI, famille, champ absent : la ligne dit l’attaque conjointe (défaut allumé)');
+  egal(mentionAttaqueConjointe(famille(2), eteintExplicite, fr), null, 'CLI, famille éteinte : rien');
+  egal(mentionAttaqueConjointe(s1, allume, fr), 'attaque conjointe (appelée par un allié)', 'CLI, S1 ordinaire allumé : appelé par un allié');
+  egal(mentionAttaqueConjointe(s1, eteint, fr), null, 'CLI, S1 ordinaire, champ absent : rien');
+  egal(mentionAttaqueConjointe({ ...s2, sortCooperatif: true }, eteint, fr), null, 'CLI, sort coopératif : rien (pas d’interrupteur)');
+  egal(mentionAttaqueConjointe(famille(1), { pendantTourAllie: true }, fr), 'attaque conjointe (un monstre de l’autre famille au combat, pendant le tour d’un allié)',
     'CLI, famille, S1 pendant le tour d’un allié : la ligne le dit');
-  egal(mentionAttaqueConjointe(famille(1), eteint), 'attaque conjointe (un monstre de l’autre famille au combat)', 'CLI, famille, S1 au défaut : pendant le tour du monstre, rien de plus');
-  egal(mentionAttaqueConjointe(famille(2), { pendantTourAllie: true }), 'attaque conjointe (un monstre de l’autre famille au combat)', 'CLI, famille, S2, champ resté allumé : rien de plus');
-  egal(mentionAttaqueConjointe(famille(1), { attaqueConjointe: false, pendantTourAllie: true }), null, 'CLI, famille, S1 éteint, champ resté allumé : rien');
-  egal(mentionAttaqueConjointe(s1, { attaqueConjointe: true, pendantTourAllie: true }), 'attaque conjointe (appelée par un allié)', 'CLI, S1 ordinaire allumé, champ présent : inchangé');
+  egal(mentionAttaqueConjointe(famille(1), eteint, fr), 'attaque conjointe (un monstre de l’autre famille au combat)', 'CLI, famille, S1 au défaut : pendant le tour du monstre, rien de plus');
+  egal(mentionAttaqueConjointe(famille(2), { pendantTourAllie: true }, fr), 'attaque conjointe (un monstre de l’autre famille au combat)', 'CLI, famille, S2, champ resté allumé : rien de plus');
+  egal(mentionAttaqueConjointe(famille(1), { attaqueConjointe: false, pendantTourAllie: true }, fr), null, 'CLI, famille, S1 éteint, champ resté allumé : rien');
+  egal(mentionAttaqueConjointe(s1, { attaqueConjointe: true, pendantTourAllie: true }, fr), 'attaque conjointe (appelée par un allié)', 'CLI, S1 ordinaire allumé, champ présent : inchangé');
 
   const a = artefacts([{ code: 209, value: 10 }, { code: 224, value: 20 }]);
   ok(artefactsSelonContexteConjoint(ARTIFACT_DAMAGE_NEUTRE, null) === ARTIFACT_DAMAGE_NEUTRE, 'profil sans ces lignes : rendu tel quel, aucune allocation');

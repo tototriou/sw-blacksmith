@@ -12,7 +12,7 @@ import {
   CHIFFRES_MAX_COLONNE, colonneContradictoire, decimalesColonne, depuisAffichage, libelleColonne, suffixeColonne, texteValeurColonne, versAffichage,
 } from '../../../lib/filtresAffichage';
 import { IconeSens, MarqueBorne, nomTete, triApresClic, type TriResultats } from './TetesDeTri';
-import { RAISON_COLONNE_INDISPONIBLE } from './FiltresResultats';
+import { useTraduction } from '../../../hooks/useLangue';
 
 // La forme TABLEAU des résultats, au bureau : une ligne par build, des
 // en-têtes qui trient, deux lignes de bornes Min / Max sous eux ; un clic sur
@@ -96,6 +96,9 @@ export interface TableauResultatsProps {
 
 export default function TableauResultats({ cartes, premierRang, placesEnAttente, runeById, metric, afficherDepassement, tri, trier,
   bornes, poserBorne, disponible, ouvrirDetail, vide, inactif = false, enBonus = false, base = {} }: TableauResultatsProps) {
+  const textes = useTraduction();
+  const r = textes.optimizer.resultats;
+  const k = textes.optimizer.conditions;
   const bornee = (c: ColonneResultat) => bornes[c]?.min != null || bornes[c]?.max != null;
   const largeurTotale = COLONNES_RESULTATS.length + 1;
   // La colonne triée, légèrement teintée sur toute sa hauteur.
@@ -124,8 +127,8 @@ export default function TableauResultats({ cartes, premierRang, placesEnAttente,
                     ton={triee ? 'accent' : 'neutre'}
                     fond={triee ? 'plein' : 'vide'}
                     disabled={inactif || !libre}
-                    title={libre ? undefined : RAISON_COLONNE_INDISPONIBLE}
-                    aria-label={nomTete(c, metric, tri, bornee(c))}
+                    title={libre ? undefined : r.colonneIndisponible}
+                    aria-label={nomTete(c, metric, tri, bornee(c), textes)}
                     onClick={() => trier(triApresClic(tri, c))}
                     // ⚠️ Rembourrage latéral réduit à 4 px dans la cellule (`!` :
                     // une classe de taille l'emporterait selon l'ordre de la
@@ -134,7 +137,7 @@ export default function TableauResultats({ cartes, premierRang, placesEnAttente,
                     className="!px-1 text-center leading-tight"
                     libelle={
                       <span className="flex flex-col items-center gap-0.5 py-0.5">
-                        <span>{libelleColonne(c, metric)}</span>
+                        <span>{libelleColonne(c, metric, textes)}</span>
                         <span className="inline-flex items-center gap-1">
                           <IconeSens colonne={c} courant={tri} />
                           <MarqueBorne bornee={bornee(c)} />
@@ -148,9 +151,9 @@ export default function TableauResultats({ cartes, premierRang, placesEnAttente,
           </tr>
           {(['min', 'max'] as const).map((cote) => (
             <tr key={cote} className={cote === 'max' ? 'border-b border-border' : ''}>
-              <th scope="row" className="px-1 py-0.5 text-center text-micro font-semibold text-ink-dim">{cote === 'min' ? 'Min' : 'Max'}</th>
+              <th scope="row" className="px-1 py-0.5 text-center text-micro font-semibold text-ink-dim">{cote === 'min' ? k.min : k.max}</th>
               {COLONNES_RESULTATS.map((c) => {
-                const libre = disponible(c), nom = libelleColonne(c, metric), suffixe = suffixeColonne(c, metric);
+                const libre = disponible(c), nom = libelleColonne(c, metric, textes), suffixe = suffixeColonne(c, metric);
                 const total = bornes[c]?.[cote] ?? null;
                 return (
                   <td key={c} className={`px-1 py-0.5 text-center ${teinte(c)}`} data-colonne-tableau={c}>
@@ -170,8 +173,8 @@ export default function TableauResultats({ cartes, premierRang, placesEnAttente,
                       placeholder="—"
                       suffix={suffixe || undefined}
                       boxWidth={`w-full font-mono text-sm ${MIN_CHAMP[`${CHIFFRES_MAX_COLONNE[c]}${suffixe ? '%' : ''}`]}`}
-                      ariaLabel={`${nom} ${cote === 'min' ? 'minimum' : 'maximum'} affiché`}
-                      title={libre ? (cote === 'min' ? 'Minimum' : 'Maximum') : RAISON_COLONNE_INDISPONIBLE}
+                      ariaLabel={r.borneAffichee(nom, cote)}
+                      title={libre ? (cote === 'min' ? k.minimum : k.maximum) : r.colonneIndisponible}
                     />
                   </td>
                 );
@@ -194,7 +197,7 @@ export default function TableauResultats({ cartes, premierRang, placesEnAttente,
                     <td className="px-1 py-1 text-center">
                       <ZoneCliquable
                         onClick={(e) => { e.stopPropagation(); ouvrirDetail(i); }}
-                        aria-label={`Détail du build n° ${rang}`}
+                        aria-label={r.detailBuild(rang)}
                         // La ligne entière ouvre le détail : au doigt, la règle
                         // des 40 px n'a pas à grandir la rangée pour ce rang.
                         data-cible-fine=""
@@ -208,7 +211,7 @@ export default function TableauResultats({ cartes, premierRang, placesEnAttente,
                       return (
                         <td key={c} data-colonne-tableau={c} className={`whitespace-nowrap px-1 py-1 text-center font-mono ${teinte(c)} ${
                           !disponible(c) ? 'text-ink-dimmer' : tri.tri === c ? 'font-semibold text-ink' : 'text-ink'}`}>
-                          {texteValeurColonne(c, v === null ? null : versAffichage(c, v, base, enBonus), metric)}
+                          {texteValeurColonne(c, v === null ? null : versAffichage(c, v, base, enBonus), metric, textes)}
                         </td>
                       );
                     })}
@@ -218,7 +221,7 @@ export default function TableauResultats({ cartes, premierRang, placesEnAttente,
               {Array.from({ length: placesEnAttente }, (_, j) => (
                 <tr key={`verification-${premierRang + cartes.length + j}`} className="border-b border-border-soft last:border-0">
                   <td className="px-1 py-1 text-center font-mono font-bold text-ink-dimmer">{premierRang + cartes.length + j}</td>
-                  <td colSpan={COLONNES_RESULTATS.length} className="px-1 py-1 text-ink-dim">Vérification…</td>
+                  <td colSpan={COLONNES_RESULTATS.length} className="px-1 py-1 text-ink-dim">{r.verification}</td>
                 </tr>
               ))}
             </>

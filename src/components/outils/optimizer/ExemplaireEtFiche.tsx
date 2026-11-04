@@ -5,6 +5,7 @@ import { type RefObject, type ReactNode } from 'react';
 import { type ExclusionSource } from '../../../lib/optimizerExclusion';
 import { type Monster, type GearSet } from '../../../types';
 import { EMPTY_GEAR } from './constantes';
+import { useTraduction } from '../../../hooks/useLangue';
 
 export interface ExemplaireEtFicheProps {
   zoneDRef: RefObject<HTMLDivElement>;
@@ -24,12 +25,13 @@ export interface ExemplaireEtFicheProps {
 }
 
 export default function ExemplaireEtFiche({ zoneDRef, sourceOptions, vuesExemplaire, gearSource, pickSource, allSourcesEmpty, zoneDOpen, zoneDList, validatedBadge, selected, selectionFiche, setSelectionFiche, relicUsageById, validateBuildButton }: ExemplaireEtFicheProps) {
+  const c = useTraduction().optimizer.criteres;
   return (
     <div className="flex flex-col gap-3">
       <div ref={zoneDRef} className="relative">
-        <p className="label mb-1.5">Exemplaire</p>
+        <p className="label mb-1.5">{c.exemplaire}</p>
         {vuesExemplaire}
-        <p className="label mb-1.5 mt-2">Voir aussi</p>
+        <p className="label mb-1.5 mt-2">{c.voirAussi}</p>
         {/* Seule la source regardée en aperçu est allumée. Une source sans
             autre exemplaire que celui du membre reste désactivée. */}
         <Segmented
@@ -40,7 +42,7 @@ export default function ExemplaireEtFiche({ zoneDRef, sourceOptions, vuesExempla
           size="lg"
         />
         {zoneDOpen && (
-          <Flottant aria-label="Choisir l'exemplaire" rembourrage="aucun" className="max-h-[300px] overflow-y-auto">
+          <Flottant aria-label={c.choisirExemplaire} rembourrage="aucun" className="max-h-[300px] overflow-y-auto">
             {zoneDList}
           </Flottant>
         )}

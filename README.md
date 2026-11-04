@@ -1,9 +1,11 @@
 # SW Blacksmith
 
+*Français · [English](README.en.md)*
+
 Une boîte à outils pour Summoners War.
 
 **En ligne : https://sw-forge.vercel.app** — et en application de bureau (Windows, Linux), depuis
-la page Télécharger du site.
+la page Télécharger du site. L'app existe en français et en anglais.
 
 SW Blacksmith aide à préparer ses contenus compétitifs : composer ses équipes de siège et vérifier
 leur speed tuning, classer ses monstres pour la RTA, analyser ses runes et son compte, chercher le
@@ -61,10 +63,12 @@ Une question, un retour ou une demande particulière :
 - [Electron](https://www.electronjs.org) — application de bureau
 - Déployé sur [Vercel](https://vercel.com) : déploiement automatique sur `main`, preview par branche.
 
-## Auteur
+## Auteurs
 
-**Thomas** — [github.com/tototriou](https://github.com/tototriou) ·
-[Discord](https://discord.gg/R2Fe4GJZET)
+- [github.com/enzoputzulu](https://github.com/enzoputzulu)
+- [github.com/tototriou](https://github.com/tototriou)
+
+Discord de l'app : [discord.gg/R2Fe4GJZET](https://discord.gg/R2Fe4GJZET)
 
 ## Remerciements
 

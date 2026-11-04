@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 import { Import } from 'lucide-react';
 import Bouton from '../ui/Bouton';
+import { useTraduction } from '../hooks/useLangue';
 
 interface Props {
   // Applique un export (RTA + siège défense + offense d'un coup).
@@ -16,6 +17,7 @@ interface Props {
 // destructrice collée au bouton qu'on utilise le plus souvent finit par être
 // cliquée de travers.
 export default function AccountImportControl({ onImport, variant }: Props) {
+  const i = useTraduction().importCompte;
   const fileInput = useRef<HTMLInputElement>(null);
 
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -43,17 +45,17 @@ export default function AccountImportControl({ onImport, variant }: Props) {
       {isMobile ? (
         <button
           onClick={() => fileInput.current?.click()}
-          title="Importer un export de compte SWEX (traité localement, rien n'est envoyé)"
+          title={i.boutonAide}
           className="flex items-center gap-2 rounded-lg border border-border bg-panel2 px-3 py-3 text-base font-semibold text-ink"
         >
-          <Import size={18} className="flex-none" /> Importer un JSON
+          <Import size={18} className="flex-none" /> {i.bouton}
         </button>
       ) : (
         <Bouton
           icone={<Import size={14} />}
-          libelle="Importer un JSON"
+          libelle={i.bouton}
           onClick={() => fileInput.current?.click()}
-          title="Importer un export de compte SWEX (traité localement, rien n'est envoyé)"
+          title={i.boutonAide}
           className="whitespace-nowrap"
         />
       )}

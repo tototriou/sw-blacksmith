@@ -27,6 +27,8 @@ import { StatRow } from './stats';
 import { ArtifactDetail, RelicDetail } from '../types';
 import { PaireArtefacts } from './artifactOptim';
 import { RelicContext } from './relicOptim';
+import type { Dictionnaire } from '../i18n/fr';
+import { formatNombre } from '../i18n/format';
 
 export interface ChangementResolution {
   readonly cle: string;
@@ -701,20 +703,12 @@ export function compteAffichable(e: {
   recus: number;
   affichables: number;
   modeRecherche: boolean;
-}): CompteAffichable {
+}, t: Dictionnaire): CompteAffichable {
   const ecartes = Math.max(0, e.recus - e.affichables);
   const compte = Math.max(0, e.trouves - ecartes);
   const raison =
     compte === 0 && ecartes > 0
-      ? `${ecartes.toLocaleString('fr-FR')} ${
-          ecartes === 1
-            ? 'combinaison trouvée par la recherche a été écartée'
-            : 'combinaisons trouvées par la recherche ont été écartées'
-        } : ${
-          e.modeRecherche
-            ? "aucune paire d'artéfacts ni relique réelles ne tient toutes les conditions."
-            : "aucune paire d'artéfacts réelle ne tient toutes les conditions."
-        }`
+      ? t.optimizer.resultats.ecartees(ecartes, formatNombre(ecartes, t.codeLangue), e.modeRecherche)
       : null;
   return { compte, ecartes, raison };
 }

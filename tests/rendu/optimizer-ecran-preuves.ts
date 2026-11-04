@@ -8,9 +8,9 @@ import type { UseOptimizerLists } from '../../src/hooks/useOptimizerLists';
 import type { ExclusionSelector } from '../../src/lib/optimizerExclusion';
 import { buildOptimizerRecipe } from '../../src/lib/optimizerRecipe';
 import { DEFAULT_DAMAGE_SETUP } from '../../src/lib/damage';
-import { AVERTISSEMENT_CRIT_MOYENNE } from '../../src/lib/optimizerRecipe';
 import { attendreDemandeTest, observerRechercheTest } from './optimizer-classement-banc';
 import type { DemandeDeRecherche } from '../../src/workers/runeBuildOptim.worker';
+import { fr } from '../../src/i18n/fr';
 
 export interface BancEcran {
   etat: () => OptimizerState;
@@ -139,7 +139,7 @@ export async function preuvesReglagesAvances(b: BancEcran, ouvrirMenu: () => voi
   return preuves;
 }
 
-// Ouverture guidée : choisir Accuracy comme set recherché, puis l'ajouter aux
+// Ouverture guidée : choisir Précision comme set recherché, puis l'ajouter aux
 // auras externes d'« État de mon monstre », ouvre la surface des réglages et
 // colore le cadre de l'interrupteur, amené à l'écran, pendant trois secondes.
 export async function preuvesGuidage(b: BancEcran): Promise<Preuves> {
@@ -164,12 +164,12 @@ export async function preuvesGuidage(b: BancEcran): Promise<Preuves> {
   };
   await fermerSurfaces(b);
   await ouvrirSets(b);
-  const accuracy = bouton('Accuracy');
-  preuves.push([!!accuracy && !b.etat().comboSets.includes('accuracy'), 'set Accuracy proposé, pas encore choisi']);
+  const accuracy = bouton('Précision');
+  preuves.push([!!accuracy && !b.etat().comboSets.includes('accuracy'), 'set Précision proposé, pas encore choisi']);
   if (!accuracy) return preuves;
   await b.geste(() => accuracy.click());
-  preuves.push([b.etat().comboSets.includes('accuracy'), 'clic : Accuracy devient un set recherché']);
-  await verifierGuidage('Accuracy choisi comme set recherché');
+  preuves.push([b.etat().comboSets.includes('accuracy'), 'clic : Précision devient un set recherché']);
+  await verifierGuidage('Précision choisi comme set recherché');
 
   await fermerSurfaces(b);
   await b.geste(() => b.etat().setDamageSetup({ ...b.etat().damageSetup,
@@ -181,8 +181,8 @@ export async function preuvesGuidage(b: BancEcran): Promise<Preuves> {
   preuves.push([!!ajouter && (telephone() ? !surfaceOuverte() : true), telephone() ? '« Ajouter un set d’aura » présent, surfaces fermées' : '« Ajouter un set d’aura » présent, dans sa colonne ouverte']);
   if (!ajouter) return preuves;
   await b.geste(() => ajouter.click());
-  preuves.push([b.etat().damageSetup.setsAuraExternes?.some((a) => a.set === 'accuracy') === true, 'clic : Accuracy ajouté aux auras externes']);
-  await verifierGuidage('Accuracy ajouté aux auras externes');
+  preuves.push([b.etat().damageSetup.setsAuraExternes?.some((a) => a.set === 'accuracy') === true, 'clic : Précision ajouté aux auras externes']);
+  await verifierGuidage('Précision ajouté aux auras externes');
   return preuves;
 }
 
@@ -415,10 +415,10 @@ export async function preuvesMessageImport(b: BancEcran): Promise<Preuves> {
       ?? [...document.querySelectorAll<HTMLElement>('p[role="status"]')].filter(visible).pop();
   };
   const ordinaire = await importer(recette('crit'));
-  preuves.push([!!ordinaire && ordinaire.classList.contains('text-good') && !ordinaire.textContent?.includes(AVERTISSEMENT_CRIT_MOYENNE),
+  preuves.push([!!ordinaire && ordinaire.classList.contains('text-good') && !ordinaire.textContent?.includes(fr.optimizer.recetteInvalide.critMoyenne),
     `import ordinaire : message au token de succès (${ordinaire?.className} · ${ordinaire?.textContent})`]);
   const converti = await importer(recette('moyenne'));
-  preuves.push([!!converti && converti.classList.contains('text-warn') && !!converti.textContent?.includes(AVERTISSEMENT_CRIT_MOYENNE),
+  preuves.push([!!converti && converti.classList.contains('text-warn') && !!converti.textContent?.includes(fr.optimizer.recetteInvalide.critMoyenne),
     `import converti : message au token d’avertissement, qui cite la conversion (${converti?.className})`]);
   // Une recette qui porte l'ancien réglage à vrai s'importe comme une autre
   // et n'active rien.

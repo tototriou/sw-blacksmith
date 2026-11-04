@@ -38,15 +38,15 @@ export async function testRenduOptimizerGabaritsGestes() {
     const attendues = colonnesCoffre(coffre.contenu);
     ok(coffre.principales === attendues.principal && coffre.colonnes === attendues.secondaire && Math.abs(coffre.gauche - coffre.droite) <= 1 && coffre.contour === '0px' && coffre.fond !== 'rgba(0, 0, 0, 0)',
       `set : coffre centré, sans contour, grilles de ${attendues.principal} + ${attendues.secondaire} colonnes selon sa largeur (${JSON.stringify(coffre)})`);
-    await page.getByRole('button', { name: 'Violent', exact: true }).click();
+    await page.getByRole('button', { name: 'Violente', exact: true }).click();
     await page.waitForTimeout(100);
-    ok(await ouvert(), 'set : la liste reste ouverte après un set de 4 (Violent)');
+    ok(await ouvert(), 'set : la liste reste ouverte après un set de 4 (Violente)');
     ok(await declencheur.evaluate((e) => e.closest('div')!.contains(document.activeElement)), 'set : le focus reste dans la liste (le set de 4 cliqué s’est désactivé)');
-    await page.getByRole('button', { name: 'Will', exact: true }).click();
+    await page.getByRole('button', { name: 'Volonté', exact: true }).click();
     await page.waitForTimeout(100);
     ok(!(await ouvert()), 'set : la liste se ferme au choix qui remplit les six emplacements');
     await declencheur.click();
-    await page.getByRole('button', { name: 'Retirer Will' }).click();
+    await page.getByRole('button', { name: 'Retirer Volonté' }).click();
     await page.waitForTimeout(100);
     ok(await ouvert(), 'set : retirer un set laisse la liste ouverte');
     await page.keyboard.press('Escape');
@@ -61,18 +61,18 @@ export async function testRenduOptimizerGabaritsGestes() {
     const surface = page.getByRole('group', { name: 'Slot 4' });
     ok(await surface.isVisible(), 'principales : la surface du slot 4 s’ouvre');
     ok((await surface.locator('input[type="checkbox"]').count()) === 0, 'principales : aucune case dans la surface');
-    const tauxCrit = surface.getByRole('button', { name: 'Taux Crit', exact: true });
-    ok((await tauxCrit.getAttribute('aria-pressed')) === 'false', 'principales : Taux Crit non choisie');
+    const tauxCrit = surface.getByRole('button', { name: 'Tx critiq.', exact: true });
+    ok((await tauxCrit.getAttribute('aria-pressed')) === 'false', 'principales : Tx critiq. non choisie');
     await tauxCrit.click();
-    ok((await tauxCrit.getAttribute('aria-pressed')) === 'true', 'principales : Taux Crit choisie, en surbrillance');
+    ok((await tauxCrit.getAttribute('aria-pressed')) === 'true', 'principales : Tx critiq. choisie, en surbrillance');
     ok(/border-accent/.test((await tauxCrit.getAttribute('class')) ?? ''), 'principales : la valeur choisie porte le marqueur d’accent');
     ok(await surface.isVisible(), 'principales : la liste reste ouverte après un choix');
-    ok((await page.getByRole('button', { name: 'Slot 4 : Taux Crit' }).count()) === 1, 'principales : le champ fermé résume le choix');
+    ok((await page.getByRole('button', { name: 'Slot 4 : Tx critiq.' }).count()) === 1, 'principales : le champ fermé résume le choix');
     // Toutes les valeurs du slot 4, liste ouverte : le champ s'allonge sous la
     // surface, qui ne bouge pas (elle garde la place prise à l'ouverture).
     const champ4 = page.getByRole('button', { name: /^Slot 4 :/ });
     const avantTout = { champ: (await champ4.boundingBox())!, surface: (await surface.boundingBox())! };
-    for (const v of ['PV%', 'ATQ%', 'DEF%', 'Dmg Crit']) await surface.getByRole('button', { name: v, exact: true }).click();
+    for (const v of ['PV %', 'ATQ %', 'DEF %', 'Dgts critiq.']) await surface.getByRole('button', { name: v, exact: true }).click();
     const apresTout = { champ: (await champ4.boundingBox())!, surface: (await surface.boundingBox())! };
     ok(apresTout.surface.y === avantTout.surface.y && apresTout.champ.y === avantTout.champ.y,
       `principales : cinq choix, liste ouverte, ni le champ ni la surface ne bougent (surface ${avantTout.surface.y} → ${apresTout.surface.y}, champ ${avantTout.champ.height} → ${apresTout.champ.height} px de haut)`);
@@ -81,8 +81,10 @@ export async function testRenduOptimizerGabaritsGestes() {
       const t = b.querySelector('[data-resume-entier]') as HTMLElement;
       return { texte: t.innerText.replace(/\s+/g, ' '), entier: t.scrollWidth <= t.clientWidth && b.scrollHeight <= b.clientHeight, lignes: Math.round(t.getBoundingClientRect().height / parseFloat(getComputedStyle(t).lineHeight)) };
     });
-    ok(resume.texte === 'PV%, ATQ%, DEF%, Taux Crit, Dmg Crit' && resume.entier && resume.lignes === 2,
-      `principales : fermé, les cinq valeurs se lisent en entier, sur deux lignes (« ${resume.texte} », ${resume.lignes} ligne(s))`);
+    // Cinq principales, les libellés du jeu en forme réduite, tiennent sur
+    // trois lignes : rien n'est tronqué.
+    ok(resume.texte === 'PV%, ATQ%, DEF%, Tx critiq., Dgts critiq.' && resume.entier && resume.lignes === 3,
+      `principales : fermé, les cinq valeurs se lisent en entier, en forme réduite, sur trois lignes (« ${resume.texte} », ${resume.lignes} ligne(s))`);
     const rangees = await page.evaluate(() => {
       const section = document.querySelector('section[aria-label^="Statistique principale"]')!;
       return [...section.querySelectorAll('button[aria-haspopup]')].map((b) => {
@@ -215,10 +217,10 @@ export async function testRenduOptimizerGabaritsLargeurs() {
     // resserre.
     await page.evaluate(monterA('coffre', 400));
     const set = page.locator('[data-set-optimizer="deplie"] > div').first();
-    await set.getByRole('button', { name: 'Violent', exact: true }).click();
-    await set.getByRole('button', { name: 'Will', exact: true }).click();
+    await set.getByRole('button', { name: 'Violente', exact: true }).click();
+    await set.getByRole('button', { name: 'Volonté', exact: true }).click();
     ok(await set.getByText('Set principal', { exact: true }).count() === 0, 'set plein : la grille d’ajout disparaît');
-    await set.getByRole('button', { name: 'Retirer Will' }).click();
+    await set.getByRole('button', { name: 'Retirer Volonté' }).click();
     await page.locator('[data-largeur-coffre]').evaluate(e => { (e as HTMLElement).style.width = '170px'; });
     await page.waitForTimeout(150);
     const apres = await set.evaluate((racine) => {

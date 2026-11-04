@@ -5,6 +5,7 @@ import HelpPopover from '../../HelpPopover';
 import { Interrupteur } from '../../../ui';
 import { type Dispatch, type SetStateAction, type RefObject, type ReactNode } from 'react';
 import { SECTIONS } from './bureau/panneau';
+import { useTraduction } from '../../../hooks/useLangue';
 
 export interface ReglagesAvancesContenuProps {
   slotFilterPreset: SlotFilterPresetKey;
@@ -65,6 +66,8 @@ export default function ReglagesAvancesContenu({ slotFilterPreset, handleSlotFil
   // est un panneau, et une boîte de plus y ferait la mosaïque que le trait
   // évite (docs/02-app/optimizer/ecran/README.md, « Panneaux et sections »).
   // À 314 px, la grille tenait déjà sur une colonne : rien ne change de place.
+  const o = useTraduction().optimizer;
+  const r = o.avances;
   const boite = bureau ? '' : 'rounded-lg border border-border-soft bg-panel2 px-2 py-1.5';
   return (
     <div className={bureau ? SECTIONS : 'grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-3'}>
@@ -75,10 +78,10 @@ export default function ReglagesAvancesContenu({ slotFilterPreset, handleSlotFil
       {/* « Profondeur de recherche » : le pré-filtrage par emplacement du
           moteur, nommé par ce qu'il change pour le joueur (décision de
           l'utilisateur). */}
-      <p className="text-[11.5px] text-ink-dim mb-1">Profondeur de recherche</p>
+      <p className="text-[11.5px] text-ink-dim mb-1">{r.profondeur}</p>
       <div className="flex flex-wrap items-center gap-2">
         <Segmented
-          options={SLOT_FILTER_PRESETS}
+          options={SLOT_FILTER_PRESETS.map((p) => ({ key: p.key, label: o.prereglages[p.key].libelle, hint: o.prereglages[p.key].aide }))}
           value={slotFilterPreset}
           onChange={handleSlotFilterPresetChange}
           // Dans le panneau « Options » : pleine largeur, comme les autres
@@ -89,12 +92,12 @@ export default function ReglagesAvancesContenu({ slotFilterPreset, handleSlotFil
         />
         {dansPanneau && estimate && (
           <span className="text-micro text-ink-dim">
-            Pool de runes = {formatBig(estimate.perSlot.reduce((a, b) => a + b, 0))}
+            {r.pool(formatBig(estimate.perSlot.reduce((a, b) => a + b, 0)))}
           </span>
         )}
       </div>
       <p className="mt-1 text-micro text-warn max-w-[280px]">
-        ⚠️ {SLOT_FILTER_PRESETS.find((p) => p.key === slotFilterPreset)?.hint}
+        ⚠️ {o.prereglages[slotFilterPreset].aide}
       </p>
     </div>
 
@@ -112,20 +115,17 @@ export default function ReglagesAvancesContenu({ slotFilterPreset, handleSlotFil
       <div className="flex items-center justify-between gap-2 py-3 first:pt-0">
         <LibelleEtAide
           bureau={bureau}
-          libelle="Rechercher jusqu'à épuisement complet"
+          libelle={r.exhaustif}
           interrupteur={
             <Interrupteur
               actif={exhaustiveSearch}
               onChange={setExhaustiveSearch}
-              aria-label="Rechercher jusqu'à épuisement complet"
+              aria-label={r.exhaustif}
             />
           }
           aide={
-          <HelpPopover title="Rechercher jusqu'à épuisement complet">
-            Retire la limite de temps de 10 minutes : la recherche continue tant qu'il reste des combinaisons
-            à examiner. Peut prendre très longtemps sur une recherche avec peu de conditions — le bouton{' '}
-            <b className="text-ink">« Arrêter »</b> reste disponible et garde le meilleur trouvé jusque-là.
-            Le plafond d'un million de résultats collectés, lui, reste actif.
+          <HelpPopover title={r.exhaustif}>
+            {r.exhaustifAide}<b className="text-ink">{r.exhaustifArreter}</b>{r.exhaustifAideFin}
           </HelpPopover>
           }
         />
@@ -134,18 +134,17 @@ export default function ReglagesAvancesContenu({ slotFilterPreset, handleSlotFil
       <div className="flex items-center justify-between gap-2 py-3">
         <LibelleEtAide
           bureau={bureau}
-          libelle="Diagnostic approfondi sur 0 résultat"
+          libelle={r.diagnostic}
           interrupteur={
             <Interrupteur
               actif={diagnoseBlockingEnabled}
               onChange={setDiagnoseBlockingEnabled}
-              aria-label="Diagnostic approfondi sur 0 résultat"
+              aria-label={r.diagnostic}
             />
           }
           aide={
-          <HelpPopover title="Diagnostic approfondi sur 0 résultat">
-            Après une recherche à 0 résultat, identifie quelle condition posée libère le plus de candidats si
-            on la retire — <b className="text-ink">un indice, pas une preuve</b>.
+          <HelpPopover title={r.diagnostic}>
+            {r.diagnosticAide}<b className="text-ink">{r.diagnosticIndice}</b>.
           </HelpPopover>
           }
         />
@@ -164,23 +163,20 @@ export default function ReglagesAvancesContenu({ slotFilterPreset, handleSlotFil
         <div className="flex items-center justify-between gap-2 py-3 last:pb-0">
           <LibelleEtAide
             bureau={bureau}
-            libelle="Vérifier toutes les combinaisons trouvées"
+            libelle={r.toutVerifier}
             interrupteur={
               <Interrupteur
                 actif={verifierToutesLesCombinaisons}
                 onChange={setVerifierToutesLesCombinaisons}
-                aria-label="Vérifier toutes les combinaisons trouvées"
+                aria-label={r.toutVerifier}
               />
             }
             aide={
-            <HelpPopover title="Vérifier toutes les combinaisons trouvées">
-              Par défaut, la vérification des artéfacts et de la relique s'arrête dès que{' '}
-              <b className="text-ink">100 combinaisons sont confirmées</b> (300 quand la relique est cherchée) :
-              les suivantes ne sont vérifiées que si tu ouvres leur page.
+            <HelpPopover title={r.toutVerifier}>
+              {r.toutVerifierAide}<b className="text-ink">{r.toutVerifierCent}</b>{r.toutVerifierAideSuite}
               <br />
               <br />
-              Activé, toutes les combinaisons trouvées sont vérifiées, au-delà de ces confirmées : le compte
-              devient complet, mais cela peut prendre plusieurs minutes.
+              {r.toutVerifierActive}
             </HelpPopover>
             }
           />
@@ -222,24 +218,20 @@ export default function ReglagesAvancesContenu({ slotFilterPreset, handleSlotFil
           <LibelleEtAide
             bureau={bureau}
             etire
-            libelle="Compter les effets d'auras Tolerance et Précision dans les conditions"
+            libelle={r.aurasResPre}
             interrupteur={
               <Interrupteur
                 actif={compterAurasResPre}
                 onChange={setCompterAurasResPre}
-                aria-label="Compter les effets d'auras Tolerance et Précision dans les conditions"
+                aria-label={r.aurasResPre}
               />
             }
             aide={
-            <HelpPopover title="Compter les effets d'auras Tolerance et Précision dans les conditions">
-              Activé, chaque set <b className="text-ink">Tolerance</b> ou <b className="text-ink">Accuracy</b> ajoute
-              8 points de RES ou de Précision aux <b className="text-ink">minimums et aux maximums</b> de ces deux
-              conditions : ceux des autres monstres, saisis dans {bureau ? '« Aura, exclusion, avancés »' : '« État de mon monstre »'}, et
-              ceux que forment les runes de chaque build.
+            <HelpPopover title={r.aurasResPre}>
+              {r.aurasResPreAide.debut}<b className="text-ink">{r.aurasResPreAide.tolerance}</b>{r.aurasResPreAide.ou}<b className="text-ink">{r.aurasResPreAide.accuracy}</b>{r.aurasResPreAide.ajoute}<b className="text-ink">{r.aurasResPreAide.minMax}</b>{r.aurasResPreAide.conditions(bureau ? r.aurasResPreAide.ouBureau : r.aurasResPreAide.ouTelephone)}
               <br />
               <br />
-              Désactivé, ces deux conditions portent sur les statistiques sans aucune aura. Les dégâts et les PV
-              effectifs comptent les auras dans les deux cas.
+              {r.aurasResPreAide.desactive}
             </HelpPopover>
             }
           />

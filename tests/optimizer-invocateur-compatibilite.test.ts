@@ -8,6 +8,7 @@ import { photoOptimizer } from '../src/lib/sessionOptimizer';
 import type { OptimizerState } from '../src/hooks/useOptimizerState';
 import { buildRealDamageContext } from '../scripts/lib/realDamageCli';
 import { egal, ok, titre } from './outils';
+import { fr } from '../src/i18n/fr';
 
 export function testOptimizerContenuInvocateurCompatibilite() {
   titre('Optimizer · ancienne valeur invocateur : recette, mémoire, session et script');
@@ -21,7 +22,7 @@ export function testOptimizerContenuInvocateurCompatibilite() {
     excludedSelectors: [], ignoreArtifacts: false, artifactMainByKind: {} });
   egal(recette.damageSetup.summonerSkills, 'normal', 'écriture de recette canonique');
   const legacy = { ...recette, damageSetup: ancien };
-  const relue = parseOptimizerRecipe(JSON.stringify(legacy));
+  const relue = parseOptimizerRecipe(JSON.stringify(legacy), fr);
   ok(!!relue.recipe && !relue.avertissements?.length, 'ancienne recette acceptée sans perte');
   egal(relue.recipe?.damageSetup.summonerSkills, 'normal', 'lecture de recette canonique');
   if (relue.recipe) egal(buildRealDamageContext(relue.recipe, 14104, [])?.setup.summonerSkills, 'normal', 'script : contexte canonique');
@@ -29,7 +30,7 @@ export function testOptimizerContenuInvocateurCompatibilite() {
   const criteres = { ...baseCompleteCriteres(undefined), damageSetup: ancien };
   egal(photoCriteres(criteres, { type: 'personnel' }).damageSetup.summonerSkills, 'normal', 'capture de critères canonique');
   const selector = { source: 'box' as const, unitKey: '1' }, cle = cleMemoireMembre('a', selector);
-  const memoire = lireMembresOptimizer(JSON.stringify({ memories: [[cle, { listId: 'a', selector, com2usId: 14104, criteres }]], teams: [], listContents: [] }));
+  const memoire = lireMembresOptimizer(JSON.stringify({ memories: [[cle, { listId: 'a', selector, com2usId: 14104, criteres }]], teams: [], listContents: [] }), fr);
   egal(memoire.memories.get(cle)?.criteres.damageSetup.summonerSkills, 'normal', 'mémoire ancienne relue');
   egal(memoire.rapport, [], 'mémoire compatible sans rejet');
   const session = composerSession({ maintenant: new Date('2026-01-01'), versionApp: 'test', stockage: {}, compte: null, memoire: {}, optimizer: { damageSetup: ancien } });

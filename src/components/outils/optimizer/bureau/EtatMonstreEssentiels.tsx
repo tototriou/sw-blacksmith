@@ -3,6 +3,8 @@ import { LeaderSkillPicker, RappelsEtatMonstre, TitreEtatMonstre } from '../../E
 import { type ComponentProps } from 'react';
 import { motifLeadAffiche } from '../../../../lib/equipesOptimizer';
 import { ATK_BUFF_ICON, DEF_BUFF_ICON, SPD_BUFF_ICON, type DamageSetup } from '../../../../lib/damage';
+import type { MotifLeadOptimizer } from '../../../../lib/equipesOptimizer';
+import { useTraduction } from '../../../../hooks/useLangue';
 
 // Le type des rappels vient de la carte : seuls l'écran et la carte importent
 // la table des buffs de passif (tests/buffs-de-passif.test.ts).
@@ -12,7 +14,7 @@ export interface EtatMonstreEssentielsProps {
   setup: DamageSetup;
   maj: (patch: Partial<DamageSetup>) => void;
   equipe?: boolean;
-  motifLead?: string | null;
+  motifLead?: MotifLeadOptimizer | null;
   etroit: boolean;
   rappelsBuffs: RappelsBuffs;
 }
@@ -31,23 +33,26 @@ export interface EtatMonstreEssentielsProps {
 // long libellé. L'aide du titre est celle du bureau : sans les sets d'aura ni
 // le paragraphe sur le combat.
 export default function EtatMonstreEssentiels({ setup, maj, equipe = false, motifLead, etroit, rappelsBuffs }: EtatMonstreEssentielsProps) {
+  const o = useTraduction().optimizer;
+  const e = o.etat;
+  const motif = motifLeadAffiche(motifLead);
   return (
-    <section aria-label="État de mon monstre" className="flex flex-col gap-1.5">
+    <section aria-label={e.titre} className="flex flex-col gap-1.5">
       <TitreEtatMonstre bureau />
       <div className="flex justify-between gap-1">
-        <EffetVignette icone={ATK_BUFF_ICON} libelle="Buff ATQ" description="Augmente l’ATQ du monstre de 50 %."
+        <EffetVignette icone={ATK_BUFF_ICON} libelle={e.buffs.atk} description={e.descriptionsBuffs.atk}
           onClick={() => maj({ atkBuff: !setup.atkBuff })} actif={setup.atkBuff} etroit={etroit} largeur="w-14" />
-        <EffetVignette icone={DEF_BUFF_ICON} libelle="Buff DEF" description="Augmente la DEF du monstre de 70 %."
+        <EffetVignette icone={DEF_BUFF_ICON} libelle={e.buffs.def} description={e.descriptionsBuffs.def}
           onClick={() => maj({ defBuff: !setup.defBuff })} actif={setup.defBuff} etroit={etroit} largeur="w-14" />
-        <EffetVignette icone={SPD_BUFF_ICON} libelle="Buff VIT" description="Augmente la VIT du monstre de 30 %."
+        <EffetVignette icone={SPD_BUFF_ICON} libelle={e.buffs.spd} description={e.descriptionsBuffs.spd}
           onClick={() => maj({ spdBuff: !setup.spdBuff })} actif={setup.spdBuff} etroit={etroit} largeur="w-14" />
       </div>
       <LeaderSkillPicker setup={setup} maj={maj} />
       {/* Le motif d'un lead d'équipe inactif ne se montre que s'il existe, sans
           place réservée (décision de l'utilisateur) : il paraît SOUS le lead,
           qui ne bouge donc pas ; seuls les rappels, dessous, descendent. */}
-      {equipe && motifLeadAffiche(motifLead) && (
-        <p className="text-xs text-warn">{motifLeadAffiche(motifLead)}</p>
+      {equipe && motif && (
+        <p className="text-xs text-warn">{o.motifsLead[motif]}</p>
       )}
       <RappelsEtatMonstre rappelsBuffs={rappelsBuffs} />
     </section>

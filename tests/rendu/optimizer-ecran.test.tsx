@@ -156,14 +156,14 @@ export function testRenduOptimizerResultatsEntete() {
     '0 résultat : ni infobulle des confirmées, ni « Adapter… », ni « Trier par »');
   ok(tVide.includes('Astuce : active le diagnostic approfondi'), '0 résultat : le diagnostic (palier 2, désactivé) propose son réglage');
   const impossible = texteVisible(recherche({ status: 'done', result: resultat(0) }, { minStats: { cr: 100 } }));
-  ok(/Taux Crit minimum demandé 100\s?%/.test(impossible), '0 résultat et condition hors de portée : le diagnostic de faisabilité la nomme');
+  ok(/Tx critiq\. minimum demandé 100\s?%/.test(impossible), '0 résultat et condition hors de portée : le diagnostic de faisabilité la nomme');
 
   const proche = { runeIds: candidat(1).runeIds, stats: STATS, effTotal: 0, shortfalls: [{ key: 'spd', kind: 'min', requested: 200, actual: 190, shortfall: 10 }] };
   ok(texteVisible(recherche({ status: 'done', result: { ...resultat(0), globalNearMiss: proche } })).includes('Quoi ajuster pour trouver des builds'),
     '0 résultat et un quasi-succès : « Quoi ajuster pour trouver des builds »');
   const avecResultats = texteVisible(recherche({ status: 'done', result: { ...resultat(1), globalNearMiss: proche } }, { minStats: { cr: 100 } }));
   ok(!avecResultats.includes('Quoi ajuster pour trouver des builds') && !avecResultats.includes('Astuce : active le diagnostic approfondi')
-    && !/Taux Crit minimum demandé 100\s?%/.test(avecResultats),
+    && !/Tx critiq\. minimum demandé 100\s?%/.test(avecResultats),
   'des résultats : aucun des trois blocs de 0 résultat (faisabilité, diagnostic approfondi, quasi-succès), même avec leurs données');
 
   const un = recherche({ status: 'done', result: resultat(1) });

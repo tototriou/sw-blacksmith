@@ -1,6 +1,6 @@
 # RTA · Catégories de monstres
 
-Étiquettes **libres**, créées par le joueur (« Striper », « Lead SPD », « AoE »,
+Étiquettes **libres**, créées par le joueur (« Striper », « Lead VIT », « AoE »,
 « Anti-Chasun »…), avec une couleur, et appliquées aux monstres de sa prépa.
 Les cartes concernées portent un **anneau de cette couleur**.
 
@@ -15,9 +15,13 @@ existantes classent par set (Violent, Swift…) ; les catégories offrent une
 **seconde lecture, transversale**, que chacun définit comme il veut. Les deux
 coexistent : un monstre reste dans sa section et porte ses couleurs.
 
-## Catégorie « Lead SPD » proposée d'office
+## Catégorie « Lead VIT » proposée d'office
 
-À la **première prépa non vide**, une catégorie **« Lead SPD »** est créée et
+Son nom est celui de la langue affichée **au moment de sa création** (« Lead VIT » en
+français, « Lead SPD » en anglais) : c'est ensuite une donnée du joueur, qui ne change pas avec
+la langue et se renomme comme les autres.
+
+À la **première prépa non vide**, une catégorie **« Lead VIT »** est créée et
 pré-remplie. C'est le classement que tout le monde fait de tête en RTA : autant
 le donner déjà fait.
 
@@ -38,7 +42,7 @@ vitesse.
   (prépa non vide *et* au moins un monstre à lead VIT), sinon on la perdrait sans
   l'avoir jamais montrée.
 - ⚠️ Un enregistrement à la forme d'un simple tableau est lu avec `seeded`
-  **à faux** : un joueur qui a créé des catégories sans « Lead SPD » doit lui
+  **à faux** : un joueur qui a créé des catégories sans « Lead VIT » doit lui
   aussi se la voir proposer.
 - Ensuite elle **vit sa vie** : renommée, vidée ou supprimée comme les autres.
   Elle n'est pas recréée.
@@ -153,7 +157,7 @@ pour qu'on distingue les couleurs sur une carte de cette taille.
   épouse les coins arrondis. C'est un `<span>` en `absolute` par-dessus.
 - L'ordre des segments suit **l'ordre de création** des catégories : stable d'une
   carte à l'autre et d'un rendu à l'autre.
-- Les libellés passent en **infobulle** de la carte (« Striper · Lead SPD »).
+- Les libellés passent en **infobulle** de la carte (« Striper · Lead VIT »).
 
 ## Barre de catégories
 

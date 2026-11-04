@@ -4,6 +4,7 @@ import { BuildRapide, VIT_BASE_REFERENCE, buildsLesPlusRapides, cleCombo } from 
 import { useBuildsRapides } from '../../hooks/useBuildsRapides';
 import { COMPACT, useMediaQuery } from '../../hooks/useMediaQuery';
 import { useStickyState } from '../../hooks/useStickyState';
+import { useTraduction } from '../../hooks/useLangue';
 import { Bouton, FlottantAuto, Onglets } from '../../ui';
 import RuneWheel from '../RuneWheel';
 import { RuneDetailBox } from '../PieceDetail';
@@ -42,6 +43,8 @@ function CarteBuild({
   // à la rune.
   detailEnLigne: boolean;
 }) {
+  const textes = useTraduction();
+  const br = textes.buildsRapides;
   const cleRune = (slot: number) => `${cle}-r${slot}`;
   const runeOuverte: RuneDetail | undefined = build.runes.find((r) => ouverte === cleRune(r.slot));
   return (
@@ -80,17 +83,17 @@ function CarteBuild({
         <div className="flex min-w-0 flex-1 flex-col gap-1">
           <div className="flex items-baseline justify-between gap-1">
             <span className="font-mono text-xs font-bold text-star">#{rang}</span>
-            <span className="font-mono text-nano text-ink-dim" title="Efficience moyenne des 6 runes">
-              Eff. {fmt(build.effMoyenne)} %
+            <span className="font-mono text-nano text-ink-dim" title={br.effMoyenneAide}>
+              {br.eff(fmt(build.effMoyenne))}
             </span>
           </div>
           <p className="leading-none">
             <span className="font-display text-2xl tabular-nums text-ink">{build.total}</span>{' '}
-            <span className="label">VIT</span>
+            <span className="label">{textes.jeu.stats.spd}</span>
           </p>
           <div className="grid grid-cols-2 gap-1">
-            <Part libelle="Base" valeur={String(VIT_BASE_REFERENCE)} />
-            <Part libelle="Runes" valeur={`+${build.vitRunes}`} />
+            <Part libelle={br.base} valeur={String(VIT_BASE_REFERENCE)} />
+            <Part libelle={textes.filtresRunes.runes} valeur={`+${build.vitRunes}`} />
           </div>
         </div>
       </div>
@@ -107,6 +110,9 @@ function CarteBuild({
 // Les builds les plus rapides du compte, par combinaison de sets (le réglage
 // des Paramètres). Voir docs/02-app/compte/feat-runes/resume.md.
 export default function BuildsRapides({ runes, className = '' }: { runes: RuneDetail[]; className?: string }) {
+  const textes = useTraduction();
+  const jeu = textes.jeu;
+  const br = textes.buildsRapides;
   const reglage = useBuildsRapides();
   // ⚠️ Recalculé à chaque import ou changement de réglage seulement : ~6 ms à
   // 4 000 runes et 10 builds par combinaison, mesuré — pas besoin de Worker.
@@ -138,7 +144,7 @@ export default function BuildsRapides({ runes, className = '' }: { runes: RuneDe
 
   return (
     <Panel
-      title="Builds les plus rapides"
+      title={br.titre}
       className={className}
       // La fenêtre de choix s'ouvre ICI, sur place : la même que celle des
       // Paramètres, sans quitter le Résumé.
@@ -148,26 +154,25 @@ export default function BuildsRapides({ runes, className = '' }: { runes: RuneDe
           ton="accent"
           fond="vide"
           trait="aucun"
-          libelle="Choisir les combinaisons"
+          libelle={br.choisir}
           onClick={() => setDialogue(true)}
         />
       }
     >
       {dialogue && <DialogueBuildsRapides onClose={() => setDialogue(false)} />}
       <p className="mb-3 text-xs leading-relaxed text-ink-dim">
-        Pour chaque combinaison, le build de 6 runes le plus rapide, puis le suivant{' '}
-        <b className="text-ink">sans les runes des précédents</b>. VIT d'un monstre de base{' '}
-        {VIT_BASE_REFERENCE}, sans totem ni lead.
+        {br.aide1}{' '}
+        <b className="text-ink">{br.aideGras}</b>. {br.aide2(jeu.stats.spd, VIT_BASE_REFERENCE)}
       </p>
       {!courant ? (
-        <p className="text-sm text-ink-dim">Aucune combinaison choisie : ajoute-en avec « Choisir les combinaisons ».</p>
+        <p className="text-sm text-ink-dim">{br.aucune}</p>
       ) : (
         <>
           {/* De VRAIS onglets (`Onglets`) : l'onglet ouvert coiffe les builds du
               dessous. Chacun porte la VIT de son #1 : on compare les
               combinaisons sans les ouvrir une à une. */}
           <Onglets
-            aria-label="Combinaison affichée"
+            aria-label={br.combinaisonAffichee}
             className="mb-3 xl:hidden"
             valeur={cleCombo(courant.combo)}
             onChange={setChoisi}
@@ -176,7 +181,7 @@ export default function BuildsRapides({ runes, className = '' }: { runes: RuneDe
               icone: <SymbolesCombo combo={combo} taille={14} />,
               libelle: (
                 <>
-                  {nomCombo(combo)}
+                  {nomCombo(combo, jeu)}
                   {/* La VIT du #1 se détache du nom : collée, elle se lisait
                       comme la fin du libellé. */}
                   <span className="ml-1 font-mono tabular-nums opacity-70">{builds[0]?.total ?? '—'}</span>
@@ -193,10 +198,10 @@ export default function BuildsRapides({ runes, className = '' }: { runes: RuneDe
                       enfoncé nomme déjà la combinaison. */}
                   <h4 className="mb-1.5 hidden items-center gap-1.5 text-xs font-bold text-ink xl:flex">
                     <SymbolesCombo combo={combo} />
-                    {nomCombo(combo)}
+                    {nomCombo(combo, jeu)}
                   </h4>
                   {builds.length === 0 ? (
-                    <p className="text-xs text-ink-dim">Aucun build possible avec tes runes.</p>
+                    <p className="text-xs text-ink-dim">{br.aucunBuild}</p>
                   ) : (
                     // 228 px au plus serré : 4 cartes par ligne à 1280 px de
                     // fenêtre, 5 à 1536 (barre latérale dépliée).

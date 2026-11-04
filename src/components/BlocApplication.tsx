@@ -8,6 +8,9 @@ import {
   telechargerMiseAJour,
 } from '../lib/bureau';
 import { useEtatSwex } from '../hooks/useEtatSwex';
+import { useTraduction } from '../hooks/useLangue';
+import type { Dictionnaire } from '../i18n/fr';
+import { formatDateHeure } from '../i18n/format';
 import Bouton from '../ui/Bouton';
 import Selecteur from '../ui/Selecteur';
 
@@ -28,35 +31,33 @@ export interface PresentationMiseAJour {
 
 // Pure : ce que le bloc montre pour un état (`null` : la page n'a encore rien
 // reçu, comme « aucune »).
-export function presentationMiseAJour(etat: EtatMiseAJour | null): PresentationMiseAJour {
+export function presentationMiseAJour(etat: EtatMiseAJour | null, t: Dictionnaire): PresentationMiseAJour {
+  const a = t.application;
   switch (etat?.phase ?? 'aucune') {
     case 'aucune':
-      return { libelle: 'Rechercher', action: rechercherMiseAJour, texte: 'Les nouvelles versions sont cherchées au lancement.' };
+      return { libelle: a.rechercher, action: rechercherMiseAJour, texte: a.aucune };
     case 'recherche':
-      return { libelle: 'Recherche…', texte: "Recherche d'une nouvelle version…" };
+      return { libelle: a.recherche, texte: a.enRecherche };
     case 'a-jour':
-      return { libelle: 'Rechercher', action: rechercherMiseAJour, texte: 'Tu as la dernière version.' };
+      return { libelle: a.rechercher, action: rechercherMiseAJour, texte: a.aJour };
     case 'injoignable':
-      return { libelle: 'Rechercher', action: rechercherMiseAJour, texte: 'Impossible de vérifier : pas de connexion ?' };
+      return { libelle: a.rechercher, action: rechercherMiseAJour, texte: a.injoignable };
     case 'disponible':
-      return { libelle: 'Mettre à jour', action: telechargerMiseAJour, texte: `Nouvelle version ${etat!.version} disponible.` };
+      return { libelle: a.mettreAJour, action: telechargerMiseAJour, texte: a.disponible(etat!.version) };
     case 'telechargement':
-      return { libelle: 'Téléchargement…', texte: `Téléchargement de la version ${etat!.version}…` };
+      return { libelle: a.telechargement, texte: a.enTelechargement(etat!.version) };
     case 'prete':
-      return {
-        libelle: 'Redémarrer',
-        action: redemarrerPourMettreAJour,
-        texte: `Version ${etat!.version} prête : installée au redémarrage, ou à la fermeture de l'app.`,
-      };
+      return { libelle: a.redemarrer, action: redemarrerPourMettreAJour, texte: a.prete(etat!.version) };
     case 'echec':
-      return { libelle: 'Réessayer', action: telechargerMiseAJour, texte: "Le téléchargement n'a pas abouti." };
+      return { libelle: a.reessayer, action: telechargerMiseAJour, texte: a.echec };
   }
 }
 
 export default function BlocApplication({ classeCarte, intitule }: { classeCarte: string; intitule?: ReactNode }) {
+  const textes = useTraduction();
   const [etat, setEtat] = useState<EtatMiseAJour | null>(null);
   useEffect(() => suivreMiseAJour(setEtat), []);
-  const p = presentationMiseAJour(etat);
+  const p = presentationMiseAJour(etat, textes);
   return (
     // `data-bloc-application` : repère du mode preuve (bureau/preuve.ts).
     <section data-bloc-application>
@@ -64,7 +65,7 @@ export default function BlocApplication({ classeCarte, intitule }: { classeCarte
       <div className={classeCarte}>
         <div className="py-2.5">
           <div className="flex items-center justify-between gap-3">
-            <span className="text-sm font-semibold text-ink">Version {__APP_VERSION__}</span>
+            <span className="text-sm font-semibold text-ink">{textes.application.version(__APP_VERSION__)}</span>
             {/* ⚠️ Largeur réservée : « Rechercher » → « Recherche… » ne
                 déplace pas le bouton qu'on vient de cliquer. */}
             <Bouton
@@ -85,8 +86,8 @@ export default function BlocApplication({ classeCarte, intitule }: { classeCarte
 
 // ── Le dossier SW Exporter ─────────────────────────────
 
-const date = (ms: number) =>
-  new Date(ms).toLocaleString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+const date = (ms: number, t: Dictionnaire) =>
+  formatDateHeure(ms, t.codeLangue, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 
 export interface PresentationSwex {
   // La ligne sous « Dossier SW Exporter ».
@@ -99,29 +100,26 @@ export interface PresentationSwex {
 
 // Pure : ce que montrent les deux lignes pour un état (`null` : rien reçu).
 // Toujours une ligne sous chacune (hauteur constante).
-export function presentationSwex(etat: EtatSwex | null): PresentationSwex {
+export function presentationSwex(etat: EtatSwex | null, t: Dictionnaire): PresentationSwex {
+  const a = t.application;
   if (!etat?.dossier) {
-    return {
-      dossier: 'Choisis le dossier où SW Exporter enregistre ses exports : « Mon compte » suivra chaque nouvel export.',
-      options: [],
-      invocateur: 'Aucun dossier choisi.',
-    };
+    return { dossier: a.swexSansDossier, options: [], invocateur: a.swexAucunDossier };
   }
   if (etat.introuvable) {
-    return { dossier: etat.dossier, options: [], invocateur: 'Dossier introuvable : vérifie qu’il existe encore, ou choisis-en un autre.' };
+    return { dossier: etat.dossier, options: [], invocateur: a.swexIntrouvable };
   }
   // Deux invocateurs du même nom (deux serveurs) : l'identifiant les sépare.
   const homonymes = new Set(etat.exports.filter((e, i, t) => t.findIndex((x) => x.nom === e.nom) !== i).map((e) => e.nom));
   const options = etat.exports.map((e) => ({ valeur: e.fichier, libelle: homonymes.has(e.nom) ? `${e.nom} (${e.id})` : e.nom }));
   if (options.length === 0) {
-    return { dossier: etat.dossier, options, invocateur: 'Aucun export de compte à la racine de ce dossier.' };
+    return { dossier: etat.dossier, options, invocateur: a.swexAucunExport };
   }
   const suivi = etat.exports.find((e) => e.fichier === etat.fichier);
-  if (!suivi) return { dossier: etat.dossier, options, invocateur: 'Choisis l’invocateur à suivre.' };
+  if (!suivi) return { dossier: etat.dossier, options, invocateur: a.swexChoisirInvocateur };
   const invocateur =
     etat.dernierLu !== null && etat.dernierLu >= suivi.modifie
-      ? `Export du ${date(suivi.modifie)} — lu.`
-      : `Export du ${date(suivi.modifie)} — lecture en cours…`;
+      ? a.swexLu(date(suivi.modifie, t))
+      : a.swexEnLecture(date(suivi.modifie, t));
   return { dossier: etat.dossier, options, invocateur };
 }
 
@@ -129,13 +127,15 @@ export function presentationSwex(etat: EtatSwex | null): PresentationSwex {
 // la barre latérale (SidebarCompte) : un seul réglage, deux accès.
 function ReglageSwex() {
   const { etat, agir, choisirInvocateur, choisirDossier } = useEtatSwex();
-  const p = presentationSwex(etat);
+  const textes = useTraduction();
+  const a = textes.application;
+  const p = presentationSwex(etat, textes);
   return (
     // `data-reglage-swex` : repère du mode preuve (bureau/preuve.ts).
     <div data-reglage-swex className="border-t border-border/60">
       <div className="py-2.5">
         <div className="flex items-center justify-between gap-3">
-          <span className="text-sm font-semibold text-ink">Dossier SW Exporter</span>
+          <span className="text-sm font-semibold text-ink">{a.dossierSwex}</span>
           <div className="flex flex-none gap-2">
             {/* Toujours affiché, désactivé sans dossier : il ne disparaît pas
                 selon l'état. */}
@@ -143,23 +143,23 @@ function ReglageSwex() {
               taille="sm"
               fond="vide"
               trait="aucun"
-              libelle="Retirer"
-              title="Ne plus suivre de dossier SW Exporter"
+              libelle={textes.commun.retirer}
+              title={a.retirerSwex}
               disabled={!etat?.dossier}
               onClick={() => void agir((s) => s.oublier())}
             />
-            <Bouton taille="sm" libelle="Choisir…" onClick={choisirDossier} />
+            <Bouton taille="sm" libelle={a.choisir} onClick={choisirDossier} />
           </div>
         </div>
         <p className="mt-1 break-all text-micro leading-snug text-ink-dim">{p.dossier}</p>
       </div>
       <div className="border-t border-border/60 py-2.5">
         <div className="flex items-center justify-between gap-3">
-          <span className="text-sm font-semibold text-ink">Invocateur</span>
+          <span className="text-sm font-semibold text-ink">{a.invocateur}</span>
           <Selecteur
             taille="sm"
             pleineLargeur={false}
-            aria-label="Invocateur à suivre"
+            aria-label={a.invocateurAria}
             value={etat?.fichier ?? ''}
             disabled={p.options.length === 0}
             onChange={(e) => {
@@ -169,7 +169,7 @@ function ReglageSwex() {
             className="min-w-[10rem]"
           >
             <option value="" disabled>
-              {p.options.length === 0 ? '—' : 'Choisir…'}
+              {p.options.length === 0 ? '—' : a.choisir}
             </option>
             {p.options.map((o) => (
               <option key={o.valeur} value={o.valeur}>

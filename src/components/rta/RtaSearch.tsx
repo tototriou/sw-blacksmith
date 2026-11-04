@@ -5,6 +5,7 @@ import MonsterAvatar from '../MonsterAvatar';
 import { formesJouables } from '../../lib/monsterForms';
 import { useComboboxNav } from '../../hooks/useComboboxNav';
 import { Champ, Flottant } from '../../ui';
+import { useTraduction } from '../../hooks/useLangue';
 
 interface Props {
   monsters: Monster[];
@@ -24,6 +25,7 @@ const MAX_RESULTS = 25;
 // [useComboboxNav](src/hooks/useComboboxNav.ts), partagé avec
 // [MonsterPicker](src/components/MonsterPicker.tsx).
 export default function RtaSearch({ monsters, addedIds, onAdd }: Props) {
+  const textes = useTraduction();
   const [query, setQuery] = useState('');
   const idBase = useId();
 
@@ -70,7 +72,7 @@ export default function RtaSearch({ monsters, addedIds, onAdd }: Props) {
         {...nav.inputProps}
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        placeholder="Rechercher un monstre à ajouter à ta prépa RTA…"
+        placeholder={textes.rechercheRta.placeholder}
         icone={<Search className="h-[18px] w-[18px] compact:h-4 compact:w-4" />}
         className="rounded-xl bg-panel py-3.5 pl-11 pr-4 text-base
                    compact:py-2 compact:pl-9 compact:pr-3"
@@ -82,12 +84,12 @@ export default function RtaSearch({ monsters, addedIds, onAdd }: Props) {
       {nav.open && (
         <Flottant
           {...nav.listProps}
-          aria-label="Résultats de la recherche"
+          aria-label={textes.rechercheRta.resultats}
           rembourrage="aucun"
           className="max-h-[360px] overflow-y-auto"
         >
           {results.length === 0 ? (
-            <div className="px-4 py-3 text-ink-dim text-sm">Aucun monstre trouvé.</div>
+            <div className="px-4 py-3 text-ink-dim text-sm">{textes.rechercheRta.aucun}</div>
           ) : (
             results.map((m, i) => {
               const added = addedIds.has(String(m.id));
@@ -116,7 +118,7 @@ export default function RtaSearch({ monsters, addedIds, onAdd }: Props) {
                     <span className="font-mono text-micro text-star">{m.stars}★</span>
                   ) : null}
                   <span className="font-mono text-micro text-ink-dim w-16 text-right">
-                    SPD {m.stats.speed ?? '—'}
+                    {textes.jeu.stats.spd} {m.stats.speed ?? '—'}
                   </span>
                   {added ? (
                     <Check size={15} className="text-good flex-none" />

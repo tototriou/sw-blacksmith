@@ -116,6 +116,11 @@ decks qui jouent l'un des trois.
   le même nom exige **deux** monstres. Sans ça, « chloe chloe » passerait sur un
   deck n'en portant qu'une.
 - **Un champ vide n'exige rien** : sinon ouvrir un champ viderait la page.
+- ⚠️ **Une collaboration répond aussi au nom de sa version SW**, et
+  inversement (`jumeauCollab`) : « Werner » trouve le deck noté Satoru Gojo.
+  C'est le même monstre, et qui a recruté l'un ne connaît pas forcément le nom
+  de l'autre.
+
 ### Rendu — trois cases, un champ
 
 ⚠️ **Trois CASES au-dessus, et non trois champs texte** : elles montrent la

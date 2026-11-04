@@ -1,6 +1,7 @@
 import { BoutonIcone, Champ } from '../../../ui';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { type Dispatch, type SetStateAction } from 'react';
+import { useTraduction } from '../../../hooks/useLangue';
 
 export interface PaginationResultatsProps {
   setResultsPage: Dispatch<SetStateAction<number>>;
@@ -19,13 +20,14 @@ export interface PaginationResultatsProps {
 export default function PaginationResultats({ setResultsPage, resultsPage, pageDraft, setPageDraft, totalResultsPages, pagesPeuventMonter = false,
   inactif = false }: PaginationResultatsProps) {
   const plus = pagesPeuventMonter && !inactif;
+  const p = useTraduction().optimizer.resultats.pagination;
   return (
     <div className="mt-4 flex items-center justify-center gap-3">
       <BoutonIcone
         cadre
-        libelle="Page précédente"
+        libelle={p.precedente}
         icone={<ChevronLeft size={16} />}
-        onClick={() => setResultsPage((p) => Math.max(1, p - 1))}
+        onClick={() => setResultsPage((n) => Math.max(1, n - 1))}
         disabled={inactif || resultsPage <= 1}
         className="h-8 w-8"
       />
@@ -33,11 +35,11 @@ export default function PaginationResultats({ setResultsPage, resultsPage, pageD
       {/* « Page » en police du texte ; la mono sur les chiffres seuls (le
           numéro saisi, le nombre de pages). */}
       <div className="flex items-center gap-1.5 text-[12.5px] text-ink-dim">
-        <span>Page</span>
+        <span>{p.page}</span>
         <Champ
           inputMode="numeric"
           value={pageDraft ?? String(resultsPage)}
-          aria-label="Aller à la page"
+          aria-label={p.allerA}
           disabled={inactif}
           pleineLargeur={false}
           onChange={(e) => {
@@ -72,9 +74,9 @@ export default function PaginationResultats({ setResultsPage, resultsPage, pageD
 
       <BoutonIcone
         cadre
-        libelle="Page suivante"
+        libelle={p.suivante}
         icone={<ChevronRight size={16} />}
-        onClick={() => setResultsPage((p) => Math.min(totalResultsPages, p + 1))}
+        onClick={() => setResultsPage((n) => Math.min(totalResultsPages, n + 1))}
         disabled={inactif || resultsPage >= totalResultsPages}
         className="h-8 w-8"
       />

@@ -1,5 +1,6 @@
 import { RECO_STATS } from '../../../types';
 import { type BlockingConditionsDiagnosis } from '../../../lib/runeBuildOptim';
+import { useTraduction } from '../../../hooks/useLangue';
 
 export interface DiagnosticApprofondiProps {
   blockingDiagnosis: BlockingConditionsDiagnosis | null;
@@ -9,11 +10,13 @@ export interface DiagnosticApprofondiProps {
 }
 
 export default function DiagnosticApprofondi({ blockingDiagnosis, diagnoseBlockingEnabled, bureau = false }: DiagnosticApprofondiProps) {
+  const textes = useTraduction();
+  const jeu = textes.jeu;
+  const d = textes.optimizer.resultats.diagnostic;
   return blockingDiagnosis && blockingDiagnosis.impacts.length > 0 ? (
     <div className={bureau ? 'mb-3 border-t border-border-soft pt-3' : 'mb-3 rounded-lg border border-border bg-panel p-3'}>
       <p className="mb-1.5 text-xs font-semibold text-ink">
-        Diagnostic approfondi — pool le plus restreint : {blockingDiagnosis.baselineMinSlot} candidat(s)
-        actuellement.
+        {d.titre(blockingDiagnosis.baselineMinSlot)}
       </p>
       <ul className="space-y-1">
         {blockingDiagnosis.impacts.map((imp) => {
@@ -22,16 +25,15 @@ export default function DiagnosticApprofondi({ blockingDiagnosis, diagnoseBlocki
             <li key={`${imp.key}-${imp.kind}`} className="text-xs text-ink-dim">
               {imp.delta == null ? (
                 <>
-                  <span className="font-semibold text-ink">{st.label}</span> ({imp.kind === 'min' ? '≥' : '≤'}{' '}
+                  <span className="font-semibold text-ink">{jeu.stats[st.key]}</span> ({imp.kind === 'min' ? '≥' : '≤'}{' '}
                   {imp.requested}
-                  {st.suffix}) : aucun gain, même desserrée entièrement.
+                  {st.suffix}){d.aucunGain}
                 </>
               ) : (
                 <>
-                  <span className="font-semibold text-ink">{st.label}</span>{' '}
+                  <span className="font-semibold text-ink">{jeu.stats[st.key]}</span>{' '}
                   {imp.kind === 'min' ? `−${imp.delta}` : `+${imp.delta}`}
-                  {st.suffix} suffit ({imp.kind === 'min' ? '≥' : '≤'} {imp.threshold}
-                  {st.suffix}) : {imp.poolMinSlotAtThreshold} candidat(s).
+                  {st.suffix}{d.suffit(`${imp.kind === 'min' ? '≥' : '≤'} ${imp.threshold}${st.suffix}`, imp.poolMinSlotAtThreshold)}
                 </>
               )}
             </li>
@@ -39,14 +41,13 @@ export default function DiagnosticApprofondi({ blockingDiagnosis, diagnoseBlocki
         })}
       </ul>
       <p className="mt-1.5 text-micro text-ink-dim">
-        Un indice, pas une preuve — basé sur le pré-filtrage sûr, pas sur une recherche complète.
+        {d.indice}
       </p>
     </div>
   ) : (
     !diagnoseBlockingEnabled && (
       <p className="mb-3 text-[11px] text-ink-dim">
-        Astuce : active le diagnostic approfondi (Réglages avancés) pour identifier quelle
-        condition libère le plus de candidats.
+        {d.astuce}
       </p>
     )
   );

@@ -77,6 +77,24 @@ const SEQUENCES_API: Record<number, number[]> = {
   14113: [24203, 24213],
   14613: [24703, 24713],
 };
+// Séquences de l'utilisateur (2026-11-02), testées dans
+// `degats-effets-entre-coups.test.ts` : la portée de chaque coup (PPK Combo,
+// Chain Combo Attack, Tempest Sword — elles ont une cible secondaire), ou le
+// seul coup qui lit les effets de la cible (Critical Link, Hairpin: Black
+// Flash, Exorcist Shuriken Formation, Bullet Assassination, Shining
+// Butterfly — sans cible secondaire, sauf Tempest Sword).
+const SEQUENCES_UTILISATEUR: Record<number, number[]> = {
+  10613: [19803, 19813, 19823],
+  13608: [23503, 23513],
+  13609: [23504, 23514],
+  13915: [24005, 24015],
+  14415: [24505, 24515],
+  20315: [30605, 30615],
+  20915: [31205, 31215],
+  22714: [33404, 33414],
+  23214: [33904, 33914],
+};
+const SEQUENCES_UTILISATEUR_CAPABLES = [10613, 13915, 14415];
 const LAPIS = 19811;
 const BLADE_SURGE_LAPIS = 10616;
 
@@ -126,10 +144,12 @@ export default function testDegatsBladeSurge() {
     }
   }
   for (const formes of Object.values(porteurs)) formes.sort((a, b) => a - b);
-  egal(porteurs, { ...FAMILLE, ...SEQUENCES_API }, 'corpus : exactement les cinq identifiants Blade Surge (et leurs sept formes) et les six séquences à phase d’auxiliaire portent une séquence');
+  egal(porteurs, { ...FAMILLE, ...SEQUENCES_API, ...SEQUENCES_UTILISATEUR },
+    'corpus : exactement les cinq identifiants Blade Surge (et leurs sept formes), les six séquences à phase d’auxiliaire et les neuf séquences de l’utilisateur portent une séquence');
   egal(Object.keys(FAMILLE).flatMap((id) => porteurs[Number(id)] ?? []).length, 7, 'corpus : sept formes pour Blade Surge');
-  egal([...idsCapables].sort((a, b) => a - b), Object.keys({ ...FAMILLE, ...SEQUENCES_API }).map(Number).sort((a, b) => a - b),
-    'capacité « autres ennemis » : les cinq identifiants Blade Surge et les six séquences à phase d’auxiliaire, aucun autre sort du corpus');
+  egal([...idsCapables].sort((a, b) => a - b),
+    [...Object.keys({ ...FAMILLE, ...SEQUENCES_API }).map(Number), ...SEQUENCES_UTILISATEUR_CAPABLES].sort((a, b) => a - b),
+    'capacité « autres ennemis » : Blade Surge, les six séquences à phase d’auxiliaire, PPK Combo, Chain Combo Attack et Tempest Sword, aucun autre sort du corpus');
   for (const id of HORS_FAMILLE) {
     ok(!cibleSecondairePriseEnCharge(id), `hors famille : ${id} sans cible secondaire`);
   }

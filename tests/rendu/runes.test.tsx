@@ -55,7 +55,8 @@ export function rendreVue(vue: AccountView): string {
   );
 }
 
-const SETS = ['Swift', 'Violent', 'Despair', 'Will', 'Rage', 'Fatal'];
+// Les noms du jeu en français (le rendu serveur est en français).
+const SETS = ['Rapide', 'Violente', 'Désespoir', 'Volonté', 'Rage', 'Fatale'];
 
 // Filtres communs à la Liste, aux Courbes et à l'Optimisation : sets, slots
 // (tous enclenchés par défaut), et — hors Optimisation, qui les range ailleurs —
@@ -89,10 +90,10 @@ export function testRenduRunesResume() {
   ok(t.includes('Qualité du stock Montées au +15 7 · 77.8 % 4 substats révélés 8 · 88.9 % Gemmées 1 · 11.1 % Antiques 1 · 11.1 %'), 'la qualité du stock');
   ok(t.includes('Raretés Légendaire 6 Héroïque 2 Rare 1 Magique 0 Commun 0'), 'les raretés');
   ok(t.includes('Slot 1 1 moy. 89.9 % max 89.9 %') && t.includes('Slot 4 2 moy. 94.7 % max 109.5 %') && t.includes('Slot 6 2 moy. 90.0 % max 96.7 %'), 'par emplacement : nombre, moyenne, maximum');
-  ok(t.includes('Stats principales (slots 2 · 4 · 6) VIT 2 · 33.3 % Dmg Crit 2 · 33.3 % PV% 1 · 16.7 % ATQ% 1 · 16.7 %'), 'les stats principales des slots pairs');
+  ok(t.includes('Stats principales (slots 2 · 4 · 6) VIT 2 · 33.3 % Dgts critiq. 2 · 33.3 % PV % 1 · 16.7 % ATQ % 1 · 16.7 %'), 'les stats principales des slots pairs, nommées comme dans le filtre du jeu');
   ok(t.includes('Marge de progression') && t.includes('Eff. moyenne 85.2 % aujourd\'hui Potentiel moyen 112.9 % +27.7 pts'), 'la marge de progression : aujourd\'hui, potentiel, écart');
   ok(t.includes('Meules à poser 9 100.0 % du stock Gemmes à poser 8 88.9 % du stock'), 'meules et gemmes à poser');
-  ok(t.includes('Par set (6) Violent 3 moy. 94.5 % · max 109.5 %'), 'par set : nombre, moyenne, maximum');
+  ok(t.includes('Par set (6) Violente 3 moy. 94.5 % · max 109.5 %'), 'par set : nombre, moyenne, maximum');
 }
 
 export function testRenduRunesListe() {
@@ -117,7 +118,7 @@ export function testRenduRunesListe() {
   ok(t.includes('9 runes · meilleure efficience 109.5%'), 'le compte et la meilleure efficience');
   const tuiles = b.filter((x) => / Efficience \d/.test(x.texte));
   egal(tuiles.length, 9, 'une tuile par rune');
-  egal(tuiles[0].texte, 'Dmg Crit +80% Légendaire Efficience 109.5% VIT 30 Taux Crit 20% ATQ 8% Précision 8% 4 Set : Chance de tour supplémentaire 22%', 'la meilleure en tête : stat principale, rareté, efficience, secondaires, effet du set');
+  egal(tuiles[0].texte, 'Dgts critiq. +80% Légendaire Efficience 109.5% VIT 30 Tx critiq. 20% ATQ 8% Précision 8% 4 Set : Chance de tour supplémentaire 22%', 'la meilleure en tête : stat principale, rareté, efficience, secondaires, effet du set');
   ok(tuiles.some((x) => x.texte.startsWith('VIT +42 RES +6%')), 'la stat innée');
   ok(tuiles.some((x) => x.texte.includes('PV 10% +3%') && x.title === 'Voir les valeurs totales, meule comprise' && x.presse === false), 'une rune meulée : la meule, et la bascule vers les totaux');
   ok(tuiles.some((x) => x.texte.includes('Héroïque')) && tuiles.some((x) => x.texte.includes('Rare')), 'les raretés');
@@ -180,7 +181,7 @@ export function testRenduRunesOptimisation() {
   ok(b.some((x) => x.texte === 'Runes utilisées' && x.presse === false && !!x.title?.startsWith('Ne garder que les 2 runes qui jouent')), '« Runes utilisées », et combien');
   ok(b.some((x) => x.ariaLabel === 'Comment est-ce calculé ?' && x.presse === false), 'aide « Comment est-ce calculé ? »');
   ok(t.includes('1 rune ≥ 100%'), 'combien de runes au palier');
-  ok(b.some((x) => x.texte === 'Dmg Crit +80% actuelle 109.5% Héro +19.9 → 129.5% Légend +28.3 → 137.8%'), 'une rune : actuelle, puis gain et potentiel héroïque et légendaire');
+  ok(b.some((x) => x.texte === 'Dgts critiq. +80% actuelle 109.5% Héro +19.9 → 129.5% Légend +28.3 → 137.8%'), 'une rune : actuelle, puis gain et potentiel héroïque et légendaire');
 }
 
 export function testRenduRunesAVenir() {

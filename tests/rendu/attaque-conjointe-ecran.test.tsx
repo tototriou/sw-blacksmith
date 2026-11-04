@@ -19,8 +19,8 @@ import { egal, ok, titre } from '../outils';
 import { rendre, texteVisible } from './outils-rendu';
 
 
-const CASSIE = 19315;
-const CROSS_FIRE = 10125; // S1 ordinaire
+export const CASSIE = 19315;
+export const CROSS_FIRE = 10125; // S1 ordinaire
 const DEFEAT_WILD_DOG = 10130; // S2 ordinaire
 const MONSTRE_TEAM_UP = 11001; // porte le S2 Team Up 2006 (effet Ally Attack)
 const TEAM_UP = 2006;
@@ -35,7 +35,7 @@ const PURIFICATION = 21415;
 const VERMILION = 32615;
 const RITE_OF_ASHES = 22015;
 
-function carte(monstre: number, skillCom2usId: number, etroit: boolean, setup: Partial<DamageSetup> = {}): string {
+export function carte(monstre: number, skillCom2usId: number, etroit: boolean, setup: Partial<DamageSetup> = {}): string {
   const sorts = monsterDamageSkills(loadMonsterSkills(monstre));
   const resolved = resolveDamageSkill(sorts, skillCom2usId);
   const damageSetup: DamageSetup = { ...DEFAULT_DAMAGE_SETUP, skillCom2usId, ...setup };

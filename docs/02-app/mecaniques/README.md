@@ -4,7 +4,17 @@ Page de **documentation des mécaniques de jeu** Summoners War (référence
 utilisateur, façon `swcalc.cz`). Pas d'état, pas de données chargées : contenu
 statique + sommaire cliquable.
 
-Fichier : [MechanicsPage.tsx](src/pages/MechanicsPage.tsx)
+Fichiers : [MechanicsPage.tsx](src/pages/MechanicsPage.tsx) (la mise en page) ·
+[mecaniques.fr.tsx](src/i18n/articles/mecaniques.fr.tsx) et
+[mecaniques.en.tsx](src/i18n/articles/mecaniques.en.tsx) (l'article, un par langue) ·
+[blocs.tsx](src/components/mecaniques/blocs.tsx) (formule, terme, liste).
+
+⚠️ **Un article par langue** (décision de l'utilisateur) : le texte suivi, ses
+formules et ses termes s'écrivent d'un trait dans chaque langue ; la page affiche
+celui de la langue choisie. Les deux versions gardent les mêmes sections, dans le
+même ordre, avec les mêmes ancres (`testRenduMecaniquesLangues`). Une correction
+de l'article se fait dans les deux. Les mots du jeu sont ceux de la langue : le
+set Rapide en français, Swift en anglais.
 
 ## Contenu
 
@@ -13,7 +23,7 @@ Le contenu se limite **strictement à ce que couvre swcalc.cz/game-mechanics**
 changement de hash pour ne pas casser le routing) puis sections en panneaux :
 
 1. **Vitesse de combat** — `⌈ base × (1 + Σ%vit) + Σvit_plate ⌉ × Slow × BuffVit`, avec
-   correction de troncature pour les runes Swift (perte à l'arrondi de `base × 0,25`).
+   correction de troncature pour le set Rapide (perte à l'arrondi de `base × 0,25`).
 2. **Barre d'action & ordre de tour** — `ΔATB/tick = vitesse × 7/100` (7 % par tick, sauf en
    raid, 4,5 %, et en RTA, 1,5 % — source :
    [speed-tuning/feat-formule.md](../speed-tuning/feat-formule.md), « Mode RTA ») ; action à 100.

@@ -1,5 +1,6 @@
 import { exclusionSelectorKey, type ExclusionSource, type ExclusionCandidate } from '../../../lib/optimizerExclusion';
 import ExclusionCandidateRow from '../ExclusionCandidateRow';
+import { useTraduction } from '../../../hooks/useLangue';
 
 export interface ChoixExemplaireProps {
   candidatesBySource: Record<ExclusionSource, ExclusionCandidate[]>;
@@ -8,9 +9,10 @@ export interface ChoixExemplaireProps {
 }
 
 export default function ChoixExemplaire({ candidatesBySource, gearSource, choisirExemplaireZoneD }: ChoixExemplaireProps) {
+  const c = useTraduction().optimizer.criteres;
   return (
     candidatesBySource[gearSource].length === 0 ? (
-      <div className="px-3 py-2 text-ink-dim text-[12.5px]">Aucun exemplaire.</div>
+      <div className="px-3 py-2 text-ink-dim text-[12.5px]">{c.aucunExemplaire}</div>
     ) : (
       candidatesBySource[gearSource].map((c) => (
         <button

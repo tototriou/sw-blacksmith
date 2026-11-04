@@ -2,7 +2,7 @@ import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Search, Plus, Users, Swords, X, Zap, Gauge, Eye, EyeOff, Download, Upload, Check, Scissors, Play, ChevronUp, ChevronDown, Sparkles, CopyPlus } from 'lucide-react';
 // Le chronomètre de l'entrée « Speed tuning » de la nav.
 import { IconeSpeedTuning } from '../IconesAtelier';
-import { ELEMENTS, Monster, SiegeTeam } from '../../types';
+import { Monster, SiegeTeam } from '../../types';
 import { LeadInfo, combatSpeed, leadsDeVitesse, runeSpeedForTarget, SIEGE_TICKS } from '../../lib/speed';
 import {
   simuler,
@@ -13,7 +13,6 @@ import {
   artefactsRequis,
   diagnostiquerSequence,
   fenetresRequises,
-  RaisonOrdre,
   Fenetre,
   HORIZON_TICKS,
   Camp,
@@ -49,7 +48,7 @@ import {
   uidDe,
   visibles,
 } from '../../lib/speedTuneLignes';
-import { kitVitesse, pourcentBarre, sortsVitesse, KitVitesse, SortVitesse, KIT_VIDE } from '../../lib/speedTuneKit';
+import { kitVitesse, sortsVitesse, KitVitesse, SortVitesse, KIT_VIDE } from '../../lib/speedTuneKit';
 import { passifsVitesse, pointsDeGain, PassifVitesse } from '../../lib/speedTunePassif';
 import { analyseAutomatique, cumulsEstimes, sortRetenu, sortSecondRetenu, EntreeAuto } from '../../lib/speedTuneAuto';
 import { chargerDetail } from '../../lib/monsterSkills';
@@ -79,6 +78,10 @@ import {
   Jeton,
   ZoneCliquable,
 } from '../../ui';
+import { useTraduction } from '../../hooks/useLangue';
+import { nomElement } from '../../i18n/jeu';
+import { formatNombre } from '../../i18n/format';
+import type { Dictionnaire } from '../../i18n/fr';
 
 // Icône de vitesse du jeu, celle des cartes RTA/Siège. Sert de repère au buff
 // de vitesse dans la grille dédiée.
@@ -119,55 +122,55 @@ interface Props {
 // Le rappel de la règle, en une phrase. ⚠️ Écrit UNE fois : la page le met sous
 // son titre, la modale sous le sien — il ne doit pas exister deux versions qui
 // se mettent à diverger.
-export const REGLE_TICKS = (
-  <>
-    À chaque tick, la barre d'action monte de <span className="text-ink">vitesse × 7 %</span> ; un seul monstre
-    agit par tick. Ajoute tes monstres et ceux d'en face pour voir qui joue avant qui.
-  </>
-);
-
-
+export function RegleTicks() {
+  const r = useTraduction().speedTuning.regle;
+  return (
+    <>
+      {r.debut}<span className="text-ink">{r.formule}</span>{r.fin}
+    </>
+  );
+}
 
 // Un modificateur signé, tel qu'il se lit dans une grille : « +45 », « −50 ».
 // ⚠️ Les effets posés par les compétences peuvent être NÉGATIFS (une barre
 // vidée, un ralenti) — « +-50 » serait illisible.
 const signe = (v: number) => (v > 0 ? `+${v}` : `−${Math.abs(v)}`);
 
+// Un pourcentage de barre au dixième, comme `pourcentBarre`, mais dans la
+// langue de l'écran : « 34,5 » en français, « 34.5 » en anglais.
+const barre = (n: number, t: Dictionnaire) =>
+  formatNombre(Math.round(n * 10) / 10, t.codeLangue, { maximumFractionDigits: 1 });
+
 // Ce qu'un sort fait, en une ligne, pour le menu de l'analyse poussée. Un sort
 // sans effet sur la vitesse reste proposable — c'est un tour où l'on ne fait
 // rien pour le tune, et c'est une information.
-function libelleSort(x: SortVitesse): string {
+function libelleSort(x: SortVitesse, t: Dictionnaire): string {
+  const s = t.speedTuning.sort;
   const bouts: string[] = [];
   const e = x.effet;
-  if (e.atbEquipe) bouts.push(`+${pourcentBarre(e.atbEquipe)} % barre équipe`);
-  if (e.atbAllie) bouts.push(`+${pourcentBarre(e.atbAllie)} % barre 1 allié`);
-  if (e.atbSoi) bouts.push(`+${pourcentBarre(e.atbSoi)} % sa barre`);
-  if (x.atbAuChoix?.unite === 'retrait')
-    bouts.push(`+${pourcentBarre(x.atbAuChoix.pas)} % barre équipe par buff retiré`);
-  if (x.atbAuChoix?.unite === 'pourcent') bouts.push(`jusqu'à +${x.atbAuChoix.max} % barre équipe`);
+  if (e.atbTousAZero) bouts.push(s.barresAZero);
+  if (e.atbTous) bouts.push(s.barreTous(barre(e.atbTous, t)));
+  if (e.atbEquipe) bouts.push(s.barreEquipe(barre(e.atbEquipe, t)));
+  if (e.atbAllie) bouts.push(s.barreAllie(barre(e.atbAllie, t)));
+  if (e.atbSoi) bouts.push(s.barreSoi(barre(e.atbSoi, t)));
+  if (x.atbAuChoix?.unite === 'retrait') bouts.push(s.barreParRetrait(barre(x.atbAuChoix.pas, t)));
+  if (x.atbAuChoix?.unite === 'pourcent') bouts.push(s.barreJusqua(x.atbAuChoix.max));
   // ⚠️ Annoncé, mais annoncé comme NON COMPTÉ : le tune se juge sans ce qu'on
   // retire à l'adverse (voir `sansReductionAdverse`). Le taire laisserait croire
   // que le calcul en tient compte.
   if (e.atbEnnemi)
-    bouts.push(`−${e.atbEnnemi} % barre adv${e.atbEnnemiTous ? ' (tous)' : ''} (non compté)`);
-  if (e.buffEquipe) bouts.push('buff VIT équipe');
-  if (e.buffSoi) bouts.push('buff VIT sur soi');
-  if (e.buffAllie) bouts.push('buff VIT 1 allié');
-  if (e.ralenti) bouts.push(`ralenti adv${e.ralentiTous ? ' (tous)' : ''} (non compté)`);
-  if (x.rejoue) bouts.push('rejoue');
-  if (x.cooldown > 0) bouts.push(`recharge ${x.cooldown} tours`);
+    bouts.push(s.barreAdverse(e.atbEnnemi, !!e.atbEnnemiTous));
+  if (e.buffEquipe) bouts.push(e.buffEquipeSansSoi ? s.buffAutresAllies : s.buffEquipe);
+  if (e.buffSoi) bouts.push(s.buffSoi);
+  if (e.buffAllie) bouts.push(s.buffAllie);
+  if (e.ralenti) bouts.push(s.ralenti(!!e.ralentiTous));
+  if (x.optionArbre) bouts.push(s.optionArbre);
+  if (x.rejoue) bouts.push(s.rejoue);
+  if (x.cooldown > 0) bouts.push(s.recharge(x.cooldown));
   if (x.chance != null) bouts.push(`${x.chance} %`);
-  const quoi = bouts.length ? bouts.join(' · ') : 'sans effet sur la vitesse';
+  const quoi = bouts.length ? bouts.join(' · ') : s.sansEffet;
   return `${x.slot ? `S${x.slot} ` : ''}${x.nom} — ${quoi}`;
 }
-
-// Ce qui cloche pour un monstre dans l'ordre demandé, dit en clair.
-const LIBELLE_RAISON: Record<RaisonOrdre, string> = {
-  'nagit-pas': "n'agit pas",
-  'apres-adverse': "joue après l'adverse",
-  'trop-tot': 'joue trop tôt',
-  'trop-tard': 'joue trop tard',
-};
 
 // Repère des ticks en tête : vitesse de combat minimale pour agir à chaque tick.
 // Plage utile en jeu, les deux ticks siège (239/286) marqués en couleur.
@@ -233,6 +236,8 @@ export default function SpeedTuningSection({
   deckInitial,
   entete = true,
 }: Props) {
+  const textes = useTraduction();
+  const st = textes.speedTuning;
   // ⚠️ **Ce composant NE CALCULE RIEN.** Tout le métier — vitesses, sorts,
   // analyse, adversaire de référence — vit dans `useSpeedTune` et les libs
   // qu'il appelle. Ne restent ici que le rendu et ce qui n'a de sens qu'à
@@ -342,33 +347,33 @@ export default function SpeedTuningSection({
   } = useSpeedTune({ allMonsters, siegeDefenseTeams, siegeOffenseTeams, deckInitial });
 
   const raisonExportOptimizer = useMemo(() => {
-    if (!compteCharge) return 'Charge un compte pour exporter vers l’Optimizer.';
-    if (!onImporterEquipe || !sourcesOptimizer) return 'Export vers l’Optimizer indisponible.';
-    return importerSpeedTuneOptimizer(lignes, leadAllie, sourcesOptimizer, deckInitial ?? undefined).membres.length
-      ? undefined : 'Aucun monstre importable dans ton équipe : choisis un monstre et sa vitesse de runes.';
-  }, [compteCharge, onImporterEquipe, sourcesOptimizer, lignes, leadAllie, deckInitial]);
-  const exporterOptimizer = () => onImporterEquipe?.(data => importerSpeedTuneOptimizer(lignes, leadAllie, data, deckInitial ?? undefined));
+    if (!compteCharge) return st.export.sansCompte;
+    if (!onImporterEquipe || !sourcesOptimizer) return st.export.indisponible;
+    return importerSpeedTuneOptimizer(lignes, leadAllie, sourcesOptimizer, textes, deckInitial ?? undefined).membres.length
+      ? undefined : st.export.vide;
+  }, [compteCharge, onImporterEquipe, sourcesOptimizer, lignes, leadAllie, deckInitial, textes, st]);
+  const exporterOptimizer = () => onImporterEquipe?.((data, t) => importerSpeedTuneOptimizer(lignes, leadAllie, data, t, deckInitial ?? undefined));
 
   function besoin(l: Ligne, combatCible: number | null, arteCible: number | null, arteActuel: number) {
     const runes = combatCible == null ? null : runesPour(l, combatCible);
     const arte = arteCible == null ? null : arteCible - arteActuel;
     if (runes == null && arte == null) {
-      return <span className="text-xs text-ink-dim">hors de portée</span>;
+      return <span className="text-xs text-ink-dim">{st.analyse.horsDePortee}</span>;
     }
     return (
       <span className="flex items-center gap-1.5">
         {runes != null && (
           <span className="rounded border border-accent/50 px-1.5 py-0.5 font-mono text-micro font-bold text-accent">
-            {signe(runes)} SPD
+            {st.analyse.runesSpd(signe(runes))}
           </span>
         )}
-        {runes != null && arte != null && <span className="text-micro text-ink-dim">ou</span>}
+        {runes != null && arte != null && <span className="text-micro text-ink-dim">{st.analyse.ou}</span>}
         {arte != null && (
           <span
             className="rounded border border-accent/50 px-1.5 py-0.5 font-mono text-micro font-bold text-accent"
-            title="Artéfact « Effet aug. VIT » : il amplifie le buff de vitesse reçu"
+            title={st.analyse.artefactAide}
           >
-            {signe(arte)} spd buff effect
+            {signe(arte)} {st.analyse.effetBuff}
           </span>
         )}
       </span>
@@ -396,7 +401,7 @@ export default function SpeedTuningSection({
   const ordreDeTour = (className: string) => (
     <section className={`rounded-lg border border-border bg-panel ${className}`}>
       <div className="border-b border-border-soft px-4 py-2.5 text-micro font-semibold uppercase tracking-wider text-ink-dimmer">
-        Ordre de tour
+        {st.ordreDeTour}
       </div>
       <div className="flex flex-wrap items-center gap-2 px-4 py-3.5">
         {premiers.map((a, i) => {
@@ -420,7 +425,7 @@ export default function SpeedTuningSection({
                   </span>
                 }
                 libelle={l.monster.name}
-                detail={<span className="font-mono">tick {a.tick}</span>}
+                detail={<span className="font-mono">{st.tick(a.tick)}</span>}
               />
             </span>
           );
@@ -441,9 +446,9 @@ export default function SpeedTuningSection({
           </span>
           <div>
             <h1 className="text-lg font-semibold leading-tight lg:font-display lg:text-xl lg:font-normal lg:tracking-wide lg:text-ink">
-              Speed tuning
+              {st.titre}
             </h1>
-            <p className="mt-0.5 text-sm text-ink-dim">{REGLE_TICKS}</p>
+            <p className="mt-0.5 text-sm text-ink-dim"><RegleTicks /></p>
           </div>
         </header>
       )}
@@ -451,8 +456,8 @@ export default function SpeedTuningSection({
       {/* Repère des ticks */}
       <section className="rounded-lg border border-border bg-panel">
         <div className="border-b border-border-soft px-4 py-2 text-micro font-semibold uppercase tracking-wider text-ink-dimmer">
-          Vitesse de combat pour agir au tick
-          <span className="ml-2 font-normal normal-case tracking-normal text-ink-dimmer">· repère de speed tune</span>
+          {st.repere.titre}
+          <span className="ml-2 font-normal normal-case tracking-normal text-ink-dimmer">{st.repere.sousTitre}</span>
         </div>
         <div className="flex overflow-x-auto">
           {RULER_TICKS.map((n, i) => {
@@ -502,7 +507,7 @@ export default function SpeedTuningSection({
       <div className="flex flex-wrap gap-4 max-lg:flex-col">
         <CampPanneau
           camp="allie"
-          titre="Ton équipe"
+          titre={st.tonEquipe}
           icone={<Users size={15} />}
           lead={leadAllie}
           onLead={poserLead('allie')}
@@ -530,7 +535,7 @@ export default function SpeedTuningSection({
         />
         <CampPanneau
           camp="ennemi"
-          titre="En face"
+          titre={st.enFace}
           icone={<Swords size={15} />}
           lead={leadEnnemi}
           onLead={poserLead('ennemi')}
@@ -558,11 +563,11 @@ export default function SpeedTuningSection({
 
       {rien ? (
         <div className="rounded-lg border border-dashed border-border/70 py-10 text-center text-sm text-ink-dim">
-          Ajoute au moins un monstre pour visualiser le remplissage des barres et l'ordre de tour.
+          {st.vide}
         </div>
       ) : rienVisible ? (
         <div className="rounded-lg border border-dashed border-border/70 py-10 text-center text-sm text-ink-dim">
-          Tous les monstres sont masqués — réaffiche-en un (icône œil) pour voir les barres.
+          {st.tousMasques}
         </div>
       ) : (
         <>
@@ -584,21 +589,21 @@ export default function SpeedTuningSection({
           <section className="min-w-[440px] flex-1 rounded-lg border border-border bg-panel">
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-border-soft px-4 py-2.5">
                   <span className="text-micro font-semibold uppercase tracking-wider text-ink-dimmer">
-                    Ordre des sorts
+                    {st.ordreSorts.titre}
                   </span>
                   <span className="ml-auto">
                     <Interrupteur
                       actif={poussee}
                       onChange={setPoussee}
-                      libelle={<span className="text-xs font-semibold">Afficher</span>}
-                      title="Replie la liste pour gagner de la place. ⚠️ Les sorts déjà choisis continuent de compter : refermer ne défait rien."
+                      libelle={<span className="text-xs font-semibold">{st.ordreSorts.afficher}</span>}
+                      title={st.ordreSorts.afficherAide}
                     />
                   </span>
                 </div>
                 {poussee && (
                 <div className="px-4 py-3.5">
                       {ordreVoulu.length === 0 ? (
-                        <p className="text-sm text-ink-dim">Ajoute des monstres à ton équipe pour composer un ordre.</p>
+                        <p className="text-sm text-ink-dim">{st.ordreSorts.vide}</p>
                       ) : (
                         <>
                           <ul className="space-y-2">
@@ -629,14 +634,14 @@ export default function SpeedTuningSection({
                                       taille="serre"
                                       onClick={() => deplacer(cle, -1)}
                                       disabled={i === 0}
-                                      libelle={`Monter ${l.monster.name}`}
+                                      libelle={st.ordreSorts.monter(l.monster.name)}
                                       icone={<ChevronUp size={13} />}
                                     />
                                     <BoutonIcone
                                       taille="serre"
                                       onClick={() => deplacer(cle, 1)}
                                       disabled={i === ordreVoulu.length - 1}
-                                      libelle={`Descendre ${l.monster.name}`}
+                                      libelle={st.ordreSorts.descendre(l.monster.name)}
                                       icone={<ChevronDown size={13} />}
                                     />
                                   </span>
@@ -652,7 +657,7 @@ export default function SpeedTuningSection({
                                         dans la liste — celui-ci est déjà dans la
                                         pastille à gauche. */}
                                     {rang > 1 && (
-                                      <span className="ml-1.5 font-normal text-ink-dim">· {rang}ᵉ tour</span>
+                                      <span className="ml-1.5 font-normal text-ink-dim">· {st.ordreSorts.tour(rang)}</span>
                                     )}
                                   </span>
                                   {/* Ce qu'il LANCE à son tour, dans un menu à
@@ -675,15 +680,15 @@ export default function SpeedTuningSection({
                                       même cible que la barre — un seul sort. */}
                                   {(sortDeLaLigne?.effet.atbAllie || sortDeLaLigne?.effet.buffAllie) && (
                                     <label className="flex items-center gap-1.5">
-                                      <span className="text-micro uppercase tracking-wide text-ink-dimmer">sur</span>
+                                      <span className="text-micro uppercase tracking-wide text-ink-dimmer">{st.ordreSorts.sur}</span>
                                       <Selecteur
                                         taille="sm"
                                         pleineLargeur={false}
                                         value={cibleSort[cle] ?? ''}
                                         onChange={(e) => choisirCible(cle, e.target.value)}
-                                        aria-label={`Allié visé par le sort de ${l.monster.name}`}
+                                        aria-label={st.ordreSorts.allieVise(l.monster.name)}
                                       >
-                                        <option value="">barre la plus basse</option>
+                                        <option value="">{st.ordreSorts.barreLaPlusBasse}</option>
                                         {/* ⚠️ **Le lanceur EST dans la liste.** Le jeu
                                             autorise à se viser soi-même avec un sort
                                             « sur un allié », et c'est même le geste
@@ -696,7 +701,7 @@ export default function SpeedTuningSection({
                                           .map((x) => (
                                             <option key={x.uid} value={x.uid}>
                                               {x.monster.name}
-                                              {x.uid === uid ? ' (lui-même)' : ''}
+                                              {x.uid === uid ? st.ordreSorts.luiMeme : ''}
                                             </option>
                                           ))}
                                       </Selecteur>
@@ -710,18 +715,18 @@ export default function SpeedTuningSection({
                                   {sortDeLaLigne?.atbAuChoix?.unite === 'retrait' && (
                                     <label className="flex items-center gap-1.5">
                                       <span className="text-micro uppercase tracking-wide text-ink-dimmer">
-                                        buffs retirés
+                                        {st.ordreSorts.buffsRetires}
                                       </span>
                                       <Selecteur
                                         taille="sm"
                                         pleineLargeur={false}
                                         value={String(atbChoisi[cle] ?? 0)}
                                         onChange={(e) => choisirAtb(cle, Number(e.target.value))}
-                                        aria-label={`Buffs retirés par le sort de ${l.monster.name}`}
+                                        aria-label={st.ordreSorts.buffsRetiresAria(l.monster.name)}
                                       >
                                         {Array.from({ length: sortDeLaLigne.atbAuChoix.max + 1 }, (_, n) => (
                                           <option key={n} value={n}>
-                                            {n} (+{pourcentBarre(n * sortDeLaLigne.atbAuChoix!.pas)} % équipe)
+                                            {st.ordreSorts.optionRetrait(n, barre(n * sortDeLaLigne.atbAuChoix!.pas, textes))}
                                           </option>
                                         ))}
                                       </Selecteur>
@@ -730,7 +735,7 @@ export default function SpeedTuningSection({
                                   {sortDeLaLigne?.atbAuChoix?.unite === 'pourcent' && (
                                     <label className="flex items-center gap-1.5">
                                       <span className="text-micro uppercase tracking-wide text-ink-dimmer">
-                                        barre équipe
+                                        {st.ordreSorts.barreEquipe}
                                       </span>
                                       <NumberField
                                         value={atbChoisi[cle] ?? 0}
@@ -739,7 +744,7 @@ export default function SpeedTuningSection({
                                         max={sortDeLaLigne.atbAuChoix.max}
                                         step={5}
                                         suffix="%"
-                                        ariaLabel={`Barre rendue à l'équipe par le sort de ${l.monster.name}`}
+                                        ariaLabel={st.ordreSorts.barreEquipeAria(l.monster.name)}
                                       />
                                     </label>
                                   )}
@@ -754,7 +759,7 @@ export default function SpeedTuningSection({
                                   <BoutonIcone
                                     taille="serre"
                                     onClick={() => ajouterOccurrence(cle)}
-                                    libelle={`${l.monster.name} joue un tour de plus — ajoute une ligne pour désigner ce qu'il y lance`}
+                                    libelle={st.ordreSorts.tourDePlus(l.monster.name)}
                                     icone={<Plus size={13} />}
                                   />
                                   {/* ⚠️ Seul un tour AJOUTÉ se retire. Le 1ᵉʳ n'est
@@ -765,7 +770,7 @@ export default function SpeedTuningSection({
                                     <BoutonIcone
                                       taille="serre"
                                       onClick={() => retirerOccurrence(cle)}
-                                      libelle={`Retirer le ${rang}ᵉ tour de ${l.monster.name} de l'ordre`}
+                                      libelle={st.ordreSorts.retirerTour(rang, l.monster.name)}
                                       icone={<X size={13} />}
                                     />
                                   )}
@@ -773,15 +778,15 @@ export default function SpeedTuningSection({
                                     <span className="flex items-center gap-1.5">
                                       <span
                                         className="flex-none rounded border border-accent/50 px-1 text-micro font-bold uppercase tracking-wide text-accent"
-                                        title="Cette compétence lui rend son tour : il rejoue aussitôt, au même tick."
+                                        title={st.ordreSorts.rejoueAide}
                                       >
-                                        rejoue
+                                        {st.sort.rejoue}
                                       </span>
                                       <ChoixSort
                                         sorts={liste.filter((x) => x.nom !== sortActif(l)?.nom)}
                                         valeur={sortChoisi2[uid] ?? ''}
                                         onChoisir={(v) => choisirSecond(uid, v)}
-                                        prefixe="puis : "
+                                        prefixe={st.ordreSorts.puis}
                                         nomMonstre={l.monster.name}
                                       />
                                     </span>
@@ -804,7 +809,7 @@ export default function SpeedTuningSection({
           <section className="min-w-[440px] flex-1 rounded-lg border border-border bg-panel">
               <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-border-soft px-4 py-2.5">
                 <span className="text-micro font-semibold uppercase tracking-wider text-ink-dimmer">
-                  Analyse
+                  {st.analyse.titre}
                 </span>
                 <span className="ml-auto flex flex-wrap items-center gap-2">
                   {/* ⚠️ Une ACTION, pas un mode : l'analyse ÉCRIT dans les grilles
@@ -812,13 +817,9 @@ export default function SpeedTuningSection({
                       qui tourne en fond et qui repasserait sur ce qu'on règle. */}
                   <Bouton
                     icone={<Play size={14} />}
-                    libelle={auto ? 'Relancer' : 'Analyser'}
+                    libelle={auto ? st.analyse.relancer : st.analyse.analyser}
                     disabled={!aAllie}
-                    title={
-                      !aAllie
-                        ? "Ajoute d'abord des monstres à ton équipe."
-                        : "Lit les kits et POSE le résultat dans les grilles, comme si tu les remplissais à la main. Ensuite tout est modifiable : l'analyse ne repasse plus, sauf si tu changes un sort."
-                    }
+                    title={!aAllie ? st.analyse.equipeVide : st.analyse.analyserAide}
                     onClick={analyser}
                   />
                 </span>
@@ -826,7 +827,7 @@ export default function SpeedTuningSection({
               <div className="px-4 py-3.5 space-y-3">
                 {!auto ? null : !aAllie ? (
                   <p className="text-sm text-ink-dim">
-                    Ajoute des monstres à ton équipe pour vérifier que rien ne la coupe.
+                    {st.analyse.ajouterPourVerifier}
                   </p>
                 ) : (
                   <>
@@ -843,8 +844,8 @@ export default function SpeedTuningSection({
                         <p className="flex items-center gap-2 text-sm font-semibold text-bad">
                           <Scissors size={16} className="flex-none" />
                           {sequence.problemes.every((p) => p.raison === 'apres-adverse')
-                            ? 'Ton équipe joue dans l’ordre demandé, mais elle se fait couper.'
-                            : "Les vitesses de tes monstres ne permettent pas de jouer dans l'ordre demandé."}
+                            ? st.analyse.coupee
+                            : st.analyse.ordreImpossible}
                         </p>
                         <ul className="flex flex-col gap-y-1.5">
                           {ordreVoulu.map((cle) => {
@@ -877,20 +878,20 @@ export default function SpeedTuningSection({
                             const verdict =
                               p.raison === 'nagit-pas'
                                 ? rang > 1
-                                  ? `ne joue pas une ${rang}ᵉ fois`
-                                  : "n'agit pas"
+                                  ? st.analyse.neJouePas(rang)
+                                  : st.analyse.nAgitPas
                                 : p.raison === 'apres-adverse'
-                                  ? 'se fait couper'
+                                  ? st.analyse.seFaitCouper
                                   : p.raison === 'trop-tot'
-                                    ? 'est trop rapide'
-                                    : 'est trop lent';
+                                    ? st.analyse.tropRapide
+                                    : st.analyse.tropLent;
                             const peutCalculer = runes != null || arte != null;
                             return (
                               <li key={cle} className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
                                 <MonsterAvatar monster={l.monster} size={22} element={false} />
                                 <span className="font-semibold">
                                   {l.monster.name}
-                                  {rang > 1 && <span className="ml-1 font-normal text-ink-dim">· {rang}ᵉ tour</span>}
+                                  {rang > 1 && <span className="ml-1 font-normal text-ink-dim">· {st.ordreSorts.tour(rang)}</span>}
                                 </span>
                                 <span className="text-ink-dim">{verdict}</span>
                                 {peutCalculer && besoin(l, cible ?? null, arte ?? null, arteActuel)}
@@ -903,7 +904,7 @@ export default function SpeedTuningSection({
                       <>
                         <p className="flex items-center gap-2 text-sm font-semibold text-bad">
                           <Scissors size={16} className="flex-none" />
-                          Les vitesses de tes monstres ne sont pas suffisantes pour être speed tune.
+                          {st.analyse.pasTune}
                         </p>
                         {/* ⚠️ On liste ce que le solveur DEMANDE, pas ce qui est
                             coupé — un monstre qui passe déjà peut recevoir une
@@ -920,9 +921,9 @@ export default function SpeedTuningSection({
                               <li key={c.id} className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
                                 <MonsterAvatar monster={l.monster} size={22} element={false} />
                                 <span className="font-semibold">{l.monster.name}</span>
-                                <span className="text-ink-dim">manque</span>
+                                <span className="text-ink-dim">{st.analyse.manque}</span>
                                 {besoin(l, cible, arte, a?.artefactActuel ?? 0)}
-                                <span className="text-ink-dim">pour ne pas se faire cut</span>
+                                <span className="text-ink-dim">{st.analyse.pourNePasCut}</span>
                               </li>
                             );
                           })}
@@ -931,7 +932,7 @@ export default function SpeedTuningSection({
                     ) : (
                       <p className="flex items-center gap-2 text-sm font-semibold text-good">
                         <Check size={16} className="flex-none" />
-                        Ta team est speed tune.
+                        {st.analyse.tune}
                       </p>
                     )}
                   </>
@@ -949,9 +950,9 @@ export default function SpeedTuningSection({
           {/* Barre d'action par tick (résultat, lecture seule) */}
           <section className="rounded-lg border border-border bg-panel">
             <div className="border-b border-border-soft px-4 py-2.5 text-micro font-semibold uppercase tracking-wider text-ink-dimmer">
-              Barre d'action par tick
+              {st.barres.titre}
               <span className="ml-2 font-normal normal-case tracking-normal text-ink-dimmer">
-                · % rempli sur {HORIZON_TICKS} ticks — la case surlignée = ce monstre prend le tour (la barre repart de 0)
+                {st.barres.sousTitre(HORIZON_TICKS)}
               </span>
             </div>
             <div className="overflow-x-auto" ref={enregistrer(0)} onScroll={synchro}>
@@ -960,7 +961,7 @@ export default function SpeedTuningSection({
                 style={{ width: LARGEUR_TABLE }}
               >
                 <Colonnes />
-                <TeteTicks premiere="Monstre" />
+                <TeteTicks premiere={st.barres.monstre} />
                 <tbody>
                   {lignesTableau.map((e) => {
                     const l = ligneParUid.get(e.id);
@@ -987,11 +988,11 @@ export default function SpeedTuningSection({
                                 <span className="truncate font-sans text-sm">{l.monster.name}</span>
                                 {adv && (
                                   <span className="flex-none rounded border border-bad/50 px-1 text-micro font-bold uppercase tracking-wide text-bad">
-                                    adv
+                                    {st.barres.adv}
                                   </span>
                                 )}
                               </span>
-                              <span className="block text-micro text-ink-dim">{e.incBase.toFixed(3)} %/tick</span>
+                              <span className="block text-micro text-ink-dim">{st.barres.parTick(e.incBase.toFixed(3))}</span>
                             </span>
                           </span>
                         </th>
@@ -1031,12 +1032,12 @@ export default function SpeedTuningSection({
             </div>
             <div className="flex flex-wrap gap-x-5 gap-y-1 border-t border-border-soft px-4 py-2.5 text-xs text-ink-dim">
               <span className="flex items-center gap-1.5">
-                <span className="inline-block h-3 w-3 rounded bg-good/25" /> Ton équipe agit
+                <span className="inline-block h-3 w-3 rounded bg-good/25" /> {st.barres.equipeAgit}
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="inline-block h-3 w-3 rounded bg-bad/25" /> Adversaire agit
+                <span className="inline-block h-3 w-3 rounded bg-bad/25" /> {st.barres.adversaireAgit}
               </span>
-              <span>Un seul monstre par tick ; le numéro donne l'ordre des tours.</span>
+              <span>{st.barres.unParTick}</span>
             </div>
           </section>
 
@@ -1044,8 +1045,8 @@ export default function SpeedTuningSection({
           <GrilleMod
             champ="atbMod"
             mode="nombre"
-            titre="Modification de barre d'attaque"
-            sousTitre="à un tick précis : +% pour remplir, −% pour vider la barre (jamais sous 0) — l'analyse écrit ici, tu corriges par-dessus"
+            titre={st.grilles.barreTitre}
+            sousTitre={st.grilles.barreSousTitre}
             icone={<Zap size={15} />}
             lignes={lignesVisibles}
             aAllie={aAllie}
@@ -1060,8 +1061,8 @@ export default function SpeedTuningSection({
           <GrilleMod
             champ="speedMod"
             mode="buff"
-            titre="Buff de vitesse"
-            sousTitre="icône SPD = buff +30 % d'un clic, ou saisis une valeur — l'analyse écrit ici, tu corriges par-dessus"
+            titre={st.grilles.buffTitre}
+            sousTitre={st.grilles.buffSousTitre}
             icone={<Gauge size={15} />}
             lignes={lignesVisibles}
             aAllie={aAllie}
@@ -1151,6 +1152,9 @@ function CampPanneau({
   onExporterOptimizer,
   raisonExportOptimizer,
 }: CampProps) {
+  const textes = useTraduction();
+  const jeu = textes.jeu;
+  const c = textes.speedTuning.camp;
   const adv = camp === 'ennemi';
   const dejaAjoutes = useMemo(() => new Set(lignes.map((l) => String(l.monster.id))), [lignes]);
 
@@ -1201,7 +1205,7 @@ function CampPanneau({
           {titre}
         </span>
         <span className="ml-auto flex min-w-0 flex-wrap items-center justify-end gap-1.5">
-          <span className="text-micro font-semibold uppercase tracking-wide text-ink-dimmer">Lead</span>
+          <span className="text-micro font-semibold uppercase tracking-wide text-ink-dimmer">{c.lead}</span>
           {/* ⚠️ **Un lead d'ÉLÉMENT s'affiche ICI, pas sur chaque monstre.** Le
               sélecteur n'a qu'une valeur : il ne sait pas dire « +33 % pour les
               alliés Eau seulement ». Il cède donc sa place — deux contrôles de
@@ -1222,10 +1226,10 @@ function CampPanneau({
             pleineLargeur={false}
             value={cleDe(lead)}
             onChange={(e) => onLead(tous.find((l) => cleDe(l) === e.target.value) ?? null)}
-            aria-label={`Lead de vitesse — ${titre}`}
+            aria-label={c.leadAria(titre)}
           >
-            <option value="">Sans</option>
-            <optgroup label="Tous les alliés">
+            <option value="">{c.sansLead}</option>
+            <optgroup label={c.tousAllies}>
               {tous
                 .filter((l) => !l.element)
                 .map((l) => (
@@ -1234,12 +1238,12 @@ function CampPanneau({
                   </option>
                 ))}
             </optgroup>
-            <optgroup label="Par élément">
+            <optgroup label={c.parElement}>
               {tous
                 .filter((l) => l.element)
                 .map((l) => (
                   <option key={cleDe(l)} value={cleDe(l)}>
-                    +{l.amount}% · {ELEMENTS.find((e) => e.key === l.element)?.label ?? '—'}
+                    +{l.amount}% · {l.element ? nomElement(jeu, l.element) : '—'}
                   </option>
                 ))}
             </optgroup>
@@ -1300,8 +1304,8 @@ function CampPanneau({
                     onClick={() => onDeplacer(l.uid, -1)}
                     libelle={
                       index === 0
-                        ? `${l.monster.name} joue déjà en premier à vitesse égale`
-                        : `Monter ${l.monster.name} : à vitesse égale, il jouera avant`
+                        ? c.dejaPremier(l.monster.name)
+                        : c.monter(l.monster.name)
                     }
                     icone={<ChevronUp size={13} />}
                   />
@@ -1311,8 +1315,8 @@ function CampPanneau({
                     onClick={() => onDeplacer(l.uid, 1)}
                     libelle={
                       index === lignes.length - 1
-                        ? `${l.monster.name} joue déjà en dernier à vitesse égale`
-                        : `Descendre ${l.monster.name} : à vitesse égale, il jouera après`
+                        ? c.dejaDernier(l.monster.name)
+                        : c.descendre(l.monster.name)
                     }
                     icone={<ChevronDown size={13} />}
                   />
@@ -1320,7 +1324,7 @@ function CampPanneau({
                     taille="serre"
                     actif={masque}
                     onClick={() => onMasquer(l.uid)}
-                    libelle={masque ? `Afficher ${l.monster.name}` : `Masquer ${l.monster.name}`}
+                    libelle={masque ? c.afficher(l.monster.name) : c.masquer(l.monster.name)}
                     icone={masque ? <Eye size={13} /> : <EyeOff size={13} />}
                   />
                   {/* ⚠️ **Copier en face, pas déplacer** : le monstre reste dans
@@ -1335,15 +1339,15 @@ function CampPanneau({
                     onClick={() => onCopier(l.uid)}
                     libelle={
                       l.camp === 'allie'
-                        ? `Copier ${l.monster.name} en face`
-                        : `Copier ${l.monster.name} dans ton équipe`
+                        ? c.copierEnFace(l.monster.name)
+                        : c.copierEquipe(l.monster.name)
                     }
                     icone={<CopyPlus size={13} />}
                   />
                   <BoutonIcone
                     taille="serre"
                     onClick={() => onRetirer(l.uid)}
-                    libelle={`Retirer ${l.monster.name}`}
+                    libelle={c.retirer(l.monster.name)}
                     icone={<X size={13} />}
                     className="hoverable:text-bad"
                   />
@@ -1370,19 +1374,19 @@ function CampPanneau({
                           {l.reference && (
                             <span
                               className="flex-none rounded border border-border px-1 text-micro font-bold uppercase tracking-wide text-ink-dim"
-                              title="Adversaire de référence : copie de ton monstre le plus rapide au moment de l'analyse. Changer de deck l'arrête — il faut relancer l'analyse. Un réglage à la main en fait un adversaire ordinaire."
+                              title={c.referenceAide}
                             >
-                              réf
+                              {c.reference}
                             </span>
                           )}
                         </div>
                         <div className="font-mono text-micro leading-tight text-ink-dim">
-                          base {l.monster.stats.speed ?? '—'}
+                          {c.base(l.monster.stats.speed ?? '—')}
                         </div>
                       </div>
                     </div>
                     <label className="flex flex-col gap-0.5">
-                      <span className="text-micro font-semibold uppercase tracking-wide text-ink-dimmer">Runes</span>
+                      <span className="text-micro font-semibold uppercase tracking-wide text-ink-dimmer">{c.runes}</span>
                       <NumberField
                         value={l.runeSpeed}
                         onChange={(v) => onRuneSpeed(l.uid, v)}
@@ -1390,7 +1394,7 @@ function CampPanneau({
                         allowEmpty
                         width="w-12"
                         placeholder="+"
-                        ariaLabel={`Vitesse des runes de ${l.monster.name}`}
+                        ariaLabel={c.runesAria(l.monster.name)}
                       />
                     </label>
                     {/* ⚠️ Set RAPIDITÉ : ses 25 % entrent dans la somme des
@@ -1399,7 +1403,7 @@ function CampPanneau({
                         un point suffit à rater un tick. */}
                     <label className="flex flex-col gap-0.5">
                       <span className="text-micro font-semibold uppercase tracking-wide text-ink-dimmer">
-                        Set
+                        {c.set}
                       </span>
                       {/* ⚠️ **L'ICÔNE DU SET, pas le mot.** C'est comme ça qu'un
                           joueur reconnaît Rapidité — instantanément, comme dans
@@ -1414,16 +1418,16 @@ function CampPanneau({
                         actif={!!l.swift}
                         onClick={() => onSwift(l.uid)}
                         icone={<RuneIcon setKey="swift" size={16} filter={runeSetIconFilter(!!l.swift)} />}
-                        aria-label={`Set Rapidité porté par ${l.monster.name}`}
-                        title="Le monstre porte le set Rapidité (VIT +25 %) — sa vitesse de combat se calcule alors autrement (d'un point près)."
+                        aria-label={c.setAria(l.monster.name)}
+                        title={c.setAide}
                       />
                     </label>
                     <label className="flex flex-col gap-0.5">
                       <span
                         className="text-micro font-semibold uppercase tracking-wide text-ink-dimmer"
-                        title="Bonus d'artéfact « Effet aug. VIT » — s'ajoute au buff de vitesse quand il est actif. Repris tel quel d'un deck importé ou de l'adversaire de référence."
+                        title={c.artefactAide}
                       >
-                        SPD buff effect
+                        {c.artefact}
                       </span>
                       <NumberField
                         value={l.artefactBuff}
@@ -1433,7 +1437,7 @@ function CampPanneau({
                         allowEmpty
                         width="w-12"
                         placeholder="+%"
-                        ariaLabel={`Bonus d'artéfact au buff de vitesse de ${l.monster.name}`}
+                        ariaLabel={c.artefactAria(l.monster.name)}
                       />
                     </label>
                     {/* ⚠️ La vitesse de combat est le CHIFFRE de la card : elle
@@ -1444,7 +1448,7 @@ function CampPanneau({
                       <div className={`font-mono text-lg font-black leading-none ${adv ? 'text-bad' : 'text-ink'}`}>
                         {combat ?? '—'}
                       </div>
-                      <div className="text-micro uppercase tracking-wide text-ink-dimmer">combat</div>
+                      <div className="text-micro uppercase tracking-wide text-ink-dimmer">{c.combat}</div>
                     </div>
                   </div>
 
@@ -1458,20 +1462,19 @@ function CampPanneau({
                       <Bouton
                         taille="sm"
                         icone={<Zap size={12} />}
-                        libelle="Passif"
+                        libelle={c.passif}
                         actif={(!!passif.gain || !!passif.amplifieBuff) && passifActif}
                         disabled={!passif.gain && !passif.amplifieBuff}
                         title={
                           passif.gain
                             ? `${passif.nom} — ${passif.texte}`
-                            : `${passif.nom} — son passif touche la vitesse, mais aucune valeur n'est connue : à poser à la main dans les grilles. ${passif.texte}`
+                            : c.passifSansValeur(passif.nom, passif.texte)
                         }
                         onClick={() => onPassif(l.uid)}
                       />
                       {passif.amplifieBuff && (
                         <span className="font-mono text-micro text-ink-dim">
-                          +{passif.amplifieBuff.valeur} % d'effet de buff
-                          {passif.amplifieBuff.equipe ? " sur l'équipe" : ' sur lui'}
+                          {c.amplifieBuff(passif.amplifieBuff.valeur, !!passif.amplifieBuff.equipe)}
                         </span>
                       )}
                       {passif.gain ? (
@@ -1490,7 +1493,7 @@ function CampPanneau({
                               allowEmpty
                               width="w-12"
                               placeholder="0"
-                              ariaLabel={`Déclenchements du passif de ${l.monster.name}`}
+                              ariaLabel={c.cumulsAria(l.monster.name)}
                             />
                           )}
                           <span
@@ -1498,12 +1501,12 @@ function CampPanneau({
                               gainPassif > 0 ? 'text-accent' : 'text-ink-dimmer'
                             }`}
                           >
-                            {gainPassif > 0 ? `+${gainPassif} VIT` : '—'}
+                            {gainPassif > 0 ? c.gainVit(gainPassif) : '—'}
                           </span>
                         </>
                       ) : passif.amplifieBuff ? null : (
                         <span className="min-w-0 flex-1 text-micro leading-snug text-warn">
-                          valeur inconnue — à poser à la main dans les grilles
+                          {c.valeurInconnue}
                         </span>
                       )}
                     </div>
@@ -1515,8 +1518,12 @@ function CampPanneau({
                       qu'on n'a pas encore. */}
                   {kit.atbSkillUp > 0 && (
                     <p className="mt-1.5 text-micro leading-snug text-warn">
-                      ⚠ « {kit.atbCompetence} » compte MAXÉE : {pourcentBarre(kit.atb)} % de barre, dont +
-                      {pourcentBarre(kit.atbSkillUp)} % de skill-up — sans les skill-up, {pourcentBarre(kit.atbNiveau1)} %.
+                      {c.skillUp(
+                        kit.atbCompetence,
+                        barre(kit.atb, textes),
+                        barre(kit.atbSkillUp, textes),
+                        barre(kit.atbNiveau1, textes)
+                      )}
                     </p>
                   )}
                 </div>
@@ -1531,7 +1538,7 @@ function CampPanneau({
           monsters={jouables}
           dejaAjoutes={dejaAjoutes}
           onAdd={onAjouter}
-          placeholder={adv ? 'Ajouter un monstre adverse…' : 'Ajouter un monstre à ton équipe…'}
+          placeholder={adv ? c.ajouterAdverse : c.ajouterEquipe}
         />
         {decks && onImporterDeck && (
           <div className="lg:hidden">
@@ -1539,8 +1546,8 @@ function CampPanneau({
           </div>
         )}
         {onExporterOptimizer && (
-          <Bouton pleineLargeur icone={<Upload size={14} />} libelle="Exporter vers l'Optimizer"
-            disabled={!!raisonExportOptimizer} title={raisonExportOptimizer ?? 'Exporter ton équipe et ses critères, puis ouvrir l’Optimizer.'}
+          <Bouton pleineLargeur icone={<Upload size={14} />} libelle={c.exporter}
+            disabled={!!raisonExportOptimizer} title={raisonExportOptimizer ?? c.exporterAide}
             onClick={onExporterOptimizer} />
         )}
       </div>
@@ -1584,6 +1591,7 @@ function GrilleMod({
   refConteneur,
   onScrollSync,
 }: GrilleModProps) {
+  const st = useTraduction().speedTuning;
   // Valeur commune d'un camp à un tick (pour la ligne « Toute l'équipe ») :
   // la valeur partagée si tous l'ont, sinon null (mélange).
   const valeurEquipe = (camp: Camp, tick: number): number | null => {
@@ -1595,8 +1603,8 @@ function GrilleMod({
   };
 
   const camps: { camp: Camp; label: string; present: boolean }[] = [
-    { camp: 'allie', label: 'Toute ton équipe', present: aAllie },
-    { camp: 'ennemi', label: 'Tout en face', present: aEnnemi },
+    { camp: 'allie', label: st.grilles.touteEquipe, present: aAllie },
+    { camp: 'ennemi', label: st.grilles.toutEnFace, present: aEnnemi },
   ];
 
   // Une cellule. Boost d'ATB : simple champ numérique. Buff de vitesse : le
@@ -1609,7 +1617,7 @@ function GrilleMod({
           cadre
           actif={!!value}
           onClick={() => onChange(value ? null : BUFF_SPD)}
-          libelle={`${aria} — buff +30 %`}
+          libelle={st.grilles.buffClic(aria)}
           icone={
             <img src={SPD_ICON} alt="" width={13} height={13} className={value ? '' : 'opacity-40'} />
           }
@@ -1625,12 +1633,12 @@ function GrilleMod({
           // Un buff est un gain, un ralenti une perte : même lecture que la
           // grille des barres.
           ton={value == null || value === 0 ? 'neutre' : value > 0 ? 'good' : 'bad'}
-          ariaLabel={`${aria} — valeur`}
+          ariaLabel={st.grilles.valeur(aria)}
         />
       </div>
     ) : (
       // Boost d'ATB : positif pour remplir, négatif pour vider (la barre ne
-      // descend jamais sous 0, garanti par la simulation). Bornes ±100.
+      // descend jamais sous 0, garanti par la simulation). De −999 à +100 %.
       //
       // ⚠️ La cellule porte le TON de sa valeur : une grille mêle des gains et
       // des pertes, et le signe seul — en mono 12 px, au milieu de quarante
@@ -1640,7 +1648,7 @@ function GrilleMod({
         value={value}
         onChange={onChange}
         allowEmpty
-        min={-100}
+        min={-999}
         max={100}
         // ⚠️ Élargi d'un cran avec le suffixe : « −100 % » doit tenir sans que
         // le champ ne rétrécisse le chiffre. La colonne fait 92 px, on y est.
@@ -1672,7 +1680,7 @@ function GrilleMod({
           style={{ width: LARGEUR_TABLE }}
         >
           <Colonnes />
-          <TeteTicks premiere="Cible" />
+          <TeteTicks premiere={st.grilles.cible} />
           <tbody>
             {camps.map(({ camp, label, present }) => {
               if (!present) return null;
@@ -1697,7 +1705,7 @@ function GrilleMod({
                         {cellule(
                           valeurEquipe(camp, t),
                           (v) => onSetEquipe(champ, camp, t, v),
-                          `${label} — tick ${t}`
+                          `${label} — ${st.tick(t)}`
                         )}
                       </td>
                     ))}
@@ -1722,7 +1730,7 @@ function GrilleMod({
                           {cellule(
                             l[champ][t] ?? null,
                             (v) => onSet(champ, l.uid, t, v),
-                            `${l.monster.name} — tick ${t}`
+                            `${l.monster.name} — ${st.tick(t)}`
                           )}
                         </td>
                       ))}
@@ -1766,6 +1774,8 @@ function ChoixSort({
   prefixe?: string;
   nomMonstre: string;
 }) {
+  const textes = useTraduction();
+  const cs = textes.speedTuning.choixSort;
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement | null>(null);
 
@@ -1788,7 +1798,7 @@ function ChoixSort({
   const choisi = valeur === '' ? null : (sorts.find((x) => x.nom === valeur) ?? null);
   // ⚠️ « Sort détecté » ne veut rien dire quand RIEN n'a été détecté : ce qui
   // compte, c'est ce que le monstre lance — et il ne lance rien.
-  const libelle = choisi?.nom ?? 'Aucun sort';
+  const libelle = choisi?.nom ?? cs.aucun;
 
   const icone = (x: SortVitesse | null, taille: number) =>
     x?.icone ? (
@@ -1804,7 +1814,7 @@ function ChoixSort({
         icone={icone(choisi, 16)}
         libelle={`${prefixe ?? ''}${libelle}`}
         aria-expanded={open}
-        title={choisi ? libelleSort(choisi) : `Sort lancé par ${nomMonstre}`}
+        title={choisi ? libelleSort(choisi, textes) : cs.lancePar(nomMonstre)}
         onClick={() => setOpen((v) => !v)}
       />
       {/* ⚠️ **FlottantAuto**, pas `Flottant` : ce menu est ancré à un bouton qui
@@ -1819,15 +1829,15 @@ function ChoixSort({
         rembourrage="aucun"
         className="max-h-[320px] overflow-y-auto"
       >
-        <div role="listbox" aria-label={`Sort lancé par ${nomMonstre}`}>
+        <div role="listbox" aria-label={cs.lancePar(nomMonstre)}>
           {/* ⚠️ Des RANGÉES à plat, pas des cartes : `Option` porte son propre
               cadre arrondi, fait pour un choix empilé dans un dialogue. Dans une
               surface flottante, l'app pose des rangées qui touchent les bords —
               même grammaire que l'import de deck et la recherche de monstre. */}
           <Rangee
             icone={<Sparkles size={22} className="text-ink-dimmer" />}
-            titre="Aucun sort"
-            detail="Il joue, mais rien qui touche la vitesse"
+            titre={cs.aucun}
+            detail={cs.aucunDetail}
             actif={valeur === ''}
             onClick={() => {
               onChoisir('');
@@ -1839,7 +1849,7 @@ function ChoixSort({
               key={x.nom}
               icone={icone(x, 22)}
               titre={`${x.slot ? `S${x.slot} · ` : ''}${x.nom}`}
-              detail={libelleSort(x).split(' — ')[1]}
+              detail={libelleSort(x, textes).split(' — ')[1]}
               actif={valeur === x.nom}
               onClick={() => {
                 onChoisir(x.nom);
@@ -1891,11 +1901,6 @@ function Rangee({
   );
 }
 
-const LIBELLE_SOURCE: Record<DeckDispo['source'], string> = {
-  defense: 'Défense',
-  offense: 'Offense',
-};
-
 // Reprendre une équipe de siège telle quelle plutôt que de retaper trois
 // monstres et trois vitesses de runes. Le bouton reste TOUJOURS affiché, même
 // sans compte chargé : désactivé, il dit que la possibilité existe (voir
@@ -1914,6 +1919,7 @@ function ImportDeck({
   // calée à gauche déborderait de l'écran.
   enTete?: boolean;
 }) {
+  const d = useTraduction().speedTuning.importDeck;
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement | null>(null);
 
@@ -1943,15 +1949,9 @@ function ImportDeck({
         pleineLargeur={!enTete}
         taille={enTete ? 'sm' : 'md'}
         icone={<Download size={14} />}
-        libelle="Importer un deck de siège"
+        libelle={d.libelle}
         disabled={vide}
-        title={
-          vide
-            ? "Aucune équipe de siège enregistrée — importe ton compte, ou compose une défense / offense dans Siège."
-            : adv
-              ? 'Reprendre une de tes équipes de siège comme composition adverse — elle REMPLACE ce qui est en face'
-              : 'Reprendre une de tes équipes de siège dans ton équipe — elle REMPLACE ta composition actuelle'
-        }
+        title={vide ? d.vide : adv ? d.aideAdverse : d.aideEquipe}
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
       />
@@ -1962,31 +1962,31 @@ function ImportDeck({
           largeur={enTete ? 'w-80' : 'w-full'}
           className="max-h-[320px] overflow-y-auto"
           role="listbox"
-          aria-label="Decks de siège"
+          aria-label={d.liste}
         >
-          {decks.map((d, i) => {
-            const nouvelleSource = i === 0 || decks[i - 1].source !== d.source;
+          {decks.map((deck, i) => {
+            const nouvelleSource = i === 0 || decks[i - 1].source !== deck.source;
             return (
-              <div key={d.cle}>
+              <div key={deck.cle}>
                 {nouvelleSource && (
                   <div className="border-b border-border-soft bg-panel2 px-3 py-1.5 text-micro font-semibold uppercase tracking-wider text-ink-dimmer">
-                    {LIBELLE_SOURCE[d.source]}
+                    {d.sources[deck.source]}
                   </div>
                 )}
                 <ZoneCliquable
                   role="option"
                   onClick={() => {
-                    onImporter(d.team);
+                    onImporter(deck.team);
                     setOpen(false);
                   }}
                   className="flex w-full items-center gap-2.5 px-3 py-2 text-left hoverable:bg-accent-soft"
                 >
                   <span className="flex flex-none items-center gap-1">
-                    {d.monstres.map((m, j) => (
+                    {deck.monstres.map((m, j) => (
                       <MonsterAvatar key={`${m.id}-${j}`} monster={m} size={26} element={false} />
                     ))}
                   </span>
-                  <span className="min-w-0 flex-1 truncate text-sm">{d.libelle}</span>
+                  <span className="min-w-0 flex-1 truncate text-sm">{deck.libelle}</span>
                   <Plus size={14} className="flex-none text-ink-dim" />
                 </ZoneCliquable>
               </div>
@@ -2015,6 +2015,7 @@ function RechercheMonstre({
   onAdd: (id: string) => void;
   placeholder: string;
 }) {
+  const r = useTraduction().speedTuning.recherche;
   const [query, setQuery] = useState('');
   const idBase = useId();
 
@@ -2052,12 +2053,12 @@ function RechercheMonstre({
       {nav.open && (
         <Flottant
           {...nav.listProps}
-          aria-label="Résultats de la recherche"
+          aria-label={r.resultats}
           rembourrage="aucun"
           className="max-h-[300px] overflow-y-auto"
         >
           {results.length === 0 ? (
-            <div className="px-3 py-2 text-xs text-ink-dim">Aucun monstre trouvé.</div>
+            <div className="px-3 py-2 text-xs text-ink-dim">{r.aucun}</div>
           ) : (
             results.map((m, i) => {
               const added = dejaAjoutes.has(String(m.id));
@@ -2079,7 +2080,7 @@ function RechercheMonstre({
                 >
                   <MonsterAvatar monster={m} size={26} />
                   <span className="flex-1 truncate text-sm font-medium">{m.name}</span>
-                  <span className="font-mono text-micro text-ink-dim">SPD {m.stats.speed ?? '—'}</span>
+                  <span className="font-mono text-micro text-ink-dim">{r.vitesse(m.stats.speed ?? '—')}</span>
                   {!added && <Plus size={14} className={estActif ? 'text-accent' : 'text-ink-dim'} />}
                 </div>
               );

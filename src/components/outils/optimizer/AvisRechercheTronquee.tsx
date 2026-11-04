@@ -1,5 +1,7 @@
 import { type BilanRecherche } from '../../../hooks/useBuildOptimSearch';
 import type { ArretMemoire } from '../../../lib/classementCompact';
+import { useLangue, useTraduction } from '../../../hooks/useLangue';
+import { formatNombre } from '../../../i18n/format';
 
 export interface AvisRechercheTronqueeProps {
   result: BilanRecherche | null;
@@ -9,14 +11,16 @@ export interface AvisRechercheTronqueeProps {
 }
 
 export default function AvisRechercheTronquee({ result, stoppedManually, arretMemoire = null }: AvisRechercheTronqueeProps) {
-  const fr = (n: number) => n.toLocaleString('fr-FR');
+  const a = useTraduction().optimizer.resultats.troncature;
+  const langue = useLangue();
+  const n = (v: number) => formatNombre(v, langue);
   return (
     <p className="mb-2 text-micro text-warn" data-arret-memoire={arretMemoire ? '' : undefined}>
       {arretMemoire
-        ? `Arrêt : mémoire — ${fr(arretMemoire.gardes)} builds gardés sur ${fr(arretMemoire.trouves)} trouvés. Resserre tes critères pour un résultat complet.`
+        ? a.memoire(n(arretMemoire.gardes), n(arretMemoire.trouves))
         : stoppedManually
-          ? `Recherche arrêtée après examen de ${fr(result?.explored ?? 0)} combinaisons — voici le meilleur trouvé jusque-là.`
-          : `Recherche interrompue après examen de ${fr(result?.explored ?? 0)} combinaisons — resserre tes critères pour un résultat exhaustif.`}
+          ? a.arretee(n(result?.explored ?? 0))
+          : a.interrompue(n(result?.explored ?? 0))}
     </p>
   );
 }

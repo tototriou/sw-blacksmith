@@ -6,6 +6,11 @@ import ElementIcon from './ElementIcon';
 import Onglets from '../ui/Onglets';
 import LeadPill from './siege/LeadPill';
 import CollabPortrait from './CollabPortrait';
+import { useTraduction } from '../hooks/useLangue';
+import { nomArchetype, nomEffet } from '../i18n/jeu';
+import { formatNombre } from '../i18n/format';
+import type { Langue } from '../i18n/langue';
+import { useLangue } from '../hooks/useLangue';
 import { libelleCollab } from '../lib/collabPairs';
 import {
   Competence,
@@ -59,6 +64,9 @@ export default function MonsterDetailDialog({
   // Forme affichée. ⚠️ On mémorise le MONSTRE et non un index : les deux formes
   // sont deux objets distincts, et un index se lirait mal ici.
   const [forme, setForme] = useState<Monster>(monster);
+  const t = useTraduction();
+  const f = t.ficheMonstre;
+  const langue = useLangue();
   const [detail, setDetail] = useState<DetailMonstre | null>(null);
   const [chargement, setChargement] = useState(true);
 
@@ -128,7 +136,7 @@ export default function MonsterDetailDialog({
       {forme.secondAwaken && (
         <span className="rounded bg-ctx-soft px-1.5 py-px font-mono text-micro text-ink">2A</span>
       )}
-      {detail?.archetype && <span>{detail.archetype}</span>}
+      {detail?.archetype && <span>{nomArchetype(t.jeu, detail.archetype)}</span>}
     </span>
   );
 
@@ -162,19 +170,19 @@ export default function MonsterDetailDialog({
           dessous, qui change avec elle. */}
       {formes.length > 1 && (
         <Onglets
-          aria-label="Forme du monstre"
+          aria-label={f.forme}
           className="mb-3"
           valeur={String(forme.com2usId)}
           onChange={(v) => {
             const cible = formes.find((f) => String(f.com2usId) === v);
             if (cible) setForme(cible);
           }}
-          options={formes.map((f, i) => ({
-            cle: String(f.com2usId),
+          options={formes.map((fo, i) => ({
+            cle: String(fo.com2usId),
             // Le nom est le MÊME des deux côtés : c'est le rang qui les
             // distingue, comme dans le jeu où l'une se transforme en l'autre.
-            libelle: i === 0 ? 'Forme de base' : 'Forme transformée',
-            title: `Compétences de la ${i === 0 ? 'forme de base' : 'forme transformée'}`,
+            libelle: i === 0 ? f.formeBase : f.formeTransformee,
+            title: f.competencesDe(i === 0),
           }))}
         />
       )}
@@ -209,14 +217,14 @@ export default function MonsterDetailDialog({
               Même grammaire que la table de stats du panneau d'équipement : lignes
               séparées, libellé terne à gauche, valeur mono alignée à droite. */}
           <div className="rounded-lg border border-border bg-panel2 px-2.5 py-1.5">
-            <Stat label="PV" valeur={s.hp} />
-            <Stat label="ATQ" valeur={s.attack} />
-            <Stat label="DEF" valeur={s.defense} />
-            <Stat label="VIT" valeur={s.speed} />
-            <Stat label="Taux crit." valeur={s.critRate} suffixe="%" />
-            <Stat label="Dmg crit." valeur={s.critDamage} suffixe="%" />
-            <Stat label="RES" valeur={s.resistance} suffixe="%" />
-            <Stat label="Précision" valeur={s.accuracy} suffixe="%" dernier />
+            <Stat label={t.jeu.stats.hp} valeur={s.hp} langue={langue} />
+            <Stat label={t.jeu.stats.atk} valeur={s.attack} langue={langue} />
+            <Stat label={t.jeu.stats.def} valeur={s.defense} langue={langue} />
+            <Stat label={t.jeu.stats.spd} valeur={s.speed} langue={langue} />
+            <Stat label={t.jeu.stats.cr} valeur={s.critRate} suffixe="%" langue={langue} />
+            <Stat label={t.jeu.stats.cd} valeur={s.critDamage} suffixe="%" langue={langue} />
+            <Stat label={t.jeu.stats.res} valeur={s.resistance} suffixe="%" langue={langue} />
+            <Stat label={t.jeu.stats.acc} valeur={s.accuracy} suffixe="%" langue={langue} dernier />
           </div>
 
         </div>
@@ -226,7 +234,7 @@ export default function MonsterDetailDialog({
             une description longue déborderait sur la colonne de gauche. */}
         <div className="min-w-0 flex-1">
           {chargement ? (
-            <p className="py-6 text-center text-xs text-ink-dim">Chargement des compétences…</p>
+            <p className="py-6 text-center text-xs text-ink-dim">{f.chargement}</p>
           ) : detail && detail.competences.length > 0 ? (
             <div className="flex flex-col gap-2">
               {detail.competences.map((c) => (
@@ -234,7 +242,7 @@ export default function MonsterDetailDialog({
               ))}
               {detail.skillUpsToMax != null && (
                 <p className="mt-1 font-mono text-micro text-ink-dim">
-                  {detail.skillUpsToMax} amélioration(s) pour maxer ses compétences.
+                  {f.pourMaxer(detail.skillUpsToMax)}
                 </p>
               )}
         </div>
@@ -243,9 +251,7 @@ export default function MonsterDetailDialog({
         // comme une affirmation sur le monstre, alors que c'est notre donnée qui
         // manque — un monstre perso n'a pas de fiche SWARFARM.
         <p className="py-6 text-center text-xs text-ink-dim">
-          {forme.com2usId == null
-            ? "Ce monstre a été créé à la main : il n'a pas de fiche de compétences."
-            : 'Le détail des compétences de ce monstre n’est pas disponible.'}
+          {forme.com2usId == null ? f.creeALaMain : f.indisponible}
         </p>
       )}
         </div>
@@ -259,10 +265,12 @@ function Stat({
   valeur,
   suffixe = '',
   dernier = false,
+  langue,
 }: {
   label: string;
   valeur: number | null | undefined;
   suffixe?: string;
+  langue: Langue;
   // Pas de filet sous la dernière ligne : il soulignerait le bord du cadre.
   dernier?: boolean;
 }) {
@@ -277,7 +285,7 @@ function Stat({
           chiffres et plus, un nombre nu se lit mal. `tabular-nums` garde les
           colonnes alignées d'une ligne à l'autre. */}
       <span className="font-mono tabular-nums text-ink">
-        {valeur != null ? valeur.toLocaleString('fr-FR') : '—'}
+        {valeur != null ? formatNombre(valeur, langue) : '—'}
         {valeur != null && suffixe}
       </span>
     </div>
@@ -287,7 +295,10 @@ function Stat({
 // Une compétence : son nom, son coefficient, sa description, ses effets et ses
 // montées de niveau.
 function CompetenceBloc({ c }: { c: Competence }) {
-  const formule = formuleLisible(c.formule);
+  const t = useTraduction();
+  const jeu = t.jeu;
+  const f = t.ficheMonstre;
+  const formule = formuleLisible(c.formule, jeu);
   const paliers = paliersRechargement(c);
   return (
     <div className="rounded-lg border border-border bg-panel2 p-2.5">
@@ -308,12 +319,12 @@ function CompetenceBloc({ c }: { c: Competence }) {
             <span className="text-sm font-bold text-ink">{c.nom}</span>
             {c.passif && (
               <span className="rounded bg-panel px-1.5 py-px font-mono text-micro text-ink-dim">
-                Passif
+                {f.passif}
               </span>
             )}
             {c.aoe && (
               <span className="rounded bg-panel px-1.5 py-px font-mono text-micro text-ink-dim">
-                Zone
+                {f.zone}
               </span>
             )}
           </div>
@@ -328,7 +339,7 @@ function CompetenceBloc({ c }: { c: Competence }) {
               </span>
             )}
             {c.coups != null && c.coups > 1 && (
-              <span className="text-ink-dim">×{c.coups} coups</span>
+              <span className="text-ink-dim">{f.coups(c.coups)}</span>
             )}
             {/* Rechargement. ⚠️ Le SABLIER et non l'éclair : l'éclair dit la
                 puissance, pas l'attente — on lisait « 3 tours » comme une durée
@@ -344,8 +355,8 @@ function CompetenceBloc({ c }: { c: Competence }) {
                 className="inline-flex items-center gap-1 text-ink-dim"
                 title={
                   paliers.length > 1
-                    ? `Rechargement : ${paliers[0]} tours, réduit à ${paliers[paliers.length - 1]} en montant la compétence`
-                    : `Rechargement : ${paliers[0]} tours`
+                    ? f.rechargementReduit(paliers[0], paliers[paliers.length - 1])
+                    : f.rechargement(paliers[0])
                 }
               >
                 <Hourglass size={11} />
@@ -355,7 +366,7 @@ function CompetenceBloc({ c }: { c: Competence }) {
                     <span className={i === paliers.length - 1 ? 'text-ink' : ''}>{p}</span>
                   </span>
                 ))}
-                tours
+                {f.tours}
               </span>
             )}
           </div>
@@ -390,7 +401,7 @@ function CompetenceBloc({ c }: { c: Competence }) {
               }`}
             >
               {e.icone && <img src={e.icone} alt="" className="h-3.5 w-3.5" loading="lazy" />}
-              {e.nom}
+              {e.nom ? nomEffet(jeu, e.nom) : null}
               {e.surSoi && <Shield size={10} className="opacity-70" />}
             </span>
           ))}
@@ -403,7 +414,7 @@ function CompetenceBloc({ c }: { c: Competence }) {
       {c.ameliorations.length > 0 && (
         <details className="mt-2">
           <summary className="cursor-pointer text-micro text-ink-dim transition hoverable:text-ink">
-            {c.ameliorations.length} amélioration(s)
+            {f.ameliorations(c.ameliorations.length)}
           </summary>
           <ol className="mt-1 space-y-px pl-4">
             {c.ameliorations.map((a, i) => (

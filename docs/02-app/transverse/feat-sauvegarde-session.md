@@ -101,13 +101,14 @@ testé).
 - **Après l'écriture**, la notification « Session enregistrée · <nom>.json »
   (`useNotifier`). **Un échec** (dossier disparu, accès refusé, disque
   plein…) ouvre une modale « La session n'a pas été enregistrée » avec la
-  cause et « Fermer » ; la session en cours ne change pas. La cause : celle
-  de l'écriture (`messageEchec` ; un dossier de session disparu renvoie vers
+  cause et « Fermer » ; la session en cours ne change pas. Le bureau rend le
+  MOTIF de l'échec et le code d'erreur du système (`codeErreur`) ; la page
+  rédige la cause dans sa langue (`messageEchecSession`, src/lib/bureau.ts) :
+  celle de l'écriture (un dossier de session disparu renvoie vers
   « Sauvegarder sous… »), ou, quand le dossier SW Blacksmith ne peut pas
   recevoir `sessions`, « Le dossier SW Blacksmith ne peut pas recevoir la
   session : <raison>. Choisis-en un autre dans Paramètres › « Dossier SW
-  Blacksmith ». » (`messageEchecDossier`) — « Sauvegarder sous… »
-  échouerait pareil.
+  Blacksmith ». » — « Sauvegarder sous… » échouerait pareil.
 - **Écriture sûre** (`ecrireSansRisque`) : un fichier temporaire caché dans
   le même dossier, vidé sur le disque, puis renommé par-dessus l'ancien
   (renommage retenté cinq fois sur `EPERM`, `EBUSY`, `EACCES`). Un échec
@@ -171,7 +172,7 @@ compact (`composerSession`, `ecrireSession`, `src/lib/session.ts`) :
 |-------|---------|-------------------|
 | `format`, `version` | `swblacksmith/session`, `2` pour toute session écrite | — |
 | `enregistreeLe`, `versionApp` | date ISO du clic ; version de l'app | — |
-| `stockage` | clé → valeur brute, pour les clés de `CLES_SESSION` : prépa RTA, ses catégories, ses deux points de retour ; siège défense et offense ; recommandations ; monstres perso ; listes de l'Optimizer ; thème, score, overcap, adversaire de référence, builds les plus rapides (du JSON, relu et validé par `lireReglageBuildsRapides`) | `lireTravail` (`usePersistence.ts`) : la dernière valeur écrite par `saveLocal`, gardée en mémoire même conservation refusée (`saveLocal` n'écrit alors rien sur le disque), sinon le stockage local ; `oublierLocal` efface les deux |
+| `stockage` | clé → valeur brute, pour les clés de `CLES_SESSION` : prépa RTA, ses catégories, ses deux points de retour ; siège défense et offense ; recommandations ; monstres perso ; listes de l'Optimizer ; thème, langue, score, overcap, adversaire de référence, builds les plus rapides (du JSON, relu et validé par `lireReglageBuildsRapides`) | `lireTravail` (`usePersistence.ts`) : la dernière valeur écrite par `saveLocal`, gardée en mémoire même conservation refusée (`saveLocal` n'écrit alors rien sur le disque), sinon le stockage local ; `oublierLocal` efface les deux |
 | `compte` | le compte importé (`StoredAccount`, schéma 7), ou `null` | le compte en mémoire de `App.tsx`, pas IndexedDB |
 | `outils.memoire` | clé → valeur de chaque `useStickyState`, sauf `STICKY_HORS_SESSION` (`sidebar.retractee`, `mobileNotice.ferme`, `ecranPartage.volets`) | `photographierMemoire` (`useStickyState.ts`) |
 | `outils.optimizer` | les champs `CHAMPS_OPTIMIZER_SESSION` de `useOptimizerState` : monstre choisi et son exemplaire, set, conditions min/max, principales imposées, runes imposées, sous-propriétés verrouillées, artéfacts, relique, objectif et réglages de combat, exclusions, réglages avancés, tri | `photoOptimizer` (`sessionOptimizer.ts`) |

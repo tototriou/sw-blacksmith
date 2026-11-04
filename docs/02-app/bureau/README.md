@@ -64,6 +64,7 @@ lecteur côté page (`estBureau()` = l'objet présent, avec `bureau: true`).
 |-----------|-------|------|
 | `bureau`, `plateforme` (`process.platform`) | — | valeurs |
 | `couleurs({ fond, barre, symboles })` | `bureau:couleurs` | page → bureau |
+| `langue(langue)` | `bureau:langue` | page → bureau : la langue de l'app (`html[lang]`), au chargement et à chaque changement |
 | `coeursPhysiques()` | `bureau:coeurs-physiques` (`invoke`) | rend le nombre de cœurs physiques, ou `null` |
 | `miseAJour.etat()` | `bureau:mise-a-jour` (`invoke`) | état courant |
 | `miseAJour.surChangement(rappel)` | `bureau:mise-a-jour` | bureau → page ; rend de quoi se désabonner |
@@ -77,6 +78,16 @@ lecteur côté page (`estBureau()` = l'objet présent, avec `bureau: true`).
 
 Le processus principal n'accepte un message que de la page de SA fenêtre
 (`evenement.sender`), et vérifie son contenu.
+
+**Les boîtes du système** (enregistrer un fichier, sauvegarder la session
+sous…, remplacer un fichier, choisir le dossier SW Blacksmith ou SW Exporter)
+s'affichent dans la langue de l'APP : la page l'envoie (`langue`), et
+[bureau/textes.ts](../../../bureau/textes.ts) en tire leurs textes ; avant le
+premier envoi, la langue du système, par la règle de l'app. Le reste des
+textes du bureau s'affiche dans la page et vient de `src/i18n/` ; un échec
+de session revient en motif et code d'erreur, rédigés par la page. Le mode
+preuve fixe la page en français (`--lang=fr-FR`) : il cherche ses libellés
+français.
 
 ## Un seul code
 
@@ -224,7 +235,10 @@ qui n'a pas accès au pont.
 - **Deux plateformes : Windows et Linux.** Pas de macOS. Sous Linux,
   l'**AppImage** est le seul format qu'electron-updater sait mettre à jour
   (un `.deb` passe par le gestionnaire de paquets).
-- **Windows** : assistant NSIS en français (`oneClick: false`) — pour qui
+- **Windows** : assistant NSIS dans la langue de Windows, français ou, pour
+  toute autre, anglais, sans sélecteur (`multiLanguageInstaller`,
+  `installerLanguages: [fr_FR, en_US]`, `language: "1033"` en repli ; le
+  désinstalleur suit) ; `oneClick: false` — pour qui
   (« juste pour moi » par défaut, `perMachine: false` : dans le profil,
   sans droits administrateur, et la mise à jour passe sans demande
   d'autorisation ; « tous les utilisateurs » la fait demander à chaque

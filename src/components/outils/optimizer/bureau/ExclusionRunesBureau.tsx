@@ -1,4 +1,5 @@
 import ExclusionRunesContenu, { type ExclusionRunesContenuProps } from '../ExclusionRunesContenu';
+import { useTraduction } from '../../../../hooks/useLangue';
 
 // « Exclusion de runes », au bureau : EN LIGNE dans la colonne repliable « Aura,
 // exclusion, avancés », section de son panneau, jamais repliée derrière un
@@ -10,7 +11,7 @@ import ExclusionRunesContenu, { type ExclusionRunesContenuProps } from '../Exclu
 // tiendraient pas.
 export default function ExclusionRunesBureau(props: Omit<ExclusionRunesContenuProps, 'sansAccroche'>) {
   return (
-    <section aria-label="Exclusion de runes">
+    <section aria-label={useTraduction().optimizer.criteres.exclusionRunes}>
       <ExclusionRunesContenu {...props} sansAccroche />
     </section>
   );

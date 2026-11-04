@@ -19,6 +19,7 @@ import { IconeOffense } from '../IconesAtelier';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ARTIFACT_KINDS,
+  sortesArtefact,
   ArtifactKind,
   LeaderSkill,
   MAX_ARTIFACT_SUBS,
@@ -48,6 +49,10 @@ import {
   MAX_SET_PIECES,
 } from '../../lib/effects';
 import { UseRecoState } from '../../hooks/useSiegeRecos';
+import { useTraduction } from '../../hooks/useLangue';
+import { nomSet } from '../../i18n/jeu';
+import { libelleSource } from '../../lib/ownedBuilds';
+import type { Dictionnaire } from '../../i18n/fr';
 import RuneIcon from '../RuneIcon';
 import { STATS_AVEC_BASE } from '../../lib/stats';
 import SetsPortes from '../SetsPortes';
@@ -175,6 +180,8 @@ export default function RecoCard({
   recos,
   vue = 'attaque',
 }: Props) {
+  const textes = useTraduction();
+  const cr = textes.carteReco;
   const status = match?.status ?? 'unknown';
 
   // Deux niveaux d'édition distincts :
@@ -214,7 +221,7 @@ export default function RecoCard({
   function supprimerReco() {
     const index = recos.state.recos.findIndex((r) => r.id === reco.id);
     recos.removeReco(reco.id);
-    notifier({ message: 'Recommandation supprimée', action: () => recos.restaurerReco(reco, index) });
+    notifier({ message: cr.supprimee, action: () => recos.restaurerReco(reco, index) });
   }
   const deckCount = reco.decks.length;
   // ⚠️ Un deck retiré ou remis en place DÉCALE les index : le deck en édition
@@ -399,7 +406,7 @@ export default function RecoCard({
           aria-expanded={expanded}
           taille="serre"
           icone={<ChevronDown size={15} className={`transition-transform ${expanded ? '' : '-rotate-90'}`} />}
-          libelle={editing ? "Termine l'édition pour replier" : open ? 'Réduire' : 'Consulter'}
+          libelle={editing ? cr.terminePourReplier : open ? cr.reduire : cr.consulter}
           className={`hidden lg:inline-flex ${ICONE_LG}`}
         />
         {editing ? (
@@ -412,7 +419,7 @@ export default function RecoCard({
               const t = e.target.value.trim();
               if (t !== reco.name) recos.setMeta(reco.id, { name: t });
             }}
-            placeholder={`Recommandation ${index + 1}`}
+            placeholder={textes.partage.reco.recommandation(index + 1)}
             pleineLargeur={false}
             className="min-w-[min(160px,100%)] flex-1 bg-panel py-1 text-base font-semibold"
           />
@@ -425,7 +432,7 @@ export default function RecoCard({
           <ZoneCliquable
             onClick={() => onToggleOpen(reco.id)}
             aria-expanded={expanded}
-            title={open ? 'Replier' : `Voir les ${reco.decks.length} deck(s)`}
+            title={open ? cr.replier : cr.voirDecks(reco.decks.length)}
             // ⚠️ `p-0` explicite : un `<button>` porte un rembourrage par
             // défaut du navigateur, invisible à l'œil mais qui élargit sa
             // boîte au-delà du texte.
@@ -439,7 +446,7 @@ export default function RecoCard({
                 texte (interligne 1,6 de l'échelle) dépassait la hauteur des
                 icônes juste à côté, et l'écart se lisait comme un défaut. */}
             <h3 className="truncate font-display text-lg leading-none tracking-wide compact:text-base">
-              {reco.name || `Recommandation ${index + 1}`}
+              {reco.name || textes.partage.reco.recommandation(index + 1)}
             </h3>
           </ZoneCliquable>
         )}
@@ -463,8 +470,8 @@ export default function RecoCard({
               icone={
                 <ChevronDown size={13} className={`transition-transform ${expanded ? 'rotate-180' : ''}`} />
               }
-              libelle={open ? 'Réduire' : 'Consulter'}
-              title={open ? 'Replier' : `Voir les ${reco.decks.length} deck(s)`}
+              libelle={open ? cr.reduire : cr.consulter}
+              title={open ? cr.replier : cr.voirDecks(reco.decks.length)}
               className="compact:hidden lg:hidden"
             />
           )}
@@ -493,7 +500,7 @@ export default function RecoCard({
               onClick={() => onExport(reco)}
               taille="serre"
               icone={<Upload size={13} />}
-              libelle="Exporter cette recommandation (tous ses decks)"
+              libelle={cr.exporter}
               className={ICONE_ACTION}
             />
             {/* ⚠️ Pas `actif` (le marqueur d'état standard) : le ✓ DORÉ
@@ -515,7 +522,7 @@ export default function RecoCard({
                 disabled={!recoModifiee && !deckModifie}
                 taille="serre"
                 icone={<Undo2 size={13} />}
-                libelle="Annuler les modifications"
+                libelle={cr.annulerModifs}
                 className={ICONE_ACTION}
               />
             )}
@@ -524,7 +531,7 @@ export default function RecoCard({
               aria-pressed={editing}
               taille="serre"
               icone={editing ? <Check size={14} className="text-star" /> : <Pencil size={13} />}
-              libelle={editing ? "Terminer l'édition" : 'Éditer la recommandation'}
+              libelle={editing ? textes.equipeSiege.terminerEdition : cr.editer}
               className={ICONE_ACTION}
             />
             <BoutonIcone
@@ -532,7 +539,7 @@ export default function RecoCard({
               ton="danger"
               taille="serre"
               icone={<Trash2 size={13} />}
-              libelle="Supprimer cette recommandation"
+              libelle={cr.supprimer}
               className={ICONE_ACTION}
             />
           </div>
@@ -549,9 +556,9 @@ export default function RecoCard({
           <span
             className="inline-flex items-center gap-1 rounded-full border border-border-soft bg-panel2 px-2 py-0.5
                        label"
-            title="Recommandation reçue d'un autre joueur"
+            title={cr.importeeAide}
           >
-            <Download size={10} /> Importée
+            <Download size={10} /> {cr.importee}
           </span>
         )}
         {/* ⚠️ Pendant une recherche, le compteur dit « N sur M » : afficher le
@@ -559,12 +566,10 @@ export default function RecoCard({
             d'affichage — on cherche les cinq autres. Même règle que le compteur
             filtré de l'inventaire d'artéfacts. */}
         <span className="font-mono text-micro text-ink-dim">
-          {decksFiltres
-            ? `${decksTrouves.size} sur ${reco.decks.length} deck${reco.decks.length > 1 ? 's' : ''}`
-            : `${reco.decks.length} deck${reco.decks.length > 1 ? 's' : ''}`}
+          {decksFiltres ? cr.decksSur(decksTrouves.size, reco.decks.length) : cr.decks(reco.decks.length)}
         </span>
         {!editing && reco.author && (
-          <span className="font-mono text-micro text-ink-dim">· par {reco.author}</span>
+          <span className="font-mono text-micro text-ink-dim">· {textes.vueAmi.par(reco.author)}</span>
         )}
 
         {/* ⚠️ **À la SOURIS seulement** (`compact:hidden`) : au doigt, ce bouton
@@ -600,15 +605,11 @@ export default function RecoCard({
             // milieu d'icônes nues, il ne ressortait pas et ne ressemblait pas
             // aux autres boutons. Les icônes du bout de ligne restent nues.
             title={
-              match
-                ? "Masquer le résultat de l'analyse"
-                : canAnalyze
-                  ? 'Confronter toute la recommandation à tes monstres'
-                  : 'Importe ton compte pour analyser'
+              match ? cr.masquerAnalyse : canAnalyze ? cr.confronter : textes.recos.importerPourAnalyser
             }
             taille="sm"
             icone={<Gauge size={13} />}
-            libelle="Analyser mes decks"
+            libelle={cr.analyserMesDecks}
             className={`compact:hidden max-lg:hidden ${BOUTON_LG}`}
           />
         )}
@@ -624,15 +625,15 @@ export default function RecoCard({
               const t = e.target.value.trim();
               if (t !== reco.author) recos.setMeta(reco.id, { author: t });
             }}
-            placeholder="Ton pseudo (auteur)"
+            placeholder={cr.pseudo}
             className="bg-panel py-1.5 text-xs"
           />
           <NoteEditor
             value={reco.note}
             max={NOTE_MAX}
             rows={3}
-            label="Consignes générales"
-            placeholder="Consignes valables pour tous les decks (ex. « toujours viser le heal en premier », « pas de def break sur les tanks »)…"
+            label={cr.consignesGenerales}
+            placeholder={cr.consignesGeneralesAide}
             onChange={(v) => recos.setMeta(reco.id, { note: v })}
           />
         </div>
@@ -649,7 +650,7 @@ export default function RecoCard({
         />
       )}
 
-      {!editing && expanded && reco.note && <NoteBlock text={reco.note} label="Consignes générales" />}
+      {!editing && expanded && reco.note && <NoteBlock text={reco.note} label={cr.consignesGenerales} />}
 
       {/* Repliée : un aperçu d'une ligne — le nom de chaque deck et sa pastille
           de statut, pour savoir quoi ouvrir sans tout déplier. */}
@@ -660,7 +661,7 @@ export default function RecoCard({
         <ZoneCliquable
           onClick={() => onToggleOpen(reco.id)}
           className="w-full flex flex-wrap items-center gap-1.5"
-          title="Consulter cette recommandation"
+          title={cr.consulterReco}
         >
           {defenses.defenses.map((d) => (
             <span
@@ -676,12 +677,12 @@ export default function RecoCard({
           ))}
           {defenses.sansDefense.length > 0 && (
             <span className="inline-flex items-center gap-1 text-micro text-ink-dim">
-              {defenses.sansDefense.length} deck{defenses.sansDefense.length > 1 ? 's' : ''} sans défense visée
+              {cr.sansDefense(defenses.sansDefense.length)}
             </span>
           )}
           {reco.note && (
             <span className="inline-flex items-center gap-1 text-micro text-ink-dim">
-              <StickyNote size={11} className="text-star" /> consignes
+              <StickyNote size={11} className="text-star" /> {cr.consignes}
             </span>
           )}
         </ZoneCliquable>
@@ -690,7 +691,7 @@ export default function RecoCard({
         <ZoneCliquable
           onClick={() => onToggleOpen(reco.id)}
           className="w-full flex flex-wrap items-center gap-1.5"
-          title="Consulter cette recommandation"
+          title={cr.consulterReco}
         >
           {reco.decks.map((deck, di) => {
             const st = match?.decks[di]?.status ?? 'unknown';
@@ -706,7 +707,7 @@ export default function RecoCard({
           })}
           {reco.note && (
             <span className="inline-flex items-center gap-1 text-micro text-ink-dim">
-              <StickyNote size={11} className="text-star" /> consignes
+              <StickyNote size={11} className="text-star" /> {cr.consignes}
             </span>
           )}
         </ZoneCliquable>
@@ -737,7 +738,7 @@ export default function RecoCard({
                 onClick={basculerTousLesDecks}
                 className="font-mono text-micro text-ink-dim hoverable:text-ink transition underline lg:hidden"
               >
-                {tousOuverts ? 'Replier tous les decks' : 'Déplier tous les decks'}
+                {tousOuverts ? cr.replierTous : cr.deplierTous}
               </button>
               {/* ⚠️ **À la souris, un bouton fantôme de la librairie**, plus
                   un lien souligné. Il reste AU-DESSUS du tableau, pas en
@@ -749,7 +750,7 @@ export default function RecoCard({
                 fond="vide"
                 trait="aucun"
                 taille="sm"
-                libelle={tousOuverts ? 'Replier tous les decks' : 'Déplier tous les decks'}
+                libelle={tousOuverts ? cr.replierTous : cr.deplierTous}
                 className={`hidden lg:inline-flex ${BOUTON_LG}`}
               />
             </div>
@@ -777,9 +778,9 @@ export default function RecoCard({
                 chaque ligne (`LIGNE_DECK`). */}
             <div className={`hidden bg-panel2 px-3 py-1.5 ${LIGNE_DECK}`} aria-hidden data-intitules-decks>
               <span />
-              <span className="label">Offense · sets visés</span>
-              <span className="label">Fort contre</span>
-              <span className="label text-right">Verdict</span>
+              <span className="label">{cr.colOffense}</span>
+              <span className="label">{cr.colFortContre}</span>
+              <span className="label text-right">{cr.colVerdict}</span>
             </div>
             {/* ⚠️ Pendant une recherche, SEULS les decks trouvés sont rendus —
                 les autres disparaissent complètement. Sans ça la carte remontait
@@ -841,7 +842,7 @@ export default function RecoCard({
               trait="pointille"
               taille="sm"
               icone={<Plus size={14} />}
-              libelle="Ajouter un deck vide"
+              libelle={cr.ajouterDeck}
               className={BOUTON_LG}
             />
             {/* ⚠️ `trait` bascule pointillé → plein avec l'état, comme le fond :
@@ -853,16 +854,14 @@ export default function RecoCard({
               actif={pickOffense}
               trait={pickOffense ? 'plein' : 'pointille'}
               title={
-                offenseTeams.length === 0
-                  ? "Aucune équipe d'offense : importe ton compte (barre du haut) après avoir sauvegardé tes attaques en jeu."
-                  : "Partir d'une de tes équipes d'offense (monstres, sets, artéfacts et stats réels pré-remplis)"
+                offenseTeams.length === 0 ? cr.sansOffense : cr.partirOffense
               }
               taille="sm"
               icone={<IconeOffense size={14} />}
               className={BOUTON_LG}
               libelle={
                 <>
-                  Importer un deck d'offense{' '}
+                  {cr.importerOffense}{' '}
                   <span className="font-mono text-micro opacity-70">{offenseTeams.length}</span>
                 </>
               }
@@ -872,7 +871,7 @@ export default function RecoCard({
           {pickOffense && offenseTeams.length > 0 && (
             <div className="mt-2 rounded-xl border border-border bg-panel/60 p-2">
               <p className="label mb-1.5">
-                Tes équipes d'offense — les stats du build sont reprises comme minimums
+                {cr.tesOffenses}
               </p>
 
               {/* Recherche par monstre : avec ~50 attaques sauvegardées, c'est
@@ -880,7 +879,7 @@ export default function RecoCard({
               <Champ
                 value={offenseQuery}
                 onChange={(e) => setOffenseQuery(e.target.value)}
-                placeholder="Filtrer par monstre…"
+                placeholder={cr.filtrerMonstre}
                 icone={<Search size={13} />}
                 className="mb-1.5 py-1 text-xs"
               />
@@ -910,7 +909,7 @@ export default function RecoCard({
                   </ZoneCliquable>
                 ))}
                 {filteredOffense.length === 0 && (
-                  <p className="px-1 py-2 text-xs text-ink-dim">Aucune équipe avec ce monstre.</p>
+                  <p className="px-1 py-2 text-xs text-ink-dim">{cr.aucuneEquipe}</p>
                 )}
               </div>
             </div>
@@ -921,30 +920,32 @@ export default function RecoCard({
   );
 }
 
-// Nom de chaque sorte d'artéfact, tel que le jeu les appelle.
-const LIBELLE_KIND: Record<ArtifactKind, string> = { element: "d'attribut", archetype: 'de type' };
 
 /* ---- Rapport d'analyse -------------------------------------------------- */
 
 // Pourquoi un slot ne passe pas, en une ligne lisible.
+// Les libellés du jeu (stats, sets, propriétés d'artéfact) viennent du lexique
+// de la langue affichée, jamais des `label` du match (écrits en français).
 function slotProblem(
   slot: RecoSlot,
   sm: SlotMatch,
-  byCom2us: Map<number, Monster>
+  byCom2us: Map<number, Monster>,
+  t: Dictionnaire
 ): string | null {
   if (sm.status === 'ok' || sm.status === 'empty' || sm.status === 'unknown') return null;
+  const p = t.carteReco.probleme;
   const nom = (slot.com2usId != null ? byCom2us.get(slot.com2usId)?.name : null) ?? slot.name ?? '?';
-  if (sm.status === 'absent') return `${nom} — monstre indisponible`;
+  if (sm.status === 'absent') return p.indisponible(nom);
 
   const bouts: string[] = [];
   // Le runage d'abord : reruner change les stats, l'inverse n'est pas vrai.
-  if (sm.missingSets.length) bouts.push(`set ${sm.missingSets.join(' + ')} manquant`);
+  if (sm.missingSets.length) bouts.push(p.setManquant(sm.missingSets.map((k) => nomSet(t.jeu, k)).join(' + ')));
   for (const c of sm.artifactChecks) {
-    if (!c.ok) bouts.push(`artéfact ${LIBELLE_KIND[c.kind]} : ${c.label} absent`);
+    if (!c.ok) bouts.push(p.artefactAbsent(p.sorte[c.kind], artifactSubLabel(c.code, t.jeu)));
   }
   for (const c of sm.checks) {
     if (!c.ok && c.actual !== null) {
-      bouts.push(`${c.label} ${fmtStat(c.actual)}${c.suffix} au lieu de ${fmtStat(c.required)}${c.suffix}`);
+      bouts.push(p.statInsuffisante(t.jeu.stats[c.key], `${fmtStat(c.actual)}${c.suffix}`, `${fmtStat(c.required)}${c.suffix}`));
     }
   }
   return `${nom} — ${bouts.join(' · ')}`;
@@ -954,10 +955,11 @@ function slotProblem(
 // non : « à composer » (tu as les monstres) vs « impossible » (il t'en manque).
 // ⚠️ `ko` n'a pas de libellé fixe : la cause dépend du deck (runage, stats, ou
 // les deux) — voir `deckFault`.
-function deckProblem(dm: DeckMatch): string {
-  if (dm.status === 'missing') return 'monstre indisponible — deck impossible';
-  if (dm.status === 'nodeck') return 'aucun deck avec ces monstres — tu peux le composer';
-  if (dm.status === 'ko') return libelleCausesDeck(deckFaults(dm.slots)) || 'critères non respectés';
+function deckProblem(dm: DeckMatch, t: Dictionnaire): string {
+  const p = t.carteReco.probleme;
+  if (dm.status === 'missing') return p.deckImpossible;
+  if (dm.status === 'nodeck') return p.aComposer;
+  if (dm.status === 'ko') return libelleCausesDeck(deckFaults(dm.slots), t) || p.criteres;
   return '';
 }
 
@@ -978,9 +980,9 @@ function deckProblem(dm: DeckMatch): string {
 // monstre Feu, et « Tout effacer » était déjà en `bad` sur la même page.
 type VerdictKey = 'ok' | 'nodeck' | 'ko' | 'missing';
 
+// Le libellé de chaque verdict : `carteReco.verdicts` du dictionnaire.
 const VERDICTS: {
   key: VerdictKey;
-  label: string;
   statuts: DeckMatch['status'][];
   dot: string;
   texte: string;
@@ -996,7 +998,6 @@ const VERDICTS: {
   // une légende ordonne des catégories, une liste hiérarchise l'urgence.
   {
     key: 'ok',
-    label: 'Bon',
     statuts: ['ok'],
     dot: 'bg-good',
     texte: 'text-good',
@@ -1008,7 +1009,6 @@ const VERDICTS: {
   },
   {
     key: 'nodeck',
-    label: 'À composer',
     statuts: ['nodeck'],
     dot: 'bg-warn',
     texte: 'text-warn',
@@ -1017,7 +1017,6 @@ const VERDICTS: {
   },
   {
     key: 'ko',
-    label: 'À revoir',
     statuts: ['ko'],
     dot: 'bg-bad',
     texte: 'text-bad',
@@ -1029,7 +1028,6 @@ const VERDICTS: {
     // répare un monstre absent, alors qu'un « à revoir » se corrige le soir
     // même avec les runes qu'on a déjà.
     key: 'missing',
-    label: 'Monstre manquant',
     statuts: ['missing'],
     // ⚠️ Point CREUX, même rouge : deux pastilles de la même couleur côte à
     // côte ne se distinguent plus que par leur texte, qu'on ne relit pas une
@@ -1097,6 +1095,8 @@ function AnalysisSummary({
   // Absent en vue Défense, où les decks ne sont pas affichés.
   onGoToDeck?: (deckIndex: number) => void;
 }) {
+  const textes = useTraduction();
+  const cr = textes.carteReco;
   // Tous les decks analysables, triés du plus urgent au plus tranquille :
   // ⚠️ ROUGE → ORANGE → VERT. Ce qui demande du travail se lit en premier ; les
   // decks déjà jouables closent la liste au lieu de la précéder — sinon il faut
@@ -1131,7 +1131,7 @@ function AnalysisSummary({
   const closeBtn = (
     <BoutonIcone
       onClick={onClear}
-      libelle="Masquer le résultat de l'analyse"
+      libelle={cr.masquerAnalyse}
       icone={<X size={14} />}
       className="ml-auto"
     />
@@ -1140,7 +1140,7 @@ function AnalysisSummary({
   if (match.totalDecks === 0) {
     return (
       <div className="mb-3 flex items-center gap-2 rounded-lg border border-border bg-panel/60 px-3 py-2">
-        <p className="text-sm text-ink-dim">Rien à analyser : aucun deck rempli.</p>
+        <p className="text-sm text-ink-dim">{cr.rienAAnalyser}</p>
         {closeBtn}
       </div>
     );
@@ -1162,9 +1162,7 @@ function AnalysisSummary({
           <AlertTriangle size={15} className="flex-none text-warn" />
         )}
         <p className={`text-sm font-semibold ${toutPasse ? 'text-good' : 'text-warn'}`}>
-          {toutPasse
-            ? `Tout est respecté : les ${match.totalDecks} deck(s) sont jouables avec tes monstres.`
-            : `${match.okDecks}/${match.totalDecks} deck(s) au niveau · ${rates.length} à corriger`}
+          {toutPasse ? cr.toutRespecte(match.totalDecks) : cr.bilan(match.okDecks, match.totalDecks, rates.length)}
         </p>
         {closeBtn}
       </div>
@@ -1198,10 +1196,10 @@ function AnalysisSummary({
               aria-pressed={actif}
               title={
                 n === 0
-                  ? `Aucun deck « ${v.label} »`
+                  ? cr.aucunDeck(cr.verdicts[v.key])
                   : actif
-                    ? `Ne plus isoler « ${v.label} »`
-                    : `N'afficher que « ${v.label} »`
+                    ? cr.nePlusIsoler(cr.verdicts[v.key])
+                    : cr.isoler(cr.verdicts[v.key])
               }
               className={`flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs
                           font-semibold transition ${BOUTON_LG} ${
@@ -1215,7 +1213,7 @@ function AnalysisSummary({
               {/* 2 px de plus que le point des lignes : un cercle CREUX de
                   1.5 px ne se lit pas, son intérieur disparaît. */}
               <span className={`h-2 w-2 flex-none rounded-full ${v.dot}`} />
-              {v.label}
+              {cr.verdicts[v.key]}
               <span className="font-mono text-micro text-ink-dim">{n}</span>
             </button>
           );
@@ -1229,14 +1227,14 @@ function AnalysisSummary({
               onClick={() => setVus(new Set())}
               className="text-xs text-ink-dim underline transition hoverable:text-ink lg:hidden"
             >
-              Tout afficher
+              {textes.commun.toutAfficher}
             </button>
             <Bouton
               onClick={() => setVus(new Set())}
               fond="vide"
               trait="aucun"
               taille="sm"
-              libelle="Tout afficher"
+              libelle={textes.commun.toutAfficher}
               className={`hidden lg:inline-flex ${BOUTON_LG}`}
             />
           </>
@@ -1267,8 +1265,8 @@ function AnalysisSummary({
                            transition hoverable:bg-panel2/60 disabled:hoverable:bg-transparent"
                 title={
                   onGoToDeck
-                    ? `Voir le deck « ${deckLabel(deck, monsterByCom2us, i)} »`
-                    : 'Passe en vue Attaque pour ouvrir ce deck'
+                    ? cr.voirDeck(deckLabel(deck, monsterByCom2us, i))
+                    : cr.passerEnAttaque
                 }
               >
                 {/* Le point du VERDICT, pas `DOT[status]` : il doit être le
@@ -1284,11 +1282,7 @@ function AnalysisSummary({
                   {/* Un deck bon annonce ce qui le rend jouable — l'équipe
                       retenue —, pas un simple « ok » : c'est elle qu'on va
                       chercher en jeu. */}
-                  {verdict === 'ok'
-                    ? dm.team
-                      ? `jouable · ${dm.team}`
-                      : 'jouable'
-                    : deckProblem(dm)}
+                  {verdict === 'ok' ? (dm.team ? cr.jouableAvec(libelleSource(dm.team, cr.sources)) : cr.jouable) : deckProblem(dm, textes)}
                 </span>
                 {/* Combien de fois le deck est montable EN PARALLÈLE avec la
                     réserve 6★ (`deckCopies`). C'est la question qu'on se pose
@@ -1307,7 +1301,7 @@ function AnalysisSummary({
               {(verdict === 'ko' || verdict === 'missing') && (
                 <ul className="ml-3 mt-0.5 space-y-0.5">
                   {deck.slots.map((slot, si) => {
-                    const txt = dm.slots[si] ? slotProblem(slot, dm.slots[si], monsterByCom2us) : null;
+                    const txt = dm.slots[si] ? slotProblem(slot, dm.slots[si], monsterByCom2us, textes) : null;
                     return txt ? (
                       <li key={si} className="text-xs text-ink-dim leading-snug">
                         • {txt}
@@ -1417,6 +1411,9 @@ function DeckBlock({
   // Termine l'édition du deck avant sa suppression.
   onSupprime: () => void;
 }) {
+  const textes = useTraduction();
+  const jeu = textes.jeu;
+  const cr = textes.carteReco;
   // Supprimer un deck SE DÉFAIT au lieu de se confirmer : immédiat, puis
   // « Deck supprimé · Annuler » le remet à SA place — le dernier deck remplace
   // alors le deck vide laissé derrière lui (voir `decksApresRestauration`).
@@ -1428,7 +1425,7 @@ function DeckBlock({
   function supprimerDeck() {
     onSupprime();
     recos.removeDeck(reco.id, deckIndex);
-    notifier({ message: 'Deck supprimé', action: () => recos.restaurerDeck(reco.id, deck, deckIndex) });
+    notifier({ message: cr.deckSupprime, action: () => recos.restaurerDeck(reco.id, deck, deckIndex) });
   }
   // Un monstre choisi → le curseur passe au slot vide suivant (voir
   // `slotVideSuivant`) : on compose les trois d'affilée, sans la souris.
@@ -1496,7 +1493,7 @@ function DeckBlock({
             aria-expanded={!folded}
             taille="serre"
             icone={<ChevronDown size={14} className={`transition-transform ${folded ? '-rotate-90' : ''}`} />}
-            libelle={folded ? 'Déplier ce deck' : 'Replier ce deck'}
+            libelle={folded ? cr.deplierDeck : cr.replierDeck}
             className={ICONE_LG}
           />
 
@@ -1516,7 +1513,7 @@ function DeckBlock({
             // `gap-2.5` au doigt : 44 px d'un portrait au suivant, la place
             // d'une pastille de sets (42 px) sous chacun — voir plus bas.
             className="flex items-center gap-2.5 flex-1 min-w-0 lg:gap-4"
-            title={folded ? 'Déplier ce deck' : 'Replier ce deck'}
+            title={folded ? cr.deplierDeck : cr.replierDeck}
           >
             {deck.slots.map((sl, i) => {
               const m = sl.com2usId != null ? monsterByCom2us.get(sl.com2usId) ?? null : null;
@@ -1549,7 +1546,7 @@ function DeckBlock({
                     espacement="gap-0.5"
                     affichage="hidden lg:inline-flex"
                     className="flex-none"
-                    title={sets.map((k) => RUNE_SETS.find((s) => s.key === k)?.label ?? k).join(' + ')}
+                    title={sets.map((k) => nomSet(jeu, k)).join(' + ')}
                   />
                 </span>
               );
@@ -1598,17 +1595,17 @@ function DeckBlock({
                   className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-micro font-semibold ${
                     PASTILLE_STATUT[match.status] ?? PASTILLE_STATUT.unknown
                   }`}
-                  title={verdictDeck(match)?.text}
+                  title={verdictDeck(match, textes)?.text}
                 >
                   <span className={`h-1.5 w-1.5 flex-none rounded-full ${verdictLigne.dot}`} />
-                  {verdictLigne.label}
+                  {cr.verdicts[verdictLigne.key]}
                 </span>
                 <CopiesBadge copies={match.copies} />
               </>
             )}
           </span>
-          <Bouton aria-label="Exporter vers l'Optimizer" icone={<Upload size={14} />} taille="carre" trait="aucun" fond="vide"
-            disabled={!!raisonExportOptimizer} title={raisonExportOptimizer ?? "Exporter vers l'Optimizer"}
+          <Bouton aria-label={textes.commun.exporterOptimizer} icone={<Upload size={14} />} taille="carre" trait="aucun" fond="vide"
+            disabled={!!raisonExportOptimizer} title={raisonExportOptimizer ?? textes.commun.exporterOptimizer}
             onClick={onExporterOptimizer} className={`h-7 w-7 ${ICONE_LG}`} />
           </span>
           {/* Le lead n'est pas dans l'en-tête : il est posé sur le leader lui-même
@@ -1662,7 +1659,7 @@ function DeckBlock({
               disabled={!annulable}
               taille="serre"
               icone={<Undo2 size={12} />}
-              libelle="Annuler les modifications"
+              libelle={cr.annulerModifs}
               libelleALaSouris
               className="max-lg:order-1 max-lg:gap-0"
             />
@@ -1672,7 +1669,7 @@ function DeckBlock({
             aria-pressed={editing}
             taille="serre"
             icone={editing ? <Check size={13} className="text-star" /> : <Pencil size={12} />}
-            libelle={editing ? "Terminer l'édition de ce deck" : 'Éditer ce deck'}
+            libelle={editing ? cr.terminerDeck : cr.editerDeck}
             libelleALaSouris
             className="max-lg:gap-0"
           />
@@ -1687,7 +1684,7 @@ function DeckBlock({
             ton="danger"
             taille="serre"
             icone={<Trash2 size={12} />}
-            libelle="Supprimer ce deck"
+            libelle={cr.supprimerDeck}
             libelleALaSouris
             className="order-first max-lg:gap-0 lg:mr-auto"
           />
@@ -1698,8 +1695,8 @@ function DeckBlock({
               (`taille="serre"`) : exempté de la règle tactile des 40 px — à
               40 px de haut, la colonne (84 px) dépassait la rangée et les
               sets, et la carte grandissait. */}
-          <Bouton aria-label="Exporter vers l'Optimizer" icone={<Upload size={12} />} taille="carre" trait="aucun" fond="vide"
-            disabled={!!raisonExportOptimizer} title={raisonExportOptimizer ?? "Exporter vers l'Optimizer"}
+          <Bouton aria-label={textes.commun.exporterOptimizer} icone={<Upload size={12} />} taille="carre" trait="aucun" fond="vide"
+            disabled={!!raisonExportOptimizer} title={raisonExportOptimizer ?? textes.commun.exporterOptimizer}
             onClick={onExporterOptimizer} data-cible-fine className="order-last h-5 w-5 lg:hidden" />
         </div>
 
@@ -1745,7 +1742,7 @@ function DeckBlock({
                   className={`w-max rounded-full border border-border-soft bg-panel2 py-0.5 ${
                     sets.length === 3 ? 'px-0' : 'px-1.5'
                   }`}
-                  title={sets.map((k) => RUNE_SETS.find((s) => s.key === k)?.label ?? k).join(' + ')}
+                  title={sets.map((k) => nomSet(jeu, k)).join(' + ')}
                 />
               );
             })}
@@ -1778,13 +1775,13 @@ function DeckBlock({
             value={deck.note}
             max={DECK_NOTE_MAX}
             rows={2}
-            label="Consignes du deck"
-            placeholder="Consignes pour ce deck (ex. « ne pas ouvrir sur le leader »)…"
+            label={cr.consignesDeck}
+            placeholder={cr.consignesDeckAide}
             onChange={(v) => recos.setDeckMeta(reco.id, deckIndex, { note: v })}
           />
         </div>
       ) : (
-        deck.note && <NoteBlock text={deck.note} label="Consignes du deck" compact />
+        deck.note && <NoteBlock text={deck.note} label={cr.consignesDeck} compact />
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
@@ -1820,12 +1817,12 @@ function DeckBlock({
                 editing ? (
                   <div>
                     <div className="label mb-1.5">
-                      {idx === 0 ? 'Leader' : `Slot ${idx + 1}`}
+                      {idx === 0 ? textes.equipeSiege.leader : `${textes.equipeSiege.slot} ${idx + 1}`}
                     </div>
                     <MonsterPicker
                       monsters={monsters}
                       excludeIds={usedIds}
-                      placeholder="Choisir un monstre…"
+                      placeholder={textes.equipeSiege.choisirMonstre}
                       jetonFocus={focus?.slot === idx ? focus.n : undefined}
                       onPick={(id) => {
                         const m = monsters.find((x) => String(x.id) === id);
@@ -1840,7 +1837,7 @@ function DeckBlock({
                   </div>
                 ) : (
                   <p className="text-xs text-ink-dim py-4 text-center">
-                    {idx === 0 ? 'Leader' : 'Slot'} vide
+                    {cr.slotVide(idx === 0 ? textes.equipeSiege.leader : textes.equipeSiege.slot)}
                   </p>
                 )
               ) : (
@@ -1866,13 +1863,13 @@ function DeckBlock({
                         </div>
                       )}
                       {sm && <SlotBadge sm={sm} />}
-                      {!monster && <div className="font-mono text-micro text-ink-dim">monstre inconnu</div>}
+                      {!monster && <div className="font-mono text-micro text-ink-dim">{cr.monstreInconnu}</div>}
                     </div>
                     {editing && (
                       <BoutonIcone
                         onClick={() => recos.setSlotMonster(reco.id, deckIndex, idx, null, '')}
                         ton="danger"
-                        libelle="Vider le slot"
+                        libelle={cr.viderSlot}
                         icone={<X size={14} />}
                       />
                     )}
@@ -1992,6 +1989,7 @@ function CounterBlock({
   // Index des défenses qui contiennent le monstre cherché.
   hitCounters: number[];
 }) {
+  const cr = useTraduction().carteReco;
   // ⚠️ Édition PAR DÉFENSE, et non pour le bloc entier.
   //
   // Le bloc n'a plus de bouton « Éditer » : noter la défense qu'on vient
@@ -2109,7 +2107,7 @@ function CounterBlock({
     <div className="mt-2.5 pt-2.5 border-t border-border/50">
       <div className="mb-1.5 flex items-center gap-1.5">
         <IconeOffense size={13} className="text-ink-dim" />
-        <span className="label">Fort contre</span>
+        <span className="label">{cr.colFortContre}</span>
         {deck.counters.length > 1 && (
           <span className="font-mono text-micro text-ink-dim">{deck.counters.length}</span>
         )}
@@ -2161,9 +2159,9 @@ function CounterBlock({
           taille="sm"
           className="h-[44px] max-lg:px-3.5 max-lg:text-sm lg:ml-auto lg:h-7 lg:self-center"
           icone={<Plus size={14} />}
-          libelle="Défense"
-          aria-label="Ajouter une défense que ce deck bat"
-          title="Ajouter une défense que ce deck bat"
+          libelle={cr.defense}
+          aria-label={cr.ajouterDefense}
+          title={cr.ajouterDefense}
         />
       </div>
     </div>
@@ -2200,6 +2198,8 @@ function CounterRow({
   noteOuverte: boolean;
   onToggleNote: () => void;
 }) {
+  const textes = useTraduction();
+  const cr = textes.carteReco;
 
   // Un même monstre ne peut pas occuper deux emplacements de LA MÊME défense —
   // même règle que les slots d'un deck. Il peut revenir dans une autre défense.
@@ -2283,7 +2283,7 @@ function CounterRow({
           cadre
           auSurvol
           icone={<Pencil size={10} />}
-          libelle="Modifier cette défense"
+          libelle={cr.modifierDefense}
           // Repère du banc d'affichage (tests/banc/mesure.ts, « bouton en
           // coin ») : le dépassement de ce coin sur la vignette est voulu. Posé
           // sur le `<button>` positionné lui-même ; le retirer rend ses
@@ -2297,7 +2297,7 @@ function CounterRow({
             onClick={onToggleNote}
             aria-expanded={noteOuverte}
             className="flex w-full items-center rounded-lg px-2 py-1.5 transition hoverable:brightness-110"
-            title={noteOuverte ? 'Masquer la précision' : 'Voir la précision'}
+            title={noteOuverte ? cr.masquerPrecision : cr.voirPrecision}
           >
             {portraits}
           </ZoneCliquable>
@@ -2349,7 +2349,7 @@ function CounterRow({
                   <MonsterPicker
                     monsters={monsters}
                     excludeIds={usedIds}
-                    placeholder={`Monstre ${i + 1}…`}
+                    placeholder={cr.monstreN(i + 1)}
                     jetonFocus={focus?.slot === i ? focus.n : undefined}
                     onPick={(id) => {
                       const mon = monsters.find((x) => String(x.id) === id);
@@ -2383,7 +2383,7 @@ function CounterRow({
                       ton="danger"
                       taille="serre"
                       icone={<X size={12} />}
-                      libelle="Retirer ce monstre"
+                      libelle={cr.retirerMonstre}
                     />
                   </div>
                 )}
@@ -2401,12 +2401,12 @@ function CounterRow({
             onClick={onToggleEdit}
             aria-pressed
             icone={<Check size={14} className="text-star" />}
-            libelle="Terminer"
+            libelle={textes.commun.terminer}
           />
           <BoutonIcone
             onClick={() => recos.removeCounter(reco.id, deckIndex, counterIndex)}
             ton="danger"
-            libelle="Retirer cette défense"
+            libelle={cr.retirerDefense}
             icone={<Trash2 size={13} />}
           />
         </div>
@@ -2424,7 +2424,7 @@ function CounterRow({
           const t = e.target.value.trim();
           if (t !== counter.note) recos.setCounterNote(reco.id, deckIndex, counterIndex, t);
         }}
-        placeholder="Précision (ex. « si le Chloe est en lead »)…"
+        placeholder={cr.precisionAide}
         className="mt-1.5 bg-panel py-1 text-micro"
       />
     </div>
@@ -2474,6 +2474,8 @@ function TableauDefenses({
   match: RecoMatch | null;
   monsterByCom2us: Map<number, Monster>;
 }) {
+  const textes = useTraduction();
+  const cr = textes.carteReco;
   const monstre = (id: number | null) => (id != null ? monsterByCom2us.get(id) ?? null : null);
 
   // Une offense : ses trois portraits (le leader porte son lead), le point de
@@ -2506,8 +2508,8 @@ function TableauDefenses({
           ))}
         </span>
         <span className="text-xs text-ink">{deckLabel(deck, monsterByCom2us, deckIndex)}</span>
-        <Bouton aria-label="Exporter vers l'Optimizer" icone={<Upload size={14} />} taille="carre" trait="aucun" fond="vide"
-          disabled={!!raisonsExportOptimizer[deckIndex]} title={raisonsExportOptimizer[deckIndex] ?? "Exporter vers l'Optimizer"}
+        <Bouton aria-label={textes.commun.exporterOptimizer} icone={<Upload size={14} />} taille="carre" trait="aucun" fond="vide"
+          disabled={!!raisonsExportOptimizer[deckIndex]} title={raisonsExportOptimizer[deckIndex] ?? textes.commun.exporterOptimizer}
           onClick={() => onExporterDeckOptimizer(deck)} className={`h-7 w-7 ${ICONE_LG}`} />
         {note && <span className="text-micro text-ink-dim">— {note}</span>}
       </li>
@@ -2515,7 +2517,7 @@ function TableauDefenses({
   };
 
   if (vue.defenses.length === 0 && vue.sansDefense.length === 0) {
-    return <p className="py-3 text-center text-xs text-ink-dim">Aucun deck dans cette recommandation.</p>;
+    return <p className="py-3 text-center text-xs text-ink-dim">{cr.aucunDeckDansReco}</p>;
   }
 
   return (
@@ -2528,8 +2530,8 @@ function TableauDefenses({
         aria-hidden
         data-intitules-defenses
       >
-        <span className="label">Défense</span>
-        <span className="label">Offenses fortes contre elle</span>
+        <span className="label">{cr.defense}</span>
+        <span className="label">{cr.offensesFortes}</span>
       </div>
       {vue.defenses.map((d) => {
         const leader = monstre(d.monsters[0]?.com2usId ?? null);
@@ -2570,7 +2572,7 @@ function TableauDefenses({
                      lg:grid lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:items-center lg:gap-3
                      lg:rounded-none lg:border-0 lg:border-t lg:border-solid lg:px-3 lg:py-2"
         >
-          <p className="mb-2 text-xs text-ink-dim lg:mb-0">Aucune défense visée</p>
+          <p className="mb-2 text-xs text-ink-dim lg:mb-0">{textes.recos.videSelon.defense}</p>
           <ul className="flex flex-col gap-1.5">{vue.sansDefense.map((di) => offense(di, ''))}</ul>
         </div>
       )}
@@ -2642,6 +2644,9 @@ export function StatEditor({
   lead: number;
   onSet: (key: RecoStatKey, total: number | null) => void;
 }) {
+  const textes = useTraduction();
+  const jeu = textes.jeu;
+  const cr = textes.carteReco;
   // Raccourci « Tick rapide / Tick lent », comme sur les cartes d'équipe du
   // siège : un clic met la VIT de FICHE qui tombe pile sur le tick, totem et
   // lead du deck compris. ⚠️ **Rien n'est stocké** : seule la VIT l'est, et on
@@ -2676,14 +2681,8 @@ export function StatEditor({
             // VIT écrite est celle de FICHE (269 sans lead), et un bouton qui
             // annonçait 286 pour écrire 269 se lisait comme une erreur. Le
             // tick visé reste dans l'infobulle.
-            libelle={`Tick ${t.label.toLowerCase()}`}
-            title={
-              toutSwift
-                ? 'Runage Swift : il se speed tune, il ne vise pas de tick'
-                : cible == null
-                  ? 'Vitesse de base inconnue : le tick ne peut pas être calculé'
-                  : `Mettre la VIT à ${cible} : tick ${t.value} en combat, totem et lead compris`
-            }
+            libelle={cr.tick[t.key]}
+            title={toutSwift ? cr.tickSwift : cible == null ? cr.tickSansBase : cr.tickMettre(jeu.stats.spd, cible, t.value)}
             // Même pastille que les ticks d'une équipe de siège (`TickBtn`) :
             // deux côte à côte, sans zone tactile étendue qui les ferait se
             // chevaucher — c'est l'espacement qui protège du ratage. Sans
@@ -2721,7 +2720,7 @@ export function StatEditor({
             data-stat-reco={st.key}
             className="flex flex-wrap items-center gap-x-2 gap-y-1 border-b border-border/40 py-1 text-micro last:border-0"
           >
-            <span className="w-14 flex-none text-ink-dim">{st.label}</span>
+            <span className="w-14 flex-none text-ink-dim">{jeu.stats[st.key]}</span>
             <span className="flex-none font-mono text-ink-dim tabular-nums">
               {known != null ? fmtStat(known) : '—'}
             </span>
@@ -2795,6 +2794,7 @@ function NoteEditor({
   max: number;
   rows: number;
 }) {
+  const textes = useTraduction();
   const left = max - value.length;
   return (
     <div>
@@ -2802,7 +2802,7 @@ function NoteEditor({
         <span className="label">{label}</span>
         {left < max / 4 && (
           <span className={`font-mono text-micro ${left <= 0 ? 'text-bad' : 'text-ink-dim'}`}>
-            {left} car.
+            {textes.carteReco.caracteres(left)}
           </span>
         )}
       </div>
@@ -2881,6 +2881,9 @@ function SetEditor({
   onAddOption: () => void;
   onRemoveOption: (option: number) => void;
 }) {
+  const textes = useTraduction();
+  const jeu = textes.jeu;
+  const cr = textes.carteReco;
   // Possibilité VISÉE par les ajouts. Par défaut la dernière — on construit la
   // combinaison en cours. Cliquer une chip d'une autre possibilité la vise, ce
   // qui permet de revenir compléter une combinaison laissée incomplète
@@ -2903,10 +2906,10 @@ function SetEditor({
     <div>
       <div className="flex items-center justify-between mb-1 gap-2">
         <span className="label">
-          Runage{options.length > 1 ? ` · ${options.length} possibilités` : ''}
+          {cr.runage}{options.length > 1 ? cr.possibilites(options.length) : ''}
         </span>
         <span className="font-mono text-micro text-ink-dim">
-          {used}/{MAX_SET_PIECES} runes
+          {cr.runesUtilisees(used, MAX_SET_PIECES)}
         </span>
       </div>
 
@@ -2923,7 +2926,7 @@ function SetEditor({
                   }`}
                 >
                   {sets.length === 0 ? (
-                    <span className="font-mono text-micro text-ink-dim italic">vide</span>
+                    <span className="font-mono text-micro text-ink-dim italic">{textes.equipeSiege.vide}</span>
                   ) : (
                     sets.map((key, pos) => (
                       <span
@@ -2937,9 +2940,7 @@ function SetEditor({
                         <ZoneCliquable
                           onClick={() => setFocus(oi)}
                           title={
-                            oi === target
-                              ? 'Les sets ajoutés vont dans cette possibilité'
-                              : 'Éditer cette possibilité'
+                            oi === target ? cr.possibiliteVisee : cr.editerPossibilite
                           }
                           className="inline-flex items-center gap-1"
                         >
@@ -2958,8 +2959,8 @@ function SetEditor({
                           onClick={() => onRemove(oi, pos)}
                           data-cible-fine
                           className="flex-none text-ink-dim transition hoverable:text-bad"
-                          title="Retirer ce set"
-                          aria-label="Retirer ce set"
+                          title={cr.retirerSet}
+                          aria-label={cr.retirerSet}
                         >
                           <X size={10} />
                         </button>
@@ -2994,7 +2995,7 @@ function SetEditor({
           taille="xs"
           pleineLargeur
           icone={!full ? <Plus size={11} /> : undefined}
-          libelle={full ? 'Plus de place (6 runes)' : 'Set'}
+          libelle={full ? cr.plusDePlace : cr.set}
           className={BOUTON_LG}
         />
         <Bouton
@@ -3005,14 +3006,12 @@ function SetEditor({
           }}
           disabled={(options[last] ?? []).length === 0}
           title={
-            (options[last] ?? []).length === 0
-              ? 'Complète la combinaison en cours avant d’en proposer une autre'
-              : 'Proposer un autre runage possible — un seul suffira'
+            (options[last] ?? []).length === 0 ? cr.completerAvant : cr.autrePossibilite
           }
           taille="xs"
           pleineLargeur
           icone={<Plus size={11} />}
-          libelle="Possibilité"
+          libelle={cr.possibilite}
           className={BOUTON_LG}
         />
       </div>
@@ -3042,10 +3041,10 @@ function SetEditor({
                   disabled={!fits}
                   title={
                     fits
-                      ? `${st.label} — ${setPieces(st.key)} runes`
-                      : `${st.label} — ${setPieces(st.key)} runes : il ne reste pas la place`
+                      ? cr.setRunes(nomSet(jeu, st.key), setPieces(st.key))
+                      : cr.setSansPlace(nomSet(jeu, st.key), setPieces(st.key))
                   }
-                  aria-label={st.label}
+                  aria-label={nomSet(jeu, st.key)}
                   // ⚠️ `data-cible-fine` : grille serrée d'icônes de set, où une
                   // cible de 44 px déborderait sur la voisine.
                   data-cible-fine
@@ -3090,13 +3089,15 @@ function ArtifactEditor({
   onAdd: (kind: ArtifactKind, code: number) => void;
   onRemove: (kind: ArtifactKind, code: number) => void;
 }) {
+  const textes = useTraduction();
+  const jeu = textes.jeu;
   return (
     <div className="space-y-1.5">
-      <span className="label">Artéfacts</span>
-      {ARTIFACT_KINDS.map(({ key, label }) => {
+      <span className="label">{textes.carteReco.artefacts}</span>
+      {sortesArtefact(textes).map(({ key, label }) => {
         const choisis = artifacts?.[key] ?? [];
         const plein = choisis.length >= MAX_ARTIFACT_SUBS;
-        const dispo = artifactSubsFor(key).filter((o) => !choisis.includes(o.code));
+        const dispo = artifactSubsFor(key, jeu).filter((o) => !choisis.includes(o.code));
         return (
           <div key={key}>
             <div className="flex items-center justify-between gap-2">
@@ -3113,13 +3114,13 @@ function ArtifactEditor({
                     key={code}
                     className="inline-flex items-center gap-1 rounded-full border border-border bg-panel pl-1.5 pr-1 py-0.5"
                   >
-                    <span className="text-micro text-ink">{artifactSubLabel(code)}</span>
+                    <span className="text-micro text-ink">{artifactSubLabel(code, jeu)}</span>
                     <BoutonIcone
                       onClick={() => onRemove(key, code)}
                       ton="danger"
                       taille="serre"
                       icone={<X size={10} />}
-                      libelle="Retirer cette propriété"
+                      libelle={textes.carteReco.retirerPropriete}
                     />
                   </span>
                 ))}
@@ -3141,7 +3142,7 @@ function ArtifactEditor({
               className="mt-0.5 text-ink-dim hoverable:text-ink disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <option value="">
-                {plein ? `Les ${MAX_ARTIFACT_SUBS} propriétés sont prises` : '+ Propriété…'}
+                {plein ? textes.carteReco.proprietesPrises(MAX_ARTIFACT_SUBS) : textes.carteReco.ajouterPropriete}
               </option>
               {/* `artifactSubsFor` les rend déjà dans l'ordre du JEU — le même
                   que le filtre de l'inventaire d'artéfacts. */}
@@ -3168,6 +3169,8 @@ function ArtifactList({
   artifacts: Record<ArtifactKind, number[]>;
   sm: SlotMatch | null;
 }) {
+  const textes = useTraduction();
+  const jeu = textes.jeu;
   const rien = ARTIFACT_KINDS.every(({ key }) => (artifacts?.[key] ?? []).length === 0);
   if (rien) return null;
   // Après analyse seulement : sans build confronté, un ✗ sur chaque ligne
@@ -3177,8 +3180,8 @@ function ArtifactList({
 
   return (
     <div className="space-y-1">
-      <span className="label">Artéfacts</span>
-      {ARTIFACT_KINDS.map(({ key, label }) => {
+      <span className="label">{textes.carteReco.artefacts}</span>
+      {sortesArtefact(textes).map(({ key, label }) => {
         const codes = artifacts?.[key] ?? [];
         if (codes.length === 0) return null;
         return (
@@ -3193,8 +3196,8 @@ function ArtifactList({
                     ok === null
                       ? undefined
                       : ok
-                        ? 'Propriété présente sur son artéfact'
-                        : `Propriété absente de l'artéfact ${LIBELLE_KIND[key]} de ton exemplaire`
+                        ? textes.carteReco.proprietePresente
+                        : textes.carteReco.proprieteAbsente(textes.carteReco.probleme.sorte[key])
                   }
                   // Fonds DOUX du jeton (`good-soft`/`bad-soft`), texte à l'encre :
                   // un aplat saturé à 20-25 % se lisait mal.
@@ -3207,7 +3210,7 @@ function ArtifactList({
                   }`}
                 >
                   <span className="text-micro text-ink">
-                    {artifactSubLabel(code)}
+                    {artifactSubLabel(code, jeu)}
                   </span>
                   {ok === true && <Check size={10} className="text-good" />}
                   {ok === false && <X size={10} className="text-bad" />}
@@ -3227,9 +3230,11 @@ function ArtifactList({
 // autres restent neutres, sinon on afficherait des manques sur un runage que le
 // joueur n'a pas choisi.
 function SetList({ options, sm }: { options: string[][]; sm: SlotMatch | null }) {
+  const textes = useTraduction();
+  const cr = textes.carteReco;
   const opts = options?.length ? options : [[]];
   if (opts.every((o) => o.length === 0)) {
-    return <p className="font-mono text-micro text-ink-dim">Aucun set recommandé</p>;
+    return <p className="font-mono text-micro text-ink-dim">{cr.aucunSetRecommande}</p>;
   }
   const analysed = !!sm && sm.status !== 'empty';
   const retenue = sm?.matchedOption ?? 0;
@@ -3243,7 +3248,7 @@ function SetList({ options, sm }: { options: string[][]; sm: SlotMatch | null })
           <span key={oi} className="flex flex-wrap items-center gap-1">
             {oi > 0 && <span className="px-0.5 font-mono text-xs text-ink-dim">|</span>}
             {sets.length === 0 ? (
-              <span className="font-mono text-micro text-ink-dim italic">aucun set</span>
+              <span className="font-mono text-micro text-ink-dim italic">{cr.aucunSet}</span>
             ) : (
               <span className="flex flex-wrap items-center gap-1">
                 {sets.map((key, i) => {
@@ -3259,7 +3264,7 @@ function SetList({ options, sm }: { options: string[][]; sm: SlotMatch | null })
                     <span
                       key={i}
                       title={
-                        ok === null ? undefined : ok ? 'Set porté' : `Set ${key} manquant sur ton exemplaire`
+                        ok === null ? undefined : ok ? cr.setPorte : cr.setManquant(nomSet(textes.jeu, key))
                       }
                       // Fonds DOUX, texte à l'encre — comme les
                       // propriétés d'artéfact.
@@ -3293,7 +3298,7 @@ function SetList({ options, sm }: { options: string[][]; sm: SlotMatch | null })
 
 // Badge d'un deck : le verdict en trois mots, + l'équipe retenue si trouvée.
 function DeckBadge({ match }: { match: DeckMatch }) {
-  const m = verdictDeck(match);
+  const m = verdictDeck(match, useTraduction());
   if (!m) return null;
   return <span className={`font-mono text-micro ${m.cls}`}>· {m.text}</span>;
 }
@@ -3301,15 +3306,17 @@ function DeckBadge({ match }: { match: DeckMatch }) {
 // La phrase du verdict d'un deck — lue par `DeckBadge` et par l'infobulle de
 // la pastille de la ligne (tableau des decks à la souris) : une
 // seule rédaction pour les deux.
-function verdictDeck(match: DeckMatch): { cls: string; text: string } | null {
+function verdictDeck(match: DeckMatch, t: Dictionnaire): { cls: string; text: string } | null {
+  const p = t.carteReco.probleme;
+  const equipe = match.team ? ` · ${libelleSource(match.team, t.carteReco.sources)}` : '';
   const map: Record<string, { cls: string; text: string }> = {
-    ok: { cls: 'text-good', text: `jouable${match.team ? ` · ${match.team}` : ''}` },
-    nodeck: { cls: 'text-warn', text: 'aucun deck avec ces monstres — à composer' },
+    ok: { cls: 'text-good', text: `${t.carteReco.jouable}${equipe}` },
+    nodeck: { cls: 'text-warn', text: p.aComposerCourt },
     ko: {
       cls: 'text-bad',
-      text: `${libelleCausesDeck(deckFaults(match.slots)) || 'critères non respectés'}${match.team ? ` · ${match.team}` : ''}`,
+      text: `${libelleCausesDeck(deckFaults(match.slots), t) || p.criteres}${equipe}`,
     },
-    missing: { cls: 'text-bad', text: 'monstre indisponible — deck impossible' },
+    missing: { cls: 'text-bad', text: p.deckImpossible },
   };
   return map[match.status] ?? null;
 }
@@ -3323,6 +3330,7 @@ function verdictDeck(match: DeckMatch): { cls: string; text: string } | null {
 // ⚠️ **6★ uniquement** — la box n'en contient pas d'autres (voir
 // `countCopiesByCom2us`). Un monstre en réserve à 5★ ne se joue pas tel quel.
 function CopiesBadge({ copies }: { copies: number | null }) {
+  const c = useTraduction().carteReco.copies;
   // `null` = pas de compte importé, ou deck vide : on ne dit rien plutôt que
   // d'annoncer « 0 fois », qui affirmerait quelque chose de faux.
   if (copies === null) return null;
@@ -3333,9 +3341,9 @@ function CopiesBadge({ copies }: { copies: number | null }) {
     return (
       <span
         className="font-mono text-micro text-bad"
-        title="Il manque au moins un monstre 6★ en réserve pour monter ce deck"
+        title={c.zeroAide}
       >
-        · réalisable 0 fois
+        · {c.realisable(0)}
       </span>
     );
   }
@@ -3343,66 +3351,56 @@ function CopiesBadge({ copies }: { copies: number | null }) {
     <span
       className="font-mono text-micro text-ink-dim"
       title={
-        copies > 1
-          ? `Tes monstres 6★ permettent de monter ce deck ${copies} fois en parallèle`
-          : 'Tes monstres 6★ permettent de monter ce deck une seule fois'
+        copies > 1 ? c.plusieursAide(copies) : c.uneAide
       }
     >
-      · réalisable {copies} fois
+      · {c.realisable(copies)}
     </span>
   );
 }
 
-// Libellés courts d'une cause de rejet — voir `slotFaults` dans recoMatch.ts.
-// Les causes sont déjà rendues dans l'ordre du geste à faire (runage, artéfacts,
-// puis stats) ; il n'y a plus qu'à les joindre.
-const LIBELLE_CAUSE_SLOT: Record<FaultCause, string> = {
-  sets: 'mauvais set de runes',
-  artifacts: 'mauvaise statistique',
-  stats: 'stats insuffisantes',
-};
-
+// Libellés d'une cause de rejet — voir `slotFaults` dans recoMatch.ts, et
+// `carteReco.causes` du dictionnaire. Les causes sont déjà rendues dans l'ordre
+// du geste à faire (runage, artéfacts, puis stats) ; il n'y a plus qu'à les
+// joindre.
 // ⚠️ Côté deck, un NOM suivi de « à revoir » plutôt que « non respecté(e)s » :
 // la formule est invariable, donc elle se combine sans accord — « runage,
 // artéfacts et stats à revoir » se construit tout seul, quel que soit le
 // nombre de causes.
-const NOM_CAUSE_DECK: Record<FaultCause, string> = {
-  sets: 'runage',
-  artifacts: 'artéfacts',
-  stats: 'stats',
-};
-
-function enumerer(morceaux: string[]): string {
+function enumerer(morceaux: string[], et: string): string {
   if (morceaux.length <= 1) return morceaux[0] ?? '';
-  return `${morceaux.slice(0, -1).join(', ')} et ${morceaux[morceaux.length - 1]}`;
+  return `${morceaux.slice(0, -1).join(', ')} ${et} ${morceaux[morceaux.length - 1]}`;
 }
 
-function libelleCausesSlot(causes: FaultCause[]): string {
-  return causes.map((c) => LIBELLE_CAUSE_SLOT[c]).join(' · ');
+function libelleCausesSlot(causes: FaultCause[], t: Dictionnaire): string {
+  return causes.map((c) => t.carteReco.causes.slot[c]).join(' · ');
 }
 
-function libelleCausesDeck(causes: FaultCause[]): string {
-  return causes.length ? `${enumerer(causes.map((c) => NOM_CAUSE_DECK[c]))} à revoir` : '';
+function libelleCausesDeck(causes: FaultCause[], t: Dictionnaire): string {
+  const k = t.carteReco.causes;
+  return causes.length ? k.aRevoir(enumerer(causes.map((c) => k.deck[c]), t.siege.fautes.et)) : '';
 }
 
 // Badge sous le nom du monstre : possédé ? au niveau ? et d'après quel build
 // (box, RTA, défense/offense de siège) — utile quand plusieurs presets existent.
 function SlotBadge({ sm }: { sm: SlotMatch }) {
+  const textes = useTraduction();
+  const cr = textes.carteReco;
   if (sm.status === 'absent')
-    return <div className="font-mono text-micro text-bad">monstre indisponible</div>;
+    return <div className="font-mono text-micro text-bad">{cr.indisponible}</div>;
   if (sm.status === 'unknown')
     // Possédé, mais aucun deck existant ne le réunit aux autres → rien à comparer.
-    return <div className="font-mono text-micro text-ink-dim">possédé</div>;
+    return <div className="font-mono text-micro text-ink-dim">{cr.possede}</div>;
   if (sm.status === 'ok')
     return (
-      <div className="font-mono text-micro text-good" title={`Deck retenu : ${sm.owned?.label}`}>
-        au niveau
+      <div className="font-mono text-micro text-good" title={cr.deckRetenu(libelleSource(sm.owned?.label ?? '', cr.sources))}>
+        {cr.auNiveau}
       </div>
     );
   if (sm.status === 'ko')
     return (
-      <div className="font-mono text-micro text-bad" title={`Deck retenu : ${sm.owned?.label}`}>
-        {libelleCausesSlot(slotFaults(sm)) || 'critères non respectés'}
+      <div className="font-mono text-micro text-bad" title={cr.deckRetenu(libelleSource(sm.owned?.label ?? '', cr.sources))}>
+        {libelleCausesSlot(slotFaults(sm), textes) || cr.probleme.criteres}
       </div>
     );
   return null;
@@ -3427,10 +3425,12 @@ function StatList({
   monster: Monster | null;
   sm: SlotMatch | null;
 }) {
+  const textes = useTraduction();
+  const jeu = textes.jeu;
   const entries = RECO_STATS.filter((st) => (slot.stats[st.key] ?? 0) > 0);
   const [total, setTotal] = useState(false);
   if (entries.length === 0) {
-    return <p className="font-mono text-micro text-ink-dim">Aucune stat recommandée</p>;
+    return <p className="font-mono text-micro text-ink-dim">{textes.carteReco.aucuneStat}</p>;
   }
   const checkOf = (key: RecoStatKey) => sm?.checks.find((c) => c.key === key) ?? null;
   // La colonne « toi » n'a de sens qu'après une analyse.
@@ -3447,12 +3447,12 @@ function StatList({
     <ZoneCliquable
       onClick={() => setTotal((v) => !v)}
       aria-pressed={total}
-      title={total ? 'Voir le détail (base + bonus)' : 'Voir les valeurs totales'}
+      title={total ? textes.carteReco.voirDetail : textes.carteReco.voirTotaux}
       className="flex w-full flex-col text-left"
     >
       {analyse && (
         <div className="flex items-center pb-1">
-          <span className="ml-auto label">actuel</span>
+          <span className="ml-auto label">{textes.carteReco.actuel}</span>
         </div>
       )}
       {entries.map((st) => {
@@ -3470,7 +3470,7 @@ function StatList({
               text-micro last:border-0 ${rate ? 'bg-bad-soft' : ''}`}
           >
             <span className={`w-14 flex-none ${rate ? 'text-bad font-semibold' : 'text-ink-dim'}`}>
-              {st.label}
+              {jeu.stats[st.key]}
             </span>
             {/* Taux Crit, Dmg Crit, RES et Précision : toujours le total
                 (`STATS_AVEC_BASE`, décision de l'utilisateur pour toute l'app). */}
@@ -3496,7 +3496,7 @@ function StatList({
                 }`}
                 title={
                   c && c.actual !== null && !c.ok
-                    ? `Il te manque ${fmtStat(-c.diff)}${st.suffix}`
+                    ? textes.carteReco.ilTeManque(`${fmtStat(-c.diff)}${st.suffix}`)
                     : undefined
                 }
               >

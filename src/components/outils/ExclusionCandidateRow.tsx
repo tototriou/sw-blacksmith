@@ -3,6 +3,7 @@ import MonsterAvatar from '../MonsterAvatar';
 import SetsPortes from '../SetsPortes';
 import { activeSets } from '../../lib/effects';
 import { ExclusionCandidate } from '../../lib/optimizerExclusion';
+import { useTraduction } from '../../hooks/useLangue';
 
 interface Props {
   candidate: ExclusionCandidate;
@@ -30,6 +31,7 @@ export default function ExclusionCandidateRow({ candidate: c, suffixe }: Props) 
   // monstre du compte, pas seulement les favoris RTA) n'ont pas cette valeur
   // déjà posée quelque part.
   const sets = activeSets(c.gear.runes.map((r) => r.set));
+  const k = useTraduction().optimizer.candidat;
   return (
     <>
       <MonsterAvatar monster={c.monster} size={c.teamContext ? 46 : 28} className="flex-none" />
@@ -38,13 +40,13 @@ export default function ExclusionCandidateRow({ candidate: c, suffixe }: Props) 
           <span className="text-[13px] font-medium truncate flex-1">{c.monster.name}</span>
           <SetsPortes sets={sets} taille={14} espacement="gap-1" className="flex-none" />
           <span className="text-[11px] tabular-nums text-ink-dim flex-none">
-            {c.gear.runes.length} rune{c.gear.runes.length > 1 ? 's' : ''}
+            {k.runes(c.gear.runes.length)}
           </span>
           {suffixe}
         </div>
         {c.teamContext && (
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-ink-dim">
-            <span className="flex-none">Équipe {c.teamContext.teamNumber}</span>
+            <span className="flex-none">{k.equipe(c.teamContext.teamNumber)}</span>
             <span className="flex flex-wrap items-center gap-2.5 min-w-0">
               {c.teamContext.slots.map((m, slotIdx) => {
                 const estSlotCourant = 'slotIndex' in c.selector && c.selector.slotIndex === slotIdx;
