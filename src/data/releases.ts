@@ -70,8 +70,8 @@ export function journal(langue: Langue): Release[] {
 // Si une ligne dépasse ~15 mots, c'est qu'elle raconte l'implémentation.
 export const RELEASES: Release[] = [
   {
-    version: null,
-    date: '2026-10-31',
+    version: '2.3.0',
+    date: '2026-11-04',
     title: 'SW Blacksmith en anglais',
     highlights: ['L’app s’affiche en français ou en anglais, dans la langue de ton navigateur'],
     changes: [
