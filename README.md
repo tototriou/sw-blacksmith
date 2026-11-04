@@ -63,10 +63,12 @@ Une question, un retour ou une demande particulière :
 - [Electron](https://www.electronjs.org) — application de bureau
 - Déployé sur [Vercel](https://vercel.com) : déploiement automatique sur `main`, preview par branche.
 
-## Auteur
+## Auteurs
 
-**Thomas** — [github.com/tototriou](https://github.com/tototriou) ·
-[Discord](https://discord.gg/R2Fe4GJZET)
+- [github.com/enzoputzulu](https://github.com/enzoputzulu)
+- [github.com/tototriou](https://github.com/tototriou)
+
+Discord de l'app : [discord.gg/R2Fe4GJZET](https://discord.gg/R2Fe4GJZET)
 
 ## Remerciements
 
