@@ -64,10 +64,12 @@ A question, feedback or a specific request:
 - [Electron](https://www.electronjs.org) — desktop app
 - Deployed on [Vercel](https://vercel.com): automatic deployment on `main`, preview per branch.
 
-## Author
+## Authors
 
-**Thomas** — [github.com/tototriou](https://github.com/tototriou) ·
-[Discord](https://discord.gg/R2Fe4GJZET)
+- [github.com/enzoputzulu](https://github.com/enzoputzulu)
+- [github.com/tototriou](https://github.com/tototriou)
+
+App Discord: [discord.gg/R2Fe4GJZET](https://discord.gg/R2Fe4GJZET)
 
 ## Acknowledgements
 
