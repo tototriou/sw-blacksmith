@@ -66,7 +66,7 @@ export default function testBureauMiseAJour() {
   const blocLinux = config.split(/\n(?=\S)/).find((b) => b.startsWith('linux:')) ?? '';
   egal(blocLinux.match(/^\s+target:\s*\[([^\]]*)\]/m)?.[1].split(',').map((s) => s.trim()), ['deb', 'AppImage'], 'cibles Linux : le .deb, puis l’AppImage');
   ok(/^\s+maintainer:\s*\S.* <[^@\s>]+@[^@\s>]+>$/m.test(blocLinux), 'mainteneur du .deb : « Nom <adresse> »');
-  const flux = readFileSync(join(process.cwd(), '.github', 'workflows', 'bureau.yml'), 'utf8');
+  const flux = readFileSync(join(process.cwd(), '.github', 'workflows', 'bureau.yml'), 'utf8').replace(/\r\n/g, '\n');
   const fichiersLinux = flux.match(/- os: ubuntu-latest\s*\n\s+fichiers: \|\n((?:\s+paquets\/\S+\n)+)/)?.[1].trim().split(/\s+/);
   egal(fichiersLinux, ['paquets/*.deb', 'paquets/*.AppImage', 'paquets/latest-linux.yml'], 'publication : le .deb, l’AppImage et `latest-linux.yml`');
   const publish = config.match(/publish:\s*\n\s+provider:\s*(\S+)\s*\n\s+owner:\s*(\S+)\s*\n\s+repo:\s*(\S+)/);

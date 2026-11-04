@@ -115,7 +115,7 @@ export default function testReliqueOu() {
     // Sans la +10 : la borne par stat (ATQ +15 pour le minimum, +0 pour le
     // maximum) déclarait le build réussi ; relique par relique, la +15 dépasse
     // le maximum (805) et la +5 manque le minimum (735). Le quasi-succès en
-    // vient (D31) : les deux conditions, chacune ratée seule, et le plus petit
+    // vient : les deux conditions, chacune ratée seule, et le plus petit
     // écart relatif au global (25 / 780 < 25 / 760).
     const sansMilieu = resoudreContexteRelique(LIBRE, undefined, [inv[0]!, inv[2]!]);
     const rSans = searchBuilds({ ...p, relicContext: sansMilieu });
