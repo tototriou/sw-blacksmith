@@ -9,8 +9,8 @@ import type { Release } from './releases';
 
 export const RELEASES_EN: Release[] = [
   {
-    version: null,
-    date: '2026-10-31',
+    version: '2.3.0',
+    date: '2026-11-04',
     title: 'SW Blacksmith in English',
     highlights: ['The app is shown in French or English, in your browser’s language'],
     changes: [
