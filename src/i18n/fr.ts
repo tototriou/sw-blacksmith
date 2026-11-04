@@ -396,11 +396,14 @@ export const fr = {
       { titre: '100 % local', texte: "Comme le site : rien n'est envoyé, tout reste sur ta machine." },
     ],
     windows: 'Télécharger pour Windows',
-    linux: 'Télécharger pour Linux',
+    linux: 'Télécharger pour Linux (.deb)',
     // ⚠️ Les libellés de Windows, dans la langue de Windows : celle de l'interface
     // est la meilleure approximation.
     avertissementWindows:
       'Windows peut afficher « Windows a protégé votre ordinateur » : clique sur « Informations complémentaires », puis sur « Exécuter quand même ».',
+    // Suivi du lien vers l'AppImage (`appImage`), qui finit la phrase.
+    paquetLinux: "Le .deb s'installe sur Debian, Ubuntu et leurs dérivées. Pour une autre distribution :",
+    appImage: "l'AppImage",
     auTelephone: 'À installer depuis un ordinateur Windows ou Linux.',
     versionProposee: (version: string) => `Version proposée : ${version}`,
     toutesLesVersions: 'Toutes les versions sur GitHub',

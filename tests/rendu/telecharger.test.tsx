@@ -28,13 +28,16 @@ export function testRenduTelecharger() {
   // Les deux téléchargements : le FICHIER, chacun avec le logo de son système.
   for (const [libelle, href, logo] of [
     ['Télécharger pour Windows', TELECHARGEMENTS.windows, 'windows'],
-    ['Télécharger pour Linux', TELECHARGEMENTS.linux, 'linux'],
+    ['Télécharger pour Linux (.deb)', TELECHARGEMENTS.linux, 'linux'],
   ]) {
     const a = ancres.find((x) => x.texte === libelle);
     ok(a?.href === href, `« ${libelle} » → ${href}`);
     ok(!!a && a.contenu.includes(`data-logo="${logo}"`), `« ${libelle} » : le logo ${logo}`);
   }
   ok(t.includes('Windows peut afficher « Windows a protégé votre ordinateur » : clique sur « Informations complémentaires », puis sur « Exécuter quand même ».'), 'la phrase SmartScreen, avec les libellés de Windows');
+  ok(t.includes("Le .deb s'installe sur Debian, Ubuntu et leurs dérivées. Pour une autre distribution : l'AppImage"), 'Linux : à qui va le .deb, et l\'AppImage pour les autres');
+  const appImage = ancres.find((a) => a.texte === "l'AppImage");
+  ok(appImage?.href === TELECHARGEMENTS.linuxAppImage && !appImage.nouvelOnglet, '« l\'AppImage » → le fichier de la dernière release, dans la page');
   ok(t.includes('À installer depuis un ordinateur Windows ou Linux.'), 'au téléphone : la ligne à la place des boutons');
 
   const derniere = RELEASES.find((r) => r.version !== null) ?? RELEASES[0];

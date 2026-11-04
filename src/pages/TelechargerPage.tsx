@@ -15,7 +15,9 @@ import { Bouton } from '../ui';
 // page de la release, où il faudrait le chercher parmi les fichiers de la
 // mise à jour. Pas de signature : la phrase dit comment passer
 // l'avertissement de Windows, avec SES libellés.
-// ⚠️ **Au téléphone, sans boutons** : ni un `.exe` ni une AppImage ne s'y
+// Linux : le bouton donne le `.deb` (Debian, Ubuntu et dérivées) ; l'AppImage,
+// pour les autres distributions, est un lien de la ligne d'en dessous.
+// ⚠️ **Au téléphone, sans boutons** : ni un `.exe` ni un paquet Linux ne s'y
 // installent (`lg:`, deux formats, deux contenus).
 
 export default function TelechargerPage() {
@@ -57,6 +59,12 @@ export default function TelechargerPage() {
           />
         </div>
         <p className="mt-3 max-w-xl text-xs leading-relaxed text-ink-dim">{tt.avertissementWindows}</p>
+        <p className="mt-1.5 max-w-xl text-xs leading-relaxed text-ink-dim">
+          {tt.paquetLinux}{' '}
+          <a href={TELECHARGEMENTS.linuxAppImage} className="text-accent hoverable:text-ink transition">
+            {tt.appImage}
+          </a>
+        </p>
       </div>
 
       {/* Au téléphone : rien à installer ici. */}
