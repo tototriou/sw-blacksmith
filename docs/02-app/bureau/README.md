@@ -30,9 +30,22 @@ Electron `44.5.1`, electron-builder `26.15.3`, electron-updater `6.8.9`
   `vite build`, la compilation, puis l'app sur le build.
   `npm run bureau:paquet` : la même chose, puis electron-builder (voir
   « L'installeur »).
-- Tout lancement passe par `scripts/lib/electron.mjs`, qui retire
-  `ELECTRON_RUN_AS_NODE` de l'environnement (hérité d'un terminal de VS
-  Code, il fait démarrer Electron comme un simple Node).
+- Tout lancement passe par `scripts/lib/electron.mjs`, qui nettoie
+  l'environnement hérité d'un terminal de VS Code
+  (`scripts/lib/environnementElectron.mjs`, pur, testé ; en JavaScript pour
+  marcher avec le Node du terminal, quel qu'il soit) :
+  - `ELECTRON_RUN_AS_NODE` est retirée : elle fait démarrer Electron comme
+    un simple Node ;
+  - ⚠️ **VS Code installé en snap** (Linux) : ses variables GIO, GSettings
+    et GTK (`GIO_MODULE_DIR`, `GSETTINGS_SCHEMA_DIR`, `GTK_PATH`…) pointent
+    vers les modules et les schémas du snap, et Electron plante à la
+    création de la fenêtre (SIGSEGV, après « Schema
+    org.gnome.desktop.interface does not have key font-antialiasing »).
+    Celles qui pointent dans un snap sont retirées, et celles dont VS Code
+    garde l'origine (`<NOM>_VSCODE_SNAP_ORIG`, dont `XDG_DATA_DIRS`) la
+    retrouvent. Ni Wayland ni la version d'Electron n'y sont pour rien.
+  `scripts/generer-icone-bureau.mjs`, qui se relance dans Electron, applique
+  la même règle.
 
 ## Le démarrage
 
@@ -64,6 +77,7 @@ lecteur côté page (`estBureau()` = l'objet présent, avec `bureau: true`).
 |-----------|-------|------|
 | `bureau`, `plateforme` (`process.platform`) | — | valeurs |
 | `couleurs({ fond, barre, symboles })` | `bureau:couleurs` | page → bureau |
+| `langue(langue)` | `bureau:langue` | page → bureau : la langue de l'app (`html[lang]`), au chargement et à chaque changement |
 | `coeursPhysiques()` | `bureau:coeurs-physiques` (`invoke`) | rend le nombre de cœurs physiques, ou `null` |
 | `miseAJour.etat()` | `bureau:mise-a-jour` (`invoke`) | état courant |
 | `miseAJour.surChangement(rappel)` | `bureau:mise-a-jour` | bureau → page ; rend de quoi se désabonner |
@@ -77,6 +91,16 @@ lecteur côté page (`estBureau()` = l'objet présent, avec `bureau: true`).
 
 Le processus principal n'accepte un message que de la page de SA fenêtre
 (`evenement.sender`), et vérifie son contenu.
+
+**Les boîtes du système** (enregistrer un fichier, sauvegarder la session
+sous…, remplacer un fichier, choisir le dossier SW Blacksmith ou SW Exporter)
+s'affichent dans la langue de l'APP : la page l'envoie (`langue`), et
+[bureau/textes.ts](../../../bureau/textes.ts) en tire leurs textes ; avant le
+premier envoi, la langue du système, par la règle de l'app. Le reste des
+textes du bureau s'affiche dans la page et vient de `src/i18n/` ; un échec
+de session revient en motif et code d'erreur, rédigés par la page. Le mode
+preuve fixe la page en français (`--lang=fr-FR`) : il cherche ses libellés
+français.
 
 ## Un seul code
 
@@ -221,10 +245,26 @@ qui n'a pas accès au pont.
 
 `npm run bureau:paquet` → dossier `paquets`, non suivi (`electron-builder.yml`) :
 
-- **Deux plateformes : Windows et Linux.** Pas de macOS. Sous Linux,
-  l'**AppImage** est le seul format qu'electron-updater sait mettre à jour
-  (un `.deb` passe par le gestionnaire de paquets).
-- **Windows** : assistant NSIS en français (`oneClick: false`) — pour qui
+- **Deux plateformes : Windows et Linux.** Pas de macOS. Sous Linux, **deux
+  paquets** :
+  - le **`.deb`** (Debian, Ubuntu et dérivées), celui que propose le site :
+    installé par le gestionnaire de paquets dans `/opt/SW Blacksmith`, sans
+    FUSE, avec le profil AppArmor sans lequel Ubuntu 24.04 refuse le bac à
+    sable d'Electron (posé par son script d'installation). ⚠️ Il exige un
+    mainteneur (`linux.maintainer`, l'adresse noreply GitHub : public par
+    `apt show`) et une page du projet (`extraMetadata.homepage`, le site) ;
+  - l'**AppImage**, pour les autres distributions et pour les AppImage déjà
+    installées : sans elle, elles ne recevraient plus de mise à jour. Elle
+    demande `libfuse2`, qu'Ubuntu 24.04 n'installe plus d'office.
+
+  `extraMetadata.desktopName` (`swblacksmith.desktop`) et
+  `linux.syncDesktopName` : Electron en tire l'identifiant de sa fenêtre,
+  qui doit être le nom du `.desktop` installé pour que le bureau rattache la
+  fenêtre à son lanceur et à son icône.
+- **Windows** : assistant NSIS dans la langue de Windows, français ou, pour
+  toute autre, anglais, sans sélecteur (`multiLanguageInstaller`,
+  `installerLanguages: [fr_FR, en_US]`, `language: "1033"` en repli ; le
+  désinstalleur suit) ; `oneClick: false` — pour qui
   (« juste pour moi » par défaut, `perMachine: false` : dans le profil,
   sans droits administrateur, et la mise à jour passe sans demande
   d'autorisation ; « tous les utilisateurs » la fait demander à chaque
@@ -232,12 +272,12 @@ qui n'a pas accès au pont.
   désinstallation avec ses pages (bienvenue, avancement, fin). L'icône de
   l'app est sur l'exécutable, l'installeur et les raccourcis (`SW
   Blacksmith`). **Non signé** : Windows avertit au premier lancement (la
-  page « Télécharger » dit comment passer). **Linux** : AppImage, icône
-  `public/favicon.png`.
+  page « Télécharger » dit comment passer). **Linux** : `.deb` et
+  AppImage, icône `public/favicon.png`.
 - **`appId` `com.swblacksmith.app` — définitif** : Windows et la mise à jour
   reconnaissent l'app par lui.
 - Fichiers **sans numéro de version** (`SW-Blacksmith-Setup.exe`,
-  `SW-Blacksmith.AppImage`) : seule adresse fixe pour
+  `SW-Blacksmith.deb`, `SW-Blacksmith.AppImage`) : seule adresse fixe pour
   `releases/latest/download`.
 - Le paquet ne contient que `dist/`, les deux `.cjs` et `package.json`
   (aucun `node_modules`) ; l'icône Windows est `bureau/icone.ico`
@@ -249,7 +289,9 @@ qui n'a pas accès au pont.
 ## La publication
 
 Au **tag `v*`**, `.github/workflows/bureau.yml` construit l'installeur
-Windows et l'AppImage, puis les attache à la release du tag **par `gh`** —
+Windows, le `.deb` et l'AppImage, puis les attache à la release du tag
+**par `gh`**, avec `latest.yml` et `latest-linux.yml` (qui liste les deux
+paquets Linux) —
 ajoutés à une release déjà rédigée (titre et notes intacts), ou dans un
 brouillon créé sinon. La version de l'app est celle du tag. ⚠️ Pas par
 electron-builder : il ignore sans échouer une release publiée depuis plus de
@@ -262,7 +304,10 @@ seulement (`app.isPackaged` ; lancée par `bureau:local`, « Rechercher »
 répond « à jour »). ⚠️ **L'utilisateur décide** : au lancement, une
 recherche dans les releases GitHub, **rien ne se télécharge** sans
 « Mettre à jour » (`autoDownload = false`, `downloadUpdate()` au clic ;
-`autoInstallOnAppQuit = true`). Phases données à la page (`EtatMiseAJour`) :
+`autoInstallOnAppQuit = true`). Sous Linux, electron-updater prend le
+paquet du format installé (`resources/package-type`, écrit par le `.deb` ;
+l'AppImage sinon) : le `.deb` s'installe par `dpkg`, avec le mot de passe
+administrateur. Phases données à la page (`EtatMiseAJour`) :
 `aucune`, `recherche`, `a-jour`, `injoignable`, `disponible`,
 `telechargement`, `prete`, `echec` ; « Redémarrer » =
 `quitAndInstall(true, true)`. Composants : `MiseAJourBureau` (la
@@ -325,7 +370,7 @@ npm run bureau:preuve -- --swex        # le dossier SW Exporter, sur des fixture
 npm run bureau:preuve -- --session     # « Sauvegarder », « Sauvegarder sous… », conservation refusée
 npm run bureau:preuve -- <dossier> --exe "<app installée>"  # la même chose, sur l'app installée
 npm run bureau:local                   # la regarder
-node tests/run.mjs bureau              # protocole, fenêtre, mise à jour, noms de fichiers, cœurs physiques
+node tests/run.mjs bureau              # protocole, fenêtre, mise à jour, noms de fichiers, cœurs physiques, lancement
 ```
 
 Le mode preuve (`bureau/preuve.ts`, variables `SWBLACKSMITH_PREUVE` et

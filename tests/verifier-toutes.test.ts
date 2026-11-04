@@ -19,6 +19,7 @@ import { DEFAULT_DAMAGE_SETUP } from '../src/lib/damage';
 import { toutVerifierDeLaRecette } from '../scripts/lib/recipeToSearchParams';
 import { RelicDetail } from '../src/types';
 import { egal, ok, titre } from './outils';
+import { fr } from '../src/i18n/fr';
 
 const build = (id: number) => ({ runeIds: [id] }) as unknown as BuildCandidate;
 const ordre = (n: number) => Array.from({ length: n }, (_, i) => build(i + 1));
@@ -71,7 +72,7 @@ export function testVerifierToutes() {
   titre('« Vérifier toutes les combinaisons trouvées » — gardé dans la recette');
 
   {
-    const allerRetour = (v?: boolean) => parseOptimizerRecipe(JSON.stringify(recette(v))).recipe;
+    const allerRetour = (v?: boolean) => parseOptimizerRecipe(JSON.stringify(recette(v)), fr).recipe;
     egal(allerRetour(true)?.verifierToutesLesCombinaisons, true, 'activé : relu activé');
     egal(allerRetour(false)?.verifierToutesLesCombinaisons, false, 'désactivé : relu désactivé');
     const ancienne = allerRetour(undefined);
@@ -79,7 +80,7 @@ export function testVerifierToutes() {
     egal([toutVerifierDeLaRecette(ancienne!), toutVerifierDeLaRecette(allerRetour(true)!)], [false, true],
       'CLI (`toutVerifierDeLaRecette`) : absent → désactivé, comme l’écran (`?? false`)');
     const mal = { ...recette(true), verifierToutesLesCombinaisons: 'oui' };
-    const lu = parseOptimizerRecipe(JSON.stringify(mal));
+    const lu = parseOptimizerRecipe(JSON.stringify(mal), fr);
     ok(lu.recipe === null && /verifierToutesLesCombinaisons/.test(lu.error ?? ''), `mal typé : refusé avec son chemin (${lu.error})`);
   }
 

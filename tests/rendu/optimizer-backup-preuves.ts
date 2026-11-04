@@ -6,6 +6,7 @@ import { exclusionSelectorKey, otherValidatedArtifactIds, type ExclusionSelector
 import { cleMemoireMembre, reverifierStockageOptimizer } from '../../src/lib/optimizerMemberStorage';
 import { OPTIMIZER_BACKUP_STORAGE_KEY } from '../../src/lib/optimizerBackup';
 import { listeActiveLue } from './optimizer-listes-preuves';
+import { fr } from '../../src/i18n/fr';
 
 interface Banc {
   etat: () => OptimizerState; listes: () => UseOptimizerLists; data: () => ExclusionSourceData;
@@ -136,7 +137,7 @@ export async function preuvesPointOptimizer(b: Banc, nom: string): Promise<[bool
     const defenses = b.data().siegeDefenseTeams.map(e => ({ ...e, slots: e.slots.map((s, i) => i === 0 ? { ...s, monsterId: '2' } : s) }));
     const data = { ...b.data(), siegeDefenseTeams: defenses }, runes = b.runes().slice(0, -1), arts = b.arts().slice(0, 1);
     const ids = new Set(runes.map(r => r.id));
-    const r = reverifierStockageOptimizer(b.listes(), data, ids, new Set(arts.map(a => a.id)));
+    const r = reverifierStockageOptimizer(b.listes(), data, ids, fr, new Set(arts.map(a => a.id)));
     await b.geste(() => { b.changerDefenses(defenses); b.changerRunes(runes); b.changerArtefacts(arts);
       b.listes().replaceAfterRevalidation(r.stockage); b.etat().appliquerReverificationMembres(r.stockage, r.rapport, data, ids); });
     verifier(localStorage.getItem(OPTIMIZER_BACKUP_STORAGE_KEY) === point, 'réimport ne modifie pas le point');

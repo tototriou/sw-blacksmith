@@ -40,6 +40,7 @@ import {
 import { DetailMonstre } from '../src/lib/monsterSkills';
 import { ProseDUnBloc, clesProseDejaRendue, renduStatsCombat } from '../src/lib/proseStatsCombat';
 import { egal, ok, titre } from './outils';
+import { fr } from '../src/i18n/fr';
 
 const racine = resolve(new URL('..', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1'));
 const dossierSorts = resolve(racine, 'public/data/skills');
@@ -55,7 +56,7 @@ function blocsVoisins(fiche: DetailMonstre): (ProseDUnBloc | null)[] {
   if (!sort) throw new Error(`${fiche.com2usId} : aucun sort par défaut — la carte « Dégâts réels » ne s'afficherait pas`);
   return [
     ...monsterConditionsCombat(fiche),
-    ...monsterModificateursVit(fiche),
+    ...monsterModificateursVit(fiche, fr),
     monsterBonusDegatsStackable(fiche),
     monsterBonusDegatsConditionnel(fiche),
     monsterBonusParEffetCible(fiche),

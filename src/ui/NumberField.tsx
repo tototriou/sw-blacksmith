@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Minus, Plus } from 'lucide-react';
+import { useTraduction } from '../hooks/useLangue';
 
 // Champ numérique de l'app : **deux boutons − / +** encadrant la valeur.
 //
@@ -139,6 +140,7 @@ export default function NumberField({
   // brouillon ne vit QUE le temps de cette saisie incomplète, puis s'efface dès
   // qu'un nombre valide est parsé ou à la sortie du champ.
   const [brouillon, setBrouillon] = useState<string | null>(null);
+  const c = useTraduction().controles;
   const affiche = brouillon ?? (value == null ? '' : String(value));
 
   // ⚠️ **La valeur courante est tenue dans une `ref`, pas lue dans la closure.**
@@ -266,7 +268,7 @@ export default function NumberField({
           disabled={disabled || (min != null && (value ?? 0) <= min)}
           data-cible-fine
           className={`${btn} border-r border-border-soft`}
-          aria-label="Diminuer"
+          aria-label={c.diminuer}
           tabIndex={-1}
         >
           <Minus size={12} />
@@ -322,7 +324,7 @@ export default function NumberField({
           disabled={disabled || (max != null && (value ?? 0) >= max)}
           data-cible-fine
           className={`${btn} border-l border-border-soft`}
-          aria-label="Augmenter"
+          aria-label={c.augmenter}
           tabIndex={-1}
         >
           <Plus size={12} />

@@ -5,6 +5,7 @@ import RuneIcon from '../RuneIcon';
 import AccordionGrid from '../AccordionGrid';
 import { ConfirmDialog } from '../../ui/Dialogs';
 import { BoutonIcone } from '../../ui';
+import { useTraduction } from '../../hooks/useLangue';
 
 interface Props {
   sectionKey: string;
@@ -31,6 +32,7 @@ export default function RtaSection({
   detail,
   children,
 }: Props) {
+  const textes = useTraduction();
   const [over, setOver] = useState(false);
   const depth = useRef(0); // compte enter/leave pour éviter le scintillement
 
@@ -97,7 +99,7 @@ export default function RtaSection({
         {removable && onRemoveSection && (
           <BoutonIcone
             onClick={() => setSuppressionAConfirmer(true)}
-            libelle="Supprimer la section (les monstres reviennent en Non classé)"
+            libelle={textes.sectionRta.supprimer}
             ton="danger"
             icone={<X size={13} />}
           />
@@ -106,13 +108,9 @@ export default function RtaSection({
 
       {suppressionAConfirmer && (
         <ConfirmDialog
-          titre={`Supprimer la section « ${label} » ?`}
-          message={
-            count > 0
-              ? `Ses ${count} monstre(s) reviennent en « Non classé » — aucun n'est retiré de ta prépa. C'est le CLASSEMENT qui est perdu, et il se refait un monstre à la fois.`
-              : 'Cette section est vide. Les autres ne sont pas touchées.'
-          }
-          libelleAction="Supprimer"
+          titre={textes.sectionRta.supprimerTitre(label)}
+          message={count > 0 ? textes.sectionRta.supprimerPleine(count) : textes.sectionRta.supprimerVide}
+          libelleAction={textes.commun.supprimer}
           destructif
           onCancel={() => setSuppressionAConfirmer(false)}
           onConfirm={() => {
@@ -124,7 +122,7 @@ export default function RtaSection({
 
       {count === 0 ? (
         <div className="rounded-xl border border-dashed border-border py-6 text-center text-ink-dim text-xs">
-          Glisse des monstres ici
+          {textes.sectionRta.glisserIci}
         </div>
       ) : (
         <AccordionGrid

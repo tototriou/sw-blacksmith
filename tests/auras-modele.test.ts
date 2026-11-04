@@ -30,6 +30,7 @@ import { params, rune } from './relic-search.test';
 import type { LoadedMonster } from '../scripts/lib/loadMonster';
 import type { Competence } from '../src/lib/monsterSkills';
 import type { BaseStats, RelicDetail, RuneDetail } from '../src/types';
+import { fr } from '../src/i18n/fr';
 
 const BASE: BaseStats = { hp: 1001, atk: 101, def: 101, spd: 100, cr: 15, cd: 50, res: 0, acc: 0 };
 const STATS = computeStats({ base: BASE, runes: [], artifacts: [] });
@@ -80,7 +81,7 @@ function recette() {
 export function testAurasRecette() {
   titre('Auras · recette externe, 15 acceptés, 16 refusés, ancien champ et resets');
   const r = recette();
-  const lire = (value: unknown) => parseOptimizerRecipe(JSON.stringify(value));
+  const lire = (value: unknown) => parseOptimizerRecipe(JSON.stringify(value), fr);
   const avecExternes = (setsAuraExternes: unknown) => lire({ ...r, damageSetup: { ...SETUP, setsAuraExternes } });
   // `erreur` écrit « <chemin> <attente> » : l'espace final exige le chemin exact.
   const refuse = (resultat: ReturnType<typeof lire>, chemin: string) => resultat.recipe === null && !!resultat.error?.includes(`${chemin} `);

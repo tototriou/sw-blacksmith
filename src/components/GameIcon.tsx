@@ -8,13 +8,9 @@
 // gemme dessinés par une bibliothèque d'icônes demandent, eux, de lire le
 // libellé à côté.
 
-export type GameIconKey = 'monster' | 'rune' | 'artifact';
+import { useTraduction } from '../hooks/useLangue';
 
-const LABEL: Record<GameIconKey, string> = {
-  monster: 'Monstres',
-  rune: 'Runes',
-  artifact: 'Artéfacts',
-};
+export type GameIconKey = 'monster' | 'rune' | 'artifact';
 
 export default function GameIcon({
   name,
@@ -25,11 +21,12 @@ export default function GameIcon({
   size?: number;
   className?: string;
 }) {
+  const inventaire = useTraduction().inventaire;
   return (
     <img
       src={`${import.meta.env.BASE_URL}icons/${name}.png`}
       alt=""
-      aria-label={LABEL[name]}
+      aria-label={inventaire[name]}
       width={size}
       height={size}
       draggable={false}

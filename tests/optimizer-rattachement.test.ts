@@ -11,6 +11,7 @@ import { consommerImportOptimizer, importerDefensesSiegeOptimizer } from '../src
 import { loadOptimizerLists } from '../src/hooks/useOptimizerLists';
 import { monterListesOptimizer } from './optimizer-lists-harness';
 import { egal, faussLocalStorage, ok, titre } from './outils';
+import { fr } from '../src/i18n/fr';
 
 const monster = (id: number): Monster => ({ id, com2usId: 1000 + id, name: `Espèce ${id}`, element: 'fire', stars: 6,
   naturalStars: 5, secondAwaken: false, image: null, leaderSkill: null,
@@ -38,20 +39,20 @@ export function testOptimizerRattachementIdentites() {
   egal(acquis.identities.get(cleMemoireMembre('l', ancien))?.com2usId, 1001, 'identité acquise sans créer de mémoire');
   egal(acquis.memories.size, 0, 'acquisition indépendante des critères');
   const suivant = data(); suivant.siegeDefenseTeams = [deck('ancien', [2, null, null])];
-  const r = reverifierStockageOptimizer(acquis, suivant, runeIds);
+  const r = reverifierStockageOptimizer(acquis, suivant, runeIds, fr);
   egal(resolveExclusionEntry(r.stockage.members[0].selector, suivant)?.monster.com2usId, 1001, 'slot remplacé : espèce du compte précédent conservée');
-  const inconnu = reverifierStockageOptimizer(s, suivant, runeIds);
+  const inconnu = reverifierStockageOptimizer(s, suivant, runeIds, fr);
   egal(inconnu.stockage.identities.get(cleMemoireMembre('l', ancien))?.com2usId, 1002, 'sans identité antérieure : espèce du nouveau compte');
   ok(inconnu.rapport.messages.some(m => m.includes('identité inconnue avant le réimport')), 'limite dite au réimport');
   ok(acquerirIdentitesMembres(acquis, suivant) === acquis, 'une identité acquise ne change plus selon le slot');
   ok(enregistrerIdentiteMembre(acquis.identities, { listId: 'l', selector: ancien, com2usId: 1002 }) === acquis.identities,
     'tous les chemins de création conservent une identité déjà connue');
-  const relu = lireMembresOptimizer(ecrireMembresOptimizer(acquis));
+  const relu = lireMembresOptimizer(ecrireMembresOptimizer(acquis), fr);
   ok(isDeepStrictEqual(relu.identities, acquis.identities), 'identités indépendantes dans la clé des membres, aller-retour JSON');
   const malformed = { listId: 'l', selector: ancien, com2usId: ['1001'] };
-  const rejete = lireMembresOptimizer(JSON.stringify({ memories: [], teams: [], identities: [['l|siege-defense:ancien:0', malformed]] }));
+  const rejete = lireMembresOptimizer(JSON.stringify({ memories: [], teams: [], identities: [['l|siege-defense:ancien:0', malformed]] }), fr);
   egal(rejete.identities.size, 0, 'identité mal typée non appliquée');
-  egal(lireMembresOptimizer(ecrireMembresOptimizer(rejete)).rejets.identities, rejete.rejets.identities, 'rejet brut conservé sans réactivation');
+  egal(lireMembresOptimizer(ecrireMembresOptimizer(rejete), fr).rejets.identities, rejete.rejets.identities, 'rejet brut conservé sans réactivation');
   faussLocalStorage({ 'swblacksmith-optimizer-lists-v1': JSON.stringify({ lists: s.lists, members: [], validated: [], activeListId: 'l' }) });
   const h = monterListesOptimizer(); let listes = h.render();
   listes.addMember('l', ancien, 1001); listes = h.render();
@@ -79,7 +80,7 @@ export const verificationsOptimizerRattachementOrdres = ORDRES.flatMap(([contenu
     if (disponibles.has('rta')) compte.rtaEntries['1'] = { monsterId: '1', section: 'swift', runeSpeed: 0, gear: gear([1, 2, 3]) };
     if (disponibles.has('siege-defense')) compte.siegeDefenseTeams = [deck('d', [1, null, null])];
     if (disponibles.has('siege-offense')) compte.siegeOffenseTeams = [deck('o', [1, null, null])];
-    const r = reverifierStockageOptimizer(stockage([ancien], contenu), compte, runeIds);
+    const r = reverifierStockageOptimizer(stockage([ancien], contenu), compte, runeIds, fr);
     egal(r.stockage.members[0].selector.source, attendu, 'source prioritaire disponible, même sans rune portée');
     egal(r.rapport.rattachements.length, 1, 'rattachement individuel dans le rapport');
   },
@@ -90,15 +91,15 @@ export function testOptimizerRattachementDepartageEtPrises() {
   const compte = data(); compte.box.push(box('premier', 1, [1]), box('meilleur', 1, [1, 2, 3]), box('garde', 1, [1, 2, 3, 4]));
   const garde: ExclusionSelector = { source: 'box', unitKey: 'garde' };
   const s = stockage([ancien, garde]); s.validated = [{ listId: 'l', selector: ancien, runeIds: [1, 2, 3, 4, 5, 6] }];
-  const r = reverifierStockageOptimizer(s, compte, runeIds);
+  const r = reverifierStockageOptimizer(s, compte, runeIds, fr);
   egal(r.stockage.members.map(m => m.selector), [{ source: 'box', unitKey: 'meilleur' }, garde], 'meilleur disponible choisi sans prendre la référence valide du membre suivant');
-  const aucunBuild = reverifierStockageOptimizer({ ...s, validated: [] }, compte, runeIds);
+  const aucunBuild = reverifierStockageOptimizer({ ...s, validated: [] }, compte, runeIds, fr);
   egal(aucunBuild.stockage.members[0].selector, { source: 'box', unitKey: 'premier' }, 'sans build : premier exemplaire dans la source');
-  const deux = reverifierStockageOptimizer(stockage([ancien, { ...ancien, slotIndex: 1 }]), compte, runeIds);
+  const deux = reverifierStockageOptimizer(stockage([ancien, { ...ancien, slotIndex: 1 }]), compte, runeIds, fr);
   egal(new Set(deux.stockage.members.map(m => exclusionSelectorKey(m.selector))).size, 2, 'deux membres de même espèce : exemplaires distincts');
   const autreListe = { ...s, lists: [...s.lists, { id: 'autre', name: 'Autre' }], members: s.members.map((m, i) => i ? { ...m, listId: 'autre' } : m) };
   autreListe.identities = new Map(s.identities); autreListe.identities.set(cleMemoireMembre('autre', garde), { listId: 'autre', selector: garde, com2usId: 1001 });
-  egal(reverifierStockageOptimizer(autreListe, compte, runeIds).stockage.members[0].selector, garde, 'occupation dans une autre liste : aucune exclusion');
+  egal(reverifierStockageOptimizer(autreListe, compte, runeIds, fr).stockage.members[0].selector, garde, 'occupation dans une autre liste : aucune exclusion');
 }
 
 export function testOptimizerRattachementCopiesSansExemplaire() {
@@ -111,7 +112,7 @@ export function testOptimizerRattachementCopiesSansExemplaire() {
     s.validated.push({ listId: 'l', selector, runeIds: [i * 6 + 1] });
   });
   s.teams = [{ id: 'e', listId: 'l', members: selectors, leader: ancien, lead: null }];
-  const compte = data(), r = reverifierStockageOptimizer(s, compte, runeIds);
+  const compte = data(), r = reverifierStockageOptimizer(s, compte, runeIds, fr);
   egal(r.stockage.members.map(m => exclusionSelectorKey(m.selector)), ['unowned:1:2', 'unowned:1:3', 'unowned:1'], 'copie originale réservée avant les deux rattachements');
   egal(r.stockage.memories.size, 3, 'trois mémoires conservées sans collision');
   for (const [i, membre] of r.stockage.members.entries()) {
@@ -137,7 +138,7 @@ export function testOptimizerRattachementPermutationEtProprietaire() {
   }
   s.teams = [{ id: 'e', listId: 'l', members: [ancien, second], leader: ancien, lead: { stat: 'Attack Speed', amount: 24, area: 'Guild', element: null } }];
   const avant = structuredClone(s), compte = data(); compte.siegeDefenseTeams = [deck('ancien', [2, 1, null])];
-  const r = reverifierStockageOptimizer(s, compte, runeIds);
+  const r = reverifierStockageOptimizer(s, compte, runeIds, fr);
   egal(r.stockage.members.map(m => m.selector), [second, ancien], 'permutation des slots');
   egal(r.stockage.memories.get(cleMemoireMembre('l', second))?.criteres.minStats.spd, 210, 'mémoire du premier suit sans écraser celle du second');
   egal(r.stockage.identities.get(cleMemoireMembre('l', second))?.com2usId, 1001, 'identité migrée');
@@ -146,7 +147,7 @@ export function testOptimizerRattachementPermutationEtProprietaire() {
   const p = rattacherProprietaireCriteres({ listId: 'l', selector: ancien, com2usId: 1001 }, r.rapport.rattachements);
   ok(!!validerProprietaireCriteres(p, { ...r.stockage, activeListId: 'l' }, { selectedId: '1', sourceSelector: second }, compte), 'propriétaire validé contre le nouvel état');
   ok(isDeepStrictEqual(s, avant), 'entrée pure : stockage intégralement intact');
-  ok(reverifierStockageOptimizer(r.stockage, compte, runeIds).stockage === r.stockage, 'réimport identique : même stockage, aucune réécriture');
+  ok(reverifierStockageOptimizer(r.stockage, compte, runeIds, fr).stockage === r.stockage, 'réimport identique : même stockage, aucune réécriture');
   egal(r.rapport.rattachements.length, 2, 'rapport individuel pour les deux membres');
 
   const orphelin: ExclusionSelector = { source: 'box', unitKey: 'destination' }, avecOrphelin = stockage();
@@ -156,10 +157,10 @@ export function testOptimizerRattachementPermutationEtProprietaire() {
   avecOrphelin.memories.set(cleMemoireMembre('l', orphelin), memoireOrpheline);
   avecOrphelin.identities.set(cleMemoireMembre('l', orphelin), { ...memoireOrpheline });
   const destination = data(); destination.box.push(box('destination'));
-  const collision = reverifierStockageOptimizer(avecOrphelin, destination, runeIds);
+  const collision = reverifierStockageOptimizer(avecOrphelin, destination, runeIds, fr);
   egal(collision.stockage.memories.get(cleMemoireMembre('l', orphelin))?.com2usId, 1001, 'mémoire du membre prioritaire sur une entrée orpheline');
   egal(collision.stockage.rejets.memories, [[cleMemoireMembre('l', orphelin), memoireOrpheline]], 'collision : mémoire orpheline conservée brute');
-  const reluCollision = lireMembresOptimizer(ecrireMembresOptimizer(collision.stockage));
+  const reluCollision = lireMembresOptimizer(ecrireMembresOptimizer(collision.stockage), fr);
   egal(reluCollision.rejets.identities, collision.stockage.rejets.identities, 'identité orpheline conservée sans réactivation à la relecture');
 }
 
@@ -167,22 +168,22 @@ export function testOptimizerRattachementRuneVendue() {
   titre('Rattachement · rune disparue conservée dans le build, exclue de la réservation');
   const s = stockage([{ source: 'box', unitKey: 'temoin' }]); s.identities.clear();
   s.validated = [{ listId: 'l', selector: s.members[0].selector, runeIds: [1, 2, 3, 4, 5, 6], artifactIds: [50] }];
-  const compte = data(), acquis = acquerirIdentitesMembres(s, compte), r = reverifierStockageOptimizer(acquis, compte, new Set([1, 2, 3, 4, 5]));
+  const compte = data(), acquis = acquerirIdentitesMembres(s, compte), r = reverifierStockageOptimizer(acquis, compte, new Set([1, 2, 3, 4, 5]), fr);
   egal(r.stockage.validated[0].runeIds, [1, 2, 3, 4, 5, 6], 'rune vendue reste dans l’instantané');
   egal(r.stockage.validated[0].runesManquantes, [6], 'build conservé et marqué');
   egal([...otherValidatedRuneIds(r.stockage.validated, 'l', null)], [1, 2, 3, 4, 5], 'seules les runes présentes réservées');
   egal([...otherValidatedRuneIds(r.stockage.validated, 'l', exclusionSelectorKey(s.members[0].selector))], [], 'auto-exemption conservée');
   egal(runesManquantesDuBuild(r.stockage.validated[0], new Set([1, 2, 3, 4, 5])), [6], 'marque affichée dérivée de l’inventaire courant');
   ok(r.rapport.messages.some(m => m.includes('build conservé')), 'build incomplet annoncé');
-  ok(!reverifierStockageOptimizer(r.stockage, compte, runeIds).stockage.validated[0].runesManquantes, 'rune retrouvée : marque retirée');
-  const vide = reverifierStockageOptimizer(r.stockage, { ...compte, box: [] }, new Set());
+  ok(!reverifierStockageOptimizer(r.stockage, compte, runeIds, fr).stockage.validated[0].runesManquantes, 'rune retrouvée : marque retirée');
+  const vide = reverifierStockageOptimizer(r.stockage, { ...compte, box: [] }, new Set(), fr);
   ok(vide.stockage === r.stockage && vide.rapport.compteVide, 'compte vide : aucune modification');
 }
 
 export function testOptimizerRattachementDefensesComplet() {
   titre('Rattachement · défenses importées, builds validés, monstres déplacés ou retirés');
   const compte = data(); compte.siegeDefenseTeams = [deck('ancien', [1, 2, 3])];
-  const importe = consommerImportOptimizer(stockage([]), null, importerDefensesSiegeOptimizer(compte), compte, 'defenses');
+  const importe = consommerImportOptimizer(stockage([]), null, importerDefensesSiegeOptimizer(compte, fr), compte, 'defenses', fr);
   const s = importe.stockage;
   const membres = s.members.filter(m => m.listId === importe.activeListId);
   egal(membres.length, 3, 'défense importée avec ses trois membres');
@@ -190,7 +191,7 @@ export function testOptimizerRattachementDefensesComplet() {
   s.validated = membres.map((m, i) => ({ ...m, runeIds: [i * 6 + 1, i * 6 + 2], artifactIds: [50 + i] }));
   const avant = structuredClone(s), nouveau = data(); nouveau.siegeDefenseTeams = [deck('ancien', [9, null, null]), deck('deplace', [1, null, null])];
   nouveau.siegeOffenseTeams = [deck('offense', [2, null, null])]; nouveau.box.push(box('box-3', 3));
-  const r = reverifierStockageOptimizer(s, nouveau, runeIds);
+  const r = reverifierStockageOptimizer(s, nouveau, runeIds, fr);
   egal(r.stockage.members.filter(m => m.listId === importe.activeListId).map(m => m.selector.source), ['siege-defense', 'siege-offense', 'box'], 'rattachement selon le contenu Guilde');
   egal(r.stockage.lists, s.lists, 'liste intacte'); egal(r.stockage.validated.length, 3, 'tous les builds conservés');
   egal(r.stockage.memories.size, s.memories.size, 'toutes les mémoires conservées');
@@ -215,7 +216,7 @@ export function testOptimizerRattachementBranchement() {
   const relecture = compte.indexOf('hydrationJustAppliedRef.current = false;');
   ok(relecture > acquisition && relecture < compte.indexOf('setBox(boxItems)'),
     'un vrai import regroupé avec la relecture du compte conservé reste revérifié : la garde se libère');
-  ok(app.includes('reverifierStockageOptimizer(stockageAvantImportRef.current ?? optimizerLists, data, runeIds, new Set(artifacts.map(a => a.id)))'), 'revérification du stockage enrichi avant import, inventaire complet des artéfacts compris');
+  ok(app.includes('reverifierStockageOptimizer(stockageAvantImportRef.current ?? optimizerLists, data, runeIds, textes, new Set(artifacts.map(a => a.id)))'), 'revérification du stockage enrichi avant import, inventaire complet des artéfacts compris');
   ok(app.includes('optimizer.appliquerReverificationMembres(resultat.stockage, resultat.rapport, data, runeIds)'), 'propriétaire et sélection suivent le résultat commun');
   ok(app.includes('const acquis = acquerirIdentitesMembres(optimizerLists, optimizerData)'), 'compte conservé : acquisition au chargement');
 }

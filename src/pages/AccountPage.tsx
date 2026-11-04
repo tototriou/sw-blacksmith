@@ -21,6 +21,8 @@ import { ELEMENT_FILTER_STYLES } from '../components/elementStyles';
 import RunesSection from '../components/account/RunesSection';
 import ArtifactsSection from '../components/account/ArtifactsSection';
 import { useStickyState } from '../hooks/useStickyState';
+import { useTraduction } from '../hooks/useLangue';
+import { nomElement } from '../i18n/jeu';
 import Segmented from '../ui/Segmented';
 import { MonsterSortMode, comparateurMonstres } from '../lib/monsterSort';
 import {
@@ -83,6 +85,9 @@ function MonsterBoxSection({
   menuOuvert: boolean;
   onFermerMenu: () => void;
 }) {
+  const textes = useTraduction();
+  const jeu = textes.jeu;
+  const b = textes.boxCompte;
   const [query, setQuery] = useStickyState('box.query', '');
   // ⚠️ **Liste BLANCHE, tout coché par défaut** — même règle que les filtres de
   // runes : une pastille cochée est AFFICHÉE, n'en cocher aucune revient à ne
@@ -229,7 +234,7 @@ function MonsterBoxSection({
         {/* Filtre élément — la teinte de l'élément est portée par l'appelant
             (tokens partagés avec le Bestiaire), pas par la librairie. */}
         <div className="flex flex-wrap items-center gap-2">
-          <span className="label mr-1">Élément</span>
+          <span className="label mr-1">{textes.bestiaire.element}</span>
           {ELEMENTS.filter((el) => el.key !== 'unknown').map((el) => (
             <Pastille
               key={el.key}
@@ -237,7 +242,7 @@ function MonsterBoxSection({
               couleurs={ELEMENT_FILTER_STYLES[el.key]}
               onClick={() => toggleElement(el.key)}
               icone={<ElementIcon element={el.key} size={15} />}
-              libelle={el.label}
+              libelle={nomElement(jeu, el.key)}
             />
           ))}
         </div>
@@ -249,7 +254,7 @@ function MonsterBoxSection({
             rangée se lisent comme trois natures de filtre différentes, alors
             qu'ils font tous la même chose. */}
         <div className="flex flex-wrap items-center gap-2">
-          <span className="label mr-1">Nat</span>
+          <span className="label mr-1">{b.nat}</span>
           {[5, 4, 3, 2].map((s) => (
             <Pastille
               key={s}
@@ -264,14 +269,14 @@ function MonsterBoxSection({
             onClick={() => setDupesOnly((v) => !v)}
             className="ml-1"
             icone={<Copy size={13} />}
-            libelle="Doublons"
+            libelle={b.doublons}
           />
           <Pastille
             actif={secondOnly}
             onClick={() => setSecondOnly((v) => !v)}
             icone={<Star size={13} />}
             libelle="2A"
-            title="Monstres à second éveil (double éveil)"
+            title={b.secondEveil}
           />
         </div>
 
@@ -287,11 +292,11 @@ function MonsterBoxSection({
             setSecondOnly(false);
           }}
           disabled={filtresParDefaut}
-          title={filtresParDefaut ? 'Aucun filtre posé' : 'Revenir à tous les éléments et toutes les étoiles, sans Doublons ni 2A'}
+          title={filtresParDefaut ? b.aucunFiltre : b.effacerFiltresAide}
           fond="vide"
           trait="aucun"
           taille="sm"
-          libelle="Effacer les filtres"
+          libelle={b.effacerFiltres}
           className="self-start lg:h-8 lg:self-auto"
         />
     </>
@@ -312,13 +317,13 @@ function MonsterBoxSection({
       options={[
         {
           key: 'jeu' as const,
-          label: 'Sortie',
-          hint: 'Par élément, puis les 2A d’abord et les familles par date de sortie',
+          label: b.triSortie,
+          hint: b.triSortieAide,
         },
         {
           key: 'alpha' as const,
           label: 'A → Z',
-          hint: 'Par élément, puis par nom',
+          hint: b.triAlphaAide,
         },
       ]}
     />
@@ -330,10 +335,10 @@ function MonsterBoxSection({
           maquette) : « Ma box », puis le compte en pastille — le même texte
           qu'au doigt, où il reste une ligne sous la barre du haut. */}
       <div className="mb-4 flex items-center gap-2.5">
-        <h1 className="hidden font-display text-xl tracking-wide text-ink lg:block">Ma box</h1>
+        <h1 className="hidden font-display text-xl tracking-wide text-ink lg:block">{b.titre}</h1>
         <p className="font-mono text-ink-dim text-xs lg:rounded-full lg:border lg:border-border-soft lg:bg-panel2 lg:px-2 lg:py-0.5 lg:text-micro">
-          {entries.length} monstre{entries.length > 1 ? 's' : ''} différent{entries.length > 1 ? 's' : ''}
-          {box.length !== entries.length && ` · ${box.length} au total`} · 6★
+          {b.differents(entries.length)}
+          {box.length !== entries.length && b.auTotal(box.length)} · 6★
         </p>
       </div>
 
@@ -353,7 +358,7 @@ function MonsterBoxSection({
             icone={<Search size={15} />}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Rechercher un monstre…"
+            placeholder={b.rechercher}
             classNameConteneur="max-w-xs flex-1 lg:w-72 lg:flex-none"
           />
 
@@ -379,12 +384,12 @@ function MonsterBoxSection({
         )}
       </div>
 
-      <MobileSheet ouvert={menuOuvert} onFermer={onFermerMenu} titre="Filtrer ma box">
+      <MobileSheet ouvert={menuOuvert} onFermer={onFermerMenu} titre={b.filtrer}>
         <div className="flex flex-col gap-3">{filtres}</div>
       </MobileSheet>
 
       {filtered.length === 0 ? (
-        <p className="text-ink-dim text-sm">Aucun monstre ne correspond aux filtres.</p>
+        <p className="text-ink-dim text-sm">{b.aucun}</p>
       ) : (
         <>
           {/* Pagination JUSTE AU-DESSUS de la grille : le sélecteur de page se
@@ -467,6 +472,7 @@ export default function AccountPage({
   menuOuvert,
   onFermerMenu,
 }: Props) {
+  const textes = useTraduction();
   const empty = box.length === 0 && runes.length === 0 && artifacts.length === 0;
 
   if (empty && hydrating) {
@@ -477,7 +483,7 @@ export default function AccountPage({
           <InventaireIcon name="rune" size={34} />
           <InventaireIcon name="artifact" size={34} />
         </div>
-        <p className="text-sm">Chargement de ton compte…</p>
+        <p className="text-sm">{textes.boxCompte.chargement}</p>
       </div>
     );
   }
@@ -491,13 +497,9 @@ export default function AccountPage({
           <InventaireIcon name="rune" size={34} />
           <InventaireIcon name="artifact" size={34} />
         </div>
-        <p className="text-base font-semibold text-ink">Aucune donnée de compte chargée</p>
-        <p className="mt-1 text-sm max-w-sm">
-          Importe ton compte (bouton « Importer un JSON ») pour afficher tes monstres 6★, tes runes et
-          tes artéfacts. Active « Garder mes données » dans les Paramètres pour ne pas avoir à le
-          redéposer à chaque visite.
-        </p>
-        {loadState === 'loading' && <p className="mt-3 text-xs">Chargement des monstres…</p>}
+        <p className="text-base font-semibold text-ink">{textes.boxCompte.videTitre}</p>
+        <p className="mt-1 text-sm max-w-sm">{textes.boxCompte.videTexte}</p>
+        {loadState === 'loading' && <p className="mt-3 text-xs">{textes.commun.chargementMonstres}</p>}
       </div>
     );
   }

@@ -124,14 +124,14 @@ Et deux ajustements, qui ne sont pas des retraits :
 
 À ~175 px de tuile il reste **~75 px** à gauche de la colonne rareté/mesure
 (159 de contenu − 30 de cadre − 16 d'écarts − ~36 pour « 132.7% », le plus
-large des éléments empilés à droite). Or « Taux Crit +58% » occupe ~84 px
+large des éléments empilés à droite). Or « Tx critiq. +58% » occupe ~84 px
 même à 10 px : une ligne unique demanderait ~7 px, illisible.
 
 Ce qui la donnerait, c'est de faire **descendre rareté et mesure sous le
-texte** — 121 px alors disponibles, « Taux Crit +58% » tiendrait en 12 px.
+texte** — 121 px alors disponibles, « Tx critiq. +58% » tiendrait en 12 px.
 **Écarté volontairement** : l'en-tête resterait sur deux lignes de toute façon
 (bannière et mesure sont déjà empilées), pour un gain qui ne porte que sur les
-trois libellés de 14 caractères — « Taux Crit », « Précision », « Dmg Crit ».
+trois libellés les plus longs — « Tx critiq. », « Précision », « Dgts critiq. ».
 Les autres (`PV +2448`, `VIT +42`, `DEF +160`) tiennent déjà sur une ligne.
 
 ⚠️ **`etroit` et `resserre` sont deux axes distincts, qui se cumulent.**

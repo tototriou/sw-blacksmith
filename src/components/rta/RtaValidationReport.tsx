@@ -1,6 +1,7 @@
 import { AlertTriangle, X, XCircle } from 'lucide-react';
 import { ImportReport } from '../../lib/rtaShare';
 import { BoutonIcone } from '../../ui';
+import { useTraduction } from '../../hooks/useLangue';
 
 // Rapport de validation du dernier fichier de prépa lu. Reste affiché jusqu'à
 // fermeture : contrairement au message de succès, il y a quelque chose à LIRE.
@@ -17,6 +18,7 @@ export default function RtaValidationReport({
   report: ImportReport;
   onClose: () => void;
 }) {
+  const r = useTraduction().rapportImport;
   const bloque = report.errors.length > 0;
   return (
     <div
@@ -32,13 +34,11 @@ export default function RtaValidationReport({
           <AlertTriangle size={15} className="flex-none text-warn" />
         )}
         <span className={`text-xs font-semibold ${bloque ? 'text-bad' : 'text-warn'}`}>
-          {bloque
-            ? "Fichier refusé — le contenu n'est pas valide"
-            : `Lu avec ${report.warnings.length} correction${report.warnings.length > 1 ? 's' : ''}`}
+          {bloque ? r.fichierRefuse : r.luAvec(report.warnings.length)}
         </span>
         <BoutonIcone
           onClick={onClose}
-          libelle="Fermer le rapport"
+          libelle={r.fermer}
           icone={<X size={14} />}
           className="ml-auto"
         />
@@ -59,8 +59,7 @@ export default function RtaValidationReport({
 
       {!bloque && (
         <p className="mt-1.5 font-mono text-micro text-ink-dim">
-          {report.counts.monstres} monstre(s) · {report.counts.avecRunes} avec runes ·{' '}
-          {report.counts.categories} catégorie(s) lus.
+          {r.bilanRta(report.counts.monstres, report.counts.avecRunes, report.counts.categories)}
         </p>
       )}
     </div>

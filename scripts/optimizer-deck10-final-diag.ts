@@ -46,6 +46,7 @@ import { loadSiegeMonster, printMonsterSummary } from './lib/loadMonster';
 import { recipeToSearchParams } from './lib/recipeToSearchParams';
 import { prepareSearch, buildBuckets, pairBuckets, totalPairCount } from '../src/lib/runeBuildOptim';
 import { drain } from './lib/drain';
+import { fr } from '../src/i18n/fr';
 
 const [exportPath, recipePath, deckIdArg, maxMsArg] = process.argv.slice(2);
 if (!exportPath || !recipePath || !deckIdArg) {
@@ -54,7 +55,7 @@ if (!exportPath || !recipePath || !deckIdArg) {
 }
 const MAX_MS = maxMsArg ? Number(maxMsArg) : 300_000;
 
-const { recipe, error, avertissements } = parseOptimizerRecipe(readFileSync(recipePath, 'utf8'));
+const { recipe, error, avertissements } = parseOptimizerRecipe(readFileSync(recipePath, 'utf8'), fr);
 for (const a of avertissements ?? []) console.warn(`⚠️ ${a}`);
 if (!recipe) {
   console.error(`Recette invalide : ${error}`);

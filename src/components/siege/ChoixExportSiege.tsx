@@ -1,5 +1,6 @@
 import { Eye, EyeOff } from 'lucide-react';
 import { Modale, Option } from '../../ui';
+import { useTraduction } from '../../hooks/useLangue';
 
 // Choix d'export des équipes de siège : avec ou sans les runes.
 //
@@ -25,24 +26,23 @@ export default function ChoixExportSiege({
   onChoisir: (avecRunes: boolean) => void;
   onAnnuler: () => void;
 }) {
+  const c = useTraduction().siege.choixExport;
   return (
     <Modale
       onClose={onAnnuler}
       labelledBy="export-siege-titre"
       largeur="max-w-[460px]"
       croix
-      titre="Que veux-tu partager ?"
+      titre={c.titre}
       sousTitre={
         <>
-          Tes équipes, leurs vitesses et leurs ticks sont toujours inclus. La question porte sur
-          ce que tu laisses voir de <b className="text-ink">tes runes</b>.
+          {c.sousTitre} <b className="text-ink">{c.sousTitreGras}</b>.
         </>
       }
     >
       {avecRunes === 0 && (
         <p className="mb-3 rounded-lg border border-border bg-panel2 px-3 py-2 text-micro leading-relaxed text-ink-dim">
-          Aucun de ces monstres ne porte de runes connues — importe ton compte pour pouvoir les
-          partager.
+          {c.sansRunes}
         </p>
       )}
       <div className="flex flex-col gap-2">
@@ -51,15 +51,15 @@ export default function ChoixExportSiege({
           autoFocus
           disabled={avecRunes === 0}
           icone={<Eye size={16} />}
-          titre="Avec les runes et les artéfacts"
+          titre={c.completTitre}
           compte={avecRunes || undefined}
-          description="Il voit le détail de chaque rune, artéfact et relique de tes monstres, substats compris."
+          description={c.completDetail}
         />
         <Option
           onClick={() => onChoisir(false)}
           icone={<EyeOff size={16} />}
-          titre="Composition et vitesses"
-          description="Il voit tes monstres, leur vitesse de runes, leurs ticks et leurs sets, mais pas le détail de tes runes."
+          titre={c.vitessesTitre}
+          description={c.vitessesDetail}
         />
       </div>
     </Modale>

@@ -1,9 +1,11 @@
 import { ZoneCliquable, Bouton } from '../../../ui';
 import { ChevronDown, CheckCircle2 } from 'lucide-react';
 import Segmented from '../../../ui/Segmented';
-import { CRITERE_ARTEFACTS_LABELS } from './constantes';
+import { CRITERES_ARTEFACTS } from './constantes';
 import ArtifactFrameIcon from '../../ArtifactFrameIcon';
 import { formatArtifactMain } from '../../../lib/effects';
+import { useLangue, useTraduction } from '../../../hooks/useLangue';
+import { formatNombre } from '../../../i18n/format';
 import ArtifactSubLigne from '../../ArtifactSubLigne';
 import { type ArtifactDetail, type ArtifactKind } from '../../../types';
 import { type Dispatch, type SetStateAction } from 'react';
@@ -35,6 +37,10 @@ export interface MeilleursArtefactsProps {
 }
 
 export default function MeilleursArtefacts({ modeArtefactsSeuls, etroit, setArtefactsOuverts, artefactsOuverts, critereArtefacts, setCritereArtefacts, setSetupOuvert, sortesFigees, resolvedSkill, sourceSelector, lists, ownValidatedBuild, canValidateDisplayed, handleValidateArtefacts, artefactsProposesDejaReserves, carte = false }: MeilleursArtefactsProps) {
+  const textes = useTraduction();
+  const langue = useLangue();
+  const jeu = textes.jeu;
+  const m = textes.optimizer.meilleurs;
   return (
     <div className={carte ? '' : 'mt-2.5 rounded-lg border border-border-soft bg-panel2/60 px-2 py-1.5'}>
       {(() => {
@@ -47,7 +53,7 @@ export default function MeilleursArtefacts({ modeArtefactsSeuls, etroit, setArte
             offensifs l'un comme l'autre. Sans lui, « meilleurs » se lirait
             comme un verdict général, alors qu'un tank peut parfaitement
             vouloir tout autre chose. */}
-        <span className="label">Meilleurs artéfacts offensifs pour ce build</span>
+        <span className="label">{m.titre}</span>
         {/* ⚠️ **L'ABSOLU d'abord, l'écart ensuite** (demande explicite). Le
             delta seul laissait sans réponse « combien cette paire me
             rapporte-t-elle ? » : un gros gain sur une base nulle et un petit
@@ -64,8 +70,8 @@ export default function MeilleursArtefacts({ modeArtefactsSeuls, etroit, setArte
           // « / coup » en police du texte.
           <span className="flex items-baseline gap-1.5 text-micro">
             <span className="text-ink">
-              <span className="font-mono">{Math.round(modeArtefactsSeuls.degatsParCoup).toLocaleString('fr-FR')}</span>
-              {modeArtefactsSeuls.surLeReel ? ' dégâts' : ' / coup'}
+              <span className="font-mono">{formatNombre(Math.round(modeArtefactsSeuls.degatsParCoup), langue)}</span>
+              {modeArtefactsSeuls.surLeReel ? m.degats : m.parCoup}
             </span>
             {/* ⚠️ **L’écart s’affiche AUSSI quand il est négatif.** Il ne
                 l’était que s’il était positif : on cachait donc exactement
@@ -84,7 +90,7 @@ export default function MeilleursArtefacts({ modeArtefactsSeuls, etroit, setArte
             {!modeArtefactsSeuls.dejaPorte && Math.round(modeArtefactsSeuls.gainBrutParCoup) !== 0 && (
               <span className={`font-mono ${modeArtefactsSeuls.gainBrutParCoup > 0 ? 'text-good' : 'text-bad'}`}>
                 {modeArtefactsSeuls.gainBrutParCoup > 0 ? '+' : '−'}
-                {Math.abs(Math.round(modeArtefactsSeuls.gainBrutParCoup)).toLocaleString('fr-FR')}
+                {formatNombre(Math.abs(Math.round(modeArtefactsSeuls.gainBrutParCoup)), langue)}
               </span>
             )}
           </span>
@@ -111,7 +117,7 @@ export default function MeilleursArtefacts({ modeArtefactsSeuls, etroit, setArte
           reposerait sur un sort, une cible et un critique jamais choisis —
           exactement ce qui avait fait RETIRER cette optimisation. */}
       <Segmented<'brut' | 'reel'>
-        options={CRITERE_ARTEFACTS_LABELS}
+        options={CRITERES_ARTEFACTS.map((key) => ({ key, label: m.criteres[key] }))}
         value={critereArtefacts}
         onChange={(v) => {
           setCritereArtefacts(v);
@@ -128,7 +134,7 @@ export default function MeilleursArtefacts({ modeArtefactsSeuls, etroit, setArte
       />
       {modeArtefactsSeuls.reelIndisponible && (
         <p className="mt-1 text-micro text-warn">
-          Aucun sort de ce monstre n’est calculable : classement sur les dégâts supplémentaires.
+          {m.reelIndisponible}
         </p>
       )}
       {/* ⚠️ **Un seul emplacement figé : la proposition reste valable, mais
@@ -154,10 +160,9 @@ export default function MeilleursArtefacts({ modeArtefactsSeuls, etroit, setArte
         // une boîte posée sur une autre boîte déjà bordée.
         <p className="mt-1.5 rounded border border-border bg-panel px-2 py-1 text-micro leading-tight text-ink">
           <b className="font-semibold">
-            Emplacement {sortesFigees[0] === 'element' ? 'attribut' : 'type'} figé
+            {m.emplacementFige(sortesFigees[0] === 'element' ? textes.optimizer.verrous.attribut : textes.optimizer.verrous.type)}
           </b>{' — '}
-          il est gardé tel que porté, pas optimisé. Seul l’emplacement{' '}
-          {sortesFigees[0] === 'element' ? 'type' : 'attribut'} est cherché ici.
+          {m.seulCherche(sortesFigees[0] === 'element' ? textes.optimizer.verrous.type : textes.optimizer.verrous.attribut)}
         </p>
       )}
       {/* ⚠️ **La raison passe DEVANT tout le reste.** Elle dit ce que
@@ -170,10 +175,10 @@ export default function MeilleursArtefacts({ modeArtefactsSeuls, etroit, setArte
         // ⚠️ Le dire plutôt que d'afficher « +0 » : « tu portes déjà les
         // meilleurs » est une réponse, un zéro ressemble à une panne.
         <p className="mt-0.5 text-micro text-ink-dim">
-          Tu portes déjà la meilleure paire disponible pour ce critère.
+          {m.dejaPorte}
         </p>
       ) : modeArtefactsSeuls.paire.length === 0 ? (
-        <p className="mt-0.5 text-micro text-ink-dim">Aucun artéfact équipable ne correspond aux critères.</p>
+        <p className="mt-0.5 text-micro text-ink-dim">{m.aucunArtefact}</p>
       ) : (
         // ⚠️ **Le rendu du JEU, pas une ligne aplatie.** Les quatre
         // sous-propriétés étaient jointes par des « · » sur une seule ligne qui
@@ -219,10 +224,10 @@ export default function MeilleursArtefacts({ modeArtefactsSeuls, etroit, setArte
                     gauche ». Même gabarit que la pastille de sorte de
                     ArtifactLinesEditor : rien de nouveau dans la librairie. */}
                 <div className="flex flex-wrap items-center gap-1.5">
-                  <p className="text-micro font-semibold leading-tight text-ink">{formatArtifactMain(a.main)}</p>
+                  <p className="text-micro font-semibold leading-tight text-ink">{formatArtifactMain(a.main, jeu)}</p>
                   {sortesFigees.includes(a.kind) && (
                     <span className="shrink-0 rounded-full border border-border bg-panel px-1.5 py-px text-nano font-semibold text-ink-dim">
-                      figé
+                      {m.fige}
                     </span>
                   )}
                 </div>
@@ -248,8 +253,8 @@ export default function MeilleursArtefacts({ modeArtefactsSeuls, etroit, setArte
       {modeArtefactsSeuls.paire.length > 0 && (
         <p className="mt-1 text-nano text-ink-dimmer">
           {modeArtefactsSeuls.surLeReel
-            ? `Dégâts totaux de ${resolvedSkill ? `« ${resolvedSkill.nom} »` : 'ce sort'} contre l’adversaire décrit — ouvre « Dégâts réels » pour changer le sort, la cible ou le traitement du critique.`
-            : 'Dégâts supplémentaires bruts, à chaque coup — ils ne peuvent pas être critiques et ignorent la défense adverse, donc ce gain ne dépend ni du sort utilisé ni de la cible.'}
+            ? m.legendeReel(resolvedSkill ? m.guillemets(resolvedSkill.nom) : m.ceSort)
+            : m.legendeBrut}
         </p>
       )}
       {modeArtefactsSeuls.coutVerrousPct != null && (
@@ -259,7 +264,7 @@ export default function MeilleursArtefacts({ modeArtefactsSeuls, etroit, setArte
         // précision laisserait croire à un contrefactuel global qu'on ne
         // calcule pas.
         <p className="mt-1 text-micro text-warn">
-          Vos lignes verrouillées coûtent −{modeArtefactsSeuls.coutVerrousPct.toFixed(1)} % sur ce build.
+          {m.coutVerrous(formatNombre(modeArtefactsSeuls.coutVerrousPct, langue, { minimumFractionDigits: 1, maximumFractionDigits: 1 }))}
         </p>
       )}
       {/* ⚠️ **La proposition devient actionnable.** Le bloc calculait la
@@ -286,10 +291,10 @@ export default function MeilleursArtefacts({ modeArtefactsSeuls, etroit, setArte
             icone={artefactsProposesDejaReserves ? <CheckCircle2 size={14} /> : undefined}
             libelle={
               artefactsProposesDejaReserves
-                ? 'Artéfacts validés'
+                ? m.valides
                 : ownValidatedBuild
-                  ? 'Valider ces artéfacts'
-                  : 'Valider ce build avec ces artéfacts'
+                  ? m.validerArtefacts
+                  : m.validerBuild
             }
             className="mt-2"
           />

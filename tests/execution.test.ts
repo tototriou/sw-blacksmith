@@ -12,6 +12,7 @@ import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'no
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { getHeapStatistics } from 'node:v8';
 import { emplacementManifeste, etatContenu, RefusManifeste } from './execution';
 import { egal, ok, titre } from './outils';
 
@@ -164,6 +165,15 @@ export function testExecutionProuveeEmplacement(): void {
   } finally {
     rmSync(dossier, { recursive: true, force: true });
   }
+}
+
+// La suite tourne dans le processus lancé par tests/run.mjs, avec le tas
+// qu'il lui donne (TAS_MAX_MO) : au tas par défaut, les entrées les plus
+// lourdes approchaient la limite.
+export function testExecutionTasDeLaSuite(): void {
+  titre('Exécution prouvée — tas du processus de la suite');
+  const limiteMo = Math.round(getHeapStatistics().heap_size_limit / 1048576);
+  ok(limiteMo >= 8192, `limite du tas : ${limiteMo} Mo, au moins les 8192 Mo que donne tests/run.mjs`);
 }
 
 export async function testExecutionProuveePointEntree(): Promise<void> {

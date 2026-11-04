@@ -14,6 +14,7 @@ import {
 } from '../src/lib/recoMatch';
 import { OwnedBuild } from '../src/lib/ownedBuilds';
 import { artifactSubKinds, artifactSubLabel, artifactSubsFor, isArtifactSub } from '../src/lib/effects';
+import { jeuFr } from '../src/i18n/jeu/fr';
 import { cleanArtifacts, decodeRecosJson, encodeRecosJson } from '../src/lib/recoShare';
 import { chercheMonstre } from '../src/lib/recoSearch';
 import { estEveille, estObtenable, formesJouables } from '../src/lib/monsterForms';
@@ -25,6 +26,7 @@ import {
   emptyRecoDeck,
   emptyRecoSlot,
 } from '../src/types';
+import { fr } from '../src/i18n/fr';
 import { egal, ok, titre } from './outils';
 
 // Slot minimal : seuls `status`, `checks`, `artifactChecks` et `missingSets`
@@ -168,8 +170,8 @@ export default function testReco() {
   egal(artifactSubKinds(402), ['archetype'], 'dmg crit par compétence → artéfact de type seul');
   egal(artifactSubKinds(215), ['element', 'archetype'], 'vol de vie → les deux sortes');
 
-  const attribut = artifactSubsFor('element').map((o) => o.code);
-  const type = artifactSubsFor('archetype').map((o) => o.code);
+  const attribut = artifactSubsFor('element', jeuFr).map((o) => o.code);
+  const type = artifactSubsFor('archetype', jeuFr).map((o) => o.code);
   ok(attribut.includes(300) && !attribut.includes(400), "l'attribut propose 300 et jamais 400");
   ok(type.includes(400) && !type.includes(300), 'le type propose 400 et jamais 300');
   ok(attribut.length > 20 && type.length > 20, 'les deux listes sont fournies, pas des restes');
@@ -180,7 +182,7 @@ export default function testReco() {
   // ⚠️ C'est le libellé **du jeu**, relevé sur sa recherche détaillée de
   // sous-propriétés — pas une reformulation « plus claire ». Un joueur qui lit
   // autre chose ici que dans son inventaire ne fait pas le rapprochement.
-  egal(artifactSubLabel(300), 'Aug. des dgts infl. au Feu +X%', 'libellé lisible, valeur en joker');
+  egal(artifactSubLabel(300, jeuFr), 'Aug. des dgts infl. au Feu +X%', 'libellé lisible, valeur en joker');
   ok(!isArtifactSub(999), 'code inexistant refusé');
 
   // ⚠️ L'ORDRE est celui du jeu, pas celui des codes : les dégâts élémentaires
@@ -193,43 +195,43 @@ export default function testReco() {
 
   const bruit = { errors: [] as string[], warnings: [] as string[] };
   egal(
-    cleanArtifacts({ attribut: [300, 301], type: [400] }, bruit, 'x'),
+    cleanArtifacts({ attribut: [300, 301], type: [400] }, bruit, 'x', fr),
     { element: [300, 301], archetype: [400] },
     'clés françaises du fichier → sortes internes'
   );
   egal(
-    cleanArtifacts({ attribut: [{ code: 300, propriete: 'peu importe' }] }, bruit, 'x'),
+    cleanArtifacts({ attribut: [{ code: 300, propriete: 'peu importe' }] }, bruit, 'x', fr),
     { element: [300], archetype: [] },
     'forme écrite par l’export (code + libellé) relue par son CODE'
   );
   // ⚠️ Le libellé du fichier ne fait pas foi : modifié à la main, il est ignoré.
   egal(
-    cleanArtifacts({ attribut: [{ code: 300, propriete: 'Dégâts sur les Ténèbres' }] }, bruit, 'x'),
+    cleanArtifacts({ attribut: [{ code: 300, propriete: 'Dégâts sur les Ténèbres' }] }, bruit, 'x', fr),
     { element: [300], archetype: [] },
     'libellé mensonger dans le fichier → seul le code compte'
   );
   egal(
-    cleanArtifacts({ type: [300] }, bruit, 'x'),
+    cleanArtifacts({ type: [300] }, bruit, 'x', fr),
     { element: [], archetype: [] },
     'propriété impossible sur cette sorte → écartée plutôt qu’ineffaçablement fausse'
   );
   egal(
-    cleanArtifacts({ attribut: [300, 300, 301] }, bruit, 'x'),
+    cleanArtifacts({ attribut: [300, 300, 301] }, bruit, 'x', fr),
     { element: [300, 301], archetype: [] },
     'doublon écarté : deux fois la même ligne n’est pas plus exigeant'
   );
   egal(
-    cleanArtifacts({ attribut: [300, 301, 302, 303, 304] }, bruit, 'x').element.length,
+    cleanArtifacts({ attribut: [300, 301, 302, 303, 304] }, bruit, 'x', fr).element.length,
     MAX_ARTIFACT_SUBS,
     'au-delà de 4 propriétés → tronqué, un artéfact n’a que 4 emplacements'
   );
   egal(
-    cleanArtifacts(undefined, bruit, 'x'),
+    cleanArtifacts(undefined, bruit, 'x', fr),
     { element: [], archetype: [] },
     'reco enregistrée avant les artéfacts → rien d’exigé, rien qui casse'
   );
   egal(
-    cleanArtifacts({ attribut: [999] }, bruit, 'x'),
+    cleanArtifacts({ attribut: [999] }, bruit, 'x', fr),
     { element: [], archetype: [] },
     'code inconnu ignoré'
   );
@@ -262,7 +264,7 @@ export function testDefensesVisees() {
   // Un deck sans monstre n'est pas exporté : on en pose un pour que la reco le soit.
   reco.decks[0].slots[0] = { ...emptyRecoSlot(), com2usId: 999, name: 'Moi' };
 
-  const relu = decodeRecosJson(encodeRecosJson([reco]));
+  const relu = decodeRecosJson(encodeRecosJson([reco]), fr);
   const c = relu?.[0]?.decks[0]?.counters ?? [];
   egal(c.length, 1, 'la défense visée survit à l’aller-retour');
   egal(
@@ -276,7 +278,7 @@ export function testDefensesVisees() {
   const vide = { ...reco, decks: [{ ...deck, counters: [emptyRecoCounter()] }] };
   vide.decks[0].slots = deck.slots;
   egal(
-    decodeRecosJson(encodeRecosJson([vide]))?.[0]?.decks[0]?.counters.length,
+    decodeRecosJson(encodeRecosJson([vide]), fr)?.[0]?.decks[0]?.counters.length,
     0,
     'une défense sans monstre n’est ni écrite ni relue'
   );
@@ -290,7 +292,7 @@ export function testDefensesVisees() {
     ],
   });
   egal(
-    decodeRecosJson(v4)?.[0]?.decks[0]?.counters,
+    decodeRecosJson(v4, fr)?.[0]?.decks[0]?.counters,
     [],
     'fichier antérieur → aucune défense visée, rien ne casse'
   );
@@ -331,7 +333,7 @@ export function testTrimPartage() {
     ],
   };
 
-  const relu = decodeRecosJson(encodeRecosJson([reco]))?.[0];
+  const relu = decodeRecosJson(encodeRecosJson([reco]), fr)?.[0];
   egal(relu?.name, 'Defs G3', 'le nom de la recommandation est trimé');
   egal(relu?.author, 'Joueur', 'l’auteur est trimé');
   egal(relu?.note, 'viser le heal', 'les consignes générales sont trimées');
@@ -349,7 +351,7 @@ export function testTrimPartage() {
   // mise en forme voulue par l'auteur, seuls les bords sont rognés.
   const multi = { ...reco, note: '  ligne 1\nligne 2  ' };
   egal(
-    decodeRecosJson(encodeRecosJson([multi]))?.[0]?.note,
+    decodeRecosJson(encodeRecosJson([multi]), fr)?.[0]?.note,
     'ligne 1\nligne 2',
     'un retour à la ligne intérieur survit au trim'
   );

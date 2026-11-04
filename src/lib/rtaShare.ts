@@ -28,6 +28,7 @@ import { RtaCategory } from '../hooks/useRtaCategories';
 import { NOM_APP } from '../marque';
 import { formatExport, formatReconnu } from './formatsExport';
 import { cleanGear } from './equipementPartage';
+import type { Dictionnaire } from '../i18n/fr';
 
 const SET_KEYS = new Set<string>(RUNE_SETS.map((s) => s.key));
 // Sections acceptées : les sets de runes + les deux sections spéciales.
@@ -518,9 +519,9 @@ function cleanPerso(raw: unknown): RtaSharePerso | undefined {
   return { nom, element, vitesse: Math.round(vitesse), ...(lead ? { lead } : {}) };
 }
 
-function cleanEntry(raw: unknown, ctx: Issues, where: string): RtaShareEntry | null {
+function cleanEntry(raw: unknown, ctx: Issues, where: string, t: Dictionnaire): RtaShareEntry | null {
   if (!raw || typeof raw !== 'object') {
-    warn(ctx, `${where} : entrée invalide — ignorée.`);
+    warn(ctx, t.partage.entreeInvalide(where));
     return null;
   }
   const o = raw as Record<string, unknown>;
@@ -531,10 +532,7 @@ function cleanEntry(raw: unknown, ctx: Issues, where: string): RtaShareEntry | n
   // sont acceptés ; ce qui n'a NI l'un NI l'autre est ignoré.
   const perso = cleanPerso(o.perso);
   if (!aUnId && !perso) {
-    warn(
-      ctx,
-      `${where} : ni « com2usId » valide (${String(o.com2usId)}) ni description de monstre perso — ignoré.`
-    );
+    warn(ctx, t.partage.rta.sansIdNiPerso(where, String(o.com2usId)));
     return null;
   }
 
@@ -542,7 +540,7 @@ function cleanEntry(raw: unknown, ctx: Issues, where: string): RtaShareEntry | n
   const brutSection = o.section;
   let section = typeof brutSection === 'string' ? brutSection : RTA_UNASSIGNED;
   if (!isSectionKey(section)) {
-    warn(ctx, `${where} : section inconnue « ${String(brutSection)} » — rangé en « Non classé ».`);
+    warn(ctx, t.partage.rta.sectionInconnue(where, String(brutSection)));
     section = RTA_UNASSIGNED;
   }
 
@@ -553,7 +551,7 @@ function cleanEntry(raw: unknown, ctx: Issues, where: string): RtaShareEntry | n
   if (brutVitesse != null) {
     const n = Number(brutVitesse);
     if (!Number.isFinite(n) || n < 0) {
-      warn(ctx, `${where} : vitesse invalide (${String(brutVitesse)}) — laissée vide.`);
+      warn(ctx, t.partage.rta.vitesseInvalide(where, String(brutVitesse)));
     } else {
       runeSpeed = Math.round(n);
     }
@@ -578,22 +576,22 @@ function cleanEntry(raw: unknown, ctx: Issues, where: string): RtaShareEntry | n
     ...(() => {
       // L'équipement de l'auteur, lu par la porte commune aux partages
       // (equipementPartage.ts) : affichage seulement.
-      const gear = cleanGear(o.equipement ?? o.gear, (m) => warn(ctx, m), where);
+      const gear = cleanGear(o.equipement ?? o.gear, (m) => warn(ctx, m), where, t);
       return gear ? { gear } : {};
     })(),
   };
 }
 
-function cleanCategory(raw: unknown, ctx: Issues, where: string): RtaShareCategory | null {
+function cleanCategory(raw: unknown, ctx: Issues, where: string, t: Dictionnaire): RtaShareCategory | null {
   if (!raw || typeof raw !== 'object') {
-    warn(ctx, `${where} : catégorie invalide — ignorée.`);
+    warn(ctx, t.partage.rta.categorieInvalide(where));
     return null;
   }
   const o = raw as Record<string, unknown>;
   const label = typeof o.label === 'string' ? o.label.trim().slice(0, LABEL_MAX) : '';
   const color = typeof o.color === 'string' && /^#[0-9a-f]{6}$/i.test(o.color) ? o.color : null;
   if (!label || !color) {
-    warn(ctx, `${where} : catégorie sans libellé ou sans couleur valide — ignorée.`);
+    warn(ctx, t.partage.rta.categorieIncomplete(where));
     return null;
   }
   const brut = o.membres ?? o.members;
@@ -683,8 +681,8 @@ export interface ImportReport extends Issues {
 }
 
 // **Validateur d'import** — JSON uniquement. Rend compte de ce qu'il a lu :
-// erreurs bloquantes ET corrections appliquées.
-export function validateRtaImport(text: string): ImportReport {
+// erreurs bloquantes ET corrections appliquées, dans la langue de `t`.
+export function validateRtaImport(text: string, t: Dictionnaire): ImportReport {
   const ctx = noIssues();
   const vide: ImportReport = {
     ...ctx,
@@ -692,26 +690,26 @@ export function validateRtaImport(text: string): ImportReport {
     counts: { monstres: 0, sections: 0, categories: 0, avecRunes: 0 },
   };
 
-  const t = text.trim();
-  if (!t) {
-    ctx.errors.push('Contenu vide.');
+  const texte = text.trim();
+  if (!texte) {
+    ctx.errors.push(t.partage.contenuVide);
     return { ...vide, ...ctx };
   }
   // Message explicite plutôt qu'une erreur de parseur cryptique.
-  if (!t.startsWith('{')) {
-    ctx.errors.push(`Attendu un JSON de prépa RTA (fichier .json d'export ${NOM_APP}).`);
+  if (!texte.startsWith('{')) {
+    ctx.errors.push(t.partage.rta.attenduPrepa(NOM_APP));
     return { ...vide, ...ctx };
   }
 
   let obj: Record<string, unknown>;
   try {
-    obj = JSON.parse(t) as Record<string, unknown>;
+    obj = JSON.parse(texte) as Record<string, unknown>;
   } catch (e) {
-    ctx.errors.push(`JSON invalide : ${(e as Error).message}`);
+    ctx.errors.push(t.partage.jsonInvalide((e as Error).message));
     return { ...vide, ...ctx };
   }
   if (!obj || typeof obj !== 'object' || Array.isArray(obj)) {
-    ctx.errors.push('Le JSON doit être un objet contenant une clé « monstres ».');
+    ctx.errors.push(t.partage.rta.objetAttendu);
     return { ...vide, ...ctx };
   }
 
@@ -719,28 +717,18 @@ export function validateRtaImport(text: string): ImportReport {
     // Erreur BLOQUANTE et non simple avertissement : importer une prépa
     // REMPLACE la prépa en cours. Se tromper de fichier (une recommandation de
     // siège, par exemple) coûterait le classement en place.
-    ctx.errors.push(
-      `Ce fichier est un export « ${obj.format} », pas une prépa RTA (« ${JSON_FORMAT} »).`
-    );
+    ctx.errors.push(t.partage.rta.autreFormat(obj.format, JSON_FORMAT));
     return { ...vide, ...ctx };
   }
 
   const version = Number(obj.version);
   if (Number.isFinite(version) && version > JSON_VERSION) {
-    warn(
-      ctx,
-      `Fichier au format v${version}, plus récent que cette version de ${NOM_APP} (v${JSON_VERSION}) — ` +
-        `ce qui n'est pas reconnu a été ignoré.`
-    );
+    warn(ctx, t.partage.rta.versionPlusRecente(version, JSON_VERSION, NOM_APP));
   } else if (Number.isFinite(version) && version < JSON_VERSION) {
     // Lu sans perte, mais signalé : sinon un fichier ancien circule
     // indéfiniment dans la guilde et personne ne sait qu'il peut désormais
     // porter les runes (même raisonnement que pour les recommandations).
-    warn(
-      ctx,
-      `Fichier au format v${version} (actuel : v${JSON_VERSION}) : il ne contient pas les runes. ` +
-        `Demande à son auteur de le réexporter pour les voir.`
-    );
+    warn(ctx, t.partage.rta.versionSansRunes(version, JSON_VERSION));
   }
 
   const brutMonstres = Array.isArray(obj.monstres)
@@ -749,14 +737,14 @@ export function validateRtaImport(text: string): ImportReport {
       ? obj.entries
       : null;
   if (!brutMonstres) {
-    ctx.errors.push("Clé « monstres » absente ou invalide : ce n'est pas un export de prépa RTA.");
+    ctx.errors.push(t.partage.rta.monstresAbsents);
     return { ...vide, ...ctx };
   }
 
   const entries: RtaShareEntry[] = [];
   const vus = new Set<number>();
   brutMonstres.forEach((raw, i) => {
-    const e = cleanEntry(raw, ctx, `Monstre ${i + 1}`);
+    const e = cleanEntry(raw, ctx, t.partage.rta.monstre(i + 1), t);
     if (!e) return;
     // Une seule carte par monstre, comme dans l'app : le doublon est écarté.
     // ⚠️ La dédup ne porte QUE sur les monstres identifiés : deux monstres perso
@@ -764,10 +752,7 @@ export function validateRtaImport(text: string): ImportReport {
     // comme des doublons n'en aurait laissé passer qu'un seul.
     if (e.com2usId != null) {
       if (vus.has(e.com2usId)) {
-        warn(
-          ctx,
-          `« ${e.nom || e.com2usId} » apparaît plusieurs fois — seule la première entrée est gardée.`
-        );
+        warn(ctx, t.partage.rta.doublon(e.nom || String(e.com2usId)));
         return;
       }
       vus.add(e.com2usId);
@@ -776,7 +761,7 @@ export function validateRtaImport(text: string): ImportReport {
   });
 
   if (entries.length === 0) {
-    ctx.errors.push('Aucun monstre exploitable dans ce fichier.');
+    ctx.errors.push(t.partage.rta.aucunMonstre);
     return { ...vide, ...ctx };
   }
 
@@ -796,7 +781,7 @@ export function validateRtaImport(text: string): ImportReport {
   const categories: RtaShareCategory[] = [];
   const brutCats = Array.isArray(obj.categories) ? obj.categories : [];
   brutCats.forEach((raw, i) => {
-    const c = cleanCategory(raw, ctx, `Catégorie ${i + 1}`);
+    const c = cleanCategory(raw, ctx, t.partage.rta.categorie(i + 1), t);
     if (c) categories.push(c);
   });
 

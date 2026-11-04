@@ -10,6 +10,8 @@ import { loadLocal, saveLocal, usePersistence } from './usePersistence';
 import type { CriteresOptimizer } from '../lib/criteresOptimizer';
 import { synchroniserLeadsMembresOptimizer } from '../lib/equipesOptimizer';
 import { nomNouvelleListeOptimizer } from '../lib/optimizerListNames';
+import { useTraduction } from './useLangue';
+import type { Dictionnaire } from '../i18n/fr';
 import { identifiantListeImportOccupe } from '../lib/importEquipes';
 import type { ExclusionSourceData } from '../lib/optimizerExclusion';
 import type { OptimMetric } from '../lib/runeOptim';
@@ -178,15 +180,20 @@ export interface UseOptimizerLists {
 
 interface MemberStorage extends DonneesMembresOptimizer { rapport: string[]; raw: string | null }
 interface State extends StoredState { memberStorage: MemberStorage }
-function loadState(): State {
+function loadState(t: Dictionnaire): State {
   const raw = loadLocal(OPTIMIZER_MEMBERS_STORAGE_KEY);
-  const lu = lireMembresOptimizer(raw);
+  const lu = lireMembresOptimizer(raw, t);
   return { ...loadOptimizerLists(), memberStorage: { ...lu, raw } };
 }
 
 export function useOptimizerLists(): UseOptimizerLists {
-  const [state, publierEtat] = useState<State>(loadState);
+  const textes = useTraduction();
+  const nomParDefaut = textes.optimizer.listes.nomParDefaut;
+  const [state, publierEtat] = useState<State>(() => loadState(textes));
   const courant = useRef(state);
+  // Les rapports se rédigent au geste, dans la langue du moment.
+  const textesVivants = useRef(textes);
+  textesVivants.current = textes;
   // Les gestes groupés doivent lire les écritures déjà envoyées à React.
   // Les transformations restent pures : React peut les rejouer sans effet de bord.
   // Toutes les écritures des listes passent ici dans l'ordre d'envoi, sans
@@ -209,7 +216,7 @@ export function useOptimizerLists(): UseOptimizerLists {
   const lireStockageCourant = useCallback(() => ({ ...courant.current, ...courant.current.memberStorage }), []);
   const [pointStocke, setPointStocke] = useState(() => {
     const brut = loadLocal(OPTIMIZER_BACKUP_STORAGE_KEY);
-    return { brut, ...lirePointOptimizer(brut) };
+    return { brut, ...lirePointOptimizer(brut, textes) };
   });
 
   const persist = usePersistence();
@@ -231,7 +238,7 @@ export function useOptimizerLists(): UseOptimizerLists {
     const point = photographierPointOptimizer({ ...acquis, activeListId: etatCourant.activeListId }, selection, new Date(),
       acquis === stockageCourant ? etatCourant.memberStorage.raw : null);
     const brut = JSON.stringify(point);
-    setPointStocke({ brut, ...lirePointOptimizer(brut) });
+    setPointStocke({ brut, ...lirePointOptimizer(brut, textesVivants.current) });
   }, []);
 
   const remplacerParPoint = useCallback((reprise: ReturnType<typeof import('../lib/optimizerBackup').preparerRepriseOptimizer>) => {
@@ -265,10 +272,10 @@ export function useOptimizerLists(): UseOptimizerLists {
 
   const createList = useCallback((name: string, contenu: ContenuListeOptimizer) => {
     const id = newId();
-    setState((s) => ({ ...s, lists: [...s.lists, { id, name: name.trim() || nomNouvelleListeOptimizer(s.lists) }], activeListId: id,
+    setState((s) => ({ ...s, lists: [...s.lists, { id, name: name.trim() || nomNouvelleListeOptimizer(s.lists, nomParDefaut) }], activeListId: id,
       memberStorage: { ...s.memberStorage, raw: null, listContents: new Map(s.memberStorage.listContents).set(id, contenu) } }));
     return id;
-  }, [setState]);
+  }, [setState, nomParDefaut]);
 
   const setListContent = useCallback((id: string, contenu: ContenuListeOptimizer) => {
     setState(s => !s.lists.some(l => l.id === id) || !contenuListeValide(contenu) ? s : { ...s,
@@ -429,9 +436,9 @@ export function useOptimizerLists(): UseOptimizerLists {
     setState((s) => {
       if (s.activeListId !== membre.listId || !s.lists.some(l => l.id === membre.listId)
         || !s.members.some((m) => cleMemoireMembre(m.listId, m.selector) === cleMemoireMembre(membre.listId, membre.selector))) {
-        return { ...s, memberStorage: { ...s.memberStorage, rapport: [...s.memberStorage.rapport, 'Mémoire non écrite : membre absent de la liste.'] } };
+        return { ...s, memberStorage: { ...s.memberStorage, rapport: [...s.memberStorage.rapport, textesVivants.current.optimizer.stockage.memoireMembreAbsent] } };
       }
-      const r = enregistrerMemoireMembre(s.memberStorage.memories, membre, criteres, data);
+      const r = enregistrerMemoireMembre(s.memberStorage.memories, membre, criteres, data, textesVivants.current);
       return { ...s, memberStorage: { ...s.memberStorage, memories: r.memories,
         rejets: r.rapport.length ? s.memberStorage.rejets : retirerRejetsOptimizer(s.memberStorage.rejets, membre.listId, membre.selector),
         raw: r.rapport.length ? s.memberStorage.raw : null, rapport: [...s.memberStorage.rapport, ...r.rapport] } };
@@ -447,13 +454,13 @@ export function useOptimizerLists(): UseOptimizerLists {
 
   const setTeams = useCallback((teams: EquipeOptimizer[]) => {
     setState((s) => {
-      const r = validerEquipesOptimizer(teams);
+      const r = validerEquipesOptimizer(teams, textesVivants.current);
       // Les références des équipes inchangées peuvent être orphelines : seule
       // une équipe ajoutée ou modifiée doit encore appartenir à sa liste.
       const modifiees = teams.filter(e => !s.memberStorage.teams.some(ancienne => JSON.stringify(ancienne) === JSON.stringify(e)));
       const horsListe = modifiees.some((e) => !s.lists.some((l) => l.id === e.listId)
         || e.members.some((sel) => !s.members.some((m) => cleMemoireMembre(m.listId, m.selector) === cleMemoireMembre(e.listId, sel))));
-      const rapport = [...r.rapport, ...(horsListe ? ['Équipe non écrite : membre absent de la liste.'] : [])];
+      const rapport = [...r.rapport, ...(horsListe ? [textesVivants.current.optimizer.stockage.equipeMembreAbsent] : [])];
       return { ...s, memberStorage: { ...s.memberStorage, teams: rapport.length ? s.memberStorage.teams : structuredClone(r.teams),
         raw: rapport.length ? s.memberStorage.raw : null, rapport: [...s.memberStorage.rapport, ...rapport] } };
     });
@@ -461,7 +468,7 @@ export function useOptimizerLists(): UseOptimizerLists {
 
   const synchroniserLeadsEquipes = useCallback((data: ExclusionSourceData) => {
     const synchroniser = (s: State) => s.activeListId
-      ? synchroniserLeadsMembresOptimizer({ ...s.memberStorage, members: s.members }, s.activeListId, data) : null;
+      ? synchroniserLeadsMembresOptimizer({ ...s.memberStorage, members: s.members }, s.activeListId, data, textesVivants.current) : null;
     // Appelée après chaque rendu : aucune mise à jour envoyée sans écriture.
     if (!synchroniser(courant.current)?.ecrits.length) return;
     setState((s) => {

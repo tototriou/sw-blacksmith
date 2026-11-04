@@ -1,6 +1,7 @@
 import { Bouton } from '../../../ui';
 import { CheckCircle2 } from 'lucide-react';
 import { type EtatValidation } from './types';
+import { useTraduction } from '../../../hooks/useLangue';
 
 export interface BoutonValiderBuildProps {
   handleValidateDisplayed: () => void;
@@ -11,6 +12,7 @@ export interface BoutonValiderBuildProps {
 }
 
 export default function BoutonValiderBuild({ handleValidateDisplayed, canValidateDisplayed, matchesValidatedBuild, etatFiche, displayedRuneConflicts }: BoutonValiderBuildProps) {
+  const v = useTraduction().optimizer.validation;
   return (
     <>
       <Bouton
@@ -26,7 +28,7 @@ export default function BoutonValiderBuild({ handleValidateDisplayed, canValidat
         icone={matchesValidatedBuild ? <CheckCircle2 size={14} /> : undefined}
         // ⚠️ Trois libellés, pas deux : mêmes runes + autre paire, il reste
         // quelque chose à valider — les artéfacts. Voir `EtatValidation`.
-        libelle={etatFiche === 'oui' ? 'Validé' : etatFiche === 'artefacts' ? 'Valider les artéfacts' : 'Valider ce build'}
+        libelle={etatFiche === 'oui' ? v.valide : etatFiche === 'artefacts' ? v.validerArtefacts : v.validerBuild}
         className="mt-2.5"
       />
       {/* Message listant les runes déjà utilisées — demande explicite,
@@ -35,11 +37,11 @@ export default function BoutonValiderBuild({ handleValidateDisplayed, canValidat
           suffit alors, ce build EST la réservation). */}
       {displayedRuneConflicts.length > 0 && !matchesValidatedBuild && (
         <p className="mt-1.5 text-[11px] text-warn">
-          {displayedRuneConflicts.length > 1 ? 'Runes déjà réservées' : 'Rune déjà réservée'} dans cette liste :{' '}
+          {v.dejaReservees(displayedRuneConflicts.length)}{' '}
           {displayedRuneConflicts.map((c, i) => (
             <span key={i}>
               {i > 0 && ', '}
-              {c.slot != null ? `emplacement ${c.slot}` : 'une rune'} ({c.monsterName})
+              {c.slot != null ? v.emplacement(c.slot) : v.uneRune} ({c.monsterName})
             </span>
           ))}
           .

@@ -3,6 +3,7 @@ import { Ban } from 'lucide-react';
 import { RelicDetail } from '../types';
 import { formatRelicMain, formatRelicUnique, formatRelicUsage } from '../lib/effects';
 import { ZoneCliquable } from '../ui';
+import { useTraduction } from '../hooks/useLangue';
 
 // Emplacement « Relique » — extrait de [MonsterGear.tsx](src/components/MonsterGear.tsx)
 // à son deuxième usage (carte candidat de l'Optimizer, voir
@@ -30,9 +31,11 @@ export function RelicDetailBox({
   count?: number;
   encadre?: boolean;
 }) {
+  const textes = useTraduction();
+  const jeu = textes.jeu;
   return (
     <div className={encadre ? 'rounded-lg border border-border bg-panel/70 p-2.5' : ''}>
-      <div className="text-xs font-bold text-ink">{formatRelicMain(relic.main)}</div>
+      <div className="text-xs font-bold text-ink">{formatRelicMain(relic.main, jeu)}</div>
       {/* ⚠️ **La description seule, sans intitulé.** La propriété unique
           déclenche un effet proportionnel à une stat (« +2 % par tranche de
           27 000 PV »), et cette phrase se suffit : la coiffer d'un « Propriété
@@ -43,7 +46,7 @@ export function RelicDetailBox({
       {relic.unique && (
         <div
           className="text-micro text-ink-dim mt-0.5"
-          title={`Propriété unique n° ${relic.unique.type} — l'export ne dit pas ce qu'elle déclenche`}
+          title={textes.pieces.uniqueSansEffet(relic.unique.type)}
         >
           {formatRelicUnique(relic.unique)}
         </div>
@@ -85,6 +88,9 @@ export default function RelicSlot({
   renderOverlay,
   small = false,
 }: RelicSlotProps) {
+  const textes = useTraduction();
+  const jeu = textes.jeu;
+  const p = textes.pieces;
   const ancre = useRef<HTMLDivElement>(null);
   const taille = small ? 'px-1.5 py-1.5' : 'px-2.5 py-2 compact:px-1.5 compact:py-1.5';
   const texte = small ? 'text-micro' : 'text-xs compact:text-micro';
@@ -92,11 +98,11 @@ export default function RelicSlot({
   if (enAttente) {
     return (
       <div
-        title="Relique : en attente"
+        title={p.reliqueEnAttente}
         className={`rounded-lg border border-border bg-panel/60 text-center opacity-40 ${taille}`}
       >
-        <div className="label">Relique</div>
-        <div className={`mt-0.5 ${texte} text-ink-dim`}>en attente</div>
+        <div className="label">{p.relique}</div>
+        <div className={`mt-0.5 ${texte} text-ink-dim`}>{p.enAttente}</div>
       </div>
     );
   }
@@ -104,10 +110,10 @@ export default function RelicSlot({
   if (!relic) {
     return (
       <div
-        title="Aucune relique équipée"
+        title={p.aucuneRelique}
         className={`rounded-lg border border-border bg-panel/60 text-center opacity-40 ${taille}`}
       >
-        <div className="label">Relique</div>
+        <div className="label">{p.relique}</div>
         <div className="mt-0.5 flex items-center justify-center">
           {small ? (
             <Ban size={13} className="text-ink-dim" />
@@ -126,7 +132,7 @@ export default function RelicSlot({
     <div ref={ancre} className={`relative ${selected ? 'z-10' : ''}`}>
       <ZoneCliquable
         onClick={() => onToggle?.()}
-        title="Voir la relique"
+        title={p.voirRelique}
         aria-pressed={selected}
         className={`rounded-lg border text-center ${taille} ${
           selected
@@ -134,8 +140,8 @@ export default function RelicSlot({
             : 'border-border bg-panel/60 hoverable:border-accent'
         }`}
       >
-        <div className="label">Relique</div>
-        <div className={`mt-0.5 font-bold text-ink ${texte}`}>{formatRelicMain(relic.main)}</div>
+        <div className="label">{p.relique}</div>
+        <div className={`mt-0.5 font-bold text-ink ${texte}`}>{formatRelicMain(relic.main, jeu)}</div>
       </ZoneCliquable>
       {renderOverlay?.({ current: ancre.current })}
       {marques && marques.length > 0 && (

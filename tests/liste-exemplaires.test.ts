@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { egal, ok, titre } from './outils';
 import type { GearSet, Monster } from '../src/types';
 import { exemplaireSuivantEspece, libellePuceSource, type ExclusionCandidate, type ExclusionSource, type OptimizerListMember } from '../src/lib/optimizerExclusion';
+import { fr } from '../src/i18n/fr';
 
 const monstre: Monster = { id: 14104, com2usId: 14104, name: 'Lushen', element: 'wind', stars: 6, naturalStars: 4,
   secondAwaken: false, image: null, stats: { hp: 0, attack: 0, defense: 0, speed: 0, critRate: 0, critDamage: 0, resistance: 0, accuracy: 0 }, leaderSkill: null };
@@ -12,7 +13,7 @@ export function testListeExemplaires() {
   const a = candidat('a'), b = candidat('b');
   const candidats: Record<ExclusionSource, ExclusionCandidate[]> = { box: [a, b], rta: [], 'siege-defense': [], 'siege-offense': [] };
   const membre = (c: ExclusionCandidate, listId = 'L'): OptimizerListMember => ({ listId, selector: c.selector });
-  const suivant = (membres: OptimizerListMember[], listeId: string | null = 'L') => exemplaireSuivantEspece(monstre, candidats, membres, listeId);
+  const suivant = (membres: OptimizerListMember[], listeId: string | null = 'L') => exemplaireSuivantEspece(monstre, candidats, membres, listeId, fr);
   egal(suivant([]).suivant, a.selector, 'exemplaire suivant : premier Box, même nu');
   egal(suivant([membre(a)]).suivant, b.selector, 'exemplaire suivant : premier absent dans l’ordre de la zone D');
   egal(suivant([membre(b)]).suivant, a.selector, 'ordre des membres sans influence');

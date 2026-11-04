@@ -11,6 +11,8 @@ import CreateMonster from '../CreateMonster';
 import { ConfirmDialog } from '../../ui/Dialogs';
 import MobileSheet from '../../ui/MobileSheet';
 import { BarreActions, Bouton, Interrupteur, Jeton, useNotifier } from '../../ui';
+import { useTraduction } from '../../hooks/useLangue';
+import type { Dictionnaire } from '../../i18n/fr';
 import MonsterPicker from '../MonsterPicker';
 import MonsterAvatar from '../MonsterAvatar';
 import { equipeContient } from './rechercheEquipe';
@@ -64,17 +66,19 @@ export default function SiegeBoard({
   menuOuvert,
   onFermerMenu,
 }: Props) {
-  const produireEquipe = useCallback((teamId: string, data: ExclusionSourceData) => side === 'defense'
-    ? importerDefensesSiegeOptimizer({ ...data, siegeDefenseTeams: data.siegeDefenseTeams.filter(t => t.id === teamId) })
-    : importerOffenseSiegeOptimizer(teamId, data), [side]);
+  const textes = useTraduction();
+  const b = textes.siege.board;
+  const produireEquipe = useCallback((teamId: string, data: ExclusionSourceData, t: Dictionnaire) => side === 'defense'
+    ? importerDefensesSiegeOptimizer({ ...data, siegeDefenseTeams: data.siegeDefenseTeams.filter(e => e.id === teamId) }, t)
+    : importerOffenseSiegeOptimizer(teamId, data, t), [side]);
   const disponibiliteExport = useMemo(() => {
-    const raisonCompte = 'Charge un compte pour exporter vers l’Optimizer.';
+    const raisonCompte = b.exportSansCompte;
     const equipes = new Map(siege.state.teams.map(t => [t.id, !compteCharge ? raisonCompte
-      : produireEquipe(t.id, sourcesOptimizer).membres.length ? undefined : 'Aucun monstre importable dans cette équipe.']));
-    const defenses = !compteCharge ? raisonCompte : importerDefensesSiegeOptimizer(sourcesOptimizer).membres.length
-      ? undefined : 'Aucun monstre importable dans les défenses de siège.';
+      : produireEquipe(t.id, sourcesOptimizer, textes).membres.length ? undefined : b.exportEquipeVide]));
+    const defenses = !compteCharge ? raisonCompte : importerDefensesSiegeOptimizer(sourcesOptimizer, textes).membres.length
+      ? undefined : b.exportDefensesVides;
     return { equipes, defenses };
-  }, [compteCharge, produireEquipe, siege.state.teams, sourcesOptimizer]);
+  }, [b, compteCharge, produireEquipe, siege.state.teams, sourcesOptimizer, textes]);
   const exporterDefensesOptimizer = () => onImporterEquipe(importerDefensesSiegeOptimizer);
   // ⚠️ **Éteint par défaut** : les équipes s'affichent telles quelles, et c'est
   // un geste délibéré qui demande la vérification. Tout ce que l'app calcule
@@ -84,10 +88,10 @@ export default function SiegeBoard({
   // Formulaire de création ouvert depuis le menu « ⋯ » (bureau).
   const [creationOuverte, setCreationOuverte] = useState(false);
 
-  const noun = side === 'defense' ? 'défense' : 'attaque';
+  const noun = b.cote[side].nom;
   // ⚠️ L'élision se choisit AVEC le mot : `d'${noun}` écrivait « équipes
   // d'défense ».
-  const deNoun = side === 'defense' ? 'de défense' : "d'attaque";
+  const deNoun = b.cote[side].de;
 
   // Supprimer une équipe SE DÉFAIT au lieu de se confirmer : immédiat, puis « Équipe
   // retirée · Annuler » la remet à SA place,
@@ -99,7 +103,7 @@ export default function SiegeBoard({
     const equipe = siege.state.teams[index];
     siege.removeTeam(teamId);
     notifier({
-      message: `Équipe retirée ${side === 'defense' ? 'de la défense' : "de l'offense"}`,
+      message: b.retiree(side),
       action: () => siege.restaurerEquipe(equipe, index),
     });
   }
@@ -186,28 +190,26 @@ export default function SiegeBoard({
     const nom = nomFichierSiege(side);
     telechargerTexte(nom, texte);
     setMsg({
-      text:
-        `${equipes} équipe(s) exportée(s) ${avecRunes ? 'avec les runes' : 'sans les runes'} · ${nom}` +
-        (perso > 0 ? ` · ${perso} monstre(s) perso non exporté(s) : emplacement vide.` : ''),
+      text: b.exporte(equipes, avecRunes, nom) + (perso > 0 ? b.persoNonExportes(perso) : ''),
     });
   }
 
   function importer(texte: string) {
-    const lu = lireEquipes(texte, monsters);
+    const lu = lireEquipes(texte, monsters, textes);
     if (!lu.ok) {
-      setMsg({ text: `Import refusé : ${lu.erreur}`, error: true });
+      setMsg({ text: b.importRefuse(lu.erreur), error: true });
       return;
     }
     siege.appendTeams(lu.equipes);
     setScrollToLast(true);
     setMsg({
       text:
-        `${lu.equipes.length} équipe(s) ajoutée(s) à la suite des tiennes` +
-        (lu.avecRunes > 0 ? `, avec les runes de ${lu.avecRunes} monstre(s).` : '.') +
+        b.ajoutees(lu.equipes.length) +
+        (lu.avecRunes > 0 ? b.avecRunesDe(lu.avecRunes) : '.') +
         (lu.avertissements.length > 0 ? ` ${lu.avertissements.join(' ')}` : '') +
-        (lu.cote !== side ? ` Le fichier venait ${lu.cote === 'defense' ? 'de la défense' : "de l'offense"}.` : '') +
+        (lu.cote !== side ? b.venaitDe(lu.cote) : '') +
         (lu.inconnus.length > 0
-          ? ` ${lu.inconnus.length} monstre(s) absent(s) des données chargées (${lu.inconnus.slice(0, 3).join(', ')}${lu.inconnus.length > 3 ? '…' : ''}) : emplacement vide.`
+          ? b.inconnus(lu.inconnus.length, `${lu.inconnus.slice(0, 3).join(', ')}${lu.inconnus.length > 3 ? '…' : ''}`)
           : ''),
       error: lu.inconnus.length > 0,
     });
@@ -250,8 +252,8 @@ export default function SiegeBoard({
       pleineLargeur={dansLePanneau}
       taille="sm"
       icone={<Trash2 size={13} />}
-      libelle="Tout effacer"
-      title={siege.state.teams.length === 0 ? "Aucune équipe à effacer" : undefined}
+      libelle={textes.commun.toutEffacer}
+      title={siege.state.teams.length === 0 ? b.rienAEffacer : undefined}
       // ⚠️ `leading-none` : l'interligne du libellé donne au texte une boîte
       // plus haute que sa lettre. Centrées boîte contre boîte, la poubelle et
       // le mot ne le sont plus à l'œil.
@@ -262,7 +264,7 @@ export default function SiegeBoard({
   // Posé DEUX fois : dans l'en-tête bureau, et seul dans la page au téléphone.
   const compteur = (
     <>
-      {siege.state.teams.length} équipe{siege.state.teams.length > 1 ? 's' : ''}
+      {b.equipes(siege.state.teams.length)}
     </>
   );
 
@@ -278,10 +280,10 @@ export default function SiegeBoard({
           setScrollToLast(true);
           onFermerMenu();
         }}
-        aria-label="Ajouter une équipe"
+        aria-label={b.ajouter}
         icone={<Plus size={15} />}
-        libelle="Ajouter une équipe"
-        libelleCourt="Équipe"
+        libelle={b.ajouter}
+        libelleCourt={b.ajouterCourt}
       />
 
       {/* ⚠️ « Vérifier mes speed » n'est PLUS ici : au téléphone, c'est un
@@ -296,18 +298,18 @@ export default function SiegeBoard({
           onFermerMenu();
         }}
         disabled={affichees.length === 0}
-        title={affichees.length === 0 ? 'Aucune équipe à exporter' : 'Exporter les équipes affichées en fichier .json'}
+        title={affichees.length === 0 ? b.rienAExporter : b.exporterAffichees}
         icone={<Upload size={15} />}
-        libelle="Exporter"
+        libelle={textes.commun.exporter}
       />
       <Bouton
         onClick={() => {
           fichierEquipes.current?.click();
           onFermerMenu();
         }}
-        title={`Ajouter les équipes d'un fichier .json exporté par ${NOM_APP} — les tiennes ne sont pas touchées`}
+        title={b.importerAide(NOM_APP)}
         icone={<Download size={15} />}
-        libelle="Importer"
+        libelle={textes.commun.importer}
       />
 
       {/* En dernier des actions : c'est le geste le plus rare. */}
@@ -335,13 +337,13 @@ export default function SiegeBoard({
           « Options ». */}
       <div className="mt-5 hidden flex-wrap items-center gap-x-3 gap-y-1 lg:flex">
         <h1 className="font-display text-xl tracking-wide text-ink">
-          {side === 'defense' ? 'Défense' : 'Offense'}
+          {b.cote[side].titre}
         </h1>
         <span className="rounded-full border border-border-soft bg-panel2 px-2 py-0.5 font-mono text-micro text-ink-dim">
           {compteur}
         </span>
         <BarreActions
-          libelleMenu="Plus d'actions"
+          libelleMenu={textes.sauvegardeRta.plusActions}
           toujours={[
             // « Vérifier mes speed » vient en premier : c'est pour vérifier ses
             // équipes qu'on vient ici, on n'en ajoute qu'une de temps en temps.
@@ -350,23 +352,23 @@ export default function SiegeBoard({
             // Allumé, il prend le fond d'accent doux d'un bouton enclenché.
             {
               cle: 'verifier',
-              libelle: 'Vérifier mes speed',
+              libelle: b.verifier,
               icone: <Gauge size={15} />,
               actif: checkTicks,
               disabled: siege.state.teams.length === 0,
               // Même texte que le bouton du panneau mobile, ci-dessous.
               title:
                 siege.state.teams.length === 0
-                  ? 'Aucune équipe à vérifier'
+                  ? b.rienAVerifier
                   : checkTicks
-                    ? 'Masquer les auras de vérification'
-                    : 'Colorer les équipes selon leur vitesse : speed tune pour une équipe Swift, calage sur les ticks ATB pour les autres',
+                    ? b.masquerAuras
+                    : b.verifierAide,
               onClick: () => setCheckTicks((v) => !v),
             },
             {
               cle: 'ajouter',
-              libelle: 'Ajouter une équipe',
-              'aria-label': 'Ajouter une équipe',
+              libelle: b.ajouter,
+              'aria-label': b.ajouter,
               icone: <Plus size={15} />,
               onClick: () => {
                 siege.addTeam();
@@ -374,9 +376,9 @@ export default function SiegeBoard({
               },
             },
             ...(side === 'defense' ? [{
-              cle: 'optimizer', libelle: "Exporter vers l'Optimizer", icone: <Upload size={15} />,
+              cle: 'optimizer', libelle: textes.commun.exporterOptimizer, icone: <Upload size={15} />,
               disabled: !!disponibiliteExport.defenses,
-              title: disponibiliteExport.defenses ?? 'Créer une liste avec toutes les défenses de siège.',
+              title: disponibiliteExport.defenses ?? b.exportDefensesAide,
               onClick: exporterDefensesOptimizer,
             }] : []),
           ]}
@@ -384,38 +386,38 @@ export default function SiegeBoard({
             // Export / import d'équipes — ajout décidé par le mainteneur.
             {
               cle: 'exporter',
-              libelle: 'Exporter',
+              libelle: textes.commun.exporter,
               icone: <Upload size={14} />,
               disabled: affichees.length === 0,
               title:
                 affichees.length === 0
-                  ? 'Aucune équipe à exporter'
+                  ? b.rienAExporter
                   : filtre
-                    ? 'Exporter les équipes affichées (celles de la recherche) en fichier .json'
-                    : `Télécharger tes équipes ${deNoun} en fichier .json, pour les partager ou les garder de côté`,
+                    ? b.exporterRecherche
+                    : b.telechargerEquipes(deNoun),
               onClick: () => setChoixExport(true),
             },
             {
               cle: 'importer',
-              libelle: 'Importer',
+              libelle: textes.commun.importer,
               icone: <Download size={14} />,
-              title: `Ajouter les équipes d'un fichier .json exporté par ${NOM_APP} — les tiennes ne sont pas touchées`,
+              title: b.importerAide(NOM_APP),
               onClick: () => fichierEquipes.current?.click(),
             },
             {
               cle: 'creer',
-              libelle: 'Créer un monstre',
+              libelle: textes.creerMonstre.bouton,
               icone: <Wand2 size={15} />,
-              title: "Créer un monstre qui n'existe pas dans les données chargées",
+              title: textes.creerMonstre.boutonAide,
               onClick: () => setCreationOuverte(true),
             },
             {
               cle: 'effacer',
-              libelle: 'Tout effacer',
+              libelle: textes.commun.toutEffacer,
               icone: <Trash2 size={14} />,
               danger: true,
               disabled: siege.state.teams.length === 0,
-              title: siege.state.teams.length === 0 ? 'Aucune équipe à effacer' : undefined,
+              title: siege.state.teams.length === 0 ? b.rienAEffacer : undefined,
               onClick: () => setEffacementAConfirmer(true),
             },
           ]}
@@ -467,8 +469,8 @@ export default function SiegeBoard({
         <div className="w-full sm:w-72">
           <MonsterPicker
             monsters={monstresDesEquipes}
-            placeholder="Nom du monstre…"
-            ariaLabel="Chercher une équipe par monstre"
+            placeholder={b.nomMonstre}
+            ariaLabel={b.chercher}
             onPick={(id) => setRecherche(monsterById.get(id)?.name ?? '')}
           />
         </div>
@@ -480,10 +482,10 @@ export default function SiegeBoard({
               }
               libelle={recherche}
               onRetirer={() => setRecherche('')}
-              libelleRetrait="Vider la recherche"
+              libelleRetrait={b.viderRecherche}
             />
             <span className="font-mono text-xs text-ink-dim">
-              {affichees.length} équipe{affichees.length > 1 ? 's' : ''} sur {siege.state.teams.length}
+              {b.surTotal(affichees.length, siege.state.teams.length)}
             </span>
           </>
         )}
@@ -508,27 +510,27 @@ export default function SiegeBoard({
           actif={checkTicks}
           onChange={setCheckTicks}
           disabled={siege.state.teams.length === 0}
-          libelle="Vérifier mes speed"
-          aria-label="Vérifier mes speed"
+          libelle={b.verifier}
+          aria-label={b.verifier}
           className="ml-auto"
           title={
             siege.state.teams.length === 0
-              ? 'Aucune équipe à vérifier'
+              ? b.rienAVerifier
               : checkTicks
-                ? 'Masquer les auras de vérification'
+                ? b.masquerAuras
                 : // ⚠️ L'interrupteur couvre les DEUX questions : une équipe
                   // Swift se juge sur son speed tune, les autres sur leur tick.
-                  'Colorer les équipes selon leur vitesse : speed tune pour une équipe Swift, calage sur les ticks ATB pour les autres'
+                  b.verifierAide
           }
         />
       </div>
 
-      <MobileSheet ouvert={menuOuvert} onFermer={onFermerMenu} titre={`Actions — ${noun}`}>
+      <MobileSheet ouvert={menuOuvert} onFermer={onFermerMenu} titre={b.actions(noun)}>
         <div data-rangee-actions>{actions}</div>
         {side === 'defense' && <Bouton className="mt-3" pleineLargeur
-          libelle="Exporter vers l'Optimizer" icone={<Upload size={15} />}
+          libelle={textes.commun.exporterOptimizer} icone={<Upload size={15} />}
           disabled={!!disponibiliteExport.defenses}
-          title={disponibiliteExport.defenses ?? 'Créer une liste avec toutes les défenses de siège.'}
+          title={disponibiliteExport.defenses ?? b.exportDefensesAide}
           onClick={exporterDefensesOptimizer} />}
         <div data-zone-destructive className="mt-4 border-t border-border pt-3">
           {effacer(true)}
@@ -537,9 +539,9 @@ export default function SiegeBoard({
 
       {effacementAConfirmer && (
         <ConfirmDialog
-          titre={`Effacer toutes les équipes ${deNoun} ?`}
-          message="Toutes les équipes de ce côté seront supprimées, avec leurs monstres et leurs vitesses. L'autre côté n'est pas touché."
-          libelleAction="Tout effacer"
+          titre={b.effacerTitre(deNoun)}
+          message={b.effacerMessage}
+          libelleAction={textes.commun.toutEffacer}
           destructif
           onCancel={() => setEffacementAConfirmer(false)}
           onConfirm={() => {
@@ -550,7 +552,7 @@ export default function SiegeBoard({
       )}
 
       {loadState === 'loading' && monsters.length === 0 && (
-        <p className="mt-4 text-ink-dim text-sm">Chargement des monstres…</p>
+        <p className="mt-4 text-ink-dim text-sm">{textes.commun.chargementMonstres}</p>
       )}
 
       {siege.state.teams.length === 0 ? (
@@ -564,18 +566,17 @@ export default function SiegeBoard({
             )}
           </div>
           <p className="text-ink-dim text-sm max-w-md">
-            Aucune équipe {deNoun} pour l'instant. Clique sur{' '}
-            <b className="text-ink">Ajouter une équipe</b> pour composer, ou importe ton compte
-            depuis la barre du haut.
+            {b.vide(deNoun)}{' '}
+            <b className="text-ink">{b.ajouter}</b> {b.videSuite}
           </p>
         </div>
       ) : affichees.length === 0 ? (
         // La recherche ne trouve rien : on le dit, et on propose d'en sortir.
         <div className="mt-6 flex flex-col items-center gap-2 rounded-xl border border-dashed border-border px-6 py-10 text-center">
           <p className="text-sm text-ink-dim">
-            Aucune équipe ne contient « {recherche.trim()} ».
+            {b.aucuneAvec(recherche.trim())}
           </p>
-          <Bouton taille="sm" libelle="Effacer la recherche" onClick={() => setRecherche('')} />
+          <Bouton taille="sm" libelle={b.effacerRecherche} onClick={() => setRecherche('')} />
         </div>
       ) : (
         // ⚠️ **Autant de colonnes que la PLACE en permet** (« optimiser
@@ -600,7 +601,7 @@ export default function SiegeBoard({
             >
             <SiegeTeam
               team={team}
-              onExporterOptimizer={() => onImporterEquipe(data => produireEquipe(team.id, data))}
+              onExporterOptimizer={() => onImporterEquipe((data, t) => produireEquipe(team.id, data, t))}
               raisonExportOptimizer={disponibiliteExport.equipes.get(team.id)}
               index={rang}
               monsters={monsters}
@@ -636,15 +637,13 @@ export default function SiegeBoard({
             onClick={() => siege.addTeam()}
             disabled={filtre}
             title={
-              filtre
-                ? "Vide la recherche pour ajouter une équipe ici : une équipe vide n'y apparaîtrait pas"
-                : 'Ajouter une équipe à la fin de la liste'
+              filtre ? b.ajouterPendantRecherche : b.ajouterALaFin
             }
             fond="vide"
             trait="pointille"
             taille="carre"
             icone={<Plus size={22} />}
-            libelle="Ajouter une équipe"
+            libelle={b.ajouter}
             // ⚠️ `lg:text-sm` et non `text-sm` : le `text-xs` de la taille
             // `carre` vient APRÈS `text-sm` dans le CSS construit et l'emportait.
             className="hidden min-h-36 w-full flex-col gap-2 self-stretch rounded-xl p-4 lg:inline-flex lg:text-sm"

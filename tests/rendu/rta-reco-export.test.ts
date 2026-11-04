@@ -42,7 +42,7 @@ export function testOptimizerImportRtaRecoBranchement() {
   for (const prop of ['onImporterEquipe={importerEquipe}', 'sourcesOptimizer={optimizerData}', 'compteCharge={box.length > 0 || runes.length > 0}']) ok(rta.includes(prop), `App → RTA : ${prop}`);
   for (const prop of ['onImporterEquipe={boardProps.onImporterEquipe}', 'sourcesOptimizer={boardProps.sourcesOptimizer}', 'compteCharge={boardProps.compteCharge}']) ok(siege.includes(prop), `Siège → recommandations : ${prop}`);
   ok(lire('src/pages/RtaPage.tsx').includes('const exporterOptimizer = () => onImporterEquipe(importerPrepaRtaOptimizer);'), 'RTA appelle le producteur de toute la prépa par l’action commune');
-  ok(montage('src/components/siege/RecoBoard.tsx', 'RecoCard').includes('onExporterDeckOptimizer={deck => onImporterEquipe(data => importerRecoOptimizer(deck, data))}'), 'board → carte : même action et seul deck transmis');
+  ok(montage('src/components/siege/RecoBoard.tsx', 'RecoCard').includes('onExporterDeckOptimizer={deck => onImporterEquipe((data, t) => importerRecoOptimizer(deck, data, t))}'), 'board → carte : même action et seul deck transmis');
   ok(montage('src/App.tsx', 'OutilsPage').includes('recommandations={recos.state.recos}'), 'App → outils : recommandations courantes');
   ok(montage('src/pages/OutilsPage.tsx', 'OptimizerSection').includes('recommandations={recommandations}'), 'outils → Optimizer : recommandations relayées');
   const app = lire('src/App.tsx');

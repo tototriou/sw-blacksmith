@@ -23,12 +23,11 @@ import { printMonsterSummary } from './lib/loadMonster';
 import { resolveArtifacts, toutVerifierDeLaRecette } from './lib/recipeToSearchParams';
 import { chargerRecette } from './lib/chargerRecette';
 import { activeSets, artifactSubName } from '../src/lib/effects';
+import { jeuFr } from '../src/i18n/jeu/fr';
 import { loadMonsterSkills } from './lib/skillsData';
 import { loadMonstersList } from './lib/monstersData';
 import {
-  CIBLE_DEGATS_LABELS,
   DEFAULT_DAMAGE_SETUP,
-  SUMMONER_SKILLS_LABELS,
   bonusDegatsConditionnelActif,
   bonusPassifActif,
   cibleDegatsRetenue,
@@ -75,6 +74,7 @@ import { etatReliqueDuBuild } from '../src/lib/relicQueue';
 import { cleBuild } from '../src/lib/artifactQueue';
 import { LIGNES_IMPRIMEES, classerCommeLEcran } from './lib/classementCli';
 import { autoExcludedRuneIds, resolveExcludedRuneIds } from '../src/lib/optimizerExclusion';
+import { fr } from '../src/i18n/fr';
 
 const [exportPath, recipePath] = process.argv.slice(2).filter((a) => !a.startsWith('--'));
 const rtaMode = process.argv.includes('--rta');
@@ -206,21 +206,21 @@ if (recipe.objective === 'degats_reels') {
     const scenarioEntreCoups = s.scenariosEffetsEntreCoups?.[profile.skillCom2usId];
     // Blade Dancers : le cran d'ignore DEF RETENU par le
     // calcul, dans la MÊME phrase que le résumé du sort à l'écran.
-    const ignoreDefRetenu = resumeIgnoreDefRetenu(profile, s);
+    const ignoreDefRetenu = resumeIgnoreDefRetenu(profile, s, fr);
     // Séquence curée (Blade Surge) : la séquence ENTIÈRE et la cible calculée,
     // avec les textes mêmes de l'écran (`resumeSequenceDeCoups`,
-    // `CIBLE_DEGATS_LABELS`) — `resolvedHits` et `aoe` ne décrivent que la
+    // `degats.cibles`) — `resolvedHits` et `aoe` ne décrivent que la
     // donnée, jamais la séquence.
     const sequence = profile.sequenceDeCoups;
     const cibleCalculee = cibleSecondairePriseEnCharge(profile.skillCom2usId)
-      ? CIBLE_DEGATS_LABELS.find((c) => c.key === cibleDegatsRetenue(profile, s))?.label
+      ? fr.degats.cibles[cibleDegatsRetenue(profile, s)]
       : undefined;
     // Même règle que le résumé de l'écran (`coupsAffichesDuSort`) : sans build
     // ici, un coup en plus déduit de l'ATQ du build s'annonce en plage.
     const coupsAffiches = coupsAffichesDuSort(profile, s);
-    const mentionConjointe = mentionAttaqueConjointe(profile, s);
+    const mentionConjointe = mentionAttaqueConjointe(profile, s, fr);
     console.log(
-      `Dégâts réels : sort « ${profile.nom} » (S${profile.slot}, ${sequence ? resumeSequenceDeCoups(sequence) : `${coupsAffiches.dependDuBuild ? `${coupsAffiches.hits} à ${coupsAffiches.max}` : coupsAffiches.hits} coup(s)`}` +
+      `Dégâts réels : sort « ${profile.nom} » (S${profile.slot}, ${sequence ? resumeSequenceDeCoups(sequence, fr) : `${coupsAffiches.dependDuBuild ? `${coupsAffiches.hits} à ${coupsAffiches.max}` : coupsAffiches.hits} coup(s)`}` +
         `${profile.hitsRange ? ` [variable ${profile.hitsRange.min}-${profile.hitsRange.max}${coupsAffiches.dependDuBuild ? ', selon l\'ATQ du build' : ''}]` : ''}` +
         `${!sequence && profile.aoe ? ', zone' : ''}${profile.ignoreDef ? ', ignore la DEF' : ''}` +
         `${ignoreDefRetenu ? `, ${ignoreDefRetenu.charAt(0).toLowerCase()}${ignoreDefRetenu.slice(1)}` : ''}` +
@@ -242,7 +242,7 @@ if (recipe.objective === 'degats_reels') {
         `${bonusConditionnel && bonusDegatsConditionnelActif(bonusConditionnel, s) ? ` — ${bonusConditionnel.nom.replace(/\s*\(Passive\)\s*$/i, '')} (+${bonusConditionnel.pct}%)` : ''} — ` +
         // ⚠️ `?? DEFAULT` : une recette exportée AVANT ce champ n'en a pas.
         // L'élément vient du monstre CHARGÉ, jamais de la recette.
-        `comp. invocateur ${SUMMONER_SKILLS_LABELS.find(v => v.key === s.summonerSkills)?.label ?? SUMMONER_SKILLS_LABELS[0].label} (${monsterElement ?? 'élément inconnu'}) — ` +
+        `comp. invocateur ${fr.degats.contenusInvocateur[s.summonerSkills ?? 'normal']} (${monsterElement ?? 'élément inconnu'}) — ` +
         `stats privilégiées [${damageRelevantStats(
           profile,
           passifs,
@@ -321,7 +321,7 @@ if (recipe.objective === 'degats_reels') {
     // paire retenue soit plus faible qu'attendu, ou qu'il n'y en ait aucune.
     // Le taire ferait chercher la cause ailleurs.
     for (const l of recipe.lignesVerrouillees ?? []) {
-      if (l.min > 0) console.log(`Ligne verrouillée : ${artifactSubName(l.code)} ≥ ${l.min} (cumulé sur la paire).`);
+      if (l.min > 0) console.log(`Ligne verrouillée : ${artifactSubName(l.code, jeuFr)} ≥ ${l.min} (cumulé sur la paire).`);
     }
     if (artefacts.ampliVitPct > 0)
       console.log(`Effet aug. VIT (artéfacts) : +${artefacts.ampliVitPct} % — amplifie le buff VIT s'il est actif.`);

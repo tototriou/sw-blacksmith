@@ -4,6 +4,7 @@ import { egal, ok, titre } from './outils';
 import { DEFAULT_DAMAGE_SETUP, type DamageSetup } from '../src/lib/damage';
 import { DAMAGE_SETUP_CLASSIFICATION, damageSetupApresChangementMonstre } from '../src/lib/damageSetupTransition';
 import { buildOptimizerRecipe, parseOptimizerRecipe } from '../src/lib/optimizerRecipe';
+import { fr } from '../src/i18n/fr';
 
 export default function testOptimizerDamageTransitions() {
   titre('Optimizer · contexte de dégâts aux cinq transitions');
@@ -40,7 +41,7 @@ export default function testOptimizerDamageTransitions() {
     excludeUsedRunes: false, excludeUsedScope: 'box', excludedSelectors: [],
     ignoreArtifacts: false, artifactMainByKind: {},
   });
-  const relue = parseOptimizerRecipe(JSON.stringify(recette));
+  const relue = parseOptimizerRecipe(JSON.stringify(recette), fr);
   ok(!!relue.recipe, 'recette : import de production accepté');
   egal(relue.recipe!.damageSetup, avant, 'recette : valeurs transportées intactes');
   egal(DEFAULT_DAMAGE_SETUP.enemyDef, 1500, 'compte : retour au défaut complet');

@@ -21,6 +21,7 @@ import {
 } from '../src/lib/artifactQueue';
 import { StatRow } from '../src/lib/stats';
 import { egal, ok, titre } from './outils';
+import { fr } from '../src/i18n/fr';
 
 const PAGE = 20;
 const OPTIONS: OptionsDeClassement = { aurasPropresDe: aurasPropresParRunes(new Map()) };
@@ -313,7 +314,7 @@ export function testCompositionDePage() {
 
   const carte = readFileSync('src/components/outils/BuildCandidateCard.tsx', 'utf8').replace(/\r\n/g, '\n');
   const place = carte.slice(carte.indexOf('export function PlaceEnVerification'), carte.indexOf('export function useHauteurDesCartes'));
-  ok(place.length > 0 && />Vérification…</.test(place), 'place en attente : « Vérification… »');
+  ok(place.length > 0 && />\{verification\}</.test(place) && fr.optimizer.resultats.verification === 'Vérification…', 'place en attente : « Vérification… »');
   ok(!/\b(red|green|blue|amber|emerald|sky|slate|gray|zinc|neutral|stone|orange|yellow|lime|teal|cyan|indigo|violet|purple|fuchsia|pink|rose)-\d{2,3}\b/.test(place),
     'place en attente : aucune couleur Tailwind native, des tokens seulement');
   ok(/data-carte-resultat/.test(carte), 'carte : marquée pour la mesure de sa hauteur (place réservée à la même hauteur)');

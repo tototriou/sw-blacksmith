@@ -2,6 +2,7 @@ import { Fragment, memo, type ReactNode } from 'react';
 import { motion } from 'framer-motion';
 import { Monster } from '../types';
 import { libelleCollab } from '../lib/collabPairs';
+import { useTraduction } from '../hooks/useLangue';
 import MonsterAvatar from './MonsterAvatar';
 
 // ⚠️ **Au-delà de ce nombre de cartes, l'animation de disposition est COUPÉE.**
@@ -85,6 +86,7 @@ const MonsterCard = memo(function MonsterCard({
   // tout, le survol passe en CSS.
   anime?: boolean;
 }) {
+  const textes = useTraduction();
   // Poignées communes aux deux rendus. ⚠️ `role="button"` porté par l'élément
   // lui-même plutôt qu'un `<button>` autour : envelopper casserait l'animation
   // de disposition (`layout`), qui mesure CET élément. Le clavier est rétabli à
@@ -102,7 +104,7 @@ const MonsterCard = memo(function MonsterCard({
     role: onOpen ? ('button' as const) : undefined,
     tabIndex: onOpen ? 0 : undefined,
     title: onOpen
-      ? `Voir la fiche de ${jumeau ? libelleCollab(monster.name, jumeau.name) : monster.name}`
+      ? textes.controles.voirFiche(jumeau ? libelleCollab(monster.name, jumeau.name) : monster.name)
       : undefined,
   };
 

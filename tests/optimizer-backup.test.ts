@@ -10,6 +10,7 @@ import { baseCompleteCriteres } from '../src/lib/criteresOptimizer';
 import { composerSession, ecrireSession, lireSession, CLES_SESSION } from '../src/lib/session';
 import { lireSession as lireAncienneSession } from './fixtures/lecteur-session-v1';
 import { egal, faussLocalStorage, ok, titre } from './outils';
+import { fr } from '../src/i18n/fr';
 
 export function donneesPointOptimizer(): StockageOptimizer & { activeListId: string | null } {
   const a = { source: 'box' as const, unitKey: '11' }, b = { source: 'box' as const, unitKey: '22' };
@@ -29,16 +30,16 @@ export function testOptimizerPointAllerRetourComplet() {
   titre('Point Optimizer · photo détachée et relecture complète');
   const s = donneesPointOptimizer(), selection = s.members[0];
   const p = photographierPointOptimizer(s, selection, new Date('2026-10-09T12:00:00Z'));
-  const relu = lirePointOptimizer(JSON.stringify(p));
+  const relu = lirePointOptimizer(JSON.stringify(p), fr);
   ok(!!relu.point, 'point valide relu');
-  const m = lireMembresOptimizer(relu.point!.membres);
+  const m = lireMembresOptimizer(relu.point!.membres, fr);
   for (const champ of ['identities', 'memories', 'teams', 'listContents', 'rejets'] as const)
     ok(isDeepStrictEqual(m[champ], s[champ]), `${champ} : aller-retour sans perte`);
   egal(relu.point!.historique, { lists: s.lists, members: s.members, validated: s.validated, activeListId: s.activeListId }, 'listes, membres, builds, artéfacts et sélection active');
   s.lists[0].name = 'Modifiée'; s.validated[0].artifactIds!.push(73); s.memories.values().next().value!.criteres.minStats.spd = 180;
   egal(p.historique.lists[0].name, 'Alpha', 'nom de la photo indépendant');
   egal(p.historique.validated[0].artifactIds, [71, 72], 'réservations de la photo indépendantes');
-  egal(lireMembresOptimizer(p.membres).memories.values().next().value?.criteres.minStats.spd, 230, 'mémoire de la photo indépendante');
+  egal(lireMembresOptimizer(p.membres, fr).memories.values().next().value?.criteres.minStats.spd, 230, 'mémoire de la photo indépendante');
 }
 
 export function testOptimizerPointMemoireMemeGeste() {
@@ -53,14 +54,14 @@ export function testOptimizerPointMemoireMemeGeste() {
   listes.writeMemory({ ...membre, com2usId: 10101 }, criteres, data);
   listes.sauvegarderPoint(membre, data);
   listes = h.render();
-  const point = listes.point!, memorise = lireMembresOptimizer(point.membres), cle = cleMemoireMembre(membre.listId, membre.selector);
+  const point = listes.point!, memorise = lireMembresOptimizer(point.membres, fr), cle = cleMemoireMembre(membre.listId, membre.selector);
   egal(listes.memories.get(cle)?.criteres.minStats.spd, 321, 'précondition : écriture de mémoire acceptée');
   egal(memorise.memories.get(cle)?.criteres.minStats.spd, 321, 'point : mémoire écrite avant la sauvegarde, sans rendu intermédiaire');
   ok(isDeepStrictEqual(memorise.memories, listes.memories), 'point : toutes les mémoires courantes photographiées');
   egal(point.historique.activeListId, 'a', 'point : liste active courante');
   egal(point.selection, membre, 'point : sélection conservée');
   listes.writeMemory({ ...membre, com2usId: 10101 }, { ...criteres, minStats: { spd: 444 } }, data);
-  egal(lireMembresOptimizer(point.membres).memories.get(cle)?.criteres.minStats.spd, 321, 'point détaché : une écriture suivante ne change pas la photo');
+  egal(lireMembresOptimizer(point.membres, fr).memories.get(cle)?.criteres.minStats.spd, 321, 'point détaché : une écriture suivante ne change pas la photo');
 }
 
 export function testOptimizerPointLectureDefensive() {
@@ -69,14 +70,14 @@ export function testOptimizerPointLectureDefensive() {
   for (const v of ['{', 'null', JSON.stringify({ ...p, version: 2 }), JSON.stringify({ ...p, date: 'inconnue' }),
     JSON.stringify({ ...p, historique: { ...p.historique, validated: [{ ...p.historique.validated[0], runeIds: ['1'] }] } }),
     JSON.stringify({ ...p, membres: '{' })]) {
-    const lu = lirePointOptimizer(v); ok(lu.point === null && lu.rapport.length > 0, 'photo abîmée refusée et dite');
+    const lu = lirePointOptimizer(v, fr); ok(lu.point === null && lu.rapport.length > 0, 'photo abîmée refusée et dite');
   }
   const ancien = { ...p, selection: undefined };
-  ok(lirePointOptimizer(JSON.stringify(ancien)).point?.selection === null, 'sélection absente tolérée');
+  ok(lirePointOptimizer(JSON.stringify(ancien), fr).point?.selection === null, 'sélection absente tolérée');
   const brut = JSON.stringify({ ...JSON.parse(p.membres), futur: { intact: true }, memories: [['invalide', {}]] });
-  const tolere = lirePointOptimizer(JSON.stringify({ ...p, membres: brut })).point!;
+  const tolere = lirePointOptimizer(JSON.stringify({ ...p, membres: brut }), fr).point!;
   egal(tolere.membres, brut, 'texte indépendant gardé avec champs futurs');
-  ok(lireMembresOptimizer(tolere.membres).rejets.memories.length > 0, 'entrée malformée conservée sans application');
+  ok(lireMembresOptimizer(tolere.membres, fr).rejets.memories.length > 0, 'entrée malformée conservée sans application');
 }
 
 export function testOptimizerPointSessionRelue() {
@@ -148,7 +149,7 @@ export function testOptimizerPointRepriseRattachement() {
   s.teams[0].members[0] = avant; s.teams[0].leader = avant;
   const point = photographierPointOptimizer(s, s.members[0], new Date('2026-10-09T12:00:00Z'));
   const compte = comptePoint(), runes = new Set([1, 2, 3, 4, 5]), arts = new Set([71]);
-  const r = preparerRepriseOptimizer(point, compte, runes, arts), build = r.stockage.validated[0];
+  const r = preparerRepriseOptimizer(point, compte, runes, arts, fr), build = r.stockage.validated[0];
   egal(r.stockage.members.length, 2, 'aucun membre retiré'); egal(r.stockage.validated.length, 1, 'aucun build retiré');
   egal(resolveExclusionEntry(r.selection!.selector, compte)?.monster.com2usId, 10101, 'sélection rattachée à la bonne espèce, autre occupant ignoré');
   egal(r.stockage.teams[0].leader, r.selection!.selector, 'leader et place en équipe suivent le membre');
@@ -158,9 +159,9 @@ export function testOptimizerPointRepriseRattachement() {
   egal([...otherValidatedArtifactIds(r.stockage.validated, 'a', null)], [71], 'artéfact disparu non réservé');
   ok(r.messages.some(m => m.includes('rattaché')) && r.messages.some(m => m.includes('1 artéfact(s) absent(s)')), 'rattachement et artéfact absent dits');
   ok(isDeepStrictEqual(r.stockage.rejets, s.rejets) && isDeepStrictEqual(r.stockage.listContents, s.listContents), 'rejets et contenus intacts');
-  const reimport = reverifierStockageOptimizer({ ...lireMembresOptimizer(point.membres), ...point.historique }, compte, runes, arts);
+  const reimport = reverifierStockageOptimizer({ ...lireMembresOptimizer(point.membres, fr), ...point.historique }, compte, runes, fr, arts);
   ok(isDeepStrictEqual(reimport.stockage, r.stockage), 'même calcul à la reprise et au réimport');
-  const retour = reverifierStockageOptimizer(r.stockage, compte, new Set([1, 2, 3, 4, 5, 6]), new Set([71, 72]));
+  const retour = reverifierStockageOptimizer(r.stockage, compte, new Set([1, 2, 3, 4, 5, 6]), fr, new Set([71, 72]));
   ok(!retour.stockage.validated[0].runesManquantes && !retour.stockage.validated[0].artefactsManquants, 'pièces revenues : marques levées');
   egal([...otherValidatedArtifactIds(retour.stockage.validated, 'a', null)], [71, 72], 'pièces revenues : réservations rétablies');
   faussLocalStorage({ 'swblacksmith-optimizer-lists-v1': JSON.stringify({ ...r.stockage, activeListId: 'a' }) });
@@ -174,14 +175,14 @@ export function testOptimizerPointRepriseRattachement() {
   egal(listes.validated[0].artifactIds, [], 'paire rendue : aucune réservation restante');
   ok(!listes.validated[0].artefactsManquants, 'paire rendue : aucune ancienne marque restante');
   const app = readFileSync('src/App.tsx', 'utf8');
-  ok(app.includes('data, runeIds, new Set(artifacts.map(a => a.id))'), 'réimport branché sur l’inventaire complet des artéfacts');
+  ok(app.includes('data, runeIds, textes, new Set(artifacts.map(a => a.id))'), 'réimport branché sur l’inventaire complet des artéfacts');
 }
 
 export function testOptimizerPointRepriseCompteVide() {
   titre('Point Optimizer · compte vide, reprise sans jugement');
   const s = donneesPointOptimizer(), data = comptePoint(); data.box = [];
   const point = photographierPointOptimizer(s, s.members[0], new Date('2026-10-09T12:00:00Z'));
-  const r = preparerRepriseOptimizer(point, data, new Set(), new Set());
+  const r = preparerRepriseOptimizer(point, data, new Set(), new Set(), fr);
   ok(r.rapport.compteVide, 'RTA et siège seuls ne permettent pas de juger');
   egal(r.stockage.members, s.members, 'références inchangées'); egal(r.stockage.validated, s.validated, 'builds et marques inchangés');
   egal(r.brutMembres, point.membres, 'texte et rejets conservés sans réécriture');

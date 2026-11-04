@@ -33,7 +33,9 @@ import { meilleuresPairesArtefacts, nombreDePaires, type ArtifactSearchParams, t
 import { artifactDamageProfile, aurasPropresDesRunes, computeTotalDamage, defaultDamageSkill, monsterDamageSkills, monsterOffensivePassives, resumeSequenceDeCoups, DEFAULT_DAMAGE_SETUP, type DamageSetup, type SkillDamageProfile } from '../src/lib/damage';
 import { computeStats } from '../src/lib/stats';
 import { artifactSubName } from '../src/lib/effects';
+import { jeuFr } from '../src/i18n/jeu/fr';
 import { ARTIFACT_KINDS, type ArtifactDetail, type ArtifactKind, type ElementKey } from '../src/types';
+import { fr } from '../src/i18n/fr';
 
 const libres = process.argv.slice(2).filter((a) => !a.startsWith('--'));
 const [exportPath, monsterName] = libres;
@@ -114,7 +116,8 @@ const params: ArtifactSearchParams = {
   evaluer,
 };
 
-const parSorte = ARTIFACT_KINDS.map(({ key, label }) => {
+const parSorte = ARTIFACT_KINDS.map(({ key }) => {
+  const label = jeuFr.sortesArtefact[key];
   const n = loaded.allArtifacts.filter((a) => a.kind === key).length;
   return `${label} : ${n} en inventaire`;
 }).join(' · ');
@@ -123,7 +126,7 @@ const parSorte = ARTIFACT_KINDS.map(({ key, label }) => {
 // et `aoe` ne décrivent que la donnée, jamais la séquence.
 const sequence = sort.sequenceDeCoups;
 console.log(
-  `\nSort : ${sort.nom} (slot ${sort.slot}, ${sequence ? resumeSequenceDeCoups(sequence) : `${sort.hits} coup(s)`}` +
+  `\nSort : ${sort.nom} (slot ${sort.slot}, ${sequence ? resumeSequenceDeCoups(sequence, fr) : `${sort.hits} coup(s)`}` +
     `${!sequence && sort.aoe ? ', zone' : ''}${sort.bombe ? ', BOMBE' : ''})`
 );
 console.log(`Cible : ${setup.enemyDef} DEF · élément visé : ${setup.enemyElement ?? 'ignoré'} · critique : ${setup.critMode}`);
@@ -137,7 +140,7 @@ const ms = Date.now() - t0;
 const decrire = (a: ArtifactDetail | null, kind: ArtifactKind) => {
   if (!a) return '(aucun)';
   const quoi = a.intangible ? 'INTANGIBLE' : kind === 'element' ? (a.element ?? '?') : (a.archetype ?? '?');
-  const lignes = a.subs.map((s) => `${artifactSubName(s.code)} ${s.value}`).join(', ');
+  const lignes = a.subs.map((s) => `${artifactSubName(s.code, jeuFr)} ${s.value}`).join(', ');
   return `${quoi} — principale ${a.main.code}/${a.main.value}${lignes ? ` — ${lignes}` : ''}`;
 };
 

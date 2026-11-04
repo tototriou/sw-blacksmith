@@ -4,6 +4,7 @@ import { STATS_AVEC_BASE, StatRow } from '../lib/stats';
 import { CAPPED_STATS, type StatKey } from '../lib/effects';
 import { displayedTotal, useOvercapDisplay } from '../hooks/useOvercapDisplay';
 import { ZoneCliquable } from '../ui';
+import { useTraduction } from '../hooks/useLangue';
 
 // Nombres compacts (39051 → « 39 051 »).
 function fmt(n: number): string {
@@ -25,9 +26,10 @@ function fmt(n: number): string {
 // de l'Optimizer au bureau, décision de l'utilisateur : une carte de plus par
 // rangée) : 174 px et 6 px de rembourrage latéral au lieu de 12. La place
 // retirée est l'écart entre la colonne des libellés et celle des stats de
-// base, que la table répartit : la table garde 160 px, pour 157 px de contenu
-// au pire cas mesuré (base à six chiffres comme les 19 755 PV, la plus haute
-// des données, et bonus « +40 000 ») : rien n'est tronqué ni replié. Toujours
+// base, que la table répartit : la table garde 160 px, et le pire cas mesuré
+// (base à six chiffres comme les 19 755 PV, la plus haute des données, bonus
+// « +40 000 », libellé « Dgts critiq. ») y tient à 11 px : rien n'est tronqué
+// ni replié. Toujours
 // FIXE : la bascule ne déplace rien. Au doigt, la largeur et le rembourrage
 // habituels.
 const PANEL_WIDTH = 'w-[200px] p-3';
@@ -39,8 +41,10 @@ interface Props {
   // elle ne correspond plus à l'équipement. `null`/absent = pas de cible.
   spdCible?: number | null;
   // ⚠️ **Lignes resserrées** (cartes de résultat de l'Optimizer au bureau,
-  // décision de l'utilisateur) : pas de 27 à 22 px, taille du texte
-  // inchangée — interligne `snug` et 2 px de rembourrage au lieu de 4.
+  // décision de l'utilisateur) : pas de 27 à 22 px — interligne `snug` et
+  // 2 px de rembourrage au lieu de 4, et le texte d'un cran plus petit
+  // (`micro`) : avec les noms du jeu (« Dgts critiq. »), la table de 160 px
+  // ne tient le pire cas qu'à 11 px.
   serre?: boolean;
   // La ligne de la stat qui TRIE les résultats de l'Optimizer, mise en avant
   // (fond d'accent léger, libellé et base en accent) : on compare vingt cartes
@@ -55,6 +59,8 @@ const PAS_NORMAL = 'py-1 compact:py-0.5';
 const PAS_SERRE = 'py-0.5 leading-snug';
 
 export default function StatPanel({ stats, spdCible = null, serre = false, ligneMiseEnAvant = null }: Props) {
+  const textes = useTraduction();
+  const jeu = textes.jeu;
   const pasLigne = serre ? PAS_SERRE : PAS_NORMAL;
   // ⚠️ État LOCAL à l'instance : chaque panneau (fiche pleine page, ou
   // chacune des cartes de résultat de l'Optimizer) bascule indépendamment
@@ -70,7 +76,7 @@ export default function StatPanel({ stats, spdCible = null, serre = false, ligne
     <ZoneCliquable
       imbrique
       onClick={() => setShowTotal((v) => !v)}
-      title={showTotal ? 'Afficher base + bonus' : 'Afficher le total'}
+      title={showTotal ? textes.pieces.afficherBaseBonus : textes.pieces.afficherTotal}
       aria-pressed={showTotal}
       // ⚠️ Rembourrage réduit au doigt : le panneau porte HUIT lignes, et
       // chaque pixel de marge s'y multiplie par huit.
@@ -83,7 +89,7 @@ export default function StatPanel({ stats, spdCible = null, serre = false, ligne
           Le texte descend à 11 px et l'interligne de moitié — le nom du monstre
           reste au-dessus, ce qui remet le panneau à sa place dans la hiérarchie.
           À la souris, rien ne change : la place ne manque pas. */}
-      <table className="w-full text-xs compact:text-micro">
+      <table className={`w-full ${serre ? 'text-micro' : 'text-xs'} compact:text-micro`}>
         <tbody>
           {stats.map((row) => {
             // ⚠️ Le plafond de 100 % (Taux Crit/RES/Précision) n'a de sens à
@@ -95,7 +101,7 @@ export default function StatPanel({ stats, spdCible = null, serre = false, ligne
             return (
               <tr key={row.key} className={`border-b border-border/40 last:border-0 ${enAvant ? 'bg-accent-soft' : ''}`}
                 data-ligne-mise-en-avant={enAvant ? '' : undefined}>
-                <td className={`${pasLigne} pr-2 ${enAvant ? 'text-accent' : 'text-ink-dim'}`}>{row.label}</td>
+                <td className={`${pasLigne} pr-2 ${enAvant ? 'text-accent' : 'text-ink-dim'}`}>{jeu.stats[row.key]}</td>
                 {!showTotal && !STATS_AVEC_BASE.has(row.key) ? (
                   // ⚠️ Taux Crit, Dmg Crit, RES et Précision s'affichent
                   // TOUJOURS en total (`STATS_AVEC_BASE`, décision de
@@ -130,7 +136,7 @@ export default function StatPanel({ stats, spdCible = null, serre = false, ligne
                         <span
                           // Rouge d'ÉTAT, celui qu'annonce `DesyncBadge` (RTA).
                           className="ml-1.5 inline-flex items-center gap-0.5 text-bad"
-                          title={`Il faut ${fmt(spdCible)} de SPD sur les runes pour coller à l'ordre de tour`}
+                          title={textes.pieces.spdCible(fmt(spdCible))}
                         >
                           <ArrowRight size={11} className="flex-none" />
                           {fmt(spdCible)}

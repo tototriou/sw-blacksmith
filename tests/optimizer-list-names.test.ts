@@ -2,12 +2,16 @@ import { nomNouvelleListeOptimizer } from '../src/lib/optimizerListNames';
 import { monterListesOptimizer } from './optimizer-lists-harness';
 import { faussLocalStorage, egal, titre } from './outils';
 import { setPersistence } from '../src/hooks/usePersistence';
+import { fr } from '../src/i18n/fr';
+import { en } from '../src/i18n/en';
 
 export function testOptimizerCreationNomParDefaut() {
   titre('Optimizer · nom de création vide et premier numéro libre');
-  egal(nomNouvelleListeOptimizer([]), 'Liste 1', 'aucune liste : premier numéro');
+  const nom = fr.optimizer.listes.nomParDefaut;
+  egal(nomNouvelleListeOptimizer([], nom), 'Liste 1', 'aucune liste : premier numéro');
+  egal(nomNouvelleListeOptimizer([], en.optimizer.listes.nomParDefaut), 'List 1', 'en anglais : « List 1 »');
   const existantes = ['Liste 1', 'Liste 3', 'Autre', 'Liste 01'].map((name, i) => ({ id: String(i), name }));
-  egal(nomNouvelleListeOptimizer(existantes), 'Liste 2', 'premier trou, sans compter les noms libres');
+  egal(nomNouvelleListeOptimizer(existantes, nom), 'Liste 2', 'premier trou, sans compter les noms libres');
   faussLocalStorage({ 'swblacksmith-optimizer-lists-v1': JSON.stringify({ lists: existantes, members: [], validated: [], activeListId: null }) });
   setPersistence(true);
   try {

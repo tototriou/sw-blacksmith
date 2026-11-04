@@ -1,6 +1,7 @@
 import { ExternalLink } from 'lucide-react';
 import { LogoLinux, LogoWindows } from '../components/IconesSystemes';
 import { RELEASES, libelleVersion } from '../data/releases';
+import { useTraduction } from '../hooks/useLangue';
 import { DEPOT, TELECHARGEMENTS } from '../lib/bureau';
 import { NOM_APP } from '../marque';
 import { Bouton } from '../ui';
@@ -14,28 +15,24 @@ import { Bouton } from '../ui';
 // page de la release, où il faudrait le chercher parmi les fichiers de la
 // mise à jour. Pas de signature : la phrase dit comment passer
 // l'avertissement de Windows, avec SES libellés.
-// ⚠️ **Au téléphone, sans boutons** : ni un `.exe` ni une AppImage ne s'y
+// Linux : le bouton donne le `.deb` (Debian, Ubuntu et dérivées) ; l'AppImage,
+// pour les autres distributions, est un lien de la ligne d'en dessous.
+// ⚠️ **Au téléphone, sans boutons** : ni un `.exe` ni un paquet Linux ne s'y
 // installent (`lg:`, deux formats, deux contenus).
 
-const ATOUTS: { titre: string; texte: string }[] = [
-  { titre: 'Sa propre fenêtre', texte: 'Hors du navigateur, à la taille que tu lui donnes, lancée comme n\'importe quel logiciel.' },
-  { titre: 'La mise à jour proposée', texte: "À chaque nouvelle version, l'application te propose de se mettre à jour. C'est toi qui décides quand." },
-  { titre: '100 % local', texte: "Comme le site : rien n'est envoyé, tout reste sur ta machine." },
-];
-
 export default function TelechargerPage() {
+  const t = useTraduction();
+  const tt = t.telecharger;
   // La version que télécharge `releases/latest` : la dernière PUBLIÉE (une
   // version en préparation est en tête du journal sans être en ligne).
   const derniere = RELEASES.find((r) => r.version !== null) ?? RELEASES[0];
   return (
     <div className="mx-auto max-w-[760px]">
-      <h1 className="font-display font-black text-[clamp(28px,4vw,42px)] text-ink mb-2">Télécharger</h1>
-      <p className="text-ink-dim text-sm leading-relaxed mb-6">
-        {`${NOM_APP} existe en application de bureau pour Windows et Linux : la même boîte à outils, dans sa propre fenêtre.`}
-      </p>
+      <h1 className="font-display font-black text-[clamp(28px,4vw,42px)] text-ink mb-2">{tt.titre}</h1>
+      <p className="text-ink-dim text-sm leading-relaxed mb-6">{tt.intro(NOM_APP)}</p>
 
       <ul className="mb-8 grid gap-3 sm:grid-cols-3">
-        {ATOUTS.map((a) => (
+        {tt.atouts.map((a) => (
           <li key={a.titre} className="rounded-xl border border-border-soft bg-panel px-4 py-3">
             <p className="text-sm font-semibold text-ink">{a.titre}</p>
             <p className="mt-1 text-xs leading-relaxed text-ink-dim">{a.texte}</p>
@@ -51,34 +48,37 @@ export default function TelechargerPage() {
             fond="plein"
             href={TELECHARGEMENTS.windows}
             icone={<LogoWindows size={15} />}
-            libelle="Télécharger pour Windows"
+            libelle={tt.windows}
           />
           <Bouton
             ton="accent"
             fond="plein"
             href={TELECHARGEMENTS.linux}
             icone={<LogoLinux size={15} />}
-            libelle="Télécharger pour Linux"
+            libelle={tt.linux}
           />
         </div>
-        <p className="mt-3 max-w-xl text-xs leading-relaxed text-ink-dim">
-          Windows peut afficher « Windows a protégé votre ordinateur » : clique sur « Informations
-          complémentaires », puis sur « Exécuter quand même ».
+        <p className="mt-3 max-w-xl text-xs leading-relaxed text-ink-dim">{tt.avertissementWindows}</p>
+        <p className="mt-1.5 max-w-xl text-xs leading-relaxed text-ink-dim">
+          {tt.paquetLinux}{' '}
+          <a href={TELECHARGEMENTS.linuxAppImage} className="text-accent hoverable:text-ink transition">
+            {tt.appImage}
+          </a>
         </p>
       </div>
 
       {/* Au téléphone : rien à installer ici. */}
-      <p className="text-sm text-ink lg:hidden">À installer depuis un ordinateur Windows ou Linux.</p>
+      <p className="text-sm text-ink lg:hidden">{tt.auTelephone}</p>
 
       <p className="mt-6 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink-dim">
-        <span>{`Version proposée : ${libelleVersion(derniere.version)}`}</span>
+        <span>{tt.versionProposee(libelleVersion(derniere.version, t.nouveautes.enPreparation))}</span>
         <a
           href={`${DEPOT}/releases`}
           target="_blank"
           rel="noreferrer"
           className="inline-flex items-center gap-1 text-accent hoverable:text-ink transition"
         >
-          Toutes les versions sur GitHub <ExternalLink size={12} />
+          {tt.toutesLesVersions} <ExternalLink size={12} />
         </a>
       </p>
     </div>

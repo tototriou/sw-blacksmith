@@ -2,6 +2,7 @@
 // Aligné sur sw-exporter (app/mapping.js) et vérifié sur des exports réels.
 
 import { ArtifactKind, EffectLine, RelicUnique, RuneDetail } from '../types';
+import type { LexiqueJeu } from '../i18n/jeu';
 
 export type StatKey = 'hp' | 'atk' | 'def' | 'spd' | 'cr' | 'cd' | 'res' | 'acc';
 
@@ -20,103 +21,67 @@ export function isAncient(rune: { rank: number }): boolean {
 }
 
 // Effet de rune (pri_eff / prefix_eff / sec_eff) → stat visée + affichage.
+// ⚠️ Pas de libellé ici : il vient du lexique du jeu (src/i18n/jeu/), dans la
+// langue affichée — `libelleEffetRune` (ligne d'une rune) et `choixEffetRune`
+// (filtre, sélecteur).
 interface RuneEff {
-  label: string; // libellé court (colonnes de stats)
   stat: StatKey;
   pct: boolean; // true → valeur en % qui s'applique à la base (PV/ATQ/DEF)
   suffix: string; // suffixe d'affichage ('%' ou '')
 }
 
 export const RUNE_EFFECT: Record<number, RuneEff> = {
-  1: { label: 'PV', stat: 'hp', pct: false, suffix: '' },
-  2: { label: 'PV%', stat: 'hp', pct: true, suffix: '%' },
-  3: { label: 'ATQ', stat: 'atk', pct: false, suffix: '' },
-  4: { label: 'ATQ%', stat: 'atk', pct: true, suffix: '%' },
-  5: { label: 'DEF', stat: 'def', pct: false, suffix: '' },
-  6: { label: 'DEF%', stat: 'def', pct: true, suffix: '%' },
-  8: { label: 'VIT', stat: 'spd', pct: false, suffix: '' },
-  9: { label: 'Taux Crit', stat: 'cr', pct: false, suffix: '%' },
-  10: { label: 'Dmg Crit', stat: 'cd', pct: false, suffix: '%' },
-  11: { label: 'RES', stat: 'res', pct: false, suffix: '%' },
-  12: { label: 'Précision', stat: 'acc', pct: false, suffix: '%' },
+  1: { stat: 'hp', pct: false, suffix: '' },
+  2: { stat: 'hp', pct: true, suffix: '%' },
+  3: { stat: 'atk', pct: false, suffix: '' },
+  4: { stat: 'atk', pct: true, suffix: '%' },
+  5: { stat: 'def', pct: false, suffix: '' },
+  6: { stat: 'def', pct: true, suffix: '%' },
+  8: { stat: 'spd', pct: false, suffix: '' },
+  9: { stat: 'cr', pct: false, suffix: '%' },
+  10: { stat: 'cd', pct: false, suffix: '%' },
+  11: { stat: 'res', pct: false, suffix: '%' },
+  12: { stat: 'acc', pct: false, suffix: '%' },
 };
 
-// Stat principale d'artéfact (pri_effect) : PV / ATQ / DEF plats.
-export const ARTIFACT_MAIN: Record<number, { label: string; stat: StatKey }> = {
-  100: { label: 'PV', stat: 'hp' },
-  101: { label: 'ATQ', stat: 'atk' },
-  102: { label: 'DEF', stat: 'def' },
+// Le libellé d'un effet de rune sur une LIGNE de rune ou une colonne : la stat,
+// suivie de « % » pour un pourcentage de PV/ATQ/DEF (« PV% »).
+export function libelleEffetRune(code: number, j: LexiqueJeu): string {
+  const def = RUNE_EFFECT[code];
+  return def ? `${j.stats[def.stat]}${def.pct ? '%' : ''}` : `#${code}`;
+}
+
+// Le libellé d'un effet de rune dans un CHOIX (filtre, sélecteur), comme le
+// filtre du jeu : « PV + » (valeur fixe), « PV % ».
+export function choixEffetRune(code: number, j: LexiqueJeu): string {
+  return j.choixStat[code] ?? `#${code}`;
+}
+
+// Stat principale d'artéfact (pri_effect) : PV / ATQ / DEF plats. Le libellé :
+// `j.stats[stat]`.
+export const ARTIFACT_MAIN: Record<number, { stat: StatKey }> = {
+  100: { stat: 'hp' },
+  101: { stat: 'atk' },
+  102: { stat: 'def' },
 };
 
 // Substats d'artéfacts (sec_effects). Effets conditionnels/situationnels :
 // ils portent une valeur mais n'entrent pas dans les 8 stats de base.
 //
-// ⚠️ **Les libellés du JEU**, relevés sur la « Recherche détaillée de
-// sous-propriétés ». Ce sont ceux que le joueur lit dans son inventaire : une
-// reformulation, même plus claire à nos yeux, l'empêche de faire le
-// rapprochement (« Drain de vie » et non « Vol de vie », « Dgts supp. en prop.
-// de » et non « Dégâts add. par »). Même règle que Attribut/Type pour les
-// sortes d'artéfact — voir docs/02-app/compte/.
-export const ARTIFACT_SUB: Record<number, (v: number) => string> = {
-  200: (v) => `ATQ + selon PV perdus, jusqu'à +${v}%`,
-  201: (v) => `DEF + selon PV perdus, jusqu'à +${v}%`,
-  202: (v) => `VIT + selon PV perdus, jusqu'à +${v}%`,
-  203: (v) => `VIT sous effet d'incapacité +${v}%`,
-  204: (v) => `Effet renforcement ATQ +${v}%`,
-  205: (v) => `Effet renforcement DEF +${v}%`,
-  206: (v) => `Effet aug. VIT +${v}%`,
-  207: (v) => `Effet aug. taux CRIT +${v}%`,
-  208: (v) => `Dgts de contre-attaque +${v}%`,
-  209: (v) => `Dgts d'attaque conjointe +${v}%`,
-  210: (v) => `Dgts de bombe +${v}%`,
-  211: (v) => `Dgts de réflexion +${v}%`,
-  212: (v) => `Dgts de coup dévastateur +${v}%`,
-  213: (v) => `Dgts reçus sous incapacité -${v}%`,
-  214: (v) => `Dgts CRIT reçus -${v}%`,
-  215: (v) => `Drain de vie +${v}%`,
-  216: (v) => `PV à la résurrection +${v}%`,
-  217: (v) => `Barre d'action à la résurrection +${v}%`,
-  218: (v) => `Dgts supp. en prop. des PV : ${v}%`,
-  219: (v) => `Dgts supp. en prop. de ATQ : ${v}%`,
-  220: (v) => `Dgts supp. en prop. de DEF : ${v}%`,
-  221: (v) => `Dgts supp. en prop. de VIT : ${v}%`,
-  222: (v) => `D.CRIT+ selon bon état PV enn. +${v}%`,
-  223: (v) => `D.CRIT+ sel. mauv. étt PV enn. +${v}%`,
-  224: (v) => `D.CRIT+ comp cib uniq pdt tour +${v}%`,
-  225: (v) => `Dgts de contre-attaque/attaque conjointe +${v}%`,
-  226: (v) => `Effet renforcement ATQ/DEF +${v}%`,
-  300: (v) => `Aug. des dgts infl. au Feu +${v}%`,
-  301: (v) => `Aug. des dgts infl. à l'Eau +${v}%`,
-  302: (v) => `Aug. des dgts infl. au Vent +${v}%`,
-  303: (v) => `Aug. des dgts infl. à Lum. +${v}%`,
-  304: (v) => `Aug. dgts infl. aux Tén. +${v}%`,
-  305: (v) => `Réd. des dgts reçus du Feu -${v}%`,
-  306: (v) => `Réd. dgts reçus de l'Eau -${v}%`,
-  307: (v) => `Réd. dgts reçus du Vent -${v}%`,
-  308: (v) => `Réd. dgts reçus de la Lum. -${v}%`,
-  309: (v) => `Réd. dgts reçus des Tén. -${v}%`,
-  400: (v) => `[Comp.1] Aug. Dgts CRIT +${v}%`,
-  401: (v) => `[Comp.2] Aug. Dgts CRIT +${v}%`,
-  402: (v) => `[Comp.3] Aug. Dgts CRIT +${v}%`,
-  403: (v) => `[Comp.4] Aug. Dgts CRIT +${v}%`,
-  404: (v) => `[Comp.1] Aug. des soins +${v}%`,
-  405: (v) => `[Comp.2] Aug. des soins +${v}%`,
-  406: (v) => `[Comp.3] Aug. des soins +${v}%`,
-  407: (v) => `[Comp.1] Aug. Précision +${v}%`,
-  408: (v) => `[Comp.2] Aug. Précision +${v}%`,
-  409: (v) => `[Comp.3] Aug. Précision +${v}%`,
-  410: (v) => `Dgts CRIT [compétence 3/4] +${v}%`,
-  411: (v) => `Dgts CRIT 1re attaque +${v}%`,
-};
+// ⚠️ **Leurs libellés sont dans le lexique du jeu** (`sousProprietes`,
+// src/i18n/jeu/), dans chaque langue : ceux de l'inventaire du jeu, relevés sur
+// la « Recherche détaillée de sous-propriétés ». Une reformulation, même plus
+// claire à nos yeux, empêche le joueur de faire le rapprochement. Les fonctions
+// ci-dessous reçoivent le lexique (`j`) de la langue affichée.
 
 // Stat principale de relique (pri_effect) : PV% / ATQ% / DEF%.
 //
-// ⚠️ Le libellé ne porte PAS le « % » : la valeur, elle, s'écrit « +12% ». Le
-// jeu affiche « PV +12% » ; « PV% +12% » doublait le signe.
-export const RELIC_MAIN: Record<number, { label: string; stat: StatKey }> = {
-  100: { label: 'PV', stat: 'hp' },
-  101: { label: 'ATQ', stat: 'atk' },
-  102: { label: 'DEF', stat: 'def' },
+// ⚠️ Le libellé (`j.stats[stat]`) ne porte PAS le « % » : la valeur, elle,
+// s'écrit « +12% ». Le jeu affiche « PV +12% » ; « PV% +12% » doublait le signe.
+export const RELIC_MAIN: Record<number, { stat: StatKey }> = {
+  100: { stat: 'hp' },
+  101: { stat: 'atk' },
+  102: { stat: 'def' },
 };
 
 // Options du sélecteur « Relique — principale » — courtes comme celles de
@@ -124,11 +89,9 @@ export const RELIC_MAIN: Record<number, { label: string; stat: StatKey }> = {
 // la liste est déjà nommée « Principale », et « Comme équipée » garde la pièce
 // entière, ce que dit l'aide de la carte. Le « % » distingue la relique de
 // l'artéfact (plat) — même stat, sémantique différente.
-export const RELIC_MAIN_OPTIONS: { code: 100 | 101 | 102; label: string }[] = [
-  { code: 101, label: 'ATQ %' },
-  { code: 102, label: 'DEF %' },
-  { code: 100, label: 'PV %' },
-];
+export function optionsPrincipaleRelique(j: LexiqueJeu): { code: 100 | 101 | 102; label: string }[] {
+  return ([101, 102, 100] as const).map((code) => ({ code, label: `${j.stats[RELIC_MAIN[code].stat]} %` }));
+}
 
 // Rareté → libellé + couleur de texte + fond de bannière (dégradé sombre),
 // façon bannière du jeu (ex. Légendaire = orange sur bordeaux).
@@ -141,17 +104,13 @@ export const RELIC_MAIN_OPTIONS: { code: 100 | 101 | 102; label: string }[] = [
 //     illisible.
 // D'où `color` (bannière, fixe) et `ink` (texte, variable de thème). Les valeurs
 // claires vivent dans index.css. Voir docs/03-developpeur/interface/.
-// ⚠️ `court` : l'abréviation de la bannière, réservée aux tuiles TROP ÉTROITES
+// ⚠️ Le NOM d'un grade est dans le lexique du jeu (`nomGrade`, src/i18n/jeu/) :
+// le mot du jeu, et son abréviation (`court`) réservée aux tuiles TROP ÉTROITES
 // pour le mot entier — la liste de runes à deux colonnes sur téléphone, où
-// « LÉGENDAIRE » à lui seul mangeait la moitié de la largeur utile. Partout
-// ailleurs c'est `label`, le mot du jeu. Le mot entier reste en `title`.
-export const RARITY_META: Record<
-  number,
-  { label: string; court: string; color: string; bg: string; ink: string }
-> = {
+// « LÉGENDAIRE » à lui seul mangeait la moitié de la largeur utile. Le mot
+// entier reste en `title`.
+export const RARITY_META: Record<number, { color: string; bg: string; ink: string }> = {
   5: {
-    label: 'Légendaire',
-    court: 'Lég',
     color: '#f8b24a',
     bg: 'linear-gradient(180deg,#7a2a1c,#431310)',
     ink: 'rgb(var(--rarity-5))',
@@ -164,29 +123,21 @@ export const RARITY_META: Record<
   // éclaircie, #154c79 étant trop sombre pour rester lisible sur le panneau.
   // L'héroïque garde son violet : essayé en #691d42, le rendu ne passait pas.
   4: {
-    label: 'Héroïque',
-    court: 'Hér',
     color: '#c88cff',
     bg: 'linear-gradient(180deg,#3f2270,#241145)',
     ink: 'rgb(var(--rarity-4))',
   },
   3: {
-    label: 'Rare',
-    court: 'Rare',
     color: '#6fa3cf',
     bg: 'linear-gradient(180deg,#154c79,#0d2c47)',
     ink: 'rgb(var(--rarity-3))',
   },
   2: {
-    label: 'Magique',
-    court: 'Mag',
     color: '#7cf0a6',
     bg: 'linear-gradient(180deg,#1f5a39,#0f3121)',
     ink: 'rgb(var(--rarity-2))',
   },
   1: {
-    label: 'Commun',
-    court: 'Com',
     color: '#e6e6e6',
     bg: 'linear-gradient(180deg,#4a4a4a,#2a2a2a)',
     ink: 'rgb(var(--rarity-1))',
@@ -225,34 +176,34 @@ export const RARITY_FILTER: Record<number, string> = {
 export const runeSetIconFilter = (accentue: boolean) =>
   `sepia(1) saturate(3.2) hue-rotate(-12deg) brightness(${accentue ? 1.15 : 0.95}) contrast(1.05)`;
 
-// Bonus de set (nombre de pièces + effet), pour la ligne « X Set : … ».
-export const SET_BONUS: Record<string, { pieces: number; label: string }> = {
-  swift: { pieces: 4, label: 'VIT +25%' },
-  violent: { pieces: 4, label: 'Chance de tour supplémentaire 22%' },
-  despair: { pieces: 4, label: "Chance d'étourdissement 25%" },
-  rage: { pieces: 4, label: 'Dégâts critiques +40%' },
-  fatal: { pieces: 4, label: 'ATQ +35%' },
-  vampire: { pieces: 4, label: 'Vol de vie 35%' },
-  energy: { pieces: 2, label: 'PV +15%' },
-  guard: { pieces: 2, label: 'DEF +15%' },
-  blade: { pieces: 2, label: 'Taux critique +12%' },
-  focus: { pieces: 2, label: 'Précision +20%' },
-  endure: { pieces: 2, label: 'Résistance +20%' },
-  will: { pieces: 2, label: 'Immunité 1 tour' },
-  nemesis: { pieces: 2, label: "Barre d'action +4% par 7% de PV perdus" },
-  shield: { pieces: 2, label: 'Bouclier 3 tours (15% PV)' },
-  revenge: { pieces: 2, label: 'Chance de contre-attaque +15%' },
-  destroy: { pieces: 2, label: 'Détruit 4% des PV max ennemi' },
-  fight: { pieces: 2, label: 'ATQ alliés +8%' },
-  determination: { pieces: 2, label: 'DEF alliés +8%' },
-  enhance: { pieces: 2, label: 'PV alliés +8%' },
-  // ⚠️ +8 points, comme le calcul (`pointsAuraResPre`, damage.ts) : valeur
-  // curée (docs/02-app/degats-reels/ § Les valeurs de
-  // jeu — curées, avec leur source). Le libellé reste celui du calcul.
-  accuracy: { pieces: 2, label: 'Précision alliés +8%' },
-  tolerance: { pieces: 2, label: 'Résistance alliés +8%' },
-  seal: { pieces: 2, label: "Réduit les PV max de l'ennemi vaincu" },
-  intangible: { pieces: 1, label: 'Joker (complète un set)' },
+// Bonus de set : le nombre de pièces, pour la ligne « X Set : … ». L'effet
+// est dans le lexique du jeu (`bonusSets`, src/i18n/jeu/), dans chaque langue.
+// ⚠️ Précision et Tolérance y valent +8 points, comme le calcul
+// (`pointsAuraResPre`, damage.ts) : le libellé suit le calcul.
+export const SET_BONUS: Record<string, { pieces: number }> = {
+  swift: { pieces: 4 },
+  violent: { pieces: 4 },
+  despair: { pieces: 4 },
+  rage: { pieces: 4 },
+  fatal: { pieces: 4 },
+  vampire: { pieces: 4 },
+  energy: { pieces: 2 },
+  guard: { pieces: 2 },
+  blade: { pieces: 2 },
+  focus: { pieces: 2 },
+  endure: { pieces: 2 },
+  will: { pieces: 2 },
+  nemesis: { pieces: 2 },
+  shield: { pieces: 2 },
+  revenge: { pieces: 2 },
+  destroy: { pieces: 2 },
+  fight: { pieces: 2 },
+  determination: { pieces: 2 },
+  enhance: { pieces: 2 },
+  accuracy: { pieces: 2 },
+  tolerance: { pieces: 2 },
+  seal: { pieces: 2 },
+  intangible: { pieces: 1 },
 };
 
 /* --------------------------------------------------------------------------
@@ -423,17 +374,17 @@ export function runeEfficiency(rune: RuneDetail): number {
   return ((main + subsRatio(rune, SUBSTAT_MAX)) / 2.8) * 100;
 }
 
-// Affichage d'un effet de rune (« ATQ +160 », « VIT +23 », « Dmg Crit +7% »).
-export function formatRuneEffect(e: EffectLine): string {
+// Affichage d'un effet de rune (« ATQ +160 », « VIT +23 », « Dgts critiq. +7% »).
+export function formatRuneEffect(e: EffectLine, j: LexiqueJeu): string {
   const def = RUNE_EFFECT[e.code];
   if (!def) return `#${e.code} +${e.value}`;
-  return `${def.label} +${e.value}${def.suffix}`;
+  return `${libelleEffetRune(e.code, j)} +${e.value}${def.suffix}`;
 }
 
 // Affichage de la stat principale d'un artéfact (plat).
-export function formatArtifactMain(e: EffectLine): string {
+export function formatArtifactMain(e: EffectLine, j: LexiqueJeu): string {
   const def = ARTIFACT_MAIN[e.code];
-  return def ? `${def.label} +${e.value}` : `#${e.code} +${e.value}`;
+  return def ? `${j.stats[def.stat]} +${e.value}` : `#${e.code} +${e.value}`;
 }
 
 /**
@@ -456,8 +407,8 @@ export function valeurArtefactPropre(v: number): number {
 }
 
 // Affichage d'un substat d'artéfact (conditionnel).
-export function formatArtifactSub(e: EffectLine): string {
-  const fn = ARTIFACT_SUB[e.code];
+export function formatArtifactSub(e: EffectLine, j: LexiqueJeu): string {
+  const fn = j.sousProprietes[e.code];
   const v = valeurArtefactPropre(e.value);
   return fn ? fn(v) : `#${e.code} +${v}`;
 }
@@ -470,8 +421,8 @@ export function formatArtifactSub(e: EffectLine): string {
 // 9% de l'ATQ » la met au milieu, « Vol de vie +33% » à la fin). Une table
 // « libellé sans valeur » aurait dupliqué 48 lignes et divergé au premier
 // ajustement — même raison qu'`artifactSubLabel`.
-export function splitArtifactSub(e: EffectLine): { avant: string; valeur: string; apres: string } {
-  const texte = formatArtifactSub(e);
+export function splitArtifactSub(e: EffectLine, j: LexiqueJeu): { avant: string; valeur: string; apres: string } {
+  const texte = formatArtifactSub(e, j);
   // La valeur telle qu'elle a été écrite (décimales comprises : « 0.3 »),
   // avec le signe qui la précède et le % qui la suit s'il y en a un.
   //
@@ -501,13 +452,24 @@ export function splitArtifactSub(e: EffectLine): { avant: string; valeur: string
 // ⚠️ Le « +X% » est GARDÉ tel quel. Le retirer par expression régulière cassait
 // les libellés qui portent la valeur au milieu (« Dégâts add. par X% des PV »)
 // ou qui l'annoncent (« …, jusqu'à +X% » → « …, jusqu'à »).
-export function artifactSubLabel(code: number): string {
-  const fn = ARTIFACT_SUB[code];
+export function artifactSubLabel(code: number, j: LexiqueJeu): string {
+  const fn = j.sousProprietes[code];
   return fn ? fn('X' as unknown as number) : `#${code}`;
 }
 
+// Les codes de sous-propriété que l'app connaît (com2us : 200-226, 300-309,
+// 400-411), en ordre croissant, indépendants de la langue : leurs libellés
+// sont dans le lexique, qui doit porter exactement ces codes
+// (tests/lexique-jeu.test.ts).
+export const CODES_SOUS_PROPRIETES: readonly number[] = [
+  ...Array.from({ length: 27 }, (_, i) => 200 + i),
+  ...Array.from({ length: 10 }, (_, i) => 300 + i),
+  ...Array.from({ length: 12 }, (_, i) => 400 + i),
+];
+const EST_SOUS_PROPRIETE: ReadonlySet<number> = new Set(CODES_SOUS_PROPRIETES);
+
 export function isArtifactSub(code: number): boolean {
-  return Number.isFinite(code) && ARTIFACT_SUB[code] != null;
+  return Number.isFinite(code) && EST_SOUS_PROPRIETE.has(code);
 }
 
 // Le NOM seul de la propriété, sans sa valeur — pour un filtre, où « +X% »
@@ -517,13 +479,18 @@ export function isArtifactSub(code: number): boolean {
 // tantôt à la fin (« Vol de vie +X% »), tantôt annoncée par ce qui la précède
 // (« …, jusqu'à +X% »), tantôt AU MILIEU (« Dégâts add. par X% des PV » →
 // « Dégâts add. par des PV »). On nettoie donc les prépositions restées
-// orphelines, en plus de la ponctuation.
-export function artifactSubName(code: number): string {
-  const { avant, apres } = splitArtifactSub({ code, value: 'X' as unknown as number });
+// orphelines, en plus de la ponctuation — en français comme en anglais.
+export function artifactSubName(code: number, j: LexiqueJeu): string {
+  const { avant, apres } = splitArtifactSub({ code, value: 'X' as unknown as number }, j);
   return `${avant}${apres}`
     .replace(/,?\s*jusqu'à\s*$/i, '') // « …, jusqu'à » une fois la valeur ôtée
     // « par des PV » / « par de l'ATQ » : la valeur était entre les deux mots.
     .replace(/\bpar\s+(des?|du|de\s+l'|de\s+la)\s+/i, 'sur ')
+    // Anglais : « …up to » en fin, « up to as the enemy's… » au milieu, et
+    // « by of HP » quand la valeur était entre les deux mots.
+    .replace(/\s*\bup to\s*$/i, '')
+    .replace(/\bup to\s+(?=as\b)/i, '')
+    .replace(/\bby\s+of\b/i, 'by % of')
     .replace(/\s{2,}/g, ' ')
     .replace(/\s+([.,])/g, '$1')
     .replace(/[\s:]+$/, '')
@@ -588,18 +555,17 @@ export function isAutreSousPropriete(code: number): boolean {
 
 // Propriétés proposables pour une sorte d'artéfact, **rangées par catégorie**
 // (voir ci-dessus).
-export function artifactSubsFor(kind: ArtifactKind): { code: number; label: string }[] {
-  return Object.keys(ARTIFACT_SUB)
-    .map(Number)
+export function artifactSubsFor(kind: ArtifactKind, j: LexiqueJeu): { code: number; label: string }[] {
+  return [...CODES_SOUS_PROPRIETES]
     .filter((c) => artifactSubKinds(c).includes(kind))
     .sort((a, b) => artifactSubOrder(a) - artifactSubOrder(b))
-    .map((code) => ({ code, label: artifactSubLabel(code) }));
+    .map((code) => ({ code, label: artifactSubLabel(code, j) }));
 }
 
 // Affichage de la stat principale d'une relique (en %).
-export function formatRelicMain(e: EffectLine): string {
+export function formatRelicMain(e: EffectLine, j: LexiqueJeu): string {
   const def = RELIC_MAIN[e.code];
-  return def ? `${def.label} +${e.value}%` : `#${e.code} +${e.value}`;
+  return def ? `${j.stats[def.stat]} +${e.value}%` : `#${e.code} +${e.value}`;
 }
 
 // Limite de poses simultanées d'une relique sur le compte

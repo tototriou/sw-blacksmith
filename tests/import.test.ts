@@ -19,6 +19,7 @@ import {
 } from '../src/lib/importAccount';
 import { formatRelicUnique } from '../src/lib/effects';
 import { egal, exportReel, exportExemplairesMultiples, exportSynthetique, ignore, ok, titre } from './outils';
+import { fr } from '../src/i18n/fr';
 
 export default function testImport() {
   titre('Import de compte');
@@ -28,7 +29,7 @@ export default function testImport() {
 
   /* --- Contenu attendu du fichier d'exemple --------------------------- */
 
-  const box = parseAccountBox(objet);
+  const box = parseAccountBox(objet, fr);
   egal(box.monsters.length, 2, 'box : seules les unités montées 6★ sont retenues');
   egal(box.monsters[0].com2usId, 15105, 'box : com2usId lu depuis unit_master_id');
 
@@ -125,7 +126,7 @@ export default function testImport() {
     'relique : sans pourcentage connu, on retombe sur la formule plutôt que d’écrire une phrase trouée'
   );
 
-  const inv = parseAccountInventory(objet);
+  const inv = parseAccountInventory(objet, fr);
   egal(inv.runes.length, 8, 'inventaire : runes équipées ET en réserve, dédupliquées');
   egal(inv.artifacts.length, 3, 'inventaire : artéfacts équipés ET en réserve');
 
@@ -168,14 +169,14 @@ export default function testImport() {
   // `data.relics.length` (les trois autres pièces sont en inventaire seul).
   egal(inv.relicUsageById, { 7001: 1 }, 'inventaire : occupation comptée sur les unités, pas sur data.relics');
 
-  const rta = parseAccountJson(objet);
+  const rta = parseAccountJson(objet, fr);
   egal(rta.units!.length, 2, 'RTA : les favoris, et eux seuls');
 
-  const def = parseSiegeDefense(objet);
+  const def = parseSiegeDefense(objet, fr);
   egal(def.decks!.length, 2, 'siège défense : les decks configurés');
   egal(def.decks![0].slots.filter(Boolean).length, 2, 'siège défense : un slot vide reste vide');
 
-  const off = parseSiegeOffense(objet);
+  const off = parseSiegeOffense(objet, fr);
   egal(off.decks!.length, 1, 'siège attaque : seuls les decks de type 22');
   egal(off.decks![0].slots[0]!.com2usId, 14314, 'siège attaque : le leader est en tête');
 
@@ -233,7 +234,7 @@ export default function testImport() {
 
   // ⚠️ Le marqueur n'est PAS dans l'objet rune : il vient de `rune_lock_list`.
   // Une rune absente de la liste n'a pas de marqueur — le champ reste absent.
-  const inventaire = parseAccountInventory(objet).runes;
+  const inventaire = parseAccountInventory(objet, fr).runes;
   const marqueDe = (id: number) => inventaire.find((r) => r.id === id)?.marker;
   egal(marqueDe(1002), 1, 'marqueur : rune équipée marquée');
   egal(marqueDe(9001), 3, 'marqueur : rune d’inventaire marquée');
@@ -261,11 +262,11 @@ export default function testImport() {
   // casse, l'app entière lit des données différentes de ce que testent les
   // lignes ci-dessus.
   for (const [nom, fn] of [
-    ['RTA', parseAccountJson],
-    ['box', parseAccountBox],
-    ['inventaire', parseAccountInventory],
-    ['siège défense', parseSiegeDefense],
-    ['siège attaque', parseSiegeOffense],
+    ['RTA', (s: Parameters<typeof parseAccountJson>[0]) => parseAccountJson(s, fr)],
+    ['box', (s: Parameters<typeof parseAccountBox>[0]) => parseAccountBox(s, fr)],
+    ['inventaire', (s: Parameters<typeof parseAccountInventory>[0]) => parseAccountInventory(s, fr)],
+    ['siège défense', (s: Parameters<typeof parseSiegeDefense>[0]) => parseSiegeDefense(s, fr)],
+    ['siège attaque', (s: Parameters<typeof parseSiegeOffense>[0]) => parseSiegeOffense(s, fr)],
     ['runes utilisées', parseUsedRuneIds],
   ] as const) {
     ok(
@@ -276,9 +277,9 @@ export default function testImport() {
 
   /* --- Fichiers illisibles --------------------------------------------- */
 
-  egal(parseAccountJson('{oops').error, 'Fichier JSON illisible.', 'JSON cassé → message clair');
+  egal(parseAccountJson('{oops', fr).error, 'Fichier JSON illisible.', 'JSON cassé → message clair');
   ok(
-    /unit_list/.test(parseAccountJson('[]').error ?? ''),
+    /unit_list/.test(parseAccountJson('[]', fr).error ?? ''),
     "racine inattendue → on parle de 'unit_list', plus utile qu'« illisible »"
   );
 
@@ -311,19 +312,19 @@ export default function testImport() {
   // « du » com2usId (il n'y en a pas une seule).
   const exemplaires = parseAccountSource(exportExemplairesMultiples())!;
 
-  const boxExemplaires = parseAccountBox(exemplaires).monsters;
+  const boxExemplaires = parseAccountBox(exemplaires, fr).monsters;
   egal(boxExemplaires.length, 2, 'deux exemplaires 6★ du même com2usId, tous deux retenus');
   const gearParUnitId = new Map(boxExemplaires.map((m) => [m.unitId, m.gear]));
   egal(gearParUnitId.get(201)?.relic?.id, 9101, 'Box : unit_id 201 → sa propre relique');
   egal(gearParUnitId.get(202)?.relic?.id, 9102, 'Box : unit_id 202 → sa propre relique, pas celle de 201');
 
-  const rtaExemplaires = parseAccountJson(exemplaires);
+  const rtaExemplaires = parseAccountJson(exemplaires, fr);
   egal(rtaExemplaires.units?.length, 1, 'RTA : seul le favori (unit_id 201) est retenu');
   egal(rtaExemplaires.units?.[0]?.gear?.relic?.id, 9101, 'RTA : même relique que la Box pour ce unit_id');
 
   // Défense de siège : le deck place 201 puis 202 (guildsiege_defense_deck_unit_list) —
   // l'ordre des slots reflète l'ordre du preset, chaque slot garde SA relique.
-  const siegeExemplaires = parseSiegeDefense(exemplaires).decks!;
+  const siegeExemplaires = parseSiegeDefense(exemplaires, fr).decks!;
   egal(siegeExemplaires.length, 1, 'siège : un deck configuré');
   const slotsExemplaires = siegeExemplaires[0]?.slots ?? [];
   egal(slotsExemplaires[0]?.gear?.relic?.id, 9101, 'siège : premier slot (unit_id 201) → sa relique');
@@ -337,8 +338,8 @@ export default function testImport() {
     return;
   }
   const reelObjet = parseAccountSource(reel)!;
-  ok(parseAccountBox(reelObjet).monsters.length > 100, 'export réel : la box 6★ est extraite');
-  ok(parseAccountInventory(reelObjet).runes.length > 1000, 'export réel : l’inventaire de runes est extrait');
+  ok(parseAccountBox(reelObjet, fr).monsters.length > 100, 'export réel : la box 6★ est extraite');
+  ok(parseAccountInventory(reelObjet, fr).runes.length > 1000, 'export réel : l’inventaire de runes est extrait');
   const d = parseAccountExportDate(reelObjet);
   ok(d !== null && d < Date.now(), 'export réel : date d’export plausible');
   const w = parseWizardId(reelObjet);
@@ -346,7 +347,7 @@ export default function testImport() {
   // Un compte réel fait jouer une PART de son stock : ni zéro (les decks
   // seraient mal lus), ni tout (le filtre ne servirait à rien).
   const utiliseesReelles = parseUsedRuneIds(reelObjet);
-  const totalRunes = parseAccountInventory(reelObjet).runes.length;
+  const totalRunes = parseAccountInventory(reelObjet, fr).runes.length;
   ok(
     utiliseesReelles.length > 0 && utiliseesReelles.length < totalRunes,
     `export réel : ${utiliseesReelles.length} runes utilisées sur ${totalRunes}`
@@ -361,6 +362,6 @@ export default function testImport() {
     parPerimetreReel['arene-attaque'].length > 0 && parPerimetreReel['siege-attaque'].length > 0,
     `export réel : arène — attaque ${parPerimetreReel['arene-attaque'].length}, siège — attaque ${parPerimetreReel['siege-attaque'].length}`
   );
-  const marquees = parseAccountInventory(reelObjet).runes.filter((r) => r.marker !== undefined).length;
+  const marquees = parseAccountInventory(reelObjet, fr).runes.filter((r) => r.marker !== undefined).length;
   ok(marquees > 0, `export réel : ${marquees} runes marquées`);
 }

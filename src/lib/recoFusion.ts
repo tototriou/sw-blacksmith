@@ -14,6 +14,7 @@
 // ne se perd.
 
 import type { Reco, RecoCounter, RecoDeck, RecoPayload } from '../types';
+import type { Dictionnaire } from '../i18n/fr';
 import { cleEquipe, type MonstresConnus } from './recoDefenses';
 
 /* --------------------------------------------------------------------------
@@ -203,32 +204,23 @@ export function appliquerImport(
   return { recos, bilan };
 }
 
-const pluriel = (n: number, mot: string) => `${n} ${mot}${n > 1 ? 's' : ''}`;
-
 // Ce que ferait la fusion, dit AVANT de choisir (dialogue de l'import).
-export function apercuFusion(b: BilanFusion): string {
-  const s = (n: number, sing: string, plur: string) => (n > 1 ? plur : sing);
+export function apercuFusion(b: BilanFusion, t: Dictionnaire): string {
+  const a = t.recos.fusion.apercu;
   const parties = [
-    b.decksAjoutes ? `${pluriel(b.decksAjoutes, 'deck')} ${s(b.decksAjoutes, 'nouveau', 'nouveaux')}, à la fin` : '',
-    b.decksEnrichis
-      ? `${pluriel(b.decksEnrichis, 'deck')} que tu as déjà ${s(b.decksEnrichis, 'gagne', 'gagnent')} ${pluriel(b.defensesAjoutees, 'défense')} ${s(b.defensesAjoutees, 'visée', 'visées')}`
-      : '',
+    b.decksAjoutes ? a.decksNouveaux(b.decksAjoutes) : '',
+    b.decksEnrichis ? a.decksEnrichis(b.decksEnrichis, b.defensesAjoutees) : '',
   ].filter(Boolean);
-  return parties.length
-    ? `${parties.join(' ; ')}.`.replace(/^./, (c) => c.toUpperCase())
-    : 'Rien de nouveau : tous ses decks et leurs défenses y sont déjà.';
+  return parties.length ? a.phrase(parties).replace(/^./, (c) => c.toUpperCase()) : a.rien;
 }
 
 // Le message rendu après une fusion : ce qui est arrivé, puis ce qui n'est PAS
 // touché — c'est la question qu'on se pose après coup.
-export function messageFusion(b: BilanImport): string {
+export function messageFusion(b: BilanImport, t: Dictionnaire): string {
+  const m = t.recos.fusion.message;
   const parties: string[] = [];
-  if (b.decksAjoutes) parties.push(`${pluriel(b.decksAjoutes, 'deck')} ajouté${b.decksAjoutes > 1 ? 's' : ''}`);
-  if (b.decksEnrichis)
-    parties.push(
-      `${pluriel(b.decksEnrichis, 'deck')} enrichi${b.decksEnrichis > 1 ? 's' : ''} de ${pluriel(b.defensesAjoutees, 'défense')}`,
-    );
-  if (!parties.length) parties.push('rien de nouveau, tous ses decks et leurs défenses étaient déjà là');
-  const aPart = b.recosAjoutees ? ` · ${pluriel(b.recosAjoutees, 'recommandation')} ajoutée${b.recosAjoutees > 1 ? 's' : ''} à part` : '';
-  return `Fusion : ${parties.join(', ')}${aPart}. Rien n'a été retiré ni modifié.`;
+  if (b.decksAjoutes) parties.push(m.decksAjoutes(b.decksAjoutes));
+  if (b.decksEnrichis) parties.push(m.decksEnrichis(b.decksEnrichis, b.defensesAjoutees));
+  if (!parties.length) parties.push(m.rien);
+  return m.phrase(parties, b.recosAjoutees ? m.aPart(b.recosAjoutees) : '');
 }

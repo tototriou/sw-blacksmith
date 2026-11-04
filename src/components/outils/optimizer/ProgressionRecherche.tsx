@@ -1,5 +1,7 @@
 import { type BuildOptimProgress, type BuildOptimStatus } from '../../../hooks/useBuildOptimSearch';
 import { type RelicVide } from '../../../lib/relicOptim';
+import { useLangue, useTraduction } from '../../../hooks/useLangue';
+import { formatNombre } from '../../../i18n/format';
 
 export interface ProgressionRechercheProps {
   status: BuildOptimStatus;
@@ -15,6 +17,9 @@ export interface ProgressionRechercheProps {
 }
 
 export default function ProgressionRecherche({ status, progress, refusal, compteAffiche, compacte = false }: ProgressionRechercheProps) {
+  const pr = useTraduction().optimizer.resultats.progression;
+  const langue = useLangue();
+  const n = (v: number) => formatNombre(v, langue);
   return (
     <>
       {/* ⚠️ Deux phases distinctes affichées différemment, pas une seule
@@ -52,8 +57,8 @@ export default function ProgressionRecherche({ status, progress, refusal, compte
                     chiffres seuls) ; `tabular-nums` : les compteurs changent
                     en place sans faire danser la ligne. */}
                 <p className={`${compacte ? '' : 'mt-1 '}text-micro tabular-nums text-ink-dim`}>
-                  Préparation — moitié {half} :{' '}
-                  {h ? `${h.scanned.toLocaleString('fr-FR')} / ${h.total.toLocaleString('fr-FR')} runes` : 'en attente…'}
+                  {pr.moitie(half)}{' '}
+                  {h ? pr.runes(n(h.scanned), n(h.total)) : pr.enAttente}
                 </p>
               </div>
             );
@@ -78,12 +83,12 @@ export default function ProgressionRecherche({ status, progress, refusal, compte
               suppression du moteur. */}
           <p className={`${compacte ? '' : 'mt-1 '}text-micro tabular-nums text-ink-dim`}>
             {progress === null
-              ? 'Préparation…'
-              : `${progress.explored.toLocaleString('fr-FR')} / ${progress.totalPairs.toLocaleString('fr-FR')} combinaisons examinées · ${compteAffiche.compte.toLocaleString('fr-FR')} trouvée(s)`}
+              ? pr.preparation
+              : pr.examinees(n(progress.explored), n(progress.totalPairs), n(compteAffiche.compte))}
           </p>
           {progress !== null && (
             <p className="mt-0.5 text-[11px] font-bold text-star">
-              Attendez la fin de la recherche pour être sûr de trouver votre build optimal.
+              {pr.attendez}
             </p>
           )}
           {/* ⚠️ Plus de phrase sur un budget qui s'élargit : l'escalade du
@@ -93,7 +98,7 @@ export default function ProgressionRecherche({ status, progress, refusal, compte
       )}
 
       {status === 'error' && (
-        <p className="text-xs text-bad">La recherche a échoué. Réessaie avec des critères moins stricts.</p>
+        <p className="text-xs text-bad">{pr.echec}</p>
       )}
 
       {/* ⚠️ Refus NOMMÉ : `search.status ===
@@ -103,15 +108,7 @@ export default function ProgressionRecherche({ status, progress, refusal, compte
           juste au-dessus, à la place du lancement. */}
       {status === 'refused' && refusal && (
         <p className="text-xs text-bad">
-          {refusal.vide === 'seuil'
-            ? 'Aucune relique éligible : abaisse le niveau minimum.'
-            : refusal.vide === 'principale'
-              ? 'Aucune relique de cette principale dans ton inventaire.'
-              : refusal.vide === 'type'
-                ? 'Aucune relique de cette propriété unique dans ton inventaire.'
-                : refusal.vide === 'inventaire'
-                  ? "Aucune relique dans le compte importé : réimporte le compte, ou coupe l'optimisation d'artéfacts et reliques."
-                  : 'Ce monstre ne porte pas de relique.'}
+          {pr.refus[refusal.vide]}
         </p>
       )}
     </>

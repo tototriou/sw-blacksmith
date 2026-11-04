@@ -26,7 +26,9 @@
 // leur résultat.
 
 import { STAT_DE_L_AURA, type DamageSetup, type SetAura } from './damage';
-import { RUNE_SETS } from '../types';
+import { nomSet, type LexiqueJeu } from '../i18n/jeu';
+import type { Dictionnaire } from '../i18n/fr';
+import type { ErreurRecette } from './optimizerRecipe';
 
 export type AuraExterne = NonNullable<DamageSetup['setsAuraExternes']>[number];
 
@@ -44,14 +46,14 @@ export function estSetAura(set: unknown): set is SetAura {
   return typeof set === 'string' && SETS_CONNUS.has(set);
 }
 
-// Nom du set tel que le jeu l'écrit (`RUNE_SETS`, la table de toute l'app).
-export function nomSetAura(set: SetAura): string {
-  return RUNE_SETS.find((s) => s.key === set)?.label ?? set;
+// Nom du set tel que le jeu l'écrit dans la langue du lexique (`nomSet`, src/i18n/jeu/).
+export function nomSetAura(set: SetAura, jeu: LexiqueJeu): string {
+  return nomSet(jeu, set);
 }
 
 // Le libellé explicite d'une ligne — même patron pour les cinq sets.
-export function libelleNombreAura(set: SetAura): string {
-  return `Nombre de sets ${nomSetAura(set)} des autres monstres de l'équipe`;
+export function libelleNombreAura(set: SetAura, t: Dictionnaire): string {
+  return t.optimizer.auras.nombre(nomSetAura(set, t.jeu));
 }
 
 export function sommeAurasExternes(entrees: readonly AuraExterne[] | undefined): number {
@@ -65,26 +67,26 @@ export function sommeAurasExternes(entrees: readonly AuraExterne[] | undefined):
  * `.0.nombre`) : la recette le préfixe de `damageSetup.setsAuraExternes`.
  * Absente (`undefined`), la liste vaut zéro aura et reste acceptée.
  */
-export function erreurAurasExternes(value: unknown): { chemin: string; attente: string } | null {
+export function erreurAurasExternes(value: unknown): ErreurRecette | null {
   if (value === undefined) return null;
-  if (!Array.isArray(value)) return { chemin: '', attente: 'doit être une liste' };
+  if (!Array.isArray(value)) return { chemin: '', attente: (a) => a.liste };
   const vus = new Set<string>();
   let somme = 0;
   for (const [index, entree] of value.entries()) {
     const chemin = `.${index}`;
     if (typeof entree !== 'object' || entree === null || Array.isArray(entree)) {
-      return { chemin, attente: 'doit être un objet' };
+      return { chemin, attente: (a) => a.objet };
     }
     const { set, nombre } = entree as Record<string, unknown>;
-    if (!estSetAura(set) || vus.has(set)) return { chemin: `${chemin}.set`, attente: 'set inconnu ou répété' };
+    if (!estSetAura(set) || vus.has(set)) return { chemin: `${chemin}.set`, attente: (a) => a.setRepete };
     vus.add(set);
     if (typeof nombre !== 'number' || !Number.isInteger(nombre) || nombre < 1 || nombre > PLAFOND_AURAS_EXTERNES) {
-      return { chemin: `${chemin}.nombre`, attente: `doit être un entier de 1 à ${PLAFOND_AURAS_EXTERNES}` };
+      return { chemin: `${chemin}.nombre`, attente: (a) => a.entierDe1A(PLAFOND_AURAS_EXTERNES) };
     }
     somme += nombre;
   }
   if (somme > PLAFOND_AURAS_EXTERNES) {
-    return { chemin: '', attente: `la somme ne doit pas dépasser ${PLAFOND_AURAS_EXTERNES}` };
+    return { chemin: '', attente: (a) => a.sommeMax(PLAFOND_AURAS_EXTERNES) };
   }
   return null;
 }
@@ -156,11 +158,10 @@ export function retirerAura(entrees: AuraExterne[], set: SetAura): AuraExterne[]
  * aucun candidat (carte a4c2), ces activations se résolvent par build. Un
  * rendu de l'état, jamais une source de calcul.
  */
-export function echoAurasExternes(entrees: readonly AuraExterne[] | undefined): string {
-  const liste = (entrees ?? []).map((e) => `${e.nombre} set${e.nombre > 1 ? 's' : ''} ${nomSetAura(e.set)}`);
-  return liste.length > 0
-    ? `auras externes : ${liste.join(', ')} ; les sets d'aura du build s'y ajoutent sur chaque résultat`
-    : `aucune aura externe ; les sets d'aura du build comptent sur chaque résultat`;
+export function echoAurasExternes(entrees: readonly AuraExterne[] | undefined, t: Dictionnaire): string {
+  const echo = t.optimizer.auras.echo;
+  const liste = (entrees ?? []).map((e) => echo.sets(e.nombre, nomSetAura(e.set, t.jeu)));
+  return liste.length > 0 ? echo.externes(liste.join(', ')) : echo.aucune;
 }
 
 // ── Rappel au changement de monstre ──────────────────

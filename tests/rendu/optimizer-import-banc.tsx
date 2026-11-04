@@ -15,6 +15,7 @@ import { importerDefensesSiegeOptimizer, importerPrepaRtaOptimizer, type Rapport
 import * as importsEquipes from '../../src/lib/importEquipes';
 import { exclusionSelectorKey, type ExclusionSourceData } from '../../src/lib/optimizerExclusion';
 import type { GearSet, Monster, SiegeTeam } from '../../src/types';
+import { fr } from '../../src/i18n/fr';
 
 const base = { hp: 10000, atk: 800, def: 700, spd: 100, cr: 15, cd: 50, res: 15, acc: 0 };
 const gear: GearSet = { base, runes: [], artifacts: [] };
@@ -137,7 +138,7 @@ export async function scenario(nom: string): Promise<[boolean, string][]> {
     let rapport!: RapportImportOptimizer, appels = 0;
     await geste(() => {
       reverificationEnAttente = true;
-      rapport = etat.importerEquipe(courantes => { appels++; return importerDefensesSiegeOptimizer(courantes); });
+      rapport = etat.importerEquipe(courantes => { appels++; return importerDefensesSiegeOptimizer(courantes, fr); });
     });
     verifier(rapport.listeCreee === null && rapport.membresImportes === 0 && rapport.equipesCreees === 0
       && rapport.messages.some(m => m.includes('refusé') && m.includes('revérification') && m.includes('en attente')), 'réimport en attente : refus explicite au rapport');
@@ -152,7 +153,7 @@ export async function scenario(nom: string): Promise<[boolean, string][]> {
     verifier(photographierAffichage() === affichageAvant && etat.search.result === resultatAvant,
       'clic refusé : affichage et résultat toujours intacts');
     await geste(() => {
-      const runeIds = new Set<number>(), rev = reverifierStockageOptimizer(listes.lireStockageCourant(), data, runeIds, new Set());
+      const runeIds = new Set<number>(), rev = reverifierStockageOptimizer(listes.lireStockageCourant(), data, runeIds, fr, new Set());
       listes.replaceAfterRevalidation(rev.stockage);
       etat.appliquerReverificationMembres(rev.stockage, rev.rapport, data, runeIds);
       reverificationEnAttente = false;
@@ -177,7 +178,7 @@ export async function scenario(nom: string): Promise<[boolean, string][]> {
           if (uuid) Object.defineProperty(crypto, 'randomUUID', uuid); else delete (crypto as Partial<Crypto>).randomUUID;
         }
         idsAvant.add('import'); avant = photographierExistant(listes.lireStockageCourant(), idsAvant);
-        return importerDefensesSiegeOptimizer(courantes);
+        return importerDefensesSiegeOptimizer(courantes, fr);
       });
     });
     verifier(rapport.listeCreee === null && rapport.membresImportes === 0 && rapport.equipesCreees === 0
@@ -197,7 +198,7 @@ export async function scenario(nom: string): Promise<[boolean, string][]> {
         listes.setListContent('a', 'arene');
         creee = listes.createList('Créée dans le geste', 'donjon');
         listes.addMember(creee, autreSelector, 10101);
-        listes.replaceAfterRevalidation(reverifierStockageOptimizer(listes.lireStockageCourant(), data, new Set(), new Set()).stockage);
+        listes.replaceAfterRevalidation(reverifierStockageOptimizer(listes.lireStockageCourant(), data, new Set(), fr, new Set()).stockage);
         const courant = listes.lireStockageCourant();
         idsAvant.add(creee);
         attente = photographierExistant(courant, idsAvant);
@@ -241,7 +242,7 @@ globalThis.Worker = ClassementVideTest as unknown as typeof Worker;
     const memoires = JSON.stringify([...listes.memories]);
     await geste(() => { const d = demandeClassementTest(); etat.search.run(d.params, d.photo, d.vue); });
     const resultatAvantImportVide = etat.search.result;
-    await geste(() => { etat.importerEquipe(courantes => importerPrepaRtaOptimizer({ ...courantes, rtaEntries: {} })); });
+    await geste(() => { etat.importerEquipe(courantes => importerPrepaRtaOptimizer({ ...courantes, rtaEntries: {} }, fr)); });
     verifier(listes.activeListId === id && listes.lists.length === 2 && JSON.stringify([...listes.memories]) === memoires
       && etat.proprietaireCriteres?.listId === id && resultatAvantImportVide !== null && etat.search.result === resultatAvantImportVide,
       'import vide : état, propriétaire et résultats conservés');

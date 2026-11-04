@@ -15,13 +15,14 @@ import {
   parseUsedRuneIdsParPerimetre,
 } from '../src/lib/importAccount';
 import { egal, exportSynthetique, ok, titre } from './outils';
+import { fr } from '../src/i18n/fr';
 
 export default async function testStockage() {
   titre('Conservation du compte (IndexedDB)');
 
   const data = parseAccountSource(exportSynthetique())!;
-  const box = parseAccountBox(data).monsters;
-  const inv = parseAccountInventory(data);
+  const box = parseAccountBox(data, fr).monsters;
+  const inv = parseAccountInventory(data, fr);
   const compte = {
     box,
     runes: inv.runes,

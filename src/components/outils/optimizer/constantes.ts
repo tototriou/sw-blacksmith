@@ -38,10 +38,8 @@ export const EMPTY_GEAR: GearSet = {
 // ⚠️ Défini ici et non dans `runeBuildOptim.ts` avec `OBJECTIVE_LABELS` : ce
 // n'est PAS un objectif de recherche de runes — il ne change rien aux builds
 // trouvés, seulement la paire d'artéfacts proposée par-dessus l'un d'eux.
-export const CRITERE_ARTEFACTS_LABELS: { key: 'brut' | 'reel'; label: string }[] = [
-  { key: 'brut', label: 'Dégâts supplémentaires' },
-  { key: 'reel', label: 'Dégâts réels' },
-];
+// Leurs noms sont sous `optimizer.meilleurs.criteres` du dictionnaire.
+export const CRITERES_ARTEFACTS: readonly ('brut' | 'reel')[] = ['brut', 'reel'];
 
 // ⚠️ **Largeur fixe et commune** aux quatre listes de la carte « Artéfacts
 // et relique » (Attribut, Type, Principale, Propriété unique) — un

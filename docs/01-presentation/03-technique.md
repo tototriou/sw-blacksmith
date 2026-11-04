@@ -13,6 +13,7 @@ commits, vérifications) sont dans [AGENTS.md](../../AGENTS.md) et
 | Dépendances runtime | `lucide-react` (icônes), `framer-motion` (animations), `react-resizable-panels` (séparateur de l'écran partagé) — aucune mesure d'audience |
 | Node | **24** (LTS active), déclaré à trois endroits qui doivent rester alignés : `engines` de `package.json`, `.nvmrc` et la CI |
 | Calcul lourd | Web Workers de recherche, classement et résolution (`src/workers/`) ; corps de calcul partagés avec les outils Node |
+| Langues | français et anglais, par dictionnaires TypeScript typés (`src/i18n/`), sans bibliothèque de traduction ; règle ESLint locale `swblacksmith/texte-en-dur` ([feat-langues.md](../02-app/transverse/feat-langues.md)) |
 | Stockage | `localStorage` (prépa, équipes, réglages) + **IndexedDB** (compte importé) |
 | Déploiement du site | Vercel (preset Vite, sortie `dist`) : déploiement automatique sur `main`, preview par branche |
 | Application de bureau | Electron, voir ci-dessous |
@@ -37,12 +38,14 @@ Code dans **`bureau/`** (hors de `src/` : il tourne dans Node) :
   `dossier-swblacksmith.json`) ;
 - `coeurs.ts` + `coeursPur.ts` (nombre de cœurs physiques, lu par une commande du système et
   donné à la page : le nombre de Workers de la recherche de runes en dérive) ;
+- `textes.ts` (textes des boîtes du système, dans la langue que la page envoie, pur) ;
 - `preuve.ts`, `installeur.nsh` (désinstalleur Windows), `icone.ico` (générée par
   `scripts/generer-icone-bureau.mjs`).
 
 Empaqueté par `electron-builder.yml`, publié au tag `v*` par `.github/workflows/bureau.yml`
 (installeurs attachés à la release), compilé par `scripts/construire-bureau.mjs` vers le dossier
-`dist-bureau` (non suivi). Côté page : `src/lib/bureau.ts` (`estBureau()`, couleurs du thème,
+`dist-bureau` (non suivi), lancé par `scripts/lib/electron.mjs` (l'environnement hérité de VS
+Code nettoyé par `scripts/lib/environnementElectron.mjs`). Côté page : `src/lib/bureau.ts` (`estBureau()`, couleurs du thème,
 mise à jour, cœurs physiques), `src/components/MiseAJourBureau.tsx` (la mise à jour dite par la notification),
 `src/components/BlocApplication.tsx` (bloc « Application » des Réglages : version, mise à jour à
 portée, dossier SW Exporter), `src/components/SuiviSwex.tsx` (applique l'export : tout après le
@@ -73,6 +76,12 @@ npm run bureau:preuve  # l'app se contrôle elle-même, captures + resultats.jso
                        # --conservation : les données survivent à la fermeture ; --swex : le dossier SW Exporter)
 npm run bureau:paquet  # l'installeur de la plateforme courante dans paquets/ (electron-builder.yml)
 ```
+
+Les scripts d'installation des dépendances sont approuvés un par un dans la clé `allowScripts` du
+`package.json` (npm ≥ 11.19 avertit pour tout script non couvert) : `esbuild` et
+`electron-winstaller`, à leur version exacte. Après une montée de version de l'un d'eux,
+l'avertissement de `npm ci` revient : relire le script, puis
+`npm install-scripts approve <paquet>` (jamais avec `--dry-run`, qui écrit quand même le fichier).
 
 Avant d'ouvrir une pull request : `npx tsc --noEmit` (TypeScript strict), `npm run lint` (une
 erreur bloque, un avertissement s'affiche), `npm test` (calculs, intégration, rendu, outillage) et

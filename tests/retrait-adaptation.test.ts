@@ -10,6 +10,7 @@ import type { ExclusionSelector, ExclusionSourceData } from '../src/lib/optimize
 import type { GearSet, Monster } from '../src/types';
 import { fixtureClassementCombat } from './classement-fixture';
 import { egal, ok, titre } from './outils';
+import { fr } from '../src/i18n/fr';
 
 const RETIRE = 'adapterArtefactsAuTri';
 const box: ExclusionSelector = { source: 'box', unitKey: '11' };
@@ -31,22 +32,22 @@ export function testRetraitAdaptationMigrations() {
     && !(CHAMPS_OPTIMIZER_SESSION as readonly string[]).includes(RETIRE), 'le réglage n’est plus un critère, ni un champ de session');
 
   for (const valeur of [true, false]) {
-    const lu = lireMembresOptimizer(stockageHistorique(valeur));
+    const lu = lireMembresOptimizer(stockageHistorique(valeur), fr);
     const m = lu.memories.get(cleMemoireMembre('l1', box));
     ok(!!m && !(RETIRE in m.criteres), `mémoire historique (${valeur}) : acceptée, réglage ôté à la lecture`);
     egal([m?.criteres.minStats, m?.criteres.sortBy], [{ spd: 200 }, 'hp'], `mémoire historique (${valeur}) : les autres critères sont conservés`);
     egal(lu.rapport, [], `mémoire historique (${valeur}) : aucun avertissement`);
     ok(!ecrireMembresOptimizer({ ...lu }).includes(RETIRE), `mémoire historique (${valeur}) : la réécriture ne le contient plus`);
   }
-  const malForme = lireMembresOptimizer(stockageHistorique('oui'));
+  const malForme = lireMembresOptimizer(stockageHistorique('oui'), fr);
   ok(malForme.memories.size === 0 && malForme.rejets.memories.length === 1, 'valeur historique mal typée : mémoire rejetée et conservée brute, jamais acceptée comme migration');
 
   const brut = stockageHistorique(true);
-  const point = photographierPointOptimizer({ ...lireMembresOptimizer(brut), lists: [{ id: 'l1', name: 'Liste' }], members: [{ listId: 'l1', selector: box }],
+  const point = photographierPointOptimizer({ ...lireMembresOptimizer(brut, fr), lists: [{ id: 'l1', name: 'Liste' }], members: [{ listId: 'l1', selector: box }],
     validated: [], activeListId: 'l1' }, null, new Date('2026-10-25T10:00:00Z'), brut);
-  const relu = lirePointOptimizer(JSON.stringify(point)).point!;
+  const relu = lirePointOptimizer(JSON.stringify(point), fr).point!;
   egal(relu.membres, brut, 'point de sauvegarde : texte opaque des membres inchangé');
-  const reprise = preparerRepriseOptimizer(relu, compte, new Set(), new Set());
+  const reprise = preparerRepriseOptimizer(relu, compte, new Set(), new Set(), fr);
   ok(![...reprise.stockage.memories.values()].some((x) => RETIRE in x.criteres), 'reprise du point : même lecteur, réglage ôté');
 
   const sources = { maintenant: new Date('2026-10-25T10:00:00Z'), versionApp: 'test', stockage: {}, compte: null, memoire: {},

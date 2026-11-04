@@ -263,6 +263,22 @@ Conséquences :
 | `ko` | possédé mais ≥ 1 stat sous le minimum **ou** ≥ 1 set manquant | bordure orange, « à améliorer » |
 | `ok` | possédé, **toutes** les stats atteintes **et** tous les sets portés | bordure verte, « au niveau » |
 
+### ⚠️ Une collaboration vaut sa version SW
+
+Satoru Gojo, c'est Werner (`jumeauCollab`, voir
+[bestiaire/](../../bestiaire/README.md), d'où vient le lien) : un
+deck qui demande l'un **se joue avec l'autre**. `contexteConfrontationReco`
+([recoMatch.ts](src/lib/recoMatch.ts)) range donc builds, équipes et
+exemplaires 6★ sous l'identifiant commun de la paire (`idCanoniqueCollab`,
+[monsterForms.ts](src/lib/monsterForms.ts)) :
+
+- un Werner possédé n'est pas un « monstre indisponible » pour le Gojo du
+  deck, et l'équipe qui le réunit aux deux autres est retenue ;
+- un Werner et un Gojo font **deux exemplaires** du même monstre pour
+  « réalisable N fois » — et les deux dans un même deck en demandent deux ;
+- les paires viennent des monstres **possédés** : un monstre qu'on n'a sous
+  aucune de ses faces n'a rien à confronter.
+
 ### Trois questions, dans cet ordre
 
 L'analyse d'un deck répond à : **ai-je un deck ? est-il correct ? sinon, puis-je

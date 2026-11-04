@@ -49,6 +49,7 @@ import {
   resolveDamageSkill,
   artifactDamageProfile,
 } from '../src/lib/damage';
+import { fr } from '../src/i18n/fr';
 
 const [exportPath, recipePath, maxMsArg] = process.argv.slice(2);
 if (!exportPath || !recipePath) {
@@ -56,7 +57,7 @@ if (!exportPath || !recipePath) {
   process.exit(1);
 }
 
-const { recipe, error, avertissements } = parseOptimizerRecipe(readFileSync(recipePath, 'utf8'));
+const { recipe, error, avertissements } = parseOptimizerRecipe(readFileSync(recipePath, 'utf8'), fr);
 for (const a of avertissements ?? []) console.warn(`⚠️ ${a}`);
 if (!recipe) {
   console.error(`Recette invalide : ${error}`);

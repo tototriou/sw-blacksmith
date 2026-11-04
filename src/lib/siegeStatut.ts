@@ -1,4 +1,5 @@
 import { ResultatAuto } from './speedTuneAuto';
+import type { Dictionnaire } from '../i18n/fr';
 
 // Le STATUT d'une équipe de siège en mode « Vérifier mes speed », et ce que
 // la card en dit.
@@ -62,16 +63,16 @@ export function statutEquipe(e: EntreeStatut): StatutEquipe {
 // vérification, la card n'a pas bougé, et rien ne dit pourquoi. Cette fonction
 // donne la raison quand il n'y a pas de verdict — et `null` quand il y en a un,
 // c'est alors le message de statut qui parle.
-export function raisonSansVerdict(e: EntreeStatut): string | null {
+export function raisonSansVerdict(e: EntreeStatut, t: Dictionnaire): string | null {
   if (!e.verifier || statutEquipe(e) !== 'neutre') return null;
-  if (!e.desMonstres) return 'Équipe vide.';
-  if (e.leo) return 'Leo est dans l\u2019équipe : elle ne se juge pas au tick.';
+  if (!e.desMonstres) return t.siege.raisons.vide;
+  if (e.leo) return t.siege.raisons.leo;
   // ⚠️ **Les données ne sont pas encore là.** L'équipe a de quoi être jugée, ce
   // sont ses monstres qui ne sont pas encore reconnus (catalogue en cours de
   // chargement, juste après un rechargement de page). Dire « il faut au moins
   // deux monstres » à une équipe qui en a quatre envoyait corriger un défaut
   // inexistant. Rien à faire : ça se résout tout seul.
-  if (e.slotsRemplis >= 2 && e.monstresConnus < 2) return 'Vitesses en cours de chargement…';
+  if (e.slotsRemplis >= 2 && e.monstresConnus < 2) return t.siege.raisons.chargement;
   // Swift sans verdict : l'analyse demande au moins deux monstres connus.
-  return 'Équipe speed : il faut au moins deux monstres pour calculer le speed tune.';
+  return t.siege.raisons.deuxMonstres;
 }

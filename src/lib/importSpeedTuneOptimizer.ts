@@ -5,18 +5,22 @@ import { exclusionSelectorKey, resolveExclusionEntry, type ExclusionSelector, ty
 import { retrouverDeckCompositionOptimizer, selecteurRepliCompositionOptimizer } from './deckCompositionOptimizer';
 import type { LeadInfo } from './speed';
 import type { Ligne } from './speedTuneLignes';
+import { artifactSubName } from './effects';
+import type { Dictionnaire } from '../i18n/fr';
 
 export function importerSpeedTuneOptimizer(
-  lignes: readonly Ligne[], lead: LeadInfo | null, data: ExclusionSourceData, deckInitial?: DeckInitial
+  lignes: readonly Ligne[], lead: LeadInfo | null, data: ExclusionSourceData, t: Dictionnaire, deckInitial?: DeckInitial
 ): ImportOptimizer {
-  const resultat: ImportOptimizer = { nomListe: 'Speed tuning', contenu: 'guilde', membres: [], equipes: [], ignores: [],
-    messages: ['La VIT minimum de fiche ne garantit pas l’ordre des tours ; les fenêtres de l’analyse ne sont pas importées.'] };
+  const m = t.optimizer.importsEquipe;
+  const s = m.speedTune;
+  const resultat: ImportOptimizer = { nomListe: s.nomListe, contenu: 'guilde', membres: [], equipes: [], ignores: [],
+    messages: [s.avertissement] };
   let deck: SiegeTeam | undefined;
   let sourceDeck: 'siege-defense' | 'siege-offense' | undefined;
   if (deckInitial) {
     const teams = deckInitial.source === 'defense' ? data.siegeDefenseTeams : data.siegeOffenseTeams;
     // Même résolution que l'ouverture du speed tuning depuis un deck.
-    deck = teams.find(t => t.id === deckInitial.teamId) ?? teams[Number(deckInitial.teamId)];
+    deck = teams.find(e => e.id === deckInitial.teamId) ?? teams[Number(deckInitial.teamId)];
     sourceDeck = deckInitial.source === 'defense' ? 'siege-defense' : 'siege-offense';
   } else {
     const composition = lignes.filter(l => l.camp === 'allie').map(l => {
@@ -35,11 +39,11 @@ export function importerSpeedTuneOptimizer(
     const ignorer = (raison: string) => resultat.ignores.push({ selector: { ...selector }, libelle: ligne.monster.name, raison });
     if (!monstre || !Number.isSafeInteger(monstre.com2usId) || monstre.com2usId === null
       || monstre.com2usId <= 0 || monstre.com2usId !== ligne.monster.com2usId) {
-      ignorer('Monstre inconnu ou identité d’espèce inutilisable.');
+      ignorer(m.reco.monstreInconnu);
       continue;
     }
     if (deckInitial && !deck) {
-      ignorer('Deck d’origine introuvable : exemplaire non établi.');
+      ignorer(s.deckIntrouvable);
       continue;
     }
     const slotIndex = deck?.slots.findIndex((s, i) => !slotsUtilises.has(i) && s.monsterId !== null
@@ -50,32 +54,32 @@ export function importerSpeedTuneOptimizer(
     } else {
       const choisi = selecteurRepliCompositionOptimizer(monsterId, monstre.com2usId, data, 'box');
       if (!choisi) {
-        ignorer('Exemplaire réel sans équipement résolvable.');
+        ignorer(s.sansEquipement);
         continue;
       }
       selector = choisi;
-      if (deck) resultat.messages.push(`${monstre.name} : absent des slots disponibles du deck d’origine ; exemplaire choisi dans le compte.`);
+      if (deck) resultat.messages.push(s.horsDeck(monstre.name));
     }
     const resolu = resolveExclusionEntry(selector, data);
     if (!resolu || resolu.monster.com2usId !== monstre.com2usId) {
-      ignorer('Exemplaire introuvable ou d’une autre espèce.');
+      ignorer(m.exemplaireIntrouvable);
       continue;
     }
     const base = ligne.monster.stats.speed, runeSpeed = ligne.runeSpeed;
     if (runeSpeed === null || base === null || !Number.isFinite(base) || base < 0
       || !Number.isFinite(runeSpeed) || runeSpeed < 0 || !Number.isFinite(base + runeSpeed)) {
-      ignorer('Vitesse non saisie ou VIT de fiche non établie.');
+      ignorer(s.vitesseNonSaisie);
       continue;
     }
     // La saisie porte déjà Swift à plat, comme la fiche computeStats.
     const criteres: ImportOptimizer['membres'][number]['criteres'] = { vitesse: { minimum: base + runeSpeed } };
     if (ligne.swift) criteres.comboSets = ['swift'];
-    else resultat.messages.push(`${monstre.name} : aucun set sélectionné ; choisir un set avant de rechercher.`);
+    else resultat.messages.push(m.aucunSet(monstre.name));
     if (ligne.artefactBuff !== null) {
       if (Number.isFinite(ligne.artefactBuff) && ligne.artefactBuff > 0) {
         criteres.lignesVerrouillees = [{ code: 206, min: ligne.artefactBuff }];
       } else if (!Number.isFinite(ligne.artefactBuff) || ligne.artefactBuff < 0) {
-        resultat.messages.push(`${monstre.name} : Effet aug. VIT non importé, valeur invalide.`);
+        resultat.messages.push(s.effetVitInvalide(monstre.name, artifactSubName(206, t.jeu)));
       }
     }
     resultat.membres.push({ selector: { ...selector }, com2usId: monstre.com2usId, libelle: monstre.name, criteres });
@@ -85,7 +89,7 @@ export function importerSpeedTuneOptimizer(
   const members = resultat.membres.map(m => m.selector);
   const leader = deck && sourceDeck ? members.find(s => exclusionSelectorKey(s)
     === exclusionSelectorKey({ source: sourceDeck, teamId: deck.id, slotIndex: 0 })) : undefined;
-  resultat.equipes.push({ libelle: 'Ton équipe', members, ...(leader ? { leader: { ...leader } } : {}),
+  resultat.equipes.push({ libelle: s.tonEquipe, members, ...(leader ? { leader: { ...leader } } : {}),
     lead: lead ? { stat: 'Attack Speed', amount: lead.amount, area: lead.area, element: lead.element } : null });
   return resultat;
 }

@@ -11,18 +11,20 @@
 // (là où il reste utile côté SETS, qui en aligne vingt-cinq).
 import { MARQUEUR_FILTRE_ACTIF } from '../../ui/Pastille';
 import { ACTIF_FILTRE_LG, CADRE_FILTRE_LG, CASE_FILTRE_LG } from './gabaritFiltre';
+import { useTraduction } from '../../hooks/useLangue';
 
 const SLOTS = [1, 2, 3, 4, 5, 6];
 
 export default function SlotFilter({
   value,
   onChange,
-  label = 'Slot',
+  label,
 }: {
   value: Set<number>;
   onChange: (next: Set<number>) => void;
   label?: string;
 }) {
+  const textes = useTraduction();
   const toggle = (n: number) => {
     const next = new Set(value);
     next.has(n) ? next.delete(n) : next.add(n);
@@ -33,7 +35,7 @@ export default function SlotFilter({
     // `data-filtre-slots` : dans le panneau mobile, les six emplacements se
     // répartissent sur toute la largeur (voir index.css). Ailleurs, sans effet.
     <div data-filtre-slots className="flex flex-wrap items-center gap-1">
-      <span className="label mr-1">{label}</span>
+      <span className="label mr-1">{label ?? textes.filtresRunes.slot}</span>
       {/* À la SOURIS, le gabarit du `Segmented` : voir gabaritFiltre.ts. */}
       <div className={`flex flex-wrap items-center gap-0.5 rounded-lg border border-border bg-panel p-1 ${CADRE_FILTRE_LG}`}>
         {SLOTS.map((n) => {

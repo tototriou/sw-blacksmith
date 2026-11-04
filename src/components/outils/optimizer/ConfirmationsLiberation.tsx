@@ -2,6 +2,7 @@ import { type Dispatch, type SetStateAction } from 'react';
 import { ConfirmDialog } from '../../../ui';
 import { type UseOptimizerLists } from '../../../hooks/useOptimizerLists';
 import { type ExclusionSelector } from '../../../lib/optimizerExclusion';
+import { useTraduction } from '../../../hooks/useLangue';
 
 export interface ConfirmationsLiberationProps {
   lists: UseOptimizerLists;
@@ -26,6 +27,7 @@ export default function ConfirmationsLiberation({
   removeMemberConfirm,
   setRemoveMemberConfirm,
 }: ConfirmationsLiberationProps) {
+  const l = useTraduction().optimizer.liberation;
   return (
     <>
       {/* Confirmations de libération — demande explicite de l'utilisateur.
@@ -33,9 +35,9 @@ export default function ConfirmationsLiberation({
           d'importance pour son rendu. */}
       {releaseConfirm && (
         <ConfirmDialog
-          titre="Libérer ce build validé ?"
-          message="Ces 6 runes ET la paire d’artéfacts redeviendront disponibles pour les autres monstres de cette liste."
-          libelleAction="Libérer"
+          titre={l.buildTitre}
+          message={l.buildMessage}
+          libelleAction={l.liberer}
           onConfirm={() => {
             lists.releaseBuild(releaseConfirm.listId, releaseConfirm.selector);
             setReleaseConfirm(null);
@@ -45,9 +47,9 @@ export default function ConfirmationsLiberation({
       )}
       {releaseArtifactsConfirm && (
         <ConfirmDialog
-          titre="Libérer les artéfacts validés ?"
-          message="Cette paire redeviendra disponible pour les autres monstres de cette liste. Les 6 runes du build restent réservées."
-          libelleAction="Libérer"
+          titre={l.artefactsTitre}
+          message={l.artefactsMessage}
+          libelleAction={l.liberer}
           onConfirm={() => {
             lists.releaseArtifacts(releaseArtifactsConfirm.listId, releaseArtifactsConfirm.selector);
             setReleaseArtifactsConfirm(null);
@@ -57,9 +59,9 @@ export default function ConfirmationsLiberation({
       )}
       {releaseAllConfirm && (
         <ConfirmDialog
-          titre="Libérer toutes les runes validées de cette liste ?"
-          message="Tous les builds validés de cette liste seront libérés d'un coup — leurs runes redeviennent disponibles."
-          libelleAction="Tout libérer"
+          titre={l.toutTitre}
+          message={l.toutMessage}
+          libelleAction={l.toutLiberer}
           destructif
           onConfirm={() => {
             lists.releaseAllInList(releaseAllConfirm);
@@ -70,9 +72,9 @@ export default function ConfirmationsLiberation({
       )}
       {removeMemberConfirm && (
         <ConfirmDialog
-          titre="Retirer ce monstre de la liste ?"
-          message="Ses runes validées seront aussi libérées — elles redeviennent disponibles pour les recherches des autres monstres de cette liste."
-          libelleAction="Retirer"
+          titre={l.retirerTitre}
+          message={l.retirerMessage}
+          libelleAction={l.retirer}
           destructif
           onConfirm={() => {
             lists.removeMember(removeMemberConfirm.listId, removeMemberConfirm.selector);

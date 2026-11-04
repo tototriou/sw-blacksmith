@@ -1,12 +1,16 @@
 import { X } from 'lucide-react';
 import ZoneCliquable from '../../ui/ZoneCliquable';
 import BoutonIcone from '../../ui/BoutonIcone';
+import { useTraduction } from '../../hooks/useLangue';
 
 // Une entrée de légende : le nom et la couleur d'une courbe, plus son éventuel
 // retrait. Le retrait est ABSENT pour « Moi » et les potentiels (qui ne se
 // retirent pas), PRÉSENT pour une courbe importée.
 export interface EntreeLegende {
   name: string;
+  // La clé de masquage, quand le nom affiché change avec la langue (les
+  // courbes calculées) ; par défaut, le nom.
+  cle?: string;
   color: string;
   onRetirer?: () => void;
 }
@@ -43,15 +47,16 @@ export default function CurveLegend({
   // sous le graphe d'avant.
   className?: string;
 }) {
+  const c = useTraduction().courbes;
   return (
     <div className={`mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 ${className}`}>
-      {entrees.map(({ name, color, onRetirer }) => {
-        const off = masquees.has(name);
+      {entrees.map(({ name, cle = name, color, onRetirer }) => {
+        const off = masquees.has(cle);
         return (
           <span key={name} className="flex items-center gap-1.5">
             <ZoneCliquable
-              onClick={() => onBascule(name)}
-              title={off ? 'Afficher cette courbe' : 'Masquer cette courbe'}
+              onClick={() => onBascule(cle)}
+              title={off ? c.afficher : c.masquer}
               aria-pressed={!off}
               data-cible-fine
               className="flex items-center gap-2 rounded px-1.5 py-1
@@ -73,7 +78,7 @@ export default function CurveLegend({
               <BoutonIcone
                 onClick={onRetirer}
                 icone={<X size={13} />}
-                libelle="Retirer cette courbe"
+                libelle={c.retirer}
                 ton="danger"
                 taille="serre"
               />

@@ -33,6 +33,7 @@ import {
   loadSiegeTeamsForExclusion,
 } from './loadMonster';
 import { recipeToSearchParams } from './recipeToSearchParams';
+import { fr } from '../../src/i18n/fr';
 
 /**
  * D'où vient le build du monstre — les trois sources que l'écran propose.
@@ -69,7 +70,7 @@ export function chargerRecette(
 ): RecetteChargee {
   const avertissements: string[] = [];
 
-  const { recipe, error, avertissements: conversions } = parseOptimizerRecipe(readFileSync(cheminRecette, 'utf8'));
+  const { recipe, error, avertissements: conversions } = parseOptimizerRecipe(readFileSync(cheminRecette, 'utf8'), fr);
   if (!recipe) throw new Error(`Recette invalide : ${error}`);
   // Ce que le parseur a CONVERTI (l'ancien mode critique « Moyenne » →
   // « Critique ») : le même texte que le message

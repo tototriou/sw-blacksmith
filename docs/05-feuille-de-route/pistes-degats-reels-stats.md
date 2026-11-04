@@ -62,21 +62,22 @@ les coups. La forme d'une piste et des relevés en jeu est celle de
 
 ### Ignore DEF conditionnel
 
-- **Constat** : cinq sorts comptent l'ignore DEF en permanence et portent
+- **Constat** : quatre sorts comptent l'ignore DEF en permanence et portent
   « Calcul partiel » (`CALCUL_PARTIEL_PAR_ID`, `src/lib/damage.ts`) :
-  Madness Judgement (`13406`, `13410`), Start of Attacking (`13611`), Thunder Strike (`7713`), Sword of Discharge
-  (`6013`) ; calcul trop favorable. Meteor Strike (`19215`) et Black Meteor
-  (`19615`) ignorent la DEF sur tout le sort dès qu'un effet nocif est
-  présent ; Bull's Eye, Wipe Out, Shadow Arrow et Dark Dragon Attack
-  (`8215`, Fei) n'ont qu'un interrupteur pour tout le sort
-  (`CONDITIONS_COMBAT_PAR_ID_CONNUS`).
+  Madness Judgement (`13406`, `13410`), Start of Attacking (`13611`),
+  Thunder Strike (`7713`) ; calcul trop favorable. Meteor Strike (`19215`)
+  et Black Meteor (`19615`) ignorent la DEF sur tout le sort dès qu'un effet
+  nocif est présent ; Bull's Eye, Wipe Out et Shadow Arrow n'ont qu'un
+  interrupteur pour tout le sort (`CONDITIONS_COMBAT_PAR_ID_CONNUS`).
+  (Sword of Discharge, sous l'interrupteur d'Invincibilité, et Dark Dragon
+  Attack de Fei, un interrupteur par coup, sont réglés :
+  [feat-poses-entre-les-coups.md](../02-app/degats-reels/feat-poses-entre-les-coups.md).)
 - **Idée** : Thunder Strike, borne stricte (DEF de la cible sous 50 % de la
-  tienne) ; Start of Attacking, 35 % par effet bénéfique retiré ; Sword of
-  Discharge, sous Invincibilité. Meteor Strike et Black Meteor : « ignore
-  DEF à partir du coup 1, 2, 3, ou aucun ». Fei, Bull's Eye, Wipe Out,
-  Shadow Arrow : un choix coup par coup, la chance affichée près de
-  l'interrupteur. Chaque entrée sort de `CALCUL_PARTIEL_PAR_ID` dans le
-  commit qui la conditionne.
+  tienne) ; Start of Attacking, 35 % par effet bénéfique retiré. Meteor
+  Strike et Black Meteor : « ignore DEF à partir du coup 1, 2, 3, ou
+  aucun ». Bull's Eye, Wipe Out, Shadow Arrow : un choix coup par coup,
+  comme Fei, la chance affichée près de l'interrupteur. Chaque entrée sort
+  de `CALCUL_PARTIEL_PAR_ID` dans le commit qui la conditionne.
 - **Bloque** : un changement de code, et des relevés. Madness Judgement
   contre ~3 000 de DEF, sans puis avec Brise DEF à 100 % de PV, puis 75,
   50, 20 % : PV lus avant ou après l'auto-dégât, et loi linéaire ou non.
@@ -125,21 +126,26 @@ les coups. La forme d'une piste et des relevés en jeu est celle de
 
 ### Composantes conditionnelles et comptées
 
-- **Constat** : Red Battlefield (`13414`, Lucifer) et Start of Pain
-  (`15115`, Kiki) n'ont aucune entrée dans `src/lib/damage.ts`, alors que
-  leurs valeurs sont fournies ([02-app/degats-reels/](../02-app/degats-reels/)) ;
-  les clauses conditionnelles d'Amber, d'Übel feu, de Shakan (et de
-  Disdain), de Mandrake (Hyanes), du S3 de Jin et Kai ne sont pas comptées.
+- **Constat** : Red Battlefield (`13414`, Lucifer) n'a aucune entrée dans
+  `src/lib/damage.ts`, alors que sa valeur est fournie
+  ([02-app/degats-reels/](../02-app/degats-reels/)) ; les clauses
+  conditionnelles de Shakan (et de Disdain), de Mandrake (Hyanes), du S3 de
+  Jin et Kai ne sont pas comptées. Seul le S3 de Jin et Kai vent porte
+  « Calcul partiel » (`22413`, `22913`, `CALCUL_PARTIEL_PAR_ID`) ; ni
+  Mandrake (`12815`), ni les S1 et S2 de Shakan que Disdain renforce
+  (`5603`, `5608`, `5653`, `5658`), ni les sorts des alliés de Lucifer ne
+  l'ont. (Kiki, Amber, Übel feu, Wieb feu, Nina et
+  Shasha lumière, eux, se comptent : `BRUT_PAR_EFFET_CIBLE_PAR_ID` et
+  `BRUT_PAR_EFFET_CIBLE_PAR_PASSIF_PAR_ID`,
+  [feat-poses-entre-les-coups.md](../02-app/degats-reels/feat-poses-entre-les-coups.md).)
 - **Idée** : une clause « la cible porte un effet » en interrupteur ;
   Lucifer, un effet actif saisi de 0 à 50 % avec l'équivalent en dégâts
-  reçus ; Kiki, un choix de 0, 1 ou 2 effets nocifs sur la cible ; le
-  bonus du S4 de Zenitsu et de Qilin Slasher, lié à un seuil de PV de la
-  cible, en interrupteur.
-- **Bloque** : des relevés. Nina ou Shasha, S3, valeurs par coup. Shakan, PV % égaux puis cible entamée, et Disdain
-  par un relevé propre. Amber (deux coups) contre 0, 1, 3, 4 débuffs.
-  Mandrake avec puis sans effet sur la cible. S3 d'Übel feu sur une cible
-  sans dégât continu, valeurs par coup. S3 de Jin ou de Kai, jumeaux, une
-  mesure, coup par coup, contre une ATQ entre la leur sans et avec buff.
+  reçus ; le bonus du S4 de Zenitsu et de Qilin Slasher, lié à un seuil de
+  PV de la cible, en interrupteur.
+- **Bloque** : des relevés. Shakan, PV % égaux puis cible entamée, et
+  Disdain par un relevé propre. Mandrake avec puis sans effet sur la cible.
+  S3 de Jin ou de Kai, jumeaux, une mesure, coup par coup, contre une ATQ
+  entre la leur sans et avec buff.
 
 ### PV et comparaisons continues
 
@@ -148,7 +154,11 @@ les coups. La forme d'une piste et des relevés en jeu est celle de
   favorables sous le seuil. Le bonus de Summary Justice selon la VIT
   contre un ennemi plus lent porte « Calcul partiel » (`23515`). Les PV
   propres n'ont pas de source unique ; Massacre (`1215`, Garok) n'est pas
-  curé.
+  curé. Les comparaisons de DEF de la cible (`defCibleSousDefPropre`,
+  `defCibleSousAtkPropre` : Jaara, Varus 2A, Copper 2A…) lisent la DEF
+  saisie, jamais la DEF réduite par une Réduction de DEF ; seul l'écart de
+  Martial Arts Specialist (Sin feu) la lit réduite, sur décision de
+  l'utilisateur (2026-11-02), non étendue par ressemblance.
 - **Idée** : Self Repair et Path of the Brave Warrior en réglage continu
   (valeurs fournies) ; Massacre déduit des PV de la cible ; Bayek et Ahmed
   sur l'état partagé « PV détruits de la cible ». Une seule source pour les PV propres.
@@ -162,7 +172,8 @@ les coups. La forme d'une piste et des relevés en jeu est celle de
   (cible plus lente), Spear of Thunder (`23415`, Asbolus, cible plus
   rapide). Born to Fight (Lucas), premier tour puis bouclier affiché.
   Dismantle (Sukuna) ou Bead Explosion (Hayato), sans puis avec Brise DEF,
-  puis buff d'ATQ. Stark, équipe pleine, alliés blessés, 1 puis 2 morts.
+  puis buff d'ATQ. Copper 2A (ignore DEF sous 50 % de sa DEF) contre une
+  cible juste au-dessus du seuil, sans puis avec Brise DEF : ignore ou non. Stark, équipe pleine, alliés blessés, 1 puis 2 morts.
   Bayek ou Ahmed, cible intacte puis après une destruction connue.
 
 ### Pertes de PV

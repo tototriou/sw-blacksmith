@@ -1,5 +1,6 @@
 import { Monitor, X } from 'lucide-react';
 import { useStickyState } from '../hooks/useStickyState';
+import { useTraduction } from '../hooks/useLangue';
 
 // Avertissement affiché **sur petit écran uniquement** : l'app manipule des
 // listes de runes, des équipes de trois monstres et des ordres de tour — tout
@@ -17,6 +18,7 @@ import { useStickyState } from '../hooks/useStickyState';
 // prépa RTA serait disproportionné.
 export default function MobileNotice() {
   const [ferme, setFerme] = useStickyState('mobileNotice.ferme', false);
+  const a = useTraduction().controles.avertissementMobile;
   if (ferme) return null;
 
   return (
@@ -29,12 +31,11 @@ export default function MobileNotice() {
           de la largeur. Trois lignes pour le dire prenaient un quart de
           l'écran, juste sous la barre. */}
       <p className="flex-1 text-xs leading-relaxed text-ink-dim">
-        Les <b className="text-ink">courbes</b> et l'<b className="text-ink">optimiseur</b> se
-        lisent plus confortablement sur un grand écran.
+        {a.debut}<b className="text-ink">{a.courbes}</b>{a.milieu}<b className="text-ink">{a.optimiseur}</b>{a.fin}
       </p>
       <button
         onClick={() => setFerme(true)}
-        aria-label="Masquer cet avertissement"
+        aria-label={a.masquer}
         className="flex-none rounded-md p-1 text-ink-dim transition hoverable:text-ink"
       >
         <X size={14} />

@@ -1,4 +1,6 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
+import { useTraduction } from '../hooks/useLangue';
+import type { Dictionnaire } from '../i18n/fr';
 import { EtatMiseAJour, redemarrerPourMettreAJour, suivreMiseAJour, telechargerMiseAJour } from '../lib/bureau';
 import { Annonce, useNotifier } from '../ui/Notification';
 
@@ -10,7 +12,8 @@ import { Annonce, useNotifier } from '../ui/Notification';
 //
 // Les phases d'une RECHERCHE (`aucune`, `recherche`, `a-jour`,
 // `injoignable`) ne notifient rien : elles se lisent dans les Réglages.
-function annonce({ phase, version }: EtatMiseAJour): Annonce | null {
+export function annonce({ phase, version }: EtatMiseAJour, t: Dictionnaire): Annonce | null {
+  const a = t.application;
   switch (phase) {
     case 'aucune':
     case 'recherche':
@@ -19,21 +22,21 @@ function annonce({ phase, version }: EtatMiseAJour): Annonce | null {
       return null;
     case 'disponible':
       return {
-        message: `Nouvelle version ${version} disponible`,
+        message: a.notifDisponible(version),
         action: telechargerMiseAJour,
-        libelleAction: 'Mettre à jour',
+        libelleAction: a.mettreAJour,
         persistante: true,
       };
     case 'telechargement':
-      return { message: 'Téléchargement de la mise à jour…' };
+      return { message: a.notifTelechargement };
     case 'prete':
       // Sans redémarrage, elle s'installe à la fermeture de l'app.
-      return { message: 'Mise à jour prête', action: redemarrerPourMettreAJour, libelleAction: 'Redémarrer' };
+      return { message: a.notifPrete, action: redemarrerPourMettreAJour, libelleAction: a.redemarrer };
     case 'echec':
       return {
-        message: "La mise à jour n'a pas pu être téléchargée",
+        message: a.notifEchec,
         action: telechargerMiseAJour,
-        libelleAction: 'Réessayer',
+        libelleAction: a.reessayer,
         persistante: true,
       };
   }
@@ -41,10 +44,14 @@ function annonce({ phase, version }: EtatMiseAJour): Annonce | null {
 
 export default function MiseAJourBureau() {
   const notifier = useNotifier();
+  // La langue au moment de la notification, sans réabonner le suivi.
+  const textes = useTraduction();
+  const textesVivants = useRef(textes);
+  textesVivants.current = textes;
   useEffect(
     () =>
       suivreMiseAJour((etat) => {
-        const a = annonce(etat);
+        const a = annonce(etat, textesVivants.current);
         if (a) notifier(a);
       }),
     [notifier]

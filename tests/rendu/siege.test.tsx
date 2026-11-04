@@ -138,7 +138,7 @@ export function testRenduSiegeEdition() {
   ok(!!bouton(html, "Terminer l'édition"), 'le bouton « Terminer l\'édition »');
   ok(valeurs(html, 'placeholder').includes('Choisir un monstre…'), 'le slot vide propose « Choisir un monstre… »');
   egal(boutons(html).filter((b) => b.ariaLabel === 'Retirer' || b.title === 'Retirer').length, 2, 'chaque monstre posé a sa croix « Retirer »');
-  egal(valeurs(html, 'aria-label').filter((v) => v === 'SPD des runes').length, 2, 'chaque monstre posé a son champ « SPD des runes »');
+  egal(valeurs(html, 'aria-label').filter((v) => v === 'VIT des runes').length, 2, 'chaque monstre posé a son champ « VIT des runes »');
   egal((t.match(/base \d+/g) ?? []).length, 2, 'chaque monstre posé affiche sa vitesse de base');
   egal(boutons(html).filter((b) => b.texte === 'Off').length, 2, 'chaque monstre posé a sa rangée de ticks (« Off » + les ticks)');
   ok(/manque \d+ pour 239|\+\d+ au-dessus de 239|pile au tick 239/.test(t), 'le monstre visant 239 affiche son écart au tick');

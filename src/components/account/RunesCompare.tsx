@@ -22,6 +22,7 @@ import AncientFilter, {
 import Bouton from '../../ui/Bouton';
 import Onglets from '../../ui/Onglets';
 import { PREFIXE_FICHIER } from '../../marque';
+import { useTraduction } from '../../hooks/useLangue';
 
 interface Props {
   runes: RuneDetail[];
@@ -63,6 +64,8 @@ const desc = (a: number, b: number) => b - a;
 // honnête. D'où la séparation, plutôt qu'un onglet unique aux filtres qui
 // marchent une fois sur deux.
 export default function RunesCompare({ runes }: Props) {
+  const textes = useTraduction();
+  const c = textes.comparaison;
   const [onglet, setOnglet] = useStickyState<Onglet>('runesCompare.tab', 'courbes');
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const metric = useRuneMetric();
@@ -85,18 +88,18 @@ export default function RunesCompare({ runes }: Props) {
   // n'hésite pas à cliquer.
   // Ce qui va être retiré, en toutes lettres : « 2 courbes et 1 compte ».
   const resumeRetrait = [
-    courbes.length > 0 && `${courbes.length} courbe${courbes.length > 1 ? 's' : ''}`,
-    comptes.length > 0 && `${comptes.length} compte${comptes.length > 1 ? 's' : ''}`,
+    courbes.length > 0 && c.nCourbes(courbes.length),
+    comptes.length > 0 && c.nComptes(comptes.length),
   ]
     .filter(Boolean)
-    .join(' et ');
+    .join(` ${textes.siege.fautes.et} `);
 
   function toutRetirer() {
     setRetraitAConfirmer(false);
     setCourbes([]);
     setComptes([]);
     setHidden(new Set());
-    flash(true, 'Comparaison remise à zéro.');
+    flash(true, c.remiseAZero);
   }
 
   return (
@@ -106,17 +109,17 @@ export default function RunesCompare({ runes }: Props) {
       <div className={`mb-3 items-center gap-2 flex-wrap lg:flex lg:gap-3 ${importes > 0 ? 'flex' : 'hidden'}`}>
         {/* ⚠️ **À la SOURIS, le titre de la vue en tête de la rangée** (la maquette).
             Au doigt, la barre du haut dit déjà la vue. */}
-        <h1 className="hidden font-display text-xl tracking-wide text-ink lg:block">Comparaison</h1>
+        <h1 className="hidden font-display text-xl tracking-wide text-ink lg:block">{c.titre}</h1>
 
         {importes > 0 && (
           <Bouton
             onClick={() => setRetraitAConfirmer(true)}
-            title="Retire uniquement ce qui a été importé ici"
+            title={c.toutRetirerAide}
             ton="danger"
             fond="vide"
             taille="sm"
             icone={<Trash2 size={14} />}
-            libelle={`Tout retirer (${importes})`}
+            libelle={c.toutRetirerN(importes)}
             className="ml-auto"
           />
         )}
@@ -125,7 +128,7 @@ export default function RunesCompare({ runes }: Props) {
       {/* Les deux sources en ONGLETS (`Onglets`) : chacune affiche un écran à
           part, et l'onglet ouvert le coiffe. */}
       <Onglets
-        aria-label="Source de la comparaison"
+        aria-label={c.source}
         className="mb-3"
         valeur={onglet}
         onChange={(k) => {
@@ -133,8 +136,8 @@ export default function RunesCompare({ runes }: Props) {
           setMsg(null);
         }}
         options={[
-          { cle: 'courbes', libelle: 'Courbes partagées', icone: <LineChart size={14} /> },
-          { cle: 'comptes', libelle: 'Fichiers de compte', icone: <Boxes size={14} /> },
+          { cle: 'courbes', libelle: c.courbesPartagees, icone: <LineChart size={14} /> },
+          { cle: 'comptes', libelle: c.fichiersCompte, icone: <Boxes size={14} /> },
         ]}
       />
 
@@ -168,9 +171,9 @@ export default function RunesCompare({ runes }: Props) {
 
       {retraitAConfirmer && (
         <ConfirmDialog
-          titre={`Retirer ${resumeRetrait} de la comparaison ?`}
-          message="Ton propre compte, tes recommandations et tes équipes ne sont pas touchés."
-          libelleAction="Tout retirer"
+          titre={c.retirerTitre(resumeRetrait)}
+          message={c.retirerMessage}
+          libelleAction={textes.categories.toutRetirer}
           destructif
           onCancel={() => setRetraitAConfirmer(false)}
           onConfirm={toutRetirer}
@@ -205,6 +208,8 @@ function OngletCourbes({
   hidden: Set<string>;
   setHidden: Dispatch<SetStateAction<Set<string>>>;
 }) {
+  const textes = useTraduction();
+  const c = textes.comparaison;
   const [limit, setLimit] = useStickyState('runesCompare.limit', DEFAULT_LIMIT);
   const curveRef = useRef<HTMLInputElement>(null);
 
@@ -213,19 +218,19 @@ function OngletCourbes({
   const myScores = useMemo(() => runes.map((r) => runeScore(r)).sort(desc), [runes]);
 
   function handleExport() {
-    if (myEffs.length === 0) return flash(false, 'Aucune rune à exporter.');
+    if (myEffs.length === 0) return flash(false, c.aucuneAExporter);
     setNomExportDemande(true);
   }
 
   function exporterSous(saisi: string) {
     setNomExportDemande(false);
-    const name = saisi.trim() || 'Moi';
+    const name = saisi.trim() || c.moi;
     // ⚠️ On n'exporte QUE les points, jamais les runes : une courbe partagée ne
     // doit transporter aucune donnée de compte.
     const json = encodeCurveJson(name, myEffs, myScores);
     navigator.clipboard?.writeText(json).catch(() => {});
     telechargerTexte(`${PREFIXE_FICHIER}-runes-${name.replace(/\s+/g, '_')}.json`, json);
-    flash(true, 'Courbe exportée : fichier .json téléchargé et contenu copié.');
+    flash(true, c.exportee);
   }
 
   function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -235,7 +240,7 @@ function OngletCourbes({
     const reader = new FileReader();
     reader.onload = () => {
       const payload = decodeCurve(String(reader.result ?? ''));
-      if (!payload) return flash(false, 'Courbe invalide.');
+      if (!payload) return flash(false, c.invalide);
       setOverlays((prev) => [
         ...prev,
         {
@@ -247,9 +252,9 @@ function OngletCourbes({
         color: couleurLibre(prev.map((o) => o.color)),
         },
       ]);
-      flash(true, `Courbe « ${payload.name} » importée.`);
+      flash(true, c.importee(payload.name));
     };
-    reader.onerror = () => flash(false, 'Lecture du fichier impossible.');
+    reader.onerror = () => flash(false, c.lectureImpossible);
     reader.readAsText(file);
   }
 
@@ -271,7 +276,7 @@ function OngletCourbes({
   const lignes: Ligne[] = [
     // ⚠️ `runes` et non `mine` : `mine` n'est qu'une liste de valeurs déjà
     // triées, sans les runes qui vont avec.
-    { series: { name: 'Moi', ...classees(runes), color: OWN_COLOR, own: true } },
+    { cle: CLE_MOI, series: { name: c.moi, ...classees(runes), color: OWN_COLOR, own: true } },
     // ⚠️ Une courbe PARTAGÉE ne porte pas ses runes — juste des points. Elle
     // reste donc en lecture seule, sans `runes` : le graphe ne promet un clic
     // que là où il y a quelque chose à ouvrir.
@@ -294,23 +299,23 @@ function OngletCourbes({
   return (
     <>
       <div className="flex items-center gap-2 flex-wrap mb-3">
-        <Bouton onClick={handleExport} taille="sm" icone={<Upload size={14} />} libelle="Exporter ma courbe" />
+        <Bouton onClick={handleExport} taille="sm" icone={<Upload size={14} />} libelle={c.exporterCourbe} />
         <Bouton
           onClick={() => curveRef.current?.click()}
           taille="sm"
           icone={<Download size={14} />}
-          libelle="Importer une courbe"
+          libelle={c.importerCourbe}
         />
         <input ref={curveRef} type="file" accept=".json,application/json" onChange={handleFile} className="hidden" />
 
         <div className="ml-auto flex items-center gap-2">
-          <span className="label">Nb de runes</span>
+          <span className="label">{textes.courbes.nbRunes}</span>
           <NumberField
             value={limit}
             min={1}
             step={50}
             width="w-14"
-            ariaLabel="Nombre de runes"
+            ariaLabel={textes.courbes.nombreRunes}
             onChange={(v) => setLimit(Math.max(1, v ?? 1))}
           />
         </div>
@@ -318,22 +323,19 @@ function OngletCourbes({
 
       {/* ⚠️ Explique l'ABSENCE des autres filtres, sinon on la prend pour un oubli. */}
       <p className="mb-3 text-xs leading-relaxed text-ink-dim">
-        Cet onglet montre <b className="text-ink">tout ce que tu as importé</b>, courbes partagées
-        comme fichiers de compte. Une courbe partagée ne contient que des{' '}
-        <b className="text-ink">points</b>, pas les runes — c'est ce qui lui évite de transporter la
-        moindre donnée de compte, mais aussi ce qui rend les filtres par set, emplacement ou
-        antiques impossibles ici : ils vivent dans l'onglet{' '}
-        <b className="text-ink">Fichiers de compte</b>.
+        {c.courbesAide1} <b className="text-ink">{c.courbesAide1Gras}</b>{c.courbesAide2}{' '}
+        <b className="text-ink">{c.courbesAidePoints}</b>{c.courbesAide3}{' '}
+        <b className="text-ink">{c.fichiersCompte}</b>.
       </p>
 
       <Graphe lignes={lignes} metric={metric} hidden={hidden} setHidden={setHidden} />
 
       {nomExportDemande && (
         <PromptDialog
-          titre="Nom de ta courbe"
-          message="Il sera visible par ceux à qui tu partages le fichier."
-          valeurInitiale="Moi"
-          libelleAction="Exporter"
+          titre={c.nomCourbe}
+          message={c.nomCourbeAide}
+          valeurInitiale={c.moi}
+          libelleAction={textes.commun.exporter}
           onCancel={() => setNomExportDemande(false)}
           onValider={exporterSous}
         />
@@ -363,6 +365,8 @@ function OngletComptes({
   hidden: Set<string>;
   setHidden: Dispatch<SetStateAction<Set<string>>>;
 }) {
+  const textes = useTraduction();
+  const c = textes.comparaison;
   // Liste blanche, tout coché par défaut (voir RunesList) : coché = affiché,
   // aucun coché = rien.
   const [sets, setSets] = useStickyState<Set<string>>('runesCompare.sets', new Set(runes.map((r) => r.set)));
@@ -396,7 +400,7 @@ function OngletComptes({
     // masqué d'emblée, et sa courbe faussée. Les slots, eux, sont déjà tous les
     // six.
     setSets((prev) => new Set([...prev, ...compteEnAttente.runes.map((r) => r.set)]));
-    flash(true, `${compteEnAttente.runes.length} runes importées pour « ${nom} ».`);
+    flash(true, c.runesImportees(compteEnAttente.runes.length, nom));
     setCompteEnAttente(null);
   }
 
@@ -404,18 +408,18 @@ function OngletComptes({
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
-    const repli = file.name.replace(/\.json$/i, '').slice(0, 40) || 'Ami';
+    const repli = file.name.replace(/\.json$/i, '').slice(0, 40) || c.ami;
     const reader = new FileReader();
     reader.onload = () => {
-      const res = parseAccountInventory(String(reader.result ?? ''));
+      const res = parseAccountInventory(String(reader.result ?? ''), textes);
       if (res.error || res.runes.length === 0) {
-        return flash(false, res.error || 'Aucune rune trouvée dans ce fichier de compte.');
+        return flash(false, res.error || c.aucuneRuneCompte);
       }
       // On demande le nom APRÈS avoir lu le fichier : inutile de faire saisir
       // quoi que ce soit pour un fichier qui n'aurait rien d'exploitable.
       setCompteEnAttente({ runes: res.runes, repli });
     };
-    reader.onerror = () => flash(false, 'Lecture du fichier impossible.');
+    reader.onerror = () => flash(false, c.lectureImpossible);
     reader.readAsText(file);
   }
 
@@ -443,7 +447,7 @@ function OngletComptes({
   // Ici TOUTES les séries portent leurs runes — les fichiers de compte en
   // contiennent, contrairement aux courbes partagées. Chacune est donc ouvrable.
   const lignes: Ligne[] = [
-    { series: { name: 'Moi', ...classees(runes), color: OWN_COLOR, own: true } },
+    { cle: CLE_MOI, series: { name: c.moi, ...classees(runes), color: OWN_COLOR, own: true } },
     ...overlays.map((o, i) => ({
       series: { name: o.name, ...classees(o.runes), color: o.color, own: false },
       remove: () => setOverlays((prev) => prev.filter((_, j) => j !== i)),
@@ -464,11 +468,11 @@ function OngletComptes({
           onClick={() => jsonRef.current?.click()}
           taille="sm"
           icone={<FileJson size={14} />}
-          libelle="Importer un fichier de compte"
+          libelle={c.importerCompte}
         />
         <input ref={jsonRef} type="file" accept=".json,application/json" onChange={handleFile} className="hidden" />
         <span className="text-xs text-ink-dim">
-          L'export SWEX d'un ami — lu dans la page, jamais envoyé.
+          {c.importerCompteAide}
         </span>
       </div>
 
@@ -478,13 +482,13 @@ function OngletComptes({
           <SlotFilter value={slots} onChange={setSlots} />
           <AncientFilter value={ancient} onChange={setAncient} />
           <div className="ml-auto flex items-center gap-2">
-            <span className="label">Nb de runes</span>
+            <span className="label">{textes.courbes.nbRunes}</span>
             <NumberField
               value={limit}
               min={1}
               step={50}
               width="w-14"
-              ariaLabel="Nombre de runes"
+              ariaLabel={textes.courbes.nombreRunes}
               onChange={(v) => setLimit(Math.max(1, v ?? 1))}
             />
           </div>
@@ -493,9 +497,8 @@ function OngletComptes({
 
       {overlays.length === 0 && (
         <p className="mb-3 text-xs leading-relaxed text-ink-dim">
-          Importe le fichier de compte d'un ami pour le comparer au tien.{' '}
-          <b className="text-ink">Les filtres s'appliquent à tout le monde de la même façon.</b> Une
-          courbe partagée ne peut pas apparaître ici.
+          {c.comptesAide1}{' '}
+          <b className="text-ink">{c.comptesAideGras}</b> {c.comptesAide2}
         </p>
       )}
 
@@ -503,10 +506,10 @@ function OngletComptes({
 
       {compteEnAttente && (
         <PromptDialog
-          titre="Nom de ce compte"
-          message="Il sert d'étiquette sur le graphe, rien de plus."
+          titre={c.nomCompte}
+          message={c.nomCompteAide}
           valeurInitiale={compteEnAttente.repli}
-          libelleAction="Ajouter"
+          libelleAction={textes.commun.ajouter}
           onCancel={() => setCompteEnAttente(null)}
           onValider={ajouterCompte}
         />
@@ -531,8 +534,15 @@ function nomLibre(souhaite: string, pris: string[]): string {
 // listes (courbes et comptes), un index n'y désignerait plus rien de fiable.
 export interface Ligne {
   series: CurveSeries;
+  // La clé de masquage MÉMORISÉE quand le nom suit la langue (« Moi ») ; par
+  // défaut, le nom de la série.
+  cle?: string;
   remove?: () => void;
 }
+
+// ⚠️ Clé mémorisée de « Moi » (`runesCompare.hidden`) : elle ne suit pas la
+// langue, sinon changer de langue réafficherait la courbe masquée.
+const CLE_MOI = 'Moi';
 
 // Légende cliquable (masquer/afficher) + graphe, partagés par les deux onglets.
 function Graphe({
@@ -546,6 +556,7 @@ function Graphe({
   hidden: Set<string>;
   setHidden: Dispatch<SetStateAction<Set<string>>>;
 }) {
+  const k = useTraduction().courbes;
   const toggle = (name: string) =>
     setHidden((prev) => {
       const next = new Set(prev);
@@ -560,8 +571,8 @@ function Graphe({
     // rangée sous le graphe d'avant.
     <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_240px] lg:items-start lg:gap-3">
       <CurveChart
-        series={lignes.map((l) => l.series).filter((s) => !hidden.has(s.name))}
-        yLabel={metric === 'eff' ? 'Efficience (%)' : 'Score SW'}
+        series={lignes.filter((l) => !hidden.has(l.cle ?? l.series.name)).map((l) => l.series)}
+        yLabel={metric === 'eff' ? k.axeEfficience : k.axeScore}
         unit={metric === 'eff' ? '%' : ''}
       />
 
@@ -569,10 +580,11 @@ function Graphe({
           d'une ligne lui est attaché — l'onglet Courbes mélange deux listes, un
           index n'y désignerait plus rien de fiable. */}
       <aside className="lg:rounded-xl lg:border lg:border-border-soft lg:bg-panel lg:p-3">
-        <p className="mb-2 hidden label lg:block">Séries</p>
+        <p className="mb-2 hidden label lg:block">{k.series}</p>
         <CurveLegend
-          entrees={lignes.map(({ series: s, remove }) => ({
+          entrees={lignes.map(({ series: s, cle, remove }) => ({
             name: s.name,
+            cle,
             color: s.color,
             onRetirer: remove,
           }))}

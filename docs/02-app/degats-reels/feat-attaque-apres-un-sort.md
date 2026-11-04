@@ -24,10 +24,16 @@ que des passifs et les reconnaît par leur nom : une table frère,
 `ATTAQUES_APPELEES_PAR_DECLENCHEUR`, la décrit par son sort déclencheur, et
 `monsterOffensivePassives` la rend au même format, en fin de liste — même
 porte (`passifCompte`), même calcul (voir
-« Ce qu’il faudra fournir »). Aucune attaque conditionnelle n’y est encore
-curée. La table n’est pas vide pour autant : elle porte un second genre
-d’entrée, le sort coopératif sans dégâts propres qui appelle le S1 (voir
-« Sort coopératif sans dégâts propres »), que ce chemin ne lit pas.
+« Ce qu’il faudra fournir »). Six attaques conditionnelles y sont curées : le
+S1 enchaîné de Shoryuken (RYU feu, vent et ténèbres : [Hadoken]) et d'Iron
+Uppercut (Douglas, Kashmir, Vancliffe : [Mach Punch]), sous leur interrupteur
+éteint par défaut. La Marque que la S2 pose avant lui se règle par
+l'interrupteur « Posé au coup 1 » de la Marque (« pour [Hadoken] enchaîné »)
+dans le scénario des poses entre les coups : le S1 lit l'état de la cible
+après la S2 ([feat-poses-entre-les-coups.md](feat-poses-entre-les-coups.md)).
+La table porte aussi un second genre d’entrée, le sort coopératif sans
+dégâts propres qui appelle le S1 (voir « Sort coopératif sans dégâts
+propres »), que ce chemin ne lit pas.
 
 | Paramètre | Champ curé | Tempest | Source |
 | --- | --- | --- | --- |
@@ -193,21 +199,21 @@ Puis, pour l’une comme pour l’autre :
    effet posé par le déclencheur n’est modélisé. Un effet dont le jeu dit
    qu’il est déjà actif et que le calcul lit fait classer le cas, jamais
    accepter : buff d’ATQ de Tiger Punch, buff de VIT de Seal Punch (lu par la
-   ligne 221, dégâts selon la VIT buffée). ⚠️ **La Marque** que Shoryuken et
-   Iron Uppercut posent (`Brand`, 100 %) n’est pas modélisée pour la S1
-   enchaînée. Elle est posée (ou non) **avant** que la S1 se déclenche : un
-   interrupteur « Marque posée » la règle, sans relevé ([valeurs curées](valeurs-de-jeu-curees.md), « Marque
-   de la S2, puis S1 enchaîné ») ; il reste à coder
-   ([05-feuille-de-route/pistes-degats-reels.md § Compétence active appelée par un sort](../../05-feuille-de-route/pistes-degats-reels.md#compétence-active-appelée-par-un-sort)).
+   ligne 221, dégâts selon la VIT buffée). **La Marque** que Shoryuken et
+   Iron Uppercut posent (`Brand`, 100 %) est posée (ou non) **avant** que la
+   S1 se déclenche : un interrupteur la règle, sans relevé ([valeurs curées](valeurs-de-jeu-curees.md), « Marque
+   de la S2, puis S1 enchaîné ») — la pose de la Marque au coup 1, « pour
+   [Hadoken] enchaîné », du scénario des poses entre les coups
+   ([feat-poses-entre-les-coups.md](feat-poses-entre-les-coups.md)).
 
 ### Les 17 amorces examinées
 
-Examinées une par une (`testAttaqueAppeleeCouverture`) ; aucune n’est
-curée en production.
+Examinées une par une (`testAttaqueAppeleeCouverture`) ; les six de RYU et
+Striker sont curées en production (demande de l’utilisateur, 2026-11-02).
 
 | Amorces | Verdict | Raison |
 | --- | --- | --- |
-| `13907`, `13908`, `13910`, `14407`, `14408`, `14410` (RYU et Striker) | acceptables, une entrée chacune | même total qu’un profil construit à la main ; la Marque reste à régler (point 6) |
+| `13907`, `13908`, `13910`, `14407`, `14408`, `14410` (RYU et Striker) | acceptées, en production | même total qu’un profil construit à la main ; la Marque se règle par « pour [Hadoken] enchaîné » (point 6) |
 | `8107`, `8110` (Drunken Kick), `8113` (Phoenix Kick), `8114` (Stork Kick), `8115` (Snake Punch) | acceptables, une entrée chacune | rien de ce qu’ils posent n’est lu par Rolling Punch (il ignore la DEF ; le soin ne porte que sur Stork Kick) ; Snake Punch : sa hausse de TC ne compterait que dans un mode critique pondéré par le Taux Crit, que le calcul n’a pas (« Critique » ou « Non critique ») |
 | `8106`, `8108`, `8109` (One More Drink) | classées | le déclencheur est un soin, sans profil de dégâts, jamais « Compétence utilisée » ; Rolling Punch y est la première attaque du tour et reçoit 411, que la boucle neutralise |
 | `8111` (Seal Punch), `8112` (Tiger Punch) | classées | buff de VIT ou d’ATQ posé avant Rolling Punch, lu par le calcul (point 6) |
@@ -236,7 +242,7 @@ source (`testDegatsTempestEcran`).
 
 `tests/degats-attaque-appelee.test.ts` (`node tests/run.mjs attaqueappelee`),
 entrées injectées puis retirées, table de production vérifiée (deux entrées
-coopératives, aucune attaque conditionnelle) :
+coopératives, six attaques conditionnelles de RYU et Striker) :
 approvisionnement par une ligne, profil identique à celui de « Compétence
 utilisée », sort par défaut et liste des sorts inchangés, 411, jamais par
 nom, gardes du chemin frère (`testAttaqueAppeleeApprovisionnement`) ; les 17

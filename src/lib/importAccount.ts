@@ -18,6 +18,7 @@ import {
   RuneDetail,
 } from '../types';
 import { activeSets } from './effects';
+import type { Dictionnaire } from '../i18n/fr';
 
 const RUNE_EFF_SPEED = 8; // type d'effet « Vitesse » dans les données com2us
 const RUNE_SET_SWIFT = 3; // set_id du set Swift
@@ -572,16 +573,15 @@ function findRtaEquipList(data: any): any[] | null {
   return null;
 }
 
-export function parseAccountJson(src: AccountSource): ParseResult {
+// Les messages d'erreur sont écrits dans la langue de `t`.
+export function parseAccountJson(src: AccountSource, t: Dictionnaire): ParseResult {
+  const e = t.importCompte;
   const data = parseAccountSource(src);
-  if (!data) return { units: [], error: 'Fichier JSON illisible.' };
+  if (!data) return { units: [], error: e.illisible };
 
   const unitList = data?.unit_list;
   if (!Array.isArray(unitList)) {
-    return {
-      units: [],
-      error: "Ce fichier ne contient pas de 'unit_list' — un export de compte SWEX est attendu.",
-    };
+    return { units: [], error: e.pasDeUnitList };
   }
 
   const runeById = indexRunes(data);
@@ -608,11 +608,7 @@ export function parseAccountJson(src: AccountSource): ParseResult {
   // Cible : les favoris si présents, sinon repli sur tous les monstres runés RTA.
   const targetUnitIds = favIds.size > 0 ? Array.from(favIds) : Array.from(runesByUnit.keys());
   if (targetUnitIds.length === 0) {
-    return {
-      units: [],
-      error:
-        "Aucun monstre favori RTA ni preset de runes RTA trouvé dans ce fichier (world_arena_favorite_unit_id_list / world_arena_rune_equip_list).",
-    };
+    return { units: [], error: e.sansRta };
   }
 
   const units: ImportedUnit[] = [];
@@ -655,15 +651,13 @@ export interface BoxParseResult {
 
 // Extrait toute la box 6★. L'équipement vient de l'unité elle-même (runes et
 // artéfacts embarqués) : c'est le build actuellement équipé en jeu.
-export function parseAccountBox(src: AccountSource): BoxParseResult {
+export function parseAccountBox(src: AccountSource, t: Dictionnaire): BoxParseResult {
+  const e = t.importCompte;
   const data = parseAccountSource(src);
-  if (!data) return { monsters: [], error: 'Fichier JSON illisible.' };
+  if (!data) return { monsters: [], error: e.illisible };
   const unitList = data?.unit_list;
   if (!Array.isArray(unitList)) {
-    return {
-      monsters: [],
-      error: "Ce fichier ne contient pas de 'unit_list' — un export de compte SWEX est attendu.",
-    };
+    return { monsters: [], error: e.pasDeUnitList };
   }
 
   const runeById = indexRunes(data);
@@ -681,7 +675,7 @@ export function parseAccountBox(src: AccountSource): BoxParseResult {
   }
 
   if (monsters.length === 0) {
-    return { monsters: [], error: 'Aucun monstre monté 6★ trouvé dans ce fichier.' };
+    return { monsters: [], error: e.sans6 };
   }
   return { monsters };
 }
@@ -706,7 +700,8 @@ export interface InventoryParseResult {
   error?: string;
 }
 
-export function parseAccountInventory(src: AccountSource): InventoryParseResult {
+export function parseAccountInventory(src: AccountSource, t: Dictionnaire): InventoryParseResult {
+  const e = t.importCompte;
   const data = parseAccountSource(src);
   if (!data)
     return {
@@ -716,7 +711,7 @@ export function parseAccountInventory(src: AccountSource): InventoryParseResult 
       crafts: [],
       relicUsageById: {},
       relicUpgradeMismatches: 0,
-      error: 'Fichier JSON illisible.',
+      error: e.illisible,
     };
   if (!Array.isArray(data?.unit_list)) {
     return {
@@ -726,7 +721,7 @@ export function parseAccountInventory(src: AccountSource): InventoryParseResult 
       crafts: [],
       relicUsageById: {},
       relicUpgradeMismatches: 0,
-      error: "Ce fichier ne contient pas de 'unit_list' — un export de compte SWEX est attendu.",
+      error: e.pasDeUnitList,
     };
   }
 
@@ -792,14 +787,15 @@ export type PerimetreUtilise =
   | 'arene-defense'
   | 'autres';
 
-// Ordre d'affichage et libellés de l'écran.
-export const PERIMETRES_UTILISES: { key: PerimetreUtilise; libelle: string }[] = [
-  { key: 'rta', libelle: 'RTA' },
-  { key: 'siege-attaque', libelle: 'Siège — attaque' },
-  { key: 'siege-defense', libelle: 'Siège — défense' },
-  { key: 'arene-attaque', libelle: 'Arène — attaque' },
-  { key: 'arene-defense', libelle: 'Arène — défense' },
-  { key: 'autres', libelle: 'Autres decks' },
+// Ordre d'affichage. Le libellé de chaque périmètre : `compte.perimetres` du
+// dictionnaire.
+export const PERIMETRES_UTILISES: { key: PerimetreUtilise }[] = [
+  { key: 'rta' },
+  { key: 'siege-attaque' },
+  { key: 'siege-defense' },
+  { key: 'arene-attaque' },
+  { key: 'arene-defense' },
+  { key: 'autres' },
 ];
 
 // `rune_id` utilisés, triés, par périmètre.
@@ -1145,23 +1141,17 @@ function buildSiegeDecks(
 }
 
 // Import des DÉFENSES de siège.
-export function parseSiegeDefense(src: AccountSource): SiegeParseResult {
+export function parseSiegeDefense(src: AccountSource, t: Dictionnaire): SiegeParseResult {
+  const e = t.importCompte;
   const data = parseAccountSource(src);
-  if (!data) return { decks: [], error: 'Fichier JSON illisible.' };
+  if (!data) return { decks: [], error: e.illisible };
   if (!Array.isArray(data?.unit_list)) {
-    return {
-      decks: [],
-      error: "Ce fichier ne contient pas de 'unit_list' — un export de compte SWEX est attendu.",
-    };
+    return { decks: [], error: e.pasDeUnitList };
   }
 
   const deckList = data?.guildsiege_defense_deck_unit_list;
   if (!Array.isArray(deckList) || deckList.length === 0) {
-    return {
-      decks: [],
-      error:
-        "Aucune défense de siège trouvée (guildsiege_defense_deck_unit_list). Enregistre tes défenses de combat de guilde en jeu avant d'exporter.",
-    };
+    return { decks: [], error: e.sansDefense };
   }
 
   const runeById = indexRunes(data);
@@ -1182,30 +1172,24 @@ export function parseSiegeDefense(src: AccountSource): SiegeParseResult {
 
   const decks = buildSiegeDecks(defs, runeById, unitById, artById, indexRuneMarkers(data));
   if (decks.length === 0) {
-    return { decks: [], error: 'Aucune défense de siège configurée dans ce fichier.' };
+    return { decks: [], error: e.defenseVide };
   }
   return { decks };
 }
 
 // Import des ÉQUIPES D'ATTAQUE de siège (offense).
-export function parseSiegeOffense(src: AccountSource): SiegeParseResult {
+export function parseSiegeOffense(src: AccountSource, t: Dictionnaire): SiegeParseResult {
+  const e = t.importCompte;
   const data = parseAccountSource(src);
-  if (!data) return { decks: [], error: 'Fichier JSON illisible.' };
+  if (!data) return { decks: [], error: e.illisible };
   if (!Array.isArray(data?.unit_list)) {
-    return {
-      decks: [],
-      error: "Ce fichier ne contient pas de 'unit_list' — un export de compte SWEX est attendu.",
-    };
+    return { decks: [], error: e.pasDeUnitList };
   }
 
   const deckList = Array.isArray(data?.deck_list) ? data.deck_list : [];
   const offense = deckList.filter((dk: any) => Number(dk?.deck_type) === SIEGE_OFFENSE_DECK_TYPE);
   if (offense.length === 0) {
-    return {
-      decks: [],
-      error:
-        "Aucune équipe d'attaque de siège trouvée (deck_list). Sauvegarde tes équipes d'attaque de combat de guilde en jeu avant d'exporter.",
-    };
+    return { decks: [], error: e.sansOffense };
   }
 
   const runeById = indexRunes(data);
@@ -1231,7 +1215,7 @@ export function parseSiegeOffense(src: AccountSource): SiegeParseResult {
 
   const decks = buildSiegeDecks(defs, runeById, unitById, artById, indexRuneMarkers(data));
   if (decks.length === 0) {
-    return { decks: [], error: "Aucune équipe d'attaque de siège configurée dans ce fichier." };
+    return { decks: [], error: e.offenseVide };
   }
   return { decks };
 }

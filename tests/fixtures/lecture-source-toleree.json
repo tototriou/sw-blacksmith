@@ -756,6 +756,34 @@
       "statut": "stock"
     },
     {
+      "fichier": "tests/langue.test.ts",
+      "cible": "src/components/RuneIcon.tsx",
+      "occurrences": 1,
+      "statut": "exception",
+      "justification": "Nom de fichier passé à ESLint par --stdin-filename, avec un code écrit dans le test : le fichier n'est pas lu, son chemin montre que la règle couvre tout src/, même un fichier sans texte jusqu'ici."
+    },
+    {
+      "fichier": "tests/langue.test.ts",
+      "cible": "src/components/TopBar.tsx",
+      "occurrences": 1,
+      "statut": "exception",
+      "justification": "Nom de fichier passé à ESLint par --stdin-filename, avec un code écrit dans le test : le fichier n'est pas lu, son chemin le place sous la règle texte-en-dur."
+    },
+    {
+      "fichier": "tests/langue.test.ts",
+      "cible": "src/components/outils/optimizer/gabarits/VueGabarits.tsx",
+      "occurrences": 1,
+      "statut": "exception",
+      "justification": "Nom de fichier passé à ESLint par --stdin-filename, avec un code écrit dans le test : le fichier n'est pas lu, son chemin montre que la vue de développement des gabarits est hors de la règle texte-en-dur."
+    },
+    {
+      "fichier": "tests/langue.test.ts",
+      "cible": "src/i18n/articles/mecaniques.fr.tsx",
+      "occurrences": 1,
+      "statut": "exception",
+      "justification": "Nom de fichier passé à ESLint par --stdin-filename, avec un code écrit dans le test : le fichier n'est pas lu, son chemin montre que src/i18n/ est hors de la règle texte-en-dur."
+    },
+    {
       "fichier": "tests/lecture-source.test.ts",
       "cible": "src",
       "occurrences": 1,
@@ -944,6 +972,13 @@
       "cible": "src/hooks/useOptimizerState.ts",
       "occurrences": 1,
       "statut": "stock"
+    },
+    {
+      "fichier": "tests/phrases-degats.test.ts",
+      "cible": "src/lib/damage.ts",
+      "occurrences": 1,
+      "statut": "exception",
+      "justification": "Relevé des phrases curées affichées, dans des tables que damage.ts n'exporte pas, pour exiger la traduction anglaise de chacune ; l'affichage traduit est testé par rendu."
     },
     {
       "fichier": "tests/pre-commit.test.ts",

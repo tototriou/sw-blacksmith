@@ -1,6 +1,6 @@
 import { ReactNode, RefObject, useLayoutEffect, useState } from 'react';
 import { ArrowLeftRight, CheckCircle2 } from 'lucide-react';
-import { ArtifactDetail, RelicDetail, RuneDetail, RUNE_SETS } from '../../types';
+import { ArtifactDetail, RelicDetail, RuneDetail } from '../../types';
 import { BuildCandidate, candidateMetricTotal } from '../../lib/runeBuildOptim';
 import { activeSets } from '../../lib/effects';
 import { EtatRelique } from '../../lib/relicQueue';
@@ -14,6 +14,9 @@ import RelicSlot, { RelicDetailBox } from '../RelicSlot';
 import StatPanel from '../StatPanel';
 import { COMPACT, useMediaQuery } from '../../hooks/useMediaQuery';
 import { Bouton, FlottantAuto } from '../../ui';
+import { useLangue, useTraduction } from '../../hooks/useLangue';
+import { formatNombre } from '../../i18n/format';
+import { nomSet } from '../../i18n/jeu';
 
 interface Props {
   rank: number;
@@ -148,6 +151,7 @@ interface Props {
  * comparaison des stats : une valeur absente se lirait « non comparée ».
  */
 function Delta({ valeur, suffixe = '' }: { valeur: number; suffixe?: string }) {
+  const langue = useLangue();
   const arrondi = Math.round(valeur * 10) / 10;
   return (
     <span
@@ -156,7 +160,7 @@ function Delta({ valeur, suffixe = '' }: { valeur: number; suffixe?: string }) {
       }`}
     >
       {arrondi > 0 ? '+' : ''}
-      {arrondi.toLocaleString('fr-FR')}
+      {formatNombre(arrondi, langue)}
       {suffixe}
     </span>
   );
@@ -208,6 +212,10 @@ export default function BuildCandidateCard({
   bureau = false,
   colonneTriee = null,
 }: Props) {
+  const textes = useTraduction();
+  const langue = useLangue();
+  const jeu = textes.jeu;
+  const ca = textes.optimizer.carte;
   const runes = candidate.runeIds.map((id) => runeById.get(id)).filter((r): r is RuneDetail => !!r);
   const sets = activeSets(runes.map((r) => r.set));
   // ⚠️ Une même rune peut apparaître dans PLUSIEURS candidats affichés (une
@@ -266,8 +274,8 @@ export default function BuildCandidateCard({
               relic: etatRelique.relique,
               enAttente: false,
               marques: [
-                ...(etatRelique.sansEffetSurLeTri ? ['relique sans effet sur ce tri'] : []),
-                ...(etatRelique.equipeeExclue ? ['relique équipée exclue par le filtre'] : []),
+                ...(etatRelique.sansEffetSurLeTri ? [ca.reliqueSansEffet] : []),
+                ...(etatRelique.equipeeExclue ? [ca.reliqueExclue] : []),
               ],
             };
 
@@ -316,7 +324,7 @@ export default function BuildCandidateCard({
   // `tabular-nums` aligne la valeur d'une carte à l'autre.
   const texteMoyen = (
     <span className={`text-xs tabular-nums ${colonneTriee === 'efficience' ? 'text-accent' : 'text-ink-dim'}`}>
-      {metric === 'eff' ? 'Efficience moyenne' : 'Score moyen'} : {formatRuneMetric(moyenneParRune(liveTotal), metric)}
+      {ca.moyenne(metric === 'eff' ? textes.optimizer.resultats.quasi.efficienceMoyenne : textes.optimizer.resultats.quasi.scoreMoyen, formatRuneMetric(moyenneParRune(liveTotal), metric))}
     </span>
   );
   const ecartMoyen = metricDelta != null && <Delta valeur={metricDelta / 6} suffixe={metric === 'eff' ? ' %' : ''} />;
@@ -335,7 +343,7 @@ export default function BuildCandidateCard({
   const groupeValeur = 'flex flex-none items-baseline gap-x-1.5';
   const lesSets = sets.map((key, i) => (
     <span key={`${key}-${i}`} className="text-micro text-ink-dim">
-      {RUNE_SETS.find((s) => s.key === key)?.label ?? key}
+      {nomSet(jeu, key)}
     </span>
   ));
   // « Valider » — réserve les 6 runes de CE build (bloquées pour les
@@ -361,7 +369,7 @@ export default function BuildCandidateCard({
           fond={comparaison ? 'doux' : 'vide'}
           taille="sm"
           icone={<ArrowLeftRight size={14} />}
-          libelle="Comparer"
+          libelle={ca.comparer}
           pleineLargeur={!bureau}
         />
       )}
@@ -393,12 +401,12 @@ export default function BuildCandidateCard({
           icone={validated === 'oui' ? <CheckCircle2 size={14} /> : undefined}
           libelle={
             validated === 'oui'
-              ? 'Validé'
+              ? textes.optimizer.validation.valide
               : conflit
-                ? 'Rune déjà réservée'
+                ? ca.runeReservee
                 : validated === 'artefacts'
-                  ? 'Valider les artéfacts'
-                  : 'Valider ce build'
+                  ? textes.optimizer.validation.validerArtefacts
+                  : textes.optimizer.validation.validerBuild
           }
           pleineLargeur={!bureau}
           className={bureau ? VALIDER_BUREAU : undefined}
@@ -449,11 +457,11 @@ export default function BuildCandidateCard({
           signalé à l'usage. */}
       {pvEffectifs && (
         <p className="mb-2 flex flex-wrap items-baseline justify-between gap-x-2 rounded-lg border border-border-soft bg-panel2 px-2 py-1">
-          <span className="text-micro text-ink-dim">PV effectifs</span>
+          <span className="text-micro text-ink-dim">{textes.optimizer.objectifs.ehp}</span>
           <span className={groupeValeur}>
             <EmplacementEcart>{pvEffectifs.delta != null && <Delta valeur={pvEffectifs.delta} />}</EmplacementEcart>
             <span className="font-mono text-sm font-bold text-star">
-              {entierAffiche(pvEffectifs.total).toLocaleString('fr-FR')}
+              {formatNombre(entierAffiche(pvEffectifs.total), langue)}
             </span>
           </span>
         </p>
@@ -466,15 +474,15 @@ export default function BuildCandidateCard({
           adverses saisis — ils n'entrent jamais dans le classement. */}
       {degatsReels && (
         <p className="mb-2 flex flex-wrap items-baseline justify-between gap-x-2 rounded-lg border border-border-soft bg-panel2 px-2 py-1">
-          <span className="text-micro text-ink-dim">Dégâts</span>
+          <span className="text-micro text-ink-dim">{ca.degats}</span>
           <span className={groupeValeur}>
             <EmplacementEcart>{degatsReels.delta != null && <Delta valeur={degatsReels.delta} />}</EmplacementEcart>
             {/* La mono sur le chiffre seul : « tue la cible » / « N % des PV »
                 est une phrase, en police du texte. */}
             <span className="text-sm font-bold text-star">
-              <span className="font-mono">{entierAffiche(degatsReels.total).toLocaleString('fr-FR')}</span>
+              <span className="font-mono">{formatNombre(entierAffiche(degatsReels.total), langue)}</span>
               <span className="ml-1.5 font-normal text-micro text-ink-dim">
-                {degatsReels.partPvCible >= 100 ? 'tue la cible' : `${Math.round(degatsReels.partPvCible)} % des PV`}
+                {degatsReels.partPvCible >= 100 ? ca.tueLaCible : ca.partPv(Math.round(degatsReels.partPvCible))}
               </span>
             </span>
           </span>
@@ -617,14 +625,14 @@ export default function BuildCandidateCard({
         <div className="mt-2 grid grid-cols-[repeat(auto-fit,minmax(72px,1fr))] gap-x-2 gap-y-0.5 rounded border border-border-soft bg-panel2 px-2 py-1.5">
           {comparaison.map((s) => (
             <div key={s.key} className="flex items-baseline justify-between gap-1">
-              <span className="text-nano text-ink-dim">{s.label}</span>
+              <span className="text-nano text-ink-dim">{(jeu.stats as Record<string, string>)[s.key] ?? s.label}</span>
               <span
                 className={`font-mono text-nano tabular-nums ${
                   s.delta > 0 ? 'text-good' : s.delta < 0 ? 'text-bad' : 'text-ink-dimmer'
                 }`}
               >
                 {s.delta > 0 ? '+' : ''}
-                {Math.round(s.delta).toLocaleString('fr-FR')}
+                {formatNombre(Math.round(s.delta), langue)}
                 {s.suffix}
               </span>
             </div>
@@ -651,6 +659,7 @@ export default function BuildCandidateCard({
  * rien ne s'anime (une liste de résultats se voit cent fois).
  */
 export function PlaceEnVerification({ rank, hauteur }: { rank: number; hauteur: number | null }) {
+  const verification = useTraduction().optimizer.resultats.verification;
   return (
     <div
       aria-busy="true"
@@ -660,7 +669,7 @@ export function PlaceEnVerification({ rank, hauteur }: { rank: number; hauteur: 
       style={hauteur == null ? undefined : { minHeight: hauteur }}
     >
       <span className="font-mono text-xs font-bold text-ink-dimmer">#{rank}</span>
-      <span className="flex flex-1 items-center justify-center text-xs text-ink-dim">Vérification…</span>
+      <span className="flex flex-1 items-center justify-center text-xs text-ink-dim">{verification}</span>
     </div>
   );
 }

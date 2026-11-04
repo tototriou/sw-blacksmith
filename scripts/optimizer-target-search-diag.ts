@@ -19,6 +19,7 @@ import { parseOptimizerRecipe } from '../src/lib/optimizerRecipe';
 import { loadSiegeMonster, printMonsterSummary } from './lib/loadMonster';
 import { recipeToSearchParams } from './lib/recipeToSearchParams';
 import { runSearchToCompletion } from './lib/runSearch';
+import { fr } from '../src/i18n/fr';
 
 const [exportPath, recipePath, deckIdArg, targetIdsArg] = process.argv.slice(2);
 if (!exportPath || !recipePath || !deckIdArg || !targetIdsArg) {
@@ -27,7 +28,7 @@ if (!exportPath || !recipePath || !deckIdArg || !targetIdsArg) {
 }
 const targetIds = new Set(targetIdsArg.split(',').map(Number));
 
-const { recipe, error, avertissements } = parseOptimizerRecipe(readFileSync(recipePath, 'utf8'));
+const { recipe, error, avertissements } = parseOptimizerRecipe(readFileSync(recipePath, 'utf8'), fr);
 for (const a of avertissements ?? []) console.warn(`⚠️ ${a}`);
 if (!recipe) {
   console.error(`Recette invalide : ${error}`);

@@ -35,6 +35,7 @@ import { BuildCandidate, objectiveScore } from '../src/lib/runeBuildOptim';
 import { StatKey } from '../src/lib/effects';
 import { StatRow } from '../src/lib/stats';
 import { egal, ok, titre } from './outils';
+import { fr } from '../src/i18n/fr';
 
 const racine = resolve(new URL('..', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1'));
 const DOSSIER_SORTS = resolve(racine, 'public/data/skills');
@@ -133,8 +134,8 @@ export function testGarantieYujiRick() {
       `${sort} ${nom} — la prose porte la garantie et la réduction de DEF du coup 1`);
     egal(p.conditionsCombat, [{ type: 'debuffCiblePresent', critiqueGaranti: true }],
       `${sort} ${nom} — condition « débuff sur la cible » qui garantit le critique`);
-    egal(p.effetsEntreCoups, [{ id: 'decrease-def', label: 'Réduction de DEF', cumulable: false, effetCombat: 'defBreak' }],
-      `${sort} ${nom} — réduction de DEF posable entre les coups, comptée comme débuff ET comme Brise DEF pour le coup 2`);
+    egal(p.effetsEntreCoups, [{ id: 'decrease-def', label: 'Réduction de DEF', cumulable: false, effetCombat: 'defBreak', coups: [1] }],
+      `${sort} ${nom} — réduction de DEF posable au coup 1 seul (prose), comptée comme débuff ET comme Brise DEF pour le coup 2`);
 
     const element = forme % 10 === 2 ? 'fire' : forme % 10 === 3 ? 'wind' : 'dark';
     const total = (s: Partial<DamageSetup>) =>
@@ -174,7 +175,7 @@ export function testGarantieYujiRick() {
   // Le moteur et la recette : le scénario traverse l'export/import, le
   // score du moteur est celui de l'écran.
   const { recette, ctx } = contexte(30413, scenario1);
-  egal(parseOptimizerRecipe(JSON.stringify(recette)).recipe?.damageSetup?.scenariosEffetsEntreCoups,
+  egal(parseOptimizerRecipe(JSON.stringify(recette), fr).recipe?.damageSetup?.scenariosEffetsEntreCoups,
     scenario1.scenariosEffetsEntreCoups, 'recette : le scénario « decrease-def » survit à l’export/import');
   egal(objectiveScore(candidat, 'degats_reels', AUCUNE_AURA_PROPRE, ctx),
     computeSkillDamage(p, build, scenario1, AUCUNE_AURA_PROPRE, 'wind'),
@@ -251,10 +252,13 @@ export function testResumeConditionDef() {
   titre('Résumé des comparaisons de DEF — effet et borne lus sur l’entrée (DamageSetupCard.tsx)');
   const source = carte();
   ok(/function effetCondition\(/.test(source), 'un seul producteur de l’effet d’une condition');
-  ok(source.includes("if (condition.critiqueGaranti) return 'critique garanti';"),
+  ok(source.includes('if (condition.critiqueGaranti) return c.critiqueGaranti;') && fr.degats.condition.critiqueGaranti === 'critique garanti',
     'critique garanti lu sur l’entrée (Jaara, Varus disaient « ignore DEF »)');
-  ok(source.includes("return `${effetCondition(condition)} si la DEF cible ${condition.inclusif ? '≤' : '<'} ${condition.ratio}× ta DEF`;") &&
-    source.includes("return `${effetCondition(condition)} si la DEF cible ${condition.inclusif ? '≤' : '<'} ${condition.ratio}× ton ATQ`;"),
+  ok(source.includes("const op = 'inclusif' in condition && condition.inclusif ? '≤' : '<';") &&
+    source.includes('return c.defCibleSousDef(effetCondition(condition, t), op, condition.ratio);') &&
+    source.includes('return c.defCibleSousAtk(effetCondition(condition, t), op, condition.ratio);') &&
+    fr.degats.condition.defCibleSousDef('critique garanti', '≤', 1.5) === 'critique garanti si la DEF cible ≤ 1.5× ta DEF' &&
+    fr.degats.condition.defCibleSousAtk('ignore DEF', '<', 2) === 'ignore DEF si la DEF cible < 2× ton ATQ',
     'comparaisons de DEF : effet et borne (≤ ou <) lus sur l’entrée');
   ok(!source.includes('`ignore DEF si la DEF cible ≤'), 'plus de texte de comparaison de DEF figé sur « ignore DEF » et « ≤ »');
 }
@@ -262,9 +266,9 @@ export function testResumeConditionDef() {
 export function testResumeConditionDebuff() {
   titre('Résumé « débuff sur la cible » — l’effet lu sur l’entrée (DamageSetupCard.tsx)');
   const source = carte();
-  ok(source.includes("return `${effetCondition(condition)} si la cible a un débuff`;"),
+  ok(source.includes('return c.debuffCible(effetCondition(condition, t));') && fr.degats.condition.debuffCible('ignore DEF') === 'ignore DEF si la cible a un débuff',
     'débuff sur la cible : l’effet suit l’entrée (Triss : ignore DEF ; Yuji, Rick : critique garanti)');
   ok(!source.includes("'ignore DEF si la cible a un débuff'"), 'plus de texte figé sur « ignore DEF »');
-  ok(source.includes("condition.critiqueGaranti ? ' (critique garanti)'"),
+  ok(source.includes('condition.critiqueGaranti ? d.condition.suffixeCritique') && fr.degats.condition.suffixeCritique === ' (critique garanti)',
     'interrupteur « débuff présent » : le libellé dit « critique garanti » pour Yuji et Rick');
 }

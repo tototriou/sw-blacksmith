@@ -5,6 +5,7 @@ import { dateCourte } from './AccountFreshness';
 import { presentationSwex } from './BlocApplication';
 import { useEtatSwex } from '../hooks/useEtatSwex';
 import Menu from '../ui/Menu';
+import { useLangue, useTraduction } from '../hooks/useLangue';
 
 // Carte du compte, en tête de la barre latérale (bureau) : QUI est chargé, et
 // le geste qui s'y rapporte — en charger un autre.
@@ -39,6 +40,9 @@ export default function SidebarCompte({
   // clic utilisateur.
   onImport: (texte: string) => void;
 }) {
+  const textes = useTraduction();
+  const t = textes.carteCompte;
+  const langue = useLangue();
   const fichier = useRef<HTMLInputElement>(null);
 
   async function choisir(e: ChangeEvent<HTMLInputElement>) {
@@ -49,10 +53,10 @@ export default function SidebarCompte({
   }
 
   const detail = nom
-    ? [exporteLe != null ? `Export du ${dateCourte(exporteLe)}` : null, `${nbMonstres} monstres`]
+    ? [exporteLe != null ? t.exportDu(dateCourte(exporteLe, langue)) : null, t.monstres(nbMonstres)]
         .filter(Boolean)
         .join(' · ')
-    : 'Importer un export SWEX';
+    : t.importerExport;
 
   // ⚠️ **App de bureau, dossier SW Exporter choisi** : la carte ouvre
   // un MENU — les invocateurs du dossier (celui suivi, coché), puis l'import
@@ -61,7 +65,7 @@ export default function SidebarCompte({
   // Sans dossier, et sur le site : la carte importe, comme
   // avant.
   const { etat, choisirInvocateur } = useEtatSwex();
-  const invocateurs = etat?.dossier && !etat.introuvable ? presentationSwex(etat).options : [];
+  const invocateurs = etat?.dossier && !etat.introuvable ? presentationSwex(etat, textes).options : [];
 
   const classeCarte = `flex w-full items-center rounded-xl border border-border-soft bg-panel text-left
                     transition-colors hoverable:bg-panel2 ${
@@ -82,7 +86,7 @@ export default function SidebarCompte({
         <>
           <span className="flex min-w-0 flex-1 flex-col">
             <span className={`truncate text-sm font-semibold ${nom ? 'text-ink' : 'text-ink-dim'}`}>
-              {nom ?? 'Aucun compte'}
+              {nom ?? t.aucunCompte}
             </span>
             <span className="truncate text-xs text-ink-dimmer">{detail}</span>
           </span>
@@ -101,11 +105,11 @@ export default function SidebarCompte({
       <>
         {champ}
         <Menu
-          libelle="Changer de compte"
+          libelle={t.changerCompte}
           cote="gauche"
           largeur={retractee ? 'w-56' : 'w-full'}
           declencheur={(p) => (
-            <button type="button" {...p} aria-label="Changer de compte" title="Changer de compte" className={classeCarte}>
+            <button type="button" {...p} aria-label={t.changerCompte} title={t.changerCompte} className={classeCarte}>
               {contenu}
             </button>
           )}
@@ -121,9 +125,9 @@ export default function SidebarCompte({
             })),
             {
               cle: 'importer',
-              libelle: 'Importer un fichier…',
+              libelle: t.importerFichier,
               icone: <Import size={14} />,
-              title: "Importer un export de compte SWEX (traité localement, rien n'est envoyé)",
+              title: t.importerAide,
               onClick: () => fichier.current?.click(),
             },
           ]}
@@ -138,8 +142,8 @@ export default function SidebarCompte({
       <button
         type="button"
         onClick={() => fichier.current?.click()}
-        aria-label="Importer un compte"
-        title="Importer un export de compte SWEX (traité localement, rien n'est envoyé)"
+        aria-label={t.importerCompte}
+        title={t.importerAide}
         className={classeCarte}
       >
         {contenu}
@@ -164,12 +168,13 @@ export function SidebarParametres({
   retractee: boolean;
   onToggle: () => void;
 }) {
+  const t = useTraduction().barreHaut;
   return (
     <button
       type="button"
       onClick={onToggle}
-      aria-label={actifs ? 'Fermer les paramètres' : 'Paramètres'}
-      title={actifs ? 'Fermer les paramètres' : 'Paramètres'}
+      aria-label={actifs ? t.fermerParametres : t.parametres}
+      title={actifs ? t.fermerParametres : t.parametres}
       aria-pressed={actifs}
       className={`flex h-8 w-full items-center rounded-lg text-left text-md font-medium transition-colors ${
         retractee ? 'justify-center px-0' : 'gap-2.5 px-2.5'
@@ -181,7 +186,7 @@ export function SidebarParametres({
           huitième de tour à l'ouverture : des curseurs tournés ne diraient
           rien, et l'état se lit déjà au fond et au libellé. */}
       <IconeParametres size={16} />
-      {!retractee && <span>Paramètres</span>}
+      {!retractee && <span>{t.parametres}</span>}
     </button>
   );
 }

@@ -64,7 +64,7 @@ export function rendreSpeedTune(etat: Record<string, unknown> = {}): string {
   );
 }
 
-const ETAT_EQUIPE = () => ({
+export const ETAT_EQUIPE = () => ({
   'speedTune.lignes': LIGNES,
   'speedTune.leadAllie': leadPresent(LIGNES, 'allie'),
   'speedTune.leadChoisi': { allie: true, ennemi: true },

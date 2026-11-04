@@ -6,7 +6,10 @@
 // l'action du jour. Calcul pur — aucune dépendance React.
 
 import { CraftKind, CraftLine } from '../types';
-import { RUNE_EFFECT } from './effects';
+import { libelleEffetRune } from './effects';
+// Texte rédigé en français : les libellés du jeu qu'il cite viennent du
+// lexique français (`jeuFr`), pour que la phrase reste d'une seule langue.
+import { jeuFr } from '../i18n/jeu/fr';
 import { CraftDispo, RunePlan } from './runeOptim';
 
 // Un consommable qu'un plan réclame. Pas de quantité : un plan ne demande
@@ -162,6 +165,5 @@ export function craftsToSpend(
 
 // « meule VIT », « gemme ATQ% » — de quoi lire ce qui manque sans décoder un code.
 export function craftLabel(need: CraftNeed): string {
-  const def = RUNE_EFFECT[need.stat];
-  return `${need.kind === 'grind' ? 'meule' : 'gemme'} ${def?.label ?? `#${need.stat}`}`;
+  return `${need.kind === 'grind' ? 'meule' : 'gemme'} ${libelleEffetRune(need.stat, jeuFr)}`;
 }

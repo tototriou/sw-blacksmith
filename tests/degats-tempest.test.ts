@@ -48,6 +48,7 @@ import { buildOptimizerRecipe, parseOptimizerRecipe } from '../src/lib/optimizer
 import { buildRealDamageContext } from '../scripts/lib/realDamageCli';
 import { resolveObjectiveStats } from '../scripts/lib/recipeToSearchParams';
 import { LoadedMonster } from '../scripts/lib/loadMonster';
+import { fr } from '../src/i18n/fr';
 
 const racine = resolve(new URL('..', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1'));
 const DOSSIER_SORTS = resolve(racine, 'public/data/skills');
@@ -529,7 +530,7 @@ export function testDegatsTempestRecette() {
     ignoreArtifacts: false,
     artifactMainByKind: {},
   });
-  const lue = parseOptimizerRecipe(JSON.stringify(recette));
+  const lue = parseOptimizerRecipe(JSON.stringify(recette), fr);
   ok(lue.recipe != null, `recette relue sans erreur${lue.error ? ` — ${lue.error}` : ''}`);
   if (!lue.recipe) return;
   egal(lue.recipe.damageSetup.skillCom2usId, TEMPEST, 'aller-retour : skillCom2usId 3213 conservé tel quel');
@@ -596,7 +597,9 @@ export function testDegatsTempestEcran() {
     carte.includes("const apresSort = cat.type === 'conditionnel' && p.slotsDeclencheurs != null;"),
     'passif qui frappe après certains sorts = conditionnel à slots déclencheurs curés'
   );
-  ok(/apresSort\s*\?\s*`\$\{nom\} \(S\$\{p\.profile\.slot\}\) se déclenche \$\{p\.avantLeSort \? 'avant' : 'après'\} ce sort`/.test(carte),
+  ok(/apresSort\s*\?\s*d\.passifs\.apresSort\(nom, p\.profile\.slot, !!p\.avantLeSort\)/.test(carte)
+    && fr.degats.passifs.apresSort('Tempest', 3, false) === 'Tempest (S3) se déclenche après ce sort'
+    && fr.degats.passifs.apresSort('Tempest', 3, true) === 'Tempest (S3) se déclenche avant ce sort',
     'son interrupteur s’intitule « <nom> (S<slot>) se déclenche après ce sort » (« avant » pour une attaque qui précède le sort)');
   ok(
     carte.includes('{!apresSort && <p className="mt-1 text-xs leading-snug text-ink-dim">{texteCondition}</p>}'),
@@ -606,7 +609,7 @@ export function testDegatsTempestEcran() {
   // interrupteur-là — un `title` ne s'ouvre jamais au doigt ; la condition du
   // jeu reste dans la prose du passif (sous l'interrupteur, et au « ? » de 11bis).
   ok(
-    carte.includes("title={apresSort ? undefined : `${condition}${actif ? ' (activé)' : ' — désactivé par défaut'}`}"),
+    carte.includes('title={apresSort ? undefined : `${condition}${d.etat(actif)}`}'),
     'l’interrupteur « se déclenche après ce sort » n’a plus de survol (`title`), les autres interrupteurs de passif gardent le leur'
   );
   ok(
@@ -615,10 +618,10 @@ export function testDegatsTempestEcran() {
   );
   ok(carte.includes('{texteJeu}') && carte.includes('<p className="mt-1 text-xs leading-snug text-ink-dim">{p.description}</p>'), 'la prose du jeu du passif reste affichée sous l’interrupteur');
   ok(
-    carte.includes('<HelpPopover title={s.nom} ariaLabel={`Description de ${s.nom}`}>'),
+    carte.includes('<HelpPopover title={ph(s.nom)} ariaLabel={d.competence.description(ph(s.nom))}>'),
     'la prose de chaque sort, Tempest compris, reste au « ? » de sa case'
   );
-  ok(carte.includes("const nom = p.nom.replace(/\\s*\\(Passive\\)\\s*$/i, '');"), 'nom affiché : celui du jeu, sans « (Passive) »');
+  ok(carte.includes("const nom = ph(p.nom).replace(/\\s*\\(Passive\\)\\s*$/i, '');"), 'nom affiché : celui du jeu, sans « (Passive) »');
   ok(carte.includes('const actif = setup.passifsOffensifs?.[p.skillCom2usId] ?? false;'), 'interrupteur éteint tant que rien n’est saisi');
 
   const teshar = fiche(TESHAR);
