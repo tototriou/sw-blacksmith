@@ -77,6 +77,12 @@ npm run bureau:preuve  # l'app se contrôle elle-même, captures + resultats.jso
 npm run bureau:paquet  # l'installeur de la plateforme courante dans paquets/ (electron-builder.yml)
 ```
 
+Les scripts d'installation des dépendances sont approuvés un par un dans la clé `allowScripts` du
+`package.json` (npm ≥ 11.19 avertit pour tout script non couvert) : `esbuild` et
+`electron-winstaller`, à leur version exacte. Après une montée de version de l'un d'eux,
+l'avertissement de `npm ci` revient : relire le script, puis
+`npm install-scripts approve <paquet>` (jamais avec `--dry-run`, qui écrit quand même le fichier).
+
 Avant d'ouvrir une pull request : `npx tsc --noEmit` (TypeScript strict), `npm run lint` (une
 erreur bloque, un avertissement s'affiche), `npm test` (calculs, intégration, rendu, outillage) et
 `npm run build`. À chaque commit, les hooks refusent une erreur ESLint dans le code indexé et un
