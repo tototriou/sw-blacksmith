@@ -17,6 +17,13 @@ productName: SW Blacksmith
 # l'écrire — sinon l'app installée s'appelle `swblacksmith`.
 extraMetadata:
   productName: SW Blacksmith
+  # Linux : la page du projet, exigée par un `.deb` (`apt show`).
+  homepage: https://sw-forge.vercel.app
+  # Linux : Electron en tire l'identifiant de sa fenêtre (`app_id` sous
+  # Wayland, `WM_CLASS` sous X11) ; il doit être le nom du `.desktop` installé
+  # (`syncDesktopName`) pour que le bureau rattache la fenêtre à son lanceur et
+  # à son icône.
+  desktopName: swblacksmith.desktop
 copyright: SW Blacksmith
 
 directories:
@@ -81,9 +88,24 @@ nsis:
   # retrouve l'ancien `.blockmap` par le tag (`v2.0.0`) dans le chemin.
   artifactName: SW-Blacksmith-Setup.${ext}
 
+# Deux paquets Linux, de même nom à l'extension près :
+#  - le `.deb` (Debian, Ubuntu et dérivées), celui que propose le site. Il
+#    s'installe par le gestionnaire de paquets, sans FUSE, et pose le profil
+#    AppArmor sans lequel Ubuntu 24.04 refuse le bac à sable d'Electron.
+#    electron-updater le met à jour par `dpkg`, avec le mot de passe
+#    administrateur ;
+#  - l'AppImage, pour les autres distributions et pour celles déjà
+#    installées, qui ne recevraient plus de mise à jour sans elle.
+# `latest-linux.yml` les liste tous deux : la mise à jour prend le format
+# installé (`resources/package-type`, écrit par le `.deb`).
 linux:
-  target: AppImage
+  target: [deb, AppImage]
   icon: public/favicon.png
   category: Game
-  # Sans version, comme l'installeur Windows (voir plus haut).
+  syncDesktopName: true
+  # ⚠️ Obligatoire pour un `.deb`, et public (`apt show`) : l'adresse
+  # noreply GitHub, déjà dans l'historique du dépôt.
+  maintainer: tototriou <104363083+tototriou@users.noreply.github.com>
+  # Sans version, comme l'installeur Windows (voir plus haut) :
+  # `SW-Blacksmith.deb` et `SW-Blacksmith.AppImage`.
   artifactName: SW-Blacksmith.${ext}

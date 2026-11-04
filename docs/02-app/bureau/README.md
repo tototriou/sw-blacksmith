@@ -232,9 +232,22 @@ qui n'a pas accès au pont.
 
 `npm run bureau:paquet` → dossier `paquets`, non suivi (`electron-builder.yml`) :
 
-- **Deux plateformes : Windows et Linux.** Pas de macOS. Sous Linux,
-  l'**AppImage** est le seul format qu'electron-updater sait mettre à jour
-  (un `.deb` passe par le gestionnaire de paquets).
+- **Deux plateformes : Windows et Linux.** Pas de macOS. Sous Linux, **deux
+  paquets** :
+  - le **`.deb`** (Debian, Ubuntu et dérivées), celui que propose le site :
+    installé par le gestionnaire de paquets dans `/opt/SW Blacksmith`, sans
+    FUSE, avec le profil AppArmor sans lequel Ubuntu 24.04 refuse le bac à
+    sable d'Electron (posé par son script d'installation). ⚠️ Il exige un
+    mainteneur (`linux.maintainer`, l'adresse noreply GitHub : public par
+    `apt show`) et une page du projet (`extraMetadata.homepage`, le site) ;
+  - l'**AppImage**, pour les autres distributions et pour les AppImage déjà
+    installées : sans elle, elles ne recevraient plus de mise à jour. Elle
+    demande `libfuse2`, qu'Ubuntu 24.04 n'installe plus d'office.
+
+  `extraMetadata.desktopName` (`swblacksmith.desktop`) et
+  `linux.syncDesktopName` : Electron en tire l'identifiant de sa fenêtre,
+  qui doit être le nom du `.desktop` installé pour que le bureau rattache la
+  fenêtre à son lanceur et à son icône.
 - **Windows** : assistant NSIS dans la langue de Windows, français ou, pour
   toute autre, anglais, sans sélecteur (`multiLanguageInstaller`,
   `installerLanguages: [fr_FR, en_US]`, `language: "1033"` en repli ; le
@@ -246,12 +259,12 @@ qui n'a pas accès au pont.
   désinstallation avec ses pages (bienvenue, avancement, fin). L'icône de
   l'app est sur l'exécutable, l'installeur et les raccourcis (`SW
   Blacksmith`). **Non signé** : Windows avertit au premier lancement (la
-  page « Télécharger » dit comment passer). **Linux** : AppImage, icône
-  `public/favicon.png`.
+  page « Télécharger » dit comment passer). **Linux** : `.deb` et
+  AppImage, icône `public/favicon.png`.
 - **`appId` `com.swblacksmith.app` — définitif** : Windows et la mise à jour
   reconnaissent l'app par lui.
 - Fichiers **sans numéro de version** (`SW-Blacksmith-Setup.exe`,
-  `SW-Blacksmith.AppImage`) : seule adresse fixe pour
+  `SW-Blacksmith.deb`, `SW-Blacksmith.AppImage`) : seule adresse fixe pour
   `releases/latest/download`.
 - Le paquet ne contient que `dist/`, les deux `.cjs` et `package.json`
   (aucun `node_modules`) ; l'icône Windows est `bureau/icone.ico`
@@ -263,7 +276,9 @@ qui n'a pas accès au pont.
 ## La publication
 
 Au **tag `v*`**, `.github/workflows/bureau.yml` construit l'installeur
-Windows et l'AppImage, puis les attache à la release du tag **par `gh`** —
+Windows, le `.deb` et l'AppImage, puis les attache à la release du tag
+**par `gh`**, avec `latest.yml` et `latest-linux.yml` (qui liste les deux
+paquets Linux) —
 ajoutés à une release déjà rédigée (titre et notes intacts), ou dans un
 brouillon créé sinon. La version de l'app est celle du tag. ⚠️ Pas par
 electron-builder : il ignore sans échouer une release publiée depuis plus de
@@ -276,7 +291,10 @@ seulement (`app.isPackaged` ; lancée par `bureau:local`, « Rechercher »
 répond « à jour »). ⚠️ **L'utilisateur décide** : au lancement, une
 recherche dans les releases GitHub, **rien ne se télécharge** sans
 « Mettre à jour » (`autoDownload = false`, `downloadUpdate()` au clic ;
-`autoInstallOnAppQuit = true`). Phases données à la page (`EtatMiseAJour`) :
+`autoInstallOnAppQuit = true`). Sous Linux, electron-updater prend le
+paquet du format installé (`resources/package-type`, écrit par le `.deb` ;
+l'AppImage sinon) : le `.deb` s'installe par `dpkg`, avec le mot de passe
+administrateur. Phases données à la page (`EtatMiseAJour`) :
 `aucune`, `recherche`, `a-jour`, `injoignable`, `disponible`,
 `telechargement`, `prete`, `echec` ; « Redémarrer » =
 `quitAndInstall(true, true)`. Composants : `MiseAJourBureau` (la

@@ -54,9 +54,21 @@ export default function testBureauMiseAJour() {
     return bloc.match(/artifactName:\s*(\S+)/)?.[1];
   };
   egal(nom('nsis'), 'SW-Blacksmith-Setup.${ext}', 'installeur Windows : nom sans version');
-  egal(nom('linux'), 'SW-Blacksmith.${ext}', 'AppImage : nom sans version');
+  egal(nom('linux'), 'SW-Blacksmith.${ext}', 'paquets Linux : nom sans version');
   ok(TELECHARGEMENTS.windows.endsWith('/releases/latest/download/SW-Blacksmith-Setup.exe'), 'Windows : la dernière release, le fichier construit');
-  ok(TELECHARGEMENTS.linux.endsWith('/releases/latest/download/SW-Blacksmith.AppImage'), 'Linux : la dernière release, le fichier construit');
+  ok(TELECHARGEMENTS.linux.endsWith('/releases/latest/download/SW-Blacksmith.deb'), 'Linux : le .deb de la dernière release');
+  ok(TELECHARGEMENTS.linuxAppImage.endsWith('/releases/latest/download/SW-Blacksmith.AppImage'), 'Linux, autres distributions : l’AppImage de la dernière release');
+
+  // Les deux paquets Linux sont construits, et publiés. Sans l'AppImage, celles
+  // déjà installées ne recevraient plus de mise à jour ; un `.deb` sans
+  // mainteneur ne se construit pas.
+  titre('bureau · paquets Linux — .deb et AppImage, construits et publiés');
+  const blocLinux = config.split(/\n(?=\S)/).find((b) => b.startsWith('linux:')) ?? '';
+  egal(blocLinux.match(/^\s+target:\s*\[([^\]]*)\]/m)?.[1].split(',').map((s) => s.trim()), ['deb', 'AppImage'], 'cibles Linux : le .deb, puis l’AppImage');
+  ok(/^\s+maintainer:\s*\S.* <[^@\s>]+@[^@\s>]+>$/m.test(blocLinux), 'mainteneur du .deb : « Nom <adresse> »');
+  const flux = readFileSync(join(process.cwd(), '.github', 'workflows', 'bureau.yml'), 'utf8');
+  const fichiersLinux = flux.match(/- os: ubuntu-latest\s*\n\s+fichiers: \|\n((?:\s+paquets\/\S+\n)+)/)?.[1].trim().split(/\s+/);
+  egal(fichiersLinux, ['paquets/*.deb', 'paquets/*.AppImage', 'paquets/latest-linux.yml'], 'publication : le .deb, l’AppImage et `latest-linux.yml`');
   const publish = config.match(/publish:\s*\n\s+provider:\s*(\S+)\s*\n\s+owner:\s*(\S+)\s*\n\s+repo:\s*(\S+)/);
   ok(!!publish && TELECHARGEMENTS.windows.startsWith(`https://github.com/${publish[2]}/${publish[3]}/`), 'même dépôt que la mise à jour (`publish`)');
 }

@@ -169,10 +169,12 @@ export function selonSupport<T>(site: T, app: T): T {
 // propose. ⚠️ Les noms suivent `artifactName` de
 // electron-builder.yml — sans numéro de version, seule adresse fixe ;
 // tests/bureau-mise-a-jour.test.ts vérifie qu'ils concordent.
+// Linux : le `.deb` d'abord (Debian, Ubuntu), l'AppImage pour les autres.
 export const DEPOT = 'https://github.com/tototriou/sw-forge';
 export const TELECHARGEMENTS = {
   windows: `${DEPOT}/releases/latest/download/SW-Blacksmith-Setup.exe`,
-  linux: `${DEPOT}/releases/latest/download/SW-Blacksmith.AppImage`,
+  linux: `${DEPOT}/releases/latest/download/SW-Blacksmith.deb`,
+  linuxAppImage: `${DEPOT}/releases/latest/download/SW-Blacksmith.AppImage`,
 } as const;
 
 // `rappel` reçoit l'état de la mise à jour — celui qui existe déjà au

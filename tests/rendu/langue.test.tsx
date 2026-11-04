@@ -143,6 +143,7 @@ export function testRenduLanguePagesPubliques() {
 
   const telecharger = enAnglais(() => texteVisible(rendreApp('#/telecharger')));
   ok(telecharger.includes('Download for Windows') && telecharger.includes('Version offered: v'), 'Télécharger : boutons et version proposée');
+  ok(telecharger.includes('Download for Linux (.deb)') && telecharger.includes('For another distribution: the AppImage'), 'Télécharger : le .deb, et l’AppImage pour les autres distributions');
 
   const mecaniques = enAnglais(() => rendre(<MechanicsPage />));
   ok(texteVisible(mecaniques).startsWith('Game mechanics The formulas behind Summoners War'), 'Mécaniques : l’article anglais');

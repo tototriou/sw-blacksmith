@@ -378,9 +378,11 @@ export const en: Dictionnaire = {
       { titre: '100% local', texte: 'Like the website: nothing is sent, everything stays on your machine.' },
     ],
     windows: 'Download for Windows',
-    linux: 'Download for Linux',
+    linux: 'Download for Linux (.deb)',
     avertissementWindows:
       'Windows may show “Windows protected your PC”: click “More info”, then “Run anyway”.',
+    paquetLinux: 'The .deb installs on Debian, Ubuntu and their derivatives. For another distribution:',
+    appImage: 'the AppImage',
     auTelephone: 'Install it from a Windows or Linux computer.',
     versionProposee: (version: string) => `Version offered: ${version}`,
     toutesLesVersions: 'All versions on GitHub',

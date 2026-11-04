@@ -87,6 +87,7 @@ export const RELEASES: Release[] = [
       { kind: 'feat', scope: 'Dégâts réels', text: 'La fenêtre de l’objectif en anglais : sort, effets actifs, passifs, adversaire et coup critique.' },
       { kind: 'feat', scope: 'Dégâts réels', text: 'Les compteurs, conditions, aides et textes du « Calcul partiel » propres à chaque monstre en anglais.' },
       { kind: 'feat', scope: 'Application', text: 'L’application de bureau en anglais : mise à jour, SW Exporter, sauvegarde de session et fenêtres du système ; l’installeur suit la langue de Windows.' },
+      { kind: 'feat', scope: 'Application', text: 'Sous Linux, un .deb pour Debian et Ubuntu, en plus de l’AppImage.' },
       { kind: 'feat', scope: 'Interface', text: 'Les derniers textes restés en français passent en anglais : champs, notifications, fiches d’artéfact et de relique, roue des runes.' },
       { kind: 'feat', scope: 'Dégâts réels', text: 'Les débuffs posés entre les coups se règlent sur chaque sort à plusieurs coups qui en pose, coup par coup, tirages au hasard compris.' },
       { kind: 'feat', scope: 'Dégâts réels', text: 'Coups au hasard (Splash, Water Dragon Attack…), ignore DEF coup par coup de Fei et Invincibilité de Katarina se règlent dans la fenêtre.' },

@@ -26,6 +26,7 @@ export const RELEASES_EN: Release[] = [
       { kind: 'feat', scope: 'Real damage', text: 'The objective’s window in English: skill, active effects, passives, opponent and critical hit.' },
       { kind: 'feat', scope: 'Real damage', text: 'Each monster’s counters, conditions, help texts and “Partial calculation” notes in English.' },
       { kind: 'feat', scope: 'Application', text: 'The desktop app in English: updates, SW Exporter, session saving and system windows; the installer follows the Windows language.' },
+      { kind: 'feat', scope: 'Application', text: 'On Linux, a .deb for Debian and Ubuntu, alongside the AppImage.' },
       { kind: 'feat', scope: 'Interface', text: 'The last texts left in French are now in English: fields, notifications, artifact and relic cards, rune wheel.' },
       { kind: 'feat', scope: 'Real damage', text: 'Debuffs applied between hits can be set on every multi-hit skill that applies them, hit by hit, random rolls included.' },
       { kind: 'feat', scope: 'Real damage', text: 'Random hits (Splash, Water Dragon Attack…), Fei’s hit-by-hit DEF ignore and Katarina’s Invincibility can be set in the window.' },
