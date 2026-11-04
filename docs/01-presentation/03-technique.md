@@ -44,7 +44,8 @@ Code dans **`bureau/`** (hors de `src/` : il tourne dans Node) :
 
 Empaqueté par `electron-builder.yml`, publié au tag `v*` par `.github/workflows/bureau.yml`
 (installeurs attachés à la release), compilé par `scripts/construire-bureau.mjs` vers le dossier
-`dist-bureau` (non suivi). Côté page : `src/lib/bureau.ts` (`estBureau()`, couleurs du thème,
+`dist-bureau` (non suivi), lancé par `scripts/lib/electron.mjs` (l'environnement hérité de VS
+Code nettoyé par `scripts/lib/environnementElectron.ts`). Côté page : `src/lib/bureau.ts` (`estBureau()`, couleurs du thème,
 mise à jour, cœurs physiques), `src/components/MiseAJourBureau.tsx` (la mise à jour dite par la notification),
 `src/components/BlocApplication.tsx` (bloc « Application » des Réglages : version, mise à jour à
 portée, dossier SW Exporter), `src/components/SuiviSwex.tsx` (applique l'export : tout après le

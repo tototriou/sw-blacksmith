@@ -30,9 +30,21 @@ Electron `44.5.1`, electron-builder `26.15.3`, electron-updater `6.8.9`
   `vite build`, la compilation, puis l'app sur le build.
   `npm run bureau:paquet` : la même chose, puis electron-builder (voir
   « L'installeur »).
-- Tout lancement passe par `scripts/lib/electron.mjs`, qui retire
-  `ELECTRON_RUN_AS_NODE` de l'environnement (hérité d'un terminal de VS
-  Code, il fait démarrer Electron comme un simple Node).
+- Tout lancement passe par `scripts/lib/electron.mjs`, qui nettoie
+  l'environnement hérité d'un terminal de VS Code
+  (`scripts/lib/environnementElectron.ts`, pur, testé) :
+  - `ELECTRON_RUN_AS_NODE` est retirée : elle fait démarrer Electron comme
+    un simple Node ;
+  - ⚠️ **VS Code installé en snap** (Linux) : ses variables GIO, GSettings
+    et GTK (`GIO_MODULE_DIR`, `GSETTINGS_SCHEMA_DIR`, `GTK_PATH`…) pointent
+    vers les modules et les schémas du snap, et Electron plante à la
+    création de la fenêtre (SIGSEGV, après « Schema
+    org.gnome.desktop.interface does not have key font-antialiasing »).
+    Celles qui pointent dans un snap sont retirées, et celles dont VS Code
+    garde l'origine (`<NOM>_VSCODE_SNAP_ORIG`, dont `XDG_DATA_DIRS`) la
+    retrouvent. Ni Wayland ni la version d'Electron n'y sont pour rien.
+  `scripts/generer-icone-bureau.mjs`, qui se relance dans Electron, applique
+  la même règle.
 
 ## Le démarrage
 
@@ -339,7 +351,7 @@ npm run bureau:preuve -- --swex        # le dossier SW Exporter, sur des fixture
 npm run bureau:preuve -- --session     # « Sauvegarder », « Sauvegarder sous… », conservation refusée
 npm run bureau:preuve -- <dossier> --exe "<app installée>"  # la même chose, sur l'app installée
 npm run bureau:local                   # la regarder
-node tests/run.mjs bureau              # protocole, fenêtre, mise à jour, noms de fichiers, cœurs physiques
+node tests/run.mjs bureau              # protocole, fenêtre, mise à jour, noms de fichiers, cœurs physiques, lancement
 ```
 
 Le mode preuve (`bureau/preuve.ts`, variables `SWBLACKSMITH_PREUVE` et

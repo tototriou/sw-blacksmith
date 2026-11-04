@@ -24,9 +24,11 @@ const BMP = [16, 20, 24, 32, 40, 48, 64];
 const PNG = [256];
 
 if (!process.versions.electron) {
-  // Sous Node : relance dans Electron (sans ELECTRON_RUN_AS_NODE, voir lib/electron.mjs).
-  const env = { ...process.env };
-  delete env.ELECTRON_RUN_AS_NODE;
+  // Sous Node : relance dans Electron, l'environnement nettoyé comme pour tout
+  // lancement (lib/environnementElectron.ts). Importé ici seulement : relancé
+  // dans Electron, le script ne charge pas de TypeScript.
+  const { environnementElectron } = await import('./lib/environnementElectron.ts');
+  const env = environnementElectron(process.env);
   const electron = createRequire(import.meta.url)('electron');
   const r = spawnSync(electron, [fileURLToPath(import.meta.url)], { stdio: 'inherit', env });
   process.exit(r.status ?? 1);
