@@ -1,6 +1,6 @@
 // Lancer Electron depuis un script.
 //
-// ⚠️ **L'environnement hérité est nettoyé** (environnementElectron.ts) : un
+// ⚠️ **L'environnement hérité est nettoyé** (environnementElectron.mjs) : un
 // terminal de VS Code transmet `ELECTRON_RUN_AS_NODE`, et, quand VS Code est
 // installé en snap sous Linux, les variables GIO, GSettings et GTK du snap.
 // Les unes comme les autres empêchent la fenêtre de s'ouvrir. Tout lancement
@@ -8,7 +8,7 @@
 
 import { spawn, spawnSync } from 'node:child_process';
 import { createRequire } from 'node:module';
-import { environnementElectron } from './environnementElectron.ts';
+import { environnementElectron } from './environnementElectron.mjs';
 
 const executable = createRequire(import.meta.url)('electron');
 

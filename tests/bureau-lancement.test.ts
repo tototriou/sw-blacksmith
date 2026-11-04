@@ -1,5 +1,5 @@
 // L'environnement donné à Electron par les scripts de lancement
-// (scripts/lib/environnementElectron.ts, scripts/lib/electron.mjs,
+// (scripts/lib/environnementElectron.mjs, scripts/lib/electron.mjs,
 // scripts/generer-icone-bureau.mjs).
 //
 // ⚠️ Une variable héritée du terminal de VS Code qui passerait empêcherait la
@@ -9,7 +9,7 @@
 // exercé que par `npm run bureau` lui-même.
 
 import { readFileSync } from 'node:fs';
-import { SUFFIXE_ORIGINE_SNAP, VARIABLES_DU_SNAP, environnementElectron } from '../scripts/lib/environnementElectron';
+import { SUFFIXE_ORIGINE_SNAP, VARIABLES_DU_SNAP, environnementElectron } from '../scripts/lib/environnementElectron.mjs';
 import { egal, ok, titre } from './outils';
 
 const sansCommentaires = (source: string) =>
@@ -80,13 +80,14 @@ export default function testBureauLancement() {
 
   titre('bureau · lancement — tout lancement passe par la règle, contrôlé sur la source');
   const lanceur = sansCommentaires(readFileSync('scripts/lib/electron.mjs', 'utf8'));
-  ok(/import \{ environnementElectron \} from '\.\/environnementElectron\.ts';/.test(lanceur),
-    'electron.mjs importe la règle (extension `.ts` : chargée par Node sans compilation)');
+  ok(/import \{ environnementElectron \} from '\.\/environnementElectron\.mjs';/.test(lanceur),
+    'electron.mjs importe la règle, en JavaScript : chargée par tout Node, sans compilation ni option');
   ok(/const environnement = \(supplement\) => environnementElectron\(process\.env, supplement\);/.test(lanceur),
     'electron.mjs : l’environnement est celui du processus, nettoyé');
   egal((lanceur.match(/env: environnement\(supplement\)/g) ?? []).length, 2,
     'electron.mjs : `lancerElectron` et `lancerElectronEtAttendre` lancent tous deux avec lui');
   const icone = sansCommentaires(readFileSync('scripts/generer-icone-bureau.mjs', 'utf8'));
-  ok(/const env = environnementElectron\(process\.env\);/.test(icone) && /spawnSync\(electron, \[[^\]]*\], \{ stdio: 'inherit', env \}\)/.test(icone),
+  ok(/import \{ environnementElectron \} from '\.\/lib\/environnementElectron\.mjs';/.test(icone)
+    && /const env = environnementElectron\(process\.env\);/.test(icone) && /spawnSync\(electron, \[[^\]]*\], \{ stdio: 'inherit', env \}\)/.test(icone),
     'generer-icone-bureau.mjs : relancé dans Electron avec le même nettoyage');
 }

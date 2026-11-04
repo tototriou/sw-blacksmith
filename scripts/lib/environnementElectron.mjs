@@ -1,6 +1,10 @@
 // L'environnement donné à Electron quand un script le lance
 // (scripts/lib/electron.mjs). Pur, testé (tests/bureau-lancement.test.ts) ;
-// chargé par `node` sans compilation : syntaxe TypeScript effaçable seulement.
+// types dans environnementElectron.d.mts.
+//
+// ⚠️ **En JavaScript, pas en TypeScript** : `npm run bureau` doit marcher
+// avec le Node du terminal, quel qu'il soit, et un Node antérieur à 22.18 ne
+// charge pas de `.ts` sans option.
 //
 // Deux héritages du terminal de VS Code empêchent la fenêtre de s'ouvrir :
 //
@@ -23,19 +27,17 @@
 // Les variables du snap qui désignent ses bibliothèques. Retirées seulement
 // quand leur valeur pointe dans un snap (`/snap/`, ou `~/snap/`) : une valeur
 // posée à la main pour le système reste.
-export const VARIABLES_DU_SNAP = [
+export const VARIABLES_DU_SNAP = Object.freeze([
   'GIO_MODULE_DIR', 'GSETTINGS_SCHEMA_DIR', 'GTK_PATH', 'GTK_EXE_PREFIX', 'GTK_IM_MODULE_FILE',
   'GDK_PIXBUF_MODULE_FILE', 'GDK_PIXBUF_MODULEDIR', 'LOCPATH',
-] as const;
+]);
 
 export const SUFFIXE_ORIGINE_SNAP = '_VSCODE_SNAP_ORIG';
 
-type Environnement = Record<string, string | undefined>;
-
 // L'environnement hérité, nettoyé, puis complété par `supplement` (qui
 // l'emporte). L'objet reçu n'est pas modifié.
-export function environnementElectron(herite: Environnement, supplement: Environnement = {}): Environnement {
-  const env: Environnement = { ...herite };
+export function environnementElectron(herite, supplement = {}) {
+  const env = { ...herite };
   delete env.ELECTRON_RUN_AS_NODE;
 
   for (const cle of Object.keys(env)) {

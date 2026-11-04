@@ -32,7 +32,8 @@ Electron `44.5.1`, electron-builder `26.15.3`, electron-updater `6.8.9`
   « L'installeur »).
 - Tout lancement passe par `scripts/lib/electron.mjs`, qui nettoie
   l'environnement hérité d'un terminal de VS Code
-  (`scripts/lib/environnementElectron.ts`, pur, testé) :
+  (`scripts/lib/environnementElectron.mjs`, pur, testé ; en JavaScript pour
+  marcher avec le Node du terminal, quel qu'il soit) :
   - `ELECTRON_RUN_AS_NODE` est retirée : elle fait démarrer Electron comme
     un simple Node ;
   - ⚠️ **VS Code installé en snap** (Linux) : ses variables GIO, GSettings

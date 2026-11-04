@@ -16,6 +16,7 @@ import { writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { environnementElectron } from './lib/environnementElectron.mjs';
 
 const racine = join(dirname(fileURLToPath(import.meta.url)), '..');
 const SOURCE = join(racine, 'public', 'favicon.png');
@@ -25,9 +26,7 @@ const PNG = [256];
 
 if (!process.versions.electron) {
   // Sous Node : relance dans Electron, l'environnement nettoyé comme pour tout
-  // lancement (lib/environnementElectron.ts). Importé ici seulement : relancé
-  // dans Electron, le script ne charge pas de TypeScript.
-  const { environnementElectron } = await import('./lib/environnementElectron.ts');
+  // lancement (lib/environnementElectron.mjs).
   const env = environnementElectron(process.env);
   const electron = createRequire(import.meta.url)('electron');
   const r = spawnSync(electron, [fileURLToPath(import.meta.url)], { stdio: 'inherit', env });
