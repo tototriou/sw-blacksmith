@@ -35,7 +35,7 @@ const EQUIPES: EquipeEnregistree[] = [
   { ...creerEquipe('e3', 'pve', 'Donjon', T0), monstres: [monstreEx('c', 1003, null, null)] },
 ];
 const api = (equipes = EQUIPES, relecture: 'en-cours' | 'finie' = 'finie'): EquipesEnregistreesApi => ({
-  equipes, relecture, illisibles: 0, signalements: [], appliquer: () => {}, remplacerTout: () => {},
+  equipes, relecture, illisibles: 0, signalements: [], clesReservees: new Set(), signaler: () => {}, appliquer: () => {}, remplacerTout: () => {},
 });
 const section = (o: { api?: EquipesEnregistreesApi; compte?: boolean; menuOuvert?: boolean } = {}) => (
   <EquipesSection api={o.api ?? api()} ctx={ctx(o.compte ?? true)} inventaire={o.compte === false ? null : INVENTAIRE}

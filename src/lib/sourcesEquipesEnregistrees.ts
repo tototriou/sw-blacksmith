@@ -12,7 +12,7 @@ import type { Dictionnaire } from '../i18n/fr';
 import type { DeckArene } from './importAccount';
 import { resolveExclusionEntry, type ExclusionSelector, type ExclusionSourceData } from './optimizerExclusion';
 import type { StockageOptimizer } from './optimizerMemberStorage';
-import { preparerRetourOptimizer } from './importEquipesEnregistrees';
+import { disponibiliteRetourOptimizer, preparerRetourOptimizer } from './importEquipesEnregistrees';
 import {
   MONSTRES_MAX_EQUIPE, creerEquipe,
   type EquipeEnregistree, type InventaireCompte, type MonstreEnregistre, type OngletEquipes,
@@ -99,7 +99,8 @@ export interface SourceImportEquipe {
   creer: (id: string, tirerUid: TirerId, maintenant: Date) => ImportEquipeCree | null;
 }
 
-interface MembreBrut { com2usId: number | null; unitId: number | null; equipement: GearSet | null }
+// `leader` : le membre vient du slot 0 de sa source (siège) ou de la tête du deck (arène).
+interface MembreBrut { com2usId: number | null; unitId: number | null; equipement: GearSet | null; leader: boolean }
 
 function equipeDepuisMembres(
   membres: MembreBrut[], onglet: OngletEquipes, nom: string, provenance: ProvenanceEquipement,
@@ -107,13 +108,14 @@ function equipeDepuisMembres(
 ): ImportEquipeCree {
   let ignores = 0;
   const monstres: MonstreEnregistre[] = [];
+  let leader: string | null = null;
   for (const m of membres.slice(0, MONSTRES_MAX_EQUIPE)) {
     if (m.com2usId === null || !ctx.monsterByCom2us.has(m.com2usId)) { ignores++; continue; }
-    monstres.push({ uid: tirerUid(), com2usId: m.com2usId, unitId: m.unitId, provenance: m.equipement ? provenance : 'aucun',
+    const uid = tirerUid();
+    if (m.leader) leader = uid;
+    monstres.push({ uid, com2usId: m.com2usId, unitId: m.unitId, provenance: m.equipement ? provenance : 'aucun',
       equipement: m.equipement ? structuredClone(m.equipement) : null });
   }
-  // Le premier membre de la source est son leader (slot 0 du siège, leader du deck d'arène).
-  const leader = membres[0]?.com2usId != null && monstres.length && monstres[0].com2usId === membres[0].com2usId ? monstres[0].uid : null;
   return { equipe: { ...creerEquipe(id, onglet, nom, maintenant), monstres, leader }, ignores };
 }
 
@@ -128,8 +130,9 @@ export function sourcesImportEquipes(
   const res: SourceImportEquipe[] = [];
   const siege = (teams: readonly SiegeTeam[], groupe: string, onglet: OngletEquipes, provenance: ProvenanceEquipement, libelle: (n: number) => string) =>
     teams.forEach((team, i) => {
-      const membres: MembreBrut[] = team.slots.filter((s) => s.monsterId !== null)
-        .map((s) => ({ com2usId: ctx.monsterById.get(s.monsterId!)?.com2usId ?? null, unitId: null, equipement: s.gear ?? null }));
+      // Le leader est le slot 0, et lui seul : un slot 0 vide laisse l'équipe sans leader.
+      const membres: MembreBrut[] = team.slots.flatMap((s, i) => (s.monsterId === null ? [] : [{
+        com2usId: ctx.monsterById.get(s.monsterId)?.com2usId ?? null, unitId: null, equipement: s.gear ?? null, leader: i === 0 }]));
       res.push({ cle: `${provenance}:${team.id}`, groupe, libelle: libelle(i + 1), monstres: monstresConnus(membres.map((m) => m.com2usId), ctx),
         raison: membres.length ? null : im.aucunDeck,
         creer: (id, tirerUid, maintenant) => equipeDepuisMembres(membres, onglet, libelle(i + 1), provenance, ctx, id, tirerUid, maintenant) });
@@ -145,7 +148,7 @@ export function sourcesImportEquipes(
     const libelle = deck.cle === 'defense' ? im.areneDefense : deck.cle === 'defense-serveur' ? im.areneDefenseServeur : im.areneAttaque(deck.rang + 1);
     const onglet: OngletEquipes = deck.cle === 'attaque' ? 'arene-attaque' : 'arene-defense';
     const provenance: ProvenanceEquipement = onglet;
-    const membres: MembreBrut[] = deck.slots.map((s) => ({ com2usId: s.com2usId, unitId: s.unitId, equipement: s.gear }));
+    const membres: MembreBrut[] = deck.slots.map((s, i) => ({ com2usId: s.com2usId, unitId: s.unitId, equipement: s.gear, leader: i === 0 }));
     res.push({ cle: `arene:${deck.cle}:${deck.rang}`, groupe: im.arene, libelle, monstres: monstresConnus(membres.map((m) => m.com2usId), ctx),
       raison: membres.length ? null : im.aucunDeck,
       creer: (id, tirerUid, maintenant) => equipeDepuisMembres(membres, onglet, libelle, provenance, ctx, id, tirerUid, maintenant) });
@@ -161,9 +164,15 @@ export function sourcesImportEquipes(
     const equipes = st.teams.filter((e) => e.listId === liste.id);
     const especes = (selectors: ExclusionSelector[]) => selectors
       .map((sel) => resolveExclusionEntry(sel, optimizer.data)?.monster).filter((m): m is Monster => !!m);
+    const brouillon = (id: string, equipeId: string | null, nom: string, maintenant: Date): EquipeEnregistree => ({
+      ...creerEquipe(id, ongletOuvert, nom, maintenant), lienOptimizer: { listId: liste.id, equipeId, correspondance: [] } });
+    // Un membre que le compte ne résout plus rend la source indisponible, avec sa raison.
+    const raisonOptimizer = (equipeId: string | null) => {
+      const r = disponibiliteRetourOptimizer(brouillon('', equipeId, '', new Date(0)), st, optimizer.data);
+      return r ? t.equipes.retour.refus[r] : null;
+    };
     const creerDepuis = (equipeId: string | null, nom: string) => (id: string, tirerUid: TirerId, maintenant: Date): ImportEquipeCree | null => {
-      const vide: EquipeEnregistree = { ...creerEquipe(id, ongletOuvert, nom, maintenant),
-        lienOptimizer: { listId: liste.id, equipeId, correspondance: [] } };
+      const vide = brouillon(id, equipeId, nom, maintenant);
       const r = preparerRetourOptimizer(vide, st, optimizer.data, inv, tirerUid, maintenant);
       if (typeof r === 'string') return null;
       // Une équipe importée ne se lie pas : seul l'export pose un lien.
@@ -172,13 +181,13 @@ export function sourcesImportEquipes(
     };
     if (equipes.length) equipes.forEach((e, i) => {
       const nom = im.equipeListe(liste.name, i + 1);
-      res.push({ cle: `optimizer:${liste.id}:${e.id}`, groupe: im.optimizer, libelle: nom, monstres: especes(e.members), raison: null, creer: creerDepuis(e.id, nom) });
+      res.push({ cle: `optimizer:${liste.id}:${e.id}`, groupe: im.optimizer, libelle: nom, monstres: especes(e.members), raison: raisonOptimizer(e.id), creer: creerDepuis(e.id, nom) });
     });
     else {
       const membres = st.members.filter((m) => m.listId === liste.id).map((m) => m.selector);
       const nom = im.membresListe(liste.name);
       res.push({ cle: `optimizer:${liste.id}`, groupe: im.optimizer, libelle: nom, monstres: especes(membres),
-        raison: membres.length === 0 ? im.aucunDeck : membres.length > MONSTRES_MAX_EQUIPE ? im.tropDeMembres : null,
+        raison: membres.length === 0 ? im.aucunDeck : membres.length > MONSTRES_MAX_EQUIPE ? im.tropDeMembres : raisonOptimizer(null),
         creer: creerDepuis(null, nom) });
     }
   }

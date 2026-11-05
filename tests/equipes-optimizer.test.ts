@@ -86,11 +86,11 @@ function testEquipesOptimizerBuilds() {
 
 function testEquipesOptimizerRetour() {
   titre('Mes équipes — mise à jour depuis l’Optimizer');
-  egal(disponibiliteRetourOptimizer(equipe(), vide()), 'sansLien', 'sans lien, rien à reprendre');
+  egal(disponibiliteRetourOptimizer(equipe(), vide(), sources()), 'sansLien', 'sans lien, rien à reprendre');
   const { r, lie } = exporter(equipe());
   const st = r.stockage;
-  egal(disponibiliteRetourOptimizer(lie, { ...st, lists: [] }), 'listeAbsente', 'liste supprimée : refus');
-  egal(disponibiliteRetourOptimizer(lie, { ...st, teams: [] }), 'equipeAbsente', 'équipe supprimée : refus, rien deviné');
+  egal(disponibiliteRetourOptimizer(lie, { ...st, lists: [] }, sources()), 'listeAbsente', 'liste supprimée : refus');
+  egal(disponibiliteRetourOptimizer(lie, { ...st, teams: [] }, sources()), 'equipeAbsente', 'équipe supprimée : refus, rien deviné');
   // Le build du monstre 1 change : la rune 25 (emplacement 6) vient du monstre 2, la 999 n'existe nulle part.
   const validated = st.validated.map((v) => (v.selector.source === 'box'
     ? { listId: v.listId, selector: v.selector, runeIds: [1, 2, 3, 4, 5, 25, 999], artifactIds: [10, 11] } : v));
@@ -106,7 +106,14 @@ function testEquipesOptimizerRetour() {
   egal(retour.equipe.leader, 'a', 'le leader de l’équipe de l’Optimizer');
   egal([retour.equipe.nom, retour.equipe.creeLe, retour.equipe.modifieLe], ['Défense GW', T0.toISOString(), T1.toISOString()], 'nom et création gardés, modification datée');
   egal(retour.equipe.lienOptimizer?.correspondance.map((c) => c.uid), ['a', 'b'], 'la correspondance est réécrite');
-  ok(retour.monstresChanges >= 2 && retour.piecesChangees >= 2, 'la confirmation compte ce qui change');
+  // a : la 3 (relue modifiée), la 6 partie, la 25 arrivée ; b inchangé ; c retiré : ses 9 pièces.
+  egal([retour.monstresChanges, retour.piecesChangees], [2, 12], 'la confirmation compte ce qui change, pièces du monstre retiré comprises');
+  const sansBox = { ...sources(), box: [] };
+  egal(disponibiliteRetourOptimizer(lie, st, sansBox), 'membresIntrouvables', 'un membre Box introuvable (compte pas relu) : refus, aucun monstre retiré');
+  // Une liste liée sans équipe, vidée dans l'Optimizer : l'équipe devient vide.
+  const lieListe: EquipeEnregistree = { ...lie, lienOptimizer: { ...lie.lienOptimizer!, equipeId: null } };
+  const videe = preparerRetourOptimizer(lieListe, { ...st, members: [], teams: [] }, sources(), inventaire(), () => 'x', T1);
+  egal(typeof videe !== 'string' && [videe.equipe.monstres.length, videe.equipe.leader], [0, null], 'une liste vidée donne une équipe vide, sans leader');
   // Un membre ajouté dans l'Optimizer devient un nouveau monstre.
   const ajout = { ...st, validated, teams: st.teams.map((t) => ({ ...t, members: [...t.members, { source: 'unowned' as const, monsterId: '3' }] })) };
   const r2 = preparerRetourOptimizer(lie, ajout, sources(), inventaire(), () => 'neuf', T1);
@@ -130,6 +137,11 @@ function testEquipesOptimizerImport() {
   egal(cree.equipe.monstres[0].equipement?.runes.map((x) => x.id), [1, 2, 3, 4, 5, 6], 'les runes du build validé');
   egal(cree.equipe.leader, 'u1', 'le leader de l’équipe de l’Optimizer');
   ok(cree.equipe.lienOptimizer === undefined, 'une équipe importée n’est pas liée');
+  egal(cree.ignores, 0, 'tous les membres repris');
+  // Un membre que les sources ne résolvent plus rend la source indisponible.
+  const sansDeux = { ...data, monsterById: new Map([...data.monsterById].filter(([k]) => k !== '2')) };
+  const src2 = sourcesImportEquipes(ctx, { stockage: r.stockage, data: sansDeux }, inventaire(), 'pve', fr).find((x) => x.groupe === fr.equipes.imports.optimizer)!;
+  egal(src2.raison, fr.equipes.retour.refus.membresIntrouvables, 'un membre introuvable désactive la source, avec sa raison');
 }
 
 export const verificationsEquipesOptimizer: [string, () => void][] = [

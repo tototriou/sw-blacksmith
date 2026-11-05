@@ -4,7 +4,7 @@ import type { BoxItem } from '../src/lib/applyAccount';
 import {
   ajouterMonstre, comparerPiece, compteParOnglet, creerEquipe, deplacerMonstre, designerLeader, dupliquerEquipe,
   equipesFiltrees, etatExemplaire, etatPiece, indexerInventaire, lireEquipeEnregistree, modifierTextes,
-  nomEquipeLibre, resumeEcarts, retirerMonstre, type EquipeEnregistree, type MonstreEnregistre,
+  nomEquipeLibre, resumeEcarts, retirerMonstre, retirerRelique, type EquipeEnregistree, type MonstreEnregistre,
 } from '../src/lib/equipesEnregistrees';
 
 const T0 = new Date('2026-11-05T10:00:00Z');
@@ -98,6 +98,10 @@ function testEquipesEnregistreesOperations() {
   egal([reordonnee.leader, reordonnee.speedTune?.liens.map((l) => l.monstre)], ['b', ['b', 'c']], 'et ne change aucune désignation');
   const sansB = retirerMonstre(e, 'b', T1);
   egal([sansB.leader, sansB.speedTune?.liens.map((l) => l.uid)], [null, ['l2']], 'retirer le leader remet le leader à null et retire ses liens');
+  const sansRelique = retirerRelique(e, e.monstres[0].uid, T1);
+  ok(sansRelique.monstres[0].equipement !== null && sansRelique.monstres[0].equipement.relic === undefined
+    && sansRelique.monstres[0].equipement.runes.length === e.monstres[0].equipement!.runes.length, 'retirer la relique ne retire qu’elle');
+  ok(e.monstres[0].equipement?.relic !== undefined, 'sans toucher à l’équipe d’origine');
   ok(ajouterMonstre({ ...e, monstres: [1, 2, 3, 4, 5, 6].map((i) => monstreEx(`u${i}`, i, null)) }, monstreEx('z', 9, null), T1) === null, 'pas de 7ᵉ monstre');
   egal(modifierTextes(e, { nom: '  Nouvelle  ', note: ' n ' }, T1).nom, 'Nouvelle', 'le nom est trimé');
   egal(modifierTextes(e, { nom: '   ' }, T1).nom, 'E', 'un nom vide garde l’ancien');

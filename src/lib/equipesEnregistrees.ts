@@ -407,6 +407,15 @@ export function remplacerEquipement(
     ? { ...m, provenance, equipement: equipement === null ? null : structuredClone(equipement) } : m) }, maintenant);
 }
 
+// Retire la seule relique enregistrée : le retour de l'Optimizer la garde
+// faute de savoir si elle a été retirée, le retrait se refait ici.
+export function retirerRelique(e: EquipeEnregistree, uid: string, maintenant: Date): EquipeEnregistree {
+  const m = e.monstres.find((x) => x.uid === uid);
+  if (!m?.equipement?.relic) return e;
+  const { relic: _relique, ...sans } = m.equipement;
+  return touchee({ ...e, monstres: e.monstres.map((x) => (x.uid === uid ? { ...x, equipement: sans } : x)) }, maintenant);
+}
+
 export function modifierTextes(e: EquipeEnregistree, champs: { nom?: string; note?: string }, maintenant: Date): EquipeEnregistree {
   const nom = champs.nom !== undefined && champs.nom.trim() !== '' ? champs.nom.trim() : e.nom;
   const note = champs.note !== undefined ? champs.note.trim() : e.note;

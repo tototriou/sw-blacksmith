@@ -43,7 +43,7 @@ async function testEquipesStockageFile() {
   await brutDansLaBase('cassee', { id: 'cassee', onglet: 42 });
   oublierConnexionEquipes();
   lu = await chargerEquipes();
-  egal([lu?.equipes.length, lu?.illisibles], [1, 1], 'une entrée illisible est écartée et comptée');
+  egal([lu?.equipes.length, lu?.illisibles, lu?.clesIllisibles], [1, 1, ['cassee']], 'une entrée illisible est écartée, comptée, et sa clé réservée');
   lu = await chargerEquipes();
   egal(lu?.illisibles, 1, 'et la relecture ne l’efface pas');
   ok(await viderEquipes(), 'vider la base');
@@ -79,6 +79,9 @@ function testEquipesFichier() {
   const avecInvalide = JSON.stringify({ ...brut, equipes: [...brut.equipes, { id: 'x' }] });
   const lu2 = lireFichierEquipes(avecInvalide, new Set(), () => 'z');
   egal(lu2.ok && lu2.ignorees, 1, 'une équipe invalide est ignorée et comptée');
+  const stCasse = { ...brut, equipes: [{ ...brut.equipes[0], speedTune: { plan: 'illisible', liens: [] } }] };
+  const lu3 = lireFichierEquipes(JSON.stringify(stCasse), new Set(['e1']), () => 'nouvel');
+  egal(lu3.ok && lu3.signalements, [{ id: 'nouvel', signalements: ['speedTuneIncomplet'] }], 'un speed tune abîmé est signalé sous l’identifiant définitif');
   egal(lireFichierEquipes(JSON.stringify({ ...brut, format: 'swblacksmith/session' }), new Set(), () => 'z'), { ok: false, raison: 'format' }, 'un autre format est refusé entier');
   egal(lireFichierEquipes('pas du json', new Set(), () => 'z'), { ok: false, raison: 'illisible' }, 'un texte illisible est refusé');
   egal(lireFichierEquipes(JSON.stringify({ ...brut, version: 2 }), new Set(), () => 'z'), { ok: false, raison: 'version' }, 'une version inconnue est refusée');
@@ -103,6 +106,8 @@ function testEquipesDecksArene() {
   egal(decks[0].slots[0].gear.artifacts.map((a) => a.id), [5002], 'artéfacts portés avec');
   egal(decks[0].slots[0].com2usId, 14314, 'l’espèce de l’unité');
   egal(parseArenaDecks({ unit_list: [] }), [], 'un export sans deck d’arène rend une liste vide');
+  const presetVide = { ...compte, defense_deck_info: { ...compte.defense_deck_info, equip: [{ unit_id: 102, rune_id_list: [], artifact_id_list: [] }] } };
+  egal(parseArenaDecks(presetVide)[0].slots[0].gear.runes, [], 'un preset présent mais vide fait foi : pas de repli sur ce que porte le monstre');
 }
 
 verificationsEquipesStockage.push(['testEquipesDecksArene', testEquipesDecksArene]);

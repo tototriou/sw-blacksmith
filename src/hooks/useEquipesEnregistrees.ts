@@ -21,6 +21,10 @@ export interface EquipesEnregistreesApi {
   relecture: RelectureEquipesEtat;
   illisibles: number;
   signalements: { id: string; signalements: SignalementEquipe[] }[];
+  // Les clés des entrées illisibles de la base : un import ne les reprend pas.
+  clesReservees: ReadonlySet<string>;
+  // Les signalements d'équipes ajoutées par un fichier.
+  signaler: (s: { id: string; signalements: SignalementEquipe[] }[]) => void;
   appliquer: (f: (equipes: EquipeEnregistree[]) => EquipeEnregistree[]) => void;
   remplacerTout: (equipes: EquipeEnregistree[]) => void;
 }
@@ -31,6 +35,7 @@ export function useEquipesEnregistrees(): EquipesEnregistreesApi {
   const [relecture, setRelecture] = useState<RelectureEquipesEtat>(() => (persistenceEnabled() ? 'en-cours' : 'finie'));
   const [illisibles, setIllisibles] = useState(0);
   const [signalements, setSignalements] = useState<EquipesEnregistreesApi['signalements']>([]);
+  const [clesReservees, setClesReservees] = useState<ReadonlySet<string>>(() => new Set());
   // Les objets déjà sur le disque : une équipe relue n'est pas réécrite.
   const surDisque = useRef(new WeakSet<EquipeEnregistree>());
   const precedent = useRef<EquipeEnregistree[]>([]);
@@ -46,8 +51,11 @@ export function useEquipesEnregistrees(): EquipesEnregistreesApi {
       if (res) {
         for (const e of res.equipes) surDisque.current.add(e);
         setIllisibles(res.illisibles);
-        setSignalements(res.signalements);
-        setEquipes((m) => fusionnerRelecture(m, res.equipes, supprimeesPendantRelecture.current));
+        setSignalements((s) => [...res.signalements, ...s]);
+        setClesReservees(new Set(res.clesIllisibles));
+        // ⚠️ Une COPIE : l'updater s'exécute plus tard, après le vidage ci-dessous.
+        const supprimees = new Set(supprimeesPendantRelecture.current);
+        setEquipes((m) => fusionnerRelecture(m, res.equipes, supprimees));
       }
       supprimeesPendantRelecture.current.clear();
       setRelecture('finie');
@@ -81,6 +89,7 @@ export function useEquipesEnregistrees(): EquipesEnregistreesApi {
 
   const appliquer = useCallback((f: (e: EquipeEnregistree[]) => EquipeEnregistree[]) => setEquipes((e) => f(e)), []);
   const remplacerTout = useCallback((e: EquipeEnregistree[]) => setEquipes(e), []);
+  const signaler = useCallback((s: EquipesEnregistreesApi['signalements']) => { if (s.length) setSignalements((p) => [...p, ...s]); }, []);
 
-  return { equipes, relecture, illisibles, signalements, appliquer, remplacerTout };
+  return { equipes, relecture, illisibles, signalements, clesReservees, signaler, appliquer, remplacerTout };
 }

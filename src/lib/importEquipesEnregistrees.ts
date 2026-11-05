@@ -132,7 +132,7 @@ export function lienApresExportOptimizer(export_: ExportEquipeOptimizer, rapport
  * Mettre à jour depuis l'Optimizer
  * ----------------------------------------------------------------------- */
 
-export type RefusRetourOptimizer = 'sansLien' | 'listeAbsente' | 'equipeAbsente' | 'tropDeMembres' | 'aucunMembre';
+export type RefusRetourOptimizer = 'sansLien' | 'listeAbsente' | 'equipeAbsente' | 'tropDeMembres' | 'membresIntrouvables';
 
 export interface PieceManquante {
   libelle: string; // le monstre
@@ -151,14 +151,17 @@ export interface RetourOptimizer {
   retires: string[];
 }
 
-export function disponibiliteRetourOptimizer(equipe: EquipeEnregistree, stockage: StockageOptimizer): RefusRetourOptimizer | null {
+// ⚠️ Un membre qui ne se résout pas (compte pas encore relu, exemplaire
+// disparu) refuse tout : le reprendre comme absent retirerait son monstre de
+// l'équipe. Une liste vidée, elle, donne une équipe vide, que la spec permet.
+export function disponibiliteRetourOptimizer(equipe: EquipeEnregistree, stockage: StockageOptimizer, data: ExclusionSourceData): RefusRetourOptimizer | null {
   const lien = equipe.lienOptimizer;
   if (!lien) return 'sansLien';
   if (!stockage.lists.some((l) => l.id === lien.listId)) return 'listeAbsente';
   if (lien.equipeId !== null && !stockage.teams.some((e) => e.id === lien.equipeId && e.listId === lien.listId)) return 'equipeAbsente';
-  const n = membresSource(equipe, stockage).length;
-  if (n === 0) return 'aucunMembre';
-  if (n > MONSTRES_MAX_EQUIPE) return 'tropDeMembres';
+  const source = membresSource(equipe, stockage);
+  if (source.length > MONSTRES_MAX_EQUIPE) return 'tropDeMembres';
+  if (source.some((s) => { const r = resolveExclusionEntry(s, data); return !r?.monster || r.monster.com2usId === null; })) return 'membresIntrouvables';
   return null;
 }
 
@@ -174,7 +177,7 @@ export function preparerRetourOptimizer(
   equipe: EquipeEnregistree, stockage: StockageOptimizer, data: ExclusionSourceData, inv: InventaireCompte,
   tirerUid: TirerId, maintenant: Date
 ): RetourOptimizer | RefusRetourOptimizer {
-  const refus = disponibiliteRetourOptimizer(equipe, stockage);
+  const refus = disponibiliteRetourOptimizer(equipe, stockage, data);
   if (refus) return refus;
   const lien = equipe.lienOptimizer!;
   const parCle = new Map(lien.correspondance.map((c) => [exclusionSelectorKey(c.selecteur), c.uid]));
@@ -245,6 +248,8 @@ export function preparerRetourOptimizer(
   for (const m of equipe.monstres) if (!vus.has(m.uid)) {
     res.retires.push(monstreDeLEspece(m.com2usId, data)?.name ?? String(m.com2usId));
     res.monstresChanges++;
+    // Son équipement quitte l'équipe avec lui.
+    res.piecesChangees += piecesDe(m.equipement).size;
   }
 
   let leader: string | null;

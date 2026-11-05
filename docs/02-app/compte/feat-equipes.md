@@ -219,7 +219,7 @@ modifié.
 | --- | --- | --- |
 | Une défense de siège | « Siège — défense » | le preset du deck |
 | Une attaque de siège | « Siège — attaque » | le preset du deck |
-| La défense d'arène (et celle d'arène de serveur) | « Arène — défense » | le preset de la défense |
+| La défense d'arène (et celle d'arène de serveur) | « Arène — défense » | le preset de la défense, même vide ; sans preset pour l'unité, ce qu'elle porte |
 | Une attaque d'arène | « Arène — attaque » | ce que portent les monstres à l'export |
 | Une équipe de l'Optimizer | l'onglet ouvert | le build validé du membre, sinon son équipement affiché |
 
@@ -234,7 +234,10 @@ modifié.
 - RTA : la prépa RTA n'est pas une équipe ; son preset sert de choix d'équipement
   (« Preset RTA ») à l'ajout d'un monstre.
 - Optimizer : une équipe d'une liste (ses membres, son leader, son speed tune) ou, sans
-  équipe, les membres d'une liste (1 à 6 au plus ; au-delà, refus avec sa raison).
+  équipe, les membres d'une liste (1 à 6 au plus ; au-delà, refus avec sa raison). Une
+  source dont un membre ne se résout plus dans le compte est désactivée, avec sa raison.
+- Siège : le leader est le monstre du slot 0, et lui seul ; un slot 0 vide donne une
+  équipe sans leader.
 - Guerre de guilde et PVE n'ont pas de source dans l'export de compte : leurs équipes
   se créent à la main ou depuis l'Optimizer.
 
@@ -309,7 +312,12 @@ lignes ; la confirmation le nomme.
 - `equipeId` désigne une équipe disparue : l'action est désactivée, « L'équipe de
   l'Optimizer n'existe plus », et rien n'est deviné.
 
-Plus de 6 membres à reprendre : refus avec sa raison.
+Plus de 6 membres à reprendre : refus avec sa raison. ⚠️ **Un membre qui ne se résout
+pas** (compte pas encore relu, exemplaire disparu) refuse toute la mise à jour : le
+reprendre comme absent retirerait son monstre de l'équipe. Sans compte chargé,
+l'action est désactivée (« Importe ton compte pour mettre à jour depuis l'Optimizer »).
+Une liste liée sans équipe vidée dans l'Optimizer donne une équipe vide, après
+confirmation des retraits.
 
 L'équipement de chaque monstre se reconstruit pièce par pièce :
 
@@ -328,13 +336,14 @@ L'équipement de chaque monstre se reconstruit pièce par pièce :
   `reliqueId` garde la relique enregistrée,
   jamais la relique portée. La confirmation dit « relique gardée » : l'Optimizer ne
   distingue pas un retrait volontaire de la relique d'un build validé sans relique,
-  et le retrait se refait à la main dans le détail ;
+  et le retrait se refait à la main dans le détail (« Retirer la relique ») ;
 - les stats de base sont celles de l'exemplaire actuel s'il est dans la Box, sinon
   celles de la copie enregistrée du monstre, sinon celles de l'espèce (6★ niveau
   max, comme un monstre non possédé de l'Optimizer).
 
 Une confirmation (`Dialogs.tsx`) précède l'écriture, qui remplace l'équipe. Elle
-nomme le nombre de monstres et de pièces qui changent, et **chaque pièce manquante**
+nomme le nombre de monstres et de pièces qui changent (les pièces d'un monstre retiré
+comprises), et **chaque pièce manquante**
 avec son monstre ; son défaut est « Annuler ». Nom, note, onglet et `creeLe`
 restent ; `modifieLe` change. La `correspondance` du lien est réécrite avec les
 membres repris, nouveaux compris, pour que le retour suivant les retrouve.
@@ -384,7 +393,11 @@ par la nouvelle liste.
   (« Lecture des équipes enregistrées… ») : les collisions d'`id` se résolvent contre
   l'ensemble complet.
 - « Importer un fichier » **ajoute** les équipes du fichier, jamais ne remplace : une
-  équipe dont l'`id` existe déjà reçoit un nouvel `id`, et le rapport dit combien.
+  équipe dont l'`id` existe déjà reçoit un nouvel `id`, et le rapport dit combien. Les
+  clés des entrées illisibles de la base comptent comme prises : un import ne les
+  écrase jamais. Les collisions se résolvent contre l'état courant au moment de
+  l'ajout, deux fichiers lus en même temps ne se donnent pas le même `id`. Un speed
+  tune abîmé dans le fichier est signalé sur la carte (« Speed tune incomplet »).
   Les `lienOptimizer` importés sont retirés (ils désignent les listes d'un autre
   navigateur). Une équipe invalide est ignorée avec sa raison ; un fichier d'un autre
   format est refusé entier.

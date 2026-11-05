@@ -1260,7 +1260,9 @@ export function parseArenaDecks(src: AccountSource): DeckArene[] {
     const com2usId = Number(unit?.unit_master_id);
     if (!unit || !Number.isFinite(com2usId)) return null;
     const preset = presets?.get(uid);
-    const avecPreset = !!preset && preset.length > 0;
+    // Un preset présent fait foi, même vide (comme les decks de siège) ;
+    // sans entrée, ce que porte le monstre.
+    const avecPreset = preset !== undefined;
     const runeIds = avecPreset ? preset : Array.isArray(unit.runes) ? unit.runes.map((r: any) => r?.rune_id) : [];
     const artIds = avecPreset ? artefacts?.get(uid) ?? [] : null;
     const artObjs = artIds ? artIds.map((a) => artById.get(Number(a))).filter(Boolean) : Array.isArray(unit.artifacts) ? unit.artifacts : [];

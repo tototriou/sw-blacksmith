@@ -1114,6 +1114,7 @@ export const fr = {
       rune: (slot: number) => `Rune ${slot}`,
       artefact: (n: number) => `Artéfact ${n}`,
       relique: 'Relique',
+      retirerRelique: 'Retirer la relique',
       sansCompte: 'Importe ton compte pour comparer cet équipement au tien.',
     },
     ajout: {
@@ -1189,13 +1190,14 @@ export const fr = {
       pieceN: (piece: string, id: number) => `${piece} n° ${id}`,
       action: 'Mettre à jour',
       enregistrer: 'Enregistrer dans Mes équipes',
+      sansCompte: 'Importe ton compte pour mettre à jour depuis l’Optimizer.',
       fait: (nom: string) => `« ${nom} » mise à jour.`,
       refus: {
         sansLien: 'L’équipe n’a pas été exportée vers l’Optimizer.',
         listeAbsente: 'La liste de l’Optimizer n’existe plus.',
         equipeAbsente: 'L’équipe de l’Optimizer n’existe plus.',
         tropDeMembres: 'La liste a plus de 6 monstres.',
-        aucunMembre: 'La liste n’a aucun monstre.',
+        membresIntrouvables: 'Un monstre de la liste est introuvable dans le compte : rien n’est repris.',
       },
     },
   },

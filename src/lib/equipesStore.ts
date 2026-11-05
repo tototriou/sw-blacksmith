@@ -81,8 +81,10 @@ function transaction<T>(mode: IDBTransactionMode, faire: (s: IDBObjectStore) => 
 export interface RelectureEquipes {
   equipes: EquipeEnregistree[];
   // Les entrées illisibles restent telles quelles dans la base, jamais
-  // réécrites ni supprimées par la relecture : seul leur nombre remonte.
+  // réécrites ni supprimées par la relecture : leur nombre remonte, et leurs
+  // clés, que l'import d'un fichier ne doit pas reprendre (il les écraserait).
   illisibles: number;
+  clesIllisibles: string[];
   signalements: { id: string; signalements: SignalementEquipe[] }[];
 }
 
@@ -91,10 +93,12 @@ export function chargerEquipes(): Promise<RelectureEquipes | null> {
   return enfiler(async () => {
     const brut = await transaction<unknown[]>('readonly', (s) => s.getAll());
     if (brut === null) return null;
-    const res: RelectureEquipes = { equipes: [], illisibles: 0, signalements: [] };
-    for (const v of brut) {
+    // Même ordre que `getAll` (ordre des clés) ; rien n'écrit entre les deux, la file est sérielle.
+    const cles = (await transaction<IDBValidKey[]>('readonly', (s) => s.getAllKeys())) ?? [];
+    const res: RelectureEquipes = { equipes: [], illisibles: 0, clesIllisibles: [], signalements: [] };
+    for (const [i, v] of brut.entries()) {
       const lu = lireEquipeEnregistree(v);
-      if (!lu) { res.illisibles++; continue; }
+      if (!lu) { res.illisibles++; if (cles[i] !== undefined) res.clesIllisibles.push(String(cles[i])); continue; }
       res.equipes.push(lu.equipe);
       if (lu.signalements.length) res.signalements.push({ id: lu.equipe.id, signalements: lu.signalements });
     }

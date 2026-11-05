@@ -64,6 +64,8 @@ function testEquipesSourcesImports() {
   egal(cree.equipe.leader, cree.equipe.monstres[0].uid, 'le slot 0 est le leader');
   cree.equipe.monstres[0].equipement!.runes[0].level = 0;
   egal(ctx.siegeDefenseTeams, avant, 'la source n’est jamais modifiée');
+  const sansTete = sourcesImportEquipes({ ...ctx, siegeDefenseTeams: [deck('d2', [null, '2', '1'])] }, null, inv, 'pve', fr)[0].creer('e3', uid, T0);
+  egal(sansTete?.equipe.leader, null, 'un slot 0 vide laisse l’équipe sans leader, le slot 1 n’en devient pas un');
   const arene = sources[2].creer('e2', uid, T0);
   egal(arene && [arene.equipe.onglet, arene.equipe.monstres[0].unitId], ['arene-defense', 11], 'un deck d’arène garde l’unité');
   egal(sourcesImportEquipes({ ...ctx, arenaDecks: null }, null, inv, 'pve', fr).find((x) => x.groupe === 'Arène')?.raison,

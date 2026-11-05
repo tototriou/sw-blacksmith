@@ -106,9 +106,23 @@ export default function EquipesSection({ api, ctx, inventaire, allMonsters, opti
     onFermerMenu();
   };
   const importerFichier = async (f: File) => {
-    const lu = lireFichierEquipes(await f.text(), new Set(api.equipes.map((x) => x.id)), tirerIdEquipe);
+    const texte = await f.text();
+    // Les identifiants pris : les équipes présentes ET les entrées illisibles
+    // de la base, qu'un import écraserait.
+    const pris = (l: readonly EquipeEnregistree[]) => new Set([...l.map((x) => x.id), ...api.clesReservees]);
+    const lu = lireFichierEquipes(texte, pris(api.equipes), tirerIdEquipe);
     if (!lu.ok) return setRapport({ titre: e.fichier.titre, lignes: [e.fichier.refus[lu.raison]] });
-    ajouterEquipes(lu.equipes);
+    // ⚠️ Les collisions se résolvent contre l'état COURANT, au moment d'ajouter :
+    // deux fichiers lus en même temps ne se donnent pas le même identifiant.
+    let ajout = lu;
+    api.appliquer((l) => {
+      const relu = lireFichierEquipes(texte, pris(l), tirerIdEquipe);
+      if (!relu.ok) return l;
+      ajout = relu;
+      return [...relu.equipes, ...l];
+    });
+    if (ajout.ok) api.signaler(ajout.signalements);
+    onEquipeCreee();
     setRapport({ titre: e.fichier.titre, lignes: [e.fichier.ajoutees(lu.equipes.length),
       ...(lu.nouveauxId ? [e.fichier.nouveauxId(lu.nouveauxId)] : []), ...(lu.ignorees ? [e.fichier.ignorees(lu.ignorees)] : [])] });
   };
@@ -136,13 +150,16 @@ export default function EquipesSection({ api, ctx, inventaire, allMonsters, opti
   };
 
   const refusRetour = (x: EquipeEnregistree): string | null => {
-    if (!optimizer) return e.retour.refus.sansLien;
-    const r = disponibiliteRetourOptimizer(x, optimizer.stockage);
+    if (!optimizer || !x.lienOptimizer) return e.retour.refus.sansLien;
+    // Sans compte relu, les membres Box ne se résolvent pas : rien n'est repris.
+    if (!inventaire) return e.retour.sansCompte;
+    const r = disponibiliteRetourOptimizer(x, optimizer.stockage, optimizer.data);
     return r ? e.retour.refus[r] : null;
   };
   const demanderRetour = (x: EquipeEnregistree) => {
-    if (!optimizer) return;
-    const r = preparerRetourOptimizer(x, optimizer.stockage, optimizer.data, inventaire ?? { runes: new Map(), artefacts: new Map(), reliques: new Map() }, tirerUid, new Date());
+    const refus = refusRetour(x);
+    if (refus || !optimizer || !inventaire) return setRapport({ titre: e.retour.titre, lignes: [refus ?? e.retour.sansCompte] });
+    const r = preparerRetourOptimizer(x, optimizer.stockage, optimizer.data, inventaire, tirerUid, new Date());
     if (typeof r === 'string') return setRapport({ titre: e.retour.titre, lignes: [e.retour.refus[r]] });
     setRetour(r);
   };

@@ -1062,6 +1062,7 @@ export const en: Dictionnaire = {
       rune: (slot: number) => `Rune ${slot}`,
       artefact: (n: number) => `Artifact ${n}`,
       relique: 'Relic',
+      retirerRelique: 'Remove the relic',
       sansCompte: 'Import your account to compare this equipment with yours.',
     },
     ajout: {
@@ -1137,13 +1138,14 @@ export const en: Dictionnaire = {
       pieceN: (piece: string, id: number) => `${piece} #${id}`,
       action: 'Update',
       enregistrer: 'Save to My teams',
+      sansCompte: 'Import your account to update from the Optimizer.',
       fait: (nom: string) => `“${nom}” updated.`,
       refus: {
         sansLien: 'The team was not exported to the Optimizer.',
         listeAbsente: 'The Optimizer list no longer exists.',
         equipeAbsente: 'The Optimizer team no longer exists.',
         tropDeMembres: 'The list has more than 6 monsters.',
-        aucunMembre: 'The list has no monster.',
+        membresIntrouvables: 'A monster of the list cannot be found in the account: nothing is taken.',
       },
     },
   },

@@ -7,7 +7,7 @@
 import { formatExport, formatReconnu } from './formatsExport';
 import { PREFIXE_FICHIER } from '../marque';
 import { jourLocal } from './telechargement';
-import { lireEquipeEnregistree, type EquipeEnregistree, type TirerId } from './equipesEnregistrees';
+import { lireEquipeEnregistree, type EquipeEnregistree, type SignalementEquipe, type TirerId } from './equipesEnregistrees';
 
 export const NOM_FORMAT_EQUIPES = 'equipes';
 export const VERSION_FICHIER_EQUIPES = 1;
@@ -27,7 +27,9 @@ export function ecrireFichierEquipes(equipes: readonly EquipeEnregistree[], main
 }
 
 export type LectureFichierEquipes =
-  | { ok: true; equipes: EquipeEnregistree[]; nouveauxId: number; ignorees: number }
+  | { ok: true; equipes: EquipeEnregistree[]; nouveauxId: number; ignorees: number;
+      // Sous les identifiants définitifs, après résolution des collisions.
+      signalements: { id: string; signalements: SignalementEquipe[] }[] }
   | { ok: false; raison: 'illisible' | 'format' | 'version' };
 
 // `existants` : les identifiants déjà présents ; une équipe qui en reprend un
@@ -44,6 +46,7 @@ export function lireFichierEquipes(texte: string, existants: ReadonlySet<string>
   const equipes: EquipeEnregistree[] = [];
   let nouveauxId = 0;
   let ignorees = 0;
+  const signalements: { id: string; signalements: SignalementEquipe[] }[] = [];
   for (const brut of f.equipes) {
     const lu = lireEquipeEnregistree(brut);
     if (!lu) { ignorees++; continue; }
@@ -56,6 +59,8 @@ export function lireFichierEquipes(texte: string, existants: ReadonlySet<string>
     }
     pris.add(equipe.id);
     equipes.push(equipe);
+    const s = lu.signalements.filter((x) => x !== 'lienOptimizerRetire');
+    if (s.length) signalements.push({ id: equipe.id, signalements: s });
   }
-  return { ok: true, equipes, nouveauxId, ignorees };
+  return { ok: true, equipes, nouveauxId, ignorees, signalements };
 }
