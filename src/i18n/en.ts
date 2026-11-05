@@ -1916,6 +1916,7 @@ export const en: Dictionnaire = {
     // The “Speed tune” box of a constrained member (feat-contrainte-speed-tune.md).
     speedTune: {
       titre: 'Speed tune',
+      titreMembre: (nom: string) => `Speed tune · ${nom}`,
       detacher: 'Detach the speed tune',
       rattacher: 'Attach again',
       detache: 'Detached: the member’s minimum SPD and artifact lock apply; the plan stays on the team.',
@@ -1924,11 +1925,11 @@ export const en: Dictionnaire = {
       zoneEnCours: 'Computing the zone…',
       zoneVide: 'No speed keeps the speed tune with the other lines as they are: the search does not start.',
       setsImpossibles: 'No set combination keeps the plan’s passive stacks: the search does not start.',
-      zoneTitre: 'Speeds that keep the order (combat under the plan’s lead, sheet, artifact effect)',
-      ligneZone: (combat: string, fiche: string, arte: string, swift: string | null) =>
-        `Combat ${combat} · sheet ${fiche} · ${arte}${swift ? ` · ${swift}` : ''}`,
+      zoneTitre: (nom: string) => `${nom}’s speeds that keep the order (combat under the plan’s lead)`,
+      colonnes: { combat: 'Combat SPD', totale: 'Total SPD', swift: (set: string) => `${set} set` },
+      oui: 'Yes',
+      non: 'No',
       plage: (a: string, b: string) => `${a}–${b}`,
-      sansArtefact: 'no artifact',
       autresLignes: 'The plan’s other lines',
       origines: { build: 'validated build', plan: 'plan values', inexploitable: 'validated build not usable, plan values', 'sans-membre': 'fixed, no member' },
       modifiee: 'recalculated from the speed tuning’s original value',

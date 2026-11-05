@@ -13,6 +13,8 @@ import { ligneModifiee, plagesAffichees, type EcartLigne, type VerdictEquipe } f
 import type { SpeedTuneDuMembre } from '../../../hooks/useSpeedTuneMembre';
 import type { DonneesKit } from '../../../lib/speedTuneAuto';
 import { autresPour } from '../../../lib/speedTuneMembre';
+import { artifactSubName } from '../../../lib/effects';
+import { CODE_AMPLI_VIT } from '../../../lib/damage';
 
 // Le défaut d'un allié dans les mots de l'écran du speed tuning.
 export function phraseProbleme(p: ProblemeOrdre, t: Dictionnaire): string {
@@ -54,7 +56,7 @@ export default function SpeedTuneEncart({ m, monstres, donnees, zoneChangee = fa
   return (
     <section aria-label={s.titre} className="mt-3 border-t border-border-soft pt-3">
       <div className="flex items-center justify-between gap-2 flex-wrap mb-1.5">
-        <p className="label">{s.titre}</p>
+        <p className="label">{s.titreMembre(nom(m.lien.uid))}</p>
         {m.lien.attache
           ? <Bouton fond="vide" taille="sm" onClick={m.detacher} libelle={s.detacher} />
           : m.plan && <Bouton fond="vide" taille="sm" onClick={m.rattacher} libelle={s.rattacher} />}
@@ -75,15 +77,28 @@ export default function SpeedTuneEncart({ m, monstres, donnees, zoneChangee = fa
             <p className="text-xs text-bad">{s.zoneVide}</p>
           ) : m.zone.etat === 'prete' && m.zone.contrainte && donnees ? (
             <div>
-              <p className="text-micro text-ink-dim mb-1">{s.zoneTitre}</p>
-              <ul className="flex flex-col gap-0.5">
-                {plagesAffichees(m.plan, donnees, monstres, m.zone.contrainte.zone, autresPour(m.lignes, m.lien.uid)).map((p, i) => (
-                  <li key={i} className="text-xs text-ink">
-                    {s.ligneZone(plage(p.combatMin ?? 0, p.combatMax ?? 0), plage(p.ficheMin, p.ficheMax),
-                      p.arteMax === 0 ? s.sansArtefact : plage(p.arteMin, p.arteMax), p.swift ? t.jeu.sets.swift : null)}
-                  </li>
-                ))}
-              </ul>
+              <p className="text-micro text-ink-dim mb-1">{s.zoneTitre(nom(m.lien.uid))}</p>
+              {/* Une ligne par classe d'artéfact et état de Rapidité ; les
+                  titres passent sur deux lignes plutôt que d'élargir la carte. */}
+              <table className="w-full table-fixed border-collapse text-xs [font-variant-numeric:tabular-nums]">
+                <thead>
+                  <tr className="border-b border-border-soft text-ink-dim">
+                    {[s.colonnes.combat, s.colonnes.totale, artifactSubName(CODE_AMPLI_VIT, t.jeu), s.colonnes.swift(t.jeu.sets.swift)].map((c) => (
+                      <th key={c} scope="col" className="px-1 pb-1 text-left align-bottom text-micro font-semibold leading-tight">{c}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {plagesAffichees(m.plan, donnees, monstres, m.zone.contrainte.zone, autresPour(m.lignes, m.lien.uid)).map((p, i) => (
+                    <tr key={i} className="border-b border-border-soft last:border-b-0 text-ink">
+                      <td className="px-1 py-0.5">{plage(p.combatMin ?? 0, p.combatMax ?? 0)}</td>
+                      <td className="px-1 py-0.5">{plage(p.ficheMin, p.ficheMax)}</td>
+                      <td className="px-1 py-0.5">{plage(p.arteMin, p.arteMax)}</td>
+                      <td className="px-1 py-0.5">{p.swift ? s.oui : s.non}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
               {!m.zone.contrainte.setsAdmis.length && <p className="text-xs text-bad">{s.setsImpossibles}</p>}
             </div>
           ) : null}

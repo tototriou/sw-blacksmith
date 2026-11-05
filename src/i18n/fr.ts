@@ -2045,6 +2045,7 @@ export const fr = {
     // L'encart « Speed tune » d'un membre contraint (feat-contrainte-speed-tune.md).
     speedTune: {
       titre: 'Speed tune',
+      titreMembre: (nom: string) => `Speed tune · ${nom}`,
       detacher: 'Détacher le speed tune',
       rattacher: 'Rattacher',
       detache: 'Détaché : la VIT minimum et le verrou d’artéfact du membre s’appliquent ; le plan reste sur l’équipe.',
@@ -2053,11 +2054,11 @@ export const fr = {
       zoneEnCours: 'Zone en cours de calcul…',
       zoneVide: 'Aucune vitesse ne tient le speed tune avec les autres lignes actuelles : la recherche ne part pas.',
       setsImpossibles: 'Aucun jeu de sets ne tient les cumuls de passif du plan : la recherche ne part pas.',
-      zoneTitre: 'Vitesses qui tiennent l’ordre (combat sous le lead du plan, fiche, effet d’artéfact)',
-      ligneZone: (combat: string, fiche: string, arte: string, swift: string | null) =>
-        `Combat ${combat} · fiche ${fiche} · ${arte}${swift ? ` · ${swift}` : ''}`,
+      zoneTitre: (nom: string) => `Vitesses de ${nom} qui tiennent l’ordre (combat sous le lead du plan)`,
+      colonnes: { combat: 'VIT. combat', totale: 'VIT totale', swift: (set: string) => `Set ${set}` },
+      oui: 'Oui',
+      non: 'Non',
       plage: (a: string, b: string) => `${a}–${b}`,
-      sansArtefact: 'sans artéfact',
       autresLignes: 'Les autres lignes du plan',
       origines: { build: 'build validé', plan: 'valeurs du plan', inexploitable: 'build validé non exploitable, valeurs du plan', 'sans-membre': 'figée faute de membre' },
       modifiee: 'recalculée depuis la valeur d’origine du speed tuning',

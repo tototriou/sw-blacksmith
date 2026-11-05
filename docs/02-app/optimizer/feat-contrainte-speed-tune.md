@@ -365,9 +365,12 @@ invalidé automatiquement.
 Dans les conditions du membre, un encart « Speed tune » remplace le champ de VIT
 minimum et le verrou « Effet aug. VIT » :
 
-- la zone en clair, une ligne par classe utile et par état de Swift : la plage
-  de vitesse de combat, la plage de VIT de fiche correspondante, et le 206 de
-  la classe (« sans artéfact » pour la classe de 0) ;
+- le nom du monstre du membre, dans le titre de l'encart (« Speed tune · Lushen ») et dans
+  celui de la zone ;
+- la zone en tableau, une ligne par classe utile et par état de Swift, aux colonnes « VIT.
+  combat » (sous le lead du plan), « VIT totale » (la VIT de fiche), « Effet aug. VIT » (le
+  206 de la classe, 0 pour la classe sans artéfact) et « Set Rapide » (oui ou non) ; les
+  titres passent sur deux lignes plutôt que d'élargir la carte ;
 - les autres lignes, leur origine (plan, build validé, figé faute de membre) et
   les écarts de la section dédiée, avec leurs boutons ;
 - un bouton « Détacher le speed tune ».

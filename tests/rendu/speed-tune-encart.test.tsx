@@ -35,7 +35,10 @@ function membre(p: { st?: ReturnType<typeof speedTune>; zone?: EtatZone; attache
 export function testRenduSpeedTuneEncart() {
   titre('rendu · Optimizer — encart « Speed tune » d’un membre');
   const pret = membre();
-  ok(pret.includes(s.verdictTenu) && pret.includes(s.zoneTitre) && pret.includes(s.sansArtefact), 'zone prête : verdict, zone en clair, classe sans artéfact');
+  ok(pret.includes(s.titreMembre('M9101')) && pret.includes(s.zoneTitre('M9101')), 'le nom du monstre du membre dans le titre et la zone');
+  ok(pret.includes(s.verdictTenu) && ['VIT. combat', 'VIT totale', 'Effet aug. VIT', 'Set Rapide'].every((c) => pret.includes(c)),
+    'zone prête : verdict, tableau aux colonnes VIT. combat, VIT totale, Effet aug. VIT, Set Rapide');
+  ok(pret.includes('0 Non') || pret.includes('0Non'), 'classe sans artéfact : effet 0, Rapide « Non »');
   ok(pret.includes(s.detacher) && !pret.includes(s.rattacher), 'attaché : « Détacher » seul');
   ok(membre({ zone: { etat: 'kits' } }).includes(s.kitsEnCours), 'kits en lecture : dit');
   ok(membre({ zone: { etat: 'calcul', empreinte: 'x' } }).includes(s.zoneEnCours), 'zone en calcul : dit');
