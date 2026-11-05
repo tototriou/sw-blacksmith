@@ -46,11 +46,17 @@ ceux du deck d’origine. Elle se ferme seulement après un export accepté
 ## Critères transmis
 
 La liste « Speed tuning » porte le contenu Guilde et l’équipe « Ton équipe »
-porte le lead actuel du camp, avec sa portée et son élément. Chaque membre
-reçoit la VIT minimum de fiche (base + vitesse de runes saisie), Swift si la
-ligne le porte et le verrou de paire « Effet aug. VIT » (code 206) si sa valeur
-est positive. Les autres critères viennent de la base complète de l’exemplaire.
-La VIT minimum ne garantit pas l’ordre des tours ; les fenêtres de l’analyse
-ne sont pas exportées. Le rapport le dit. Les lignes ignorées et les membres
-sans set se disent également. Les règles de conversion et de filtrage restent
-dans [l’import d’équipes](../optimizer/feat-import-equipes.md#f3--conversion-du-speed-tuning).
+porte le lead actuel du camp, avec sa portée et son élément, et le **plan de
+speed tune** : les deux camps, les sorts, les grilles et l’ordre voulu, figés au
+moment de l’export. Chaque membre reçoit la **contrainte de speed tune** à la
+place d’une VIT minimum : la recherche ne retient que les builds dont la vitesse
+de combat et l’« Effet aug. VIT » de la paire gardent l’ordre voulu, les autres
+alliés pris à leur build validé ou, faute de build, à leurs valeurs du plan
+([contrainte de speed tune](../optimizer/feat-contrainte-speed-tune.md)).
+Swift est sélectionné si la ligne le porte ; les autres critères viennent de la
+base complète de l’exemplaire. Détacher la contrainte dans l’Optimizer repose
+la VIT minimum de fiche (base + vitesse de runes saisie) et le verrou de paire
+« Effet aug. VIT » (code 206) si sa valeur est positive. Les lignes ignorées et
+les membres sans set se disent dans le rapport. Les règles de conversion et de
+filtrage restent dans
+[l’import d’équipes](../optimizer/feat-import-equipes.md#f3--conversion-du-speed-tuning).
