@@ -352,7 +352,10 @@ export default function SpeedTuningSection({
     return importerSpeedTuneOptimizer(lignes, leadAllie, sourcesOptimizer, textes, deckInitial ?? undefined).membres.length
       ? undefined : st.export.vide;
   }, [compteCharge, onImporterEquipe, sourcesOptimizer, lignes, leadAllie, deckInitial, textes, st]);
-  const exporterOptimizer = () => onImporterEquipe?.((data, t) => importerSpeedTuneOptimizer(lignes, leadAllie, data, t, deckInitial ?? undefined));
+  // Le plan photographié à l'export : l'état de l'outil au geste
+  // (feat-contrainte-speed-tune.md, « Le plan de speed tune »).
+  const etatPlan = { leads, choix: choixSorts, ordre: ordreVoulu, donnees: donneesKit, verdictEcran: sequence.ok };
+  const exporterOptimizer = () => onImporterEquipe?.((data, t) => importerSpeedTuneOptimizer(lignes, leadAllie, data, t, deckInitial ?? undefined, etatPlan));
 
   function besoin(l: Ligne, combatCible: number | null, arteCible: number | null, arteActuel: number) {
     const runes = combatCible == null ? null : runesPour(l, combatCible);

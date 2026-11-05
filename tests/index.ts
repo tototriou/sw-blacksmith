@@ -78,7 +78,7 @@ import { testMemoireOptimizerRejetsConserves, testMemoireOptimizerTextesCriteres
 import { testOptimizerRattachementReferenceConservee } from './optimizer-rattachement-attribution.test';
 import { testOptimizerRattachementIdentites, verificationsOptimizerRattachementOrdres, testOptimizerRattachementDepartageEtPrises,
   testOptimizerRattachementCopiesSansExemplaire, testOptimizerRattachementPermutationEtProprietaire,
-  testOptimizerRattachementRuneVendue, testOptimizerRattachementDefensesComplet, testOptimizerRattachementBranchement } from './optimizer-rattachement.test';
+  testOptimizerRattachementRuneVendue, testOptimizerRattachementDefensesComplet, testOptimizerRattachementBranchement, testOptimizerRattachementSpeedTune } from './optimizer-rattachement.test';
 import testMeules, { testGemmeMemeStat, testRegemmeDifferent, testReserveParGrade, testPalier, testRegistre, testSansDowngrade } from './meules.test';
 import testArtefacts from './artefacts.test';
 import testArtefactsTop from './artefacts-top.test';
@@ -320,6 +320,7 @@ import testRelicQueue from './relic-queue.test';
 import testResolutionRapide, { testResolutionConfirmation, testResolutionRapideNaN } from './resolution-rapide.test';
 import testResolutionDominanceReliques from './resolution-dominance-reliques.test';
 import testResolutionSpeedTune from './resolution-speed-tune.test';
+import { testSpeedTuneEquipeLecture, testSpeedTuneEquipeMembres, testSpeedTuneEquipeStockage } from './speed-tune-equipe.test';
 import testMemoCombat from './memo-combat.test';
 import testDominanceLecteursCorpus from './dominance-lecteurs-corpus.test';
 import testMonotonieDegatsCorpus from './monotonie-degats-corpus.test';
@@ -948,6 +949,9 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testResolutionConfirmation', testResolutionConfirmation],
   ['testResolutionDominanceReliques', testResolutionDominanceReliques],
   ['testResolutionSpeedTune', testResolutionSpeedTune],
+  ['testSpeedTuneEquipeLecture', testSpeedTuneEquipeLecture],
+  ['testSpeedTuneEquipeMembres', testSpeedTuneEquipeMembres],
+  ['testSpeedTuneEquipeStockage', testSpeedTuneEquipeStockage],
   ['testMemoCombat', testMemoCombat],
   ['testDominanceLecteursCorpus', testDominanceLecteursCorpus],
   ['testMonotonieDegatsCorpus', testMonotonieDegatsCorpus],
@@ -1162,6 +1166,7 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testOptimizerRattachementRuneVendue', testOptimizerRattachementRuneVendue],
   ['testOptimizerRattachementDefensesComplet', testOptimizerRattachementDefensesComplet],
   ['testOptimizerRattachementBranchement', testOptimizerRattachementBranchement],
+  ['testOptimizerRattachementSpeedTune', testOptimizerRattachementSpeedTune],
   ['testMemoireOptimizerCopie', testMemoireOptimizerCopie],
   ['testMemoireOptimizerLecteurListes', testMemoireOptimizerLecteurListes],
   ['testMemoireOptimizerListesIllisibles', testMemoireOptimizerListesIllisibles],

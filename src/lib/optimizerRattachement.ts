@@ -159,9 +159,16 @@ export function rattacherStockageOptimizer(stockage: StockageOptimizer, data: Ex
   const teams = acquis.teams.map(equipe => {
     const members = equipe.members.map(s => migrer(equipe.listId, s));
     const leader = equipe.leader ? migrer(equipe.listId, equipe.leader) : undefined;
-    if (members.every((s, i) => s === equipe.members[i]) && leader === equipe.leader) return equipe;
+    // Les liens du speed tune nomment les membres par le même sélecteur : ils migrent avec eux.
+    const liens = equipe.speedTune?.membres.map((l) => {
+      const selector = migrer(equipe.listId, l.selector);
+      return selector === l.selector ? l : { ...l, selector };
+    });
+    const liensInchanges = !liens || liens.every((l, i) => l === equipe.speedTune!.membres[i]);
+    if (members.every((s, i) => s === equipe.members[i]) && leader === equipe.leader && liensInchanges) return equipe;
     rapport.equipesModifiees.push(equipe.id);
-    return { ...equipe, members, ...(leader ? { leader } : {}) };
+    return { ...equipe, members, ...(leader ? { leader } : {}),
+      ...(equipe.speedTune && liens ? { speedTune: { ...equipe.speedTune, membres: liens } } : {}) };
   });
   const builds = acquis.validated.map(build => {
     const selector = migrer(build.listId, build.selector);

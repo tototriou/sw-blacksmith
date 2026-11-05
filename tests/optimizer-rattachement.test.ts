@@ -12,6 +12,7 @@ import { loadOptimizerLists } from '../src/hooks/useOptimizerLists';
 import { monterListesOptimizer } from './optimizer-lists-harness';
 import { egal, faussLocalStorage, ok, titre } from './outils';
 import { fr } from '../src/i18n/fr';
+import { plan as planDeTest } from './speed-tune-equipe.test';
 
 const monster = (id: number): Monster => ({ id, com2usId: 1000 + id, name: `Espèce ${id}`, element: 'fire', stars: 6,
   naturalStars: 5, secondAwaken: false, image: null, leaderSkill: null,
@@ -219,4 +220,24 @@ export function testOptimizerRattachementBranchement() {
   ok(app.includes('reverifierStockageOptimizer(stockageAvantImportRef.current ?? optimizerLists, data, runeIds, textes, new Set(artifacts.map(a => a.id)))'), 'revérification du stockage enrichi avant import, inventaire complet des artéfacts compris');
   ok(app.includes('optimizer.appliquerReverificationMembres(resultat.stockage, resultat.rapport, data, runeIds)'), 'propriétaire et sélection suivent le résultat commun');
   ok(app.includes('const acquis = acquerirIdentitesMembres(optimizerLists, optimizerData)'), 'compte conservé : acquisition au chargement');
+}
+
+export function testOptimizerRattachementSpeedTune() {
+  titre('Rattachement · les liens du speed tune migrent avec les membres');
+  const second: ExclusionSelector = { ...ancien, slotIndex: 1 }, s = stockage([ancien, second], 'guilde');
+  s.identities.set(cleMemoireMembre('l', second), { listId: 'l', selector: second, com2usId: 1002 });
+  const plan = planDeTest();
+  s.teams = [{ id: 'e', listId: 'l', members: [ancien, second], lead: null, speedTune: { plan, membres: [
+    { uid: 'allie:1', selector: ancien, attache: true, repli: { vitesseMin: 140, effet206: 0 } },
+    { uid: 'allie:2', selector: second, attache: false, repli: { vitesseMin: null, effet206: 12 } },
+  ] } }];
+  const compte = data(); compte.siegeDefenseTeams = [deck('ancien', [2, 1, null])];
+  const r = reverifierStockageOptimizer(s, compte, runeIds, fr);
+  const st = r.stockage.teams[0].speedTune;
+  egal(r.stockage.teams[0].members, [second, ancien], 'permutation des slots');
+  egal(st?.membres.map((m) => [m.uid, m.selector]), [['allie:1', second], ['allie:2', ancien]], 'chaque ligne suit son monstre');
+  egal(st?.membres.map((m) => m.attache), [true, false], 'le rattachement suit le lien');
+  ok(st?.plan === plan, 'le plan n’est pas recopié');
+  ok(r.rapport.equipesModifiees.includes('e'), 'équipe signalée modifiée');
+  ok(reverifierStockageOptimizer(r.stockage, compte, runeIds, fr).stockage === r.stockage, 'réimport identique : même stockage');
 }

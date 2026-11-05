@@ -10,7 +10,9 @@ Voir aussi : [../speed-tuning/feat-export-optimizer.md](../speed-tuning/feat-exp
 [ecran/sous-proprietes-verrouillees.md](ecran/sous-proprietes-verrouillees.md).
 
 Fichiers : `src/lib/planSpeedTune.ts` (le plan, son plateau, sa zone et son
-verdict, calcul pur), [speedTuneAuto.ts](src/lib/speedTuneAuto.ts) (le
+verdict, calcul pur), `src/lib/contrainteSpeedTune.ts` (la contrainte d'un
+membre telle que la recherche la lit), `src/lib/speedTuneEquipe.ts` (le speed
+tune stocké sur l'équipe et ses liens), [speedTuneAuto.ts](src/lib/speedTuneAuto.ts) (le
 producteur du plateau, partagé avec l'outil),
 [speedTuneLignes.ts](src/lib/speedTuneLignes.ts) (la provenance des cases),
 [speedTune.ts](src/lib/speedTune.ts) (la simulation),
@@ -124,10 +126,14 @@ rien pour elle.
 
 ## Membres et lignes
 
-Le plan garde la correspondance entre ses lignes et les membres de l'équipe,
-par l'**identité indépendante** des membres
-([feat-listes-equipes-et-sauvegarde.md](feat-listes-equipes-et-sauvegarde.md)),
-jamais par le sélecteur : un rattachement au réimport ne la casse pas.
+L'équipe garde la correspondance entre les lignes alliées du plan et ses
+membres (`SpeedTuneEquipe.membres`, `src/lib/speedTuneEquipe.ts`) : chaque lien
+nomme sa ligne et son membre par le **même sélecteur** que les membres de
+l'équipe, et migre avec eux quand le réimport rattache un membre à un autre
+exemplaire (`optimizerRattachement.ts`,
+[feat-listes-equipes-et-sauvegarde.md](feat-listes-equipes-et-sauvegarde.md)) :
+un rattachement ne casse pas le lien. L'export ne lie que les membres que la
+liste accepte.
 
 - Une ligne alliée du plan **avec membre** est un membre contraint.
 - Une ligne alliée du plan **sans membre** (ignorée à l'export, membre retiré
@@ -372,11 +378,17 @@ deux champs. Le plan reste sur l'équipe dans les deux cas.
 
 ## Persistance
 
-Le plan est un champ facultatif de l'équipe stockée, validé à la lecture comme
-ses autres champs ; le rattachement (attaché ou détaché, valeurs de repli) est
-un critère personnel du membre. Une équipe sans plan se lit comme aujourd'hui.
+Le speed tune est un champ facultatif de l'équipe stockée
+(`EquipeOptimizer.speedTune`), validé à la lecture comme ses autres champs
+(`lireSpeedTuneEquipe`) : le plan et les liens. Le rattachement (attaché ou
+détaché, valeurs de repli) vit sur le lien de chaque membre, à côté de sa
+ligne. Une équipe sans speed tune se lit comme aujourd'hui.
 
-Un plan malformé est signalé et écarté, sans rejeter l'équipe. Un membre
+Des liens malformés (ligne inconnue ou ennemie, sélecteur invalide, ligne ou
+membre lié deux fois, repli négatif) écartent le speed tune entier ; l'équipe
+reste, le rapport de lecture le dit et la valeur brute rejoint les rejets du
+stockage. Un plan malformé seul est signalé et écarté, sans rejeter l'équipe
+ni ses liens : il se relit `null`, sans rejet de plus aux lectures suivantes. Un membre
 encore attaché à un plan absent ne devient pas une recherche libre : la
 recherche refuse de partir, l'encart dit « plan de speed tune perdu » et ne
 propose que « Détacher », qui lit les valeurs de repli du rattachement. Une
