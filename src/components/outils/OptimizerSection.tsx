@@ -1916,7 +1916,7 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
   // script Node (voir scripts/lib/) ou, plus tard, par les recommandations
   // de decks. Voir src/lib/optimizerRecipe.ts.
   function exportRecipe() {
-    if (!selected || selected.monster.com2usId == null) return;
+    if (!selected || selected.monster.com2usId == null || speedTuneBloque) return;
     const recipe = buildOptimizerRecipe({
       monsterCom2usId: selected.monster.com2usId,
       monsterName: selected.monster.name,
@@ -3520,6 +3520,7 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
             status={status}
             comboSets={comboSets}
             exportRecipe={exportRecipe}
+            exportBloque={speedTuneBloque}
             importFileRef={importFileRef}
             importRecipe={importRecipe}
             setStoppedManually={setStoppedManually}
@@ -3790,6 +3791,7 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
         status={status}
         comboSets={comboSets}
         exportRecipe={exportRecipe}
+        exportBloque={speedTuneBloque}
         importFileRef={importFileRef}
         importRecipe={importRecipe}
         setStoppedManually={setStoppedManually}

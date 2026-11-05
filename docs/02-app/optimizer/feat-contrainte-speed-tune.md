@@ -119,8 +119,9 @@ Les adversaires gardent leurs valeurs du plan : ils ne sont pas optimisés.
 
 L'export se fait sans plan, avec la raison dans le rapport, quand l'ordre voulu
 est vide, qu'il omet un allié du plan, qu'il range une occurrence avant une
-occurrence de rang inférieur du même monstre, ou qu'une case est de provenance
-inconnue. Les membres reçoivent alors la VIT minimum et le verrou de
+occurrence de rang inférieur du même monstre, qu'un monstre figure deux fois
+dans un même camp (deux lignes d'un même uid ne se lieraient qu'à un membre),
+ou qu'une case est de provenance inconnue. Les membres reçoivent alors la VIT minimum et le verrou de
 [l'export](../speed-tuning/feat-export-optimizer.md).
 
 ### Portée
@@ -400,7 +401,10 @@ La recette exportée porte la contrainte calculée (`speedTune`, version 1),
 validée à la lecture : une contrainte malformée refuse la recette et nomme le
 champ. Le CLI la rejoue comme l'écran : exigence de VIT sous l'enveloppe, 206
 incomparable et sans verrou, résolution même avec les artéfacts ignorés ; une
-zone sans aucun set admis refuse la recherche. L'écran, lui, ignore la
+zone sans aucun set admis refuse la recherche. Tant que l'écran n'a pas de
+contrainte publiée pour un membre attaché (kits, calcul, plan perdu, zone
+vide), l'export de la recette est grisé comme la recherche : il donnerait au
+CLI une recherche libre. L'écran, lui, ignore la
 contrainte d'une recette importée et le dit : la zone se recalcule depuis le
 plan de l'équipe, jamais depuis un fichier.
 
@@ -415,7 +419,8 @@ ligne. Une équipe sans speed tune se lit comme aujourd'hui.
 Des liens malformés (ligne inconnue ou ennemie, sélecteur invalide, ligne ou
 membre lié deux fois, repli négatif) écartent le speed tune entier ; l'équipe
 reste, le rapport de lecture le dit et la valeur brute rejoint les rejets du
-stockage. Un plan malformé seul est signalé et écarté, sans rejeter l'équipe
+stockage. Un plan malformé seul, dont un ordre voulu que la construction aurait
+refusé (vide, incomplet, occurrences inversées), est signalé et écarté, sans rejeter l'équipe
 ni ses liens : il se relit `null`, sans rejet de plus aux lectures suivantes. Un membre
 encore attaché à un plan absent ne devient pas une recherche libre : la
 recherche refuse de partir, l'encart dit « plan de speed tune perdu » et ne

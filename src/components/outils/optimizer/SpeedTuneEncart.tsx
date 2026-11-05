@@ -106,12 +106,16 @@ export default function SpeedTuneEncart({ m, monstres, donnees, zoneChangee = fa
               })}
             </ul>
             {(() => {
+              // « Restaurer » reste offert après un recalcul qui a fait disparaître l'écart.
               const propre = m.ecarts.find((x) => x.uid === m.lien.uid);
-              return propre && (
+              const modifiee = !!m.plan && ligneModifiee(m.plan, m.lien.uid);
+              return (propre || modifiee) && (
                 <div className="mt-1 text-xs text-ink">
-                  <Ecart e={propre} nom={nom(propre.uid)} n={n} onRecalculer={() => m.recalculer([propre])} />
-                  {m.plan && ligneModifiee(m.plan, propre.uid) && (
-                    <Bouton fond="vide" trait="aucun" taille="sm" onClick={() => m.restaurer(propre.uid)} libelle={s.restaurer} />
+                  {propre && <Ecart e={propre} nom={nom(propre.uid)} n={n} onRecalculer={() => m.recalculer([propre])} />}
+                  {modifiee && (
+                    <span className="text-ink-dim">{nom(m.lien.uid)} · {s.modifiee}{' '}
+                      <Bouton fond="vide" trait="aucun" taille="sm" onClick={() => m.restaurer(m.lien.uid)} libelle={s.restaurer} />
+                    </span>
                   )}
                 </div>
               );

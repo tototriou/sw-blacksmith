@@ -129,6 +129,10 @@ export function testRenduOptimizerGabaritsDroite() {
   ok(texteVisible(repos).indexOf('runes gardées après pré-filtrage') < texteVisible(repos).indexOf('Objectif de recherche'), 'étroite : l\'estimation du pool au-dessus de l\'objectif');
   ok(/grid-template-columns:repeat\(2, minmax\(0, 1fr\)\)/.test(repos), 'étroite : les quatre objectifs en 2 × 2');
   ok(bouton(repos, 'Rechercher')?.desactive === false && cache(repos, 'Rechercher') === false, 'au repos : « Rechercher » actif et lisible');
+  // Membre attaché sans zone publiée : la recette serait une recherche libre au CLI.
+  const exportBloque = rendre(<ObjectifEtRechercherBureau {...props({ exportBloque: true })} />);
+  ok(bouton(repos, 'Exporter les paramètres de recherche')?.desactive === false
+    && bouton(exportBloque, 'Exporter les paramètres de recherche')?.desactive === true, 'speed tune sans zone : l’export de la recette est grisé');
   // « Rechercher » pèse plus qu'un segment choisi : la braise pleine du bouton
   // principal dès qu'un set est choisi ; sans set, le fond doux et son grisé
   // (une braise pleine grisée serait brune).

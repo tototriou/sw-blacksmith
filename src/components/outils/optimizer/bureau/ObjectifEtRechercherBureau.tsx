@@ -27,7 +27,7 @@ export interface ObjectifEtRechercherBureauProps extends ObjectifEtActionsProps 
 // docs/02-app/optimizer/ecran/README.md, « Bloc « Objectif et Rechercher » ».
 export default function ObjectifEtRechercherBureau({
   cadre = true, partie = 'tout', estimation, messageImport, progression, objective, setObjective, setSetupOuvert, resumeCombat, handleSearch, selected, status,
-  comboSets, exportRecipe, importFileRef, importRecipe, setStoppedManually, stop,
+  comboSets, exportRecipe, exportBloque = false, importFileRef, importRecipe, setStoppedManually, stop,
 }: ObjectifEtRechercherBureauProps) {
   const a = useTraduction().optimizer.actions;
   const objectifs = useObjectifs();
@@ -102,7 +102,7 @@ export default function ObjectifEtRechercherBureau({
   const exporter = (
     <Bouton
       onClick={exportRecipe}
-      disabled={!selected || comboSets.length === 0}
+      disabled={!selected || comboSets.length === 0 || exportBloque}
       aria-label={a.exporterLong}
       title={a.exporterAide}
       icone={<Upload size={14} />}

@@ -24,6 +24,9 @@ export interface ObjectifEtActionsProps {
   status: BuildOptimStatus;
   comboSets: string[];
   exportRecipe: () => void;
+  // Membre attaché sans contrainte publiée : une recette exportée serait une
+  // recherche libre au CLI, comme la recherche refuse de partir.
+  exportBloque?: boolean;
   importFileRef: RefObject<HTMLInputElement>;
   importRecipe: (file: File) => void;
   setStoppedManually: Dispatch<SetStateAction<boolean>>;
@@ -64,7 +67,7 @@ export function ResumeCombat({ resumeCombat, setSetupOuvert }: { resumeCombat: s
   );
 }
 
-export default function ObjectifEtActions({ objective, setObjective, setSetupOuvert, resumeCombat, handleSearch, selected, status, comboSets, exportRecipe, importFileRef, importRecipe, setStoppedManually, stop }: ObjectifEtActionsProps) {
+export default function ObjectifEtActions({ objective, setObjective, setSetupOuvert, resumeCombat, handleSearch, selected, status, comboSets, exportRecipe, exportBloque = false, importFileRef, importRecipe, setStoppedManually, stop }: ObjectifEtActionsProps) {
   const a = useTraduction().optimizer.actions;
   const objectifs = useObjectifs();
   return (
@@ -134,7 +137,7 @@ export default function ObjectifEtActions({ objective, setObjective, setSetupOuv
           script. Voir src/lib/optimizerRecipe.ts. */}
       <Bouton
         onClick={exportRecipe}
-        disabled={!selected || comboSets.length === 0}
+        disabled={!selected || comboSets.length === 0 || exportBloque}
         title={a.exporterAide}
         icone={<Upload size={14} />}
         libelle={a.exporterLong}
