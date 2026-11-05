@@ -344,8 +344,18 @@ le remplacement de copie n’est pas détectable.
 
 Seule une nouvelle liste et ses membres, mémoires, équipes et contenu sont ajoutés.
 Aucune liste existante, mémoire existante, équipe existante, valeur rejetée,
-contenu existant ou build validé n’est remplacé ni supprimé. Aucun build n’est validé par
-l’import ; aucune rune ni paire d’artéfacts n’est réservée.
+contenu existant ou build validé n’est remplacé ni supprimé. Les producteurs du
+siège, de la prépa RTA et des recommandations ne valident aucun build : aucune rune
+ni paire d’artéfacts n’est réservée.
+
+Seul l’export d’une équipe de « Mes équipes »
+([feat-equipes.md](../compte/feat-equipes.md)) propose des builds à valider
+(`buildsAValider`) : les 6 runes, la paire et la relique enregistrées d’un membre
+accepté. Ils se valident dans la nouvelle liste, dans leur ordre ; une rune ou un
+artéfact **présent** déjà pris par un build précédent de la proposition refuse le
+build suivant, et le rapport le dit. Une pièce absente de l’inventaire reste dans
+le build comme manquante, sans réservation. Le rapport donne les identifiants des
+équipes créées (`equipesCreeesIds`), qui fixent le lien de retour.
 
 ## Équipes et leads après filtrage
 

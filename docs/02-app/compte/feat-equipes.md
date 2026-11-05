@@ -305,8 +305,6 @@ lignes ; la confirmation le nomme.
 
 - `equipeId` désigne une équipe disparue : l'action est désactivée, « L'équipe de
   l'Optimizer n'existe plus », et rien n'est deviné.
-- `equipeId` désigne une équipe disparue : l'action est désactivée, « L'équipe de
-  l'Optimizer n'existe plus », et rien n'est deviné.
 
 Plus de 6 membres à reprendre : refus avec sa raison.
 

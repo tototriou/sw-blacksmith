@@ -24,6 +24,7 @@ import testImport from './import.test';
 import { verificationsImportEquipes } from './import-equipes.test';
 import { verificationsEquipesEnregistrees } from './equipes-enregistrees.test';
 import { verificationsEquipesStockage } from './equipes-stockage.test';
+import { verificationsEquipesOptimizer } from './equipes-optimizer.test';
 import { testOptimizerImportNavigation } from './optimizer-import-navigation.test';
 import { testOptimizerColonnes, testOptimizerColonnesOnglet, testOptimizerColonnesGuidages, testOptimizerColonnesAttenteResultats, testOptimizerColonnesCoffreSets, testOptimizerColonnesTableau } from './optimizer-colonnes.test';
 import { testRenduRtaExportOptimizer, testRenduTelephoneRtaExportOptimizer, testRenduRecoExportOptimizer,
@@ -888,6 +889,7 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ...verificationsImportEquipes,
   ...verificationsEquipesEnregistrees,
   ...verificationsEquipesStockage,
+  ...verificationsEquipesOptimizer,
   ...verificationsImportSpeedTune,
   ...verificationsPlanSpeedTune,
   ...verificationsSpeedTuneDepuisPlan,
