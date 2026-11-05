@@ -13,7 +13,7 @@ Fichiers : `src/lib/planSpeedTune.ts` (le plan, son plateau, sa zone et son
 verdict, calcul pur), [speedTuneAuto.ts](src/lib/speedTuneAuto.ts) (le
 producteur du plateau, partagé avec l'outil),
 [speedTuneLignes.ts](src/lib/speedTuneLignes.ts) (la provenance des cases),
-[speedTune.ts](src/lib/speedTune.ts) (la simulation, inchangée),
+[speedTune.ts](src/lib/speedTune.ts) (la simulation),
 [importSpeedTuneOptimizer.ts](src/lib/importSpeedTuneOptimizer.ts) (l'export),
 [runeBuildOptim.ts](src/lib/runeBuildOptim.ts) et
 [artifactOptim.ts](src/lib/artifactOptim.ts) (l'élagage et le choix de la
@@ -59,18 +59,32 @@ et toute saisie dans une case la rend **saisie**, même à valeur identique
 sans plan, et le rapport demande de relancer l'analyse.
 
 Le nombre de cumuls de passif est une entrée du scénario, comme dans l'outil :
-il est photographié en nombre et ne se réestime pas pendant la recherche.
+il est photographié en nombre et ne se réestime pas pendant la recherche. Ses
+**préconditions** se gardent pourtant (section « Cumuls de passif et sets »).
 
 ### Le plateau
 
-Le **plateau** d'un plan est la liste de `TuneMonstre` que la simulation
-reçoit. Il se construit par une **projection** des entrées du plan, extraite
-de `analyseAutomatique` et partagée avec l'outil : vitesse de combat (lead,
-Swift, gain de passif sur les cumuls photographiés), amplification de camp,
-sorts **écrits** et cases saisies. La projection ne devine rien : elle ne
-choisit aucun sort du kit à la place d'un choix absent et n'ajoute aucun
-adversaire de référence. Un état jamais analysé donne un plateau sans sorts,
-comme à l'écran. Le plateau n'a aucune autre construction.
+Le **plateau** d'un plan est la liste de `TuneMonstre` dont la simulation tire
+le verdict. Il se construit comme l'analyse de l'outil le construit, en deux
+passes, par une **projection** extraite de `analyseAutomatique` et partagée
+avec l'outil :
+
+1. une première simulation avec les sorts **écrits** des alliés (vitesse de
+   combat avec lead, Swift et gain de passif sur les cumuls photographiés,
+   amplification de camp), sans leurs cases saisies, les cases saisies des
+   adversaires comprises — exactement les entrées de la première passe de
+   l'analyse ;
+2. l'écriture de ce que les sorts posent dans les grilles, décalé d'un tick
+   comme dans l'analyse, **les cases saisies gardant la priorité** à leur tick,
+   zéro compris ;
+3. une seconde simulation sur ces grilles, qui donne le verdict.
+
+À entrées inchangées depuis la dernière analyse, le plateau du plan est donc
+celui de l'écran, case pour case : le plan juge ce que l'outil juge, avec ses
+approximations. La projection ne devine rien : elle ne choisit aucun sort du kit
+à la place d'un choix absent et n'ajoute aucun adversaire de référence. Un état
+jamais analysé donne un plateau sans sorts, comme à l'écran. Le plateau n'a
+aucune autre construction.
 
 Les kits (sorts, rechargements, passifs) se relisent dans les données de
 l'app, comme dans l'outil.
@@ -125,6 +139,11 @@ jamais par le sélecteur : un rattachement au réimport ne la casse pas.
   vitesse, un seul artéfact.
 - Deux copies d'une espèce sont deux lignes et deux membres.
 
+Deux comportements de la simulation du speed tuning sont corrigés dans l'outil
+avant d'être hérités par le plan : un « Aucun sort » choisi pour un tour
+supplémentaire ne relance plus le sort du premier tour, et un tour rendu
+(`rejoue`) ne suit que le tour où le sort qui le rend est réellement lancé.
+
 Une équipe demande au moins deux membres : un export qui ne garde qu'un seul
 allié importable ne pose pas de plan, et le rapport le dit.
 
@@ -177,6 +196,19 @@ classe d'artéfact** ; une classe peut porter plusieurs intervalles, ou aucun.
 L'écran les montre en vitesse de combat, sous le lead du plan, avec la VIT de
 fiche correspondante : c'est la forme décidée (« intervalles de vitesse de
 combat par palier »), la fiche n'étant que l'index exact du calcul.
+
+### Cumuls de passif et sets
+
+Un cumul de passif estimé dépend des sets de l'équipe (Volonté, Bouclier) :
+un Chilling dont un cumul vient de sa Volonté perd 20 de VIT dans un build sans
+Volonté. Un build ne tient donc la contrainte que si l'estimation des cumuls
+(`cumulsEstimes`), refaite avec les sets du build à la place de ceux de la
+ligne, donne pour chaque ligne du plan le même nombre qu'avec les sets du
+plan. Le contrôle ne s'applique qu'aux lignes dont les sets sont connus dans
+le plan ; il se fait à la validation finale, une fois par build, avec les sets
+réels. Un build validé d'un autre membre qui change ainsi un cumul est signalé
+comme un écart (« cumuls du plan non tenus »), et le verdict d'équipe ne peut
+pas être « tenu ».
 
 ### Les autres lignes
 
@@ -331,7 +363,7 @@ stockage.
 - Le plan garde l'adversaire saisi dans le speed tuning, pas l'équipe adverse
   réelle.
 - La zone suppose les sorts, cibles, cases saisies et cumuls de passif du plan.
-  Un combat qui s'en écarte (un buff raté, un remplissage différent, un build
-  qui ne porte plus la Volonté) n'est pas couvert.
+  Un combat qui s'en écarte (un buff raté, un remplissage différent) n'est pas
+  couvert.
 - Les membres se cherchent un par un : un membre sans build validé compte pour
   ses valeurs du plan.

@@ -48,8 +48,8 @@ ceux du deck d’origine. Elle se ferme seulement après un export accepté
 La liste « Speed tuning » porte le contenu Guilde et l’équipe « Ton équipe »
 porte le lead actuel du camp, avec sa portée et son élément, et le **plan de
 speed tune** : les deux camps, les sorts, les grilles et l’ordre voulu, figés au
-moment de l’export. Chaque membre reçoit la **contrainte de speed tune** à la
-place d’une VIT minimum : la recherche ne retient que les builds dont la vitesse
+moment de l’export. Chaque membre d’une ligne visible reçoit la **contrainte de
+speed tune** à la place d’une VIT minimum : la recherche ne retient que les builds dont la vitesse
 de combat et l’« Effet aug. VIT » de la paire gardent l’ordre voulu, les autres
 alliés pris à leur build validé ou, faute de build, à leurs valeurs du plan
 ([contrainte de speed tune](../optimizer/feat-contrainte-speed-tune.md)).

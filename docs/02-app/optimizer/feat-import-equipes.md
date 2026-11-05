@@ -215,9 +215,10 @@ verrou ; une valeur invalide n’est pas importée et le rapport le dit.
 
 Ce minimum et ce verrou ne servent que **sans plan de speed tune** : quand
 l’export pose un plan sur l’équipe (au moins deux membres, ordre voulu complet),
-chaque membre reçoit à la place la
+chaque membre d’une ligne visible reçoit à la place la
 [contrainte de speed tune](feat-contrainte-speed-tune.md), et le minimum et le
-verrou ne reviennent qu’au détachement. Sans plan, la VIT minimum **ne garantit
+verrou ne reviennent qu’au détachement ; le membre d’une ligne masquée garde
+le minimum et le verrou. Sans plan, la VIT minimum **ne garantit
 pas l’ordre des tours** : un build peut dépasser le minimum, changer
 d’amplification ou différer en Swift. Exemple chiffré avec base 101,
 lead 0 et totem 15 % : 100 points plats de runes avec Swift donnent une saisie
