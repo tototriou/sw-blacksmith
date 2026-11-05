@@ -13,6 +13,7 @@ import { EMPTY_GEAR } from './constantes';
 import { useTraduction } from '../../../hooks/useLangue';
 
 export interface MonstreEquipementTelephoneProps {
+  actionMesEquipes?: ReactNode;
   allMonsters: Monster[];
   pickSpecies: (monster: Monster) => void;
   disponibiliteEspece: (monster: Monster) => { raison: string | null };
@@ -41,7 +42,7 @@ export interface MonstreEquipementTelephoneProps {
   validateBuildButton: ReactNode;
 }
 
-export default function MonstreEquipementTelephone({ allMonsters, pickSpecies, disponibiliteEspece, ligneMonstreTelephoneRef, selected, selectionAffichee, sourcesImport, importerDepuisEcran, rapportImport, setZoneCOpen, zoneCOpen, eclatImport, listesTelephone, sourceOptions, vuesExemplaire, gearSource, pickSource, allSourcesEmpty, zoneDOpen, zoneDList, zoneCContent, validatedBadge, selectionFiche, setSelectionFiche, relicUsageById, validateBuildButton }: MonstreEquipementTelephoneProps) {
+export default function MonstreEquipementTelephone({ actionMesEquipes, allMonsters, pickSpecies, disponibiliteEspece, ligneMonstreTelephoneRef, selected, selectionAffichee, sourcesImport, importerDepuisEcran, rapportImport, setZoneCOpen, zoneCOpen, eclatImport, listesTelephone, sourceOptions, vuesExemplaire, gearSource, pickSource, allSourcesEmpty, zoneDOpen, zoneDList, zoneCContent, validatedBadge, selectionFiche, setSelectionFiche, relicUsageById, validateBuildButton }: MonstreEquipementTelephoneProps) {
   const c = useTraduction().optimizer.criteres;
   return (
     <div className="space-y-3">
@@ -57,7 +58,8 @@ export default function MonstreEquipementTelephone({ allMonsters, pickSpecies, d
             <span className="min-w-0 line-clamp-1 font-semibold text-[14px]" title={selected.monster.name}>{selected.monster.name}</span>
           </>}
         </div>
-        <div className="mt-3">
+        <div className="mt-3 flex flex-col gap-2">
+          {actionMesEquipes}
           <OptimizerImportButton sources={sourcesImport} onImporter={importerDepuisEcran} rapport={rapportImport} />
         </div>
         <ZoneCliquable

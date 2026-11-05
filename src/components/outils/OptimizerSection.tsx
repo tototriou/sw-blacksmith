@@ -1,4 +1,4 @@
-import { useCallback, useLayoutEffect, useMemo, useRef, useState, useEffect } from 'react';
+import { useCallback, useLayoutEffect, useMemo, useRef, useState, useEffect, type ReactNode } from 'react';
 import { Bouton, ConfirmDialog, Segmented } from '../../ui';
 import type { ContenuListeOptimizer, EquipeOptimizer } from '../../lib/optimizerMemberStorage';
 import OptimizerEquipeDialog from './OptimizerEquipeDialog';
@@ -215,6 +215,9 @@ interface Props {
   // perdue au moindre aller-retour vers un autre onglet.
   optimizer: OptimizerState;
   onImporterEquipe: OptimizerState['importerEquipe'];
+  // « Enregistrer dans Mes équipes » (docs/02-app/compte/feat-equipes.md),
+  // posé près de « Importer une équipe » quand la liste active est liée.
+  actionMesEquipes?: ReactNode;
   // Pour l'exclusion manuelle de runes (RuneExclusionPicker) — RTA/Siège
   // n'étaient jusqu'ici jamais lus par cet écran, voir optimizerExclusion.ts.
   allMonsters: Monster[];
@@ -368,7 +371,7 @@ function memesIds(a: number[], b: number[]): boolean {
 const AUCUNE_RECOMMANDATION: Reco[] = [];
 const AUCUNE_CARTE: CarteClassement[] = [];
 
-export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATION, box, runes, artifacts, relics, relicUsageById, optimizer, onImporterEquipe, allMonsters, rtaEntries, siegeDefenseTeams, siegeOffenseTeams, lists, accountName, menuOuvert, onFermerMenu, onOuvrirMenu, onMonstreHorsVue }: Props) {
+export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATION, box, runes, artifacts, relics, relicUsageById, optimizer, onImporterEquipe, allMonsters, rtaEntries, siegeDefenseTeams, siegeOffenseTeams, lists, accountName, menuOuvert, onFermerMenu, onOuvrirMenu, onMonstreHorsVue, actionMesEquipes }: Props) {
   const textes = useTraduction();
   const langue = useLangue();
   const jeu = textes.jeu;
@@ -2785,7 +2788,8 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
   // Assemblage des cartes de réglage (composants d'`optimizer/`).
   const listesBureau = (
     <SelecteurListes
-      action={<OptimizerImportButton enLigne sources={sourcesImport} onImporter={importerDepuisEcran} rapport={rapportImport} />}
+      action={actionMesEquipes ? <div className="flex flex-wrap items-center gap-2">{actionMesEquipes}<OptimizerImportButton enLigne sources={sourcesImport} onImporter={importerDepuisEcran} rapport={rapportImport} /></div>
+        : <OptimizerImportButton enLigne sources={sourcesImport} onImporter={importerDepuisEcran} rapport={rapportImport} />}
       lists={lists}
       memberCounts={memberCountsByList}
       titreSection
@@ -3581,6 +3585,7 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
             ligneMonstreTelephoneRef={ligneMonstreTelephoneRef}
             selected={selected}
             sourcesImport={sourcesImport}
+            actionMesEquipes={actionMesEquipes}
             importerDepuisEcran={importerDepuisEcran}
             rapportImport={rapportImport}
             setZoneCOpen={setZoneCOpen}

@@ -6,6 +6,7 @@ import {
   IconeAmi,
   IconeArene,
   IconeArtefacts,
+  IconeEquipes,
   IconeMonstres,
   IconeRunes,
   IconeBestiaire,
@@ -80,11 +81,15 @@ import {
   persistenceEnabled,
   purgeDonneesConservees,
   setDialogueMasque,
+  persistenceChoisie,
   setPersistence,
   storageAvailable,
 } from './hooks/usePersistence';
 import { ConfirmDialog, KeepAccountDialog, Modale } from './ui/Dialogs';
 import { useEquipesEnregistrees } from './hooks/useEquipesEnregistrees';
+import EquipesSection from './components/account/equipes/EquipesSection';
+import type { ContexteSourcesEquipes } from './lib/sourcesEquipesEnregistrees';
+import { indexerInventaire } from './lib/equipesEnregistrees';
 import { FournisseurNotification, useNotifier } from './ui/Notification';
 import { Bouton, DeuxVolets } from './ui';
 import VoletEcran from './components/VoletEcran';
@@ -212,7 +217,7 @@ type Route =
   | 'releases'
   | 'telecharger'
   | 'parametres';
-export type AccountSub = 'monstres' | 'runes' | 'artefacts';
+export type AccountSub = 'monstres' | 'runes' | 'artefacts' | 'equipes';
 
 // Sous-sections de RTA. `prepa` = la sienne (tout l'écran historique), `ami` =
 // celle de quelqu'un d'autre, en lecture.
@@ -269,7 +274,7 @@ export function parseHash(hash: string = window.location.hash): {
     // `compte/runes/courbes` → sous-section « runes », vue « courbes ».
     const [, sub, vue] = h.split('/');
     const accountSub: AccountSub =
-      sub === 'runes' ? 'runes' : sub === 'artefacts' ? 'artefacts' : 'monstres';
+      sub === 'runes' ? 'runes' : sub === 'artefacts' ? 'artefacts' : sub === 'equipes' ? 'equipes' : 'monstres';
     return {
       route: 'compte',
       rtaSub: 'prepa',
@@ -347,6 +352,7 @@ const ACCOUNT_SUBS: { sub: AccountSub; texte: CleNavigation; icon: IconeAtelier;
   { sub: 'monstres', texte: 'monstres', icon: IconeMonstres, couleur: COULEUR_COMPTE_SUB.monstres },
   { sub: 'runes', texte: 'runes', icon: IconeRunes, couleur: COULEUR_COMPTE_SUB.runes },
   { sub: 'artefacts', texte: 'artefacts', icon: IconeArtefacts, couleur: COULEUR_COMPTE_SUB.artefacts },
+  { sub: 'equipes', texte: 'mesEquipes', icon: IconeEquipes, couleur: COULEUR_COMPTE_SUB.equipes },
 ];
 
 // Sous-sections d'« Outils » (dropdown de nav) — un seul outil pour l'instant,
@@ -684,6 +690,35 @@ function Application() {
     for (const mon of allMonsters) if (mon.com2usId != null) m.set(mon.com2usId, mon);
     return m;
   }, [allMonsters]);
+
+  // « Mes équipes » : ses sources, l'inventaire de comparaison et les listes
+  // de l'Optimizer pour l'aller-retour (docs/02-app/compte/feat-equipes.md).
+  const compteCharge = box.length > 0 || runes.length > 0;
+  const contexteEquipes = useMemo<ContexteSourcesEquipes>(() => ({ box, rtaEntries: rta.state.entries,
+    siegeDefenseTeams: siegeDef.state.teams, siegeOffenseTeams: siegeOff.state.teams, arenaDecks, compte: compteCharge,
+    monsterById: optimizerData.monsterById, monsterByCom2us }),
+  [box, rta.state.entries, siegeDef.state.teams, siegeOff.state.teams, arenaDecks, compteCharge, optimizerData.monsterById, monsterByCom2us]);
+  const inventaireEquipes = useMemo(() => (compteCharge ? indexerInventaire(runes, artifacts, relics) : null),
+    [compteCharge, runes, artifacts, relics]);
+  const optimizerPourEquipes = useMemo(() => ({ data: optimizerData, stockage: {
+    identities: optimizerLists.identities, lists: optimizerLists.lists, members: optimizerLists.members,
+    validated: optimizerLists.validated, memories: optimizerLists.memories, teams: optimizerLists.teams,
+    listContents: optimizerLists.listContents, rejets: optimizerLists.rejets } }),
+  [optimizerData, optimizerLists.identities, optimizerLists.lists, optimizerLists.members, optimizerLists.validated,
+    optimizerLists.memories, optimizerLists.teams, optimizerLists.listContents, optimizerLists.rejets]);
+  // La première équipe créée ou importée pose la question de conservation,
+  // tant qu'elle n'a jamais été tranchée.
+  const demanderConservationEquipes = () => {
+    if (!persistenceChoisie() && storageAvailable()) setAskKeep(true);
+  };
+  // « Enregistrer dans Mes équipes » depuis l'Optimizer : la liste active liée
+  // à une équipe ouvre Mes équipes sur la confirmation de sa mise à jour.
+  const [retourDemande, setRetourDemande] = useState<string | null>(null);
+  const equipeLiee = equipesEnregistrees.equipes.find((e) => e.lienOptimizer && e.lienOptimizer.listId === optimizerLists.activeListId);
+  const actionMesEquipes = equipeLiee ? (
+    <Bouton icone={<Save size={14} />} libelle={textes.equipes.retour.enregistrer} title={equipeLiee.nom}
+      onClick={() => { setRetourDemande(equipeLiee.id); window.location.hash = hashVue('equipes', vueParDefaut('equipes')); }} />
+  ) : undefined;
 
   // ---- PALETTE Ctrl K --------------------------------
   // Ouverte par Ctrl/⌘ K de n'importe où, par le champ de la barre latérale, et
@@ -1433,6 +1468,13 @@ function Application() {
         },
         { key: 'runes', label: nomNav('runes'), icon: <IconeRunes size={18} />, ouvre: sectionRunesBureau, actif: route === 'compte' && accountSub === 'runes' },
         { key: 'artefacts', label: nomNav('artefacts'), icon: <IconeArtefacts size={18} />, ouvre: sectionArtefactsBureau, actif: route === 'compte' && accountSub === 'artefacts' },
+        {
+          key: 'equipes',
+          label: nomNav('mesEquipes'),
+          hash: hashVue('equipes', vueParDefaut('equipes')),
+          icon: <IconeEquipes size={18} />,
+          actif: route === 'compte' && accountSub === 'equipes',
+        },
       ],
     },
     {
@@ -1815,6 +1857,21 @@ function Application() {
         icon={IconeArene}
         description={textes.donnees.areneBientot}
       />
+    ) : n.route === 'compte' && n.accountSub === 'equipes' ? (
+      // ⚠️ Avant les écrans du compte : « Mes équipes » se lit sans compte importé.
+      <EquipesSection
+        api={equipesEnregistrees}
+        ctx={contexteEquipes}
+        inventaire={inventaireEquipes}
+        allMonsters={allMonsters}
+        optimizer={optimizerPourEquipes}
+        onImporterOptimizer={importerEquipe}
+        onEquipeCreee={demanderConservationEquipes}
+        retourDemande={retourDemande}
+        onRetourTraite={() => setRetourDemande(null)}
+        menuOuvert={menu.ouvert}
+        onFermerMenu={menu.fermer}
+      />
     ) : n.route === 'compte' ? (
       <AccountPage
         sub={n.accountSub}
@@ -1862,6 +1919,7 @@ function Application() {
         // au doigt — seule page qui le demande.
         onOuvrirMenu={menu.ouvrir}
         onMonstreHorsVue={setMonstreOptions}
+        actionMesEquipes={actionMesEquipes}
       />
     ) : n.route === 'releases' ? (
       <ReleasesPage />

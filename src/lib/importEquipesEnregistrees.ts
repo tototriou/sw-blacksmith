@@ -8,13 +8,13 @@
 
 import type { ArtifactDetail, GearSet, Monster, RelicDetail, RuneDetail } from '../types';
 import type { Dictionnaire } from '../i18n/fr';
-import type { BuildAValiderImport, ImportOptimizer } from './importEquipes';
+import type { BuildAValiderImport, ImportOptimizer, RapportImportOptimizer } from './importEquipes';
 import { exclusionSelectorKey, resolveExclusionEntry, type ExclusionSelector, type ExclusionSourceData } from './optimizerExclusion';
 import type { StockageOptimizer } from './optimizerMemberStorage';
 import type { SpeedTuneEquipe } from './speedTuneEquipe';
 import {
   CONTENU_OPTIMIZER_ONGLET, MONSTRES_MAX_EQUIPE, comparerPiece,
-  type CorrespondanceOptimizer, type EquipeEnregistree, type InventaireCompte, type LienLigneEnregistre,
+  type CorrespondanceOptimizer, type EquipeEnregistree, type LienOptimizerEquipe, type InventaireCompte, type LienLigneEnregistre,
   type MonstreEnregistre, type SpeedTuneEnregistre, type TirerId,
 } from './equipesEnregistrees';
 
@@ -114,6 +114,20 @@ export function preparerExportEquipeOptimizer(
   return { proposition, correspondance };
 }
 
+// Le lien posé sur l'équipe après un export accepté : la liste créée, sa
+// première équipe (aucune avec 1 ou 6 membres), et les membres que le
+// consommateur a gardés. `null` : export refusé, rien n'est lié.
+// ⚠️ Le rapport commence par les ignorés du PRODUCTEUR, déjà absents de la
+// correspondance : un doublon d'exemplaire y porte le sélecteur du membre
+// gardé, et le compter retirerait ce membre du lien.
+export function lienApresExportOptimizer(export_: ExportEquipeOptimizer, rapport: RapportImportOptimizer): LienOptimizerEquipe | null {
+  if (!rapport.listeCreee) return null;
+  const { correspondance, proposition } = export_;
+  const ignores = new Set(rapport.ignores.slice(proposition.ignores.length).map((i) => exclusionSelectorKey(i.selector)));
+  return { listId: rapport.listeCreee.id, equipeId: rapport.equipesCreeesIds?.[0] ?? null,
+    correspondance: correspondance.filter((c) => !ignores.has(exclusionSelectorKey(c.selecteur))).map((c) => ({ uid: c.uid, selecteur: { ...c.selecteur } })) };
+}
+
 /* --------------------------------------------------------------------------
  * Mettre à jour depuis l'Optimizer
  * ----------------------------------------------------------------------- */
@@ -133,7 +147,7 @@ export interface RetourOptimizer {
   manquantes: PieceManquante[];
   reliquesGardees: string[];
   artefactsGardes: string[];
-  copiesAmbigues: string[];
+  copiesAmbigues: { type: 'rune' | 'artefact' | 'relique'; id: number }[];
   retires: string[];
 }
 
@@ -178,7 +192,7 @@ export function preparerRetourOptimizer(
     }
     if (!trouvees.length) return null;
     const choisie = trouvees.find((x) => x.uid === uid) ?? trouvees[0];
-    if (trouvees.some((x) => !comparerPiece(x.p, choisie.p))) res.copiesAmbigues.push(`${type} ${id}`);
+    if (trouvees.some((x) => !comparerPiece(x.p, choisie.p))) { if (!res.copiesAmbigues.some((c) => c.type === type && c.id === id)) res.copiesAmbigues.push({ type, id }); }
     return structuredClone(choisie.p);
   };
   const resoudre = <T extends Piece>(type: 'rune' | 'artefact' | 'relique', id: number, uid: string | undefined, libelle: string): T | null => {

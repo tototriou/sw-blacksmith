@@ -5,10 +5,17 @@
 // ne doit pas pouvoir écraser le travail présent.
 
 import { formatExport, formatReconnu } from './formatsExport';
+import { PREFIXE_FICHIER } from '../marque';
+import { jourLocal } from './telechargement';
 import { lireEquipeEnregistree, type EquipeEnregistree, type TirerId } from './equipesEnregistrees';
 
 export const NOM_FORMAT_EQUIPES = 'equipes';
 export const VERSION_FICHIER_EQUIPES = 1;
+
+// `swblacksmith-equipes-2026-11-05.json`.
+export function nomFichierEquipes(date: Date): string {
+  return `${PREFIXE_FICHIER}-equipes-${jourLocal(date)}.json`;
+}
 
 export function ecrireFichierEquipes(equipes: readonly EquipeEnregistree[], maintenant: Date): string {
   return JSON.stringify({

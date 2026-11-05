@@ -117,7 +117,7 @@ l'inventaire actuel (`runes`, `artifacts`, `relics` du compte) :
 
 L'égalité est champ à champ sur le type de la pièce (`RuneDetail`, `ArtifactDetail`,
 `RelicDetail`), lignes d'effet comprises dans leur ordre, par une seule fonction pure
-(`comparerPiece`) : un champ ajouté à ces types est comparé sans qu'on y pense. Les
+(`comparerPiece`) : un champ ajouté à ces types est comparé sans qu'on y pense. La
 seule exclusion est le marqueur de rune posé en jeu (`marker`), qui n'est pas une
 stat. Une pièce
 d'identifiant non strictement positif (pièce synthétique) n'est jamais comparée :
@@ -154,21 +154,23 @@ sinon « N pièces modifiées », « N pièces disparues ». Le détail marque c
   d'actions (`Menu`) : « Ouvrir », « Exporter vers l'Optimizer », « Mettre à jour
   depuis l'Optimizer », « Dupliquer », « Déplacer vers… », « Supprimer ».
 - Au-delà de 24 équipes dans l'onglet (après recherche), la grille se pagine
-  (`Pager`). Une page garde sa hauteur pour qu'un changement de page ne déplace pas
-  le pager.
-- « Ouvrir » affiche le détail dans un panneau à droite (`DeuxVolets`) : le nom et la
-  note éditables, puis une fiche par monstre (stats calculées de l'équipement
-  enregistré, roue de runes, artéfacts, relique, avec l'état de chaque pièce), et la
-  modification de la composition.
+  (`Pager`), posé **au-dessus** de la grille : la hauteur d'une page varie avec ses
+  cartes, et un pager placé dessous bougerait sous le clic.
+- « Ouvrir » affiche le détail dans une modale large (`Modale`, croix en coin) : le
+  nom et la note éditables, puis une fiche par monstre (l'équipement enregistré par
+  `MonsterGear` : stats calculées, roue de runes, artéfacts, relique ; puis l'état de
+  chaque pièce qui n'est pas identique), et la modification de la composition. Le
+  détail est une consultation qu'on ferme ; l'écran partagé (`DeuxVolets`) reste
+  celui de l'app, pas un second volet propre à la page.
 
 ### Téléphone
 
 - La rangée d'onglets défile de côté. Sous elle, la recherche sur toute la largeur,
-  puis « Nouvelle équipe » et un bouton « Options » qui regroupe les imports et les
-  fichiers.
-- Les équipes en une colonne de cartes compactes, mêmes informations, même menu.
-- « Ouvrir » ouvre le détail en `MobileSheet`, une fiche de monstre par section
-  repliable.
+  puis « Nouvelle équipe ». Le bouton « Options » de la barre du haut (panneau
+  d'actions, [panneau-actions-mobile.md](../transverse/feat-navigation/panneau-actions-mobile.md))
+  regroupe les imports et les fichiers.
+- Les équipes en une colonne de cartes, mêmes informations, même menu.
+- « Ouvrir » ouvre le détail en `MobileSheet`, les fiches de monstre à la suite.
 
 Aucune des deux mises en page n'est dérivée de l'autre : chacune a son agencement
 et ses tests de rendu.
@@ -194,8 +196,8 @@ et ses tests de rendu.
   provenance : « Équipement porté » (chaque exemplaire de la Box), « Preset RTA »,
   « Défense de siège N », « Attaque de siège N », « Défense d'arène », « Attaque
   d'arène N », ou « Sans équipement ». Le choix copie l'équipement à cet instant.
-- Réordonner (glisser, avec le repli au doigt par un sélecteur de position),
-  désigner le leader, retirer un monstre.
+- Réordonner par un sélecteur de position (« Position N », le même geste aux deux
+  formats, sans glisser-déposer), désigner le leader, retirer un monstre.
 - « Reprendre l'équipement actuel » sur une fiche de monstre remplace sa copie par
   ce que son exemplaire porte aujourd'hui (provenance `porte`). Il n'existe que si
   `unitId` est connu et présent dans la Box.
@@ -245,7 +247,7 @@ raison (espèce inconnue, slot vide sans monstre).
 
 « Exporter vers l'Optimizer » crée une **nouvelle liste** par l'action commune
 `importerEquipe` (voir [feat-import-equipes.md](../optimizer/feat-import-equipes.md)),
-avec un producteur dédié, `importerEquipeEnregistreeOptimizer` :
+avec un producteur dédié, `preparerExportEquipeOptimizer` (`src/lib/importEquipesEnregistrees.ts`) :
 
 - nom de liste : le nom de l'équipe ; contenu : celui de l'onglet (tableau plus haut) ;
 - membres, dans l'ordre de l'équipe : un monstre dont l'`unitId` est dans la Box
@@ -269,7 +271,7 @@ avec un producteur dédié, `importerEquipeEnregistreeOptimizer` :
   validée sous son identifiant, et le rapport la nomme, puisque l'Optimizer lira sa
   version actuelle. Si une rune ou un artéfact présent est déjà réservé par un membre
   précédent de la même liste (deux presets qui partagent une pièce), le membre n'a
-  pas de build validé, et le rapport nomme la pièce et le monstre. Un membre sans
+  pas de build validé, et le rapport nomme les deux monstres. Un membre sans
   6 runes n'a pas de build validé.
 
 ⚠️ **C'est la seule entrée dont le consommateur pose des builds validés.** Le
@@ -289,7 +291,8 @@ format.
 Une équipe dont la liste liée existe encore propose « Mettre à jour depuis
 l'Optimizer » ; et l'Optimizer, sur la liste active liée à une équipe, propose
 « Enregistrer dans Mes équipes » près de « Importer une équipe ». Les deux gestes font
-la même chose. **La source est fixée par le lien** :
+la même chose : celui de l'Optimizer ouvre « Mes équipes » sur l'onglet de l'équipe,
+et la même confirmation s'y affiche. **La source est fixée par le lien** :
 
 - `equipeId` désigne une équipe qui existe encore dans la liste : ses membres, dans
   leur ordre, son leader et son speed tune ;

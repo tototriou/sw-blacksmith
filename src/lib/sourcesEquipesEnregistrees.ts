@@ -1,0 +1,186 @@
+// Les SOURCES de « Mes équipes » : l'équipement qu'un monstre ajouté peut
+// copier, et les équipes qu'un import peut créer.
+//
+// Spec : docs/02-app/compte/feat-equipes.md, « Créer et modifier » et
+// « Imports ». Tout se lit dans les données de l'app (Box, prépa RTA, équipes
+// de siège, decks d'arène, listes de l'Optimizer) ; rien n'est écrit ici, le
+// geste rend une équipe neuve que l'écran ajoute.
+
+import type { GearSet, Monster, RtaEntry, SiegeTeam } from '../types';
+import type { BoxItem } from './applyAccount';
+import type { Dictionnaire } from '../i18n/fr';
+import type { DeckArene } from './importAccount';
+import { resolveExclusionEntry, type ExclusionSelector, type ExclusionSourceData } from './optimizerExclusion';
+import type { StockageOptimizer } from './optimizerMemberStorage';
+import { preparerRetourOptimizer } from './importEquipesEnregistrees';
+import {
+  MONSTRES_MAX_EQUIPE, creerEquipe,
+  type EquipeEnregistree, type InventaireCompte, type MonstreEnregistre, type OngletEquipes,
+  type ProvenanceEquipement, type TirerId,
+} from './equipesEnregistrees';
+
+export interface ContexteSourcesEquipes {
+  box: readonly BoxItem[];
+  rtaEntries: Readonly<Record<string, RtaEntry>>;
+  siegeDefenseTeams: readonly SiegeTeam[];
+  siegeOffenseTeams: readonly SiegeTeam[];
+  // `null` : compte conservé avant la lecture des decks d'arène.
+  arenaDecks: readonly DeckArene[] | null;
+  // Un compte est-il chargé (Box ou inventaire non vides) ?
+  compte: boolean;
+  monsterById: ReadonlyMap<string, Monster>;
+  monsterByCom2us: ReadonlyMap<number, Monster>;
+}
+
+/* --------------------------------------------------------------------------
+ * L'équipement d'un monstre ajouté
+ * ----------------------------------------------------------------------- */
+
+export interface SourceEquipement {
+  cle: string;
+  libelle: string;
+  provenance: ProvenanceEquipement;
+  unitId: number | null;
+  equipement: GearSet | null;
+}
+
+// Les choix d'équipement d'une espèce, dans l'ordre de la spec : chaque
+// exemplaire de la Box, le preset RTA, les decks de siège, les decks d'arène,
+// puis « Sans équipement », toujours présent.
+export function sourcesEquipementEspece(com2usId: number, ctx: ContexteSourcesEquipes, t: Dictionnaire): SourceEquipement[] {
+  const a = t.equipes.ajout;
+  const res: SourceEquipement[] = [];
+  for (const b of ctx.box) {
+    if (b.monster.com2usId !== com2usId) continue;
+    const unitId = /^\d+$/.test(b.key) ? Number(b.key) : null;
+    res.push({ cle: `box:${b.key}`, libelle: a.porte(b.level), provenance: b.gear ? 'porte' : 'aucun', unitId, equipement: b.gear ?? null });
+  }
+  for (const entry of Object.values(ctx.rtaEntries)) {
+    if (entry.gear && ctx.monsterById.get(entry.monsterId)?.com2usId === com2usId)
+      res.push({ cle: `rta:${entry.monsterId}`, libelle: a.presetRta, provenance: 'rta', unitId: null, equipement: entry.gear });
+  }
+  const siege = (teams: readonly SiegeTeam[], provenance: ProvenanceEquipement, libelle: (n: number) => string) =>
+    teams.forEach((team, i) => team.slots.forEach((slot, s) => {
+      if (slot.monsterId !== null && slot.gear && ctx.monsterById.get(slot.monsterId)?.com2usId === com2usId)
+        res.push({ cle: `${provenance}:${team.id}:${s}`, libelle: libelle(i + 1), provenance, unitId: null, equipement: slot.gear });
+    }));
+  siege(ctx.siegeDefenseTeams, 'siege-defense', a.defense);
+  siege(ctx.siegeOffenseTeams, 'siege-attaque', a.attaque);
+  for (const deck of ctx.arenaDecks ?? []) deck.slots.forEach((slot, s) => {
+    if (slot.com2usId !== com2usId) return;
+    const provenance: ProvenanceEquipement = deck.cle === 'attaque' ? 'arene-attaque' : 'arene-defense';
+    res.push({ cle: `arene:${deck.cle}:${deck.rang}:${s}`, libelle: libelleDeckArene(deck, a), provenance, unitId: slot.unitId, equipement: slot.gear });
+  });
+  res.push({ cle: 'aucun', libelle: a.sansEquipement, provenance: 'aucun', unitId: null, equipement: null });
+  return res;
+}
+
+function libelleDeckArene(deck: DeckArene, a: { areneDefense: string; areneDefenseServeur: string; areneAttaque: (n: number) => string }): string {
+  return deck.cle === 'defense' ? a.areneDefense : deck.cle === 'defense-serveur' ? a.areneDefenseServeur : a.areneAttaque(deck.rang + 1);
+}
+
+/* --------------------------------------------------------------------------
+ * Les imports d'équipes
+ * ----------------------------------------------------------------------- */
+
+export interface ImportEquipeCree {
+  equipe: EquipeEnregistree;
+  // Monstres d'espèce inconnue, laissés de côté.
+  ignores: number;
+}
+
+export interface SourceImportEquipe {
+  cle: string;
+  groupe: string;
+  libelle: string;
+  monstres: Monster[];
+  // La raison quand la source n'a rien à importer ; `null` : utilisable.
+  raison: string | null;
+  creer: (id: string, tirerUid: TirerId, maintenant: Date) => ImportEquipeCree | null;
+}
+
+interface MembreBrut { com2usId: number | null; unitId: number | null; equipement: GearSet | null }
+
+function equipeDepuisMembres(
+  membres: MembreBrut[], onglet: OngletEquipes, nom: string, provenance: ProvenanceEquipement,
+  ctx: ContexteSourcesEquipes, id: string, tirerUid: TirerId, maintenant: Date
+): ImportEquipeCree {
+  let ignores = 0;
+  const monstres: MonstreEnregistre[] = [];
+  for (const m of membres.slice(0, MONSTRES_MAX_EQUIPE)) {
+    if (m.com2usId === null || !ctx.monsterByCom2us.has(m.com2usId)) { ignores++; continue; }
+    monstres.push({ uid: tirerUid(), com2usId: m.com2usId, unitId: m.unitId, provenance: m.equipement ? provenance : 'aucun',
+      equipement: m.equipement ? structuredClone(m.equipement) : null });
+  }
+  // Le premier membre de la source est son leader (slot 0 du siège, leader du deck d'arène).
+  const leader = membres[0]?.com2usId != null && monstres.length && monstres[0].com2usId === membres[0].com2usId ? monstres[0].uid : null;
+  return { equipe: { ...creerEquipe(id, onglet, nom, maintenant), monstres, leader }, ignores };
+}
+
+const monstresConnus = (ids: (number | null)[], ctx: ContexteSourcesEquipes) =>
+  ids.map((c) => (c === null ? undefined : ctx.monsterByCom2us.get(c))).filter((m): m is Monster => !!m);
+
+export function sourcesImportEquipes(
+  ctx: ContexteSourcesEquipes, optimizer: { stockage: StockageOptimizer; data: ExclusionSourceData } | null,
+  inv: InventaireCompte, ongletOuvert: OngletEquipes, t: Dictionnaire
+): SourceImportEquipe[] {
+  const im = t.equipes.imports;
+  const res: SourceImportEquipe[] = [];
+  const siege = (teams: readonly SiegeTeam[], groupe: string, onglet: OngletEquipes, provenance: ProvenanceEquipement, libelle: (n: number) => string) =>
+    teams.forEach((team, i) => {
+      const membres: MembreBrut[] = team.slots.filter((s) => s.monsterId !== null)
+        .map((s) => ({ com2usId: ctx.monsterById.get(s.monsterId!)?.com2usId ?? null, unitId: null, equipement: s.gear ?? null }));
+      res.push({ cle: `${provenance}:${team.id}`, groupe, libelle: libelle(i + 1), monstres: monstresConnus(membres.map((m) => m.com2usId), ctx),
+        raison: membres.length ? null : im.aucunDeck,
+        creer: (id, tirerUid, maintenant) => equipeDepuisMembres(membres, onglet, libelle(i + 1), provenance, ctx, id, tirerUid, maintenant) });
+    });
+  siege(ctx.siegeDefenseTeams, im.siegeDefenses, 'siege-defense', 'siege-defense', im.defense);
+  siege(ctx.siegeOffenseTeams, im.siegeAttaques, 'siege-attaque', 'siege-attaque', im.attaque);
+
+  // Arène : lue dans l'export de compte.
+  if (!ctx.compte || ctx.arenaDecks === null || ctx.arenaDecks.length === 0) {
+    const raison = !ctx.compte ? im.sansCompte : ctx.arenaDecks === null ? im.reimporter : im.aucunDeck;
+    res.push({ cle: 'arene', groupe: im.arene, libelle: im.arene, monstres: [], raison, creer: () => null });
+  } else for (const deck of ctx.arenaDecks) {
+    const libelle = deck.cle === 'defense' ? im.areneDefense : deck.cle === 'defense-serveur' ? im.areneDefenseServeur : im.areneAttaque(deck.rang + 1);
+    const onglet: OngletEquipes = deck.cle === 'attaque' ? 'arene-attaque' : 'arene-defense';
+    const provenance: ProvenanceEquipement = onglet;
+    const membres: MembreBrut[] = deck.slots.map((s) => ({ com2usId: s.com2usId, unitId: s.unitId, equipement: s.gear }));
+    res.push({ cle: `arene:${deck.cle}:${deck.rang}`, groupe: im.arene, libelle, monstres: monstresConnus(membres.map((m) => m.com2usId), ctx),
+      raison: membres.length ? null : im.aucunDeck,
+      creer: (id, tirerUid, maintenant) => equipeDepuisMembres(membres, onglet, libelle, provenance, ctx, id, tirerUid, maintenant) });
+  }
+
+  // Optimizer : une équipe d'une liste, ou les membres d'une liste sans équipe.
+  const st = optimizer?.stockage;
+  if (!optimizer || !st || st.lists.length === 0) {
+    res.push({ cle: 'optimizer', groupe: im.optimizer, libelle: im.optimizer, monstres: [], raison: im.aucuneListe, creer: () => null });
+    return res;
+  }
+  for (const liste of st.lists) {
+    const equipes = st.teams.filter((e) => e.listId === liste.id);
+    const especes = (selectors: ExclusionSelector[]) => selectors
+      .map((sel) => resolveExclusionEntry(sel, optimizer.data)?.monster).filter((m): m is Monster => !!m);
+    const creerDepuis = (equipeId: string | null, nom: string) => (id: string, tirerUid: TirerId, maintenant: Date): ImportEquipeCree | null => {
+      const vide: EquipeEnregistree = { ...creerEquipe(id, ongletOuvert, nom, maintenant),
+        lienOptimizer: { listId: liste.id, equipeId, correspondance: [] } };
+      const r = preparerRetourOptimizer(vide, st, optimizer.data, inv, tirerUid, maintenant);
+      if (typeof r === 'string') return null;
+      // Une équipe importée ne se lie pas : seul l'export pose un lien.
+      const { lienOptimizer: _lien, ...equipe } = r.equipe;
+      return { equipe: { ...equipe, modifieLe: maintenant.toISOString() }, ignores: 0 };
+    };
+    if (equipes.length) equipes.forEach((e, i) => {
+      const nom = im.equipeListe(liste.name, i + 1);
+      res.push({ cle: `optimizer:${liste.id}:${e.id}`, groupe: im.optimizer, libelle: nom, monstres: especes(e.members), raison: null, creer: creerDepuis(e.id, nom) });
+    });
+    else {
+      const membres = st.members.filter((m) => m.listId === liste.id).map((m) => m.selector);
+      const nom = im.membresListe(liste.name);
+      res.push({ cle: `optimizer:${liste.id}`, groupe: im.optimizer, libelle: nom, monstres: especes(membres),
+        raison: membres.length === 0 ? im.aucunDeck : membres.length > MONSTRES_MAX_EQUIPE ? im.tropDeMembres : null,
+        creer: creerDepuis(null, nom) });
+    }
+  }
+  return res;
+}

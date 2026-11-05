@@ -12,7 +12,8 @@ import type { ExclusionSourceData } from '../src/lib/optimizerExclusion';
 import type { StockageOptimizer } from '../src/lib/optimizerMemberStorage';
 import { consommerImportOptimizer } from '../src/lib/importEquipes';
 import { creerEquipe, indexerInventaire, type EquipeEnregistree } from '../src/lib/equipesEnregistrees';
-import { disponibiliteRetourOptimizer, preparerExportEquipeOptimizer, preparerRetourOptimizer } from '../src/lib/importEquipesEnregistrees';
+import { disponibiliteRetourOptimizer, lienApresExportOptimizer, preparerExportEquipeOptimizer, preparerRetourOptimizer } from '../src/lib/importEquipesEnregistrees';
+import { sourcesImportEquipes } from '../src/lib/sourcesEquipesEnregistrees';
 import { fr } from '../src/i18n/fr';
 import { equipementEx, monstreEx, runeEx } from './equipes-enregistrees.test';
 
@@ -60,9 +61,9 @@ function testEquipesOptimizerExport() {
 }
 
 function exporter(e: EquipeEnregistree, data = sources()) {
-  const { proposition, correspondance } = preparerExportEquipeOptimizer(e, data, inventaire(), fr);
-  const r = consommerImportOptimizer(vide(), null, proposition, data, 'liste', fr);
-  const lie: EquipeEnregistree = { ...e, lienOptimizer: { listId: r.rapport.listeCreee!.id, equipeId: r.rapport.equipesCreeesIds?.[0] ?? null, correspondance } };
+  const prep = preparerExportEquipeOptimizer(e, data, inventaire(), fr);
+  const r = consommerImportOptimizer(vide(), null, prep.proposition, data, 'liste', fr);
+  const lie: EquipeEnregistree = { ...e, lienOptimizer: lienApresExportOptimizer(prep, r.rapport)! };
   return { r, lie };
 }
 
@@ -73,6 +74,9 @@ function testEquipesOptimizerBuilds() {
   egal(r.stockage.validated.map((v) => [v.listId, v.runesManquantes ?? []]), [['liste', []], ['liste', [20, 21, 22, 23, 24, 25]]],
     'dans la liste créée, les manquantes gardées');
   egal(r.rapport.equipesCreeesIds?.length, 1, 'l’équipe créée est nommée au rapport');
+  egal(lienApresExportOptimizer(preparerExportEquipeOptimizer(equipe(), sources(), inventaire(), fr), { ...r.rapport, listeCreee: null }), null, 'export refusé : aucun lien');
+  egal(exporter(equipe()).lie.lienOptimizer, { listId: 'liste', equipeId: r.rapport.equipesCreeesIds![0],
+    correspondance: preparerExportEquipeOptimizer(equipe(), sources(), inventaire(), fr).correspondance }, 'le lien : la liste, son équipe, la correspondance');
   // Deux monstres sur les mêmes runes présentes : le second n'est pas validé.
   const conflit = { ...equipe(), monstres: [monstreEx('a', 1001, 11), monstreEx('b', 1002, null, equipementEx(1))] };
   const r2 = exporter(conflit).r;
@@ -109,8 +113,28 @@ function testEquipesOptimizerRetour() {
   egal(typeof r2 !== 'string' && r2.equipe.monstres.map((m) => [m.uid, m.com2usId]), [['a', 1001], ['b', 1002], ['neuf', 1003]], 'un membre ajouté devient un nouveau monstre');
 }
 
+function testEquipesOptimizerImport() {
+  titre('Mes équipes — importer une équipe de l’Optimizer');
+  const { r } = exporter(equipe());
+  const data = sources();
+  const ctx = { box: data.box, rtaEntries: {}, siegeDefenseTeams: [], siegeOffenseTeams: [], arenaDecks: [], compte: true,
+    monsterById: data.monsterById, monsterByCom2us: new Map([...data.monsterById.values()].map((m) => [m.com2usId as number, m])) };
+  const src = sourcesImportEquipes(ctx, { stockage: r.stockage, data }, inventaire(), 'pve', fr).filter((x) => x.groupe === fr.equipes.imports.optimizer);
+  egal(src.map((x) => [x.libelle, x.raison]), [['Défense GW — équipe 1', null]], 'une source par équipe de liste');
+  let n = 0;
+  const cree = src[0].creer('neuve', () => `u${++n}`, T1);
+  ok(cree !== null, 'l’équipe se crée');
+  if (!cree) return;
+  egal([cree.equipe.onglet, cree.equipe.monstres.map((m) => [m.com2usId, m.unitId, m.provenance])],
+    ['pve', [[1001, 11, 'optimizer'], [1002, null, 'optimizer']]], 'dans l’onglet ouvert, chaque membre et son build validé');
+  egal(cree.equipe.monstres[0].equipement?.runes.map((x) => x.id), [1, 2, 3, 4, 5, 6], 'les runes du build validé');
+  egal(cree.equipe.leader, 'u1', 'le leader de l’équipe de l’Optimizer');
+  ok(cree.equipe.lienOptimizer === undefined, 'une équipe importée n’est pas liée');
+}
+
 export const verificationsEquipesOptimizer: [string, () => void][] = [
   ['testEquipesOptimizerExport', testEquipesOptimizerExport],
   ['testEquipesOptimizerBuilds', testEquipesOptimizerBuilds],
   ['testEquipesOptimizerRetour', testEquipesOptimizerRetour],
+  ['testEquipesOptimizerImport', testEquipesOptimizerImport],
 ];
