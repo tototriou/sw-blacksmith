@@ -16,14 +16,12 @@ import {
   type Leads,
   type Ligne,
 } from '../src/lib/speedTuneLignes';
+import { arteAdmissibles, dansZone, enveloppeZone } from '../src/lib/contrainteSpeedTune';
 import {
-  arteAdmissibles,
   classesArtefact,
   contexteTenu,
   cumulsEnDefaut,
-  dansZone,
   entreesDeBuild,
-  enveloppeZone,
   planDepuisSpeedTune,
   planTient,
   plateauDuPlan,

@@ -340,6 +340,7 @@ function paramsArtefacts(
       // Le sort résolu comme à l'écran (`resolvedSkill`), quel que soit
       // l'objectif : la même source, `resolveDamageSkill`.
       sortDegats: resolveDamageSkill(monsterDamageSkills(loadMonsterSkills(loaded.com2usId)), recipe.damageSetup?.skillCom2usId ?? null)?.skillCom2usId ?? null,
+      speedTune: null,
     }),
     evaluer,
   };

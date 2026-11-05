@@ -33,6 +33,7 @@ import {
   plateauAnalyse,
 } from './speedTuneAuto';
 import { pointsDeGain } from './speedTunePassif';
+import { ClasseZone, ContrainteSpeedTune, SetsCumuls, ZoneMembre, ZoneSwift } from './contrainteSpeedTune';
 import { Leads, Ligne, casesSaisies, leadPour, visibles } from './speedTuneLignes';
 
 // Ce qu'un build change sur SA ligne : c'est tout ce que l'adaptateur écrit, et
@@ -341,28 +342,6 @@ export function classesArtefact(buffs: number[], ampli: number, max = ARTE_MAX):
   return out;
 }
 
-export interface ClasseZone {
-  // Plage de 206 de la classe (bornes incluses).
-  arteMin: number;
-  arteMax: number;
-  // Intervalles de VIT de FICHE admissibles (bornes incluses), croissants.
-  intervalles: [number, number][];
-}
-
-export interface ZoneSwift {
-  swift: boolean;
-  classes: ClasseZone[];
-}
-
-export interface ZoneMembre {
-  uid: string;
-  base: number;
-  // Une entrée par état de Swift calculé.
-  parSwift: ZoneSwift[];
-  // Faux quand aucun buff de vitesse ne peut être posé : le 206 n'agit pas.
-  axeArtefact: boolean;
-}
-
 export interface BornesZone {
   // Majorant de la VIT de fiche atteignable, par état de Swift (voir la spec).
   ficheMax: { swift: number; sansSwift: number };
@@ -423,36 +402,42 @@ export function zoneMembre(
   return { uid, base, parSwift, axeArtefact: buffs.length > 0 };
 }
 
-// Le couple (fiche, Swift, 206) est-il dans la zone ?
-export function dansZone(z: ZoneMembre, fiche: number, swift: boolean, cumul206: number): boolean {
-  const s = z.parSwift.find((x) => x.swift === swift);
-  if (!s) return false;
-  const c = s.classes.find((x) => cumul206 >= x.arteMin && cumul206 <= x.arteMax);
-  return !!c?.intervalles.some(([a, b]) => fiche >= a && fiche <= b);
+// Les combinaisons Volonté × Bouclier du build de `uid` qui tiennent la
+// précondition des cumuls, les autres lignes fixées par `autres`. Le
+// candidat n'y change que ses sets : Volonté et Bouclier sont les seuls que
+// lit l'estimation des cumuls (`cumulsEstimes`, `cumulsEquipe`).
+export function setsAdmis(
+  plan: PlanSpeedTune,
+  d: DonneesKit,
+  monstres: Bestiaire,
+  uid: string,
+  autres: ReadonlyMap<string, EntreesLigne>
+): SetsCumuls[] {
+  const ligne = plan.lignes.find((l) => l.uid === uid && l.camp === 'allie');
+  if (!ligne) return [];
+  const out: SetsCumuls[] = [];
+  for (const will of [false, true])
+    for (const shield of [false, true]) {
+      const sets = [...(will ? ['will'] : []), ...(shield ? ['shield'] : [])];
+      const subs = new Map(autres);
+      subs.set(uid, { runeSpeed: ligne.runeSpeed, swift: ligne.swift, sets, artefactBuff: ligne.artefactBuff });
+      if (cumulsEnDefaut(plan, d, monstres, subs).length === 0) out.push({ will, shield });
+    }
+  return out;
 }
 
-// L'enveloppe de VIT de fiche, toutes classes et tous états de Swift : elle
-// élargit, jamais ne resserre. `null` : zone vide.
-export function enveloppeZone(z: ZoneMembre): { min: number; max: number } | null {
-  let min = Infinity;
-  let max = -Infinity;
-  for (const s of z.parSwift)
-    for (const c of s.classes)
-      for (const [a, b] of c.intervalles) {
-        if (a < min) min = a;
-        if (b > max) max = b;
-      }
-  return Number.isFinite(min) ? { min, max } : null;
-}
-
-// Les 206 admissibles pour un build donné : les classes dont un intervalle
-// contient sa fiche. Sert à restreindre la paire.
-export function arteAdmissibles(z: ZoneMembre, fiche: number, swift: boolean): { min: number; max: number }[] {
-  const s = z.parSwift.find((x) => x.swift === swift);
-  if (!s) return [];
-  return s.classes
-    .filter((c) => c.intervalles.some(([a, b]) => fiche >= a && fiche <= b))
-    .map((c) => ({ min: c.arteMin, max: c.arteMax }));
+// La contrainte que la recherche de `uid` lit : sa zone et ses sets admis,
+// contre les mêmes autres lignes. `null` : la ligne ou son monstre manque.
+export function contrainteDuMembre(
+  plan: PlanSpeedTune,
+  d: DonneesKit,
+  monstres: Bestiaire,
+  uid: string,
+  autres: ReadonlyMap<string, EntreesLigne>,
+  bornes: BornesZone
+): ContrainteSpeedTune | null {
+  const zone = zoneMembre(plan, d, monstres, uid, autres, bornes);
+  return zone ? { version: 1, zone, setsAdmis: setsAdmis(plan, d, monstres, uid, autres) } : null;
 }
 
 // La vitesse de combat d'une ligne sous le lead du plan, gain de passif compris

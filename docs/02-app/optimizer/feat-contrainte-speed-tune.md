@@ -305,14 +305,18 @@ reste fixe pendant ce choix.
   et maximum sur toutes ses classes et tous ses états de Swift. L'enveloppe ne
   fait qu'élargir : elle n'écarte jamais un build qui tiendrait la zone. Aucun
   seuil d'artéfact ne sert à élaguer les runes.
-- **Réduction des artéfacts** : la contrainte suit le 206 comme une stat sous
-  minimum **et** maximum — la pertinence, la dominance et les apports
-  atteignables gardent toutes les valeurs distinctes du 206, puisqu'un 206 plus
-  fort peut faire jouer trop tôt. Les réductions qui ne voient pas la
-  contrainte ne s'appliquent pas au 206 d'un membre contraint.
-- **Validation finale** : le test exact de la section précédente, sur les
-  vraies paires, au même endroit que le filtre final des conditions. Un build
-  hors zone n'est jamais affiché.
+- **Réduction des artéfacts** : le 206 devient incomparable pour la dominance
+  du préfiltre — deux pièces qui y diffèrent ne s'éliminent jamais, puisqu'un
+  206 plus fort peut faire jouer trop tôt — et le verrou du 206 disparaît. Les
+  apports atteignables de la recherche de runes ne suivent que les
+  principales : ils ignorent le 206, restent optimistes et n'écartent aucun
+  build.
+- **Validation finale** : le test exact de la section précédente, à la
+  résolution de l'équipement de chaque build, là où se juge déjà le filtre
+  final des conditions sur la vraie paire. Seules les paires dont le 206 tombe
+  dans une classe admissible pour la fiche et l'état de Swift du build sont
+  notées ; aucune, et le build est rejeté comme un build sans paire conforme.
+  Un build hors zone n'est jamais affiché.
 - **Contexte photographié** : l'empreinte de la zone entre dans le contexte
   photographié au lancement et dans la signature de résolution. Quand la zone
   change après le lancement, les résultats restent ceux de leur contexte, et

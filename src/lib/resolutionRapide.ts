@@ -90,6 +90,8 @@ import {
   PaireArtefacts,
   analyserPertinence,
   candidatsParSorte,
+  lignesBorneesDe,
+  paireRespecteBornes,
   paireRespecteLignes,
   pairesParScore,
   preFiltrerCandidats,
@@ -192,8 +194,11 @@ export class CachesResolutionRapide {
    * la relique : mémoïsés sur les entrées qu'ils lisent, par identité.
    */
   apportsRealisables(params: ParamsDePaires): Float64Array {
+    // ⚠️ Les lignes bornées (contrainte de speed tune) sont celles d'UN build :
+    // elles entrent dans la clé, par identité (`lignesBorneesDuBuild` rend le
+    // même objet pour les mêmes plages).
     const entrees = [params.inventaire, params.equipes, params.porteur, params.principaleParSorte,
-      params.lignesVerrouillees, params.avecCoutDesVerrous, params.maxStatsActifs];
+      params.lignesVerrouillees, params.avecCoutDesVerrous, params.maxStatsActifs, params.lignesBornees];
     if (!this.apports || !this.entreesApports || entrees.some((v, i) => v !== this.entreesApports![i])) {
       this.apports = calculerApportsRealisables(params, this.representants(params));
       this.entreesApports = entrees;
@@ -307,6 +312,7 @@ function meilleurePaireFaisable(
   const indicesElement = candidatsElement!.map((a) => indiceDe(formes.indiceElement, a));
   const indicesArchetype = candidatsArchetype!.map((a) => indiceDe(formes.indiceArchetype, a));
   const verrous = params.lignesVerrouillees?.filter((l) => l.min > 0) ?? [];
+  const bornes = lignesBorneesDe(params);
   let meilleure: PaireArtefacts | null = null;
   // Réutilisé d'un tour à l'autre, comme dans `collecterPaires`.
   const paire: ArtifactDetail[] = [];
@@ -321,6 +327,7 @@ function meilleurePaireFaisable(
       if (element) paire.push(element);
       if (archetype) paire.push(archetype);
       if (!paireRespecteLignes(paire, verrous)) continue;
+      if (!paireRespecteBornes(paire, bornes)) continue;
       if (!faisable(ie, indicesArchetype[j]!, element, archetype, paire)) continue;
       const score = params.evaluer(paire);
       if (compteurs) compteurs.notesFaisables++;
@@ -928,6 +935,7 @@ function calculerApportsRealisables(params: ParamsDePaires, formes: FormesDePair
   const nA = formes.archetype.length;
   const realisables = new Uint8Array(formes.element.length * nA);
   const verrous = params.lignesVerrouillees?.filter((l) => l.min > 0) ?? [];
+  const bornes = lignesBorneesDe(params);
   const paire: ArtifactDetail[] = [];
   for (let i = 0; i < elements.length; i++) {
     for (let j = 0; j < archetypes.length; j++) {
@@ -938,7 +946,7 @@ function calculerApportsRealisables(params: ParamsDePaires, formes: FormesDePair
       paire.length = 0;
       if (element) paire.push(element);
       if (archetype) paire.push(archetype);
-      if (paireRespecteLignes(paire, verrous)) realisables[k] = 1;
+      if (paireRespecteLignes(paire, verrous) && paireRespecteBornes(paire, bornes)) realisables[k] = 1;
     }
   }
   const apports: number[] = [];

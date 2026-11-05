@@ -228,6 +228,11 @@ complète de `candidatsParSorte`, élaguée par `preFiltrerCandidats`. N'est
     deux candidats qui y diffèrent sont incomparables : « plus » n'y est plus
     « au moins aussi bon ». Retirer la principale du vecteur ne suffirait
     pas, le départage des ex æquo éliminerait l'un des deux.
+  - Une sous-propriété de `codesIncomparables` suit la même règle : deux
+    candidats qui y diffèrent ne se comparent pas. `parametresArtefactsFiche`
+    y pose le 206 sous une contrainte de speed tune, où la pièce qui tient la
+    zone peut être celle qui en porte le moins
+    ([§ Lignes bornées](#lignes-bornées--la-contrainte-de-speed-tune)).
   - L'emplacement vide n'est jamais soumis à la dominance.
   - ⚠️ La dominance suppose la règle de jeu R (une principale ou une ligne
     plus grande ne baisse jamais la note). Sous `sansDominance` — le sort
@@ -305,6 +310,48 @@ Côté moteur :
   mêmes, et le coût affiché tomberait à `null` ou serait sous-estimé sans
   que rien n'échoue. La garde qui l'éviterait dédouble la boucle pour un
   gain nul sans verrou posé, où `paireRespecteLignes` rend vrai aussitôt.
+
+### Lignes bornées — la contrainte de speed tune
+
+La spec : [02-app/optimizer/feat-contrainte-speed-tune.md](../../../02-app/optimizer/feat-contrainte-speed-tune.md).
+Côté moteur :
+
+- `LigneBornee` (`code`, `plages`) : le cumul de la ligne sur la paire tombe
+  dans l'une des plages, bornes incluses, avec la tolérance des verrous ;
+  aucune plage, aucune paire. Ce n'est pas un verrou : une valeur plus
+  faible peut la tenir et une plus forte la casser. Elle n'entre donc ni
+  dans l'obligation ni dans les dimensions de la dominance, et son code doit
+  être dans `codesIncomparables` — `lignesBorneesDe` lève sinon, jamais un
+  repli : le préfiltre aurait pu jeter la seule pièce qui la tient.
+- `ArtifactSearchParams.lignesBornees` est propre à UN build. Seule la double
+  boucle la lit : `collecterPaires` (donc `chercherPaires`, `pairesParScore`
+  et le calcul exhaustif), `meilleurePaireFaisable` et les formes réalisables
+  de la confirmation (`calculerApportsRealisables`, resolutionRapide.ts).
+  Elle se teste AVANT la note : ce n'est pas un verrou, le « meilleur sans
+  verrous » ne compte que les paires qui la tiennent.
+- `ArtifactSearchParams.speedTune` porte la contrainte du membre
+  (`ContrainteSpeedTune`, contrainteSpeedTune.ts : la zone et les sets
+  admis, en données seules), posée avec `codesIncomparables: [206]` par
+  `parametresArtefactsFiche`, qui retire aussi le verrou du 206. Ce module ne
+  la lit pas ; elle suit les paramètres de la fiche partout où ils vont,
+  Workers de résolution compris.
+- `entreeResolutionDuBuild` (relicQueue.ts) en tire les lignes bornées de
+  chaque build (`lignesBorneesDuBuild`) : les classes de la zone dont un
+  intervalle contient sa VIT de fiche, pour l'état de Swift de ses sets
+  activés, et aucune plage si Volonté et Bouclier cassent la précondition des
+  cumuls. Ni artéfact ni relique ne porte la VIT : la fiche se lit sur
+  `computeStats` du build. Les mêmes plages rendent le même objet
+  (`CachesResolution.bornesSpeedTune`), si bien que les mémoires de la file
+  indexées par identité restent valides d'un build à l'autre ; les formes
+  réalisables de la confirmation entrent ces lignes dans leur clé.
+- La recherche de runes ne voit que l'enveloppe de VIT de fiche
+  (`exigenceSousSpeedTune`) : un build dans l'enveloppe mais hors zone est
+  trouvé, puis rejeté à la résolution comme un build sans paire conforme.
+- Ce que les tests verrouillent (`tests/resolution-speed-tune.test.ts`) :
+  contre un balayage brut de la vue complète, même verdict et, hors régime
+  `aucun`, même meilleure note ; chemin de l'app, calcul exhaustif et
+  confirmation d'accord ; la paire retenue dans la zone ; des builds rejetés
+  par la seule zone.
 
 ### Paire supposée et revérifications
 

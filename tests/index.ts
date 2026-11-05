@@ -319,6 +319,7 @@ import testTestConjointExact from './test-conjoint-exact.test';
 import testRelicQueue from './relic-queue.test';
 import testResolutionRapide, { testResolutionConfirmation, testResolutionRapideNaN } from './resolution-rapide.test';
 import testResolutionDominanceReliques from './resolution-dominance-reliques.test';
+import testResolutionSpeedTune from './resolution-speed-tune.test';
 import testMemoCombat from './memo-combat.test';
 import testDominanceLecteursCorpus from './dominance-lecteurs-corpus.test';
 import testMonotonieDegatsCorpus from './monotonie-degats-corpus.test';
@@ -946,6 +947,7 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testResolutionRapideNaN', testResolutionRapideNaN],
   ['testResolutionConfirmation', testResolutionConfirmation],
   ['testResolutionDominanceReliques', testResolutionDominanceReliques],
+  ['testResolutionSpeedTune', testResolutionSpeedTune],
   ['testMemoCombat', testMemoCombat],
   ['testDominanceLecteursCorpus', testDominanceLecteursCorpus],
   ['testMonotonieDegatsCorpus', testMonotonieDegatsCorpus],

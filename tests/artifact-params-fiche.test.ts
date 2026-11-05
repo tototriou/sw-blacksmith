@@ -187,6 +187,7 @@ function artifactParamsApres(e: EntreesMemoArtifactParams) {
       damageSetup,
       maxStats,
       sortDegats: resolvedSkill?.skillCom2usId ?? null,
+      speedTune: null,
     }),
     evaluer,
   };
@@ -261,7 +262,7 @@ export function testArtefactsFicheParamsEcran() {
   egal(memo,
     'const artifactParams = useMemo(() => { if (!selected || !evaluateursFiche) return null; const espece = selected.monster; const evaluer = evaluateursFiche.representatif; '
     + 'return { ...parametresArtefactsFiche({ porteur: { element: espece.element, archetype: espece.archetype }, inventaire: artifacts, reserves: artefactsReserves, equipes: selected.gear.artifacts, '
-    + 'optimiserArtefacts, principaleParSorte: artifactMainByKind, lignesVerrouillees, damageSetup, maxStats, sortDegats: resolvedSkill?.skillCom2usId ?? null, }), evaluer, }; '
+    + 'optimiserArtefacts, principaleParSorte: artifactMainByKind, lignesVerrouillees, damageSetup, maxStats, sortDegats: resolvedSkill?.skillCom2usId ?? null, speedTune: null, }), evaluer, }; '
     + '}, [selected, evaluateursFiche, optimiserArtefacts, artifactMainByKind, sortesFigees, artifacts, artefactsReserves, lignesVerrouillees, damageSetup, maxStats, resolvedSkill]);',
     'écran : le mémo artifactParams appelle le producteur, avec les dépendances d’avant (sortesFigees compris) et le sort noté');
   // Le sort noté en exception à la règle R (Ceres, Last Shot) retire la

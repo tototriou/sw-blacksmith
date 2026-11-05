@@ -1490,6 +1490,7 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
         damageSetup,
         maxStats,
         sortDegats: resolvedSkill?.skillCom2usId ?? null,
+        speedTune: null,
       }),
       evaluer,
     };
@@ -2287,6 +2288,7 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
         // runes à nombre et identifiants égaux gardait les paires de l'ancien
         // compte ; chaque import vide le cache.
         importDuCompte,
+        empreinteSpeedTune: null,
       }),
     [selected?.monster.com2usId, selected?.gear.relic, selected?.gear.artifacts, damageSetup, compterAurasResPre, regimeEquipement, optimiserArtefacts, artifactMainByKind, lignesVerrouillees, artifacts.length, relicContextRecherche?.empreinte, requirementAvecAuras, artefactsReserves, importDuCompte]
   );
