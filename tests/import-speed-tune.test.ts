@@ -309,6 +309,11 @@ export function testImportSpeedTunePlanMasqueEtRefus() {
   ok(un.equipes[0].speedTune === undefined, 'un seul allié importable : export sans plan');
   ok(un.messages.includes(s.sansPlan(s.refusPlan.membresInsuffisants, nom)), 'un seul allié importable : dit au rapport');
   egal(un.membres[0].criteres.vitesse, { minimum: 201 }, 'un seul allié importable : VIT minimum rendue');
+  const doubles = [ligne(1), ligne(1), ligne(2)];
+  const double = importerSpeedTuneOptimizer(doubles, lead, data, fr, undefined, etat(doubles));
+  ok(double.equipes[0].speedTune === undefined, 'deux lignes d’un même monstre : export sans plan');
+  ok(double.messages.includes(s.sansPlan(s.refusPlan.ligneDupliquee('Monstre 1'), nom)), 'deux lignes d’un même monstre : dit au rapport');
+  egal(double.membres.map(m => m.criteres.vitesse), [{ minimum: 201 }, { minimum: 201 }, { minimum: 201 }], 'deux lignes d’un même monstre : VIT minimum rendue');
   const ecart = importerSpeedTuneOptimizer(lignes, lead, data, fr, undefined, etat(lignes, undefined, true));
   ok(ecart.equipes[0].speedTune !== undefined && ecart.messages.includes(s.verdictDifferent), 'verdict différent : plan posé, écart signalé');
 }

@@ -9,7 +9,7 @@
 import type { Camp, ModParTick } from './speedTune';
 import type { ChoixSorts } from './speedTuneAuto';
 import type { LeadInfo } from './speed';
-import type { EntreesLigne, LignePlan, PlanSpeedTune } from './planSpeedTune';
+import { refusDeLOrdre, type EntreesLigne, type LignePlan, type PlanSpeedTune } from './planSpeedTune';
 import { exclusionSelectorKey, type ExclusionSelector } from './optimizerExclusion';
 
 export interface MembreLigne {
@@ -100,6 +100,8 @@ function plan(v: unknown): v is PlanSpeedTune {
   if (!Array.isArray(v.ordre) || !v.ordre.every(texte) || !objet(v.leads) || !lead(v.leads.allie) || !lead(v.leads.ennemi)) return false;
   const uids = new Set((v.lignes as LignePlan[]).map((l) => l.uid));
   if (uids.size !== v.lignes.length) return false;
+  const allies = (v.lignes as LignePlan[]).filter((l) => l.camp === 'allie').map((l) => l.uid);
+  if (refusDeLOrdre(allies, v.ordre as string[])) return false;
   const origineValide = (x: unknown): x is EntreesLigne & { cumulsPassif: number } => entrees(x) && objet(x) && nombre(x.cumulsPassif);
   if (!dictionnaire(v.origine, origineValide) || !Object.keys(v.origine).every((u) => uids.has(u))) return false;
   return dictionnaire(v.referenceGains, nombre) && Object.keys(v.referenceGains).every((u) => uids.has(u));

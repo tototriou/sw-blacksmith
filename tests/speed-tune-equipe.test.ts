@@ -45,6 +45,8 @@ export function testSpeedTuneEquipeLecture() {
   egal(perdu?.plan, null, 'plan d’une autre version : plan perdu');
   egal(perdu?.membres.length, 2, 'plan perdu : les liens restent');
   egal(lire({ ...speedTune(), plan: { ...plan(), lignes: [...plan().lignes, plan().lignes[0]] } })?.plan, null, 'uid de ligne en double : plan perdu');
+  for (const [nom, ordre] of [['vide', []], ['qui omet un allié', ['allie:1']], ['aux occurrences inversées', ['allie:1#2', 'allie:1', 'allie:2']]] as const)
+    egal(lire({ ...speedTune(), plan: { ...plan(), ordre } })?.plan, null, `ordre ${nom} : plan perdu`);
   egal(lire({ ...speedTune(), plan: { ...plan(), origine: { inconnue: plan().origine['allie:1'] } } })?.plan, null, 'origine d’une ligne absente : plan perdu');
   const lien = speedTune().membres[0];
   const malformes: [string, unknown][] = [

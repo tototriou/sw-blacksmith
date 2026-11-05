@@ -82,7 +82,25 @@ export type RefusPlan =
   | { motif: 'ordre-incomplet'; manquants: string[] }
   | { motif: 'occurrences-inversees'; id: string }
   | { motif: 'provenance-inconnue'; uid: string }
-  | { motif: 'membres-insuffisants' };
+  | { motif: 'membres-insuffisants' }
+  | { motif: 'ligne-dupliquee'; uid: string };
+
+// L'ordre voulu d'un plan, jugé à la construction comme à la relecture du
+// stockage : non vide, chaque allié présent, occurrences d'un même allié dans
+// l'ordre de leur rang. `null` : il tient.
+export function refusDeLOrdre(allies: readonly string[], ordre: readonly string[]): RefusPlan | null {
+  if (ordre.length === 0) return { motif: 'ordre-vide' };
+  const presents = new Set(ordre.map((c) => litOccurrence(c).id));
+  const manquants = allies.filter((u) => !presents.has(u));
+  if (manquants.length > 0) return { motif: 'ordre-incomplet', manquants };
+  const rangVu = new Map<string, number>();
+  for (const cle of ordre) {
+    const { id, n } = litOccurrence(cle);
+    if ((rangVu.get(id) ?? 0) > n) return { motif: 'occurrences-inversees', id };
+    rangVu.set(id, n);
+  }
+  return null;
+}
 
 // ─── Construction ───────────────────────────────────────────────────────────
 
@@ -99,16 +117,15 @@ export function planDepuisSpeedTune(
   const vues = visibles(lignes);
   const allies = vues.filter((l) => l.camp === 'allie');
   if (allies.length < 2) return { refus: { motif: 'membres-insuffisants' } };
-  if (ordre.length === 0) return { refus: { motif: 'ordre-vide' } };
-  const presents = new Set(ordre.map((c) => litOccurrence(c).id));
-  const manquants = allies.map((l) => l.uid).filter((u) => !presents.has(u));
-  if (manquants.length > 0) return { refus: { motif: 'ordre-incomplet', manquants } };
-  const rangVu = new Map<string, number>();
-  for (const cle of ordre) {
-    const { id, n } = litOccurrence(cle);
-    if ((rangVu.get(id) ?? 0) > n) return { refus: { motif: 'occurrences-inversees', id } };
-    rangVu.set(id, n);
+  // Deux lignes d'un même uid ne se lieraient qu'à un seul membre : le stockage
+  // relirait le plan comme malformé et l'écarterait après l'export.
+  const uidsVus = new Set<string>();
+  for (const l of vues) {
+    if (uidsVus.has(l.uid)) return { refus: { motif: 'ligne-dupliquee', uid: l.uid } };
+    uidsVus.add(l.uid);
   }
+  const refusOrdre = refusDeLOrdre(allies.map((l) => l.uid), ordre);
+  if (refusOrdre) return { refus: refusOrdre };
   const lignesPlan: LignePlan[] = [];
   for (const l of vues) {
     const cases = casesSaisies(l);

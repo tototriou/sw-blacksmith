@@ -33,6 +33,7 @@ function raisonRefus(refus: RefusPlan, lignes: readonly Ligne[], t: Dictionnaire
     case 'occurrences-inversees': return r.occurrencesInversees(nom(refus.id));
     case 'provenance-inconnue': return r.provenanceInconnue(nom(refus.uid));
     case 'membres-insuffisants': return r.membresInsuffisants;
+    case 'ligne-dupliquee': return r.ligneDupliquee(nom(refus.uid));
   }
 }
 

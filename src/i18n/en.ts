@@ -2494,6 +2494,7 @@ export const en: Dictionnaire = {
           occurrencesInversees: (nom: string) => `the wanted order puts a turn of ${nom} before an earlier one.`,
           provenanceInconnue: (nom: string) => `the cells of ${nom} have an unknown origin; run the analysis again.`,
           membresInsuffisants: 'fewer than two importable allies.',
+          ligneDupliquee: (nom: string) => `${nom} appears twice on the allied side.`,
         },
       },
     },

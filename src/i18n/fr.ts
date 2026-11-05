@@ -2667,6 +2667,7 @@ export const fr = {
           occurrencesInversees: (nom: string) => `l’ordre voulu range un tour de ${nom} avant un tour précédent.`,
           provenanceInconnue: (nom: string) => `les cases de ${nom} sont de provenance inconnue ; relancer l’analyse.`,
           membresInsuffisants: 'moins de deux alliés importables.',
+          ligneDupliquee: (nom: string) => `${nom} figure deux fois dans le camp allié.`,
         },
       },
     },
