@@ -2130,6 +2130,53 @@ export function testSpeedTuneSequence() {
     );
   }
 
+  // ⚠️ LE TOUR RENDU APPARTIENT AU SORT LANCÉ. Le moteur rendait le tour à
+  // CHAQUE tour d'un monstre `rejoue`, rechargement ignoré : un second tour
+  // fantôme décalait tout le monde.
+  {
+    // A lance un buff qui lui rend son tour (rechargement 3), puis rien.
+    const owl: EffetSort = { buffEquipe: 30, cooldown: 3, cle: 'owl', rejoue: true };
+    const plateau: TuneMonstre[] = [
+      { id: 'A', combat: 400, camp: 'allie', sort: owl, rejoue: true },
+      m('B', 170, 'allie'),
+      m('E', 100, 'ennemi'),
+    ];
+    const sim = simuler(plateau, 40);
+    const rendusA = sim.actions.filter((a) => a.id === 'A' && a.rejoue).map((a) => a.tick);
+    egal(rendusA.length > 0 ? rendusA[0] : null, sim.actions.find((a) => a.id === 'A')!.tick, 'le 1ᵉʳ tour de A est rendu');
+    const tours = sim.actions.filter((a) => a.id === 'A' && !a.rejoue).map((a) => a.tick);
+    // Rendu aux tours 1, 4, 7… de A seulement : jamais deux tours de suite.
+    const rendusAttendus = tours.filter((_, i) => i % 3 === 0);
+    egal(rendusA.join(','), rendusAttendus.join(','), 'le tour n’est rendu qu’aux tours où le sort revient de rechargement');
+
+    // En GRILLES (sans `sort`), même règle par `rejoueParTour` / `rejoueCooldown`.
+    const enGrilles: TuneMonstre[] = [
+      { id: 'A', combat: 400, camp: 'allie', rejoue: true, rejoueCooldown: 3 },
+      m('B', 170, 'allie'),
+      m('E', 100, 'ennemi'),
+    ];
+    const simG = simuler(enGrilles, 40).actions.filter((a) => a.id === 'A');
+    const g = simG.filter((a) => a.rejoue).map((a) => a.tick);
+    const attendusG = simG.filter((a) => !a.rejoue).map((a) => a.tick).filter((_, i) => i % 3 === 0);
+    egal(g.join(','), attendusG.join(','), 'en grilles, le rechargement du sort qui rend le tour est respecté');
+    // Sans rechargement connu, l'ancien comportement reste (chaque tour).
+    const ancien = simuler([{ id: 'A', combat: 400, camp: 'allie', rejoue: true }, m('E', 100, 'ennemi')], 40);
+    ok(
+      ancien.actions.filter((a) => a.id === 'A' && a.rejoue).length === ancien.actions.filter((a) => a.id === 'A' && !a.rejoue).length,
+      'sans rechargement, un monstre `rejoue` rejoue à chacun de ses tours, comme avant'
+    );
+    // Un autre sort au 2ᵉ tour ne rend rien, même sans rechargement.
+    const autre = simuler(
+      [
+        { id: 'A', combat: 400, camp: 'allie', rejoue: true, sort: { ...owl, cooldown: 0 }, sortsParTour: [undefined, { rejoue: false }] },
+        m('E', 100, 'ennemi'),
+      ],
+      40
+    ).actions.filter((a) => a.id === 'A');
+    ok(autre[1]?.rejoue === true && autre[2]?.rejoue !== true, 'un 2ᵉ tour qui lance autre chose ne rend pas le tour');
+  }
+
+
   // ⚠️⚠️ **ON NE CORRIGE QUE CE QUI EST ENCORE EN DÉFAUT.** Cas remonté, chiffres
   // réels : Chilling 396 / Carcano 366 (artéfact 35) / Seren 354 (artéfact 42),
   // référence Chilling 396 en face. L'écran annonçait « Carcano +2 SPD » alors
@@ -2506,6 +2553,43 @@ export function testSpeedTuneAuto() {
     ({ id, com2usId: id, name: nom, stats: { speed: spd } }) as unknown as Monster;
 
   const vide: DonneesKit = { kits: new Map(), sorts: new Map(), passifs: new Map() };
+
+  // ⚠️ « AUCUN SORT » POUR UN TOUR AJOUTÉ EST UN EFFET VIDE. Laissé `undefined`,
+  // il retombait sur le sort du 1ᵉʳ tour, relancé dès son rechargement fini.
+  {
+    const racuni = monstre(901, 'Racuni', 300);
+    const plein: SortVitesse = {
+      nom: 'S2 Plein', slot: 2, icone: null, effet: { atbSoi: 100 }, rejoue: false, cooldown: 2,
+      atbNiveau1: 100, atbSkillUp: 0, chance: null, neutre: false, buffsEquipe: 0,
+    };
+    const sorts = new Map<number, SortVitesse[]>([[901, [plein]]]);
+    const donnees: DonneesKit = { kits: new Map(), sorts, passifs: new Map() };
+    const equipe: EntreeAuto[] = [
+      { id: 'allie:901', monster: racuni, runeSpeed: 0, camp: 'allie' },
+    ];
+    const plateau = (aucun: boolean) =>
+      analyseAutomatique(equipe, 0, donnees, {
+        choix: {
+          sort: { 'allie:901': 'S2 Plein', 'allie:901#2': '', 'allie:901#3': aucun ? '' : 'S2 Plein' },
+        },
+      });
+    const sans = plateau(true);
+    const avec = plateau(false);
+    ok(
+      JSON.stringify(sans.mods.get('allie:901')?.atbMod ?? {}) !== JSON.stringify(avec.mods.get('allie:901')?.atbMod ?? {}),
+      '« Aucun sort » au 3ᵉ tour ne relance pas le sort du 1ᵉʳ'
+    );
+    // Sans choix pour le 3ᵉ tour, le moteur relance le sort du 1ᵉʳ (règle
+    // documentée) : c'est ce que « Aucun sort » ne doit PAS donner.
+    const nonChoisi = analyseAutomatique(equipe, 0, donnees, {
+      choix: { sort: { 'allie:901': 'S2 Plein', 'allie:901#2': '' } },
+    });
+    egal(
+      JSON.stringify(nonChoisi.mods.get('allie:901')?.atbMod ?? {}),
+      JSON.stringify(avec.mods.get('allie:901')?.atbMod ?? {}),
+      'un tour ajouté sans choix relance le sort du 1ᵉʳ tour'
+    );
+  }
 
   // Sans kit ni passif : la vitesse de combat est celle de speed.ts, et le plus
   // rapide sert de référence.

@@ -11,7 +11,7 @@
 
 import { Monster } from '../types';
 import { LeadInfo, combatSpeed, isSiegeLeadActive, siegeLeadFor, speedLeadOf } from './speed';
-import { Camp, ModParTick, TuneMonstre } from './speedTune';
+import { Camp, ModParTick, TuneMonstre, cleOccurrence, litOccurrence } from './speedTune';
 import { SortVitesse } from './speedTuneKit';
 import { PassifVitesse, pointsDeGain } from './speedTunePassif';
 import {
@@ -20,6 +20,7 @@ import {
   ModsAuto,
   EntreeAuto,
   cumulsEstimes,
+  rejoueEnGrilles,
   sortRetenu,
   sortSecondRetenu,
 } from './speedTuneAuto';
@@ -266,6 +267,26 @@ export function plateauDeLignes(lignes: Ligne[], leads: Leads): EntreeAuto[] {
 // dans les grilles par l'analyse ; le rappliquer le compterait deux fois. Seul le
 // tour rendu reste — c'est une structure (qui joue, combien de fois), pas une
 // valeur.
+// Les sorts des tours AJOUTÉS d'une ligne (index 0 = son 1ᵉʳ tour, laissé vide :
+// il suit `sortActif`). `undefined` = tour sans choix, qui relance le 1ᵉʳ sort ;
+// « Aucun sort » donne un effet vide. Rien quand aucun tour n'est ajouté.
+function sortsDesTours(l: Ligne, d: DonneesKit, choix: ChoixSorts) {
+  let dernier = 1;
+  for (const cle of Object.keys(choix.sort ?? {})) {
+    const { id, n } = litOccurrence(cle);
+    if (id === l.uid && n > dernier) dernier = n;
+  }
+  if (dernier <= 1) return undefined;
+  return Array.from({ length: dernier }, (_, i) => {
+    if (i === 0) return undefined;
+    const nom = choix.sort?.[cleOccurrence(l.uid, i + 1)];
+    if (nom === '') return { rejoue: false, cooldown: 0 };
+    if (nom == null) return undefined;
+    const x = sortsDe(l, d).find((s) => s.nom === nom);
+    return x ? { rejoue: x.rejoue, cooldown: x.cooldown } : undefined;
+  });
+}
+
 export function tuneDe(lignes: Ligne[], leads: Leads, d: DonneesKit, choix: ChoixSorts): TuneMonstre[] {
   const out: TuneMonstre[] = [];
   // ⚠️ L'amplification d'un camp entre dans `artefactBuff` — le moteur ne connaît
@@ -289,6 +310,7 @@ export function tuneDe(lignes: Ligne[], leads: Leads, d: DonneesKit, choix: Choi
       artefactBuff: (l.artefactBuff ?? 0) + ampli[l.camp],
       ampliBuff: ampli[l.camp],
       rejoue: sortActif(l, d, choix)?.rejoue ?? false,
+      ...rejoueEnGrilles(sortActif(l, d, choix), sortsDesTours(l, d, choix)),
     });
   }
   return out;

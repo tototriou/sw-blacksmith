@@ -98,6 +98,11 @@ export interface EffetSort {
   // même sort relancé à deux tours garde la sienne. Absent = comportement
   // d'avant (une horloge par tour).
   cle?: string;
+  // ⚠️ **Le sort rend son tour au lanceur** (Owl's Hoot de Kroa). Le tour rendu
+  // appartient au SORT LANCÉ : un tour où ce sort est en rechargement, ou où un
+  // autre sort part, ne rend rien. Absent = le moteur suit `TuneMonstre.rejoue`
+  // (plateau en grilles, où les sorts ne voyagent pas).
+  rejoue?: boolean;
 }
 
 // La vitesse de combat de base (base + runes + totem + lead), calculée par
@@ -138,6 +143,16 @@ export interface TuneMonstre {
   // ⚠️ À ne pas confondre avec `sort2`, qui est le tour SUPPLÉMENTAIRE pris au
   // MÊME tick (`rejoue`) — celui-là ne fait pas avancer le compteur de tours.
   sortsParTour?: (EffetSort | undefined)[];
+  // ⚠️ **Le tour rendu d'un plateau en GRILLES** (sans `sort`) : `rejoue` seul
+  // le rendait à CHAQUE tour, rechargement ignoré. Le rechargement se compte en
+  // tours du lanceur, donc sans simulation : lancé à son tour k, le sort qui
+  // rend le tour revient à son tour k + `rejoueCooldown`.
+  //   - `rejoueParTour[k-1]` : le sort de son kᵉ tour rend-il le tour ? Au-delà
+  //     de la liste, ou absent, on retombe sur `rejoue` ;
+  //   - `rejoueCooldown` : rechargement du sort qui rend le tour (0 ou absent :
+  //     aucun, comportement d'avant).
+  rejoueParTour?: boolean[];
+  rejoueCooldown?: number;
   // Bonus d'artéfact « Effet aug. VIT » (%), actif UNIQUEMENT quand un buff de
   // vitesse (> 0) est présent ce tick-là (il n'a rien à amplifier sinon, et il ne
   // s'applique pas à un ralenti).
@@ -278,6 +293,8 @@ export function simuler(monstres: TuneMonstre[], horizon = HORIZON_TICKS): Simul
   // ses deux sorts a été lancé pour la dernière fois.
   const tours: Record<string, number> = {};
   const dernier: Record<string, number> = {};
+  // Le dernier tour (du lanceur) où un tour rendu a eu lieu, en grilles.
+  const dernierRejoue: Record<string, number> = {};
 
   for (let tick = 1; tick <= horizon; tick++) {
     for (const m of etat) {
@@ -365,12 +382,13 @@ export function simuler(monstres: TuneMonstre[], horizon = HORIZON_TICKS): Simul
       const precedent = dernier[cle];
       return precedent === undefined || tours[gagnant.id] - precedent >= cd;
     };
-    const poser = (sort: EffetSort | undefined, cleParDefaut?: string) => {
-      if (!sort) return;
+    // Rend `true` quand le sort part vraiment (présent et disponible).
+    const poser = (sort: EffetSort | undefined, cleParDefaut?: string): boolean => {
+      if (!sort) return false;
       // L'horloge du SORT quand il se nomme, celle du TOUR sinon.
       const cle = sort.cle ? `${gagnant.id}@${sort.cle}` : cleParDefaut;
       if (cle) {
-        if (!disponible(sort, cle)) return;
+        if (!disponible(sort, cle)) return false;
         dernier[cle] = tours[gagnant.id];
       }
       const camp = gagnant.camp;
@@ -422,19 +440,33 @@ export function simuler(monstres: TuneMonstre[], horizon = HORIZON_TICKS): Simul
       if (sort.buffAllie && cibleAlliee && sort.buffAllie > (buffIndiv[cibleAlliee.id] ?? 0))
         buffIndiv[cibleAlliee.id] = sort.buffAllie;
       if (sort.ralenti && sort.ralenti > ralentiCamp[adverse]) ralentiCamp[adverse] = sort.ralenti;
+      return true;
     };
     tours[gagnant.id] = (tours[gagnant.id] ?? 0) + 1;
     // Le sort de CE tour-ci : celui qu'on a désigné pour son Nᵉ tour, sinon son
     // sort par défaut. ⚠️ Le compteur vient d'être incrémenté, donc le 1ᵉʳ tour
     // est l'index 0.
-    const sortDuTour = gagnant.sortsParTour?.[tours[gagnant.id] - 1] ?? gagnant.sort;
-    poser(sortDuTour, `${gagnant.id}#1`);
+    const tour = tours[gagnant.id];
+    const sortDuTour = gagnant.sortsParTour?.[tour - 1] ?? gagnant.sort;
+    const lance = poser(sortDuTour, `${gagnant.id}#1`);
+
+    // Le tour est-il rendu ? Au sort lancé quand il le dit, sinon (grilles) par
+    // le tour et l'horloge du sort qui le rend.
+    const rendu = (() => {
+      if (sortDuTour?.rejoue !== undefined) return sortDuTour.rejoue && lance;
+      if (!(gagnant.rejoueParTour?.[tour - 1] ?? gagnant.rejoue)) return false;
+      const cd = gagnant.rejoueCooldown ?? 0;
+      const precedent = dernierRejoue[gagnant.id];
+      if (cd > 0 && precedent !== undefined && tour - precedent < cd) return false;
+      dernierRejoue[gagnant.id] = tour;
+      return true;
+    })();
 
     // ⚠️ Tour SUPPLÉMENTAIRE : il rejoue AU MÊME TICK, sans qu'aucune horloge ne
     // tourne — les autres ne gagnent donc rien entre les deux. Son second tour
     // lance une AUTRE compétence, celle qu'on lui a désignée : rien par défaut,
     // on ne devine pas.
-    if (gagnant.rejoue) {
+    if (rendu) {
       actions.push({ id: gagnant.id, camp: gagnant.camp, tick, ordre: actions.length + 1, rejoue: true });
       poser(gagnant.sort2, `${gagnant.id}#2`);
       gagnant.atb = 0;

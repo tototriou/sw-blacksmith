@@ -341,6 +341,22 @@ export interface OptionsAuto {
   idReference?: string;
 }
 
+// Le tour rendu d'un plateau en GRILLES, où les sorts ne voyagent pas : quels
+// tours lancent un sort qui rend le tour, et le rechargement de ce sort.
+// ⚠️ Un tour ajouté sans choix (`undefined`) relance le sort du 1ᵉʳ tour, comme
+// dans le moteur ; un « Aucun sort » ne rend rien.
+export function rejoueEnGrilles(
+  sort: Pick<SortVitesse, 'rejoue' | 'cooldown'> | Pick<EffetSort, 'rejoue' | 'cooldown'> | null | undefined,
+  sortsParTour?: (Pick<EffetSort, 'rejoue' | 'cooldown'> | undefined)[]
+): Pick<TuneMonstre, 'rejoueParTour' | 'rejoueCooldown'> {
+  const rendant = [sort, ...(sortsParTour ?? [])].find((x) => x?.rejoue);
+  if (!rendant) return {};
+  return {
+    rejoueParTour: sortsParTour?.map((x) => (x ? !!x.rejoue : !!sort?.rejoue)),
+    rejoueCooldown: rendant.cooldown ?? 0,
+  };
+}
+
 export function analyseAutomatique(
   equipe: EntreeAuto[],
   lead: number,
@@ -469,6 +485,7 @@ export function analyseAutomatique(
               ...sansReductionAdverse(effetAuChoix(x, choix?.atbChoisi?.[cleOccurrence(e.id, n)] ?? 0)),
               cooldown: x.cooldown,
               cle: x.nom,
+              rejoue: x.rejoue,
               // ⚠️ **La cible appartient au couple (tour, sort), pas au
               // monstre.** Un tour supplémentaire ne reprend PAS la cible du
               // premier : enchaîner Breeze après un Rabbit's Agility visé sur
@@ -485,7 +502,14 @@ export function analyseAutomatique(
       const dernier = derniereOccurrence(e);
       const sortsParTour =
         dernier > 1
-          ? Array.from({ length: dernier }, (_, i) => enEffet(sortDOccurrence(e, i + 1), i + 1))
+          ? Array.from({ length: dernier }, (_, i) =>
+              // ⚠️ **« Aucun sort » choisi pour un tour ajouté est un effet VIDE**,
+              // pas une absence : `undefined` retomberait sur le sort du 1ᵉʳ tour,
+              // qui repartirait dès la fin de son rechargement.
+              i > 0 && choix?.sort?.[cleOccurrence(e.id, i + 1)] === ''
+                ? { rejoue: false }
+                : enEffet(sortDOccurrence(e, i + 1), i + 1)
+            )
           : undefined;
       return {
         id: e.id,
@@ -496,6 +520,7 @@ export function analyseAutomatique(
         ampliBuff: ampli,
         sort: enEffet(sort, 1),
         rejoue: sort?.rejoue ?? false,
+        ...rejoueEnGrilles(sort, sortsParTour),
         sort2: second
           ? { ...sansReductionAdverse(second.effet), cooldown: second.cooldown, cle: second.nom, cibleAllie: cible }
           : undefined,
@@ -561,6 +586,8 @@ export function analyseAutomatique(
       artefactBuff: m.artefactBuff,
       ampliBuff: m.ampliBuff,
       rejoue: m.rejoue,
+      rejoueParTour: m.rejoueParTour,
+      rejoueCooldown: m.rejoueCooldown,
       atbMod,
       speedMod,
     };
