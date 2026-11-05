@@ -22,6 +22,7 @@ import { testRenduOptimizerBandesEquipesClair, testRenduOptimizerBandesEquipesSo
   testOptimizerEquipesJetons } from './rendu/optimizer-bandes.test';
 import testImport from './import.test';
 import { verificationsImportEquipes } from './import-equipes.test';
+import { verificationsEquipesEnregistrees } from './equipes-enregistrees.test';
 import { testOptimizerImportNavigation } from './optimizer-import-navigation.test';
 import { testOptimizerColonnes, testOptimizerColonnesOnglet, testOptimizerColonnesGuidages, testOptimizerColonnesAttenteResultats, testOptimizerColonnesCoffreSets, testOptimizerColonnesTableau } from './optimizer-colonnes.test';
 import { testRenduRtaExportOptimizer, testRenduTelephoneRtaExportOptimizer, testRenduRecoExportOptimizer,
@@ -884,6 +885,7 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testOptimizerContenuListeImportPreserveEtCollisions', testOptimizerContenuListeImportPreserveEtCollisions],
   ...verificationsOptimizerEquipesActivite,
   ...verificationsImportEquipes,
+  ...verificationsEquipesEnregistrees,
   ...verificationsImportSpeedTune,
   ...verificationsPlanSpeedTune,
   ...verificationsSpeedTuneDepuisPlan,
