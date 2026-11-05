@@ -141,7 +141,7 @@ dans la carte).
 sont les deux racines ; dessous : `RunesList`, `RunesSummary` + `BuildsRapides`, `RunesCurve` +
 `CurveChart` + `curveColors`, `RunesCompare`, `RunesOptim`, `SetFilter`, `SlotFilter`,
 `SubSearchBar` + `SubSearchDialog`, `Pager`, `SummaryBits`, `ArtifactsList`, `ArtifactsSummary`,
-`ArtifactsTop` ; « Mes équipes » dans `equipes/` : `EquipesSection` (racine), `CarteEquipe`,
+`ArtifactsTop` ; « Mes équipes » dans `src/components/account/equipes/` : `EquipesSection` (racine), `CarteEquipe`,
 `DetailEquipe`, `AjoutMonstreModale`, `ImportEquipeModale`.
 Lib `accountStore` (IndexedDB), `accountViews`, `runeSort`, `runeOptim`, `buildsRapides`,
 `artifactsTop`, `monsterSort`, `crafts` ; « Mes équipes » : `equipesEnregistrees` (modèle pur),
