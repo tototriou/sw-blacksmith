@@ -215,4 +215,7 @@ export function testRenduAppMobile() {
     egal(onglets.split(' ').filter((m) => ['Accueil', 'RTA', 'Siège', 'Compte', 'Outils'].includes(m)), ['Accueil', 'RTA', 'Siège', 'Compte', 'Outils'], `${hash} : les cinq onglets, dans l'ordre`);
   }
   ok(/aria-label="Filtres et actions de la page"/.test(rendreApp('#/siege/defense')), 'bouton « Options » du panneau d\'actions mobile');
+  for (const hash of ['#/compte/equipes', '#/compte/equipes/liste']) {
+    ok(/aria-label="Filtres et actions de la page"/.test(rendreApp(hash)), `${hash} : « Options » ouvre le panneau de Mes équipes`);
+  }
 }

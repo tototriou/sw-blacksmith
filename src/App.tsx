@@ -193,10 +193,11 @@ function aPanneau(n: ReturnType<typeof parseHash>): boolean {
     // catégories, tout effacer) : aucune n'a de sens en consultant celle d'un
     // ami, où l'on ne modifie rien.
     (n.route !== 'rta' || n.rtaSub === 'prepa') &&
+    // ⚠️ La vue LUE, pas celle de l'adresse : `#/compte/equipes` n'en porte
+    // aucune et s'ouvre pourtant sur la liste.
     (n.route !== 'compte' ||
       n.accountSub === 'monstres' ||
-      n.accountView === 'liste' ||
-      n.accountView === 'optimisation') &&
+      ['liste', 'optimisation'].includes(vueValide(n.accountSub, n.accountView))) &&
     // ⚠️ Un seul outil aujourd'hui (Optimizer), mais la vérification
     // reste écrite : un futur outil sans réglages avancés n'hériterait pas
     // du bouton par accident (même raison que la garde ci-dessus sur
