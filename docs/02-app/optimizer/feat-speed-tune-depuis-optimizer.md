@@ -15,8 +15,10 @@ la zone), [../speed-tuning/feat-export-optimizer.md](../speed-tuning/feat-export
   plan, « Modifier le speed tune » quand elle en a un. Absent pour une liste Arène, Donjon ou
   sans contenu : la portée reste le siège. Sa place reste réservée, pour que changer le contenu
   de la liste ne déplace pas « Modifier l'équipe ».
-- **Dans l'encart « Speed tune »** d'un membre : « Modifier le speed tune », à côté de
-  « Détacher ». Il ouvre la modale de l'équipe du membre.
+- **Dans l'encart « Speed tune »** d'un membre, **au téléphone seulement** : « Modifier le
+  speed tune », à côté de « Détacher ». Il ouvre la modale de l'équipe du membre. Au téléphone,
+  la liste des équipes est dans un autre panneau ; au bureau, elle est à côté et le bouton y
+  ferait doublon.
 
 ## État de la modale
 

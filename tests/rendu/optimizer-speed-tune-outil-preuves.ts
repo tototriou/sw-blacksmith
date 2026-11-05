@@ -86,7 +86,10 @@ export async function preuvesSpeedTuneDepuisOptimizer(b: Banc, monstres: readonl
   await b.geste(() => b.etat().choisirMembre('a', b.premier));
   const depuisEncart = [...document.querySelectorAll<HTMLElement>(`section[aria-label="${o.titre}"]`)].filter(visible)
     .flatMap(s => boutons(o.modifier, s))[0];
-  verifier(!!depuisEncart, 'encart du membre : « Modifier le speed tune »');
+  // Au téléphone seulement : au bureau, la liste des équipes et son bouton sont à côté.
+  const bureau = matchMedia('(min-width: 1024px)').matches;
+  verifier(bureau ? !depuisEncart : !!depuisEncart, bureau ? 'bureau : pas de « Modifier le speed tune » dans l’encart, doublon du bouton de l’équipe'
+    : 'téléphone : « Modifier le speed tune » dans l’encart du membre');
   if (depuisEncart) {
     await b.geste(() => depuisEncart.click());
     verifier(!!appliquer(), 'il ouvre la modale de l’équipe');

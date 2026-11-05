@@ -2822,10 +2822,12 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
   );
 
   // L'encart du membre contraint : le même dans les deux formats, sous la
-  // grille des conditions qui le porte.
-  const encartSpeedTune = speedTuneMembre
+  // grille des conditions qui le porte. « Modifier le speed tune » seulement au
+  // téléphone : la liste des équipes, qui porte le même geste, y est dans un autre
+  // panneau ; au bureau elle est à côté, et le bouton y ferait doublon.
+  const encartDuMembre = (telephone: boolean) => speedTuneMembre
     ? <SpeedTuneEncart m={speedTuneMembre} monstres={speedTuneMembre.monstres} donnees={speedTuneMembre.donnees}
-        onModifier={lists.listContents.get(speedTuneMembre.equipe.listId) === 'guilde' ? () => speedTuneOutil.ouvrir(speedTuneMembre.equipe) : undefined}
+        onModifier={telephone && lists.listContents.get(speedTuneMembre.equipe.listId) === 'guilde' ? () => speedTuneOutil.ouvrir(speedTuneMembre.equipe) : undefined}
         zoneChangee={(() => {
           const photo = search.contexte?.resolution?.artifactParams.speedTune;
           return !!photo && empreinteSpeedTune(photo) !== empreinteSpeedTune(contrainteSpeedTune);
@@ -2842,7 +2844,7 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
       maxStats={maxStats}
       setMinStats={setMinStats}
       setMaxStats={setMaxStats}
-      speedTune={encartSpeedTune}
+      speedTune={encartDuMembre(true)}
       vitessePossedee={speedTuneAttache}
     />
   );
@@ -3416,7 +3418,7 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
             maxStats={maxStats}
             setMinStats={setMinStats}
             setMaxStats={setMaxStats}
-            speedTune={encartSpeedTune}
+            speedTune={encartDuMembre(false)}
             vitessePossedee={speedTuneAttache}
           />
         }
