@@ -42,6 +42,7 @@ import { testRenduOptimizerLeadEquipePersonnel, testRenduTelephoneOptimizerLeadE
   testRenduOptimizerLigneListe, testRenduTelephoneOptimizerLigneListe,
   testRenduOptimizerCombatEffectifAffiche, testRenduTelephoneOptimizerCombatEffectifAffiche } from './rendu/optimizer-equipes.test';
 import { verificationsImportSpeedTune } from './import-speed-tune.test';
+import { verificationsPlanSpeedTune } from './plan-speed-tune.test';
 import { testRenduOptimizerPointGestes, testRenduTelephoneOptimizerPointGestes, testRenduOptimizerPointReimport,
   testRenduTelephoneOptimizerPointReimport, testRenduOptimizerPointCompteVide, testRenduTelephoneOptimizerPointCompteVide,
   testRenduOptimizerPointSansMemoireChangementListe, testRenduTelephoneOptimizerPointSansMemoireChangementListe,
@@ -875,6 +876,7 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ...verificationsOptimizerEquipesActivite,
   ...verificationsImportEquipes,
   ...verificationsImportSpeedTune,
+  ...verificationsPlanSpeedTune,
   ...verificationsImportReco,
   ...verificationsImportRecoCopies,
   ...verificationsRecoCollab,

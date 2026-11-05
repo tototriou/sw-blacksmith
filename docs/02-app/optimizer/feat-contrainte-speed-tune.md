@@ -170,7 +170,8 @@ combat, gain de passif et vitesse de départage en découlent par la projection.
   atteignable, `base + Σ (meilleure VIT par emplacement dans le pool) +
   bonus plat Rapidité` (le bonus seulement dans l'état Swift). Le majorant peut
   surestimer, jamais sous-estimer.
-- **Axe artéfact** : de 0 au plafond de paire (`ARTE_MAX`).
+- **Axe artéfact** : de 0 au plus fort cumul 206 qu'une paire de
+  l'inventaire peut porter, `ARTE_MAX` par défaut.
 - **Swift** : une zone par état que la recherche du membre peut produire ; un
   combo qui impose ou exclut Rapidité n'en calcule qu'une. Les autres sets ne
   changent pas le plateau : les cumuls de passif sont photographiés.
@@ -182,8 +183,9 @@ peut voler le tick d'un allié.
 ### Classes d'artéfact
 
 Deux valeurs de 206 sont équivalentes quand elles donnent, pour **chaque**
-valeur de buff positive que le plan peut poser (sorts de tous les alliés,
-cases saisies), le même buff tronqué, calculé en entiers comme dans le moteur :
+valeur de buff positive que le plan peut poser sur ce membre (buffs d'équipe et
+sur un allié des sorts écrits, ses propres buffs sur soi, cases de vitesse
+saisies sur sa ligne), le même buff tronqué, calculé en entiers comme dans le moteur :
 `⌊buff × (100 + 206 + amplification) / 100⌋`. On simule un représentant par
 classe. Sans aucune source de buff de vitesse positive dans le plan, l'axe
 artéfact disparaît ; la présence d'un buff dans la seule simulation du plan ne
@@ -252,9 +254,11 @@ chargés, aucune zone n'est publiée et la recherche ne part pas. Un calcul en
 cours est abandonné quand son contexte change. La recherche n'en relance aucun,
 ni par candidat de runes, ni par paire.
 
-Budget : une zone se calcule en moins d'une seconde sur le cas le plus lourd
-mesuré (cinq alliés, adversaires, deux états de Swift), mesure nommée à
-l'appui ; au-delà, le calcul se découpe avant d'être livré.
+Coût mesuré (2026-11-05, conteneur cloud, un fil, script de mesure du chantier) :
+environ 125 µs par point balayé, soit 1,3 s pour une zone de 19 classes et
+1,8 s pour 28 classes, sur cinq alliés, un adversaire, deux états de Swift et
+un domaine de 280 points de fiche. Le calcul tourne donc en arrière-plan :
+l'encart dit « zone en cours de calcul » et la recherche attend la zone.
 
 ## Écart entre le plan et l'Optimizer
 
