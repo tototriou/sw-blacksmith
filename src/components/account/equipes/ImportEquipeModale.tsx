@@ -12,13 +12,14 @@ interface Props {
 
 // Les sources d'import, avec la grammaire de l'import de l'Optimizer : un
 // en-tête par section, les monstres puis le libellé, une source vide
-// désactivée avec sa raison.
+// désactivée avec sa raison. Le rembourrage par défaut garde l'air du titre ;
+// la liste en sort par des marges négatives pour que ses bandes touchent les bords.
 export default function ImportEquipeModale({ sources, onChoisir, onFermer }: Props) {
   const im = useTraduction().equipes.imports;
   const id = useId();
   return (
-    <Modale onClose={onFermer} labelledBy={id} titre={im.titre} croix largeur="max-w-[480px]" padding="p-0">
-      <div className="max-h-[60dvh] overflow-y-auto">
+    <Modale onClose={onFermer} labelledBy={id} titre={im.titre} croix largeur="max-w-[480px]">
+      <div className="-mx-5 -mb-5 max-h-[60dvh] overflow-y-auto">
         {sources.map((s, n) => (
           <div key={s.cle}>
             {(n === 0 || sources[n - 1].groupe !== s.groupe) && (

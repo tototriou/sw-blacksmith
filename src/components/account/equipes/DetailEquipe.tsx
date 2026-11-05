@@ -41,8 +41,11 @@ export default function DetailEquipe({ equipe, onChanger, monstreDe, box, invent
   const t = useTraduction();
   const d = t.equipes.detail;
   const plein = equipe.monstres.length >= MONSTRES_MAX_EQUIPE;
+  // Une grille, pas une colonne flex : dans le panneau du téléphone, une
+  // colonne flex aligne ses enfants à gauche (index.css, `[data-tiroir]`) et
+  // les fiches se rétrécissaient sur leur contenu.
   return (
-    <div className="flex flex-col gap-4">
+    <div className="grid grid-cols-1 gap-4">
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <ChampTexte libelle={d.nom} valeur={equipe.nom} onValider={(nom) => onChanger((e, n) => modifierTextes(e, { nom }, n))} />
         <ChampTexte libelle={d.note} valeur={equipe.note} onValider={(note) => onChanger((e, n) => modifierTextes(e, { note }, n))} />
@@ -79,7 +82,9 @@ function FicheMonstre({ m, position, total, leader, monstre, box, inventaire, on
     if (etats.relique) dire(d.relique, etats.relique);
   }
   return (
-    <section className="rounded-lg border border-border-soft bg-panel2/40 p-3" aria-label={nom}>
+    // ⚠️ Étroit (téléphone, volet), les réglages passent sous le nom : sur une
+    // ligne, ils tronquaient le nom et rejetaient la croix seule à la ligne.
+    <section className="@container rounded-lg border border-border-soft bg-panel2/40 p-3" aria-label={nom}>
       <div className="flex flex-wrap items-center gap-2">
         <MonsterAvatar monster={monstre ?? null} fallback={nom} size={40} couronne={leader} />
         <div className="min-w-0 flex-1">
@@ -88,13 +93,15 @@ function FicheMonstre({ m, position, total, leader, monstre, box, inventaire, on
             {d.provenance[m.provenance]}{exemplaire ? ` · ${d.exemplaire[exemplaire]}` : ''}
           </p>
         </div>
-        <Bouton taille="sm" actif={leader} icone={<Crown size={14} />} libelle={leader ? d.leader : d.designerLeader}
-          title={leader ? d.retirerLeader : d.designerLeader}
-          onClick={() => onChanger((e, n) => designerLeader(e, leader ? null : m.uid, n))} />
-        <Selecteur taille="sm" aria-label={d.position} value={String(position)}
-          onChange={(ev) => onChanger((e, n) => deplacerMonstre(e, m.uid, Number(ev.target.value), n))}>
-          {Array.from({ length: total }, (_, k) => <option key={k} value={k}>{d.positionN(k + 1)}</option>)}
-        </Selecteur>
+        <div className="order-1 flex basis-full items-center gap-2 @lg:order-none @lg:basis-auto">
+          <Bouton taille="sm" actif={leader} icone={<Crown size={14} />} libelle={leader ? d.leader : d.designerLeader}
+            title={leader ? d.retirerLeader : d.designerLeader}
+            onClick={() => onChanger((e, n) => designerLeader(e, leader ? null : m.uid, n))} />
+          <Selecteur taille="sm" pleineLargeur={false} surface="panel" aria-label={d.position} value={String(position)}
+            onChange={(ev) => onChanger((e, n) => deplacerMonstre(e, m.uid, Number(ev.target.value), n))}>
+            {Array.from({ length: total }, (_, k) => <option key={k} value={k}>{d.positionN(k + 1)}</option>)}
+          </Selecteur>
+        </div>
         <BoutonIcone libelle={d.retirer(nom)} icone={<X size={14} />} onClick={() => onChanger((e, n) => retirerMonstre(e, m.uid, n))} />
       </div>
       {(actuel?.gear || m.equipement?.relic) && (
