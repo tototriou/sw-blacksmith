@@ -7,7 +7,7 @@
 // calcule ailleurs, hors du fil de l'interface (`contrainteDuMembre`).
 
 import type { ArtifactDetail, GearSet, RuneDetail } from '../types';
-import { activeSets } from './effects';
+import { activeSets, canAddSet } from './effects';
 import { computeStats } from './stats';
 import { CODE_AMPLI_VIT } from './damage';
 import type { ProblemeOrdre } from './speedTune';
@@ -98,17 +98,25 @@ const vitesseDeRune = (r: RuneDetail) =>
 
 // Le majorant de VIT de fiche (`base + Σ meilleure VIT par emplacement +
 // bonus plat Rapidité`, ce dernier dans l'état Swift seulement) : il peut
-// surestimer, jamais sous-estimer. `imposeSwift` : chaque combo de la
-// recherche impose Rapidité, un seul état se calcule.
-export function bornesDuMembre(base: number, pool: readonly RuneDetail[], imposeSwift: boolean, arteMax: number): BornesZone {
+// surestimer, jamais sous-estimer. `etatsSwift` : ceux que le combo de la
+// recherche peut former (`etatsSwiftDuCombo`).
+export function bornesDuMembre(base: number, pool: readonly RuneDetail[], etatsSwift: readonly boolean[], arteMax: number): BornesZone {
   const parSlot = new Map<number, number>();
   for (const r of pool) parSlot.set(r.slot, Math.max(parSlot.get(r.slot) ?? 0, vitesseDeRune(r)));
   const sansSwift = base + [...parSlot.values()].reduce((a, b) => a + b, 0);
   return {
     ficheMax: { sansSwift, swift: sansSwift + Math.ceil(base * 0.25) },
-    etatsSwift: imposeSwift ? [true] : [false, true],
+    etatsSwift: [...etatsSwift],
     arteMax: Math.max(0, arteMax),
   };
+}
+
+// Les états de Rapidité qu'un combo de recherche (multiset `activeSets`) peut
+// former : imposée, elle seule ; sinon formable par les runes libres tant
+// qu'un set de 4 tient encore à côté du combo ; plus de place, jamais.
+export function etatsSwiftDuCombo(comboSets: readonly string[]): boolean[] {
+  if (comboSets.includes('swift')) return [true];
+  return canAddSet([...comboSets], 'swift') ? [false, true] : [false];
 }
 
 // L'empreinte du contexte d'une zone : la zone se garde sous elle et se
@@ -177,10 +185,13 @@ export function ecartsDuPlan(
     const entrees = l.origine === 'build' ? l.entrees : portees(l.membre);
     const ligne = plan.lignes.find((p) => p.uid === l.uid)!;
     if (!entrees || memesEntrees(entrees, ligne)) continue;
+    // La vitesse annoncée est celle du plan que le clic écrira : des sets qui
+    // changent un gain de passif décalent aussi les cumuls photographiés.
+    const recalcule = ecrireEntrees({ plan, membres: [] }, d, monstres, new Map([[l.uid, entrees]])).plan!;
     out.push({
       uid: l.uid,
       combatPlan: combatSousPlan(plan, d, monstres, l.uid),
-      combatOptimizer: combatSousPlan(plan, d, monstres, l.uid, new Map([[l.uid, entrees]])),
+      combatOptimizer: combatSousPlan(recalcule, d, monstres, l.uid),
       artePlan: ligne.artefactBuff,
       arteOptimizer: entrees.artefactBuff,
       source: l.origine === 'build' ? 'build' : 'equipement',

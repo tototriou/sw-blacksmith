@@ -39,7 +39,7 @@ const sort = (nom: string, effet: SortVitesse['effet'], cooldown = 0, buffsEquip
   atbNiveau1: 0, atbSkillUp: 0, chance: null, neutre: false, buffsEquipe,
 });
 
-const passifChilling: PassifVitesse = {
+export const passifChilling: PassifVitesse = {
   nom: 'Cumuls', texte: '', amplifieBuff: null,
   gain: { valeur: 20, pourcent: false, plafond: null, parCumul: true, cumulEquipe: false, releve: true },
   buff: false, barre: null, tourSupp: false, inconnu: false,

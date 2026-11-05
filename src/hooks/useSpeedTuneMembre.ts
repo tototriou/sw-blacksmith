@@ -15,7 +15,7 @@ import type { Bestiaire, PlanSpeedTune } from '../lib/planSpeedTune';
 import type { DonneesKit } from '../lib/speedTuneAuto';
 import type { ContrainteSpeedTune } from '../lib/contrainteSpeedTune';
 import {
-  autresPour, avecRattachement, bornesDuMembre, criteresDetaches, ecartsDuPlan, entreesDuGear, gearDuBuildValide,
+  autresPour, avecRattachement, bornesDuMembre, criteresDetaches, etatsSwiftDuCombo, ecartsDuPlan, entreesDuGear, gearDuBuildValide,
   lignesDeLEquipe, recalculerPlan, restaurerLigne, verdictEquipe, type BuildDuMembre, type EcartLigne, type LigneEquipe, type VerdictEquipe,
 } from '../lib/speedTuneMembre';
 import { bestiaireDe, useDonneesKitPlan, useZoneSpeedTune, type EtatZone } from './useZoneSpeedTune';
@@ -96,12 +96,11 @@ export function useSpeedTuneMembre(e: {
     const l = plan?.lignes.find((x) => x.uid === uid);
     return l ? monstres.get(l.monsterId)?.stats.speed ?? null : null;
   }, [plan, uid, monstres]);
-  // Rapidité demandée : un seul état. Sinon les runes libres peuvent encore la former.
-  const imposeSwift = e.comboSets.includes('swift');
+  const etatsSwift = useMemo(() => etatsSwiftDuCombo(e.comboSets), [e.comboSets]);
   const arteMax = useMemo(() => arteMaxInventaire(e.artifacts), [e.artifacts]);
   const entreeZone = useMemo(() => (plan && uid && base != null ? {
-    plan, uid, autres: autresPour(lignes, uid), bornes: bornesDuMembre(base, e.pool, imposeSwift, arteMax), monstres, kits,
-  } : null), [plan, uid, base, lignes, e.pool, imposeSwift, arteMax, monstres, kits]);
+    plan, uid, autres: autresPour(lignes, uid), bornes: bornesDuMembre(base, e.pool, etatsSwift, arteMax), monstres, kits,
+  } : null), [plan, uid, base, lignes, e.pool, etatsSwift, arteMax, monstres, kits]);
   const zone = useZoneSpeedTune(entreeZone);
   const verdict = useMemo(() => (plan && kits ? verdictEquipe(plan, kits.donnees, monstres, lignes) : null), [plan, kits, monstres, lignes]);
   const ecarts = useMemo(() => {

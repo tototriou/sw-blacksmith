@@ -11,19 +11,20 @@ import type { SpeedTuneEquipe } from '../src/lib/speedTuneEquipe';
 import type { ExclusionSelector } from '../src/lib/optimizerExclusion';
 import { computeStats } from '../src/lib/stats';
 import {
-  autresPour, avecRattachement, bornesDuMembre, criteresDetaches, ecartsDuPlan, entreesDuGear, gearDuBuildValide,
+  autresPour, avecRattachement, bornesDuMembre, criteresDetaches, etatsSwiftDuCombo, ecartsDuPlan, entreesDuGear, gearDuBuildValide,
   ligneModifiee, lignesDeLEquipe, recalculerPlan, restaurerLigne, validationTient, verdictEquipe, type BuildDuMembre,
 } from '../src/lib/speedTuneMembre';
 import { egal, ok, titre } from './outils';
+import { passifChilling } from './plan-speed-tune.test';
 
 const monstre = (id: number, spd: number): Monster =>
   ({ id, com2usId: id, name: `M${id}`, element: 'wind', stats: { speed: spd } }) as unknown as Monster;
 const A = monstre(9101, 105), B = monstre(9102, 100), C = monstre(9103, 102), E = monstre(9104, 110);
-const bestiaire = new Map([A, B, C, E].map((m) => [m.id, m] as const));
-const d: DonneesKit = { kits: new Map(), sorts: new Map(), passifs: new Map() };
-const sa: ExclusionSelector = { source: 'box', unitKey: 'a' };
-const sb: ExclusionSelector = { source: 'box', unitKey: 'b' };
-const sc: ExclusionSelector = { source: 'box', unitKey: 'c' };
+export const bestiaire = new Map([A, B, C, E].map((m) => [m.id, m] as const));
+export const d: DonneesKit = { kits: new Map(), sorts: new Map(), passifs: new Map() };
+export const sa: ExclusionSelector = { source: 'box', unitKey: 'a' };
+export const sb: ExclusionSelector = { source: 'box', unitKey: 'b' };
+export const sc: ExclusionSelector = { source: 'box', unitKey: 'c' };
 
 function plan(): PlanSpeedTune {
   const lignes: Ligne[] = [
@@ -34,7 +35,7 @@ function plan(): PlanSpeedTune {
   if (!('plan' in r)) throw new Error(JSON.stringify(r.refus));
   return r.plan;
 }
-function speedTune(): SpeedTuneEquipe {
+export function speedTune(): SpeedTuneEquipe {
   return { plan: plan(), membres: [
     { uid: 'allie:9101', selector: sa, attache: true, repli: { vitesseMin: 225, effet206: 0 } },
     { uid: 'allie:9102', selector: sb, attache: true, repli: { vitesseMin: 200, effet206: 4 } },
@@ -93,6 +94,20 @@ export function testSpeedTuneMembreEcarts() {
   const apres = recalculerPlan(st, d, bestiaire, ecarts);
   egal(combatSousPlan(apres.plan!, d, bestiaire, 'allie:9101'), e!.combatOptimizer, 'après « Recalculer », le plateau donne exactement la valeur affichée');
   egal(apres.membres[0]!.repli, { vitesseMin: 105 + 104, effet206: 6 }, 'les valeurs de repli suivent le recalcul');
+  // Un build qui retire la Volonté retire le cumul : l'annonce le compte déjà.
+  const dPassif: DonneesKit = { ...d, passifs: new Map([[9101, [passifChilling]]]) };
+  const lignesWill: Ligne[] = [
+    { ...ligneVierge(A, 'allie'), runeSpeed: 120, sets: ['will'], cumulsPassif: 1 }, { ...ligneVierge(B, 'allie'), runeSpeed: 100 },
+    { ...ligneVierge(E, 'ennemi'), runeSpeed: 60 },
+  ];
+  const rw = planDepuisSpeedTune(lignesWill, { allie: null, ennemi: null }, {}, ['allie:9101', 'allie:9102'], dPassif);
+  if (!('plan' in rw)) throw new Error(JSON.stringify(rw.refus));
+  const stWill: SpeedTuneEquipe = { plan: rw.plan, membres: [{ uid: 'allie:9101', selector: sa, attache: true, repli: { vitesseMin: 225, effet206: 0 } }] };
+  const sansWill = { runeSpeed: 120, swift: false, sets: ['violent'], artefactBuff: 0 };
+  const [ew] = ecartsDuPlan(rw.plan, dPassif, bestiaire, lignesDeLEquipe(stWill, rw.plan, [sa], () => null), () => sansWill);
+  egal(ew!.combatOptimizer, combatSousPlan(recalculerPlan(stWill, dPassif, bestiaire, [ew!]).plan!, dPassif, bestiaire, 'allie:9101'),
+    'sets qui retirent un cumul : « Recalculer avec N » donne exactement N');
+  ok(ew!.combatOptimizer !== ew!.combatPlan, 'et N tient compte du cumul retiré');
   ok(ligneModifiee(apres.plan!, 'allie:9101') && !ligneModifiee(apres.plan!, 'allie:9102'), 'la ligne recalculée est marquée modifiée');
   ok(apres.plan!.origine === p.origine, 'l’origine du speed tuning ne bouge pas');
   const rendu = restaurerLigne(apres, d, bestiaire, 'allie:9101');
@@ -103,10 +118,12 @@ export function testSpeedTuneMembreEcarts() {
 export function testSpeedTuneMembreBornesEtDetachement() {
   titre('Speed tune · bornes du balayage, détacher et rattacher');
   const pool = [rune(1, 1, 'swift', 10), rune(2, 1, 'swift', 25), rune(3, 2, 'swift', 42), rune(4, 4, 'will', 7)];
-  egal(bornesDuMembre(100, pool, false, 30), { ficheMax: { sansSwift: 174, swift: 199 }, etatsSwift: [false, true], arteMax: 30 },
+  egal(bornesDuMembre(100, pool, [false, true], 30), { ficheMax: { sansSwift: 174, swift: 199 }, etatsSwift: [false, true], arteMax: 30 },
     'meilleure VIT par emplacement, bonus Rapidité dans l’état Swift seul');
-  egal(bornesDuMembre(101, [], true, -1).etatsSwift, [true], 'Rapidité imposée : un seul état');
-  egal(bornesDuMembre(101, [], true, -1).ficheMax.swift, 101 + 26, 'bonus plat Rapidité arrondi au supérieur');
+  egal(bornesDuMembre(101, [], [true], -1).etatsSwift, [true], 'Rapidité imposée : un seul état');
+  egal([etatsSwiftDuCombo(['swift', 'will']), etatsSwiftDuCombo(['violent', 'will']), etatsSwiftDuCombo(['will', 'will', 'will']), etatsSwiftDuCombo(['will']), etatsSwiftDuCombo([])],
+    [[true], [false], [false], [false, true], [false, true]], 'états de Rapidité : imposée, sans place pour elle, formable par les runes libres');
+  egal(bornesDuMembre(101, [], [true], -1).ficheMax.swift, 101 + 26, 'bonus plat Rapidité arrondi au supérieur');
   const st = speedTune();
   const detache = avecRattachement(st, 'allie:9101', false);
   egal(detache.membres.map((m) => m.attache), [false, true, false], 'détacher ne touche que son lien');
