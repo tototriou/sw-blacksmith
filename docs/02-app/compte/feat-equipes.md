@@ -90,8 +90,8 @@ monstre »).
 - `com2usId` : l'espèce. Le `Monster` se re-résout à chaque lecture avec les données
   du jour, jamais figé dans l'enregistrement (même règle que le compte conservé) ;
 - `unitId` : l'unité du jeu (`unit_id`) **quand la source la connaît** : un
-  exemplaire de la Box, un membre Box de l'Optimizer. Les presets (RTA, siège, arène)
-  ne la portent pas dans l'app : `unitId` vaut alors `null`, et aucune copie de la
+  exemplaire de la Box, un membre Box de l'Optimizer, un deck d'arène. Les presets de
+  RTA et de siège ne la portent pas dans l'app : `unitId` vaut alors `null`, et aucune copie de la
   Box n'est choisie à sa place. Même règle pour un monstre ajouté sans exemplaire ;
 - `provenance` : d'où vient l'équipement (`porte`, `rta`, `siege-defense`,
   `siege-attaque`, `arene-defense`, `arene-attaque`, `optimizer`, `aucun`) ;
@@ -222,10 +222,13 @@ modifié.
 | Une équipe de l'Optimizer | l'onglet ouvert | le build validé du membre, sinon son équipement affiché |
 
 - Siège : depuis les équipes de siège de l'app (`SiegeTeam`, slot 0 = leader).
-- Arène : les decks d'arène sont lus à l'import du compte (`defense_deck_info`,
-  `server_arena_defense_deck_info`, `deck_list` au `deck_type` 1) et conservés avec
-  le compte : `ACCOUNT_SCHEMA` passe à 8, et un compte conservé au schéma 7 invite à
-  réimporter.
+- Arène : les decks d'arène sont lus à l'import du compte (`parseArenaDecks` :
+  `defense_deck_info`, `server_arena_defense_deck_info`, `deck_list` au `deck_type`
+  1) et conservés avec le compte dans un champ facultatif, `arenaDecks`, sans
+  changer de schéma. Un compte conservé avant ce champ n'a pas ses decks d'arène : la
+  source est désactivée, « Réimporte ton compte pour lire tes decks d'arène ». Ces
+  decks connaissent l'unité de chaque monstre : leurs monstres gardent leur
+  `unitId`.
 - RTA : la prépa RTA n'est pas une équipe ; son preset sert de choix d'équipement
   (« Preset RTA ») à l'ajout d'un monstre.
 - Optimizer : une équipe d'une liste (ses membres, son leader, son speed tune) ou, sans

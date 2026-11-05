@@ -5,6 +5,9 @@
 // fichier importé qui écrase une équipe présente.
 
 import 'fake-indexeddb/auto';
+import { readFileSync } from 'node:fs';
+import { parseArenaDecks } from '../src/lib/importAccount';
+import { composerSession, ecrireSession, empreinteTravail, lireSession } from '../src/lib/session';
 import { egal, ok, titre } from './outils';
 import { chargerEquipes, enregistrerEquipes, oublierConnexionEquipes, supprimerEquipes, viderEquipes } from '../src/lib/equipesStore';
 import { ecrireFichierEquipes, lireFichierEquipes } from '../src/lib/equipesFichier';
@@ -87,3 +90,36 @@ export const verificationsEquipesStockage: [string, () => void | Promise<void>][
   ['testEquipesStockageFusion', testEquipesStockageFusion],
   ['testEquipesFichier', testEquipesFichier],
 ];
+
+function testEquipesDecksArene() {
+  titre('Mes équipes — decks d’arène lus dans l’export');
+  const compte = JSON.parse(readFileSync(new URL('./fixtures/compte-banc.json', import.meta.url), 'utf8'));
+  const decks = parseArenaDecks(compte);
+  egal(decks.map((d) => [d.cle, d.rang, d.slots.map((s) => s.unitId)]),
+    [['defense', 0, [102]], ['defense-serveur', 0, [101]], ['attaque', 0, [101]]],
+    'défense, défense de serveur (unit_id en objet) et attaque au deck_type 1');
+  egal(decks[1].slots[0].gear.runes.map((r) => r.id), [1004], 'une défense prend le preset de son deck');
+  egal(decks[0].slots[0].gear.runes.map((r) => r.id), [2001, 2002], 'sans preset, ce que porte le monstre');
+  egal(decks[0].slots[0].gear.artifacts.map((a) => a.id), [5002], 'artéfacts portés avec');
+  egal(decks[0].slots[0].com2usId, 14314, 'l’espèce de l’unité');
+  egal(parseArenaDecks({ unit_list: [] }), [], 'un export sans deck d’arène rend une liste vide');
+}
+
+verificationsEquipesStockage.push(['testEquipesDecksArene', testEquipesDecksArene]);
+
+function testEquipesSession() {
+  titre('Mes équipes — sauvegarde de session');
+  const base = { maintenant: T0, versionApp: 'test', stockage: {}, compte: null, memoire: {}, optimizer: null };
+  const session = composerSession({ ...base, equipes: [equipe('e1')] });
+  const lu = lireSession(ecrireSession(session));
+  egal(lu.ok && lu.session.equipes.map((e) => e.id), ['e1'], 'les équipes voyagent dans la session');
+  ok(empreinteTravail(session) !== empreinteTravail(composerSession(base)), 'une équipe change l’empreinte du travail');
+  const sansChamp = JSON.parse(ecrireSession(composerSession(base)));
+  delete sansChamp.equipes;
+  const lu2 = lireSession(JSON.stringify(sansChamp));
+  egal(lu2.ok && lu2.session.equipes, [], 'une session écrite avant ce champ se relit sans équipe');
+  const abimee = lireSession(JSON.stringify({ ...sansChamp, equipes: [{ id: 'x' }, equipe('e2')] }));
+  egal(abimee.ok && [abimee.session.equipes.length, abimee.avertissements.length], [1, 1], 'une équipe illisible est laissée et dite');
+}
+
+verificationsEquipesStockage.push(['testEquipesSession', testEquipesSession]);

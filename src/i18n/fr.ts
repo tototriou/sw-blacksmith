@@ -963,6 +963,7 @@ export const fr = {
   donnees: {
     sessionEnregistree: (nom: string | null) => `Session enregistrée${nom ? ` · ${nom}` : ''}`,
     compteEnChargement: 'Ton compte se charge encore : la sauvegarde attend qu’il soit relu.',
+    equipesEnChargement: 'Tes équipes enregistrées se relisent encore : la sauvegarde attend qu’elles le soient.',
     sessionEchec: 'La session n’a pas été enregistrée',
     // Pourquoi l'écriture a échoué, selon le motif et le code d'erreur du
     // système que rend l'app de bureau (`messageEchecSession`, src/lib/bureau.ts).

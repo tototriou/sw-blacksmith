@@ -84,6 +84,7 @@ import {
   storageAvailable,
 } from './hooks/usePersistence';
 import { ConfirmDialog, KeepAccountDialog, Modale } from './ui/Dialogs';
+import { useEquipesEnregistrees } from './hooks/useEquipesEnregistrees';
 import { FournisseurNotification, useNotifier } from './ui/Notification';
 import { Bouton, DeuxVolets } from './ui';
 import VoletEcran from './components/VoletEcran';
@@ -141,6 +142,8 @@ import {
   parseAccountSource,
   parseSiegeDefense,
   parseSiegeOffense,
+  parseArenaDecks,
+  type DeckArene,
   parseAccountBox,
   parseAccountInventory,
   parseUsedRuneIdsParPerimetre,
@@ -429,6 +432,12 @@ function Application() {
   // Libellés des marqueurs de runes (`parseRuneMarkerLabels`) — même raison :
   // `markers` ne vit que dans l'export brut.
   const [runeMarkerLabels, setRuneMarkerLabels] = useState<Record<number, string>>({});
+  // Les decks d'arène, sources de « Mes équipes ». `null` : pas lus (compte
+  // conservé avant ce champ) — distinct d'un compte qui n'en a aucun.
+  const [arenaDecks, setArenaDecks] = useState<DeckArene[] | null>(null);
+  // « Mes équipes » : ici, comme les listes de l'Optimizer, pour que la page
+  // et l'Optimizer partagent les mêmes équipes et que la session les emporte.
+  const equipesEnregistrees = useEquipesEnregistrees();
 
   // Un nouveau compte importé (`appliquerImport`, `setBox` avec une NOUVELLE
   // référence) rend obsolètes les « Critères de recherche »/« Combinaisons
@@ -741,6 +750,7 @@ function Application() {
         setUsedRuneIds(rec.usedRuneIds);
         setRelicUsageById(rec.relicUsageById);
         setRuneMarkerLabels(rec.runeMarkerLabels);
+        setArenaDecks(rec.arenaDecks ?? null);
         setAccountExportedAt(rec.exportedAt);
         setAccountName(rec.wizardName ?? null);
       }
@@ -894,6 +904,7 @@ function Application() {
       // siège), réduits aux runes qui y jouent — rangés par périmètre.
       usedRunes: parseUsedRuneIdsParPerimetre(data),
       markerLabels: parseRuneMarkerLabels(data),
+      decksArene: parseArenaDecks(data),
     };
   }
 
@@ -910,7 +921,7 @@ function Application() {
     // Regroupé avec la relecture du compte conservé, ce vrai import doit
     // être revérifié : sinon la photo resterait posée et bloquerait l'import d'équipe.
     hydrationJustAppliedRef.current = false;
-    const { exporte, nomJoueur, boxRes, invRes, boxItems, usedRunes, markerLabels } = compte;
+    const { exporte, nomJoueur, boxRes, invRes, boxItems, usedRunes, markerLabels, decksArene } = compte;
     // Exclusion manuelle de runes de l'Optimizer (excludedSelectors) : à
     // effacer sur un compte VRAIMENT DIFFÉRENT (autre wizard_id — voir
     // parseWizardId), pas sur une simple nouvelle version RÉEXPORTÉE du même
@@ -949,6 +960,7 @@ function Application() {
     setUsedRuneIds(usedRunes);
     setRelicUsageById(invRes.relicUsageById ?? {});
     setRuneMarkerLabels(markerLabels);
+    setArenaDecks(decksArene);
 
     // Enregistrement **après** la mise à jour de l'affichage et sans attendre :
     // une écriture de 2 Mo ne doit pas retarder l'apparition du compte. Un échec
@@ -966,6 +978,7 @@ function Application() {
         runeMarkerLabels: markerLabels,
         exportedAt: exporte,
         wizardName: nomJoueur,
+        arenaDecks: decksArene,
       });
     }
   }
@@ -1044,6 +1057,7 @@ function Application() {
       runeMarkerLabels,
       exportedAt: accountExportedAt,
       wizardName: accountName,
+      ...(arenaDecks ? { arenaDecks } : {}),
     });
   }
 
@@ -1079,7 +1093,9 @@ function Application() {
   // Pourquoi « Sauvegarder » est désactivé, ou `null` s'il ne l'est pas.
   const sauvegardeIndisponible = accountHydrating
     ? textes.donnees.compteEnChargement
-    : null;
+    : equipesEnregistrees.relecture === 'en-cours'
+      ? textes.donnees.equipesEnChargement
+      : null;
   const sauvegarderSession = () => void enregistrerSession(false);
   const sauvegarderSessionSous = () => void enregistrerSession(true);
   // Ctrl+S lit la DERNIÈRE version : l'écouteur, lui, ne se pose qu'une fois.
@@ -1091,6 +1107,7 @@ function Application() {
       maintenant,
       versionApp: __APP_VERSION__,
       stockage: Object.fromEntries(CLES_SESSION.map((cle) => [cle, lireTravail(cle)])),
+      equipes: equipesEnregistrees.equipes,
       compte: compteDeSession(
         {
           exportedAt: accountExportedAt,
@@ -1103,6 +1120,7 @@ function Application() {
           usedRuneIds,
           relicUsageById,
           runeMarkerLabels,
+          ...(arenaDecks ? { arenaDecks } : {}),
         },
         maintenant
       ),

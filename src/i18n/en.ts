@@ -917,6 +917,7 @@ export const en: Dictionnaire = {
   donnees: {
     sessionEnregistree: (nom: string | null) => `Session saved${nom ? ` · ${nom}` : ''}`,
     compteEnChargement: 'Your account is still loading: saving waits until it is read again.',
+    equipesEnChargement: 'Your saved teams are still loading: saving waits until they are read again.',
     sessionEchec: 'The session was not saved',
     echecSession: {
       pasUneSession: 'This is not a session.',
