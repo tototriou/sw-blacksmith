@@ -443,3 +443,31 @@ export function dupliquerEquipe(e: EquipeEnregistree, id: string, nom: string, t
 export function tireurIdentifiants(prefixe: string): TirerId {
   return () => `${prefixe}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
 }
+
+/* --------------------------------------------------------------------------
+ * Relecture et écritures
+ * ----------------------------------------------------------------------- */
+
+// La relecture au démarrage s'applique SOUS les gestes déjà faits : pour un
+// même `id`, l'état en mémoire gagne ; une équipe supprimée pendant la
+// relecture ne revient pas.
+export function fusionnerRelecture(
+  memoire: readonly EquipeEnregistree[], relues: readonly EquipeEnregistree[], supprimees: ReadonlySet<string>
+): EquipeEnregistree[] {
+  const enMemoire = new Set(memoire.map((e) => e.id));
+  return [...memoire, ...relues.filter((e) => !enMemoire.has(e.id) && !supprimees.has(e.id))];
+}
+
+// Ce qu'un changement d'état demande d'écrire : les équipes nouvelles ou
+// changées (par référence : les opérations rendent un nouvel objet), et les
+// identifiants disparus.
+export function ecrituresEntre(
+  avant: readonly EquipeEnregistree[], apres: readonly EquipeEnregistree[]
+): { aEcrire: EquipeEnregistree[]; aSupprimer: string[] } {
+  const anciens = new Map(avant.map((e) => [e.id, e]));
+  const presents = new Set(apres.map((e) => e.id));
+  return {
+    aEcrire: apres.filter((e) => anciens.get(e.id) !== e),
+    aSupprimer: avant.filter((e) => !presents.has(e.id)).map((e) => e.id),
+  };
+}

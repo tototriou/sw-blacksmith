@@ -44,9 +44,8 @@ Une rangée `Onglets` (`src/ui/Onglets.tsx`), dans cet ordre :
 | `guerre-guilde` | « Guerre de guilde » | `guilde` |
 | `pve` | « PVE » | `donjon` |
 
-Chaque libellé porte le nombre d'équipes de l'onglet. L'onglet ouvert est un réglage
-d'affichage (`swblacksmith-equipes-onglet`, déclaré dans `CLES_DE_REGLAGE`) : il
-survit au rechargement même sans conservation des données.
+Chaque libellé porte le nombre d'équipes de l'onglet. L'onglet ouvert et la recherche
+se gardent pour la session, comme l'état des autres outils (`useStickyState`).
 
 Une équipe appartient à un seul onglet ; « Déplacer vers… » la change d'onglet. Elle
 compte **de 0 à 6 monstres**, quel que soit l'onglet : le jeu impose des tailles
@@ -343,8 +342,7 @@ par la nouvelle liste.
 ## Conservation
 
 - Les équipes vivent en **IndexedDB**, dans une base à elles,
-  `swblacksmith-equipes` : un store `equipes` (une entrée par équipe, clé = `id`) et
-  un store `rejets`. La base du compte (`swblacksmith`) n'est pas touchée et garde sa
+  `swblacksmith-equipes` : un store `equipes` (une entrée par équipe, clé = `id`). La base du compte (`swblacksmith`) n'est pas touchée et garde sa
   version. Raison de l'IndexedDB : des centaines d'équipes à six monstres équipés
   pèsent plusieurs mégaoctets, hors de portée de `localStorage`.
 - **Sous l'interrupteur unique de conservation** (`usePersistence`) : écrites
@@ -366,9 +364,10 @@ par la nouvelle liste.
 - Toutes les écritures passent par une file sérielle, comme le compte : la dernière
   action gagne, et une suppression n'est jamais ressuscitée par une écriture en
   retard.
-- Une entrée illisible à la relecture est écartée, gardée brute dans `rejets`, et
-  signalée une fois par une notification ; elle n'est jamais réécrite ni supprimée
-  par la relecture.
+- Une entrée illisible à la relecture est écartée de l'écran et signalée une fois par
+  une notification ; elle reste telle quelle dans la base, jamais réécrite ni
+  supprimée par la relecture (seuls « Tout supprimer » et le refus de conservation
+  l'effacent).
 - Erreur de stockage (navigation privée, quota) : repli en mémoire, comme le compte,
   sans exception.
 

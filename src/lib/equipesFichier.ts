@@ -1,0 +1,54 @@
+// Le fichier de « Mes équipes » : toutes les équipes, tous onglets confondus.
+//
+// Spec : docs/02-app/compte/feat-equipes.md, « Fichier ». L'import AJOUTE,
+// jamais ne remplace : c'est la sauvegarde qui survit au navigateur vidé, elle
+// ne doit pas pouvoir écraser le travail présent.
+
+import { formatExport, formatReconnu } from './formatsExport';
+import { lireEquipeEnregistree, type EquipeEnregistree, type TirerId } from './equipesEnregistrees';
+
+export const NOM_FORMAT_EQUIPES = 'equipes';
+export const VERSION_FICHIER_EQUIPES = 1;
+
+export function ecrireFichierEquipes(equipes: readonly EquipeEnregistree[], maintenant: Date): string {
+  return JSON.stringify({
+    format: formatExport(NOM_FORMAT_EQUIPES),
+    version: VERSION_FICHIER_EQUIPES,
+    exporteLe: maintenant.toISOString(),
+    equipes,
+  }, null, 2);
+}
+
+export type LectureFichierEquipes =
+  | { ok: true; equipes: EquipeEnregistree[]; nouveauxId: number; ignorees: number }
+  | { ok: false; raison: 'illisible' | 'format' | 'version' };
+
+// `existants` : les identifiants déjà présents ; une équipe qui en reprend un
+// reçoit un nouvel `id`. Les liens vers l'Optimizer désignent les listes d'un
+// autre navigateur : ils sont retirés.
+export function lireFichierEquipes(texte: string, existants: ReadonlySet<string>, tirerId: TirerId): LectureFichierEquipes {
+  let v: unknown;
+  try { v = JSON.parse(texte); } catch { return { ok: false, raison: 'illisible' }; }
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return { ok: false, raison: 'format' };
+  const f = v as Record<string, unknown>;
+  if (!formatReconnu(f.format, NOM_FORMAT_EQUIPES) || !Array.isArray(f.equipes)) return { ok: false, raison: 'format' };
+  if (f.version !== VERSION_FICHIER_EQUIPES) return { ok: false, raison: 'version' };
+  const pris = new Set(existants);
+  const equipes: EquipeEnregistree[] = [];
+  let nouveauxId = 0;
+  let ignorees = 0;
+  for (const brut of f.equipes) {
+    const lu = lireEquipeEnregistree(brut);
+    if (!lu) { ignorees++; continue; }
+    const { lienOptimizer: _lien, ...equipe } = lu.equipe;
+    if (pris.has(equipe.id)) {
+      let id = tirerId();
+      while (pris.has(id)) id = tirerId();
+      equipe.id = id;
+      nouveauxId++;
+    }
+    pris.add(equipe.id);
+    equipes.push(equipe);
+  }
+  return { ok: true, equipes, nouveauxId, ignorees };
+}
