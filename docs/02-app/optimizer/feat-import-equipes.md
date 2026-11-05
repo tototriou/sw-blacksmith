@@ -213,9 +213,13 @@ Sinon, aucun set n’est sélectionné et le rapport demande d’en choisir un.
 sur le cumul de la paire d’artéfacts. Une valeur nulle ou zéro ne pose aucun
 verrou ; une valeur invalide n’est pas importée et le rapport le dit.
 
-La VIT minimum **ne garantit pas l’ordre des tours** : aucun maximum ni
-couple vitesse/amplification n’est exporté. Un build peut dépasser le minimum,
-changer d’amplification ou différer en Swift. Exemple chiffré avec base 101,
+Ce minimum et ce verrou ne servent que **sans plan de speed tune** : quand
+l’export pose un plan sur l’équipe (au moins deux membres, ordre voulu complet),
+chaque membre reçoit à la place la
+[contrainte de speed tune](feat-contrainte-speed-tune.md), et le minimum et le
+verrou ne reviennent qu’au détachement. Sans plan, la VIT minimum **ne garantit
+pas l’ordre des tours** : un build peut dépasser le minimum, changer
+d’amplification ou différer en Swift. Exemple chiffré avec base 101,
 lead 0 et totem 15 % : 100 points plats de runes avec Swift donnent une saisie
 126 et une fiche 227. `combatSpeed` donne 242, car il retire les 26 points
 Swift plats puis arrondit une seule fois 40 % de la base (41 points).
