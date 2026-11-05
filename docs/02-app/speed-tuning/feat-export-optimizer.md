@@ -52,7 +52,9 @@ moment de l’export. Chaque membre d’une ligne visible reçoit la **contraint
 speed tune** à la place d’une VIT minimum : la recherche ne retient que les builds dont la vitesse
 de combat et l’« Effet aug. VIT » de la paire gardent l’ordre voulu, les autres
 alliés pris à leur build validé ou, faute de build, à leurs valeurs du plan
-([contrainte de speed tune](../optimizer/feat-contrainte-speed-tune.md)).
+([contrainte de speed tune](../optimizer/feat-contrainte-speed-tune.md)). Le plan d'une équipe déjà
+importée se règle ensuite depuis l'Optimizer, sans créer de liste
+([feat-speed-tune-depuis-optimizer.md](../optimizer/feat-speed-tune-depuis-optimizer.md)).
 Swift est sélectionné si la ligne le porte ; les autres critères viennent de la
 base complète de l’exemplaire. Détacher la contrainte dans l’Optimizer repose
 la VIT minimum de fiche (base + vitesse de runes saisie) et le verrou de paire

@@ -15,6 +15,8 @@ export const testRenduOptimizerLeadEquipePersonnel = () => verifier('lead-equipe
 export const testRenduTelephoneOptimizerLeadEquipePersonnel = () => verifier('lead-equipe', true);
 export const testRenduOptimizerDialogueEquipe = () => verifier('dialogue-equipe');
 export const testRenduTelephoneOptimizerDialogueEquipe = () => verifier('dialogue-equipe', true);
+export const testRenduOptimizerSpeedTuneOutil = () => verifier('speed-tune-outil');
+export const testRenduTelephoneOptimizerSpeedTuneOutil = () => verifier('speed-tune-outil', true);
 export const testRenduOptimizerCreationContenu = () => verifier('contenu-creation');
 export const testRenduTelephoneOptimizerCreationContenu = () => verifier('contenu-creation', true);
 export const testRenduOptimizerRechercheCreation = () => verifier('recherche-creation');

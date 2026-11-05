@@ -1,5 +1,7 @@
 import { Monster, SiegeTeam } from '../../types';
 import { DeckInitial } from '../../hooks/useSpeedTune';
+import type { OuvertureOptimizer } from '../../lib/speedTuneDepuisPlan';
+import type { PlanSpeedTune } from '../../lib/planSpeedTune';
 import { Modale } from '../../ui/Dialogs';
 import SpeedTuningSection, { RegleTicks } from './SpeedTuningSection';
 import type { ActionImportOptimizer } from '../../lib/actionImportOptimizer';
@@ -7,10 +9,14 @@ import type { ExclusionSourceData } from '../../lib/optimizerExclusion';
 import { useTraduction } from '../../hooks/useLangue';
 
 interface Props {
-  onImporterEquipe: ActionImportOptimizer;
-  sourcesOptimizer: ExclusionSourceData;
-  compteCharge: boolean;
-  deck: DeckInitial;
+  // Ouverte depuis un deck : l'export vers l'Optimizer.
+  onImporterEquipe?: ActionImportOptimizer;
+  sourcesOptimizer?: ExclusionSourceData;
+  compteCharge?: boolean;
+  deck?: DeckInitial;
+  // Ouverte depuis une équipe de l'Optimizer : un état à part et « Appliquer à
+  // l'équipe » (feat-speed-tune-depuis-optimizer.md). ⚠️ Exclusif de `deck`.
+  appliquer?: { ouverture: OuvertureOptimizer; onAppliquer: (plan: PlanSpeedTune) => void };
   allMonsters: Monster[];
   siegeDefenseTeams: SiegeTeam[];
   siegeOffenseTeams: SiegeTeam[];
@@ -28,7 +34,8 @@ interface Props {
 //
 // ⚠️ **Le même composant que la page**, pas une version réduite : c'est tout
 // l'outil, avec les mêmes réglages persistants — ce qu'on y change se retrouve
-// dans la page d'outil, et l'inverse. Deux vues d'un seul état.
+// dans la page d'outil, et l'inverse. Deux vues d'un seul état. Sauf ouverte
+// depuis l'Optimizer (`appliquer`) : là, un état à part, que la page ne voit pas.
 export default function SpeedTuneModale({
   onImporterEquipe,
   sourcesOptimizer,
@@ -37,6 +44,7 @@ export default function SpeedTuneModale({
   allMonsters,
   siegeDefenseTeams,
   siegeOffenseTeams,
+  appliquer,
   onClose,
 }: Props) {
   const st = useTraduction().speedTuning;
@@ -65,11 +73,11 @@ export default function SpeedTuneModale({
       // habituelle, en haut à droite.
     >
       <SpeedTuningSection
-        onImporterEquipe={produire => {
+        onImporterEquipe={onImporterEquipe && (produire => {
           const rapport = onImporterEquipe(produire);
           if (rapport.listeCreee) onClose();
           return rapport;
-        }}
+        })}
         sourcesOptimizer={sourcesOptimizer}
         compteCharge={compteCharge}
         allMonsters={allMonsters}
@@ -77,6 +85,7 @@ export default function SpeedTuneModale({
         siegeOffenseTeams={siegeOffenseTeams}
         deckInitial={deck}
         entete={false}
+        appliquer={appliquer}
       />
     </Modale>
   );

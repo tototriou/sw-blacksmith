@@ -47,19 +47,19 @@ export const passifChilling: PassifVitesse = {
 
 // Un lanceur de buff (A), deux alliés, un adversaire. A pose +30 % de vitesse
 // à l'équipe et +15 % de barre (rechargement 3).
-const A = monstre(9001, 'Lanceur', 105);
-const B = monstre(9002, 'Second', 100);
-const C = monstre(9003, 'Troisième', 102);
-const E = monstre(9004, 'Adverse', 110);
-const donnees: DonneesKit = {
+export const A = monstre(9001, 'Lanceur', 105);
+export const B = monstre(9002, 'Second', 100);
+export const C = monstre(9003, 'Troisième', 102);
+export const E = monstre(9004, 'Adverse', 110);
+export const donnees: DonneesKit = {
   kits: new Map(),
   sorts: new Map([[9001, [sort('Vent', { buffEquipe: 30, atbEquipe: 15 }, 3, 1)]]]),
   passifs: new Map(),
 };
-const bestiaire = new Map([A, B, C, E].map((m) => [m.id, m] as const));
-const leads: Leads = { allie: null, ennemi: null };
+export const bestiaire = new Map([A, B, C, E].map((m) => [m.id, m] as const));
+export const leads: Leads = { allie: null, ennemi: null };
 
-function lignesDe(spd: { a: number; b: number; c: number; e: number }, artB = 0): Ligne[] {
+export function lignesDe(spd: { a: number; b: number; c: number; e: number }, artB = 0): Ligne[] {
   return [
     { ...ligneVierge(A, 'allie'), runeSpeed: spd.a },
     { ...ligneVierge(B, 'allie'), runeSpeed: spd.b, artefactBuff: artB },
@@ -67,16 +67,16 @@ function lignesDe(spd: { a: number; b: number; c: number; e: number }, artB = 0)
     { ...ligneVierge(E, 'ennemi'), runeSpeed: spd.e },
   ];
 }
-const choix = { sort: { 'allie:9001': 'Vent', 'allie:9002': '', 'allie:9003': '' } };
-const ordre = ['allie:9001', 'allie:9002', 'allie:9003'];
+export const choix = { sort: { 'allie:9001': 'Vent', 'allie:9002': '', 'allie:9003': '' } };
+export const ordre = ['allie:9001', 'allie:9002', 'allie:9003'];
 
 // L'état de l'écran après « Analyser » : grilles écrites, provenance marquée.
-function analysees(lignes: Ligne[]): Ligne[] {
+export function analysees(lignes: Ligne[]): Ligne[] {
   const r = analyseAutomatique(plateauDeLignes(lignes, leads), 0, donnees, { choix });
   return appliquerMods(lignes, r.mods);
 }
 
-function planDe(lignes: Ligne[], o = ordre): PlanSpeedTune {
+export function planDe(lignes: Ligne[], o = ordre): PlanSpeedTune {
   const r = planDepuisSpeedTune(lignes, leads, choix, o, donnees);
   if (!('plan' in r)) throw new Error('plan refusé : ' + JSON.stringify(r.refus));
   return r.plan;

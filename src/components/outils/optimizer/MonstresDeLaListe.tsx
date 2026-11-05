@@ -1,6 +1,6 @@
 import OptimizerBackupBar from '../OptimizerBackupBar';
 import { Bouton, ZoneCliquable, BoutonIcone } from '../../../ui';
-import { CheckCircle2, Trash2, Unlock } from 'lucide-react';
+import { CheckCircle2, Gauge, Trash2, Unlock } from 'lucide-react';
 import OptimizerLeadInactif, { MotifHorsFlux } from '../OptimizerLeadInactif';
 import { resolveExclusionEntry, exclusionSelectorKey, findValidatedBuild, runesManquantesDuBuild, artefactsManquantsDuBuild, type OptimizerList, type OptimizerListMember, type ExclusionSourceData, type ExclusionSelector } from '../../../lib/optimizerExclusion';
 import { leadEffectifMembreOptimizer } from '../../../lib/equipesOptimizer';
@@ -45,9 +45,12 @@ export interface MonstresDeLaListeProps {
   // (« Rechercher un monstre… », le monstre actif), sans titre devant, pour
   // laisser au champ toute la largeur (décision de l'utilisateur).
   enTete?: ReactNode;
+  // « Régler / Modifier le speed tune » sur une équipe : absent hors d'une
+  // liste de siège (feat-speed-tune-depuis-optimizer.md).
+  onSpeedTune?: (equipe: EquipeOptimizer) => void;
 }
 
-export default function MonstresDeLaListe({ activeList, activeMembers, setEquipeOuverte, lists, optimizer, exclusionData, artifacts, rapportZoneC, groupesMembres, runeById, artifactById, choisirMembreDeLaListe, membreChoisi, setReleaseConfirm, setReleaseArtifactsConfirm, setRemoveMemberConfirm, rappelAuras, listHasValidated, setReleaseAllConfirm, enTete }: MonstresDeLaListeProps) {
+export default function MonstresDeLaListe({ activeList, activeMembers, setEquipeOuverte, lists, optimizer, exclusionData, artifacts, rapportZoneC, groupesMembres, runeById, artifactById, choisirMembreDeLaListe, membreChoisi, setReleaseConfirm, setReleaseArtifactsConfirm, setRemoveMemberConfirm, rappelAuras, listHasValidated, setReleaseAllConfirm, enTete, onSpeedTune }: MonstresDeLaListeProps) {
   const textes = useTraduction();
   const jeu = textes.jeu;
   const o = textes.optimizer;
@@ -103,7 +106,7 @@ export default function MonstresDeLaListe({ activeList, activeMembers, setEquipe
             });
             const inactifs = membres.filter(m => m.motif).length;
             return <section key={g.equipe?.id ?? 'sans-equipe'} aria-label={g.equipe ? z.equipe(numero + 1) : z.sansEquipe} className={`space-y-0.5 ${g.equipe ? `rounded-lg p-1.5 ${numero % 2 === 0 ? 'bg-equipe-a' : 'bg-equipe-b'}` : ''}`}>
-            {g.equipe && <div className="grid grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-x-1 py-0.5">
+            {g.equipe && <div className="grid grid-cols-[auto_minmax(0,1fr)_auto_auto_auto] items-center gap-x-1 py-0.5">
               {/* Lead, numéro et leader se lisent sur une seule ligne. */}
               <span className="flex h-7 items-center whitespace-nowrap">
                 {g.equipe.lead ? <LeadPill ls={g.equipe.lead} titre={z.leadEquipe(g.equipe.lead.amount, nomStatLead(jeu, g.equipe.lead.stat), nomZoneLead(jeu, g.equipe.lead.area))} /> : <span className="text-xs text-ink-dim">{z.sansLead}</span>}
@@ -114,6 +117,11 @@ export default function MonstresDeLaListe({ activeList, activeMembers, setEquipe
               <span className="inline-grid whitespace-nowrap text-micro text-warn">
                 <span className="invisible col-start-1 row-start-1" aria-hidden>⚠ {z.leadsInactifs(5)}</span>
                 <span className={`col-start-1 row-start-1 ${inactifs ? '' : 'invisible'}`} aria-hidden={!inactifs}>⚠ {z.leadsInactifs(inactifs)}</span>
+              </span>
+              {/* Place réservée hors siège : changer le contenu de la liste ne déplace pas « Modifier ». */}
+              <span className={onSpeedTune ? '' : 'invisible'} aria-hidden={!onSpeedTune}>
+                <BoutonIcone taille="serre" icone={<Gauge size={14} />} disabled={!onSpeedTune} tabIndex={onSpeedTune ? undefined : -1}
+                  libelle={g.equipe.speedTune?.plan ? o.speedTune.modifier : o.speedTune.regler} onClick={() => onSpeedTune?.(g.equipe!)} />
               </span>
               <Bouton taille="xs" fond="vide" libelle={o.equipe.modifier} onClick={() => setEquipeOuverte({ listId: g.equipe!.listId, equipe: g.equipe })} />
             </div>}

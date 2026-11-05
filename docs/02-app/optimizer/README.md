@@ -58,6 +58,7 @@ partagés avec `MonsterGear.tsx` (RTA/Siège/« Équipement actuel »), voir
 | `src/lib/optimizerMemberStorage.ts`, `src/lib/equipesOptimizer.ts`, `src/lib/optimizerBackup.ts`, `src/components/outils/OptimizerBackupBar.tsx`, `src/components/outils/OptimizerEquipeDialog.tsx`, `src/components/outils/OptimizerCreateListDialog.tsx` | [feat-listes-equipes-et-sauvegarde.md](feat-listes-equipes-et-sauvegarde.md) |
 | `src/lib/importEquipes.ts`, `src/lib/actionImportOptimizer.ts`, `src/lib/importRecoOptimizer.ts`, `src/lib/importSpeedTuneOptimizer.ts`, `src/components/outils/OptimizerImportButton.tsx`, `src/components/outils/OptimizerImportRapport.tsx` | [feat-import-equipes.md](feat-import-equipes.md) |
 | `src/lib/planSpeedTune.ts`, la contrainte de speed tune d'un membre, le verdict d'ordre d'une équipe | [feat-contrainte-speed-tune.md](feat-contrainte-speed-tune.md) |
+| `src/lib/speedTuneDepuisPlan.ts`, `src/hooks/useSpeedTuneDepuisOptimizer.ts`, le speed tune d'une équipe réglé en modale depuis l'Optimizer | [feat-speed-tune-depuis-optimizer.md](feat-speed-tune-depuis-optimizer.md) |
 | `src/lib/optimizerExclusion.ts`, `src/components/outils/RuneExclusionPicker.tsx`, `src/components/outils/ExclusionCandidateRow.tsx` | [feat-exclusion.md](feat-exclusion.md) |
 | `src/hooks/useBuildOptimSearch.ts`, le filet de temps, la barre de progression, l'arrêt | [feat-interruption.md](feat-interruption.md) |
 | `src/lib/runeBuildOptim.ts`, `src/lib/artifactOptim.ts`, les `relic…` de `src/lib/`, `src/workers/` | [03-developpeur/optimizer/](../../03-developpeur/optimizer/README.md) |
@@ -86,6 +87,7 @@ moteur et sa vérification vivent côté développeur :
 - [Stockage des membres, des équipes et du point de sauvegarde](feat-listes-equipes-et-sauvegarde.md)
 - [Import d’équipes : modèle et conversions](feat-import-equipes.md)
 - [Contrainte de speed tune : zone vitesse × « Effet aug. VIT » et verdict d'ordre](feat-contrainte-speed-tune.md)
+- [Régler le speed tune d'une équipe depuis l'Optimizer](feat-speed-tune-depuis-optimizer.md)
 - [Exclusion des runes déjà portées ailleurs](feat-exclusion.md)
 - [Interruption — filet de temps, pré-filtrage et arrêt manuel](feat-interruption.md)
 - **Algorithme** (le chemin d'une recherche, les élagages, le choix des artéfacts, la vérification) — [03-developpeur/optimizer/](../../03-developpeur/optimizer/)

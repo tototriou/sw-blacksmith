@@ -24,7 +24,9 @@ export interface EtatPlanSpeedTune {
   verdictEcran: boolean;
 }
 
-function raisonRefus(refus: RefusPlan, lignes: readonly Ligne[], t: Dictionnaire): string {
+// Le refus du constructeur dans les mots du rapport d'export ; repris par
+// « Appliquer à l'équipe ».
+export function raisonRefus(refus: RefusPlan, lignes: readonly Ligne[], t: Dictionnaire): string {
   const r = t.optimizer.importsEquipe.speedTune.refusPlan;
   const nom = (uid: string) => lignes.find((l) => l.uid === uid)?.monster.name ?? uid;
   switch (refus.motif) {

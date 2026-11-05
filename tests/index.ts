@@ -34,6 +34,7 @@ import { testOptimizerImportActionDemontee, testOptimizerImportEcrituresGroupees
   testRenduTelephoneOptimizerImportRta, testRenduOptimizerImportIndisponible, testRenduTelephoneOptimizerImportIndisponible, testRenduOptimizerImportRapportPartage, testRenduOptimizerImportDisponibiliteMemoisee } from './rendu/optimizer-import.test';
 import { testRenduOptimizerLeadEquipePersonnel, testRenduTelephoneOptimizerLeadEquipePersonnel,
   testRenduOptimizerDialogueEquipe, testRenduTelephoneOptimizerDialogueEquipe,
+  testRenduOptimizerSpeedTuneOutil, testRenduTelephoneOptimizerSpeedTuneOutil,
   testRenduOptimizerCreationContenu, testRenduTelephoneOptimizerCreationContenu,
   testRenduOptimizerRefusIdentitePerime, testRenduTelephoneOptimizerRefusIdentitePerime,
   testRenduOptimizerRecetteLeadEquipe, testRenduTelephoneOptimizerRecetteLeadEquipe,
@@ -43,6 +44,7 @@ import { testRenduOptimizerLeadEquipePersonnel, testRenduTelephoneOptimizerLeadE
   testRenduOptimizerCombatEffectifAffiche, testRenduTelephoneOptimizerCombatEffectifAffiche } from './rendu/optimizer-equipes.test';
 import { verificationsImportSpeedTune } from './import-speed-tune.test';
 import { verificationsPlanSpeedTune } from './plan-speed-tune.test';
+import { verificationsSpeedTuneDepuisPlan } from './speed-tune-depuis-plan.test';
 import { testRenduOptimizerPointGestes, testRenduTelephoneOptimizerPointGestes, testRenduOptimizerPointReimport,
   testRenduTelephoneOptimizerPointReimport, testRenduOptimizerPointCompteVide, testRenduTelephoneOptimizerPointCompteVide,
   testRenduOptimizerPointSansMemoireChangementListe, testRenduTelephoneOptimizerPointSansMemoireChangementListe,
@@ -387,7 +389,7 @@ import { testRenduRecosPage, testRenduRecosEnTete, testRenduRecosDeploiement, te
 import testAnnulerEdition from './annuler-edition.test';
 import { testRenduRunesResume, testRenduRunesListe, testRenduRunesCourbes, testRenduRunesComparaison, testRenduRunesOptimisation, testRenduRunesAVenir, testRenduRunesFiltresLigne, testRenduRunesTriOnglets, testRenduRunesResumeSouris, testRenduRunesListeSouris, testRenduRunesVuesSouris } from './rendu/runes.test';
 import { testRenduCompteMonstres, testRenduCompteArtefactsResume, testRenduCompteArtefactsListe, testRenduCompteArtefactsTop, testRenduCompteSouris, testRenduCompteEffacerFiltres } from './rendu/compte.test';
-import { testRenduSpeedTuneVide, testRenduSpeedTuneCamps, testRenduSpeedTuneAnalyse } from './rendu/speed-tune.test';
+import { testRenduSpeedTuneVide, testRenduSpeedTuneCamps, testRenduSpeedTuneAnalyse, testRenduSpeedTuneAppliquer } from './rendu/speed-tune.test';
 import { testRenduOptimizerVide, testRenduOptimizerMonstre, testRenduOptimizerReglages, testRenduTelephoneOptimizer } from './rendu/optimizer.test';
 import { testRenduOptimizerGabaritsComposants, testRenduOptimizerGabaritsVue, testRenduOptimizerGabaritsAdresse } from './rendu/optimizer-gabarits.test';
 import { testRenduOptimizerGabaritsColonnes, testRenduOptimizerGabaritsDroite, testRenduOptimizerPageBureauDroite } from './rendu/optimizer-gabarits-droite.test';
@@ -588,6 +590,7 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testRenduSpeedTuneVide', testRenduSpeedTuneVide],
   ['testRenduSpeedTuneCamps', testRenduSpeedTuneCamps],
   ['testRenduSpeedTuneAnalyse', testRenduSpeedTuneAnalyse],
+  ['testRenduSpeedTuneAppliquer', testRenduSpeedTuneAppliquer],
   ['testRenduOptimizerVide', testRenduOptimizerVide],
   ['testRenduOptimizerGabaritsComposants', testRenduOptimizerGabaritsComposants],
   ['testRenduOptimizerGabaritsVue', testRenduOptimizerGabaritsVue],
@@ -883,6 +886,7 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ...verificationsImportEquipes,
   ...verificationsImportSpeedTune,
   ...verificationsPlanSpeedTune,
+  ...verificationsSpeedTuneDepuisPlan,
   ...verificationsImportReco,
   ...verificationsImportRecoCopies,
   ...verificationsRecoCollab,
@@ -1202,6 +1206,8 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testRenduTelephoneOptimizerLeadEquipePersonnel', testRenduTelephoneOptimizerLeadEquipePersonnel],
   ['testRenduOptimizerDialogueEquipe', testRenduOptimizerDialogueEquipe],
   ['testRenduTelephoneOptimizerDialogueEquipe', testRenduTelephoneOptimizerDialogueEquipe],
+  ['testRenduOptimizerSpeedTuneOutil', testRenduOptimizerSpeedTuneOutil],
+  ['testRenduTelephoneOptimizerSpeedTuneOutil', testRenduTelephoneOptimizerSpeedTuneOutil],
   ['testRenduOptimizerDialogueLeaderSkill', testRenduOptimizerDialogueLeaderSkill],
   ['testRenduTelephoneOptimizerDialogueLeaderSkill', testRenduTelephoneOptimizerDialogueLeaderSkill],
   ['testRenduOptimizerDialogueLeaderEspece', testRenduOptimizerDialogueLeaderEspece],

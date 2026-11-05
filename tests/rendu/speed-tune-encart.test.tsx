@@ -47,6 +47,9 @@ export function testRenduSpeedTuneEncart() {
   ok(/aria-expanded="true"[^>]*>[\s\S]*?Vitesses de M9101/.test(html) && html.includes('<table'), 'le titre de la zone replie le tableau, déplié par défaut');
   ok(!pret.includes('Les autres lignes du plan'), 'pas d’intitulé au-dessus des autres lignes');
   ok(pret.includes(s.detacher) && !pret.includes(s.rattacher), 'attaché : « Détacher » seul');
+  ok(!pret.includes(s.modifier), 'sans ouverture possible : pas de « Modifier le speed tune »');
+  ok(texteVisible(rendre(<SpeedTuneEncart m={{ ...brut(), detacher: rien, rattacher: rien, recalculer: rien, restaurer: rien }} monstres={bestiaire} donnees={d} onModifier={rien} />)).includes(s.modifier),
+    '« Modifier le speed tune » à côté de « Détacher »');
   ok(membre({ zone: { etat: 'kits' } }).includes(s.kitsEnCours), 'kits en lecture : dit');
   ok(membre({ zone: { etat: 'calcul', empreinte: 'x' } }).includes(s.zoneEnCours), 'zone en calcul : dit');
   ok(membre({ zone: { etat: 'prete', empreinte: 'x', contrainte: null } }).includes(s.zoneVide), 'zone vide : la recherche ne part pas');

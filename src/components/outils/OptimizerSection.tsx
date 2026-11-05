@@ -185,6 +185,8 @@ import { useLangue, useTraduction } from '../../hooks/useLangue';
 import type { Dictionnaire } from '../../i18n/fr';
 import { formatNombre } from '../../i18n/format';
 import { useSpeedTuneMembre } from '../../hooks/useSpeedTuneMembre';
+import { useSpeedTuneDepuisOptimizer } from '../../hooks/useSpeedTuneDepuisOptimizer';
+import SpeedTuneModale from './SpeedTuneModale';
 import SpeedTuneEncart from './optimizer/SpeedTuneEncart';
 import { CODE_206, empreinteSpeedTune, enveloppeZone, exigenceSousSpeedTune } from '../../lib/contrainteSpeedTune';
 import { entreesDuGear, validationTient } from '../../lib/speedTuneMembre';
@@ -1304,6 +1306,13 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
     teams: lists.teams, validated: lists.validated, activeListId: lists.activeListId, selector: sourceSelector,
     data: exclusionData, runeById, artifactById, artifacts, allMonsters, pool, comboSets,
     setTeams: lists.setTeams, poserRepli: poserRepliSpeedTune,
+  });
+  // L'outil de speed tuning ouvert sur une équipe de la liste, et son plan
+  // appliqué à l'équipe (feat-speed-tune-depuis-optimizer.md).
+  const speedTuneOutil = useSpeedTuneDepuisOptimizer({
+    teams: lists.teams, validated: lists.validated, activeListId: lists.activeListId, data: exclusionData,
+    runeById, artifactById, allMonsters, memories: lists.memories, selectionne: ownSelectorKey,
+    setTeams: lists.setTeams, writeMemory: lists.writeMemory, poserRepli: poserRepliSpeedTune,
   });
   const speedTuneAttache = !!speedTuneMembre?.lien.attache;
   const contrainteSpeedTune = speedTuneMembre?.contrainte ?? null;
@@ -2816,6 +2825,7 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
   // grille des conditions qui le porte.
   const encartSpeedTune = speedTuneMembre
     ? <SpeedTuneEncart m={speedTuneMembre} monstres={speedTuneMembre.monstres} donnees={speedTuneMembre.donnees}
+        onModifier={lists.listContents.get(speedTuneMembre.equipe.listId) === 'guilde' ? () => speedTuneOutil.ouvrir(speedTuneMembre.equipe) : undefined}
         zoneChangee={(() => {
           const photo = search.contexte?.resolution?.artifactParams.speedTune;
           return !!photo && empreinteSpeedTune(photo) !== empreinteSpeedTune(contrainteSpeedTune);
@@ -2866,7 +2876,7 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
     } else setRappelAuras(null);
   }
 
-  const rapportZoneC = [...lists.rapportStockage, ...optimizer.rapportCriteres];
+  const rapportZoneC = [...lists.rapportStockage, ...optimizer.rapportCriteres, ...speedTuneOutil.messages];
   // La liste de travail (zone C), une fois : dans « Monstre & équipement » au
   // téléphone, dans les essentiels au bureau.
   const proprietesListe: MonstresDeLaListeProps = {
@@ -2889,6 +2899,7 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
     rappelAuras: rappelAuras !== null,
     listHasValidated,
     setReleaseAllConfirm,
+    onSpeedTune: activeList && lists.listContents.get(activeList.id) === 'guilde' ? speedTuneOutil.ouvrir : undefined,
   };
   const zoneCContent = <MonstresDeLaListe {...proprietesListe} />;
 
@@ -3341,6 +3352,9 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
       )}
       {equipeOuverte && <OptimizerEquipeDialog contexte={lists} listId={equipeOuverte.listId} equipe={equipeOuverte.equipe}
         data={exclusionData} onValider={lists.setTeams} onClose={() => setEquipeOuverte(null)} />}
+      {speedTuneOutil.ouverte && <SpeedTuneModale allMonsters={allMonsters} siegeDefenseTeams={siegeDefenseTeams}
+        siegeOffenseTeams={siegeOffenseTeams} onClose={speedTuneOutil.fermer}
+        appliquer={{ ouverture: speedTuneOutil.ouverte.ouverture, onAppliquer: speedTuneOutil.appliquer }} />}
     </>
   );
 

@@ -7,6 +7,7 @@ la paire d'artéfacts gardent l'ordre de tour réglé dans l'outil.
 Voir aussi : [../speed-tuning/feat-export-optimizer.md](../speed-tuning/feat-export-optimizer.md),
 [../speed-tuning/feat-ordre-des-sorts.md](../speed-tuning/feat-ordre-des-sorts.md),
 [feat-import-equipes.md](feat-import-equipes.md),
+[feat-speed-tune-depuis-optimizer.md](feat-speed-tune-depuis-optimizer.md) (régler ou corriger le plan sans repasser par une liste),
 [ecran/sous-proprietes-verrouillees.md](ecran/sous-proprietes-verrouillees.md).
 
 Fichiers : `src/lib/planSpeedTune.ts` (le plan, son plateau, sa zone et son

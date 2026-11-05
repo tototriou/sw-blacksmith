@@ -39,12 +39,14 @@ export function VerdictSpeedTune({ verdict, nom }: { verdict: VerdictEquipe | nu
   return <p className="text-xs font-semibold text-bad">{s.verdictCasse(raison)}</p>;
 }
 
-export default function SpeedTuneEncart({ m, monstres, donnees, zoneChangee = false }: {
+export default function SpeedTuneEncart({ m, monstres, donnees, zoneChangee = false, onModifier }: {
   m: SpeedTuneDuMembre & { detacher: () => void; rattacher: () => void; recalculer: (e: readonly EcartLigne[]) => void; restaurer: (uid: string) => void };
   monstres: Bestiaire;
   donnees: DonneesKit | null;
   // Les résultats affichés viennent d'une autre zone que l'actuelle.
   zoneChangee?: boolean;
+  // Ouvre l'outil de speed tuning sur l'équipe du membre.
+  onModifier?: () => void;
 }) {
   const t = useTraduction();
   const langue = useLangue();
@@ -61,9 +63,12 @@ export default function SpeedTuneEncart({ m, monstres, donnees, zoneChangee = fa
     <section aria-label={s.titre} className="mt-3 border-t border-border-soft pt-3">
       <div className="flex items-center justify-between gap-2 flex-wrap mb-1.5">
         <p className="label">{s.titreMembre(nom(m.lien.uid))}</p>
-        {m.lien.attache
-          ? <Bouton fond="vide" taille="sm" onClick={m.detacher} libelle={s.detacher} />
-          : m.plan && <Bouton fond="vide" taille="sm" onClick={m.rattacher} libelle={s.rattacher} />}
+        <span className="flex flex-wrap items-center gap-1">
+          {onModifier && <Bouton fond="vide" taille="sm" onClick={onModifier} libelle={s.modifier} />}
+          {m.lien.attache
+            ? <Bouton fond="vide" taille="sm" onClick={m.detacher} libelle={s.detacher} />
+            : m.plan && <Bouton fond="vide" taille="sm" onClick={m.rattacher} libelle={s.rattacher} />}
+        </span>
       </div>
       {!m.plan ? (
         <p className="text-xs text-bad">{s.planPerdu}</p>

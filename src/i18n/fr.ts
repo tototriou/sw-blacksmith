@@ -2083,6 +2083,10 @@ export const fr = {
       conditionBloquante: (min: string, max: string) =>
         `Contrainte de speed tune : la recherche exige une VIT de fiche entre ${min} et ${max}, puis une paire d’artéfacts dont l’effet tient la zone avec cette fiche.`,
       zoneChangee: 'La zone a changé depuis la recherche.',
+      regler: 'Régler le speed tune',
+      modifier: 'Modifier le speed tune',
+      ouvertureImpossible: (id: string) =>
+        `Speed tune : un monstre du plan (n° ${id}) manque au bestiaire, l’outil ne peut pas s’ouvrir sans perdre sa ligne.`,
     },
     conditions: {
       titre: 'Conditions',
@@ -2898,6 +2902,16 @@ export const fr = {
       ajouterEquipe: 'Ajouter un monstre à ton équipe…',
       exporter: "Exporter vers l'Optimizer",
       exporterAide: 'Exporter ton équipe et ses critères, puis ouvrir l’Optimizer.',
+      appliquer: "Appliquer à l'équipe",
+      appliquerAide: "Remplacer le speed tune de l'équipe de l'Optimizer par celui-ci.",
+      lectureKits: 'Lecture des kits…',
+      vitesseManquante: (nom: string) => `Vitesse de runes de ${nom} à saisir.`,
+      perteOrigine: 'Appliquer remplace les valeurs d’origine du speed tuning.',
+      verdictDifferent: {
+        titre: 'Verdict différent',
+        message: 'Le verdict affiché n’est pas celui du plan : relance l’analyse ou applique quand même.',
+        action: 'Appliquer quand même',
+      },
     },
     choixSort: {
       aucun: 'Aucun sort',

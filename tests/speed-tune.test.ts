@@ -2621,7 +2621,7 @@ export function testSpeedTuneAuto() {
   // validerait exactement ce qu'on lui a dit, et manquerait la suivante.
   {
     const source = readFileSync('src/hooks/useSpeedTune.ts', 'utf8');
-    const cles = [...source.matchAll(/useStickyState[^(]*\(\s*'([^']+)'/g)].map((m) => m[1]);
+    const cles = [...source.matchAll(/(?:useStickyState|useCle)[^(]*\(\s*'([^']+)'/g)].map((m) => m[1]);
     ok(cles.length >= 10, `${cles.length} clés collantes trouvées dans le hook`);
     const horsPrefixe = cles.filter((c) => !c.startsWith(PREFIXE_SPEED_TUNE));
     egal(

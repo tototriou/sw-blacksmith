@@ -1954,6 +1954,10 @@ export const en: Dictionnaire = {
       conditionBloquante: (min: string, max: string) =>
         `Speed tune constraint: the search requires a sheet SPD between ${min} and ${max}, then an artifact pair whose effect keeps the zone with that sheet.`,
       zoneChangee: 'The zone has changed since the search.',
+      regler: 'Set the speed tune',
+      modifier: 'Edit the speed tune',
+      ouvertureImpossible: (id: string) =>
+        `Speed tune: a monster of the plan (no. ${id}) is missing from the bestiary; the tool cannot open without losing its line.`,
     },
     conditions: {
       titre: 'Conditions',
@@ -2718,6 +2722,16 @@ export const en: Dictionnaire = {
       ajouterEquipe: 'Add a monster to your team…',
       exporter: 'Export to the Optimizer',
       exporterAide: 'Export your team and its criteria, then open the Optimizer.',
+      appliquer: 'Apply to the team',
+      appliquerAide: "Replace the Optimizer team's speed tune with this one.",
+      lectureKits: 'Reading kits…',
+      vitesseManquante: (nom: string) => `${nom}'s rune speed is missing.`,
+      perteOrigine: 'Applying replaces the original speed tuning values.',
+      verdictDifferent: {
+        titre: 'Different verdict',
+        message: 'The verdict shown is not the plan’s: run the analysis again or apply anyway.',
+        action: 'Apply anyway',
+      },
     },
     choixSort: {
       aucun: 'No skill',

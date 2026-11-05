@@ -58,7 +58,9 @@ import { chargerDetail } from '../lib/monsterSkills';
 import { teamSummary } from '../lib/recoFromSiege';
 import { formesJouables } from '../lib/monsterForms';
 import { useAdversaireReference } from './useAdversaireReference';
+import { useDonneesKitPlan } from './useZoneSpeedTune';
 import { useStickyState } from './useStickyState';
+import { etatDepuisPlan, type EtatOutil, type OuvertureOptimizer } from '../lib/speedTuneDepuisPlan';
 import { useTraduction } from './useLangue';
 
 // Un deck proposé à l'import : une équipe de siège et le camp d'où elle vient.
@@ -88,12 +90,19 @@ export interface DeckInitial {
 // ⚠️ Le hook n'expose AUCUN JSX : ce qui se dessine (pastilles, tableaux) reste
 // dans le composant, ce qui se calcule reste ici.
 export const PREFIXE_SPEED_TUNE = 'speedTune.';
+// L'espace de la modale ouverte depuis l'Optimizer : un état à part, jamais
+// celui de la page (feat-speed-tune-depuis-optimizer.md). Sous le préfixe de
+// l'outil, pour être remis à zéro avec lui au changement de compte.
+export const ESPACE_SPEED_TUNE_OPTIMIZER = `${PREFIXE_SPEED_TUNE}optimizer.`;
+
+export type { OuvertureOptimizer };
 
 export function useSpeedTune({
   allMonsters,
   siegeDefenseTeams,
   siegeOffenseTeams,
   deckInitial,
+  ouverture,
 }: {
   allMonsters: Monster[];
   siegeDefenseTeams: SiegeTeam[];
@@ -101,30 +110,33 @@ export function useSpeedTune({
   // L'équipe à charger dans « Ton équipe » à l'ouverture — l'outil ouvert
   // DEPUIS un deck. ⚠️ Une PROP, pas un message stocké : voir l'effet plus bas.
   deckInitial?: DeckInitial | null;
+  // Ouvert depuis l'Optimizer : un état à part, chargé depuis l'équipe.
+  ouverture?: OuvertureOptimizer | null;
 }) {
+  // ⚠️ Constant pendant la vie du composant : l'espace décide des clés lues.
+  const espace = useRef(ouverture ? ESPACE_SPEED_TUNE_OPTIMIZER : PREFIXE_SPEED_TUNE).current;
+  const useCle = <T,>(cle: string, initial: T) => useStickyState<T>(espace + cle.slice(PREFIXE_SPEED_TUNE.length), initial);
   const equipeVide = useTraduction().siege.equipeVide;
   // ⚠️ **TOUTES les clés collantes de l'outil portent ce préfixe**, sans
   // exception : c'est lui qui permet de tout réinitialiser d'un coup quand on
   // importe le JSON d'un AUTRE compte (voir App.tsx). Une clé ajoutée en dehors
   // survivrait au changement de compte et parlerait de monstres disparus — un
   // test le vérifie sur le SOURCE de ce fichier.
-  const [lignes, setLignes] = useStickyState<Ligne[]>('speedTune.lignes', []);
+  const [lignes, setLignes] = useCle<Ligne[]>('speedTune.lignes', []);
   // ⚠️ **Le lead d'un camp est un LEAD DE JEU, portée comprise** — pas un
   // pourcentage. « +33 % pour tous » et « +33 % pour les alliés Eau » ne se
   // disent pas avec le même nombre, et un deck peut imposer l'un comme l'autre.
   // C'est ce qui permet à l'encart de proposer TOUS les leads, et au calcul de
   // ne donner le bonus qu'à ceux qui y ont droit.
-  const [leadAllie, setLeadAllie] = useStickyState<LeadInfo | null>('speedTune.leadAllie', null);
-  const [leadEnnemi, setLeadEnnemi] = useStickyState<LeadInfo | null>(
-    'speedTune.leadEnnemi',
+  const [leadAllie, setLeadAllie] = useCle<LeadInfo | null>('speedTune.leadAllie', null);
+  const [leadEnnemi, setLeadEnnemi] = useCle<LeadInfo | null>('speedTune.leadEnnemi',
     null
   );
   // Le lead de ce camp a-t-il été CHOISI ? Tant que non, il suit la composition
   // (voir l'effet plus bas). ⚠️ Sans ce drapeau, choisir « Sans » alors qu'un
   // monstre du camp porte un lead se serait défait tout seul au rendu suivant —
   // un réglage qu'on ne peut pas poser est pire que pas de défaut du tout.
-  const [leadChoisi, setLeadChoisi] = useStickyState<Record<Camp, boolean>>(
-    'speedTune.leadChoisi',
+  const [leadChoisi, setLeadChoisi] = useCle<Record<Camp, boolean>>('speedTune.leadChoisi',
     { allie: false, ennemi: false }
   );
 
@@ -163,33 +175,33 @@ export function useSpeedTune({
   //
   // Ce drapeau ne dit qu'une chose : une analyse a déjà été appliquée. Il sert à
   // la REJOUER quand on change un sort — le seul changement qui la rend fausse.
-  const [auto, setAuto] = useStickyState<boolean>('speedTune.auto', false);
+  const [auto, setAuto] = useCle<boolean>('speedTune.auto', false);
   // Affichage de la card « Ordre des sorts ». ⚠️ Ce n'est QUE de l'affichage :
   // les sorts déjà choisis continuent de compter, refermer la card ne défait
   // rien. Sinon ce serait un piège — on masque pour gagner de la place, pas pour
   // annuler un réglage.
-  const [poussee, setPoussee] = useStickyState<boolean>('speedTune.poussee', true);
+  const [poussee, setPoussee] = useCle<boolean>('speedTune.poussee', true);
   // Affichage de la card d'analyse — même mécanique que celle de l'ordre des
   // sorts : ⚠️ replier n'annule rien, c'est de la place qu'on gagne, pas un
   // réglage qu'on défait.
-  const [montrerAnalyse, setMontrerAnalyse] = useStickyState<boolean>('speedTune.montrer', true);
-  const [ordreVoulu, setOrdreVoulu] = useStickyState<string[]>('speedTune.ordre', []);
+  const [montrerAnalyse, setMontrerAnalyse] = useCle<boolean>('speedTune.montrer', true);
+  const [ordreVoulu, setOrdreVoulu] = useCle<string[]>('speedTune.ordre', []);
   // ⚠️ Tant qu'on n'a rien rangé à la main, l'ordre voulu SUIT les vitesses :
   // c'est le point de départ évident (« voilà l'ordre que tu as aujourd'hui »),
   // et il se recale quand une vitesse change. Le premier ▲▼ le fige — à partir
   // de là c'est un choix, et le réécrire serait une perte.
-  const [ordreRange, setOrdreRange] = useStickyState<boolean>('speedTune.ordreRange', false);
-  const [sortChoisi, setSortChoisi] = useStickyState<Record<string, string>>('speedTune.sorts', {});
+  const [ordreRange, setOrdreRange] = useCle<boolean>('speedTune.ordreRange', false);
+  const [sortChoisi, setSortChoisi] = useCle<Record<string, string>>('speedTune.sorts', {});
   // Le sort du SECOND tour, pour ceux dont la compétence leur rend leur tour
   // (Kroa) : on ne devine pas ce qu'ils lancent ensuite, c'est à désigner.
-  const [sortChoisi2, setSortChoisi2] = useStickyState<Record<string, string>>('speedTune.sorts2', {});
+  const [sortChoisi2, setSortChoisi2] = useCle<Record<string, string>>('speedTune.sorts2', {});
   // L'allié VISÉ par un sort qui n'en touche qu'un (S3 de Sapsaree). Vide = la
   // barre la plus basse, le défaut du moteur.
-  const [cibleSort, setCibleSort] = useStickyState<Record<string, string>>('speedTune.cibles', {});
+  const [cibleSort, setCibleSort] = useCle<Record<string, string>>('speedTune.cibles', {});
   // La valeur désignée d'un remplissage de barre AU CHOIX (buffs retirés par
   // Blade Fan, % de Start of Attacking), en paliers. Absent = 0 : ce que le
   // sort donne dépend de l'adverse, un speed tune ne l'attend pas.
-  const [atbChoisi, setAtbChoisi] = useStickyState<Record<string, number>>('speedTune.atbChoisi', {});
+  const [atbChoisi, setAtbChoisi] = useCle<Record<string, number>>('speedTune.atbChoisi', {});
 
   // Les données de kit sous la forme que la lib partagée attend.
   const donneesKit = useMemo(() => ({ kits, sorts, passifs }), [kits, sorts, passifs]);
@@ -260,6 +272,54 @@ export function useSpeedTune({
     () => new Map(allMonsters.map((m) => [String(m.id), m])),
     [allMonsters]
   );
+
+  // ⚠️ **Ouverture DEPUIS L'OPTIMIZER** : l'état est chargé une fois. Un plan
+  // attend les kits de TOUTES ses lignes, des deux camps, puis revient en lignes
+  // portant la projection du plan : l'outil rouvert donne le plateau du plan.
+  // L'analyse n'est pas relancée : elle prêterait des sorts absents et poserait
+  // une référence.
+  const [restauration, setRestauration] = useState<'attente' | 'prete' | 'introuvable' | null>(ouverture ? 'attente' : null);
+  const bestiaire = useMemo(() => new Map(allMonsters.map((m) => [m.id, m] as const)), [allMonsters]);
+  const poserEtat = (e: EtatOutil) => {
+    setAuto(false);
+    setLignes(e.lignes);
+    setLeadAllie(e.leads.allie);
+    setLeadEnnemi(e.leads.ennemi);
+    setLeadChoisi({ allie: true, ennemi: true });
+    setSortChoisi(e.choix.sort);
+    setSortChoisi2(e.choix.sort2);
+    setCibleSort(e.choix.cible);
+    setAtbChoisi(e.choix.atbChoisi);
+    setOrdreVoulu(e.ordre);
+    setOrdreRange(e.ordreRange);
+  };
+  // Les kits de TOUTES les lignes du plan, lus à part : ils ne dépendent pas
+  // des lignes de l'outil, qu'un geste pendant la lecture pourrait changer.
+  const planOuvert = ouverture && 'plan' in ouverture ? ouverture.plan : null;
+  const kitsPlan = useDonneesKitPlan(planOuvert, bestiaire);
+  const sansKit = !!planOuvert && planOuvert.lignes.every((l) => bestiaire.get(l.monsterId)?.com2usId == null);
+  const ouvert = useRef(false);
+  useEffect(() => {
+    if (ouvert.current || !ouverture) return;
+    if ('etat' in ouverture) {
+      ouvert.current = true;
+      poserEtat(ouverture.etat);
+      setRestauration('prete');
+      return;
+    }
+    if (!kitsPlan && !sansKit) return;
+    ouvert.current = true;
+    const e = etatDepuisPlan(ouverture.plan, kitsPlan?.donnees ?? { kits: new Map(), sorts: new Map(), passifs: new Map() }, bestiaire);
+    if (!('lignes' in e)) {
+      setRestauration('introuvable');
+      return;
+    }
+    poserEtat(e);
+    setRestauration('prete');
+  }, [ouverture, kitsPlan, sansKit, bestiaire]);
+  // « Appliquer » attend aussi les kits des lignes de l'outil : un plan construit
+  // sans eux perdrait les sorts et les gains de passif de référence.
+  const kitsLus = lignes.every((l) => l.monster.com2usId == null || kits.has(l.monster.com2usId));
 
   // Decks importables : les équipes de siège du compte qui portent au moins un
   // monstre connu. `cle` porte la source, jamais `team.id` seul — deux équipes
@@ -930,6 +990,9 @@ export function useSpeedTune({
 
 
   return {
+    restauration,
+    bestiaire,
+    kitsLus,
     aAllie,
     aEnnemi,
     nomDe,
