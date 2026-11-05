@@ -21,6 +21,12 @@
      avec la raison et la conduite à tenir ; sa **croix reste active**, parce
      que la retirer est le seul geste qui serve encore.
 
+   **Membre sous contrainte de speed tune** : l'« Effet aug. VIT » appartient
+   au rattachement. Il disparaît de la section et du menu, et une ligne déjà
+   posée est conservée dans les critères sans s'afficher ; détacher le speed
+   tune la remplace par la valeur de repli
+   ([../feat-contrainte-speed-tune.md § Détacher et rattacher](../feat-contrainte-speed-tune.md#détacher-et-rattacher)).
+
    ⚠️ **Le minimum vaut 1 % à la pose, et ne peut pas descendre à 0**.
    Un verrou à 0 est **inerte** — `paireRespecteLignes`
    passe les lignes à `min <= 0` : la ligne s'afficherait donc comme une

@@ -19,7 +19,13 @@ producteur du plateau, partagé avec l'outil),
 [importSpeedTuneOptimizer.ts](src/lib/importSpeedTuneOptimizer.ts) (l'export),
 [runeBuildOptim.ts](src/lib/runeBuildOptim.ts) et
 [artifactOptim.ts](src/lib/artifactOptim.ts) (l'élagage et le choix de la
-paire).
+paire), `src/lib/speedTuneMembre.ts` (les lignes de l'équipe, les bornes du
+membre, le verdict, les écarts, Recalculer et Restaurer, calcul pur),
+`src/hooks/useZoneSpeedTune.ts` et `src/workers/zoneSpeedTune.worker.ts` (les
+kits du plan et la zone calculée hors du fil de l'interface),
+`src/hooks/useSpeedTuneMembre.ts` (l'assemblage sur l'état de l'Optimizer),
+`src/components/outils/optimizer/SpeedTuneEncart.tsx` (l'encart),
+`scripts/lib/recipeToSearchParams.ts` (la recette rejouée par le CLI).
 
 ## Le plan de speed tune
 
@@ -292,8 +298,8 @@ le speed tuning peut porter 401.
   tuning », et « Restaurer » rend exactement les entrées d'origine.
 
 Le lead du plan reste celui du calcul : le speed tune a été réglé avec lui.
-Quand le lead effectif du membre dans l'Optimizer diffère, l'encart affiche
-les deux leads et la vitesse de combat sous chacun, sans bouton.
+L'affichage des deux leads quand le lead effectif du membre dans l'Optimizer
+diffère n'est pas encore fait (voir « Limites »).
 
 ## Conversion vers le build
 
@@ -317,6 +323,9 @@ reste fixe pendant ce choix.
   apports atteignables de la recherche de runes ne suivent que les
   principales : ils ignorent le 206, restent optimistes et n'écartent aucun
   build.
+- **Résolution même sans optimisation des artéfacts** : sous contrainte, la
+  paire se juge à la résolution même quand « ignorer les artéfacts » est
+  coché ; sans paire, le build n'est pas affiché.
 - **Validation finale** : le test exact de la section précédente, à la
   résolution de l'équipement de chaque build, là où se juge déjà le filtre
   final des conditions sur la vraie paire. Seules les paires dont le 206 tombe
@@ -362,8 +371,17 @@ minimum et le verrou « Effet aug. VIT » :
   les écarts de la section dédiée, avec leurs boutons ;
 - un bouton « Détacher le speed tune ».
 
-Le verdict d'équipe s'affiche avec l'équipe. Les deux formats ont le même
-contenu ; l'encart suit la grille des conditions de chaque format.
+Le verdict d'équipe s'affiche en tête de l'encart de chaque membre de l'équipe,
+pas encore dans la liste des équipes. Tant que le membre est attaché, la case
+« Min » de VIT dit « speed tune » et ne se saisit pas, et l'« Effet aug. VIT »
+disparaît de l'éditeur des sous-propriétés verrouillées (sans être effacé des
+critères) ; la VIT maximum reste saisissable et resserre l'enveloppe. Les
+deux formats ont le même contenu ; l'encart suit la grille des conditions de
+chaque format.
+
+L'encart dit aussi les états d'attente : lecture des kits, zone en calcul, zone
+vide (aucune vitesse ne tient l'ordre : la recherche ne part pas), aucun set
+admis par la précondition des cumuls.
 
 ### Détacher et rattacher
 
@@ -375,6 +393,16 @@ par « Recalculer » et « Restaurer ». Détacher pose ces deux valeurs (le ver
 seulement s'il est positif) à la place de ces deux champs ; les autres critères
 ne bougent pas. « Rattacher » repose la contrainte et masque de nouveau les
 deux champs. Le plan reste sur l'équipe dans les deux cas.
+
+## Recette et CLI
+
+La recette exportée porte la contrainte calculée (`speedTune`, version 1),
+validée à la lecture : une contrainte malformée refuse la recette et nomme le
+champ. Le CLI la rejoue comme l'écran : exigence de VIT sous l'enveloppe, 206
+incomparable et sans verrou, résolution même avec les artéfacts ignorés ; une
+zone sans aucun set admis refuse la recherche. L'écran, lui, ignore la
+contrainte d'une recette importée et le dit : la zone se recalcule depuis le
+plan de l'équipe, jamais depuis un fichier.
 
 ## Persistance
 
@@ -404,3 +432,8 @@ stockage.
   couvert.
 - Les membres se cherchent un par un : un membre sans build validé compte pour
   ses valeurs du plan.
+- Pas encore faits : l'affichage des deux leads quand le lead effectif diffère,
+  l'annonce de « Recalculer » quand les gains d'une ligne changent, le verdict
+  dans la liste des équipes ; un échec de lecture des kits laisse l'encart sur
+  « lecture des kits ». Suivi :
+  [pistes-optimizer.md § Contrainte de speed tune : ce qui reste à faire](../../05-feuille-de-route/pistes-optimizer.md#contrainte-de-speed-tune--ce-qui-reste-à-faire).
