@@ -17,6 +17,7 @@ import {
 } from './artifactEvaluation';
 import { apportExclusive, statsAvecApport } from './relicExclusive';
 import { estExceptionRegleR } from './resolutionRapide';
+import { CODE_206, lignesSousSpeedTune, type ContrainteSpeedTune } from './contrainteSpeedTune';
 
 /**
  * Les emplacements figés sur « Comme équipé ». Une sorte absente
@@ -78,6 +79,10 @@ export const AUCUN_ARTEFACT_RESERVE: ReadonlySet<number> = new Set();
  *   l'écran pose une note de dégâts sur ces mêmes paramètres hors de
  *   l'objectif « Dégâts réels » (« Meilleurs artéfacts offensifs ») ; une
  *   dominance en moins sous une autre note ne coûte que du temps.
+ * - `speedTune` : la contrainte de speed tune du membre attaché à son plan
+ *   (`contrainteDuMembre`, planSpeedTune.ts), `null` sans elle. Elle rend le
+ *   206 incomparable, retire son verrou et suit les paramètres jusqu'à la
+ *   résolution de chaque build (`entreeResolutionDuBuild`).
  */
 export function parametresArtefactsFiche(e: {
   porteur: PorteurArtefact;
@@ -90,6 +95,7 @@ export function parametresArtefactsFiche(e: {
   damageSetup: DamageSetup;
   maxStats: Partial<Record<StatKey, number>>;
   sortDegats: number | null;
+  speedTune: ContrainteSpeedTune | null;
 }): Omit<ArtifactSearchParams, 'evaluer'> & Required<Pick<ArtifactSearchParams, 'lignesVerrouillees' | 'codesAmplification' | 'maxStatsActifs'>> {
   return {
     porteur: e.porteur,
@@ -105,11 +111,20 @@ export function parametresArtefactsFiche(e: {
     // exprime une exigence que la pièce figée doit tenir, ce que
     // `paireRespecteLignes` vérifie.
     lignesVerrouillees:
-      e.optimiserArtefacts && sortesFigeesDe(e.principaleParSorte).length < ARTIFACT_KINDS.length ? e.lignesVerrouillees : [],
+      e.optimiserArtefacts && sortesFigeesDe(e.principaleParSorte).length < ARTIFACT_KINDS.length
+        ? lignesSousSpeedTune(e.lignesVerrouillees, e.speedTune)
+        : [],
     codesAmplification: codesAmplificationActifs(e.damageSetup),
     maxStatsActifs: (Object.keys(e.maxStats) as StatKey[]).filter((k) => (e.maxStats[k] ?? 0) > 0),
     // Absent hors exception : les paramètres des autres sorts restent ceux d'avant, champ pour champ.
     ...(e.sortDegats != null && estExceptionRegleR(e.sortDegats) ? { sansDominance: true } : {}),
+    // ⚠️ **Sous une contrainte de speed tune, le 206 n'a plus de sens.** Un
+    // 206 plus fort peut faire jouer trop tôt : chaque valeur distincte doit
+    // survivre au préfiltre (`codesIncomparables`), et le verrou du 206, que
+    // le rattachement possède, disparaît (`lignesSousSpeedTune`). Même avec
+    // les deux emplacements figés : la paire figée est alors jugée seule.
+    // Absent sans contrainte : les paramètres d'avant, champ pour champ.
+    ...(e.speedTune ? { speedTune: e.speedTune, codesIncomparables: [CODE_206] } : {}),
   };
 }
 

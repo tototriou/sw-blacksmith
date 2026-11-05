@@ -24,6 +24,7 @@ import { preuvesRechercheCreationOptimizer, preuvesEditionListeOptimizer, preuve
 import { preuvesRechercheOptimizer } from './optimizer-recherche-preuves';
 import { preuvesCreationObligatoire, preuvesEtatAuras, preuvesEnteteEquipe, preuvesDialogueElement, preuvesActionsZoneC } from './optimizer-retouches-preuves';
 import { preuvesEquipeImpossible } from './optimizer-equipe-impossible-preuves';
+import { preuvesSpeedTuneDepuisOptimizer } from './optimizer-speed-tune-outil-preuves';
 import { preuvesReglagesAvances, preuvesGuidage, preuvesRappelDeuxRendus, preuvesListesEcran, preuvesMessageImport, preuvesResultats } from './optimizer-ecran-preuves';
 import { rechercheClasseeTest } from './optimizer-classement-banc';
 import { preuvesCarteContexte, preuvesFiltresBranchement, preuvesFiltresEcran, preuvesFiltresMemoire, preuvesFiltresMesure } from './optimizer-filtres-preuves';
@@ -200,6 +201,7 @@ export async function scenario(nom: string): Promise<[boolean, string][]> {
   if (nom === 'lead-equipe') return preuvesLeadEquipeOptimizer(bancEquipes);
   if (nom === 'dialogue-equipe') return preuvesDialogueEquipeOptimizer(bancEquipes);
   if (nom === 'contenu-creation') return preuvesContenuCreationOptimizer(bancEquipes);
+  if (nom === 'speed-tune-outil') return preuvesSpeedTuneDepuisOptimizer(bancEquipes, monstres);
   if (nom === 'identite-enregistree') return preuvesIdentiteEnregistree({ etat: () => etat, listes: () => listes,
     data: () => compteActuel, changerBox, geste, premier });
   const supplement = await preuvesSupplementaires(nom, { etat: () => etat, listes: () => listes, geste, premier, second, rta, siege });

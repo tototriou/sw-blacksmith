@@ -34,6 +34,7 @@ import { testOptimizerImportActionDemontee, testOptimizerImportEcrituresGroupees
   testRenduTelephoneOptimizerImportRta, testRenduOptimizerImportIndisponible, testRenduTelephoneOptimizerImportIndisponible, testRenduOptimizerImportRapportPartage, testRenduOptimizerImportDisponibiliteMemoisee } from './rendu/optimizer-import.test';
 import { testRenduOptimizerLeadEquipePersonnel, testRenduTelephoneOptimizerLeadEquipePersonnel,
   testRenduOptimizerDialogueEquipe, testRenduTelephoneOptimizerDialogueEquipe,
+  testRenduOptimizerSpeedTuneOutil, testRenduTelephoneOptimizerSpeedTuneOutil,
   testRenduOptimizerCreationContenu, testRenduTelephoneOptimizerCreationContenu,
   testRenduOptimizerRefusIdentitePerime, testRenduTelephoneOptimizerRefusIdentitePerime,
   testRenduOptimizerRecetteLeadEquipe, testRenduTelephoneOptimizerRecetteLeadEquipe,
@@ -42,6 +43,8 @@ import { testRenduOptimizerLeadEquipePersonnel, testRenduTelephoneOptimizerLeadE
   testRenduOptimizerLigneListe, testRenduTelephoneOptimizerLigneListe,
   testRenduOptimizerCombatEffectifAffiche, testRenduTelephoneOptimizerCombatEffectifAffiche } from './rendu/optimizer-equipes.test';
 import { verificationsImportSpeedTune } from './import-speed-tune.test';
+import { verificationsPlanSpeedTune } from './plan-speed-tune.test';
+import { verificationsSpeedTuneDepuisPlan } from './speed-tune-depuis-plan.test';
 import { testRenduOptimizerPointGestes, testRenduTelephoneOptimizerPointGestes, testRenduOptimizerPointReimport,
   testRenduTelephoneOptimizerPointReimport, testRenduOptimizerPointCompteVide, testRenduTelephoneOptimizerPointCompteVide,
   testRenduOptimizerPointSansMemoireChangementListe, testRenduTelephoneOptimizerPointSansMemoireChangementListe,
@@ -77,7 +80,7 @@ import { testMemoireOptimizerRejetsConserves, testMemoireOptimizerTextesCriteres
 import { testOptimizerRattachementReferenceConservee } from './optimizer-rattachement-attribution.test';
 import { testOptimizerRattachementIdentites, verificationsOptimizerRattachementOrdres, testOptimizerRattachementDepartageEtPrises,
   testOptimizerRattachementCopiesSansExemplaire, testOptimizerRattachementPermutationEtProprietaire,
-  testOptimizerRattachementRuneVendue, testOptimizerRattachementDefensesComplet, testOptimizerRattachementBranchement } from './optimizer-rattachement.test';
+  testOptimizerRattachementRuneVendue, testOptimizerRattachementDefensesComplet, testOptimizerRattachementBranchement, testOptimizerRattachementSpeedTune } from './optimizer-rattachement.test';
 import testMeules, { testGemmeMemeStat, testRegemmeDifferent, testReserveParGrade, testPalier, testRegistre, testSansDowngrade } from './meules.test';
 import testArtefacts from './artefacts.test';
 import testArtefactsTop from './artefacts-top.test';
@@ -318,6 +321,10 @@ import testTestConjointExact from './test-conjoint-exact.test';
 import testRelicQueue from './relic-queue.test';
 import testResolutionRapide, { testResolutionConfirmation, testResolutionRapideNaN } from './resolution-rapide.test';
 import testResolutionDominanceReliques from './resolution-dominance-reliques.test';
+import testResolutionSpeedTune from './resolution-speed-tune.test';
+import { testSpeedTuneEquipeLecture, testSpeedTuneEquipeMembres, testSpeedTuneEquipeStockage } from './speed-tune-equipe.test';
+import { testSpeedTuneRecetteLecture, testSpeedTuneRecetteCli } from './speed-tune-recette.test';
+import { testSpeedTuneMembreAdaptateur, testSpeedTuneMembreLignes, testSpeedTuneMembreEcarts, testSpeedTuneMembreBornesEtDetachement } from './speed-tune-membre.test';
 import testMemoCombat from './memo-combat.test';
 import testDominanceLecteursCorpus from './dominance-lecteurs-corpus.test';
 import testMonotonieDegatsCorpus from './monotonie-degats-corpus.test';
@@ -382,10 +389,11 @@ import { testRenduRecosPage, testRenduRecosEnTete, testRenduRecosDeploiement, te
 import testAnnulerEdition from './annuler-edition.test';
 import { testRenduRunesResume, testRenduRunesListe, testRenduRunesCourbes, testRenduRunesComparaison, testRenduRunesOptimisation, testRenduRunesAVenir, testRenduRunesFiltresLigne, testRenduRunesTriOnglets, testRenduRunesResumeSouris, testRenduRunesListeSouris, testRenduRunesVuesSouris } from './rendu/runes.test';
 import { testRenduCompteMonstres, testRenduCompteArtefactsResume, testRenduCompteArtefactsListe, testRenduCompteArtefactsTop, testRenduCompteSouris, testRenduCompteEffacerFiltres } from './rendu/compte.test';
-import { testRenduSpeedTuneVide, testRenduSpeedTuneCamps, testRenduSpeedTuneAnalyse } from './rendu/speed-tune.test';
+import { testRenduSpeedTuneVide, testRenduSpeedTuneCamps, testRenduSpeedTuneAnalyse, testRenduSpeedTuneAppliquer } from './rendu/speed-tune.test';
 import { testRenduOptimizerVide, testRenduOptimizerMonstre, testRenduOptimizerReglages, testRenduTelephoneOptimizer } from './rendu/optimizer.test';
 import { testRenduOptimizerGabaritsComposants, testRenduOptimizerGabaritsVue, testRenduOptimizerGabaritsAdresse } from './rendu/optimizer-gabarits.test';
 import { testRenduOptimizerGabaritsColonnes, testRenduOptimizerGabaritsDroite, testRenduOptimizerPageBureauDroite } from './rendu/optimizer-gabarits-droite.test';
+import { testRenduSpeedTuneEncart } from './rendu/speed-tune-encart.test';
 import { testRenduOptimizerGabaritsGestes, testRenduOptimizerGabaritsLargeurs } from './rendu/optimizer-gabarits-navigateur.test';
 import { testRenduOptimizerCarteResultatBureau, testRenduOptimizerCarteResultatTelephone } from './rendu/optimizer-carte-resultat-navigateur.test';
 import { testRenduOptimizerComparerValidationBureau, testRenduOptimizerComparerValidationTelephone,
@@ -582,12 +590,14 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testRenduSpeedTuneVide', testRenduSpeedTuneVide],
   ['testRenduSpeedTuneCamps', testRenduSpeedTuneCamps],
   ['testRenduSpeedTuneAnalyse', testRenduSpeedTuneAnalyse],
+  ['testRenduSpeedTuneAppliquer', testRenduSpeedTuneAppliquer],
   ['testRenduOptimizerVide', testRenduOptimizerVide],
   ['testRenduOptimizerGabaritsComposants', testRenduOptimizerGabaritsComposants],
   ['testRenduOptimizerGabaritsVue', testRenduOptimizerGabaritsVue],
   ['testRenduOptimizerGabaritsAdresse', testRenduOptimizerGabaritsAdresse],
   ['testRenduOptimizerGabaritsColonnes', testRenduOptimizerGabaritsColonnes],
   ['testRenduOptimizerGabaritsDroite', testRenduOptimizerGabaritsDroite],
+  ['testRenduSpeedTuneEncart', testRenduSpeedTuneEncart],
   ['testRenduOptimizerPageBureauDroite', testRenduOptimizerPageBureauDroite],
   ['testRenduOptimizerGabaritsGestes', testRenduOptimizerGabaritsGestes],
   ['testRenduOptimizerGabaritsLargeurs', testRenduOptimizerGabaritsLargeurs],
@@ -875,6 +885,8 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ...verificationsOptimizerEquipesActivite,
   ...verificationsImportEquipes,
   ...verificationsImportSpeedTune,
+  ...verificationsPlanSpeedTune,
+  ...verificationsSpeedTuneDepuisPlan,
   ...verificationsImportReco,
   ...verificationsImportRecoCopies,
   ...verificationsRecoCollab,
@@ -944,6 +956,16 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testResolutionRapideNaN', testResolutionRapideNaN],
   ['testResolutionConfirmation', testResolutionConfirmation],
   ['testResolutionDominanceReliques', testResolutionDominanceReliques],
+  ['testResolutionSpeedTune', testResolutionSpeedTune],
+  ['testSpeedTuneEquipeLecture', testSpeedTuneEquipeLecture],
+  ['testSpeedTuneEquipeMembres', testSpeedTuneEquipeMembres],
+  ['testSpeedTuneEquipeStockage', testSpeedTuneEquipeStockage],
+  ['testSpeedTuneMembreAdaptateur', testSpeedTuneMembreAdaptateur],
+  ['testSpeedTuneMembreLignes', testSpeedTuneMembreLignes],
+  ['testSpeedTuneMembreEcarts', testSpeedTuneMembreEcarts],
+  ['testSpeedTuneMembreBornesEtDetachement', testSpeedTuneMembreBornesEtDetachement],
+  ['testSpeedTuneRecetteLecture', testSpeedTuneRecetteLecture],
+  ['testSpeedTuneRecetteCli', testSpeedTuneRecetteCli],
   ['testMemoCombat', testMemoCombat],
   ['testDominanceLecteursCorpus', testDominanceLecteursCorpus],
   ['testMonotonieDegatsCorpus', testMonotonieDegatsCorpus],
@@ -1158,6 +1180,7 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testOptimizerRattachementRuneVendue', testOptimizerRattachementRuneVendue],
   ['testOptimizerRattachementDefensesComplet', testOptimizerRattachementDefensesComplet],
   ['testOptimizerRattachementBranchement', testOptimizerRattachementBranchement],
+  ['testOptimizerRattachementSpeedTune', testOptimizerRattachementSpeedTune],
   ['testMemoireOptimizerCopie', testMemoireOptimizerCopie],
   ['testMemoireOptimizerLecteurListes', testMemoireOptimizerLecteurListes],
   ['testMemoireOptimizerListesIllisibles', testMemoireOptimizerListesIllisibles],
@@ -1183,6 +1206,8 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testRenduTelephoneOptimizerLeadEquipePersonnel', testRenduTelephoneOptimizerLeadEquipePersonnel],
   ['testRenduOptimizerDialogueEquipe', testRenduOptimizerDialogueEquipe],
   ['testRenduTelephoneOptimizerDialogueEquipe', testRenduTelephoneOptimizerDialogueEquipe],
+  ['testRenduOptimizerSpeedTuneOutil', testRenduOptimizerSpeedTuneOutil],
+  ['testRenduTelephoneOptimizerSpeedTuneOutil', testRenduTelephoneOptimizerSpeedTuneOutil],
   ['testRenduOptimizerDialogueLeaderSkill', testRenduOptimizerDialogueLeaderSkill],
   ['testRenduTelephoneOptimizerDialogueLeaderSkill', testRenduTelephoneOptimizerDialogueLeaderSkill],
   ['testRenduOptimizerDialogueLeaderEspece', testRenduOptimizerDialogueLeaderEspece],

@@ -20,6 +20,7 @@ import { AutoExclusionScope, ExclusionSelector } from './optimizerExclusion';
 import { ArtifactKind, RUNE_SETS } from '../types';
 import { ArtifactMainChoice, RelicMainChoice, RelicUniqueChoice, SlotFilterPresetKey } from '../hooks/useOptimizerState';
 import { LigneVerrouillee } from './artifactOptim';
+import { contrainteValide, type ContrainteSpeedTune } from './contrainteSpeedTune';
 import { RuneMetric } from '../hooks/useRuneMetric';
 import { RELIC_UNIQUE, setsCost } from './effects';
 import { lireCompetencesInvocateur, normaliserCompetencesInvocateur } from './competencesInvocateur';
@@ -188,6 +189,12 @@ export interface OptimizerRecipe {
   // rien à re-résoudre contre le compte de qui importe, contrairement à
   // `excludedSelectors`. La règle de tête de ce fichier tient.
   lignesVerrouillees?: LigneVerrouillee[];
+  // La contrainte de speed tune du membre attaché à son plan, telle que la
+  // recherche l'a lue (feat-contrainte-speed-tune.md) : la zone déjà
+  // calculée, en données seules. OPTIONNELLE : absente, la recherche est
+  // celle d'avant. Le CLI la rejoue telle quelle ; l'écran ne la reprend pas,
+  // sa contrainte vient du plan de l'équipe du membre.
+  speedTune?: ContrainteSpeedTune;
   /**
    * Intention de recherche de relique : principale ET
    * propriété unique demandées, seuil de niveau. **Trois champs OPTIONNELS,
@@ -580,6 +587,7 @@ export function parseOptimizerRecipe(text: string, t: Dictionnaire): RecipeValid
       }
     }
   }
+  if (d.speedTune !== undefined && !contrainteValide(d.speedTune)) return echec(erreur('speedTune', (a) => a.contrainteSpeedTune));
   const damageSetupErreur = validerDamageSetup(d.damageSetup);
   if (damageSetupErreur) return echec(damageSetupErreur);
   if (d.relicMainChoice !== undefined && !CHOIX_RELIC_MAIN_ACCEPTES.has(d.relicMainChoice)) {

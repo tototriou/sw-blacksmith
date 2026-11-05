@@ -33,13 +33,26 @@ export async function preuvesBandesEquipes(b: Banc): Promise<[boolean, string][]
   const ordinaire = (e: Element) => !e.hasAttribute('aria-current');
   const reference = cartes(a).find(ordinaire)!;
   verifier(cartes(libres).filter(ordinaire).every(e => e.className === reference.className), 'cartes liées et libres : même aspect');
-  verifier(a.contains(a.querySelector('img[src*="leader_skill_"]')) && a.textContent!.includes('Leader : Premier')
-    && cartes(a).length === 2 && [...a.querySelectorAll('button')].some(e => e.textContent === 'Modifier l’équipe'), 'bande : numéro, leader, LeadPill, modifier et deux cartes');
+  verifier(a.contains(a.querySelector('img[src*="leader_skill_"]')) && !a.textContent!.includes('Leader :')
+    && cartes(a).length === 2 && [...a.querySelectorAll('button')].some(e => e.textContent === 'Modifier l’équipe'), 'bande : numéro sans leader, LeadPill, modifier et deux cartes');
   const centre = (e: Element) => { const r = e.getBoundingClientRect(); return r.top + r.height / 2; };
   const titre = [...a.querySelectorAll('span')].find(e => e.textContent?.startsWith('Équipe 1'))!;
   const modifier = [...a.querySelectorAll('button')].find(e => e.textContent === 'Modifier l’équipe')!;
-  verifier([a.querySelector('img[src*="leader_skill_"]')!, modifier].every(e => Math.abs(centre(e) - centre(titre)) < 2),
-    `en-tête : LeadPill, numéro, leader et modifier sur une seule ligne — ${[titre, modifier].map(centre).join(' / ')}`);
+  // Une ligne : LeadPill, numéro lisible en entier, « Speed tune » et « Modifier l'équipe ».
+  const speedTune = [...a.querySelectorAll('button')].find(e => e.textContent === 'Speed tune');
+  // Un libellé sur une seule ligne de texte : ses boîtes de texte ont toutes le même haut.
+  const unLigne = (e: Element) => {
+    const marche = document.createTreeWalker(e, NodeFilter.SHOW_TEXT), hauts = new Set<number>();
+    for (let n = marche.nextNode(); n; n = marche.nextNode()) {
+      if (!n.textContent!.trim()) continue;
+      const r = document.createRange(); r.selectNodeContents(n);
+      for (const x of r.getClientRects()) if (x.width > 0) hauts.add(Math.round(x.top));
+    }
+    return hauts.size === 1;
+  };
+  verifier([a.querySelector('img[src*="leader_skill_"]')!, modifier, ...(speedTune ? [speedTune] : [])].every(e => Math.abs(centre(e) - centre(titre)) < 2)
+    && titre.scrollWidth <= titre.clientWidth && [modifier, ...(speedTune ? [speedTune] : [])].every(unLigne),
+    `en-tête : LeadPill, numéro entier, Speed tune et Modifier sur une seule ligne — ${[titre, modifier].map(centre).join(' / ')} · ${titre.scrollWidth}/${titre.clientWidth}`);
   verifier(libres.firstElementChild?.textContent === 'Sans équipe' && !!(a.compareDocumentPosition(libres) & Node.DOCUMENT_POSITION_FOLLOWING), 'les libres suivent sous Sans équipe');
   const styleA = getComputedStyle(a), styleB = getComputedStyle(autre);
   const jeton = (nom: string) => `rgb(${getComputedStyle(document.documentElement).getPropertyValue(nom).trim().split(/\s+/).join(', ')})`;
@@ -97,12 +110,12 @@ export async function preuvesBandesEquipes(b: Banc): Promise<[boolean, string][]
   await b.geste(() => b.listes().setListContent('a', 'donjon'));
   verifier(geometrie() === avant, 'contenu incompatible : cartes et contrôles aux mêmes positions');
   verifier(a.querySelectorAll('[aria-label^="Lead inactif"]').length === 2
-    && [...a.querySelectorAll('span')].some(e => visible(e) && e.textContent === '⚠ 2 leads inactifs'), 'contenu incompatible : deux icônes et compte dérivé dans l’en-tête');
+    && [...a.querySelectorAll<HTMLElement>('span')].some(e => visible(e) && e.title === '2 leads inactifs' && [...e.children].some(c => visible(c) && c.textContent === '⚠ 2')), 'contenu incompatible : deux icônes et compte dérivé dans l’en-tête');
   await b.geste(() => b.listes().setTeams(b.listes().teams.map(e => e.id === 'ea' ? { ...e,
     lead: { stat: 'Attack Speed', amount: 24, area: 'Element', element: 'fire' } } : e)));
   verifier(geometrie() === avant, 'changement du lead : cartes et contrôles aux mêmes positions');
   verifier(a.querySelectorAll('[aria-label^="Lead inactif"]').length === 1
-    && [...a.querySelectorAll('span')].some(e => visible(e) && e.textContent === '⚠ 1 lead inactif'), 'lead d’élément : seule la carte incompatible porte une icône et le compte vaut un');
+    && [...a.querySelectorAll<HTMLElement>('span')].some(e => visible(e) && e.title === '1 lead inactif' && [...e.children].some(c => visible(c) && c.textContent === '⚠ 1')), 'lead d’élément : seule la carte incompatible porte une icône et le compte vaut un');
   await b.geste(() => b.listes().setTeams(b.listes().teams.map(e => e.id === 'ea' ? { ...e, lead: null } : e)));
   verifier(!a.querySelector('[aria-label^="Lead inactif"]') && geometrie() === avant, 'équipe sans lead : aucune alerte et positions conservées');
   await b.geste(() => b.listes().setTeams(b.listes().teams.map(e => e.id === 'ea' ? { ...e,

@@ -152,7 +152,7 @@ export async function preuvesEnteteEquipe(b: BancRetouches): Promise<[boolean, s
   await preparerEquipe(b);
   const equipe = [...document.querySelectorAll<HTMLElement>('section[aria-label="Équipe 1"]')].find(visible)!;
   const modifier = bouton('Modifier l’équipe', equipe), nom = equipe.querySelector<HTMLElement>('[title^="Équipe 1"]')!;
-  const compte = [...equipe.querySelectorAll<HTMLElement>('span')].find(e => e.textContent === '⚠ 2 leads inactifs')!;
+  const compte = [...equipe.querySelectorAll<HTMLElement>('span')].find(e => e.title === '2 leads inactifs')!;
   if (!nom || !compte) return [[false, 'nom avec infobulle et compteur présents']];
   const m = await positionStable(modifier);
   const n=nom.getBoundingClientRect(), c=compte.getBoundingClientRect();

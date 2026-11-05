@@ -62,10 +62,11 @@ function Pastille({ sortes }: { sortes: ArtifactKind[] }) {
 }
 
 export default function ArtifactLinesEditor({
-  lignes,
-  onChange,
+  lignes: lignesRecues,
+  onChange: onChangeRecu,
   diagnostic,
   figees = [],
+  possedes = [],
 }: {
   lignes: LigneVerrouillee[];
   onChange: (l: LigneVerrouillee[]) => void;
@@ -85,10 +86,20 @@ export default function ArtifactLinesEditor({
    * mais proposé quand même — une saisie sans effet, pire qu'une saisie absente.
    */
   figees?: ArtifactKind[];
+  /**
+   * Les codes qu'un autre réglage POSSÈDE (le 206 sous une contrainte de speed
+   * tune attachée, feat-contrainte-speed-tune.md « Détacher et rattacher ») :
+   * ni affichés ni proposés, et conservés tels quels à chaque changement.
+   */
+  possedes?: number[];
   // Le meilleur cumul RÉELLEMENT atteignable par ligne, quand aucune paire ne
   // passe. `null` le reste du temps — ce bloc n'a rien à dire quand ça marche.
   diagnostic?: { code: number; min: number; auMieux: number; atteint: boolean }[] | null;
 }) {
+  const toutes = lignesRecues;
+  const lignes = possedes.length ? toutes.filter((l) => !possedes.includes(l.code)) : toutes;
+  const onChange = (l: LigneVerrouillee[]) =>
+    onChangeRecu(possedes.length ? [...toutes.filter((x) => possedes.includes(x.code)), ...l] : l);
   const toutFige = figees.length >= ARTIFACT_KINDS.length;
   // ⚠️ `parCode` part du catalogue COMPLET, jamais du filtré : une ligne déjà
   // posée doit garder son nom, sa pastille et son plafond même si sa sorte
@@ -101,7 +112,7 @@ export default function ArtifactLinesEditor({
   const parCode = new Map(catalogueComplet.map((l) => [l.code, l]));
   // Proposable seulement si AU MOINS une des sortes qui peuvent la porter
   // cherche encore.
-  const catalogue = catalogueComplet.filter((l) => l.sortes.some((k) => !figees.includes(k)));
+  const catalogue = catalogueComplet.filter((l) => !possedes.includes(l.code) && l.sortes.some((k) => !figees.includes(k)));
   // Nom lisible d'un code, pour nommer les formes voisines dans
   // l'avertissement — le catalogue ne couvre que les lignes CHOISISSABLES ici,
   // d'où le repli sur le numéro.

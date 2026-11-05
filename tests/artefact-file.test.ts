@@ -183,7 +183,7 @@ export default function testArtefactFile() {
       requirement: { minStats: { atk: 100 }, maxStats: { def: 2000 } },
       artefactsReserves: [] as Iterable<number>,
       piecesFigees: [] as readonly unknown[],
-      importDuCompte: 0,
+      importDuCompte: 0, empreinteSpeedTune: null,
     };
     const s = signatureReglages(base);
     // ⚠️ Tout ce qui change quelles LIGNES comptent change la paire gagnante
@@ -329,7 +329,7 @@ export default function testArtefactFile() {
     ok(import1 !== s, 'le premier import de la session change la signature');
     ok(import2 !== import1, 'deux imports distincts → deux signatures différentes, à réglages et inventaire de même taille');
     egal(signatureReglages({ ...base, importDuCompte: 1 }), import1, 'même import → signature inchangée');
-    // `base` porte `importDuCompte: 0` et `s` est épinglé plus haut sur le
+    // `base` porte `importDuCompte: 0, empreinteSpeedTune: null` et `s` est épinglé plus haut sur le
     // littéral d'avant les réservations : avant tout import de la session, la
     // signature reste donc aussi celle d'avant l'identité d'import (rien vidé pour rien).
     ok(!s.includes('import:'), 'avant tout import de la session, aucun composant d’import : la signature ne porte pas d’identité d’import');
@@ -356,7 +356,7 @@ export default function testArtefactFile() {
       requirement: { minStats: {}, maxStats: {} },
       artefactsReserves: [] as Iterable<number>,
       piecesFigees: [] as readonly unknown[],
-      importDuCompte: 0,
+      importDuCompte: 0, empreinteSpeedTune: null,
     };
     const s2 = signatureArtefacts(base2);
     egal(

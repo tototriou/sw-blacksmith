@@ -478,6 +478,14 @@ export function signatureReglages(parts: {
    * Obligatoire, pour la même raison qu'`artefactsReserves`.
    */
   importDuCompte: number;
+  /**
+   * L'empreinte de la contrainte de speed tune du membre
+   * (`empreinteSpeedTune`, contrainteSpeedTune.ts), `null` sans elle : la
+   * zone et les sets admis bornent la paire de chaque build. Sans ce champ,
+   * une zone recalculée gardait en cache des paires jugées sur l'ancienne.
+   * Obligatoire, pour la même raison qu'`artefactsReserves`.
+   */
+  empreinteSpeedTune: string | null;
 }): string {
   // ⚠️ Un minimum à 0 n'exige RIEN : le retenir ferait relancer 100
   // optimisations pour rien dès qu'on tape puis efface une valeur. L'ordre de
@@ -511,6 +519,8 @@ export function signatureReglages(parts: {
     // Même règle encore : avant tout import de la session, composant omis,
     // signature d'avant l'import ; chaque import la change ensuite.
     ...(parts.importDuCompte > 0 ? [`import:${parts.importDuCompte}`] : []),
+    // Même règle : sans contrainte de speed tune, composant omis.
+    ...(parts.empreinteSpeedTune != null ? [`speedtune:${parts.empreinteSpeedTune}`] : []),
   ].join('§');
 }
 
@@ -543,6 +553,8 @@ export function signatureArtefacts(parts: {
   piecesFigees: readonly unknown[];
   // L'identité de l'import du compte — voir `signatureReglages`.
   importDuCompte: number;
+  // L'empreinte de la contrainte de speed tune — voir `signatureReglages`.
+  empreinteSpeedTune: string | null;
 }): string {
   return signatureReglages({
     monstreCom2usId: parts.monstreCom2usId,
@@ -559,6 +571,7 @@ export function signatureArtefacts(parts: {
     artefactsReserves: parts.artefactsReserves,
     piecesFigees: parts.piecesFigees,
     importDuCompte: parts.importDuCompte,
+    empreinteSpeedTune: parts.empreinteSpeedTune,
   });
 }
 

@@ -74,6 +74,22 @@ export interface EntreeAuto {
   // recalculées, sans confondre leur valeur avec une correction manuelle.
   atbAuto?: ModParTick;
   speedMod?: ModParTick;
+  // La provenance des cases des deux grilles, tous camps (voir `CasesAuto`).
+  casesAuto?: CasesAuto;
+}
+
+// ⚠️ **LA PROVENANCE DES CASES, dans les deux camps et les deux grilles.** Ce
+// que l'analyse écrit ne vaut qu'aux vitesses du moment : un buff posé au tick
+// où le lanceur jouait tombe ailleurs s'il ralentit. Qui rejoue un plan à
+// d'autres vitesses (l'Optimizer) doit donc séparer ces cases-là des cases
+// SAISIES, qui gardent leur tick. Une valeur ne le dit pas : une saisie peut
+// reprendre le chiffre automatique. La provenance s'écrit donc au geste.
+//
+// Une ligne SANS ce champ et aux grilles non vides vient d'un état enregistré
+// avant lui : sa provenance est inconnue.
+export interface CasesAuto {
+  atb: ModParTick;
+  speed: ModParTick;
 }
 
 // Ce que les kits pré-générés donnent, déjà chargé par l'appelant.
@@ -87,6 +103,7 @@ export interface ModsAuto {
   atbMod: ModParTick;
   speedMod: ModParTick;
   atbAuto?: ModParTick;
+  casesAuto: CasesAuto;
 }
 
 export interface ResultatAuto {
@@ -339,15 +356,64 @@ export interface OptionsAuto {
   // ce que l'analyse écrit — un monstre dont on ne voit pas les modificateurs
   // est un monstre dont on ne peut pas vérifier le calcul.
   idReference?: string;
+  // ⚠️ **PROJECTION D'UN PLAN** (l'Optimizer rejoue un speed tune à d'autres
+  // vitesses). Trois écarts à l'analyse de l'écran, tous trois absents par défaut :
+  //   - `deviner: false` : aucun sort du kit à la place d'un choix absent, aucun
+  //     adversaire de référence ajouté — on rejoue ce qui est ÉCRIT ;
+  //   - `saisiesAllies` : les cases SAISIES des alliés, que l'analyse ne lit pas
+  //     en entrée (elle écrit leurs grilles) : elles gardent la priorité à leur
+  //     tick, zéro compris, exactement comme sur l'écran après une retouche ;
+  //   - `plateauSeul` : ni vitesses requises ni ordre, seulement le plateau final
+  //     (`ResultatAuto.plateau`) — le coût d'un balayage.
+  deviner?: boolean;
+  saisiesAllies?: Map<string, { atb: ModParTick; speed: ModParTick }>;
+  plateauSeul?: boolean;
 }
 
 export function analyseAutomatique(
   equipe: EntreeAuto[],
   lead: number,
   donnees: DonneesKit,
-  options: OptionsAuto = {}
+  options: Omit<OptionsAuto, 'plateauSeul'> = {}
 ): ResultatAuto {
-  const { horizon = HORIZON_TICKS, choix, idReference } = options;
+  return analyseEnDeuxPasses(equipe, lead, donnees, { ...options, plateauSeul: false }) as ResultatAuto;
+}
+
+// Le plateau final de l'analyse, sans verdict ni vitesses requises : ce que la
+// simulation reçoit après les deux passes. C'est la projection d'un plan de
+// speed tune (planSpeedTune.ts) quand `deviner` est faux.
+export function plateauAnalyse(
+  equipe: EntreeAuto[],
+  lead: number,
+  donnees: DonneesKit,
+  options: Omit<OptionsAuto, 'plateauSeul'> = {}
+): TuneMonstre[] {
+  return analyseEnDeuxPasses(equipe, lead, donnees, { ...options, plateauSeul: true }) as TuneMonstre[];
+}
+
+// Le tour rendu d'un plateau en GRILLES, où les sorts ne voyagent pas : quels
+// tours lancent un sort qui rend le tour, et le rechargement de ce sort.
+// ⚠️ Un tour ajouté sans choix (`undefined`) relance le sort du 1ᵉʳ tour, comme
+// dans le moteur ; un « Aucun sort » ne rend rien.
+export function rejoueEnGrilles(
+  sort: Pick<SortVitesse, 'rejoue' | 'cooldown'> | Pick<EffetSort, 'rejoue' | 'cooldown'> | null | undefined,
+  sortsParTour?: (Pick<EffetSort, 'rejoue' | 'cooldown'> | undefined)[]
+): Pick<TuneMonstre, 'rejoueParTour' | 'rejoueCooldown'> {
+  const rendant = [sort, ...(sortsParTour ?? [])].find((x) => x?.rejoue);
+  if (!rendant) return {};
+  return {
+    rejoueParTour: sortsParTour?.map((x) => (x ? !!x.rejoue : !!sort?.rejoue)),
+    rejoueCooldown: rendant.cooldown ?? 0,
+  };
+}
+
+function analyseEnDeuxPasses(
+  equipe: EntreeAuto[],
+  lead: number,
+  donnees: DonneesKit,
+  options: OptionsAuto = {}
+): ResultatAuto | TuneMonstre[] {
+  const { horizon = HORIZON_TICKS, choix, idReference, deviner = true, saisiesAllies, plateauSeul = false } = options;
 
   // Le sort effectivement lancé : celui qu'on a désigné, sinon celui du kit.
   const sortDe = (e: EntreeAuto): SortVitesse | null => {
@@ -355,7 +421,7 @@ export function analyseAutomatique(
     if (nom === '') return null;
     if (nom != null && e.monster.com2usId != null)
       return (donnees.sorts.get(e.monster.com2usId) ?? []).find((x) => x.nom === nom) ?? null;
-    return sortRetenu(e, donnees);
+    return deviner ? sortRetenu(e, donnees) : null;
   };
   // ⚠️ **Le sort d'un tour SUPPLÉMENTAIRE se désigne, il ne se devine pas.** Un
   // combo fait jouer le même monstre deux fois avant l'adverse (Racuni se vise
@@ -383,7 +449,7 @@ export function analyseAutomatique(
     if (nom === '') return null;
     if (nom != null && e.monster.com2usId != null)
       return (donnees.sorts.get(e.monster.com2usId) ?? []).find((x) => x.nom === nom) ?? null;
-    return sortSecondRetenu(e, donnees);
+    return deviner ? sortSecondRetenu(e, donnees) : null;
   };
   // ⚠️ **LES DEUX CAMPS, dans l'ordre où ils sont donnés.** `equipe` est le
   // PLATEAU, pas seulement ton côté : un adverse occupe des ticks, et un seul
@@ -469,6 +535,7 @@ export function analyseAutomatique(
               ...sansReductionAdverse(effetAuChoix(x, choix?.atbChoisi?.[cleOccurrence(e.id, n)] ?? 0)),
               cooldown: x.cooldown,
               cle: x.nom,
+              rejoue: x.rejoue,
               // ⚠️ **La cible appartient au couple (tour, sort), pas au
               // monstre.** Un tour supplémentaire ne reprend PAS la cible du
               // premier : enchaîner Breeze après un Rabbit's Agility visé sur
@@ -485,7 +552,14 @@ export function analyseAutomatique(
       const dernier = derniereOccurrence(e);
       const sortsParTour =
         dernier > 1
-          ? Array.from({ length: dernier }, (_, i) => enEffet(sortDOccurrence(e, i + 1), i + 1))
+          ? Array.from({ length: dernier }, (_, i) =>
+              // ⚠️ **« Aucun sort » choisi pour un tour ajouté est un effet VIDE**,
+              // pas une absence : `undefined` retomberait sur le sort du 1ᵉʳ tour,
+              // qui repartirait dès la fin de son rechargement.
+              i > 0 && choix?.sort?.[cleOccurrence(e.id, i + 1)] === ''
+                ? { rejoue: false }
+                : enEffet(sortDOccurrence(e, i + 1), i + 1)
+            )
           : undefined;
       return {
         id: e.id,
@@ -496,6 +570,7 @@ export function analyseAutomatique(
         ampliBuff: ampli,
         sort: enEffet(sort, 1),
         rejoue: sort?.rejoue ?? false,
+        ...rejoueEnGrilles(sort, sortsParTour),
         sort2: second
           ? { ...sansReductionAdverse(second.effet), cooldown: second.cooldown, cle: second.nom, cibleAllie: cible }
           : undefined,
@@ -504,7 +579,7 @@ export function analyseAutomatique(
     });
   // L'adversaire de RÉFÉRENCE ne s'ajoute que s'il n'y a personne en face :
   // c'est un repère faute d'adversaire, pas un adversaire de plus.
-  if (modele && adverses.length === 0) {
+  if (deviner && modele && adverses.length === 0) {
     avecSorts.push({
       id: idReference ?? `ref:${modele.id}`,
       combat: combats.get(modele.id)!,
@@ -525,12 +600,18 @@ export function analyseAutomatique(
   const pose = simuler(avecSorts, horizon);
   const parId = new Map(pose.lignes.map((l) => [l.id, l]));
   const automatiques = new Map<string, ModParTick>();
+  const vitessesAuto = new Map<string, ModParTick>();
+  const precedentes = new Map(equipe.map((e) => [e.id, e.casesAuto] as const));
   const final: TuneMonstre[] = avecSorts.map((m) => {
     const l = parId.get(m.id);
-    const atbMod: ModParTick = { ...m.atbMod };
+    // Les cases saisies d'un allié (projection d'un plan) : absentes de la
+    // première passe, prioritaires à leur tick dans la seconde.
+    const manuel = m.camp === 'allie' ? saisiesAllies?.get(m.id) : undefined;
+    const atbMod: ModParTick = { ...m.atbMod, ...manuel?.atb };
     const atbAuto: ModParTick = {};
     automatiques.set(m.id, atbAuto);
-    const speedMod: ModParTick = { ...m.speedMod };
+    const speedMod: ModParTick = { ...m.speedMod, ...manuel?.speed };
+    const speedAuto: ModParTick = {};
     if (l) {
       for (const [tick, v] of Object.entries(l.effetAtb)) {
         const t = Number(tick);
@@ -546,13 +627,22 @@ export function analyseAutomatique(
         // mauvais côté.
         const saisi = m.atbMod?.[t] !== undefined;
         const cible = saisi ? t : t + 1;
-        if (v !== 0 && cible <= horizon && (saisi || m.atbMod?.[cible] === undefined)) {
+        if (v !== 0 && cible <= horizon && (saisi || (m.atbMod?.[cible] === undefined && manuel?.atb[cible] === undefined))) {
           atbMod[cible] = v;
           if (!saisi) atbAuto[cible] = v;
         }
       }
-      for (const [tick, v] of Object.entries(l.effetSpeed)) if (v !== 0) speedMod[Number(tick)] = v;
+      for (const [tick, v] of Object.entries(l.effetSpeed)) {
+        const t = Number(tick);
+        if (v === 0 || manuel?.speed[t] !== undefined) continue;
+        speedMod[t] = v;
+        // Automatique : posée par un sort, ou case reprise d'une analyse
+        // précédente sans avoir été retouchée depuis.
+        const entree = m.speedMod?.[t];
+        if (entree === undefined || precedentes.get(m.id)?.speed[t] === entree) speedAuto[t] = v;
+      }
     }
+    vitessesAuto.set(m.id, speedAuto);
     return {
       id: m.id,
       combat: m.combat,
@@ -561,11 +651,14 @@ export function analyseAutomatique(
       artefactBuff: m.artefactBuff,
       ampliBuff: m.ampliBuff,
       rejoue: m.rejoue,
+      rejoueParTour: m.rejoueParTour,
+      rejoueCooldown: m.rejoueCooldown,
       atbMod,
       speedMod,
     };
   });
 
+  if (plateauSeul) return final;
   const verdict = diagnostiquerChaine(final, horizon);
   // Les effets globaux écrivent aussi sur les adverses réels. Leurs cases
   // manuelles sont conservées ; les cases automatiques sont identifiées pour
@@ -584,6 +677,7 @@ export function analyseAutomatique(
       atbMod: m.atbMod ?? {},
       speedMod: m.speedMod ?? {},
       ...(reels.has(m.id) ? { atbAuto } : {}),
+      casesAuto: { atb: atbAuto, speed: vitessesAuto.get(m.id) ?? {} },
     });
   }
   return {

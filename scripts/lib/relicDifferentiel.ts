@@ -150,6 +150,8 @@ export function entreeResolution(p: SearchParams, c: BuildCandidate, ctx: RelicC
       // Le sort du contexte de dégâts ; sans lui (critère hors « Dégâts
       // réels »), aucune note de dégâts n'est posée et la dominance reste.
       sortDegats: r.degats?.profile.skillCom2usId ?? null,
+      // Le différentiel des reliques n'a pas de plan de speed tune.
+      speedTune: null,
     }),
     regime: regimeDe(r),
     degats: r.degats ?? null,

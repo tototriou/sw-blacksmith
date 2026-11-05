@@ -56,10 +56,12 @@ import { teamSummary } from '../../lib/recoFromSiege';
 import { formesJouables } from '../../lib/monsterForms';
 import LeadPill from '../siege/LeadPill';
 import { useComboboxNav } from '../../hooks/useComboboxNav';
-import { useSpeedTune, DeckDispo, ChampMod, DeckInitial } from '../../hooks/useSpeedTune';
+import { useSpeedTune, DeckDispo, ChampMod, DeckInitial, type OuvertureOptimizer } from '../../hooks/useSpeedTune';
+import type { PlanSpeedTune } from '../../lib/planSpeedTune';
+import { jugerApplication, perdOrigine } from '../../lib/speedTuneDepuisPlan';
 import type { ActionImportOptimizer } from '../../lib/actionImportOptimizer';
 import type { ExclusionSourceData } from '../../lib/optimizerExclusion';
-import { importerSpeedTuneOptimizer } from '../../lib/importSpeedTuneOptimizer';
+import { importerSpeedTuneOptimizer, raisonRefus } from '../../lib/importSpeedTuneOptimizer';
 
 import { useAdversaireReference } from '../../hooks/useAdversaireReference';
 import { useStickyState } from '../../hooks/useStickyState';
@@ -77,6 +79,7 @@ import {
   BoutonIcone,
   Jeton,
   ZoneCliquable,
+  ConfirmDialog,
 } from '../../ui';
 import { useTraduction } from '../../hooks/useLangue';
 import { nomElement } from '../../i18n/jeu';
@@ -117,6 +120,10 @@ interface Props {
   // modale, qui porte déjà les deux : deux titres « Speed tuning » l'un sous
   // l'autre, et on cherche lequel des deux se ferme.
   entete?: boolean;
+  // Ouvert depuis une équipe de l'Optimizer (feat-speed-tune-depuis-optimizer.md) :
+  // un état à part, prérempli depuis l'équipe, et « Appliquer à l'équipe » à la
+  // place de l'export.
+  appliquer?: { ouverture: OuvertureOptimizer; onAppliquer: (plan: PlanSpeedTune) => void };
 }
 
 // Le rappel de la règle, en une phrase. ⚠️ Écrit UNE fois : la page le met sous
@@ -235,6 +242,7 @@ export default function SpeedTuningSection({
   siegeOffenseTeams,
   deckInitial,
   entete = true,
+  appliquer,
 }: Props) {
   const textes = useTraduction();
   const st = textes.speedTuning;
@@ -344,7 +352,10 @@ export default function SpeedTuningSection({
     sortsSignature,
     toujoursReference,
     tune,
-  } = useSpeedTune({ allMonsters, siegeDefenseTeams, siegeOffenseTeams, deckInitial });
+    restauration,
+    bestiaire,
+    kitsLus,
+  } = useSpeedTune({ allMonsters, siegeDefenseTeams, siegeOffenseTeams, deckInitial, ouverture: appliquer?.ouverture });
 
   const raisonExportOptimizer = useMemo(() => {
     if (!compteCharge) return st.export.sansCompte;
@@ -352,7 +363,31 @@ export default function SpeedTuningSection({
     return importerSpeedTuneOptimizer(lignes, leadAllie, sourcesOptimizer, textes, deckInitial ?? undefined).membres.length
       ? undefined : st.export.vide;
   }, [compteCharge, onImporterEquipe, sourcesOptimizer, lignes, leadAllie, deckInitial, textes, st]);
-  const exporterOptimizer = () => onImporterEquipe?.((data, t) => importerSpeedTuneOptimizer(lignes, leadAllie, data, t, deckInitial ?? undefined));
+  // Le plan photographié à l'export : l'état de l'outil au geste
+  // (feat-contrainte-speed-tune.md, « Le plan de speed tune »).
+  const etatPlan = { leads, choix: choixSorts, ordre: ordreVoulu, donnees: donneesKit, verdictEcran: sequence.ok };
+  const exporterOptimizer = () => onImporterEquipe?.((data, t) => importerSpeedTuneOptimizer(lignes, leadAllie, data, t, deckInitial ?? undefined, etatPlan));
+
+  // « Appliquer à l'équipe » : refus dit sous le bouton, verdict différent de
+  // l'écran confirmé (défaut : annuler), sinon le plan part à l'équipe.
+  const [refusAppliquer, setRefusAppliquer] = useState<string | null>(null);
+  const [aConfirmer, setAConfirmer] = useState<PlanSpeedTune | null>(null);
+  useEffect(() => setRefusAppliquer(null), [lignes, ordreVoulu]);
+  const appliquerALEquipe = () => {
+    if (!appliquer) return;
+    const r = jugerApplication(lignes, leads, choixSorts, ordreVoulu, donneesKit, bestiaire, sequence.ok);
+    if ('manque' in r) return setRefusAppliquer(st.camp.vitesseManquante(r.manque.monster.name));
+    if ('refus' in r) return setRefusAppliquer(raisonRefus(r.refus, lignes, textes));
+    setRefusAppliquer(null);
+    if (r.verdictDifferent) setAConfirmer(r.plan);
+    else appliquer.onAppliquer(r.plan);
+  };
+  const actionAppliquer = appliquer && {
+    onClick: appliquerALEquipe,
+    raison: restauration === 'prete' && kitsLus ? undefined : st.camp.lectureKits,
+    refus: refusAppliquer,
+    perteOrigine: 'plan' in appliquer.ouverture && perdOrigine(appliquer.ouverture.plan),
+  };
 
   function besoin(l: Ligne, combatCible: number | null, arteCible: number | null, arteActuel: number) {
     const runes = combatCible == null ? null : runesPour(l, combatCible);
@@ -530,8 +565,9 @@ export default function SpeedTuningSection({
           onArtefact={setArtefact}
           decks={decks}
           onImporterDeck={(team) => importerDeck('allie', team)}
-          onExporterOptimizer={exporterOptimizer}
+          onExporterOptimizer={appliquer ? undefined : exporterOptimizer}
           raisonExportOptimizer={raisonExportOptimizer}
+          appliquer={actionAppliquer || undefined}
         />
         <CampPanneau
           camp="ennemi"
@@ -1077,6 +1113,19 @@ export default function SpeedTuningSection({
           {ordreDeTour('lg:hidden')}
         </>
       )}
+      {aConfirmer && appliquer && (
+        <ConfirmDialog
+          titre={st.camp.verdictDifferent.titre}
+          message={st.camp.verdictDifferent.message}
+          libelleAction={st.camp.verdictDifferent.action}
+          onConfirm={() => {
+            const plan = aConfirmer;
+            setAConfirmer(null);
+            appliquer.onAppliquer(plan);
+          }}
+          onCancel={() => setAConfirmer(null)}
+        />
+      )}
     </div>
   );
 }
@@ -1122,6 +1171,8 @@ interface CampProps {
   onImporterDeck?: (team: SiegeTeam) => void;
   onExporterOptimizer?: () => void;
   raisonExportOptimizer?: string;
+  // Ouvert depuis l'Optimizer : « Appliquer à l'équipe » remplace l'export.
+  appliquer?: { onClick: () => void; raison?: string; refus: string | null; perteOrigine: boolean };
 }
 
 function CampPanneau({
@@ -1151,6 +1202,7 @@ function CampPanneau({
   onImporterDeck,
   onExporterOptimizer,
   raisonExportOptimizer,
+  appliquer,
 }: CampProps) {
   const textes = useTraduction();
   const jeu = textes.jeu;
@@ -1549,6 +1601,16 @@ function CampPanneau({
           <Bouton pleineLargeur icone={<Upload size={14} />} libelle={c.exporter}
             disabled={!!raisonExportOptimizer} title={raisonExportOptimizer ?? c.exporterAide}
             onClick={onExporterOptimizer} />
+        )}
+        {appliquer && (
+          <>
+            {appliquer.perteOrigine && <p className="text-xs text-ink-dim">{c.perteOrigine}</p>}
+            <Bouton pleineLargeur ton="accent" fond="doux" icone={<Check size={14} />} libelle={c.appliquer}
+              disabled={!!appliquer.raison} title={appliquer.raison ?? c.appliquerAide}
+              onClick={appliquer.onClick} />
+            {appliquer.raison && <p className="text-xs text-ink-dim">{appliquer.raison}</p>}
+            {appliquer.refus && <p role="alert" className="text-xs text-bad">{appliquer.refus}</p>}
+          </>
         )}
       </div>
     </section>

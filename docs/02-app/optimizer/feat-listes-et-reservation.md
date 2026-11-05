@@ -175,9 +175,13 @@ jeu, n'ont RIEN à voir l'un avec l'autre.
   ligne d’annonce du point de sauvegarde, au bureau et au téléphone. Une
   mémoire conservée mais inapplicable reste conservée
   et son refus est dit lorsqu'on choisit le membre.
-  Les membres sont regroupés par équipe dans des bandes teintées sans contour,
-  avec le numéro, le leader facultatif, la pastille `LeadPill` et le compte des
-  leads inactifs. Les cartes gardent l’aspect et la hauteur des cartes libres,
+  Les membres sont regroupés par équipe dans des bandes teintées sans contour.
+  L'en-tête tient sur une ligne : la pastille `LeadPill`, le numéro seul
+  (« Équipe 1 », sans le leader, qui ne tenait jamais), le compte des leads
+  inactifs en court (« ⚠ 2 », la phrase en infobulle et pour les lecteurs
+  d'écran), « Speed tune » (liste de siège, place réservée sinon, voir
+  [feat-speed-tune-depuis-optimizer.md](feat-speed-tune-depuis-optimizer.md))
+  et « Modifier l’équipe ». Les cartes gardent l’aspect et la hauteur des cartes libres,
   qui suivent sous « Sans équipe ». « Lier une équipe » et « Modifier l’équipe » ouvrent
   un dialogue hors du flux ; les cases ne changent pas les groupes avant
   validation et fermeture. « Délier » dans ce dialogue garde les membres

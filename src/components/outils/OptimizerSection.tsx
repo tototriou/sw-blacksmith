@@ -1,12 +1,12 @@
 import { useCallback, useLayoutEffect, useMemo, useRef, useState, useEffect } from 'react';
-import { Bouton, Segmented } from '../../ui';
+import { Bouton, ConfirmDialog, Segmented } from '../../ui';
 import type { ContenuListeOptimizer, EquipeOptimizer } from '../../lib/optimizerMemberStorage';
 import OptimizerEquipeDialog from './OptimizerEquipeDialog';
 import OptimizerCreateListDialog from './OptimizerCreateListDialog';
 import OptimizerImportButton, { type SourceImportOptimizer } from './OptimizerImportButton';
 import { importerRecoOptimizer } from '../../lib/importRecoOptimizer';
 import { importerDefensesSiegeOptimizer, importerOffenseSiegeOptimizer, importerPrepaRtaOptimizer, type RapportImportOptimizer } from '../../lib/importEquipes';
-import { ArtifactDetail, ArtifactKind, ARTIFACT_KINDS, ELEMENTS, RelicDetail, RuneDetail, Monster, RtaEntry, SiegeTeam, Reco } from '../../types';
+import { ArtifactDetail, ArtifactKind, ARTIFACT_KINDS, ELEMENTS, RelicDetail, RuneDetail, Monster, RtaEntry, SiegeTeam, Reco, type GearSet } from '../../types';
 import { computeStats } from '../../lib/stats';
 import { compteAffichable, compteConfirmeDesComptes, pagesDesResultats, signatureArtefacts as calculerSignatureArtefacts } from '../../lib/artifactQueue';
 import { etatReliqueDuBuild } from '../../lib/relicQueue';
@@ -184,6 +184,12 @@ import { PREFIXE_FICHIER } from '../../marque';
 import { useLangue, useTraduction } from '../../hooks/useLangue';
 import type { Dictionnaire } from '../../i18n/fr';
 import { formatNombre } from '../../i18n/format';
+import { useSpeedTuneMembre } from '../../hooks/useSpeedTuneMembre';
+import { useSpeedTuneDepuisOptimizer } from '../../hooks/useSpeedTuneDepuisOptimizer';
+import SpeedTuneModale from './SpeedTuneModale';
+import SpeedTuneEncart from './optimizer/SpeedTuneEncart';
+import { CODE_206, empreinteSpeedTune, enveloppeZone, exigenceSousSpeedTune } from '../../lib/contrainteSpeedTune';
+import { entreesDuGear, validationTient } from '../../lib/speedTuneMembre';
 import { nomElement } from '../../i18n/jeu';
 import { phraseDegats } from '../../i18n/phrasesDegats';
 
@@ -1285,6 +1291,32 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
     return runes.filter((r) => !auto.has(r.id) && !manual.has(r.id) && !reserved.has(r.id));
   }, [selected, selectedUnitKey, excludeUsedRunes, excludeUsedScope, excludedSelectors, exclusionData, runes, lists.validated, lists.activeListId, ownSelectorKey]);
 
+  // Le speed tune du membre, s'il est lié à une ligne d'un plan de son équipe
+  // (feat-contrainte-speed-tune.md). Attaché, il possède la VIT minimum et le
+  // verrou 206 : le détachement y repose les valeurs de repli.
+  const poserRepliSpeedTune = useCallback((vitesseMin: number | null, verrou206: number | null) => {
+    setMinStats((prev) => {
+      const next = { ...prev };
+      if (vitesseMin == null) delete next.spd; else next.spd = vitesseMin;
+      return next;
+    });
+    setLignesVerrouillees((prev) => [...prev.filter((l) => l.code !== CODE_206), ...(verrou206 ? [{ code: CODE_206, min: verrou206 }] : [])]);
+  }, [setMinStats, setLignesVerrouillees]);
+  const speedTuneMembre = useSpeedTuneMembre({
+    teams: lists.teams, validated: lists.validated, activeListId: lists.activeListId, selector: sourceSelector,
+    data: exclusionData, runeById, artifactById, artifacts, allMonsters, pool, comboSets,
+    setTeams: lists.setTeams, poserRepli: poserRepliSpeedTune,
+  });
+  // L'outil de speed tuning ouvert sur une équipe de la liste, et son plan
+  // appliqué à l'équipe (feat-speed-tune-depuis-optimizer.md).
+  const speedTuneOutil = useSpeedTuneDepuisOptimizer({
+    teams: lists.teams, validated: lists.validated, activeListId: lists.activeListId, data: exclusionData,
+    runeById, artifactById, allMonsters, memories: lists.memories, selectionne: ownSelectorKey,
+    setTeams: lists.setTeams, writeMemory: lists.writeMemory, poserRepli: poserRepliSpeedTune,
+  });
+  const speedTuneAttache = !!speedTuneMembre?.lien.attache;
+  const contrainteSpeedTune = speedTuneMembre?.contrainte ?? null;
+
   // Artéfacts déjà réservés par les AUTRES builds validés de la liste active.
   //
   // ⚠️ Pendant symétrique de `reserved` ci-dessus, et pour la même raison : un
@@ -1490,10 +1522,11 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
         damageSetup,
         maxStats,
         sortDegats: resolvedSkill?.skillCom2usId ?? null,
+        speedTune: contrainteSpeedTune,
       }),
       evaluer,
     };
-  }, [selected, evaluateursFiche, optimiserArtefacts, artifactMainByKind, sortesFigees, artifacts, artefactsReserves, lignesVerrouillees, damageSetup, maxStats, resolvedSkill]);
+  }, [selected, evaluateursFiche, optimiserArtefacts, artifactMainByKind, sortesFigees, artifacts, artefactsReserves, lignesVerrouillees, damageSetup, maxStats, resolvedSkill, contrainteSpeedTune]);
 
   const searchArtifacts = useMemo<ArtifactDetail[]>(
     () => (artifactParams ? paireRepresentative(artifactParams) : []),
@@ -1716,10 +1749,22 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
     }
     return { sets: comboSets, minStats, maxStats, mainStats: mainStatsReq, lockedRunes };
   }, [comboSets, minStats, maxStats, mainStatsBySlot, lockedRunes]);
-  const requirementAvecAuras = useMemo(
+  const requirementSansSpeedTune = useMemo(
     () => avecAurasConditions(requirement, damageSetup, compterAurasResPre),
     [requirement, damageSetup, compterAurasResPre]
   );
+  // ⚠️ **Sous une contrainte de speed tune, la VIT de fiche suit l'enveloppe
+  // de la zone** (`exigenceSousSpeedTune`) : minimum de la zone, maximum le
+  // plus serré des deux. Les runes ne voient qu'elle ; le couple exact se juge
+  // à la résolution. `null` : zone vide, la recherche ne part pas
+  // (`handleSearch`) — l'exigence d'avant reste pour l'estimation.
+  const exigenceSpeedTune = useMemo(
+    () => (contrainteSpeedTune ? exigenceSousSpeedTune(requirementSansSpeedTune, contrainteSpeedTune) : null),
+    [requirementSansSpeedTune, contrainteSpeedTune]
+  );
+  const requirementAvecAuras = exigenceSpeedTune ?? requirementSansSpeedTune;
+  // Attaché, la recherche attend une zone prête et non vide (spec, « Calcul et cache »).
+  const speedTuneBloque = speedTuneAttache && (!contrainteSpeedTune || !exigenceSpeedTune);
 
   /**
    * Ce que l'INVENTAIRE d'artéfacts peut apporter, borné des deux côtés —
@@ -1813,6 +1858,7 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
       return;
     }
     setSetPickerInvalid(false);
+    if (speedTuneBloque) return;
     setStoppedManually(false);
     // Le tri de départ est la colonne de l'objectif ; Vitesse se trie par VIT.
     const triDeDepart = triDesResultats(objective);
@@ -1854,7 +1900,10 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
       // session reprise ni une recette importée ne le réactivent.
     };
     const photo = contexteResultat({ params, fiche: selected.gear,
-      resolution: artifactParams && optimiserArtefacts ? { fiche: selected.gear, artifactParams,
+      // ⚠️ Sous une contrainte de speed tune, la résolution a lieu même sans
+      // optimisation des artéfacts : la paire portée, seule candidate, doit
+      // encore tenir la zone avec la fiche de chaque build.
+      resolution: artifactParams && (optimiserArtefacts || contrainteSpeedTune) ? { fiche: selected.gear, artifactParams,
         regime: regimeEquipement, degats: contexteDegatsArtefacts, exclusive: contexteExclusive,
         requirement: requirementAvecAuras, relicContext: params.relicContext } : null,
       realDamage, damageSetup, exclusive: contexteExclusive, signature: signatureArtefacts, idInventaire: importDuCompte, idEspece: selected.monster.com2usId ?? null,
@@ -1876,7 +1925,7 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
   // script Node (voir scripts/lib/) ou, plus tard, par les recommandations
   // de decks. Voir src/lib/optimizerRecipe.ts.
   function exportRecipe() {
-    if (!selected || selected.monster.com2usId == null) return;
+    if (!selected || selected.monster.com2usId == null || speedTuneBloque) return;
     const recipe = buildOptimizerRecipe({
       monsterCom2usId: selected.monster.com2usId,
       monsterName: selected.monster.name,
@@ -1903,6 +1952,8 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
       relicMainChoice,
       relicUniqueChoice,
       relicMinUpgrade,
+      // La contrainte que la recherche lit, pour que le CLI la rejoue.
+      ...(contrainteSpeedTune ? { speedTune: contrainteSpeedTune } : {}),
     });
     const jour = jourLocal();
     const DIACRITICS = new RegExp('[̀-ͯ]', 'g');
@@ -2155,6 +2206,9 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
         // sans un mot, serait pire que la donnée transportée telle quelle.
         + (bascules ? ` ${os.recette.autreCompteArtefacts}` : '')
         + (relicBascule ? ` ${os.recette.autreCompteRelique}` : '')
+        // La contrainte de speed tune de la recette sert au CLI : à l'écran,
+        // elle vient du plan de l'équipe du membre, et cela se dit.
+        + (recipe.speedTune ? ` ${os.recette.speedTuneIgnore}` : '')
         // ⚠️ Ce que le parseur a CONVERTI (l'ancien mode critique « Moyenne »
         // → « Critique ») se dit aussi, mot pour mot
         // comme le CLI (`chargerRecette`) : jamais une conversion silencieuse.
@@ -2287,8 +2341,9 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
         // runes à nombre et identifiants égaux gardait les paires de l'ancien
         // compte ; chaque import vide le cache.
         importDuCompte,
+        empreinteSpeedTune: empreinteSpeedTune(contrainteSpeedTune),
       }),
-    [selected?.monster.com2usId, selected?.gear.relic, selected?.gear.artifacts, damageSetup, compterAurasResPre, regimeEquipement, optimiserArtefacts, artifactMainByKind, lignesVerrouillees, artifacts.length, relicContextRecherche?.empreinte, requirementAvecAuras, artefactsReserves, importDuCompte]
+    [selected?.monster.com2usId, selected?.gear.relic, selected?.gear.artifacts, damageSetup, compterAurasResPre, regimeEquipement, optimiserArtefacts, artifactMainByKind, lignesVerrouillees, artifacts.length, relicContextRecherche?.empreinte, requirementAvecAuras, artefactsReserves, importDuCompte, contrainteSpeedTune]
   );
 
   // Les chiffres des cartes lisent la photographie et l'instantané du classeur.
@@ -2612,7 +2667,30 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
    * que tout le reste du code lit comme « 6 runes » : on valide donc le
    * build affiché AVEC cette paire, ce que le bouton annonce.
    */
+  // ⚠️ **Valider juge le speed tune sans passer par la zone** : le contexte
+  // tenu avec les entrées réelles du build et les valeurs actuelles des autres
+  // lignes. Cassé, une confirmation l'annonce, son défaut est d'annuler.
+  const [confirmSpeedTune, setConfirmSpeedTune] = useState<(() => void) | null>(null);
+  const casseLeSpeedTune = (gear: GearSet) => {
+    const m = speedTuneMembre;
+    return !!m?.lien.attache && !!m.plan && !!m.donnees
+      && !validationTient(m.plan, m.donnees, m.monstres, m.lignes, m.lien.uid, entreesDuGear(gear));
+  };
+  const avecControleSpeedTune = (gear: GearSet, valider: () => void) => {
+    if (casseLeSpeedTune(gear)) setConfirmSpeedTune(() => valider);
+    else valider();
+  };
+
   function handleValidateArtefacts() {
+    if (!sourceSelector || !lists.activeListId || !modeArtefactsSeuls) return;
+    const paire = modeArtefactsSeuls.paire;
+    if (selected && casseLeSpeedTune({ ...selected.gear, artifacts: paire })) {
+      setConfirmSpeedTune(() => validerArtefacts);
+      return;
+    }
+    validerArtefacts();
+  }
+  function validerArtefacts() {
     if (!sourceSelector || !lists.activeListId || !modeArtefactsSeuls) return;
     const ids = modeArtefactsSeuls.paire.map((a) => a.id);
     if (ownValidatedBuild) lists.validateArtifacts(lists.activeListId, sourceSelector, ids);
@@ -2628,10 +2706,13 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
       setAddListPromptOpen('validate');
       return;
     }
-    lists.validateBuild(lists.activeListId, sourceSelector, displayedRuneIds, displayedArtifactIds, selectionAffichee!.gear.relic?.id, selected!.monster.com2usId!);
-    optimizer.capturerMembre(lists.activeListId, sourceSelector);
-    setApercu(null);
-    setShowRealGear(false);
+    const listId = lists.activeListId, selector = sourceSelector;
+    avecControleSpeedTune(selectionAffichee!.gear, () => {
+      lists.validateBuild(listId, selector, displayedRuneIds, displayedArtifactIds, selectionAffichee!.gear.relic?.id, selected!.monster.com2usId!);
+      optimizer.capturerMembre(listId, selector);
+      setApercu(null);
+      setShowRealGear(false);
+    });
   }
 
   // Les vues et l'aperçu partagent leurs contrôles entre les deux formats.
@@ -2740,6 +2821,19 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
     />
   );
 
+  // L'encart du membre contraint : le même dans les deux formats, sous la
+  // grille des conditions qui le porte. « Modifier le speed tune » seulement au
+  // téléphone : la liste des équipes, qui porte le même geste, y est dans un autre
+  // panneau ; au bureau elle est à côté, et le bouton y ferait doublon.
+  const encartDuMembre = (telephone: boolean) => speedTuneMembre
+    ? <SpeedTuneEncart m={speedTuneMembre} monstres={speedTuneMembre.monstres} donnees={speedTuneMembre.donnees}
+        onModifier={telephone && lists.listContents.get(speedTuneMembre.equipe.listId) === 'guilde' ? () => speedTuneOutil.ouvrir(speedTuneMembre.equipe) : undefined}
+        zoneChangee={(() => {
+          const photo = search.contexte?.resolution?.artifactParams.speedTune;
+          return !!photo && empreinteSpeedTune(photo) !== empreinteSpeedTune(contrainteSpeedTune);
+        })()} />
+    : null;
+  const verrousPossedes = speedTuneAttache ? [CODE_206] : undefined;
   const conditions = (
     <Conditions
       excludeBase={excludeBase}
@@ -2750,6 +2844,8 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
       maxStats={maxStats}
       setMinStats={setMinStats}
       setMaxStats={setMaxStats}
+      speedTune={encartDuMembre(true)}
+      vitessePossedee={speedTuneAttache}
     />
   );
 
@@ -2782,7 +2878,7 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
     } else setRappelAuras(null);
   }
 
-  const rapportZoneC = [...lists.rapportStockage, ...optimizer.rapportCriteres];
+  const rapportZoneC = [...lists.rapportStockage, ...optimizer.rapportCriteres, ...speedTuneOutil.messages];
   // La liste de travail (zone C), une fois : dans « Monstre & équipement » au
   // téléphone, dans les essentiels au bureau.
   const proprietesListe: MonstresDeLaListeProps = {
@@ -2805,6 +2901,7 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
     rappelAuras: rappelAuras !== null,
     listHasValidated,
     setReleaseAllConfirm,
+    onSpeedTune: activeList && lists.listContents.get(activeList.id) === 'guilde' ? speedTuneOutil.ouvrir : undefined,
   };
   const zoneCContent = <MonstresDeLaListe {...proprietesListe} />;
 
@@ -3089,6 +3186,7 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
             objective={contexteResultatAffiche?.recherche.objective ?? objective}
             aurasPropresDe={aurasPropresDuResultat}
             damageSetup={contexteResultatAffiche?.damageSetup ?? damageSetup}
+            speedTune={(() => { const c = contexteResultatAffiche?.resolution?.artifactParams.speedTune; return c ? enveloppeZone(c.zone) : null; })()}
           />
   
           {(result?.truncated || instantane?.arretMemoire) && (
@@ -3226,6 +3324,15 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
   );
   const fenetresListes = (
     <>
+      {confirmSpeedTune && (
+        <ConfirmDialog
+          titre={textes.optimizer.speedTune.validationCasseTitre}
+          message={textes.optimizer.speedTune.validationCasse}
+          libelleAction={textes.optimizer.speedTune.validerQuandMeme}
+          onConfirm={() => { confirmSpeedTune(); setConfirmSpeedTune(null); }}
+          onCancel={() => setConfirmSpeedTune(null)}
+        />
+      )}
       <ConfirmationsLiberation
         lists={lists}
         releaseConfirm={releaseConfirm}
@@ -3247,6 +3354,9 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
       )}
       {equipeOuverte && <OptimizerEquipeDialog contexte={lists} listId={equipeOuverte.listId} equipe={equipeOuverte.equipe}
         data={exclusionData} onValider={lists.setTeams} onClose={() => setEquipeOuverte(null)} />}
+      {speedTuneOutil.ouverte && <SpeedTuneModale allMonsters={allMonsters} siegeDefenseTeams={siegeDefenseTeams}
+        siegeOffenseTeams={siegeOffenseTeams} onClose={speedTuneOutil.fermer}
+        appliquer={{ ouverture: speedTuneOutil.ouverte.ouverture, onAppliquer: speedTuneOutil.appliquer }} />}
     </>
   );
 
@@ -3308,6 +3418,8 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
             maxStats={maxStats}
             setMinStats={setMinStats}
             setMaxStats={setMaxStats}
+            speedTune={encartDuMembre(false)}
+            vitessePossedee={speedTuneAttache}
           />
         }
         principales={<PrincipalesImposeesBureau mainStatsBySlot={mainStatsBySlot} toggleMainStat={toggleMainStat} />}
@@ -3337,6 +3449,7 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
             setRelicUniqueChoice={setRelicUniqueChoice}
             relicMinUpgrade={relicMinUpgrade}
             setRelicMinUpgrade={setRelicMinUpgrade}
+            verrousPossedes={verrousPossedes}
           />
         }
         meilleurs={modeArtefactsSeuls && (
@@ -3423,6 +3536,7 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
             status={status}
             comboSets={comboSets}
             exportRecipe={exportRecipe}
+            exportBloque={speedTuneBloque}
             importFileRef={importFileRef}
             importRecipe={importRecipe}
             setStoppedManually={setStoppedManually}
@@ -3520,6 +3634,7 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
         setRelicUniqueChoice={setRelicUniqueChoice}
         relicMinUpgrade={relicMinUpgrade}
         setRelicMinUpgrade={setRelicMinUpgrade}
+        verrousPossedes={verrousPossedes}
       />
 
       {/* ⚠️ **Carte à part, sous « Artéfacts et relique »** — ces cinq
@@ -3692,6 +3807,7 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
         status={status}
         comboSets={comboSets}
         exportRecipe={exportRecipe}
+        exportBloque={speedTuneBloque}
         importFileRef={importFileRef}
         importRecipe={importRecipe}
         setStoppedManually={setStoppedManually}

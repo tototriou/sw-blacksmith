@@ -6,7 +6,8 @@
 // runeBuildOptim.ts, pas d'une copie locale) pour qu'un script ne puisse
 // plus diverger silencieusement de l'écran.
 
-import { BuildCandidate, SearchParams, SlotFilterPresetKey, SLOT_FILTER_PRESETS, ARTIFACT_MAIN_VALUE, avecAurasConditions } from '../../src/lib/runeBuildOptim';
+import { BuildCandidate, SearchParams, SlotFilterPresetKey, SLOT_FILTER_PRESETS, ARTIFACT_MAIN_VALUE, avecAurasConditions, type BuildRequirement } from '../../src/lib/runeBuildOptim';
+import { exigenceSousSpeedTune } from '../../src/lib/contrainteSpeedTune';
 import { ExclusionSourceData, autoExcludedRuneIds, resolveExcludedRuneIds } from '../../src/lib/optimizerExclusion';
 import { OptimizerRecipe } from '../../src/lib/optimizerRecipe';
 import { DEFAULT_RELIC_MIN_UPGRADE, RelicIntent, defaultRelicMainChoice } from '../../src/hooks/useOptimizerState';
@@ -261,8 +262,8 @@ export function toutVerifierDeLaRecette(recipe: OptimizerRecipe): boolean {
  * `params.relicContext`).
  *
  * `null` là où l'écran n'a pas de file : optimisation d'artéfacts coupée
- * (`ignoreArtifacts`, qui met aussi la relique en mode `off`), ou espèce
- * introuvable.
+ * (`ignoreArtifacts`, qui met aussi la relique en mode `off`) sans contrainte
+ * de speed tune, ou espèce introuvable.
  *
  * `options.diagnostic` : un build rejeté porte le diagnostic du calcul
  * exhaustif (son meilleur couple au score), que l'écran ne calcule jamais ;
@@ -275,7 +276,9 @@ export function resoudreEquipementCli(
   params: SearchParams,
   options: { diagnostic?: boolean } = {}
 ): ((c: BuildCandidate) => ResultatArtefacts) | null {
-  if (recipe.ignoreArtifacts) return null;
+  // Sous une contrainte de speed tune, la paire portée se juge encore contre
+  // la zone, comme à l'écran (`handleSearch`, `resolution`).
+  if (recipe.ignoreArtifacts && !recipe.speedTune) return null;
   const a = artefactsDuCli(recipe, loaded);
   if (!a) return null;
   const regime = regimeEquipementDe(regimeArtefacts(recipe.objective), a.degats != null);
@@ -340,6 +343,9 @@ function paramsArtefacts(
       // Le sort résolu comme à l'écran (`resolvedSkill`), quel que soit
       // l'objectif : la même source, `resolveDamageSkill`.
       sortDegats: resolveDamageSkill(monsterDamageSkills(loadMonsterSkills(loaded.com2usId)), recipe.damageSetup?.skillCom2usId ?? null)?.skillCom2usId ?? null,
+      // La contrainte de la recette, comme l'écran la pose : le 206
+      // incomparable, son verrou retiré, la zone jugée à la résolution.
+      speedTune: recipe.speedTune ?? null,
     }),
     evaluer,
   };
@@ -496,6 +502,18 @@ export function resolveObjectiveStats(recipe: OptimizerRecipe, loaded: LoadedMon
 
 const HARD_TIMEOUT_MS = 10 * 60 * 1000; // ⚠️ IDENTIQUE à HARD_TIMEOUT_MS (OptimizerSection.tsx).
 
+// L'exigence envoyée au moteur, comme l'écran (`requirementAvecAuras`) : les
+// auras, puis, sous une contrainte de speed tune, l'enveloppe de la zone
+// (`exigenceSousSpeedTune`). Une zone vide refuse la recherche, comme à
+// l'écran.
+export function exigenceDeLaRecette(recipe: OptimizerRecipe): BuildRequirement {
+  const avecAuras = avecAurasConditions(recipe.requirement, recipe.damageSetup ?? DEFAULT_DAMAGE_SETUP, recipe.compterAurasResPre ?? true);
+  if (!recipe.speedTune) return avecAuras;
+  const sous = exigenceSousSpeedTune(avecAuras, recipe.speedTune);
+  if (!sous) throw new Error('Recette : la contrainte de speed tune ne laisse aucune vitesse (zone vide ou sets impossibles).');
+  return sous;
+}
+
 export function recipeToSearchParams(
   recipe: OptimizerRecipe,
   loaded: LoadedMonster,
@@ -520,7 +538,7 @@ export function recipeToSearchParams(
     // compte — exactement ce que `relicOracleCli` fait pour l'oracle.
     relicContext: resoudreContexteRelique(recipeToRelicIntent(recipe, loaded), loaded.gear.relic, loaded.allRelics),
     pool: resolvePool(recipe, loaded, exclusionData),
-    requirement: avecAurasConditions(recipe.requirement, recipe.damageSetup ?? DEFAULT_DAMAGE_SETUP, recipe.compterAurasResPre ?? true),
+    requirement: exigenceDeLaRecette(recipe),
     metric: recipe.metric,
     objective: recipe.objective,
     objectiveStats: resolveObjectiveStats(recipe, loaded),

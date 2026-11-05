@@ -4,7 +4,8 @@ import { appliquerCriteres, baseCompleteCriteres } from '../src/lib/criteresOpti
 import { paireRespecteLignes } from '../src/lib/artifactOptim';
 import { leadEffectifMembreOptimizer } from '../src/lib/equipesOptimizer';
 import { consommerImportOptimizer } from '../src/lib/importEquipes';
-import { importerSpeedTuneOptimizer } from '../src/lib/importSpeedTuneOptimizer';
+import { importerSpeedTuneOptimizer, type EtatPlanSpeedTune } from '../src/lib/importSpeedTuneOptimizer';
+import { planDepuisSpeedTune, planTient } from '../src/lib/planSpeedTune';
 import { exclusionSelectorKey, type ExclusionSourceData } from '../src/lib/optimizerExclusion';
 import { cleMemoireMembre, type StockageOptimizer } from '../src/lib/optimizerMemberStorage';
 import { combatSpeed, type LeadInfo } from '../src/lib/speed';
@@ -251,6 +252,71 @@ export function testImportSpeedTuneCompositionCopies() {
   ok(invalide.membres.length === 3 && invalide.membres.every(m => m.selector.source === 'siege-defense'), 'aucune copie Box substituée au slot sans équipement');
 }
 
+// L'état de l'outil photographié en plan : sans kits, l'ordre voulu suit la
+// vitesse ; le verdict de l'écran est celui du plan, sauf demande contraire.
+function etat(lignes: Ligne[], ordre = lignes.filter(l => l.camp === 'allie' && !l.masque).map(l => l.uid), ecart = false): EtatPlanSpeedTune {
+  const base = { leads: { allie: lead, ennemi: null }, choix: {}, ordre, donnees: { kits: new Map(), sorts: new Map(), passifs: new Map() } };
+  const r = planDepuisSpeedTune(lignes, base.leads, base.choix, base.ordre, base.donnees);
+  const tient = 'plan' in r ? planTient(r.plan, base.donnees, new Map(lignes.map(l => [l.monster.id, l.monster] as const))).ok : true;
+  return { ...base, verdictEcran: ecart ? !tient : tient };
+}
+export function testImportSpeedTunePlanPose() {
+  titre('Import speed tuning · plan posé : contrainte à la place de la VIT minimum et du verrou');
+  const data = sources(), lignes = [{ ...ligne(1, true, 126), artefactBuff: 10 }, ligne(2, false, 110), ligne(3, false, 90)];
+  const p = importerSpeedTuneOptimizer(lignes, lead, data, fr, undefined, etat(lignes));
+  egal(p.membres.map(m => [m.criteres.vitesse, m.criteres.lignesVerrouillees]), [[undefined, undefined], [undefined, undefined], [undefined, undefined]],
+    'attachés : ni VIT minimum ni verrou 206');
+  egal(p.membres[0].criteres.comboSets, ['swift'], 'Swift reste sélectionné');
+  const st = p.equipes[0].speedTune!;
+  egal(st.plan?.lignes.map(l => l.uid), ['allie:1', 'allie:2', 'allie:3'], 'le plan photographie les lignes visibles');
+  egal(st.membres.map(l => [l.uid, l.attache, l.repli]), [
+    ['allie:1', true, { vitesseMin: 227, effet206: 10 }], ['allie:2', true, { vitesseMin: 211, effet206: 0 }], ['allie:3', true, { vitesseMin: 191, effet206: 0 }],
+  ], 'chaque ligne liée à son membre, valeurs de repli de l’export d’avant');
+  ok(p.messages.includes(fr.optimizer.importsEquipe.speedTune.avertissementPlan) && !p.messages.includes(fr.optimizer.importsEquipe.speedTune.avertissement),
+    'le rapport dit le plan, plus l’absence de garantie d’ordre');
+  ok(!p.messages.includes(fr.optimizer.importsEquipe.speedTune.verdictDifferent), 'verdicts égaux : rien signalé');
+  const r = consommer(p, data), equipe = r.stockage.teams[0];
+  ok(isDeepStrictEqual(equipe.speedTune, st), 'consommé : le speed tune est posé sur l’équipe');
+  ok(equipe.speedTune!.plan !== st.plan, 'le plan stocké est une copie');
+  const photo = r.stockage.memories.get(cleMemoireMembre('nouvelle', p.membres[1].selector))!.criteres;
+  egal(photo.minStats.spd, undefined, 'mémoire : aucune VIT minimum');
+  egal(photo.lignesVerrouillees, [], 'mémoire : aucun verrou');
+}
+export function testImportSpeedTunePlanMembreRefuse() {
+  titre('Import speed tuning · un membre refusé à la consommation : sa ligne reste sans membre');
+  const data = sources(), lignes = [ligne(1), ligne(2), ligne(3)];
+  const p = importerSpeedTuneOptimizer(lignes, lead, data, fr, undefined, etat(lignes));
+  p.membres[2] = { ...p.membres[2], com2usId: 4242 };
+  const equipe = consommer(p, data).stockage.teams[0];
+  egal(equipe.speedTune?.membres.map(l => l.uid), ['allie:1', 'allie:2'], 'seuls les membres acceptés gardent leur lien');
+  egal(equipe.speedTune?.plan?.lignes.length, 3, 'la ligne refusée reste dans le plan');
+}
+export function testImportSpeedTunePlanMasqueEtRefus() {
+  titre('Import speed tuning · ligne masquée, ordre vide, un seul allié importable, verdict différent');
+  const data = sources(), masque = [ligne(1), ligne(2), { ...ligne(3), masque: true }];
+  const p = importerSpeedTuneOptimizer(masque, lead, data, fr, undefined, etat(masque));
+  egal(p.membres[2].criteres.vitesse, { minimum: 201 }, 'ligne masquée : membre sans contrainte, VIT minimum d’avant');
+  egal(p.equipes[0].speedTune?.membres.map(l => l.uid), ['allie:1', 'allie:2'], 'ligne masquée : hors du plan');
+  const lignes = [ligne(1), ligne(2)], s = fr.optimizer.importsEquipe.speedTune, nom = 'Effet aug. VIT';
+  const vide = importerSpeedTuneOptimizer(lignes, lead, data, fr, undefined, etat(lignes, []));
+  ok(vide.equipes[0].speedTune === undefined, 'ordre vide : export sans plan');
+  ok(vide.messages.includes(s.sansPlan(s.refusPlan.ordreVide, nom)), 'ordre vide : raison au rapport');
+  egal(vide.membres.map(m => m.criteres.vitesse), [{ minimum: 201 }, { minimum: 201 }], 'sans plan : VIT minimum d’avant');
+  const incomplet = importerSpeedTuneOptimizer(lignes, lead, data, fr, undefined, etat(lignes, ['allie:1']));
+  ok(incomplet.messages.includes(s.sansPlan(s.refusPlan.ordreIncomplet('Monstre 2'), nom)), 'ordre incomplet : l’allié omis nommé');
+  const seul = [ligne(1), ligne(2, false, null)];
+  const un = importerSpeedTuneOptimizer(seul, lead, data, fr, undefined, etat(seul));
+  ok(un.equipes[0].speedTune === undefined, 'un seul allié importable : export sans plan');
+  ok(un.messages.includes(s.sansPlan(s.refusPlan.membresInsuffisants, nom)), 'un seul allié importable : dit au rapport');
+  egal(un.membres[0].criteres.vitesse, { minimum: 201 }, 'un seul allié importable : VIT minimum rendue');
+  const doubles = [ligne(1), ligne(1), ligne(2)];
+  const double = importerSpeedTuneOptimizer(doubles, lead, data, fr, undefined, etat(doubles));
+  ok(double.equipes[0].speedTune === undefined, 'deux lignes d’un même monstre : export sans plan');
+  ok(double.messages.includes(s.sansPlan(s.refusPlan.ligneDupliquee('Monstre 1'), nom)), 'deux lignes d’un même monstre : dit au rapport');
+  egal(double.membres.map(m => m.criteres.vitesse), [{ minimum: 201 }, { minimum: 201 }, { minimum: 201 }], 'deux lignes d’un même monstre : VIT minimum rendue');
+  const ecart = importerSpeedTuneOptimizer(lignes, lead, data, fr, undefined, etat(lignes, undefined, true));
+  ok(ecart.equipes[0].speedTune !== undefined && ecart.messages.includes(s.verdictDifferent), 'verdict différent : plan posé, écart signalé');
+}
 export const verificationsImportSpeedTune: [string, () => void][] = [
   testImportSpeedTuneFicheSwift, testImportSpeedTuneFicheSansSwift, testImportSpeedTuneEcartSwift,
   testImportSpeedTuneLigne206, testImportSpeedTuneLeadElement, testImportSpeedTuneLignesIgnorees,
@@ -259,4 +325,5 @@ export const verificationsImportSpeedTune: [string, () => void][] = [
   testImportSpeedTuneCopiesDeckEtReverification,
   testImportSpeedTuneCompositionRetrouvee, testImportSpeedTuneCompositionAmbigue,
   testImportSpeedTuneCompositionModifiee, testImportSpeedTuneCompositionCopies,
+  testImportSpeedTunePlanPose, testImportSpeedTunePlanMembreRefuse, testImportSpeedTunePlanMasqueEtRefus,
 ].map(test => [test.name, test]);

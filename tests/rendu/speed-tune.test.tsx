@@ -10,6 +10,8 @@
 import SpeedTuningSection from '../../src/components/outils/SpeedTuningSection';
 import { leadPresent, ligneVierge, type Ligne } from '../../src/lib/speedTuneLignes';
 import type { Monster } from '../../src/types';
+import { planDepuisSpeedTune } from '../../src/lib/planSpeedTune';
+import { fr } from '../../src/i18n/fr';
 import { egal, faussLocalStorage, monstersJson, ok, titre } from '../outils';
 import { boutons, rendre, texteVisible, valeurs } from './outils-rendu';
 
@@ -154,4 +156,30 @@ export function testRenduSpeedTuneAnalyse() {
   ok(b.find((x) => x.ariaLabel === 'Galleon — tick 3 — buff +30 %')?.presse === true, 'le buff +30 % posé, enclenché');
   ok(b.find((x) => x.ariaLabel === 'Toute ton équipe — tick 1 — buff +30 %')?.presse === false, 'le buff d\'un clic pour tout le camp');
   ok(t.endsWith('Ordre de tour 1 Veromos tick 4 → 2 Galleon tick 5 → 3 Belladeon tick 6 → 4 Lushen tick 7'), 'l\'ordre de tour, rang et tick');
+}
+
+// Ouvert depuis une équipe de l'Optimizer (feat-speed-tune-depuis-optimizer.md) :
+// l'état à part se lit sous `speedTune.optimizer.`, « Appliquer à l'équipe »
+// remplace l'export, et reste désactivé tant que l'état n'est pas posé (en rendu
+// serveur, l'effet d'ouverture ne tourne pas).
+export function testRenduSpeedTuneAppliquer() {
+  titre('rendu · Speed tuning — ouvert depuis l’Optimizer');
+  const c = fr.speedTuning.camp;
+  const allies = LIGNES.filter((l) => l.camp === 'allie' && !l.masque);
+  const plan = planDepuisSpeedTune(allies, { allie: null, ennemi: null }, {}, allies.map((l) => l.uid), { kits: new Map(), sorts: new Map(), passifs: new Map() });
+  if (!('plan' in plan)) throw new Error('plan refusé');
+  const rendreAvec = (p: typeof plan.plan) => {
+    faussLocalStorage({});
+    return avecEtat({ 'speedTune.optimizer.lignes': allies }, () => rendre(
+      <SpeedTuningSection allMonsters={MONSTRES} siegeDefenseTeams={[]} siegeOffenseTeams={[]}
+        appliquer={{ ouverture: { plan: p }, onAppliquer: () => {} }} />));
+  };
+  const html = rendreAvec(plan.plan);
+  const b = boutons(html).filter((x) => x.texte === c.appliquer);
+  ok(b.length === 1 && boutons(html).every((x) => x.texte !== c.exporter), '« Appliquer à l’équipe » à la place de l’export');
+  ok(b[0]!.desactive && texteVisible(html).includes(c.lectureKits), 'avant les kits : désactivé, « lecture des kits » dit');
+  ok(texteVisible(html).includes('Galleon'), 'l’état à part est celui que la modale lit');
+  ok(!texteVisible(html).includes(c.perteOrigine), 'plan sans ligne recalculée : rien sur l’origine');
+  const recalcule = { ...plan.plan, lignes: plan.plan.lignes.map((l, i) => (i === 0 ? { ...l, runeSpeed: l.runeSpeed + 2 } : l)) };
+  ok(texteVisible(rendreAvec(recalcule)).includes(c.perteOrigine), 'ligne recalculée : la perte des valeurs d’origine est dite');
 }

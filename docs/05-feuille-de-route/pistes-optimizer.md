@@ -483,18 +483,6 @@ Les pistes du calcul des dégâts réels sont dans [pistes-degats-reels.md](pist
   garder cette paire, et, en mode « recherche », la relique. Jamais
   construit.
 
-### Viser un ordre de tours plutôt qu'une VIT runée
-
-- **Constat** : aucune condition de recherche ne porte sur l'ordre des
-  tours. Viser une vitesse finale est écarté
-  ([03-developpeur/optimizer/moteur/optimiseur-artefacts.md § Paire supposée et revérifications](../03-developpeur/optimizer/moteur/optimiseur-artefacts.md#paire-supposée-et-revérifications)).
-- **Idée** : des couples (intervalle de vitesse de combat, intervalle
-  d'effet du buff de vitesse), tirés de l'outil de speed tuning : deux
-  contraintes distinctes, pas un scalaire.
-- **Bloque** : non cadré ; exige de lire `speedTuneDeck.ts` et
-  `useSpeedTune` avant toute proposition
-  ([02-app/speed-tuning/ (feat-formule.md) § Formule (modèle partagé)](../02-app/speed-tuning/feat-formule.md)).
-
 ### Import d'une équipe : les sets d'aura des coéquipiers
 
 - **Constat** : l'import d'une équipe reprend le lead (`lead` de
@@ -508,24 +496,20 @@ Les pistes du calcul des dégâts réels sont dans [pistes-degats-reels.md](pist
   ou ceux que l'import propose) ; les sets d'aura sont aujourd'hui une
   saisie, jamais une dérivation.
 
-### Import depuis le speed tuning : l'ordre des tours n'est pas garanti
+### Contrainte de speed tune : ce qui reste à faire
 
-- **Constat** : l'import pose pour chaque membre une VIT minimum de fiche
-  (base + vitesse de runes saisie) et, si l'Effet aug. VIT est saisi, une
-  ligne verrouillée de code 206
-  (`importerSpeedTuneOptimizer`, `src/lib/importSpeedTuneOptimizer.ts`).
-  Un minimum par membre ne garantit pas l'ordre des tours, et le rapport le
-  dit. Les fenêtres de vitesse de l'analyse du speed tuning ne sont pas
-  transmises à l'Optimizer, et aucune condition de recherche ne porte sur
-  l'ordre des tours.
-- **Idée** : transmettre les fenêtres de l'analyse sous forme de couples :
-  un intervalle de vitesse de runes et un intervalle d'Effet aug. VIT par
-  membre, deux contraintes distinctes ; puis contrôler, depuis le speed
-  tuning, l'ordre des tours des builds trouvés. Voir aussi « Viser un ordre
-  de tours plutôt qu'une VIT runée ».
-- **Bloque** : non cadré ; l'Optimizer n'a pas de condition en intervalle
-  sur ces deux valeurs, et le speed tuning ne relit pas les builds de
-  l'Optimizer.
+- **Constat** : un membre exporté depuis le speed tuning porte une zone de
+  couples (VIT de fiche, Effet aug. VIT) qui garde l'ordre des tours
+  ([02-app/optimizer/feat-contrainte-speed-tune.md](../02-app/optimizer/feat-contrainte-speed-tune.md)).
+  Restent hors du premier livrable : l'affichage des deux leads quand le
+  lead effectif du membre diffère de celui du plan ; l'annonce, sur
+  « Recalculer », que les gains d'une ligne changent ; le verdict d'équipe
+  dans la liste des équipes (il n'est que dans l'encart du membre) ; un
+  échec de lecture des kits, qui laisse l'encart sur « lecture des kits »
+  (`src/hooks/useZoneSpeedTune.ts`).
+- **Idée** : chacun est un ajout d'écran sur le calcul existant
+  (`src/lib/speedTuneMembre.ts`).
+- **Bloque** : rien de technique ; à prioriser.
 
 ### Un membre importé sans set
 
