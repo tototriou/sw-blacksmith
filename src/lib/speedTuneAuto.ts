@@ -74,6 +74,22 @@ export interface EntreeAuto {
   // recalculées, sans confondre leur valeur avec une correction manuelle.
   atbAuto?: ModParTick;
   speedMod?: ModParTick;
+  // La provenance des cases des deux grilles, tous camps (voir `CasesAuto`).
+  casesAuto?: CasesAuto;
+}
+
+// ⚠️ **LA PROVENANCE DES CASES, dans les deux camps et les deux grilles.** Ce
+// que l'analyse écrit ne vaut qu'aux vitesses du moment : un buff posé au tick
+// où le lanceur jouait tombe ailleurs s'il ralentit. Qui rejoue un plan à
+// d'autres vitesses (l'Optimizer) doit donc séparer ces cases-là des cases
+// SAISIES, qui gardent leur tick. Une valeur ne le dit pas : une saisie peut
+// reprendre le chiffre automatique. La provenance s'écrit donc au geste.
+//
+// Une ligne SANS ce champ et aux grilles non vides vient d'un état enregistré
+// avant lui : sa provenance est inconnue.
+export interface CasesAuto {
+  atb: ModParTick;
+  speed: ModParTick;
 }
 
 // Ce que les kits pré-générés donnent, déjà chargé par l'appelant.
@@ -87,6 +103,7 @@ export interface ModsAuto {
   atbMod: ModParTick;
   speedMod: ModParTick;
   atbAuto?: ModParTick;
+  casesAuto: CasesAuto;
 }
 
 export interface ResultatAuto {
@@ -550,12 +567,15 @@ export function analyseAutomatique(
   const pose = simuler(avecSorts, horizon);
   const parId = new Map(pose.lignes.map((l) => [l.id, l]));
   const automatiques = new Map<string, ModParTick>();
+  const vitessesAuto = new Map<string, ModParTick>();
+  const precedentes = new Map(equipe.map((e) => [e.id, e.casesAuto] as const));
   const final: TuneMonstre[] = avecSorts.map((m) => {
     const l = parId.get(m.id);
     const atbMod: ModParTick = { ...m.atbMod };
     const atbAuto: ModParTick = {};
     automatiques.set(m.id, atbAuto);
     const speedMod: ModParTick = { ...m.speedMod };
+    const speedAuto: ModParTick = {};
     if (l) {
       for (const [tick, v] of Object.entries(l.effetAtb)) {
         const t = Number(tick);
@@ -576,8 +596,17 @@ export function analyseAutomatique(
           if (!saisi) atbAuto[cible] = v;
         }
       }
-      for (const [tick, v] of Object.entries(l.effetSpeed)) if (v !== 0) speedMod[Number(tick)] = v;
+      for (const [tick, v] of Object.entries(l.effetSpeed)) {
+        const t = Number(tick);
+        if (v === 0) continue;
+        speedMod[t] = v;
+        // Automatique : posée par un sort, ou case reprise d'une analyse
+        // précédente sans avoir été retouchée depuis.
+        const entree = m.speedMod?.[t];
+        if (entree === undefined || precedentes.get(m.id)?.speed[t] === entree) speedAuto[t] = v;
+      }
     }
+    vitessesAuto.set(m.id, speedAuto);
     return {
       id: m.id,
       combat: m.combat,
@@ -611,6 +640,7 @@ export function analyseAutomatique(
       atbMod: m.atbMod ?? {},
       speedMod: m.speedMod ?? {},
       ...(reels.has(m.id) ? { atbAuto } : {}),
+      casesAuto: { atb: atbAuto, speed: vitessesAuto.get(m.id) ?? {} },
     });
   }
   return {

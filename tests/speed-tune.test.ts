@@ -47,6 +47,7 @@ import {
   plateauDeLignes,
   majMod,
   modifierMod,
+  casesSaisies,
   oublierCamp,
   ordreApresImport,
   plusRapideAllie,
@@ -4204,7 +4205,7 @@ export function testSpeedTuneModele() {
   // Ce que l'analyse écrit atterrit bien sur les lignes.
   {
     const l: Ligne = ligneVierge(monstre(5, 'Cible', 100), 'allie');
-    const mods = new Map([['allie:5', { atbMod: { 6: 45 }, speedMod: { 7: 30 } }]]);
+    const mods = new Map([['allie:5', { atbMod: { 6: 45 }, speedMod: { 7: 30 }, casesAuto: { atb: { 6: 45 }, speed: { 7: 30 } } }]]);
     const [apres] = appliquerMods([l], mods);
     egal(JSON.stringify(apres.atbMod), '{"6":45}', 'la grille des barres reçoit ce qui a été calculé');
     egal(JSON.stringify(apres.speedMod), '{"7":30}', 'et celle des buffs aussi');
@@ -4338,5 +4339,26 @@ export function testSpeedTuneResetAtb() {
     egal(corrigee.atbAuto?.[tick], undefined, nom + ' : une saisie de zéro cesse d’être une case automatique');
     const manuel = analyser([appliquees[0], appliquees[1], corrigee]);
     egal(manuel.mods.get(lignes[2].uid)?.atbMod[tick] ?? corrigee.atbMod[tick], 0, nom + ' : la relance conserve le zéro saisi explicitement');
+
+    // ⚠️ PROVENANCE DES CASES, tous camps : ce que l'analyse écrit est
+    // automatique ; une saisie, même au même chiffre, devient saisie.
+    const allie = appliquees[1];
+    ok(Object.keys(allie.atbMod).length + Object.keys(allie.speedMod).length > 0, nom + ' : l’analyse écrit dans la grille de l’allié');
+    egal(casesSaisies(allie), { atb: {}, speed: {} }, nom + ' : tout ce qu’elle y écrit est automatique');
+    const [tAllie, vAllie] = Object.entries(allie.atbMod).length
+      ? [Number(Object.keys(allie.atbMod)[0]), Object.values(allie.atbMod)[0]]
+      : [Number(Object.keys(allie.speedMod)[0]), Object.values(allie.speedMod)[0]];
+    const champ = Object.entries(allie.atbMod).length ? 'atbMod' : 'speedMod';
+    const resaisie = modifierMod(allie, champ, tAllie, vAllie);
+    egal(casesSaisies(resaisie)![champ === 'atbMod' ? 'atb' : 'speed'][tAllie], vAllie, nom + ' : la même valeur, saisie, devient une case saisie');
+    egal(casesSaisies(appliquees[2])!.atb[2], -20, nom + ' : la correction adverse est une case saisie');
+    egal(casesSaisies(relance.mods.size ? appliquerMods(appliquees, relance.mods)[1] : allie), { atb: {}, speed: {} }, nom + ' : une relance garde la provenance');
+  }
+  // Une ligne enregistrée avant le marquage : provenance inconnue si ses grilles
+  // ne sont pas vides.
+  {
+    const ancienne = { ...ligneVierge(monstres.get(15311)!, 'allie'), casesAuto: undefined, speedMod: { 3: 30 } };
+    egal(casesSaisies(ancienne), null, 'une grille non vide sans provenance est de provenance inconnue');
+    egal(casesSaisies({ ...ancienne, speedMod: {} }), { atb: {}, speed: {} }, 'une grille vide n’a rien à départager');
   }
 }

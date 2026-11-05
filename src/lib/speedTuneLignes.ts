@@ -18,6 +18,7 @@ import {
   ChoixSorts,
   DonneesKit,
   ModsAuto,
+  CasesAuto,
   EntreeAuto,
   cumulsEstimes,
   rejoueEnGrilles,
@@ -36,6 +37,9 @@ export interface Ligne {
   camp: Camp;
   atbMod: ModParTick;
   atbAuto?: ModParTick; // cases adverses issues de l’analyse, recalculables
+  // Provenance des cases des deux grilles, dans les deux camps (voir
+  // `CasesAuto`). Absent sur une ligne enregistrée avant ce champ.
+  casesAuto?: CasesAuto;
   speedMod: ModParTick;
   // Bonus d'artéfact « augmente l'effet du buff de vitesse » (%). Renseigné pour
   // les alliés seulement (on ne connaît pas les artéfacts d'en face).
@@ -95,6 +99,7 @@ export function ligneVierge(monster: Monster, camp: Camp): Ligne {
     camp,
     atbMod: {},
     speedMod: {},
+    casesAuto: { atb: {}, speed: {} },
     artefactBuff: null,
     masque: false,
   };
@@ -129,6 +134,7 @@ export const entreeDe = (l: Ligne): EntreeAuto => ({
   atbMod: l.atbMod,
   atbAuto: l.atbAuto,
   speedMod: l.speedMod,
+  casesAuto: l.casesAuto,
 });
 
 // ⚠️ **L'ORDRE DE L'ÉQUIPE EST UNE DONNÉE DU CALCUL, pas une présentation.**
@@ -449,7 +455,25 @@ export function modifierMod(
     ...aLaMain(l),
     [champ]: majMod(l[champ], tick, v),
     ...(champ === 'atbMod' && l.atbAuto ? { atbAuto: majMod(l.atbAuto, tick, null) } : {}),
+    ...(l.casesAuto
+      ? {
+          casesAuto: {
+            ...l.casesAuto,
+            [champ === 'atbMod' ? 'atb' : 'speed']: majMod(l.casesAuto[champ === 'atbMod' ? 'atb' : 'speed'], tick, null),
+          },
+        }
+      : {}),
   };
+}
+
+// La provenance des cases d'une ligne : `null` quand elle est inconnue (grilles
+// non vides sans `casesAuto`, état enregistré avant ce marquage).
+export function casesSaisies(l: Ligne): { atb: ModParTick; speed: ModParTick } | null {
+  const vide = Object.keys(l.atbMod).length === 0 && Object.keys(l.speedMod).length === 0;
+  if (!l.casesAuto) return vide ? { atb: {}, speed: {} } : null;
+  const garder = (m: ModParTick, auto: ModParTick) =>
+    Object.fromEntries(Object.entries(m).filter(([t, v]) => auto[Number(t)] !== v));
+  return { atb: garder(l.atbMod, l.casesAuto.atb), speed: garder(l.speedMod, l.casesAuto.speed) };
 }
 
 // Ce que l'analyse a écrit, reporté sur les lignes.
