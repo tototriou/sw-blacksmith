@@ -74,15 +74,22 @@ export interface MembrePourOutil {
   entrees: EntreesLigne | null;
 }
 
-// L'état sans plan : les membres dans l'ordre de l'équipe, le lead de l'équipe,
-// aucun adversaire, l'ordre voulu libre (il suit les vitesses).
+// L'uid du n-ième exemplaire d'un même monstre dans un camp : le premier garde
+// l'uid du monstre, les suivants `allie:<id>~<n>`. Une ligne se lie à un membre
+// par son uid, jamais par son monstre : deux exemplaires restent deux lignes.
+export const uidExemplaire = (base: string, n: number) => (n <= 1 ? base : `${base}~${n}`);
+
+// L'état sans plan : les membres dans l'ordre de l'équipe (deux exemplaires du
+// même monstre, deux lignes), le lead de l'équipe, aucun adversaire, l'ordre
+// voulu libre (il suit les vitesses).
 export function etatDepuisMembres(membres: readonly MembrePourOutil[], lead: LeadInfo | null): EtatOutil {
-  const vus = new Set<string>();
+  const vus = new Map<string, number>();
   const lignes: Ligne[] = [];
   for (const { monster, entrees } of membres) {
-    const l = ligneVierge(monster, 'allie');
-    if (vus.has(l.uid)) continue;
-    vus.add(l.uid);
+    const vierge = ligneVierge(monster, 'allie');
+    const n = (vus.get(vierge.uid) ?? 0) + 1;
+    vus.set(vierge.uid, n);
+    const l = { ...vierge, uid: uidExemplaire(vierge.uid, n) };
     lignes.push(entrees
       ? { ...l, runeSpeed: entrees.runeSpeed, swift: entrees.swift, ...(entrees.sets ? { sets: [...entrees.sets] } : {}), artefactBuff: entrees.artefactBuff }
       : l);
@@ -181,7 +188,9 @@ export function appliquerPlanALEquipe(
   const nouveaux: MembreLigne[] = [];
   for (const l of allies) {
     if (liesUid.has(l.uid)) continue;
-    const s = members.find((x) => !liesMembre.has(exclusionSelectorKey(x)) && monstreDe(x) != null && uidDe('allie', String(monstreDe(x))) === l.uid);
+    // Par monstre, dans l'ordre de l'équipe : deux exemplaires se partagent les
+    // lignes de leur monstre dans l'ordre où elles viennent.
+    const s = members.find((x) => !liesMembre.has(exclusionSelectorKey(x)) && monstreDe(x) != null && String(monstreDe(x)) === String(l.monsterId));
     if (!s) continue;
     liesMembre.add(exclusionSelectorKey(s));
     nouveaux.push({ uid: l.uid, selector: s, attache: true, repli: { vitesseMin: null, effet206: 0 } });

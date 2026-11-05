@@ -62,6 +62,23 @@ export function testSpeedTuneDepuisMembres() {
   egal([e.leads.allie?.amount, e.leads.ennemi, e.ordreRange], [24, null, false], 'lead de l’équipe, aucun adversaire, ordre libre');
   egal(vitesseManquante(e.lignes)?.uid, 'allie:9002', '« Appliquer » refusé tant qu’une vitesse alliée manque');
   egal(vitesseManquante(e.lignes.map((l) => ({ ...l, runeSpeed: l.runeSpeed ?? 100 }))), null, 'saisie : accepté');
+
+  // Deux exemplaires du même monstre : deux lignes, un plan, deux liens.
+  const doubles = etatDepuisMembres([
+    { monster: A, entrees: { runeSpeed: 120, swift: false, artefactBuff: 0 } },
+    { monster: A, entrees: { runeSpeed: 110, swift: false, artefactBuff: 0 } },
+    { monster: B, entrees: { runeSpeed: 100, swift: false, artefactBuff: 0 } },
+  ], null);
+  egal(doubles.lignes.map((l) => [l.uid, l.runeSpeed]), [['allie:9001', 120], ['allie:9001~2', 110], ['allie:9002', 100]],
+    'deux exemplaires : deux lignes, aucune supprimée');
+  const plan = planDepuisSpeedTune(doubles.lignes, leads, {}, doubles.lignes.map((l) => l.uid), donnees);
+  if (!('plan' in plan)) throw new Error(JSON.stringify(plan.refus));
+  const s1: ExclusionSelector = { source: 'box', unitKey: 'a1' }, s2: ExclusionSelector = { source: 'box', unitKey: 'a2' }, s3: ExclusionSelector = { source: 'box', unitKey: 'b' };
+  const monstreDe = (x: ExclusionSelector) => ((x as { unitKey: string }).unitKey === 'b' ? B.id : A.id);
+  const { st } = appliquerPlanALEquipe(undefined, plan.plan, [s1, s2, s3], monstreDe, bestiaire);
+  egal(st.membres.map((m) => [m.uid, (m.selector as { unitKey: string }).unitKey, m.repli.vitesseMin]),
+    [['allie:9001', 'a1', A.stats.speed! + 120], ['allie:9001~2', 'a2', A.stats.speed! + 110], ['allie:9002', 'b', B.stats.speed! + 100]],
+    'chaque exemplaire lié à sa ligne, dans l’ordre de l’équipe');
 }
 
 export function testSpeedTuneAppliquerALEquipe() {

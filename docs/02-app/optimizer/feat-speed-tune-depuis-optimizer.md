@@ -11,10 +11,11 @@ la zone), [../speed-tuning/feat-export-optimizer.md](../speed-tuning/feat-export
 ## Points d'entrée
 
 - **Sur l'équipe** (tête de l'équipe d'une liste au contenu Guilde, celui du siège) : un bouton
-  icône (jauge), nommé « Régler le speed tune » quand l'équipe n'a pas de plan, « Modifier le
-  speed tune » quand elle en a un ; une icône, pour tenir dans la tête de l'équipe au téléphone.
-  Absent pour une liste Arène, Donjon ou sans contenu : la portée reste le siège. Sa place reste
-  réservée, pour que changer le contenu de la liste ne déplace pas « Modifier l'équipe ».
+  « Speed tune » mis en avant, sur la ligne des gestes de l'équipe à côté de « Modifier
+  l'équipe », nommé pour les lecteurs d'écran « Régler le speed tune » quand l'équipe n'a pas de
+  plan, « Modifier le speed tune » quand elle en a un. Absent pour une liste Arène, Donjon ou
+  sans contenu : la portée reste le siège. Sa place reste réservée, pour que changer le contenu
+  de la liste ne déplace pas « Modifier l'équipe ».
 - **Dans l'encart « Speed tune »** d'un membre : « Modifier le speed tune », à côté de
   « Détacher ». Il ouvre la modale de l'équipe du membre.
 
@@ -54,7 +55,8 @@ Relancer l'analyse reste un geste de l'utilisateur, comme dans la page.
 
 ### Préremplissage sans plan
 
-L'équipe n'a pas de plan : « Ton équipe » reçoit ses membres, dans l'ordre de l'équipe, avec les
+L'équipe n'a pas de plan : « Ton équipe » reçoit ses membres, dans l'ordre de l'équipe (deux
+exemplaires du même monstre font deux lignes : `allie:<id>` puis `allie:<id>~2`), avec les
 entrées de leur build validé exploitable, sinon de l'équipement porté (le même adaptateur que la
 zone : vitesse de runes `fiche − base`, Rapidité des sets activés, sets, Effet aug. VIT de la
 paire). Un membre sans équipement complet (moins de six runes) et sans build validé exploitable
@@ -69,7 +71,7 @@ Dans la modale ouverte depuis l'Optimizer, le bouton « Exporter vers l'Optimize
 « Appliquer à l'équipe ». Il construit le plan par le même constructeur que l'export
 (`planDepuisSpeedTune`) :
 
-- **refus** (ordre vide ou incomplet, occurrences inversées, monstre en double, case de
+- **refus** (ordre vide ou incomplet, occurrences inversées, ligne en double (même uid), case de
   provenance inconnue, moins de deux alliés) : rien n'est écrit, la modale reste ouverte et dit
   la raison dans les mots du rapport d'export ;
 - **verdict différent** : le verdict du plan construit n'est pas celui que l'outil affiche (une
@@ -86,10 +88,10 @@ Les liens se reconstruisent sur le nouveau plan :
 - un lien existant est gardé, sélecteur et état (attaché ou détaché) compris, tant que sa ligne
   (même uid) existe dans le nouveau plan **et** que son membre est encore dans l'équipe ; le lien
   d'un membre retiré de l'équipe tombe ;
-- chaque ligne alliée restée sans lien reçoit le membre de l'équipe non encore lié dont le monstre
-  (identifiant du bestiaire, `allie:<id>`) est celui de la ligne, au plus un ; ce lien est attaché.
-  Un camp ne porte jamais deux fois le même monstre (le constructeur refuse), donc l'affectation
-  est unique ;
+- chaque ligne alliée restée sans lien reçoit, dans l'ordre des lignes, le premier membre de
+  l'équipe non encore lié dont le monstre (identifiant du bestiaire) est celui de la ligne, au plus
+  un ; ce lien est attaché. Deux exemplaires du même monstre se partagent ainsi ses lignes
+  (`allie:<id>`, `allie:<id>~2`) dans l'ordre de l'équipe ;
 - les valeurs de repli suivent la ligne (`base + vitesse de runes`, son Effet aug. VIT), comme
   après « Recalculer » ;
 - une ligne alliée sans membre reste figée faute de membre ;
@@ -119,6 +121,4 @@ valeurs d'origine du speed tuning »). Les builds validés ne sont pas touchés 
 ## Limites
 
 - Un seul plan par équipe ; la modale ne garde pas d'historique.
-- Deux exemplaires du même monstre dans l'équipe : l'outil n'en porte qu'un (une ligne par monstre
-  et par camp), le second reste sans lien.
 - Les membres hors siège (liste Arène) ne s'ouvrent pas.

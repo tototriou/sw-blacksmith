@@ -160,8 +160,8 @@ export async function preuvesEnteteEquipe(b: BancRetouches): Promise<[boolean, s
   await b.geste(() => b.listes().setListContent('a', 'guilde'));
   const apres = await positionStable(modifier);
   return [
-    [Math.abs(n.y-c.y) < Math.max(n.height,c.height) && Math.abs(c.y-m.y) < Math.max(c.height,m.height) && c.x>=n.right && m.x>=c.right,
-      'en-tête : compteur entre le nom et Modifier sur la même ligne'],
+    [Math.abs(n.y-c.y) < Math.max(n.height,c.height) && c.x>=n.right && m.y>=Math.max(n.bottom,c.bottom) - 1 && m.right>=c.right - 1,
+      'en-tête : compteur à côté du nom, Modifier dessous, à droite'],
     [titres, 'nom tronqué : texte complet en infobulle'],
     [m.x === apres.x && m.y === apres.y, 'compte inactif à place réservée, Modifier immobile'],
     [document.documentElement.scrollWidth<=innerWidth, 'en-tête sans débordement'],

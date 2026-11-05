@@ -33,13 +33,16 @@ export async function preuvesBandesEquipes(b: Banc): Promise<[boolean, string][]
   const ordinaire = (e: Element) => !e.hasAttribute('aria-current');
   const reference = cartes(a).find(ordinaire)!;
   verifier(cartes(libres).filter(ordinaire).every(e => e.className === reference.className), 'cartes liées et libres : même aspect');
-  verifier(a.contains(a.querySelector('img[src*="leader_skill_"]')) && a.textContent!.includes('Leader : Premier')
-    && cartes(a).length === 2 && [...a.querySelectorAll('button')].some(e => e.textContent === 'Modifier l’équipe'), 'bande : numéro, leader, LeadPill, modifier et deux cartes');
+  verifier(a.contains(a.querySelector('img[src*="leader_skill_"]')) && !a.textContent!.includes('Leader :')
+    && cartes(a).length === 2 && [...a.querySelectorAll('button')].some(e => e.textContent === 'Modifier l’équipe'), 'bande : numéro sans leader, LeadPill, modifier et deux cartes');
   const centre = (e: Element) => { const r = e.getBoundingClientRect(); return r.top + r.height / 2; };
   const titre = [...a.querySelectorAll('span')].find(e => e.textContent?.startsWith('Équipe 1'))!;
   const modifier = [...a.querySelectorAll('button')].find(e => e.textContent === 'Modifier l’équipe')!;
-  verifier([a.querySelector('img[src*="leader_skill_"]')!, modifier].every(e => Math.abs(centre(e) - centre(titre)) < 2),
-    `en-tête : LeadPill, numéro, leader et modifier sur une seule ligne — ${[titre, modifier].map(centre).join(' / ')}`);
+  // Deux lignes : LeadPill et numéro, puis les gestes de l'équipe (« Speed tune »,
+  // « Modifier l'équipe ») — à côté du numéro, ils ne laissaient plus de place pour lui.
+  verifier(Math.abs(centre(a.querySelector('img[src*="leader_skill_"]')!) - centre(titre)) < 2
+    && modifier.getBoundingClientRect().top >= titre.getBoundingClientRect().bottom - 1 && titre.getBoundingClientRect().width > 0,
+    `en-tête : LeadPill et numéro sur une ligne, Modifier dessous — ${[titre, modifier].map(centre).join(' / ')}`);
   verifier(libres.firstElementChild?.textContent === 'Sans équipe' && !!(a.compareDocumentPosition(libres) & Node.DOCUMENT_POSITION_FOLLOWING), 'les libres suivent sous Sans équipe');
   const styleA = getComputedStyle(a), styleB = getComputedStyle(autre);
   const jeton = (nom: string) => `rgb(${getComputedStyle(document.documentElement).getPropertyValue(nom).trim().split(/\s+/).join(', ')})`;
