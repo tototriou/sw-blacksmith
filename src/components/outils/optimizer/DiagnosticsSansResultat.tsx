@@ -6,6 +6,8 @@ import { type RuneDetail } from '../../../types';
 import { type BilanRecherche } from '../../../hooks/useBuildOptimSearch';
 import { type RuneMetric } from '../../../hooks/useRuneMetric';
 import { type SetAura, type DamageSetup } from '../../../lib/damage';
+import { useLangue, useTraduction } from '../../../hooks/useLangue';
+import { formatNombre } from '../../../i18n/format';
 
 export interface DiagnosticsSansResultatProps {
   result: BilanRecherche | null;
@@ -24,11 +26,21 @@ export interface DiagnosticsSansResultatProps {
   // (docs/02-app/optimizer/ecran/README.md, « Panneaux et sections »).
   // Le téléphone garde ses encadrés.
   bureau?: boolean;
+  // L'enveloppe de VIT de fiche d'une recherche sous contrainte de speed
+  // tune : une condition bloquante comme une autre, nommée comme telle.
+  speedTune?: { min: number; max: number } | null;
 }
 
-export default function DiagnosticsSansResultat({ result, feasibilityDiagnosis, impossibleFeasibility, blockingDiagnosis, diagnoseBlockingEnabled, runeById, metric, objective, aurasPropresDe, damageSetup, bureau = false }: DiagnosticsSansResultatProps) {
+export default function DiagnosticsSansResultat({ result, feasibilityDiagnosis, impossibleFeasibility, blockingDiagnosis, diagnoseBlockingEnabled, runeById, metric, objective, aurasPropresDe, damageSetup, bureau = false, speedTune = null }: DiagnosticsSansResultatProps) {
+  const t = useTraduction();
+  const langue = useLangue();
   return (
     <>
+    {result?.nombre === 0 && speedTune && (
+      <p className={`text-xs font-semibold text-bad ${bureau ? 'mb-3 border-t border-border-soft pt-3' : 'mb-3 rounded-lg border border-border bg-panel p-3'}`}>
+        {t.optimizer.speedTune.conditionBloquante(formatNombre(speedTune.min, langue), formatNombre(speedTune.max, langue))}
+      </p>
+    )}
     {/* ⚠️ Diagnostic affiché UNIQUEMENT sur 0 résultat — voir
         `diagnoseFeasibility` dans runeBuildOptim.ts pour ce qu'il
         prouve exactement. Deux cas : au moins une condition

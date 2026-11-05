@@ -2,7 +2,7 @@ import HelpPopover from '../../HelpPopover';
 import { Interrupteur, NumberField, Bouton } from '../../../ui';
 import { RECO_STATS } from '../../../types';
 import { BASE_TOGGLE_STATS, CAPPED_100 } from './constantes';
-import { Fragment, type Dispatch, type SetStateAction } from 'react';
+import { Fragment, type Dispatch, type ReactNode, type SetStateAction } from 'react';
 import { RotateCcw } from 'lucide-react';
 import { type StatKey } from '../../../lib/effects';
 import { useTraduction } from '../../../hooks/useLangue';
@@ -24,9 +24,15 @@ export interface ConditionsProps {
   // champ, ils faisaient déborder la grille des 294 px (≈ 322). Le téléphone
   // ne la passe pas.
   bureau?: boolean;
+  // L'encart « Speed tune » du membre contraint
+  // (feat-contrainte-speed-tune.md, « Écran ») : posé sous la grille.
+  // `vitessePossedee` : attaché, il possède la VIT minimum, qui ne s'affiche
+  // ni ne se saisit ; la VIT maximum reste une condition du membre.
+  speedTune?: ReactNode;
+  vitessePossedee?: boolean;
 }
 
-export default function Conditions({ excludeBase, setExcludeBase, baseOf, artifactFloorOf, minStats, maxStats, setMinStats, setMaxStats, bureau = false }: ConditionsProps) {
+export default function Conditions({ excludeBase, setExcludeBase, baseOf, artifactFloorOf, minStats, maxStats, setMinStats, setMaxStats, bureau = false, speedTune, vitessePossedee = false }: ConditionsProps) {
   const textes = useTraduction();
   const jeu = textes.jeu;
   const k = textes.optimizer.conditions;
@@ -97,6 +103,9 @@ export default function Conditions({ excludeBase, setExcludeBase, baseOf, artifa
           return (
             <Fragment key={st.key}>
               <span className="text-xs text-ink">{jeu.stats[st.key]}</span>
+              {vitessePossedee && st.key === 'spd' ? (
+                <span className="text-xs text-ink-dim" title={k.vitesseSpeedTune}>{k.vitesseSpeedTuneCourt}</span>
+              ) : (
               <div className="flex items-center gap-1.5">
                 <NumberField
                   value={minDisplayed}
@@ -123,6 +132,7 @@ export default function Conditions({ excludeBase, setExcludeBase, baseOf, artifa
                 />
                 {!bureau && <span className="hidden sm:inline text-ink-dim text-micro">{k.min}</span>}
               </div>
+              )}
               <div className="flex items-center gap-1.5">
                 <NumberField
                   value={maxDisplayed}
@@ -189,6 +199,7 @@ export default function Conditions({ excludeBase, setExcludeBase, baseOf, artifa
           className="text-ink-dim hoverable:text-bad"
         />
       </div>
+      {speedTune}
     </div>
   );
 }

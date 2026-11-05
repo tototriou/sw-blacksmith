@@ -118,7 +118,7 @@ export async function scenario(reset?: { monstres: Monster[]; details: DetailMon
         });
         const texte = rapport()?.innerText ?? '';
         verifier(!!rapport() && visible(rapport()!), `${accepte ? 'accepté' : 'refusé'} : rapport global visible`);
-        verifier(texte.includes('ne garantit pas l’ordre des tours'), `${accepte ? 'accepté' : 'refusé'} : avertissement de conversion lu à l’écran`);
+        verifier(texte.includes(accepte ? 'Le plan de speed tune est posé' : 'ne garantit pas l’ordre des tours'), `${accepte ? 'accepté : plan posé' : 'refusé : sans plan, avertissement de conversion'} lu à l’écran`);
         verifier(accepte ? texte.includes('3 monstre(s), 1 équipe(s)') : texte.includes('Aucune liste créée') && texte.includes('identité d’espèce inutilisable'),
           accepte ? 'accepté : compte des membres et équipe lu à l’écran' : 'refusé : motif lu à l’écran');
         verifier(accepte ? !modale() : !!modale(), accepte ? 'accepté : speed tuning fermé' : 'refusé : speed tuning conservé');

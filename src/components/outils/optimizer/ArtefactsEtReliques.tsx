@@ -28,6 +28,8 @@ export interface ArtefactsEtReliquesProps {
   setRelicUniqueChoice: Dispatch<SetStateAction<RelicUniqueChoice>>;
   relicMinUpgrade: number;
   setRelicMinUpgrade: Dispatch<SetStateAction<number>>;
+  // Les codes de verrou possédés par la contrainte de speed tune attachée.
+  verrousPossedes?: number[];
   // Forme de la colonne « Artéfacts et relique » du bureau
   // (`bureau/ArtefactsEtReliqueBureau.tsx`), que le téléphone ne prend pas :
   // section sans cadre (le panneau de la colonne le porte), et Attribut et
@@ -36,7 +38,7 @@ export interface ArtefactsEtReliquesProps {
   bureau?: boolean;
 }
 
-export default function ArtefactsEtReliques({ optimiserArtefacts, setOptimiserArtefacts, artifactMainByKind, setArtifactMainByKind, lignesVerrouillees, setLignesVerrouillees, diagnosticVerrous, sortesFigees, blocArtefactsSeuls, relicMainChoice, setRelicMainChoice, relicUniqueChoice, setRelicUniqueChoice, relicMinUpgrade, setRelicMinUpgrade, bureau = false }: ArtefactsEtReliquesProps) {
+export default function ArtefactsEtReliques({ optimiserArtefacts, setOptimiserArtefacts, artifactMainByKind, setArtifactMainByKind, lignesVerrouillees, setLignesVerrouillees, diagnosticVerrous, sortesFigees, blocArtefactsSeuls, relicMainChoice, setRelicMainChoice, relicUniqueChoice, setRelicUniqueChoice, relicMinUpgrade, setRelicMinUpgrade, verrousPossedes, bureau = false }: ArtefactsEtReliquesProps) {
   const textes = useTraduction();
   const a = textes.optimizer.artefacts;
   return (
@@ -155,6 +157,7 @@ export default function ArtefactsEtReliques({ optimiserArtefacts, setOptimiserAr
             onChange={setLignesVerrouillees}
             diagnostic={diagnosticVerrous}
             figees={sortesFigees}
+            possedes={verrousPossedes}
           />
         </div>
       )}
