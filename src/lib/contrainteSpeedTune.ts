@@ -165,3 +165,30 @@ export const BORNE_MEMO_BORNES = 64;
 export function empreinteSpeedTune(c: ContrainteSpeedTune | null): string | null {
   return c ? JSON.stringify([c.version, c.zone, c.setsAdmis]) : null;
 }
+
+// ─── Lecture validée ────────────────────────────────────────────────────────
+
+const entierNonNegatif = (v: unknown): v is number => typeof v === 'number' && Number.isInteger(v) && v >= 0;
+
+// Une contrainte lue d'un fichier (la recette de recherche) : sa forme seule,
+// intervalles croissants et bornés compris. Ce qu'elle dit n'est pas
+// recalculé : elle a été produite par `contrainteDuMembre`.
+export function contrainteValide(v: unknown): v is ContrainteSpeedTune {
+  if (typeof v !== 'object' || v === null) return false;
+  const c = v as Record<string, unknown>;
+  if (c.version !== 1 || typeof c.zone !== 'object' || c.zone === null || !Array.isArray(c.setsAdmis)) return false;
+  if (!c.setsAdmis.every((x) => typeof x === 'object' && x !== null
+    && typeof (x as SetsCumuls).will === 'boolean' && typeof (x as SetsCumuls).shield === 'boolean')) return false;
+  const z = c.zone as Record<string, unknown>;
+  if (typeof z.uid !== 'string' || !entierNonNegatif(z.base) || typeof z.axeArtefact !== 'boolean' || !Array.isArray(z.parSwift)) return false;
+  return z.parSwift.every((ps) => {
+    if (typeof ps !== 'object' || ps === null) return false;
+    const { swift, classes } = ps as Record<string, unknown>;
+    return typeof swift === 'boolean' && Array.isArray(classes) && classes.every((k) => {
+      if (typeof k !== 'object' || k === null) return false;
+      const { arteMin, arteMax, intervalles } = k as Record<string, unknown>;
+      return entierNonNegatif(arteMin) && entierNonNegatif(arteMax) && arteMin <= arteMax && Array.isArray(intervalles)
+        && intervalles.every((i) => Array.isArray(i) && i.length === 2 && entierNonNegatif(i[0]) && entierNonNegatif(i[1]) && i[0] <= i[1]);
+    });
+  });
+}

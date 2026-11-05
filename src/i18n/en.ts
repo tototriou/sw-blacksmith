@@ -2202,6 +2202,7 @@ export const en: Dictionnaire = {
         verrousIgnores: (n: number) => `${n} locked rune(s) ignored: missing from your inventory.`,
         autreCompteArtefacts: 'This recipe comes from another account: “As equipped” was switched to “Any”.',
         autreCompteRelique: 'This recipe comes from another account: “As equipped” (relic) was switched to “Any”.',
+        speedTuneIgnore: 'The recipe’s speed tune constraint is not applied: on screen, it comes from the member’s team plan.',
         importes: (monstre: string) => `Settings imported for ${monstre} — monster selected automatically.`,
         monstreIntrouvable: (monstre: string) =>
           `Settings imported (${monstre}), but this monster cannot be found in the current data — choose one manually.`,
@@ -2540,6 +2541,7 @@ export const en: Dictionnaire = {
         perimetre: 'contains an unknown exclusion scope',
         choixArtefact: 'contains an invalid artifact choice',
         ligneVerrou: 'must contain an integer code and a numeric minimum',
+        contrainteSpeedTune: 'must be a speed tune constraint (version 1, zone and allowed sets)',
         choixRelique: 'contains an invalid relic choice',
         typeUnique: 'contains an unknown unique property type',
         setRepete: 'unknown or repeated set',

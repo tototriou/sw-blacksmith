@@ -2351,6 +2351,7 @@ export const fr = {
         verrousIgnores: (n: number) => `${n} rune(s) imposée(s) ignorée(s) : absentes de ton inventaire.`,
         autreCompteArtefacts: "Cette recette vient d'un autre compte : « Comme équipé » est passé sur « Libre ».",
         autreCompteRelique: "Cette recette vient d'un autre compte : « Comme équipée » est passé sur « Libre ».",
+        speedTuneIgnore: 'La contrainte de speed tune de la recette n’est pas reprise : à l’écran, elle vient du plan de l’équipe du membre.',
         importes: (monstre: string) => `Réglages importés pour ${monstre} — monstre sélectionné automatiquement.`,
         monstreIntrouvable: (monstre: string) =>
           `Réglages importés (${monstre}), mais ce monstre est introuvable dans les données actuelles — choisis-en un manuellement.`,
@@ -2715,6 +2716,7 @@ export const fr = {
         perimetre: "contient un périmètre d'exclusion inconnu",
         choixArtefact: "contient un choix d'artéfact invalide",
         ligneVerrou: 'doit contenir un code entier et un minimum numérique',
+        contrainteSpeedTune: 'doit être une contrainte de speed tune (version 1, zone et sets admis)',
         choixRelique: 'contient un choix de relique invalide',
         typeUnique: 'contient un type de propriété unique inconnu',
         setRepete: 'set inconnu ou répété',

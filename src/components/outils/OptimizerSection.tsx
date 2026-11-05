@@ -1943,6 +1943,8 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
       relicMainChoice,
       relicUniqueChoice,
       relicMinUpgrade,
+      // La contrainte que la recherche lit, pour que le CLI la rejoue.
+      ...(contrainteSpeedTune ? { speedTune: contrainteSpeedTune } : {}),
     });
     const jour = jourLocal();
     const DIACRITICS = new RegExp('[̀-ͯ]', 'g');
@@ -2195,6 +2197,9 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
         // sans un mot, serait pire que la donnée transportée telle quelle.
         + (bascules ? ` ${os.recette.autreCompteArtefacts}` : '')
         + (relicBascule ? ` ${os.recette.autreCompteRelique}` : '')
+        // La contrainte de speed tune de la recette sert au CLI : à l'écran,
+        // elle vient du plan de l'équipe du membre, et cela se dit.
+        + (recipe.speedTune ? ` ${os.recette.speedTuneIgnore}` : '')
         // ⚠️ Ce que le parseur a CONVERTI (l'ancien mode critique « Moyenne »
         // → « Critique ») se dit aussi, mot pour mot
         // comme le CLI (`chargerRecette`) : jamais une conversion silencieuse.

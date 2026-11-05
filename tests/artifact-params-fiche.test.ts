@@ -262,9 +262,9 @@ export function testArtefactsFicheParamsEcran() {
   egal(memo,
     'const artifactParams = useMemo(() => { if (!selected || !evaluateursFiche) return null; const espece = selected.monster; const evaluer = evaluateursFiche.representatif; '
     + 'return { ...parametresArtefactsFiche({ porteur: { element: espece.element, archetype: espece.archetype }, inventaire: artifacts, reserves: artefactsReserves, equipes: selected.gear.artifacts, '
-    + 'optimiserArtefacts, principaleParSorte: artifactMainByKind, lignesVerrouillees, damageSetup, maxStats, sortDegats: resolvedSkill?.skillCom2usId ?? null, speedTune: null, }), evaluer, }; '
-    + '}, [selected, evaluateursFiche, optimiserArtefacts, artifactMainByKind, sortesFigees, artifacts, artefactsReserves, lignesVerrouillees, damageSetup, maxStats, resolvedSkill]);',
-    'écran : le mémo artifactParams appelle le producteur, avec les dépendances d’avant (sortesFigees compris) et le sort noté');
+    + 'optimiserArtefacts, principaleParSorte: artifactMainByKind, lignesVerrouillees, damageSetup, maxStats, sortDegats: resolvedSkill?.skillCom2usId ?? null, speedTune: contrainteSpeedTune, }), evaluer, }; '
+    + '}, [selected, evaluateursFiche, optimiserArtefacts, artifactMainByKind, sortesFigees, artifacts, artefactsReserves, lignesVerrouillees, damageSetup, maxStats, resolvedSkill, contrainteSpeedTune]);',
+    'écran : le mémo artifactParams appelle le producteur, avec les dépendances d’avant (sortesFigees compris), le sort noté et la contrainte de speed tune');
   // Le sort noté en exception à la règle R (Ceres, Last Shot) retire la
   // dominance du préfiltre ; les autres gardent les champs d'avant.
   const ceres = artifactParamsApres({ ...entreesEcran(recette({}), loaded, evaluer), resolvedSkill: { skillCom2usId: 5812 } })!;

@@ -321,6 +321,7 @@ import testResolutionRapide, { testResolutionConfirmation, testResolutionRapideN
 import testResolutionDominanceReliques from './resolution-dominance-reliques.test';
 import testResolutionSpeedTune from './resolution-speed-tune.test';
 import { testSpeedTuneEquipeLecture, testSpeedTuneEquipeMembres, testSpeedTuneEquipeStockage } from './speed-tune-equipe.test';
+import { testSpeedTuneRecetteLecture, testSpeedTuneRecetteCli } from './speed-tune-recette.test';
 import { testSpeedTuneMembreAdaptateur, testSpeedTuneMembreLignes, testSpeedTuneMembreEcarts, testSpeedTuneMembreBornesEtDetachement } from './speed-tune-membre.test';
 import testMemoCombat from './memo-combat.test';
 import testDominanceLecteursCorpus from './dominance-lecteurs-corpus.test';
@@ -957,6 +958,8 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testSpeedTuneMembreLignes', testSpeedTuneMembreLignes],
   ['testSpeedTuneMembreEcarts', testSpeedTuneMembreEcarts],
   ['testSpeedTuneMembreBornesEtDetachement', testSpeedTuneMembreBornesEtDetachement],
+  ['testSpeedTuneRecetteLecture', testSpeedTuneRecetteLecture],
+  ['testSpeedTuneRecetteCli', testSpeedTuneRecetteCli],
   ['testMemoCombat', testMemoCombat],
   ['testDominanceLecteursCorpus', testDominanceLecteursCorpus],
   ['testMonotonieDegatsCorpus', testMonotonieDegatsCorpus],
