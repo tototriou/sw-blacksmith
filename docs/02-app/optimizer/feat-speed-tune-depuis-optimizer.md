@@ -11,8 +11,7 @@ la zone), [../speed-tuning/feat-export-optimizer.md](../speed-tuning/feat-export
 ## Points d'entrée
 
 - **Sur l'équipe** (tête de l'équipe d'une liste au contenu Guilde, celui du siège) : un bouton
-  « Speed tune » mis en avant, sur la ligne des gestes de l'équipe à côté de « Modifier
-  l'équipe », nommé pour les lecteurs d'écran « Régler le speed tune » quand l'équipe n'a pas de
+  « Speed tune » mis en avant, sur la ligne de l'en-tête à côté de « Modifier l'équipe », nommé pour les lecteurs d'écran « Régler le speed tune » quand l'équipe n'a pas de
   plan, « Modifier le speed tune » quand elle en a un. Absent pour une liste Arène, Donjon ou
   sans contenu : la portée reste le siège. Sa place reste réservée, pour que changer le contenu
   de la liste ne déplace pas « Modifier l'équipe ».

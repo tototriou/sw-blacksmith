@@ -152,7 +152,7 @@ export async function preuvesEnteteEquipe(b: BancRetouches): Promise<[boolean, s
   await preparerEquipe(b);
   const equipe = [...document.querySelectorAll<HTMLElement>('section[aria-label="Équipe 1"]')].find(visible)!;
   const modifier = bouton('Modifier l’équipe', equipe), nom = equipe.querySelector<HTMLElement>('[title^="Équipe 1"]')!;
-  const compte = [...equipe.querySelectorAll<HTMLElement>('span')].find(e => e.textContent === '⚠ 2 leads inactifs')!;
+  const compte = [...equipe.querySelectorAll<HTMLElement>('span')].find(e => e.title === '2 leads inactifs')!;
   if (!nom || !compte) return [[false, 'nom avec infobulle et compteur présents']];
   const m = await positionStable(modifier);
   const n=nom.getBoundingClientRect(), c=compte.getBoundingClientRect();
@@ -160,8 +160,8 @@ export async function preuvesEnteteEquipe(b: BancRetouches): Promise<[boolean, s
   await b.geste(() => b.listes().setListContent('a', 'guilde'));
   const apres = await positionStable(modifier);
   return [
-    [Math.abs(n.y-c.y) < Math.max(n.height,c.height) && c.x>=n.right && m.y>=Math.max(n.bottom,c.bottom) - 1 && m.right>=c.right - 1,
-      'en-tête : compteur à côté du nom, Modifier dessous, à droite'],
+    [Math.abs(n.y-c.y) < Math.max(n.height,c.height) && Math.abs(c.y-m.y) < Math.max(c.height,m.height) && c.x>=n.right && m.x>=c.right,
+      'en-tête : compteur entre le nom et Modifier sur la même ligne'],
     [titres, 'nom tronqué : texte complet en infobulle'],
     [m.x === apres.x && m.y === apres.y, 'compte inactif à place réservée, Modifier immobile'],
     [document.documentElement.scrollWidth<=innerWidth, 'en-tête sans débordement'],

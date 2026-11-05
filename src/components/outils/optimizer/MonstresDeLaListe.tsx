@@ -106,27 +106,27 @@ export default function MonstresDeLaListe({ activeList, activeMembers, setEquipe
             });
             const inactifs = membres.filter(m => m.motif).length;
             return <section key={g.equipe?.id ?? 'sans-equipe'} aria-label={g.equipe ? z.equipe(numero + 1) : z.sansEquipe} className={`space-y-0.5 ${g.equipe ? `rounded-lg p-1.5 ${numero % 2 === 0 ? 'bg-equipe-a' : 'bg-equipe-b'}` : ''}`}>
-            {g.equipe && <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-1 py-0.5">
-              {/* Lead, numéro et compte des leads inactifs sur la première ligne ;
-                  les gestes de l'équipe sur la seconde, qui garde la place des deux. */}
+            {g.equipe && <div className="grid grid-cols-[auto_minmax(0,1fr)_auto_auto_auto] items-center gap-x-1 py-0.5">
+              {/* Lead, numéro, compte des leads inactifs et gestes de l'équipe sur une seule ligne. */}
               <span className="flex h-7 items-center whitespace-nowrap">
                 {g.equipe.lead ? <LeadPill ls={g.equipe.lead} titre={z.leadEquipe(g.equipe.lead.amount, nomStatLead(jeu, g.equipe.lead.stat), nomZoneLead(jeu, g.equipe.lead.area))} /> : <span className="text-xs text-ink-dim">{z.sansLead}</span>}
               </span>
               {/* Le numéro seul : le leader, tronqué à toutes les largeurs, ne se lisait jamais. */}
               <span title={z.equipe(numero + 1)} className="min-w-0 truncate text-xs font-semibold text-ink">{z.equipe(numero + 1)}</span>
-              <span className="inline-grid whitespace-nowrap text-micro text-warn">
-                <span className="invisible col-start-1 row-start-1" aria-hidden>⚠ {z.leadsInactifs(5)}</span>
-                <span className={`col-start-1 row-start-1 ${inactifs ? '' : 'invisible'}`} aria-hidden={!inactifs}>⚠ {z.leadsInactifs(inactifs)}</span>
+              {/* Le compte en court (« ⚠ 2 »), la phrase en infobulle et pour les lecteurs
+                  d'écran : en toutes lettres, sa place réservée chassait les gestes de la ligne. */}
+              <span className="inline-grid whitespace-nowrap text-micro text-warn" title={inactifs ? z.leadsInactifs(inactifs) : undefined}>
+                <span className="invisible col-start-1 row-start-1" aria-hidden>⚠ 5</span>
+                <span className={`col-start-1 row-start-1 ${inactifs ? '' : 'invisible'}`} aria-hidden>⚠ {inactifs}</span>
+                {inactifs > 0 && <span className="sr-only">{z.leadsInactifs(inactifs)}</span>}
               </span>
-              <div className="col-span-3 flex items-center justify-end gap-1">
-                {/* Place réservée hors siège : changer le contenu de la liste ne déplace pas « Modifier ». */}
-                <span className={onSpeedTune ? '' : 'invisible'} aria-hidden={!onSpeedTune}>
-                  <Bouton taille="xs" fond="doux" ton="accent" icone={<Gauge size={12} />} libelle={o.speedTune.titre} disabled={!onSpeedTune} tabIndex={onSpeedTune ? undefined : -1}
-                    aria-label={g.equipe.speedTune?.plan ? o.speedTune.modifier : o.speedTune.regler}
-                    title={g.equipe.speedTune?.plan ? o.speedTune.modifier : o.speedTune.regler} onClick={() => onSpeedTune?.(g.equipe!)} />
-                </span>
-                <Bouton taille="xs" fond="vide" libelle={o.equipe.modifier} onClick={() => setEquipeOuverte({ listId: g.equipe!.listId, equipe: g.equipe })} />
-              </div>
+              {/* Place réservée hors siège : changer le contenu de la liste ne déplace pas « Modifier ». */}
+              <span className={onSpeedTune ? '' : 'invisible'} aria-hidden={!onSpeedTune}>
+                <Bouton taille="xs" fond="doux" ton="accent" icone={<Gauge size={12} />} libelle={o.speedTune.titre} disabled={!onSpeedTune} tabIndex={onSpeedTune ? undefined : -1}
+                  aria-label={g.equipe.speedTune?.plan ? o.speedTune.modifier : o.speedTune.regler}
+                  title={g.equipe.speedTune?.plan ? o.speedTune.modifier : o.speedTune.regler} onClick={() => onSpeedTune?.(g.equipe!)} />
+              </span>
+              <Bouton taille="xs" fond="vide" libelle={o.equipe.modifier} onClick={() => setEquipeOuverte({ listId: g.equipe!.listId, equipe: g.equipe })} />
             </div>}
             {!g.equipe && <p className="py-1 text-xs font-semibold text-ink-dim">{z.sansEquipe}</p>}
           {membres.map(({ m, resolved, motif }) => {

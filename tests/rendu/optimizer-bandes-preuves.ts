@@ -38,11 +38,21 @@ export async function preuvesBandesEquipes(b: Banc): Promise<[boolean, string][]
   const centre = (e: Element) => { const r = e.getBoundingClientRect(); return r.top + r.height / 2; };
   const titre = [...a.querySelectorAll('span')].find(e => e.textContent?.startsWith('Équipe 1'))!;
   const modifier = [...a.querySelectorAll('button')].find(e => e.textContent === 'Modifier l’équipe')!;
-  // Deux lignes : LeadPill et numéro, puis les gestes de l'équipe (« Speed tune »,
-  // « Modifier l'équipe ») — à côté du numéro, ils ne laissaient plus de place pour lui.
-  verifier(Math.abs(centre(a.querySelector('img[src*="leader_skill_"]')!) - centre(titre)) < 2
-    && modifier.getBoundingClientRect().top >= titre.getBoundingClientRect().bottom - 1 && titre.getBoundingClientRect().width > 0,
-    `en-tête : LeadPill et numéro sur une ligne, Modifier dessous — ${[titre, modifier].map(centre).join(' / ')}`);
+  // Une ligne : LeadPill, numéro lisible en entier, « Speed tune » et « Modifier l'équipe ».
+  const speedTune = [...a.querySelectorAll('button')].find(e => e.textContent === 'Speed tune');
+  // Un libellé sur une seule ligne de texte : ses boîtes de texte ont toutes le même haut.
+  const unLigne = (e: Element) => {
+    const marche = document.createTreeWalker(e, NodeFilter.SHOW_TEXT), hauts = new Set<number>();
+    for (let n = marche.nextNode(); n; n = marche.nextNode()) {
+      if (!n.textContent!.trim()) continue;
+      const r = document.createRange(); r.selectNodeContents(n);
+      for (const x of r.getClientRects()) if (x.width > 0) hauts.add(Math.round(x.top));
+    }
+    return hauts.size === 1;
+  };
+  verifier([a.querySelector('img[src*="leader_skill_"]')!, modifier, ...(speedTune ? [speedTune] : [])].every(e => Math.abs(centre(e) - centre(titre)) < 2)
+    && titre.scrollWidth <= titre.clientWidth && [modifier, ...(speedTune ? [speedTune] : [])].every(unLigne),
+    `en-tête : LeadPill, numéro entier, Speed tune et Modifier sur une seule ligne — ${[titre, modifier].map(centre).join(' / ')} · ${titre.scrollWidth}/${titre.clientWidth}`);
   verifier(libres.firstElementChild?.textContent === 'Sans équipe' && !!(a.compareDocumentPosition(libres) & Node.DOCUMENT_POSITION_FOLLOWING), 'les libres suivent sous Sans équipe');
   const styleA = getComputedStyle(a), styleB = getComputedStyle(autre);
   const jeton = (nom: string) => `rgb(${getComputedStyle(document.documentElement).getPropertyValue(nom).trim().split(/\s+/).join(', ')})`;
@@ -100,12 +110,12 @@ export async function preuvesBandesEquipes(b: Banc): Promise<[boolean, string][]
   await b.geste(() => b.listes().setListContent('a', 'donjon'));
   verifier(geometrie() === avant, 'contenu incompatible : cartes et contrôles aux mêmes positions');
   verifier(a.querySelectorAll('[aria-label^="Lead inactif"]').length === 2
-    && [...a.querySelectorAll('span')].some(e => visible(e) && e.textContent === '⚠ 2 leads inactifs'), 'contenu incompatible : deux icônes et compte dérivé dans l’en-tête');
+    && [...a.querySelectorAll<HTMLElement>('span')].some(e => visible(e) && e.title === '2 leads inactifs' && [...e.children].some(c => visible(c) && c.textContent === '⚠ 2')), 'contenu incompatible : deux icônes et compte dérivé dans l’en-tête');
   await b.geste(() => b.listes().setTeams(b.listes().teams.map(e => e.id === 'ea' ? { ...e,
     lead: { stat: 'Attack Speed', amount: 24, area: 'Element', element: 'fire' } } : e)));
   verifier(geometrie() === avant, 'changement du lead : cartes et contrôles aux mêmes positions');
   verifier(a.querySelectorAll('[aria-label^="Lead inactif"]').length === 1
-    && [...a.querySelectorAll('span')].some(e => visible(e) && e.textContent === '⚠ 1 lead inactif'), 'lead d’élément : seule la carte incompatible porte une icône et le compte vaut un');
+    && [...a.querySelectorAll<HTMLElement>('span')].some(e => visible(e) && e.title === '1 lead inactif' && [...e.children].some(c => visible(c) && c.textContent === '⚠ 1')), 'lead d’élément : seule la carte incompatible porte une icône et le compte vaut un');
   await b.geste(() => b.listes().setTeams(b.listes().teams.map(e => e.id === 'ea' ? { ...e, lead: null } : e)));
   verifier(!a.querySelector('[aria-label^="Lead inactif"]') && geometrie() === avant, 'équipe sans lead : aucune alerte et positions conservées');
   await b.geste(() => b.listes().setTeams(b.listes().teams.map(e => e.id === 'ea' ? { ...e,
