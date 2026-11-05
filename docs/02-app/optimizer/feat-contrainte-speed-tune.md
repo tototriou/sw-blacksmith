@@ -201,14 +201,29 @@ combat par palier »), la fiche n'étant que l'index exact du calcul.
 
 Un cumul de passif estimé dépend des sets de l'équipe (Volonté, Bouclier) :
 un Chilling dont un cumul vient de sa Volonté perd 20 de VIT dans un build sans
-Volonté. Un build ne tient donc la contrainte que si l'estimation des cumuls
-(`cumulsEstimes`), refaite avec les sets du build à la place de ceux de la
-ligne, donne pour chaque ligne du plan le même nombre qu'avec les sets du
-plan. Le contrôle ne s'applique qu'aux lignes dont les sets sont connus dans
-le plan ; il se fait à la validation finale, une fois par build, avec les sets
-réels. Un build validé d'un autre membre qui change ainsi un cumul est signalé
-comme un écart (« cumuls du plan non tenus »), et le verdict d'équipe ne peut
-pas être « tenu ».
+Volonté. Le plan garde donc, à l'export, une **référence** : pour chaque ligne
+dont le passif est actif et dont le gain de vitesse dépend des cumuls, le
+**gain effectif** (gain par cumul × cumuls, plafond du passif compris) que
+`cumulsEstimes` donne avec les sets de toutes les lignes du plan.
+
+Un **contexte** réunit les entrées de toutes les lignes alliées du plan : le
+candidat pour sa ligne, le build validé exploitable des autres membres, le plan
+ailleurs. La précondition est tenue quand, refaite sur ce contexte entier,
+l'estimation donne à chaque ligne de la référence le même gain effectif. Une
+ligne aux sets inconnus ne fournit aucune source, dans la référence comme dans
+le contexte ; elle reste contrôlée si son passif en dépend. Une ligne sans
+passif dépendant des cumuls n'est jamais contrôlée.
+
+Le prédicat **contexte tenu** (précondition des cumuls, puis plateau tenu) est
+le même au filtre final, à la validation d'un build et au verdict d'équipe. Un
+build validé d'un autre membre qui casse la précondition est signalé comme un
+écart (« cumuls du plan non tenus ») et le verdict d'équipe ne peut pas être
+« tenu ».
+
+Quand « Recalculer » change les sets d'une ligne au point de changer un gain
+effectif, le bouton l'annonce, et le clic met à jour ensemble les sets, les
+cumuls photographiés (décalés de la différence d'estimation) et la référence ;
+« Restaurer » rend l'ensemble d'origine.
 
 ### Les autres lignes
 
@@ -274,8 +289,9 @@ les deux leads et la vitesse de combat sous chacun, sans bouton.
 
 Un build **tient la contrainte** quand une paire d'artéfacts réellement
 équipable donne un cumul 206 dont la classe, pour la VIT de fiche et l'état de
-Swift du build, est dans la zone, et que **cette même paire** tient aussi les
-autres conditions et verrous du membre. La paire de la carte se choisit parmi
+Swift du build, est dans la zone, que **cette même paire** tient aussi les
+autres conditions et verrous du membre, et que la précondition des cumuls est
+tenue avec les sets du build. La paire de la carte se choisit parmi
 ces paires seulement, par le régime habituel de l'objectif. Le build de runes
 reste fixe pendant ce choix.
 
@@ -297,8 +313,9 @@ reste fixe pendant ce choix.
   photographié au lancement et dans la signature de résolution. Quand la zone
   change après le lancement, les résultats restent ceux de leur contexte, et
   l'écran le dit (« la zone a changé depuis la recherche »).
-- **Valider un build** rejoue le plan avec les entrées réelles du build et les
-  valeurs actuelles des autres lignes, sans passer par la zone. Si l'ordre
+- **Valider un build** juge le prédicat « contexte tenu » avec les entrées
+  réelles du build et les valeurs actuelles des autres lignes, sans passer par
+  la zone. Si l'ordre
   casse, une confirmation l'annonce (« ce build casse l'ordre avec les builds
   actuels ») ; son défaut est d'annuler.
 - **Diagnostic « 0 résultat »** : la contrainte de speed tune est une condition
