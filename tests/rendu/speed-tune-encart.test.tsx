@@ -19,7 +19,8 @@ const contrainte: ContrainteSpeedTune = { version: 1, setsAdmis: [{ will: false,
   parSwift: [{ swift: false, classes: [{ arteMin: 0, arteMax: 0, intervalles: [[220, 230]] }] }],
 } };
 
-function membre(p: { st?: ReturnType<typeof speedTune>; zone?: EtatZone; attache?: boolean; ecarts?: EcartLigne[]; sansPlan?: boolean } = {}) {
+type Options = { st?: ReturnType<typeof speedTune>; zone?: EtatZone; attache?: boolean; ecarts?: EcartLigne[]; sansPlan?: boolean };
+function brut(p: Options = {}): SpeedTuneDuMembre {
   const st = p.st ?? speedTune();
   const plan = p.sansPlan ? null : st.plan;
   const lien = { ...st.membres[0]!, attache: p.attache ?? true };
@@ -29,7 +30,10 @@ function membre(p: { st?: ReturnType<typeof speedTune>; zone?: EtatZone; attache
     zone: p.zone ?? { etat: 'prete', empreinte: 'x', contrainte }, contrainte: null,
     verdict: { etat: 'tenu' }, ecarts: p.ecarts ?? [], kitsCharges: true, monstres: bestiaire, donnees: d,
   };
-  return texteVisible(rendre(<SpeedTuneEncart m={{ ...m, detacher: rien, rattacher: rien, recalculer: rien, restaurer: rien }} monstres={bestiaire} donnees={d} />));
+  return m;
+}
+function membre(p: Options = {}) {
+  return texteVisible(rendre(<SpeedTuneEncart m={{ ...brut(p), detacher: rien, rattacher: rien, recalculer: rien, restaurer: rien }} monstres={bestiaire} donnees={d} />));
 }
 
 export function testRenduSpeedTuneEncart() {
@@ -39,6 +43,9 @@ export function testRenduSpeedTuneEncart() {
   ok(pret.includes(s.verdictTenu) && ['VIT. combat', 'VIT totale', 'Effet aug. VIT', 'Set Rapide'].every((c) => pret.includes(c)),
     'zone prête : verdict, tableau aux colonnes VIT. combat, VIT totale, Effet aug. VIT, Set Rapide');
   ok(pret.includes('0 Non') || pret.includes('0Non'), 'classe sans artéfact : effet 0, Rapide « Non »');
+  const html = rendre(<SpeedTuneEncart m={{ ...brut(), detacher: rien, rattacher: rien, recalculer: rien, restaurer: rien }} monstres={bestiaire} donnees={d} />);
+  ok(/aria-expanded="true"[^>]*>[\s\S]*?Vitesses de M9101/.test(html) && html.includes('<table'), 'le titre de la zone replie le tableau, déplié par défaut');
+  ok(!pret.includes('Les autres lignes du plan'), 'pas d’intitulé au-dessus des autres lignes');
   ok(pret.includes(s.detacher) && !pret.includes(s.rattacher), 'attaché : « Détacher » seul');
   ok(membre({ zone: { etat: 'kits' } }).includes(s.kitsEnCours), 'kits en lecture : dit');
   ok(membre({ zone: { etat: 'calcul', empreinte: 'x' } }).includes(s.zoneEnCours), 'zone en calcul : dit');

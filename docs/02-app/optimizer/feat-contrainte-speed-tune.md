@@ -370,7 +370,9 @@ minimum et le verrou « Effet aug. VIT » :
 - la zone en tableau, une ligne par classe utile et par état de Swift, aux colonnes « VIT.
   combat » (sous le lead du plan), « VIT totale » (la VIT de fiche), « Effet aug. VIT » (le
   206 de la classe, 0 pour la classe sans artéfact) et « Set Rapide » (oui ou non) ; les
-  titres passent sur deux lignes plutôt que d'élargir la carte ;
+  titres passent sur deux lignes plutôt que d'élargir la carte. Le titre de la zone
+  (« Vitesses de Lushen qui respectent l'ordre et le speed tuning comme défini ») replie et
+  déplie le tableau, déplié par défaut ;
 - les autres lignes, leur origine (plan, build validé, figé faute de membre) et
   les écarts de la section dédiée, avec leurs boutons ;
 - un bouton « Détacher le speed tune ».

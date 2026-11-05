@@ -3,7 +3,9 @@
 // lignes et leurs écarts, le verdict d'équipe, et les gestes Détacher,
 // Rattacher, Recalculer et Restaurer. Le même contenu dans les deux formats :
 // il suit la grille des conditions qui le porte.
-import { Bouton } from '../../../ui';
+import { useState } from 'react';
+import { ChevronDown } from 'lucide-react';
+import { Bouton, ZoneCliquable } from '../../../ui';
 import { useLangue, useTraduction } from '../../../hooks/useLangue';
 import { formatNombre } from '../../../i18n/format';
 import type { Dictionnaire } from '../../../i18n/fr';
@@ -47,6 +49,8 @@ export default function SpeedTuneEncart({ m, monstres, donnees, zoneChangee = fa
   const t = useTraduction();
   const langue = useLangue();
   const s = t.optimizer.speedTune;
+  // Déplié par défaut : la zone est la raison d'être de l'encart.
+  const [zoneOuverte, setZoneOuverte] = useState(true);
   const n = (v: number | null) => (v == null ? '—' : formatNombre(v, langue));
   const nom = (uid: string) => {
     const l = m.plan?.lignes.find((x) => x.uid === uid);
@@ -77,10 +81,16 @@ export default function SpeedTuneEncart({ m, monstres, donnees, zoneChangee = fa
             <p className="text-xs text-bad">{s.zoneVide}</p>
           ) : m.zone.etat === 'prete' && m.zone.contrainte && donnees ? (
             <div>
-              <p className="text-micro text-ink-dim mb-1">{s.zoneTitre(nom(m.lien.uid))}</p>
+              {/* Le titre replie le tableau ; il reste en place, seul ce qui
+                  suit bouge. */}
+              <ZoneCliquable onClick={() => setZoneOuverte((v) => !v)} aria-expanded={zoneOuverte}
+                className="mb-1 flex w-full items-center gap-2 text-left">
+                <span className="min-w-0 flex-1 text-micro text-ink-dim">{s.zoneTitre(nom(m.lien.uid))}</span>
+                <ChevronDown size={13} className={`flex-none text-ink-dim transition-transform ${zoneOuverte ? 'rotate-180' : ''}`} />
+              </ZoneCliquable>
               {/* Une ligne par classe d'artéfact et état de Rapidité ; les
                   titres passent sur deux lignes plutôt que d'élargir la carte. */}
-              <table className="w-full table-fixed border-collapse text-xs [font-variant-numeric:tabular-nums]">
+              {zoneOuverte && <table className="w-full table-fixed border-collapse text-xs [font-variant-numeric:tabular-nums]">
                 <thead>
                   <tr className="border-b border-border-soft text-ink-dim">
                     {[s.colonnes.combat, s.colonnes.totale, artifactSubName(CODE_AMPLI_VIT, t.jeu), s.colonnes.swift(t.jeu.sets.swift)].map((c) => (
@@ -98,12 +108,11 @@ export default function SpeedTuneEncart({ m, monstres, donnees, zoneChangee = fa
                     </tr>
                   ))}
                 </tbody>
-              </table>
+              </table>}
               {!m.zone.contrainte.setsAdmis.length && <p className="text-xs text-bad">{s.setsImpossibles}</p>}
             </div>
           ) : null}
           <div>
-            <p className="text-micro text-ink-dim mb-1">{s.autresLignes}</p>
             <ul className="flex flex-col gap-1">
               {m.lignes.filter((l) => l.uid !== m.lien.uid).map((l) => {
                 const e = m.ecarts.find((x) => x.uid === l.uid);
