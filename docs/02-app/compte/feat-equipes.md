@@ -171,9 +171,13 @@ sinon « N pièces modifiées », « N pièces disparues ». Le détail marque c
   regroupe les imports et les fichiers.
 - Les équipes en une colonne de cartes, mêmes informations, même menu.
 - « Ouvrir » ouvre le détail en `MobileSheet`, les fiches de monstre à la suite.
+  Dans une fiche, le leader et la position passent sous le nom quand la place
+  manque (requête de conteneur), pour ne pas tronquer le nom.
 
 Aucune des deux mises en page n'est dérivée de l'autre : chacune a son agencement
-et ses tests de rendu.
+et ses tests de rendu. Le banc d'affichage mesure la page (`compte-equipes` :
+ouverture, sources d'import, équipe importée, détail) et l'Optimizer sur une liste
+liée (`optimizer`, état `equipe-liee`).
 
 ## Recherche
 
@@ -293,7 +297,8 @@ format.
 
 Une équipe dont la liste liée existe encore propose « Mettre à jour depuis
 l'Optimizer » ; et l'Optimizer, sur la liste active liée à une équipe, propose
-« Enregistrer dans Mes équipes » près de « Importer une équipe ». Les deux gestes font
+« Enregistrer dans Mes équipes » sur sa propre ligne, sous la liste active (au
+téléphone, au-dessus de « Importer une équipe »). Les deux gestes font
 la même chose : celui de l'Optimizer ouvre « Mes équipes » sur l'onglet de l'équipe,
 et la même confirmation s'y affiche. **La source est fixée par le lien** :
 

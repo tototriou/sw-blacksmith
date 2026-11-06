@@ -2786,14 +2786,19 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
   );
 
   // Assemblage des cartes de réglage (composants d'`optimizer/`).
+  // ⚠️ « Enregistrer dans Mes équipes » a SA ligne, sous la liste : la colonne
+  // d'action de la liste prend la largeur de son contenu, et deux boutons y
+  // écrasaient la liste et la recherche dans une colonne étroite.
   const listesBureau = (
+    <>
     <SelecteurListes
-      action={actionMesEquipes ? <div className="flex flex-wrap items-center gap-2">{actionMesEquipes}<OptimizerImportButton enLigne sources={sourcesImport} onImporter={importerDepuisEcran} rapport={rapportImport} /></div>
-        : <OptimizerImportButton enLigne sources={sourcesImport} onImporter={importerDepuisEcran} rapport={rapportImport} />}
+      action={<OptimizerImportButton enLigne sources={sourcesImport} onImporter={importerDepuisEcran} rapport={rapportImport} />}
       lists={lists}
       memberCounts={memberCountsByList}
       titreSection
     />
+    {actionMesEquipes && <div className="mt-2 flex">{actionMesEquipes}</div>}
+    </>
   );
 
   const listesTelephone = <SelecteurListes lists={lists} memberCounts={memberCountsByList} />;
