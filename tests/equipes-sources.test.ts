@@ -24,7 +24,7 @@ function contexte(): ContexteSourcesEquipes {
   return {
     box: [{ key: '11', monster: ms[0], stars: 6, level: 40, gear: equipementEx(1) }, { key: '12', monster: ms[0], stars: 6, level: 35, gear: equipementEx(2) }],
     siegeDefenseTeams: [deck('d1', ['1', '2', '99'])], siegeOffenseTeams: [deck('o1', [null, null, null])],
-    arenaDecks: [{ cle: 'defense', rang: 0, slots: [{ unitId: 11, com2usId: 1001, gear: equipementEx(4) }] }],
+    arenaDecks: [{ cle: 'defense', rang: 0, slots: [{ unitId: 11, com2usId: 1001, gear: equipementEx(4) }, { unitId: 21, com2usId: 1002, gear: equipementEx(5) }] }],
     compte: true,
     monsterById: new Map(ms.map((m) => [String(m.id), m])),
     monsterByCom2us: new Map(ms.map((m) => [m.com2usId as number, m])),
@@ -71,6 +71,8 @@ function testEquipesSourcesImports() {
     fr.equipes.imports.reimporter, 'compte conservé sans ses decks d’arène : réimporter');
   egal(sourcesImportEquipes({ ...ctx, compte: false }, null, inv, 'pve', fr).find((x) => x.groupe === 'Arène')?.raison,
     fr.equipes.imports.sansCompte, 'sans compte : la raison le dit');
+  const seul = sourcesImportEquipes({ ...ctx, siegeDefenseTeams: [deck('d3', ['1', '99', null])] }, null, inv, 'pve', fr)[0];
+  egal(seul.raison, fr.equipes.imports.moinsDeDeux, 'une seule espèce connue : pas importable, une équipe a au moins deux monstres');
 }
 
 export const verificationsEquipesSources: [string, () => void][] = [

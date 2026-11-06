@@ -7,13 +7,15 @@ import MonsterAvatar from '../../MonsterAvatar';
 import MonsterGear from '../../MonsterGear';
 import { useTraduction } from '../../../hooks/useLangue';
 import {
-  MONSTRES_MAX_EQUIPE, deplacerMonstre, designerLeader, etatExemplaire, etatsEquipement, modifierTextes,
+  MONSTRES_MAX_EQUIPE, MONSTRES_MIN_EQUIPE, deplacerMonstre, designerLeader, etatExemplaire, etatsEquipement, modifierTextes,
   remplacerEquipement, retirerMonstre, retirerRelique,
   type EquipeEnregistree, type EtatPiece, type InventaireCompte, type MonstreEnregistre,
 } from '../../../lib/equipesEnregistrees';
 
 interface Props {
   equipe: EquipeEnregistree;
+  // Pas encore enregistrée : moins de deux monstres (« Nouvelle équipe »).
+  brouillon?: boolean;
   onChanger: (f: (e: EquipeEnregistree, maintenant: Date) => EquipeEnregistree) => void;
   monstreDe: (com2usId: number) => Monster | undefined;
   box: readonly BoxItem[];
@@ -37,10 +39,12 @@ function ChampTexte({ libelle, valeur, onValider }: { libelle: string; valeur: s
 
 // Le détail d'une équipe : son nom, sa note et une fiche par monstre. Le même
 // contenu dans la modale de l'ordinateur et le panneau du téléphone.
-export default function DetailEquipe({ equipe, onChanger, monstreDe, box, inventaire, onAjouter }: Props) {
+export default function DetailEquipe({ equipe, brouillon = false, onChanger, monstreDe, box, inventaire, onAjouter }: Props) {
   const t = useTraduction();
   const d = t.equipes.detail;
   const plein = equipe.monstres.length >= MONSTRES_MAX_EQUIPE;
+  // Enregistrée, une équipe garde deux monstres : le retrait du deuxième est refusé.
+  const retirable = brouillon || equipe.monstres.length > MONSTRES_MIN_EQUIPE;
   // Une grille, pas une colonne flex : dans le panneau du téléphone, une
   // colonne flex aligne ses enfants à gauche (index.css, `[data-tiroir]`) et
   // les fiches se rétrécissaient sur leur contenu.
@@ -50,9 +54,10 @@ export default function DetailEquipe({ equipe, onChanger, monstreDe, box, invent
         <ChampTexte libelle={d.nom} valeur={equipe.nom} onValider={(nom) => onChanger((e, n) => modifierTextes(e, { nom }, n))} />
         <ChampTexte libelle={d.note} valeur={equipe.note} onValider={(note) => onChanger((e, n) => modifierTextes(e, { note }, n))} />
       </div>
+      {brouillon && <p role="status" className="text-xs text-ink-dim">{d.brouillon}</p>}
       {!inventaire && equipe.monstres.length > 0 && <p className="text-xs text-ink-dim">{d.sansCompte}</p>}
       {equipe.monstres.map((m, i) => (
-        <FicheMonstre key={m.uid} m={m} position={i} total={equipe.monstres.length} leader={equipe.leader === m.uid}
+        <FicheMonstre key={m.uid} m={m} position={i} total={equipe.monstres.length} leader={equipe.leader === m.uid} retirable={retirable}
           monstre={monstreDe(m.com2usId)} box={box} inventaire={inventaire} onChanger={onChanger} />
       ))}
       <div>
@@ -63,8 +68,8 @@ export default function DetailEquipe({ equipe, onChanger, monstreDe, box, invent
   );
 }
 
-function FicheMonstre({ m, position, total, leader, monstre, box, inventaire, onChanger }: {
-  m: MonstreEnregistre; position: number; total: number; leader: boolean; monstre: Monster | undefined;
+function FicheMonstre({ m, position, total, leader, retirable, monstre, box, inventaire, onChanger }: {
+  m: MonstreEnregistre; position: number; total: number; leader: boolean; retirable: boolean; monstre: Monster | undefined;
   box: readonly BoxItem[]; inventaire: InventaireCompte | null;
   onChanger: Props['onChanger'];
 }) {
@@ -102,7 +107,9 @@ function FicheMonstre({ m, position, total, leader, monstre, box, inventaire, on
             {Array.from({ length: total }, (_, k) => <option key={k} value={k}>{d.positionN(k + 1)}</option>)}
           </Selecteur>
         </div>
-        <BoutonIcone libelle={d.retirer(nom)} icone={<X size={14} />} onClick={() => onChanger((e, n) => retirerMonstre(e, m.uid, n))} />
+        {/* Désactivé, son infobulle dit pourquoi. */}
+        <BoutonIcone libelle={retirable ? d.retirer(nom) : d.minimum} icone={<X size={14} />} disabled={!retirable}
+          onClick={() => onChanger((e, n) => retirerMonstre(e, m.uid, n))} />
       </div>
       {(actuel?.gear || m.equipement?.relic) && (
         <div className="mt-2 flex flex-wrap gap-2">

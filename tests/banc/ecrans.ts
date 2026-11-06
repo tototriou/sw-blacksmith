@@ -373,8 +373,8 @@ const EQ_IMPORT: Record<Format, Etape[]> = {
   ordinateur: [{ cliquer: bouton('Importer une équipe') }, EQ_SOURCE_DEFENSE, EQ_FERMER_RAPPORT],
 };
 const EQ_CARTE: Cible = { role: 'button', nom: 'Ouvrir Défense 1' };
-// L'équipe envoyée à l'Optimizer : son équipe de liste porte « Enregistrer
-// dans Mes équipes » dans son en-tête, comme toute équipe de l'Optimizer.
+// L'équipe envoyée à l'Optimizer : la fenêtre de son équipe de liste porte
+// « Enregistrer dans Mes équipes », comme toute équipe de l'Optimizer.
 // Au téléphone, les équipes de la liste vivent dans « Gérer mes listes », replié.
 const EQ_LISTES_TELEPHONE: Etape = { cliquer: { role: 'button', nom: 'Gérer mes listes', etendu: false } };
 // « Enregistrer dans Mes équipes » vit dans la fenêtre de l'équipe.
@@ -638,6 +638,12 @@ export const ECRANS: Ecran[] = [
         libelle: 'détail d’une équipe ouvert',
         preparation: { telephone: [...EQ_IMPORT.telephone, { cliquer: EQ_CARTE }], ordinateur: [...EQ_IMPORT.ordinateur, { cliquer: EQ_CARTE }] },
         atteint: [{ role: 'textbox', nom: 'Note' }],
+      },
+      {
+        id: 'brouillon',
+        libelle: '« Nouvelle équipe » : le brouillon, avant son deuxième monstre',
+        preparation: { telephone: [{ cliquer: bouton('Nouvelle équipe') }], ordinateur: [{ cliquer: bouton('Nouvelle équipe') }] },
+        atteint: [repere('[role="status"]:has-text("deux monstres")'), bouton('Ajouter un monstre')],
       },
       {
         id: 'retour-optimizer',

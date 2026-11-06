@@ -30,7 +30,6 @@ export default function CarteEquipe({ equipe, monstreDe, ecarts, speedTuneIncomp
         className="flex min-w-0 flex-1 flex-col gap-2 p-3 pr-11 text-left hoverable:bg-panel2">
         <span className="truncate text-sm font-semibold text-ink">{equipe.nom}</span>
         <span className="flex min-h-[40px] flex-wrap items-center gap-1.5">
-          {equipe.monstres.length === 0 && <span className="text-xs text-ink-dimmer">{c.aucunMonstre}</span>}
           {equipe.monstres.map((m) => {
             const monstre = monstreDe(m.com2usId) ?? null;
             return (

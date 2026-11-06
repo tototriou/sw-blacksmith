@@ -13,7 +13,7 @@ import { exclusionSelectorKey, resolveExclusionEntry, type ExclusionSelector, ty
 import type { StockageOptimizer } from './optimizerMemberStorage';
 import type { SpeedTuneEquipe } from './speedTuneEquipe';
 import {
-  CONTENU_OPTIMIZER_ONGLET, MONSTRES_MAX_EQUIPE, comparerPiece, creerEquipe,
+  CONTENU_OPTIMIZER_ONGLET, comparerPiece, creerEquipe,
   type CorrespondanceOptimizer, type EquipeEnregistree, type LienOptimizerEquipe, type InventaireCompte, type LienLigneEnregistre,
   type MonstreEnregistre, type OngletEquipes, type SpeedTuneEnregistre, type TirerId,
 } from './equipesEnregistrees';
@@ -114,17 +114,18 @@ export function preparerExportEquipeOptimizer(
   return { proposition, correspondance };
 }
 
-// Le lien posé sur l'équipe après un export accepté : la liste créée, sa
-// première équipe (aucune avec 1 ou plus de 6 membres), et les membres que le
-// consommateur a gardés. `null` : export refusé, rien n'est lié.
+// Le lien posé sur l'équipe après un export accepté : la liste créée, son
+// équipe, et les membres que le consommateur a gardés. `null` : export refusé,
+// ou aucune équipe créée (moins de deux membres gardés), rien n'est lié.
 // ⚠️ Le rapport commence par les ignorés du PRODUCTEUR, déjà absents de la
 // correspondance : un doublon d'exemplaire y porte le sélecteur du membre
 // gardé, et le compter retirerait ce membre du lien.
 export function lienApresExportOptimizer(export_: ExportEquipeOptimizer, rapport: RapportImportOptimizer): LienOptimizerEquipe | null {
-  if (!rapport.listeCreee) return null;
+  const equipeId = rapport.equipesCreeesIds?.[0];
+  if (!rapport.listeCreee || !equipeId) return null;
   const { correspondance, proposition } = export_;
   const ignores = new Set(rapport.ignores.slice(proposition.ignores.length).map((i) => exclusionSelectorKey(i.selector)));
-  return { listId: rapport.listeCreee.id, equipeId: rapport.equipesCreeesIds?.[0] ?? null,
+  return { listId: rapport.listeCreee.id, equipeId,
     correspondance: correspondance.filter((c) => !ignores.has(exclusionSelectorKey(c.selecteur))).map((c) => ({ uid: c.uid, selecteur: { ...c.selecteur } })) };
 }
 
@@ -132,7 +133,7 @@ export function lienApresExportOptimizer(export_: ExportEquipeOptimizer, rapport
  * Mettre à jour depuis l'Optimizer
  * ----------------------------------------------------------------------- */
 
-export type RefusRetourOptimizer = 'sansLien' | 'listeAbsente' | 'equipeAbsente' | 'tropDeMembres' | 'membresIntrouvables';
+export type RefusRetourOptimizer = 'sansLien' | 'listeAbsente' | 'equipeAbsente' | 'membresIntrouvables';
 
 export interface PieceManquante {
   libelle: string; // le monstre
@@ -153,22 +154,20 @@ export interface RetourOptimizer {
 
 // ⚠️ Un membre qui ne se résout pas (compte pas encore relu, exemplaire
 // disparu) refuse tout : le reprendre comme absent retirerait son monstre de
-// l'équipe. Une liste vidée, elle, donne une équipe vide, que la spec permet.
+// l'équipe. L'équipe de l'Optimizer a 2 à 6 membres, comme une équipe enregistrée.
 export function disponibiliteRetourOptimizer(equipe: EquipeEnregistree, stockage: StockageOptimizer, data: ExclusionSourceData): RefusRetourOptimizer | null {
   const lien = equipe.lienOptimizer;
   if (!lien) return 'sansLien';
   if (!stockage.lists.some((l) => l.id === lien.listId)) return 'listeAbsente';
-  if (lien.equipeId !== null && !stockage.teams.some((e) => e.id === lien.equipeId && e.listId === lien.listId)) return 'equipeAbsente';
+  if (!stockage.teams.some((e) => e.id === lien.equipeId && e.listId === lien.listId)) return 'equipeAbsente';
   const source = membresSource(equipe, stockage);
-  if (source.length > MONSTRES_MAX_EQUIPE) return 'tropDeMembres';
   if (source.some((s) => { const r = resolveExclusionEntry(s, data); return !r?.monster || r.monster.com2usId === null; })) return 'membresIntrouvables';
   return null;
 }
 
 function membresSource(equipe: EquipeEnregistree, stockage: StockageOptimizer): ExclusionSelector[] {
   const lien = equipe.lienOptimizer!;
-  if (lien.equipeId !== null) return stockage.teams.find((e) => e.id === lien.equipeId)?.members ?? [];
-  return stockage.members.filter((m) => m.listId === lien.listId).map((m) => m.selector);
+  return stockage.teams.find((e) => e.id === lien.equipeId)?.members ?? [];
 }
 
 type Piece = RuneDetail | ArtifactDetail | RelicDetail;
@@ -252,22 +251,16 @@ export function preparerRetourOptimizer(
     res.piecesChangees += piecesDe(m.equipement).size;
   }
 
-  let leader: string | null;
   let speedTune: SpeedTuneEnregistre | undefined;
-  if (lien.equipeId !== null) {
-    const source = stockage.teams.find((e) => e.id === lien.equipeId)!;
-    leader = source.leader ? uidDe.get(exclusionSelectorKey(source.leader)) ?? null : null;
-    if (source.speedTune) {
-      const liens: LienLigneEnregistre[] = [];
-      for (const l of source.speedTune.membres) {
-        const uid = uidDe.get(exclusionSelectorKey(l.selector));
-        if (uid) liens.push({ uid: l.uid, monstre: uid, attache: l.attache, repli: { ...l.repli } });
-      }
-      speedTune = { plan: source.speedTune.plan === null ? null : structuredClone(source.speedTune.plan), liens };
+  const source = stockage.teams.find((e) => e.id === lien.equipeId)!;
+  const leader = source.leader ? uidDe.get(exclusionSelectorKey(source.leader)) ?? null : null;
+  if (source.speedTune) {
+    const liens: LienLigneEnregistre[] = [];
+    for (const l of source.speedTune.membres) {
+      const uid = uidDe.get(exclusionSelectorKey(l.selector));
+      if (uid) liens.push({ uid: l.uid, monstre: uid, attache: l.attache, repli: { ...l.repli } });
     }
-  } else {
-    leader = equipe.leader && vus.has(equipe.leader) ? equipe.leader : null;
-    if (equipe.speedTune) speedTune = { ...equipe.speedTune, liens: equipe.speedTune.liens.filter((l) => vus.has(l.monstre)) };
+    speedTune = { plan: source.speedTune.plan === null ? null : structuredClone(source.speedTune.plan), liens };
   }
   const correspondance: CorrespondanceOptimizer[] = [...uidDe].map(([cle, uid]) => {
     const selecteur = membresSource(equipe, stockage).find((s) => exclusionSelectorKey(s) === cle)!;

@@ -15,7 +15,7 @@ import { creerEquipe, ecrituresEntre, fusionnerRelecture, type EquipeEnregistree
 import { monstreEx } from './equipes-enregistrees.test';
 
 const T0 = new Date('2026-11-05T10:00:00Z');
-const equipe = (id: string): EquipeEnregistree => ({ ...creerEquipe(id, 'rta', `Équipe ${id}`, T0), monstres: [monstreEx('a', 1, 11)], leader: 'a' });
+const equipe = (id: string): EquipeEnregistree => ({ ...creerEquipe(id, 'rta', `Équipe ${id}`, T0), monstres: [monstreEx('a', 1, 11), monstreEx('b', 2, 12)], leader: 'a' });
 
 async function brutDansLaBase(id: string, valeur: unknown) {
   await new Promise<void>((resolve) => {
@@ -65,7 +65,7 @@ function testEquipesStockageFusion() {
 
 function testEquipesFichier() {
   titre('Mes équipes — fichier');
-  const lie = { ...equipe('e1'), lienOptimizer: { listId: 'L', equipeId: null, correspondance: [] } };
+  const lie = { ...equipe('e1'), lienOptimizer: { listId: 'L', equipeId: 'E', correspondance: [] } };
   const texte = ecrireFichierEquipes([lie, equipe('e2')], T0);
   const brut = JSON.parse(texte);
   egal([brut.format, brut.version, brut.exporteLe], ['swblacksmith/equipes', 1, T0.toISOString()], 'en-tête du fichier');

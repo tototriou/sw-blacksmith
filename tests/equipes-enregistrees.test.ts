@@ -3,7 +3,7 @@ import type { ArtifactDetail, GearSet, Monster, RelicDetail, RuneDetail } from '
 import type { BoxItem } from '../src/lib/applyAccount';
 import {
   ajouterMonstre, comparerPiece, compteParOnglet, creerEquipe, deplacerMonstre, designerLeader, dupliquerEquipe,
-  equipesFiltrees, etatExemplaire, etatPiece, indexerInventaire, lireEquipeEnregistree, modifierTextes,
+  equipesFiltrees, gesteSurBrouillon, etatExemplaire, etatPiece, indexerInventaire, lireEquipeEnregistree, modifierTextes,
   nomEquipeLibre, resumeEcarts, retirerMonstre, retirerRelique, type EquipeEnregistree, type MonstreEnregistre,
 } from '../src/lib/equipesEnregistrees';
 
@@ -40,7 +40,7 @@ function testEquipesEnregistreesRelecture() {
   const lu = lireEquipeEnregistree(JSON.parse(JSON.stringify(e)));
   egal(lu?.equipe, e, 'une équipe valide se relit à l’identique');
   egal(lu?.signalements, [], 'sans signalement');
-  ok(lireEquipeEnregistree({ ...e, monstres: [] })?.equipe.monstres.length === 0, 'une équipe de 0 monstre est valide');
+  for (const n of [0, 1]) ok(lireEquipeEnregistree({ ...e, monstres: e.monstres.slice(0, n) }) === null, `${n} monstre : illisible, une équipe en a au moins deux`);
   ok(lireEquipeEnregistree({ ...e, onglet: 'inconnu' }) === null, 'un onglet inconnu rend l’équipe illisible');
   ok(lireEquipeEnregistree({ ...e, monstres: [1, 2, 3, 4, 5, 6, 7].map((i) => monstreEx(`u${i}`, i, null)) }) === null, 'plus de 6 monstres : illisible');
   ok(lireEquipeEnregistree({ ...e, monstres: [monstreEx('a', 1, 11), monstreEx('a', 2, 12)] }) === null, 'deux uid identiques : illisible');
@@ -54,8 +54,10 @@ function testEquipesEnregistreesRelecture() {
   egal(st?.equipe.speedTune?.plan, null, 'le plan illisible devient null');
   egal(st?.equipe.speedTune?.liens.map((l) => l.uid), ['l1'], 'le lien vers un monstre absent est retiré');
   egal(st?.signalements, ['speedTuneIncomplet'], 'et la dégradation est signalée');
-  const lien = lireEquipeEnregistree({ ...e, lienOptimizer: { listId: 'L', equipeId: null, correspondance: [{ uid: 'a', selecteur: { source: 'box', unitKey: '11' } }] } });
+  const lien = lireEquipeEnregistree({ ...e, lienOptimizer: { listId: 'L', equipeId: 'E', correspondance: [{ uid: 'a', selecteur: { source: 'box', unitKey: '11' } }] } });
   egal(lien?.equipe.lienOptimizer?.correspondance.length, 1, 'un lien valide se relit');
+  const sansEquipe = lireEquipeEnregistree({ ...e, lienOptimizer: { listId: 'L', equipeId: null, correspondance: [] } });
+  egal([sansEquipe?.equipe.lienOptimizer, sansEquipe?.signalements], [undefined, ['lienOptimizerRetire']], 'un lien sans équipe de l’Optimizer est retiré et signalé');
   egal(lireEquipeEnregistree({ ...e, lienOptimizer: { listId: 'L' } })?.signalements, ['lienOptimizerRetire'], 'un lien malformé est retiré et signalé');
 }
 
@@ -86,6 +88,12 @@ function testEquipesEnregistreesComparaison() {
 
 function testEquipesEnregistreesOperations() {
   titre('Mes équipes — composition, leader, speed tune, duplication');
+  // « Nouvelle équipe » : brouillon jusqu'au deuxième monstre, puis équipe à enregistrer.
+  const b0 = creerEquipe('n', 'pve', 'N', T0);
+  const b1 = gesteSurBrouillon(b0, (x, n) => ajouterMonstre(x, monstreEx('a', 1, null), n)!, T1);
+  egal([b1.brouillon?.monstres.length, b1.aEnregistrer], [1, null], 'un monstre : encore un brouillon, rien à enregistrer');
+  const b2 = gesteSurBrouillon(b1.brouillon!, (x, n) => ajouterMonstre(x, monstreEx('b', 2, null), n)!, T1);
+  egal([b2.brouillon, b2.aEnregistrer?.monstres.length], [null, 2], 'deux monstres : l’équipe s’enregistre');
   let e = creerEquipe('e', 'pve', 'E', T0);
   for (const [uid, id] of [['a', 1], ['b', 2], ['c', 3]] as const) e = ajouterMonstre(e, monstreEx(uid, id, null), T1)!;
   e = designerLeader(e, 'b', T1);

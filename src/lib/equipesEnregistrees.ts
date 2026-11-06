@@ -36,6 +36,9 @@ export const PROVENANCES_EQUIPEMENT = [
 export type ProvenanceEquipement = (typeof PROVENANCES_EQUIPEMENT)[number];
 
 export const MONSTRES_MAX_EQUIPE = 6;
+// Une équipe enregistrée en a au moins deux : « Nouvelle équipe » reste un
+// brouillon, non enregistré, tant qu'elle n'en a pas deux.
+export const MONSTRES_MIN_EQUIPE = 2;
 
 export interface MonstreEnregistre {
   // Stable dans l'équipe : le leader et les lignes du speed tune le désignent.
@@ -66,7 +69,7 @@ export interface CorrespondanceOptimizer {
 
 export interface LienOptimizerEquipe {
   listId: string;
-  equipeId: string | null;
+  equipeId: string;
   correspondance: CorrespondanceOptimizer[];
 }
 
@@ -154,7 +157,7 @@ export interface LectureEquipe {
 export function lireEquipeEnregistree(v: unknown): LectureEquipe | null {
   if (!objet(v) || !texteNonVide(v.id) || !ONGLETS_EQUIPES.includes(v.onglet as OngletEquipes)
     || !texteNonVide(v.nom) || !texte(v.note) || !date(v.creeLe) || !date(v.modifieLe)
-    || !Array.isArray(v.monstres) || v.monstres.length > MONSTRES_MAX_EQUIPE || !v.monstres.every(monstre)) return null;
+    || !Array.isArray(v.monstres) || v.monstres.length < MONSTRES_MIN_EQUIPE || v.monstres.length > MONSTRES_MAX_EQUIPE || !v.monstres.every(monstre)) return null;
   const monstres = v.monstres as MonstreEnregistre[];
   const uids = new Set(monstres.map((m) => m.uid));
   if (uids.size !== monstres.length) return null;
@@ -207,7 +210,7 @@ function lireSpeedTune(v: unknown, uids: ReadonlySet<string>): { valeur: SpeedTu
 }
 
 function lireLien(v: unknown): LienOptimizerEquipe | null {
-  if (!objet(v) || !texteNonVide(v.listId) || !(v.equipeId === null || texteNonVide(v.equipeId))
+  if (!objet(v) || !texteNonVide(v.listId) || !texteNonVide(v.equipeId)
     || !Array.isArray(v.correspondance)) return null;
   const correspondance: CorrespondanceOptimizer[] = [];
   for (const c of v.correspondance) {
@@ -367,6 +370,15 @@ export function nomEquipeLibre(equipes: readonly EquipeEnregistree[], modele: (n
 export function creerEquipe(id: string, onglet: OngletEquipes, nom: string, maintenant: Date): EquipeEnregistree {
   const d = maintenant.toISOString();
   return { id, onglet, nom, note: '', monstres: [], leader: null, creeLe: d, modifieLe: d };
+}
+
+// Un geste sur le brouillon de « Nouvelle équipe » : il reste brouillon sous
+// deux monstres, et devient l'équipe à enregistrer dès le deuxième.
+export function gesteSurBrouillon(
+  b: EquipeEnregistree, f: (e: EquipeEnregistree, maintenant: Date) => EquipeEnregistree, maintenant: Date
+): { brouillon: EquipeEnregistree | null; aEnregistrer: EquipeEnregistree | null } {
+  const suite = f(b, maintenant);
+  return suite.monstres.length < MONSTRES_MIN_EQUIPE ? { brouillon: suite, aEnregistrer: null } : { brouillon: null, aEnregistrer: suite };
 }
 
 const touchee = (e: EquipeEnregistree, maintenant: Date): EquipeEnregistree => ({ ...e, modifieLe: maintenant.toISOString() });

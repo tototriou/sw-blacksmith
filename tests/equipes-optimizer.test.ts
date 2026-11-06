@@ -110,10 +110,8 @@ function testEquipesOptimizerRetour() {
   egal([retour.monstresChanges, retour.piecesChangees], [2, 12], 'la confirmation compte ce qui change, pièces du monstre retiré comprises');
   const sansBox = { ...sources(), box: [] };
   egal(disponibiliteRetourOptimizer(lie, st, sansBox), 'membresIntrouvables', 'un membre Box introuvable (compte pas relu) : refus, aucun monstre retiré');
-  // Une liste liée sans équipe, vidée dans l'Optimizer : l'équipe devient vide.
-  const lieListe: EquipeEnregistree = { ...lie, lienOptimizer: { ...lie.lienOptimizer!, equipeId: null } };
-  const videe = preparerRetourOptimizer(lieListe, { ...st, members: [], teams: [] }, sources(), inventaire(), () => 'x', T1);
-  egal(typeof videe !== 'string' && [videe.equipe.monstres.length, videe.equipe.leader], [0, null], 'une liste vidée donne une équipe vide, sans leader');
+  // L'équipe de l'Optimizer dissoute : rien n'est repris, l'équipe enregistrée garde ses monstres.
+  egal(preparerRetourOptimizer(lie, { ...st, teams: [] }, sources(), inventaire(), () => 'x', T1), 'equipeAbsente', 'équipe de l’Optimizer dissoute : refus, rien n’est vidé');
   // Un membre ajouté dans l'Optimizer devient un nouveau monstre.
   const ajout = { ...st, validated, teams: st.teams.map((t) => ({ ...t, members: [...t.members, { source: 'unowned' as const, monsterId: '3' }] })) };
   const r2 = preparerRetourOptimizer(lie, ajout, sources(), inventaire(), () => 'neuf', T1);

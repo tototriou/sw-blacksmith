@@ -31,8 +31,8 @@ const eq1 = equipementEx(1);
 const INVENTAIRE = indexerInventaire(eq1.runes.map((r) => (r.id === 3 ? runeEx(3, 3, 99) : r)), eq1.artifacts, [eq1.relic!]);
 const EQUIPES: EquipeEnregistree[] = [
   { ...creerEquipe('e1', 'rta', 'Ma RTA', T0), note: 'contre Lushen', monstres: [monstreEx('a', 1001, 11), monstreEx('b', 1002, null, null)], leader: 'a' },
-  { ...creerEquipe('e2', 'rta', 'Autre RTA', T0), monstres: [] },
-  { ...creerEquipe('e3', 'pve', 'Donjon', T0), monstres: [monstreEx('c', 1003, null, null)] },
+  { ...creerEquipe('e2', 'rta', 'Autre RTA', T0), monstres: [monstreEx('d', 1002, null, null), monstreEx('e', 1003, null, null)] },
+  { ...creerEquipe('e3', 'pve', 'Donjon', T0), monstres: [monstreEx('c', 1003, null, null), monstreEx('f', 1001, null, null)] },
 ];
 const api = (equipes = EQUIPES, relecture: 'en-cours' | 'finie' = 'finie'): EquipesEnregistreesApi => ({
   equipes, relecture, illisibles: 0, signalements: [], clesReservees: new Set(), signaler: () => {}, appliquer: () => {}, remplacerTout: () => {},
@@ -55,7 +55,6 @@ export function testRenduEquipesBureau() {
   ok(t.includes('Ma RTA') && t.includes('Autre RTA') && !t.includes('Donjon'), 'les cartes de l’onglet ouvert seulement');
   ok(t.includes('contre Lushen'), 'la note sur la carte');
   ok(t.includes(e.carte.modifiees(1)), 'l’écart au compte : une pièce modifiée');
-  ok(t.includes(e.carte.aucunMonstre), 'une équipe vide le dit');
   for (const b of [e.nouvelle, e.importer, e.exporterFichier, e.importerFichier]) ok(bouton(html, b)?.desactive === false, `« ${b} » utilisable`);
   ok(valeurs(html, 'placeholder').includes(e.recherche), 'la recherche par monstre');
   ok(!texteVisible(rendre(section({ compte: false }))).includes(e.carte.modifiees(1)), 'sans compte, aucun écart affiché');
@@ -84,13 +83,19 @@ export function testRenduEquipesDetail() {
   ok(valeurs(html, 'value').includes('Ma RTA') && valeurs(html, 'value').includes('contre Lushen'), 'nom et note éditables');
   ok(t.includes(`${e.detail.provenance.porte} · ${e.detail.exemplaire['equipe-ainsi']}`), 'la provenance et ce que porte l’exemplaire');
   ok(t.includes(`${e.detail.rune(3)} : ${e.detail.etats.modifiee}`), 'la pièce modifiée nommée');
-  ok(bouton(html, e.detail.retirer('Monstre 1')) !== undefined, 'retirer un monstre');
+  egal(bouton(html, e.detail.minimum)?.desactive, true, 'à deux monstres, le retrait est refusé et l’infobulle dit pourquoi');
+  ok(!texteVisible(html).includes(e.detail.brouillon), 'une équipe enregistrée n’est pas un brouillon');
   ok(bouton(html, e.detail.reprendre) !== undefined, 'reprendre l’équipement actuel, l’exemplaire étant connu');
   egal(bouton(html, e.detail.ajouter)?.desactive, false, 'ajouter un monstre');
   const plein = { ...EQUIPES[0], monstres: [1, 2, 3, 4, 5, 6].map((k) => monstreEx(`m${k}`, 1002, null, null)) };
   const h2 = rendre(<DetailEquipe equipe={plein} onChanger={() => {}} monstreDe={() => undefined} box={[]} inventaire={null} onAjouter={() => {}} />);
   egal([bouton(h2, e.detail.ajouter)?.desactive, bouton(h2, e.detail.ajouter)?.title], [true, e.detail.complet], 'à 6 monstres, l’ajout est désactivé avec sa raison');
   ok(texteVisible(h2).includes(e.detail.sansCompte), 'sans compte, la comparaison est annoncée absente');
+  egal(bouton(h2, e.detail.retirer('1002'))?.desactive, false, 'au-delà de deux monstres, le retrait est permis');
+  const seul = { ...EQUIPES[0], monstres: [monstreEx('s', 1002, null, null)] };
+  const h3 = rendre(<DetailEquipe equipe={seul} brouillon onChanger={() => {}} monstreDe={() => undefined} box={[]} inventaire={null} onAjouter={() => {}} />);
+  ok(texteVisible(h3).includes(e.detail.brouillon), 'le brouillon de « Nouvelle équipe » dit quand il s’enregistre');
+  egal(bouton(h3, e.detail.retirer('1002'))?.desactive, false, 'un brouillon se vide librement');
 }
 
 export function testRenduEquipesImports() {

@@ -14,7 +14,7 @@ import { resolveExclusionEntry, type ExclusionSelector, type ExclusionSourceData
 import type { StockageOptimizer } from './optimizerMemberStorage';
 import { creerDepuisEquipeOptimizer, disponibiliteRetourOptimizer } from './importEquipesEnregistrees';
 import {
-  MONSTRES_MAX_EQUIPE, creerEquipe,
+  MONSTRES_MAX_EQUIPE, MONSTRES_MIN_EQUIPE, creerEquipe,
   type EquipeEnregistree, type InventaireCompte, type MonstreEnregistre, type OngletEquipes,
   type ProvenanceEquipement, type TirerId,
 } from './equipesEnregistrees';
@@ -116,6 +116,10 @@ function equipeDepuisMembres(
 
 const monstresConnus = (ids: (number | null)[], ctx: ContexteSourcesEquipes) =>
   ids.map((c) => (c === null ? undefined : ctx.monsterByCom2us.get(c))).filter((m): m is Monster => !!m);
+// Un deck vide, ou de moins de deux espèces connues, n'est pas importable : une
+// équipe enregistrée a au moins deux monstres.
+const raisonDeck = (membres: MembreBrut[], connus: Monster[], im: Dictionnaire['equipes']['imports']) =>
+  !membres.length ? im.aucunDeck : connus.slice(0, MONSTRES_MAX_EQUIPE).length < MONSTRES_MIN_EQUIPE ? im.moinsDeDeux : null;
 
 export function sourcesImportEquipes(
   ctx: ContexteSourcesEquipes, optimizer: { stockage: StockageOptimizer; data: ExclusionSourceData } | null,
@@ -128,8 +132,8 @@ export function sourcesImportEquipes(
       // Le leader est le slot 0, et lui seul : un slot 0 vide laisse l'équipe sans leader.
       const membres: MembreBrut[] = team.slots.flatMap((s, i) => (s.monsterId === null ? [] : [{
         com2usId: ctx.monsterById.get(s.monsterId)?.com2usId ?? null, unitId: null, equipement: s.gear ?? null, leader: i === 0 }]));
-      res.push({ cle: `${provenance}:${team.id}`, groupe, libelle: libelle(i + 1), monstres: monstresConnus(membres.map((m) => m.com2usId), ctx),
-        raison: membres.length ? null : im.aucunDeck,
+      const connus = monstresConnus(membres.map((m) => m.com2usId), ctx);
+      res.push({ cle: `${provenance}:${team.id}`, groupe, libelle: libelle(i + 1), monstres: connus, raison: raisonDeck(membres, connus, im),
         creer: (id, tirerUid, maintenant) => equipeDepuisMembres(membres, onglet, libelle(i + 1), provenance, ctx, id, tirerUid, maintenant) });
     });
   siege(ctx.siegeDefenseTeams, im.siegeDefenses, 'siege-defense', 'siege-defense', im.defense);
@@ -144,8 +148,8 @@ export function sourcesImportEquipes(
     const onglet: OngletEquipes = deck.cle === 'attaque' ? 'arene-attaque' : 'arene-defense';
     const provenance: ProvenanceEquipement = onglet;
     const membres: MembreBrut[] = deck.slots.map((s, i) => ({ com2usId: s.com2usId, unitId: s.unitId, equipement: s.gear, leader: i === 0 }));
-    res.push({ cle: `arene:${deck.cle}:${deck.rang}`, groupe: im.arene, libelle, monstres: monstresConnus(membres.map((m) => m.com2usId), ctx),
-      raison: membres.length ? null : im.aucunDeck,
+    const connus = monstresConnus(membres.map((m) => m.com2usId), ctx);
+    res.push({ cle: `arene:${deck.cle}:${deck.rang}`, groupe: im.arene, libelle, monstres: connus, raison: raisonDeck(membres, connus, im),
       creer: (id, tirerUid, maintenant) => equipeDepuisMembres(membres, onglet, libelle, provenance, ctx, id, tirerUid, maintenant) });
   }
 
@@ -159,10 +163,10 @@ export function sourcesImportEquipes(
     const equipes = st.teams.filter((e) => e.listId === liste.id);
     const especes = (selectors: ExclusionSelector[]) => selectors
       .map((sel) => resolveExclusionEntry(sel, optimizer.data)?.monster).filter((m): m is Monster => !!m);
-    const brouillon = (id: string, equipeId: string | null, nom: string, maintenant: Date): EquipeEnregistree => ({
+    const brouillon = (id: string, equipeId: string, nom: string, maintenant: Date): EquipeEnregistree => ({
       ...creerEquipe(id, ongletOuvert, nom, maintenant), lienOptimizer: { listId: liste.id, equipeId, correspondance: [] } });
     // Un membre que le compte ne résout plus rend la source indisponible, avec sa raison.
-    const raisonOptimizer = (equipeId: string | null) => {
+    const raisonOptimizer = (equipeId: string) => {
       const r = disponibiliteRetourOptimizer(brouillon('', equipeId, '', new Date(0)), st, optimizer.data);
       return r ? t.equipes.retour.refus[r] : null;
     };

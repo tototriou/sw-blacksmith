@@ -25,7 +25,7 @@ import {
 import { sourcesImportEquipes, type ContexteSourcesEquipes, type SourceEquipement, type SourceImportEquipe } from '../../../lib/sourcesEquipesEnregistrees';
 import {
   ONGLETS_EQUIPES, ajouterMonstre, compteParOnglet, creerEquipe, deplacerVersOnglet, dupliquerEquipe, equipesFiltrees,
-  nomEquipeLibre, resumeEcarts, tireurIdentifiants,
+  gesteSurBrouillon, nomEquipeLibre, resumeEcarts, tireurIdentifiants,
   type EquipeEnregistree, type InventaireCompte, type OngletEquipes,
 } from '../../../lib/equipesEnregistrees';
 
@@ -70,6 +70,9 @@ export default function EquipesSection({ api, ctx, inventaire, allMonsters, opti
   const [rechercheIds, setRechercheIds] = useStickyState<number[]>('equipes.recherche', []);
   const [page, setPage] = useState(0);
   const [ouverte, setOuverte] = useState<string | null>(null);
+  // « Nouvelle équipe » : un brouillon, enregistré dès son deuxième monstre ;
+  // le fermer avant l'abandonne.
+  const [brouillon, setBrouillon] = useState<EquipeEnregistree | null>(null);
   const [ajout, setAjout] = useState(false);
   const [imports, setImports] = useState(false);
   const [aSupprimer, setASupprimer] = useState<EquipeEnregistree | null>(null);
@@ -87,7 +90,8 @@ export default function EquipesSection({ api, ctx, inventaire, allMonsters, opti
   const pages = Math.max(1, Math.ceil(visibles.length / EQUIPES_PAR_PAGE));
   const pageSure = Math.min(page, pages - 1);
   const affichees = visibles.slice(pageSure * EQUIPES_PAR_PAGE, (pageSure + 1) * EQUIPES_PAR_PAGE);
-  const equipeOuverte = ouverte ? api.equipes.find((x) => x.id === ouverte) ?? null : null;
+  const equipeOuverte = ouverte ? api.equipes.find((x) => x.id === ouverte) ?? (brouillon?.id === ouverte ? brouillon : null) : null;
+  const fermerDetail = () => { setOuverte(null); setBrouillon(null); };
   const enRelecture = api.relecture === 'en-cours';
 
   const ajouterEquipes = (nouvelles: EquipeEnregistree[]) => {
@@ -95,12 +99,16 @@ export default function EquipesSection({ api, ctx, inventaire, allMonsters, opti
     api.appliquer((l) => [...nouvelles, ...l]);
     onEquipeCreee();
   };
-  const changerEquipe = (id: string, f: (x: EquipeEnregistree, maintenant: Date) => EquipeEnregistree) =>
-    api.appliquer((l) => l.map((x) => (x.id === id ? f(x, new Date()) : x)));
+  const changerEquipe = (id: string, f: (x: EquipeEnregistree, maintenant: Date) => EquipeEnregistree) => {
+    if (brouillon?.id !== id) return api.appliquer((l) => l.map((x) => (x.id === id ? f(x, new Date()) : x)));
+    const r = gesteSurBrouillon(brouillon, f, new Date());
+    setBrouillon(r.brouillon);
+    if (r.aEnregistrer) ajouterEquipes([r.aEnregistrer]);
+  };
 
   const nouvelle = () => {
     const id = tirerIdEquipe();
-    ajouterEquipes([creerEquipe(id, onglet, nomEquipeLibre(api.equipes, e.nomParDefaut), new Date())]);
+    setBrouillon(creerEquipe(id, onglet, nomEquipeLibre(api.equipes, e.nomParDefaut), new Date()));
     setOuverte(id);
     onFermerMenu();
   };
@@ -193,7 +201,7 @@ export default function EquipesSection({ api, ctx, inventaire, allMonsters, opti
 
   const actions = (x: EquipeEnregistree): ElementMenu[] => {
     const c = e.carte;
-    const exportImpossible = x.monstres.length === 0 ? e.export.indisponible : !inventaire || !onImporterOptimizer ? e.export.sansCompte : null;
+    const exportImpossible = !inventaire || !onImporterOptimizer ? e.export.sansCompte : null;
     const retourImpossible = refusRetour(x);
     return [
       { cle: 'ouvrir', libelle: c.ouvrir, onClick: () => setOuverte(x.id) },
@@ -241,7 +249,7 @@ export default function EquipesSection({ api, ctx, inventaire, allMonsters, opti
   );
 
   const detail = equipeOuverte && (
-    <DetailEquipe equipe={equipeOuverte} onChanger={(f) => changerEquipe(equipeOuverte.id, f)} monstreDe={monstreDe}
+    <DetailEquipe equipe={equipeOuverte} brouillon={brouillon?.id === equipeOuverte.id} onChanger={(f) => changerEquipe(equipeOuverte.id, f)} monstreDe={monstreDe}
       box={ctx.box} inventaire={inventaire} onAjouter={() => setAjout(true)} />
   );
 
@@ -299,9 +307,9 @@ export default function EquipesSection({ api, ctx, inventaire, allMonsters, opti
       )}
 
       {equipeOuverte && (telephone ? (
-        <MobileSheet ouvert onFermer={() => setOuverte(null)} titre={equipeOuverte.nom}>{detail}</MobileSheet>
+        <MobileSheet ouvert onFermer={fermerDetail} titre={equipeOuverte.nom}>{detail}</MobileSheet>
       ) : (
-        <Modale onClose={() => setOuverte(null)} labelledBy={idDetail} titre={equipeOuverte.nom} croix largeur="max-w-[960px]">
+        <Modale onClose={fermerDetail} labelledBy={idDetail} titre={equipeOuverte.nom} croix largeur="max-w-[960px]">
           {detail}
         </Modale>
       ))}

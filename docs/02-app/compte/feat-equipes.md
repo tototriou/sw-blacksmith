@@ -48,12 +48,13 @@ Chaque libellé porte le nombre d'équipes de l'onglet. L'onglet ouvert et la re
 se gardent pour la session, comme l'état des autres outils (`useStickyState`).
 
 Une équipe appartient à un seul onglet ; « Déplacer vers… » la change d'onglet. Elle
-compte **de 0 à 6 monstres**, quel que soit l'onglet : le jeu impose des tailles
-différentes selon le contenu (3 au siège, 4 en arène, 5 en donjon, 6 en raid), et
-la page n'en refuse aucune. Une équipe de 0 monstre est valide partout (stockage,
-fichier, relecture) : c'est l'état d'une équipe qu'on vient de créer ou qu'on a
-vidée ; « Exporter vers l'Optimizer » y est désactivé (« L'équipe n'a aucun
-monstre »).
+compte **de 2 à 6 monstres** (décision de l'utilisateur), quel que soit l'onglet : le
+jeu impose des tailles différentes selon le contenu (3 au siège, 4 en arène, 5 en
+donjon, 6 en raid), et la page n'en refuse aucune dans cet intervalle. Une équipe de
+0 ou 1 monstre n'est jamais enregistrée : illisible à la relecture (stockage,
+fichier, session), elle va aux rejets ; « Nouvelle équipe » reste un brouillon tant
+qu'elle n'a pas deux monstres ; le retrait du deuxième est refusé. Toute équipe
+enregistrée s'exporte donc vers une équipe de l'Optimizer, qui en accepte 2 à 6.
 
 ## Ce qu'une équipe enregistre
 
@@ -75,7 +76,7 @@ monstre »).
   invalide est retiré, et la carte le signale (« Speed tune incomplet ») ;
 - `lienOptimizer` (facultatif) : `{ listId, equipeId, correspondance }`, la liste de
   l'Optimizer créée par le dernier export de cette équipe, l'équipe de cette liste
-  (`null` quand l'export n'a pas pu en créer une, voir plus bas), et pour chaque
+  (toujours désignée : un lien sans équipe est retiré à la relecture), et pour chaque
   membre exporté le couple `{ uid, selecteur }` (le monstre de l'équipe et son
   sélecteur dans la liste) ;
 - `creeLe`, `modifieLe` : dates ISO.
@@ -193,15 +194,18 @@ liée (`optimizer`, état `equipe-liee`).
 
 ## Créer et modifier
 
-- « Nouvelle équipe » crée une équipe de 0 monstre dans l'onglet ouvert et ouvre son
-  détail.
+- « Nouvelle équipe » ouvre le détail d'un **brouillon** dans l'onglet ouvert (« L'équipe
+  s'enregistre dès qu'elle a deux monstres. ») : rien n'est enregistré avant le
+  deuxième monstre (`gesteSurBrouillon`), et fermer le détail avant l'abandonne.
 - « Ajouter un monstre » : une recherche d'espèce, puis le choix de l'équipement
   parmi ce que le compte connaît de cette espèce, chaque choix nommé par sa
   provenance : « Équipement porté » (chaque exemplaire de la Box),
   « Défense de siège N », « Attaque de siège N », « Défense d'arène », « Attaque
   d'arène N », ou « Sans équipement ». Le choix copie l'équipement à cet instant.
 - Réordonner par un sélecteur de position (« Position N », le même geste aux deux
-  formats, sans glisser-déposer), désigner le leader, retirer un monstre.
+  formats, sans glisser-déposer), désigner le leader, retirer un monstre. À deux
+  monstres, la croix est désactivée, son infobulle dit « Une équipe garde au moins
+  deux monstres. »
 - « Reprendre l'équipement actuel » sur une fiche de monstre remplace sa copie par
   ce que son exemplaire porte aujourd'hui (provenance `porte`). Il n'existe que si
   `unitId` est connu et présent dans la Box.
@@ -244,6 +248,8 @@ modifié.
   est désactivée, avec sa raison.
 - Siège : le leader est le monstre du slot 0, et lui seul ; un slot 0 vide donne une
   équipe sans leader.
+- Un deck de siège ou d'arène de moins de deux espèces connues est désactivé, « Moins
+  de deux monstres connus. »
 - Guerre de guilde et PVE n'ont pas de source dans l'export de compte : leurs équipes
   se créent à la main ou depuis l'Optimizer.
 
@@ -266,8 +272,9 @@ avec un producteur dédié, `preparerExportEquipeOptimizer` (`src/lib/importEqui
   second est ignoré avec sa raison (un exemplaire ne figure qu'une fois dans une
   liste) ;
 - équipe : créée si 2 à 6 membres restent (règle de l'Optimizer) ; leader et lead du
-  monstre leader ; speed tune reporté sur les membres de ses lignes. Avec 1 ou
-  6 membres, la liste n'a pas d'équipe : le lien garde `equipeId: null` ;
+  monstre leader ; speed tune reporté sur les membres de ses lignes. Si un doublon
+  d'unité laisse moins de deux membres, la liste n'a pas d'équipe et aucun lien
+  n'est posé ;
 - **point de départ** : un build validé par membre, dans l'ordre de l'équipe, quand
   son équipement enregistré compte 6 runes d'identifiant strictement positif,
   distinctes, une par emplacement de 1 à 6. Les artéfacts repris sont ceux de la
@@ -319,11 +326,9 @@ jamais pour une liste entière** (décision de l'utilisateur). Le geste ouvre «
 **La source est fixée par le lien** :
 
 - `equipeId` désigne une équipe qui existe encore dans la liste : ses membres, dans
-  leur ordre, son leader et son speed tune ;
-- `equipeId: null` (export de 1 monstre ou de plus de 6) : tous les membres de la liste, dans
-  leur ordre ; le leader et le speed tune **enregistrés** sont gardés.
+  leur ordre, son leader et son speed tune.
 
-Dans les deux cas, un membre repris retrouve son monstre enregistré par la
+Un membre repris retrouve son monstre enregistré par la
 `correspondance` du lien (clé `exclusionSelectorKey` du sélecteur) et garde son
 `uid` ; un membre sans correspondance (ajouté dans l'Optimizer, ou dont la
 revérification du compte a changé le sélecteur) devient un nouveau monstre. Un
@@ -333,12 +338,12 @@ lignes ; la confirmation le nomme.
 - `equipeId` désigne une équipe disparue : l'action est désactivée, « L'équipe de
   l'Optimizer n'existe plus », et rien n'est deviné.
 
-Plus de 6 membres à reprendre : refus avec sa raison. ⚠️ **Un membre qui ne se résout
+⚠️ **Un membre qui ne se résout
 pas** (compte pas encore relu, exemplaire disparu) refuse toute la mise à jour : le
 reprendre comme absent retirerait son monstre de l'équipe. Sans compte chargé,
 l'action est désactivée (« Importe ton compte pour mettre à jour depuis l'Optimizer »).
-Une liste liée sans équipe vidée dans l'Optimizer donne une équipe vide, après
-confirmation des retraits.
+L'équipe de l'Optimizer compte 2 à 6 membres : la mise à jour ne vide jamais une
+équipe enregistrée.
 
 L'équipement de chaque monstre se reconstruit pièce par pièce :
 
