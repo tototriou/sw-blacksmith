@@ -216,8 +216,8 @@ interface Props {
   optimizer: OptimizerState;
   onImporterEquipe: OptimizerState['importerEquipe'];
   // « Enregistrer dans Mes équipes » (docs/02-app/compte/feat-equipes.md),
-  // posé près de « Importer une équipe » quand la liste active est liée.
-  actionMesEquipes?: ReactNode;
+  // dans l'en-tête de chaque équipe de la liste.
+  onEnregistrerEquipe?: (equipe: EquipeOptimizer) => void;
   // Pour l'exclusion manuelle de runes (RuneExclusionPicker) — RTA/Siège
   // n'étaient jusqu'ici jamais lus par cet écran, voir optimizerExclusion.ts.
   allMonsters: Monster[];
@@ -371,7 +371,7 @@ function memesIds(a: number[], b: number[]): boolean {
 const AUCUNE_RECOMMANDATION: Reco[] = [];
 const AUCUNE_CARTE: CarteClassement[] = [];
 
-export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATION, box, runes, artifacts, relics, relicUsageById, optimizer, onImporterEquipe, allMonsters, rtaEntries, siegeDefenseTeams, siegeOffenseTeams, lists, accountName, menuOuvert, onFermerMenu, onOuvrirMenu, onMonstreHorsVue, actionMesEquipes }: Props) {
+export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATION, box, runes, artifacts, relics, relicUsageById, optimizer, onImporterEquipe, allMonsters, rtaEntries, siegeDefenseTeams, siegeOffenseTeams, lists, accountName, menuOuvert, onFermerMenu, onOuvrirMenu, onMonstreHorsVue, onEnregistrerEquipe }: Props) {
   const textes = useTraduction();
   const langue = useLangue();
   const jeu = textes.jeu;
@@ -2786,19 +2786,15 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
   );
 
   // Assemblage des cartes de réglage (composants d'`optimizer/`).
-  // ⚠️ « Enregistrer dans Mes équipes » a SA ligne, sous la liste : la colonne
-  // d'action de la liste prend la largeur de son contenu, et deux boutons y
-  // écrasaient la liste et la recherche dans une colonne étroite.
+  // ⚠️ La colonne d'action de la liste prend la largeur de son contenu : un
+  // seul bouton y tient (deux écrasaient la liste et la recherche).
   const listesBureau = (
-    <>
     <SelecteurListes
       action={<OptimizerImportButton enLigne sources={sourcesImport} onImporter={importerDepuisEcran} rapport={rapportImport} />}
       lists={lists}
       memberCounts={memberCountsByList}
       titreSection
     />
-    {actionMesEquipes && <div className="mt-2 flex">{actionMesEquipes}</div>}
-    </>
   );
 
   const listesTelephone = <SelecteurListes lists={lists} memberCounts={memberCountsByList} />;
@@ -2911,6 +2907,7 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
     listHasValidated,
     setReleaseAllConfirm,
     onSpeedTune: activeList && lists.listContents.get(activeList.id) === 'guilde' ? speedTuneOutil.ouvrir : undefined,
+    onEnregistrerEquipe,
   };
   const zoneCContent = <MonstresDeLaListe {...proprietesListe} />;
 
@@ -3590,7 +3587,6 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
             ligneMonstreTelephoneRef={ligneMonstreTelephoneRef}
             selected={selected}
             sourcesImport={sourcesImport}
-            actionMesEquipes={actionMesEquipes}
             importerDepuisEcran={importerDepuisEcran}
             rapportImport={rapportImport}
             setZoneCOpen={setZoneCOpen}

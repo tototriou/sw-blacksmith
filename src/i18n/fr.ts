@@ -1174,6 +1174,12 @@ export const fr = {
       paireIncoherente: (nom: string) => `${nom} : deux artéfacts de la même sorte, aucun artéfact repris dans le build validé.`,
       piecesModifiees: (nom: string, n: number) => `${nom} : ${n > 1 ? `${n} pièces ont changé` : 'une pièce a changé'} depuis l’enregistrement ; l’Optimizer lit leur version actuelle.`,
     },
+    creation: {
+      titre: 'Enregistrer dans Mes équipes',
+      message: (nom: string) => `« ${nom} » devient une nouvelle équipe, liée à son équipe de l’Optimizer : l’enregistrer à nouveau la mettra à jour.`,
+      onglet: 'Onglet',
+      action: 'Enregistrer',
+    },
     retour: {
       titre: 'Mettre à jour depuis l’Optimizer ?',
       resume: (monstres: number, pieces: number) =>
@@ -1186,7 +1192,6 @@ export const fr = {
       pieces: { rune: 'rune', artefact: 'artéfact', relique: 'relique' },
       pieceN: (piece: string, id: number) => `${piece} n° ${id}`,
       action: 'Mettre à jour',
-      enregistrer: 'Enregistrer dans Mes équipes',
       sansCompte: 'Importe ton compte pour mettre à jour depuis l’Optimizer.',
       fait: (nom: string) => `« ${nom} » mise à jour.`,
       refus: {
@@ -2049,6 +2054,7 @@ export const fr = {
       elementAria: 'Élément du lead de l’équipe',
       conserveSansEffet: 'Ce lead est conservé sans effet calculé.',
       modifier: 'Modifier l’équipe',
+      enregistrerMesEquipes: 'Enregistrer dans Mes équipes',
       lier: 'Lier une équipe',
       sousTitre: 'Deux à cinq membres de cette liste. Le lead de l’équipe devient celui de chaque membre.',
       delier: 'Délier',

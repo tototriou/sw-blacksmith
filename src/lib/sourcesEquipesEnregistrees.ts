@@ -12,7 +12,7 @@ import type { Dictionnaire } from '../i18n/fr';
 import type { DeckArene } from './importAccount';
 import { resolveExclusionEntry, type ExclusionSelector, type ExclusionSourceData } from './optimizerExclusion';
 import type { StockageOptimizer } from './optimizerMemberStorage';
-import { disponibiliteRetourOptimizer, preparerRetourOptimizer } from './importEquipesEnregistrees';
+import { creerDepuisEquipeOptimizer, disponibiliteRetourOptimizer } from './importEquipesEnregistrees';
 import {
   MONSTRES_MAX_EQUIPE, creerEquipe,
   type EquipeEnregistree, type InventaireCompte, type MonstreEnregistre, type OngletEquipes,
@@ -166,11 +166,12 @@ export function sourcesImportEquipes(
       const r = disponibiliteRetourOptimizer(brouillon('', equipeId, '', new Date(0)), st, optimizer.data);
       return r ? t.equipes.retour.refus[r] : null;
     };
-    const creerDepuis = (equipeId: string | null, nom: string) => (id: string, tirerUid: TirerId, maintenant: Date): ImportEquipeCree | null => {
-      const vide = brouillon(id, equipeId, nom, maintenant);
-      const r = preparerRetourOptimizer(vide, st, optimizer.data, inv, tirerUid, maintenant);
+    const creerDepuis = (equipeId: string, nom: string) => (id: string, tirerUid: TirerId, maintenant: Date): ImportEquipeCree | null => {
+      const r = creerDepuisEquipeOptimizer({ listId: liste.id, equipeId, nom, onglet: ongletOuvert }, st, optimizer.data, inv, id, tirerUid, maintenant);
       if (typeof r === 'string') return null;
-      // Une équipe importée ne se lie pas : seul l'export pose un lien.
+      // Une copie, sans lien : seuls l'export et « Enregistrer dans Mes équipes »
+      // de l'Optimizer en posent, pour qu'une équipe de l'Optimizer n'ait
+      // qu'une équipe enregistrée qui la suive.
       const { lienOptimizer: _lien, ...equipe } = r.equipe;
       return { equipe: { ...equipe, modifieLe: maintenant.toISOString() }, ignores: 0 };
     };

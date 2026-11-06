@@ -1122,6 +1122,12 @@ export const en: Dictionnaire = {
       paireIncoherente: (nom: string) => `${nom}: two artifacts of the same kind, no artifact kept in the validated build.`,
       piecesModifiees: (nom: string, n: number) => `${nom}: ${n > 1 ? `${n} pieces have changed` : 'one piece has changed'} since saving; the Optimizer reads their current version.`,
     },
+    creation: {
+      titre: 'Save to My teams',
+      message: (nom: string) => `“${nom}” becomes a new team, linked to its Optimizer team: saving it again will update it.`,
+      onglet: 'Tab',
+      action: 'Save',
+    },
     retour: {
       titre: 'Update from the Optimizer?',
       resume: (monstres: number, pieces: number) =>
@@ -1134,7 +1140,6 @@ export const en: Dictionnaire = {
       pieces: { rune: 'rune', artefact: 'artifact', relique: 'relic' },
       pieceN: (piece: string, id: number) => `${piece} #${id}`,
       action: 'Update',
-      enregistrer: 'Save to My teams',
       sansCompte: 'Import your account to update from the Optimizer.',
       fait: (nom: string) => `“${nom}” updated.`,
       refus: {
@@ -1936,6 +1941,7 @@ export const en: Dictionnaire = {
       elementAria: 'Team lead element',
       conserveSansEffet: 'This lead is kept with no computed effect.',
       modifier: 'Edit the team',
+      enregistrerMesEquipes: 'Save to My teams',
       lier: 'Link a team',
       sousTitre: 'Two to five members of this list. The team lead becomes each member’s lead.',
       delier: 'Unlink',

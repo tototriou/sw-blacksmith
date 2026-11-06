@@ -1,7 +1,7 @@
 import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Download, FolderInput, Plus, Upload } from 'lucide-react';
 import type { Monster } from '../../../types';
-import { Bouton, ConfirmDialog, Jeton, MobileSheet, Modale, Onglets, PiedDeDialogue, type ElementMenu } from '../../../ui';
+import { Bouton, ConfirmDialog, Jeton, MobileSheet, Modale, Onglets, PiedDeDialogue, Selecteur, type ElementMenu } from '../../../ui';
 import MonsterPicker from '../../MonsterPicker';
 import MonsterAvatar from '../../MonsterAvatar';
 import Pager from '../Pager';
@@ -18,7 +18,10 @@ import type { ExclusionSourceData } from '../../../lib/optimizerExclusion';
 import type { StockageOptimizer } from '../../../lib/optimizerMemberStorage';
 import { telechargerTexte } from '../../../lib/telechargement';
 import { ecrireFichierEquipes, lireFichierEquipes, nomFichierEquipes } from '../../../lib/equipesFichier';
-import { disponibiliteRetourOptimizer, lienApresExportOptimizer, preparerExportEquipeOptimizer, preparerRetourOptimizer, type ExportEquipeOptimizer, type RetourOptimizer } from '../../../lib/importEquipesEnregistrees';
+import {
+  creerDepuisEquipeOptimizer, disponibiliteRetourOptimizer, equipeLieeA, lienApresExportOptimizer, preparerExportEquipeOptimizer, preparerRetourOptimizer,
+  type DemandeEquipeOptimizer, type ExportEquipeOptimizer, type RetourOptimizer,
+} from '../../../lib/importEquipesEnregistrees';
 import { sourcesImportEquipes, type ContexteSourcesEquipes, type SourceEquipement, type SourceImportEquipe } from '../../../lib/sourcesEquipesEnregistrees';
 import {
   ONGLETS_EQUIPES, ajouterMonstre, compteParOnglet, creerEquipe, deplacerVersOnglet, dupliquerEquipe, equipesFiltrees,
@@ -43,9 +46,10 @@ interface Props {
   onImporterOptimizer: ActionImportOptimizer | null;
   // La première équipe créée pose la question de conservation (App).
   onEquipeCreee: () => void;
-  // Une mise à jour demandée depuis l'Optimizer, à confirmer ici.
-  retourDemande?: string | null;
-  onRetourTraite?: () => void;
+  // « Enregistrer dans Mes équipes » sur une équipe de l'Optimizer : la mise à
+  // jour de l'équipe liée, ou la création d'une nouvelle, à confirmer ici.
+  demandeOptimizer?: DemandeEquipeOptimizer | null;
+  onDemandeTraitee?: () => void;
   menuOuvert: boolean;
   onFermerMenu: () => void;
 }
@@ -55,7 +59,7 @@ interface Rapport { titre: string; lignes: string[] }
 // La page « Mes équipes » (docs/02-app/compte/feat-equipes.md) : les onglets,
 // la recherche par monstre dans l'onglet ouvert, la grille de cartes, le
 // détail, les imports et le fichier.
-export default function EquipesSection({ api, ctx, inventaire, allMonsters, optimizer, onImporterOptimizer, onEquipeCreee, retourDemande = null, onRetourTraite, menuOuvert, onFermerMenu }: Props) {
+export default function EquipesSection({ api, ctx, inventaire, allMonsters, optimizer, onImporterOptimizer, onEquipeCreee, demandeOptimizer = null, onDemandeTraitee, menuOuvert, onFermerMenu }: Props) {
   const t = useTraduction();
   const e = t.equipes;
   const telephone = useMediaQuery(SOUS_LG);
@@ -70,6 +74,7 @@ export default function EquipesSection({ api, ctx, inventaire, allMonsters, opti
   const [imports, setImports] = useState(false);
   const [aSupprimer, setASupprimer] = useState<EquipeEnregistree | null>(null);
   const [retour, setRetour] = useState<RetourOptimizer | null>(null);
+  const [creation, setCreation] = useState<RetourOptimizer | null>(null);
   const [rapport, setRapport] = useState<Rapport | null>(null);
   const fichier = useRef<HTMLInputElement>(null);
 
@@ -164,16 +169,27 @@ export default function EquipesSection({ api, ctx, inventaire, allMonsters, opti
     setRetour(r);
   };
 
-  // La demande venue de l'Optimizer attend la relecture des équipes.
+  // La demande venue de l'Optimizer attend la relecture des équipes : une
+  // équipe déjà liée se met à jour, sinon une nouvelle se crée, liée à son tour.
   useEffect(() => {
-    if (!retourDemande || enRelecture) return;
-    const x = api.equipes.find((eq) => eq.id === retourDemande);
-    onRetourTraite?.();
-    if (!x) return;
-    setOnglet(x.onglet);
-    demanderRetour(x);
+    if (!demandeOptimizer || enRelecture) return;
+    onDemandeTraitee?.();
+    const liee = equipeLieeA(api.equipes, demandeOptimizer.listId, demandeOptimizer.equipeId);
+    if (liee) {
+      setOnglet(liee.onglet);
+      demanderRetour(liee);
+      return;
+    }
+    if (!optimizer || !inventaire) return setRapport({ titre: e.creation.titre, lignes: [e.retour.sansCompte] });
+    const liste = optimizer.stockage.lists.find((l) => l.id === demandeOptimizer.listId);
+    const rang = optimizer.stockage.teams.filter((x) => x.listId === demandeOptimizer.listId).findIndex((x) => x.id === demandeOptimizer.equipeId);
+    if (!liste || rang < 0) return setRapport({ titre: e.creation.titre, lignes: [e.retour.refus.equipeAbsente] });
+    const r = creerDepuisEquipeOptimizer({ ...demandeOptimizer, nom: e.imports.equipeListe(liste.name, rang + 1), onglet },
+      optimizer.stockage, optimizer.data, inventaire, tirerIdEquipe(), tirerUid, new Date());
+    if (typeof r === 'string') return setRapport({ titre: e.creation.titre, lignes: [e.retour.refus[r]] });
+    setCreation(r);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [retourDemande, enRelecture]);
+  }, [demandeOptimizer, enRelecture]);
 
   const actions = (x: EquipeEnregistree): ElementMenu[] => {
     const c = e.carte;
@@ -308,6 +324,16 @@ export default function EquipesSection({ api, ctx, inventaire, allMonsters, opti
           onCancel={() => setRetour(null)}
           onConfirm={() => { const r = retour; setRetour(null); changerEquipe(r.equipe.id, () => r.equipe); setRapport({ titre: e.retour.titre, lignes: [e.retour.fait(r.equipe.nom)] }); }} />
       )}
+      {creation && (
+        <ConfirmationCreation creation={creation} onChanger={setCreation} onAnnuler={() => setCreation(null)}
+          onConfirmer={(x) => {
+            setCreation(null);
+            ajouterEquipes([x]);
+            setOnglet(x.onglet);
+            setPage(0);
+            setRapport({ titre: e.creation.titre, lignes: [e.imports.cree(x.nom, e.onglets[x.onglet])] });
+          }} />
+      )}
       {rapport && (
         <Modale onClose={() => setRapport(null)} labelledBy={idRapport} titre={rapport.titre}
           actions={<PiedDeDialogue><Bouton ton="accent" fond="plein" libelle={t.commun.fermer} onClick={() => setRapport(null)} /></PiedDeDialogue>}>
@@ -318,8 +344,32 @@ export default function EquipesSection({ api, ctx, inventaire, allMonsters, opti
   );
 }
 
+// « Enregistrer dans Mes équipes » sur une équipe de l'Optimizer qu'aucune
+// équipe enregistrée ne suit : son onglet se choisit (le contenu d'une liste de
+// l'Optimizer ne le désigne pas), l'onglet ouvert par défaut.
+export function ConfirmationCreation({ creation, onChanger, onAnnuler, onConfirmer }: {
+  creation: RetourOptimizer; onChanger: (r: RetourOptimizer) => void; onAnnuler: () => void; onConfirmer: (e: EquipeEnregistree) => void;
+}) {
+  const e = useTraduction().equipes;
+  return (
+    <ConfirmDialog titre={e.creation.titre} libelleAction={e.creation.action}
+      message={<div className="flex flex-col gap-3">
+        <p>{e.creation.message(creation.equipe.nom)}</p>
+        <label className="flex flex-col gap-1 text-xs text-ink-dim">
+          {e.creation.onglet}
+          <Selecteur value={creation.equipe.onglet}
+            onChange={(ev) => onChanger({ ...creation, equipe: { ...creation.equipe, onglet: ev.target.value as OngletEquipes } })}>
+            {ONGLETS_EQUIPES.map((o) => <option key={o} value={o}>{e.onglets[o]}</option>)}
+          </Selecteur>
+        </label>
+        <LignesRetour retour={creation} resume={false} />
+      </div>}
+      onCancel={onAnnuler} onConfirm={() => onConfirmer(creation.equipe)} />
+  );
+}
+
 // Ce que la mise à jour change, et chaque pièce manquante avec son monstre.
-function LignesRetour({ retour }: { retour: RetourOptimizer }) {
+function LignesRetour({ retour, resume = true }: { retour: RetourOptimizer; resume?: boolean }) {
   const r = useTraduction().equipes.retour;
   const lignes = [
     ...retour.manquantes.map((m) => r.manquante(m.libelle, r.pieces[m.type], m.id)),
@@ -330,7 +380,7 @@ function LignesRetour({ retour }: { retour: RetourOptimizer }) {
   ];
   return (
     <div className="flex flex-col gap-2">
-      <p>{r.resume(retour.monstresChanges, retour.piecesChangees)}</p>
+      {resume && <p>{r.resume(retour.monstresChanges, retour.piecesChangees)}</p>}
       {lignes.length > 0 && <ul className="flex list-disc flex-col gap-1 pl-4 text-xs">{lignes.map((l, i) => <li key={i}>{l}</li>)}</ul>}
     </div>
   );

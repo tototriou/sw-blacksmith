@@ -1,6 +1,6 @@
 import OptimizerBackupBar from '../OptimizerBackupBar';
 import { Bouton, ZoneCliquable, BoutonIcone } from '../../../ui';
-import { CheckCircle2, Gauge, Trash2, Unlock } from 'lucide-react';
+import { CheckCircle2, Gauge, Save, Trash2, Unlock } from 'lucide-react';
 import OptimizerLeadInactif, { MotifHorsFlux } from '../OptimizerLeadInactif';
 import { resolveExclusionEntry, exclusionSelectorKey, findValidatedBuild, runesManquantesDuBuild, artefactsManquantsDuBuild, type OptimizerList, type OptimizerListMember, type ExclusionSourceData, type ExclusionSelector } from '../../../lib/optimizerExclusion';
 import { leadEffectifMembreOptimizer } from '../../../lib/equipesOptimizer';
@@ -48,9 +48,11 @@ export interface MonstresDeLaListeProps {
   // « Régler / Modifier le speed tune » sur une équipe : absent hors d'une
   // liste de siège (feat-speed-tune-depuis-optimizer.md).
   onSpeedTune?: (equipe: EquipeOptimizer) => void;
+  // « Enregistrer dans Mes équipes » : met à jour l'équipe liée, sinon en crée une.
+  onEnregistrerEquipe?: (equipe: EquipeOptimizer) => void;
 }
 
-export default function MonstresDeLaListe({ activeList, activeMembers, setEquipeOuverte, lists, optimizer, exclusionData, artifacts, rapportZoneC, groupesMembres, runeById, artifactById, choisirMembreDeLaListe, membreChoisi, setReleaseConfirm, setReleaseArtifactsConfirm, setRemoveMemberConfirm, rappelAuras, listHasValidated, setReleaseAllConfirm, enTete, onSpeedTune }: MonstresDeLaListeProps) {
+export default function MonstresDeLaListe({ activeList, activeMembers, setEquipeOuverte, lists, optimizer, exclusionData, artifacts, rapportZoneC, groupesMembres, runeById, artifactById, choisirMembreDeLaListe, membreChoisi, setReleaseConfirm, setReleaseArtifactsConfirm, setRemoveMemberConfirm, rappelAuras, listHasValidated, setReleaseAllConfirm, enTete, onSpeedTune, onEnregistrerEquipe }: MonstresDeLaListeProps) {
   const textes = useTraduction();
   const jeu = textes.jeu;
   const o = textes.optimizer;
@@ -106,7 +108,7 @@ export default function MonstresDeLaListe({ activeList, activeMembers, setEquipe
             });
             const inactifs = membres.filter(m => m.motif).length;
             return <section key={g.equipe?.id ?? 'sans-equipe'} aria-label={g.equipe ? z.equipe(numero + 1) : z.sansEquipe} className={`space-y-0.5 ${g.equipe ? `rounded-lg p-1.5 ${numero % 2 === 0 ? 'bg-equipe-a' : 'bg-equipe-b'}` : ''}`}>
-            {g.equipe && <div className="grid grid-cols-[auto_minmax(0,1fr)_auto_auto_auto] items-center gap-x-1 py-0.5">
+            {g.equipe && <div className="grid grid-cols-[auto_minmax(0,1fr)_auto_auto_auto_auto] items-center gap-x-1 py-0.5">
               {/* Lead, numéro, compte des leads inactifs et gestes de l'équipe sur une seule ligne. */}
               <span className="flex h-7 items-center whitespace-nowrap">
                 {g.equipe.lead ? <LeadPill ls={g.equipe.lead} titre={z.leadEquipe(g.equipe.lead.amount, nomStatLead(jeu, g.equipe.lead.stat), nomZoneLead(jeu, g.equipe.lead.area))} /> : <span className="text-xs text-ink-dim">{z.sansLead}</span>}
@@ -127,6 +129,10 @@ export default function MonstresDeLaListe({ activeList, activeMembers, setEquipe
                   title={g.equipe.speedTune?.plan ? o.speedTune.modifier : o.speedTune.regler} onClick={() => onSpeedTune?.(g.equipe!)} />
               </span>
               <Bouton taille="xs" fond="vide" libelle={o.equipe.modifier} onClick={() => setEquipeOuverte({ listId: g.equipe!.listId, equipe: g.equipe })} />
+              {/* Une icône : la ligne porte déjà quatre éléments, un libellé de plus la débordait en colonne étroite. */}
+              {onEnregistrerEquipe
+                ? <BoutonIcone cadre icone={<Save size={14} />} libelle={o.equipe.enregistrerMesEquipes} onClick={() => onEnregistrerEquipe(g.equipe!)} />
+                : <span aria-hidden />}
             </div>}
             {!g.equipe && <p className="py-1 text-xs font-semibold text-ink-dim">{z.sansEquipe}</p>}
           {membres.map(({ m, resolved, motif }) => {

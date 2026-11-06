@@ -298,11 +298,24 @@ format.
 ### Mettre à jour depuis l'Optimizer
 
 Une équipe dont la liste liée existe encore propose « Mettre à jour depuis
-l'Optimizer » ; et l'Optimizer, sur la liste active liée à une équipe, propose
-« Enregistrer dans Mes équipes » sur sa propre ligne, sous la liste active (au
-téléphone, au-dessus de « Importer une équipe »). Les deux gestes font
-la même chose : celui de l'Optimizer ouvre « Mes équipes » sur l'onglet de l'équipe,
-et la même confirmation s'y affiche. **La source est fixée par le lien** :
+l'Optimizer ». Dans l'Optimizer, **chaque équipe d'une liste** porte « Enregistrer
+dans Mes équipes » dans son en-tête (une icône, après « Modifier l'équipe » ; au
+téléphone, dans « Gérer mes listes »). **L'enregistrement se fait équipe par équipe,
+jamais pour une liste entière** (décision de l'utilisateur). Le geste ouvre « Mes
+équipes » et, après sa relecture :
+
+- une équipe enregistrée suit déjà cette équipe de l'Optimizer (`equipeLieeA` :
+  même `listId`, même `equipeId`) : la même confirmation que « Mettre à jour depuis
+  l'Optimizer », sur l'onglet de l'équipe ;
+- sinon : « Enregistrer dans Mes équipes », une confirmation qui crée une **nouvelle**
+  équipe (`creerDepuisEquipeOptimizer`), nommée « liste — équipe N », avec un
+  sélecteur d'onglet (l'onglet ouvert par défaut : le contenu d'une liste de
+  l'Optimizer ne désigne pas un onglet) et les pièces introuvables nommées. L'équipe
+  créée est **liée** : l'enregistrer à nouveau la met à jour au lieu d'en créer une
+  autre. L'import « Optimizer » de Mes équipes, lui, crée une copie sans lien, pour
+  qu'une équipe de l'Optimizer n'ait qu'une équipe enregistrée qui la suive.
+
+**La source est fixée par le lien** :
 
 - `equipeId` désigne une équipe qui existe encore dans la liste : ses membres, dans
   leur ordre, son leader et son speed tune ;

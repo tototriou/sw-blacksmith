@@ -3,7 +3,7 @@
 // dit et permet, jamais son apparence.
 
 import type { Monster } from '../../src/types';
-import EquipesSection from '../../src/components/account/equipes/EquipesSection';
+import EquipesSection, { ConfirmationCreation } from '../../src/components/account/equipes/EquipesSection';
 import DetailEquipe from '../../src/components/account/equipes/DetailEquipe';
 import ImportEquipeModale from '../../src/components/account/equipes/ImportEquipeModale';
 import type { EquipesEnregistreesApi } from '../../src/hooks/useEquipesEnregistrees';
@@ -103,7 +103,25 @@ export function testRenduEquipesImports() {
   ok(t.includes(e.imports.reimporter), 'avec sa raison');
 }
 
+export function testRenduEquipesCreationOptimizer() {
+  titre('rendu · Mes équipes — enregistrer une équipe de l’Optimizer');
+  const creation = { equipe: { ...EQUIPES[0], nom: 'Liste — équipe 1', lienOptimizer: { listId: 'l', equipeId: 'q', correspondance: [] } },
+    monstresChanges: 2, piecesChangees: 9, manquantes: [{ libelle: 'Monstre 1', type: 'rune' as const, id: 999 }],
+    reliquesGardees: [], artefactsGardes: [], copiesAmbigues: [], retires: [] };
+  // Une modale ne se rend qu'avec une fenêtre (auTelephone en fournit une), comme la modale des sources.
+  {
+    const html = auTelephone(() => rendre(<ConfirmationCreation creation={creation} onChanger={() => {}} onAnnuler={() => {}} onConfirmer={() => {}} />));
+    const t = texteVisible(html);
+    ok(t.includes(e.creation.message('Liste — équipe 1')), 'ce que crée l’enregistrement, et qu’il restera lié');
+    ok(t.includes(e.creation.onglet) && t.includes(e.onglets.rta), 'l’onglet se choisit, l’onglet ouvert par défaut');
+    ok(t.includes(e.retour.manquante('Monstre 1', e.retour.pieces.rune, 999)), 'une pièce introuvable est nommée');
+    ok(!t.includes(e.retour.resume(2, 9)), 'pas de résumé de changements : tout est nouveau');
+    ok(bouton(html, e.creation.action)?.desactive === false, '« Enregistrer » utilisable');
+  }
+}
+
 export const verificationsRenduEquipes: [string, () => void][] = [
+  ['testRenduEquipesCreationOptimizer', testRenduEquipesCreationOptimizer],
   ['testRenduEquipesBureau', testRenduEquipesBureau],
   ['testRenduEquipesTelephone', testRenduEquipesTelephone],
   ['testRenduEquipesDetail', testRenduEquipesDetail],

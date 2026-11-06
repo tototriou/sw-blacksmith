@@ -373,13 +373,15 @@ const EQ_IMPORT: Record<Format, Etape[]> = {
   ordinateur: [{ cliquer: bouton('Importer une équipe') }, EQ_SOURCE_DEFENSE, EQ_FERMER_RAPPORT],
 };
 const EQ_CARTE: Cible = { role: 'button', nom: 'Ouvrir Défense 1' };
-// L'équipe envoyée à l'Optimizer : la liste active lui est liée et
-// « Enregistrer dans Mes équipes » s'ajoute à l'en-tête des listes.
+// L'équipe envoyée à l'Optimizer : son équipe de liste porte « Enregistrer
+// dans Mes équipes » dans son en-tête, comme toute équipe de l'Optimizer.
+// Au téléphone, les équipes de la liste vivent dans « Gérer mes listes », replié.
+const EQ_LISTES_TELEPHONE: Etape = { cliquer: { role: 'button', nom: 'Gérer mes listes', etendu: false } };
 const EQ_EXPORTER: Etape[] = [
   { cliquer: { role: 'button', nom: 'Actions de l’équipe', pres: EQ_CARTE } },
   { cliquer: repere('[role="menuitem"]:has-text("Exporter vers l’Optimizer")') },
-  { attendre: bouton('Enregistrer dans Mes équipes') },
-  // Le compte rendu de l'export se ferme : on mesure la page, pas lui.
+  // Le compte rendu de l'export, sur l'Optimizer, se ferme : on mesure la page, pas lui.
+  { attendre: repere('[role="dialog"]:has-text("Export vers l")') },
   { cliquer: repere('[role="dialog"]:has-text("Export vers l") button[aria-label="Fermer"]') },
 ];
 // Depuis l'Optimizer : la barre latérale au bureau, l'onglet « Compte » au téléphone.
@@ -388,7 +390,7 @@ const EQ_ALLER: Record<Format, Etape[]> = {
   ordinateur: [{ cliquer: { role: 'link', nom: 'Mes équipes' } }],
 };
 const EQ_LIEE: Record<Format, Etape[]> = {
-  telephone: [...EQ_ALLER.telephone, ...EQ_IMPORT.telephone, ...EQ_EXPORTER],
+  telephone: [...EQ_ALLER.telephone, ...EQ_IMPORT.telephone, ...EQ_EXPORTER, EQ_LISTES_TELEPHONE],
   ordinateur: [...EQ_ALLER.ordinateur, ...EQ_IMPORT.ordinateur, ...EQ_EXPORTER],
 };
 
@@ -419,7 +421,7 @@ export const ECRANS: Ecran[] = [
       DEFAUT,
       {
         id: 'equipe-liee',
-        libelle: 'liste liée à une équipe de Mes équipes : « Enregistrer dans Mes équipes »',
+        libelle: 'équipe exportée depuis Mes équipes : « Enregistrer dans Mes équipes » dans son en-tête',
         // Pas en écran partagé : la barre latérale y mène le volet principal.
         tailles: ['telephone', 'ordinateur', 'bureau-portable', 'bureau-colonnes', 'conteneur-752', 'conteneur-1096'],
         preparation: EQ_LIEE,
@@ -634,6 +636,15 @@ export const ECRANS: Ecran[] = [
         libelle: 'détail d’une équipe ouvert',
         preparation: { telephone: [...EQ_IMPORT.telephone, { cliquer: EQ_CARTE }], ordinateur: [...EQ_IMPORT.ordinateur, { cliquer: EQ_CARTE }] },
         atteint: [{ role: 'textbox', nom: 'Note' }],
+      },
+      {
+        id: 'retour-optimizer',
+        libelle: 'exportée, puis « Enregistrer dans Mes équipes » depuis son équipe de l’Optimizer',
+        preparation: {
+          telephone: [...EQ_IMPORT.telephone, ...EQ_EXPORTER, EQ_LISTES_TELEPHONE, { cliquer: bouton('Enregistrer dans Mes équipes') }],
+          ordinateur: [...EQ_IMPORT.ordinateur, ...EQ_EXPORTER, { cliquer: bouton('Enregistrer dans Mes équipes') }],
+        },
+        atteint: [{ role: 'dialog', nom: 'Mettre à jour depuis l’Optimizer ?' }],
       },
     ],
   },

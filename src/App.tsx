@@ -88,6 +88,7 @@ import {
 import { ConfirmDialog, KeepAccountDialog, Modale } from './ui/Dialogs';
 import { useEquipesEnregistrees } from './hooks/useEquipesEnregistrees';
 import EquipesSection from './components/account/equipes/EquipesSection';
+import type { DemandeEquipeOptimizer } from './lib/importEquipesEnregistrees';
 import type { ContexteSourcesEquipes } from './lib/sourcesEquipesEnregistrees';
 import { indexerInventaire } from './lib/equipesEnregistrees';
 import { FournisseurNotification, useNotifier } from './ui/Notification';
@@ -136,7 +137,7 @@ import { avecNavigationImportOptimizer } from './lib/actionImportOptimizer';
 import type { RapportImportOptimizer } from './lib/importEquipes';
 import { useOptimizerLists } from './hooks/useOptimizerLists';
 import { ExclusionSourceData } from './lib/optimizerExclusion';
-import { reverifierStockageOptimizer, type StockageOptimizer } from './lib/optimizerMemberStorage';
+import { reverifierStockageOptimizer, type EquipeOptimizer, type StockageOptimizer } from './lib/optimizerMemberStorage';
 import { acquerirIdentitesMembres } from './lib/optimizerRattachement';
 import { collectOwnedBuilds, collectOwnedTeams, countCopiesByCom2us } from './lib/ownedBuilds';
 import {
@@ -712,14 +713,14 @@ function Application() {
   const demanderConservationEquipes = () => {
     if (!persistenceChoisie() && storageAvailable()) setAskKeep(true);
   };
-  // « Enregistrer dans Mes équipes » depuis l'Optimizer : la liste active liée
-  // à une équipe ouvre Mes équipes sur la confirmation de sa mise à jour.
-  const [retourDemande, setRetourDemande] = useState<string | null>(null);
-  const equipeLiee = equipesEnregistrees.equipes.find((e) => e.lienOptimizer && e.lienOptimizer.listId === optimizerLists.activeListId);
-  const actionMesEquipes = equipeLiee ? (
-    <Bouton icone={<Save size={14} />} libelle={textes.equipes.retour.enregistrer} title={equipeLiee.nom}
-      onClick={() => { setRetourDemande(equipeLiee.id); window.location.hash = hashVue('equipes', vueParDefaut('equipes')); }} />
-  ) : undefined;
+  // « Enregistrer dans Mes équipes » depuis une équipe de l'Optimizer : Mes
+  // équipes s'ouvre et décide, après sa relecture, de la mise à jour de
+  // l'équipe liée ou de la création d'une nouvelle.
+  const [demandeOptimizer, setDemandeOptimizer] = useState<DemandeEquipeOptimizer | null>(null);
+  const enregistrerEquipeOptimizer = useCallback((equipe: EquipeOptimizer) => {
+    setDemandeOptimizer({ listId: equipe.listId, equipeId: equipe.id });
+    window.location.hash = hashVue('equipes', vueParDefaut('equipes'));
+  }, []);
 
   // ---- PALETTE Ctrl K --------------------------------
   // Ouverte par Ctrl/⌘ K de n'importe où, par le champ de la barre latérale, et
@@ -1868,8 +1869,8 @@ function Application() {
         optimizer={optimizerPourEquipes}
         onImporterOptimizer={importerEquipe}
         onEquipeCreee={demanderConservationEquipes}
-        retourDemande={retourDemande}
-        onRetourTraite={() => setRetourDemande(null)}
+        demandeOptimizer={demandeOptimizer}
+        onDemandeTraitee={() => setDemandeOptimizer(null)}
         menuOuvert={menu.ouvert}
         onFermerMenu={menu.fermer}
       />
@@ -1920,7 +1921,7 @@ function Application() {
         // au doigt — seule page qui le demande.
         onOuvrirMenu={menu.ouvrir}
         onMonstreHorsVue={setMonstreOptions}
-        actionMesEquipes={actionMesEquipes}
+        onEnregistrerEquipe={enregistrerEquipeOptimizer}
       />
     ) : n.route === 'releases' ? (
       <ReleasesPage />

@@ -13,9 +13,9 @@ import { exclusionSelectorKey, resolveExclusionEntry, type ExclusionSelector, ty
 import type { StockageOptimizer } from './optimizerMemberStorage';
 import type { SpeedTuneEquipe } from './speedTuneEquipe';
 import {
-  CONTENU_OPTIMIZER_ONGLET, MONSTRES_MAX_EQUIPE, comparerPiece,
+  CONTENU_OPTIMIZER_ONGLET, MONSTRES_MAX_EQUIPE, comparerPiece, creerEquipe,
   type CorrespondanceOptimizer, type EquipeEnregistree, type LienOptimizerEquipe, type InventaireCompte, type LienLigneEnregistre,
-  type MonstreEnregistre, type SpeedTuneEnregistre, type TirerId,
+  type MonstreEnregistre, type OngletEquipes, type SpeedTuneEnregistre, type TirerId,
 } from './equipesEnregistrees';
 
 function monstreDeLEspece(com2usId: number, data: ExclusionSourceData): Monster | undefined {
@@ -277,6 +277,28 @@ export function preparerRetourOptimizer(
   res.equipe = { ...sansSpeedTune, monstres, leader, ...(speedTune ? { speedTune } : {}),
     lienOptimizer: { ...lien, correspondance }, modifieLe: maintenant.toISOString() };
   return res;
+}
+
+// « Enregistrer dans Mes équipes » sur une équipe de l'Optimizer qu'aucune
+// équipe enregistrée ne suit : une NOUVELLE équipe, déjà liée à elle, pour
+// que le geste suivant la mette à jour au lieu d'en créer une autre. Même
+// reconstruction que la mise à jour, depuis une équipe vide.
+export function creerDepuisEquipeOptimizer(
+  source: { listId: string; equipeId: string; nom: string; onglet: OngletEquipes },
+  stockage: StockageOptimizer, data: ExclusionSourceData, inv: InventaireCompte,
+  id: string, tirerUid: TirerId, maintenant: Date
+): RetourOptimizer | RefusRetourOptimizer {
+  const vide: EquipeEnregistree = { ...creerEquipe(id, source.onglet, source.nom, maintenant),
+    lienOptimizer: { listId: source.listId, equipeId: source.equipeId, correspondance: [] } };
+  return preparerRetourOptimizer(vide, stockage, data, inv, tirerUid, maintenant);
+}
+
+// Une équipe de l'Optimizer désignée par « Enregistrer dans Mes équipes ».
+export interface DemandeEquipeOptimizer { listId: string; equipeId: string }
+
+// L'équipe enregistrée qui suit une équipe de l'Optimizer, s'il y en a une.
+export function equipeLieeA(equipes: readonly EquipeEnregistree[], listId: string, equipeId: string): EquipeEnregistree | undefined {
+  return equipes.find((e) => e.lienOptimizer?.listId === listId && e.lienOptimizer.equipeId === equipeId);
 }
 
 function piecesDe(eq: GearSet | null): Map<string, Piece> {
