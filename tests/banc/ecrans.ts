@@ -358,6 +358,40 @@ const RECO_CONTRES: Cible[] = [
   { role: 'texte', nom: '— défense lente' },
 ];
 
+// « Mes équipes » remplie par ses propres imports : la défense de siège 1 du
+// compte du banc (deux monstres). Au téléphone, « Importer une équipe » vit
+// dans le panneau d'actions de la page.
+const EQ_OPTIONS: Cible = { role: 'button', nom: 'Filtres et actions de la page' };
+const EQ_SOURCES: Cible = { role: 'dialog', nom: 'Importer une équipe' };
+// La source se repère dans la modale des sources (le panneau d'actions qui
+// se referme est encore un dialogue visible) ; l'import ouvre l'onglet de
+// l'équipe et dit ce qu'il a créé, dans une modale qu'on ferme.
+const EQ_SOURCE_DEFENSE: Etape = { cliquer: repere('[role="dialog"]:has-text("Défenses de siège") [aria-label="Défense 1"]') };
+const EQ_FERMER_RAPPORT: Etape = { cliquer: repere('[role="dialog"]:has-text("créée dans") button:has-text("Fermer")') };
+const EQ_IMPORT: Record<Format, Etape[]> = {
+  telephone: [{ cliquer: EQ_OPTIONS }, { cliquer: bouton('Importer une équipe') }, EQ_SOURCE_DEFENSE, EQ_FERMER_RAPPORT],
+  ordinateur: [{ cliquer: bouton('Importer une équipe') }, EQ_SOURCE_DEFENSE, EQ_FERMER_RAPPORT],
+};
+const EQ_CARTE: Cible = { role: 'button', nom: 'Ouvrir Défense 1' };
+// L'équipe envoyée à l'Optimizer : la liste active lui est liée et
+// « Enregistrer dans Mes équipes » s'ajoute à l'en-tête des listes.
+const EQ_EXPORTER: Etape[] = [
+  { cliquer: { role: 'button', nom: 'Actions de l’équipe', pres: EQ_CARTE } },
+  { cliquer: repere('[role="menuitem"]:has-text("Exporter vers l’Optimizer")') },
+  { attendre: bouton('Enregistrer dans Mes équipes') },
+  // Le compte rendu de l'export se ferme : on mesure la page, pas lui.
+  { cliquer: repere('[role="dialog"]:has-text("Export vers l") button[aria-label="Fermer"]') },
+];
+// Depuis l'Optimizer : la barre latérale au bureau, l'onglet « Compte » au téléphone.
+const EQ_ALLER: Record<Format, Etape[]> = {
+  telephone: [{ cliquer: { role: 'button', nom: 'Compte' } }, { cliquer: { role: 'link', nom: 'Mes équipes' } }],
+  ordinateur: [{ cliquer: { role: 'link', nom: 'Mes équipes' } }],
+};
+const EQ_LIEE: Record<Format, Etape[]> = {
+  telephone: [...EQ_ALLER.telephone, ...EQ_IMPORT.telephone, ...EQ_EXPORTER],
+  ordinateur: [...EQ_ALLER.ordinateur, ...EQ_IMPORT.ordinateur, ...EQ_EXPORTER],
+};
+
 export const ECRANS: Ecran[] = [
   {
     id: 'accueil',
@@ -383,6 +417,14 @@ export const ECRANS: Ecran[] = [
     ],
     etats: [
       DEFAUT,
+      {
+        id: 'equipe-liee',
+        libelle: 'liste liée à une équipe de Mes équipes : « Enregistrer dans Mes équipes »',
+        // Pas en écran partagé : la barre latérale y mène le volet principal.
+        tailles: ['telephone', 'ordinateur', 'bureau-portable', 'bureau-colonnes', 'conteneur-752', 'conteneur-1096'],
+        preparation: EQ_LIEE,
+        atteint: [bouton('Enregistrer dans Mes équipes'), bouton('Importer une équipe')],
+      },
       {
         id: 'reglages-avances',
         libelle: 'réglages avancés ouverts',
@@ -564,6 +606,37 @@ export const ECRANS: Ecran[] = [
     '#/compte/artefacts',
   ]),
   ouverture('compte-artefacts-liste', 'Mon compte — Artéfacts, Liste', '#/compte/artefacts/liste', MOTIFS_COMPTE),
+  {
+    id: 'compte-equipes',
+    libelle: 'Mon compte — Mes équipes',
+    hash: '#/compte/equipes/liste',
+    alias: ['#/compte/equipes'],
+    motifs: [...MOTIFS_COMPTE, 'src/lib/equipes*', 'src/lib/sourcesEquipesEnregistrees', 'src/hooks/useEquipesEnregistrees'],
+    etats: [
+      DEFAUT,
+      {
+        id: 'imports',
+        libelle: 'sources d’import ouvertes',
+        preparation: {
+          telephone: [{ cliquer: EQ_OPTIONS }, { cliquer: bouton('Importer une équipe') }],
+          ordinateur: [{ cliquer: bouton('Importer une équipe') }],
+        },
+        atteint: [EQ_SOURCES],
+      },
+      {
+        id: 'equipe-importee',
+        libelle: 'une défense de siège importée, dans son onglet',
+        preparation: EQ_IMPORT,
+        atteint: [EQ_CARTE],
+      },
+      {
+        id: 'detail',
+        libelle: 'détail d’une équipe ouvert',
+        preparation: { telephone: [...EQ_IMPORT.telephone, { cliquer: EQ_CARTE }], ordinateur: [...EQ_IMPORT.ordinateur, { cliquer: EQ_CARTE }] },
+        atteint: [{ role: 'textbox', nom: 'Note' }],
+      },
+    ],
+  },
   ouverture('bestiaire', 'Bestiaire', '#/bestiary', [
     'src/pages/BestiaryPage',
     'src/components/MonsterGrid',
