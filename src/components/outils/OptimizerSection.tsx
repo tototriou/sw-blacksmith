@@ -2907,7 +2907,6 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
     listHasValidated,
     setReleaseAllConfirm,
     onSpeedTune: activeList && lists.listContents.get(activeList.id) === 'guilde' ? speedTuneOutil.ouvrir : undefined,
-    onEnregistrerEquipe,
   };
   const zoneCContent = <MonstresDeLaListe {...proprietesListe} />;
 
@@ -3359,7 +3358,7 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
         />
       )}
       {equipeOuverte && <OptimizerEquipeDialog contexte={lists} listId={equipeOuverte.listId} equipe={equipeOuverte.equipe}
-        data={exclusionData} onValider={lists.setTeams} onClose={() => setEquipeOuverte(null)} />}
+        data={exclusionData} onValider={lists.setTeams} onClose={() => setEquipeOuverte(null)} onEnregistrerMesEquipes={onEnregistrerEquipe} />}
       {speedTuneOutil.ouverte && <SpeedTuneModale allMonsters={allMonsters} siegeDefenseTeams={siegeDefenseTeams}
         siegeOffenseTeams={siegeOffenseTeams} onClose={speedTuneOutil.fermer}
         appliquer={{ ouverture: speedTuneOutil.ouverte.ouverture, onAppliquer: speedTuneOutil.appliquer }} />}

@@ -265,7 +265,7 @@ avec un producteur dédié, `preparerExportEquipeOptimizer` (`src/lib/importEqui
   deux membres), et le rapport le dit. Deux monstres de la même unité Box : le
   second est ignoré avec sa raison (un exemplaire ne figure qu'une fois dans une
   liste) ;
-- équipe : créée si 2 à 5 membres restent (règle de l'Optimizer) ; leader et lead du
+- équipe : créée si 2 à 6 membres restent (règle de l'Optimizer) ; leader et lead du
   monstre leader ; speed tune reporté sur les membres de ses lignes. Avec 1 ou
   6 membres, la liste n'a pas d'équipe : le lien garde `equipeId: null` ;
 - **point de départ** : un build validé par membre, dans l'ordre de l'équipe, quand
@@ -299,8 +299,9 @@ format.
 
 Une équipe dont la liste liée existe encore propose « Mettre à jour depuis
 l'Optimizer ». Dans l'Optimizer, **chaque équipe d'une liste** porte « Enregistrer
-dans Mes équipes » dans son en-tête (une icône, après « Modifier l'équipe » ; au
-téléphone, dans « Gérer mes listes »). **L'enregistrement se fait équipe par équipe,
+dans Mes équipes » dans sa fenêtre « Modifier l'équipe » (le brouillon de la fenêtre
+est appliqué d'abord ; l'en-tête de la bande n'a pas la place d'un geste de plus au
+téléphone). **L'enregistrement se fait équipe par équipe,
 jamais pour une liste entière** (décision de l'utilisateur). Le geste ouvre « Mes
 équipes » et, après sa relecture :
 
@@ -319,7 +320,7 @@ jamais pour une liste entière** (décision de l'utilisateur). Le geste ouvre «
 
 - `equipeId` désigne une équipe qui existe encore dans la liste : ses membres, dans
   leur ordre, son leader et son speed tune ;
-- `equipeId: null` (export de 1 ou 6 monstres) : tous les membres de la liste, dans
+- `equipeId: null` (export de 1 monstre ou de plus de 6) : tous les membres de la liste, dans
   leur ordre ; le leader et le speed tune **enregistrés** sont gardés.
 
 Dans les deux cas, un membre repris retrouve son monstre enregistré par la

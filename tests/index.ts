@@ -71,6 +71,7 @@ import { testRenduOptimizerDialogueLeaderSkill, testRenduTelephoneOptimizerDialo
   testRenduOptimizerDialogueDefilement, testRenduTelephoneOptimizerDialogueDefilement,
   testRenduOptimizerDialogueHauteur400, testRenduOptimizerDialogueHauteur600,
   testRenduOptimizerDialogueReferencesLeader, testRenduTelephoneOptimizerDialogueReferencesLeader,
+  testRenduOptimizerDialogueMesEquipes, testRenduTelephoneOptimizerDialogueMesEquipes,
   testRenduOptimizerDialogueChangementFormat } from './rendu/optimizer-dialogue.test';
 import {
   testMemoireOptimizerJson, testMemoireOptimizerCopie, testMemoireOptimizerLecteurListes,
@@ -1230,6 +1231,8 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testRenduOptimizerDialogueHauteur600', testRenduOptimizerDialogueHauteur600],
   ['testRenduOptimizerDialogueReferencesLeader', testRenduOptimizerDialogueReferencesLeader],
   ['testRenduTelephoneOptimizerDialogueReferencesLeader', testRenduTelephoneOptimizerDialogueReferencesLeader],
+  ['testRenduOptimizerDialogueMesEquipes', testRenduOptimizerDialogueMesEquipes],
+  ['testRenduTelephoneOptimizerDialogueMesEquipes', testRenduTelephoneOptimizerDialogueMesEquipes],
   ['testRenduOptimizerDialogueChangementFormat', testRenduOptimizerDialogueChangementFormat],
   ['testRenduOptimizerCreationContenu', testRenduOptimizerCreationContenu],
   ['testRenduTelephoneOptimizerCreationContenu', testRenduTelephoneOptimizerCreationContenu],

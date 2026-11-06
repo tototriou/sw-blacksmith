@@ -115,7 +115,7 @@ export function preparerExportEquipeOptimizer(
 }
 
 // Le lien posé sur l'équipe après un export accepté : la liste créée, sa
-// première équipe (aucune avec 1 ou 6 membres), et les membres que le
+// première équipe (aucune avec 1 ou plus de 6 membres), et les membres que le
 // consommateur a gardés. `null` : export refusé, rien n'est lié.
 // ⚠️ Le rapport commence par les ignorés du PRODUCTEUR, déjà absents de la
 // correspondance : un doublon d'exemplaire y porte le sélecteur du membre
