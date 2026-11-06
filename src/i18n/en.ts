@@ -1040,7 +1040,6 @@ export const en: Dictionnaire = {
       reprendre: 'Take the current equipment',
       provenance: {
         porte: 'Worn equipment',
-        rta: 'RTA preset',
         'siege-defense': 'Siege defense',
         'siege-attaque': 'Siege offense',
         'arene-defense': 'Arena defense',
@@ -1070,7 +1069,6 @@ export const en: Dictionnaire = {
       chercher: 'Search a species',
       equipement: 'Equipment',
       porte: (niveau: number) => `Worn equipment (level ${niveau})`,
-      presetRta: 'RTA preset',
       defense: (n: number) => `Siege defense ${n}`,
       attaque: (n: number) => `Siege offense ${n}`,
       areneDefense: 'Arena defense',

@@ -124,7 +124,7 @@ function testEquipesOptimizerImport() {
   titre('Mes équipes — importer une équipe de l’Optimizer');
   const { r } = exporter(equipe());
   const data = sources();
-  const ctx = { box: data.box, rtaEntries: {}, siegeDefenseTeams: [], siegeOffenseTeams: [], arenaDecks: [], compte: true,
+  const ctx = { box: data.box, siegeDefenseTeams: [], siegeOffenseTeams: [], arenaDecks: [], compte: true,
     monsterById: data.monsterById, monsterByCom2us: new Map([...data.monsterById.values()].map((m) => [m.com2usId as number, m])) };
   const src = sourcesImportEquipes(ctx, { stockage: r.stockage, data }, inventaire(), 'pve', fr).filter((x) => x.groupe === fr.equipes.imports.optimizer);
   egal(src.map((x) => [x.libelle, x.raison]), [['Défense GW — équipe 1', null]], 'une source par équipe de liste');

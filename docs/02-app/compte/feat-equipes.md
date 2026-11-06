@@ -91,9 +91,9 @@ monstre »).
   du jour, jamais figé dans l'enregistrement (même règle que le compte conservé) ;
 - `unitId` : l'unité du jeu (`unit_id`) **quand la source la connaît** : un
   exemplaire de la Box, un membre Box de l'Optimizer, un deck d'arène. Les presets de
-  RTA et de siège ne la portent pas dans l'app : `unitId` vaut alors `null`, et aucune copie de la
+  siège ne la portent pas dans l'app : `unitId` vaut alors `null`, et aucune copie de la
   Box n'est choisie à sa place. Même règle pour un monstre ajouté sans exemplaire ;
-- `provenance` : d'où vient l'équipement (`porte`, `rta`, `siege-defense`,
+- `provenance` : d'où vient l'équipement (`porte`, `siege-defense`,
   `siege-attaque`, `arene-defense`, `arene-attaque`, `optimizer`, `aucun`) ;
 - `equipement` : un `GearSet` **copié** au moment de l'enregistrement — stats de base
   de l'unité, runes (`RuneDetail` complet, identifiant compris), artéfacts
@@ -197,7 +197,7 @@ liée (`optimizer`, état `equipe-liee`).
   détail.
 - « Ajouter un monstre » : une recherche d'espèce, puis le choix de l'équipement
   parmi ce que le compte connaît de cette espèce, chaque choix nommé par sa
-  provenance : « Équipement porté » (chaque exemplaire de la Box), « Preset RTA »,
+  provenance : « Équipement porté » (chaque exemplaire de la Box),
   « Défense de siège N », « Attaque de siège N », « Défense d'arène », « Attaque
   d'arène N », ou « Sans équipement ». Le choix copie l'équipement à cet instant.
 - Réordonner par un sélecteur de position (« Position N », le même geste aux deux
@@ -235,8 +235,8 @@ modifié.
   source est désactivée, « Réimporte ton compte pour lire tes decks d'arène ». Ces
   decks connaissent l'unité de chaque monstre : leurs monstres gardent leur
   `unitId`.
-- RTA : la prépa RTA n'est pas une équipe ; son preset sert de choix d'équipement
-  (« Preset RTA ») à l'ajout d'un monstre.
+- RTA : la prépa RTA n'est pas une source, ni d'équipe ni d'équipement (décision de
+  l'utilisateur) ; les équipes RTA se créent à la main ou depuis l'Optimizer.
 - Optimizer : une équipe d'une liste (ses membres, son leader, son speed tune) ou, sans
   équipe, les membres d'une liste (1 à 6 au plus ; au-delà, refus avec sa raison). Une
   source dont un membre ne se résout plus dans le compte est désactivée, avec sa raison.

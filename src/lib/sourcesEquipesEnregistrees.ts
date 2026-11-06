@@ -6,7 +6,7 @@
 // de siège, decks d'arène, listes de l'Optimizer) ; rien n'est écrit ici, le
 // geste rend une équipe neuve que l'écran ajoute.
 
-import type { GearSet, Monster, RtaEntry, SiegeTeam } from '../types';
+import type { GearSet, Monster, SiegeTeam } from '../types';
 import type { BoxItem } from './applyAccount';
 import type { Dictionnaire } from '../i18n/fr';
 import type { DeckArene } from './importAccount';
@@ -21,7 +21,6 @@ import {
 
 export interface ContexteSourcesEquipes {
   box: readonly BoxItem[];
-  rtaEntries: Readonly<Record<string, RtaEntry>>;
   siegeDefenseTeams: readonly SiegeTeam[];
   siegeOffenseTeams: readonly SiegeTeam[];
   // `null` : compte conservé avant la lecture des decks d'arène.
@@ -45,7 +44,7 @@ export interface SourceEquipement {
 }
 
 // Les choix d'équipement d'une espèce, dans l'ordre de la spec : chaque
-// exemplaire de la Box, le preset RTA, les decks de siège, les decks d'arène,
+// exemplaire de la Box, les decks de siège, les decks d'arène,
 // puis « Sans équipement », toujours présent.
 export function sourcesEquipementEspece(com2usId: number, ctx: ContexteSourcesEquipes, t: Dictionnaire): SourceEquipement[] {
   const a = t.equipes.ajout;
@@ -54,10 +53,6 @@ export function sourcesEquipementEspece(com2usId: number, ctx: ContexteSourcesEq
     if (b.monster.com2usId !== com2usId) continue;
     const unitId = /^\d+$/.test(b.key) ? Number(b.key) : null;
     res.push({ cle: `box:${b.key}`, libelle: a.porte(b.level), provenance: b.gear ? 'porte' : 'aucun', unitId, equipement: b.gear ?? null });
-  }
-  for (const entry of Object.values(ctx.rtaEntries)) {
-    if (entry.gear && ctx.monsterById.get(entry.monsterId)?.com2usId === com2usId)
-      res.push({ cle: `rta:${entry.monsterId}`, libelle: a.presetRta, provenance: 'rta', unitId: null, equipement: entry.gear });
   }
   const siege = (teams: readonly SiegeTeam[], provenance: ProvenanceEquipement, libelle: (n: number) => string) =>
     teams.forEach((team, i) => team.slots.forEach((slot, s) => {

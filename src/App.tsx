@@ -695,10 +695,10 @@ function Application() {
   // « Mes équipes » : ses sources, l'inventaire de comparaison et les listes
   // de l'Optimizer pour l'aller-retour (docs/02-app/compte/feat-equipes.md).
   const compteCharge = box.length > 0 || runes.length > 0;
-  const contexteEquipes = useMemo<ContexteSourcesEquipes>(() => ({ box, rtaEntries: rta.state.entries,
+  const contexteEquipes = useMemo<ContexteSourcesEquipes>(() => ({ box,
     siegeDefenseTeams: siegeDef.state.teams, siegeOffenseTeams: siegeOff.state.teams, arenaDecks, compte: compteCharge,
     monsterById: optimizerData.monsterById, monsterByCom2us }),
-  [box, rta.state.entries, siegeDef.state.teams, siegeOff.state.teams, arenaDecks, compteCharge, optimizerData.monsterById, monsterByCom2us]);
+  [box, siegeDef.state.teams, siegeOff.state.teams, arenaDecks, compteCharge, optimizerData.monsterById, monsterByCom2us]);
   const inventaireEquipes = useMemo(() => (compteCharge ? indexerInventaire(runes, artifacts, relics) : null),
     [compteCharge, runes, artifacts, relics]);
   const optimizerPourEquipes = useMemo(() => ({ data: optimizerData, stockage: {

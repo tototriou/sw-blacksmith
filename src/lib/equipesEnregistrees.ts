@@ -31,7 +31,7 @@ export const CONTENU_OPTIMIZER_ONGLET: Record<OngletEquipes, ContenuListeOptimiz
 };
 
 export const PROVENANCES_EQUIPEMENT = [
-  'porte', 'rta', 'siege-defense', 'siege-attaque', 'arene-defense', 'arene-attaque', 'optimizer', 'aucun',
+  'porte', 'siege-defense', 'siege-attaque', 'arene-defense', 'arene-attaque', 'optimizer', 'aucun',
 ] as const;
 export type ProvenanceEquipement = (typeof PROVENANCES_EQUIPEMENT)[number];
 

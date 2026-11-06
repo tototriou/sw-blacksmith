@@ -22,7 +22,7 @@ function monstre(id: number): Monster {
 const MONSTRES = [1, 2, 3].map(monstre);
 const ctx = (compte = true): ContexteSourcesEquipes => ({
   box: compte ? [{ key: '11', monster: MONSTRES[0], stars: 6, level: 40, gear: equipementEx(1) }] : [],
-  rtaEntries: {}, siegeDefenseTeams: [], siegeOffenseTeams: [], arenaDecks: compte ? [] : null, compte,
+  siegeDefenseTeams: [], siegeOffenseTeams: [], arenaDecks: compte ? [] : null, compte,
   monsterById: new Map(MONSTRES.map((m) => [String(m.id), m])),
   monsterByCom2us: new Map(MONSTRES.map((m) => [m.com2usId as number, m])),
 });

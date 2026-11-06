@@ -1092,7 +1092,6 @@ export const fr = {
       reprendre: 'Reprendre l’équipement actuel',
       provenance: {
         porte: 'Équipement porté',
-        rta: 'Preset RTA',
         'siege-defense': 'Défense de siège',
         'siege-attaque': 'Attaque de siège',
         'arene-defense': 'Défense d’arène',
@@ -1122,7 +1121,6 @@ export const fr = {
       chercher: 'Chercher une espèce',
       equipement: 'Équipement',
       porte: (niveau: number) => `Équipement porté (niveau ${niveau})`,
-      presetRta: 'Preset RTA',
       defense: (n: number) => `Défense de siège ${n}`,
       attaque: (n: number) => `Attaque de siège ${n}`,
       areneDefense: 'Défense d’arène',

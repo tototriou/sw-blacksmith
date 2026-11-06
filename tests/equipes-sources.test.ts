@@ -23,7 +23,6 @@ function contexte(): ContexteSourcesEquipes {
   const ms = [1, 2, 3].map(monstre);
   return {
     box: [{ key: '11', monster: ms[0], stars: 6, level: 40, gear: equipementEx(1) }, { key: '12', monster: ms[0], stars: 6, level: 35, gear: equipementEx(2) }],
-    rtaEntries: { '1': { monsterId: '1', section: 'swift', runeSpeed: null, gear: equipementEx(3) } },
     siegeDefenseTeams: [deck('d1', ['1', '2', '99'])], siegeOffenseTeams: [deck('o1', [null, null, null])],
     arenaDecks: [{ cle: 'defense', rang: 0, slots: [{ unitId: 11, com2usId: 1001, gear: equipementEx(4) }] }],
     compte: true,
@@ -40,9 +39,9 @@ function testEquipesSourcesEquipement() {
   const s = sourcesEquipementEspece(1001, contexte(), fr);
   egal(s.map((x) => [x.libelle, x.provenance, x.unitId]), [
     ['Équipement porté (niveau 40)', 'porte', 11], ['Équipement porté (niveau 35)', 'porte', 12],
-    ['Preset RTA', 'rta', null], ['Défense de siège 1', 'siege-defense', null],
+['Défense de siège 1', 'siege-defense', null],
     ['Défense d’arène', 'arene-defense', 11], ['Sans équipement', 'aucun', null],
-  ], 'chaque exemplaire de la Box, le preset RTA, les decks ; un preset sans unité garde unitId null');
+  ], 'chaque exemplaire de la Box, les decks ; un deck de siège sans unité garde unitId null');
   egal(sourcesEquipementEspece(1003, contexte(), fr).map((x) => x.provenance), ['aucun'], 'une espèce inconnue du compte : sans équipement seulement');
 }
 
