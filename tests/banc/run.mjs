@@ -527,7 +527,7 @@ async function principal(etat) {
             // largeur : celle que la taille déclare pour ce cas.
             const enTableau = st.tableau ? taille.optimizer?.enTableau : null;
             const attenduOptimizer = enTableau
-              ? { ...taille.optimizer, ...enTableau, set: enTableau.configuration === 'deux-piles' ? 'deplie' : undefined }
+              ? { ...taille.optimizer, ...enTableau }
               : taille.optimizer;
             resultat.optimizer = await verifierOptimizer(page, attenduOptimizer, st.id === 'guidage-set');
           } catch (err) {

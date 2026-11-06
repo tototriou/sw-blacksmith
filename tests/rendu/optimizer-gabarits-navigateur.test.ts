@@ -5,7 +5,7 @@ import { colonnesCoffre } from '../../src/lib/coffreSets';
 // Le sens des listes à choix multiples des essentiels du bureau, après de vrais
 // clics : un rendu serveur n'exécute aucun gestionnaire.
 
-const monter = (nom: string) => `globalThis.bancOptimizer.monter(${JSON.stringify(nom)})`;
+const monter = (nom: string, largeur?: number) => `globalThis.bancOptimizer.monter(${JSON.stringify(nom)}${largeur == null ? '' : `, ${largeur}`})`;
 
 export async function testRenduOptimizerGabaritsGestes() {
   titre('rendu · gabarits de l’Optimizer — set compact et principales, au clic');
@@ -166,51 +166,111 @@ export async function testRenduOptimizerGabaritsLargeurs() {
       `objectif à 420 px : « Rechercher » sous « Exporter » · « Importer », pleine largeur (${JSON.stringify(etroit)})`);
 
     await page.setViewportSize({ width: 2048, height: 1000 });
-    for (const [largeur, configuration, colonnes, onglets] of [
-      [1800, 'colonnes', ['criteres', 'artefacts', 'complements'], []],
-      [1500, 'criteres-et-groupe', ['criteres', 'artefacts'], ['Artéfacts', 'Options']],
-      [1200, 'groupe', ['criteres'], ['Critères', 'Artéfacts', 'Options']],
-      [752, 'deux-piles', ['criteres'], ['Critères', 'Artéfacts', 'Options']],
+    const TROIS = ['Critères', 'Artéfacts', 'Options'];
+    for (const [largeur, configuration, onglets, placeGroupe] of [
+      // Décisions de l'utilisateur : les trois réglages toujours en onglets ;
+      // le groupe s'élargit quand la place le permet ; quand elle manque
+      // vraiment, l'objectif et les résultats deviennent le quatrième onglet.
+      [1800, 'groupe-large', TROIS, 392],
+      [1120, 'groupe', TROIS, 328],
+      [752, 'quatre-onglets', [...TROIS, 'Résultats'], null],
     ] as const) {
       await page.evaluate(monterA('page', largeur));
       const racine = page.locator('[data-configuration]');
       egal(await racine.getAttribute('data-configuration'), configuration, `${largeur} px : configuration mesurée`);
-      egal(await racine.locator('[data-colonne]').evaluateAll(es => es.map(e => e.getAttribute('data-colonne'))), [...colonnes], `${configuration} : réglages présents dans l'ordre`);
-      egal(await racine.getByRole('tab').locator('[data-libelle-onglet]').allTextContents(), [...onglets], `${configuration} : seuls les réglages rangés ont un onglet`);
-      ok(await racine.locator('[data-zone="monstre"]').isVisible() && await racine.locator('[data-zone="resultats"]').isVisible(), `${configuration} : Monstre et résultats visibles`);
+      egal(await racine.locator('[data-colonne]').evaluateAll(es => es.map(e => e.getAttribute('data-colonne'))), ['criteres'], `${configuration} : seul l'onglet ouvert est monté`);
+      const reglages = racine.getByRole('tablist', { name: 'Réglages de recherche' });
+      egal(await reglages.getByRole('tab').locator('[data-libelle-onglet]').allTextContents(), [...onglets], `${configuration} : les onglets du groupe`);
+      ok(await racine.locator('[data-zone="monstre"]').isVisible() && (placeGroupe == null) !== await racine.locator('[data-zone="resultats"]').isVisible(),
+        `${configuration} : Monstre visible ; les résultats en colonne, ou dans leur onglet`);
+      const geometrie = await racine.evaluate(e => {
+        // Les cadres des colonnes : « Monstre », le panneau du groupe, les résultats.
+        const monstre = e.querySelector('[data-zone="monstre"]')!.getBoundingClientRect();
+        const groupe = e.querySelector<HTMLElement>('[data-zone="onglets"]')!;
+        const panneau = groupe.querySelector('[role="tabpanel"] > *')!.getBoundingClientRect();
+        const resultats = e.querySelector('[data-zone="resultats"]')?.getBoundingClientRect();
+        return {
+          place: Math.round(groupe.getBoundingClientRect().width) + 8,
+          ecarts: [Math.round(panneau.left - monstre.right), resultats ? Math.round(resultats.left - panneau.right) : null],
+          // Les sections de l'onglet, l'une sous l'autre à toute largeur.
+          sections: [...groupe.querySelectorAll<HTMLElement>('[data-colonne] [data-defilement] > div > *')].map(s => Math.round(s.getBoundingClientRect().top)),
+        };
+      });
+      ok((placeGroupe == null || geometrie.place === placeGroupe) && geometrie.ecarts.every(x => x == null || x === 18)
+        && geometrie.sections.length >= 4 && geometrie.sections.every((h, i) => i === 0 || h > geometrie.sections[i - 1]),
+        `${configuration} : groupe de ${placeGroupe ?? 'toute la largeur'} px, 18 px entre panneaux, sections en colonne (${JSON.stringify(geometrie)})`);
       const confinement = await racine.evaluate(e => ({
         hauteur: Math.abs(e.getBoundingClientRect().bottom - (innerHeight - 16)) <= 1,
         deborde: e.scrollWidth > e.clientWidth + 1,
-        panneaux: [...e.querySelectorAll<HTMLElement>('[data-zone="monstre"], [data-zone="pile-droite"], [data-colonne], [data-zone="resultats"]')]
-          .filter(p => getComputedStyle(p).overflowY === 'auto').map(p => ({
-            contient: getComputedStyle(p).overscrollBehaviorY === 'contain',
-            defile: p.scrollHeight > p.clientHeight,
-          })),
+        // ⚠️ Le cadre d'une colonne ne défile jamais : son contenu défile
+        // dedans, la barre à l'intérieur du contour.
+        panneaux: [...e.querySelectorAll<HTMLElement>('[data-zone="monstre"], [data-colonne], [data-zone="resultats"]')].map(p => {
+          const defilement = p.querySelector<HTMLElement>(':scope > [data-defilement]')!;
+          const cadre = p.getBoundingClientRect(), d = defilement.getBoundingClientRect();
+          return {
+            zone: p.dataset.zone ?? p.dataset.colonne,
+            cadreFixe: getComputedStyle(p).overflowY === 'visible' && p.scrollHeight <= p.clientHeight + 1,
+            contient: getComputedStyle(defilement).overscrollBehaviorY === 'contain',
+            defile: defilement.scrollHeight > defilement.clientHeight + 1,
+            barreDedans: d.right <= cadre.right - 0.5 && d.bottom <= cadre.bottom - 0.5,
+          };
+        }),
+        // « Monstre » : la liste de banc (1 200 px) défile seule, l'exemplaire
+        // entier dessous, dans le panneau ; pas d'onglets.
+        liste: (() => {
+          const colonne = e.querySelector<HTMLElement>('[data-zone="monstre"]')!;
+          const liste = colonne.querySelector<HTMLElement>('[data-liste-banc]')!;
+          const exemplaire = colonne.querySelector('[data-zone="exemplaire"]')?.getBoundingClientRect();
+          return { defile: liste.scrollHeight > liste.clientHeight, exemplaireDessous: !!exemplaire && exemplaire.bottom <= colonne.getBoundingClientRect().bottom,
+            onglets: !!e.querySelector('[role="tablist"][aria-label="Liste et exemplaire"]') };
+        })(),
       }));
       ok(confinement.hauteur && !confinement.deborde && confinement.panneaux.length >= 2
-        && confinement.panneaux.every(p => p.contient && p.defile), `${configuration} : hauteur visible, largeur contenue et défilements indépendants (${JSON.stringify(confinement)})`);
+        && confinement.panneaux.every(p => p.cadreFixe && p.contient && p.barreDedans && p.defile === (p.zone !== 'monstre'))
+        && confinement.liste.defile && confinement.liste.exemplaireDessous && !confinement.liste.onglets,
+        `${configuration} : hauteur visible, largeur contenue, cadres fixes, contenus qui défilent dans leur panneau, « Monstre » sans défilement, sa liste qui défile seule au-dessus de l'exemplaire (${JSON.stringify(confinement)})`);
       if (onglets.length) {
-        const options = racine.getByRole('tab', { name: 'Options', exact: true });
+        const options = reglages.getByRole('tab', { name: 'Options', exact: true });
         const avant = await options.boundingBox();
         await options.click();
         egal(await options.boundingBox(), avant, `${configuration} : cliquer Options ne déplace pas l'onglet`);
         await options.click();
         ok(await options.getAttribute('aria-selected') === 'true', `${configuration} : recliquer garde Options ouvert`);
-        egal(await racine.getByRole('tabpanel').getAttribute('aria-label'), 'Aura, exclusion, avancés', `${configuration} : panneau correspondant à Options`);
+        egal(await racine.locator('[data-zone="onglets"] [role="tabpanel"]').getAttribute('aria-label'), 'Aura, exclusion, avancés', `${configuration} : panneau correspondant à Options`);
+      }
+      if (placeGroupe == null) {
+        await racine.getByRole('tab', { name: 'Résultats', exact: true }).click();
+        ok(await racine.locator('[data-zone="resultats"]').isVisible() && await racine.getByRole('button', { name: 'Rechercher' }).isVisible(),
+          `${configuration} : l'onglet Résultats montre l'objectif, « Rechercher » et les résultats`);
+        await racine.getByRole('tab', { name: 'Critères', exact: true }).click();
       }
     }
-    // Redimensionner la même page conserve un onglet encore présent ; quand
-    // le groupe disparaît, son retour repart du premier onglet.
+    // Redimensionner la même page conserve l'onglet ouvert, quatre onglets
+    // et très grande largeur comprises ; l'onglet Résultats disparaît quand
+    // les résultats repassent en colonne.
     await page.getByRole('tab', { name: 'Options', exact: true }).click();
-    await page.locator('[data-configuration]').evaluate(e => { e.parentElement!.style.width = '1500px'; });
-    await page.waitForTimeout(100);
-    ok(await page.getByRole('tab', { name: 'Options', exact: true }).getAttribute('aria-selected') === 'true', 'redimensionnement : Options reste dans le groupe et reste actif');
-    await page.locator('[data-configuration]').evaluate(e => { e.parentElement!.style.width = '1800px'; });
-    await page.waitForTimeout(100);
-    egal(await page.getByRole('tab').count(), 0, 'cinq colonnes : aucun onglet');
-    await page.locator('[data-configuration]').evaluate(e => { e.parentElement!.style.width = '1200px'; });
-    await page.waitForTimeout(100);
-    ok(await page.getByRole('tab', { name: 'Critères', exact: true }).getAttribute('aria-selected') === 'true', 'retour du groupe : son premier onglet, sans ressusciter Options');
+    for (const [largeur, nombre] of [['1800px', 3], ['900px', 4], ['1200px', 3]] as const) {
+      await page.locator('[data-configuration]').evaluate((e, l) => { e.parentElement!.style.width = l; }, largeur);
+      await page.waitForTimeout(100);
+      egal(await page.getByRole('tablist', { name: 'Réglages de recherche' }).getByRole('tab').count(), nombre, `redimensionnement à ${largeur} : ${nombre} onglets`);
+      ok(await page.getByRole('tab', { name: 'Options', exact: true }).getAttribute('aria-selected') === 'true', `redimensionnement à ${largeur} : Options reste actif`);
+    }
+
+    // Fenêtre très basse : même une liste réduite à une équipe de trois et
+    // l'exemplaire ne tiennent plus ensemble, l'exemplaire passe en onglet ;
+    // revenue haute, la colonne les empile de nouveau.
+    await page.setViewportSize({ width: 2048, height: 420 });
+    const ongletsMonstre = page.getByRole('tablist', { name: 'Liste et exemplaire' });
+    await ongletsMonstre.waitFor();
+    egal(await ongletsMonstre.getByRole('tab').locator('[data-libelle-onglet]').allTextContents(), ['Liste active', 'Exemplaire'],
+      'fenêtre basse : l’exemplaire passe en onglet, à côté de « Liste active »');
+    await ongletsMonstre.getByRole('tab', { name: 'Exemplaire', exact: true }).click();
+    ok(await page.locator('[data-zone="exemplaire"]').isVisible() && await page.locator('[data-liste-banc]').count() === 0,
+      'onglet Exemplaire : l’exemplaire à la place de la liste');
+    await page.setViewportSize({ width: 2048, height: 1000 });
+    await page.locator('[data-liste-banc]').waitFor();
+    ok(await ongletsMonstre.count() === 0 && await page.locator('[data-zone="exemplaire"]').isVisible(),
+      'fenêtre revenue haute : liste et exemplaire de nouveau empilés');
 
     // Le coffre démonté par une combinaison pleine revient au premier retrait :
     // ce nouvel élément suit encore la largeur de sa section quand elle se

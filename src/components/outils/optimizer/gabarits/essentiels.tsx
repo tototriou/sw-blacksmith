@@ -10,11 +10,11 @@ import MonsterSourcePicker from '../../MonsterSourcePicker';
 import OptimizerImportButton from '../../OptimizerImportButton';
 import { listesInertes, optimizerInerte } from './inertes';
 import type { ContexteGabarits, Gabarit } from './types';
-import { exclusionSelectorKey, resolveExclusionEntry, type OptimizerListMember } from '../../../../lib/optimizerExclusion';
+import { exclusionSelectorKey, type OptimizerListMember } from '../../../../lib/optimizerExclusion';
 import { leadEffectifMembreOptimizer } from '../../../../lib/equipesOptimizer';
 import { artifactConditionFloor, relicConditionFloor } from '../../../../lib/artifactConditionFloor';
 import { type DamageSetup } from '../../../../lib/damage';
-import { configurationBureau, ongletOuvert, type ColonneReglage } from '../../../../lib/optimizerColonnes';
+import { configurationBureau, ongletOuvert, type OngletBureau } from '../../../../lib/optimizerColonnes';
 import type { EquipeOptimizer } from '../../../../lib/optimizerMemberStorage';
 import type { StatKey } from '../../../../lib/effects';
 import type { Monster } from '../../../../types';
@@ -56,12 +56,6 @@ function ListeGabarit({ ctx, mode }: { ctx: ContexteGabarits; mode: 'vide' | 're
     return listesInertes(ctx.lists, { lists: [LISTE_GABARIT], activeListId: LISTE_GABARIT.id, members, teams: [equipe], validated: [], rapportStockage: [] });
   }, [ctx, mode]);
   const optimizer = useMemo(() => optimizerInerte(ctx.optimizer), [ctx.optimizer]);
-  const [actif, setActif] = useState<Monster | null>(() => {
-    if (mode === 'vide') return null;
-    if (mode === 'reelle') return monstreReel(ctx)?.monster ?? null;
-    const premier = lists.members[0];
-    return premier ? resolveExclusionEntry(premier.selector, ctx.exclusionData)?.monster ?? null : null;
-  });
   const activeList = lists.lists.find((l) => l.id === lists.activeListId) ?? null;
   const activeMembers = lists.activeListId ? lists.members.filter((m) => m.listId === lists.activeListId) : [];
   const equipes = lists.teams.filter((e) => e.listId === lists.activeListId);
@@ -79,12 +73,11 @@ function ListeGabarit({ ctx, mode }: { ctx: ContexteGabarits; mode: 'vide' | 're
     <ListeDeTravailBureau
       listes={<SelecteurListes lists={lists} memberCounts={compte} titreSection
         action={<OptimizerImportButton enLigne sources={[]} onImporter={optimizer.importerEquipe} rapport={null} />} />}
-      recherche={<MonsterSourcePicker mode="bestiary" candidates={ctx.allMonsters} onPick={setActif} />}
-      monstreActif={actif}
+      recherche={<MonsterSourcePicker mode="bestiary" candidates={ctx.allMonsters} onPick={rien} />}
       liste={{
         activeList, activeMembers, groupesMembres, lists, optimizer, exclusionData: ctx.exclusionData, artifacts: ctx.artifacts,
         setEquipeOuverte: rien, rapportZoneC: mode === 'reelle' ? [...ctx.lists.rapportStockage, ...ctx.optimizer.rapportCriteres] : [],
-        runeById, artifactById, choisirMembreDeLaListe: (_m, resolved) => setActif(resolved?.monster ?? null), membreChoisi: null,
+        runeById, artifactById, choisirMembreDeLaListe: rien, membreChoisi: null,
         setReleaseConfirm: rien, setReleaseArtifactsConfirm: rien, setRemoveMemberConfirm: rien, rappelAuras: false,
         listHasValidated: activeList != null && lists.validated.some((v) => v.listId === activeList.id), setReleaseAllConfirm: rien,
       }}
@@ -137,10 +130,10 @@ function EtatGabarit({ ctx, patch = {}, equipe = false }: { ctx: ContexteGabarit
 }
 
 const LARGEUR_ONGLETS = 320;
-function OngletsGabarit({ largeur, initial }: { largeur: number; initial: ColonneReglage }) {
-  const [etat, setEtat] = useState<ColonneReglage>(initial);
+function OngletsGabarit({ largeur, initial }: { largeur: number; initial: OngletBureau }) {
+  const [etat, setEtat] = useState<OngletBureau>(initial);
   const { groupe } = configurationBureau(largeur);
-  const noms = { criteres: 'Critères', artefacts: 'Artéfacts', complements: 'Options' };
+  const noms = { criteres: 'Critères', artefacts: 'Artéfacts', complements: 'Options', resultats: 'Résultats' };
   return <Onglets aria-label="Réglages de recherche" valeur={ongletOuvert(groupe, etat)!} onChange={setEtat}
     options={groupe.map(cle => ({ cle, libelle: noms[cle] }))} />;
 }
@@ -151,7 +144,7 @@ export const GABARITS_ESSENTIELS: Gabarit[] = [
     composant: 'ListeDeTravailBureau (bureau/ListeDeTravailBureau.tsx), composant à part',
     telephone: 'Partage MonstresDeLaListe avec le téléphone, par une variante qu\'il ne prend pas (prop enTete) ; SelecteurListes, MonsterSourcePicker et OptimizerImportButton tels quels.',
     changements: [
-      '« Rechercher un monstre… » et le monstre actif passent sur la rangée du titre de la carte de la liste ; plus de bloc « Monstre à optimiser » au-dessus.',
+      '« Rechercher un monstre… » passe sur la rangée du titre de la carte de la liste, sur toute sa largeur ; le monstre actif n’est plus affiché à côté ; plus de bloc « Monstre à optimiser » au-dessus.',
       'Le titre de la carte est toujours « Ajouter un monstre / à la liste », sur deux lignes (il nomme le champ qui le suit) : ni le nom de la liste ni son compte, que « Liste active » dit juste au-dessus.',
       '« Liste active » prend le style d\'un titre de section (13,5 px gras ; le téléphone garde l\'étiquette).',
       'Les puces d\'exemplaire (Box / RTA / Défenses siège / Offenses siège) quittent ce bloc pour la carte « Exemplaire ».',
@@ -159,7 +152,7 @@ export const GABARITS_ESSENTIELS: Gabarit[] = [
     ],
     etats: [
       { id: 'vide', nom: 'Liste vide, aucun monstre', rendu: (ctx) => <ListeGabarit ctx={ctx} mode="vide" /> },
-      { id: 'remplie', nom: 'Liste remplie (7 membres, une équipe), monstre actif', rendu: (ctx) => <ListeGabarit ctx={ctx} mode="remplie" /> },
+      { id: 'remplie', nom: 'Liste remplie (7 membres, une équipe)', rendu: (ctx) => <ListeGabarit ctx={ctx} mode="remplie" /> },
       { id: 'reelle', nom: 'Listes réelles du navigateur', rendu: (ctx) => <ListeGabarit ctx={ctx} mode="reelle" /> },
     ],
   },
@@ -233,12 +226,12 @@ export const GABARITS_ESSENTIELS: Gabarit[] = [
     telephone: 'Aucun : le téléphone garde le panneau « Options ».',
     changements: [
       '« Critères », « Artéfacts », « Options » : un seul onglet actif, recliquer le garde ouvert.',
-      'La largeur seule décide des réglages rangés : aucun onglet quand les cinq colonnes tiennent.',
+      'Les trois réglages sont toujours en onglets, à toutes les largeurs : jamais de colonne de réglages.',
       'Exclusion de runes et Réglages avancés ne s\'ouvrent plus en flottant depuis leur en-tête : ils sont en ligne dans leur colonne.',
     ],
     etats: [
       { id: 'criteres', nom: 'Trois onglets, Critères actif', rendu: () => <OngletsGabarit largeur={1200} initial="criteres" /> },
-      { id: 'artefacts', nom: 'Deux onglets, Artéfacts actif', rendu: () => <OngletsGabarit largeur={1500} initial="artefacts" /> },
+      { id: 'artefacts', nom: 'Trois onglets, Artéfacts actif', rendu: () => <OngletsGabarit largeur={1200} initial="artefacts" /> },
       { id: 'complements', nom: 'Trois onglets, Options actif', rendu: () => <OngletsGabarit largeur={1200} initial="complements" /> },
     ],
   },

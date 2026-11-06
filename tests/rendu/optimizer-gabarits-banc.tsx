@@ -1,4 +1,5 @@
-import { useRef, useState } from 'react';
+import { useContext, useRef, useState } from 'react';
+import { HauteurListeContext } from '../../src/components/outils/optimizer/bureau/hauteurListe';
 import { createRoot, type Root } from 'react-dom/client';
 import { flushSync } from 'react-dom';
 import SetDeRunesCompact from '../../src/components/outils/optimizer/bureau/SetDeRunesCompact';
@@ -8,7 +9,7 @@ import ExemplaireBureau from '../../src/components/outils/optimizer/bureau/Exemp
 import ObjectifEtRechercherBureau from '../../src/components/outils/optimizer/bureau/ObjectifEtRechercherBureau';
 import PageBureau from '../../src/components/outils/optimizer/bureau/PageBureau';
 import { SetDeplieContext } from '../../src/components/outils/optimizer/bureau/setDeplie';
-import type { ColonneReglage } from '../../src/lib/optimizerColonnes';
+import type { OngletBureau } from '../../src/lib/optimizerColonnes';
 import { SOURCE_OPTIONS } from '../../src/lib/optimizerExclusion';
 import { DEFAULT_DAMAGE_SETUP, type DamageSetup } from '../../src/lib/damage';
 
@@ -57,13 +58,22 @@ function ObjectifBanc() {
     importRecipe={rien} setStoppedManually={rien} stop={rien} />;
 }
 
+// Une liste des membres de banc : comme la vraie, elle prend au plus la
+// hauteur que « Monstre » lui laisse, puis défile seule.
+function ListeBanc() {
+  const hauteur = useContext(HauteurListeContext);
+  return <div data-liste-membres="" data-liste-banc="" className="relative overflow-y-auto" style={hauteur != null ? { maxHeight: hauteur } : undefined}>
+    <div style={{ height: 1200 }}>Liste</div>
+  </div>;
+}
+
 function PageBanc() {
-  const [onglet, setOnglet] = useState<ColonneReglage | null>(null);
+  const [onglet, setOnglet] = useState<OngletBureau | null>(null);
   const contenu = (nom: string) => <div style={{ height: 1200 }}>{nom}</div>;
-  return <PageBureau liste={contenu('Liste')} exemplaire={<p>Exemplaire</p>}
-    set={contenu('Sets')} conditions={null} principales={null} etat={null}
+  return <PageBureau liste={<ListeBanc />} exemplaire={<div style={{ height: 300 }}>Exemplaire</div>}
+    set={contenu('Sets')} conditions={<p>Conditions</p>} principales={<p>Principales</p>} etat={<p>État</p>}
     artefacts={contenu('Artéfacts')} meilleurs={null} auras={contenu('Auras')} exclusion={null} avances={null}
-    objectif={({ partie }) => partie === 'barre' ? <button type="button">Rechercher</button> : <p>Objectif {partie}</p>}
+    objectif={() => <><p>Objectif</p><button type="button">Rechercher</button></>}
     resultats={contenu('Résultats')} onglet={onglet} onOnglet={setOnglet} rappelAuras={false} />;
 }
 

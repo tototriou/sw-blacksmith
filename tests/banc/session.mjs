@@ -331,7 +331,7 @@ export async function verifierOptimizer(page, attendu, guidageSet = false) {
     const stats = rect(fiche?.children[0]), equipement = rect(fiche?.children[1]);
     const onglets = [...racine.querySelectorAll('[role="tablist"][aria-label="Réglages de recherche"] [role="tab"]')];
     const monstre = racine.querySelector('[data-zone="monstre"]');
-    const pile = racine.querySelector('[data-zone="pile-droite"]');
+    const blocOnglets = racine.querySelector('[data-zone="onglets"]');
     const colonnes = [...racine.querySelectorAll('[data-colonne]')].map(el => ({
       nom: el.dataset.colonne, ...rect(el), contenu: el.scrollWidth, interieur: el.clientWidth,
       // Le premier élément qui dépasse le bord droit : de quoi corriger sans rejouer.
@@ -379,21 +379,29 @@ export async function verifierOptimizer(page, attendu, guidageSet = false) {
         }
       }
     }
-    const scrollers = [...racine.querySelectorAll('[data-zone="monstre"], [data-colonne], [data-zone="resultats"], [data-zone="pile-droite"]')]
-      .filter(el => getComputedStyle(el).overflowY === 'auto');
+    // Ce qui défile : le contenu de chaque colonne, dans son cadre fixe.
+    const scrollers = [...racine.querySelectorAll('[data-defilement]')];
+    const cadres = [...racine.querySelectorAll('[data-zone="monstre"], [data-colonne], [data-zone="resultats"]')];
     return {
       largeur: racine.getBoundingClientRect().width, configuration: racine.dataset.configuration,
       groupe: onglets.map(el => el.querySelector('[data-libelle-onglet]').textContent.trim()),
       actif: onglets.find(el => el.getAttribute('aria-selected') === 'true')?.querySelector('[data-libelle-onglet]').textContent.trim() ?? null,
       fiche: stats && equipement ? (equipement.y >= stats.bas - 1 ? 'repliee' : 'depliee') : null,
       exemplaireDansMonstre: !!monstre?.querySelector('[data-zone="exemplaire"]'),
+      // Liste et exemplaire trop hauts ensemble : l'exemplaire dans son onglet.
+      monstreEnOnglets: !!racine.querySelector('[role="tablist"][aria-label="Liste et exemplaire"]'),
+      // « Monstre » ne défile pas : sa liste des membres cède la hauteur.
+      monstreDefile: (d => !!d && d.scrollHeight > d.clientHeight + 1)(monstre?.querySelector(':scope > [data-defilement]')),
+      // ⚠️ Le cadre d'une colonne ne défile jamais.
+      cadreQuiDefile: (c => c ? c.getAttribute('data-zone') ?? c.getAttribute('data-colonne') : null)(
+        cadres.find(el => getComputedStyle(el).overflowY !== 'visible' || el.scrollHeight > el.clientHeight + 1)),
       set: set?.dataset.setOptimizer, nombreSetsVisibles: setsVisibles.length, setInvalide: invalide,
-      setRect, surfaceSet: surfaceSet?.dataset.zone ?? surfaceSet?.dataset.colonne ?? null, surfaceVisible,
+      setRect, surfaceSet: (c => c ? c.dataset.zone ?? c.dataset.colonne ?? null : null)(surfaceSet?.closest('[data-zone], [data-colonne]')), surfaceVisible,
       setGuideVisible: !invalide || !!(setRect && surfaceVisible
         && setRect.hauteur > 0 && setRect.largeur > 0
         && setRect.y >= surfaceVisible.y - 1 && setRect.bas <= surfaceVisible.bas + 1
         && setRect.x >= surfaceVisible.x - 1 && setRect.droite <= surfaceVisible.droite + 1),
-      colonnes, monstre: rect(monstre), pile: rect(pile), bouton: rect(bouton),
+      colonnes, monstre: rect(monstre), blocOnglets: rect(blocOnglets), bouton: rect(bouton),
       volet: !!racine.closest('[data-volet]'), volets: [...document.querySelectorAll('[data-volet]')].map(rect),
       pageFenetre: racine.hasAttribute('data-page-fenetre'),
       debordement: racine.scrollWidth > racine.clientWidth + 1,
@@ -410,7 +418,10 @@ export async function verifierOptimizer(page, attendu, guidageSet = false) {
   if (JSON.stringify(observe.groupe) !== JSON.stringify(attendu.groupe)) refuser(`onglets ${JSON.stringify(observe.groupe)} au lieu de ${JSON.stringify(attendu.groupe)}`);
   const { configuration } = attendu;
   // La fiche se lit dépliée, comme une carte de résultat : équipement à côté des stats.
-  if (observe.fiche !== 'depliee' || !observe.exemplaireDansMonstre) refuser('Exemplaire doit être déplié dans Monstre');
+  if (!observe.monstreEnOnglets && (observe.fiche !== 'depliee' || !observe.exemplaireDansMonstre)) refuser('Exemplaire doit être déplié dans Monstre');
+  if (observe.cadreQuiDefile !== null) refuser(`le cadre d'une colonne défile (${observe.cadreQuiDefile}) : son contenu doit défiler dedans`);
+  if (observe.scrollers.length < 2) refuser('contenus de colonne sans défilement intérieur');
+  if (observe.monstreDefile) refuser('« Monstre » défile : sa liste des membres doit céder la hauteur');
   if (attendu.set && observe.set && observe.set !== attendu.set) refuser(`set ${observe.set} au lieu de ${attendu.set}`);
   if (!observe.setGuideVisible || (guidageSet && (observe.nombreSetsVisibles !== 1 || !observe.setInvalide))) {
     refuser(`le guidage sans set ne montre pas le set (${JSON.stringify({ nombre: observe.nombreSetsVisibles, surligne: observe.setInvalide, set: observe.setRect, surface: observe.surfaceSet, visible: observe.surfaceVisible })})`);
@@ -423,8 +434,8 @@ export async function verifierOptimizer(page, attendu, guidageSet = false) {
   if (new Set(noms).size !== noms.length) refuser('un réglage est monté deux fois');
   const deborde = observe.colonnes.find(c => c.contenu > c.interieur + 1);
   if (deborde) refuser(`une colonne déborde horizontalement (${deborde.nom} : ${deborde.depasse ?? 'élément non trouvé'})`);
-  if (configuration === 'colonnes' && JSON.stringify(noms) !== JSON.stringify(['criteres', 'artefacts', 'complements'])) refuser('les trois colonnes de réglages ne sont pas visibles');
-  if (configuration === 'deux-piles' && (!observe.pile || !observe.monstre || Math.abs(observe.pile.y - observe.monstre.y) > 1 || observe.pile.x <= observe.monstre.x)) refuser('les deux piles ne sont pas côte à côte');
+  if (noms.length > 1) refuser(`les réglages ne sont pas dans un seul groupe d'onglets (${noms.join(', ')})`);
+  if (configuration === 'quatre-onglets' && (!observe.blocOnglets || !observe.monstre || Math.abs(observe.blocOnglets.y - observe.monstre.y) > 1 || observe.blocOnglets.x <= observe.monstre.x)) refuser('le groupe des quatre onglets n’est pas à côté de « Monstre »');
   return observe;
 }
 

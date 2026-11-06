@@ -184,24 +184,28 @@ partagées : `src/components/outils/optimizer/constantes.ts` ; types :
 Au format bureau, `OptimizerSection` rend la page en colonnes
 ([02-app/optimizer/ecran/](../02-app/optimizer/ecran/README.md)) par `PageBureau`
 (`src/components/outils/optimizer/bureau/PageBureau.tsx`) : largeur de conteneur mesurée,
-quatre configurations (toutes les colonnes, Critères et groupe de deux, groupe de trois,
-deux piles), page à hauteur de fenêtre partout. Chaque colonne ou pile défile seule ;
+trois configurations (« Monstre », le groupe des trois onglets de réglages, large ou non, et
+les résultats ; ou « Monstre » et un groupe de quatre onglets, les résultats en dernier), page
+à hauteur de fenêtre partout. Le cadre de chaque colonne reste fixe, son contenu défile seul
+dedans ;
 les places, les seuils calculés et la résolution de l'onglet ouvert viennent de
 `src/lib/optimizerColonnes.ts`. Le groupe utilise `Onglets` de `src/ui/`, et son état reste
 local à `OptimizerSection`, guidages vers Critères et Options compris. Le téléphone
 garde la grille des cartes ci-dessus. Les boîtes de cette page vivent dans
 `src/components/outils/optimizer/bureau/` : la liste de
-travail (`ListeDeTravailBureau`) puis la fiche repliée (`ExemplaireBureau`) dans « Monstre » ;
-dans « Critères », le set de runes compact ou déplié (`SetDeRunesCompact`), les principales
+travail (`ListeDeTravailBureau`) puis la fiche repliée (`ExemplaireBureau`) dans « Monstre »,
+en onglets quand la place verticale manque (`hauteurListe.ts` : la hauteur laissée à la
+liste) ;
+dans l'onglet « Critères », le set de runes compact ou déplié (`SetDeRunesCompact`), les principales
 imposées (`PrincipalesImposeesBureau`), les conditions (`ConditionsBureau`), l'état du monstre
-réduit aux buffs et au lead (`EtatMonstreEssentiels`) ; dans la colonne
-« Artéfacts et relique », la carte des artéfacts et de la relique (`ArtefactsEtReliqueBureau`) et
-celle des meilleurs artéfacts (`MeilleursArtefactsBureau`) ; dans la colonne « Aura, exclusion,
-avancés », les sets d'aura (`SetsAuraBureau`), l'exclusion de runes (`ExclusionRunesBureau`) et les
-réglages avancés (`ReglagesAvancesBureau`), en ligne ; dans la colonne des résultats,
+réduit aux buffs et au lead (`EtatMonstreEssentiels`) ; dans l'onglet
+« Artéfacts », la carte des artéfacts et de la relique (`ArtefactsEtReliqueBureau`) et
+celle des meilleurs artéfacts (`MeilleursArtefactsBureau`) ; dans l'onglet « Options »,
+les sets d'aura (`SetsAuraBureau`), l'exclusion de runes (`ExclusionRunesBureau`) et les
+réglages avancés (`ReglagesAvancesBureau`), en ligne ; dans la colonne ou l'onglet des résultats,
 le bloc « Objectif et Rechercher » à une forme (`ObjectifEtRechercherBureau`),
 puis les résultats (`ResultatsBureau`, autour des composants des
-résultats plus bas). Elles se voient seules et assemblées dans les quatre configurations
+résultats plus bas). Elles se voient seules et assemblées dans les trois configurations
 dans la vue de développement `#/outils/optimizer/gabarits`
 (`src/components/outils/optimizer/gabarits/`, adresse dans `src/lib/optimizerGabarits.ts`) :
 [03-developpeur/vue-des-gabarits.md](../03-developpeur/vue-des-gabarits.md).

@@ -51,13 +51,29 @@ export async function testRenduOptimizerAlerteDefilement() {
 
     await page.mouse.move(0, 0);
     await icone.evaluate(e => (e as HTMLElement).blur());
-    await icone.focus();
+    // « Monstre » ne défile qu'en dernier recours : dans une fenêtre très
+    // basse, où les en-têtes et le minimum de la liste dépassent à eux seuls.
+    await page.setViewportSize({ width: 1440, height: 360 });
+    // La hauteur de la liste se recalcule à la mesure suivante : la bulle,
+    // ouverte avant, se fermerait au redimensionnement de la liste.
+    await page.waitForFunction(() => {
+      const colonne = document.querySelector<HTMLElement>('[data-zone="monstre"]');
+      const liste = colonne?.querySelector<HTMLElement>('[data-liste-membres]');
+      return !!colonne && !!liste && colonne.getBoundingClientRect().bottom <= innerHeight
+        && Math.abs(liste.getBoundingClientRect().height - parseFloat(liste.style.maxHeight)) <= 1;
+    });
+    await icone.scrollIntoViewIfNeeded();
+    // L'événement de défilement part à l'image suivante : la bulle, ouverte
+    // avant, se fermerait aussitôt. Le focus ne fait plus rien défiler.
+    await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+    await icone.evaluate(e => (e as HTMLElement).focus({ preventScroll: true }));
     await panneau.waitFor({ state: 'visible' });
     await finirAnimations(page);
-    const colonne = page.locator('[data-zone="monstre"]');
+    // Ce qui défile dans « Monstre » : son contenu, dans le cadre fixe.
+    const colonne = page.locator('[data-zone="monstre"] > [data-defilement]');
     const position = await colonne.evaluate(e => e.scrollTop);
     await colonne.evaluate(e => e.scrollBy(0, e.scrollTop >= e.scrollHeight - e.clientHeight - 1 ? -40 : 40));
-    await page.waitForFunction(avant => document.querySelector('[data-zone="monstre"]')!.scrollTop !== avant, position);
+    await page.waitForFunction(avant => document.querySelector('[data-zone="monstre"] > [data-defilement]')!.scrollTop !== avant, position);
     await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
     await finirAnimations(page);
     ok(await panneau.count() === 0, 'défilement de la colonne ancêtre : bulle fermée');

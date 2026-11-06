@@ -147,7 +147,9 @@ export function testRenduOptimizerMonstre() {
   const html = rendreOptimizer(AVEC_MONSTRE);
   const t = texteVisible(html);
   const b = boutons(html);
-  ok(/data-monstre-actif[^>]*>[\s\S]{0,400}?Devilmon/.test(html), 'le monstre choisi, sur la rangée du titre de la liste');
+  // Le monstre actif n'est plus affiché au bureau (décision de l'utilisateur) :
+  // la recherche prend toute la largeur de « Monstre ».
+  ok(!/data-monstre-actif/.test(html), 'le monstre choisi n’est plus affiché à côté de la recherche');
   // Tx critiq., Dgts critiq., RES et Précision s'écrivent toujours en total (`STATS_AVEC_BASE`).
   ok(t.includes('PV 1 500 +180 ATQ 700 +160 DEF 500 — VIT 101 +80 Tx critiq. 15% Dgts critiq. 113% RES 78% Précision 7%'),
     'ses stats : base et bonus de l\'équipement pour PV, ATQ, DEF et VIT, le total pour les autres');

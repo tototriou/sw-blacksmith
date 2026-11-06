@@ -1,54 +1,68 @@
-// Les quatre configurations du bureau et leur groupe d'onglets, calculés
-// sur la largeur du conteneur (docs/02-app/optimizer/ecran/README.md).
-// Monstre et résultats restent visibles ; les réglages se rangent de droite
-// à gauche. L'onglet est local à l'écran, hors recette et hors recherche.
+// Les configurations du bureau, calculées sur la largeur du conteneur
+// (docs/02-app/optimizer/ecran/README.md). ⚠️ Les trois réglages sont
+// TOUJOURS dans un seul groupe d'onglets (décision de l'utilisateur : trois
+// colonnes de réglages faisaient trop à l'écran pour un utilisateur
+// ordinaire), à côté de « Monstre » et des résultats. Quand la place le
+// permet, le groupe passe à son cran large, la largeur de « Monstre », ses
+// sections toujours l'une sous l'autre ; quand elle manque vraiment, l'objectif et les résultats
+// deviennent un quatrième onglet du groupe, qui prend toute la largeur à côté
+// de « Monstre » (décisions de l'utilisateur). L'onglet est local à l'écran,
+// hors recette et hors recherche.
 export type ColonneReglage = 'criteres' | 'artefacts' | 'complements';
-export type ConfigurationBureau = 'colonnes' | 'criteres-et-groupe' | 'groupe' | 'deux-piles';
+export type OngletBureau = ColonneReglage | 'resultats';
+export type ConfigurationBureau = 'groupe-large' | 'groupe' | 'quatre-onglets';
 
-// Des places : le panneau retire 8 px, la gouttière en ajoute 16, soit
-// 24 px entre panneaux. Les résultats comprennent leur barre réservée.
-export const LARGEURS_BUREAU = { monstre: 384, reglage: 320, resultats: 360, gouttiere: 16 } as const;
+// Des places : le panneau retire 8 px, la gouttière en ajoute 10, soit
+// 18 px entre panneaux (décision de l'utilisateur : des écarts plus
+// serrés). La barre de défilement est dans le panneau, dont le cadre ne
+// défile jamais : un panneau compte son contour (2), son rembourrage (2 × 8)
+// et la barre (8) autour de son contenu ; `reglage` garde ainsi 294 px de
+// contenu, et « Monstre » 358. Les résultats, sans place, prennent toute
+// leur piste. `reglageLarge` : la place de « Monstre » (décision de
+// l'utilisateur : les deux colonnes de même largeur).
+export const LARGEURS_BUREAU = { monstre: 392, reglage: 328, reglageLarge: 392, resultats: 360, gouttiere: 10 } as const;
 export const RETRAIT_PANNEAU = 8;
 const L = LARGEURS_BUREAU;
 const BASE = L.monstre + L.gouttiere + L.resultats;
 export const SEUILS_BUREAU = {
   groupe: BASE + L.gouttiere + L.reglage,
-  criteresEtGroupe: BASE + 2 * (L.gouttiere + L.reglage),
-  colonnes: BASE + 3 * (L.gouttiere + L.reglage),
+  groupeLarge: BASE + L.gouttiere + L.reglageLarge,
 } as const;
 
 export interface DispositionBureau {
   configuration: ConfigurationBureau;
-  colonnes: ColonneReglage[];
-  groupe: ColonneReglage[];
-  deuxPiles: boolean;
+  groupe: OngletBureau[];
+  // La place du groupe d'onglets à côté des résultats ; 0 quand les
+  // résultats sont un onglet : le groupe prend alors toute la largeur.
+  reglage: number;
 }
 
 // La largeur que les résultats demandent pour le tableau : sa largeur
 // minimale (`SEUIL_TABLEAU_PX`, TableauResultats.tsx, 661) plus ce que la
-// colonne des résultats ou la pile de droite prennent autour de la zone
-// (barre réservée 10, écart 4, panneau ou marges 18).
-export const RESULTATS_TABLEAU = 661 + 32;
+// colonne ou l'onglet des résultats prennent autour de la zone : contour 2,
+// rembourrage 2 × 8 et barre réservée de 8, dans le panneau
+// (bureau/panneau.ts, `DEFILEMENT`).
+export const RESULTATS_TABLEAU = 661 + 26;
 
-// Du plus large au plus étroit ; `reglages` : les pistes de 320 px prises à
-// côté de « Monstre » et des résultats (colonnes visibles, puis le groupe).
-const CONFIGURATIONS: { disposition: DispositionBureau; reglages: number; seuil: number }[] = [
-  { disposition: { configuration: 'colonnes', colonnes: ['criteres', 'artefacts', 'complements'], groupe: [], deuxPiles: false }, reglages: 3, seuil: SEUILS_BUREAU.colonnes },
-  { disposition: { configuration: 'criteres-et-groupe', colonnes: ['criteres'], groupe: ['artefacts', 'complements'], deuxPiles: false }, reglages: 2, seuil: SEUILS_BUREAU.criteresEtGroupe },
-  { disposition: { configuration: 'groupe', colonnes: [], groupe: ['criteres', 'artefacts', 'complements'], deuxPiles: false }, reglages: 1, seuil: SEUILS_BUREAU.groupe },
-  { disposition: { configuration: 'deux-piles', colonnes: [], groupe: ['criteres', 'artefacts', 'complements'], deuxPiles: true }, reglages: 0, seuil: 0 },
+const GROUPE: OngletBureau[] = ['criteres', 'artefacts', 'complements'];
+
+// Du plus large au plus étroit.
+const CONFIGURATIONS: { disposition: DispositionBureau; seuil: number }[] = [
+  { disposition: { configuration: 'groupe-large', groupe: GROUPE, reglage: L.reglageLarge }, seuil: SEUILS_BUREAU.groupeLarge },
+  { disposition: { configuration: 'groupe', groupe: GROUPE, reglage: L.reglage }, seuil: SEUILS_BUREAU.groupe },
+  { disposition: { configuration: 'quatre-onglets', groupe: [...GROUPE, 'resultats'], reglage: 0 }, seuil: 0 },
 ];
 
-// La largeur des résultats (colonne, ou pile de droite en deux piles).
+// La largeur des résultats (leur colonne, ou leur onglet).
 export function largeurResultats(largeur: number, configuration: ConfigurationBureau): number {
-  const c = CONFIGURATIONS.find((x) => x.disposition.configuration === configuration)!;
-  return largeur - L.monstre - L.gouttiere - c.reglages * (L.reglage + L.gouttiere);
+  const { reglage } = CONFIGURATIONS.find((x) => x.disposition.configuration === configuration)!.disposition;
+  return largeur - L.monstre - L.gouttiere - (reglage ? reglage + L.gouttiere : 0);
 }
 
-// `tableau` (le réglage « Résultats de l'Optimizer », Paramètres) : la page
-// range ses réglages cran par cran, deux piles comprises, jusqu'à laisser
-// `RESULTATS_TABLEAU` aux résultats. Aucune configuration ne le permet (trop
-// étroit) : celle de la largeur seule, et les résultats en cartes.
+// `tableau` (le réglage « Résultats de l'Optimizer », Paramètres) : la
+// configuration la plus large qui laisse `RESULTATS_TABLEAU` aux résultats.
+// Aucune ne le permet (trop étroit) : celle de la largeur seule, et les
+// résultats en cartes.
 export function configurationBureau(largeur: number, tableau = false): DispositionBureau {
   const possibles = CONFIGURATIONS.filter((c) => largeur >= c.seuil);
   if (tableau) {
@@ -58,9 +72,8 @@ export function configurationBureau(largeur: number, tableau = false): Dispositi
   return possibles[0].disposition;
 }
 
-// Un guidage vers une colonne déjà visible ne change pas le groupe.
-// Sans groupe, aucun onglet ; au retour d'un groupe, son premier onglet.
-export function ongletOuvert(groupe: readonly ColonneReglage[], precedent: ColonneReglage | null, guidage: ColonneReglage | null = null): ColonneReglage | null {
+// Un guidage ouvre son onglet ; sinon l'onglet précédent, ou le premier.
+export function ongletOuvert(groupe: readonly OngletBureau[], precedent: OngletBureau | null, guidage: OngletBureau | null = null): OngletBureau | null {
   if (guidage && groupe.includes(guidage)) return guidage;
   return precedent && groupe.includes(precedent) ? precedent : groupe[0] ?? null;
 }
