@@ -237,9 +237,11 @@ modifié.
   `unitId`.
 - RTA : la prépa RTA n'est pas une source, ni d'équipe ni d'équipement (décision de
   l'utilisateur) ; les équipes RTA se créent à la main ou depuis l'Optimizer.
-- Optimizer : une équipe d'une liste (ses membres, son leader, son speed tune) ou, sans
-  équipe, les membres d'une liste (1 à 6 au plus ; au-delà, refus avec sa raison). Une
-  source dont un membre ne se résout plus dans le compte est désactivée, avec sa raison.
+- Optimizer : une équipe d'une liste (ses membres, son leader, son speed tune), une à
+  la fois. **Jamais une liste entière** (décision de l'utilisateur) : une liste sans
+  équipe n'est pas une source ; sans aucune équipe, la source est désactivée, « Aucune
+  équipe dans l'Optimizer ». Une source dont un membre ne se résout plus dans le compte
+  est désactivée, avec sa raison.
 - Siège : le leader est le monstre du slot 0, et lui seul ; un slot 0 vide donne une
   équipe sans leader.
 - Guerre de guilde et PVE n'ont pas de source dans l'export de compte : leurs équipes

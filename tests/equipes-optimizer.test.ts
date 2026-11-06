@@ -142,6 +142,9 @@ function testEquipesOptimizerImport() {
   const sansDeux = { ...data, monsterById: new Map([...data.monsterById].filter(([k]) => k !== '2')) };
   const src2 = sourcesImportEquipes(ctx, { stockage: r.stockage, data: sansDeux }, inventaire(), 'pve', fr).find((x) => x.groupe === fr.equipes.imports.optimizer)!;
   egal(src2.raison, fr.equipes.retour.refus.membresIntrouvables, 'un membre introuvable désactive la source, avec sa raison');
+  // Jamais une liste entière : une liste sans équipe n'est pas une source.
+  const sansEquipe = sourcesImportEquipes(ctx, { stockage: { ...r.stockage, teams: [] }, data }, inventaire(), 'pve', fr).filter((x) => x.groupe === fr.equipes.imports.optimizer);
+  egal(sansEquipe.map((x) => [x.libelle, x.raison]), [['Optimizer', fr.equipes.imports.aucuneEquipe]], 'une liste sans équipe : aucune source, la raison le dit');
 }
 
 export const verificationsEquipesOptimizer: [string, () => void][] = [

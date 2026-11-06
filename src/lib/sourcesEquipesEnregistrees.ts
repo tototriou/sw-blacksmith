@@ -149,7 +149,7 @@ export function sourcesImportEquipes(
       creer: (id, tirerUid, maintenant) => equipeDepuisMembres(membres, onglet, libelle, provenance, ctx, id, tirerUid, maintenant) });
   }
 
-  // Optimizer : une équipe d'une liste, ou les membres d'une liste sans équipe.
+  // Optimizer : une équipe d'une liste.
   const st = optimizer?.stockage;
   if (!optimizer || !st || st.lists.length === 0) {
     res.push({ cle: 'optimizer', groupe: im.optimizer, libelle: im.optimizer, monstres: [], raison: im.aucuneListe, creer: () => null });
@@ -174,17 +174,14 @@ export function sourcesImportEquipes(
       const { lienOptimizer: _lien, ...equipe } = r.equipe;
       return { equipe: { ...equipe, modifieLe: maintenant.toISOString() }, ignores: 0 };
     };
-    if (equipes.length) equipes.forEach((e, i) => {
+    // Une équipe à la fois, jamais une liste entière (décision de l'utilisateur) :
+    // une liste sans équipe n'est pas une source.
+    equipes.forEach((e, i) => {
       const nom = im.equipeListe(liste.name, i + 1);
       res.push({ cle: `optimizer:${liste.id}:${e.id}`, groupe: im.optimizer, libelle: nom, monstres: especes(e.members), raison: raisonOptimizer(e.id), creer: creerDepuis(e.id, nom) });
     });
-    else {
-      const membres = st.members.filter((m) => m.listId === liste.id).map((m) => m.selector);
-      const nom = im.membresListe(liste.name);
-      res.push({ cle: `optimizer:${liste.id}`, groupe: im.optimizer, libelle: nom, monstres: especes(membres),
-        raison: membres.length === 0 ? im.aucunDeck : membres.length > MONSTRES_MAX_EQUIPE ? im.tropDeMembres : raisonOptimizer(null),
-        creer: creerDepuis(null, nom) });
-    }
   }
+  if (!res.some((x) => x.groupe === im.optimizer))
+    res.push({ cle: 'optimizer', groupe: im.optimizer, libelle: im.optimizer, monstres: [], raison: im.aucuneEquipe, creer: () => null });
   return res;
 }
