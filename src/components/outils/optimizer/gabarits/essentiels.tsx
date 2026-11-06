@@ -204,12 +204,12 @@ export const GABARITS_ESSENTIELS: Gabarit[] = [
     ],
   },
   {
-    id: 'etat', nom: 'État de mon monstre : buffs et lead', largeur: LARGEUR_COLONNE_ETROITE, hauteurEstimee: 186,
+    id: 'etat', nom: 'État de mon monstre : buffs et lead', largeur: 294, hauteurEstimee: 150,
     composant: 'EtatMonstreEssentiels (bureau/EtatMonstreEssentiels.tsx), composant à part',
     telephone: 'EtatMonstre (partagé) exporte son titre, son choix du lead et ses rappels, rendu inchangé ; le téléphone garde EtatMonstre entier.',
     changements: [
       'Réduit aux buffs et au lead ; « Sets d\'aura des autres monstres » passe en tête de la colonne « Aura, exclusion, avancés ».',
-      'Les trois vignettes de buff en colonne, à toute largeur de fenêtre, centrée dans la carte.',
+      'Le lead d’abord, sur une rangée : sa valeur à droite du type une fois le type choisi (comme au téléphone) ; les trois buffs ensemble dessous, sur toute la largeur.',
       'L\'aide du titre ne nomme plus les sets d\'aura et n\'a plus le paragraphe « Ce qui décrit le combat… ».',
       'Aux deux formats : plus de phrase « Lead effectif de l\'équipe : … » ni de motif « Le contenu de combat de la liste n\'est pas défini… ». Au bureau, le motif d\'un lead inactif ne paraît que s\'il existe, sous le lead, sans place réservée (le téléphone garde la sienne).',
     ],

@@ -113,8 +113,24 @@ export async function testRenduOptimizerGabaritsGestes() {
         largeurs: buffs.map((b) => Math.round(b.width)), statEntiere: stat.scrollWidth <= stat.clientWidth + 1 && stat.getBoundingClientRect().right <= section.right + 0.5,
       };
     });
-    ok(rangee.memeLigne && rangee.dedans, `état : les trois buffs sur une rangée, dans la sous-colonne (${rangee.largeurs.join(' / ')} px)`);
-    ok(rangee.statEntiere, 'état : la liste du lead n’est plus coupée, dans la sous-colonne');
+    ok(rangee.memeLigne && rangee.dedans, `état : les trois buffs sur une rangée, dans la section (${rangee.largeurs.join(' / ')} px)`);
+    ok(rangee.statEntiere, 'état : la liste du lead n’est plus coupée, dans la section');
+    // Le lead d'abord, sa valeur À DROITE du type une fois le type choisi,
+    // et les trois buffs ensemble dessous.
+    await page.getByRole('combobox', { name: 'Type de leader skill' }).selectOption({ index: 1 });
+    const disposition = await page.evaluate(() => {
+      const section = document.querySelector('section[aria-label="État de mon monstre"]')!.getBoundingClientRect();
+      const type = document.querySelector('[aria-label="Type de leader skill"]')!.getBoundingClientRect();
+      const valeur = document.querySelector('[aria-label="Valeur du leader skill"]')!.getBoundingClientRect();
+      const buffs = ['Buff ATQ', 'Buff DEF', 'Buff VIT'].map((n) => document.querySelector(`[aria-label^="${n}"]`)!.getBoundingClientRect());
+      return {
+        valeurADroite: valeur.left >= type.right && Math.abs(valeur.top - type.top) < 1,
+        dedans: valeur.right <= section.right + 0.5,
+        buffsDessous: buffs.every((b) => b.top >= Math.max(type.bottom, valeur.bottom) && Math.abs(b.top - buffs[0].top) < 1),
+      };
+    });
+    ok(disposition.valeurADroite && disposition.dedans && disposition.buffsDessous,
+      `état à 294 px : la valeur du lead à droite du type, dans la section, les trois buffs ensemble dessous (${JSON.stringify(disposition)})`);
   } finally { await browser.close(); }
 }
 

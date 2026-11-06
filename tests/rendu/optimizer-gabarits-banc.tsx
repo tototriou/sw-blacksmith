@@ -93,7 +93,9 @@ export async function monter(nom: 'set' | 'coffre' | 'principales' | 'etat' | 'e
     : nom === 'exemplaire' ? <div style={{ width: largeur }}><ExemplaireBanc /></div>
       : nom === 'objectif' ? <div style={{ width: largeur }}><ObjectifBanc /></div>
         : nom === 'page' ? <div style={{ width: largeur }}><PageBanc /></div>
-        : <div style={{ width: LARGEUR_COLONNE_ETROITE }}>{nom === 'etat' ? <EtatBanc /> : <PrincipalesBanc />}</div>;
+        // L'état, à la largeur d'une section du groupe de 328 px (294 px).
+        : nom === 'etat' ? <div style={{ width: largeur ?? 294 }}><EtatBanc /></div>
+        : <div style={{ width: LARGEUR_COLONNE_ETROITE }}><PrincipalesBanc /></div>;
   flushSync(() => r.render(<div style={{ padding: 24 }}>{contenu}</div>));
   await new Promise((fin) => setTimeout(fin, 50));
 }
