@@ -122,7 +122,7 @@ Ce document décrit les conditions, l'inventaire et les réglages avancés.
      pas l'aura propre. Les auras PV/ATQ/DEF ne comptent dans aucune
      condition. Les auras externes se saisissent dans « État de mon
      monstre » au téléphone, dans la carte « Sets d'aura des autres
-     monstres » de la colonne « Aura, exclusion, avancés » au bureau (voir
+     monstres » de l'onglet « Options » au bureau (voir
      etat-de-mon-monstre.md § Sets d'aura des autres monstres) ;
      `compterAurasResPre` se règle dans
      « Réglages avancés » (point 9 ci-dessous).

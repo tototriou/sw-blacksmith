@@ -7,28 +7,29 @@ import { colonnesCoffre } from '../src/lib/coffreSets';
 import { RESULTATS_TABLEAU, largeurResultats } from '../src/lib/optimizerColonnes';
 import { SEUIL_TABLEAU_PX } from '../src/components/outils/optimizer/TableauResultats';
 
-// Le réglage « Tableau » : la page range ses réglages, deux piles comprises,
-// jusqu'à laisser au tableau sa largeur ; trop étroit, la configuration de la
-// largeur seule (les résultats passent en cartes).
+// Le réglage « Tableau » : la configuration la plus large qui laisse au
+// tableau sa largeur ; trop étroit, celle de la largeur seule (les résultats
+// passent en cartes).
 export function testOptimizerColonnesTableau() {
   titre('Optimizer · configuration quand les résultats sont en tableau');
-  egal(RESULTATS_TABLEAU, SEUIL_TABLEAU_PX + 32, 'la largeur du tableau plus la barre, l’écart et le panneau');
+  egal(RESULTATS_TABLEAU, SEUIL_TABLEAU_PX + 26, 'la largeur du tableau plus le contour, le rembourrage et la barre du panneau');
   const cas: [number, string, string][] = [
-    [2288, 'colonnes', 'colonnes'], // 2560 plein
-    [2101, 'colonnes', 'colonnes'],
-    [2100, 'colonnes', 'criteres-et-groupe'],
-    [1840, 'colonnes', 'criteres-et-groupe'], // 1920 plein, barre repliée
-    [1648, 'criteres-et-groupe', 'groupe'], // 1920 plein
-    [1264, 'groupe', 'deux-piles'], // portable
-    [1112, 'groupe', 'deux-piles'], // 2560 scindé
-    [792, 'deux-piles', 'deux-piles'], // 1920 scindé : trop étroit, cartes
+    [2288, 'groupe-large', 'groupe-large'], // 2560 plein
+    [1648, 'groupe-large', 'groupe-large'], // 1920 plein
+    [1491, 'groupe-large', 'groupe-large'],
+    [1490, 'groupe-large', 'groupe'],
+    [1427, 'groupe-large', 'groupe'],
+    [1426, 'groupe-large', 'quatre-onglets'],
+    [1264, 'groupe-large', 'quatre-onglets'], // portable
+    [1112, 'groupe', 'quatre-onglets'], // 2560 scindé
+    [792, 'quatre-onglets', 'quatre-onglets'], // 1920 scindé : trop étroit, cartes
   ];
   for (const [largeur, cartes, tableau] of cas) {
     egal([configurationBureau(largeur).configuration, configurationBureau(largeur, true).configuration], [cartes, tableau],
       `${largeur} px : ${cartes} en cartes, ${tableau} en tableau`);
   }
-  ok(largeurResultats(1112, 'deux-piles') >= RESULTATS_TABLEAU && largeurResultats(792, 'deux-piles') < RESULTATS_TABLEAU,
-    '2560 scindé tient le tableau en deux piles, 1920 scindé jamais');
+  ok(largeurResultats(1112, 'quatre-onglets') >= RESULTATS_TABLEAU && largeurResultats(792, 'quatre-onglets') < RESULTATS_TABLEAU,
+    '2560 scindé tient le tableau dans son onglet, 1920 scindé jamais');
 }
 import { egal, ok, titre } from './outils';
 
@@ -49,41 +50,41 @@ export function testOptimizerColonnesCoffreSets() {
 
 export function testOptimizerColonnes() {
   titre('Optimizer · configuration des colonnes selon la largeur');
-  egal(LARGEURS_BUREAU, { monstre: 384, reglage: 320, resultats: 360, gouttiere: 16 }, 'places de la spec');
-  egal([LARGEUR_MONSTRE, LARGEUR_ARTEFACTS, LARGEUR_COMPLEMENTS], [384, 320, 320], 'les composants déclarent les mêmes places');
-  egal(RETRAIT_PANNEAU, 8, '16 + 8 = 24 entre panneaux');
-  egal(SEUILS_BUREAU, { groupe: 1096, criteresEtGroupe: 1432, colonnes: 1768 }, 'seuils calculés sur les places');
+  egal(LARGEURS_BUREAU, { monstre: 392, reglage: 328, reglageLarge: 392, resultats: 360, gouttiere: 10 }, 'places de la spec');
+  egal([LARGEUR_MONSTRE, LARGEUR_ARTEFACTS, LARGEUR_COMPLEMENTS], [392, 328, 328], 'les composants déclarent les mêmes places');
+  egal(RETRAIT_PANNEAU + LARGEURS_BUREAU.gouttiere, 18, '10 + 8 = 18 entre panneaux');
+  // La barre est dans le panneau : place − retrait 8 − contour 2 − rembourrage 2 × 8 − barre 8.
+  egal([LARGEURS_BUREAU.reglage - 34, LARGEURS_BUREAU.monstre - 34], [294, 358], 'contenus : 294 px dans le groupe, 358 dans « Monstre »');
+  egal(SEUILS_BUREAU, { groupe: 1100, groupeLarge: 1164 }, 'seuils calculés sur les places');
+  egal(LARGEURS_BUREAU.reglageLarge, LARGEURS_BUREAU.monstre, 'groupe large : la largeur de « Monstre »');
   const cas = [
-    [751, 'deux-piles'], [752, 'deux-piles'], [753, 'deux-piles'],
-    [1095, 'deux-piles'], [1096, 'groupe'], [1097, 'groupe'],
-    [1431, 'groupe'], [1432, 'criteres-et-groupe'], [1433, 'criteres-et-groupe'],
-    [1767, 'criteres-et-groupe'], [1768, 'colonnes'], [1769, 'colonnes'],
+    [751, 'quatre-onglets'], [752, 'quatre-onglets'], [753, 'quatre-onglets'],
+    [1099, 'quatre-onglets'], [1100, 'groupe'], [1101, 'groupe'],
+    [1163, 'groupe'], [1164, 'groupe-large'], [1165, 'groupe-large'], [2288, 'groupe-large'],
   ] as const;
   for (const [largeur, configuration] of cas) egal(configurationBureau(largeur).configuration, configuration, `${largeur} px : ${configuration}`);
-  egal(configurationBureau(752), { configuration: 'deux-piles', colonnes: [], groupe: ['criteres', 'artefacts', 'complements'], deuxPiles: true }, 'minimum de bureau : deux piles et groupe de trois');
-  egal(752 - LARGEURS_BUREAU.monstre - LARGEURS_BUREAU.gouttiere, 352, 'la pile de droite reçoit 352 px au minimum');
-  egal(configurationBureau(1096), { configuration: 'groupe', colonnes: [], groupe: ['criteres', 'artefacts', 'complements'], deuxPiles: false }, 'groupe de trois à côté des résultats');
-  egal(configurationBureau(1432), { configuration: 'criteres-et-groupe', colonnes: ['criteres'], groupe: ['artefacts', 'complements'], deuxPiles: false }, 'Critères puis groupe de deux');
-  egal(configurationBureau(1768), { configuration: 'colonnes', colonnes: ['criteres', 'artefacts', 'complements'], groupe: [], deuxPiles: false }, 'les cinq colonnes, aucun onglet');
+  egal(configurationBureau(752), { configuration: 'quatre-onglets', groupe: ['criteres', 'artefacts', 'complements', 'resultats'], reglage: 0 },
+    'minimum de bureau : l’objectif et les résultats deviennent le quatrième onglet');
+  egal(largeurResultats(752, 'quatre-onglets'), 350, 'l’onglet des résultats reçoit 350 px au minimum');
+  egal(configurationBureau(1100), { configuration: 'groupe', groupe: ['criteres', 'artefacts', 'complements'], reglage: 328 }, 'groupe de trois à côté des résultats');
+  egal(configurationBureau(1164), { configuration: 'groupe-large', groupe: ['criteres', 'artefacts', 'complements'], reglage: 392 }, 'groupe large dès que les résultats gardent 360 px');
+  egal([largeurResultats(1100, 'groupe'), largeurResultats(1164, 'groupe-large')], [360, 360], 'à chaque seuil, les résultats gardent leur largeur minimale');
+  // Décision de l'utilisateur : jamais de colonne de réglages, même très large.
   for (const [largeur] of cas) {
-    const d = configurationBureau(largeur);
-    ok(d.groupe.length !== 1, `${largeur} : jamais de groupe à un seul onglet`);
-    egal([...d.colonnes, ...d.groupe], ['criteres', 'artefacts', 'complements'], 'chaque réglage apparaît une seule fois, dans son ordre');
+    egal(configurationBureau(largeur).groupe.slice(0, 3), ['criteres', 'artefacts', 'complements'], `${largeur} px : les trois réglages en onglets, dans leur ordre`);
   }
 }
 
 export function testOptimizerColonnesOnglet() {
   titre('Optimizer · onglet gardé ou remplacé au redimensionnement');
-  const trois = configurationBureau(1264).groupe, deux = configurationBureau(1648).groupe;
+  const trois = configurationBureau(1264).groupe;
   egal(ongletOuvert(trois, null), 'criteres', 'premier onglet au départ');
-  egal(ongletOuvert(deux, null), 'artefacts', 'premier du groupe de deux au départ');
   egal(ongletOuvert(trois, 'complements'), 'complements', 'onglet précédent gardé');
-  egal(ongletOuvert(deux, 'criteres'), 'artefacts', 'Critères devenu colonne : premier du groupe');
-  egal(ongletOuvert(deux, 'complements'), 'complements', 'Options reste dans le groupe');
-  egal(ongletOuvert(trois, 'artefacts'), 'artefacts', 'le groupe agrandi conserve Artéfacts');
-  egal(ongletOuvert([], 'complements'), null, 'aucun groupe : aucun onglet');
-  egal(ongletOuvert(trois, ongletOuvert([], 'complements')), 'criteres', 'au retour du groupe : premier onglet');
-  egal(ongletOuvert(configurationBureau(792).groupe, 'complements'), 'complements', 'passer en deux piles garde Options');
+  egal(ongletOuvert(trois, 'artefacts'), 'artefacts', 'Artéfacts gardé');
+  egal(ongletOuvert(configurationBureau(792).groupe, 'complements'), 'complements', 'passer à quatre onglets garde Options');
+  egal(ongletOuvert(configurationBureau(2288).groupe, 'complements'), 'complements', 'agrandir la fenêtre garde Options');
+  egal(ongletOuvert(configurationBureau(792).groupe, 'resultats'), 'resultats', 'quatre onglets : Résultats gardé');
+  egal(ongletOuvert(configurationBureau(1264).groupe, 'resultats'), 'criteres', 'les résultats redevenus colonne : premier onglet');
   for (const largeur of [792, 1112, 1264, 1648, 2288]) {
     const groupe = configurationBureau(largeur).groupe;
     const avant = ongletOuvert(groupe, 'complements');
@@ -93,14 +94,12 @@ export function testOptimizerColonnesOnglet() {
 
 export function testOptimizerColonnesGuidages() {
   titre('Optimizer · guidages vers les réglages rangés');
-  const trois = configurationBureau(1264).groupe, deux = configurationBureau(1648).groupe;
+  const trois = configurationBureau(1264).groupe;
   egal(ongletOuvert(trois, 'artefacts', 'criteres'), 'criteres', 'Rechercher sans set ouvre Critères');
   egal(ongletOuvert(trois, 'criteres', 'complements'), 'complements', 'auras RES/PRE : Options');
-  egal(ongletOuvert(deux, 'artefacts', 'complements'), 'complements', 'guidage Options dans le groupe de deux');
-  egal(ongletOuvert(deux, 'complements', 'criteres'), 'complements', 'Critères déjà en colonne : aucun changement du groupe');
-  egal(ongletOuvert([], null, 'complements'), null, 'Options déjà en colonne : aucun onglet créé');
+  egal(ongletOuvert(configurationBureau(2288).groupe, 'artefacts', 'complements'), 'complements', 'guidage Options aussi en fenêtre large');
   egal(ongletOuvert(trois, 'complements', 'complements'), 'complements', 'un guidage ne referme jamais sa cible');
-  egal(ongletOuvert(configurationBureau(752).groupe, 'complements', 'criteres'), 'criteres', 'guidage vers le set aussi dans la pile');
+  egal(ongletOuvert(configurationBureau(752).groupe, 'resultats', 'criteres'), 'criteres', 'quatre onglets : Rechercher sans set quitte Résultats pour Critères');
 }
 
 export function testOptimizerColonnesAttenteResultats() {

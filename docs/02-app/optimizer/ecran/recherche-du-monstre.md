@@ -188,14 +188,23 @@ l'autre, sans carte commune :
    une rangée sans titre (décision de l'utilisateur : le champ prend la
    largeur ; « Liste active » nomme la liste juste au-dessus ; au
    téléphone, le titre reste « Monstres de « … » » et son compte) :
-   « Rechercher un monstre… » et le monstre actif (portrait et nom). ⚠️ **La place du monstre actif est réservée, vide ou
-   non**, de la largeur d'« Importer une équipe » au-dessus d'elle (lue sur
-   la page) : choisir un monstre ne déplace ni le champ ni la liste, et la
-   droite du champ s'aligne sur celle de la liste déroulante des listes
-   (décision de l'utilisateur).
-   Les membres prennent leur hauteur jusqu'à 308 px, comme au téléphone,
-   puis défilent pour garder les critères accessibles ;
-2. **« Exemplaire »**, sous la liste de travail (`ExemplaireBureau`) : les
+   « Rechercher un monstre… », seul, sur **toute la largeur de la
+   colonne** (décision de l'utilisateur). ⚠️ **Le monstre actif n'est plus
+   affiché au bureau**, ni à côté du champ ni ailleurs (décision de
+   l'utilisateur) : la carte du membre choisi, surlignée dans la liste, et
+   l'exemplaire le disent. Le téléphone garde le sien dans sa carte.
+   ⚠️ Les membres prennent la hauteur que « Monstre » leur laisse sous
+   ses en-têtes et au-dessus de l'exemplaire, sans borne fixe (décision de
+   l'utilisateur : une liste qui défilait à 308 px avec de la place libre
+   dessous ne va pas), puis défilent seuls ; jamais moins que la plus
+   petite équipe, trois monstres (ou la hauteur entière d'une liste plus
+   courte ; décision de l'utilisateur). Le téléphone garde sa borne de
+   308 px ;
+2. **« Exemplaire »**, sous la liste de travail (`ExemplaireBureau`) sur la
+   plupart des écrans, ou dans son onglet quand même une liste réduite à
+   trois monstres et lui ne tiennent pas ensemble en hauteur
+   (« Liste active » · « Exemplaire », voir
+   [README.md](README.md#défilement)) : les
    vues « Build actuel » · « Build validé », les puces d'aperçu, la zone D
    en flottant (300 px de haut au plus, qui défile), puis la fiche,
    dépliée à la façon des cartes de résultat ([equipement-actuel.md](equipement-actuel.md)).

@@ -11,15 +11,15 @@ import { fr } from '../../src/i18n/fr';
 export function verifierContratsBanc() {
   const optimizer = ECRANS.find((e) => e.id === 'optimizer')!;
   const tailles = taillesPour(optimizer);
-  egal(tailles.length, 18, 'Optimizer : téléphone, six repères de bureau et onze frontières');
+  egal(tailles.length, 15, 'Optimizer : téléphone, six repères de bureau et huit frontières');
   egal(new Set(tailles.map(t => t.id)).size, tailles.length, 'captures sans collision');
   for (const ecran of ECRANS.filter(e => e !== optimizer)) {
     egal(taillesPour(ecran).map(t => t.id), ['telephone', 'ordinateur'], `${ecran.id} garde ses deux tailles`);
   }
-  for (const configuration of ['colonnes', 'criteres-et-groupe', 'groupe', 'deux-piles']) {
+  for (const configuration of ['groupe-large', 'groupe', 'quatre-onglets']) {
     ok(tailles.some(t => t.optimizer?.configuration === configuration), `${configuration} exercée`);
   }
-  for (const largeur of [752, 753, 1095, 1096, 1097, 1431, 1432, 1433, 1767, 1768, 1769]) {
+  for (const largeur of [752, 753, 1099, 1100, 1101, 1163, 1164, 1165]) {
     ok(tailles.some(t => t.preparation?.some(e => 'largeurOptimizer' in e && e.largeurOptimizer === largeur)), `conteneur ${largeur} visé par mesure`);
   }
   for (const taille of tailles) {

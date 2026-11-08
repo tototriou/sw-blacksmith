@@ -11,7 +11,8 @@ import MonsterAvatar from '../../MonsterAvatar';
 import IconeInterdite from '../../IconeInterdite';
 import { WHEEL_IMG } from '../../RuneWheel';
 import GameIcon from '../../GameIcon';
-import { type Dispatch, type ReactNode, type SetStateAction } from 'react';
+import { useContext, type Dispatch, type ReactNode, type SetStateAction } from 'react';
+import { HauteurListeContext } from './bureau/hauteurListe';
 import { type EquipeOptimizer } from '../../../lib/optimizerMemberStorage';
 import { type UseOptimizerLists } from '../../../hooks/useOptimizerLists';
 import { type OptimizerState } from '../../../hooks/useOptimizerState';
@@ -70,6 +71,8 @@ export default function MonstresDeLaListe({ activeList, activeMembers, setEquipe
   // « Panneaux et sections ») ; chaque monstre garde sa propre carte. Le
   // téléphone garde aussi la carte de la liste.
   const bureau = enTete !== undefined;
+  // Au bureau, la hauteur que « Monstre » laisse à la liste (`PageBureau`).
+  const hauteurListe = useContext(HauteurListeContext);
   return (
     <div className={bureau ? 'relative' : 'rounded-lg border border-border-soft bg-panel2/60 p-2.5'}>
       {enTete ? (
@@ -95,9 +98,19 @@ export default function MonstresDeLaListe({ activeList, activeMembers, setEquipe
           {activeList ? z.listeVide : z.choisirListe}
         </p>
       ) : (
-        // Bornés à 308 px aux deux formats : la liste prend la hauteur de ses
+        // Au téléphone, bornés à 308 px : la liste prend la hauteur de ses
         // membres jusque-là, puis défile pour garder les critères accessibles.
-        <div className="mt-1 max-h-[308px] space-y-1 overflow-y-auto">
+        // ⚠️ Au bureau, aucune borne fixe : la liste prend au plus la hauteur
+        // que la colonne « Monstre » lui laisse (`HauteurListeContext`), et
+        // défile seule au-delà ; la colonne ne défile pas (décision de
+        // l'utilisateur).
+        // ⚠️ `relative` : la liste contient ses descendants en absolu (les
+        // textes `sr-only` des équipes et des membres). Sans elle, leur
+        // ancêtre positionné était la racine : la liste ne les rognait pas,
+        // et ceux des membres cachés sous son bas allongeaient la colonne
+        // « Monstre », qui défilait alors que tout semblait tenir.
+        <div data-liste-membres="" className={`relative mt-1 space-y-1 overflow-y-auto ${bureau ? '' : 'max-h-[308px]'}`}
+          style={bureau && hauteurListe != null ? { maxHeight: hauteurListe } : undefined}>
           {groupesMembres.filter(g => g.members.length > 0).map((g, numero) => {
             const membres = g.members.map(m => {
               const resolved = resolveExclusionEntry(m.selector, exclusionData);
@@ -148,7 +161,7 @@ export default function MonstresDeLaListe({ activeList, activeMembers, setEquipe
               // l'utilisateur : seules les couleurs du contour et du fond
               // changent, la carte ne bouge pas. ⚠️ Jamais le fond même de la
               // bande : la carte s'y fondait et semblait désélectionnée.
-              <div key={key} data-membre-optimizer={resolved?.monster.com2usId} aria-current={choisi || undefined}
+              <div key={key} data-carte-membre="" data-membre-optimizer={resolved?.monster.com2usId} aria-current={choisi || undefined}
                 className={`flex flex-wrap items-center gap-x-2 rounded-lg border px-2 py-1.5 ${!choisi ? 'border-border-soft bg-panel/60'
                   : g.equipe && numero % 2 === 1 ? 'border-equipe-b-trait bg-equipe-b-trait/25' : 'border-equipe-a-trait bg-equipe-a-trait/25'}`}>
                 <ZoneCliquable

@@ -1,14 +1,14 @@
 import { useCallback, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react';
 import { Onglets } from '../../../../ui';
-import { COIN_RACCORD, HAUT_FIXE, HAUT_FIXE_RACCORD, PANNEAU, SECTIONS, coinsDuPanneau } from './panneau';
-import { type PartieObjectif } from './ObjectifEtRechercherBureau';
+import { CADRE, COIN_RACCORD, DEFILEMENT, SECTIONS } from './panneau';
 import { SetDeplieContext } from './setDeplie';
-import { configurationBureau, ongletOuvert, LARGEURS_BUREAU, RETRAIT_PANNEAU, type ColonneReglage } from '../../../../lib/optimizerColonnes';
+import { HauteurListeContext, MIN_LISTE_BUREAU, hauteurEquipeMinimale } from './hauteurListe';
+import { configurationBureau, ongletOuvert, LARGEURS_BUREAU, RETRAIT_PANNEAU, SEUILS_BUREAU, type ColonneReglage, type OngletBureau } from '../../../../lib/optimizerColonnes';
 import { useTraduction } from '../../../../hooks/useLangue';
 
-// Bureau seulement : la largeur du conteneur décide des colonnes et du
-// groupe. Chaque colonne défile seule, ou les deux piles sous le seuil.
-// docs/02-app/optimizer/ecran/README.md, « Les quatre configurations ».
+// Bureau seulement : « Monstre », les réglages en un seul groupe d'onglets,
+// les résultats, ou un quatrième onglet sous le seuil ; chaque colonne défile
+// seule. docs/02-app/optimizer/ecran/README.md, « Les trois configurations ».
 const MARGE_BAS = 16;
 
 // Ce que la page reprend, à gauche et à droite, sur le rembourrage de ce qui
@@ -98,7 +98,7 @@ function useHauteurVisible(racine: RefObject<HTMLDivElement>): Mesure {
   return mesure;
 }
 
-export interface PresentationObjectif { cadre: boolean; partie: PartieObjectif }
+export interface PresentationObjectif { cadre: boolean }
 export interface PageBureauProps {
   liste: ReactNode;
   set: ReactNode;
@@ -113,8 +113,8 @@ export interface PageBureauProps {
   exemplaire: ReactNode;
   objectif: (presentation: PresentationObjectif) => ReactNode;
   resultats: ReactNode;
-  onglet: ColonneReglage | null;
-  onOnglet: (suivant: ColonneReglage | null) => void;
+  onglet: OngletBureau | null;
+  onOnglet: (suivant: OngletBureau | null) => void;
   rappelAuras: boolean;
   guideComplements?: number | null;
   guideCriteres?: number | null;
@@ -123,18 +123,19 @@ export interface PageBureauProps {
   tableau?: boolean;
 }
 
-export interface MesureColonne { boite: number; naturelle: number }
+// `boite` : la hauteur visible du contenu ; `naturelle` : celle qu'il prend.
+export interface MesureColonne { boite: number; naturelle: number; interieur: HTMLElement }
 
-// La boîte déborde de 6 px sur la gouttière : panneau (place - 8),
-// écart de 4, barre de 10. Sans débordement vertical, la barre est absente
-// mais le panneau garde sa largeur. Résultats : barre toujours réservée.
+// ⚠️ Le cadre de la colonne ne défile jamais (décision de l'utilisateur) : il
+// prend la hauteur de la colonne et sa place moins `RETRAIT_PANNEAU` (toute
+// la piste sans place), et son contenu défile À L'INTÉRIEUR (`DEFILEMENT`,
+// `data-defilement`), la barre dans le panneau.
 function Colonne({ place, children, surMesure, zone, colonne, raccord = false }: {
   place?: number; children: ReactNode; surMesure?: (mesure: MesureColonne) => void;
   zone?: string; colonne?: ColonneReglage; raccord?: boolean;
 }) {
   const boite = useRef<HTMLDivElement>(null);
   const interieur = useRef<HTMLDivElement>(null);
-  const [coins, setCoins] = useState<string>();
   const mesureRef = useRef(surMesure);
   mesureRef.current = surMesure;
   useLayoutEffect(() => {
@@ -142,13 +143,10 @@ function Colonne({ place, children, surMesure, zone, colonne, raccord = false }:
     if (!b || !i || typeof ResizeObserver === 'undefined') return;
     const lire = () => {
       const dernier = i.lastElementChild;
-      if (dernier) {
-        const s = getComputedStyle(i);
-        mesureRef.current?.({ boite: b.clientHeight, naturelle: dernier.getBoundingClientRect().bottom - i.getBoundingClientRect().top
-          + (parseFloat(s.paddingBottom) || 0) + (parseFloat(s.borderBottomWidth) || 0) });
-      }
+      if (!dernier) return;
       const s = getComputedStyle(i);
-      setCoins(coinsDuPanneau(i.getBoundingClientRect().width, parseFloat(s.borderTopRightRadius) || 0, parseFloat(s.borderTopLeftRadius) || 0));
+      mesureRef.current?.({ boite: b.clientHeight, naturelle: dernier.getBoundingClientRect().bottom - i.getBoundingClientRect().top
+        + (parseFloat(s.paddingBottom) || 0), interieur: i });
     };
     lire();
     const obs = new ResizeObserver(lire);
@@ -156,13 +154,13 @@ function Colonne({ place, children, surMesure, zone, colonne, raccord = false }:
     return () => obs.disconnect();
   }, [colonne]);
   return (
-    <div ref={boite} data-zone={zone} data-colonne={colonne}
-      className={`h-full min-h-0 min-w-0 overflow-y-auto overflow-x-hidden overscroll-contain ${place == null ? '[scrollbar-gutter:stable]' : ''}`}
-      style={{ width: place == null ? '100%' : place + 6, clipPath: coins }}>
-      <div ref={interieur}
-        style={{ width: place == null ? 'calc(100% - 4px)' : place - RETRAIT_PANNEAU }}
-        className={`flex min-h-full flex-col ${PANNEAU} ${raccord ? HAUT_FIXE_RACCORD : HAUT_FIXE} ${SECTIONS}`}>
-        {children}
+    <div data-zone={zone} data-colonne={colonne}
+      className={`h-full min-h-0 min-w-0 ${CADRE} ${raccord ? COIN_RACCORD : ''}`}
+      style={{ width: place == null ? '100%' : place - RETRAIT_PANNEAU }}>
+      <div ref={boite} data-defilement="" className={`${DEFILEMENT} ${raccord ? 'rounded-tl-none' : ''}`}>
+        <div ref={interieur} className={`flex min-h-full flex-col p-2 ${SECTIONS}`}>
+          {children}
+        </div>
       </div>
     </div>
   );
@@ -170,12 +168,12 @@ function Colonne({ place, children, surMesure, zone, colonne, raccord = false }:
 
 // La décision se reprend à hauteur ou écart changés, jamais à contenu changé :
 // choisir un set ou une principale ne replie pas la grille sous le pointeur.
-function useSetDeplie(autorise: boolean) {
-  const [deplie, setDeplie] = useState(false);
+// Déplié avant la mesure (rendu serveur, premier rendu) : la mesure, prise
+// avant le premier affichage, replie aussitôt s'il ne tient pas.
+function useSetDeplie() {
+  const [deplie, setDeplie] = useState(true);
   const deplieRendu = useRef(deplie);
   deplieRendu.current = deplie;
-  const autoriseRef = useRef(autorise);
-  autoriseRef.current = autorise;
   const ecart = useRef<number | null>(null);
   const derniere = useRef<MesureColonne | null>(null);
   const evaluee = useRef('');
@@ -183,56 +181,71 @@ function useSetDeplie(autorise: boolean) {
     const m = derniere.current;
     if (!m) return;
     const e = ecart.current;
-    const cle = `${Math.round(m.boite)}|${e == null ? '' : Math.round(e)}|${autoriseRef.current}`;
+    const cle = `${Math.round(m.boite)}|${e == null ? '' : Math.round(e)}`;
     if (cle === evaluee.current) return;
     evaluee.current = cle;
     const compacte = m.naturelle - (deplieRendu.current && e != null ? e : 0);
-    const cible = autoriseRef.current && e != null && compacte + e <= m.boite + 0.5;
+    const cible = e != null && compacte + e <= m.boite + 0.5;
     // `deplieRendu` ne suit que le rendu : une mesure prise avant que la
     // nouvelle forme soit dessinée se rapporte encore à l'ancienne.
     if (cible !== deplieRendu.current) setDeplie(cible);
   }, []);
-  // L'autorisation change même à hauteur égale au passage en deux piles.
-  useLayoutEffect(() => { decider(); }, [autorise, decider]);
   const surMesure = useCallback((m: MesureColonne) => { derniere.current = m; decider(); }, [decider]);
   const reporterEcart = useCallback((e: number) => { ecart.current = e; decider(); }, [decider]);
-  const contexte = useMemo(() => ({ deplie: autorise && deplie, reporterEcart }), [autorise, deplie, reporterEcart]);
+  const contexte = useMemo(() => ({ deplie, reporterEcart }), [deplie, reporterEcart]);
   return { contexte, surMesure };
 }
 
+export type OngletMonstre = 'liste' | 'exemplaire';
 
-
-// « Rechercher » reste à sa place dans le bloc, sans coller au bas de la pile
-// (décision de l'utilisateur). Le fond du panneau commence au bloc de
-// recherche, hors du flux.
-function PileDroite({ groupe, objectif, resultats }: {
-  groupe: ReactNode; objectif: PageBureauProps['objectif']; resultats: ReactNode;
-}) {
-  const reglages = useRef<HTMLDivElement>(null);
-  const bloc = useRef<HTMLDivElement>(null);
-  const fond = useRef<HTMLDivElement>(null);
-  useLayoutEffect(() => {
-    const r = reglages.current, b = bloc.current, f = fond.current;
-    if (!r || !b || !f || typeof ResizeObserver === 'undefined') return;
-    const mesurer = () => { f.style.top = `${b.offsetTop}px`; };
-    mesurer();
-    const obs = new ResizeObserver(mesurer);
-    obs.observe(r);
-    return () => obs.disconnect();
-  }, []);
-  return (
-    <div data-zone="pile-droite" className="h-full min-h-0 min-w-0 overflow-y-auto overflow-x-hidden overscroll-contain [scrollbar-gutter:stable]">
-      <div className="relative mr-1">
-        <div ref={fond} aria-hidden className={`pointer-events-none absolute inset-x-0 bottom-0 ${PANNEAU}`} />
-        <div ref={reglages} className="relative pb-6">{groupe}</div>
-        <div ref={bloc} data-zone="objectif" className="relative px-[9px] pt-[9px]">{objectif({ cadre: false, partie: 'reglages' })}</div>
-        <div data-zone="barre" className="relative px-[9px] py-2">{objectif({ cadre: false, partie: 'barre' })}</div>
-        <div className="relative px-[9px]">{objectif({ cadre: false, partie: 'progression' })}</div>
-        <div className="relative px-[9px] pb-[9px] pt-2"><div data-zone="resultats" className="min-w-0 border-t border-border-soft pt-2">{resultats}</div></div>
-      </div>
-    </div>
-  );
+// ⚠️ « Monstre » ne défile pas (décision de l'utilisateur). L'exemplaire
+// reste sous la liste tant qu'il tient sous une liste réduite à la plus
+// petite équipe, trois monstres (`hauteurEquipeMinimale`, ou la liste
+// entière si elle est plus courte) : sur la plupart des écrans, la liste
+// défile et l'exemplaire reste dessous. Seulement quand même ce minimum ne
+// tient pas, l'exemplaire passe dans un onglet (« Liste active » ·
+// « Exemplaire ») ; décisions de l'utilisateur.
+// Dans les deux formes, la liste des membres (`data-liste-membres`) prend au
+// plus la hauteur que le reste de la colonne lui laisse, jamais moins de ce
+// minimum, et défile seule au-delà (une liste très longue, même seule dans
+// son onglet) ; sous ce minimum, la colonne défile en dernier recours.
+// Stable : la liste changeant de hauteur, le contenu change d'autant.
+// ⚠️ Le passage aux onglets se fait dès que l'empilement ne tient plus ; le
+// retour, seulement quand la hauteur de la colonne change, jamais quand le
+// contenu rétrécit : retirer un membre ne fait pas remonter la liste sous le
+// pointeur (un clic ne déplace jamais ce qu'on vient de cliquer).
+function useMonstre(colonne: RefObject<HTMLDivElement>) {
+  const [enOnglets, setEnOnglets] = useState(false);
+  const [hauteurListe, setHauteurListe] = useState<number | null>(null);
+  const enOngletsRendu = useRef(enOnglets);
+  enOngletsRendu.current = enOnglets;
+  // Mesurés empilés : tout ce qui n'est pas la liste ; et, la liste
+  // affichée, sa hauteur minimale (une équipe de trois, ou elle entière).
+  const horsListe = useRef<number | null>(null);
+  const minimumListe = useRef<number | null>(null);
+  const hauteurEvaluee = useRef<number | null>(null);
+  const surMesure = useCallback(({ boite, naturelle, interieur }: MesureColonne) => {
+    const liste = interieur.querySelector<HTMLElement>('[data-liste-membres]');
+    const listeAffichee = !!interieur.querySelector('[data-liste-travail]');
+    const hauteur = liste?.getBoundingClientRect().height ?? 0;
+    if (listeAffichee) minimumListe.current = liste ? Math.min(hauteurEquipeMinimale(liste), liste.scrollHeight) : 0;
+    if (!enOngletsRendu.current) horsListe.current = naturelle - hauteur;
+    const suivante = liste ? Math.max(minimumListe.current ?? MIN_LISTE_BUREAU, Math.floor(boite - (naturelle - hauteur))) : null;
+    setHauteurListe(avant => avant === suivante ? avant : suivante);
+    const h = colonne.current?.getBoundingClientRect().height;
+    if (h == null || horsListe.current == null || minimumListe.current == null) return;
+    // Empilés, la liste réduite à son minimum et l'exemplaire tiennent dans
+    // le panneau (contour de 2 px).
+    const tient = horsListe.current + minimumListe.current <= h - 2 + 0.5;
+    const hauteurChangee = hauteurEvaluee.current == null || Math.round(h) !== hauteurEvaluee.current;
+    hauteurEvaluee.current = Math.round(h);
+    if (!tient && !enOngletsRendu.current) setEnOnglets(true);
+    else if (tient && enOngletsRendu.current && hauteurChangee) setEnOnglets(false);
+  }, [colonne]);
+  return { enOnglets, hauteurListe, surMesure };
 }
+
+
 
 export default function PageBureau(props: PageBureauProps) {
   const o = useTraduction().optimizer;
@@ -241,7 +254,10 @@ export default function PageBureau(props: PageBureauProps) {
   const racine = useRef<HTMLDivElement>(null);
   const { largeur, style } = useHauteurVisible(racine);
   const tableau = props.tableau ?? false;
-  const disposition = useMemo(() => configurationBureau(largeur ?? 752, tableau), [largeur, tableau]);
+  // Avant la mesure (rendu serveur, premier rendu) : le groupe de trois
+  // onglets, où l'objectif et les résultats restent à l'écran. La mesure, prise
+  // avant le premier affichage, corrige aussitôt.
+  const disposition = useMemo(() => configurationBureau(largeur ?? SEUILS_BUREAU.groupe, tableau), [largeur, tableau]);
   const actif = ongletOuvert(disposition.groupe, props.onglet);
   const { onOnglet, guideComplements, guideCriteres } = props;
   const courant = useRef({ groupe: disposition.groupe, actif });
@@ -255,81 +271,72 @@ export default function PageBureau(props: PageBureauProps) {
   useLayoutEffect(() => {
     if (guideCriteres != null) onOnglet(ongletOuvert(courant.current.groupe, courant.current.actif, 'criteres'));
   }, [guideCriteres, onOnglet]);
-  const setDeplie = useSetDeplie(!disposition.deuxPiles);
-  // En deux piles, la pile défile d'un bloc : la hauteur ne compte pas, le
-  // set est toujours déplié, et sa grille passe sur plus de lignes quand la
-  // pile se resserre.
-  const contextePile = useMemo(() => ({ deplie: true, reporterEcart: () => {} }), []);
+  // ⚠️ Dans chaque onglet, les sections restent l'une sous l'autre, quelle
+  // que soit la largeur du groupe (décision de l'utilisateur) : le groupe
+  // large et les quatre onglets élargissent la colonne, jamais en rangées.
+  // Le set s'y déplie selon la hauteur.
+  const setDeplie = useSetDeplie();
+  const colonneMonstre = useRef<HTMLDivElement>(null);
+  const monstre = useMonstre(colonneMonstre);
+  // L'onglet ouvert de « Monstre » : local à l'écran, la liste au départ.
+  const [ongletMonstre, setOngletMonstre] = useState<OngletMonstre>('liste');
+  const om = o.ongletsMonstre;
+  const voirListe = !monstre.enOnglets || ongletMonstre === 'liste';
+  const voirExemplaire = !monstre.enOnglets || ongletMonstre === 'exemplaire';
   const contenus: Record<ColonneReglage, ReactNode> = {
     criteres: <><SetDeplieContext.Provider value={setDeplie.contexte}>{props.set}</SetDeplieContext.Provider>{props.conditions}{props.principales}{props.etat}</>,
     artefacts: <>{props.artefacts}{props.meilleurs}</>,
     complements: <>{props.auras}{props.exclusion}{props.avances}</>,
   };
-  // En deux piles seulement, les sections se partagent les rangées tant que
-  // 294 px chacune tiennent, centrées dans le panneau ; chacune s'élargit pour
-  // remplir sa rangée sans s'étirer au-delà de 420 px. Leur ordre reste
-  // celui du DOM. ⚠️ Dans « Critères », la disposition tient plus étroit
-  // (décision de l'utilisateur) : le set se resserre à côté des Conditions,
-  // qui gardent leurs 294 px (sa grille perd des colonnes et s'allonge,
-  // `colonnesCoffre`, jusqu'à 155 px : 1 + 2 colonnes, le compartiment du
-  // set principal gardant la largeur de son titre), et les principales
-  // (160 px : « Slot n » et une liste dont le texte passe à la ligne) et
-  // l'état du monstre (176 px : ses trois vignettes de 56 px) restent côte à
-  // côte le plus longtemps possible (décision de l'utilisateur).
-  const section = (contenu: ReactNode, forme = 'min-w-[294px] flex-[1_1_294px]') => (
-    <div className={`${forme} max-w-[420px]`}>{contenu}</div>
-  );
-  // ⚠️ `px-2` : les lignes surlignées (une option avancée, le set refusé)
-  // débordent de 8 px de leur section (`-mx-2`, `-m-2`) ; sans cette marge,
-  // une section pleine largeur les faisait sortir de la pile.
-  const contenuPile = (cle: ColonneReglage) => (
-    <div data-colonne={cle} className="flex flex-wrap items-start justify-center gap-4 px-2">
-      {cle === 'criteres'
-        ? <>
-            {section(<SetDeplieContext.Provider value={contextePile}>{props.set}</SetDeplieContext.Provider>, 'min-w-[155px] flex-[1_1_155px]')}
-            {section(props.conditions, 'w-[294px] flex-none')}
-            {section(props.principales, 'min-w-[160px] flex-[1_1_160px]')}
-            {section(props.etat, 'min-w-[176px] flex-[1_1_176px]')}
-          </>
-        : cle === 'artefacts'
-          ? <>{section(props.artefacts)}{props.meilleurs && section(props.meilleurs)}</>
-          : <>{section(props.auras)}{section(props.exclusion)}{section(props.avances)}</>}
-    </div>
-  );
   // La ligne de base des onglets s'arrête au rayon du coin haut droit du
-  // panneau, qui la prolonge en arrondi (`HAUT_FIXE_RACCORD`, `COIN_RACCORD`).
+  // panneau, qui la prolonge en arrondi (`COIN_RACCORD`).
   const onglets = <Onglets aria-label={o.reglagesRecherche} valeur={actif ?? 'criteres'} className="pr-[var(--radius-xl)]"
     options={disposition.groupe.map(cle => ({ cle, ...noms[cle] }))} onChange={onOnglet} />;
-  // Comme une colonne fixe, le groupe prend 326 px dans sa piste de 320 :
-  // panneau 312 + écart 4 + barre 10, puis 10 px libres jusqu'à la piste
-  // suivante. Son tabpanel doit offrir toute cette largeur au défilement.
+  // L'objectif, « Rechercher » et les résultats : leur colonne, ou leur
+  // onglet quand la place manque.
+  const resultats = <><div data-zone="objectif">{props.objectif({ cadre: false })}</div><div>{props.resultats}</div></>;
+  const contenuOnglet = (cle: OngletBureau) =>
+    cle === 'resultats' ? resultats : contenus[cle];
+  // Comme une colonne fixe, le groupe prend sa place moins le retrait, la
+  // rangée des onglets à la largeur du panneau. Sans place (quatre onglets),
+  // il prend la largeur de sa piste.
+  const place = disposition.reglage || undefined;
   const groupe = actif && (
-    <div data-zone="onglets" className={disposition.deuxPiles ? '' : 'flex h-full min-h-0 flex-col'}
-      style={disposition.deuxPiles ? undefined : { width: LARGEURS_BUREAU.reglage + 6 }}>
-      <div className="flex-none" style={disposition.deuxPiles ? undefined : { width: LARGEURS_BUREAU.reglage - RETRAIT_PANNEAU }}>{onglets}</div>
-      {disposition.deuxPiles
-        ? <div role="tabpanel" aria-label={noms[actif].title} className={`${PANNEAU} ${COIN_RACCORD}`}>{contenuPile(actif)}</div>
-        : <div role="tabpanel" aria-label={noms[actif].title} className="min-h-0 flex-1">
-            <Colonne place={LARGEURS_BUREAU.reglage} colonne={actif} raccord surMesure={actif === 'criteres' ? setDeplie.surMesure : undefined}>{contenus[actif]}</Colonne>
-          </div>}
+    <div data-zone="onglets" className="flex h-full min-h-0 min-w-0 flex-col" style={place ? { width: place - RETRAIT_PANNEAU } : undefined}>
+      <div className="flex-none">{onglets}</div>
+      <div role="tabpanel" aria-label={noms[actif].title} className="min-h-0 flex-1">
+        <Colonne key={actif} place={place} raccord
+          colonne={actif === 'resultats' ? undefined : actif} zone={actif === 'resultats' ? 'resultats' : undefined}
+          surMesure={actif === 'criteres' ? setDeplie.surMesure : undefined}>
+          {contenuOnglet(actif)}
+        </Colonne>
+      </div>
     </div>
   );
-  const pistes = disposition.deuxPiles ? [] : [...disposition.colonnes, ...(disposition.groupe.length ? ['groupe'] : [])];
+  const pistes = place ? `${place}px minmax(0,1fr)` : 'minmax(0,1fr)';
   return (
     <div ref={racine} className="-mx-3 @container" style={style} data-configuration={largeur != null ? disposition.configuration : undefined} data-page-fenetre="">
       <p className="sr-only" aria-live="polite">{props.rappelAuras ? o.auras.rappel : ''}</p>
-      <div className="grid h-full min-h-0 gap-4" style={{ gridTemplateColumns: `${LARGEURS_BUREAU.monstre}px ${pistes.map(() => `${LARGEURS_BUREAU.reglage}px `).join('')}minmax(0,1fr)` }}>
-        <Colonne place={LARGEURS_BUREAU.monstre} zone="monstre"><div>{props.liste}</div><div data-zone="exemplaire">{props.exemplaire}</div></Colonne>
-        {disposition.colonnes.map(cle => <Colonne key={cle} place={LARGEURS_BUREAU.reglage} colonne={cle} surMesure={cle === 'criteres' ? setDeplie.surMesure : undefined}>{contenus[cle]}</Colonne>)}
-        {!disposition.deuxPiles && groupe}
-        {disposition.deuxPiles ? (
-          <PileDroite groupe={groupe} objectif={props.objectif} resultats={props.resultats} />
-        ) : (
-          <Colonne zone="resultats">
-            <div data-zone="objectif">{props.objectif({ cadre: false, partie: 'tout' })}</div>
-            <div>{props.resultats}</div>
-          </Colonne>
-        )}
+      <div className="grid h-full min-h-0" style={{ gap: LARGEURS_BUREAU.gouttiere, gridTemplateColumns: `${LARGEURS_BUREAU.monstre}px ${pistes}` }}>
+        {/* ⚠️ « Monstre » ne défile pas : empilé, ou en onglets (`useMonstre`).
+            Les deux sections gardent leur clé : passer aux onglets ne remonte
+            ni la liste ni l'exemplaire. */}
+        <div ref={colonneMonstre} className="flex h-full min-h-0 min-w-0 flex-col" style={{ width: LARGEURS_BUREAU.monstre - RETRAIT_PANNEAU }}>
+          {monstre.enOnglets && (
+            <div className="flex-none">
+              <Onglets aria-label={om.nom} valeur={ongletMonstre} className="pr-[var(--radius-xl)]"
+                options={(['liste', 'exemplaire'] as const).map(cle => ({ cle, ...om[cle] }))} onChange={setOngletMonstre} />
+            </div>
+          )}
+          <div role={monstre.enOnglets ? 'tabpanel' : undefined} aria-label={monstre.enOnglets ? om[ongletMonstre].title : undefined} className="min-h-0 flex-1">
+            <Colonne place={LARGEURS_BUREAU.monstre} zone="monstre" raccord={monstre.enOnglets} surMesure={monstre.surMesure}>
+              {voirListe && <div key="liste" data-liste-travail=""><HauteurListeContext.Provider value={monstre.hauteurListe}>{props.liste}</HauteurListeContext.Provider></div>}
+              {voirExemplaire && <div key="exemplaire" data-zone="exemplaire">{props.exemplaire}</div>}
+            </Colonne>
+          </div>
+        </div>
+        {groupe}
+        {place && <Colonne zone="resultats">{resultats}</Colonne>}
       </div>
     </div>
   );

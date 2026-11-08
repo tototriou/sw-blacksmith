@@ -19,8 +19,8 @@ async function transition(nom: string, telephone = false, largeurBureau?: number
       const disposition = await page.locator('[data-configuration]').evaluate(el => ({
         largeur: el.getBoundingClientRect().width, configuration: el.getAttribute('data-configuration'),
       }));
-      ok(disposition.largeur >= 1768 && disposition.configuration === 'colonnes',
-        `écran monté : conteneur de ${Math.round(disposition.largeur)} px, configuration ${disposition.configuration}, toutes les colonnes attendues`);
+      ok(disposition.largeur >= 1768 && disposition.configuration === 'groupe-large',
+        `écran monté : conteneur de ${Math.round(disposition.largeur)} px, configuration ${disposition.configuration}, les réglages en onglets`);
     }
     ok(preuves.length > 0, 'scénario exécuté avec de vrais hooks et un écran monté');
     for (const [condition, texte] of preuves) ok(condition, texte);
@@ -41,8 +41,7 @@ export const testRenduMemoireOptimizerSaisies = () => transition('saisies');
 export const testRenduMemoireOptimizerAutomatismes = () => transition('automatismes');
 export const testRenduMemoireOptimizerRappelAurasDestination = () => transition('auras-destination');
 export const testRenduTelephoneMemoireOptimizerRappelAurasDestination = () => transition('auras-destination', true);
-export const testRenduMemoireOptimizerZoneC = () => transition('zone-c');
-export const testRenduTelephoneMemoireOptimizerZoneC = () => transition('zone-c', true);
+export const testRenduMemoireOptimizerZoneC = () => transition('zone-c');export const testRenduTelephoneMemoireOptimizerZoneC = () => transition('zone-c', true);
 export const testRenduMemoireOptimizerListeInactive = () => transition('liste-inactive');
 export const testRenduMemoireOptimizerRecetteSansSelection = () => transition('recette-sans-selection');
 export const testRenduMemoireOptimizerGlobauxAvantRestauration = () => transition('globaux-restauration');

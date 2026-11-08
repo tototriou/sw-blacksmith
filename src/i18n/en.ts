@@ -1859,8 +1859,14 @@ export const en: Dictionnaire = {
       criteres: { libelle: 'Criteria', title: 'Search criteria' },
       artefacts: { libelle: 'Artifacts', title: 'Artifacts and relic' },
       complements: { libelle: 'Options', title: 'Aura, exclusion, advanced' },
+      resultats: { libelle: 'Results', title: 'Objective and results' },
     },
     reglagesRecherche: 'Search settings',
+    ongletsMonstre: {
+      nom: 'List and copy',
+      liste: { libelle: 'Active list', title: 'Working list' },
+      exemplaire: { libelle: 'Copy', title: 'Copy and build' },
+    },
     objectifs: { efficience: 'Efficiency', degats_reels: 'Real damage', ehp: 'Effective HP', vitesse: 'Speed' },
     prereglages: {
       bas: { libelle: 'Low', aide: 'Fast, but may miss runes if you have many in the same slot.' },

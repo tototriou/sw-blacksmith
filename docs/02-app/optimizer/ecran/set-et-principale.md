@@ -84,10 +84,9 @@ Ce document décrit le choix du set de runes et des statistiques principales imp
      libellé (décision de l'utilisateur : il faisait doublon), tant que
      « Critères » (sa colonne, ou le panneau du groupe d'onglets) tient sans
      défiler une fois dépliée ; compacte sinon (`useSetDeplie`,
-     `PageBureau.tsx` ; contexte `setDeplie.ts`). Décision de l'utilisateur.
-     ⚠️ **En deux piles**, où la pile de droite défile d'un bloc, la hauteur
-     ne compte pas : toujours dépliée (décision de l'utilisateur).
-     La page décide sur la hauteur de la boîte de « Critères » et sur ce
+     `PageBureau.tsx` ; contexte `setDeplie.ts`), dans les trois
+     configurations, où « Critères » reste une colonne de sections. Décision
+     de l'utilisateur. La page décide sur la hauteur de la boîte de « Critères » et sur ce
      que le dépli ajoute (mesuré sur deux copies invisibles, liste fermée
      et grille vide, indépendant des sets choisis) : jamais sur un clic, et
      elle ne redécide que si cette hauteur, cet écart ou la configuration

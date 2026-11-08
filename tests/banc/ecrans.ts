@@ -41,13 +41,13 @@ export interface Taille extends DefinitionFormat {
   format: Format;
   preparation?: Etape[];
   optimizer?: {
-    configuration: 'colonnes' | 'criteres-et-groupe' | 'groupe' | 'deux-piles';
+    configuration: 'groupe-large' | 'groupe' | 'quatre-onglets';
     conteneur: [number, number];
     groupe: string[];
     set?: 'compact' | 'deplie';
     volet?: true;
     /** La configuration que la page choisit quand les résultats sont en tableau. */
-    enTableau?: { configuration: 'colonnes' | 'criteres-et-groupe' | 'groupe' | 'deux-piles'; groupe: string[] };
+    enTableau?: { configuration: 'groupe-large' | 'groupe' | 'quatre-onglets'; groupe: string[] };
   };
 }
 
@@ -222,6 +222,9 @@ const onglet = (nom: string): Cible => ({ role: 'tab', nom, dans: '[role="tablis
 const choisirReglage = (nom: string, colonne: string): Etape => ({
   cliquer: onglet(nom), sinonPresent: repere(`[data-colonne="${colonne}"]`),
 });
+// Quatre onglets : l'objectif, « Rechercher » et les résultats sont dans
+// l'onglet « Résultats » ; ailleurs, dans leur colonne, déjà à l'écran.
+const VOIR_RESULTATS: Etape = { cliquer: onglet('Résultats'), sinonPresent: repere('[data-zone="resultats"]') };
 const OPT_LISTE: Etape[] = [
   { cliquer: bouton('Aucune liste — choisir ou créer') },
   { cliquer: bouton('Nouvelle liste…') },
@@ -240,7 +243,7 @@ const OPT_IMPORT: Etape = {
   confirme: { role: 'texte', nom: 'Réglages importés pour Cassie — monstre sélectionné automatiquement.' },
 };
 const OPT_RESULTATS: Etape[] = [
-  ...OPT_LISTE, OPT_IMPORT,
+  ...OPT_LISTE, VOIR_RESULTATS, OPT_IMPORT,
   { cliquer: bouton('Rechercher') },
   { attendre: repere('[data-carte-resultat]:nth-child(2)'), delaiMs: 30000 },
   { attendre: bouton('Rechercher'), delaiMs: 30000 },
@@ -250,7 +253,7 @@ const OPT_RESULTATS: Etape[] = [
 // les cartes sinon.
 const RESULTAT_2 = '[data-carte-resultat]:nth-child(2), [data-tableau-resultats] tbody tr:nth-child(2)';
 const OPT_RESULTATS_FORME: Etape[] = [
-  ...OPT_LISTE, OPT_IMPORT,
+  ...OPT_LISTE, VOIR_RESULTATS, OPT_IMPORT,
   { cliquer: bouton('Rechercher') },
   { attendre: repere(RESULTAT_2), delaiMs: 30000 },
   { attendre: bouton('Rechercher'), delaiMs: 30000 },
@@ -267,20 +270,22 @@ function tailleOptimizer(id: string, largeur: number, hauteur: number, optimizer
 
 // Les cinq repères de la spec, navigation dépliée ; les seuils se jugent
 // sur le conteneur. Les cas de frontière ajustent la fenêtre par mesure.
+// Les trois réglages sont toujours en onglets : le groupe large dès 1 164,
+// le groupe dès 1 100, sinon les quatre onglets (l'objectif et les résultats
+// en quatrième) ; en tableau, la configuration la plus large qui laisse 687 px
+// aux résultats (1 491, 1 427, 1 089), sinon celle de la largeur seule
+// (tests/banc/contrats.ts confronte ces seuils à
+// `configurationBureau(largeur, true)`).
 type Configuration = NonNullable<Taille['optimizer']>['configuration'];
 const groupeDe = (configuration: Configuration) =>
-  configuration === 'colonnes' ? [] : configuration === 'criteres-et-groupe' ? ['Artéfacts', 'Options'] : ['Critères', 'Artéfacts', 'Options'];
+  configuration === 'quatre-onglets' ? ['Critères', 'Artéfacts', 'Options', 'Résultats'] : ['Critères', 'Artéfacts', 'Options'];
 function attenduOptimizer(largeur: number, volet = false): NonNullable<Taille['optimizer']> {
-  const configuration = largeur >= 1768 ? 'colonnes' : largeur >= 1432 ? 'criteres-et-groupe' : largeur >= 1096 ? 'groupe' : 'deux-piles';
-  // En tableau, la page range ses réglages jusqu'à laisser 693 px aux
-  // résultats : d'autres seuils (tests/banc/contrats.ts les confronte à
-  // `configurationBureau(largeur, true)`).
-  const tableau = largeur >= 2101 ? 'colonnes' : largeur >= 1765 ? 'criteres-et-groupe' : largeur >= 1429 ? 'groupe' : 'deux-piles';
+  const configuration = largeur >= 1164 ? 'groupe-large' : largeur >= 1100 ? 'groupe' : 'quatre-onglets';
+  const tableau = largeur >= 1491 ? 'groupe-large' : largeur >= 1427 ? 'groupe' : largeur >= 1089 ? 'quatre-onglets' : configuration;
   return {
     configuration, conteneur: [largeur, largeur + 1],
     groupe: groupeDe(configuration),
-    // En deux piles, le set est toujours déplié.
-    ...(configuration === 'deux-piles' ? { set: 'deplie' as const } : {}),
+    // Le set se déplie selon la hauteur, dans toutes les configurations.
     ...(volet ? { volet: true as const } : {}),
     enTableau: { configuration: tableau, groupe: groupeDe(tableau) },
   };
@@ -289,17 +294,18 @@ export const TAILLES_OPTIMIZER: Taille[] = [
   TAILLES_PAR_DEFAUT[0],
   tailleOptimizer('ordinateur', 1400, 1000, attenduOptimizer(1128)),
   tailleOptimizer('bureau-portable', 1536, 730, attenduOptimizer(1264)),
-  tailleOptimizer('bureau-criteres-groupe', 1920, 940, attenduOptimizer(1648)),
-  tailleOptimizer('bureau-colonnes', 2560, 1300, attenduOptimizer(2288)),
-  tailleOptimizer('volet-deux-piles', 1920, 940, attenduOptimizer(792, true)),
+  tailleOptimizer('bureau-1920', 1920, 940, attenduOptimizer(1648)),
+  tailleOptimizer('bureau-2560', 2560, 1300, attenduOptimizer(2288)),
+  tailleOptimizer('volet-quatre-onglets', 1920, 940, attenduOptimizer(792, true)),
   tailleOptimizer('volet-groupe', 2560, 1300, attenduOptimizer(1112, true)),
-  ...[752, 753, 1095, 1096, 1097, 1431, 1432, 1433, 1767, 1768, 1769].map(largeur => ({
+  ...[752, 753, 1099, 1100, 1101, 1163, 1164, 1165].map(largeur => ({
     ...tailleOptimizer(`conteneur-${largeur}`, largeur + 272, 940, attenduOptimizer(largeur)),
     preparation: [{ largeurOptimizer: largeur }],
   })),
 ];
 const OPT_BUREAU = TAILLES_OPTIMIZER.filter(t => t.format === 'ordinateur').map(t => t.id);
-const OPT_TOUTES = TAILLES_OPTIMIZER.filter(t => t.optimizer?.configuration === 'colonnes').map(t => t.id);
+// Les tailles où les résultats ont leur colonne, à côté des réglages ouverts.
+const OPT_COLONNE_RESULTATS = TAILLES_OPTIMIZER.filter(t => t.format === 'ordinateur' && t.optimizer?.configuration !== 'quatre-onglets').map(t => t.id);
 // Le set compact : « Critères » trop basse pour le déplier (fenêtre de 730 px).
 const OPT_COMPACTS = ['bureau-portable'];
 
@@ -405,7 +411,10 @@ export const ECRANS: Ecran[] = [
         // Choisir l'objectif « Dégâts réels » ouvre la fenêtre du combat
         // (OptimizerSection.tsx, `setSetupOuvert(true)`). Sans monstre
         // choisi, elle ne dit que « aucun sort calculable ».
-        preparation: [{ cliquer: OBJECTIF_DEGATS_REELS }],
+        preparation: {
+          telephone: [{ cliquer: OBJECTIF_DEGATS_REELS }],
+          ordinateur: [VOIR_RESULTATS, { cliquer: OBJECTIF_DEGATS_REELS }],
+        },
         atteint: [{ role: 'dialog', nom: 'Dégâts réels' }],
       },
       {
@@ -415,7 +424,7 @@ export const ECRANS: Ecran[] = [
         // fenêtre montre alors le sort, l'adversaire et le critique.
         preparation: {
           telephone: [{ cliquer: bouton('Gérer mes listes') }, ...OPT_LISTE, { cliquer: OBJECTIF_DEGATS_REELS }],
-          ordinateur: [...OPT_LISTE, { cliquer: OBJECTIF_DEGATS_REELS }],
+          ordinateur: [...OPT_LISTE, VOIR_RESULTATS, { cliquer: OBJECTIF_DEGATS_REELS }],
         },
         // « Non critique » n'existe que dans la fenêtre remplie (choix du
         // traitement du critique) : sans sort, elle n'en a pas.
@@ -446,30 +455,25 @@ export const ECRANS: Ecran[] = [
         atteint: [...OPT_CARTES, { role: 'dialog', nom: "Filtrer l'affichage" }],
       },
       {
-        id: 'artefacts', libelle: 'résultats et colonne Artéfacts et relique ouverte', tailles: OPT_BUREAU,
+        id: 'artefacts', libelle: 'résultats et onglet Artéfacts ouvert', tailles: OPT_COLONNE_RESULTATS,
         preparation: [...OPT_RESULTATS, choisirReglage('Artéfacts', 'artefacts')],
         atteint: [...OPT_CARTES, repere('[data-colonne="artefacts"]')],
       },
       {
-        id: 'complements', libelle: 'résultats et colonne Aura, exclusion, avancés ouverte', tailles: OPT_BUREAU,
+        id: 'complements', libelle: 'résultats et onglet Options ouvert', tailles: OPT_COLONNE_RESULTATS,
         preparation: [...OPT_RESULTATS, choisirReglage('Options', 'complements')],
         atteint: [...OPT_CARTES, repere('[data-colonne="complements"]'), { role: 'switch', nom: "Rechercher jusqu'à épuisement complet" }],
       },
       {
-        id: 'toutes-colonnes', libelle: 'résultats et trois colonnes de réglages', tailles: OPT_TOUTES,
-        preparation: OPT_RESULTATS,
-        atteint: [...OPT_CARTES, repere('[data-colonne="artefacts"]'), repere('[data-colonne="complements"]')],
-      },
-      {
         id: 'guidage-set', libelle: 'Rechercher sans set ouvre Critères et montre le set', tailles: OPT_BUREAU,
-        preparation: [...OPT_LISTE, choisirReglage('Options', 'complements'), { cliquer: bouton('Rechercher') }],
+        preparation: [...OPT_LISTE, choisirReglage('Options', 'complements'), VOIR_RESULTATS, { cliquer: bouton('Rechercher') }],
         atteint: [repere('[data-colonne="criteres"]'), { role: 'texte', nom: 'Sélectionne au moins un set avant de lancer la recherche.' }],
       },
       {
-        // « Rechercher » ne colle plus au bas : on fait défiler la pile jusqu'à lui.
-        id: 'pile-defilee', libelle: 'pile de droite défilée jusqu’à Rechercher', tailles: TAILLES_OPTIMIZER.filter(t => t.optimizer?.configuration === 'deux-piles').map(t => t.id),
-        preparation: [...OPT_LISTE, choisirReglage('Options', 'complements'), { montrer: bouton('Rechercher') }],
-        atteint: [repere('[data-zone="pile-droite"]'), bouton('Rechercher')],
+        // Quatre onglets : depuis Options, l'onglet Résultats montre l'objectif et « Rechercher ».
+        id: 'onglet-resultats', libelle: 'quatre onglets, onglet Résultats ouvert', tailles: TAILLES_OPTIMIZER.filter(t => t.optimizer?.configuration === 'quatre-onglets').map(t => t.id),
+        preparation: [...OPT_LISTE, choisirReglage('Options', 'complements'), VOIR_RESULTATS],
+        atteint: [repere('[data-zone="resultats"]'), bouton('Rechercher')],
       },
       {
         id: 'set-flottant', libelle: 'liste remplie et coffre du set compact ouvert', tailles: OPT_COMPACTS,
