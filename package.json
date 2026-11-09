@@ -4,7 +4,7 @@
   "version": "2.3.0",
   "type": "module",
   "main": "dist-bureau/main.cjs",
-  "description": "SW Blacksmith — boîte à outils Summoners War : siège, RTA, runes et analyse de compte. 100 % local, aucune donnée envoyée.",
+  "description": "SW Blacksmith — boîte à outils Summoners War : siège, RTA, runes et analyse de compte. local par défaut, rien n'est envoyé sans ton accord.",
   "author": "SW Blacksmith",
   "engines": {
     "node": ">=24"

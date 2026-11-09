@@ -1,8 +1,9 @@
 # SW Blacksmith — guide agents & contributeurs
 
 Boîte à outils **Summoners War** : préparation RTA et siège, exploration du compte, Optimizer de
-runes, speed tuning, dégâts réels. **100 % local** : une app web sans serveur, qui lit un export de
-compte dans le navigateur et n'envoie rien. La même app existe en **application de bureau**
+runes, speed tuning, dégâts réels. **Local par défaut** : une app web qui lit un export de compte
+dans le navigateur, et dont rien ne part sans un geste de l'utilisateur
+([local-par-defaut.md](docs/04-decisions/adr/local-par-defaut.md)). La même app existe en **application de bureau**
 (Electron, Windows et Linux). Le dépôt est **public**.
 
 > Documentation : [`docs/`](docs/) (carte : [docs/README.md](docs/README.md)). Où se trouve quoi,
@@ -100,8 +101,9 @@ npm run bureau:preuve          # la vérification de l'application de bureau
 
 - ⚠️ **Le dépôt est public** : jamais d'export de compte, de données personnelles ni de capture
   d'écran dans un commit.
-- **Rien ne quitte le navigateur** : l'export de compte (SWEX) se lit en local, aucune requête ne
-  l'envoie. Les données de jeu viennent de SWARFARM, figées dans `public/data`.
+- **Rien ne quitte l'appareil sans un geste de l'utilisateur** : l'export de compte (SWEX) se lit
+  en local, aucune requête ne l'envoie. Les données de jeu viennent de SWARFARM, figées dans
+  `public/data`.
 - **Un seul interrupteur de conservation** : `usePersistence` — aucun hook n'appelle
   `localStorage.setItem` directement, tout passe par `saveLocal` ; clés préfixées `swblacksmith-`.
   Les données (prépa, équipes, recommandations, monstres perso, compte) ne sont conservées que si
