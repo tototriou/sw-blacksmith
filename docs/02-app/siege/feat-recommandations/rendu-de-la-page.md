@@ -45,9 +45,9 @@ recommandation liée sur l'appareil :
 - **Le compte Discord, en pied de la colonne et de la feuille** : connecté,
   le nom, « Actualiser » (relit les salons) et « Se déconnecter », avec
   l'heure de la dernière lecture ; sinon l'encart « Discord » : une phrase,
-  « Se connecter à Discord » et « Installer le bot sur ton serveur ». ⚠️ Dans
-  l'application de bureau, « Se connecter » reste affiché, désactivé avec sa
-  raison, jusqu'à ce qu'elle ait sa propre session.
+  « Se connecter à Discord » et « Installer le bot sur ton serveur ». Dans
+  l'application de bureau sans chiffrement sûr (Linux sans trousseau), une
+  ligne sous le nom dit que la connexion ne survivra pas à la fermeture.
 - **Le bandeau d'un salon**, au-dessus de la carte quand on regarde un salon :
   serveur › salon, état, date de la version reçue et ce que l'état veut dire,
   puis « Publier » — « Fusionner » en conflit. « Publier » est toujours
@@ -67,15 +67,20 @@ recommandation liée sur l'appareil :
   les contributeurs (« par Toto · avec Lulu ») ; un auteur déjà présent reste
   affiché, en lecture seule.
 - **Dialogues** : « Se connecter à Discord » (ce qui est partagé, et
-  l'avertissement sur la perte d'accès) avant de partir vers Discord ;
-  l'installation du bot ; la fusion (ce qui a passé seul, puis chaque
+  l'avertissement sur la perte d'accès) avant de partir vers Discord ; dans
+  l'application de bureau, « Coller le code de connexion » (les trois étapes,
+  le champ, une ligne réservée pour un code refusé, « Rouvrir la page dans le
+  navigateur » ; « Annuler » abandonne la connexion) ; sur le site, au retour
+  d'une connexion demandée par l'application, le code en lecture seule et
+  « Copier le code » ; l'installation du bot ; la fusion (ce qui a passé seul, puis chaque
   élément à choisir, les deux versions côte à côte à l'ordinateur, l'une sous
   l'autre au téléphone ; « Appliquer » désactivé tant qu'un choix manque).
   Une publication refusée parce que le salon a changé ouvre la fusion.
 - **Notifications** : une par lecture des salons, qui regroupe ce qui a
   changé, et rien quand rien n'a changé ; une par publication, refus ou
-  panne. Le retour de l'autorisation (`?discord=refus`, `?discord=erreur`)
-  se dit une fois, puis s'efface de l'adresse.
+  panne. Le retour de l'autorisation (`?discord=refus`, `?discord=erreur`,
+  leurs variantes `-bureau`, et `?discord-bureau=<code>`) se dit une fois,
+  puis s'efface de l'adresse.
 
 ## En-tête d'une recommandation et actions d'un deck
 

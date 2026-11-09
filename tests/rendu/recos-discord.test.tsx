@@ -7,7 +7,7 @@
 
 import { ColonneProvenances, type PropsProvenances } from '../../src/components/siege/discord/Provenances';
 import BandeauSalon from '../../src/components/siege/discord/BandeauSalon';
-import { CorpsFusion, ListeSalonsPublication } from '../../src/components/siege/discord/DialoguesDiscord';
+import { CorpsCodeBureau, CorpsCodeSite, CorpsFusion, ListeSalonsPublication } from '../../src/components/siege/discord/DialoguesDiscord';
 import { fusionEnAttente, recevoirVersion, recoLiee, type SalonAccessible } from '../../src/lib/recoDiscord';
 import { groupesSalons } from '../../src/lib/provenancesRecos';
 import type { Monster, Reco, RecoDeck, RecoPayload } from '../../src/types';
@@ -49,7 +49,7 @@ export function testRenduRecosDiscordPage() {
 
 // ⚠️ Créé au moment du rendu : « lus à l'instant » se calcule sur l'heure
 // courante, et la série de tests peut durer des minutes.
-const etatConnecte = () => ({ statut: 'connecte' as const, utilisateur: { id: 'U', nom: 'tototriou15' }, sources: null, salons: [], luA: Date.now() });
+const etatConnecte = () => ({ statut: 'connecte' as const, utilisateur: { id: 'U', nom: 'tototriou15' }, sources: null, salons: [], luA: Date.now(), conservable: true });
 
 function props(recos: Reco[], extra: Partial<PropsProvenances> = {}): PropsProvenances {
   return {
@@ -71,9 +71,23 @@ export function testRenduRecosDiscordComposants() {
   egal(bc.filter((x) => x.ariaLabel === 'Retirer des favoris' || x.ariaLabel === 'Mettre en favori').map((x) => [x.ariaLabel, x.presse]),
     [['Retirer des favoris', true], ['Mettre en favori', false]], 'application de bureau : une étoile par salon, le favori en tête');
   ok(!boutons(rendre(<ColonneProvenances {...props([a, b], { favoris: false })} />)).some((x) => x.ariaLabel === 'Mettre en favori'), 'sur le site : pas d\'étoile');
-  ok(boutons(rendre(<ColonneProvenances {...props([a], { discord: { ...etatConnecte(), statut: 'bureau', utilisateur: null } })} />))
-    .some((x) => x.texte === 'Se connecter à Discord' && x.desactive && x.title === 'La connexion à Discord arrive bientôt dans l\'application de bureau.'),
-  'application de bureau : la connexion reste affichée, désactivée avec sa raison');
+  ok(!colonne.includes('data-connexion-non-gardee'), 'connexion gardée : rien à dire');
+  ok(texteVisible(rendre(<ColonneProvenances {...props([a], { discord: { ...etatConnecte(), conservable: false } })} />))
+    .includes('Connexion gardée jusqu\'à la fermeture : ce système ne sait pas la chiffrer.'),
+  'application de bureau sans trousseau : la connexion ne survit pas à la fermeture, et c\'est dit');
+  ok(boutons(rendre(<ColonneProvenances {...props([a], { discord: { ...etatConnecte(), statut: 'code', utilisateur: null } })} />))
+    .some((x) => x.texte === 'Se connecter à Discord' && !x.desactive), 'en attente du code : l\'encart reste, la connexion se relance');
+
+  // Application de bureau : le code collé ; site : le code à copier.
+  const code = rendre(<CorpsCodeBureau code="" erreur={null} onCode={() => {}} onRelancer={() => {}} />);
+  ok(texteVisible(code).includes('Le site affiche alors un code : copie-le. Colle-le ici.') && code.includes('aria-label="Code de connexion"'),
+    'bureau : les étapes, puis le champ du code');
+  ok(boutons(code).some((x) => x.texte === 'Rouvrir la page dans le navigateur'), 'bureau : la page de connexion se rouvre');
+  ok(texteVisible(rendre(<CorpsCodeBureau code="x" erreur="invalide" onCode={() => {}} onRelancer={() => {}} />)).includes('il a plus de 10 minutes'),
+    'bureau : un code refusé, et pourquoi');
+  const site = rendre(<CorpsCodeSite code="abc-123_XYZ" />);
+  ok(site.includes('value="abc-123_XYZ"') && /readOnly=""|readonly=""/.test(site), 'site : le code, en lecture seule');
+  ok(boutons(site).some((x) => x.texte === 'Copier le code'), 'site : « Copier le code »');
 
   const publier = (r: Reco, connecte = true) => boutons(rendre(<BandeauSalon reco={r} connecte={connecte} enCours={false} onPublier={() => {}} onFusionner={() => {}} />));
   egal(publier(a).map((x) => [x.texte, x.desactive, x.title]), [['Publier', true, 'Rien à publier : la recommandation est celle du salon']], 'à jour : « Publier » désactivé, avec sa raison');

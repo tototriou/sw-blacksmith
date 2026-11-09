@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
-import { Hash } from 'lucide-react';
-import { Bouton, Modale, Option } from '../../../ui';
+import { Copy, ExternalLink, Hash } from 'lucide-react';
+import { Bouton, Champ, Modale, Option, useNotifier } from '../../../ui';
+import type { IssueCodeDiscord } from '../../../lib/bureau';
 import Segmented from '../../../ui/Segmented';
 import { useLangue, useTraduction } from '../../../hooks/useLangue';
 import { formatDateHeure } from '../../../i18n/format';
@@ -30,6 +31,92 @@ export function DialogueConnexion({ onContinuer, onFermer }: { onContinuer: () =
     >
       <p className="rounded-lg bg-warn-soft px-3 py-2 text-sm text-warn" data-avertissement-acces>{t.avertissement}</p>
     </Modale>
+  );
+}
+
+// Application de bureau : la connexion s'est ouverte dans le navigateur du
+// système ; le site y affiche un code, collé ici. Fermer le dialogue abandonne
+// la connexion ; « Relancer » rouvre le navigateur (un nouveau code).
+export function DialogueCodeBureau({ onValider, onRelancer, onFermer }: {
+  onValider: (code: string) => Promise<IssueCodeDiscord>;
+  onRelancer: () => void;
+  onFermer: () => void;
+}) {
+  const t = useTraduction().recosDiscord.codeBureau;
+  const c = useTraduction().commun;
+  const [code, setCode] = useState('');
+  const [erreur, setErreur] = useState<IssueCodeDiscord | null>(null);
+  const [enCours, setEnCours] = useState(false);
+  const valider = async () => {
+    setEnCours(true);
+    const issue = await onValider(code.trim());
+    setEnCours(false);
+    if (issue !== 'connecte') setErreur(issue);
+  };
+  return (
+    <Modale onClose={onFermer} labelledBy="discord-code-titre" croix largeur="max-w-[460px]" titre={t.titre}
+      actions={<>
+        <Bouton onClick={onFermer} libelle={c.annuler} />
+        <Bouton onClick={() => void valider()} disabled={!code.trim() || enCours} fond="plein" ton="accent" libelle={t.valider} />
+      </>}
+    >
+      <CorpsCodeBureau code={code} erreur={erreur} onCode={(v) => { setCode(v); setErreur(null); }} onRelancer={() => { setCode(''); setErreur(null); onRelancer(); }} />
+    </Modale>
+  );
+}
+
+// Le corps, rendu seul dans les tests (la coquille passe par un portail).
+export function CorpsCodeBureau({ code, erreur, onCode, onRelancer }: {
+  code: string; erreur: IssueCodeDiscord | null; onCode: (v: string) => void; onRelancer: () => void;
+}) {
+  const t = useTraduction().recosDiscord.codeBureau;
+  const message = erreur === 'invalide' ? t.invalide : erreur === 'sans-demande' ? t.sansDemande : erreur === 'indisponible' ? t.indisponible : null;
+  return (
+    <div className="flex flex-col gap-3">
+      <ol className="flex list-decimal flex-col gap-1.5 pl-5 text-sm text-ink-dim">
+        {t.etapes.map((e, i) => <li key={i}>{e}</li>)}
+      </ol>
+      <Champ
+        value={code}
+        onChange={(e) => onCode(e.target.value)}
+        onBlur={(e) => onCode(e.target.value.trim())}
+        aria-label={t.champ}
+        placeholder={t.champ}
+        autoFocus
+        autoComplete="off"
+        spellCheck={false}
+        className="font-mono"
+      />
+      {/* Hauteur réservée : l'erreur n'écarte pas les actions. */}
+      <p role="alert" className="min-h-10 text-sm text-bad">{message}</p>
+      <Bouton onClick={onRelancer} fond="vide" trait="aucun" taille="sm" icone={<ExternalLink size={13} />} libelle={t.relancer} className="self-start" />
+    </div>
+  );
+}
+
+// Site : le code à copier dans l'application de bureau, au retour d'une
+// connexion qu'elle a demandée.
+export function DialogueCodeSite({ code, onFermer }: { code: string; onFermer: () => void }) {
+  const t = useTraduction().recosDiscord.codeSite;
+  return (
+    <Modale onClose={onFermer} labelledBy="discord-code-site-titre" croix largeur="max-w-[460px]" titre={t.titre}
+      actions={<Bouton onClick={onFermer} libelle={useTraduction().commun.fermer} />}
+    >
+      <CorpsCodeSite code={code} />
+    </Modale>
+  );
+}
+
+export function CorpsCodeSite({ code }: { code: string }) {
+  const t = useTraduction().recosDiscord.codeSite;
+  const notifier = useNotifier();
+  const copier = () => void navigator.clipboard.writeText(code).then(() => notifier({ message: t.copie }), () => {});
+  return (
+    <div className="flex flex-col gap-3">
+      <p className="text-sm text-ink-dim">{t.texte}</p>
+      <Champ value={code} readOnly aria-label={t.champ} onFocus={(e) => e.target.select()} className="font-mono" data-code-bureau />
+      <Bouton onClick={copier} fond="plein" ton="accent" icone={<Copy size={14} />} libelle={t.copier} className="self-start" autoFocus />
+    </div>
   );
 }
 

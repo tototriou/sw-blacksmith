@@ -1,7 +1,8 @@
 // Session du service : un cookie HttpOnly chiffré (AES-GCM, Web Crypto de
 // Node), aucun stockage côté serveur. Il porte les jetons Discord du membre
 // (accès et renouvellement) pour relire ses serveurs à chaque requête
-// (docs/04-decisions/adr/local-par-defaut.md).
+// (docs/04-decisions/adr/local-par-defaut.md). L'application de bureau garde
+// la même session scellée chez elle et l'envoie en `Authorization: Bearer`.
 //
 // ⚠️ Un cookie illisible, altéré ou chiffré avec une autre clé vaut « pas de
 // session » : jamais une erreur, le membre se reconnecte.
@@ -12,12 +13,27 @@ export const DUREE_SESSION_S = 30 * 24 * 3600;
 export const DUREE_ETAT_S = 10 * 60;
 const CHEMIN = '/api/discord';
 
+export const DUREE_CODE_S = 10 * 60;
+// L'en-tête par lequel une session renouvelée revient à l'application de
+// bureau, qui l'envoie en `Authorization: Bearer` et n'a pas de cookie.
+export const ENTETE_SESSION = 'x-session-discord';
+
 export interface Session {
   acces: string; // jeton d'accès Discord du membre
   renouvellement: string; // jeton de renouvellement
   expire: number; // fin de validité du jeton d'accès, en ms depuis l'époque
+  // Fin de la session elle-même (30 jours, repoussée à chaque renouvellement).
+  // ⚠️ Le cookie expire de lui-même, pas la session de l'application de
+  // bureau : sans cette borne, elle vaudrait tant que Discord la renouvelle.
+  fin: number;
   utilisateur: { id: string; nom: string };
 }
+
+// Le code que le site affiche après une connexion demandée par l'application
+// de bureau : la session, scellée avec l'empreinte du secret que seule l'app
+// connaît (`defi`), valable 10 minutes. Le service ne garde rien : il ne peut
+// pas empêcher qu'un code serve deux fois, mais sans le secret il ne sert à rien.
+export interface CodeBureau { session: Session; defi: string; expire: number }
 
 const encodeur = new TextEncoder();
 const decodeur = new TextDecoder();
@@ -68,7 +84,26 @@ export async function desceller<T>(texte: string | undefined, cle: Cle): Promise
 export function estSession(v: unknown): v is Session {
   const s = v as Session | null;
   return !!s && typeof s.acces === 'string' && typeof s.renouvellement === 'string' && typeof s.expire === 'number'
-    && !!s.utilisateur && typeof s.utilisateur.id === 'string' && typeof s.utilisateur.nom === 'string';
+    && typeof s.fin === 'number' && !!s.utilisateur && typeof s.utilisateur.id === 'string' && typeof s.utilisateur.nom === 'string';
+}
+
+export function estCodeBureau(v: unknown): v is CodeBureau {
+  const c = v as CodeBureau | null;
+  return !!c && typeof c.defi === 'string' && typeof c.expire === 'number' && estSession(c.session);
+}
+
+// Le défi de l'application de bureau : l'empreinte SHA-256, en base64url, de
+// son secret (32 octets aléatoires). Forme stricte : il voyage dans un cookie.
+export const FORME_DEFI = /^[A-Za-z0-9_-]{43}$/;
+
+export async function empreinte(secret: string): Promise<string> {
+  return versBase64Url(new Uint8Array(await crypto.subtle.digest('SHA-256', encodeur.encode(secret))));
+}
+
+// La session de l'application de bureau, envoyée en `Authorization: Bearer`.
+export function jetonPorteur(entete: string | null): string | null {
+  const m = /^Bearer ([A-Za-z0-9_-]+)$/.exec(entete ?? '');
+  return m ? m[1] : null;
 }
 
 // Signature HMAC d'une adresse interne (la lecture d'un salon mise en cache) :

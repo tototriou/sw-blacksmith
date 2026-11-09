@@ -39,6 +39,8 @@ Code dans **`bureau/`** (hors de `src/` : il tourne dans Node) :
   `dossier-swblacksmith.json`) ;
 - `coeurs.ts` + `coeursPur.ts` (nombre de cœurs physiques, lu par une commande du système et
   donné à la page : le nombre de Workers de la recherche de runes en dérive) ;
+- `discord.ts` + `discordPur.ts` (connexion à Discord : code collé, session gardée par le
+  processus principal et chiffrée dans `discord.json`, appels au service relayés pour la page) ;
 - `textes.ts` (textes des boîtes du système, dans la langue que la page envoie, pur) ;
 - `preuve.ts`, `installeur.nsh` (désinstalleur Windows), `icone.ico` (générée par
   `scripts/generer-icone-bureau.mjs`).

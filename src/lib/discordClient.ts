@@ -99,8 +99,18 @@ export async function deconnecter(recuperer: Recuperer): Promise<void> {
 }
 
 // Le retour de l'autorisation Discord, lu dans l'adresse (`?discord=refus`,
-// `?discord=erreur`) : à dire une fois, puis à effacer de l'adresse.
-export function retourDeConnexion(search: string): 'refus' | 'erreur' | null {
+// `?discord=erreur`) : à dire une fois, puis à effacer de l'adresse. Les
+// variantes `-bureau` répondent à une connexion demandée par l'application de
+// bureau : dites sur le site, sans toucher à sa propre connexion.
+export type RetourConnexion = 'refus' | 'erreur' | 'refus-bureau' | 'erreur-bureau';
+export function retourDeConnexion(search: string): RetourConnexion | null {
   const v = new URLSearchParams(search).get('discord');
-  return v === 'refus' || v === 'erreur' ? v : null;
+  return v === 'refus' || v === 'erreur' || v === 'refus-bureau' || v === 'erreur-bureau' ? v : null;
+}
+
+// Le code à copier dans l'application de bureau (`?discord-bureau=<code>`),
+// que le site affiche après une connexion qu'elle a demandée.
+export function codeBureau(search: string): string | null {
+  const v = new URLSearchParams(search).get('discord-bureau');
+  return v && /^[A-Za-z0-9_-]+$/.test(v) ? v : null;
 }

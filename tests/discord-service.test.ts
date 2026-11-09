@@ -4,22 +4,18 @@
 // connexion, sources, lecture d'un salon, publication et conflit.
 // Modèle : docs/04-decisions/adr/un-salon-une-reco.md.
 
-import { ADMINISTRATEUR, droitsSurSalon, ENVOYER, HISTORIQUE, JOINDRE, resumeDroits, VOIR_LE_SALON, type Role, type Salon } from '../api/_source/service/droits';
-import { API } from '../api/_source/service/discordApi';
+import { ADMINISTRATEUR, droitsSurSalon, ENVOYER, JOINDRE, resumeDroits, VOIR_LE_SALON, type Role, type Salon } from '../api/_source/service/droits';
 import { candidats, ESSAIS_MAX, lireVersion, nomDuMembre, preparerPublication, type MessageDiscord } from '../api/_source/service/recoSalon';
 import { creerRouteur, PAGE_RECOS } from '../api/_source/service/routeur';
-import { COOKIE_ETAT, COOKIE_SESSION, desceller, estSession, lireCookies, sceller, signer, verifierSignature, type Cle, type Session } from '../api/_source/service/session';
+import {
+  COOKIE_ETAT, COOKIE_SESSION, desceller, empreinte, ENTETE_SESSION, estSession, lireCookies, sceller, signer, verifierSignature, type Cle, type Session,
+} from '../api/_source/service/session';
 import { fr } from '../src/i18n/fr';
 import { decodeRecosJson, encodeRecosJson } from '../src/lib/recoShare';
-import { retourDeConnexion } from '../src/lib/discordClient';
+import { codeBureau, retourDeConnexion } from '../src/lib/discordClient';
 import type { Reco } from '../src/types';
+import { bits, CDN, LIRE, monde, S, simulateur, TOUT_SALON, type Monde } from './discord-simule';
 import { egal, ok, titre } from './outils';
-
-const S = 'G1'; // serveur
-const CDN = 'https://cdn.discordapp.com/attachments/'; // seul hébergeur de pièces jointes accepté
-const bits = (...b: bigint[]) => b.reduce((a, x) => a | x, 0n).toString();
-const LIRE = bits(VOIR_LE_SALON, HISTORIQUE);
-const TOUT_SALON = bits(VOIR_LE_SALON, HISTORIQUE, ENVOYER, JOINDRE);
 
 function reco(nom: string, monstre = 14105): Reco {
   const slot = (id: number | null) => ({ com2usId: id, name: id ? `M${id}` : '', stats: {}, setOptions: [], artifacts: { element: [], archetype: [] } });
@@ -49,14 +45,14 @@ export async function testDiscordSession() {
   titre('Service Discord — session chiffrée et signature');
   const cle: Cle = new Uint8Array(32).fill(7);
   const autre: Cle = new Uint8Array(32).fill(8);
-  const s: Session = { acces: 'a', renouvellement: 'r', expire: 1, utilisateur: { id: 'U', nom: 'Toto' } };
+  const s: Session = { acces: 'a', renouvellement: 'r', expire: 1, fin: 2, utilisateur: { id: 'U', nom: 'Toto' } };
   const scelle = await sceller(s, cle);
   egal(await desceller(scelle, cle), s, 'scellée puis lue, la session revient intacte');
   ok(!scelle.includes('Toto'), 'le cookie ne laisse rien lire en clair');
   egal(await desceller(scelle, autre), null, 'une autre clé ne lit rien');
   egal(await desceller(scelle.slice(0, -2) + (scelle.endsWith('A') ? 'BB' : 'AA'), cle), null, 'un cookie altéré ne vaut rien');
   egal(await desceller('n\'importe quoi', cle), null, 'un cookie illisible ne vaut rien');
-  ok(estSession(s) && !estSession({ acces: 'a' }), 'forme d\'une session vérifiée');
+  ok(estSession(s) && !estSession({ acces: 'a' }) && !estSession({ ...s, fin: undefined }), 'forme d\'une session vérifiée, sa fin comprise');
   const sig = await signer('brut:C', cle);
   ok(await verifierSignature('brut:C', sig, cle), 'signature d\'une lecture interne acceptée');
   ok(!(await verifierSignature('brut:D', sig, cle)) && !(await verifierSignature('brut:C', null, cle)), 'autre salon ou signature absente : refusée');
@@ -101,80 +97,6 @@ export function testDiscordContributeursFormat() {
   ok(!fichier('R').includes('contributeurs'), 'une recommandation sans contributeurs n\'écrit pas de liste vide');
 }
 
-/* --------------------------------------------------------------------------
- * Discord simulé
- * ----------------------------------------------------------------------- */
-
-interface Monde {
-  roles: Role[];
-  salons: { id: string; name: string; type: number; permission_overwrites?: Salon['permission_overwrites'] }[];
-  membres: Record<string, { roles: string[]; nick?: string | null; user: { id: string; username: string; global_name?: string | null } }>;
-  messages: Record<string, MessageDiscord[]>;
-  pieces: Record<string, string>;
-  postes: { salon: string; texte: string }[];
-  appels: string[];
-  jetonRefuse?: boolean;
-}
-
-function monde(): Monde {
-  return {
-    roles: [{ id: S, permissions: LIRE }, { id: 'officier', permissions: bits(ENVOYER, JOINDRE) }],
-    salons: [
-      { id: 'C1', name: 'blacksmith-reco-siege', type: 0 },
-      { id: 'C2', name: 'general', type: 0 },
-      { id: 'C3', name: 'blacksmith-reco-cache', type: 0, permission_overwrites: [{ id: S, type: 0, allow: '0', deny: bits(VOIR_LE_SALON) }] },
-    ],
-    membres: {
-      B: { roles: ['officier'], user: { id: 'B', username: 'bot' } },
-      U: { roles: ['officier'], nick: 'Toto le chef', user: { id: 'U', username: 'toto', global_name: 'Toto' } },
-      L: { roles: [], user: { id: 'L', username: 'lulu' } },
-    },
-    messages: { C1: [] },
-    pieces: {},
-    postes: [],
-    appels: [],
-  };
-}
-
-function simulateur(w: Monde) {
-  let n = 100;
-  return async (url: string, init: RequestInit = {}): Promise<Response> => {
-    const methode = init.method ?? 'GET';
-    const auth = (init.headers as Record<string, string> | undefined)?.Authorization ?? '';
-    w.appels.push(`${methode} ${url.replace(API, '')}`);
-    const r = (corps: unknown, statut = 200) => new Response(JSON.stringify(corps), { status: statut });
-    if (url in w.pieces) return new Response(w.pieces[url]);
-    const chemin = url.replace(API, '');
-    if (chemin === '/oauth2/token') {
-      const p = init.body as URLSearchParams;
-      if (w.jetonRefuse) return r({ error: 'invalid_grant' }, 400);
-      return r({ access_token: `acces-${p.get('grant_type')}`, refresh_token: 'renouv-2', expires_in: 604800 });
-    }
-    if (chemin === '/oauth2/token/revoke') return new Response(null, { status: 200 });
-    const user = auth.startsWith('Bearer ') ? 'U' : 'B';
-    if (chemin === '/users/@me') return r(user === 'U' ? w.membres.U.user : { id: 'B', username: 'bot' });
-    if (chemin === '/users/@me/guilds') return r(user === 'U' ? [{ id: S, name: 'Ma guilde', icon: null }, { id: 'G9', name: 'Sans bot', icon: null }] : [{ id: S }]);
-    if (chemin === `/guilds/${S}`) return r({ id: S, name: 'Ma guilde', icon: null, owner_id: 'O', roles: w.roles });
-    if (chemin === `/guilds/${S}/channels`) return r(w.salons);
-    const membre = chemin.match(/^\/guilds\/G1\/members\/(\w+)$/);
-    if (membre) return w.membres[membre[1]] ? r(w.membres[membre[1]]) : r({ code: 10007 }, 404);
-    const salon = chemin.match(/^\/channels\/(\w+)$/);
-    if (salon) { const s = w.salons.find((x) => x.id === salon[1]); return s ? r({ ...s, guild_id: S }) : r({}, 404); }
-    const msgs = chemin.match(/^\/channels\/(\w+)\/messages(\?limit=100)?$/);
-    if (msgs && methode === 'GET') return r(w.messages[msgs[1]] ?? []);
-    if (msgs && methode === 'POST') {
-      const fd = init.body as FormData;
-      const texte = await (fd.get('files[0]') as Blob).text();
-      const id = String(++n);
-      w.postes.push({ salon: msgs[1], texte });
-      w.pieces[`${CDN}${id}`] = texte;
-      (w.messages[msgs[1]] ??= []).unshift({ id, timestamp: `t${id}`, author: { id: 'B' }, attachments: [{ url: `${CDN}${id}`, filename: 'recommandation.json', size: 1 }] });
-      return r({ id, timestamp: `t${id}` });
-    }
-    return r({ message: `route simulée absente : ${methode} ${chemin}` }, 500);
-  };
-}
-
 const CLE: Cle = new Uint8Array(32).fill(3);
 const ORIGINE = 'https://sw-blacksmith.vercel.app';
 
@@ -186,9 +108,10 @@ function banc(w: Monde, maintenant = 1_000_000) {
   return routeur;
 }
 
-async function cookieSession(utilisateur = 'U', expire = 1e12) {
-  const s: Session = { acces: 'acces-x', renouvellement: 'r', expire, utilisateur: { id: utilisateur, nom: 'Toto' } };
-  return `${COOKIE_SESSION}=${await sceller(s, CLE)}`;
+const sessionScellee = (utilisateur = 'U', expire = 1e12, fin = 1e12) =>
+  sceller({ acces: 'acces-x', renouvellement: 'r', expire, fin, utilisateur: { id: utilisateur, nom: 'Toto' } } satisfies Session, CLE);
+async function cookieSession(utilisateur = 'U', expire = 1e12, fin = 1e12) {
+  return `${COOKIE_SESSION}=${await sessionScellee(utilisateur, expire, fin)}`;
 }
 
 const requete = (chemin: string, init: RequestInit & { cookie?: string } = {}) => new Request(`${ORIGINE}/api/discord?chemin=${chemin}`, {
@@ -229,6 +152,7 @@ export async function testDiscordRouteurConnexion() {
   // Jeton d'accès échu : renouvelé, nouveau cookie posé.
   const echue = await r.traiter(requete('session', { cookie: await cookieSession('U', 1_000_000) }));
   ok(echue.status === 200 && echue.headers.getSetCookie().some((c) => c.startsWith(`${COOKIE_SESSION}=`)), 'jeton échu : renouvelé, cookie réécrit');
+  egal((await r.traiter(requete('session', { cookie: await cookieSession('U', 1e12, 1_000_000) }))).status, 401, 'session de plus de 30 jours : non connecté');
   w.jetonRefuse = true;
   egal((await r.traiter(requete('session', { cookie: await cookieSession('U', 1_000_000) }))).status, 401, 'renouvellement refusé : non connecté');
 
@@ -237,6 +161,48 @@ export async function testDiscordRouteurConnexion() {
   ok(w.appels.includes('POST /oauth2/token/revoke'), 'déconnexion : le jeton est révoqué chez Discord');
   egal((await r.traiter(new Request(`${ORIGINE}/api/discord?chemin=deconnexion`, { method: 'POST', headers: { origin: 'https://ailleurs.example' } }))).status, 403,
     'une requête POST d\'une autre origine est refusée');
+}
+
+export async function testDiscordRouteurBureau() {
+  titre('Service Discord — connexion de l\'application de bureau : code à copier, session en Bearer');
+  const w = monde();
+  const r = banc(w);
+  const secret = 'secret-de-l-app-'.padEnd(43, 'x');
+  const defi = await empreinte(secret);
+  egal((await r.traiter(requete('login&bureau=pas-un-defi'))).status, 400, 'un défi mal formé est refusé');
+  const login = await r.traiter(requete(`login&bureau=${defi}`));
+  const etat = new URL(login.headers.get('location') ?? '').searchParams.get('state') ?? '';
+  const cookieEtat = (login.headers.get('set-cookie') ?? '').split(';')[0];
+  egal(cookieEtat, `${COOKIE_ETAT}=${etat}.${defi}`, 'le défi est gardé avec l\'état anti-falsification');
+
+  const refus = await r.traiter(requete(`callback&error=access_denied&state=${etat}`, { cookie: cookieEtat }));
+  egal(new URL(refus.headers.get('location') ?? '', ORIGINE).search, '?discord=refus-bureau', 'refus : dit sur le site, sans toucher à sa connexion');
+  const retour = await r.traiter(requete(`callback&code=c&state=${etat}`, { cookie: cookieEtat }));
+  ok(!retour.headers.getSetCookie().some((c) => c.startsWith(`${COOKIE_SESSION}=`) && !c.includes('Max-Age=0')), 'aucune session posée sur le site');
+  const adresse = new URL(retour.headers.get('location') ?? '', ORIGINE);
+  const code = codeBureau(adresse.search) ?? '';
+  ok(code.length > 50 && adresse.hash === '#/siege/recommandations', 'le site reçoit le code à copier, sur la page Recommandations');
+  ok(await desceller(code, CLE) !== null && !estSession(await desceller(code, CLE)), 'le code n\'est pas une session : il ne s\'utilise pas tel quel');
+
+  const echanger = (corps: unknown, rr = r) => rr.traiter(new Request(`${ORIGINE}/api/discord?chemin=bureau-echange`, { method: 'POST', body: JSON.stringify(corps) }));
+  egal((await echanger({ code, secret: 'un autre secret' })).status, 400, 'sans le secret de l\'app, le code ne vaut rien');
+  egal((await echanger({ code: 'abimé', secret })).status, 400, 'un code illisible est refusé');
+  egal((await echanger({ code, secret }, banc(w, 1_000_000 + 11 * 60_000))).status, 400, 'un code de plus de 10 minutes est refusé');
+  const echange = await echanger({ code, secret });
+  const corps = await echange.json() as { session: string; utilisateur: unknown };
+  egal([echange.status, corps.utilisateur], [200, { id: 'U', nom: 'Toto' }], 'le bon secret, sans origine web : la session et l\'identité');
+
+  const bearer = (chemin: string, session: string, init: RequestInit = {}) =>
+    new Request(`${ORIGINE}/api/discord?chemin=${chemin}`, { ...init, headers: { ...(init.headers as Record<string, string> | undefined), authorization: `Bearer ${session}` } });
+  egal(await (await r.traiter(bearer('session', corps.session))).json(), { connecte: true, utilisateur: { id: 'U', nom: 'Toto' } }, 'la session se lit en Bearer');
+  const sources = await r.traiter(bearer('sources', corps.session, { headers: { cookie: await cookieSession('L') } }));
+  egal((await sources.json() as { utilisateur: { id: string } }).utilisateur.id, 'U', 'en Bearer, le cookie (d\'un autre membre) est ignoré');
+  const echue = await r.traiter(bearer('session', await sessionScellee('U', 1_000_000)));
+  const renouvelee = echue.headers.get(ENTETE_SESSION);
+  ok(echue.status === 200 && !!renouvelee && echue.headers.getSetCookie().length === 0, 'jeton échu : la session renouvelée revient par un en-tête, pas par un cookie');
+  egal((await r.traiter(bearer('session', renouvelee ?? ''))).status, 200, 'la session renouvelée se relit');
+  egal((await r.traiter(bearer('deconnexion', corps.session, { method: 'POST' }))).status, 204, 'déconnexion en Bearer, sans origine web');
+  ok(w.appels.includes('POST /oauth2/token/revoke'), 'le jeton est révoqué');
 }
 
 export async function testDiscordRouteurSources() {

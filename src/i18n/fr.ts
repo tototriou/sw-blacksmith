@@ -1553,12 +1553,35 @@ export const fr = {
       texte: 'Retrouve les recommandations de ta guilde, publiées dans ses salons #blacksmith-reco…, et publie les tiennes.',
       bouton: 'Se connecter à Discord',
       reconnecter: 'Se reconnecter à Discord',
-      bureau: "La connexion à Discord arrive bientôt dans l'application de bureau.",
       installer: 'Installer le bot sur ton serveur',
       dialogueTitre: 'Se connecter à Discord',
       dialogueTexte: "Discord donnera à SW Blacksmith ton identité et la liste de tes serveurs, pour trouver ceux où le bot est présent. Rien d'autre ne part, sauf ce que tu publies.",
       avertissement: "Une recommandation synchronisée disparaît de cet appareil si tu perds l'accès à son salon. Tes modifications pas encore publiées, elles, restent ici.",
       continuer: 'Continuer vers Discord',
+    },
+    // Application de bureau : la connexion passe par le navigateur du système,
+    // puis par le code que le site affiche.
+    codeBureau: {
+      titre: 'Coller le code de connexion',
+      etapes: [
+        'Dans ton navigateur, autorise SW Blacksmith sur la page Discord qui vient de s\'ouvrir.',
+        'Le site affiche alors un code : copie-le.',
+        'Colle-le ici.',
+      ],
+      champ: 'Code de connexion',
+      valider: 'Se connecter',
+      relancer: 'Rouvrir la page dans le navigateur',
+      invalide: "Ce code ne marche pas : il a plus de 10 minutes, ou il vient d'une autre demande. Rouvre la page pour en obtenir un nouveau.",
+      sansDemande: 'Cette connexion a été abandonnée : rouvre la page pour la relancer.',
+      indisponible: 'Discord ne répond pas : réessaie dans un instant.',
+    },
+    // Site : le retour d'une connexion demandée par l'application de bureau.
+    codeSite: {
+      titre: "Connexion de l'application de bureau",
+      texte: "Copie ce code et colle-le dans SW Blacksmith, sur ton ordinateur. Il vaut 10 minutes, et ne sert qu'à l'application qui l'a demandé.",
+      champ: 'Code de connexion',
+      copier: 'Copier le code',
+      copie: "Code copié : colle-le dans l'application.",
     },
     installation: {
       titre: 'Installer le bot sur ton serveur',
@@ -1577,6 +1600,7 @@ export const fr = {
       lusIlYa: (minutes: number) => (minutes < 1 ? "Salons lus à l'instant" : `Salons lus il y a ${minutes} min`),
       plus: 'Plus',
       deconnecter: 'Se déconnecter de Discord',
+      nonGardee: "Connexion gardée jusqu'à la fermeture : ce système ne sait pas la chiffrer.",
     },
     publierDansDialogue: {
       titre: (nom: string) => `Publier « ${nom} »`,
@@ -1637,6 +1661,8 @@ export const fr = {
       expiree: 'Ta session Discord a expiré : reconnecte-toi.',
       refus: 'Connexion à Discord annulée.',
       erreur: 'La connexion à Discord a échoué : réessaie.',
+      refusBureau: "Connexion de l'application de bureau annulée.",
+      erreurBureau: "La connexion de l'application de bureau a échoué : relance-la depuis l'application.",
       detachee: (nom: string) => `« ${nom} » détachée : elle est maintenant sur cet appareil.`,
       deconnecte: 'Déconnecté de Discord.',
       fusionnee: 'Fusion appliquée : relis la recommandation, puis publie-la.',

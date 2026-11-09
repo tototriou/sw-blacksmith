@@ -1,15 +1,15 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Reco, VersionSalon } from '../types';
 import type { UseRecoState } from './useSiegeRecos';
 import { setDiscordActif, useReglagesDiscord } from './useReglagesDiscord';
 import { useTraduction } from './useLangue';
 import { useNotifier } from '../ui/Notification';
-import { estBureau } from '../lib/bureau';
+import { discordBureau, recupererParLeBureau, type IssueCodeDiscord } from '../lib/bureau';
 import { encodeRecosJson } from '../lib/recoShare';
 import { bilanVide, type SalonDePublication } from '../lib/provenancesRecos';
 import type { SalonAccessible } from '../lib/recoDiscord';
 import {
-  deconnecter as deconnecterService, lireTout, publier as publierService, retourDeConnexion, URL_CONNEXION,
+  codeBureau, deconnecter as deconnecterService, lireTout, publier as publierService, retourDeConnexion, URL_CONNEXION,
   type Recuperer, type ResultatPublication, type Sources, type Utilisateur,
 } from '../lib/discordClient';
 
@@ -19,13 +19,16 @@ import {
 //
 // ⚠️ **Rien ne part sans un geste de l'utilisateur** : tant que le réglage
 // « Discord activé » est éteint, ce hook n'appelle jamais le service. Il
-// s'allume au clic sur « Se connecter à Discord » et s'éteint à la
-// déconnexion, à une session échue ou à une connexion refusée.
+// s'allume à la connexion réussie et s'éteint à la déconnexion, à une
+// session échue ou à une connexion refusée.
 //
-// ⚠️ L'application de bureau n'a pas encore de session Discord : le statut y
-// est `bureau`, et la connexion reste désactivée.
+// L'application de bureau (docs/02-app/bureau/README.md § « Discord ») appelle
+// le service par son processus principal, qui garde la session ; sa connexion
+// passe par le navigateur du système, puis par un code que le site affiche et
+// que l'utilisateur colle dans l'app (statut `code`). Le site, lui, montre ce
+// code (`codeAffiche`) quand il revient d'une connexion demandée par l'app.
 
-export type StatutDiscord = 'inactif' | 'bureau' | 'lecture' | 'connecte' | 'indisponible';
+export type StatutDiscord = 'inactif' | 'code' | 'lecture' | 'connecte' | 'indisponible';
 
 export interface EtatDiscord {
   statut: StatutDiscord;
@@ -33,6 +36,9 @@ export interface EtatDiscord {
   sources: Sources | null;
   salons: SalonAccessible[];
   luA: number | null; // dernière lecture réussie, en ms
+  // Application de bureau : la session ne peut pas être chiffrée par le
+  // système, elle ne survit pas à la fermeture. Toujours vrai sur le site.
+  conservable: boolean;
 }
 
 export interface UseDiscord {
@@ -41,6 +47,14 @@ export interface UseDiscord {
   connecter: () => void;
   deconnecter: () => Promise<void>;
   actualiser: () => Promise<void>;
+  // Application de bureau : le code collé, et l'abandon de la connexion (la
+  // relancer, c'est `connecter` à nouveau : un nouveau secret, l'ancien code
+  // ne vaut plus).
+  validerCode: (code: string) => Promise<IssueCodeDiscord>;
+  annulerCode: () => void;
+  // Site : le code à copier dans l'application de bureau, jusqu'à fermeture.
+  codeAffiche: string | null;
+  fermerCode: () => void;
   // La publication d'une recommandation LIÉE, depuis son bandeau.
   publier: (reco: Reco) => Promise<ResultatPublication['type']>;
   // « Publier dans… » d'une recommandation de cet appareil. Un conflit rend la
@@ -48,25 +62,26 @@ export interface UseDiscord {
   publierDans: (reco: Reco, salon: SalonDePublication, base: string | null) => Promise<ResultatPublication>;
 }
 
-const recupererParDefaut: Recuperer = (url, init) => fetch(url, init);
-const ETAT_INACTIF: EtatDiscord = { statut: 'inactif', utilisateur: null, sources: null, salons: [], luA: null };
+const recupererDuSite: Recuperer = (url, init) => fetch(url, init);
+const ETAT_INACTIF: EtatDiscord = { statut: 'inactif', utilisateur: null, sources: null, salons: [], luA: null, conservable: true };
 
-export function useDiscord(recos: UseRecoState, recuperer: Recuperer = recupererParDefaut): UseDiscord {
+export function useDiscord(recos: UseRecoState, recupererInjecte?: Recuperer): UseDiscord {
   const t = useTraduction().recosDiscord;
   const notifier = useNotifier();
   const { actif, favoris } = useReglagesDiscord();
-  const bureau = estBureau();
-  const [etat, setEtat] = useState<EtatDiscord>(bureau ? { ...ETAT_INACTIF, statut: 'bureau' } : ETAT_INACTIF);
+  const pont = discordBureau();
+  const recuperer = useMemo(() => recupererInjecte ?? (pont ? recupererParLeBureau(pont) : recupererDuSite), [recupererInjecte, pont]);
+  const [etat, setEtat] = useState<EtatDiscord>(ETAT_INACTIF);
+  const [codeAffiche, setCodeAffiche] = useState<string | null>(null);
   const salons = useRef<SalonAccessible[]>([]);
 
   const finDeSession = useCallback((message: string) => {
     setDiscordActif(false);
-    setEtat(ETAT_INACTIF);
+    setEtat((e) => ({ ...ETAT_INACTIF, conservable: e.conservable }));
     notifier({ message });
   }, [notifier]);
 
   const actualiser = useCallback(async () => {
-    if (bureau) return;
     setEtat((e) => ({ ...e, statut: 'lecture' }));
     const r = await lireTout(recuperer);
     if (!r.ok) {
@@ -79,20 +94,34 @@ export function useDiscord(recos: UseRecoState, recuperer: Recuperer = recuperer
     }
     salons.current = r.valeur.salons;
     const bilan = recos.synchroniserDiscord(r.valeur.salons, r.valeur.versions);
-    setEtat({ statut: 'connecte', utilisateur: r.valeur.sources.utilisateur, sources: r.valeur.sources, salons: r.valeur.salons, luA: Date.now() });
+    setEtat((e) => ({ statut: 'connecte', utilisateur: r.valeur.sources.utilisateur, sources: r.valeur.sources, salons: r.valeur.salons, luA: Date.now(), conservable: e.conservable }));
     // Une seule notification par lecture, rien quand rien n'a changé.
     if (!bilanVide(bilan)) notifier({ message: t.notif.bilan(bilan) });
-  }, [bureau, recuperer, recos, notifier, finDeSession, t]);
+  }, [recuperer, recos, notifier, finDeSession, t]);
 
-  // À l'ouverture de la page : le retour de l'autorisation Discord, puis une
-  // lecture des salons si Discord est activé.
+  // À l'ouverture de la page : le retour de l'autorisation Discord (site), puis
+  // une lecture des salons si Discord est activé.
   useEffect(() => {
-    if (bureau) return;
-    const retour = retourDeConnexion(window.location.search);
-    if (retour) {
-      window.history.replaceState(null, '', window.location.pathname + window.location.hash);
-      finDeSession(retour === 'refus' ? t.notif.refus : t.notif.erreur);
-      return;
+    if (pont) {
+      // Ce que le système sait garder, et une connexion déjà en attente de son
+      // code (la page a été rechargée entre-temps).
+      void pont.etat().then((e) => {
+        if (!e) return;
+        setEtat((x) => ({ ...x, conservable: e.conservable, statut: e.attente && x.statut === 'inactif' ? 'code' : x.statut }));
+      });
+    } else {
+      const search = window.location.search;
+      const retour = retourDeConnexion(search);
+      const code = codeBureau(search);
+      if (retour || code) window.history.replaceState(null, '', window.location.pathname + window.location.hash);
+      if (code) setCodeAffiche(code);
+      // Une connexion demandée par l'application de bureau : dite ici, sans
+      // toucher à celle du site.
+      if (retour === 'refus-bureau' || retour === 'erreur-bureau') notifier({ message: retour === 'refus-bureau' ? t.notif.refusBureau : t.notif.erreurBureau });
+      else if (retour) {
+        finDeSession(retour === 'refus' ? t.notif.refus : t.notif.erreur);
+        return;
+      }
     }
     if (actif) void actualiser();
     // Une seule fois, à l'arrivée sur la page.
@@ -100,15 +129,37 @@ export function useDiscord(recos: UseRecoState, recuperer: Recuperer = recuperer
   }, []);
 
   const connecter = useCallback(() => {
-    if (bureau) return;
-    setDiscordActif(true);
-    window.location.assign(URL_CONNEXION);
-  }, [bureau]);
+    if (!pont) {
+      setDiscordActif(true);
+      window.location.assign(URL_CONNEXION);
+      return;
+    }
+    // Bureau : le navigateur du système s'ouvre ; « Discord activé » ne
+    // s'allume qu'avec le code accepté.
+    void pont.connecter().then((ok) => {
+      if (ok) setEtat((e) => ({ ...e, statut: 'code' }));
+    });
+  }, [pont]);
+
+  const validerCode = useCallback(async (code: string): Promise<IssueCodeDiscord> => {
+    if (!pont) return 'sans-demande';
+    const issue = (await pont.code(code)) ?? 'indisponible';
+    if (issue === 'connecte') {
+      setDiscordActif(true);
+      await actualiser();
+    } else if (issue === 'sans-demande') setEtat((e) => ({ ...e, statut: 'inactif' }));
+    return issue;
+  }, [pont, actualiser]);
+
+  const annulerCode = useCallback(() => {
+    void pont?.annuler();
+    setEtat((e) => ({ ...e, statut: 'inactif' }));
+  }, [pont]);
 
   const deconnecter = useCallback(async () => {
     await deconnecterService(recuperer);
     setDiscordActif(false);
-    setEtat(ETAT_INACTIF);
+    setEtat((e) => ({ ...ETAT_INACTIF, conservable: e.conservable }));
     notifier({ message: t.notif.deconnecte });
   }, [recuperer, notifier, t]);
 
@@ -146,5 +197,8 @@ export function useDiscord(recos: UseRecoState, recuperer: Recuperer = recuperer
     return r;
   }, [recuperer, recos, notifier, issue, t]);
 
-  return { etat, favoris, connecter, deconnecter, actualiser, publier, publierDans };
+  return {
+    etat, favoris, connecter, deconnecter, actualiser, validerCode, annulerCode,
+    codeAffiche, fermerCode: () => setCodeAffiche(null), publier, publierDans,
+  };
 }
