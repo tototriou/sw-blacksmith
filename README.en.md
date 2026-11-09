@@ -4,7 +4,7 @@
 
 A toolbox for Summoners War.
 
-**Online: https://sw-forge.vercel.app** — and as a desktop app (Windows, Linux), from the site's
+**Online: https://sw-blacksmith.vercel.app** — and as a desktop app (Windows, Linux), from the site's
 Download page. The app is available in French and English.
 
 SW Blacksmith helps you prepare your competitive content: build your siege teams and check their
