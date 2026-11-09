@@ -17,7 +17,11 @@ import {
 } from './session';
 
 export const PREFIXE_SALON = 'blacksmith-reco';
-export const PAGE_RECOS = '/#/siege/recommandations';
+const ROUTE_RECOS = '#/siege/recommandations';
+export const PAGE_RECOS = `/${ROUTE_RECOS}`;
+// ⚠️ Le paramètre AVANT la route : `/?discord=refus#/siege/…`. Collé après
+// `PAGE_RECOS`, il deviendrait `discord=refus/`, que la page ne reconnaît pas.
+export const retourPage = (parametre: string, valeur: string) => `/?${parametre}=${valeur}${ROUTE_RECOS}`;
 const DUREE_CACHE_MS = 30_000; // droits, rôles et salons d'un serveur (décision du 2026-11-09)
 const CACHE_LECTURE_S = 15; // lecture d'un salon, partagée par le CDN entre membres
 const CACHE_SALONS_S = 60; // liste des salons d'un serveur : 10 lectures par minute chez Discord
@@ -233,8 +237,8 @@ export function creerRouteur(d: Dependances) {
       const efface = cookieEfface(COOKIE_ETAT, securise);
       const etat = lireCookies(requete.headers.get('cookie')).get(COOKIE_ETAT);
       const code = url.searchParams.get('code');
-      if (url.searchParams.get('error')) return redirection(`/?discord=refus${PAGE_RECOS}`, [efface]);
-      if (!code || !etat || etat !== url.searchParams.get('state')) return redirection(`/?discord=erreur${PAGE_RECOS}`, [efface]);
+      if (url.searchParams.get('error')) return redirection(retourPage('discord', 'refus'), [efface]);
+      if (!code || !etat || etat !== url.searchParams.get('state')) return redirection(retourPage('discord', 'erreur'), [efface]);
       try {
         const j = await jetons({ grant_type: 'authorization_code', code, redirect_uri: `${url.origin}/api/discord/callback` });
         const moi = await discord.membre<{ id: string; username: string; global_name?: string | null }>(j.access_token, '/users/@me');
@@ -244,7 +248,7 @@ export function creerRouteur(d: Dependances) {
         };
         return redirection(PAGE_RECOS, [efface, cookie(COOKIE_SESSION, await sceller(session, d.env.cle), DUREE_SESSION_S, securise)]);
       } catch {
-        return redirection(`/?discord=erreur${PAGE_RECOS}`, [efface]);
+        return redirection(retourPage('discord', 'erreur'), [efface]);
       }
     }
 

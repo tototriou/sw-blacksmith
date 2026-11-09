@@ -11,6 +11,7 @@ import { creerRouteur, PAGE_RECOS } from '../api/_source/service/routeur';
 import { COOKIE_ETAT, COOKIE_SESSION, desceller, estSession, lireCookies, sceller, signer, verifierSignature, type Cle, type Session } from '../api/_source/service/session';
 import { fr } from '../src/i18n/fr';
 import { decodeRecosJson, encodeRecosJson } from '../src/lib/recoShare';
+import { retourDeConnexion } from '../src/lib/discordClient';
 import type { Reco } from '../src/types';
 import { egal, ok, titre } from './outils';
 
@@ -207,10 +208,12 @@ export async function testDiscordRouteurConnexion() {
   ok((login.headers.get('set-cookie') ?? '').includes('HttpOnly') && (login.headers.get('set-cookie') ?? '').includes('Secure'), 'cookie HttpOnly et Secure');
 
   const faux = await r.traiter(requete(`callback&code=c&state=autre`, { cookie: `${COOKIE_ETAT}=${etat}` }));
-  egal(faux.headers.get('location'), `/?discord=erreur${PAGE_RECOS}`, 'un état qui ne correspond pas : refusé, aucune session');
+  // Ce que la page lira : le paramètre de l'adresse, puis la route.
+  const lu = (r: Response) => { const u = new URL(r.headers.get('location') ?? '', ORIGINE); return [retourDeConnexion(u.search), u.hash]; };
+  egal(lu(faux), ['erreur', '#/siege/recommandations'], 'un état qui ne correspond pas : refusé, aucune session, et la page le lit');
   ok(!faux.headers.getSetCookie().some((c) => c.startsWith(`${COOKIE_SESSION}=`)), 'aucun cookie de session posé');
   const refus = await r.traiter(requete(`callback&error=access_denied&state=${etat}`, { cookie: `${COOKIE_ETAT}=${etat}` }));
-  egal(refus.headers.get('location'), `/?discord=refus${PAGE_RECOS}`, 'autorisation refusée par le membre : dit à la page');
+  egal(lu(refus), ['refus', '#/siege/recommandations'], 'autorisation refusée par le membre : la page le lit');
 
   const retour = await r.traiter(requete(`callback&code=c&state=${etat}`, { cookie: `${COOKIE_ETAT}=${etat}` }));
   egal(retour.headers.get('location'), PAGE_RECOS, 'connecté : retour à la page Recommandations');
