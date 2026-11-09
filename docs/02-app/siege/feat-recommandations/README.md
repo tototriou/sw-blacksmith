@@ -17,6 +17,7 @@ Fichiers :
 - [ownedBuilds.ts](src/lib/ownedBuilds.ts) — collecte de tous les builds du joueur.
 - [recoFromSiege.ts](src/lib/recoFromSiege.ts) — deck pré-rempli depuis une équipe d'offense.
 - [recoSearch.ts](src/lib/recoSearch.ts) — recherche d'un monstre dans les recos (calcul pur).
+- [recoDiscord.ts](src/lib/recoDiscord.ts) — recommandations liées à un salon Discord : état, synchronisation, fusion à trois voies (calcul pur).
 - [api/_source/](../../../../api/_source/discord.ts) — le service qui synchronise les recommandations avec Discord.
 
 ## Le changement touche…
@@ -35,6 +36,7 @@ Fichiers :
 | le repli, l'édition, `src/lib/annulerEdition.ts` | [interactions.md](interactions.md) |
 | `src/lib/recoFromSiege.ts`, « Importer un deck d'offense » | [import-deck-offense.md](import-deck-offense.md) |
 | `api/`, `vercel.json`, `scripts/construire-api.mjs`, le service Discord, ses routes, droits, cache et variables | [service-discord.md](service-discord.md) |
+| `src/lib/recoDiscord.ts`, une recommandation liée à un salon, son état, la synchronisation, la fusion à trois voies, les favoris | [synchronisation-discord.md](synchronisation-discord.md) |
 
 ## Parties
 
@@ -51,6 +53,7 @@ Fichiers :
 | [confrontation.md](confrontation.md) | « Analyser mes decks » : à la demande, depuis « Options » au doigt, ce que l'analyse affiche (ordre, filtres de verdict, « réalisable N fois »), source des builds, causes d'un `ko`. |
 | [interactions.md](interactions.md) | Le repli de la recommandation et deck par deck, les trois niveaux d'édition, « Annuler les modifications », la rangée du titre et des icônes d'action. |
 | [import-deck-offense.md](import-deck-offense.md) | « Importer un deck d'offense » : un deck pré-rempli depuis une équipe d'offense existante. |
+| [synchronisation-discord.md](synchronisation-discord.md) | Une recommandation liée à un salon Discord, sur l'appareil : le lien, l'état (à jour, modifiée, conflit), la lecture des salons, délier, publier, la fusion à trois voies, les favoris, le stockage. |
 | [service-discord.md](service-discord.md) | Le service qui synchronise les recommandations avec les salons Discord : routes, droits, publication et conflit, session, cache, empaquetage, variables d'environnement. |
 
 ## Limites connues / évolutions possibles

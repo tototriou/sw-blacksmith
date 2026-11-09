@@ -381,6 +381,22 @@ function recoToJson(r: Reco) {
   };
 }
 
+// Empreinte du CONTENU d'une recommandation — nom, consignes et decks, sous la
+// forme normalisée de l'export —, sans auteur, contributeurs ni source. Deux
+// recommandations de même contenu ont la même empreinte, qu'elles viennent du
+// stockage (`[[]]` pour des sets vides) ou d'un fichier (`[]`) : c'est elle qui
+// dit si une recommandation liée est modifiée (lib/recoDiscord.ts).
+export function empreinteContenu(r: Pick<Reco, 'name' | 'note' | 'decks'>): string {
+  const j = recoToJson({ id: '', origin: 'mine', author: '', name: r.name, note: r.note, decks: r.decks });
+  return JSON.stringify([j.nom, j.consignes, j.decks]);
+}
+
+// Empreinte d'un deck, même normalisation. Un deck sans monstre n'en a pas
+// d'autre que « vide » : il n'est jamais exporté.
+export function empreinteDeck(d: RecoDeck): string {
+  return JSON.stringify(recoToJson({ id: '', origin: 'mine', author: '', name: '', note: '', decks: [d] }).decks);
+}
+
 // Sérialise en JSON indenté (fichier destiné à être lu par un humain).
 export function encodeRecosJson(recos: Reco[]): string {
   const utiles = recos.filter((r) => r.decks.some((d) => d.slots.some((s) => s.com2usId != null)));
