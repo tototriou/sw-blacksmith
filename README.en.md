@@ -15,6 +15,12 @@ for a monster, share deck recommendations with your guild.
 never sent anywhere. Nothing leaves your device unless you choose to, nothing is kept without your
 consent, and “Delete all” erases everything.
 
+## The Discord bot
+
+A Discord bot lets a guild share its siege recommendations in a channel, with no file to pass
+around: every signed-in member finds them in the app and can publish their own. It is optional:
+without signing in to Discord, nothing changes.
+
 ## Documentation
 
 The documentation is written in French.

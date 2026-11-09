@@ -15,6 +15,12 @@ meilleur build d'un monstre, partager des recommandations de decks avec sa guild
 et n'est jamais envoyé nulle part. Rien ne quitte ton appareil sans un geste de ta part, rien n'est
 conservé sans ton accord, et « Tout supprimer » efface tout.
 
+## Le bot Discord
+
+Un bot Discord permet à une guilde de partager ses recommandations de siège dans un salon, sans
+fichier à s'échanger : chaque membre connecté les retrouve dans l'app et peut y publier les
+siennes. C'est une option : sans connexion à Discord, rien ne change.
+
 ## Documentation
 
 - **Ce que fait l'app, comment elle est construite** :
