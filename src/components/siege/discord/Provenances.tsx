@@ -123,8 +123,7 @@ export function ListeProvenances(p: PropsProvenances) {
 }
 
 // Le compte Discord, en pied : connecté (qui, Actualiser, Se déconnecter), ou
-// l'encart de connexion. ⚠️ « Se connecter » est TOUJOURS affiché, désactivé
-// avec sa raison dans l'application de bureau, jamais retiré.
+// l'encart de connexion.
 export function CompteDiscord(p: PropsProvenances) {
   const t = useTraduction().recosDiscord;
   const d = p.discord;
@@ -146,16 +145,16 @@ export function CompteDiscord(p: PropsProvenances) {
         <span className="text-micro text-ink-dim">
           {d.statut === 'lecture' ? t.compte.lecture : minutes != null ? t.compte.lusIlYa(minutes) : ''}
         </span>
+        {/* Application de bureau sans chiffrement sûr (Linux sans trousseau). */}
+        {!d.conservable && <span className="text-micro text-warn" data-connexion-non-gardee>{t.compte.nonGardee}</span>}
       </div>
     );
   }
-  const bureau = d.statut === 'bureau';
   return (
     <div className="flex flex-col gap-2 rounded-lg border border-dashed border-border bg-panel2 p-2.5 text-xs text-ink-dim" data-compte-discord="deconnecte">
       <b className="text-sm text-ink">{t.connexion.titre}</b>
       <span>{t.connexion.texte}</span>
-      <Bouton onClick={p.onConnecter} disabled={bureau} title={bureau ? t.connexion.bureau : undefined}
-        fond="plein" ton="accent" taille={p.auDoigt ? 'md' : 'sm'} pleineLargeur libelle={t.connexion.bouton} />
+      <Bouton onClick={p.onConnecter} fond="plein" ton="accent" taille={p.auDoigt ? 'md' : 'sm'} pleineLargeur libelle={t.connexion.bouton} />
       <Bouton onClick={p.onAideInstallation} fond="vide" trait="aucun" taille="sm" icone={<HelpCircle size={13} />} libelle={t.connexion.installer} />
     </div>
   );

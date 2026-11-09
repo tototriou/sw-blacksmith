@@ -107,9 +107,11 @@ ceux du salon.
 
 - ⚠️ **Rien ne part sans un geste de l'utilisateur.** Le réglage « Discord
   activé » ([useReglagesDiscord.ts](src/hooks/useReglagesDiscord.ts)) s'allume
-  au clic sur « Se connecter à Discord » et s'éteint à la déconnexion, à une
-  session échue ou à une connexion refusée. Éteint, la page n'appelle jamais
-  le service. La session elle-même vit dans un cookie que la page ne lit pas.
+  au clic sur « Se connecter à Discord » (dans l'application de bureau : au
+  code accepté) et s'éteint à la déconnexion, à une session échue ou à une
+  connexion refusée. Éteint, la page n'appelle jamais le service. La session
+  elle-même vit dans un cookie que la page ne lit pas — dans l'application de
+  bureau, dans le processus principal.
 - **À l'ouverture de la page**, Discord activé, puis sur « Actualiser » :
   les sources, puis la version de chaque salon, en parallèle, et la
   synchronisation. Un salon refusé compte comme un accès perdu ; un salon en
@@ -118,8 +120,18 @@ ceux du salon.
   liée du salon, sans attendre une relecture que le cache de 15 s du service
   pourrait encore servir à l'ancienne. **Détacher** relit les salons, pour que
   celle du salon reparaisse.
-- **L'application de bureau** n'a pas encore de session Discord : la
-  connexion y reste désactivée.
+- **L'application de bureau** appelle le service par son processus
+  principal (`recupererParLeBureau`, [bureau.ts](src/lib/bureau.ts)) : le
+  client et la synchronisation sont les mêmes. Sa connexion passe par le
+  navigateur du système, puis par le code que le site affiche, collé dans un
+  dialogue (statut `code`) ; un code refusé se dit dans le dialogue, qui
+  reste ouvert. Sans chiffrement sûr, la connexion ne survit pas à la
+  fermeture, et le pied de la colonne le dit. Le détail :
+  [bureau/README.md](../../bureau/README.md#discord).
+- **Le site, au retour d'une connexion demandée par l'application de
+  bureau** (`?discord-bureau=<code>`), ouvre un dialogue qui montre le code à
+  copier, sans toucher à sa propre connexion ; un refus ou un échec
+  (`refus-bureau`, `erreur-bureau`) se dit par une notification.
 
 L'écran : [rendu-de-la-page.md](rendu-de-la-page.md#provenances-et-discord).
 

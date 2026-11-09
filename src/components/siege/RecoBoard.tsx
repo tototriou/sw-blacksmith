@@ -39,7 +39,9 @@ import {
 import type { VersionSalon } from '../../types';
 import { ColonneProvenances, SelecteurProvenance, type PropsProvenances } from './discord/Provenances';
 import BandeauSalon from './discord/BandeauSalon';
-import { DialogueConnexion, DialogueFusion, DialogueInstallation, DialoguePublierDans } from './discord/DialoguesDiscord';
+import {
+  DialogueCodeBureau, DialogueCodeSite, DialogueConnexion, DialogueFusion, DialogueInstallation, DialoguePublierDans,
+} from './discord/DialoguesDiscord';
 
 interface Props {
   onImporterEquipe: ActionImportOptimizer;
@@ -1023,7 +1025,7 @@ export default function RecoBoard({
                   : undefined}
                 onDetacher={reco.lien ? () => setADetacher(reco) : undefined}
                 publierDans={reco.lien ? undefined : {
-                  raison: discord.etat.statut === 'bureau' ? td.connexion.bureau : connecte ? null : td.publierDansHorsConnexion,
+                  raison: connecte ? null : td.publierDansHorsConnexion,
                   onClick: () => setAPublierDans(reco),
                 }}
                 raisonsExportOptimizer={disponibilitesExport.get(reco.id)!}
@@ -1065,6 +1067,12 @@ export default function RecoBoard({
           onContinuer={() => { setConnexionOuverte(false); discord.connecter(); }}
         />
       )}
+      {/* Application de bureau : le code que le site affiche, collé ici. */}
+      {discord.etat.statut === 'code' && (
+        <DialogueCodeBureau onValider={discord.validerCode} onRelancer={discord.connecter} onFermer={discord.annulerCode} />
+      )}
+      {/* Site : le code à copier dans l'application de bureau. */}
+      {discord.codeAffiche && <DialogueCodeSite code={discord.codeAffiche} onFermer={discord.fermerCode} />}
       {installationOuverte && <DialogueInstallation onFermer={() => setInstallationOuverte(false)} />}
       {aPublierDans && (
         <DialoguePublierDans

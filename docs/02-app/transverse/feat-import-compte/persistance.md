@@ -245,7 +245,9 @@ Ce qui part :
 - **le compte importé**, en IndexedDB (`clearAccount()`, attendu avant le
   rechargement) ;
 - dans l'**application de bureau**, la **session en cours** est oubliée : l'app
-  repart vide, et un Ctrl+S réécrirait le fichier avec ce vide.
+  repart vide, et un Ctrl+S réécrirait le fichier avec ce vide. La
+  **connexion à Discord** aussi (`discord.json`), comme toute donnée gardée
+  avec « Garder mes données ».
 
 Ce qui reste :
 

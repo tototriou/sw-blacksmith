@@ -16,7 +16,7 @@ Fichiers :
 - [discordApi.ts](../../../../api/_source/service/discordApi.ts) — les appels à l'API de Discord.
 - [scripts/construire-api.mjs](../../../../scripts/construire-api.mjs) — l'empaquetage au build.
 - [vercel.json](../../../../vercel.json) — région et réécriture des routes.
-- Tests : [tests/discord-service.test.ts](../../../../tests/discord-service.test.ts), Discord simulé.
+- Tests : [tests/discord-service.test.ts](../../../../tests/discord-service.test.ts), devant un Discord simulé ([tests/discord-simule.ts](../../../../tests/discord-simule.ts)), qui sert aussi à la preuve de l'application de bureau (`npm run bureau:preuve -- --discord`).
 
 ## Routes
 
@@ -27,8 +27,9 @@ code (`erreur`), que la page traduit.
 
 | Route | Rôle |
 | --- | --- |
-| `GET login` | Renvoie vers l'autorisation Discord (scopes `identify` et `guilds`), avec un état anti-falsification gardé 10 minutes dans un cookie. |
-| `GET callback` | Retour de Discord : vérifie l'état, échange le code contre les jetons, pose la session, renvoie vers `/#/siege/recommandations`. Refus du membre : `/?discord=refus#…` ; état faux ou échange raté : `/?discord=erreur#…`, sans session. |
+| `GET login` | Renvoie vers l'autorisation Discord (scopes `identify` et `guilds`), avec un état anti-falsification gardé 10 minutes dans un cookie. `?bureau=<défi>` : la connexion est demandée par l'application de bureau (voir « Application de bureau ») ; le défi est gardé avec l'état, et un défi mal formé est refusé (400). |
+| `GET callback` | Retour de Discord : vérifie l'état, échange le code contre les jetons, pose la session, renvoie vers `/#/siege/recommandations`. Refus du membre : `/?discord=refus#…` ; état faux ou échange raté : `/?discord=erreur#…`, sans session. Pour l'application de bureau : aucune session sur le site, renvoi vers `/?discord-bureau=<code>#…` (le code à copier), ou `refus-bureau` / `erreur-bureau`. |
+| `POST bureau-echange` | Corps `{ code, secret }` : le code collé dans l'application de bureau, et le secret dont le défi est l'empreinte. Rend `{ session, utilisateur }` — la session scellée, que l'app garde ; 400 si le code est illisible, a plus de 10 minutes, ou si le secret ne correspond pas. |
 | `GET session` | `{ connecte, utilisateur }` ; 401 sans session valide. |
 | `POST deconnexion` | Révoque le jeton chez Discord et efface le cookie (204). |
 | `GET sources` | Les serveurs communs au membre et au bot, et dans chacun les salons `blacksmith-reco…` que le bot et le membre peuvent lire, avec le droit de publier (`ecrire`) ; `botAdmin` signale un bot administrateur, sans bloquer. Un serveur sans tel salon n'est pas renvoyé. |
@@ -56,7 +57,9 @@ puis les exceptions du salon (`@everyone`, rôles, membre).
 ## Publier
 
 1. Origine de la requête : la page elle-même (403 sinon), en plus du cookie
-   `SameSite=Lax`.
+   `SameSite=Lax`. Une requête de l'application de bureau, qui n'a pas
+   d'origine web, porte sa session en `Authorization: Bearer` : aucun cookie,
+   donc rien qu'un autre site puisse faire porter à une requête.
 2. Droits (403), puis droit du bot de joindre un fichier (503).
 3. **Lecture directe du salon, jamais par le cache** : si sa version courante
    n'est pas `base`, réponse 409 `{ conflit, version }` avec la version à
@@ -101,6 +104,30 @@ cookie réécrit. Un cookie illisible, altéré ou d'une autre clé vaut « pas 
 session » ; un jeton refusé par Discord aussi, et le cookie est effacé. Un
 jeton du **bot** refusé est une erreur de configuration (502), qui ne
 déconnecte pas le membre.
+
+La session porte aussi **sa propre fin** (`fin`, 30 jours, repoussée à chaque
+renouvellement) : le cookie expire de lui-même, la session gardée par
+l'application de bureau non.
+
+## Application de bureau
+
+L'app n'a ni cookie ni origine web
+([bureau/README.md](../../bureau/README.md#discord) pour son côté) :
+
+1. « Se connecter » tire un **secret** (32 octets) dans le processus
+   principal, et ouvre le navigateur du système sur `login?bureau=<défi>`,
+   le défi étant l'empreinte SHA-256 du secret.
+2. Au retour de Discord, le service scelle la session avec le défi et une
+   échéance de **10 minutes** : c'est le **code**, que le site affiche, à
+   copier dans l'app. Il ne pose aucune session sur le site.
+3. L'app envoie le code et son secret à `bureau-echange`, qui rend la session
+   scellée. ⚠️ Le service ne garde rien : il ne peut pas empêcher qu'un code
+   serve deux fois en 10 minutes ; sans le secret, qui n'a jamais quitté
+   l'app, le code ne sert à rien. Le code n'est pas une session : présenté
+   tel quel, il est refusé.
+4. Ensuite, chaque appel porte la session en `Authorization: Bearer` (le
+   cookie est alors ignoré). Une session renouvelée revient dans l'en-tête
+   `x-session-discord`, jamais en cookie.
 
 ## Cache
 

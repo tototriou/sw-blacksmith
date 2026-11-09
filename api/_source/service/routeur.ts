@@ -12,12 +12,16 @@ import { client, ErreurDiscord, API, type Recuperer } from './discordApi';
 import { droitsServeur, droitsSurSalon, estAdministrateur, resumeDroits, type DroitsSalon, type Exception, type Role, type Salon } from './droits';
 import { candidats, lireVersion, nomDuMembre, NOM_FICHIER, preparerPublication, sourceDuSalon, TAILLE_MAX, type MessageDiscord } from './recoSalon';
 import {
-  COOKIE_ETAT, COOKIE_SESSION, cookie, cookieEfface, desceller, DUREE_ETAT_S, DUREE_SESSION_S, estSession, lireCookies, sceller, signer,
-  verifierSignature, type Cle, type Session,
+  COOKIE_ETAT, COOKIE_SESSION, cookie, cookieEfface, desceller, DUREE_CODE_S, DUREE_ETAT_S, DUREE_SESSION_S, empreinte, ENTETE_SESSION, estCodeBureau,
+  estSession, FORME_DEFI, jetonPorteur, lireCookies, sceller, signer, verifierSignature, type Cle, type CodeBureau, type Session,
 } from './session';
 
 export const PREFIXE_SALON = 'blacksmith-reco';
-export const PAGE_RECOS = '/#/siege/recommandations';
+const ROUTE_RECOS = '#/siege/recommandations';
+export const PAGE_RECOS = `/${ROUTE_RECOS}`;
+// ⚠️ Le paramètre AVANT la route : `/?discord=refus#/siege/…`. Collé après
+// `PAGE_RECOS`, il deviendrait `discord=refus/`, que la page ne reconnaît pas.
+export const retourPage = (parametre: string, valeur: string) => `/?${parametre}=${valeur}${ROUTE_RECOS}`;
 const DUREE_CACHE_MS = 30_000; // droits, rôles et salons d'un serveur (décision du 2026-11-09)
 const CACHE_LECTURE_S = 15; // lecture d'un salon, partagée par le CDN entre membres
 const CACHE_SALONS_S = 60; // liste des salons d'un serveur : 10 lectures par minute chez Discord
@@ -194,15 +198,20 @@ export function creerRouteur(d: Dependances) {
     return (await r.json()) as { access_token: string; refresh_token: string; expires_in: number };
   }
 
-  // La session du cookie, renouvelée si son jeton d'accès arrive à échéance.
-  async function lireSession(requete: Request, securise: boolean): Promise<{ session: Session; cookies: string[] } | null> {
-    const brut = await desceller<unknown>(lireCookies(requete.headers.get('cookie')).get(COOKIE_SESSION), d.env.cle);
-    if (!estSession(brut)) return null;
-    if (brut.expire > d.maintenant() + MARGE_RENOUVELLEMENT_MS) return { session: brut, cookies: [] };
+  const finDeSession = () => d.maintenant() + DUREE_SESSION_S * 1000;
+
+  // La session — du cookie (site) ou de `Authorization: Bearer` (application
+  // de bureau) —, renouvelée si son jeton d'accès arrive à échéance :
+  // `renouvelee` est alors la session scellée à rendre.
+  async function lireSession(requete: Request, jeton: string | null): Promise<{ session: Session; renouvelee: string | null } | null> {
+    const scellee = jeton ?? lireCookies(requete.headers.get('cookie')).get(COOKIE_SESSION);
+    const brut = await desceller<unknown>(scellee, d.env.cle);
+    if (!estSession(brut) || brut.fin <= d.maintenant()) return null;
+    if (brut.expire > d.maintenant() + MARGE_RENOUVELLEMENT_MS) return { session: brut, renouvelee: null };
     try {
       const j = await jetons({ grant_type: 'refresh_token', refresh_token: brut.renouvellement });
-      const session: Session = { ...brut, acces: j.access_token, renouvellement: j.refresh_token, expire: d.maintenant() + j.expires_in * 1000 };
-      return { session, cookies: [cookie(COOKIE_SESSION, await sceller(session, d.env.cle), DUREE_SESSION_S, securise)] };
+      const session: Session = { ...brut, acces: j.access_token, renouvellement: j.refresh_token, expire: d.maintenant() + j.expires_in * 1000, fin: finDeSession() };
+      return { session, renouvelee: await sceller(session, d.env.cle) };
     } catch {
       return null;
     }
@@ -214,38 +223,71 @@ export function creerRouteur(d: Dependances) {
     const securise = url.protocol === 'https:';
     const route = `${requete.method} ${chemin}`;
     const nonConnecte = () => json(401, { connecte: false }, {}, [cookieEfface(COOKIE_SESSION, securise)]);
+    // L'application de bureau envoie sa session en `Authorization: Bearer` ;
+    // le cookie est alors ignoré.
+    const jeton = jetonPorteur(requete.headers.get('authorization'));
 
     // Une requête qui modifie quelque chose vient de la page elle-même : même
     // origine, jamais un formulaire d'un autre site (le cookie SameSite=Lax
-    // l'écarte déjà, ceci le vérifie une seconde fois).
-    if (requete.method === 'POST' && requete.headers.get('origin') !== url.origin) return json(403, { erreur: 'origine' });
+    // l'écarte déjà, ceci le vérifie une seconde fois). L'application de
+    // bureau n'a pas d'origine web : sa session n'est pas un cookie, qu'un
+    // autre site ne peut donc pas faire porter à une requête ; l'échange du
+    // code, lui, ne vaut rien sans le secret de l'app.
+    const sansCookie = jeton !== null || route === 'POST bureau-echange';
+    if (requete.method === 'POST' && !sansCookie && requete.headers.get('origin') !== url.origin) return json(403, { erreur: 'origine' });
 
+    // `?bureau=<défi>` : la connexion est demandée par l'application de bureau.
+    // Le défi est gardé avec l'état anti-falsification, dans le même cookie.
     if (route === 'GET login') {
+      const defi = url.searchParams.get('bureau');
+      if (defi !== null && !FORME_DEFI.test(defi)) return json(400, { erreur: 'defi' });
       const etat = Buffer.from(crypto.getRandomValues(new Uint8Array(16))).toString('base64url');
       const params = new URLSearchParams({
         response_type: 'code', client_id: d.env.clientId, scope: 'identify guilds',
         redirect_uri: `${url.origin}/api/discord/callback`, state: etat, prompt: 'none',
       });
-      return redirection(`https://discord.com/oauth2/authorize?${params}`, [cookie(COOKIE_ETAT, etat, DUREE_ETAT_S, securise)]);
+      return redirection(`https://discord.com/oauth2/authorize?${params}`, [cookie(COOKIE_ETAT, defi ? `${etat}.${defi}` : etat, DUREE_ETAT_S, securise)]);
     }
 
     if (route === 'GET callback') {
       const efface = cookieEfface(COOKIE_ETAT, securise);
-      const etat = lireCookies(requete.headers.get('cookie')).get(COOKIE_ETAT);
+      const [etat, defi] = (lireCookies(requete.headers.get('cookie')).get(COOKIE_ETAT) ?? '').split('.');
+      // Pour l'application de bureau, l'échec est dit sur le site sans toucher
+      // à la connexion du site.
+      const echec = (quoi: 'refus' | 'erreur') => redirection(retourPage('discord', defi ? `${quoi}-bureau` : quoi), [efface]);
       const code = url.searchParams.get('code');
-      if (url.searchParams.get('error')) return redirection(`/?discord=refus${PAGE_RECOS}`, [efface]);
-      if (!code || !etat || etat !== url.searchParams.get('state')) return redirection(`/?discord=erreur${PAGE_RECOS}`, [efface]);
+      if (url.searchParams.get('error')) return echec('refus');
+      if (!code || !etat || etat !== url.searchParams.get('state')) return echec('erreur');
       try {
         const j = await jetons({ grant_type: 'authorization_code', code, redirect_uri: `${url.origin}/api/discord/callback` });
         const moi = await discord.membre<{ id: string; username: string; global_name?: string | null }>(j.access_token, '/users/@me');
         const session: Session = {
-          acces: j.access_token, renouvellement: j.refresh_token, expire: d.maintenant() + j.expires_in * 1000,
+          acces: j.access_token, renouvellement: j.refresh_token, expire: d.maintenant() + j.expires_in * 1000, fin: finDeSession(),
           utilisateur: { id: moi.id, nom: (moi.global_name || moi.username).slice(0, 40) },
         };
+        // Application de bureau : aucun cookie de session sur le site ; la
+        // page du site affiche le code à copier dans l'app.
+        if (defi) {
+          const pourBureau: CodeBureau = { session, defi, expire: d.maintenant() + DUREE_CODE_S * 1000 };
+          return redirection(retourPage('discord-bureau', await sceller(pourBureau, d.env.cle)), [efface]);
+        }
         return redirection(PAGE_RECOS, [efface, cookie(COOKIE_SESSION, await sceller(session, d.env.cle), DUREE_SESSION_S, securise)]);
       } catch {
-        return redirection(`/?discord=erreur${PAGE_RECOS}`, [efface]);
+        return echec('erreur');
       }
+    }
+
+    // L'application de bureau échange le code collé contre sa session, en
+    // prouvant qu'elle a demandé la connexion : son secret, dont le défi est
+    // l'empreinte.
+    if (route === 'POST bureau-echange') {
+      let corps: { code?: unknown; secret?: unknown };
+      try { corps = JSON.parse(await requete.text()); } catch { return json(400, { erreur: 'corps' }); }
+      const c = typeof corps.code === 'string' ? await desceller<unknown>(corps.code, d.env.cle) : null;
+      const valide = estCodeBureau(c) && c.expire > d.maintenant() && typeof corps.secret === 'string' && (await empreinte(corps.secret)) === c.defi;
+      if (!valide) return json(400, { erreur: 'code' });
+      const session: Session = { ...c.session, fin: finDeSession() };
+      return json(200, { session: await sceller(session, d.env.cle), utilisateur: session.utilisateur });
     }
 
     if (route === 'GET brut') {
@@ -260,10 +302,16 @@ export function creerRouteur(d: Dependances) {
       return json(200, { salons: await salonsDirect(serveurId) }, { 'Vercel-CDN-Cache-Control': `max-age=${CACHE_SALONS_S}` });
     }
 
-    const lue = await lireSession(requete, securise);
+    const lue = await lireSession(requete, jeton);
+    // Une session renouvelée revient au site par son cookie, à l'application
+    // de bureau par un en-tête.
+    const renouvelee = lue?.renouvelee ?? null;
+    const enTetes: Record<string, string> = renouvelee && jeton ? { [ENTETE_SESSION]: renouvelee } : {};
+    const cookies = renouvelee && !jeton ? [cookie(COOKIE_SESSION, renouvelee, DUREE_SESSION_S, securise)] : [];
+    const repondre = (statut: number, corps: unknown) => json(statut, corps, enTetes, cookies);
 
     if (route === 'GET session') {
-      return lue ? json(200, { connecte: true, utilisateur: lue.session.utilisateur }, {}, lue.cookies) : nonConnecte();
+      return lue ? repondre(200, { connecte: true, utilisateur: lue.session.utilisateur }) : nonConnecte();
     }
 
     if (route === 'POST deconnexion') {
@@ -278,7 +326,7 @@ export function creerRouteur(d: Dependances) {
     }
 
     if (!lue) return nonConnecte();
-    const { session, cookies } = lue;
+    const { session } = lue;
 
     // Les serveurs communs au membre et au bot, et dans chacun les salons de
     // recommandations que le bot et le membre peuvent lire.
@@ -304,7 +352,7 @@ export function creerRouteur(d: Dependances) {
 
     try {
       if (route === 'GET sources') {
-        return json(200, { utilisateur: session.utilisateur, serveurs: await decouvrir() }, {}, cookies);
+        return repondre(200, { utilisateur: session.utilisateur, serveurs: await decouvrir() });
       }
 
       // ⚠️ La lecture d'ouverture de page, en UNE requête : les sources, puis
@@ -315,53 +363,53 @@ export function creerRouteur(d: Dependances) {
         const salons = serveurs.flatMap((s) => s.salons.map((c) => c.id));
         const lues = await Promise.all(salons.map((id) => lireEnCache(url.origin, id).then(versionLue)));
         const versions = Object.fromEntries(salons.map((id, i) => [id, lues[i]]));
-        return json(200, { utilisateur: session.utilisateur, serveurs, versions }, {}, cookies);
+        return repondre(200, { utilisateur: session.utilisateur, serveurs, versions });
       }
 
       if (route === 'GET salon') {
         const salonId = url.searchParams.get('id') ?? '';
         const a = await acces(salonId, session.utilisateur.id);
-        if (!a || !a.utilisateur.lire || !a.bot.lire) return json(403, { acces: false }, {}, cookies);
+        if (!a || !a.utilisateur.lire || !a.bot.lire) return repondre(403, { acces: false });
         const version = versionLue(await lireEnCache(url.origin, salonId));
-        return json(200, { serveurId: a.serveurId, salonId, nom: a.salon.name, ecrire: a.utilisateur.ecrire && a.bot.joindre, version }, {}, cookies);
+        return repondre(200, { serveurId: a.serveurId, salonId, nom: a.salon.name, ecrire: a.utilisateur.ecrire && a.bot.joindre, version });
       }
 
       if (route === 'POST publier') {
         const texte = await requete.text();
-        if (texte.length > TAILLE_MAX * 2) return json(413, { erreur: 'trop-gros' }, {}, cookies);
+        if (texte.length > TAILLE_MAX * 2) return repondre(413, { erreur: 'trop-gros' });
         let corps: { salon?: unknown; base?: unknown; contenu?: unknown };
-        try { corps = JSON.parse(texte); } catch { return json(400, { erreur: 'corps' }, {}, cookies); }
+        try { corps = JSON.parse(texte); } catch { return repondre(400, { erreur: 'corps' }); }
         if (typeof corps.salon !== 'string' || typeof corps.contenu !== 'string' || (corps.base !== null && typeof corps.base !== 'string')) {
-          return json(400, { erreur: 'corps' }, {}, cookies);
+          return repondre(400, { erreur: 'corps' });
         }
         const a = await acces(corps.salon, session.utilisateur.id);
-        if (!a || !a.utilisateur.ecrire) return json(403, { acces: !!a?.utilisateur.lire }, {}, cookies);
-        if (!a.bot.joindre) return json(503, { erreur: 'bot-sans-droit' }, {}, cookies);
+        if (!a || !a.utilisateur.ecrire) return repondre(403, { acces: !!a?.utilisateur.lire });
+        if (!a.bot.joindre) return repondre(503, { erreur: 'bot-sans-droit' });
         // ⚠️ Lecture DIRECTE, jamais par le cache : la comparaison à la base
         // doit voir la toute dernière version (« publier relit le salon »).
         const courante = await lireDirect(corps.salon);
-        if ((courante?.messageId ?? null) !== corps.base) return json(409, { conflit: true, version: versionLue(courante) }, {}, cookies);
+        if ((courante?.messageId ?? null) !== corps.base) return repondre(409, { conflit: true, version: versionLue(courante) });
         const precedente = courante ? lireVersion(courante.texte, d.t) : null;
         const publieur = nomDuMembre(a.membre) || session.utilisateur.nom;
         const p = preparerPublication(corps.contenu, publieur, precedente, sourceDuSalon(a.serveurId, corps.salon), d.t);
-        if (!p.ok) return json(400, { erreur: 'contenu', details: p.erreurs }, {}, cookies);
+        if (!p.ok) return repondre(400, { erreur: 'contenu', details: p.erreurs });
         const fd = new FormData();
         fd.append('payload_json', JSON.stringify({ attachments: [{ id: 0, filename: NOM_FICHIER }] }));
         fd.append('files[0]', new Blob([p.texte], { type: 'application/json' }), NOM_FICHIER);
         const message = await discord.bot<{ id: string; timestamp: string }>(`/channels/${corps.salon}/messages`, { method: 'POST', body: fd });
-        return json(201, { version: { messageId: message.id, date: message.timestamp, reco: p.reco } }, {}, cookies);
+        return repondre(201, { version: { messageId: message.id, date: message.timestamp, reco: p.reco } });
       }
     } catch (e) {
       // Le jeton du membre refusé par Discord : la session ne vaut plus rien.
       if (e instanceof ErreurDiscord && e.statut === 401 && e.duMembre) return nonConnecte();
       // Discord limite les appels au-delà de ce que le service attend : la
       // page le dit (« réessaie dans une minute ») plutôt qu'une panne.
-      if (e instanceof ErreurDiscord && e.statut === 429) return json(503, { erreur: 'limite' }, {}, cookies);
-      if (e instanceof ErreurDiscord) return json(502, { erreur: 'discord', statut: e.statut }, {}, cookies);
+      if (e instanceof ErreurDiscord && e.statut === 429) return repondre(503, { erreur: 'limite' });
+      if (e instanceof ErreurDiscord) return repondre(502, { erreur: 'discord', statut: e.statut });
       throw e;
     }
 
-    return json(404, { erreur: 'route' }, {}, cookies);
+    return repondre(404, { erreur: 'route' });
   }
 
   return { traiter };

@@ -15,8 +15,15 @@
   Gateway. Les recommandations vivent sur l'appareil du membre et dans les salons Discord.
 - **La session tient dans un cookie** `HttpOnly` signé et chiffré, sur le site, pour 30 jours. Il
   contient le jeton Discord du membre et son jeton de renouvellement, pour relire ses serveurs à
-  chaque requête. Dans l'application de bureau, la session est gardée par `safeStorage` dans le
-  processus principal, d'où partent les appels au service.
+  chaque requête. **Dans l'application de bureau**, la même session scellée est gardée par le
+  processus principal, d'où partent les appels au service (en `Authorization: Bearer`) ; la page
+  ne la voit jamais. Elle n'est écrite sur le disque, chiffrée par le système (`safeStorage`),
+  qu'avec « Garder mes données », et jamais sans chiffrement sûr. La session porte sa propre fin,
+  30 jours après son dernier renouvellement.
+- **L'application de bureau se connecte par le navigateur du système, puis par un code à
+  copier** : le site affiche, au retour de Discord, un code que l'utilisateur colle dans l'app.
+  Le code ne s'échange contre la session qu'avec un secret que l'app seule connaît, et dont le
+  navigateur n'a reçu que l'empreinte ; il vaut 10 minutes.
 - **L'app demande le strict nécessaire à Discord** : l'identité du membre (`identify`) et la liste
   de ses serveurs (`guilds`), croisée avec ceux du bot. Les droits du membre sur chaque salon sont
   recalculés par le service à chaque requête, avec un cache en mémoire de 30 secondes au plus.
@@ -42,6 +49,10 @@
   ([recoShare.ts](../../../src/lib/recoShare.ts)), qui sert déjà aux imports de fichiers.
 - **Garder le jeton Discord dans le cookie** tient la liste des serveurs toujours à jour : un
   serveur rejoint après la connexion apparaît sans se reconnecter.
+- **Un code à copier marche partout** : ni protocole à déclarer au système (que l'AppImage, qui
+  ne s'installe pas, ne déclare pas), ni serveur local à ouvrir le temps de la connexion. Le
+  service, sans état, ne peut pas garantir qu'un code ne sert qu'une fois : c'est le secret de
+  l'app qui le rend inutile à qui l'intercepterait.
 - **Discord n'accepte qu'environ 5 lectures par seconde et par salon, et 10 par minute de la
   liste des salons d'un serveur** : un soir de siège, toute la guilde ouvre la page en même temps. Un cache commun à tous les membres tient ce débit ; un
   cache par instance de fonction ne le tiendrait pas, Vercel en lançant plusieurs sous la charge.
@@ -72,6 +83,12 @@
   plus, propre à Vercel, pour ce que le CDN fait déjà.
 - **Réessayer sans cache quand Discord refuse** (possibilité écartée) : la page mettrait plusieurs
   secondes à charger un soir de siège.
+- **Le retour automatique de la connexion au bureau** (possibilité écartée) : un lien profond
+  `swblacksmith://`, ou un serveur local sur `127.0.0.1` vers lequel le site renverrait, éviterait
+  le copier-coller ; le premier ne marche pas avec l'AppImage, le second ouvre un port sur la
+  machine le temps de la connexion.
+- **La session du bureau en cookie, la page appelant le service** (possibilité écartée) : il
+  faudrait autoriser l'origine `app://` côté service et un cookie entre deux origines.
 - **Les permissions du bot sur tout le serveur** (possibilité écartée) : l'installation tiendrait
   en un clic, mais le bot verrait tous les salons publics.
 
