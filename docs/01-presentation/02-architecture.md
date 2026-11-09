@@ -64,6 +64,21 @@ La même app sert les deux. Le code propre au bureau vit dans `bureau/`, hors de
 dans Node. Côté page, `src/lib/bureau.ts` (`estBureau()`) dit si l'on est au bureau. Détail :
 [bureau/](../02-app/bureau/README.md).
 
+## Le service Discord
+
+```mermaid
+flowchart LR
+  Page["page Recommandations"] -->|"/api/discord/*"| Fonction["api/discord.mjs<br/>(fonction Vercel, Paris)"]
+  Source["api/_source/ + src/lib/recoShare.ts"] -->|"npm run build (esbuild)"| Fonction
+  Fonction -->|"API REST, jeton du bot ou du membre"| Discord[("salons blacksmith-reco…")]
+  Fonction -->|"lecture d'un salon, 15 s"| CDN["CDN Vercel"]
+```
+
+Seule voie réseau de l'app, et seulement sur demande : se connecter à Discord, lire et publier les
+recommandations d'une guilde. Le service ne garde rien ; la session vit dans un cookie chiffré.
+Détail : [service-discord.md](../02-app/siege/feat-recommandations/service-discord.md) ; décisions :
+[local-par-defaut.md](../04-decisions/adr/local-par-defaut.md).
+
 ## Le shell — `src/App.tsx`
 
 Fichier central, gros et volontairement : il tient tout ce qui doit être partagé entre pages.

@@ -469,6 +469,10 @@ export interface Reco {
   // l'import, la recommandation qu'un fichier complète — malgré un renommage ou
   // une date dans le nom (voir lib/recoFusion.ts). Transporté dans l'export.
   source?: string;
+  // Membres qui ont publié la recommandation dans son salon Discord, dans
+  // l'ordre de leur première publication, sous leur surnom du serveur. Écrits
+  // par le service à la publication, jamais saisis (docs/04-decisions/adr/un-salon-une-reco.md).
+  contributeurs?: string[];
 }
 
 // Contenu transportable d'une recommandation : ni l'id (régénéré), ni l'origine

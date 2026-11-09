@@ -258,3 +258,20 @@ rien. Le rapport de validation reste affiché comme pour tout import.
 - **Gardée** dans le stockage et **repartie** à l'export : une recommandation
   reçue puis repartagée garde sa provenance, et se fusionne encore chez celui
   qui la reçoit.
+
+### Le champ `contributeurs`
+
+```json
+{ "nom": "…", "auteur": "Toto", "contributeurs": ["Toto", "Lulu"], "source": "discord:<serveur>:<salon>", "decks": [ … ] }
+```
+
+- **Facultatif**, jamais saisi : les membres qui ont publié la recommandation
+  dans son salon Discord, dans l'ordre de leur première publication, sous leur
+  surnom du serveur. C'est le service qui l'écrit à la publication, avec
+  l'auteur (le premier publieur) et la source du salon
+  ([service-discord.md](service-discord.md)).
+- **Un champ en plus, pas une version de plus**, comme `source`.
+- À la lecture, un nom vide ou en double est écarté, un nom de plus de 40
+  caractères est coupé, la liste s'arrête à 50 noms ; ce qui n'est pas une
+  liste de textes est ignoré sans avertissement. Une recommandation sans
+  contributeurs n'écrit pas de liste vide.

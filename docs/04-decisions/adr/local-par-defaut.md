@@ -20,6 +20,9 @@
 - **L'app demande le strict nécessaire à Discord** : l'identité du membre (`identify`) et la liste
   de ses serveurs (`guilds`), croisée avec ceux du bot. Les droits du membre sur chaque salon sont
   recalculés par le service à chaque requête, avec un cache en mémoire de 30 secondes au plus.
+- **La lecture d'un salon est partagée** : après la vérification des droits de chaque membre, la
+  version courante d'un salon se lit par une adresse interne signée, que le CDN de Vercel garde
+  15 secondes pour tous les membres. Une publication relit toujours le salon en direct.
 - **Le bot ne reçoit aucune permission à l'invitation** : un admin de guilde l'ajoute dans chaque
   salon de recommandations. Un bot de test distinct, sur un serveur de test, sert aux aperçus
   Vercel.
@@ -38,6 +41,9 @@
   ([recoShare.ts](../../../src/lib/recoShare.ts)), qui sert déjà aux imports de fichiers.
 - **Garder le jeton Discord dans le cookie** tient la liste des serveurs toujours à jour : un
   serveur rejoint après la connexion apparaît sans se reconnecter.
+- **Discord n'accepte qu'environ 5 lectures par seconde et par salon** : un soir de siège, toute
+  la guilde ouvre la page en même temps. Un cache commun à tous les membres tient ce débit ; un
+  cache par instance de fonction ne le tiendrait pas, Vercel en lançant plusieurs sous la charge.
 - **Un bot sans permission à l'invitation ne voit que les salons où on l'a ajouté** ; un bot de
   test distinct empêche qu'une branche poussée, dont l'aperçu porte les variables d'environnement,
   écrive dans les salons des vraies guildes avec le jeton de production.
@@ -58,6 +64,13 @@
   de guildes.
 - **Une liste des serveurs signée dans le cookie, jeton jeté** (possibilité écartée) : un serveur
   rejoint ensuite n'apparaîtrait qu'après une reconnexion.
+- **Des extensions `.js` dans les imports de `src/` qu'atteint le service** (possibilité
+  écartée) : une règle d'import propre à une partie de `src/`, qu'un import ajouté plus tard
+  oublierait.
+- **Le cache de fonctions de Vercel (Runtime Cache)** (possibilité écartée) : une dépendance de
+  plus, propre à Vercel, pour ce que le CDN fait déjà.
+- **Réessayer sans cache quand Discord refuse** (possibilité écartée) : la page mettrait plusieurs
+  secondes à charger un soir de siège.
 - **Les permissions du bot sur tout le serveur** (possibilité écartée) : l'installation tiendrait
   en un clic, mais le bot verrait tous les salons publics.
 
@@ -69,3 +82,8 @@
 - **Le site a un service** : des secrets (identifiant et secret OAuth, jeton du bot, clé de la
   session) en variables d'environnement Vercel, jamais dans le dépôt, qui est public.
 - **Le dépôt gagne un dossier `api`**, couvert par `tsc`, ESLint et les tests comme le reste.
+- **Le service est empaqueté au build** : Vercel compile chaque fichier de `api` séparément, et
+  dans un projet ESM un import relatif sans extension, comme ceux de `src/`, échoue à l'exécution.
+  `npm run build` empaquette donc le service avec esbuild, et la fonction charge le paquet ; `src/`
+  garde ses imports. Les fonctions tournent à Paris. Le détail :
+  [service-discord.md](../../02-app/siege/feat-recommandations/service-discord.md).

@@ -11,7 +11,8 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && node scripts/construire-api.mjs",
+    "dev:api": "node scripts/construire-api.mjs && vercel dev",
     "preview": "vite preview",
     "fetch-data": "node scripts/fetch-monsters.mjs && node scripts/fetch-skills.mjs && node scripts/link-collabs.mjs",
     "fetch-skills": "node scripts/fetch-skills.mjs",

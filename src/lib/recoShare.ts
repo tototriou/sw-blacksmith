@@ -308,6 +308,25 @@ export const COUNTER_NOTE_MAX = 200;
 // reconnaîtrait plus rien et pourrait en confondre deux.
 export const SOURCE_MAX = 200;
 
+// `contributeurs` : les membres qui ont publié la recommandation dans son salon
+// Discord, écrits par le service. Même règle que `source` : un champ en plus,
+// ignoré par une app qui ne le connaît pas. Un nom vide ou en double est
+// écarté, un nom trop long coupé à la longueur de l'auteur ; la liste est
+// bornée, et ce qui n'est pas une liste de textes est ignoré sans bruit.
+export const CONTRIBUTEURS_MAX = 50;
+
+function cleanContributeurs(raw: unknown): string[] | undefined {
+  if (!Array.isArray(raw)) return undefined;
+  const noms: string[] = [];
+  for (const n of raw) {
+    if (typeof n !== 'string') continue;
+    const nom = n.trim().slice(0, 40);
+    if (nom && !noms.includes(nom)) noms.push(nom);
+    if (noms.length === CONTRIBUTEURS_MAX) break;
+  }
+  return noms.length ? noms : undefined;
+}
+
 function cleanSource(raw: unknown, ctx: Issues, where: string, t: Dictionnaire): string | undefined {
   if (raw == null) return undefined;
   if (typeof raw !== 'string') {
@@ -328,6 +347,7 @@ function recoToJson(r: Reco) {
   // À l'écriture les données viennent de l'app : rien à signaler, les messages
   // (en français, la langue du fichier) ne sont jamais lus.
   const out = noIssues();
+  const contributeurs = cleanContributeurs(r.contributeurs);
   return {
     nom: texteSortant(r.name, 60),
     auteur: texteSortant(r.author, 40),
@@ -335,6 +355,7 @@ function recoToJson(r: Reco) {
     // sa provenance, et se fusionne encore chez celui qui la reçoit. Omise
     // quand il n'y en a pas, comme une liste vide.
     ...(r.source?.trim() ? { source: texteSortant(r.source, SOURCE_MAX) } : {}),
+    ...(contributeurs ? { contributeurs } : {}),
     consignes: texteSortant(r.note, NOTE_MAX),
     decks: r.decks
       .filter((d) => d.slots.some((s) => s.com2usId != null))
@@ -490,12 +511,14 @@ export function decodeRecosJson(text: string, t: Dictionnaire, ctx: Issues = noI
     const auteur = r.auteur ?? r.author;
     const consignes = r.consignes ?? r.note;
     const source = cleanSource(r.source, ctx, label, t);
+    const contributeurs = cleanContributeurs(r.contributeurs);
     out.push({
       name,
       author: typeof auteur === 'string' ? auteur.trim().slice(0, 40) : '',
       note: cleanText(consignes, NOTE_MAX, ctx, label, t),
       decks,
       ...(source ? { source } : {}),
+      ...(contributeurs ? { contributeurs } : {}),
     });
   });
 

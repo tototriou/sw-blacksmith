@@ -15,7 +15,8 @@ commits, vérifications) sont dans [AGENTS.md](../../AGENTS.md) et
 | Calcul lourd | Web Workers de recherche, classement et résolution (`src/workers/`) ; corps de calcul partagés avec les outils Node |
 | Langues | français et anglais, par dictionnaires TypeScript typés (`src/i18n/`), sans bibliothèque de traduction ; règle ESLint locale `swblacksmith/texte-en-dur` ([feat-langues.md](../02-app/transverse/feat-langues.md)) |
 | Stockage | `localStorage` (prépa, équipes, réglages) + **IndexedDB** (compte importé) |
-| Déploiement du site | Vercel (preset Vite, sortie `dist`) : déploiement automatique sur `main`, preview par branche |
+| Déploiement du site | Vercel (preset Vite, sortie `dist`, projet `sw-blacksmith`) : déploiement automatique sur `main`, preview par branche |
+| Service | une fonction Vercel sans état, `api/discord.mjs`, à Paris : la synchronisation Discord des recommandations ([service-discord.md](../02-app/siege/feat-recommandations/service-discord.md)) |
 | Application de bureau | Electron, voir ci-dessous |
 
 Développer sur une version de Node et vérifier sur une autre laisse passer des écarts d'API — c'est
@@ -64,7 +65,8 @@ nvm use                # lit .nvmrc
 npm install            # installe aussi les hooks Git (script prepare → scripts/installer-hooks.mjs --automatique)
 npm run fetch-data     # régénère les données monstres et compétences depuis SWARFARM (mode démo si l'API est KO)
 npm run dev            # serveur de dev, http://localhost:5173
-npm run build          # build de prod (⚠️ seul endroit où l'on voit le CSS réellement émis)
+npm run build          # build de prod (⚠️ seul endroit où l'on voit le CSS réellement émis), puis le service api/
+npm run dev:api        # le site et le service Discord en local, http://localhost:3000 (vercel dev)
 npm test               # = node tests/run.mjs
 node tests/run.mjs --lister <filtre>        # sélection finale, sans exécution
 node tests/run.mjs --max-entrees 30 <filtre> # limite explicite avant toute vérification
