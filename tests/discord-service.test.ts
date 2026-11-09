@@ -6,7 +6,7 @@
 
 import { ADMINISTRATEUR, droitsSurSalon, ENVOYER, HISTORIQUE, JOINDRE, resumeDroits, VOIR_LE_SALON, type Role, type Salon } from '../api/_source/service/droits';
 import { API } from '../api/_source/service/discordApi';
-import { lireVersion, nomDuMembre, preparerPublication, versionCourante, type MessageDiscord } from '../api/_source/service/recoSalon';
+import { candidats, ESSAIS_MAX, lireVersion, nomDuMembre, preparerPublication, type MessageDiscord } from '../api/_source/service/recoSalon';
 import { creerRouteur, PAGE_RECOS } from '../api/_source/service/routeur';
 import { COOKIE_ETAT, COOKIE_SESSION, desceller, estSession, lireCookies, sceller, signer, verifierSignature, type Cle, type Session } from '../api/_source/service/session';
 import { fr } from '../src/i18n/fr';
@@ -15,6 +15,7 @@ import type { Reco } from '../src/types';
 import { egal, ok, titre } from './outils';
 
 const S = 'G1'; // serveur
+const CDN = 'https://cdn.discordapp.com/attachments/'; // seul hébergeur de pièces jointes accepté
 const bits = (...b: bigint[]) => b.reduce((a, x) => a | x, 0n).toString();
 const LIRE = bits(VOIR_LE_SALON, HISTORIQUE);
 const TOUT_SALON = bits(VOIR_LE_SALON, HISTORIQUE, ENVOYER, JOINDRE);
@@ -62,11 +63,13 @@ export async function testDiscordSession() {
 
 export function testDiscordRecoSalon() {
   titre('Service Discord — version courante et fichier publié');
-  const m = (id: string, auteur: string, fichiers: string[]): MessageDiscord =>
-    ({ id, timestamp: `t${id}`, author: { id: auteur }, attachments: fichiers.map((f) => ({ url: `u${id}`, filename: f, size: 1 })) });
-  const messages = [m('5', 'U', ['a.json']), m('4', 'B', []), m('3', 'B', ['photo.png']), m('2', 'B', ['recommandation.json']), m('1', 'B', ['recommandation.json'])];
-  egal(versionCourante(messages, 'B')?.message.id, '2', 'la plus récente du bot qui porte un JSON ; ni un membre, ni un message sans fichier');
-  egal(versionCourante([m('9', 'U', ['a.json'])], 'B'), null, 'aucun message du bot : pas de recommandation');
+  const m = (id: string, auteur: string, fichiers: string[], taille = 1, url = `${CDN}${id}`): MessageDiscord =>
+    ({ id, timestamp: `t${id}`, author: { id: auteur }, attachments: fichiers.map((f) => ({ url, filename: f, size: taille })) });
+  const messages = [m('6', 'U', ['Export.JSON']), m('5', 'U', ['gros.json'], 300 * 1024), m('4', 'B', []), m('3', 'B', ['photo.png']),
+    m('2', 'U', ['piege.json'], 1, 'https://ailleurs.example/x.json'), m('1', 'B', ['recommandation.json'])];
+  egal(candidats(messages).map((c) => c.message.id), ['6', '1'],
+    'candidats : un JSON du bot OU d\'un membre ; ni un fichier de plus de 256 Ko, ni une autre extension, ni un lien hors du CDN de Discord');
+  egal(candidats(Array.from({ length: 9 }, (_, i) => m(String(9 - i), 'U', ['a.json']))).length, ESSAIS_MAX, 'au plus 5 fichiers essayés par lecture');
 
   egal(nomDuMembre({ nick: 'Chef de guerre', user: { username: 'toto', global_name: 'Toto' } }), 'Chef de guerre', 'surnom du serveur d\'abord');
   egal(nomDuMembre({ nick: null, user: { username: 'toto', global_name: 'Toto' } }), 'Toto', 'à défaut, le nom d\'affichage');
@@ -163,8 +166,8 @@ function simulateur(w: Monde) {
       const texte = await (fd.get('files[0]') as Blob).text();
       const id = String(++n);
       w.postes.push({ salon: msgs[1], texte });
-      w.pieces[`https://cdn/${id}`] = texte;
-      (w.messages[msgs[1]] ??= []).unshift({ id, timestamp: `t${id}`, author: { id: 'B' }, attachments: [{ url: `https://cdn/${id}`, filename: 'recommandation.json', size: 1 }] });
+      w.pieces[`${CDN}${id}`] = texte;
+      (w.messages[msgs[1]] ??= []).unshift({ id, timestamp: `t${id}`, author: { id: 'B' }, attachments: [{ url: `${CDN}${id}`, filename: 'recommandation.json', size: 1 }] });
       return r({ id, timestamp: `t${id}` });
     }
     return r({ message: `route simulée absente : ${methode} ${chemin}` }, 500);
@@ -249,6 +252,41 @@ export async function testDiscordRouteurSources() {
   egal((await r.traiter(requete('sources'))).status, 401, 'sans session : non connecté');
   const lulu = await (await r.traiter(requete('sources', { cookie: await cookieSession('L') }))).json() as typeof corps;
   egal(lulu.serveurs[0].salons.map((s) => s.ecrire), [false], 'un membre sans droit d\'écrire voit le salon en lecture seule');
+  // ⚠️ Discord n'accepte que 10 lectures par minute de la liste des salons
+  // d'un serveur : trois requêtes n'en font qu'une.
+  egal(w.appels.filter((a) => a === 'GET /guilds/G1/channels').length, 1, 'la liste des salons d\'un serveur n\'est lue qu\'une fois par minute');
+}
+
+export async function testDiscordRouteurToutEtLimites() {
+  titre('Service Discord — lecture d\'ouverture en une requête, limites de Discord');
+  const w = monde();
+  w.messages.C1 = [{ id: '7', timestamp: 't7', author: { id: 'B' }, attachments: [{ url: `${CDN}7`, filename: 'recommandation.json', size: 1 }] }];
+  w.pieces[`${CDN}7`] = fichier('Défenses');
+  const r = banc(w);
+  const rep = await r.traiter(requete('tout', { cookie: await cookieSession() }));
+  const corps = await rep.json() as { serveurs: { salons: { id: string }[] }[]; versions: Record<string, { messageId: string; reco: Reco } | null> };
+  egal([rep.status, corps.serveurs[0].salons.map((s) => s.id), corps.versions.C1?.messageId, corps.versions.C1?.reco.name], [200, ['C1'], '7', 'Défenses'],
+    '`tout` : les sources et la version de chaque salon, en une requête');
+  egal(w.appels.filter((a) => a.startsWith('GET /guilds/G1/members/')).length, 2, 'le bot et le membre lus une fois chacun, pas une fois par salon');
+
+  const salonSeul = monde();
+  const r2 = banc(salonSeul);
+  await r2.traiter(requete('salon&id=C1', { cookie: await cookieSession() }));
+  egal(salonSeul.appels.includes('GET /guilds/G1/channels'), false, 'lire un salon précis ne lit pas la liste des salons du serveur');
+
+  const sig = await signer('salons:G1', CLE);
+  egal((await r.traiter(requete(`salons-serveur&serveur=G1&sig=${encodeURIComponent(sig)}`))).headers.get('Vercel-CDN-Cache-Control'), 'max-age=60',
+    'la liste des salons d\'un serveur : adresse interne gardée 60 s par le CDN');
+  egal((await r.traiter(requete('salons-serveur&serveur=G1&sig=faux'))).status, 403, 'sans signature valide : refusée');
+
+  const limite = monde();
+  const r3 = creerRouteur({
+    env: { clientId: 'client', clientSecret: 'secret', jetonBot: 'bot', cle: CLE },
+    recuperer: async (url, init) => (url.includes('/guilds/G1/channels') ? new Response(JSON.stringify({ retry_after: 42 }), { status: 429 }) : simulateur(limite)(url, init)),
+    maintenant: () => 1_000_000, attendre: async () => {}, t: fr, lectureEnCache: false,
+  });
+  const lim = await r3.traiter(requete('tout', { cookie: await cookieSession() }));
+  egal([lim.status, await lim.json()], [503, { erreur: 'limite' }], 'Discord limite au-delà de l\'attente tolérée : « limite », pas une panne');
 }
 
 export async function testDiscordRouteurSalonEtPublication() {
@@ -293,4 +331,28 @@ export async function testDiscordRouteurSalonEtPublication() {
   const courante = (await (await lire('C1')).json() as { version: { messageId: string } }).version.messageId;
   egal((await publier({ salon: 'C1', base: courante, contenu: 'pas du json' })).status, 400, 'contenu illisible : refusé');
   egal((await publier({ salon: 'C1', contenu: 'x' })).status, 400, 'corps incomplet : refusé');
+
+  // Fichiers déposés à la main par des membres : le plus récent VALIDE fait foi.
+  const msg = (id: string, auteur: string, nomFichier = 'export.json'): MessageDiscord =>
+    ({ id, timestamp: `t${id}`, author: { id: auteur }, attachments: [{ url: `${CDN}${id}`, filename: nomFichier, size: 1 }] });
+  const parLulu = fichier('Offs de Lulu', { author: 'Lulu' });
+  w.messages.C1.unshift(msg('900', 'L'));
+  w.pieces[`${CDN}900`] = parLulu;
+  const deposee = await (await lire('C1')).json() as { version: { messageId: string; reco: Reco } };
+  egal([deposee.version.messageId, deposee.version.reco.name, deposee.version.reco.author], ['900', 'Offs de Lulu', 'Lulu'],
+    'un fichier déposé à la main par un membre devient la version courante ; son auteur est celui du fichier');
+  w.messages.C1.unshift(msg('904', 'L'), msg('903', 'L'), msg('902', 'L'), msg('901', 'L'));
+  const sansEntete = JSON.parse(fichier('Sans en-tête')) as Record<string, unknown>;
+  delete sansEntete.format;
+  w.pieces[`${CDN}904`] = JSON.stringify(sansEntete);
+  w.pieces[`${CDN}903`] = '{"format":"autre-chose"}';
+  w.pieces[`${CDN}902`] = encodeRecosJson([reco('Une'), reco('Deux')]);
+  w.pieces[`${CDN}901`] = 'pas du json';
+  const ignores = await (await lire('C1')).json() as { version: { messageId: string } };
+  egal(ignores.version.messageId, '900',
+    'ignorés : un fichier sans l\'en-tête SW Blacksmith, d\'un autre format, à deux recommandations, illisible ; le plus récent valide reste');
+  const p3 = await publier({ salon: 'C1', base: '900', contenu: fichier('Offs v2') });
+  const v3 = await p3.json() as { version: { reco: Reco } };
+  egal([p3.status, v3.version.reco.author, v3.version.reco.contributeurs], [201, 'Lulu', ['Toto le chef']],
+    'publier par-dessus un fichier déposé : sa base est ce fichier, l\'auteur reste celui du fichier');
 }

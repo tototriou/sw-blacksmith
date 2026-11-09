@@ -363,10 +363,12 @@ import testRecoDefenses from './reco-defenses.test';
 import { testRecoFusionCorrespondance, testRecoFusionDecks, testRecoFusionChef, testRecoFusionImport, testRecoFusionSource } from './reco-fusion.test';
 import { testRenduRecoFusionChoix, testRenduRecoFusionStockage } from './rendu/reco-fusion.test';
 import { testDiscordDroits, testDiscordSession, testDiscordRecoSalon, testDiscordContributeursFormat, testDiscordRouteurConnexion,
-  testDiscordRouteurSources, testDiscordRouteurSalonEtPublication } from './discord-service.test';
+  testDiscordRouteurSources, testDiscordRouteurSalonEtPublication, testDiscordRouteurToutEtLimites } from './discord-service.test';
 import { testRecoDiscordEtat, testRecoDiscordRecevoir, testRecoDiscordSynchro, testRecoDiscordPublication, testRecoDiscordFusion,
   testRecoDiscordFavorisEtStockage } from './reco-discord.test';
 import { testRenduRecoDiscordStockage } from './rendu/reco-discord-stockage.test';
+import { testProvenancesRecos, testClientDiscord } from './provenances-recos.test';
+import { testRenduRecosDiscordPage, testRenduRecosDiscordComposants } from './rendu/recos-discord.test';
 import testSiegePartage from './siege-partage.test';
 import testMarque from './marque.test';
 import testSpeedTune, { testSpeedTuneDeck, testSpeedTuneChaine, testSpeedTuneKit, testSpeedTuneResetAtb, testSpeedTuneSequence, testSpeedTuneReference, testSpeedTunePassif, testSpeedTuneAuto, testSpeedTuneModele } from './speed-tune.test';
@@ -560,6 +562,7 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testDiscordRouteurConnexion', testDiscordRouteurConnexion],
   ['testDiscordRouteurSources', testDiscordRouteurSources],
   ['testDiscordRouteurSalonEtPublication', testDiscordRouteurSalonEtPublication],
+  ['testDiscordRouteurToutEtLimites', testDiscordRouteurToutEtLimites],
   ['testRecoDiscordEtat', testRecoDiscordEtat],
   ['testRecoDiscordRecevoir', testRecoDiscordRecevoir],
   ['testRecoDiscordSynchro', testRecoDiscordSynchro],
@@ -567,6 +570,10 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testRecoDiscordFusion', testRecoDiscordFusion],
   ['testRecoDiscordFavorisEtStockage', testRecoDiscordFavorisEtStockage],
   ['testRenduRecoDiscordStockage', testRenduRecoDiscordStockage],
+  ['testProvenancesRecos', testProvenancesRecos],
+  ['testClientDiscord', testClientDiscord],
+  ['testRenduRecosDiscordPage', testRenduRecosDiscordPage],
+  ['testRenduRecosDiscordComposants', testRenduRecosDiscordComposants],
   ['testRecoFusionCorrespondance', testRecoFusionCorrespondance],
   ['testRecoFusionDecks', testRecoFusionDecks],
   ['testRecoFusionChef', testRecoFusionChef],

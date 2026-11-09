@@ -1,5 +1,9 @@
 import {
   Trash2,
+  Send,
+  Link2Off,
+  Hash,
+  Smartphone,
   Pencil,
   Upload,
   X,
@@ -50,6 +54,8 @@ import {
 } from '../../lib/effects';
 import { UseRecoState } from '../../hooks/useSiegeRecos';
 import { useTraduction } from '../../hooks/useLangue';
+import type { EtatAffiche } from '../../lib/provenancesRecos';
+import { PastilleEtat } from './discord/Provenances';
 import { nomSet } from '../../i18n/jeu';
 import { libelleSource } from '../../lib/ownedBuilds';
 import type { Dictionnaire } from '../../i18n/fr';
@@ -102,7 +108,7 @@ import {
 // identique à ce nom automatique. `deckLabel` calcule toujours ce nom, sans
 // jamais lire `deck.name` — le champ reste dans le TYPE et le stockage pour
 // la rétrocompatibilité d'un import, mais n'est plus affiché.
-function deckLabel(deck: RecoDeck, byCom2us: Map<number, Monster>, index: number): string {
+export function deckLabel(deck: RecoDeck, byCom2us: Map<number, Monster>, index: number): string {
   const noms = deck.slots
     .map((s) => (s.com2usId != null ? byCom2us.get(s.com2usId)?.name ?? s.name : ''))
     .filter(Boolean);
@@ -142,6 +148,16 @@ interface Props {
   hit?: RecoHit | null;
   // Vue de la page. Absente : Attaque, l'affichage d'avant.
   vue?: VueRecos;
+  // Synchronisation Discord (docs/02-app/siege/feat-recommandations/rendu-de-la-page.md) :
+  // - `provenance` : dans « Toutes les recommandations », d'où vient la carte ;
+  // - `onDetacher` : recommandation LIÉE, sa corbeille devient « Détacher de ce salon » ;
+  // - `publierDans` : recommandation de cet appareil, « Publier dans… » (raison du
+  //   refus, ou `null` s'il est permis) ;
+  // - `sousBandeau` : le bandeau du salon est posé juste au-dessus.
+  provenance?: { nom: string; etat: EtatAffiche | null };
+  onDetacher?: () => void;
+  publierDans?: { raison: string | null; onClick: () => void };
+  sousBandeau?: boolean;
 }
 
 // Carte d'une recommandation — ⚠️ **NEUTRE, quel que soit le résultat de
@@ -179,9 +195,14 @@ export default function RecoCard({
   onExport,
   recos,
   vue = 'attaque',
+  provenance,
+  onDetacher,
+  publierDans,
+  sousBandeau = false,
 }: Props) {
   const textes = useTraduction();
   const cr = textes.carteReco;
+  const td = textes.recosDiscord;
   const status = match?.status ?? 'unknown';
 
   // Deux niveaux d'édition distincts :
@@ -375,7 +396,8 @@ export default function RecoCard({
     // (SiegeTeam.tsx) — au doigt, la page empile plusieurs recommandations,
     // et chaque `p-4` coûte 32 px de haut multipliés par leur nombre.
     // Gabarit des cartes de la refonte : rayon 12, contour discret (`AURA`).
-    <section className={`rounded-xl border p-4 compact:p-2.5 transition-colors ${AURA[status]}`}>
+    // Sous le bandeau d'un salon, la carte en est la suite : coins du haut droits.
+    <section className={`${sousBandeau ? 'rounded-b-xl' : 'rounded-xl'} border p-4 compact:p-2.5 transition-colors ${AURA[status]}`}>
       {/* En-tête de la recommandation.
           ⚠️ **TROIS zones, pas deux.** Le titre et les icônes d'action
           vivaient chacun dans leur propre bloc (titre + badges à gauche,
@@ -534,14 +556,39 @@ export default function RecoCard({
               libelle={editing ? textes.equipeSiege.terminerEdition : cr.editer}
               className={ICONE_ACTION}
             />
-            <BoutonIcone
-              onClick={supprimerReco}
-              ton="danger"
-              taille="serre"
-              icone={<Trash2 size={13} />}
-              libelle={cr.supprimer}
-              className={ICONE_ACTION}
-            />
+            {/* « Publier dans… » au DOIGT : une icône du groupe ; à la souris,
+                le bouton à libellé près d'« Analyser » (plus bas). Toujours
+                affiché, désactivé avec sa raison. */}
+            {publierDans && (
+              <BoutonIcone
+                onClick={publierDans.onClick}
+                disabled={!!publierDans.raison}
+                taille="serre"
+                icone={<Send size={13} />}
+                libelle={publierDans.raison ?? td.publierDans}
+                className={`lg:hidden ${ICONE_ACTION}`}
+              />
+            )}
+            {/* Une recommandation LIÉE ne se supprime pas : elle se détache de
+                son salon, pour ce membre seul (un dialogue le dit). */}
+            {onDetacher ? (
+              <BoutonIcone
+                onClick={onDetacher}
+                taille="serre"
+                icone={<Link2Off size={13} />}
+                libelle={td.detacher}
+                className={ICONE_ACTION}
+              />
+            ) : (
+              <BoutonIcone
+                onClick={supprimerReco}
+                ton="danger"
+                taille="serre"
+                icone={<Trash2 size={13} />}
+                libelle={cr.supprimer}
+                className={ICONE_ACTION}
+              />
+            )}
           </div>
         </div>
       </div>
@@ -549,6 +596,16 @@ export default function RecoCard({
       {/* Métadonnées — SOUS le titre, sur leur propre rangée qui s'enroule
           librement sans jamais perturber l'alignement titre/icônes. */}
       <div className="mb-3 flex flex-wrap items-center gap-2 lg:contents">
+        {/* Dans « Toutes les recommandations » : d'où vient la carte, et l'état
+            de son salon. */}
+        {provenance && (
+          <span className="inline-flex items-center gap-1.5" data-provenance-carte>
+            <span className="inline-flex items-center gap-1 rounded-full border border-border-soft bg-panel2 px-2 py-0.5 label">
+              {reco.lien ? <Hash size={10} /> : <Smartphone size={10} />} {provenance.nom}
+            </span>
+            {provenance.etat && <PastilleEtat etat={provenance.etat} />}
+          </span>
+        )}
         {reco.origin === 'imported' && (
           // Pastille NEUTRE : l'origine est une information, pas un
           // état à signaler — le contour d'accent la faisait passer pour un
@@ -568,8 +625,16 @@ export default function RecoCard({
         <span className="font-mono text-micro text-ink-dim">
           {decksFiltres ? cr.decksSur(decksTrouves.size, reco.decks.length) : cr.decks(reco.decks.length)}
         </span>
-        {!editing && reco.author && (
-          <span className="font-mono text-micro text-ink-dim">· {textes.vueAmi.par(reco.author)}</span>
+        {/* ⚠️ L'auteur ne se SAISIT plus (docs/04-decisions/adr/un-salon-une-reco.md) :
+            écrit par Discord à la publication, avec les contributeurs ; un
+            auteur déjà présent reste affiché, en lecture seule. */}
+        {reco.author && (
+          <span className="font-mono text-micro text-ink-dim" data-auteur-reco
+            title={reco.contributeurs?.length ? td.ecritsParDiscord : undefined}>
+            · {textes.vueAmi.par(reco.author)}
+            {reco.contributeurs && reco.contributeurs.filter((n) => n !== reco.author).length > 0
+              && ` · ${td.avec(reco.contributeurs.filter((n) => n !== reco.author).join(', '))}`}
+          </span>
         )}
 
         {/* ⚠️ **À la SOURIS seulement** (`compact:hidden`) : au doigt, ce bouton
@@ -613,21 +678,22 @@ export default function RecoCard({
             className={`compact:hidden max-lg:hidden ${BOUTON_LG}`}
           />
         )}
+        {!editing && publierDans && (
+          <Bouton
+            onClick={publierDans.onClick}
+            disabled={!!publierDans.raison}
+            title={publierDans.raison ?? undefined}
+            taille="sm"
+            icone={<Send size={13} />}
+            libelle={td.publierDans}
+            className={`compact:hidden max-lg:hidden ${BOUTON_LG}`}
+          />
+        )}
       </div>
       </div>
 
       {editing && (
         <div className="flex flex-col gap-2 mb-3">
-          <Champ
-            value={reco.author}
-            onChange={(e) => recos.setMeta(reco.id, { author: e.target.value })}
-            onBlur={(e) => {
-              const t = e.target.value.trim();
-              if (t !== reco.author) recos.setMeta(reco.id, { author: t });
-            }}
-            placeholder={cr.pseudo}
-            className="bg-panel py-1.5 text-xs"
-          />
           <NoteEditor
             value={reco.note}
             max={NOTE_MAX}

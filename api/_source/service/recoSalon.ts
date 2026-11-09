@@ -3,6 +3,7 @@
 // Le modèle : docs/04-decisions/adr/un-salon-une-reco.md.
 
 import { decodeRecosJson, encodeRecosJson, type Issues } from '../../../src/lib/recoShare';
+import { formatReconnu } from '../../../src/lib/formatsExport';
 import type { RecoPayload } from '../../../src/types';
 import type { Dictionnaire } from '../../../src/i18n/fr';
 
@@ -19,20 +20,44 @@ const collecteur = (): Issues => ({ errors: [], warnings: [] });
 // Une recommandation pèse quelques dizaines de Ko ; au-delà, ce n'en est pas une.
 export const TAILLE_MAX = 256 * 1024;
 
-// Les messages arrivent du plus récent au plus ancien : la version courante est
-// le premier message du bot qui porte un fichier JSON. Les autres messages
-// (discussion, fichiers postés à la main) ne comptent pas.
-export function versionCourante(messages: MessageDiscord[], botId: string): { message: MessageDiscord; url: string } | null {
+// Au plus tant de fichiers téléchargés par lecture : un salon rempli de faux
+// fichiers ne fait pas télécharger tout l'historique.
+export const ESSAIS_MAX = 5;
+const CDN_DISCORD = /^https:\/\/(cdn\.discordapp\.com|media\.discordapp\.net)\//;
+
+// Les messages arrivent du plus récent au plus ancien. Les CANDIDATS à la
+// version courante : chaque message, du bot ou d'un membre, qui porte une
+// pièce jointe `.json` de 256 Ko au plus hébergée par Discord — dans l'ordre,
+// au plus `ESSAIS_MAX`. La version courante est le premier candidat dont le
+// contenu est une recommandation valide (`lireVersion`) : un fichier posté à
+// la main compte comme une publication de l'app
+// (docs/04-decisions/adr/un-salon-une-reco.md).
+// ⚠️ Rien n'est cru avant validation : un fichier qui n'est pas une
+// recommandation SW Blacksmith, ou qui en contient plusieurs, est ignoré.
+export function candidats(messages: MessageDiscord[]): { message: MessageDiscord; url: string }[] {
+  const out: { message: MessageDiscord; url: string }[] = [];
   for (const m of messages) {
-    if (m.author.id !== botId) continue;
-    const pj = m.attachments.find((a) => a.filename.endsWith('.json'));
-    if (pj) return { message: m, url: pj.url };
+    const pj = m.attachments.find((a) => a.filename.toLowerCase().endsWith('.json') && a.size > 0 && a.size <= TAILLE_MAX && CDN_DISCORD.test(a.url));
+    if (pj) out.push({ message: m, url: pj.url });
+    if (out.length === ESSAIS_MAX) break;
   }
-  return null;
+  return out;
 }
 
-// Le contenu d'une version : une seule recommandation valide, ou rien.
+// Le contenu d'une version : une seule recommandation valide, ou rien. Le
+// validateur complet de l'import (format SW Blacksmith, bornes, textes
+// nettoyés, sets et propriétés connus) ; un fichier trop gros n'est pas lu.
 export function lireVersion(texte: string, t: Dictionnaire): RecoPayload | null {
+  if (texte.length > TAILLE_MAX) return null;
+  // ⚠️ Plus strict que l'import d'un fichier, qui accepte un autre format en
+  // le signalant : un fichier lu dans un salon, déposé par n'importe qui, doit
+  // porter l'en-tête du format SW Blacksmith.
+  try {
+    const brut = JSON.parse(texte) as { format?: unknown } | null;
+    if (!brut || typeof brut.format !== 'string' || !formatReconnu(brut.format, 'recommandations')) return null;
+  } catch {
+    return null;
+  }
   const recos = decodeRecosJson(texte, t, collecteur());
   return recos && recos.length === 1 ? recos[0] : null;
 }

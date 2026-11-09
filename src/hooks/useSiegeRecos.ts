@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ArtifactKind,
   MAX_ARTIFACT_SUBS,
@@ -490,14 +490,19 @@ export function useSiegeRecos(): UseRecoState {
 
   const clearAll = useCallback(() => setState({ recos: [] }), []);
 
-  // Calculé sur l'état du RENDU, comme l'import : le bilan se rend aussitôt.
+  // ⚠️ Appelé APRÈS une lecture réseau : calculé sur le DERNIER état connu
+  // (`dernier`), jamais sur celui du rendu qui a lancé la lecture — une
+  // modification faite pendant l'attente serait écrasée.
+  const dernier = useRef(state);
+  dernier.current = state;
   const synchroniserDiscord = useCallback(
     (salons: SalonAccessible[], versions: ReadonlyMap<string, VersionSalon | null>) => {
-      const res = synchroniser(state.recos, salons, versions, newId);
-      setState({ recos: res.recos });
+      const res = synchroniser(dernier.current.recos, salons, versions, newId);
+      dernier.current = { recos: res.recos };
+      setState(dernier.current);
       return res.bilan;
     },
-    [state.recos]
+    []
   );
 
   const delierReco = useCallback((id: string) => update(id, delier), [update]);
@@ -514,13 +519,13 @@ export function useSiegeRecos(): UseRecoState {
 
   const fusionnerDiscord = useCallback(
     (id: string, fusion: Fusion, choix: ChoixFusion) => {
-      const r = state.recos.find((x) => x.id === id);
+      const r = dernier.current.recos.find((x) => x.id === id);
       const fusionnee = r ? appliquerFusion(r, fusion, choix) : null;
       if (!fusionnee) return false;
       update(id, () => fusionnee);
       return true;
     },
-    [state.recos, update]
+    [update]
   );
 
   return {

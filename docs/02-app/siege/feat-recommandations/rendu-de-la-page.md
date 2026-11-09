@@ -16,6 +16,67 @@ Vue (Attaque / Défense) · filet vertical · recherche par monstre et ses trois
 cases, sur la même ligne ; « Rôle » passe dessous quand une recherche est
 posée.
 
+## Provenances et Discord
+
+Fichiers : [Provenances.tsx](../../../../src/components/siege/discord/Provenances.tsx),
+[BandeauSalon.tsx](../../../../src/components/siege/discord/BandeauSalon.tsx),
+[DialoguesDiscord.tsx](../../../../src/components/siege/discord/DialoguesDiscord.tsx),
+[provenancesRecos.ts](../../../../src/lib/provenancesRecos.ts) (calcul pur),
+[useDiscord.ts](../../../../src/hooks/useDiscord.ts). Ce que devient une
+recommandation liée sur l'appareil :
+[synchronisation-discord.md](synchronisation-discord.md).
+
+- **Les provenances** : « Toutes les recommandations », « Sur cet appareil »,
+  puis un groupe par serveur Discord, une ligne par salon qui porte une
+  recommandation, avec l'état de celle-ci (À jour, Modifiée, Conflit, Lecture
+  seule ; pastilles colorées comme celles des decks). ⚠️ **À l'ordinateur, une
+  colonne** à gauche du contenu ; **au téléphone, un sélecteur** pleine
+  largeur au-dessus de la liste (salon, serveur, état), qui ouvre la même
+  liste dans une feuille. La barre d'outils (vue, recherche) reste au-dessus
+  des deux et porte sur la provenance choisie.
+- **À l'arrivée sur la page : « Toutes les recommandations »**, une liste à
+  plat : celles de cet appareil d'abord, puis celles des salons dans l'ordre
+  de la colonne. Quand il y a des salons, chaque carte porte sa provenance
+  (le salon, ou « Sur cet appareil ») et l'état de son salon ; sans Discord,
+  rien ne change sur les cartes. Un salon qui disparaît ramène à « Toutes ».
+- **Favoris** : dans l'application de bureau seulement, une étoile devant
+  chaque salon ; les favoris passent en tête de leur serveur. Aucun salon ne
+  se masque.
+- **Le compte Discord, en pied de la colonne et de la feuille** : connecté,
+  le nom, « Actualiser » (relit les salons) et « Se déconnecter », avec
+  l'heure de la dernière lecture ; sinon l'encart « Discord » : une phrase,
+  « Se connecter à Discord » et « Installer le bot sur ton serveur ». ⚠️ Dans
+  l'application de bureau, « Se connecter » reste affiché, désactivé avec sa
+  raison, jusqu'à ce qu'elle ait sa propre session.
+- **Le bandeau d'un salon**, au-dessus de la carte quand on regarde un salon :
+  serveur › salon, état, date de la version reçue et ce que l'état veut dire,
+  puis « Publier » — « Fusionner » en conflit. « Publier » est toujours
+  affiché, désactivé avec sa raison (à jour, lecture seule, hors connexion).
+  Au téléphone, le bouton passe pleine largeur sous le texte.
+- **Une recommandation liée ne se supprime pas** : sa corbeille devient
+  « Détacher de ce salon » (icône de chaîne rompue), avec un dialogue ; elle
+  passe dans « Sur cet appareil » et celle du salon reparaît.
+- **« Publier dans… »** sur chaque recommandation de cet appareil : à la
+  souris, un bouton à libellé près d'« Analyser mes decks » ; au doigt, une
+  icône du groupe d'actions. Toujours affiché, désactivé hors connexion avec
+  sa raison. Son dialogue liste les salons lisibles et ce que chacun porte ;
+  un salon en lecture seule y est visible, désactivé. Un salon qui porte déjà
+  une recommandation demande confirmation, dont le défaut est « Annuler » (on
+  garde celle du salon).
+- **L'auteur ne se saisit plus** : écrit par Discord à la publication, avec
+  les contributeurs (« par Toto · avec Lulu ») ; un auteur déjà présent reste
+  affiché, en lecture seule.
+- **Dialogues** : « Se connecter à Discord » (ce qui est partagé, et
+  l'avertissement sur la perte d'accès) avant de partir vers Discord ;
+  l'installation du bot ; la fusion (ce qui a passé seul, puis chaque
+  élément à choisir, les deux versions côte à côte à l'ordinateur, l'une sous
+  l'autre au téléphone ; « Appliquer » désactivé tant qu'un choix manque).
+  Une publication refusée parce que le salon a changé ouvre la fusion.
+- **Notifications** : une par lecture des salons, qui regroupe ce qui a
+  changé, et rien quand rien n'a changé ; une par publication, refus ou
+  panne. Le retour de l'autorisation (`?discord=refus`, `?discord=erreur`)
+  se dit une fois, puis s'efface de l'adresse.
+
 ## En-tête d'une recommandation et actions d'un deck
 
 ⚠️ **À la souris, l'en-tête d'une recommandation tient sur UNE ligne** :

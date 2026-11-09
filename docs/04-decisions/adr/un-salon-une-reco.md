@@ -9,10 +9,15 @@
 - **Chaque publication est un nouveau message du bot**, qui ne contient que le fichier JSON de la
   recommandation. Les messages précédents restent dans le salon : l'historique vit dans Discord,
   et le bot ne supprime jamais rien de lui-même.
-- **La version courante est le message du bot le plus récent** parmi les 100 derniers messages du
-  salon ; l'app ne montre que celle-là. Au-delà de 100 messages écrits depuis la dernière
-  publication, le salon est vu sans recommandation : le guide d'installation conseille de n'y
-  laisser écrire que le bot, sans l'imposer.
+- **La version courante est le plus récent fichier valide du salon**, parmi les 100 derniers
+  messages, qu'il ait été posté par le bot ou déposé à la main par un membre (un export de
+  l'app) ; l'app ne montre que celle-là. Un fichier compte s'il est une pièce jointe `.json` de
+  256 Ko au plus hébergée par Discord, au format SW Blacksmith, qui passe le validateur de
+  l'import et contient exactement une recommandation ; sinon il est ignoré, et au plus cinq
+  fichiers sont essayés par lecture. Un fichier déposé à la main garde l'auteur et les
+  contributeurs qu'il indique. Au-delà de 100 messages écrits depuis le dernier fichier valide,
+  le salon est vu sans recommandation : le guide d'installation conseille de réserver le salon
+  aux recommandations, sans l'imposer.
 - **Publie qui peut écrire dans le salon**, selon les droits Discord, sans administration dans
   l'app. Le fichier publié nomme son auteur (le premier membre qui l'a publié) et ses
   contributeurs (chaque membre qui l'a publié depuis), sous leur surnom du serveur.
@@ -24,7 +29,7 @@
   fusion. Le résultat est une copie modifiée, que le membre relit puis publie.
 - **Un membre ne supprime rien pour les autres.** Supprimer une recommandation liée rompt son lien
   pour lui seul : elle devient une recommandation locale, et celle du salon reparaît à la
-  synchronisation suivante. Seuls les admins effacent, dans Discord ; un message du bot effacé
+  synchronisation suivante. Seuls les admins effacent, dans Discord ; le message courant effacé
   rend la version précédente courante.
 - **Les droits suivent ceux du salon.** Sans droit d'écrire, la recommandation liée est en lecture
   seule. Sans accès au salon, elle est supprimée de l'appareil ; des modifications non publiées
@@ -32,9 +37,12 @@
 
 ## Raisons
 
-- **Une lecture par salon suffit** : la version courante est le premier message du bot trouvé en
+- **Une lecture par salon suffit** : la version courante est le premier fichier valide trouvé en
   remontant le salon, sans index à tenir ni identifiant de recommandation à rapprocher entre
   messages.
+- **Un membre partage aussi sans passer par l'app** : déposer dans le salon le fichier exporté
+  suffit. Tout fichier est validé avant d'être cru, comme un import : un fichier qui n'est pas une
+  recommandation ne s'affiche jamais.
 - **Un nouveau message par publication garde l'historique complet** dans le salon : un admin
   retrouve une version écrasée, et effacer la dernière revient à annuler une publication.
 - **La fusion avant publication** évite d'écraser sans le voir le travail d'un autre membre, sans
@@ -62,6 +70,13 @@
   tenir dans l'app, alors que les droits du salon la portent déjà.
 - **Une recommandation figée « Plus accessible » quand l'accès est perdu** (possibilité écartée) :
   elle resterait sur l'appareil sans pouvoir jamais se mettre à jour.
+- **Seuls les messages du bot font foi** (ancien fonctionnement, remplacé) : un fichier exporté et
+  déposé à la main par un membre restait invisible.
+- **Une recommandation par fichier du salon** (possibilité écartée) : le salon deviendrait un
+  dossier, et chaque version publiée devrait se rapprocher des précédentes par un identifiant.
+- **L'auteur d'un fichier déposé à la main pris de Discord** (possibilité écartée) : choix du
+  mainteneur de garder l'auteur écrit dans le fichier, au risque qu'un membre y mette le nom
+  d'un autre.
 
 ## Conséquences
 
@@ -71,5 +86,9 @@
   l'appareil quand on perd l'accès à son salon ; la documentation et le guide d'installation le
   disent aussi.
 - **Une recommandation liée garde sur l'appareil la dernière version reçue**, base de la fusion.
+- **Le bot a l'intent privilégié « Message Content »** : sans lui, Discord lui donne vides les
+  messages des membres, fichiers joints compris, et seuls ses propres messages se liraient. Au-delà
+  de 100 serveurs, Discord exige la vérification du bot et l'approbation de cet intent ; refusé,
+  les fichiers déposés à la main cessent d'être lus, la publication par l'app continue.
 - **Un fichier exporté depuis une recommandation liée** perd son lien : chez celui qui l'importe,
   c'est une recommandation importée comme une autre.

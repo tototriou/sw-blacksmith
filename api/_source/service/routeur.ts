@@ -10,7 +10,7 @@ import type { Dictionnaire } from '../../../src/i18n/fr';
 import type { RecoPayload } from '../../../src/types';
 import { client, ErreurDiscord, API, type Recuperer } from './discordApi';
 import { droitsServeur, droitsSurSalon, estAdministrateur, resumeDroits, type DroitsSalon, type Exception, type Role, type Salon } from './droits';
-import { lireVersion, nomDuMembre, NOM_FICHIER, preparerPublication, sourceDuSalon, TAILLE_MAX, versionCourante, type MessageDiscord } from './recoSalon';
+import { candidats, lireVersion, nomDuMembre, NOM_FICHIER, preparerPublication, sourceDuSalon, TAILLE_MAX, type MessageDiscord } from './recoSalon';
 import {
   COOKIE_ETAT, COOKIE_SESSION, cookie, cookieEfface, desceller, DUREE_ETAT_S, DUREE_SESSION_S, estSession, lireCookies, sceller, signer,
   verifierSignature, type Cle, type Session,
@@ -20,6 +20,7 @@ export const PREFIXE_SALON = 'blacksmith-reco';
 export const PAGE_RECOS = '/#/siege/recommandations';
 const DUREE_CACHE_MS = 30_000; // droits, rôles et salons d'un serveur (décision du 2026-11-09)
 const CACHE_LECTURE_S = 15; // lecture d'un salon, partagée par le CDN entre membres
+const CACHE_SALONS_S = 60; // liste des salons d'un serveur : 10 lectures par minute chez Discord
 const MARGE_RENOUVELLEMENT_MS = 60_000;
 
 export interface Environnement {
@@ -81,23 +82,52 @@ export function creerRouteur(d: Dependances) {
   const discord = client(d.recuperer, d.env.jetonBot, d.attendre);
   const cacheBot = new Cache<{ id: string }>(d.maintenant, 24 * 3600_000);
   const cacheServeursBot = new Cache<Set<string>>(d.maintenant, DUREE_CACHE_MS);
-  const cacheServeur = new Cache<{ serveur: ServeurDiscord; salons: SalonBrut[]; bot: MembreDiscord }>(d.maintenant, DUREE_CACHE_MS);
+  const cacheServeur = new Cache<{ serveur: ServeurDiscord; bot: MembreDiscord }>(d.maintenant, DUREE_CACHE_MS);
+  const cacheSalonsServeur = new Cache<SalonBrut[]>(d.maintenant, CACHE_SALONS_S * 1000);
   const cacheMembre = new Cache<MembreDiscord | null>(d.maintenant, DUREE_CACHE_MS);
   const cacheSalon = new Cache<SalonBrut | null>(d.maintenant, DUREE_CACHE_MS);
 
-  const idBot = () => cacheBot.obtenir('moi', () => discord.bot<{ id: string }>('/users/@me')).then((b) => b.id);
+  // L'identifiant du bot est la première partie de son jeton (base64) : un
+  // appel à Discord de moins. Repli sur `/users/@me` pour un jeton d'une autre forme.
+  const idDuJeton = Buffer.from(d.env.jetonBot.split('.')[0] ?? '', 'base64').toString();
+  const idBot = () => /^\d+$/.test(idDuJeton)
+    ? Promise.resolve(idDuJeton)
+    : cacheBot.obtenir('moi', () => discord.bot<{ id: string }>('/users/@me')).then((b) => b.id);
 
+  // Un serveur : ses rôles, son propriétaire, et le bot qui y est membre — ce
+  // qu'il faut pour les droits. ⚠️ Jamais sa liste de salons : voir `salonsDuServeur`.
   function serveur(id: string) {
     return cacheServeur.obtenir(id, async () => {
       const botId = await idBot();
-      const [serveur, salons, bot] = await Promise.all([
+      const [serveur, bot] = await Promise.all([
         discord.bot<ServeurDiscord>(`/guilds/${id}`),
-        discord.bot<SalonBrut[]>(`/guilds/${id}/channels`),
         discord.bot<MembreDiscord>(`/guilds/${id}/members/${botId}`),
       ]);
-      return { serveur, salons, bot };
+      return { serveur, bot };
     });
   }
+
+  // ⚠️ La liste des salons d'un serveur : Discord n'en accepte que 10 lectures
+  // par MINUTE et par serveur, pour tout le bot (mesuré le 2026-11-09) — un
+  // quota partagé par toute la guilde. Elle passe donc par une adresse interne
+  // signée que le CDN garde 60 s, commune à tous les membres ; seule la
+  // découverte des salons (`tout`, `sources`) en a besoin, jamais l'accès à un
+  // salon précis, qui lit le salon seul.
+  function salonsDirect(serveurId: string) {
+    return discord.bot<SalonBrut[]>(`/guilds/${serveurId}/channels`);
+  }
+  function salonsDuServeur(origine: string, serveurId: string) {
+    return cacheSalonsServeur.obtenir(serveurId, async () => {
+      if (!d.lectureEnCache) return salonsDirect(serveurId);
+      const sig = await signer(`salons:${serveurId}`, d.env.cle);
+      try {
+        const r = await d.recuperer(`${origine}/api/discord/salons-serveur?serveur=${encodeURIComponent(serveurId)}&sig=${encodeURIComponent(sig)}`, { headers: contournement() });
+        if (r.ok) return ((await r.json()) as { salons: SalonBrut[] }).salons;
+      } catch { /* repli ci-dessous */ }
+      return salonsDirect(serveurId);
+    });
+  }
+  const contournement = (): Record<string, string> => (d.env.contournement ? { 'x-vercel-protection-bypass': d.env.contournement } : {});
 
   // Un membre absent du serveur (404) n'y a aucun accès.
   function membre(serveurId: string, userId: string) {
@@ -125,11 +155,16 @@ export function creerRouteur(d: Dependances) {
     return { serveurId: salon.guild_id, salon: complet, membre: m, ...droits(s, complet, m, userId, botId) };
   }
 
+  // La version courante : le plus récent fichier VALIDE du salon, du bot ou
+  // d'un membre (voir `candidats`). Un candidat illisible ou invalide passe au
+  // suivant ; un téléchargement en échec aussi.
   async function lireDirect(salonId: string): Promise<Version | null> {
-    const [messages, botId] = await Promise.all([discord.bot<MessageDiscord[]>(`/channels/${salonId}/messages?limit=100`), idBot()]);
-    const courante = versionCourante(messages, botId);
-    if (!courante) return null;
-    return { messageId: courante.message.id, date: courante.message.timestamp, texte: await discord.telecharger(courante.url) };
+    const messages = await discord.bot<MessageDiscord[]>(`/channels/${salonId}/messages?limit=100`);
+    for (const c of candidats(messages)) {
+      const texte = await discord.telecharger(c.url).catch(() => null);
+      if (texte !== null && lireVersion(texte, d.t)) return { messageId: c.message.id, date: c.message.timestamp, texte };
+    }
+    return null;
   }
 
   // La lecture passe par une adresse interne signée, que le CDN garde 15 s :
@@ -140,9 +175,8 @@ export function creerRouteur(d: Dependances) {
   async function lireEnCache(origine: string, salonId: string): Promise<Version | null> {
     if (!d.lectureEnCache) return lireDirect(salonId);
     const sig = await signer(`brut:${salonId}`, d.env.cle);
-    const entetes: Record<string, string> = d.env.contournement ? { 'x-vercel-protection-bypass': d.env.contournement } : {};
     try {
-      const r = await d.recuperer(`${origine}/api/discord/brut?salon=${encodeURIComponent(salonId)}&sig=${encodeURIComponent(sig)}`, { headers: entetes });
+      const r = await d.recuperer(`${origine}/api/discord/brut?salon=${encodeURIComponent(salonId)}&sig=${encodeURIComponent(sig)}`, { headers: contournement() });
       if (r.ok) return ((await r.json()) as { version: Version | null }).version;
     } catch { /* repli ci-dessous */ }
     return lireDirect(salonId);
@@ -220,6 +254,12 @@ export function creerRouteur(d: Dependances) {
       return json(200, { version: await lireDirect(salonId) }, { 'Vercel-CDN-Cache-Control': `max-age=${CACHE_LECTURE_S}` });
     }
 
+    if (route === 'GET salons-serveur') {
+      const serveurId = url.searchParams.get('serveur') ?? '';
+      if (!(await verifierSignature(`salons:${serveurId}`, url.searchParams.get('sig'), d.env.cle))) return json(403, { erreur: 'signature' });
+      return json(200, { salons: await salonsDirect(serveurId) }, { 'Vercel-CDN-Cache-Control': `max-age=${CACHE_SALONS_S}` });
+    }
+
     const lue = await lireSession(requete, securise);
 
     if (route === 'GET session') {
@@ -240,25 +280,42 @@ export function creerRouteur(d: Dependances) {
     if (!lue) return nonConnecte();
     const { session, cookies } = lue;
 
+    // Les serveurs communs au membre et au bot, et dans chacun les salons de
+    // recommandations que le bot et le membre peuvent lire.
+    async function decouvrir() {
+      const [siens, duBot, botId] = await Promise.all([
+        discord.membre<ServeurMembre[]>(session.acces, '/users/@me/guilds'),
+        cacheServeursBot.obtenir('serveurs', async () => new Set((await discord.bot<{ id: string }[]>('/users/@me/guilds')).map((g) => g.id))),
+        idBot(),
+      ]);
+      const serveurs = await Promise.all(siens.filter((g) => duBot.has(g.id)).map(async (g) => {
+        const [s, salonsBruts, m] = await Promise.all([serveur(g.id), salonsDuServeur(url.origin, g.id), membre(g.id, session.utilisateur.id)]);
+        if (!m) return null;
+        const salons = salonsBruts.filter(estSalonDeRecos).flatMap((brut) => {
+          const salon: Salon = { ...brut, guild_id: g.id };
+          const r = droits(s, salon, m, session.utilisateur.id, botId);
+          return r.bot.lire && r.utilisateur.lire ? [{ id: salon.id, nom: salon.name, ecrire: r.utilisateur.ecrire && r.bot.joindre }] : [];
+        });
+        const botAdmin = estAdministrateur(droitsServeur(g.id, null, s.serveur.roles, { roles: s.bot.roles, userId: botId }));
+        return salons.length ? { id: g.id, nom: g.name, icone: g.icon, botAdmin, salons } : null;
+      }));
+      return serveurs.filter((s) => s !== null);
+    }
+
     try {
       if (route === 'GET sources') {
-        const [siens, duBot, botId] = await Promise.all([
-          discord.membre<ServeurMembre[]>(session.acces, '/users/@me/guilds'),
-          cacheServeursBot.obtenir('serveurs', async () => new Set((await discord.bot<{ id: string }[]>('/users/@me/guilds')).map((g) => g.id))),
-          idBot(),
-        ]);
-        const serveurs = await Promise.all(siens.filter((g) => duBot.has(g.id)).map(async (g) => {
-          const [s, m] = await Promise.all([serveur(g.id), membre(g.id, session.utilisateur.id)]);
-          if (!m) return null;
-          const salons = s.salons.filter(estSalonDeRecos).flatMap((brut) => {
-            const salon: Salon = { ...brut, guild_id: g.id };
-            const r = droits(s, salon, m, session.utilisateur.id, botId);
-            return r.bot.lire && r.utilisateur.lire ? [{ id: salon.id, nom: salon.name, ecrire: r.utilisateur.ecrire && r.bot.joindre }] : [];
-          });
-          const botAdmin = estAdministrateur(droitsServeur(g.id, null, s.serveur.roles, { roles: s.bot.roles, userId: botId }));
-          return salons.length ? { id: g.id, nom: g.name, icone: g.icon, botAdmin, salons } : null;
-        }));
-        return json(200, { utilisateur: session.utilisateur, serveurs: serveurs.filter((s) => s !== null) }, {}, cookies);
+        return json(200, { utilisateur: session.utilisateur, serveurs: await decouvrir() }, {}, cookies);
+      }
+
+      // ⚠️ La lecture d'ouverture de page, en UNE requête : les sources, puis
+      // la version de chaque salon lisible. Le serveur, le bot et le membre ne
+      // sont lus qu'une fois, là où un appel par salon les relirait chacun.
+      if (route === 'GET tout') {
+        const serveurs = await decouvrir();
+        const salons = serveurs.flatMap((s) => s.salons.map((c) => c.id));
+        const lues = await Promise.all(salons.map((id) => lireEnCache(url.origin, id).then(versionLue)));
+        const versions = Object.fromEntries(salons.map((id, i) => [id, lues[i]]));
+        return json(200, { utilisateur: session.utilisateur, serveurs, versions }, {}, cookies);
       }
 
       if (route === 'GET salon') {
@@ -297,6 +354,9 @@ export function creerRouteur(d: Dependances) {
     } catch (e) {
       // Le jeton du membre refusé par Discord : la session ne vaut plus rien.
       if (e instanceof ErreurDiscord && e.statut === 401 && e.duMembre) return nonConnecte();
+      // Discord limite les appels au-delà de ce que le service attend : la
+      // page le dit (« réessaie dans une minute ») plutôt qu'une panne.
+      if (e instanceof ErreurDiscord && e.statut === 429) return json(503, { erreur: 'limite' }, {}, cookies);
       if (e instanceof ErreurDiscord) return json(502, { erreur: 'discord', statut: e.statut }, {}, cookies);
       throw e;
     }

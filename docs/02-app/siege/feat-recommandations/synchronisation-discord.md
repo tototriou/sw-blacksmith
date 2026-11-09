@@ -100,10 +100,35 @@ manque. La version du salon devient la base ; la recommandation est alors
 « modifiée », à relire puis publier. Auteur, contributeurs et source sont
 ceux du salon.
 
+## Quand la page lit les salons
+
+[useDiscord.ts](src/hooks/useDiscord.ts), avec le client du service
+([discordClient.ts](src/lib/discordClient.ts)) :
+
+- ⚠️ **Rien ne part sans un geste de l'utilisateur.** Le réglage « Discord
+  activé » ([useReglagesDiscord.ts](src/hooks/useReglagesDiscord.ts)) s'allume
+  au clic sur « Se connecter à Discord » et s'éteint à la déconnexion, à une
+  session échue ou à une connexion refusée. Éteint, la page n'appelle jamais
+  le service. La session elle-même vit dans un cookie que la page ne lit pas.
+- **À l'ouverture de la page**, Discord activé, puis sur « Actualiser » :
+  les sources, puis la version de chaque salon, en parallèle, et la
+  synchronisation. Un salon refusé compte comme un accès perdu ; un salon en
+  panne garde sa recommandation telle quelle.
+- **« Publier dans… »** pose aussitôt la version publiée comme recommandation
+  liée du salon, sans attendre une relecture que le cache de 15 s du service
+  pourrait encore servir à l'ancienne. **Détacher** relit les salons, pour que
+  celle du salon reparaisse.
+- **L'application de bureau** n'a pas encore de session Discord : la
+  connexion y reste désactivée.
+
+L'écran : [rendu-de-la-page.md](rendu-de-la-page.md#provenances-et-discord).
+
 ## Favoris
 
 Les salons favoris s'affichent d'abord, puis les autres, chacun dans l'ordre
-reçu (`ordonnerSalons`, `basculerFavori`). Aucun salon ne se masque.
+reçu (`ordonnerSalons`, `basculerFavori`). Aucun salon ne se masque. Ils
+n'existent que dans l'application de bureau, et se gardent comme un réglage,
+même sans « Garder mes données ».
 
 ## Stockage
 

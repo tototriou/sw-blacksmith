@@ -10,8 +10,10 @@ survivent au reload. Effacées par « Supprimer mes données » (préfixe `swbla
 
 ## Partage — un seul format : le JSON
 
-Tout vit dans [recoShare.ts](src/lib/recoShare.ts). **100 % local**, aucun envoi
-réseau.
+Tout vit dans [recoShare.ts](src/lib/recoShare.ts). Le partage par fichier est
+**100 % local**, sans aucun envoi réseau ; la synchronisation avec Discord,
+sur demande, publie ce même JSON dans un salon
+([synchronisation-discord.md](synchronisation-discord.md)).
 
 ⚠️ **Le JSON est le SEUL format**, à l'export comme à l'import. Pas de code
 compact base64 (`SWF-RECO-1:`) : deux formats

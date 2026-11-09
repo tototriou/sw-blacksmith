@@ -22,7 +22,8 @@
   recalculés par le service à chaque requête, avec un cache en mémoire de 30 secondes au plus.
 - **La lecture d'un salon est partagée** : après la vérification des droits de chaque membre, la
   version courante d'un salon se lit par une adresse interne signée, que le CDN de Vercel garde
-  15 secondes pour tous les membres. Une publication relit toujours le salon en direct.
+  15 secondes pour tous les membres ; la liste des salons d'un serveur, de même, 60 secondes. Une
+  publication relit toujours le salon en direct.
 - **Le bot ne reçoit aucune permission à l'invitation** : un admin de guilde l'ajoute dans chaque
   salon de recommandations. Un bot de test distinct, sur un serveur de test, sert aux aperçus
   Vercel.
@@ -41,8 +42,8 @@
   ([recoShare.ts](../../../src/lib/recoShare.ts)), qui sert déjà aux imports de fichiers.
 - **Garder le jeton Discord dans le cookie** tient la liste des serveurs toujours à jour : un
   serveur rejoint après la connexion apparaît sans se reconnecter.
-- **Discord n'accepte qu'environ 5 lectures par seconde et par salon** : un soir de siège, toute
-  la guilde ouvre la page en même temps. Un cache commun à tous les membres tient ce débit ; un
+- **Discord n'accepte qu'environ 5 lectures par seconde et par salon, et 10 par minute de la
+  liste des salons d'un serveur** : un soir de siège, toute la guilde ouvre la page en même temps. Un cache commun à tous les membres tient ce débit ; un
   cache par instance de fonction ne le tiendrait pas, Vercel en lançant plusieurs sous la charge.
 - **Un bot sans permission à l'invitation ne voit que les salons où on l'a ajouté** ; un bot de
   test distinct empêche qu'une branche poussée, dont l'aperçu porte les variables d'environnement,
