@@ -11,9 +11,15 @@ SW Blacksmith aide à préparer ses contenus compétitifs : composer ses équipe
 leur speed tuning, classer ses monstres pour la RTA, analyser ses runes et son compte, chercher le
 meilleur build d'un monstre, partager des recommandations de decks avec sa guilde.
 
-**Tout reste dans ton navigateur.** Pas de serveur, pas de compte, pas d'authentification : l'export
-de compte que tu importes est lu dans la page et n'est jamais envoyé nulle part. Rien n'est conservé
-sans ton accord, et « Tout supprimer » efface tout.
+**Local par défaut.** Pas de compte à créer : l'export de compte que tu importes est lu dans la page
+et n'est jamais envoyé nulle part. Rien ne quitte ton appareil sans un geste de ta part, rien n'est
+conservé sans ton accord, et « Tout supprimer » efface tout.
+
+## Le bot Discord
+
+Un bot Discord permet à une guilde de partager ses recommandations de siège dans un salon, sans
+fichier à s'échanger : chaque membre connecté les retrouve dans l'app et peut y publier les
+siennes. C'est une option : sans connexion à Discord, rien ne change.
 
 ## Documentation
 

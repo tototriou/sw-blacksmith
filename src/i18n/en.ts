@@ -375,7 +375,7 @@ export const en: Dictionnaire = {
     atouts: [
       { titre: 'Its own window', texte: 'Outside the browser, at the size you give it, launched like any other program.' },
       { titre: 'Updates offered', texte: 'With each new version, the app offers to update itself. You decide when.' },
-      { titre: '100% local', texte: 'Like the website: nothing is sent, everything stays on your machine.' },
+      { titre: 'Local by default', texte: 'Like the website: nothing leaves your machine unless you choose to.' },
     ],
     windows: 'Download for Windows',
     linux: 'Download for Linux (.deb)',

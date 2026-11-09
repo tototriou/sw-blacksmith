@@ -21,7 +21,7 @@ export function testRenduTelecharger() {
 
   ok(t.startsWith('Télécharger'), 'titre « Télécharger »');
   ok(t.includes('SW Blacksmith existe en application de bureau pour Windows et Linux : la même boîte à outils, dans sa propre fenêtre.'), 'la phrase d\'introduction');
-  for (const s of ['Sa propre fenêtre', 'La mise à jour proposée', '100 % local'])
+  for (const s of ['Sa propre fenêtre', 'La mise à jour proposée', 'Local par défaut'])
     ok(t.includes(s), `ce que l'app apporte : « ${s} »`);
   ok(t.includes("C'est toi qui décides quand."), 'la mise à jour : c\'est lui qui décide');
 

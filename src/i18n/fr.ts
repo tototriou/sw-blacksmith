@@ -393,7 +393,7 @@ export const fr = {
     atouts: [
       { titre: 'Sa propre fenêtre', texte: "Hors du navigateur, à la taille que tu lui donnes, lancée comme n'importe quel logiciel." },
       { titre: 'La mise à jour proposée', texte: "À chaque nouvelle version, l'application te propose de se mettre à jour. C'est toi qui décides quand." },
-      { titre: '100 % local', texte: "Comme le site : rien n'est envoyé, tout reste sur ta machine." },
+      { titre: 'Local par défaut', texte: 'Comme le site : rien ne quitte ta machine sans un geste de ta part.' },
     ],
     windows: 'Télécharger pour Windows',
     linux: 'Télécharger pour Linux (.deb)',
