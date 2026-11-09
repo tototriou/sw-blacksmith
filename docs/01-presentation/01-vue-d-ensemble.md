@@ -5,7 +5,7 @@ compétitifs : composer ses équipes de siège et vérifier leur speed tuning, c
 la RTA, analyser ses runes et son compte, chercher le meilleur build d'un monstre, partager des
 recommandations de decks avec sa guilde.
 
-En ligne : <https://sw-forge.vercel.app>. La même app existe en **application de bureau** (Windows,
+En ligne : <https://sw-blacksmith.vercel.app>. La même app existe en **application de bureau** (Windows,
 Linux), proposée par la page Télécharger du site.
 
 ## Local par défaut

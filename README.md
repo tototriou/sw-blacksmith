@@ -4,7 +4,7 @@
 
 Une boîte à outils pour Summoners War.
 
-**En ligne : https://sw-forge.vercel.app** — et en application de bureau (Windows, Linux), depuis
+**En ligne : https://sw-blacksmith.vercel.app** — et en application de bureau (Windows, Linux), depuis
 la page Télécharger du site. L'app existe en français et en anglais.
 
 SW Blacksmith aide à préparer ses contenus compétitifs : composer ses équipes de siège et vérifier
