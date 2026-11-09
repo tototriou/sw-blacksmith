@@ -363,7 +363,7 @@ import testRecoDefenses from './reco-defenses.test';
 import { testRecoFusionCorrespondance, testRecoFusionDecks, testRecoFusionChef, testRecoFusionImport, testRecoFusionSource } from './reco-fusion.test';
 import { testRenduRecoFusionChoix, testRenduRecoFusionStockage } from './rendu/reco-fusion.test';
 import { testDiscordDroits, testDiscordSession, testDiscordRecoSalon, testDiscordContributeursFormat, testDiscordRouteurConnexion,
-  testDiscordRouteurSources, testDiscordRouteurSalonEtPublication } from './discord-service.test';
+  testDiscordRouteurSources, testDiscordRouteurSalonEtPublication, testDiscordRouteurToutEtLimites } from './discord-service.test';
 import { testRecoDiscordEtat, testRecoDiscordRecevoir, testRecoDiscordSynchro, testRecoDiscordPublication, testRecoDiscordFusion,
   testRecoDiscordFavorisEtStockage } from './reco-discord.test';
 import { testRenduRecoDiscordStockage } from './rendu/reco-discord-stockage.test';
@@ -560,6 +560,7 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testDiscordRouteurConnexion', testDiscordRouteurConnexion],
   ['testDiscordRouteurSources', testDiscordRouteurSources],
   ['testDiscordRouteurSalonEtPublication', testDiscordRouteurSalonEtPublication],
+  ['testDiscordRouteurToutEtLimites', testDiscordRouteurToutEtLimites],
   ['testRecoDiscordEtat', testRecoDiscordEtat],
   ['testRecoDiscordRecevoir', testRecoDiscordRecevoir],
   ['testRecoDiscordSynchro', testRecoDiscordSynchro],

@@ -32,9 +32,14 @@ code (`erreur`), que la page traduit.
 | `GET session` | `{ connecte, utilisateur }` ; 401 sans session valide. |
 | `POST deconnexion` | Révoque le jeton chez Discord et efface le cookie (204). |
 | `GET sources` | Les serveurs communs au membre et au bot, et dans chacun les salons `blacksmith-reco…` que le bot et le membre peuvent lire, avec le droit de publier (`ecrire`) ; `botAdmin` signale un bot administrateur, sans bloquer. Un serveur sans tel salon n'est pas renvoyé. |
+| `GET tout` | La lecture d'ouverture de la page, en une requête : les sources, puis `versions`, la version courante de chaque salon lisible. Le serveur, le bot et le membre n'y sont lus qu'une fois. |
 | `GET salon?id=` | La version courante du salon (`messageId`, `date`, `reco`, ou `null` si le salon n'a jamais été publié) et `ecrire`. 403 si le membre ou le bot ne le lit pas, ou si ce n'est pas un salon de recommandations. |
 | `POST publier` | Corps `{ salon, base, contenu }` : `base` est la version sur laquelle le membre a travaillé (`null` s'il n'en connaissait aucune), `contenu` le fichier JSON d'une recommandation. Voir « Publier ». |
 | `GET brut?salon=&sig=` | Lecture interne d'un salon, signée, mise en cache par le CDN (voir « Cache »). |
+| `GET salons-serveur?serveur=&sig=` | Lecture interne de la liste des salons d'un serveur, signée, mise en cache par le CDN (voir « Cache »). |
+
+Une erreur `429` de Discord au-delà de l'attente tolérée répond `503 { erreur: 'limite' }` :
+la page dit de réessayer dans une minute, plutôt qu'une panne.
 
 ## Droits
 
@@ -96,8 +101,19 @@ déconnecte pas le membre.
   si elle ne répond pas, la lecture se fait en direct. Un membre peut donc
   voir une version vieille de 15 s au plus ; une publication, elle, relit
   toujours en direct.
-- **Droits** : le serveur (rôles, propriétaire), ses salons, le bot et chaque
-  membre restent **30 s** en mémoire de l'instance. Un échec n'est pas gardé.
+- ⚠️ **Liste des salons d'un serveur** : Discord n'en accepte que **10
+  lectures par minute et par serveur**, pour tout le bot — un quota partagé
+  par toute la guilde (mesuré le 2026-11-09). Elle passe donc par l'adresse
+  interne signée `salons-serveur`, que le CDN garde **60 s**, et seule la
+  découverte des salons (`tout`, `sources`) la lit. L'accès à un salon précis
+  (lecture, publication) lit le salon seul (`/channels/{id}`, limite large),
+  jamais cette liste.
+- **Droits** : le serveur (rôles, propriétaire), le bot et chaque membre
+  restent **30 s** en mémoire de l'instance. Un échec n'est pas gardé.
+  L'identifiant du bot se tire de son jeton, sans appel.
+- **Autres quotas relevés** : la liste des serveurs (`/users/@me/guilds`)
+  1 lecture par seconde ; un membre d'un serveur, 5 par seconde ; les
+  messages d'un salon, 5 par seconde.
 - Une réponse 429 de Discord avec une attente de 2 s au plus est réessayée
   une fois.
 

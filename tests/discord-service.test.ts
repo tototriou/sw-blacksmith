@@ -15,6 +15,7 @@ import type { Reco } from '../src/types';
 import { egal, ok, titre } from './outils';
 
 const S = 'G1'; // serveur
+const CDN = 'https://cdn.discordapp.com/attachments/'; // seul hébergeur de pièces jointes accepté
 const bits = (...b: bigint[]) => b.reduce((a, x) => a | x, 0n).toString();
 const LIRE = bits(VOIR_LE_SALON, HISTORIQUE);
 const TOUT_SALON = bits(VOIR_LE_SALON, HISTORIQUE, ENVOYER, JOINDRE);
@@ -163,8 +164,8 @@ function simulateur(w: Monde) {
       const texte = await (fd.get('files[0]') as Blob).text();
       const id = String(++n);
       w.postes.push({ salon: msgs[1], texte });
-      w.pieces[`https://cdn/${id}`] = texte;
-      (w.messages[msgs[1]] ??= []).unshift({ id, timestamp: `t${id}`, author: { id: 'B' }, attachments: [{ url: `https://cdn/${id}`, filename: 'recommandation.json', size: 1 }] });
+      w.pieces[`${CDN}${id}`] = texte;
+      (w.messages[msgs[1]] ??= []).unshift({ id, timestamp: `t${id}`, author: { id: 'B' }, attachments: [{ url: `${CDN}${id}`, filename: 'recommandation.json', size: 1 }] });
       return r({ id, timestamp: `t${id}` });
     }
     return r({ message: `route simulée absente : ${methode} ${chemin}` }, 500);
@@ -249,6 +250,41 @@ export async function testDiscordRouteurSources() {
   egal((await r.traiter(requete('sources'))).status, 401, 'sans session : non connecté');
   const lulu = await (await r.traiter(requete('sources', { cookie: await cookieSession('L') }))).json() as typeof corps;
   egal(lulu.serveurs[0].salons.map((s) => s.ecrire), [false], 'un membre sans droit d\'écrire voit le salon en lecture seule');
+  // ⚠️ Discord n'accepte que 10 lectures par minute de la liste des salons
+  // d'un serveur : trois requêtes n'en font qu'une.
+  egal(w.appels.filter((a) => a === 'GET /guilds/G1/channels').length, 1, 'la liste des salons d\'un serveur n\'est lue qu\'une fois par minute');
+}
+
+export async function testDiscordRouteurToutEtLimites() {
+  titre('Service Discord — lecture d\'ouverture en une requête, limites de Discord');
+  const w = monde();
+  w.messages.C1 = [{ id: '7', timestamp: 't7', author: { id: 'B' }, attachments: [{ url: `${CDN}7`, filename: 'recommandation.json', size: 1 }] }];
+  w.pieces[`${CDN}7`] = fichier('Défenses');
+  const r = banc(w);
+  const rep = await r.traiter(requete('tout', { cookie: await cookieSession() }));
+  const corps = await rep.json() as { serveurs: { salons: { id: string }[] }[]; versions: Record<string, { messageId: string; reco: Reco } | null> };
+  egal([rep.status, corps.serveurs[0].salons.map((s) => s.id), corps.versions.C1?.messageId, corps.versions.C1?.reco.name], [200, ['C1'], '7', 'Défenses'],
+    '`tout` : les sources et la version de chaque salon, en une requête');
+  egal(w.appels.filter((a) => a.startsWith('GET /guilds/G1/members/')).length, 2, 'le bot et le membre lus une fois chacun, pas une fois par salon');
+
+  const salonSeul = monde();
+  const r2 = banc(salonSeul);
+  await r2.traiter(requete('salon&id=C1', { cookie: await cookieSession() }));
+  egal(salonSeul.appels.includes('GET /guilds/G1/channels'), false, 'lire un salon précis ne lit pas la liste des salons du serveur');
+
+  const sig = await signer('salons:G1', CLE);
+  egal((await r.traiter(requete(`salons-serveur&serveur=G1&sig=${encodeURIComponent(sig)}`))).headers.get('Vercel-CDN-Cache-Control'), 'max-age=60',
+    'la liste des salons d\'un serveur : adresse interne gardée 60 s par le CDN');
+  egal((await r.traiter(requete('salons-serveur&serveur=G1&sig=faux'))).status, 403, 'sans signature valide : refusée');
+
+  const limite = monde();
+  const r3 = creerRouteur({
+    env: { clientId: 'client', clientSecret: 'secret', jetonBot: 'bot', cle: CLE },
+    recuperer: async (url, init) => (url.includes('/guilds/G1/channels') ? new Response(JSON.stringify({ retry_after: 42 }), { status: 429 }) : simulateur(limite)(url, init)),
+    maintenant: () => 1_000_000, attendre: async () => {}, t: fr, lectureEnCache: false,
+  });
+  const lim = await r3.traiter(requete('tout', { cookie: await cookieSession() }));
+  egal([lim.status, await lim.json()], [503, { erreur: 'limite' }], 'Discord limite au-delà de l\'attente tolérée : « limite », pas une panne');
 }
 
 export async function testDiscordRouteurSalonEtPublication() {

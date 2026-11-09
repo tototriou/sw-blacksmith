@@ -2,6 +2,6 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "regions": ["cdg1"],
   "rewrites": [
-    { "source": "/api/discord/:chemin*", "destination": "/api/discord?chemin=:chemin*" }
+    { "source": "/api/discord/(.*)", "destination": "/api/discord?chemin=$1" }
   ]
 }
