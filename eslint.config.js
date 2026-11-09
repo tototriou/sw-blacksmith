@@ -99,6 +99,7 @@ export default tseslint.config(
       'src/hooks/useAdversaireReference.ts',
       'src/hooks/useBuildsRapides.ts',
       'src/hooks/useFormeResultats.ts',
+      'src/hooks/useReglagesDiscord.ts',
     ],
     rules: { 'no-restricted-properties': 'off' },
   },

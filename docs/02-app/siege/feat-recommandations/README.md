@@ -18,6 +18,9 @@ Fichiers :
 - [recoFromSiege.ts](src/lib/recoFromSiege.ts) — deck pré-rempli depuis une équipe d'offense.
 - [recoSearch.ts](src/lib/recoSearch.ts) — recherche d'un monstre dans les recos (calcul pur).
 - [recoDiscord.ts](src/lib/recoDiscord.ts) — recommandations liées à un salon Discord : état, synchronisation, fusion à trois voies (calcul pur).
+- [provenancesRecos.ts](src/lib/provenancesRecos.ts) — les provenances de la page, ce que chacune montre, l'état affiché, les raisons de ne pas publier (calcul pur).
+- [discordClient.ts](src/lib/discordClient.ts), [useDiscord.ts](src/hooks/useDiscord.ts), [useReglagesDiscord.ts](src/hooks/useReglagesDiscord.ts) — appels au service, lecture et publication, réglages « Discord activé » et favoris.
+- [discord/](../../../../src/components/siege/discord/Provenances.tsx) — colonne et sélecteur des provenances, bandeau d'un salon, dialogues (connexion, installation, publier dans, fusion).
 - [api/_source/](../../../../api/_source/discord.ts) — le service qui synchronise les recommandations avec Discord.
 
 ## Le changement touche…
@@ -36,7 +39,8 @@ Fichiers :
 | le repli, l'édition, `src/lib/annulerEdition.ts` | [interactions.md](interactions.md) |
 | `src/lib/recoFromSiege.ts`, « Importer un deck d'offense » | [import-deck-offense.md](import-deck-offense.md) |
 | `api/`, `vercel.json`, `scripts/construire-api.mjs`, le service Discord, ses routes, droits, cache et variables | [service-discord.md](service-discord.md) |
-| `src/lib/recoDiscord.ts`, une recommandation liée à un salon, son état, la synchronisation, la fusion à trois voies, les favoris | [synchronisation-discord.md](synchronisation-discord.md) |
+| `src/lib/recoDiscord.ts`, `src/lib/discordClient.ts`, `src/hooks/useDiscord.ts`, `src/hooks/useReglagesDiscord.ts`, une recommandation liée à un salon, son état, la synchronisation, la fusion à trois voies, les favoris | [synchronisation-discord.md](synchronisation-discord.md) |
+| `src/components/siege/discord/`, `src/lib/provenancesRecos.ts`, la colonne des provenances, le bandeau d'un salon, « Publier dans… », les dialogues Discord | [rendu-de-la-page.md](rendu-de-la-page.md#provenances-et-discord) |
 
 ## Parties
 

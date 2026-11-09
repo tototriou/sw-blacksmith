@@ -27,6 +27,19 @@ import { PREFIXE_FICHIER } from '../../marque';
 import type { ActionImportOptimizer } from '../../lib/actionImportOptimizer';
 import type { ExclusionSourceData } from '../../lib/optimizerExclusion';
 import { importerRecoOptimizer } from '../../lib/importRecoOptimizer';
+import { useDiscord } from '../../hooks/useDiscord';
+import { basculerSalonFavori } from '../../hooks/useReglagesDiscord';
+import { useNotifier } from '../../ui/Notification';
+import { estBureau } from '../../lib/bureau';
+import { fusionEnAttente, type Fusion } from '../../lib/recoDiscord';
+import {
+  etatAffiche, groupesSalons, provenanceValide, recosDeProvenance, salonsDePublication, TOUTES,
+  type Provenance, type SalonDePublication,
+} from '../../lib/provenancesRecos';
+import type { VersionSalon } from '../../types';
+import { ColonneProvenances, SelecteurProvenance, type PropsProvenances } from './discord/Provenances';
+import BandeauSalon from './discord/BandeauSalon';
+import { DialogueConnexion, DialogueFusion, DialogueInstallation, DialoguePublierDans } from './discord/DialoguesDiscord';
 
 interface Props {
   onImporterEquipe: ActionImportOptimizer;
@@ -351,13 +364,86 @@ export default function RecoBoard({
 
   const all = recos.state.recos;
 
-  // Recherche par monstre. `null` = aucune recherche en cours (état neutre de la
-  // page : rien n'est filtré, rien n'est déplié d'office).
-  const hits = useMemo(
-    () => chercheMonstre(all, queries, searchMode, monsterByCom2us),
-    [all, queries, searchMode, monsterByCom2us]
+  // ── Synchronisation Discord et provenances ──────────────────────────────
+  // (docs/02-app/siege/feat-recommandations/rendu-de-la-page.md, « Provenances »)
+  const td = textes.recosDiscord;
+  const notifier = useNotifier();
+  const discord = useDiscord(recos);
+  const connecte = discord.etat.utilisateur !== null && discord.etat.statut !== 'inactif';
+  // Les favoris n'existent que dans l'application de bureau.
+  const favorisActifs = estBureau();
+  const groupes = useMemo(
+    () => groupesSalons(all, discord.etat.sources?.serveurs ?? null, favorisActifs ? discord.favoris : []),
+    [all, discord.etat.sources, discord.favoris, favorisActifs]
   );
-  const list = hits ? hits.map((h) => h.reco) : all;
+  // À l'arrivée sur la page : « Toutes les recommandations » (décision du
+  // 2026-11-09). Un salon qui disparaît y ramène.
+  const [provenanceChoisie, setProvenance] = useState<Provenance>(TOUTES);
+  const provenance = provenanceValide(provenanceChoisie, groupes);
+  const deLaProvenance = useMemo(() => recosDeProvenance(all, provenance, groupes), [all, provenance, groupes]);
+  const [enCours, setEnCours] = useState(false);
+  const [connexionOuverte, setConnexionOuverte] = useState(false);
+  const [installationOuverte, setInstallationOuverte] = useState(false);
+  const [aPublierDans, setAPublierDans] = useState<Reco | null>(null);
+  const [aRemplacer, setARemplacer] = useState<{ reco: Reco; salon: SalonDePublication; version: VersionSalon | null } | null>(null);
+  const [aDetacher, setADetacher] = useState<Reco | null>(null);
+  const [aFusionner, setAFusionner] = useState<{ reco: Reco; fusion: Fusion } | null>(null);
+
+  const ouvrirFusion = (reco: Reco) => {
+    const fusion = fusionEnAttente(reco, monsterByCom2us);
+    if (fusion) setAFusionner({ reco, fusion });
+  };
+  // Le salon a changé pendant qu'on modifiait : la fusion s'ouvre dès que la
+  // version reçue est dans l'état (un rendu après la réponse du service).
+  const [fusionDemandee, setFusionDemandee] = useState<string | null>(null);
+  useEffect(() => {
+    if (!fusionDemandee) return;
+    const r = all.find((x) => x.id === fusionDemandee);
+    if (r?.lien?.enAttente) ouvrirFusion(r);
+    setFusionDemandee(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [all, fusionDemandee]);
+  async function publierLiee(reco: Reco) {
+    setEnCours(true);
+    const type = await discord.publier(reco);
+    setEnCours(false);
+    if (type === 'conflit') setFusionDemandee(reco.id);
+  }
+  async function publierDansSalon(reco: Reco, salon: SalonDePublication, base: string | null) {
+    setEnCours(true);
+    const r = await discord.publierDans(reco, salon, base);
+    setEnCours(false);
+    setAPublierDans(null);
+    setARemplacer(null);
+    // Le salon porte déjà une recommandation : la remplacer se confirme.
+    if (r.type === 'conflit') setARemplacer({ reco, salon, version: r.version });
+  }
+  const propsProvenances: PropsProvenances = {
+    groupes,
+    compteToutes: all.length,
+    compteAppareil: all.filter((x) => !x.lien).length,
+    provenance,
+    onChoisir: setProvenance,
+    discord: discord.etat,
+    favoris: favorisActifs,
+    onFavori: basculerSalonFavori,
+    onConnecter: () => setConnexionOuverte(true),
+    onActualiser: () => void discord.actualiser(),
+    onDeconnecter: () => void discord.deconnecter(),
+    onAideInstallation: () => setInstallationOuverte(true),
+  };
+  const salonChoisi = provenance.type === 'salon'
+    ? groupes.flatMap((g) => g.salons).find((l) => l.salonId === provenance.salonId) ?? null
+    : null;
+
+  // Recherche par monstre. `null` = aucune recherche en cours (état neutre de la
+  // page : rien n'est filtré, rien n'est déplié d'office). Elle porte sur la
+  // provenance choisie.
+  const hits = useMemo(
+    () => chercheMonstre(deLaProvenance, queries, searchMode, monsterByCom2us),
+    [deLaProvenance, queries, searchMode, monsterByCom2us]
+  );
+  const list = hits ? hits.map((h) => h.reco) : deLaProvenance;
   // Où se trouve le monstre, par recommandation — la carte s'en sert pour
   // déplier les bons decks et surligner les bons portraits.
   // ⚠️ Changer de recherche efface les choix d’ouverture : ils valaient pour CES
@@ -834,8 +920,25 @@ export default function RecoBoard({
       )}
       </div>
 
+      {/* ⚠️ **Les provenances** : à l'ordinateur, une COLONNE à gauche du
+          contenu ; au téléphone, un SÉLECTEUR pleine largeur au-dessus de la
+          liste, qui ouvre la même liste dans une feuille (maquette validée le
+          2026-11-09). Le compte Discord est en pied de l'une et de l'autre. */}
+      <div className="mt-4 lg:grid lg:grid-cols-[256px_minmax(0,1fr)] lg:items-start lg:gap-4">
+      <div className="hidden lg:block">
+        <ColonneProvenances {...propsProvenances} />
+      </div>
+      <div className="min-w-0">
+      <div className="lg:hidden">
+        <SelecteurProvenance
+          {...propsProvenances}
+          nomChoisi={provenance.type === 'toutes' ? td.toutes : provenance.type === 'appareil' ? td.appareil : `#${salonChoisi?.nom ?? ''}`}
+          serveurChoisi={salonChoisi ? groupes.find((g) => g.serveurId === salonChoisi.serveurId)?.nom ?? null : null}
+          etatChoisi={salonChoisi?.etat ?? null}
+        />
+      </div>
       {all.length === 0 ? (
-        <div className="mt-8 flex flex-col items-center justify-center text-center rounded-2xl border border-dashed border-border bg-panel/40 py-16 px-6">
+        <div className="mt-4 flex flex-col items-center justify-center text-center rounded-2xl border border-dashed border-border bg-panel/40 py-16 px-6 lg:mt-0">
           <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-panel2 border border-border mb-4">
             {/* L'icône de la section dans la nav. */}
             <IconeRecos size={26} className="text-ink-dim" />
@@ -850,7 +953,7 @@ export default function RecoBoard({
         // ⚠️ La RECHERCHE ne renvoie rien — message distinct de celui du filtre.
         // Dire « tu n'as créé aucune recommandation » alors qu'on vient de taper
         // un nom ferait croire à une perte de données.
-        <div className="mt-6 rounded-xl border border-dashed border-border bg-panel/40 py-8 px-6 text-center">
+        <div className="mt-4 rounded-xl border border-dashed border-border bg-panel/40 py-8 px-6 text-center lg:mt-0">
           <p className="text-sm text-ink-dim">
             {/* ⚠️ Le message dit LA RÈGLE quand il y a plusieurs monstres : les
                 trois doivent être dans la MÊME composition. Sans ça, une
@@ -898,10 +1001,31 @@ export default function RecoBoard({
       ) : (
         // Une recommandation contient plusieurs decks (3 monstres chacun) :
         // elle prend toute la largeur, pas de mise en 2 colonnes.
-        <div className="mt-6 flex flex-col gap-4">
+        <div className="mt-4 flex flex-col gap-4 lg:mt-0">
           {list.map((reco, i) => (
             <div key={reco.id} ref={i === list.length - 1 ? lastRef : undefined}>
+              {/* Le bandeau du salon, au-dessus de la carte, quand on regarde un salon. */}
+              {reco.lien && provenance.type === 'salon' && (
+                <BandeauSalon
+                  reco={reco}
+                  connecte={connecte}
+                  enCours={enCours}
+                  onPublier={() => void publierLiee(reco)}
+                  onFusionner={() => ouvrirFusion(reco)}
+                />
+              )}
               <RecoCard
+                sousBandeau={!!reco.lien && provenance.type === 'salon'}
+                // La provenance sur la carte, dans « Toutes », seulement quand
+                // il y a des salons : sans Discord, toutes viennent d'ici.
+                provenance={provenance.type === 'toutes' && groupes.length > 0
+                  ? { nom: reco.lien ? reco.lien.nomSalon : td.appareil, etat: etatAffiche(reco) }
+                  : undefined}
+                onDetacher={reco.lien ? () => setADetacher(reco) : undefined}
+                publierDans={reco.lien ? undefined : {
+                  raison: discord.etat.statut === 'bureau' ? td.connexion.bureau : connecte ? null : td.publierDansHorsConnexion,
+                  onClick: () => setAPublierDans(reco),
+                }}
                 raisonsExportOptimizer={disponibilitesExport.get(reco.id)!}
                 onExporterDeckOptimizer={deck => onImporterEquipe((data, t) => importerRecoOptimizer(deck, data, t))}
                 reco={reco}
@@ -930,6 +1054,68 @@ export default function RecoBoard({
             </div>
           ))}
         </div>
+      )}
+      </div>
+      </div>
+
+      {/* ── Dialogues Discord ── */}
+      {connexionOuverte && (
+        <DialogueConnexion
+          onFermer={() => setConnexionOuverte(false)}
+          onContinuer={() => { setConnexionOuverte(false); discord.connecter(); }}
+        />
+      )}
+      {installationOuverte && <DialogueInstallation onFermer={() => setInstallationOuverte(false)} />}
+      {aPublierDans && (
+        <DialoguePublierDans
+          reco={aPublierDans}
+          salons={salonsDePublication(discord.etat.sources?.serveurs ?? [], all)}
+          enCours={enCours}
+          onFermer={() => setAPublierDans(null)}
+          onPublier={(salon) => void publierDansSalon(aPublierDans, salon, null)}
+        />
+      )}
+      {/* ⚠️ Remplacer la recommandation d'un salon se confirme, et le défaut
+          est l'action SANS PERTE : « Annuler » garde celle du salon. */}
+      {aRemplacer && (
+        <ConfirmDialog
+          titre={td.remplacer.titre}
+          message={td.remplacer.message(aRemplacer.salon.nomSalon, aRemplacer.version?.reco?.name || aRemplacer.salon.porte || '')}
+          libelleAction={td.remplacer.remplacer}
+          destructif
+          onCancel={() => setARemplacer(null)}
+          onConfirm={() => void publierDansSalon(aRemplacer.reco, aRemplacer.salon, aRemplacer.version?.messageId ?? null)}
+        />
+      )}
+      {aDetacher && (
+        <ConfirmDialog
+          titre={td.detacherDialogue.titre(aDetacher.name || td.appareil)}
+          message={td.detacherDialogue.message}
+          libelleAction={td.detacherDialogue.action}
+          onCancel={() => setADetacher(null)}
+          onConfirm={() => {
+            const reco = aDetacher;
+            setADetacher(null);
+            recos.delierReco(reco.id);
+            notifier({ message: td.notif.detachee(reco.name || td.appareil) });
+            // Celle du salon reparaît aussitôt : une relecture des salons.
+            if (connecte) void discord.actualiser();
+          }}
+        />
+      )}
+      {aFusionner && (
+        <DialogueFusion
+          reco={aFusionner.reco}
+          fusion={aFusionner.fusion}
+          monsterByCom2us={monsterByCom2us}
+          onFermer={() => setAFusionner(null)}
+          onAppliquer={(choix) => {
+            if (recos.fusionnerDiscord(aFusionner.reco.id, aFusionner.fusion, choix)) {
+              setAFusionner(null);
+              notifier({ message: td.notif.fusionnee });
+            }
+          }}
+        />
       )}
     </div>
   );
