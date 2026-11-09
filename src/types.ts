@@ -473,11 +473,37 @@ export interface Reco {
   // l'ordre de leur première publication, sous leur surnom du serveur. Écrits
   // par le service à la publication, jamais saisis (docs/04-decisions/adr/un-salon-une-reco.md).
   contributeurs?: string[];
+  // Présent sur une recommandation LIÉE à un salon Discord : purement local,
+  // jamais exporté (lib/recoDiscord.ts, docs/04-decisions/adr/un-salon-une-reco.md).
+  lien?: LienDiscord;
+}
+
+// Une version d'un salon : son message, et la recommandation qu'il porte
+// (`null` quand le fichier du message n'en contient pas une valide).
+export interface VersionSalon {
+  messageId: string;
+  date: string;
+  reco: RecoPayload | null;
+}
+
+// Le lien d'une recommandation à son salon Discord.
+export interface LienDiscord {
+  serveurId: string;
+  salonId: string;
+  nomServeur: string;
+  nomSalon: string;
+  // La dernière version reçue du salon : la base d'une fusion à trois voies, et
+  // la référence qui dit si la copie locale est modifiée.
+  base: VersionSalon & { reco: RecoPayload };
+  // Le membre peut publier dans le salon (dernier droit connu).
+  ecrire: boolean;
+  // Une version arrivée sur une copie modifiée et non publiée : à fusionner.
+  enAttente?: VersionSalon & { reco: RecoPayload };
 }
 
 // Contenu transportable d'une recommandation : ni l'id (régénéré), ni l'origine
-// (attribuée par celui qui importe).
-export type RecoPayload = Omit<Reco, 'id' | 'origin'>;
+// (attribuée par celui qui importe), ni le lien à un salon (propre à l'appareil).
+export type RecoPayload = Omit<Reco, 'id' | 'origin' | 'lien'>;
 
 export interface RecoState {
   recos: Reco[];

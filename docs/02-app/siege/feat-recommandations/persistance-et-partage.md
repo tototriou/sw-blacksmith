@@ -181,6 +181,11 @@ Une correspondance par la source passe avant une correspondance par le nom ; à
 égalité, la première de la liste. L'origine ne compte pas : une
 recommandation « à moi » se complète comme une importée.
 
+⚠️ **Une recommandation liée à un salon Discord n'est jamais complétée par un
+fichier**, même s'il porte sa source : son contenu vient du salon
+([synchronisation-discord.md](synchronisation-discord.md)). Le fichier
+s'ajoute à part.
+
 ### Le choix proposé
 
 Quand au moins une recommandation du fichier en complète une existante,

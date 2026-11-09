@@ -20,8 +20,10 @@ interface RecoCounter {                        // une défense adverse que le de
 }
 interface RecoDeck { name: string; note: string; slots: RecoSlot[]; counters: RecoCounter[] } // 3 slots, index 0 = leader
 interface Reco { id: string; origin: 'mine'|'imported'; name: string; author: string; note: string; decks: RecoDeck[];
-                 source?: string } // provenance stable, sert à la fusion d'un import (persistance-et-partage.md)
-type RecoPayload = Omit<Reco, 'id' | 'origin'>; // ce qui voyage dans un export
+                 source?: string;          // provenance stable, sert à la fusion d'un import (persistance-et-partage.md)
+                 contributeurs?: string[]; // publieurs dans le salon Discord, écrits par le service (persistance-et-partage.md)
+                 lien?: LienDiscord }      // recommandation liée à un salon, locale (synchronisation-discord.md)
+type RecoPayload = Omit<Reco, 'id' | 'origin' | 'lien'>; // ce qui voyage dans un export
 ```
 
 **Une recommandation est un lot de decks**, pas un deck isolé : on partage
@@ -63,7 +65,7 @@ Chaque recommandation porte une **origine** :
 | Origine | Attribuée quand | Rendu |
 |---------|-----------------|-------|
 | `mine` | créée via « Créer une recommandation » | — |
-| `imported` | reçue via un import | puce **« Importée »** (icône ↓) dans l'en-tête |
+| `imported` | reçue via un import, ou apparue d'un salon Discord ([synchronisation-discord.md](synchronisation-discord.md)) | puce **« Importée »** (icône ↓) dans l'en-tête |
 
 ⚠️ L'origine est **purement locale** : elle **n'est jamais transportée** dans un
 export (d'où `RecoPayload`, qui exclut `id` **et** `origin`). Ce qui est « à moi »

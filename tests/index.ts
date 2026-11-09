@@ -364,6 +364,9 @@ import { testRecoFusionCorrespondance, testRecoFusionDecks, testRecoFusionChef, 
 import { testRenduRecoFusionChoix, testRenduRecoFusionStockage } from './rendu/reco-fusion.test';
 import { testDiscordDroits, testDiscordSession, testDiscordRecoSalon, testDiscordContributeursFormat, testDiscordRouteurConnexion,
   testDiscordRouteurSources, testDiscordRouteurSalonEtPublication } from './discord-service.test';
+import { testRecoDiscordEtat, testRecoDiscordRecevoir, testRecoDiscordSynchro, testRecoDiscordPublication, testRecoDiscordFusion,
+  testRecoDiscordFavorisEtStockage } from './reco-discord.test';
+import { testRenduRecoDiscordStockage } from './rendu/reco-discord-stockage.test';
 import testSiegePartage from './siege-partage.test';
 import testMarque from './marque.test';
 import testSpeedTune, { testSpeedTuneDeck, testSpeedTuneChaine, testSpeedTuneKit, testSpeedTuneResetAtb, testSpeedTuneSequence, testSpeedTuneReference, testSpeedTunePassif, testSpeedTuneAuto, testSpeedTuneModele } from './speed-tune.test';
@@ -557,6 +560,13 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testDiscordRouteurConnexion', testDiscordRouteurConnexion],
   ['testDiscordRouteurSources', testDiscordRouteurSources],
   ['testDiscordRouteurSalonEtPublication', testDiscordRouteurSalonEtPublication],
+  ['testRecoDiscordEtat', testRecoDiscordEtat],
+  ['testRecoDiscordRecevoir', testRecoDiscordRecevoir],
+  ['testRecoDiscordSynchro', testRecoDiscordSynchro],
+  ['testRecoDiscordPublication', testRecoDiscordPublication],
+  ['testRecoDiscordFusion', testRecoDiscordFusion],
+  ['testRecoDiscordFavorisEtStockage', testRecoDiscordFavorisEtStockage],
+  ['testRenduRecoDiscordStockage', testRenduRecoDiscordStockage],
   ['testRecoFusionCorrespondance', testRecoFusionCorrespondance],
   ['testRecoFusionDecks', testRecoFusionDecks],
   ['testRecoFusionChef', testRecoFusionChef],
