@@ -11,7 +11,7 @@ commits, vérifications) sont dans [AGENTS.md](../../AGENTS.md) et
 | Framework | React 18 + TypeScript 5 strict, **sans router** (routage par `window.location.hash`) |
 | Build | Vite 5, Tailwind 3, PostCSS + autoprefixer, et le plugin de l'écran partagé (`scripts/lib/postcssVolets.ts`), tous déclarés dans `vite.config.ts` |
 | Dépendances runtime | `lucide-react` (icônes), `framer-motion` (animations), `react-resizable-panels` (séparateur de l'écran partagé) — aucune mesure d'audience |
-| Node | **24** (LTS active), déclaré à trois endroits qui doivent rester alignés : `engines` de `package.json`, `.nvmrc` et la CI |
+| Node | **24** (LTS active), déclaré à trois endroits qui doivent rester alignés : `engines` de `package.json` (`24.x` : une borne ouverte comme `>=24` fait construire Vercel sur la dernière version majeure, au mépris du réglage du projet), `.nvmrc` et la CI |
 | Calcul lourd | Web Workers de recherche, classement et résolution (`src/workers/`) ; corps de calcul partagés avec les outils Node |
 | Langues | français et anglais, par dictionnaires TypeScript typés (`src/i18n/`), sans bibliothèque de traduction ; règle ESLint locale `swblacksmith/texte-en-dur` ([feat-langues.md](../02-app/transverse/feat-langues.md)) |
 | Stockage | `localStorage` (prépa, équipes, réglages) + **IndexedDB** (compte importé) |
