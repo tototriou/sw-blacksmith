@@ -10,7 +10,7 @@ import type { Dictionnaire } from '../../../src/i18n/fr';
 import type { RecoPayload } from '../../../src/types';
 import { client, ErreurDiscord, API, type Recuperer } from './discordApi';
 import { droitsServeur, droitsSurSalon, estAdministrateur, resumeDroits, type DroitsSalon, type Exception, type Role, type Salon } from './droits';
-import { lireVersion, nomDuMembre, NOM_FICHIER, preparerPublication, sourceDuSalon, TAILLE_MAX, versionCourante, type MessageDiscord } from './recoSalon';
+import { candidats, lireVersion, nomDuMembre, NOM_FICHIER, preparerPublication, sourceDuSalon, TAILLE_MAX, type MessageDiscord } from './recoSalon';
 import {
   COOKIE_ETAT, COOKIE_SESSION, cookie, cookieEfface, desceller, DUREE_ETAT_S, DUREE_SESSION_S, estSession, lireCookies, sceller, signer,
   verifierSignature, type Cle, type Session,
@@ -155,11 +155,16 @@ export function creerRouteur(d: Dependances) {
     return { serveurId: salon.guild_id, salon: complet, membre: m, ...droits(s, complet, m, userId, botId) };
   }
 
+  // La version courante : le plus récent fichier VALIDE du salon, du bot ou
+  // d'un membre (voir `candidats`). Un candidat illisible ou invalide passe au
+  // suivant ; un téléchargement en échec aussi.
   async function lireDirect(salonId: string): Promise<Version | null> {
-    const [messages, botId] = await Promise.all([discord.bot<MessageDiscord[]>(`/channels/${salonId}/messages?limit=100`), idBot()]);
-    const courante = versionCourante(messages, botId);
-    if (!courante) return null;
-    return { messageId: courante.message.id, date: courante.message.timestamp, texte: await discord.telecharger(courante.url) };
+    const messages = await discord.bot<MessageDiscord[]>(`/channels/${salonId}/messages?limit=100`);
+    for (const c of candidats(messages)) {
+      const texte = await discord.telecharger(c.url).catch(() => null);
+      if (texte !== null && lireVersion(texte, d.t)) return { messageId: c.message.id, date: c.message.timestamp, texte };
+    }
+    return null;
   }
 
   // La lecture passe par une adresse interne signée, que le CDN garde 15 s :

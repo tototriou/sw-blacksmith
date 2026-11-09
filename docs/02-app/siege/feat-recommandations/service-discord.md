@@ -74,9 +74,22 @@ puis les exceptions du salon (`@everyone`, rôles, membre).
 6. Le bot poste un **nouveau message** qui ne contient que
    `recommandation.json` ; la réponse (201) rend la version publiée.
 
-La version courante d'un salon est le plus récent message **du bot** qui porte
-un fichier JSON, parmi les 100 derniers messages ; les messages des membres
-ne comptent pas.
+La version courante d'un salon est le plus récent fichier **valide**, parmi
+les 100 derniers messages, qu'il vienne du bot ou d'un membre
+([recoSalon.ts](../../../../api/_source/service/recoSalon.ts), `candidats`) :
+
+- ⚠️ **Rien n'est cru avant validation.** Un candidat est une pièce jointe
+  `.json` de 256 Ko au plus (taille annoncée par Discord), hébergée sur le
+  CDN de Discord ; il est téléchargé, puis passé au validateur complet de
+  l'import, et doit contenir exactement une recommandation. Sinon il est
+  ignoré et le suivant est essayé, cinq au plus par lecture : un salon rempli
+  de faux fichiers ne fait pas télécharger tout l'historique.
+- Un fichier déposé à la main garde l'auteur et les contributeurs qu'il
+  indique ; publier par-dessus en fait la base, comme une version du bot.
+- ⚠️ **Il faut l'intent privilégié « Message Content »** (onglet *Bot* de
+  l'application Discord, dans les deux applications) : sans lui, Discord
+  rend au bot les messages des membres vides, sans pièce jointe, et seules
+  ses propres publications se lisent.
 
 ## Session
 

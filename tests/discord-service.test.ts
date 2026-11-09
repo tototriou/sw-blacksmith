@@ -6,7 +6,7 @@
 
 import { ADMINISTRATEUR, droitsSurSalon, ENVOYER, HISTORIQUE, JOINDRE, resumeDroits, VOIR_LE_SALON, type Role, type Salon } from '../api/_source/service/droits';
 import { API } from '../api/_source/service/discordApi';
-import { lireVersion, nomDuMembre, preparerPublication, versionCourante, type MessageDiscord } from '../api/_source/service/recoSalon';
+import { candidats, ESSAIS_MAX, lireVersion, nomDuMembre, preparerPublication, type MessageDiscord } from '../api/_source/service/recoSalon';
 import { creerRouteur, PAGE_RECOS } from '../api/_source/service/routeur';
 import { COOKIE_ETAT, COOKIE_SESSION, desceller, estSession, lireCookies, sceller, signer, verifierSignature, type Cle, type Session } from '../api/_source/service/session';
 import { fr } from '../src/i18n/fr';
@@ -63,11 +63,13 @@ export async function testDiscordSession() {
 
 export function testDiscordRecoSalon() {
   titre('Service Discord — version courante et fichier publié');
-  const m = (id: string, auteur: string, fichiers: string[]): MessageDiscord =>
-    ({ id, timestamp: `t${id}`, author: { id: auteur }, attachments: fichiers.map((f) => ({ url: `u${id}`, filename: f, size: 1 })) });
-  const messages = [m('5', 'U', ['a.json']), m('4', 'B', []), m('3', 'B', ['photo.png']), m('2', 'B', ['recommandation.json']), m('1', 'B', ['recommandation.json'])];
-  egal(versionCourante(messages, 'B')?.message.id, '2', 'la plus récente du bot qui porte un JSON ; ni un membre, ni un message sans fichier');
-  egal(versionCourante([m('9', 'U', ['a.json'])], 'B'), null, 'aucun message du bot : pas de recommandation');
+  const m = (id: string, auteur: string, fichiers: string[], taille = 1, url = `${CDN}${id}`): MessageDiscord =>
+    ({ id, timestamp: `t${id}`, author: { id: auteur }, attachments: fichiers.map((f) => ({ url, filename: f, size: taille })) });
+  const messages = [m('6', 'U', ['Export.JSON']), m('5', 'U', ['gros.json'], 300 * 1024), m('4', 'B', []), m('3', 'B', ['photo.png']),
+    m('2', 'U', ['piege.json'], 1, 'https://ailleurs.example/x.json'), m('1', 'B', ['recommandation.json'])];
+  egal(candidats(messages).map((c) => c.message.id), ['6', '1'],
+    'candidats : un JSON du bot OU d\'un membre ; ni un fichier de plus de 256 Ko, ni une autre extension, ni un lien hors du CDN de Discord');
+  egal(candidats(Array.from({ length: 9 }, (_, i) => m(String(9 - i), 'U', ['a.json']))).length, ESSAIS_MAX, 'au plus 5 fichiers essayés par lecture');
 
   egal(nomDuMembre({ nick: 'Chef de guerre', user: { username: 'toto', global_name: 'Toto' } }), 'Chef de guerre', 'surnom du serveur d\'abord');
   egal(nomDuMembre({ nick: null, user: { username: 'toto', global_name: 'Toto' } }), 'Toto', 'à défaut, le nom d\'affichage');
@@ -329,4 +331,28 @@ export async function testDiscordRouteurSalonEtPublication() {
   const courante = (await (await lire('C1')).json() as { version: { messageId: string } }).version.messageId;
   egal((await publier({ salon: 'C1', base: courante, contenu: 'pas du json' })).status, 400, 'contenu illisible : refusé');
   egal((await publier({ salon: 'C1', contenu: 'x' })).status, 400, 'corps incomplet : refusé');
+
+  // Fichiers déposés à la main par des membres : le plus récent VALIDE fait foi.
+  const msg = (id: string, auteur: string, nomFichier = 'export.json'): MessageDiscord =>
+    ({ id, timestamp: `t${id}`, author: { id: auteur }, attachments: [{ url: `${CDN}${id}`, filename: nomFichier, size: 1 }] });
+  const parLulu = fichier('Offs de Lulu', { author: 'Lulu' });
+  w.messages.C1.unshift(msg('900', 'L'));
+  w.pieces[`${CDN}900`] = parLulu;
+  const deposee = await (await lire('C1')).json() as { version: { messageId: string; reco: Reco } };
+  egal([deposee.version.messageId, deposee.version.reco.name, deposee.version.reco.author], ['900', 'Offs de Lulu', 'Lulu'],
+    'un fichier déposé à la main par un membre devient la version courante ; son auteur est celui du fichier');
+  w.messages.C1.unshift(msg('904', 'L'), msg('903', 'L'), msg('902', 'L'), msg('901', 'L'));
+  const sansEntete = JSON.parse(fichier('Sans en-tête')) as Record<string, unknown>;
+  delete sansEntete.format;
+  w.pieces[`${CDN}904`] = JSON.stringify(sansEntete);
+  w.pieces[`${CDN}903`] = '{"format":"autre-chose"}';
+  w.pieces[`${CDN}902`] = encodeRecosJson([reco('Une'), reco('Deux')]);
+  w.pieces[`${CDN}901`] = 'pas du json';
+  const ignores = await (await lire('C1')).json() as { version: { messageId: string } };
+  egal(ignores.version.messageId, '900',
+    'ignorés : un fichier sans l\'en-tête SW Blacksmith, d\'un autre format, à deux recommandations, illisible ; le plus récent valide reste');
+  const p3 = await publier({ salon: 'C1', base: '900', contenu: fichier('Offs v2') });
+  const v3 = await p3.json() as { version: { reco: Reco } };
+  egal([p3.status, v3.version.reco.author, v3.version.reco.contributeurs], [201, 'Lulu', ['Toto le chef']],
+    'publier par-dessus un fichier déposé : sa base est ce fichier, l\'auteur reste celui du fichier');
 }
