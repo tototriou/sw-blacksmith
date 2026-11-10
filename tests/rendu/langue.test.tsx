@@ -132,9 +132,9 @@ export function testRenduLangueApp() {
 export function testRenduLanguePagesPubliques() {
   titre('rendu · langue — les pages ouvertes à tous, en anglais');
   const accueil = enAnglais(() => texteVisible(rendreApp('#/')));
-  for (const attendu of ['The toolbox for Summoners', 'How it works', 'Export your account', 'Features', 'Rune analysis', 'Drop your .json file here', "See what's new"])
+  for (const attendu of ['The toolbox for Summoners', 'What the tool offers', 'Your RTA prep', 'Rune analysis', 'Drop your .json file here', 'Join the community', "See what's new"])
     ok(accueil.includes(attendu), `accueil : « ${attendu} »`);
-  for (const absent of ['Comment ça marche', 'Fonctionnalités', 'Dépose ton fichier']) ok(!accueil.includes(absent), `accueil : plus de « ${absent} »`);
+  for (const absent of ['Ce que propose', 'Rejoins la communauté', 'Dépose ton fichier']) ok(!accueil.includes(absent), `accueil : plus de « ${absent} »`);
 
   const nouveautes = enAnglais(() => texteVisible(rendreApp('#/releases')));
   // ⚠️ La pastille de tête dépend du journal : « Current version » sur une

@@ -384,7 +384,8 @@ import { testRenduAppRoutes, testRenduAppNavigation, testRenduAppMobile, testRen
 import { testEcranPartageMediaQueryVolet, testEcranPartageMemePage, testRenduEcranPartageApp,
   testRenduEcranPartageBarre, testRenduEcranPartageBouton, testRenduEcranPartageSelecteur,
   testRenduEcranPartageSeparateur, testRenduEcranPartageVolet } from './rendu/ecran-partage.test';
-import { testRenduAccueil, testRenduAccueilBureau, testRenduAccueilEspace } from './rendu/accueil.test';
+import { testRenduAccueil, testRenduAccueilBureau, testRenduAccueilDiscord, testRenduAccueilEspace, testRenduAccueilExemples } from './rendu/accueil.test';
+import { testDemoAccueil } from './demo-accueil.test';
 import { testRenduTelecharger } from './rendu/telecharger.test';
 import { testRenduBureauTextes } from './rendu/bureau-textes.test';
 import { testRenduBureauCoeursRecherche } from './rendu/recherche-coeurs.test';
@@ -727,6 +728,9 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testRenduAccueil', testRenduAccueil],
   ['testRenduAccueilEspace', testRenduAccueilEspace],
   ['testRenduAccueilBureau', testRenduAccueilBureau],
+  ['testRenduAccueilDiscord', testRenduAccueilDiscord],
+  ['testRenduAccueilExemples', testRenduAccueilExemples],
+  ['testDemoAccueil', testDemoAccueil],
   ['testRenduTelecharger', testRenduTelecharger],
   ['testRenduBureauTextes', testRenduBureauTextes],
   ['testRenduBureauCoeursRecherche', testRenduBureauCoeursRecherche],

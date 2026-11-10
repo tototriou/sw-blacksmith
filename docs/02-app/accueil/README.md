@@ -1,59 +1,55 @@
 # Accueil (`#/`)
 
-Page d'entrée de SW Blacksmith. Rôle : **faire faire le premier geste** (importer son
-compte) et **ramener l'habitué là où il s'était arrêté**.
+Page d'entrée de SW Blacksmith, en **vitrine** : faire faire le **premier geste**
+(importer son compte), **montrer** ce que fait chaque outil phare, ramener
+l'habitué là où il s'était arrêté, et mener à la communauté.
 
-Fichier : [HomePage.tsx](src/pages/HomePage.tsx)
+Fichiers :
+- [HomePage.tsx](src/pages/HomePage.tsx) — la page.
+- [ExemplesAccueil.tsx](src/components/accueil/ExemplesAccueil.tsx) — les exemples des outils.
+- [demoAccueil.ts](src/lib/demoAccueil.ts) — leurs données de démonstration (calcul pur, testé).
 
-## Contenu
+## Contenu, de haut en bas
 
-⚠️ **L'accueil est une PAGE D'ENTRÉE, pas un sommaire.** Une grille de cartes
-identique pour tout le monde ne retient personne : le visiteur ne sait pas par où
-commencer, et l'habitué doit re-naviguer à chaque visite vers l'endroit qu'il ne
-quitte jamais. La page répond donc à deux publics, dans cet ordre.
+### 1. Héros — le nom, les actions, la zone de dépôt
 
-### 1. Héros — promesse à gauche, action à droite
-
-Deux colonnes (`1.1fr / 0.9fr`, empilées sous `lg`).
-
-- **Gauche** : **logo + titre `SW Blacksmith`** (le symbole de l'identité, le
-  nom en Saira, capitales espacées, `clamp(32px, 5vw, 56px)`, qui passe sur
-  deux lignes quand la colonne est étroite), accroche
-  en sous-titre (« La boîte à outils pour Summoners War. »), phrase de
-  promesse, puis les **5 éléments qui flottent**, centrés sous le texte.
-  - ⚠️ **Le logo et le nom du site sont dans le héros.** C'est la page
-    d'entrée : le nom s'y lit en grand, même si la barre latérale du bureau
-    porte aussi le logo ; au téléphone, la barre du haut ne montre que le
-    symbole.
-  - ⚠️ **Aucun bouton d'IMPORT dans le héros**, et aucun argument commercial
-    répété (« Gratuit · Aucune inscription », « Traitement 100 % local… »,
-    « sans créer de compte »). La **zone de dépôt est juste à côté** : un
-    bouton « Importer mon compte » qui fait défiler vers un élément déjà
-    visible n'ajoute rien, et la pile d'arguments noierait la promesse au lieu
-    de la servir.
-  - **L'application de bureau** (seule exception à « aucun bouton dans le
-    héros ») : **sous la promesse, avant les éléments qui flottent**, UN
-    bouton SECONDAIRE (neutre, petit) « Télécharger l'application », aux
-    logos Windows et Linux, lien (`Bouton href`) vers la page
-    [Télécharger](../telecharger/) — les téléchargements eux-mêmes, la
-    phrase SmartScreen et la version y vivent. **Au téléphone**, à la
-    place, une ligne en lien vers la même page : « Existe aussi en
-    application pour Windows et Linux. » **Dans l'app de bureau**
-    (`estBureau()`) : rien.
-- **Droite** : la **zone de dépôt**.
+- **Logo + nom `SW Blacksmith`** en grand (Saira, capitales espacées,
+  `clamp(32px, 5vw, 56px)`), l'**accroche** en sous-titre (« La boîte à outils
+  pour Summoners War. »), puis la **promesse** (le lieu du calcul en gras).
+  ⚠️ Le nom du site reste le titre : c'est la page d'entrée, on doit savoir
+  sur quel site on est (un titre-slogan a été essayé et écarté).
+- **Trois actions** : « Importer mon compte » (le bouton plein de la page, il
+  ouvre le sélecteur de fichier), « Rejoindre le Discord » (au logo de
+  Discord, `LIEN_DISCORD` de `src/marque.ts`, **nouvel onglet**) et
+  « Application Windows et Linux » (lien vers [Télécharger](../telecharger/),
+  **site seulement** — `estBureau()`).
+  ⚠️ **Sur une ligne quand elle les tient, sinon une par ligne — jamais deux
+  puis une** (choix du mainteneur) : bascule par la largeur de la colonne
+  (requête de conteneur `@[640px]`), pas par `flex-wrap`.
+- **La zone de dépôt** (voir 2), puis, **hors de la zone** — qui est un bouton,
+  un lien dedans serait un contrôle dans un contrôle —, la ligne « Pas encore
+  d'export ? … SW Exporter ↗ » (nouvel onglet) : c'est là que vit désormais le
+  « comment obtenir l'export ».
+- **Disposition** : deux colonnes (texte, zone de dépôt) seulement quand la
+  page a **1 200 px de contenu** ; sinon le texte en pleine largeur et la zone
+  dessous, **à l'horizontale** dès 600 px (roue à gauche, textes à droite).
+  ⚠️ Requêtes de conteneur sur la page (`@container`), pas sur la fenêtre :
+  avec la barre latérale, à 1 366 px, la page n'a que 1 070 px.
+- Fond : deux lueurs des jetons (braise, violet du sombre), sur le panneau.
 
 ### 2. ⚠️ Zone de dépôt DANS le héros
 
 C'est le geste qui **débloque tout l'outil** : il est la première chose
 visible.
 
-- **Glisser-déposer ET clic** : on ne sait pas lequel le visiteur tentera, et
-  n'en proposer qu'un en laisse la moitié dehors. Accessible au clavier
-  (`Entrée` / `Espace`).
-- Elle appelle le **même `importAccount`** que le bouton de la nav — un seul
-  chemin d'import, une seule validation, un seul message de résultat.
-- La promesse « lu dans la page, jamais envoyé » est écrite **dans la zone** :
-  c'est là qu'est l'objection, pas dans le pied de page.
+- **La roue des runes du jeu** (`public/rune-wheel.png`, rendu du jeu tel
+  quel) dans une lueur de braise, les textes (« Dépose ton fichier .json
+  ici », « ou clique pour parcourir », « Export SWEX (.json) », « lu dans la
+  page, jamais envoyé ») et les **5 éléments qui flottent**.
+- **Glisser-déposer ET clic** : on ne sait pas lequel le visiteur tentera.
+  Accessible au clavier (`Entrée` / `Espace`).
+- Elle appelle le **même `onImport`** que les deux boutons « Importer mon
+  compte » et la nav — un seul chemin d'import.
 
 ### 3. « Ton espace »
 
@@ -62,122 +58,103 @@ Affiché **dès qu'il y a des données locales** (`HomeStats`, passé par
 stockage en plus**). Quatre tuiles → prépa RTA, défense, offense,
 recommandations.
 
-- ⚠️ **Titre NEUTRE.** Le bloc apparaît **dès le premier import**, pas seulement
-  au retour : « Reprends où tu en étais » accueillerait un débutant en lui parlant
-  d'un passé qu'il n'a pas.
-- **Le chiffre d'abord** : c'est lui qu'on vient vérifier. Le lien mène dans la
-  **sous-section exacte**, pas sur la page générique.
-- Une valeur à 0 est **atténuée, pas masquée** — sinon la rangée saute.
-- Une **équipe vide** (créée puis abandonnée) **n'est pas comptée** : annoncer
-  12 équipes dont 9 sans monstre serait mensonger.
-- ⚠️ **Aucun message sur l'état du compte ici** (« ton compte n'est pas chargé
-  dans cette session… ») : il expliquerait une incohérence au lieu de la
-  corriger. La question de la conservation est **posée à la fin de l'import**
-  (voir [transverse/](../transverse/)), et l'âge du compte vit dans le menu ⚙,
-  à côté du réglage qui le gouverne.
+- ⚠️ **Titre NEUTRE** : le bloc apparaît dès le premier import, pas seulement
+  au retour.
+- **Le chiffre d'abord** ; le lien mène dans la **sous-section exacte**.
+- Une valeur à 0 est **atténuée, pas masquée** — sinon la rangée saute. Une
+  **équipe vide** n'est pas comptée.
 
-### 4. Comment ça marche
+### 4. « Ce que propose l'outil » — les outils, montrés
 
-Trois **cartes** numérotées `01 · 02 · 03` : exporter avec
-[SW Exporter](https://github.com/Xzandro/sw-exporter), déposer le fichier,
-préparer.
+Quatre outils phares, chacun en **deux parts côte à côte, en alternance** :
+le texte (tuile à la teinte de la section, rubrique, titre, phrase, trois
+puces, bouton « Ouvrir… ») et **son exemple** ; l'un sous l'autre au
+téléphone. L'exemple prend les **trois cinquièmes** de la largeur (à partir de
+900 px de contenu) : ce sont de vrais composants, pensés pour leur page.
 
-⚠️ **Une carte, pas des colonnes de texte nu** : un numéro posé au-dessus d'un
-paragraphe se lirait comme une note de bas de page. Les trois étapes vivent
-dans **une seule carte**,
-séparées par des filets (à gauche en colonnes, en haut une fois empilées) :
-une séquence qu'on lit de gauche à droite. Chaque étape : son numéro en
-chiffres de code, sa tuile d'icône, son titre, sa phrase.
+⚠️ **Les exemples sont les VRAIS composants des outils** (« des images
+réalisables avec l'appli »), sur des équipes de démonstration passées par les
+**mêmes calculs** ([demoAccueil.ts](src/lib/demoAccueil.ts)) :
 
-### 5. Fonctionnalités
+| Outil | Exemple | Démo |
+|---|---|---|
+| Prépa RTA | `TurnOrder` (ordre de tour, leads) | Lora, Son Zhang Lao, Yeonhong, Woonsa, Han |
+| Recommandations | `RecoCard` dépliée, état figé (`recosFigees`) | trois decks choisis par le mainteneur, chacun « fort contre » une défense |
+| Optimizer | `GrilleResultats` : #1 et #2 | Woonsa, Violent ×4 + Volonté ×2, puis Rapide ×4 + Volonté ×2 ; stats par `computeStats` |
+| Speed tuning | `OrdreDeTour` + `TableauBarres` (vues de l'outil) | trois alliés, trois adversaires, le vrai moteur (`simuler`) |
 
-Grille **4 colonnes** de cartes **compactes** (icône, kicker, titre, une phrase).
+- ⚠️ **Des nat 5★ lumière et ténèbres** dans les équipes montrées (choix du
+  mainteneur), sauf les decks de la recommandation, qu'il a choisis lui-même.
+- ⚠️ **Inertes** (`inert`) : on regarde, on ne modifie rien — leurs gestes
+  toucheraient sinon aux réglages du joueur.
+- ⚠️ **À 80 %** (`zoom`) : un **aperçu** qui donne envie, pas le détail. `zoom`
+  et non `transform` : la mise en page suit.
+- **Sans les données du jeu** (premier chargement) : aucun exemple, plutôt
+  qu'un exemple faux.
+- ⚠️ **Aucune superposition** : la carte de recommandation, au téléphone, passe
+  son « Fort contre » à la ligne quand la place manque (correctif de
+  `RecoCard`, qui vaut aussi pour la page Recommandations).
 
-⚠️ Des cartes de 260 px de haut repousseraient tout le reste de la page hors
-de l'écran : à 7 entrées, la moitié des sections ne serait jamais vue.
+Puis **les autres outils, en pastilles** (tuile ronde à la teinte, titre), dans
+l'ordre de la navigation : Prépa d'un ami, Défenses et offenses, Analyse de
+runes, Analyse d'artéfacts, Bestiaire, Mécaniques, Application de bureau
+(**site seulement**), Arène classique · bientôt (atténuée, lien vers le
+placeholder).
 
-| Carte | Route | Teinte (`couleursSection.ts`) |
-|-------|-------|--------|
-| Préparation RTA | `#/rta` | `COULEUR_SECTION.rta` |
-| Prépa d'un ami | `#/rta/ami` | `COULEUR_RTA_SUB.ami` |
-| Défenses et offenses | `#/siege/defense` | `COULEUR_SECTION.siege` |
-| Recommandations | `#/siege/recommandations` | `COULEUR_SIEGE_SUB.recos` |
-| Analyse de runes | `#/compte/runes` | `COULEUR_COMPTE_SUB.runes` |
-| Analyse d'artéfacts | `#/compte/artefacts` | `COULEUR_COMPTE_SUB.artefacts` |
-| Optimiseur de runes | `#/outils/optimizer` | `COULEUR_SECTION.outils` |
-| Speed tuning | `#/outils/speed-tuning` | `COULEUR_SECTION.outils` |
-| Bestiaire | `#/bestiary` | `COULEUR_SECTION.bestiary` |
-| Mécaniques | `#/mecaniques` | `COULEUR_SECTION.mecaniques` |
-| Nouveautés | `#/releases` | `COULEUR_SECTION.releases` |
-| Application de bureau — **site seulement** | `#/telecharger` | `COULEUR_SECTION.telecharger` |
-| Arène classique | `#/arene` — `soon` | `COULEUR_SECTION.arene` |
+### 5. « Rejoins la communauté » — compacte
 
-(Le test de rendu `tests/rendu/accueil.test.tsx` fixe les cartes et leur
-ordre — treize sur le site, douze dans l'application de bureau.)
+Trois cartes **de même taille** sur une rangée (une colonne au téléphone) :
 
-### Icônes des cartes
+- **Discord** — teinte de braise, « Les joueurs qui utilisent SW Blacksmith
+  sont sur Discord », à quoi sert le serveur, bouton plein « Rejoindre le
+  Discord » (nouvel onglet) ;
+- **Nouveautés** — la **dernière version PUBLIÉE** (une version en préparation
+  est en tête du journal sans être en ligne) et son titre, « Voir les
+  nouveautés » → [Nouveautés](../nouveautes/) ;
+- **Le code** — open source, lien vers GitHub (nouvel onglet).
 
-Les cartes de **section** — fonctionnalités et « Ton espace » — portent les
-**icônes d'atelier** de la navigation
-([IconesAtelier.tsx](../src/components/IconesAtelier.tsx)) : une section a la
-même icône partout. Les étapes et le titre « Ton espace » gardent lucide.
+⚠️ Compacte, sans grande bande (le mainteneur : « trop grosse comparée au
+reste ») : le Discord se distingue par sa teinte, pas par sa taille.
 
-### Le style
+### 6. Dernier appel
 
-La structure ci-dessus est **gardée** ; seul le
-style change :
+« Prêt à préparer tes équipes ? », sa phrase, et « Importer mon compte » : il
+**ouvre le sélecteur de fichier** (un lien `#depot` ne ferait rien de visible
+avec le routage par hash), même `onImport` que la zone de dépôt.
 
-- **Cartes** : fond de panneau, contour discret (`border-soft`), rayon 12 ; au
-  survol, le fond s'appuie (`panel2`) et le contour se précise. Pas de
-  soulèvement.
-- ⚠️ **Les COULEURS** : l'icône de chaque carte est dans une tuile
-  (32 px, rayon 8) **à la teinte de sa section** — icône à la teinte, fond à
-  14 %, contour à 32 % (`color-mix`) — et les cartes de fonctionnalités
-  ont un **halo** flouté dans le coin, plus marqué au survol. Les étapes ont
-  leurs trois couleurs propres (bleu, vert, or), numéro compris. **L'accueil
-  est coloré, le menu neutre.**
+## Icônes et couleurs
+
+- Les tuiles de **section** (outils, pastilles, « Ton espace ») portent les
+  **icônes d'atelier** de la navigation
+  ([IconesAtelier.tsx](../src/components/IconesAtelier.tsx)) : une section a la
+  même icône partout.
+- ⚠️ **L'accueil est coloré, le menu neutre** : chaque tuile est **à la teinte
+  de sa section** (icône à la teinte, fond à 14 %, contour à 32 %), avec un
+  **halo** flouté derrière chaque exemple.
 - ⚠️ **En thème CLAIR, chaque teinte a sa variante assombrie**
-  (`TEINTE_CLAIRE`, [couleursSection.ts](../src/data/couleursSection.ts)).
-  Les couleurs de section sont pensées pour le fond sombre : en clair, l'icône
-  sur sa tuile tomberait jusqu'à 1,40:1 (arène), neuf sur douze sous 3:1.
-  Chaque variante garde la teinte, assombrie juste assez pour 3,2:1 sur la
-  carte comme au survol. Mécanique : la tuile, le halo et le numéro d'étape
-  posent en ligne les deux valeurs (`--teinte-sombre`, `--teinte-clair`), et
-  la règle `.teinte-section` d'index.css choisit selon le thème, avec les deux
-  déclencheurs du sombre. Numéros d'étape : 4,23 à 4,37 sur la carte — des
-  repères de séquence, pas du texte courant.
-- **Le bouton du dernier appel est le `Bouton` principal plein** de la
-  librairie.
-- Pastille de version : fond d'accent à 15 %, texte à l'**encre** — l'accent
-  sur ce fond tomberait à 4,4:1 en Forge.
-- ⚠️ **Au doigt, la même structure, resserrée** : marges verticales entre
-  blocs réduites (`max-lg:py-6`), zone de dépôt moins haute (170 px, 260 au
-  bureau), cartes de fonctionnalités moins rembourrées.
+  (`TEINTE_CLAIRE`, [couleursSection.ts](../src/data/couleursSection.ts)) : la
+  tuile et le halo posent les deux valeurs (`--teinte-sombre`,
+  `--teinte-clair`), la règle `.teinte-section` d'index.css choisit selon le
+  thème.
+- Les titres de section : Cinzel, la fin à l'accent (« Ce que propose
+  **l'outil** », « Rejoins **la communauté** »).
 
-### 6. Dernier appel + quoi de neuf
+## Textes
 
-Le **seul bouton** de la page (« Importer mon compte ») : en bas, après avoir
-tout lu, c'est là qu'il sert.
-
-⚠️ Il **ouvre le sélecteur de fichier**, il ne renvoie pas à la zone de dépôt :
-avec le routage par hash, un lien `#depot` ne ferait rien de visible. Un appel
-à l'action qui ne déclenche rien est pire que pas de bouton du tout. Il
-appelle le **même `onImport`** que la zone de dépôt et que la nav — un seul
-chemin d'import.
-
-Un rappel du bouton d'import, puis un bandeau **version + titre de la dernière
-release** ([Nouveautés](../nouveautes/)), tiré de `RELEASES[0]` — **rien à maintenir
-en double**. C'est ce qui donne une raison de **revenir**.
+Tous dans le dictionnaire, sous `accueil` et `accueil.vitrine`
+([fr.ts](src/i18n/fr.ts), [en.ts](src/i18n/en.ts)) — le mainteneur les
+retouche à la main ; les tests les lisent dans le dictionnaire.
 
 ## Règles / attendus
 
 - ⚠️ **L'accueil doit rester le miroir de l'app** : **toute page ou section
-  ajoutée / renommée / supprimée doit être répercutée ici** (carte de la grille
-  « Fonctionnalités », et tuile de reprise si la section a un état local)
-  **dans le même commit**.
-- La carte Arène est **inactive visuellement** (`soon`) mais reste un lien vers
-  `#/arene` (qui affiche le placeholder « Bientôt disponible »).
-- Les descriptions et CTA sont figés (validés par l'utilisateur) — notamment le
-  Siège : « Compose tes équipes, offense et défense, et vérifie les speed tune
-  de tes équipes. »
-- Aucune donnée chargée ici : page purement présentationnelle.
+  ajoutée / renommée / supprimée se répercute ici** (outil montré ou
+  pastille, et tuile de « Ton espace » si la section a un état local), **dans
+  le même commit**.
+- ⚠️ **Un exemple est un vrai composant** : quand un outil change d'allure,
+  l'exemple suit tout seul ; un exemple redessiné à la main finirait par
+  mentir.
+- Aucune mesure d'audience : pas de chiffres d'usage sur la page.
+- Tests : [accueil.test.tsx](tests/rendu/accueil.test.tsx) (contenu, exemples,
+  Discord, bureau), [demo-accueil.test.ts](tests/demo-accueil.test.ts) (les
+  démos et leur calcul).

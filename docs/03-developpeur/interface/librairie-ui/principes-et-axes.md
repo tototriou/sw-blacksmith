@@ -127,7 +127,10 @@ selon le contexte, ou à ce qu'il est :
   appui (`[data-bouton]` d'`index.css`). Un téléchargement, une page externe
   sont des liens — on peut en copier l'adresse, le lecteur d'écran dit
   « lien ». ⚠️ Jamais un `<button onClick={() => location.href = …}>` : il
-  ressemblerait au lien sans en être un.
+  ressemblerait au lien sans en être un. **`nouvelOnglet`** l'ouvre dans un
+  nouvel onglet (`target="_blank"`, `rel="noreferrer"`) : un site EXTERNE
+  (le Discord de l'app), qu'on ne suit pas dans l'onglet de l'app sans
+  perdre ce qui n'est pas conservé.
 
 > ⚠️ **Le libellé se masque, il ne DISPARAÎT pas.** C'est pourquoi l'API est
 > `icone` + `libelle` et non un `children` libre : le panneau d'actions mobile

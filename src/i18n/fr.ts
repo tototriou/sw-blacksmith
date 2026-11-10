@@ -260,8 +260,63 @@ export const fr = {
     promesseNavigateur: 'dans ton navigateur',
     promesseMachine: 'sur ta machine',
     promesseFin: '.',
-    telechargerApplication: "Télécharger l'application",
-    existeEnApplication: 'Existe aussi en application pour Windows et Linux.',
+    // Le serveur Discord de l'app : un bouton dans le héros, une carte en bas.
+    rejoindreDiscord: 'Rejoindre le Discord',
+    carteDiscord: {
+      texte: 'Pose tes questions, propose tes idées, signale un bug et suis les nouveautés, avec les autres joueurs.',
+    },
+    // L'accueil « vitrine » : un titre qui parle au joueur, chaque outil phare
+    // montré avec un exemple figé, la communauté.
+    vitrine: {
+      application: 'Application Windows et Linux',
+      sansExport: "Pas encore d'export ? Génère-le en lançant le jeu une fois avec",
+      swExporter: 'SW Exporter ↗',
+      outilsTitre: 'Ce que propose',
+      outilsAccent: "l'outil",
+      outilsChapeau: 'Chaque outil travaille sur ton propre compte. Voilà à quoi ça ressemble.',
+      exemple: 'Exemple',
+      outils: {
+        rta: {
+          titre: 'Ta prépa RTA',
+          texte: "Classe ta box par set et catégorie.",
+          puces: ['Ta box est organisée comme tu le souhaites', 'Les vitesses de combat avec ou sans lead speed', "Consulte ou exporte ta prépa ou celle d'un ami en un clic"],
+          aller: 'Ouvrir la prépa RTA',
+          etiquette: 'Ordre de tour',
+        },
+        recos: {
+          titre: 'Des decks de recommandations',
+          texte: 'Décris tes decks, partage-les dans les salons Discord de ta guilde, et vois lesquels ton compte peut jouer.',
+          puces: ['Sets, artéfacts, stats à viser, counters, etc...', 'Synchronisées avec Discord', 'Crée, édite et partage simplement tes idées'],
+          aller: 'Voir les recommandations',
+          etiquette: 'Une recommandation de guilde',
+          // La recommandation de démonstration (lib/demoAccueil.ts).
+          nom: 'Défenses GvO',
+          auteur: 'Toto',
+          contributeur: 'Lulu',
+        },
+        optimizer: {
+          titre: 'Le meilleur build de tes monstres',
+          texte: "L'Optimizer cherche, parmi les runes que tu possèdes, la meilleure combinaison possible selon tes besoins.",
+          puces: ['Sets, minimums et vitesse visée', 'Artéfacts et dégâts réels', 'Synchronisés avec le reste de l\'application'],
+          aller: "Ouvrir l'Optimizer",
+          etiquette: 'Un build trouvé parmi tes runes',
+        },
+        speed: {
+          titre: 'Speed tune tes teams en un clic.',
+          texte: "Le speed tuning te permet de visualiser les barres d'attaque de ton équipe et de celle d'en face, pour savoir qui joue avant qui.",
+          puces: ['Speed tune automatique, sorts compris', 'Ne te fais plus jamais cut dans tes combos', "Synchronisé avec l'optimizer pour avoir des équipes aux petits oignons"],
+          aller: 'Ouvrir le speed tuning',
+          etiquette: 'Ton équipe contre celle d’en face',
+        },
+      },
+      commuTitre: 'Rejoins',
+      commuAccent: 'la communauté',
+      discordTitre: (app: string) => `Les joueurs qui utilisent ${app} sont sur Discord`,
+      nouveautesTexte: 'Ce qui change à chaque version.',
+      githubTitre: 'Le code est open source',
+      githubTexte: 'Si tu n\'es pas sûr de ce que fait l\'application, vérifie par toi-même et propose des améliorations.',
+      voirGithub: 'Voir sur GitHub',
+    },
     tonEspace: 'Ton espace',
     monstres: (n: number): string => (n > 1 ? 'monstres' : 'monstre'),
     equipes: (n: number): string => (n > 1 ? 'équipes' : 'équipe'),
@@ -270,35 +325,26 @@ export const fr = {
     defenseSiege: 'Défense de siège',
     offenseSiege: 'Offense de siège',
     recommandations: 'Recommandations',
-    commentCaMarche: 'Comment ça marche',
-    etapeExporter: 'Exporte ton compte',
-    etapeExporterTexte: 'Génère un fichier .json de ton compte avec SW Exporter, en lançant le jeu une fois.',
-    etapeDeposer: 'Dépose le fichier',
-    etapeDeposerNavigateur: "Ici même, en haut de page. Rien n'est envoyé : tout se calcule dans ton navigateur.",
-    etapeDeposerMachine: "Ici même, en haut de page. Rien n'est envoyé : tout se calcule sur ta machine.",
-    etapePreparer: 'Prépare et optimise',
-    etapePreparerTexte: "Runes, prépa RTA, équipes de siège et analyse de compte se remplissent d'un seul coup.",
+    // Le nom de la rangée des autres outils (pour les lecteurs d'écran).
     fonctionnalites: 'Fonctionnalités',
     bientot: ' · bientôt',
-    // Les cartes de fonctionnalité : la rubrique, le titre, une phrase.
+    // Les outils : la rubrique (au-dessus du titre des outils montrés) et le
+    // titre (les pastilles des autres outils).
     cartes: {
-      rta: { rubrique: 'RTA', titre: 'Préparation RTA', texte: "Classe ta box par set en glisser-déposer et lis l'ordre de tour recalculé selon les leads." },
-      ami: { rubrique: 'RTA', titre: "Prépa d'un ami", texte: "Ouvre la prépa qu'un ami t'a exportée — ou son export SWEX complet — et regarde son classement, ses vitesses et son ordre de tour." },
-      siege: { rubrique: 'Siège', titre: 'Défenses et offenses', texte: 'Compose tes équipes et vérifie tes speed tune sur les ticks 239 et 286.' },
-      recos: { rubrique: 'Partage', titre: 'Recommandations', texte: 'Décris tes decks, partage-les en JSON, et vois ce que ton compte peut jouer.' },
-      runes: { rubrique: 'Compte', titre: 'Analyse de runes', texte: "Résumé chiffré, efficience ou score SW, courbes, et ce que tes meules et gemmes en réserve permettent d'améliorer dès maintenant." },
-      artefacts: { rubrique: 'Compte', titre: "Analyse d'artéfacts", texte: "Le score du jeu et l'efficience de chaque pièce, la distribution de ton stock et le top 10 de chaque propriété." },
-      optimizer: { rubrique: 'Outils', titre: 'Optimiseur de runes', texte: 'Cherche, parmi les runes que tu possèdes déjà, la meilleure combinaison de 6 pour un monstre, un set et des minimums donnés.' },
-      speedTuning: { rubrique: 'Outils', titre: 'Speed tuning', texte: "Tick par tick, vois quel monstre remplit sa barre d'action en premier — ton équipe et celle d'en face, pour savoir qui joue avant qui." },
-      bestiaire: { rubrique: 'Données', titre: 'Bestiaire', texte: 'Recherche et filtres par élément et étoiles naturelles, stats de base à portée de main.' },
-      mecaniques: { rubrique: 'Doc', titre: 'Mécaniques', texte: "Vitesse de combat, barre d'action, équation des dégâts et facteur de défense." },
-      nouveautes: { rubrique: 'Suivi', titre: 'Nouveautés', texte: 'Ce qui change à chaque version : ajouts, corrections et calculs revus.' },
-      arene: { rubrique: 'Arène', titre: 'Arène classique', texte: "Préparation des équipes d'offense et de défense." },
+      rta: { rubrique: 'RTA', titre: 'Préparation RTA' },
+      ami: { rubrique: 'RTA', titre: "Prépa d'un ami" },
+      siege: { rubrique: 'Siège', titre: 'Défenses et offenses' },
+      recos: { rubrique: 'Partage', titre: 'Recommandations' },
+      runes: { rubrique: 'Compte', titre: 'Analyse de runes' },
+      artefacts: { rubrique: 'Compte', titre: "Analyse d'artéfacts" },
+      optimizer: { rubrique: 'Outils', titre: 'Optimiseur de runes' },
+      speedTuning: { rubrique: 'Outils', titre: 'Speed tuning' },
+      bestiaire: { rubrique: 'Données', titre: 'Bestiaire' },
+      mecaniques: { rubrique: 'Doc', titre: 'Mécaniques' },
+      arene: { rubrique: 'Arène', titre: 'Arène classique' },
     },
     application: {
-      rubrique: 'Application',
       titre: 'Application de bureau',
-      texte: (app: string) => `${app} dans sa propre fenêtre, pour Windows et Linux, avec la mise à jour proposée à chaque version.`,
     },
     pretTitre: 'Prêt à préparer tes équipes ?',
     pretTexte: 'Importe ton fichier SWEX et retrouve ta box, tes runes, ta prépa RTA et tes équipes de siège en quelques secondes.',
@@ -2384,8 +2430,7 @@ export const fr = {
       maxUnSeul: (plafond: number) => `max ${plafond} % · un seul artéfact peut la porter`,
       // `noms` : les autres formes, déjà entre guillemets et jointes.
       formeSeule: (noms: string, n: number) =>
-        `Compte uniquement cette forme. ${noms} ${n > 1 ? 'valent' : 'vaut'} pareil au calcul des dégâts, mais${
-          n > 1 ? ' ne seront pas comptées' : ' ne sera pas comptée'
+        `Compte uniquement cette forme. ${noms} ${n > 1 ? 'valent' : 'vaut'} pareil au calcul des dégâts, mais${n > 1 ? ' ne seront pas comptées' : ' ne sera pas comptée'
         } par ce verrou.`,
       guillemets: (nom: string) => `« ${nom} »`,
       et: ' et ',
@@ -2552,10 +2597,9 @@ export const fr = {
       scoreSw: 'Score SW',
       // Pourquoi aucune combinaison n'est confirmée alors que la recherche en a trouvé.
       ecartees: (n: number, texte: string, avecRelique: boolean) =>
-        `${texte} ${n === 1 ? 'combinaison trouvée par la recherche a été écartée' : 'combinaisons trouvées par la recherche ont été écartées'} : ${
-          avecRelique
-            ? "aucune paire d'artéfacts ni relique réelles ne tient toutes les conditions."
-            : "aucune paire d'artéfacts réelle ne tient toutes les conditions."
+        `${texte} ${n === 1 ? 'combinaison trouvée par la recherche a été écartée' : 'combinaisons trouvées par la recherche ont été écartées'} : ${avecRelique
+          ? "aucune paire d'artéfacts ni relique réelles ne tient toutes les conditions."
+          : "aucune paire d'artéfacts réelle ne tient toutes les conditions."
         }`,
       confirmees: (n: string) => `${n} combinaison(s) confirmée(s)`,
       surTrouvees: (n: string) => ` sur ${n} trouvée(s)`,
