@@ -12,7 +12,7 @@ import {
   diagnostiquerChaine,
   diagnostiquerSequence,
   fenetresRequises,
-  premiersTours,
+  vuesDeSimulation,
   simuler,
   vitessesRequises,
   cleOccurrence,
@@ -47,6 +47,7 @@ import {
   sortSecondDe,
   sortsDe as sortsDeLigne,
   tuneDe,
+  parTickNaturel,
   uidDe,
   uidReference,
   visibles,
@@ -740,27 +741,10 @@ export function useSpeedTune({
     [tune, chaine]
   );
 
-  // Premiers tours (ordre de tour) et numéro d'action par (monstre, tick).
-  const premiers = useMemo(() => premiersTours(sim), [sim]);
-  const numAction = useMemo(() => {
-    const m = new Map<string, number>();
-    // ⚠️ Un tour RENDU tombe au même tick que celui qui l'a déclenché : on garde
-    // le premier, c'est lui que la case du tableau annonce.
-    for (const a of sim.actions) {
-      const cle = `${a.id}@${a.tick}`;
-      if (!m.has(cle)) m.set(cle, a.ordre);
-    }
-    return m;
-  }, [sim]);
-
-  // Lignes du tableau des barres, triées par ordre de PREMIER tour (celles qui
-  // n'agissent jamais en fin de liste), pour lire l'enchaînement de haut en bas.
-  const lignesTableau = useMemo(() => {
-    const rang = new Map(premiers.map((a, i) => [a.id, i]));
-    return [...sim.lignes].sort(
-      (a, b) => (rang.get(a.id) ?? Infinity) - (rang.get(b.id) ?? Infinity)
-    );
-  }, [sim, premiers]);
+  // Premiers tours (ordre de tour), numéro d'action par (monstre, tick) et
+  // lignes du tableau des barres : la fabrique de la lib, partagée avec
+  // l'exemple de l'accueil.
+  const { premiers, numAction, lignesTableau } = useMemo(() => vuesDeSimulation(sim), [sim]);
 
   const ligneParUid = useMemo(() => new Map(lignes.map((l) => [l.uid, l])), [lignes]);
 
@@ -926,21 +910,16 @@ export function useSpeedTune({
 
   // Regroupement par tick NATUREL (vitesse seule, sans modificateur) pour poser
   // le portrait dans la case du repère qui correspond à la vitesse du monstre.
-  const parTick = useMemo(() => {
-    const map = new Map<number, Ligne[]>();
-    for (const l of lignesVisibles) {
-      const c = combatDe(l);
-      if (c == null || c <= 0) continue;
-      const n = Math.ceil(10000 / (7 * c));
-      (map.get(n) ?? map.set(n, []).get(n)!).push(l);
-    }
-    return map;
+  const parTick = useMemo(
+    () => parTickNaturel(lignes, leads, donneesKit),
     // ⚠️ **`donneesKit` EN FAIT PARTIE.** `combatDe` y lit le gain de passif
     // (Shumar +15, Chilling +20 par buff) : les kits se chargeant en asynchrone,
     // sans cette dépendance les repères restaient calculés SANS le gain une fois
     // les données arrivées — et contredisaient la card et le tableau, qui eux le
     // comptaient. Un écran qui se contredit sur la même vitesse.
-  }, [lignes, leadAllie, leadEnnemi, donneesKit]);
+    // (`leads` est recréé à chaque rendu : ses deux leads, comme pour `tune`.)
+    [lignes, leadAllie, leadEnnemi, donneesKit]
+  );
 
   const rien = lignes.length === 0;
   const rienVisible = lignesVisibles.length === 0;

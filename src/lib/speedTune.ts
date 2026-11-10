@@ -501,6 +501,26 @@ export function premiersTours(sim: Simulation): Action[] {
   return out;
 }
 
+// Ce que les vues du résultat lisent d'une simulation : les premiers tours
+// (l'ordre de tour), le numéro d'action par (monstre, tick) — la case surlignée
+// du tableau — et les lignes du tableau dans l'ordre du premier tour. Une seule
+// fabrique pour l'outil (`useSpeedTune`) et l'exemple de l'accueil.
+export function vuesDeSimulation(sim: Simulation): { premiers: Action[]; numAction: Map<string, number>; lignesTableau: LigneSim[] } {
+  const premiers = premiersTours(sim);
+  const numAction = new Map<string, number>();
+  // ⚠️ Un tour RENDU tombe au même tick que celui qui l'a déclenché : on garde
+  // le premier, c'est lui que la case du tableau annonce.
+  for (const a of sim.actions) {
+    const cle = `${a.id}@${a.tick}`;
+    if (!numAction.has(cle)) numAction.set(cle, a.ordre);
+  }
+  // Triées par ordre de PREMIER tour (celles qui n'agissent jamais en fin de
+  // liste), pour lire l'enchaînement de haut en bas.
+  const rang = new Map(premiers.map((a, i) => [a.id, i]));
+  const lignesTableau = [...sim.lignes].sort((a, b) => (rang.get(a.id) ?? Infinity) - (rang.get(b.id) ?? Infinity));
+  return { premiers, numAction, lignesTableau };
+}
+
 /* ------------------------------------------------- Chaîne d'ouverture ---- */
 
 // « Est-ce que TOUTE mon équipe joue avant que l'adversaire ne s'intercale ? »

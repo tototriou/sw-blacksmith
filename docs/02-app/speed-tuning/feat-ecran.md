@@ -16,6 +16,15 @@ le siège répondent la MÊME chose :
   résultats dans les grilles, l'oubli d'un camp à l'import d'un deck.
 - `src/hooks/useSpeedTune.ts` — l'état (persistant), les actions et les dérivées.
   Ne rend aucun JSX.
+- `src/components/outils/speedTune/VuesSpeedTune.tsx` — les vues qui ne font
+  qu'AFFICHER un résultat : le repère des ticks, l'ordre de tour, la barre
+  d'action par tick (et les colonnes communes aux tableaux). Partagées avec
+  l'accueil, qui les montre sur une équipe de démonstration
+  ([../accueil/](../accueil/README.md)) : ce que l'accueil montre, l'outil
+  l'affiche. Leurs données viennent de la lib — `vuesDeSimulation`
+  (`speedTune.ts` : premiers tours, numéro d'action par case, lignes dans
+  l'ordre de tour) et `parTickNaturel` (`speedTuneLignes.ts` : le monstre
+  posé au tick de sa vitesse) —, une seule fabrique pour l'outil et l'accueil.
 
 De haut en bas :
 
