@@ -10,7 +10,7 @@ import type { Dictionnaire } from '../../../src/i18n/fr';
 import type { RecoPayload } from '../../../src/types';
 import { client, ErreurDiscord, API, type Recuperer } from './discordApi';
 import { droitsServeur, droitsSurSalon, estAdministrateur, resumeDroits, type DroitsSalon, type Exception, type Role, type Salon } from './droits';
-import { candidats, descriptionPublication, lireVersion, nomDeFichier, nomDuMembre, preparerPublication, sourceDuSalon, TAILLE_MAX, type MessageDiscord } from './recoSalon';
+import { candidats, descriptionPublication, lireVersion, messagePublication, nomDeFichier, nomDuMembre, preparerPublication, sourceDuSalon, TAILLE_MAX, type MessageDiscord } from './recoSalon';
 import {
   COOKIE_ETAT, COOKIE_SESSION, cookie, cookieEfface, desceller, DUREE_CODE_S, DUREE_ETAT_S, DUREE_SESSION_S, empreinte, ENTETE_SESSION, estCodeBureau,
   estSession, FORME_DEFI, jetonPorteur, lireCookies, sceller, signer, verifierSignature, type Cle, type CodeBureau, type Session,
@@ -53,7 +53,7 @@ export interface Dependances {
 }
 
 interface MembreDiscord { roles: string[]; nick?: string | null; user?: { id: string; username: string; global_name?: string | null } }
-interface ServeurDiscord { id: string; name: string; icon: string | null; owner_id: string; roles: Role[] }
+interface ServeurDiscord { id: string; name: string; icon: string | null; owner_id: string; roles: Role[]; preferred_locale?: string }
 interface ServeurMembre { id: string; name: string; icon: string | null; owner?: boolean }
 interface SalonBrut { id: string; guild_id?: string; name: string; type: number; permission_overwrites?: Exception[] }
 
@@ -418,11 +418,14 @@ export function creerRouteur(d: Dependances) {
         const p = preparerPublication(corps.contenu, publieur, precedente, sourceDuSalon(a.serveurId, corps.salon), d.t);
         if (!p.ok) return repondre(400, { erreur: 'contenu', details: p.erreurs });
         // Dans Discord, le message est celui du BOT : le membre qui a publié
-        // se lit dans le nom du fichier (son identifiant, que le JSON ne peut
-        // pas forger) et dans sa description, pour la modération.
+        // se lit dans son texte (une mention, sans notification), dans le nom
+        // du fichier (son identifiant, que le JSON ne peut pas forger) et dans
+        // sa description, pour la modération.
         const nom = nomDeFichier(session.utilisateur.id);
+        const langue = (await serveur(a.serveurId)).serveur.preferred_locale;
         const fd = new FormData();
         fd.append('payload_json', JSON.stringify({
+          content: messagePublication(session.utilisateur.id, courante !== null, langue),
           attachments: [{ id: 0, filename: nom, description: descriptionPublication(publieur, session.utilisateur.id) }],
           allowed_mentions: { parse: [] },
         }));

@@ -21,7 +21,18 @@ export interface MessageDiscord {
 // jointe) le redit en clair, sans langue : une guilde peut être anglophone.
 // L'identifiant vient de la session, jamais du fichier reçu.
 export const nomDeFichier = (membreId: string) => `recommandation-${membreId}.json`;
-export const descriptionPublication = (publieur: string, membreId: string) => `SW Blacksmith · ${publieur} (${membreId})`.slice(0, 1024);
+// Le texte du message d'une publication : qui a publié, par une mention, qui
+// s'affiche sous son nom du serveur sans le notifier (`allowed_mentions` vide).
+// « modifiée » quand le salon portait déjà une recommandation. Dans la langue
+// du serveur (`preferred_locale`) : français, sinon anglais. Aucun texte venu
+// du fichier : rien qu'un membre puisse y glisser (lien, mise en forme).
+export function messagePublication(membreId: string, miseAJour: boolean, langueServeur: string | undefined): string {
+  const fr = (langueServeur ?? '').startsWith('fr');
+  const qui = `<@${membreId}>`;
+  if (fr) return miseAJour ? `Recommandation modifiée par ${qui}` : `Recommandation publiée par ${qui}`;
+  return miseAJour ? `Recommendation updated by ${qui}` : `Recommendation published by ${qui}`;
+}
+export const descriptionPublication =(publieur: string, membreId: string) => `SW Blacksmith · ${publieur} (${membreId})`.slice(0, 1024);
 const collecteur = (): Issues => ({ errors: [], warnings: [] });
 // Une recommandation pèse quelques dizaines de Ko ; au-delà, ce n'en est pas une.
 export const TAILLE_MAX = 256 * 1024;

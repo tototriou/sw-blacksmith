@@ -5,7 +5,7 @@
 // Modèle : docs/04-decisions/adr/un-salon-une-reco.md.
 
 import { ADMINISTRATEUR, droitsSurSalon, ENVOYER, JOINDRE, resumeDroits, VOIR_LE_SALON, type Role, type Salon } from '../api/_source/service/droits';
-import { candidats, ESSAIS_MAX, lireVersion, nomDuMembre, preparerPublication, type MessageDiscord } from '../api/_source/service/recoSalon';
+import { candidats, ESSAIS_MAX, lireVersion, messagePublication, nomDuMembre, preparerPublication, type MessageDiscord } from '../api/_source/service/recoSalon';
 import { creerRouteur, PAGE_RECOS } from '../api/_source/service/routeur';
 import {
   COOKIE_ETAT, COOKIE_SESSION, desceller, empreinte, ENTETE_SESSION, estSession, lireCookies, sceller, signer, verifierSignature, type Cle, type Session,
@@ -301,9 +301,9 @@ export async function testDiscordRouteurSalonEtPublication() {
     'première publication : postée, auteur et contributeur = surnom du serveur, source du salon');
   egal(w.postes.length, 1, 'un message posté par le bot');
   const poste = w.postes[0];
-  egal([poste.nomFichier, poste.charge.attachments[0].filename, poste.charge.attachments[0].description, poste.charge.content],
-    ['recommandation-U.json', 'recommandation-U.json', 'SW Blacksmith · Toto le chef (U)', undefined],
-    'le fichier porte l\'identifiant du membre qui a publié, et sa description le redit ; aucun texte');
+  egal([poste.charge.content, poste.nomFichier, poste.charge.attachments[0].filename, poste.charge.attachments[0].description],
+    ['Recommandation publiée par <@U>', 'recommandation-U.json', 'recommandation-U.json', 'SW Blacksmith · Toto le chef (U)'],
+    'le message dit qui a publié (mention, dans la langue du serveur) ; le fichier porte son identifiant, sa description le redit');
   egal(poste.charge.allowed_mentions, { parse: [] }, 'aucune mention ne peut notifier qui que ce soit');
 
   const lu = await (await lire('1001')).json() as { version: { messageId: string; reco: Reco } };
@@ -321,6 +321,10 @@ export async function testDiscordRouteurSalonEtPublication() {
   const v2 = await p2.json() as { version: { reco: Reco } };
   egal([p2.status, v2.version.reco.author], [201, 'Toto le chef'], 'base à jour : publiée, l\'auteur reste le premier publieur');
   egal(w.messages['1001'].length, 2, 'la version précédente reste dans le salon');
+  egal(w.postes[1].charge.content, 'Recommandation modifiée par <@U>', 'une publication sur une version existante : « modifiée par »');
+  egal([messagePublication('42', false, 'en-US'), messagePublication('42', true, undefined), messagePublication('42', true, 'fr')],
+    ['Recommendation published by <@42>', 'Recommendation updated by <@42>', 'Recommandation modifiée par <@42>'],
+    'serveur non francophone (ou langue inconnue) : en anglais');
 
   egal((await publier({ salon: '1001', base: 'faux', contenu: 'pas du json' })).status, 409, 'le conflit se vérifie avant le contenu');
   const courante = (await (await lire('1001')).json() as { version: { messageId: string } }).version.messageId;

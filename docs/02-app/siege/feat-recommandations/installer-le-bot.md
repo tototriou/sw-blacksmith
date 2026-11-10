@@ -49,9 +49,10 @@ salon qui décident**, relus à chaque requête.
 
 - Effacer une recommandation se fait dans Discord, par qui en a le droit : le message effacé, la
   version précédente revient. Depuis l'app, un membre ne fait que se détacher du salon.
-- Les publications de l'app sont des messages **du bot**. Le membre qui a publié se lit dans le nom
-  du fichier (`recommandation-<son identifiant Discord>.json`) et dans sa description (son surnom
-  et son identifiant) : c'est par là qu'un modérateur le retrouve.
+- Les publications de l'app sont des messages **du bot**, qui disent qui a publié :
+  « Recommandation publiée par @membre », ou « modifiée par » pour une nouvelle version, sans
+  notifier personne. Le nom du fichier (`recommandation-<son identifiant Discord>.json`) et sa
+  description le redisent.
 - Retirer à un membre l'accès au salon retire la recommandation de son app à la lecture suivante ;
   ses modifications non publiées restent sur son appareil.
 
