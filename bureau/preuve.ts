@@ -10,7 +10,7 @@
 // (voir main.ts) : une preuve ne touche jamais celles de l'utilisateur.
 
 import { app, BrowserWindow } from 'electron';
-import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { PreuveMiseAJour } from './miseAJour';
 import type { PreuveSession } from './session';
