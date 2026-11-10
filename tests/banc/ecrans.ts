@@ -431,7 +431,7 @@ export const ECRANS: Ecran[] = [
         id: 'equipe-liee',
         libelle: 'équipe exportée depuis Mes équipes, sa fenêtre ouverte : « Enregistrer dans Mes équipes »',
         // Pas en écran partagé : la barre latérale y mène le volet principal.
-        tailles: ['telephone', 'ordinateur', 'bureau-portable', 'bureau-colonnes', 'conteneur-752', 'conteneur-1096'],
+        tailles: ['telephone', 'ordinateur', 'bureau-portable', 'bureau-2560', 'conteneur-752', 'conteneur-1100'],
         preparation: { telephone: [...EQ_LIEE.telephone, EQ_MODIFIER], ordinateur: [...EQ_LIEE.ordinateur, EQ_MODIFIER] },
         atteint: [bouton('Enregistrer dans Mes équipes'), { role: 'dialog', nom: 'Modifier l’équipe' }],
       },
