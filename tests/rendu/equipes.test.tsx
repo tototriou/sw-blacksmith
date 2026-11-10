@@ -122,6 +122,8 @@ export function testRenduEquipesCreationOptimizer() {
     ok(t.includes(e.retour.manquante('Monstre 1', e.retour.pieces.rune, 999)), 'une pièce introuvable est nommée');
     ok(!t.includes(e.retour.resume(2, 9)), 'pas de résumé de changements : tout est nouveau');
     ok(bouton(html, e.creation.action)?.desactive === false, '« Enregistrer » utilisable');
+    // Un paragraphe ne contient ni bloc ni liste : le sous-titre fait de blocs n'est pas un <p>.
+    ok(!/<p(?:\s[^>]*)?>(?:(?!<\/p>).)*<(?:div|ul|p)[\s>]/s.test(html), 'aucun bloc dans un paragraphe');
   }
 }
 
