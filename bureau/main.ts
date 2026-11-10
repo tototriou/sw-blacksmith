@@ -16,9 +16,11 @@ import { brancherNavigation } from './navigation';
 import { brancherSession } from './session';
 import { brancherSwex } from './swex';
 import { brancherCoeurs } from './coeurs';
+import { brancherDiscord } from './discord';
+import { adresseService } from './discordPur';
 import { SCHEMA, URL_ACCUEIL, cheminDuFichier } from './protocole';
 import { definirLangue, langueDuSysteme } from './textes';
-import { lancerPreuve, lancerPreuveConservation, lancerPreuveSession, lancerPreuveSwex, TemoinsPreuve } from './preuve';
+import { lancerPreuve, lancerPreuveConservation, lancerPreuveDiscord, lancerPreuveSession, lancerPreuveSwex, TemoinsPreuve } from './preuve';
 
 // Les couleurs des deux thèmes, LUES dans `src/index.css` à la compilation
 // (scripts/construire-bureau.mjs) — jamais recopiées ici. Elles habillent la
@@ -166,9 +168,13 @@ function creerFenetre(preuve: TemoinsPreuve | undefined): BrowserWindow {
   brancherMiseAJour(fenetre, preuve?.miseAJour);
   // Le dossier SW Exporter : « Mon compte » suit les exports.
   brancherSwex(fenetre, preuve?.swex);
+  // La connexion à Discord (recommandations de siège) : la session du service,
+  // gardée ici, jamais par la page.
+  const discord = brancherDiscord(fenetre, { service: adresseService(process.env.SWBLACKSMITH_SERVICE_DISCORD), preuve });
   // La session en cours : « Sauvegarder » la réécrit, « Sauvegarder sous… »
-  // la remplace.
-  brancherSession(fenetre, preuve?.session);
+  // la remplace. « Garder mes données » et « Tout supprimer » valent aussi
+  // pour la connexion à Discord.
+  brancherSession(fenetre, preuve?.session, discord);
   // Les cœurs physiques, que le navigateur ne connaît pas : le nombre de
   // Workers de la recherche de runes en dérive.
   brancherCoeurs(fenetre);
@@ -216,6 +222,9 @@ void app.whenReady().then(() => {
     // La sauvegarde de session.
     const compte = readFileSync(process.env.SWBLACKSMITH_PREUVE_COMPTE ?? '', 'utf8');
     void lancerPreuveSession(fenetre, DOSSIER_PREUVE, compte, preuve.dossierTelechargements);
+  } else if (DOSSIER_PREUVE && preuve && (process.env.SWBLACKSMITH_PREUVE_DISCORD === 'connecter' || process.env.SWBLACKSMITH_PREUVE_DISCORD === 'relire')) {
+    // La connexion à Discord, devant le faux service du script.
+    void lancerPreuveDiscord(fenetre, DOSSIER_PREUVE, process.env.SWBLACKSMITH_PREUVE_DISCORD, preuve);
   } else if (DOSSIER_PREUVE && process.env.SWBLACKSMITH_PREUVE_SWEX) {
     // La preuve du dossier SW Exporter.
     const compte = readFileSync(process.env.SWBLACKSMITH_PREUVE_COMPTE ?? '', 'utf8');

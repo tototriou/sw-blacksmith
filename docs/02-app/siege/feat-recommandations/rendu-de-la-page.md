@@ -16,26 +16,112 @@ Vue (Attaque / Défense) · filet vertical · recherche par monstre et ses trois
 cases, sur la même ligne ; « Rôle » passe dessous quand une recherche est
 posée.
 
+## Provenances et Discord
+
+Fichiers : [Provenances.tsx](../../../../src/components/siege/discord/Provenances.tsx),
+[BandeauSalon.tsx](../../../../src/components/siege/discord/BandeauSalon.tsx),
+[DialoguesDiscord.tsx](../../../../src/components/siege/discord/DialoguesDiscord.tsx),
+[provenancesRecos.ts](../../../../src/lib/provenancesRecos.ts) (calcul pur),
+[useDiscord.ts](../../../../src/hooks/useDiscord.ts). Ce que devient une
+recommandation liée sur l'appareil :
+[synchronisation-discord.md](synchronisation-discord.md).
+
+- **Les provenances** : « Toutes les recommandations », « Sur cet appareil »,
+  puis un groupe par serveur Discord, une ligne par salon qui porte une
+  recommandation, avec l'état de celle-ci (À jour, Modifiée, Conflit, Lecture
+  seule ; pastilles colorées comme celles des decks). ⚠️ **À l'ordinateur, une
+  colonne** à gauche du contenu, sous la barre d'outils (vue, recherche) ;
+  **au téléphone, le même bloc EN TÊTE de la page**, au-dessus de la
+  recherche, à plat (lignes de 40 px) avec le compte Discord en pied —
+  ⚠️ aucun sélecteur à dérouler : la provenance choisie et les autres se
+  voient d'un coup d'œil. La recherche porte sur la provenance choisie.
+- **À l'arrivée sur la page : « Toutes les recommandations »**, une liste à
+  plat : celles de cet appareil d'abord, puis celles des salons dans l'ordre
+  de la colonne. Quand il y a des salons, chaque carte porte sa provenance
+  (le salon, ou « Sur cet appareil ») et l'état de son salon ; sans Discord,
+  rien ne change sur les cartes. Un salon qui disparaît ramène à « Toutes ».
+- **Favoris** : dans l'application de bureau seulement, une étoile devant
+  chaque salon ; les favoris passent en tête de leur serveur. Aucun salon ne
+  se masque.
+- **Le compte Discord, en pied de la colonne et du bloc du téléphone** : connecté,
+  le nom, « Installer le bot sur ton serveur » (icône d'aide), « Actualiser »
+  (relit les salons) et « Se déconnecter », avec l'heure de la dernière
+  lecture ; sinon l'encart « Discord » : une phrase,
+  « Se connecter à Discord » et « Installer le bot sur ton serveur ». Dans
+  l'application de bureau sans chiffrement sûr (Linux sans trousseau), une
+  ligne sous le nom dit que la connexion ne survivra pas à la fermeture.
+- **Le bandeau d'un salon**, au-dessus de la carte quand on regarde un salon :
+  serveur › salon, état, date de la version reçue et ce que l'état veut dire,
+  puis « Publier » — « Fusionner » en conflit. « Publier » est toujours
+  affiché, désactivé avec sa raison (à jour, lecture seule, hors connexion).
+  Au téléphone, le bouton passe pleine largeur sous le texte.
+- **Une recommandation liée ne se supprime pas** : sa corbeille devient
+  « Détacher de ce salon » (icône de chaîne rompue), avec un dialogue ; elle
+  passe dans « Sur cet appareil » et celle du salon reparaît.
+- **« Publier dans… »** sur chaque recommandation de cet appareil : à la
+  souris, un bouton à libellé près d'« Analyser mes decks » ; au doigt, une
+  icône du groupe d'actions. Toujours affiché, désactivé hors connexion avec
+  sa raison. Son dialogue liste les salons lisibles et ce que chacun porte ;
+  un salon en lecture seule y est visible, désactivé. Un salon qui porte déjà
+  une recommandation demande confirmation, dont le défaut est « Annuler » (on
+  garde celle du salon).
+- **L'auteur ne se saisit plus** : écrit par Discord à la publication, avec
+  les contributeurs (« par Toto · avec Lulu ») ; un auteur déjà présent reste
+  affiché, en lecture seule.
+- **Dialogues** : « Se connecter à Discord » (ce qui est partagé, et
+  l'avertissement sur la perte d'accès) avant de partir vers Discord ; dans
+  l'application de bureau, « Coller le code de connexion » (les trois étapes,
+  le champ, une ligne réservée pour un code refusé, « Rouvrir la page dans le
+  navigateur » ; « Annuler » abandonne la connexion) ; sur le site, au retour
+  d'une connexion demandée par l'application, l'avertissement « Ne donne ce
+  code à personne », le code en lecture seule et « Copier le code » ; l'installation du bot (les cinq étapes du
+  [guide](installer-le-bot.md), « Inviter le bot », qui ouvre l'invitation
+  dans un nouvel onglet — dans le navigateur du système pour l'application de
+  bureau —, le lien vers le Discord de l'app, « Fermer ») ; la fusion (ce qui a passé seul, puis chaque
+  élément à choisir, les deux versions côte à côte à l'ordinateur, l'une sous
+  l'autre au téléphone ; « Appliquer » désactivé tant qu'un choix manque).
+  Une publication refusée parce que le salon a changé ouvre la fusion.
+- **Notifications** : une par lecture des salons, qui regroupe ce qui a
+  changé, et rien quand rien n'a changé ; une par publication, refus ou
+  panne. Le retour de l'autorisation (`?discord=refus`, `?discord=erreur`,
+  leurs variantes `-bureau`, et `?discord-bureau=<code>`) se dit une fois,
+  puis s'efface de l'adresse.
+
 ## En-tête d'une recommandation et actions d'un deck
 
-⚠️ **À la souris, l'en-tête d'une recommandation tient sur UNE ligne** :
-chevron · titre · Importée · decks · auteur, un ressort, puis **au bout**
-« Analyser mes decks » (bouton **à cadre**, comme les autres boutons à libellé
-de la page : fantôme, il ne se lirait pas comme un bouton parmi les icônes
-nues), un filet vertical et Exporter / Éditer / Supprimer. Au doigt, l'en-tête
-tient sur deux rangées.
+⚠️ **L'en-tête d'une recommandation se lit de haut en bas, aux deux
+formats** : le **nom** de la recommandation en titre ; **dessous**, le nombre
+de decks, l'auteur et les contributeurs ; **enfin** la source et les autres
+étiquettes (son salon ou « Sur cet appareil » avec l'état du salon,
+« Importée »), quand il y en a. À la souris, c'est une grille : le chevron devant le titre, et
+**au bout**, sur toute la hauteur, « Analyser mes decks » et « Publier dans… »
+(boutons **à cadre**, comme les autres boutons à libellé de la page), un filet
+vertical et Exporter / Éditer / Supprimer. Au doigt, les icônes restent à côté
+du titre.
 
-⚠️ **À la souris, le crayon d'un deck n'est pas dans la ligne** : la ligne n'a
-que ses quatre colonnes (chevron · offense · fort contre · verdict, ce dernier
-aligné à droite), et l'édition est **« Éditer ce deck » écrit en toutes
-lettres, en PIED du détail déplié**, à droite, sous un filet (en édition :
-« Terminer l'édition de ce deck »), avec **« Supprimer ce deck » à l'autre
-bout, TOUJOURS présent** — la confirmation est le garde-fou. Au doigt aussi,
-la corbeille suit le crayon en permanence. Ces boutons ont un **CADRE** à la
-souris, comme les autres boutons à libellé : `BoutonIcone`
-`libelleALaSouris`. Replié, un deck ne montre donc pas d'action d'édition : on
-le déplie d'abord. C'est le MÊME bouton qu'au doigt, placé sur la 3ᵉ rangée de
-la grille du deck. **En édition de la recommandation**, Ajouter un deck vide
+⚠️ **Une recommandation repliée montre une pastille par deck** (par défense
+visée, en vue Défense) **sur DEUX LIGNES au plus** : ce qui ne tient pas se
+résume en « +N », les noms cachés en infobulle, et « Consignes » suit toujours.
+La place se MESURE (largeur de la carte, longueur des noms), avant la première
+peinture, et se remesure au redimensionnement (`ApercuDeuxLignes`).
+
+⚠️ **Un deck réduit est compact : ses portraits seuls**, ni noms ni runes —
+le nom passe en infobulle du portrait, et noms et runage s'écrivent dans le
+deck ouvert, sur la fiche de chaque monstre (parties titrées : Runage, Stats,
+Artéfacts ; le tableau des stats a son en-tête : Stat, Base + bonus ou Total,
+Actuel après une analyse).
+
+⚠️ **Les actions d'un deck sont sur SA LIGNE, replié ou non** : Exporter vers
+l'Optimizer, Éditer ce deck, Supprimer ce deck (toujours présent : la
+suppression se défait par la notification). **« Éditer ce deck » ouvre le deck
+en édition directement**, sans éditer la recommandation ni le déplier d'abord.
+À la souris, elles forment la 5ᵉ colonne de la ligne (chevron · offense · fort
+contre · verdict · actions) ; au doigt, la rangée sous les portraits, verdict à
+gauche et actions à droite, en cibles de 40 px. Une place est **réservée** à
+« Annuler les modifications » devant elles : invisible hors édition, elle
+apparaît en édition, et ✎ devient ✓ à la même place — aucun bouton ne bouge
+sous le clic. Aucune icône ne chevauche sa voisine. **En édition de la
+recommandation**, Ajouter un deck vide
 et Importer un deck d'offense forment le **pied du tableau des decks**, à
 droite, en boutons **pointillés à fond**. **« + Défense »** est un bouton `sm`
 pointillé à fond au bout de la rangée des défenses visées : fantômes, ces

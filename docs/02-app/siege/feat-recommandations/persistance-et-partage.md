@@ -10,8 +10,10 @@ survivent au reload. Effacées par « Supprimer mes données » (préfixe `swbla
 
 ## Partage — un seul format : le JSON
 
-Tout vit dans [recoShare.ts](src/lib/recoShare.ts). **100 % local**, aucun envoi
-réseau.
+Tout vit dans [recoShare.ts](src/lib/recoShare.ts). Le partage par fichier est
+**100 % local**, sans aucun envoi réseau ; la synchronisation avec Discord,
+sur demande, publie ce même JSON dans un salon
+([synchronisation-discord.md](synchronisation-discord.md)).
 
 ⚠️ **Le JSON est le SEUL format**, à l'export comme à l'import. Pas de code
 compact base64 (`SWF-RECO-1:`) : deux formats
@@ -181,6 +183,11 @@ Une correspondance par la source passe avant une correspondance par le nom ; à
 égalité, la première de la liste. L'origine ne compte pas : une
 recommandation « à moi » se complète comme une importée.
 
+⚠️ **Une recommandation liée à un salon Discord n'est jamais complétée par un
+fichier**, même s'il porte sa source : son contenu vient du salon
+([synchronisation-discord.md](synchronisation-discord.md)). Le fichier
+s'ajoute à part.
+
 ### Le choix proposé
 
 Quand au moins une recommandation du fichier en complète une existante,
@@ -258,3 +265,20 @@ rien. Le rapport de validation reste affiché comme pour tout import.
 - **Gardée** dans le stockage et **repartie** à l'export : une recommandation
   reçue puis repartagée garde sa provenance, et se fusionne encore chez celui
   qui la reçoit.
+
+### Le champ `contributeurs`
+
+```json
+{ "nom": "…", "auteur": "Toto", "contributeurs": ["Toto", "Lulu"], "source": "discord:<serveur>:<salon>", "decks": [ … ] }
+```
+
+- **Facultatif**, jamais saisi : les membres qui ont publié la recommandation
+  dans son salon Discord, dans l'ordre de leur première publication, sous leur
+  surnom du serveur. C'est le service qui l'écrit à la publication, avec
+  l'auteur (le premier publieur) et la source du salon
+  ([service-discord.md](service-discord.md)).
+- **Un champ en plus, pas une version de plus**, comme `source`.
+- À la lecture, un nom vide ou en double est écarté, un nom de plus de 40
+  caractères est coupé, la liste s'arrête à 50 noms ; ce qui n'est pas une
+  liste de textes est ignoré sans avertissement. Une recommandation sans
+  contributeurs n'écrit pas de liste vide.

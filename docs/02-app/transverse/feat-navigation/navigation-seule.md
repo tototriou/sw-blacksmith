@@ -105,8 +105,10 @@ côté, parchemin des Recommandations), « Voir le speed tune » (chronomètre),
 « Importer un deck d'offense » et « Fort contre » (épée) ; à la
 RTA, l'état vide, le bouton d'ouverture et l'en-tête d'une prépa d'« Ami »
 (compagnons) ; au Bestiaire, « Aucun monstre ne correspond » (grimoire) ; au
-Speed tuning, la pastille de l'en-tête au téléphone (chronomètre). L'écran
-vide de l'Optimizer porte une clé à molette.
+Speed tuning, la pastille de l'en-tête au téléphone (chronomètre) ;
+« Exporter vers l'Optimizer » (compas), partout où l'action existe — Siège,
+équipe, recommandations, RTA, Speed tuning. L'écran vide de l'Optimizer porte
+une clé à molette.
 ⚠️ `InventaireIcon` est le rendu du jeu des écrans du compte (tête de monstre,
 rune, médaillon) ; la nav a ses propres icônes des trois inventaires.
 

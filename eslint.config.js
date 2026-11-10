@@ -19,7 +19,7 @@ const HORS_TRADUCTION = ['src/i18n/**', 'src/components/outils/optimizer/gabarit
 
 export default tseslint.config(
   {
-    ignores: ['dist/**', 'dist-bureau/**', 'paquets/**', 'public/**', 'node_modules/**', '.history/**', 'coverage/**'],
+    ignores: ['dist/**', 'dist-bureau/**', 'api/_paquet/**', 'paquets/**', 'public/**', 'node_modules/**', '.history/**', 'coverage/**'],
   },
   {
     // Les `eslint-disable` existants documentent des dépendances d'effet
@@ -99,6 +99,7 @@ export default tseslint.config(
       'src/hooks/useAdversaireReference.ts',
       'src/hooks/useBuildsRapides.ts',
       'src/hooks/useFormeResultats.ts',
+      'src/hooks/useReglagesDiscord.ts',
     ],
     rules: { 'no-restricted-properties': 'off' },
   },
@@ -109,7 +110,7 @@ export default tseslint.config(
     rules: { 'swblacksmith/texte-en-dur': 'error' },
   },
   {
-    files: ['bureau/**/*.ts', 'scripts/**/*.{ts,mjs,js}', 'tests/**/*.{ts,tsx,mjs}', '.claude/**/*.mjs', '*.{js,mjs,ts}'],
+    files: ['bureau/**/*.ts', 'api/**/*.{ts,mjs}', 'scripts/**/*.{ts,mjs,js}', 'tests/**/*.{ts,tsx,mjs}', '.claude/**/*.mjs', '*.{js,mjs,ts}'],
     languageOptions: { globals: globals.node },
   },
   {

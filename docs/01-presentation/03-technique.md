@@ -11,11 +11,12 @@ commits, vérifications) sont dans [AGENTS.md](../../AGENTS.md) et
 | Framework | React 18 + TypeScript 5 strict, **sans router** (routage par `window.location.hash`) |
 | Build | Vite 5, Tailwind 3, PostCSS + autoprefixer, et le plugin de l'écran partagé (`scripts/lib/postcssVolets.ts`), tous déclarés dans `vite.config.ts` |
 | Dépendances runtime | `lucide-react` (icônes), `framer-motion` (animations), `react-resizable-panels` (séparateur de l'écran partagé) — aucune mesure d'audience |
-| Node | **24** (LTS active), déclaré à trois endroits qui doivent rester alignés : `engines` de `package.json`, `.nvmrc` et la CI |
+| Node | **24** (LTS active), déclaré à trois endroits qui doivent rester alignés : `engines` de `package.json` (`24.x` : une borne ouverte comme `>=24` fait construire Vercel sur la dernière version majeure, au mépris du réglage du projet), `.nvmrc` et la CI |
 | Calcul lourd | Web Workers de recherche, classement et résolution (`src/workers/`) ; corps de calcul partagés avec les outils Node |
 | Langues | français et anglais, par dictionnaires TypeScript typés (`src/i18n/`), sans bibliothèque de traduction ; règle ESLint locale `swblacksmith/texte-en-dur` ([feat-langues.md](../02-app/transverse/feat-langues.md)) |
 | Stockage | `localStorage` (prépa, équipes, réglages) + **IndexedDB** (compte importé) |
-| Déploiement du site | Vercel (preset Vite, sortie `dist`) : déploiement automatique sur `main`, preview par branche |
+| Déploiement du site | Vercel (preset Vite, sortie `dist`, projet `sw-blacksmith`) : déploiement automatique sur `main`, preview par branche |
+| Service | une fonction Vercel sans état, `api/discord.mjs`, à Paris : la synchronisation Discord des recommandations ([service-discord.md](../02-app/siege/feat-recommandations/service-discord.md)) |
 | Application de bureau | Electron, voir ci-dessous |
 
 Développer sur une version de Node et vérifier sur une autre laisse passer des écarts d'API — c'est
@@ -38,6 +39,8 @@ Code dans **`bureau/`** (hors de `src/` : il tourne dans Node) :
   `dossier-swblacksmith.json`) ;
 - `coeurs.ts` + `coeursPur.ts` (nombre de cœurs physiques, lu par une commande du système et
   donné à la page : le nombre de Workers de la recherche de runes en dérive) ;
+- `discord.ts` + `discordPur.ts` (connexion à Discord : code collé, session gardée par le
+  processus principal et chiffrée dans `discord.json`, appels au service relayés pour la page) ;
 - `textes.ts` (textes des boîtes du système, dans la langue que la page envoie, pur) ;
 - `preuve.ts`, `installeur.nsh` (désinstalleur Windows), `icone.ico` (générée par
   `scripts/generer-icone-bureau.mjs`).
@@ -64,7 +67,8 @@ nvm use                # lit .nvmrc
 npm install            # installe aussi les hooks Git (script prepare → scripts/installer-hooks.mjs --automatique)
 npm run fetch-data     # régénère les données monstres et compétences depuis SWARFARM (mode démo si l'API est KO)
 npm run dev            # serveur de dev, http://localhost:5173
-npm run build          # build de prod (⚠️ seul endroit où l'on voit le CSS réellement émis)
+npm run build          # build de prod (⚠️ seul endroit où l'on voit le CSS réellement émis), puis le service api/
+npm run dev:api        # le site et le service Discord en local, http://localhost:3000 (vercel dev)
 npm test               # = node tests/run.mjs
 node tests/run.mjs --lister <filtre>        # sélection finale, sans exécution
 node tests/run.mjs --max-entrees 30 <filtre> # limite explicite avant toute vérification

@@ -44,7 +44,11 @@ export interface PreuveSession {
   choix: number;
 }
 
-export function brancherSession(fenetre: BrowserWindow, preuve?: PreuveSession) {
+// Ce qui suit « Garder mes données » et « Tout supprimer » au-delà de la
+// session en cours : la connexion à Discord (bureau/discord.ts).
+export interface SuiviConservation { retenir: (oui: boolean) => void; oublier: () => void }
+
+export function brancherSession(fenetre: BrowserWindow, preuve?: PreuveSession, suivre?: SuiviConservation) {
   const cheminRetenu = () => join(app.getPath('userData'), 'session.json');
   const cheminReglage = () => join(app.getPath('userData'), 'dossier-swblacksmith.json');
   let courante: string | null = null;
@@ -218,6 +222,7 @@ export function brancherSession(fenetre: BrowserWindow, preuve?: PreuveSession) 
     retenir = oui;
     reprendre();
     memoriser();
+    suivre?.retenir(oui);
     return repondre();
   });
 
@@ -253,13 +258,14 @@ export function brancherSession(fenetre: BrowserWindow, preuve?: PreuveSession) 
     return repondre();
   });
 
-  // « Tout supprimer » : l'app repart vide, elle n'a plus de session en cours.
-  // Le dossier SW Blacksmith, un réglage, reste.
+  // « Tout supprimer » : l'app repart vide, elle n'a plus de session en cours,
+  // ni de connexion à Discord. Le dossier SW Blacksmith, un réglage, reste.
   ipcMain.handle('bureau:session-oublier', (e) => {
     if (!deLaPage(e)) return null;
     courante = null;
     absente = null;
     memoriser();
+    suivre?.oublier();
     return repondre();
   });
 }

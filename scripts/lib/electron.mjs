@@ -24,3 +24,24 @@ export function lancerElectron(supplement = {}) {
 export function lancerElectronEtAttendre(supplement = {}, delai = 120_000, exe) {
   return spawnSync(exe ?? executable, exe ? [] : ['.'], { stdio: 'inherit', env: environnement(supplement), timeout: delai });
 }
+
+// La même chose SANS bloquer le script : il continue de répondre pendant que
+// l'app tourne (le faux service Discord de la preuve). Rend une promesse de
+// `{ error }`, comme `lancerElectronEtAttendre`.
+export function lancerElectronEnFond(supplement = {}, delai = 120_000, exe) {
+  return new Promise((resoudre) => {
+    const enfant = spawn(exe ?? executable, exe ? [] : ['.'], { stdio: 'inherit', env: environnement(supplement) });
+    const minuterie = setTimeout(() => {
+      enfant.kill();
+      resoudre({ error: new Error(`l'app ne s'est pas fermée en ${delai / 1000} s`) });
+    }, delai);
+    enfant.on('exit', () => {
+      clearTimeout(minuterie);
+      resoudre({ error: null });
+    });
+    enfant.on('error', (error) => {
+      clearTimeout(minuterie);
+      resoudre({ error });
+    });
+  });
+}

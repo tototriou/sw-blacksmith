@@ -350,6 +350,7 @@ import testBureauSwex from './bureau-swex.test';
 import testBureauSession from './bureau-session.test';
 import testBureauCoeurs from './bureau-coeurs.test';
 import testBureauLancement from './bureau-lancement.test';
+import testBureauDiscord from './bureau-discord.test';
 import testSession from './session.test';
 import { testOptimizerPointAllerRetourComplet, testOptimizerPointMemoireMemeGeste, testOptimizerPointLectureDefensive, testOptimizerPointSessionRelue,
   testOptimizerPointRepriseRattachement, testOptimizerPointRepriseCompteVide, testOptimizerPointSuppressionConservation,
@@ -362,6 +363,13 @@ import testSiegeSlotSuivant from './siege-slot-suivant.test';
 import testRecoDefenses from './reco-defenses.test';
 import { testRecoFusionCorrespondance, testRecoFusionDecks, testRecoFusionChef, testRecoFusionImport, testRecoFusionSource } from './reco-fusion.test';
 import { testRenduRecoFusionChoix, testRenduRecoFusionStockage } from './rendu/reco-fusion.test';
+import { testDiscordDroits, testDiscordSession, testDiscordRecoSalon, testDiscordContributeursFormat, testDiscordRouteurConnexion,
+  testDiscordRouteurBureau, testDiscordRouteurSources, testDiscordRouteurSalonEtPublication, testDiscordRouteurToutEtLimites } from './discord-service.test';
+import { testRecoDiscordEtat, testRecoDiscordRecevoir, testRecoDiscordSynchro, testRecoDiscordPublication, testRecoDiscordFusion,
+  testRecoDiscordFavorisEtStockage } from './reco-discord.test';
+import { testRenduRecoDiscordStockage } from './rendu/reco-discord-stockage.test';
+import { testProvenancesRecos, testClientDiscord } from './provenances-recos.test';
+import { testRenduRecosDiscordPage, testRenduRecosDiscordComposants } from './rendu/recos-discord.test';
 import testSiegePartage from './siege-partage.test';
 import testMarque from './marque.test';
 import testSpeedTune, { testSpeedTuneDeck, testSpeedTuneChaine, testSpeedTuneKit, testSpeedTuneResetAtb, testSpeedTuneSequence, testSpeedTuneReference, testSpeedTunePassif, testSpeedTuneAuto, testSpeedTuneModele } from './speed-tune.test';
@@ -385,7 +393,7 @@ import { testRenduChangementCompte } from './rendu/changement-compte.test';
 import { testRenduIcones } from './rendu/icones.test';
 import { testRenduAttaqueConjointeEcran } from './rendu/attaque-conjointe-ecran.test';
 import { testRenduEffetsEntreCoupsEcran, testRenduEffetsEntreCoupsAnglais } from './rendu/effets-entre-coups-ecran.test';
-import { testRenduRecosPage, testRenduRecosEnTete, testRenduRecosDeploiement, testRenduRecosEdition, testRenduRecosVueDefense, testRenduRecosTicks, testRenduRecosAnnulerEdition, testRenduRecosStatsEnTotal } from './rendu/recos.test';
+import { testRenduRecosPage, testRenduRecosEnTete, testRenduRecosLigneDeckReduite, testRenduRecosDeploiement, testRenduRecosEdition, testRenduRecosVueDefense, testRenduRecosTicks, testRenduRecosAnnulerEdition, testRenduRecosStatsEnTotal } from './rendu/recos.test';
 import testAnnulerEdition from './annuler-edition.test';
 import { testRenduRunesResume, testRenduRunesListe, testRenduRunesCourbes, testRenduRunesComparaison, testRenduRunesOptimisation, testRenduRunesAVenir, testRenduRunesFiltresLigne, testRenduRunesTriOnglets, testRenduRunesResumeSouris, testRenduRunesListeSouris, testRenduRunesVuesSouris } from './rendu/runes.test';
 import { testRenduCompteMonstres, testRenduCompteArtefactsResume, testRenduCompteArtefactsListe, testRenduCompteArtefactsTop, testRenduCompteSouris, testRenduCompteEffacerFiltres } from './rendu/compte.test';
@@ -548,6 +556,26 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testSiegePastille', testSiegePastille],
   ['testSiegeSlotSuivant', testSiegeSlotSuivant],
   ['testRecoDefenses', testRecoDefenses],
+  ['testDiscordDroits', testDiscordDroits],
+  ['testDiscordSession', testDiscordSession],
+  ['testDiscordRecoSalon', testDiscordRecoSalon],
+  ['testDiscordContributeursFormat', testDiscordContributeursFormat],
+  ['testDiscordRouteurConnexion', testDiscordRouteurConnexion],
+  ['testDiscordRouteurBureau', testDiscordRouteurBureau],
+  ['testDiscordRouteurSources', testDiscordRouteurSources],
+  ['testDiscordRouteurSalonEtPublication', testDiscordRouteurSalonEtPublication],
+  ['testDiscordRouteurToutEtLimites', testDiscordRouteurToutEtLimites],
+  ['testRecoDiscordEtat', testRecoDiscordEtat],
+  ['testRecoDiscordRecevoir', testRecoDiscordRecevoir],
+  ['testRecoDiscordSynchro', testRecoDiscordSynchro],
+  ['testRecoDiscordPublication', testRecoDiscordPublication],
+  ['testRecoDiscordFusion', testRecoDiscordFusion],
+  ['testRecoDiscordFavorisEtStockage', testRecoDiscordFavorisEtStockage],
+  ['testRenduRecoDiscordStockage', testRenduRecoDiscordStockage],
+  ['testProvenancesRecos', testProvenancesRecos],
+  ['testClientDiscord', testClientDiscord],
+  ['testRenduRecosDiscordPage', testRenduRecosDiscordPage],
+  ['testRenduRecosDiscordComposants', testRenduRecosDiscordComposants],
   ['testRecoFusionCorrespondance', testRecoFusionCorrespondance],
   ['testRecoFusionDecks', testRecoFusionDecks],
   ['testRecoFusionChef', testRecoFusionChef],
@@ -563,6 +591,7 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testRenduSiegeEdition', testRenduSiegeEdition],
   ['testRenduRecosPage', testRenduRecosPage],
   ['testRenduRecosEnTete', testRenduRecosEnTete],
+  ['testRenduRecosLigneDeckReduite', testRenduRecosLigneDeckReduite],
   ['testRenduRecosDeploiement', testRenduRecosDeploiement],
   ['testRenduRecosEdition', testRenduRecosEdition],
   ['testRenduRecosVueDefense', testRenduRecosVueDefense],
@@ -1121,6 +1150,7 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testBureauSession', async () => { await testBureauSession(); }],
   ['testBureauCoeurs', async () => { await testBureauCoeurs(); }],
   ['testBureauLancement', testBureauLancement],
+  ['testBureauDiscord', async () => { await testBureauDiscord(); }],
   ['testSession', testSession],
   ['testStockage', async () => { await testStockage(); }],
   ['testPersistance', async () => { await testPersistance(); }],

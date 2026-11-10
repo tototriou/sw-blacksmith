@@ -4,16 +4,22 @@
 
 A toolbox for Summoners War.
 
-**Online: https://sw-forge.vercel.app** — and as a desktop app (Windows, Linux), from the site's
+**Online: https://sw-blacksmith.vercel.app** — and as a desktop app (Windows, Linux), from the site's
 Download page. The app is available in French and English.
 
 SW Blacksmith helps you prepare your competitive content: build your siege teams and check their
 speed tuning, rank your monsters for RTA, analyze your runes and your account, find the best build
 for a monster, share deck recommendations with your guild.
 
-**Everything stays in your browser.** No server, no account, no sign-in: the account export you
-import is read in the page and never sent anywhere. Nothing is kept without your consent, and
-“Delete all” erases everything.
+**Local by default.** No account to create: the account export you import is read in the page and
+never sent anywhere. Nothing leaves your device unless you choose to, nothing is kept without your
+consent, and “Delete all” erases everything.
+
+## The Discord bot
+
+A Discord bot lets a guild share its siege recommendations in a channel, with no file to pass
+around: every signed-in member finds them in the app and can publish their own. It is optional:
+without signing in to Discord, nothing changes.
 
 ## Documentation
 

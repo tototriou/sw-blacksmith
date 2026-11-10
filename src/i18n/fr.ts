@@ -393,7 +393,7 @@ export const fr = {
     atouts: [
       { titre: 'Sa propre fenêtre', texte: "Hors du navigateur, à la taille que tu lui donnes, lancée comme n'importe quel logiciel." },
       { titre: 'La mise à jour proposée', texte: "À chaque nouvelle version, l'application te propose de se mettre à jour. C'est toi qui décides quand." },
-      { titre: '100 % local', texte: "Comme le site : rien n'est envoyé, tout reste sur ta machine." },
+      { titre: 'Local par défaut', texte: 'Comme le site : rien ne quitte ta machine sans un geste de ta part.' },
     ],
     windows: 'Télécharger pour Windows',
     linux: 'Télécharger pour Linux (.deb)',
@@ -1517,6 +1517,161 @@ export const fr = {
     chercherPartout: 'Chercher partout',
   },
 
+  // Les recommandations synchronisées avec les salons Discord d'une guilde
+  // (docs/02-app/siege/feat-recommandations/synchronisation-discord.md).
+  recosDiscord: {
+    provenances: 'Provenances',
+    toutes: 'Toutes les recommandations',
+    appareil: 'Sur cet appareil',
+    etats: { 'a-jour': 'À jour', modifiee: 'Modifiée', conflit: 'Conflit', 'lecture-seule': 'Lecture seule' },
+    etatsPhrase: {
+      'a-jour': 'identique à celle du salon',
+      modifiee: 'tes changements ne sont pas publiés',
+      conflit: 'une version plus récente attend la fusion',
+      'lecture-seule': 'tu ne peux pas publier dans ce salon',
+    },
+    versionDu: (date: string) => `Version du ${date}`,
+    publier: 'Publier',
+    fusionner: 'Fusionner',
+    raisonsPublier: {
+      'non-connecte': 'Connecte-toi à Discord pour publier',
+      'a-jour': 'Rien à publier : la recommandation est celle du salon',
+      'lecture-seule': 'Tu ne peux pas publier dans ce salon',
+    },
+    publierDans: 'Publier dans…',
+    publierDansHorsConnexion: 'Connecte-toi à Discord pour publier',
+    detacher: 'Détacher de ce salon',
+    par: (auteur: string) => `par ${auteur}`,
+    avec: (noms: string) => `avec ${noms}`,
+    ecritsParDiscord: 'Écrits par Discord à chaque publication',
+    favori: 'Mettre en favori',
+    retirerFavori: 'Retirer des favoris',
+    botAdmin: "Le bot est administrateur de ce serveur : retire-lui ce droit, il n'en a pas besoin.",
+    salonDe: (serveur: string) => `Serveur ${serveur}`,
+    connexion: {
+      titre: 'Discord',
+      texte: 'Retrouve les recommandations de ta guilde, publiées dans ses salons #blacksmith-reco…, et publie les tiennes.',
+      bouton: 'Se connecter à Discord',
+      reconnecter: 'Se reconnecter à Discord',
+      installer: 'Installer le bot sur ton serveur',
+      dialogueTitre: 'Se connecter à Discord',
+      dialogueTexte: "Discord donnera à SW Blacksmith ton identité et la liste de tes serveurs, pour trouver ceux où le bot est présent. Rien d'autre ne part, sauf ce que tu publies.",
+      avertissement: "Une recommandation synchronisée disparaît de cet appareil si tu perds l'accès à son salon. Tes modifications pas encore publiées, elles, restent ici.",
+      continuer: 'Continuer vers Discord',
+    },
+    // Application de bureau : la connexion passe par le navigateur du système,
+    // puis par le code que le site affiche.
+    codeBureau: {
+      titre: 'Coller le code de connexion',
+      etapes: [
+        'Dans ton navigateur, autorise SW Blacksmith sur la page Discord qui vient de s\'ouvrir.',
+        'Le site affiche alors un code : copie-le.',
+        'Colle-le ici.',
+      ],
+      champ: 'Code de connexion',
+      valider: 'Se connecter',
+      relancer: 'Rouvrir la page dans le navigateur',
+      invalide: "Ce code ne marche pas : il a plus de 10 minutes, ou il vient d'une autre demande. Rouvre la page pour en obtenir un nouveau.",
+      sansDemande: 'Cette connexion a été abandonnée : rouvre la page pour la relancer.',
+      indisponible: 'Discord ne répond pas : réessaie dans un instant.',
+    },
+    // Site : le retour d'une connexion demandée par l'application de bureau.
+    codeSite: {
+      titre: "Connexion de l'application de bureau",
+      texte: "Copie ce code et colle-le dans SW Blacksmith, sur ton ordinateur. Il vaut 10 minutes, et ne sert qu'à l'application qui l'a demandé.",
+      avertissement: "Ne donne ce code à personne : il ouvre ta connexion Discord. Si tu n'as pas lancé cette connexion depuis ton application SW Blacksmith, ferme cette page.",
+      champ: 'Code de connexion',
+      copier: 'Copier le code',
+      copie: "Code copié : colle-le dans l'application.",
+    },
+    installation: {
+      titre: 'Installer le bot sur ton serveur',
+      etapes: [
+        "Invite le bot sur ton serveur (il faut le droit « Gérer le serveur »). Il arrive sans aucun droit : il ne voit que les salons où tu l'ajoutes.",
+        'Crée un salon dont le nom commence par blacksmith-reco (un salon par recommandation).',
+        "Ajoute le bot à ce salon avec quatre droits : voir le salon, voir les anciens messages, envoyer des messages, joindre des fichiers. Il n'a besoin d'aucun autre droit.",
+        "Réserve le salon aux recommandations : l'app ne relit que les 100 derniers messages. Un membre peut aussi y déposer le fichier exporté par l'app : le plus récent fichier valide fait foi.",
+        "Chaque membre se connecte à Discord depuis cette page : il voit les salons qu'il peut lire, et publie dans ceux où il peut écrire.",
+      ],
+      inviter: 'Inviter le bot',
+      question: "Une question ? Le Discord de l'app",
+    },
+    compte: {
+      actualiser: 'Actualiser',
+      actualiserAide: 'Relire les salons',
+      lecture: 'Lecture des salons…',
+      lusIlYa: (minutes: number) => (minutes < 1 ? "Salons lus à l'instant" : `Salons lus il y a ${minutes} min`),
+      plus: 'Plus',
+      deconnecter: 'Se déconnecter de Discord',
+      nonGardee: "Connexion gardée jusqu'à la fermeture : ce système ne sait pas la chiffrer.",
+    },
+    publierDansDialogue: {
+      titre: (nom: string) => `Publier « ${nom} »`,
+      texte: 'Choisis le salon. La recommandation y est copiée ; celle de cet appareil reste.',
+      porte: (nom: string) => `porte « ${nom} »`,
+      vide: 'vide',
+      lectureSeule: 'lecture seule',
+      aucun: "Aucun salon blacksmith-reco… accessible : demande à un admin d'y ajouter le bot.",
+    },
+    remplacer: {
+      titre: 'Remplacer la recommandation du salon ?',
+      message: (salon: string, nom: string) =>
+        `#${salon} porte déjà « ${nom} ». Publier ici la remplace pour toute la guilde ; l'ancienne version reste dans l'historique du salon.`,
+      remplacer: 'Remplacer',
+    },
+    detacherDialogue: {
+      titre: (nom: string) => `Détacher « ${nom} » ?`,
+      message: 'Elle devient une recommandation de cet appareil, qui ne suit plus le salon. Celle du salon reparaît aussitôt. Rien ne change pour la guilde.',
+      action: 'Détacher',
+    },
+    fusion: {
+      titre: 'Fusionner avec la version du salon',
+      sousTitre: (date: string) => `Une version a été publiée le ${date} pendant que tu modifiais.`,
+      auto: (n: number) => `Déjà fusionné, ${n} changement${n > 1 ? 's' : ''} :`,
+      aChoisir: (n: number) => `À choisir, ${n} :`,
+      rien: 'Aucun choix à faire : tout se fusionne seul.',
+      nom: 'Nom de la recommandation',
+      consignes: 'Consignes générales',
+      mien: 'Le mien',
+      leur: 'Celui du salon',
+      lesDeux: 'Les deux',
+      versionSalon: 'version du salon',
+      taVersion: 'ta version',
+      retireAuSalon: 'retiré au salon',
+      retireParToi: 'retiré par toi',
+      absent: 'Absent',
+      vide: '(vide)',
+      appliquer: 'Appliquer la fusion',
+      plusTard: 'Plus tard',
+      manque: 'Choisis une version pour chaque élément.',
+    },
+    notif: {
+      bilan: (b: { ajoutees: number; misesAJour: number; conflits: number; retirees: number; detachees: number }) => {
+        const p: string[] = [];
+        if (b.misesAJour) p.push(`${b.misesAJour} recommandation${b.misesAJour > 1 ? 's' : ''} mise${b.misesAJour > 1 ? 's' : ''} à jour`);
+        if (b.ajoutees) p.push(`${b.ajoutees} nouvelle${b.ajoutees > 1 ? 's' : ''}`);
+        if (b.conflits) p.push(`${b.conflits} en conflit, à fusionner`);
+        if (b.retirees + b.detachees) p.push(`${b.retirees + b.detachees} retirée${b.retirees + b.detachees > 1 ? 's' : ''} (accès perdu)`);
+        if (b.detachees) p.push(`modifications non publiées gardées dans « Sur cet appareil »`);
+        return `Discord : ${p.join(', ')}.`;
+      },
+      publiee: (salon: string) => `Publiée dans #${salon}.`,
+      conflit: 'Le salon a changé pendant que tu modifiais : fusionne, puis publie.',
+      refusee: 'Publication refusée : tu ne peux plus écrire dans ce salon.',
+      invalide: 'Publication refusée : la recommandation doit avoir au moins un deck avec un monstre.',
+      indisponible: 'Discord ne répond pas : réessaie dans un instant.',
+      limite: 'Discord limite les lectures pour le moment : réessaie dans une minute.',
+      expiree: 'Ta session Discord a expiré : reconnecte-toi.',
+      refus: 'Connexion à Discord annulée.',
+      erreur: 'La connexion à Discord a échoué : réessaie.',
+      refusBureau: "Connexion de l'application de bureau annulée.",
+      erreurBureau: "La connexion de l'application de bureau a échoué : relance-la depuis l'application.",
+      detachee: (nom: string) => `« ${nom} » détachée : elle est maintenant sur cet appareil.`,
+      deconnecte: 'Déconnecté de Discord.',
+      fusionnee: 'Fusion appliquée : relis la recommandation, puis publie-la.',
+    },
+  },
+
   // La carte d'une recommandation de siège : ses decks, ses défenses visées,
   // l'analyse contre tes monstres.
   carteReco: {
@@ -1547,9 +1702,12 @@ export const fr = {
     consignes: 'consignes',
     replierTous: 'Replier tous les decks',
     deplierTous: 'Déplier tous les decks',
-    colOffense: 'Offense · sets visés',
+    colOffense: 'Offense',
     colFortContre: 'Fort contre',
     colVerdict: 'Verdict',
+    colActions: 'Actions',
+    stats: 'Stats',
+    statsEnTete: { stat: 'Stat', baseBonus: 'Base + bonus', total: 'Total' },
     ajouterDeck: 'Ajouter un deck vide',
     sansOffense:
       "Aucune équipe d'offense : importe ton compte (barre du haut) après avoir sauvegardé tes attaques en jeu.",
