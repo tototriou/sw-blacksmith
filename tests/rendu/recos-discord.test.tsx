@@ -46,6 +46,14 @@ export function testRenduRecosDiscordPage() {
   ok(b.some((x) => x.texte === 'Se connecter à Discord' && !x.desactive), 'encart : « Se connecter à Discord »');
   ok(b.some((x) => x.texte === 'Installer le bot sur ton serveur'), 'encart : l\'aide d\'installation');
   ok(t.includes('par Toto · avec Lulu'), 'auteur et contributeurs en lecture seule');
+  // Au téléphone : les provenances et le compte EN TÊTE de la page, à plat.
+  const tel = html.indexOf('data-provenances-telephone');
+  ok(tel >= 0 && tel < html.indexOf('data-colonne-provenances') && tel < html.indexOf('placeholder="'),
+    'téléphone : les provenances en tête de la page, avant la recherche');
+  ok(!html.includes('data-selecteur-provenance') && !html.includes('aria-haspopup="dialog"'), 'téléphone : aucun sélecteur à dérouler');
+  const blocTel = html.slice(tel, html.indexOf('</section>', tel));
+  ok(texteVisible(blocTel).includes('Toutes les recommandations 3') && blocTel.includes('min-h-10') && blocTel.includes('data-compte-discord="deconnecte"'),
+    'téléphone : les lignes au doigt, puis l\'encart Discord');
   ok(!html.includes('placeholder="Pseudo'), 'l\'auteur ne se saisit plus');
 }
 

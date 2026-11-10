@@ -30,10 +30,11 @@ recommandation liée sur l'appareil :
   puis un groupe par serveur Discord, une ligne par salon qui porte une
   recommandation, avec l'état de celle-ci (À jour, Modifiée, Conflit, Lecture
   seule ; pastilles colorées comme celles des decks). ⚠️ **À l'ordinateur, une
-  colonne** à gauche du contenu ; **au téléphone, un sélecteur** pleine
-  largeur au-dessus de la liste (salon, serveur, état), qui ouvre la même
-  liste dans une feuille. La barre d'outils (vue, recherche) reste au-dessus
-  des deux et porte sur la provenance choisie.
+  colonne** à gauche du contenu, sous la barre d'outils (vue, recherche) ;
+  **au téléphone, le même bloc EN TÊTE de la page**, au-dessus de la
+  recherche, à plat (lignes de 40 px) avec le compte Discord en pied —
+  ⚠️ aucun sélecteur à dérouler : la provenance choisie et les autres se
+  voient d'un coup d'œil. La recherche porte sur la provenance choisie.
 - **À l'arrivée sur la page : « Toutes les recommandations »**, une liste à
   plat : celles de cet appareil d'abord, puis celles des salons dans l'ordre
   de la colonne. Quand il y a des salons, chaque carte porte sa provenance
@@ -42,7 +43,7 @@ recommandation liée sur l'appareil :
 - **Favoris** : dans l'application de bureau seulement, une étoile devant
   chaque salon ; les favoris passent en tête de leur serveur. Aucun salon ne
   se masque.
-- **Le compte Discord, en pied de la colonne et de la feuille** : connecté,
+- **Le compte Discord, en pied de la colonne et du bloc du téléphone** : connecté,
   le nom, « Installer le bot sur ton serveur » (icône d'aide), « Actualiser »
   (relit les salons) et « Se déconnecter », avec l'heure de la dernière
   lecture ; sinon l'encart « Discord » : une phrase,
