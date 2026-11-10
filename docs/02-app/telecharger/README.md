@@ -16,8 +16,9 @@ Fichiers : [TelechargerPage.tsx](src/pages/TelechargerPage.tsx) ·
 - Titre « Télécharger », une phrase : l'app existe pour Windows et Linux,
   la même boîte à outils dans sa propre fenêtre.
 - **Ce que l'app apporte**, trois cartes : sa propre fenêtre ; la mise à
-  jour proposée — « c'est toi qui décides quand » ; 100 %
-  local, comme le site.
+  jour proposée — « c'est toi qui décides quand » ; « Local par
+  défaut », comme le site : rien ne quitte la machine sans un geste de
+  l'utilisateur.
 - **À l'ordinateur** : « Télécharger pour Windows » et « Télécharger pour
   Linux (.deb) », boutons principaux (`Bouton href`, le **logo du système**
   en icône), puis la phrase SmartScreen avec les libellés de Windows —

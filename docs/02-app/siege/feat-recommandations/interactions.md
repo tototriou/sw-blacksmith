@@ -170,7 +170,7 @@ Indépendamment du repli de la carte, **chaque deck a son propre chevron**.
 
 | Bouton | Où | Ce qu'il ouvre |
 |--------|----|----------------|
-| ✏️ (en-tête de la carte) | recommandation | **nom, auteur, consignes générales** + **Ajouter un deck vide** / **Importer un deck d'offense** |
+| ✏️ (en-tête de la carte) | recommandation | **nom, consignes générales** + **Ajouter un deck vide** / **Importer un deck d'offense** (l'auteur ne se saisit pas : [rendu-de-la-page.md](rendu-de-la-page.md#provenances-et-discord)) |
 | ✏️ (en-tête de chaque deck) | deck | **ses consignes, ses monstres, sets, artéfacts et stats** + 🗑 **Supprimer ce deck** (le nom n'est plus saisi, voir plus haut) |
 | **+ Défense** / ✏️ sur une vignette | défenses visées | **une** défense que ce deck bat — indépendant du deck |
 

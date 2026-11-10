@@ -263,6 +263,11 @@ export interface BoutonProps
   // téléchargement, une page externe sont des LIENS — on peut en copier
   // l'adresse, le lecteur d'écran dit « lien ». Sans `href` : un `<button>`.
   href?: string;
+  // Avec `href` : le lien s'ouvre dans un NOUVEL onglet (`target="_blank"`,
+  // `rel="noreferrer"`). Pour un site EXTERNE (le Discord de l'app) : le
+  // suivre dans le même onglet quitterait l'app, et ce qui n'est pas conservé
+  // serait perdu.
+  nouvelOnglet?: boolean;
 }
 
 const Bouton = forwardRef<HTMLButtonElement, BoutonProps>(function Bouton(
@@ -280,6 +285,7 @@ const Bouton = forwardRef<HTMLButtonElement, BoutonProps>(function Bouton(
     nuAuDoigt = false,
     actif,
     href,
+    nouvelOnglet = false,
     className = '',
     type = 'button',
     ...reste
@@ -339,6 +345,7 @@ const Bouton = forwardRef<HTMLButtonElement, BoutonProps>(function Bouton(
     return (
       <a
         href={href}
+        {...(nouvelOnglet ? { target: '_blank', rel: 'noreferrer' } : {})}
         data-bouton=""
         className={classes}
         {...(reste as React.AnchorHTMLAttributes<HTMLAnchorElement>)}

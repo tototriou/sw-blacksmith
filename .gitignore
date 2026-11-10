@@ -5,6 +5,11 @@ dist
 # installeur dépasse les 5 Mo du hook pre-commit).
 dist-bureau
 paquets
+# Service sur Vercel : le paquet construit par scripts/construire-api.mjs, et
+# tout ce que la CLI Vercel écrit en local (lien du projet, variables tirées).
+api/_paquet
+.vercel
+.env*.local
 .DS_Store
 *.log
 .env

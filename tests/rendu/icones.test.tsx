@@ -23,9 +23,9 @@ export function testRenduIcones() {
   titre('rendu · icônes — exporter ↑, importer ↓ (accueil)');
   const accueil = rendre(<HomePage stats={{ rta: 0, defense: 0, offense: 0, recos: 0 }} onImport={() => {}} />);
   ok(iconeAvant(accueil, 'Importer mon compte') === 'download', '« Importer mon compte » : flèche vers le bas');
-  ok(iconeAvant(accueil, 'Dépose ton fichier .json ici') === 'download', 'zone de dépôt : flèche vers le bas');
-  ok(iconeAvant(accueil, 'Exporte ton compte') === 'upload', 'étape 01 « Exporte ton compte » : flèche vers le haut');
-  ok(iconeAvant(accueil, 'Dépose le fichier') === 'download', 'étape 02 « Dépose le fichier » : flèche vers le bas');
+  // La zone de dépôt porte la roue des runes du jeu, pas une flèche ; les
+  // étapes « Exporte / Dépose » ont quitté l'accueil (accueil vitrine).
+  ok(!/lucide-upload/.test(accueil), 'aucun import marqué d’une flèche vers le haut');
 
   titre('rendu · icônes — symbole d’un set actif dans le filtre');
   const sets = [...new Set(RUNES.map((r) => r.set))];

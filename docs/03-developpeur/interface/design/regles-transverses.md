@@ -311,8 +311,13 @@ actionner sur téléphone**.
 ### Exporter ↑, importer ↓
 
 ⚠️ **Exporter = `Upload` (flèche vers le haut), importer = `Download`
-(flèche vers le bas)**, partout : boutons, actions de la palette, zone de
-dépôt, étapes de l'accueil. Le fichier qui **sort** de l'app monte, celui
-qui **entre** descend — même « Exporte ton compte » de l'accueil, où le
-fichier sort du jeu. Ne pas raisonner « on télécharge un fichier, donc
-`Download` » : c'est l'inversion à éviter.
+(flèche vers le bas)**, partout : boutons, actions de la palette,
+« Importer mon compte » de l'accueil. Le fichier qui **sort** de l'app monte,
+celui qui **entre** descend. Ne pas raisonner « on télécharge un fichier,
+donc `Download` » : c'est l'inversion à éviter. (La zone de dépôt de
+l'accueil porte la roue des runes du jeu, pas une flèche.)
+
+Une exception : **« Exporter vers l'Optimizer » porte le compas de l'Optimizer**
+(`IconeOptimizer`), pas `Upload` — l'équipe ne sort pas de l'app, elle part
+vers une section, et une icône qui nomme une section prend la sienne
+([navigation-seule.md](../../../02-app/transverse/feat-navigation/navigation-seule.md)).

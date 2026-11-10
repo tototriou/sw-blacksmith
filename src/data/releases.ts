@@ -70,6 +70,32 @@ export function journal(langue: Langue): Release[] {
 // Si une ligne dépasse ~15 mots, c'est qu'elle raconte l'implémentation.
 export const RELEASES: Release[] = [
   {
+    version: null,
+    date: '2026-11-10',
+    title: 'Les recommandations de siège partagées sur Discord',
+    highlights: [
+      'Retrouve les recommandations de ta guilde dans ses salons Discord, et publie les tiennes',
+      'L’Optimizer cherche des runes qui tiennent le speed tune de ton équipe',
+    ],
+    changes: [
+      { kind: 'feat', scope: 'Recommandations', text: 'Connecte-toi à Discord pour lire les recommandations publiées dans les salons de ta guilde.' },
+      { kind: 'feat', scope: 'Recommandations', text: 'Publie une recommandation dans un salon ; si elle a changé entre-temps, tu choisis deck par deck.' },
+      { kind: 'feat', scope: 'Recommandations', text: 'Le bot s’installe sur un serveur en quelques étapes, guidées depuis la page.' },
+      { kind: 'feat', scope: 'Recommandations', text: 'L’auteur et les contributeurs sont écrits par Discord à chaque publication.' },
+      { kind: 'feat', scope: 'Recommandations', text: 'Des decks compacts : portraits seuls, actions sur la ligne, et un deck s’édite sans ouvrir la recommandation.' },
+      { kind: 'feat', scope: 'Application', text: 'L’application de bureau se connecte à Discord, et garde la connexion avec « Garder mes données ».' },
+      { kind: 'feat', scope: 'Optimizer', text: 'Une équipe exportée du speed tuning garde son plan : la recherche vise les vitesses qui tiennent l’ordre.' },
+      { kind: 'feat', scope: 'Optimizer', text: 'Le speed tune d’une équipe se règle sans quitter l’Optimizer.' },
+      { kind: 'feat', scope: 'Optimizer', text: 'À l’ordinateur, les réglages en colonnes fixes qui défilent chacune de leur côté.' },
+      { kind: 'feat', scope: 'Interface', text: '« Exporter vers l’Optimizer » porte l’icône de l’Optimizer.' },
+      { kind: 'feat', scope: 'Accueil', text: 'Une page d’accueil qui montre chaque outil phare en exemple : ordre de tour RTA, recommandation, résultats de l’Optimizer, speed tuning.' },
+      { kind: 'feat', scope: 'Accueil', text: 'Le Discord de la communauté se rejoint depuis le haut de l’accueil et depuis le pied de page.' },
+      { kind: 'fix', scope: 'Recommandations', text: 'Au téléphone, « Fort contre » passe à la ligne au lieu de chevaucher le deck.' },
+      { kind: 'fix', scope: 'Speed tuning', text: 'Un monstre qui rejoue attend de nouveau le rechargement de son sort.' },
+      { kind: 'fix', scope: 'Speed tuning', text: '« Aucun sort » sur un tour ajouté ne relance plus le sort du premier tour.' },
+    ],
+  },
+  {
     version: '2.3.0',
     date: '2026-11-04',
     title: 'SW Blacksmith en anglais',

@@ -62,10 +62,14 @@ export function correspond(existante: Reco, entrante: RecoPayload): boolean {
 // Pour chaque recommandation du fichier, celle qu'il complète (ou `null`).
 // Une correspondance par la source passe avant une correspondance par le nom ;
 // à égalité, la première de la liste — la plus ancienne.
+// ⚠️ Une recommandation LIÉE à un salon Discord n'est jamais complétée par un
+// fichier : son contenu vient du salon (docs/04-decisions/adr/un-salon-une-reco.md).
+// Un fichier qui porte sa source s'ajoute donc à part.
 export function trouverCorrespondances(existantes: Reco[], entrantes: RecoPayload[]): (Reco | null)[] {
+  const candidates = existantes.filter((r) => !r.lien);
   return entrantes.map((e) => {
-    const parSource = e.source ? existantes.find((r) => r.source === e.source) : undefined;
-    return parSource ?? existantes.find((r) => correspond(r, e)) ?? null;
+    const parSource = e.source ? candidates.find((r) => r.source === e.source) : undefined;
+    return parSource ?? candidates.find((r) => correspond(r, e)) ?? null;
   });
 }
 

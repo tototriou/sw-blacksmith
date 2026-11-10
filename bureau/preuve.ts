@@ -10,7 +10,7 @@
 // (voir main.ts) : une preuve ne touche jamais celles de l'utilisateur.
 
 import { app, BrowserWindow } from 'electron';
-import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { PreuveMiseAJour } from './miseAJour';
 import type { PreuveSession } from './session';
@@ -439,6 +439,129 @@ export async function lancerPreuveSession(fenetre: BrowserWindow, dossier: strin
   } finally {
     writeFileSync(join(dossier, 'resultats-session.json'), JSON.stringify(resultats, null, 2));
     app.quit();
+  }
+}
+
+// ── La connexion à Discord ─────────────────────────────────────
+// `npm run bureau:preuve -- --discord` : le VRAI service, lancé par le script
+// devant un Discord simulé (`SWBLACKSMITH_SERVICE_DISCORD`), deux lancements
+// sur le même dossier. `connecter` : « Se connecter à Discord », le
+// navigateur simulé ici (login, puis retour de Discord avec l'état), le code
+// collé dans le dialogue ; conservation refusée, rien sur le disque ; un
+// favori ; puis « Garder mes données » : la session s'écrit, chiffrée.
+// `relire` : connecté dès l'ouverture, favori en tête, puis « Se déconnecter ».
+export async function lancerPreuveDiscord(fenetre: BrowserWindow, dossier: string, etape: 'connecter' | 'relire', temoins: TemoinsPreuve) {
+  mkdirSync(dossier, { recursive: true });
+  const resultats: Record<string, unknown> = { etape };
+  const js = (code: string) => fenetre.webContents.executeJavaScript(code, true);
+  const fichier = join(dossier, 'donnees', 'discord.json');
+  const attendreQue = async (condition: string, delai = 15_000) => {
+    const fin = Date.now() + delai;
+    while (Date.now() < fin) {
+      if (await js(condition)) return true;
+      await attendre(250);
+    }
+    return false;
+  };
+  const connecte = `!!document.querySelector('[data-compte-discord="connecte"]')`;
+  // La colonne : le compte, les salons dans leur ordre, les étoiles.
+  const releve = async () => ({
+    compte: await js(`document.querySelector('[data-compte-discord]')?.getAttribute('data-compte-discord') ?? null`),
+    colonne: await js(`document.querySelector('[data-colonne-provenances]')?.innerText.replace(/\\s+/g, ' ').trim() ?? null`),
+    etoiles: await js(`[...document.querySelectorAll('[data-colonne-provenances] button[aria-pressed]')].map((b) => b.getAttribute('aria-label'))`),
+    recos: await js(`document.body.innerText.includes('Défenses GvO') && document.body.innerText.includes('Offs de guilde')`),
+    fichier: existsSync(fichier) ? readFileSync(fichier, 'utf8') : null,
+  });
+  try {
+    if (fenetre.webContents.isLoading()) {
+      await new Promise<void>((r) => fenetre.webContents.once('did-finish-load', () => r()));
+    }
+    await attendre(2500);
+    await js(`location.hash = '#/siege/recommandations'`);
+    await attendre(1500);
+    if (etape === 'connecter') {
+      resultats.depart = await releve();
+      // Le guide d'installation : « Inviter le bot » ouvre le navigateur sur
+      // le service, qui renvoie vers l'invitation Discord.
+      resultats.guide = await cliquerQuandPret(fenetre, 'Installer le bot sur ton serveur');
+      resultats.inviter = await cliquerQuandPret(fenetre, 'Inviter le bot');
+      await attendre(500);
+      const invitation = temoins.liensOuverts.find((l) => l.endsWith('/api/discord/invitation')) ?? '';
+      resultats.invitation = invitation ? new URL(invitation).pathname : null;
+      if (invitation) {
+        const vers = new URL((await fetch(invitation, { redirect: 'manual' })).headers.get('location') ?? '');
+        resultats.invitationVers = `${vers.origin}${vers.pathname}?scope=${vers.searchParams.get('scope')}&permissions=${vers.searchParams.get('permissions')}`;
+      }
+      resultats.fermerGuide = await cliquerQuandPret(fenetre, 'Fermer');
+      await attendre(300);
+      resultats.connexion = await cliquerQuandPret(fenetre, 'Se connecter à Discord');
+      resultats.continuer = await cliquerQuandPret(fenetre, 'Continuer vers Discord');
+      await attendre(500);
+      const lien = temoins.liensOuverts.find((l) => l.includes('/api/discord/login?bureau=')) ?? '';
+      resultats.lien = lien.replace(/bureau=.*/, 'bureau=…');
+      resultats.dialogueCode = await attendreQue(`!!document.querySelector('input[aria-label="Code de connexion"]')`, 5000);
+      // Le navigateur : le login pose l'état en cookie et part vers Discord ;
+      // Discord revient sur le service avec un code et l'état ; le service
+      // renvoie vers le site, qui afficherait le code à copier.
+      const service = new URL(lien).origin;
+      const login = await fetch(lien, { redirect: 'manual' });
+      const cookieEtat = (login.headers.get('set-cookie') ?? '').split(';')[0];
+      const etat = new URL(login.headers.get('location') ?? '').searchParams.get('state') ?? '';
+      const retour = await fetch(`${service}/api/discord/callback?code=c&state=${etat}`, { redirect: 'manual', headers: { cookie: cookieEtat } });
+      const code = new URL(retour.headers.get('location') ?? '', service).searchParams.get('discord-bureau') ?? '';
+      resultats.codeObtenu = code.length;
+      // Un code abîmé d'abord : refusé, dit, le dialogue reste.
+      const coller = (texte: string) => js(`(() => {
+        const champ = document.querySelector('input[aria-label="Code de connexion"]');
+        if (!champ) return 'pas de champ';
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(champ, ${JSON.stringify(texte)});
+        champ.dispatchEvent(new Event('input', { bubbles: true }));
+        return 'collé';
+      })()`);
+      resultats.collerFaux = await coller(code.slice(0, -4) + 'AAAA');
+      resultats.validerFaux = await cliquerQuandPret(fenetre, 'Se connecter');
+      resultats.refusDit = await attendreQue(`document.querySelector('[role="alert"]')?.innerText.includes('Ce code ne marche pas') ?? false`, 5000);
+      // Le bon code, collé avec le retour à la ligne d'un copier-coller.
+      resultats.coller = await coller(`  ${code}\n`);
+      resultats.valider = await cliquerQuandPret(fenetre, 'Se connecter');
+      resultats.connecte = await attendreQue(connecte);
+      await attendre(500);
+      resultats.apresConnexion = await releve();
+      // Un favori : le second salon.
+      resultats.favori = await js(`(() => {
+        const ligne = [...document.querySelectorAll('[data-colonne-provenances] [data-serveur] > div')].find((d) => d.innerText.includes('blacksmith-reco-offs'));
+        const b = ligne?.querySelector('button[aria-pressed]');
+        if (!b) return 'pas d’étoile';
+        b.click();
+        return 'cliqué';
+      })()`);
+      await attendre(500);
+      resultats.apresFavori = await releve();
+      // « Garder mes données » : la page le redit au rechargement, la session
+      // (toujours dans le processus principal) s'écrit.
+      await js(`localStorage.setItem('swblacksmith-persist-v1', '1'); location.reload()`);
+      await new Promise<void>((r) => fenetre.webContents.once('did-finish-load', () => r()));
+      await attendre(2500);
+      resultats.reconnecteApresRechargement = await attendreQue(connecte);
+      resultats.apresConservation = await releve();
+    } else {
+      resultats.connecteAuLancement = await attendreQue(connecte);
+      resultats.auLancement = await releve();
+      resultats.deconnexion = await js(`(() => {
+        const b = document.querySelector('button[aria-label="Se déconnecter de Discord"]');
+        if (!b) return 'pas de bouton';
+        b.click();
+        return 'cliqué';
+      })()`);
+      resultats.deconnecte = await attendreQue(`document.querySelector('[data-compte-discord]')?.getAttribute('data-compte-discord') === 'deconnecte'`, 5000);
+      await attendre(500);
+      resultats.apresDeconnexion = await releve();
+    }
+  } catch (e) {
+    resultats.erreur = String(e);
+  } finally {
+    writeFileSync(join(dossier, `discord-${etape}.json`), JSON.stringify(resultats, null, 2));
+    fenetre.close();
   }
 }
 

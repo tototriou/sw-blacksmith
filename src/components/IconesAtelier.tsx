@@ -13,6 +13,9 @@ import { CSSProperties } from 'react';
 // coupe (Arène), les tenailles (Outils), le compas (Optimizer), les deux
 // compagnons (Ami), le chronomètre (Speed tuning), l'œuf (Monstres), et le
 // médaillon (Artéfacts) repris d'`InventaireIcon`.
+// ⚠️ **Une exception, voulue par le mainteneur (2026-11-10)** : l'action
+// « Exporter vers l'Optimizer » porte le compas de l'Optimizer (`IconeOptimizer`),
+// partout où elle existe — on voit d'un coup d'œil où l'équipe part.
 // ⚠️ **`InventaireIcon` n'est PAS modifié** : la refonte l'a rangé parmi les
 // rendus du jeu à l'identique (ses silhouettes de monstre, de rune et
 // d'artéfact), et les écrans du compte le gardent. Les trois inventaires ont
@@ -85,7 +88,9 @@ export const IconeArene = fabrique(
   'M7 3h10v5a5 5 0 0 1-10 0zM7 5H4v1.5A3.5 3.5 0 0 0 7.5 10M17 5h3v1.5A3.5 3.5 0 0 1 16.5 10M12 13v3M8 21h8M9 16h6l1 5H8z'
 );
 export const IconeOutils = fabrique(cercle(12, 12, 1.4) + 'M10.8 11 8 3.5h2.5l2 6M13.2 11 16 3.5h-2.5l-2 6M11 13.2 7 21M13 13.2l4 7.8');
-export const IconeOptimizer = fabrique(cercle(12, 4.5, 1.5) + 'M11 6 5 21M13 6l6 15M7.5 15h9');
+// Tête grossie et arc entre les branches : le compas fin se lisait comme un
+// « A » à 14 px, la taille des boutons d'export.
+export const IconeOptimizer = fabrique(cercle(12, 4.5, 2) + 'M10.9 6.3 5.5 20M13.1 6.3 18.5 20M4 15.5a10 10 0 0 0 16 0');
 export const IconeAmi = fabrique(cercle(8, 8, 3) + cercle(16, 8, 3) + 'M2 20a6 6 0 0 1 12 0M10 20a6 6 0 0 1 12 0');
 export const IconeSpeedTuning = fabrique(cercle(12, 14, 8) + 'M12 14l3.5-3.5M10 2h4M12 2v4M19 5l1.5 1.5');
 // Les trois inventaires de « Mon compte », dans la NAVIGATION.

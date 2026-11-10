@@ -1,5 +1,9 @@
 import {
   Trash2,
+  Send,
+  Link2Off,
+  Hash,
+  Smartphone,
   Pencil,
   Upload,
   X,
@@ -15,8 +19,8 @@ import {
 } from 'lucide-react';
 // L'épée de la section Offense, à la place des deux épées de lucide :
 // « Importer un deck d'offense », « Fort contre ».
-import { IconeOffense } from '../IconesAtelier';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { IconeOffense, IconeOptimizer } from '../IconesAtelier';
+import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   ARTIFACT_KINDS,
   sortesArtefact,
@@ -50,12 +54,13 @@ import {
 } from '../../lib/effects';
 import { UseRecoState } from '../../hooks/useSiegeRecos';
 import { useTraduction } from '../../hooks/useLangue';
+import type { EtatAffiche } from '../../lib/provenancesRecos';
+import { PastilleEtat } from './discord/Provenances';
 import { nomSet } from '../../i18n/jeu';
 import { libelleSource } from '../../lib/ownedBuilds';
 import type { Dictionnaire } from '../../i18n/fr';
 import RuneIcon from '../RuneIcon';
 import { STATS_AVEC_BASE } from '../../lib/stats';
-import SetsPortes from '../SetsPortes';
 import MonsterPicker from '../MonsterPicker';
 import { JetonSlot, prochainFocus } from './slotVideSuivant';
 import MonsterAvatar from '../MonsterAvatar';
@@ -102,7 +107,7 @@ import {
 // identique à ce nom automatique. `deckLabel` calcule toujours ce nom, sans
 // jamais lire `deck.name` — le champ reste dans le TYPE et le stockage pour
 // la rétrocompatibilité d'un import, mais n'est plus affiché.
-function deckLabel(deck: RecoDeck, byCom2us: Map<number, Monster>, index: number): string {
+export function deckLabel(deck: RecoDeck, byCom2us: Map<number, Monster>, index: number): string {
   const noms = deck.slots
     .map((s) => (s.com2usId != null ? byCom2us.get(s.com2usId)?.name ?? s.name : ''))
     .filter(Boolean);
@@ -142,6 +147,16 @@ interface Props {
   hit?: RecoHit | null;
   // Vue de la page. Absente : Attaque, l'affichage d'avant.
   vue?: VueRecos;
+  // Synchronisation Discord (docs/02-app/siege/feat-recommandations/rendu-de-la-page.md) :
+  // - `provenance` : dans « Toutes les recommandations », d'où vient la carte ;
+  // - `onDetacher` : recommandation LIÉE, sa corbeille devient « Détacher de ce salon » ;
+  // - `publierDans` : recommandation de cet appareil, « Publier dans… » (raison du
+  //   refus, ou `null` s'il est permis) ;
+  // - `sousBandeau` : le bandeau du salon est posé juste au-dessus.
+  provenance?: { nom: string; etat: EtatAffiche | null };
+  onDetacher?: () => void;
+  publierDans?: { raison: string | null; onClick: () => void };
+  sousBandeau?: boolean;
 }
 
 // Carte d'une recommandation — ⚠️ **NEUTRE, quel que soit le résultat de
@@ -179,9 +194,14 @@ export default function RecoCard({
   onExport,
   recos,
   vue = 'attaque',
+  provenance,
+  onDetacher,
+  publierDans,
+  sousBandeau = false,
 }: Props) {
   const textes = useTraduction();
   const cr = textes.carteReco;
+  const td = textes.recosDiscord;
   const status = match?.status ?? 'unknown';
 
   // Deux niveaux d'édition distincts :
@@ -370,12 +390,23 @@ export default function RecoCard({
     return () => cancelAnimationFrame(t);
   }, [deckAViser]);
 
+  // La source de la recommandation et ses autres étiquettes (provenance, état
+  // du salon, Importée), quand il y en a : la 3ᵉ rangée de l'en-tête, sous le
+  // nombre de decks et l'auteur. Les actions, à la souris, couvrent toutes les
+  // rangées. ⚠️ Classes écrites EN TOUTES LETTRES : Tailwind lit le source
+  // comme du texte.
+  const aSource = !!provenance || reco.origin === 'imported';
+  const rangTitre = 'lg:row-start-1';
+  const rangMeta = 'lg:row-start-2';
+  const hauteurActions = aSource ? 'lg:row-span-3' : 'lg:row-span-2';
+
   return (
     // ⚠️ `compact:p-2.5` : même resserrement qu'une équipe de siège
     // (SiegeTeam.tsx) — au doigt, la page empile plusieurs recommandations,
     // et chaque `p-4` coûte 32 px de haut multipliés par leur nombre.
     // Gabarit des cartes de la refonte : rayon 12, contour discret (`AURA`).
-    <section className={`rounded-xl border p-4 compact:p-2.5 transition-colors ${AURA[status]}`}>
+    // Sous le bandeau d'un salon, la carte en est la suite : coins du haut droits.
+    <section className={`${sousBandeau ? 'rounded-b-xl' : 'rounded-xl'} border p-4 compact:p-2.5 transition-colors ${AURA[status]}`}>
       {/* En-tête de la recommandation.
           ⚠️ **TROIS zones, pas deux.** Le titre et les icônes d'action
           vivaient chacun dans leur propre bloc (titre + badges à gauche,
@@ -387,11 +418,14 @@ export default function RecoCard({
           (`items-center`), toujours à deux, jamais perturbée par la longueur
           des badges — qui passent en dessous, sur une deuxième rangée qui
           leur est propre et peut s'enrouler librement. */}
-      {/* ⚠️ **À la souris, l'en-tête tient sur UNE ligne** : titre · origine · decks · auteur · Analyser, puis les
-          actions au bout. Les deux rangées ci-dessous s'effacent
-          (`lg:contents`) dans ce conteneur ; au doigt, elles restent deux,
-          pour la raison dite juste en dessous. */}
-      <div className="lg:mb-3 lg:flex lg:flex-wrap lg:items-center lg:gap-x-3 lg:gap-y-1.5">
+      {/* ⚠️ **L'en-tête se lit de haut en bas, aux deux formats** : le NOM
+          de la recommandation en titre ; dessous, le nombre de decks, l'auteur
+          et les contributeurs ; enfin la source et les autres étiquettes (son
+          salon ou « Sur cet appareil », l'état du salon, « Importée »). À la
+          souris, une grille : le chevron devant le titre, et au bout, sur
+          toute la hauteur, Analyser, Publier dans… et les actions. Au doigt,
+          les actions restent à côté du titre. */}
+      <div className="lg:mb-3 lg:grid lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:items-center lg:gap-x-3 lg:gap-y-1">
       <div className="mb-1.5 flex items-center gap-2 lg:contents">
         {/* ⚠️ **À la souris, le repli de la carte est un CHEVRON en tête de
             ligne** — même bouton, même taille et même
@@ -407,7 +441,7 @@ export default function RecoCard({
           taille="serre"
           icone={<ChevronDown size={15} className={`transition-transform ${expanded ? '' : '-rotate-90'}`} />}
           libelle={editing ? cr.terminePourReplier : open ? cr.reduire : cr.consulter}
-          className={`hidden lg:inline-flex ${ICONE_LG}`}
+          className={`hidden lg:col-start-1 lg:inline-flex ${rangTitre} ${ICONE_LG}`}
         />
         {editing ? (
           <Champ
@@ -421,7 +455,7 @@ export default function RecoCard({
             }}
             placeholder={textes.partage.reco.recommandation(index + 1)}
             pleineLargeur={false}
-            className="min-w-[min(160px,100%)] flex-1 bg-panel py-1 text-base font-semibold"
+            className={`min-w-[min(160px,100%)] flex-1 bg-panel py-1 text-base font-semibold lg:col-start-2 ${rangTitre}`}
           />
         ) : (
           // ⚠️ **Le TITRE bascule la carte**, comme le bouton « Consulter » qui
@@ -436,9 +470,9 @@ export default function RecoCard({
             // ⚠️ `p-0` explicite : un `<button>` porte un rembourrage par
             // défaut du navigateur, invisible à l'œil mais qui élargit sa
             // boîte au-delà du texte.
-            // `lg:flex-initial` : sur la ligne unique, le titre prend sa
-            // largeur, et l'origine, les decks et l'auteur le suivent.
-            className="min-w-0 flex-1 truncate p-0 text-left transition hoverable:text-ctx lg:flex-initial"
+            // `lg:justify-self-start` : à la souris, la cible du titre s'arrête
+            // à son texte, la ligne de métadonnées passe dessous.
+            className={`min-w-0 flex-1 truncate p-0 text-left transition hoverable:text-ctx lg:col-start-2 lg:justify-self-start ${rangTitre}`}
           >
             {/* ⚠️ `compact:text-base` : même resserrement que le titre d'une
                 équipe de siège (SiegeTeam.tsx) — au doigt, `text-lg` pesait
@@ -452,8 +486,8 @@ export default function RecoCard({
         )}
 
         {/* Actions — sur la MÊME rangée que le titre, à sa hauteur ; à la
-            souris, au BOUT de la ligne unique (`lg:order-last lg:ml-auto`). */}
-        <div className="flex flex-none items-center gap-1.5 lg:order-last">
+            souris, au BOUT de l'en-tête, sur la hauteur de ses deux rangées. */}
+        <div className={`flex flex-none items-center gap-1.5 lg:col-start-3 lg:row-start-1 ${hauteurActions}`}>
           {/* En édition, la carte est forcément dépliée → le bouton n'a pas de sens.
               ⚠️ **Masqué au DOIGT** (`compact:hidden`) : le titre bascule
               désormais la carte lui-même (voir plus haut), et ce petit bouton
@@ -473,6 +507,41 @@ export default function RecoCard({
               libelle={open ? cr.reduire : cr.consulter}
               title={open ? cr.replier : cr.voirDecks(reco.decks.length)}
               className="compact:hidden lg:hidden"
+            />
+          )}
+          {/* ⚠️ **À la SOURIS seulement** (`compact:hidden`) : au doigt, ce
+              bouton étiqueté encombrait le titre sur une carte étroite ;
+              « Analyser » y vit dans le panneau « Options ».
+              ⚠️ **Masqué aussi sous `lg`** (`max-lg:hidden`), même à la
+              souris : sous ce seuil, la page prend sa disposition téléphone,
+              et « Analyser » vit dans le panneau « Options » — une fenêtre
+              étroite le montrait aux DEUX endroits.
+              ⚠️ **Bouton à DEUX ÉTATS** : un premier clic analyse, un second
+              MASQUE le résultat — le même geste que la croix de l'encart.
+              Bouton À CADRE, comme les autres boutons à libellé de la page. */}
+          {!editing && (
+            <Bouton
+              onClick={match ? onClearAnalysis : onAnalyze}
+              disabled={!match && !canAnalyze}
+              actif={Boolean(match)}
+              title={
+                match ? cr.masquerAnalyse : canAnalyze ? cr.confronter : textes.recos.importerPourAnalyser
+              }
+              taille="sm"
+              icone={<Gauge size={13} />}
+              libelle={cr.analyserMesDecks}
+              className={`compact:hidden max-lg:hidden ${BOUTON_LG}`}
+            />
+          )}
+          {!editing && publierDans && (
+            <Bouton
+              onClick={publierDans.onClick}
+              disabled={!!publierDans.raison}
+              title={publierDans.raison ?? undefined}
+              taille="sm"
+              icone={<Send size={13} />}
+              libelle={td.publierDans}
+              className={`compact:hidden max-lg:hidden ${BOUTON_LG}`}
             />
           )}
           {/* Filet vertical entre les informations et les actions — à la
@@ -534,33 +603,49 @@ export default function RecoCard({
               libelle={editing ? textes.equipeSiege.terminerEdition : cr.editer}
               className={ICONE_ACTION}
             />
-            <BoutonIcone
-              onClick={supprimerReco}
-              ton="danger"
-              taille="serre"
-              icone={<Trash2 size={13} />}
-              libelle={cr.supprimer}
-              className={ICONE_ACTION}
-            />
+            {/* « Publier dans… » au DOIGT : une icône du groupe ; à la souris,
+                le bouton à libellé près d'« Analyser » (plus bas). Toujours
+                affiché, désactivé avec sa raison. */}
+            {publierDans && (
+              <BoutonIcone
+                onClick={publierDans.onClick}
+                disabled={!!publierDans.raison}
+                taille="serre"
+                icone={<Send size={13} />}
+                libelle={publierDans.raison ?? td.publierDans}
+                className={`lg:hidden ${ICONE_ACTION}`}
+              />
+            )}
+            {/* Une recommandation LIÉE ne se supprime pas : elle se détache de
+                son salon, pour ce membre seul (un dialogue le dit). */}
+            {onDetacher ? (
+              <BoutonIcone
+                onClick={onDetacher}
+                taille="serre"
+                icone={<Link2Off size={13} />}
+                libelle={td.detacher}
+                className={ICONE_ACTION}
+              />
+            ) : (
+              <BoutonIcone
+                onClick={supprimerReco}
+                ton="danger"
+                taille="serre"
+                icone={<Trash2 size={13} />}
+                libelle={cr.supprimer}
+                className={ICONE_ACTION}
+              />
+            )}
           </div>
         </div>
       </div>
 
-      {/* Métadonnées — SOUS le titre, sur leur propre rangée qui s'enroule
-          librement sans jamais perturber l'alignement titre/icônes. */}
-      <div className="mb-3 flex flex-wrap items-center gap-2 lg:contents">
-        {reco.origin === 'imported' && (
-          // Pastille NEUTRE : l'origine est une information, pas un
-          // état à signaler — le contour d'accent la faisait passer pour un
-          // élément sélectionné.
-          <span
-            className="inline-flex items-center gap-1 rounded-full border border-border-soft bg-panel2 px-2 py-0.5
-                       label"
-            title={cr.importeeAide}
-          >
-            <Download size={10} /> {cr.importee}
-          </span>
-        )}
+      {/* Métadonnées — SOUS le titre, aux deux formats, sur leur propre rangée
+          qui s'enroule librement sans jamais perturber l'alignement
+          titre/icônes : provenance, Importée, nombre de decks, auteur et
+          contributeurs. À la souris, la 2ᵉ rangée de la grille de l'en-tête,
+          sous le titre. */}
+      <div className={`${aSource ? 'mb-1.5' : 'mb-3'} flex flex-wrap items-center gap-2 lg:col-start-2 lg:mb-0 lg:gap-y-1 ${rangMeta}`}>
         {/* ⚠️ Pendant une recherche, le compteur dit « N sur M » : afficher le
             total alors qu'un seul deck est à l'écran se lit comme un bug
             d'affichage — on cherche les cinq autres. Même règle que le compteur
@@ -568,66 +653,48 @@ export default function RecoCard({
         <span className="font-mono text-micro text-ink-dim">
           {decksFiltres ? cr.decksSur(decksTrouves.size, reco.decks.length) : cr.decks(reco.decks.length)}
         </span>
-        {!editing && reco.author && (
-          <span className="font-mono text-micro text-ink-dim">· {textes.vueAmi.par(reco.author)}</span>
-        )}
-
-        {/* ⚠️ **À la SOURIS seulement** (`compact:hidden`) : au doigt, ce bouton
-            étiqueté crowdait le titre sur une carte étroite, à côté d'une
-            pastille qui redisait déjà ce que l'encart d'analyse affiche juste
-            en dessous (voir plus bas — `StatusPill` a été retiré pour ça). Sa
-            version au doigt vit désormais en icône, groupée avec Exporter /
-            Éditer / Supprimer — voir plus bas.
-            ⚠️ **Masqué aussi sous `lg`** (`max-lg:hidden`), même à la souris :
-            sous ce seuil, la page prend sa disposition téléphone, et
-            « Analyser » vit dans le panneau « Options » — une fenêtre étroite
-            le montrait aux DEUX endroits, alors qu'il ne doit être qu'à un
-            seul. */}
-        {/* ⚠️ À la souris, un RESSORT pousse la suite au bout de la ligne
-            (titre et résumé à gauche, puis ce qui se clique à droite,
-            derrière le filet). Il remplace le `ml-auto` des actions,
-            qui laissait « Analyser » au milieu. */}
-        <span className="hidden lg:block lg:flex-1" aria-hidden />
-        {!editing && (
-          // ⚠️ **Bouton à DEUX ÉTATS** : un premier clic
-          // analyse, un second MASQUE le résultat — le même geste que la croix
-          // de l'encart. Enclenché (`actif`, `aria-pressed`) tant qu'une
-          // analyse est affichée. Il disait « Réanalyser mes decks » dans cet
-          // état : relancer se fait maintenant en deux clics (masquer, puis
-          // analyser). Masquer reste possible sans compte chargé : il n'y a
-          // rien à calculer pour ça.
-          <Bouton
-            onClick={match ? onClearAnalysis : onAnalyze}
-            disabled={!match && !canAnalyze}
-            actif={Boolean(match)}
-            // ⚠️ Bouton À CADRE (`.btn-secondary`), comme les autres boutons à
-            // libellé de la page — pas fantôme. En fantôme, seul libellé nu au
-            // milieu d'icônes nues, il ne ressortait pas et ne ressemblait pas
-            // aux autres boutons. Les icônes du bout de ligne restent nues.
-            title={
-              match ? cr.masquerAnalyse : canAnalyze ? cr.confronter : textes.recos.importerPourAnalyser
-            }
-            taille="sm"
-            icone={<Gauge size={13} />}
-            libelle={cr.analyserMesDecks}
-            className={`compact:hidden max-lg:hidden ${BOUTON_LG}`}
-          />
+        {/* ⚠️ L'auteur ne se SAISIT plus (docs/04-decisions/adr/un-salon-une-reco.md) :
+            écrit par Discord à la publication, avec les contributeurs ; un
+            auteur déjà présent reste affiché, en lecture seule. */}
+        {reco.author && (
+          <span className="font-mono text-micro text-ink-dim" data-auteur-reco
+            title={reco.contributeurs?.length ? td.ecritsParDiscord : undefined}>
+            · {textes.vueAmi.par(reco.author)}
+            {reco.contributeurs && reco.contributeurs.filter((n) => n !== reco.author).length > 0
+              && ` · ${td.avec(reco.contributeurs.filter((n) => n !== reco.author).join(', '))}`}
+          </span>
         )}
       </div>
+      {/* Enfin la source et les autres étiquettes, sous les decks et l'auteur. */}
+      {aSource && (
+        <div className="mb-3 flex flex-wrap items-center gap-1.5 lg:col-start-2 lg:row-start-3 lg:mb-0" data-source-reco>
+          {/* Dans « Toutes les recommandations » : d'où vient la carte, et
+              l'état de son salon. */}
+          {provenance && (
+            <span className="inline-flex items-center gap-1.5" data-provenance-carte>
+              <span className="inline-flex items-center gap-1 rounded-full border border-border-soft bg-panel2 px-2 py-0.5 label">
+                {reco.lien ? <Hash size={10} /> : <Smartphone size={10} />} {provenance.nom}
+              </span>
+              {provenance.etat && <PastilleEtat etat={provenance.etat} />}
+            </span>
+          )}
+          {reco.origin === 'imported' && (
+            // Pastille NEUTRE : l'origine est une information, pas un
+            // état à signaler — le contour d'accent la faisait passer pour un
+            // élément sélectionné.
+            <span
+              className="inline-flex items-center gap-1 rounded-full border border-border-soft bg-panel2 px-2 py-0.5 label"
+              title={cr.importeeAide}
+            >
+              <Download size={10} /> {cr.importee}
+            </span>
+          )}
+        </div>
+      )}
       </div>
 
       {editing && (
         <div className="flex flex-col gap-2 mb-3">
-          <Champ
-            value={reco.author}
-            onChange={(e) => recos.setMeta(reco.id, { author: e.target.value })}
-            onBlur={(e) => {
-              const t = e.target.value.trim();
-              if (t !== reco.author) recos.setMeta(reco.id, { author: t });
-            }}
-            placeholder={cr.pseudo}
-            className="bg-panel py-1.5 text-xs"
-          />
           <NoteEditor
             value={reco.note}
             max={NOTE_MAX}
@@ -658,58 +725,60 @@ export default function RecoCard({
           verdict de ses offenses (verte si l'une au moins est jouable), et
           combien d'offenses la battent. */}
       {!expanded && enVueDefense && (
-        <ZoneCliquable
-          onClick={() => onToggleOpen(reco.id)}
-          className="w-full flex flex-wrap items-center gap-1.5"
-          title={cr.consulterReco}
-        >
-          {defenses.defenses.map((d) => (
-            <span
-              key={d.cle}
-              className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-micro ${
-                PASTILLE_STATUT[meilleurStatut(d.offenses, match)]
-              }`}
-            >
-              <span className={`w-1.5 h-1.5 rounded-full flex-none ${DOT[meilleurStatut(d.offenses, match)]}`} />
-              {defenseLabel(d.monsters, monsterByCom2us)}
-              <span className="font-mono">· {d.offenses.length}</span>
-            </span>
-          ))}
-          {defenses.sansDefense.length > 0 && (
-            <span className="inline-flex items-center gap-1 text-micro text-ink-dim">
-              {cr.sansDefense(defenses.sansDefense.length)}
-            </span>
-          )}
-          {reco.note && (
-            <span className="inline-flex items-center gap-1 text-micro text-ink-dim">
-              <StickyNote size={11} className="text-star" /> {cr.consignes}
-            </span>
-          )}
+        <ZoneCliquable onClick={() => onToggleOpen(reco.id)} className="w-full text-left" title={cr.consulterReco}>
+          <ApercuDeuxLignes
+            pastilles={defenses.defenses.map((d) => ({
+              cle: d.cle,
+              nom: defenseLabel(d.monsters, monsterByCom2us),
+              noeud: (
+                <span
+                  className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-micro ${
+                    PASTILLE_STATUT[meilleurStatut(d.offenses, match)]
+                  }`}
+                >
+                  <span className={`w-1.5 h-1.5 rounded-full flex-none ${DOT[meilleurStatut(d.offenses, match)]}`} />
+                  {defenseLabel(d.monsters, monsterByCom2us)}
+                  <span className="font-mono">· {d.offenses.length}</span>
+                </span>
+              ),
+            }))}
+            fin={<>
+              {defenses.sansDefense.length > 0 && (
+                <span className="inline-flex items-center gap-1 text-micro text-ink-dim">
+                  {cr.sansDefense(defenses.sansDefense.length)}
+                </span>
+              )}
+              {reco.note && (
+                <span className="inline-flex items-center gap-1 text-micro text-ink-dim">
+                  <StickyNote size={11} className="text-star" /> {cr.consignes}
+                </span>
+              )}
+            </>}
+          />
         </ZoneCliquable>
       )}
       {!expanded && !enVueDefense && (
-        <ZoneCliquable
-          onClick={() => onToggleOpen(reco.id)}
-          className="w-full flex flex-wrap items-center gap-1.5"
-          title={cr.consulterReco}
-        >
-          {reco.decks.map((deck, di) => {
-            const st = match?.decks[di]?.status ?? 'unknown';
-            return (
-              <span
-                key={di}
-                className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-micro ${PASTILLE_STATUT[st]}`}
-              >
-                <span className={`w-1.5 h-1.5 rounded-full flex-none ${DOT[st]}`} />
-                {deckLabel(deck, monsterByCom2us, di)}
+        <ZoneCliquable onClick={() => onToggleOpen(reco.id)} className="w-full text-left" title={cr.consulterReco}>
+          <ApercuDeuxLignes
+            pastilles={reco.decks.map((deck, di) => {
+              const st = match?.decks[di]?.status ?? 'unknown';
+              return {
+                cle: String(di),
+                nom: deckLabel(deck, monsterByCom2us, di),
+                noeud: (
+                  <span className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-micro ${PASTILLE_STATUT[st]}`}>
+                    <span className={`w-1.5 h-1.5 rounded-full flex-none ${DOT[st]}`} />
+                    {deckLabel(deck, monsterByCom2us, di)}
+                  </span>
+                ),
+              };
+            })}
+            fin={reco.note ? (
+              <span className="inline-flex items-center gap-1 text-micro text-ink-dim">
+                <StickyNote size={11} className="text-star" /> {cr.consignes}
               </span>
-            );
-          })}
-          {reco.note && (
-            <span className="inline-flex items-center gap-1 text-micro text-ink-dim">
-              <StickyNote size={11} className="text-star" /> {cr.consignes}
-            </span>
-          )}
+            ) : null}
+          />
         </ZoneCliquable>
       )}
 
@@ -781,6 +850,7 @@ export default function RecoCard({
               <span className="label">{cr.colOffense}</span>
               <span className="label">{cr.colFortContre}</span>
               <span className="label text-right">{cr.colVerdict}</span>
+              <span className="label text-right">{cr.colActions}</span>
             </div>
             {/* ⚠️ Pendant une recherche, SEULS les decks trouvés sont rendus —
                 les autres disparaissent complètement. Sans ça la carte remontait
@@ -920,6 +990,76 @@ export default function RecoCard({
   );
 }
 
+
+/* ---- Aperçu replié ------------------------------------------------------ */
+
+// L'aperçu d'une recommandation repliée — une pastille par deck (ou par
+// défense, en vue Défense) — tient sur DEUX LIGNES au plus : ce qui ne tient
+// pas se résume en « +N », les noms cachés en infobulle. `fin` (consignes,
+// decks sans défense) suit toujours, dans les deux lignes.
+//
+// ⚠️ **On MESURE, on ne devine pas** (même principe que BarreActions) : la
+// place dépend de la largeur de la carte et de la longueur de chaque nom. On
+// rend tout, puis on retire une pastille tant que l'aperçu dépasse deux
+// lignes — avant la première peinture (`useLayoutEffect`) : rien ne saute à
+// l'écran. Un redimensionnement recommence depuis toutes les pastilles. En
+// rendu serveur, tout est rendu.
+function ApercuDeuxLignes({ pastilles, fin }: {
+  pastilles: { cle: string; nom: string; noeud: React.ReactNode }[];
+  fin: React.ReactNode;
+}) {
+  const zone = useRef<HTMLDivElement>(null);
+  const [visibles, setVisibles] = useState(pastilles.length);
+  const [largeur, setLargeur] = useState(0);
+
+  // Le contenu, en une chaîne : une pastille renommée relance la mesure.
+  const signature = pastilles.map((p) => `${p.cle}:${p.nom}`).join('|');
+
+  // Toutes les pastilles à chaque changement de contenu ou de largeur.
+  useLayoutEffect(() => setVisibles(pastilles.length), [signature, pastilles.length, largeur]);
+
+  // Une de moins tant que l'aperçu dépasse deux lignes (chaque pastille, le
+  // « +N » et la fin comptés à leur rangée).
+  useLayoutEffect(() => {
+    const el = zone.current;
+    if (!el) return;
+    // ⚠️ Rangées comptées par CHEVAUCHEMENT vertical, pas par `offsetTop` :
+    // centrés sur leur ligne, deux éléments de hauteurs différentes n'ont pas
+    // le même haut, et chaque écart de 1 px comptait une ligne de plus.
+    let lignes = 0;
+    let basDeLigne = -Infinity;
+    for (const c of el.children) {
+      const r = c.getBoundingClientRect();
+      if (r.top >= basDeLigne - 1) {
+        lignes += 1;
+        basDeLigne = r.bottom;
+      } else basDeLigne = Math.max(basDeLigne, r.bottom);
+    }
+    if (lignes > 2 && visibles > 0) setVisibles(visibles - 1);
+  }, [visibles, signature, largeur]);
+
+  useLayoutEffect(() => {
+    const el = zone.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(() => setLargeur(el.clientWidth));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const cachees = pastilles.slice(visibles);
+  return (
+    <div ref={zone} className="flex w-full flex-wrap items-center gap-1.5" data-apercu-reco>
+      {pastilles.slice(0, visibles).map((p) => <Fragment key={p.cle}>{p.noeud}</Fragment>)}
+      {cachees.length > 0 && (
+        <span className="inline-flex items-center rounded-full border border-border-soft bg-panel2 px-2 py-0.5 font-mono text-micro text-ink-dim"
+          title={cachees.map((p) => p.nom).join('\n')} data-apercu-plus>
+          +{cachees.length}
+        </span>
+      )}
+      {fin}
+    </div>
+  );
+}
 
 /* ---- Rapport d'analyse -------------------------------------------------- */
 
@@ -1344,17 +1484,15 @@ const DECK_AURA: Record<string, string> = {
   unknown: 'border-border-soft bg-panel2',
 };
 
-// ⚠️ **À la souris, un deck est une LIGNE de tableau** : chevron ·
-// offense (sets visés collés à chaque monstre) · fort contre · verdict · crayon.
-// Même gabarit de colonnes pour la rangée d'intitulés et pour chaque ligne.
-// Écrit EN TOUTES LETTRES : Tailwind lit le source comme du texte.
-// ⚠️ **QUATRE colonnes, plus de colonne d'actions** : le crayon
-// quitte la ligne et devient « Éditer ce deck », en pied du détail déplié —
-// voir `DeckBlock`. La ligne elle-même est la grille du deck entier : ses
+// ⚠️ **À la souris, un deck est une LIGNE de tableau** : chevron · offense
+// (les portraits seuls) · fort contre · verdict · actions (Annuler réservé,
+// Exporter, Éditer, Supprimer). Même gabarit de colonnes pour la rangée
+// d'intitulés et pour chaque ligne. Écrit EN TOUTES LETTRES : Tailwind lit le
+// source comme du texte. La ligne elle-même est la grille du deck entier : ses
 // enfants s'y posent directement (`lg:contents` sur les conteneurs), le détail
-// sur la rangée suivante, le pied d'actions sur la troisième.
+// sur la rangée suivante.
 const LIGNE_DECK =
-  'lg:grid lg:grid-cols-[28px_minmax(0,1fr)_minmax(0,170px)_minmax(0,150px)] lg:items-center lg:gap-3';
+  'lg:grid lg:grid-cols-[28px_minmax(0,1fr)_minmax(0,170px)_minmax(0,150px)_auto] lg:items-center lg:gap-3';
 
 // ⚠️ **UN seul bouton d'icône sur toute la page, à la souris** : un carré de 28 px aux coins arrondis, sans cadre ni fond —
 // chevrons, Exporter, Éditer, Supprimer, en-tête de recommandation comme ligne
@@ -1412,7 +1550,6 @@ function DeckBlock({
   onSupprime: () => void;
 }) {
   const textes = useTraduction();
-  const jeu = textes.jeu;
   const cr = textes.carteReco;
   // Supprimer un deck SE DÉFAIT au lieu de se confirmer : immédiat, puis
   // « Deck supprimé · Annuler » le remet à SA place — le dernier deck remplace
@@ -1444,6 +1581,23 @@ function DeckBlock({
   // Le verdict de la ligne (souris), avec les libellés et points des filtres.
   const verdictKey = match ? VERDICT_DE[match.status] : null;
   const verdictLigne = verdictKey ? VERDICTS.find((v) => v.key === verdictKey) ?? null : null;
+  // Le verdict de la ligne, le même aux deux formats : la pastille des filtres
+  // (la phrase complète en infobulle) et combien de fois le deck est montable.
+  // Avant l'analyse, ou en édition : rien.
+  const verdict = !editing && match && !empty && verdictLigne ? (
+    <>
+      <span
+        className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2 py-0.5 text-micro font-semibold ${
+          PASTILLE_STATUT[match.status] ?? PASTILLE_STATUT.unknown
+        }`}
+        title={verdictDeck(match, textes)?.text}
+      >
+        <span className={`h-1.5 w-1.5 flex-none rounded-full ${verdictLigne.dot}`} />
+        {cr.verdicts[verdictLigne.key]}
+      </span>
+      <CopiesBadge copies={match.copies} />
+    </>
+  ) : null;
   // Lead porté par le slot 0 du deck recommandé.
   const leaderId = deck.slots[0]?.com2usId;
   const leaderLead = leaderId != null ? monsterByCom2us.get(leaderId)?.leaderSkill ?? null : null;
@@ -1486,7 +1640,14 @@ function DeckBlock({
             dont le dernier portrait porte une icône d'élément qui dépasse de
             4 px à droite ; la place entre dans la rangée, prise sur
             l'espacement de la colonne d'actions : rien ne bouge. */}
-        <div className="flex items-center gap-2 max-lg:min-h-10 max-lg:self-start max-lg:pr-1 max-lg:-mr-1 lg:contents">
+        {/* ⚠️ `max-lg:flex-wrap` + `max-lg:min-w-fit` sur les portraits :
+            quand la rangée ne tient pas le deck ET « Fort contre » (écran
+            étroit), « Fort contre » passe à la ligne — les portraits du deck
+            ne se compriment plus sous les siens (chevauchement relevé par le
+            mainteneur sur l'accueil). `gap-y-3` : la pastille LEADER dépasse
+            sous le portrait du leader, elle ne doit pas toucher la ligne
+            suivante. */}
+        <div className="flex items-center gap-2 max-lg:min-h-10 max-lg:flex-wrap max-lg:gap-y-3 max-lg:self-start max-lg:pr-1 max-lg:-mr-1 lg:contents">
           {/* Chevron de repli : indispensable en édition avec plusieurs decks */}
           <BoutonIcone
             onClick={onToggleFold}
@@ -1508,46 +1669,23 @@ function DeckBlock({
               une recommandation exportée avant ce changement, ou reçue d'un ami
               qui n'a pas encore mis à jour l'app, garde son champ `name` — il
               n'a jamais été lu ici, et n'est pas rejeté à l'import. */}
+          {/* ⚠️ **Une ligne de deck COMPACTE : les portraits seuls**, sans nom
+              ni sets — ceux-ci s'écrivent dans le deck ouvert, sur la fiche de
+              chaque monstre. Le nom passe en infobulle du portrait.
+              ⚠️ **Aucune icône ne chevauche sa voisine** : l'icône d'élément
+              d'un portrait dépasse de 4 px à droite (`-right-1`, MonsterAvatar),
+              d'où `pr-1` sur chaque enveloppe — la place entre dans la boîte,
+              l'espacement des portraits reste entier. */}
           <ZoneCliquable
             onClick={onToggleFold}
-            // `gap-2.5` au doigt : 44 px d'un portrait au suivant, la place
-            // d'une pastille de sets (42 px) sous chacun — voir plus bas.
-            className="flex items-center gap-2.5 flex-1 min-w-0 lg:gap-4"
+            className="flex min-w-0 flex-1 items-center gap-2 max-lg:min-w-fit"
             title={folded ? cr.deplierDeck : cr.replierDeck}
           >
             {deck.slots.map((sl, i) => {
               const m = sl.com2usId != null ? monsterByCom2us.get(sl.com2usId) ?? null : null;
-              // Sets visés : la PREMIÈRE possibilité de runage, sans doublon
-              // (3× Fight → une icône). Les autres possibilités restent dans le
-              // détail.
-              const sets = [...new Set(sl.setOptions?.[0] ?? [])];
-              // ⚠️ `max-lg:flex-none` : au doigt, l'enveloppe ne porte que le
-              // portrait de 34 px et ne rétrécit plus sous lui — réduite à
-              // 19-24 px, elle laissait les portraits se chevaucher. À la
-              // souris, `min-w-0` reste : c'est lui qui laisse le nom se
-              // tronquer.
-              // `max-lg:pr-1 max-lg:-mr-1` : au doigt, l'enveloppe se termine
-              // sur le portrait, dont l'icône d'élément dépasse de 4 px à
-              // droite (`-right-1`, MonsterAvatar) ; la place entre dans
-              // l'enveloppe, et la marge négative la rend à l'espacement :
-              // aucun portrait ne bouge.
               return (
-                <span key={i} className="flex min-w-0 items-center gap-1.5 max-lg:flex-none max-lg:pr-1 max-lg:-mr-1">
+                <span key={i} className="flex flex-none items-center pr-1" title={m?.name ?? sl.name ?? undefined}>
                   <MiniMonster monster={m} fallback={sl.name} size={34} lead={i === 0 ? leaderLead : null} />
-                  {/* À la souris seulement : le nom et les sets visés de CE
-                      monstre, collés à lui. Au doigt, la ligne
-                      reste aux portraits seuls. */}
-                  {(m?.name || sl.name) && (
-                    <span className="hidden truncate text-xs font-medium text-ink lg:inline">{m?.name ?? sl.name}</span>
-                  )}
-                  <SetsPortes
-                    sets={sets}
-                    taille={14}
-                    espacement="gap-0.5"
-                    affichage="hidden lg:inline-flex"
-                    className="flex-none"
-                    title={sets.map((k) => nomSet(jeu, k)).join(' + ')}
-                  />
                 </span>
               );
             })}
@@ -1585,188 +1723,67 @@ function DeckBlock({
           {/* À la souris : le VERDICT — la pastille des filtres (Bon, À
               composer, À revoir, Monstre manquant), la phrase complète en
               infobulle, et combien de fois le deck est montable. Avant
-              l'analyse : rien. `max-lg:hidden` : au doigt, il n'y porte que le
-              bouton d'export, qui passe dans la colonne d'actions (plus bas). */}
-          <span className="flex flex-none items-center gap-1 max-lg:hidden lg:justify-end">
-          <span className="hidden min-w-0 flex-col items-start gap-0.5 lg:flex lg:items-end">
-            {!editing && match && !empty && verdictLigne && (
-              <>
-                <span
-                  className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-micro font-semibold ${
-                    PASTILLE_STATUT[match.status] ?? PASTILLE_STATUT.unknown
-                  }`}
-                  title={verdictDeck(match, textes)?.text}
-                >
-                  <span className={`h-1.5 w-1.5 flex-none rounded-full ${verdictLigne.dot}`} />
-                  {cr.verdicts[verdictLigne.key]}
-                </span>
-                <CopiesBadge copies={match.copies} />
-              </>
-            )}
-          </span>
-          <Bouton aria-label={textes.commun.exporterOptimizer} icone={<Upload size={14} />} taille="carre" trait="aucun" fond="vide"
-            disabled={!!raisonExportOptimizer} title={raisonExportOptimizer ?? textes.commun.exporterOptimizer}
-            onClick={onExporterOptimizer} className={`h-7 w-7 ${ICONE_LG}`} />
-          </span>
+              l'analyse : rien. Au doigt, le même, sur la rangée suivante. */}
+          <span className="hidden min-w-0 flex-col items-end gap-0.5 lg:flex">{verdict}</span>
           {/* Le lead n'est pas dans l'en-tête : il est posé sur le leader lui-même
               (aperçu replié ci-dessous, ou slot 0 déplié) — comme en siège. */}
         </div>
 
-        {/* Édition PROPRE au deck (monstres, sets, stats, consignes) : icônes
-            nues et resserrées, comme dans l'en-tête de la recommandation.
-            ⚠️ **À la souris, le PIED du détail déplié** : « Éditer ce deck » écrit en toutes lettres, à droite,
-            sous un filet — placé sur la 3ᵉ rangée de la grille du deck
-            (`lg:row-start-3`), sous le détail, dont il ferme le cadre (le
-            détail n'a pas de bord bas : un seul trait entre les deux). Replié,
-            il n'y a pas de détail à éditer à l'œil : il se masque
-            (`lg:hidden`), sans quitter le DOM.
-            ⚠️ **Au doigt, une COLONNE en haut à droite de la carte**, de haut
-            en bas : Supprimer, Éditer, Exporter vers l'Optimizer — deuxième
-            colonne de la grille de l'en-tête, sur la hauteur de la rangée et
-            des sets (`row-span-2`). Supprimer garde la place qu'il avait au
-            bout de la rangée.
-            ⚠️ **Toute cette hauteur, à espacements égaux** :
-            `max-lg:self-stretch max-lg:justify-between`, la colonne s'étend
-            sur la rangée et les sets (65 px) et ses icônes s'y répartissent.
-            `max-lg:gap-[2.5px]`, l'espacement que donnent trois icônes de
-            20 px sur 65 : en édition, « Annuler » s'ajoute sous le ✓ sans
-            que l'espacement change, le ✓ touché ne bouge pas. */}
-        <div
-          className={`flex items-center gap-0.5 max-lg:col-start-2 max-lg:row-span-2 max-lg:row-start-1 max-lg:flex-col
-            max-lg:gap-[2.5px] max-lg:self-stretch max-lg:justify-between lg:col-span-full lg:row-start-3 lg:mb-1 lg:ml-8
-            lg:justify-end lg:gap-1.5 lg:rounded-b-xl lg:border lg:border-border-soft lg:bg-panel lg:px-3 lg:py-2
-            ${folded ? 'lg:hidden' : ''}`}
-        >
-          {/* ⚠️ Même exception que l'en-tête de la recommandation : le ✓ doré
-              est la convention documentée de l'édition en cours sur toute
-              cette page (docs/02-app/siege/), pas le marqueur
-              d'état standard. Couleur posée sur l'icône, comme dans
-              l'en-tête de la recommandation. */}
-          {/* « Annuler les modifications » — en édition
-              seulement, juste AVANT le ✓ à la souris : le pied est calé à
-              droite (`justify-end`), il s'allonge vers la gauche, le ✓ qu'on
-              vient de toucher ne bouge pas. Au doigt, SOUS le ✓
-              (`max-lg:order-1`), pour la même raison : la colonne s'allonge
-              vers le bas. Grisé tant que rien n'a changé.
-              ⚠️ `max-lg:gap-0` sur les trois `BoutonIcone` de la colonne :
-              leur libellé « à la souris », masqué au doigt, laisse un `<span>`
-              vide qui reçoit l'espacement du bouton (6 px) et poussait leur
-              icône 3 px à gauche du centre, quand celle de l'export est
-              centrée. Sans lui, les trois icônes sont sur le même axe. */}
-          {editing && (
+        {/* ⚠️ **Les actions du deck sur SA LIGNE, replié ou non** : Exporter
+            vers l'Optimizer, Éditer ce deck, Supprimer ce deck. « Éditer ce
+            deck » ouvre le deck en édition DIRECTEMENT : ni l'édition de la
+            recommandation, ni un dépliage d'abord (l'édition déplie d'office,
+            voir `folded` dans RecoCard).
+            À la souris : la 5ᵉ colonne de la ligne (`lg:col-start-5
+            lg:row-start-1`). Au doigt : la rangée sous les portraits, le
+            verdict à gauche, les actions à droite, en cibles de 40 px (règle
+            tactile) — l'ancienne colonne d'icônes de 20 px serrait les
+            portraits.
+            ⚠️ **Une place est RÉSERVÉE à « Annuler les modifications »**, devant
+            les trois : hors édition, le bouton est là mais invisible
+            (`invisible`, hors tabulation). En édition il apparaît, et ✎ devient
+            ✓ à la même place : aucun bouton ne bouge sous le clic.
+            ⚠️ Le ✓ doré est la convention documentée de l'édition en cours sur
+            cette page (docs/02-app/siege/), pas le marqueur d'état standard. */}
+        <div className="mt-1 flex items-center gap-2 lg:contents">
+          <span className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-0.5 pl-7 lg:hidden">{verdict}</span>
+          <div className="flex flex-none items-center gap-0.5 lg:col-start-5 lg:row-start-1 lg:justify-end" data-actions-deck>
             <BoutonIcone
               onClick={onAnnulerEdition}
               disabled={!annulable}
-              taille="serre"
-              icone={<Undo2 size={12} />}
+              icone={<Undo2 size={13} />}
               libelle={cr.annulerModifs}
-              libelleALaSouris
-              className="max-lg:order-1 max-lg:gap-0"
+              className={editing ? ICONE_LG : `invisible ${ICONE_LG}`}
+              tabIndex={editing ? undefined : -1}
+              aria-hidden={editing ? undefined : true}
             />
-          )}
-          <BoutonIcone
-            onClick={onToggleEdit}
-            aria-pressed={editing}
-            taille="serre"
-            icone={editing ? <Check size={13} className="text-star" /> : <Pencil size={12} />}
-            libelle={editing ? cr.terminerDeck : cr.editerDeck}
-            libelleALaSouris
-            className="max-lg:gap-0"
-          />
-          {/* ⚠️ **Toujours présent**, plus seulement en édition —
-              la confirmation (« Supprimer ce deck ? ») reste le garde-fou.
-              À la souris, à l'AUTRE bout du pied (`lg:order-first
-              lg:mr-auto`) : un geste qui perd quelque chose ne se range pas
-              au contact de celui qu'on presse le plus. Au doigt, en tête de
-              la colonne (`order-first`). */}
-          <BoutonIcone
-            onClick={supprimerDeck}
-            ton="danger"
-            taille="serre"
-            icone={<Trash2 size={12} />}
-            libelle={cr.supprimerDeck}
-            libelleALaSouris
-            className="order-first max-lg:gap-0 lg:mr-auto"
-          />
-          {/* ⚠️ **Au doigt seulement** (`lg:hidden`) : le même export que
-              celui de la colonne Verdict, à la souris (masqué, lui, au
-              doigt), avec sa raison de désactivation en `title`. 20 px et
-              `data-cible-fine`, comme ses deux voisins de colonne
-              (`taille="serre"`) : exempté de la règle tactile des 40 px — à
-              40 px de haut, la colonne (84 px) dépassait la rangée et les
-              sets, et la carte grandissait. */}
-          <Bouton aria-label={textes.commun.exporterOptimizer} icone={<Upload size={12} />} taille="carre" trait="aucun" fond="vide"
-            disabled={!!raisonExportOptimizer} title={raisonExportOptimizer ?? textes.commun.exporterOptimizer}
-            onClick={onExporterOptimizer} data-cible-fine className="order-last h-5 w-5 lg:hidden" />
+            <Bouton aria-label={textes.commun.exporterOptimizer} icone={<IconeOptimizer size={14} />} taille="carre" trait="aucun" fond="vide"
+              disabled={!!raisonExportOptimizer} title={raisonExportOptimizer ?? textes.commun.exporterOptimizer}
+              onClick={onExporterOptimizer} className={`h-7 w-7 ${ICONE_LG}`} />
+            <BoutonIcone
+              onClick={onToggleEdit}
+              aria-pressed={editing}
+              icone={editing ? <Check size={14} className="text-star" /> : <Pencil size={13} />}
+              libelle={editing ? cr.terminerDeck : cr.editerDeck}
+              className={ICONE_LG}
+            />
+            {/* Toujours présent : la suppression se défait par la notification. */}
+            <BoutonIcone
+              onClick={supprimerDeck}
+              ton="danger"
+              icone={<Trash2 size={13} />}
+              libelle={cr.supprimerDeck}
+              className={ICONE_LG}
+            />
+          </div>
         </div>
 
-        {/* ⚠️ `basis-full` sur mobile, PAS un simple `flex-wrap` sur le
-            conteneur : un item flex qui a un peu de place restante sur la
-            ligne s'y installe et enroule son PROPRE texte au mot
-            (« indis- » collé, « ponible... » en dessous) au lieu de
-            descendre entier à la ligne suivante — c'est ce qui rendait le
-            repli imprévisible (bon tantôt, tronqué tantôt). `basis-full`
-            force CHAQUE ligne (verdict, puis nombre de copies) à démarrer sa
-            propre ligne, systématique. `sm:basis-auto` : au-delà, la place ne
-            manque plus, elles reprennent leur place naturelle côte à côte. */}
-        {/* `lg:hidden` : à la souris, le verdict et « réalisable N fois » sont
-            dans la colonne Verdict de la ligne. */}
-        {/* ⚠️ **Au téléphone, les SETS visés sous la rangée** : ceux de chaque monstre, dans l'ordre
-            des portraits — à la souris, ils sont collés à chaque nom. La
-            PREMIÈRE possibilité de runage, comme là-bas.
-            ⚠️ **Chaque pastille CENTRÉE sous son monstre** : une piste de
-            grille par portrait, de sa largeur (34 px, `size` de MiniMonster),
-            espacées comme eux (`gap-x-2.5`) et décalées du chevron et de son
-            espacement (`pl-7`, 20 + 8 px). Une pastille plus large que sa
-            piste (deux sets : 42 px) déborde à parts égales des deux côtés,
-            dans l'espacement ; un monstre sans set garde sa piste, vide.
-            ⚠️ Trois sets, avec le rembourrage des autres, font 57 px et
-            mordaient de 5,5 px sur les pastilles voisines : la pastille de
-            trois sets perd son rembourrage et ses espacements (icônes
-            collées, toujours 13 px, l'arrondi au ras des icônes), soit 41 px,
-            qui tiennent dans 34 + 10, au doigt comme à la souris sous `lg`. */}
-        {deck.slots.some((sl) => (sl.setOptions?.[0] ?? []).length > 0) && (
-          <div className="mt-1.5 grid auto-cols-[34px] grid-flow-col justify-start justify-items-center gap-x-2.5 pl-7 lg:hidden">
-            {deck.slots.map((sl, i) => {
-              const sets = [...new Set(sl.setOptions?.[0] ?? [])];
-              if (sets.length === 0) return <span key={i} />;
-              return (
-                <SetsPortes
-                  key={i}
-                  sets={sets}
-                  taille={13}
-                  espacement={sets.length === 3 ? 'gap-0' : 'gap-0.5'}
-                  affichage="inline-flex"
-                  // `w-max` : sa largeur propre, jamais celle de la piste (la
-                  // grille la ramenait à 34 px, ses icônes tassées dedans).
-                  className={`w-max rounded-full border border-border-soft bg-panel2 py-0.5 ${
-                    sets.length === 3 ? 'px-0' : 'px-1.5'
-                  }`}
-                  title={sets.map((k) => nomSet(jeu, k)).join(' + ')}
-                />
-              );
-            })}
-          </div>
-        )}
-        {!editing && match && !empty && (
-          <div className="flex flex-wrap items-center gap-2 compact:gap-1 mt-1 compact:mt-0.5 max-lg:col-span-2 lg:hidden">
-            <span className="basis-full sm:basis-auto">
-              <DeckBadge match={match} />
-            </span>
-            <span className="basis-full sm:basis-auto">
-              <CopiesBadge copies={match.copies} />
-            </span>
-          </div>
-        )}
       </div>
 
       {!folded && (
       // ⚠️ À la souris, le détail d'une ligne dépliée est une CARTE sous elle,
-      // en retrait du chevron — le contenu est celui d'avant,
-      // inchangé. Au doigt, ce conteneur ne dessine rien.
-      // Le cadre s'ARRÊTE au bas du détail (`lg:border-b-0`, coins du bas
-      // droits) : le pied d'actions, en dessous, le ferme — voir plus haut.
-      <div className="lg:col-span-full lg:ml-8 lg:mt-2 lg:rounded-t-xl lg:border lg:border-b-0 lg:border-border-soft lg:bg-panel lg:p-3">
+      // en retrait du chevron. Au doigt, il suit la ligne, sous un filet.
+      <div className="mt-2 border-t border-border-soft pt-2 lg:col-span-full lg:mb-1 lg:ml-8 lg:rounded-xl lg:border lg:border-border-soft lg:bg-panel lg:p-3">
 
       {/* Consignes propres à ce deck */}
       {editing ? (
@@ -1875,8 +1892,11 @@ function DeckBlock({
                     )}
                   </div>
 
-                  {/* Sets de runes recommandés */}
+                  {/* Sets de runes recommandés. ⚠️ Chaque partie de la fiche
+                      porte son titre (Runes, Stats, Artéfacts) : un filet seul
+                      ne disait pas ce qu'on lisait. */}
                   <div className="mt-2 pt-2 border-t border-border/50">
+                    {!editing && <span className="label mb-1 block">{cr.runage}</span>}
                     {editing ? (
                       <SetEditor
                         options={slot.setOptions}
@@ -1894,6 +1914,7 @@ function DeckBlock({
 
                   {/* Stats recommandées */}
                   <div className="mt-2 pt-2 border-t border-border/50">
+                    <span className="label mb-1 block">{cr.stats}</span>
                     {editing ? (
                       <StatEditor
                         slot={slot}
@@ -2508,7 +2529,7 @@ function TableauDefenses({
           ))}
         </span>
         <span className="text-xs text-ink">{deckLabel(deck, monsterByCom2us, deckIndex)}</span>
-        <Bouton aria-label={textes.commun.exporterOptimizer} icone={<Upload size={14} />} taille="carre" trait="aucun" fond="vide"
+        <Bouton aria-label={textes.commun.exporterOptimizer} icone={<IconeOptimizer size={14} />} taille="carre" trait="aucun" fond="vide"
           disabled={!!raisonsExportOptimizer[deckIndex]} title={raisonsExportOptimizer[deckIndex] ?? textes.commun.exporterOptimizer}
           onClick={() => onExporterDeckOptimizer(deck)} className={`h-7 w-7 ${ICONE_LG}`} />
         {note && <span className="text-micro text-ink-dim">— {note}</span>}
@@ -3296,16 +3317,8 @@ function SetList({ options, sm }: { options: string[][]; sm: SlotMatch | null })
 
 /* ---- Badges de statut --------------------------------------------------- */
 
-// Badge d'un deck : le verdict en trois mots, + l'équipe retenue si trouvée.
-function DeckBadge({ match }: { match: DeckMatch }) {
-  const m = verdictDeck(match, useTraduction());
-  if (!m) return null;
-  return <span className={`font-mono text-micro ${m.cls}`}>· {m.text}</span>;
-}
-
-// La phrase du verdict d'un deck — lue par `DeckBadge` et par l'infobulle de
-// la pastille de la ligne (tableau des decks à la souris) : une
-// seule rédaction pour les deux.
+// La phrase du verdict d'un deck — l'infobulle de la pastille de la ligne,
+// aux deux formats.
 function verdictDeck(match: DeckMatch, t: Dictionnaire): { cls: string; text: string } | null {
   const p = t.carteReco.probleme;
   const equipe = match.team ? ` · ${libelleSource(match.team, t.carteReco.sources)}` : '';
@@ -3450,11 +3463,14 @@ function StatList({
       title={total ? textes.carteReco.voirDetail : textes.carteReco.voirTotaux}
       className="flex w-full flex-col text-left"
     >
-      {analyse && (
-        <div className="flex items-center pb-1">
-          <span className="ml-auto label">{textes.carteReco.actuel}</span>
-        </div>
-      )}
+      {/* L'en-tête du petit tableau : ce que dit chaque colonne. La colonne
+          des valeurs dit si elle montre base + bonus ou le total (le clic
+          bascule) ; « actuel » n'apparaît qu'après une analyse. */}
+      <div className="flex items-center gap-x-2 pb-1" data-entete-stats>
+        <span className="w-14 flex-none label">{textes.carteReco.statsEnTete.stat}</span>
+        <span className="label">{total ? textes.carteReco.statsEnTete.total : textes.carteReco.statsEnTete.baseBonus}</span>
+        {analyse && <span className="ml-auto label">{textes.carteReco.actuel}</span>}
+      </div>
       {entries.map((st) => {
         const req = slot.stats[st.key]!;
         const known = baseFor(st.key, monster);

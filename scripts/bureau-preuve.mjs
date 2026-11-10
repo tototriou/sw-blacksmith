@@ -18,10 +18,14 @@
 // `--session` (docs/02-app/transverse/) : conservation refusée,
 // « Sauvegarder » depuis les Paramètres, Ctrl K, Ctrl+S et la barre du haut,
 // puis « Sauvegarder sous… » ; chaque fichier relu par `lireSession`.
+// `--discord` : la connexion à Discord, devant le vrai service et un Discord
+// simulé — code collé, conservation refusée puis acceptée, favori, réouverture
+// connectée, déconnexion.
 
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { createServer } from 'node:http';
 import { resolve } from 'node:path';
-import { lancerElectronEtAttendre } from './lib/electron.mjs';
+import { lancerElectronEnFond, lancerElectronEtAttendre } from './lib/electron.mjs';
 
 const args = process.argv.slice(2);
 const iExe = args.indexOf('--exe');
@@ -32,6 +36,8 @@ const iSwex = args.indexOf('--swex');
 const swex = iSwex >= 0 && args.splice(iSwex, 1).length > 0;
 const iSession = args.indexOf('--session');
 const session = iSession >= 0 && args.splice(iSession, 1).length > 0;
+const iDiscord = args.indexOf('--discord');
+const discord = iDiscord >= 0 && args.splice(iDiscord, 1).length > 0;
 
 // Un module TypeScript de l'app, empaqueté par esbuild (comme tests/run.mjs)
 // et chargé tel quel.
@@ -41,7 +47,68 @@ async function chargerModule(entree) {
   return import('data:text/javascript;base64,' + Buffer.from(r.outputFiles[0].text).toString('base64'));
 }
 
-if (session) {
+if (discord) {
+  // La connexion à Discord : le VRAI service (api/_source/), devant un Discord
+  // simulé (tests/discord-simule.ts), servi ici sur 127.0.0.1 pendant que
+  // l'app tourne. Deux lancements sur un dossier neuf : se connecter (code
+  // collé, conservation refusée puis acceptée), puis relire et se déconnecter.
+  const { serviceDePreuve } = await chargerModule('tests/discord-simule.ts');
+  const { traiter, monde } = serviceDePreuve();
+  const serveur = createServer(async (req, res) => {
+    const morceaux = [];
+    for await (const m of req) morceaux.push(m);
+    const corps = Buffer.concat(morceaux);
+    const reponse = await traiter(new Request(`http://${req.headers.host}${req.url}`, {
+      method: req.method,
+      headers: Object.entries(req.headers).filter(([, v]) => typeof v === 'string'),
+      body: req.method === 'POST' ? corps : undefined,
+    })).catch((e) => new Response(String(e), { status: 500 }));
+    const entetes = {};
+    reponse.headers.forEach((v, k) => { if (k !== 'set-cookie') entetes[k] = v; });
+    const cookies = reponse.headers.getSetCookie();
+    if (cookies.length) entetes['set-cookie'] = cookies;
+    res.writeHead(reponse.status, entetes);
+    res.end(Buffer.from(await reponse.arrayBuffer()));
+  });
+  await new Promise((r) => serveur.listen(0, '127.0.0.1', r));
+  const service = `http://127.0.0.1:${serveur.address().port}`;
+  const dossier = resolve(args[0] ?? 'dist-bureau/preuve-discord');
+  rmSync(dossier, { recursive: true, force: true }); // données neuves
+  for (const etape of ['connecter', 'relire']) {
+    const r = await lancerElectronEnFond({ SWBLACKSMITH_PREUVE: dossier, SWBLACKSMITH_PREUVE_DISCORD: etape, SWBLACKSMITH_SERVICE_DISCORD: service }, 90_000, exe);
+    if (r.error) throw r.error;
+  }
+  serveur.close();
+  const lire = (etape) => JSON.parse(readFileSync(resolve(dossier, `discord-${etape}.json`), 'utf8'));
+  const c = lire('connecter');
+  const l = lire('relire');
+  console.log(JSON.stringify({ c, l, appelsDiscord: monde.appels.length }, null, 2));
+  const session = (texte) => { try { return JSON.parse(texte ?? 'null')?.session ?? null; } catch { return null; } };
+  const verdicts = {
+    'au départ : l’encart de connexion, rien sur le disque': c.depart?.compte === 'deconnecte' && c.depart?.fichier === null,
+    '« Inviter le bot » : le navigateur s’ouvre sur le service, qui renvoie vers l’invitation sans droit': c.guide === 'cliqué' && c.inviter === 'cliqué'
+      && c.invitation === '/api/discord/invitation' && c.invitationVers === 'https://discord.com/oauth2/authorize?scope=bot&permissions=0' && c.fermerGuide === 'cliqué',
+    '« Se connecter » : le navigateur s’ouvre sur le service, avec le défi seulement': c.connexion === 'cliqué' && c.continuer === 'cliqué' && c.lien === `${service}/api/discord/login?bureau=…`,
+    'le dialogue du code s’ouvre': c.dialogueCode === true,
+    'le site obtient un code': c.codeObtenu > 50,
+    'un code abîmé est refusé, et c’est dit': c.collerFaux === 'collé' && c.validerFaux === 'cliqué' && c.refusDit === true,
+    'le bon code (avec les blancs d’un copier-coller) connecte': c.coller === 'collé' && c.valider === 'cliqué' && c.connecte === true,
+    'connecté : le membre, les deux salons, leurs recommandations': c.apresConnexion?.colonne?.includes('Toto') && c.apresConnexion?.colonne?.includes('blacksmith-reco-siege')
+      && c.apresConnexion?.colonne?.includes('blacksmith-reco-offs') && c.apresConnexion?.recos === true,
+    'les étoiles de favoris, dans l’application de bureau': c.apresConnexion?.etoiles?.length === 2,
+    'conservation refusée : la session n’est pas écrite': c.apresConnexion?.fichier === null,
+    'un favori, mis en tête de son serveur': c.favori === 'cliqué' && c.apresFavori?.colonne?.indexOf('blacksmith-reco-offs') < c.apresFavori?.colonne?.indexOf('blacksmith-reco-siege'),
+    '« Garder mes données » : la session s’écrit, chiffrée par le système': c.reconnecteApresRechargement === true && typeof session(c.apresConservation?.fichier) === 'string'
+      && !c.apresConservation.fichier.includes('acces'),
+    'réouverture : connecté sans rien demander': l.connecteAuLancement === true && l.auLancement?.recos === true,
+    'réouverture : le favori toujours en tête': l.auLancement?.colonne?.indexOf('blacksmith-reco-offs') < l.auLancement?.colonne?.indexOf('blacksmith-reco-siege'),
+    '« Se déconnecter » : l’encart revient, la session est effacée du disque': l.deconnexion === 'cliqué' && l.deconnecte === true && l.apresDeconnexion?.fichier === null,
+    'le jeton est révoqué chez Discord': monde.appels.includes('POST /oauth2/token/revoke'),
+    'aucune erreur': !c.erreur && !l.erreur,
+  };
+  for (const [quoi, bon] of Object.entries(verdicts)) console.log(`${bon ? 'ok' : 'KO'}  ${quoi}`);
+  if (Object.values(verdicts).some((v) => !v)) process.exit(1);
+} else if (session) {
   // La sauvegarde de session : compte importé, conservation REFUSÉE, puis
   // chaque accès à « Sauvegarder » et « Sauvegarder sous… ». Chaque fichier
   // est relu par le vrai `lireSession`.

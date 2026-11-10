@@ -260,8 +260,63 @@ export const fr = {
     promesseNavigateur: 'dans ton navigateur',
     promesseMachine: 'sur ta machine',
     promesseFin: '.',
-    telechargerApplication: "Télécharger l'application",
-    existeEnApplication: 'Existe aussi en application pour Windows et Linux.',
+    // Le serveur Discord de l'app : un bouton dans le héros, une carte en bas.
+    rejoindreDiscord: 'Rejoindre le Discord',
+    carteDiscord: {
+      texte: 'Pose tes questions, propose tes idées, signale un bug et suis les nouveautés, avec les autres joueurs.',
+    },
+    // L'accueil « vitrine » : un titre qui parle au joueur, chaque outil phare
+    // montré avec un exemple figé, la communauté.
+    vitrine: {
+      application: 'Application Windows et Linux',
+      sansExport: "Pas encore d'export ? Génère-le en lançant le jeu une fois avec",
+      swExporter: 'SW Exporter ↗',
+      outilsTitre: 'Ce que propose',
+      outilsAccent: "l'outil",
+      outilsChapeau: 'Chaque outil travaille sur ton propre compte. Voilà à quoi ça ressemble.',
+      exemple: 'Exemple',
+      outils: {
+        rta: {
+          titre: 'Ta prépa RTA',
+          texte: "Classe ta box par set et catégorie.",
+          puces: ['Ta box est organisée comme tu le souhaites', 'Les vitesses de combat avec ou sans lead speed', "Consulte ou exporte ta prépa ou celle d'un ami en un clic"],
+          aller: 'Ouvrir la prépa RTA',
+          etiquette: 'Ordre de tour',
+        },
+        recos: {
+          titre: 'Des decks de recommandations',
+          texte: 'Décris tes decks, partage-les dans les salons Discord de ta guilde, et vois lesquels ton compte peut jouer.',
+          puces: ['Sets, artéfacts, stats à viser, counters, etc...', 'Synchronisées avec Discord', 'Crée, édite et partage simplement tes idées'],
+          aller: 'Voir les recommandations',
+          etiquette: 'Une recommandation de guilde',
+          // La recommandation de démonstration (lib/demoAccueil.ts).
+          nom: 'Défenses GvO',
+          auteur: 'Toto',
+          contributeur: 'Lulu',
+        },
+        optimizer: {
+          titre: 'Le meilleur build de tes monstres',
+          texte: "L'Optimizer cherche, parmi les runes que tu possèdes, la meilleure combinaison possible selon tes besoins.",
+          puces: ['Sets, minimums et vitesse visée', 'Artéfacts et dégâts réels', 'Synchronisés avec le reste de l\'application'],
+          aller: "Ouvrir l'Optimizer",
+          etiquette: 'Un build trouvé parmi tes runes',
+        },
+        speed: {
+          titre: 'Speed tune tes teams en un clic.',
+          texte: "Le speed tuning te permet de visualiser les barres d'attaque de ton équipe et de celle d'en face, pour savoir qui joue avant qui.",
+          puces: ['Speed tune automatique, sorts compris', 'Ne te fais plus jamais cut dans tes combos', "Synchronisé avec l'optimizer pour avoir des équipes aux petits oignons"],
+          aller: 'Ouvrir le speed tuning',
+          etiquette: 'Ton équipe contre celle d’en face',
+        },
+      },
+      commuTitre: 'Rejoins',
+      commuAccent: 'la communauté',
+      discordTitre: (app: string) => `Les joueurs qui utilisent ${app} sont sur Discord`,
+      nouveautesTexte: 'Ce qui change à chaque version.',
+      githubTitre: 'Le code est open source',
+      githubTexte: 'Si tu n\'es pas sûr de ce que fait l\'application, vérifie par toi-même et propose des améliorations.',
+      voirGithub: 'Voir sur GitHub',
+    },
     tonEspace: 'Ton espace',
     monstres: (n: number): string => (n > 1 ? 'monstres' : 'monstre'),
     equipes: (n: number): string => (n > 1 ? 'équipes' : 'équipe'),
@@ -270,35 +325,26 @@ export const fr = {
     defenseSiege: 'Défense de siège',
     offenseSiege: 'Offense de siège',
     recommandations: 'Recommandations',
-    commentCaMarche: 'Comment ça marche',
-    etapeExporter: 'Exporte ton compte',
-    etapeExporterTexte: 'Génère un fichier .json de ton compte avec SW Exporter, en lançant le jeu une fois.',
-    etapeDeposer: 'Dépose le fichier',
-    etapeDeposerNavigateur: "Ici même, en haut de page. Rien n'est envoyé : tout se calcule dans ton navigateur.",
-    etapeDeposerMachine: "Ici même, en haut de page. Rien n'est envoyé : tout se calcule sur ta machine.",
-    etapePreparer: 'Prépare et optimise',
-    etapePreparerTexte: "Runes, prépa RTA, équipes de siège et analyse de compte se remplissent d'un seul coup.",
+    // Le nom de la rangée des autres outils (pour les lecteurs d'écran).
     fonctionnalites: 'Fonctionnalités',
     bientot: ' · bientôt',
-    // Les cartes de fonctionnalité : la rubrique, le titre, une phrase.
+    // Les outils : la rubrique (au-dessus du titre des outils montrés) et le
+    // titre (les pastilles des autres outils).
     cartes: {
-      rta: { rubrique: 'RTA', titre: 'Préparation RTA', texte: "Classe ta box par set en glisser-déposer et lis l'ordre de tour recalculé selon les leads." },
-      ami: { rubrique: 'RTA', titre: "Prépa d'un ami", texte: "Ouvre la prépa qu'un ami t'a exportée — ou son export SWEX complet — et regarde son classement, ses vitesses et son ordre de tour." },
-      siege: { rubrique: 'Siège', titre: 'Défenses et offenses', texte: 'Compose tes équipes et vérifie tes speed tune sur les ticks 239 et 286.' },
-      recos: { rubrique: 'Partage', titre: 'Recommandations', texte: 'Décris tes decks, partage-les en JSON, et vois ce que ton compte peut jouer.' },
-      runes: { rubrique: 'Compte', titre: 'Analyse de runes', texte: "Résumé chiffré, efficience ou score SW, courbes, et ce que tes meules et gemmes en réserve permettent d'améliorer dès maintenant." },
-      artefacts: { rubrique: 'Compte', titre: "Analyse d'artéfacts", texte: "Le score du jeu et l'efficience de chaque pièce, la distribution de ton stock et le top 10 de chaque propriété." },
-      optimizer: { rubrique: 'Outils', titre: 'Optimiseur de runes', texte: 'Cherche, parmi les runes que tu possèdes déjà, la meilleure combinaison de 6 pour un monstre, un set et des minimums donnés.' },
-      speedTuning: { rubrique: 'Outils', titre: 'Speed tuning', texte: "Tick par tick, vois quel monstre remplit sa barre d'action en premier — ton équipe et celle d'en face, pour savoir qui joue avant qui." },
-      bestiaire: { rubrique: 'Données', titre: 'Bestiaire', texte: 'Recherche et filtres par élément et étoiles naturelles, stats de base à portée de main.' },
-      mecaniques: { rubrique: 'Doc', titre: 'Mécaniques', texte: "Vitesse de combat, barre d'action, équation des dégâts et facteur de défense." },
-      nouveautes: { rubrique: 'Suivi', titre: 'Nouveautés', texte: 'Ce qui change à chaque version : ajouts, corrections et calculs revus.' },
-      arene: { rubrique: 'Arène', titre: 'Arène classique', texte: "Préparation des équipes d'offense et de défense." },
+      rta: { rubrique: 'RTA', titre: 'Préparation RTA' },
+      ami: { rubrique: 'RTA', titre: "Prépa d'un ami" },
+      siege: { rubrique: 'Siège', titre: 'Défenses et offenses' },
+      recos: { rubrique: 'Partage', titre: 'Recommandations' },
+      runes: { rubrique: 'Compte', titre: 'Analyse de runes' },
+      artefacts: { rubrique: 'Compte', titre: "Analyse d'artéfacts" },
+      optimizer: { rubrique: 'Outils', titre: 'Optimiseur de runes' },
+      speedTuning: { rubrique: 'Outils', titre: 'Speed tuning' },
+      bestiaire: { rubrique: 'Données', titre: 'Bestiaire' },
+      mecaniques: { rubrique: 'Doc', titre: 'Mécaniques' },
+      arene: { rubrique: 'Arène', titre: 'Arène classique' },
     },
     application: {
-      rubrique: 'Application',
       titre: 'Application de bureau',
-      texte: (app: string) => `${app} dans sa propre fenêtre, pour Windows et Linux, avec la mise à jour proposée à chaque version.`,
     },
     pretTitre: 'Prêt à préparer tes équipes ?',
     pretTexte: 'Importe ton fichier SWEX et retrouve ta box, tes runes, ta prépa RTA et tes équipes de siège en quelques secondes.',
@@ -393,7 +439,7 @@ export const fr = {
     atouts: [
       { titre: 'Sa propre fenêtre', texte: "Hors du navigateur, à la taille que tu lui donnes, lancée comme n'importe quel logiciel." },
       { titre: 'La mise à jour proposée', texte: "À chaque nouvelle version, l'application te propose de se mettre à jour. C'est toi qui décides quand." },
-      { titre: '100 % local', texte: "Comme le site : rien n'est envoyé, tout reste sur ta machine." },
+      { titre: 'Local par défaut', texte: 'Comme le site : rien ne quitte ta machine sans un geste de ta part.' },
     ],
     windows: 'Télécharger pour Windows',
     linux: 'Télécharger pour Linux (.deb)',
@@ -1517,6 +1563,161 @@ export const fr = {
     chercherPartout: 'Chercher partout',
   },
 
+  // Les recommandations synchronisées avec les salons Discord d'une guilde
+  // (docs/02-app/siege/feat-recommandations/synchronisation-discord.md).
+  recosDiscord: {
+    provenances: 'Provenances',
+    toutes: 'Toutes les recommandations',
+    appareil: 'Sur cet appareil',
+    etats: { 'a-jour': 'À jour', modifiee: 'Modifiée', conflit: 'Conflit', 'lecture-seule': 'Lecture seule' },
+    etatsPhrase: {
+      'a-jour': 'identique à celle du salon',
+      modifiee: 'tes changements ne sont pas publiés',
+      conflit: 'une version plus récente attend la fusion',
+      'lecture-seule': 'tu ne peux pas publier dans ce salon',
+    },
+    versionDu: (date: string) => `Version du ${date}`,
+    publier: 'Publier',
+    fusionner: 'Fusionner',
+    raisonsPublier: {
+      'non-connecte': 'Connecte-toi à Discord pour publier',
+      'a-jour': 'Rien à publier : la recommandation est celle du salon',
+      'lecture-seule': 'Tu ne peux pas publier dans ce salon',
+    },
+    publierDans: 'Publier dans…',
+    publierDansHorsConnexion: 'Connecte-toi à Discord pour publier',
+    detacher: 'Détacher de ce salon',
+    par: (auteur: string) => `par ${auteur}`,
+    avec: (noms: string) => `avec ${noms}`,
+    ecritsParDiscord: 'Écrits par Discord à chaque publication',
+    favori: 'Mettre en favori',
+    retirerFavori: 'Retirer des favoris',
+    botAdmin: "Le bot est administrateur de ce serveur : retire-lui ce droit, il n'en a pas besoin.",
+    salonDe: (serveur: string) => `Serveur ${serveur}`,
+    connexion: {
+      titre: 'Discord',
+      texte: 'Retrouve les recommandations de ta guilde, publiées dans ses salons #blacksmith-reco…, et publie les tiennes.',
+      bouton: 'Se connecter à Discord',
+      reconnecter: 'Se reconnecter à Discord',
+      installer: 'Installer le bot sur ton serveur',
+      dialogueTitre: 'Se connecter à Discord',
+      dialogueTexte: "Discord donnera à SW Blacksmith ton identité et la liste de tes serveurs, pour trouver ceux où le bot est présent. Rien d'autre ne part, sauf ce que tu publies.",
+      avertissement: "Une recommandation synchronisée disparaît de cet appareil si tu perds l'accès à son salon. Tes modifications pas encore publiées, elles, restent ici.",
+      continuer: 'Continuer vers Discord',
+    },
+    // Application de bureau : la connexion passe par le navigateur du système,
+    // puis par le code que le site affiche.
+    codeBureau: {
+      titre: 'Coller le code de connexion',
+      etapes: [
+        'Dans ton navigateur, autorise SW Blacksmith sur la page Discord qui vient de s\'ouvrir.',
+        'Le site affiche alors un code : copie-le.',
+        'Colle-le ici.',
+      ],
+      champ: 'Code de connexion',
+      valider: 'Se connecter',
+      relancer: 'Rouvrir la page dans le navigateur',
+      invalide: "Ce code ne marche pas : il a plus de 10 minutes, ou il vient d'une autre demande. Rouvre la page pour en obtenir un nouveau.",
+      sansDemande: 'Cette connexion a été abandonnée : rouvre la page pour la relancer.',
+      indisponible: 'Discord ne répond pas : réessaie dans un instant.',
+    },
+    // Site : le retour d'une connexion demandée par l'application de bureau.
+    codeSite: {
+      titre: "Connexion de l'application de bureau",
+      texte: "Copie ce code et colle-le dans SW Blacksmith, sur ton ordinateur. Il vaut 10 minutes, et ne sert qu'à l'application qui l'a demandé.",
+      avertissement: "Ne donne ce code à personne : il ouvre ta connexion Discord. Si tu n'as pas lancé cette connexion depuis ton application SW Blacksmith, ferme cette page.",
+      champ: 'Code de connexion',
+      copier: 'Copier le code',
+      copie: "Code copié : colle-le dans l'application.",
+    },
+    installation: {
+      titre: 'Installer le bot sur ton serveur',
+      etapes: [
+        "Invite le bot sur ton serveur (il faut le droit « Gérer le serveur »). Il arrive sans aucun droit : il ne voit que les salons où tu l'ajoutes.",
+        'Crée un salon dont le nom commence par blacksmith-reco (un salon par recommandation).',
+        "Ajoute le bot à ce salon avec quatre droits : voir le salon, voir les anciens messages, envoyer des messages, joindre des fichiers. Dans Discord : Modifier le salon › Permissions › Permissions avancées › « + », choisis le bot, puis coche ces quatre droits. Il n'a besoin d'aucun autre droit.",
+        "Réserve le salon aux recommandations : l'app ne relit que les 100 derniers messages. Un membre peut aussi y déposer le fichier exporté par l'app : le plus récent fichier valide fait foi.",
+        "Chaque membre se connecte à Discord depuis cette page : il voit les salons qu'il peut lire, et publie dans ceux où il peut écrire. La modération se fait directement dans Discord, par les permissions du salon.",
+      ],
+      inviter: 'Inviter le bot',
+      question: "Une question ? Le Discord de l'app",
+    },
+    compte: {
+      actualiser: 'Actualiser',
+      actualiserAide: 'Relire les salons',
+      lecture: 'Lecture des salons…',
+      lusIlYa: (minutes: number) => (minutes < 1 ? "Salons lus à l'instant" : `Salons lus il y a ${minutes} min`),
+      plus: 'Plus',
+      deconnecter: 'Se déconnecter de Discord',
+      nonGardee: "Connexion gardée jusqu'à la fermeture : ce système ne sait pas la chiffrer.",
+    },
+    publierDansDialogue: {
+      titre: (nom: string) => `Publier « ${nom} »`,
+      texte: 'Choisis le salon. La recommandation y est copiée ; celle de cet appareil reste.',
+      porte: (nom: string) => `porte « ${nom} »`,
+      vide: 'vide',
+      lectureSeule: 'lecture seule',
+      aucun: "Aucun salon blacksmith-reco… accessible : demande à un admin d'y ajouter le bot.",
+    },
+    remplacer: {
+      titre: 'Remplacer la recommandation du salon ?',
+      message: (salon: string, nom: string) =>
+        `#${salon} porte déjà « ${nom} ». Publier ici la remplace pour toute la guilde ; l'ancienne version reste dans l'historique du salon.`,
+      remplacer: 'Remplacer',
+    },
+    detacherDialogue: {
+      titre: (nom: string) => `Détacher « ${nom} » ?`,
+      message: 'Elle devient une recommandation de cet appareil, qui ne suit plus le salon. Celle du salon reparaît aussitôt. Rien ne change pour la guilde.',
+      action: 'Détacher',
+    },
+    fusion: {
+      titre: 'Fusionner avec la version du salon',
+      sousTitre: (date: string) => `Une version a été publiée le ${date} pendant que tu modifiais.`,
+      auto: (n: number) => `Déjà fusionné, ${n} changement${n > 1 ? 's' : ''} :`,
+      aChoisir: (n: number) => `À choisir, ${n} :`,
+      rien: 'Aucun choix à faire : tout se fusionne seul.',
+      nom: 'Nom de la recommandation',
+      consignes: 'Consignes générales',
+      mien: 'Le mien',
+      leur: 'Celui du salon',
+      lesDeux: 'Les deux',
+      versionSalon: 'version du salon',
+      taVersion: 'ta version',
+      retireAuSalon: 'retiré au salon',
+      retireParToi: 'retiré par toi',
+      absent: 'Absent',
+      vide: '(vide)',
+      appliquer: 'Appliquer la fusion',
+      plusTard: 'Plus tard',
+      manque: 'Choisis une version pour chaque élément.',
+    },
+    notif: {
+      bilan: (b: { ajoutees: number; misesAJour: number; conflits: number; retirees: number; detachees: number }) => {
+        const p: string[] = [];
+        if (b.misesAJour) p.push(`${b.misesAJour} recommandation${b.misesAJour > 1 ? 's' : ''} mise${b.misesAJour > 1 ? 's' : ''} à jour`);
+        if (b.ajoutees) p.push(`${b.ajoutees} nouvelle${b.ajoutees > 1 ? 's' : ''}`);
+        if (b.conflits) p.push(`${b.conflits} en conflit, à fusionner`);
+        if (b.retirees + b.detachees) p.push(`${b.retirees + b.detachees} retirée${b.retirees + b.detachees > 1 ? 's' : ''} (accès perdu)`);
+        if (b.detachees) p.push(`modifications non publiées gardées dans « Sur cet appareil »`);
+        return `Discord : ${p.join(', ')}.`;
+      },
+      publiee: (salon: string) => `Publiée dans #${salon}.`,
+      conflit: 'Le salon a changé pendant que tu modifiais : fusionne, puis publie.',
+      refusee: 'Publication refusée : tu ne peux plus écrire dans ce salon.',
+      invalide: 'Publication refusée : la recommandation doit avoir au moins un deck avec un monstre.',
+      indisponible: 'Discord ne répond pas : réessaie dans un instant.',
+      limite: 'Discord limite les lectures pour le moment : réessaie dans une minute.',
+      expiree: 'Ta session Discord a expiré : reconnecte-toi.',
+      refus: 'Connexion à Discord annulée.',
+      erreur: 'La connexion à Discord a échoué : réessaie.',
+      refusBureau: "Connexion de l'application de bureau annulée.",
+      erreurBureau: "La connexion de l'application de bureau a échoué : relance-la depuis l'application.",
+      detachee: (nom: string) => `« ${nom} » détachée : elle est maintenant sur cet appareil.`,
+      deconnecte: 'Déconnecté de Discord.',
+      fusionnee: 'Fusion appliquée : relis la recommandation, puis publie-la.',
+    },
+  },
+
   // La carte d'une recommandation de siège : ses decks, ses défenses visées,
   // l'analyse contre tes monstres.
   carteReco: {
@@ -1547,9 +1748,12 @@ export const fr = {
     consignes: 'consignes',
     replierTous: 'Replier tous les decks',
     deplierTous: 'Déplier tous les decks',
-    colOffense: 'Offense · sets visés',
+    colOffense: 'Offense',
     colFortContre: 'Fort contre',
     colVerdict: 'Verdict',
+    colActions: 'Actions',
+    stats: 'Stats',
+    statsEnTete: { stat: 'Stat', baseBonus: 'Base + bonus', total: 'Total' },
     ajouterDeck: 'Ajouter un deck vide',
     sansOffense:
       "Aucune équipe d'offense : importe ton compte (barre du haut) après avoir sauvegardé tes attaques en jeu.",
@@ -2226,8 +2430,7 @@ export const fr = {
       maxUnSeul: (plafond: number) => `max ${plafond} % · un seul artéfact peut la porter`,
       // `noms` : les autres formes, déjà entre guillemets et jointes.
       formeSeule: (noms: string, n: number) =>
-        `Compte uniquement cette forme. ${noms} ${n > 1 ? 'valent' : 'vaut'} pareil au calcul des dégâts, mais${
-          n > 1 ? ' ne seront pas comptées' : ' ne sera pas comptée'
+        `Compte uniquement cette forme. ${noms} ${n > 1 ? 'valent' : 'vaut'} pareil au calcul des dégâts, mais${n > 1 ? ' ne seront pas comptées' : ' ne sera pas comptée'
         } par ce verrou.`,
       guillemets: (nom: string) => `« ${nom} »`,
       et: ' et ',
@@ -2394,10 +2597,9 @@ export const fr = {
       scoreSw: 'Score SW',
       // Pourquoi aucune combinaison n'est confirmée alors que la recherche en a trouvé.
       ecartees: (n: number, texte: string, avecRelique: boolean) =>
-        `${texte} ${n === 1 ? 'combinaison trouvée par la recherche a été écartée' : 'combinaisons trouvées par la recherche ont été écartées'} : ${
-          avecRelique
-            ? "aucune paire d'artéfacts ni relique réelles ne tient toutes les conditions."
-            : "aucune paire d'artéfacts réelle ne tient toutes les conditions."
+        `${texte} ${n === 1 ? 'combinaison trouvée par la recherche a été écartée' : 'combinaisons trouvées par la recherche ont été écartées'} : ${avecRelique
+          ? "aucune paire d'artéfacts ni relique réelles ne tient toutes les conditions."
+          : "aucune paire d'artéfacts réelle ne tient toutes les conditions."
         }`,
       confirmees: (n: string) => `${n} combinaison(s) confirmée(s)`,
       surTrouvees: (n: string) => ` sur ${n} trouvée(s)`,
