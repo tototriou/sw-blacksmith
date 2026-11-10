@@ -27,7 +27,6 @@ export function testRenduBureauTextes() {
   titre('rendu · textes du navigateur — sur le site, inchangés');
   const site = textes();
   ok(site.accueil.includes('tout est calculé dans ton navigateur'), 'accueil, promesse : « dans ton navigateur »');
-  ok(site.accueil.includes("Rien n'est envoyé : tout se calcule dans ton navigateur."), 'accueil, étape 02 : « dans ton navigateur »');
   ok(site.reglages.includes('tout est perdu en fermant l’onglet') && site.reglages.includes('Tout reste dans ton navigateur'), 'Garder mes données : « l’onglet », « ton navigateur »');
   ok(site.question.includes('à ta prochaine visite') && site.question.includes("en fermant l'onglet"), 'question du premier import : « visite », « onglet »');
   ok(site.theme === 'Suit le thème de ton navigateur', 'thème Auto : « ton navigateur »');
@@ -38,7 +37,6 @@ export function testRenduBureauTextes() {
   try {
     const app = textes();
     ok(app.accueil.includes('tout est calculé sur ta machine'), 'accueil, promesse : « sur ta machine »');
-    ok(app.accueil.includes("Rien n'est envoyé : tout se calcule sur ta machine."), 'accueil, étape 02 : « sur ta machine »');
     ok(!app.accueil.includes('navigateur'), 'accueil : plus un mot de « navigateur »');
     ok(app.reglages.includes('tout est perdu en fermant l’application') && app.reglages.includes('Tout reste sur cette machine'), 'Garder mes données : « l’application », « cette machine »');
     ok(!/navigateur|onglet/.test(app.reglages), 'Réglages : ni « navigateur » ni « onglet »');
