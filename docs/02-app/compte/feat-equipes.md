@@ -204,7 +204,7 @@ liée (`optimizer`, état `equipe-liee`).
 - « Ajouter un monstre » : une recherche d'espèce, puis le choix de l'équipement
   parmi ce que le compte connaît de cette espèce, chaque choix nommé par sa
   provenance : « Équipement porté » (chaque exemplaire de la Box),
-  « Défense de siège N », « Attaque de siège N », « Défense d'arène », « Attaque
+  « Défense de siège N », « Offense de siège N », « Défense d'arène », « Offense
   d'arène N », ou « Sans équipement ». Le choix copie l'équipement à cet instant.
 - Réordonner par un sélecteur de position (« Position N », le même geste aux deux
   formats, sans glisser-déposer), désigner le leader, retirer un monstre. À deux
@@ -230,9 +230,9 @@ modifié.
 | Source | Onglet de l'équipe créée | Équipement copié |
 | --- | --- | --- |
 | Une défense de siège | « Siège — défense » | le preset du deck |
-| Une attaque de siège | « Siège — offense » | le preset du deck |
+| Une offense de siège | « Siège — offense » | le preset du deck |
 | La défense d'arène (et celle d'arène de serveur) | « Arène — défense » | le preset de la défense, même vide ; sans preset pour l'unité, ce qu'elle porte |
-| Une attaque d'arène | « Arène — offense » | ce que portent les monstres à l'export |
+| Une offense d'arène | « Arène — offense » | ce que portent les monstres à l'export |
 | Une équipe de l'Optimizer | l'onglet ouvert | le build validé du membre, sinon son équipement affiché |
 
 - Siège : depuis les équipes de siège de l'app (`SiegeTeam`, slot 0 = leader).

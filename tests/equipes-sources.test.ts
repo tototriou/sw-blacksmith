@@ -51,7 +51,7 @@ function testEquipesSourcesImports() {
   const avant = structuredClone(ctx.siegeDefenseTeams);
   const sources = sourcesImportEquipes(ctx, null, inv, 'pve', fr);
   egal(sources.map((x) => [x.groupe, x.libelle, x.raison]), [
-    ['Défenses de siège', 'Défense 1', null], ['Attaques de siège', 'Attaque 1', 'Aucun deck dans ton compte.'],
+    ['Défenses de siège', 'Défense 1', null], ['Offenses de siège', 'Offense 1', 'Aucun deck dans ton compte.'],
     ['Arène', 'Défense d’arène', null], ['Optimizer', 'Optimizer', 'Aucune liste dans l’Optimizer.'],
   ], 'une source par deck, une source vide dite avec sa raison');
   const cree = sources[0].creer('e1', uid, T0);
