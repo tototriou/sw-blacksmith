@@ -641,7 +641,7 @@ export const ECRANS: Ecran[] = [
         id: 'detail',
         libelle: 'détail d’une équipe ouvert',
         preparation: { telephone: [...EQ_IMPORT.telephone, { cliquer: EQ_CARTE }], ordinateur: [...EQ_IMPORT.ordinateur, { cliquer: EQ_CARTE }] },
-        atteint: [{ role: 'textbox', nom: 'Note' }],
+        atteint: [{ role: 'textbox', nom: 'Note' }, bouton('Toutes les équipes')],
       },
       {
         id: 'brouillon',

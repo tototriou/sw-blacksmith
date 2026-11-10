@@ -87,6 +87,8 @@ export function testRenduEquipesDetail() {
   ok(!texteVisible(html).includes(e.detail.brouillon), 'une équipe enregistrée n’est pas un brouillon');
   ok(bouton(html, e.detail.reprendre) !== undefined, 'reprendre l’équipement actuel, l’exemplaire étant connu');
   egal(bouton(html, e.detail.ajouter)?.desactive, false, 'ajouter un monstre');
+  // Une ligne par monstre au large : l'identité, puis stats, artéfacts, runes et relique.
+  egal((html.match(/@4xl:flex-row/g) ?? []).length, EQUIPES[0].monstres.length, 'une ligne par monstre');
   const plein = { ...EQUIPES[0], monstres: [1, 2, 3, 4, 5, 6].map((k) => monstreEx(`m${k}`, 1002, null, null)) };
   const h2 = rendre(<DetailEquipe equipe={plein} onChanger={() => {}} monstreDe={() => undefined} box={[]} inventaire={null} onAjouter={() => {}} />);
   egal([bouton(h2, e.detail.ajouter)?.desactive, bouton(h2, e.detail.ajouter)?.title], [true, e.detail.complet], 'à 6 monstres, l’ajout est désactivé avec sa raison');

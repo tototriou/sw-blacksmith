@@ -37,8 +37,8 @@ function ChampTexte({ libelle, valeur, onValider }: { libelle: string; valeur: s
   );
 }
 
-// Le détail d'une équipe : son nom, sa note et une fiche par monstre. Le même
-// contenu dans la modale de l'ordinateur et le panneau du téléphone.
+// Le détail d'une équipe, dans la page à la place de la grille : son nom, sa
+// note et une ligne par monstre. Le même contenu aux deux formats.
 export default function DetailEquipe({ equipe, brouillon = false, onChanger, monstreDe, box, inventaire, onAjouter }: Props) {
   const t = useTraduction();
   const d = t.equipes.detail;
@@ -87,49 +87,57 @@ function FicheMonstre({ m, position, total, leader, retirable, monstre, box, inv
     if (etats.relique) dire(d.relique, etats.relique);
   }
   return (
-    // ⚠️ Étroit (téléphone, volet), les réglages passent sous le nom : sur une
-    // ligne, ils tronquaient le nom et rejetaient la croix seule à la ligne.
+    // Une ligne par monstre : l'identité et ses réglages à gauche, puis la
+    // fiche de stats, les artéfacts, les runes et la relique. Trop étroite
+    // (téléphone, volet), l'identité passe au-dessus de l'équipement.
     <section className="@container rounded-lg border border-border-soft bg-panel2/40 p-3" aria-label={nom}>
-      <div className="flex flex-wrap items-center gap-2">
-        <MonsterAvatar monster={monstre ?? null} fallback={nom} size={40} couronne={leader} />
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold text-ink">{nom}</p>
-          <p className="truncate text-xs text-ink-dim">
-            {d.provenance[m.provenance]}{exemplaire ? ` · ${d.exemplaire[exemplaire]}` : ''}
-          </p>
+      <div className="flex flex-col gap-3 @4xl:flex-row @4xl:items-center">
+        {/* ⚠️ Son propre conteneur : dans la colonne de gauche, les réglages
+            passent sous le nom ; sur une ligne, ils tronquaient le nom et
+            rejetaient la croix seule à la ligne. */}
+        <div className="@container min-w-0 @4xl:w-72 @4xl:flex-none">
+          <div className="flex flex-wrap items-center gap-2">
+            <MonsterAvatar monster={monstre ?? null} fallback={nom} size={40} couronne={leader} />
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-semibold text-ink">{nom}</p>
+              <p className="truncate text-xs text-ink-dim">
+                {d.provenance[m.provenance]}{exemplaire ? ` · ${d.exemplaire[exemplaire]}` : ''}
+              </p>
+            </div>
+            <div className="order-1 flex basis-full items-center gap-2 @lg:order-none @lg:basis-auto">
+              <Bouton taille="sm" actif={leader} icone={<Crown size={14} />} libelle={leader ? d.leader : d.designerLeader}
+                title={leader ? d.retirerLeader : d.designerLeader}
+                onClick={() => onChanger((e, n) => designerLeader(e, leader ? null : m.uid, n))} />
+              <Selecteur taille="sm" pleineLargeur={false} surface="panel" aria-label={d.position} value={String(position)}
+                onChange={(ev) => onChanger((e, n) => deplacerMonstre(e, m.uid, Number(ev.target.value), n))}>
+                {Array.from({ length: total }, (_, k) => <option key={k} value={k}>{d.positionN(k + 1)}</option>)}
+              </Selecteur>
+            </div>
+            {/* Désactivé, son infobulle dit pourquoi. */}
+            <BoutonIcone libelle={retirable ? d.retirer(nom) : d.minimum} icone={<X size={14} />} disabled={!retirable}
+              onClick={() => onChanger((e, n) => retirerMonstre(e, m.uid, n))} />
+          </div>
+          {(actuel?.gear || m.equipement?.relic) && (
+            <div className="mt-2 flex flex-wrap gap-2">
+              {/* N'existe que pour un exemplaire connu ET présent dans la Box. */}
+              {actuel?.gear && (
+                <Bouton taille="sm" icone={<RefreshCw size={14} />} libelle={d.reprendre}
+                  onClick={() => onChanger((e, n) => remplacerEquipement(e, m.uid, actuel.gear!, 'porte', n))} />
+              )}
+              {m.equipement?.relic && (
+                <Bouton taille="sm" icone={<X size={14} />} libelle={d.retirerRelique}
+                  onClick={() => onChanger((e, n) => retirerRelique(e, m.uid, n))} />
+              )}
+            </div>
+          )}
+          {ecarts.length > 0 && <p className="mt-2 text-xs text-warn">{ecarts.join(' · ')}</p>}
         </div>
-        <div className="order-1 flex basis-full items-center gap-2 @lg:order-none @lg:basis-auto">
-          <Bouton taille="sm" actif={leader} icone={<Crown size={14} />} libelle={leader ? d.leader : d.designerLeader}
-            title={leader ? d.retirerLeader : d.designerLeader}
-            onClick={() => onChanger((e, n) => designerLeader(e, leader ? null : m.uid, n))} />
-          <Selecteur taille="sm" pleineLargeur={false} surface="panel" aria-label={d.position} value={String(position)}
-            onChange={(ev) => onChanger((e, n) => deplacerMonstre(e, m.uid, Number(ev.target.value), n))}>
-            {Array.from({ length: total }, (_, k) => <option key={k} value={k}>{d.positionN(k + 1)}</option>)}
-          </Selecteur>
-        </div>
-        {/* Désactivé, son infobulle dit pourquoi. */}
-        <BoutonIcone libelle={retirable ? d.retirer(nom) : d.minimum} icone={<X size={14} />} disabled={!retirable}
-          onClick={() => onChanger((e, n) => retirerMonstre(e, m.uid, n))} />
+        {m.equipement && (
+          <div className="min-w-0 flex-1 overflow-x-auto">
+            <MonsterGear gear={m.equipement} />
+          </div>
+        )}
       </div>
-      {(actuel?.gear || m.equipement?.relic) && (
-        <div className="mt-2 flex flex-wrap gap-2">
-          {/* N'existe que pour un exemplaire connu ET présent dans la Box. */}
-          {actuel?.gear && (
-            <Bouton taille="sm" icone={<RefreshCw size={14} />} libelle={d.reprendre}
-              onClick={() => onChanger((e, n) => remplacerEquipement(e, m.uid, actuel.gear!, 'porte', n))} />
-          )}
-          {m.equipement?.relic && (
-            <Bouton taille="sm" icone={<X size={14} />} libelle={d.retirerRelique}
-              onClick={() => onChanger((e, n) => retirerRelique(e, m.uid, n))} />
-          )}
-        </div>
-      )}
-      {m.equipement && (
-        <div className="mt-3 overflow-x-auto">
-          <MonsterGear gear={m.equipement} />
-        </div>
-      )}
-      {ecarts.length > 0 && <p className="mt-2 text-xs text-warn">{ecarts.join(' · ')}</p>}
     </section>
   );
 }

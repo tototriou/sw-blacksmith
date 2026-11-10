@@ -1027,6 +1027,7 @@ export const en: Dictionnaire = {
       speedTuneIncomplet: 'Incomplete speed tune',
     },
     detail: {
+      retour: 'All teams',
       nom: 'Name',
       note: 'Note',
       ajouter: 'Add a monster',

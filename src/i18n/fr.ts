@@ -1079,6 +1079,7 @@ export const fr = {
       speedTuneIncomplet: 'Speed tune incomplet',
     },
     detail: {
+      retour: 'Toutes les équipes',
       nom: 'Nom',
       note: 'Note',
       ajouter: 'Ajouter un monstre',

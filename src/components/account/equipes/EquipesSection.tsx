@@ -1,7 +1,7 @@
 import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
-import { Download, FolderInput, Plus, Upload } from 'lucide-react';
+import { ChevronLeft, Download, FolderInput, Plus, Upload } from 'lucide-react';
 import type { Monster } from '../../../types';
-import { Bouton, ConfirmDialog, Jeton, MobileSheet, Modale, Onglets, PiedDeDialogue, Selecteur, type ElementMenu } from '../../../ui';
+import { Bouton, ConfirmDialog, Jeton, Menu, MobileSheet, Modale, Onglets, PiedDeDialogue, Selecteur, type ElementMenu } from '../../../ui';
 import MonsterPicker from '../../MonsterPicker';
 import MonsterAvatar from '../../MonsterAvatar';
 import Pager from '../Pager';
@@ -63,7 +63,6 @@ export default function EquipesSection({ api, ctx, inventaire, allMonsters, opti
   const t = useTraduction();
   const e = t.equipes;
   const telephone = useMediaQuery(SOUS_LG);
-  const idDetail = useId();
   const idRapport = useId();
   // Onglet ouvert et recherche : gardés pour la session, jamais sur le disque.
   const [ongletGarde, setOnglet] = useStickyState<OngletEquipes>('equipes.onglet', ONGLETS_EQUIPES[0]);
@@ -82,6 +81,7 @@ export default function EquipesSection({ api, ctx, inventaire, allMonsters, opti
   const [creation, setCreation] = useState<RetourOptimizer | null>(null);
   const [rapport, setRapport] = useState<Rapport | null>(null);
   const fichier = useRef<HTMLInputElement>(null);
+  const vueEquipe = useRef<HTMLDivElement>(null);
 
   const monstreDe = (com2usId: number) => ctx.monsterByCom2us.get(com2usId);
   const recherche = rechercheIds.map(monstreDe).filter((m): m is Monster => !!m);
@@ -93,8 +93,14 @@ export default function EquipesSection({ api, ctx, inventaire, allMonsters, opti
   const pageSure = Math.min(page, pages - 1);
   const affichees = visibles.slice(pageSure * EQUIPES_PAR_PAGE, (pageSure + 1) * EQUIPES_PAR_PAGE);
   const equipeOuverte = ouverte ? api.equipes.find((x) => x.id === ouverte) ?? (brouillon?.id === ouverte ? brouillon : null) : null;
-  const fermerDetail = () => { setOuverte(null); setBrouillon(null); };
+  // Refermée, la grille revient sur l'onglet de l'équipe (elle a pu y être déplacée).
+  const fermerDetail = () => { if (equipeOuverte) setOnglet(equipeOuverte.onglet); setOuverte(null); setBrouillon(null); };
   const enRelecture = api.relecture === 'en-cours';
+  // L'équipe ouverte prend la place de la grille : on la montre depuis son
+  // haut, la carte cliquée pouvait être loin dans la grille.
+  useEffect(() => {
+    if (ouverte) vueEquipe.current?.scrollIntoView?.({ block: 'nearest' });
+  }, [ouverte]);
 
   const ajouterEquipes = (nouvelles: EquipeEnregistree[]) => {
     if (!nouvelles.length) return;
@@ -261,10 +267,22 @@ export default function EquipesSection({ api, ctx, inventaire, allMonsters, opti
         onChange={(ev) => { const f = ev.target.files?.[0]; ev.target.value = ''; if (f) void importerFichier(f); }} />
 
       <div className="overflow-x-auto">
-        <Onglets aria-label={e.ongletsAria} valeur={onglet} onChange={(o) => { setOnglet(o); setPage(0); }}
+        {/* Une équipe ouverte montre son onglet ; en changer referme l'équipe. */}
+        <Onglets aria-label={e.ongletsAria} valeur={equipeOuverte?.onglet ?? onglet} onChange={(o) => { fermerDetail(); setOnglet(o); setPage(0); }}
           options={ONGLETS_EQUIPES.map((o) => ({ cle: o, libelle: <>{e.onglets[o]} <span className="font-mono text-ink-dimmer">{comptes[o]}</span></> }))} />
       </div>
 
+      {equipeOuverte ? (
+        <div ref={vueEquipe} className="flex scroll-mt-4 flex-col gap-3">
+          <div className="flex items-center gap-2">
+            <Bouton icone={<ChevronLeft size={14} />} libelle={e.detail.retour} onClick={fermerDetail} />
+            <h2 className="min-w-0 flex-1 truncate text-sm font-semibold text-ink">{equipeOuverte.nom}</h2>
+            {/* Le brouillon n'est pas encore une équipe : rien à exporter, déplacer ni supprimer. */}
+            {brouillon?.id !== equipeOuverte.id && <Menu libelle={e.carte.actions} elements={actions(equipeOuverte).filter((a) => a.cle !== 'ouvrir')} />}
+          </div>
+          {detail}
+        </div>
+      ) : (<>
       {telephone ? (
         <div className="flex flex-col gap-2">
           {recherchePicker}
@@ -301,20 +319,13 @@ export default function EquipesSection({ api, ctx, inventaire, allMonsters, opti
           </div>
         </div>
       )}
+      </>)}
 
       {telephone && (
         <MobileSheet ouvert={menuOuvert} onFermer={onFermerMenu} titre={e.options}>
           <div className="flex flex-col gap-2">{boutonsImports}</div>
         </MobileSheet>
       )}
-
-      {equipeOuverte && (telephone ? (
-        <MobileSheet ouvert onFermer={fermerDetail} titre={equipeOuverte.nom}>{detail}</MobileSheet>
-      ) : (
-        <Modale onClose={fermerDetail} labelledBy={idDetail} titre={equipeOuverte.nom} croix largeur="max-w-[960px]">
-          {detail}
-        </Modale>
-      ))}
 
       {ajout && equipeOuverte && (
         <AjoutMonstreModale monstres={allMonsters} ctx={ctx} onChoisir={ajouterMonstreChoisi} onFermer={() => setAjout(false)} />

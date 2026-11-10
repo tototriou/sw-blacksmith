@@ -161,12 +161,17 @@ sinon « N pièces modifiées », « N pièces disparues ». Le détail marque c
 - Au-delà de 24 équipes dans l'onglet (après recherche), la grille se pagine
   (`Pager`), posé **au-dessus** de la grille : la hauteur d'une page varie avec ses
   cartes, et un pager placé dessous bougerait sous le clic.
-- « Ouvrir » affiche le détail dans une modale large (`Modale`, croix en coin) : le
-  nom et la note éditables, puis une fiche par monstre (l'équipement enregistré par
-  `MonsterGear` : stats calculées, roue de runes, artéfacts, relique ; puis l'état de
-  chaque pièce qui n'est pas identique), et la modification de la composition. Le
-  détail est une consultation qu'on ferme ; l'écran partagé (`DeuxVolets`) reste
-  celui de l'app, pas un second volet propre à la page.
+- « Ouvrir » (la carte ou son menu) affiche l'équipe **dans la page**, à la place de
+  la barre de recherche et de la grille, sans modale : en tête, « Toutes les
+  équipes » (retour à la grille), le nom et le menu d'actions de la carte (sans
+  « Ouvrir ») ; puis le nom et la note éditables, et **une ligne par monstre** :
+  à gauche son identité (avatar, provenance, leader, position, retrait, reprise de
+  l'équipement, état de chaque pièce qui n'est pas identique), à droite son
+  équipement enregistré par `MonsterGear` (fiche de stats, artéfacts, roue de
+  runes, relique). Les onglets restent : celui de l'équipe est marqué, en choisir
+  un autre referme l'équipe. Refermée, la grille revient sur l'onglet de l'équipe
+  (elle a pu y être déplacée). L'écran partagé (`DeuxVolets`) reste celui de l'app,
+  pas un second volet propre à la page.
 
 ### Téléphone
 
@@ -175,9 +180,9 @@ sinon « N pièces modifiées », « N pièces disparues ». Le détail marque c
   d'actions, [panneau-actions-mobile.md](../transverse/feat-navigation/panneau-actions-mobile.md))
   regroupe les imports et les fichiers.
 - Les équipes en une colonne de cartes, mêmes informations, même menu.
-- « Ouvrir » ouvre le détail en `MobileSheet`, les fiches de monstre à la suite.
-  Dans une fiche, le leader et la position passent sous le nom quand la place
-  manque (requête de conteneur), pour ne pas tronquer le nom.
+- « Ouvrir » affiche l'équipe dans la page comme au bureau, les monstres à la
+  suite : l'identité passe au-dessus de l'équipement (requête de conteneur), et le
+  leader et la position sous le nom, pour ne pas tronquer le nom.
 
 Aucune des deux mises en page n'est dérivée de l'autre : chacune a son agencement
 et ses tests de rendu. Le banc d'affichage mesure la page (`compte-equipes` :
