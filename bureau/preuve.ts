@@ -481,6 +481,19 @@ export async function lancerPreuveDiscord(fenetre: BrowserWindow, dossier: strin
     await attendre(1500);
     if (etape === 'connecter') {
       resultats.depart = await releve();
+      // Le guide d'installation : « Inviter le bot » ouvre le navigateur sur
+      // le service, qui renvoie vers l'invitation Discord.
+      resultats.guide = await cliquerQuandPret(fenetre, 'Installer le bot sur ton serveur');
+      resultats.inviter = await cliquerQuandPret(fenetre, 'Inviter le bot');
+      await attendre(500);
+      const invitation = temoins.liensOuverts.find((l) => l.endsWith('/api/discord/invitation')) ?? '';
+      resultats.invitation = invitation ? new URL(invitation).pathname : null;
+      if (invitation) {
+        const vers = new URL((await fetch(invitation, { redirect: 'manual' })).headers.get('location') ?? '');
+        resultats.invitationVers = `${vers.origin}${vers.pathname}?scope=${vers.searchParams.get('scope')}&permissions=${vers.searchParams.get('permissions')}`;
+      }
+      resultats.fermerGuide = await cliquerQuandPret(fenetre, 'Fermer');
+      await attendre(300);
       resultats.connexion = await cliquerQuandPret(fenetre, 'Se connecter à Discord');
       resultats.continuer = await cliquerQuandPret(fenetre, 'Continuer vers Discord');
       await attendre(500);

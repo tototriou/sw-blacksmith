@@ -57,6 +57,7 @@ Fichiers :
 | [confrontation.md](confrontation.md) | « Analyser mes decks » : à la demande, depuis « Options » au doigt, ce que l'analyse affiche (ordre, filtres de verdict, « réalisable N fois »), source des builds, causes d'un `ko`. |
 | [interactions.md](interactions.md) | Le repli de la recommandation et deck par deck, les trois niveaux d'édition, « Annuler les modifications », la rangée du titre et des icônes d'action. |
 | [import-deck-offense.md](import-deck-offense.md) | « Importer un deck d'offense » : un deck pré-rempli depuis une équipe d'offense existante. |
+| [installer-le-bot.md](installer-le-bot.md) | Le guide d'un administrateur de serveur : inviter le bot, nommer les salons, leurs quatre droits, ce que voient les membres. Le même guide est dans l'app. |
 | [synchronisation-discord.md](synchronisation-discord.md) | Une recommandation liée à un salon Discord, sur l'appareil : le lien, l'état (à jour, modifiée, conflit), la lecture des salons, délier, publier, la fusion à trois voies, les favoris, le stockage. |
 | [service-discord.md](service-discord.md) | Le service qui synchronise les recommandations avec les salons Discord : routes, droits, publication et conflit, session, cache, empaquetage, variables d'environnement. |
 

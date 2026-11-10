@@ -86,6 +86,8 @@ if (discord) {
   const session = (texte) => { try { return JSON.parse(texte ?? 'null')?.session ?? null; } catch { return null; } };
   const verdicts = {
     'au départ : l’encart de connexion, rien sur le disque': c.depart?.compte === 'deconnecte' && c.depart?.fichier === null,
+    '« Inviter le bot » : le navigateur s’ouvre sur le service, qui renvoie vers l’invitation sans droit': c.guide === 'cliqué' && c.inviter === 'cliqué'
+      && c.invitation === '/api/discord/invitation' && c.invitationVers === 'https://discord.com/oauth2/authorize?scope=bot&permissions=0' && c.fermerGuide === 'cliqué',
     '« Se connecter » : le navigateur s’ouvre sur le service, avec le défi seulement': c.connexion === 'cliqué' && c.continuer === 'cliqué' && c.lien === `${service}/api/discord/login?bureau=…`,
     'le dialogue du code s’ouvre': c.dialogueCode === true,
     'le site obtient un code': c.codeObtenu > 50,

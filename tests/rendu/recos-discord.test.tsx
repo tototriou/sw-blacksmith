@@ -7,7 +7,7 @@
 
 import { ColonneProvenances, type PropsProvenances } from '../../src/components/siege/discord/Provenances';
 import BandeauSalon from '../../src/components/siege/discord/BandeauSalon';
-import { CorpsCodeBureau, CorpsCodeSite, CorpsFusion, ListeSalonsPublication } from '../../src/components/siege/discord/DialoguesDiscord';
+import { CorpsCodeBureau, CorpsCodeSite, CorpsFusion, CorpsInstallation, ListeSalonsPublication } from '../../src/components/siege/discord/DialoguesDiscord';
 import { fusionEnAttente, recevoirVersion, recoLiee, type SalonAccessible } from '../../src/lib/recoDiscord';
 import { groupesSalons } from '../../src/lib/provenancesRecos';
 import type { Monster, Reco, RecoDeck, RecoPayload } from '../../src/types';
@@ -70,6 +70,17 @@ export function testRenduRecosDiscordComposants() {
   ok(tc.includes('tototriou15') && tc.includes('Salons lus à l\'instant'), 'compte connecté : qui, et quand les salons ont été lus');
   const bc = boutons(colonne);
   ok(bc.some((x) => x.ariaLabel === 'Relire les salons') && bc.some((x) => x.ariaLabel === 'Se déconnecter de Discord'), 'Actualiser et Se déconnecter');
+  ok(bc.some((x) => x.ariaLabel === 'Installer le bot sur ton serveur'), 'connecté aussi : l\'aide d\'installation');
+
+  // Le guide d'installation : l'invitation publique, puis le salon et ses droits.
+  let invite = 0;
+  const guide = rendre(<CorpsInstallation onInviter={() => { invite++; }} />);
+  const tg = texteVisible(guide);
+  ok(tg.includes('Invite le bot sur ton serveur') && tg.includes('blacksmith-reco') && tg.includes('joindre des fichiers'),
+    'guide : inviter le bot, nommer le salon, lui donner ses quatre droits');
+  ok(!tg.includes('quelques guildes'), 'guide : le bot n\'est plus réservé à quelques serveurs');
+  ok(boutons(guide).some((x) => x.texte === 'Inviter le bot'), 'guide : le bouton « Inviter le bot »');
+  egal(invite, 0, 'guide : rien n\'est ouvert au rendu');
   egal(bc.filter((x) => x.ariaLabel === 'Retirer des favoris' || x.ariaLabel === 'Mettre en favori').map((x) => [x.ariaLabel, x.presse]),
     [['Retirer des favoris', true], ['Mettre en favori', false]], 'application de bureau : une étoile par salon, le favori en tête');
   ok(!boutons(rendre(<ColonneProvenances {...props([a, b], { favoris: false })} />)).some((x) => x.ariaLabel === 'Mettre en favori'), 'sur le site : pas d\'étoile');

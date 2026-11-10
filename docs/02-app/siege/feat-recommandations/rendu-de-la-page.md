@@ -43,8 +43,9 @@ recommandation liée sur l'appareil :
   chaque salon ; les favoris passent en tête de leur serveur. Aucun salon ne
   se masque.
 - **Le compte Discord, en pied de la colonne et de la feuille** : connecté,
-  le nom, « Actualiser » (relit les salons) et « Se déconnecter », avec
-  l'heure de la dernière lecture ; sinon l'encart « Discord » : une phrase,
+  le nom, « Installer le bot sur ton serveur » (icône d'aide), « Actualiser »
+  (relit les salons) et « Se déconnecter », avec l'heure de la dernière
+  lecture ; sinon l'encart « Discord » : une phrase,
   « Se connecter à Discord » et « Installer le bot sur ton serveur ». Dans
   l'application de bureau sans chiffrement sûr (Linux sans trousseau), une
   ligne sous le nom dit que la connexion ne survivra pas à la fermeture.
@@ -72,7 +73,10 @@ recommandation liée sur l'appareil :
   le champ, une ligne réservée pour un code refusé, « Rouvrir la page dans le
   navigateur » ; « Annuler » abandonne la connexion) ; sur le site, au retour
   d'une connexion demandée par l'application, le code en lecture seule et
-  « Copier le code » ; l'installation du bot ; la fusion (ce qui a passé seul, puis chaque
+  « Copier le code » ; l'installation du bot (les cinq étapes du
+  [guide](installer-le-bot.md), « Inviter le bot », qui ouvre l'invitation
+  dans un nouvel onglet — dans le navigateur du système pour l'application de
+  bureau —, le lien vers le Discord de l'app, « Fermer ») ; la fusion (ce qui a passé seul, puis chaque
   élément à choisir, les deux versions côte à côte à l'ordinateur, l'une sous
   l'autre au téléphone ; « Appliquer » désactivé tant qu'un choix manque).
   Une publication refusée parce que le salon a changé ouvre la fusion.

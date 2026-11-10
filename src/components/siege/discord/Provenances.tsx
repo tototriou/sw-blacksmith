@@ -137,6 +137,8 @@ export function CompteDiscord(p: PropsProvenances) {
             {d.utilisateur.nom.slice(0, 1).toUpperCase()}
           </span>
           <span className="min-w-0 flex-1 truncate text-sm text-ink">{d.utilisateur.nom}</span>
+          {/* Connecté aussi, un admin peut vouloir installer le bot ailleurs. */}
+          <BoutonIcone onClick={p.onAideInstallation} taille="serre" icone={<HelpCircle size={13} />} libelle={t.connexion.installer} />
           <BoutonIcone onClick={p.onActualiser} disabled={d.statut === 'lecture'} taille="serre"
             icone={<RefreshCw size={13} className={d.statut === 'lecture' ? 'animate-spin motion-reduce:animate-none' : ''} />}
             libelle={t.compte.actualiserAide} />

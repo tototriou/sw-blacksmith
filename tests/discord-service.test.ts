@@ -161,6 +161,14 @@ export async function testDiscordRouteurConnexion() {
   ok(w.appels.includes('POST /oauth2/token/revoke'), 'déconnexion : le jeton est révoqué chez Discord');
   egal((await r.traiter(new Request(`${ORIGINE}/api/discord?chemin=deconnexion`, { method: 'POST', headers: { origin: 'https://ailleurs.example' } }))).status, 403,
     'une requête POST d\'une autre origine est refusée');
+
+  // L'invitation du bot : publique, sans session, sans aucun droit.
+  const invitation = await r.traiter(requete('invitation'));
+  const inv = new URL(invitation.headers.get('location') ?? '');
+  egal([invitation.status, inv.origin + inv.pathname], [302, 'https://discord.com/oauth2/authorize'], 'invitation : renvoi vers Discord, sans session');
+  egal([inv.searchParams.get('client_id'), inv.searchParams.get('scope'), inv.searchParams.get('permissions')], ['client', 'bot', '0'],
+    'invitation : le bot de cet environnement, aucun droit sur le serveur');
+  ok(invitation.headers.getSetCookie().length === 0, 'invitation : aucun cookie posé');
 }
 
 export async function testDiscordRouteurBureau() {
