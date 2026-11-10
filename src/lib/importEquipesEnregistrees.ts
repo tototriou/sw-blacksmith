@@ -235,11 +235,17 @@ export function preparerRetourOptimizer(
         if (relic) res.reliquesGardees.push(libelle);
       } else relic = resoudre<RelicDetail>('relique', build.reliqueId, ancien?.uid, libelle) ?? undefined;
       equipement = { base: structuredClone(base), runes, artifacts, ...(relic ? { relic } : {}) };
+    } else if (selector.source !== 'box' && ancien) {
+      // Sans build validé ni exemplaire de la Box, l'Optimizer ne connaît aucun
+      // équipement pour ce membre : l'équipement enregistré est gardé, sinon un
+      // aller-retour sans changement viderait le monstre.
+      equipement = ancien.equipement ? structuredClone(ancien.equipement) : { ...structuredClone(resolu.gear), base: structuredClone(base) };
     } else {
       equipement = { ...structuredClone(resolu.gear), base: structuredClone(base) };
     }
+    const garde = !build && selector.source !== 'box' && !!ancien;
     const unitId = selector.source === 'box' && /^\d+$/.test(selector.unitKey) ? Number(selector.unitKey) : ancien?.unitId ?? null;
-    const m: MonstreEnregistre = { uid, com2usId: resolu.monster.com2usId, unitId, provenance: 'optimizer', equipement };
+    const m: MonstreEnregistre = { uid, com2usId: resolu.monster.com2usId, unitId, provenance: garde ? ancien!.provenance : 'optimizer', equipement };
     if (!ancien || ancien.com2usId !== m.com2usId || !memeCopie(ancien.equipement, equipement)) res.monstresChanges++;
     res.piecesChangees += piecesDifferentes(ancien?.equipement ?? null, equipement);
     monstres.push(m);

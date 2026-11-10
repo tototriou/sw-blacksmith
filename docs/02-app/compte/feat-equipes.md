@@ -349,8 +349,10 @@ L'équipement de chaque monstre se reconstruit pièce par pièce :
 
 - avec un build validé, ses identifiants de runes (`runeIds` et `runesManquantes`),
   d'artéfacts (`artifactIds` et `artefactsManquants`) et de relique ; sans build
-  validé, l'équipement affiché de l'exemplaire (provenance `optimizer` dans les deux
-  cas) ;
+  validé, l'équipement affiché de l'exemplaire de la Box (provenance `optimizer` dans
+  les deux cas). Sans build validé ni exemplaire (un monstre non possédé), l'Optimizer
+  ne connaît aucun équipement : celui enregistré est gardé avec sa provenance, pour
+  qu'un aller-retour sans changement ne vide pas le monstre ;
 - chaque identifiant se relit dans l'inventaire actuel ; absent de l'inventaire, la
   copie de la pièce de **même type et même identifiant** est cherchée dans tout
   l'équipement enregistré de l'équipe (une pièce a pu passer d'un monstre à

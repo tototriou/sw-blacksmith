@@ -116,6 +116,17 @@ function testEquipesOptimizerRetour() {
   const ajout = { ...st, validated, teams: st.teams.map((t) => ({ ...t, members: [...t.members, { source: 'unowned' as const, monsterId: '3' }] })) };
   const r2 = preparerRetourOptimizer(lie, ajout, sources(), inventaire(), () => 'neuf', T1);
   egal(typeof r2 !== 'string' && r2.equipe.monstres.map((m) => [m.uid, m.com2usId]), [['a', 1001], ['b', 1002], ['neuf', 1003]], 'un membre ajouté devient un nouveau monstre');
+  // Un monstre non possédé sans build validé (moins de 6 runes) : l'Optimizer ne lui connaît aucun
+  // équipement, l'aller-retour sans changement le garde tel qu'enregistré.
+  const quatre = { ...equipementEx(20), runes: equipementEx(20).runes.slice(0, 4) };
+  const sansBuild: EquipeEnregistree = { ...equipe(), monstres: [monstreEx('a', 1001, 11), { ...monstreEx('b', 1002, null, quatre), provenance: 'siege-defense' }] };
+  const ex = exporter(sansBuild);
+  egal(ex.r.stockage.validated.length, 1, 'seul le monstre aux 6 runes a un build validé');
+  const r3 = preparerRetourOptimizer(ex.lie, ex.r.stockage, sources(), inventaire(), () => 'x', T1);
+  if (typeof r3 === 'string') return ok(false, `retour refusé : ${r3}`);
+  const b3 = r3.equipe.monstres.find((m) => m.uid === 'b');
+  egal([b3?.equipement, b3?.provenance], [quatre, 'siege-defense'], 'non possédé sans build : équipement et provenance enregistrés gardés');
+  egal(r3.retires, [], 'aucun monstre retiré');
 }
 
 function testEquipesOptimizerImport() {
