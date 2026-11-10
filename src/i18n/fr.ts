@@ -1635,9 +1635,9 @@ export const fr = {
       etapes: [
         "Invite le bot sur ton serveur (il faut le droit « Gérer le serveur »). Il arrive sans aucun droit : il ne voit que les salons où tu l'ajoutes.",
         'Crée un salon dont le nom commence par blacksmith-reco (un salon par recommandation).',
-        "Ajoute le bot à ce salon avec quatre droits : voir le salon, voir les anciens messages, envoyer des messages, joindre des fichiers. Il n'a besoin d'aucun autre droit.",
+        "Ajoute le bot à ce salon avec quatre droits : voir le salon, voir les anciens messages, envoyer des messages, joindre des fichiers. Dans Discord : Modifier le salon › Permissions › Permissions avancées › « + », choisis le bot, puis coche ces quatre droits. Il n'a besoin d'aucun autre droit.",
         "Réserve le salon aux recommandations : l'app ne relit que les 100 derniers messages. Un membre peut aussi y déposer le fichier exporté par l'app : le plus récent fichier valide fait foi.",
-        "Chaque membre se connecte à Discord depuis cette page : il voit les salons qu'il peut lire, et publie dans ceux où il peut écrire.",
+        "Chaque membre se connecte à Discord depuis cette page : il voit les salons qu'il peut lire, et publie dans ceux où il peut écrire. La modération se fait directement dans Discord, par les permissions du salon.",
       ],
       inviter: 'Inviter le bot',
       question: "Une question ? Le Discord de l'app",

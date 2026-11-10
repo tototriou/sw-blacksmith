@@ -21,7 +21,8 @@ Un bot Discord permet à une guilde de partager ses recommandations de siège da
 fichier à s'échanger : chaque membre connecté les retrouve dans l'app et peut y publier les
 siennes. C'est une option : sans connexion à Discord, rien ne change.
 
-Pour l'installer sur ton serveur : invite le bot (il arrive sans aucun droit), crée un salon dont le
+Pour l'installer sur ton serveur : [invite le bot](https://sw-blacksmith.vercel.app/api/discord/invitation)
+(il arrive sans aucun droit), crée un salon dont le
 nom commence par `blacksmith-reco`, et ajoute-y le bot avec quatre droits. Le guide pas à pas est
 dans l'app (page Recommandations, « Installer le bot sur ton serveur ») et dans
 [docs/02-app/siege/feat-recommandations/installer-le-bot.md](docs/02-app/siege/feat-recommandations/installer-le-bot.md).

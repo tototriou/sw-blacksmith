@@ -7,8 +7,10 @@ compte connecté ([rendu-de-la-page.md](rendu-de-la-page.md#provenances-et-disco
 
 ## 1. Inviter le bot
 
-« Inviter le bot » (dans le guide de l'app) ouvre l'invitation Discord. Il faut le droit **Gérer le
-serveur**. Le bot arrive **sans aucun droit** : il ne voit que les salons où on l'ajoute.
+« Inviter le bot » (dans le guide de l'app) ouvre l'invitation Discord ; sans ouvrir l'app, la même
+invitation est à l'adresse <https://sw-blacksmith.vercel.app/api/discord/invitation>. Il faut le
+droit **Gérer le serveur**. Le bot arrive **sans aucun droit** : il ne voit que les salons où on
+l'ajoute.
 
 ⚠️ Ne lui donner **aucun rôle administrateur** : il verrait tous les salons. L'app le signale (un
 triangle à côté du nom du serveur), sans rien bloquer.
@@ -22,14 +24,16 @@ salons.
 
 ## 3. Ajouter le bot au salon, avec quatre droits
 
-Dans les permissions du salon, ajouter le bot avec :
+Dans Discord : **Modifier le salon › Permissions › Permissions avancées**, le **+** à côté de
+« Rôles/Membres », puis le bot. Lui accorder :
 
 - **Voir le salon** ;
 - **Voir les anciens messages** ;
 - **Envoyer des messages** ;
 - **Joindre des fichiers**.
 
-Aucun autre droit n'est nécessaire.
+Aucun autre droit n'est nécessaire. Un droit manquant se voit dans l'app : sans les deux premiers,
+le salon n'apparaît pas ; sans les deux derniers, la publication échoue.
 
 ## 4. Réserver le salon aux recommandations
 
@@ -46,6 +50,9 @@ valide** fait foi, qu'il vienne du bot ou d'un membre
 Chaque membre se connecte à Discord depuis la page Recommandations. Il voit les salons
 `blacksmith-reco…` qu'il peut lire, et publie dans ceux où il peut écrire : **ce sont les droits du
 salon qui décident**, relus à chaque requête.
+
+**La modération se fait directement dans Discord** : l'app n'a aucun réglage de droits ; qui lit et
+qui publie suit les permissions du salon.
 
 - Effacer une recommandation se fait dans Discord, par qui en a le droit : le message effacé, la
   version précédente revient. Depuis l'app, un membre ne fait que se détacher du salon.

@@ -1534,9 +1534,9 @@ export const en: Dictionnaire = {
       etapes: [
         'Invite the bot to your server (you need the Manage Server permission). It arrives with no permission at all: it only sees the channels you add it to.',
         'Create a channel whose name starts with blacksmith-reco (one channel per recommendation).',
-        'Add the bot to that channel with four permissions: view channel, read message history, send messages, attach files. It needs no other permission.',
+        'Add the bot to that channel with four permissions: view channel, read message history, send messages, attach files. In Discord: Edit Channel › Permissions › Advanced permissions › “+”, pick the bot, then tick those four permissions. It needs no other permission.',
         'Keep the channel for recommendations: the app only reads the last 100 messages. A member can also drop the file exported by the app there: the most recent valid file wins.',
-        'Each member connects to Discord from this page: they see the channels they can read, and publish in those they can write to.',
+        'Each member connects to Discord from this page: they see the channels they can read, and publish in those they can write to. Moderation is done directly in Discord, through the channel’s permissions.',
       ],
       inviter: 'Invite the bot',
       question: 'A question? The app’s Discord',
