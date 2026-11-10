@@ -1640,7 +1640,14 @@ function DeckBlock({
             dont le dernier portrait porte une icône d'élément qui dépasse de
             4 px à droite ; la place entre dans la rangée, prise sur
             l'espacement de la colonne d'actions : rien ne bouge. */}
-        <div className="flex items-center gap-2 max-lg:min-h-10 max-lg:self-start max-lg:pr-1 max-lg:-mr-1 lg:contents">
+        {/* ⚠️ `max-lg:flex-wrap` + `max-lg:min-w-fit` sur les portraits :
+            quand la rangée ne tient pas le deck ET « Fort contre » (écran
+            étroit), « Fort contre » passe à la ligne — les portraits du deck
+            ne se compriment plus sous les siens (chevauchement relevé par le
+            mainteneur sur l'accueil). `gap-y-3` : la pastille LEADER dépasse
+            sous le portrait du leader, elle ne doit pas toucher la ligne
+            suivante. */}
+        <div className="flex items-center gap-2 max-lg:min-h-10 max-lg:flex-wrap max-lg:gap-y-3 max-lg:self-start max-lg:pr-1 max-lg:-mr-1 lg:contents">
           {/* Chevron de repli : indispensable en édition avec plusieurs decks */}
           <BoutonIcone
             onClick={onToggleFold}
@@ -1671,7 +1678,7 @@ function DeckBlock({
               l'espacement des portraits reste entier. */}
           <ZoneCliquable
             onClick={onToggleFold}
-            className="flex min-w-0 flex-1 items-center gap-2"
+            className="flex min-w-0 flex-1 items-center gap-2 max-lg:min-w-fit"
             title={folded ? cr.deplierDeck : cr.replierDeck}
           >
             {deck.slots.map((sl, i) => {
