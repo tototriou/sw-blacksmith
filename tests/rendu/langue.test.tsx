@@ -24,6 +24,7 @@ import { rendreCompte } from './compte.test';
 import { AVEC_MONSTRE, rendreOptimizer } from './optimizer.test';
 import { ETAT_EQUIPE, rendreSpeedTune } from './speed-tune.test';
 import { en } from '../../src/i18n/en';
+import { RELEASES_EN } from '../../src/data/releases.en';
 import { OptionsFusion, SousTitreFusion, titreChoixFusion } from '../../src/components/siege/ChoixFusionRecos';
 import { messageFusion } from '../../src/lib/recoFusion';
 import { CASSIE as CASSIE_DEGATS, CROSS_FIRE as CROSS_FIRE_DEGATS, carte as carteDegats } from './attaque-conjointe-ecran.test';
@@ -136,7 +137,11 @@ export function testRenduLanguePagesPubliques() {
   for (const absent of ['Comment ça marche', 'Fonctionnalités', 'Dépose ton fichier']) ok(!accueil.includes(absent), `accueil : plus de « ${absent} »`);
 
   const nouveautes = enAnglais(() => texteVisible(rendreApp('#/releases')));
-  for (const attendu of ['What changed in each version', 'SW Blacksmith in English', 'Current version', 'A redesigned Optimizer'])
+  // ⚠️ La pastille de tête dépend du journal : « Current version » sur une
+  // version publiée, « Not yet released » sur une version en préparation
+  // (aucune n'est alors dite actuelle, voir ReleasesPage).
+  const pastilleDeTete = RELEASES_EN[0].version === null ? 'Not yet released' : 'Current version';
+  for (const attendu of ['What changed in each version', 'SW Blacksmith in English', pastilleDeTete, 'A redesigned Optimizer'])
     ok(nouveautes.includes(attendu), `Nouveautés : « ${attendu} »`);
   ok(!nouveautes.includes('Version actuelle') && !nouveautes.includes('Un Optimizer repensé'), 'Nouveautés : le journal anglais, pas le français');
   ok(/October 29, 2026/.test(nouveautes), 'Nouveautés : les dates au format anglais');
