@@ -990,13 +990,14 @@ export const en: Dictionnaire = {
 
   equipes: {
     onglets: {
-      rta: 'RTA',
-      'arene-attaque': 'Arena — offense',
-      'arene-defense': 'Arena — defense',
       'siege-attaque': 'Siege — offense',
       'siege-defense': 'Siege — defense',
-      'guerre-guilde': 'Guild War',
+      rta: 'RTA',
       pve: 'PVE',
+      'arene-attaque': 'Arena — offense',
+      'arene-defense': 'Arena — defense',
+      'guerre-guilde-offense': 'Guild War — offense',
+      'guerre-guilde-defense': 'Guild War — defense',
     },
     ongletsAria: 'Team content',
     recherche: 'Search a monster',

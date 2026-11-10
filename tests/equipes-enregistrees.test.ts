@@ -42,6 +42,7 @@ function testEquipesEnregistreesRelecture() {
   egal(lu?.signalements, [], 'sans signalement');
   for (const n of [0, 1]) ok(lireEquipeEnregistree({ ...e, monstres: e.monstres.slice(0, n) }) === null, `${n} monstre : illisible, une équipe en a au moins deux`);
   ok(lireEquipeEnregistree({ ...e, onglet: 'inconnu' }) === null, 'un onglet inconnu rend l’équipe illisible');
+  egal(lireEquipeEnregistree({ ...e, onglet: 'guerre-guilde' })?.equipe.onglet, 'guerre-guilde-offense', 'l’ancien onglet de guerre de guilde se relit en offense');
   ok(lireEquipeEnregistree({ ...e, monstres: [1, 2, 3, 4, 5, 6, 7].map((i) => monstreEx(`u${i}`, i, null)) }) === null, 'plus de 6 monstres : illisible');
   ok(lireEquipeEnregistree({ ...e, monstres: [monstreEx('a', 1, 11), monstreEx('a', 2, 12)] }) === null, 'deux uid identiques : illisible');
   const mauvaisLeader = lireEquipeEnregistree({ ...e, leader: 'zz' });

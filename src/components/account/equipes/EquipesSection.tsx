@@ -66,7 +66,9 @@ export default function EquipesSection({ api, ctx, inventaire, allMonsters, opti
   const idDetail = useId();
   const idRapport = useId();
   // Onglet ouvert et recherche : gardés pour la session, jamais sur le disque.
-  const [onglet, setOnglet] = useStickyState<OngletEquipes>('equipes.onglet', 'rta');
+  const [ongletGarde, setOnglet] = useStickyState<OngletEquipes>('equipes.onglet', ONGLETS_EQUIPES[0]);
+  // Un onglet gardé qui n'existe plus (guerre de guilde scindée) retombe sur le premier.
+  const onglet = ONGLETS_EQUIPES.includes(ongletGarde) ? ongletGarde : ONGLETS_EQUIPES[0];
   const [rechercheIds, setRechercheIds] = useStickyState<number[]>('equipes.recherche', []);
   const [page, setPage] = useState(0);
   const [ouverte, setOuverte] = useState<string | null>(null);

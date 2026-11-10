@@ -30,8 +30,8 @@ const ctx = (compte = true): ContexteSourcesEquipes => ({
 const eq1 = equipementEx(1);
 const INVENTAIRE = indexerInventaire(eq1.runes.map((r) => (r.id === 3 ? runeEx(3, 3, 99) : r)), eq1.artifacts, [eq1.relic!]);
 const EQUIPES: EquipeEnregistree[] = [
-  { ...creerEquipe('e1', 'rta', 'Ma RTA', T0), note: 'contre Lushen', monstres: [monstreEx('a', 1001, 11), monstreEx('b', 1002, null, null)], leader: 'a' },
-  { ...creerEquipe('e2', 'rta', 'Autre RTA', T0), monstres: [monstreEx('d', 1002, null, null), monstreEx('e', 1003, null, null)] },
+  { ...creerEquipe('e1', 'siege-attaque', 'Ma RTA', T0), note: 'contre Lushen', monstres: [monstreEx('a', 1001, 11), monstreEx('b', 1002, null, null)], leader: 'a' },
+  { ...creerEquipe('e2', 'siege-attaque', 'Autre RTA', T0), monstres: [monstreEx('d', 1002, null, null), monstreEx('e', 1003, null, null)] },
   { ...creerEquipe('e3', 'pve', 'Donjon', T0), monstres: [monstreEx('c', 1003, null, null), monstreEx('f', 1001, null, null)] },
 ];
 const api = (equipes = EQUIPES, relecture: 'en-cours' | 'finie' = 'finie'): EquipesEnregistreesApi => ({
@@ -49,9 +49,9 @@ export function testRenduEquipesBureau() {
   const html = rendre(section());
   const t = texteVisible(html);
   egal(onglets(html).map((o) => [o.texte, o.ouvert]), [
-    ['RTA 2', true], ['Arène — attaque 0', false], ['Arène — défense 0', false], ['Siège — attaque 0', false],
-    ['Siège — défense 0', false], ['Guerre de guilde 0', false], ['PVE 1', false],
-  ], 'sept onglets, chacun avec son total, RTA ouvert');
+    ['Siège — offense 2', true], ['Siège — défense 0', false], ['RTA 0', false], ['PVE 1', false],
+    ['Arène — offense 0', false], ['Arène — défense 0', false], ['Guerre de guilde — offense 0', false], ['Guerre de guilde — défense 0', false],
+  ], 'huit onglets dans l’ordre choisi, chacun avec son total, le premier ouvert');
   ok(t.includes('Ma RTA') && t.includes('Autre RTA') && !t.includes('Donjon'), 'les cartes de l’onglet ouvert seulement');
   ok(t.includes('contre Lushen'), 'la note sur la carte');
   ok(t.includes(e.carte.modifiees(1)), 'l’écart au compte : une pièce modifiée');

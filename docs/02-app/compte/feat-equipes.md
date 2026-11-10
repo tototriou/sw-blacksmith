@@ -32,19 +32,23 @@ conservation).
 
 ## Onglets
 
-Une rangée `Onglets` (`src/ui/Onglets.tsx`), dans cet ordre :
+Une rangée `Onglets` (`src/ui/Onglets.tsx`), dans cet ordre, choisi par l'utilisateur
+(le premier est ouvert par défaut) :
 
 | Clé | Libellé | Contenu de liste de l'Optimizer |
 | --- | --- | --- |
-| `rta` | « RTA » | `arene` |
-| `arene-attaque` | « Arène — attaque » | `arene` |
-| `arene-defense` | « Arène — défense » | `arene` |
-| `siege-attaque` | « Siège — attaque » | `guilde` |
+| `siege-attaque` | « Siège — offense » | `guilde` |
 | `siege-defense` | « Siège — défense » | `guilde` |
-| `guerre-guilde` | « Guerre de guilde » | `guilde` |
+| `rta` | « RTA » | `arene` |
 | `pve` | « PVE » | `donjon` |
+| `arene-attaque` | « Arène — offense » | `arene` |
+| `arene-defense` | « Arène — défense » | `arene` |
+| `guerre-guilde-offense` | « Guerre de guilde — offense » | `guilde` |
+| `guerre-guilde-defense` | « Guerre de guilde — défense » | `guilde` |
 
-Chaque libellé porte le nombre d'équipes de l'onglet. L'onglet ouvert et la recherche
+L'ancien onglet unique `guerre-guilde` se relit en `guerre-guilde-offense` (stockage,
+fichier, session) ; un onglet gardé pour la session qui n'existe plus retombe sur le
+premier. Chaque libellé porte le nombre d'équipes de l'onglet. L'onglet ouvert et la recherche
 se gardent pour la session, comme l'état des autres outils (`useStickyState`).
 
 Une équipe appartient à un seul onglet ; « Déplacer vers… » la change d'onglet. Elle
@@ -226,9 +230,9 @@ modifié.
 | Source | Onglet de l'équipe créée | Équipement copié |
 | --- | --- | --- |
 | Une défense de siège | « Siège — défense » | le preset du deck |
-| Une attaque de siège | « Siège — attaque » | le preset du deck |
+| Une attaque de siège | « Siège — offense » | le preset du deck |
 | La défense d'arène (et celle d'arène de serveur) | « Arène — défense » | le preset de la défense, même vide ; sans preset pour l'unité, ce qu'elle porte |
-| Une attaque d'arène | « Arène — attaque » | ce que portent les monstres à l'export |
+| Une attaque d'arène | « Arène — offense » | ce que portent les monstres à l'export |
 | Une équipe de l'Optimizer | l'onglet ouvert | le build validé du membre, sinon son équipement affiché |
 
 - Siège : depuis les équipes de siège de l'app (`SiegeTeam`, slot 0 = leader).

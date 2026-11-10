@@ -1042,13 +1042,14 @@ export const fr = {
   // « Mes équipes » (docs/02-app/compte/feat-equipes.md).
   equipes: {
     onglets: {
-      rta: 'RTA',
-      'arene-attaque': 'Arène — attaque',
-      'arene-defense': 'Arène — défense',
-      'siege-attaque': 'Siège — attaque',
+      'siege-attaque': 'Siège — offense',
       'siege-defense': 'Siège — défense',
-      'guerre-guilde': 'Guerre de guilde',
+      rta: 'RTA',
       pve: 'PVE',
+      'arene-attaque': 'Arène — offense',
+      'arene-defense': 'Arène — défense',
+      'guerre-guilde-offense': 'Guerre de guilde — offense',
+      'guerre-guilde-defense': 'Guerre de guilde — défense',
     },
     ongletsAria: 'Contenu des équipes',
     recherche: 'Chercher un monstre',

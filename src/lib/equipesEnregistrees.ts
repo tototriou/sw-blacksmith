@@ -14,20 +14,22 @@ import type { RepliSpeedTune } from './speedTuneEquipe';
 import { planSpeedTuneValide } from './speedTuneEquipe';
 import { idCanoniqueCollab } from './monsterForms';
 
+// Dans l'ordre affiché, choisi par l'utilisateur ; le premier est ouvert par défaut.
 export const ONGLETS_EQUIPES = [
-  'rta', 'arene-attaque', 'arene-defense', 'siege-attaque', 'siege-defense', 'guerre-guilde', 'pve',
+  'siege-attaque', 'siege-defense', 'rta', 'pve', 'arene-attaque', 'arene-defense', 'guerre-guilde-offense', 'guerre-guilde-defense',
 ] as const;
 export type OngletEquipes = (typeof ONGLETS_EQUIPES)[number];
 
 // Le contenu de la liste créée par l'export vers l'Optimizer.
 export const CONTENU_OPTIMIZER_ONGLET: Record<OngletEquipes, ContenuListeOptimizer> = {
-  rta: 'arene',
-  'arene-attaque': 'arene',
-  'arene-defense': 'arene',
   'siege-attaque': 'guilde',
   'siege-defense': 'guilde',
-  'guerre-guilde': 'guilde',
+  rta: 'arene',
   pve: 'donjon',
+  'arene-attaque': 'arene',
+  'arene-defense': 'arene',
+  'guerre-guilde-offense': 'guilde',
+  'guerre-guilde-defense': 'guilde',
 };
 
 export const PROVENANCES_EQUIPEMENT = [
@@ -154,7 +156,12 @@ export interface LectureEquipe {
 
 // `null` : l'équipe est illisible (elle va aux rejets, brute). Un speed tune,
 // un leader ou un lien mal formés dégradent l'équipe, ils ne la rejettent pas.
-export function lireEquipeEnregistree(v: unknown): LectureEquipe | null {
+// L'ancien onglet unique de guerre de guilde, scindé en offense et défense :
+// ses équipes se relisent en offense.
+const ONGLET_GUERRE_GUILDE_ANCIEN = 'guerre-guilde';
+
+export function lireEquipeEnregistree(brut: unknown): LectureEquipe | null {
+  const v = objet(brut) && brut.onglet === ONGLET_GUERRE_GUILDE_ANCIEN ? { ...brut, onglet: 'guerre-guilde-offense' } : brut;
   if (!objet(v) || !texteNonVide(v.id) || !ONGLETS_EQUIPES.includes(v.onglet as OngletEquipes)
     || !texteNonVide(v.nom) || !texte(v.note) || !date(v.creeLe) || !date(v.modifieLe)
     || !Array.isArray(v.monstres) || v.monstres.length < MONSTRES_MIN_EQUIPE || v.monstres.length > MONSTRES_MAX_EQUIPE || !v.monstres.every(monstre)) return null;
