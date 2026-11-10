@@ -454,25 +454,22 @@ export function LeaderSkillPicker({ setup, maj }: { setup: DamageSetup; maj: (pa
   const valeurs = lead ? LEADER_SKILL_VALEURS[lead.stat] : [];
 
   return (
-    /* ⚠️ **Une GRILLE de trois colonnes — libellé, icône, menus — dont TOUTES
-        les places sont tenues d'avance.**
-        Trois choses bougeaient ici au moindre clic, et c'est le même défaut
-        trois fois (docs/03-developpeur/interface/, « un clic ne déplace jamais ce qu'on
+    /* ⚠️ **Une GRILLE d'une rangée — libellé, icône, type, valeur — dont
+        TOUTES les places sont tenues d'avance.**
+        Deux choses bougeaient ici au moindre clic, et c'est le même défaut
+        deux fois (docs/03-developpeur/interface/, « un clic ne déplace jamais ce qu'on
         vient de cliquer ») :
-        1. le menu de la valeur se dépliait À DROITE du type, élargissant le
-           groupe et poussant « Invocateur » ;
-        2. il ferait grandir la carte en hauteur une fois passé en dessous, si
-           sa rangée n'était pas réservée ;
-        3. l'icône du lead, rendue sous condition, poussait le menu de type
+        1. le menu de la valeur, rendu au choix d'un lead, élargissait le
+           groupe et poussait ce qui le suivait ;
+        2. l'icône du lead, rendue sous condition, poussait le menu de type
            dès qu'un lead était choisi.
-        D'où une grille : la colonne de l'icône existe même vide, la seconde
-        rangée existe même sans lead, et la valeur se pose en `col-start-3`,
-        donc exactement sous le type. L'alignement se DÉDUIT des colonnes — il
-        n'est pas reproduit à coups de marges qui dériveraient au prochain
-        changement de libellé.
-        Au téléphone, la valeur prend une quatrième colonne de la même rangée :
-        elle tient moins de hauteur, et sa place reste réservée de même. */
-    <div className="grid w-fit grid-cols-[auto_auto_auto_auto] items-center gap-x-2 gap-y-1 lg:grid-cols-[auto_auto_auto]">
+        D'où une grille : la colonne de l'icône existe même vide, et celle de
+        la valeur aussi (un menu figurant, invisible), à droite du type, aux
+        deux formats (décision de l'utilisateur : sous le type, au bureau,
+        elle allongeait la section d'une rangée). L'alignement se DÉDUIT des
+        colonnes — il n'est pas reproduit à coups de marges qui dériveraient
+        au prochain changement de libellé. */
+    <div className="grid w-fit grid-cols-[auto_auto_auto_auto] items-center gap-x-2 gap-y-1">
       {/* « Lead » et non « Leader skill » : le libellé long mangeait la
           largeur d'une carte en colonne étroite, pour un mot que tout joueur
           abrège de toute façon. */}
@@ -508,11 +505,12 @@ export function LeaderSkillPicker({ setup, maj }: { setup: DamageSetup; maj: (pa
         ))}
       </Selecteur>
 
-      {/* ⚠️ `col-start-3` : sous le TYPE, pas sous le libellé. `invisible` et
-          non un rendu conditionnel — l'élément tient sa place sans se voir,
-          avec `aria-hidden` et `disabled`, sinon on tabulerait dans un menu
-          invisible. */}
-      <div className={`col-start-4 row-start-1 lg:col-start-3 lg:row-start-2 ${lead ? '' : 'invisible'}`} aria-hidden={!lead}>
+      {/* ⚠️ À droite du TYPE, aux deux formats (décision de l'utilisateur :
+          sous le type, au bureau, la valeur allongeait la section d'une
+          rangée). `invisible` et non un rendu conditionnel — l'élément tient
+          sa place sans se voir, avec `aria-hidden` et `disabled`, sinon on
+          tabulerait dans un menu invisible. */}
+      <div className={`col-start-4 row-start-1 ${lead ? '' : 'invisible'}`} aria-hidden={!lead}>
       {lead ? (
         /* ⚠️ **Un seul menu, plus de saisie libre.** Il y avait avant un menu
             de « paliers courants » ET un champ numérique, parce que la table

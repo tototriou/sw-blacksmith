@@ -2151,8 +2151,17 @@ export const fr = {
       criteres: { libelle: 'Critères', title: 'Critères de recherche' },
       artefacts: { libelle: 'Artéfacts', title: 'Artéfacts et relique' },
       complements: { libelle: 'Options', title: 'Aura, exclusion, avancés' },
+      // Seulement quand la place manque : l'objectif et les résultats en onglet.
+      resultats: { libelle: 'Résultats', title: 'Objectif et résultats' },
     },
     reglagesRecherche: 'Réglages de recherche',
+    // « Monstre » au bureau, quand la liste et l'exemplaire ne tiennent pas
+    // ensemble en hauteur : nom court, et nom complet en infobulle.
+    ongletsMonstre: {
+      nom: 'Liste et exemplaire',
+      liste: { libelle: 'Liste active', title: 'Liste de travail' },
+      exemplaire: { libelle: 'Exemplaire', title: 'Exemplaire et build' },
+    },
     // Les objectifs de recherche, par clé d'`Objective`.
     objectifs: { efficience: 'Efficience', degats_reels: 'Dégâts réels', ehp: 'PV effectifs', vitesse: 'Vitesse' },
     // Les préréglages de profondeur, par clé de `SlotFilterPresetKey`.

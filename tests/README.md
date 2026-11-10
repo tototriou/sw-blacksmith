@@ -132,40 +132,40 @@ mesure de l'écran vide.
 
 ### Tailles et états de l'Optimizer
 
-`--ecrans optimizer` exerce le téléphone et dix-sept tailles de bureau :
-les cinq repères de la spec, la fenêtre de 1400 × 1000 et onze frontières.
+`--ecrans optimizer` exerce le téléphone et quatorze tailles de bureau :
+les cinq repères de la spec, la fenêtre de 1400 × 1000 et huit frontières.
 La navigation reste dépliée. Les volets sont ouverts par « Écran partagé »,
 à parts égales, sans injection de stockage de disposition.
 
 | Taille | Fenêtre | Conteneur attendu | Configuration |
 |---|---|---|---|
-| `volet-deux-piles` | 1920 × 940 partagée | 792 | deux piles |
-| `volet-groupe` | 2560 × 1300 partagée | 1112 | groupe de trois |
-| `ordinateur` | 1400 × 1000 | 1128 | groupe de trois |
-| `bureau-portable` | 1536 × 730 | 1264 | groupe de trois |
-| `bureau-criteres-groupe` | 1920 × 940 | 1648 | Critères et groupe de deux |
-| `bureau-colonnes` | 2560 × 1300 | 2288 | toutes les colonnes |
+| `volet-quatre-onglets` | 1920 × 940 partagée | 792 | quatre onglets |
+| `volet-groupe` | 2560 × 1300 partagée | 1112 | groupe |
+| `ordinateur` | 1400 × 1000 | 1128 | groupe |
+| `bureau-portable` | 1536 × 730 | 1264 | groupe large |
+| `bureau-1920` | 1920 × 940 | 1648 | groupe large |
+| `bureau-2560` | 2560 × 1300 | 2288 | groupe large |
 
-Les tailles `conteneur-<largeur>` visent 752, 753, puis 1096, 1432 et 1768
-à −1, au seuil et à +1. L'étape `largeurOptimizer` mesure le conteneur et
+Les réglages sont toujours en onglets : les tailles `conteneur-<largeur>`
+visent 752, 753, puis chaque seuil (1100, 1164) à −1, au seuil et à +1.
+En tableau, chaque taille déclare aussi la configuration qui laisse au
+tableau sa largeur (1491, 1427, 1089). L'étape `largeurOptimizer` mesure le conteneur et
 ajuste la fenêtre par l'écart, sans modifier le style de l'app. À 751 px,
 le contenu passe sous la frontière du format bureau : cette borne est
 vérifiée par le calcul pur, le téléphone a son propre banc.
 
 Chaque état repart d'une page neuve. Les préparations choisissent les
 onglets par rôle `tab` et libellé court (« Critères », « Artéfacts »,
-« Options »). Si le réglage est déjà une colonne, sa présence est exigée.
-Le clic sur chaque onglet compare sa position avant et après : tout
+« Options », « Résultats » en quatre onglets). Le clic sur chaque onglet compare sa position avant et après : tout
 déplacement rend l'état non atteint.
 
 | État | Préparation et postcondition |
 |---|---|
 | `liste-remplie` | Liste Arène, Vanessa et Cassie ajoutées par la recherche |
 | `resultats`, `resultats-tableau`, `resultats-filtres` | Import de [optimizer-banc-recette.json](fixtures/optimizer-banc-recette.json), recherche Rapide terminée, deux cartes exigées ; tableau et filtre selon l'état |
-| `artefacts`, `complements` | Même recherche, puis sélection de l'onglet correspondant quand il existe |
-| `toutes-colonnes` | Même recherche aux tailles qui affichent tous les réglages |
+| `artefacts`, `complements` | Même recherche, puis sélection de l'onglet correspondant |
 | `guidage-set` | Options, puis Rechercher sans set : Critères et message d'erreur visibles |
-| `pile-defilee` | Options en deux piles, défilement de la pile jusqu'à Rechercher, qui reste dans le bloc |
+| `onglet-resultats` | Quatre onglets : Options, puis l'onglet Résultats, avec l'objectif et Rechercher |
 | `set-flottant` | Liste remplie, ouverture du coffre compact à la taille où il existe (1536 × 730) |
 
 Les états de départ, de réglages avancés et de modale « Dégâts réels »
@@ -173,10 +173,13 @@ restent exercés aux deux formats. Le téléphone garde « Gérer mes listes »
 et son panneau « Options ».
 
 Avant la mesure, le banc exige la configuration, les libellés des onglets,
-la fiche repliée dans « Monstre », le confinement des défilements et
-l'absence de débordement horizontal. En deux piles, le set monté est compact ;
-ailleurs, sa forme mesurée est consignée. Le guidage sans set doit rendre
-le set visible dans la partie visible de sa colonne ou de la pile de droite :
+la fiche repliée dans « Monstre » (sauf quand l'exemplaire est dans son
+onglet, même une équipe de trois et lui trop hauts ensemble), un contenu de « Monstre »
+qui ne défile pas, des cadres de colonne qui ne défilent
+jamais (leur contenu défile dedans, `data-defilement`), le confinement des défilements et
+l'absence de débordement horizontal. La forme mesurée du set est consignée.
+Le guidage sans set doit rendre le set visible dans la partie visible de
+sa colonne :
 les copies invisibles sont exclues, et le client du défilement est intersecté
 avec la fenêtre et les ancêtres qui le rognent. Les rectangles, l'onglet ouvert et le
 nombre de cartes figurent dans le manifeste. Une incohérence donne le code 2

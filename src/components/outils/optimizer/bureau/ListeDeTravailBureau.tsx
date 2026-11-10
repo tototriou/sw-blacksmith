@@ -1,13 +1,12 @@
-import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
-import MonsterAvatar from '../../../MonsterAvatar';
+import { type ReactNode } from 'react';
 import MonstresDeLaListe, { type MonstresDeLaListeProps } from '../MonstresDeLaListe';
-import { type Monster } from '../../../../types';
 import { useTraduction } from '../../../../hooks/useLangue';
 
 // La place de « Monstre » (docs/02-app/optimizer/ecran/README.md,
-// « Mise en page d'ensemble ») : son panneau en prend 376, le reste va à
-// l'écart avec la colonne suivante (`RETRAIT_PANNEAU`, src/lib/optimizerColonnes.ts).
-export const LARGEUR_MONSTRE = 384;
+// « Mise en page d'ensemble ») : son panneau en prend 384 (358 de contenu,
+// sa barre de défilement comprise dedans), le reste va à l'écart avec la
+// colonne suivante (`RETRAIT_PANNEAU`, src/lib/optimizerColonnes.ts).
+export const LARGEUR_MONSTRE = 392;
 
 export interface ListeDeTravailBureauProps {
   // « Liste active » ▾ · « Importer une équipe » : `SelecteurListes` et
@@ -15,60 +14,21 @@ export interface ListeDeTravailBureauProps {
   listes: ReactNode;
   // « Rechercher un monstre… » : `MonsterSourcePicker` en mode bestiaire, tel quel.
   recherche: ReactNode;
-  monstreActif: Monster | null;
   liste: MonstresDeLaListeProps;
 }
 
 // La liste de travail de « Monstre », au bureau : la recherche du monstre,
-// sans titre devant (toute la largeur au champ, décision de l'utilisateur),
-// et le monstre actif ; les membres prennent leur hauteur jusqu'à 308 px,
-// puis défilent. Le téléphone garde « Monstre & équipement ».
-//
-// ⚠️ **Le monstre actif tient sa place, vide ou non** : choisir un monstre ne
-// déplace ni le champ ni la liste (un clic ne déplace jamais ce qu'on vient de
-// cliquer).
-//
-// ⚠️ **La recherche s'arrête à la droite de la liste déroulante des listes**
-// (décision de l'utilisateur) : la place du monstre actif a la largeur de
-// l'action qui suit la liste (« Importer une équipe », `data-action-liste`),
-// lue sur la page, puisque son libellé fixe sa largeur. Avant la première
-// mesure (rendu serveur), la largeur mesurée au bureau.
-const LARGEUR_ACTION_LISTE_DEFAUT = 161;
-
-export default function ListeDeTravailBureau({ listes, recherche, monstreActif, liste }: ListeDeTravailBureauProps) {
-  const section = useRef<HTMLElement>(null);
-  const [largeurAction, setLargeurAction] = useState(LARGEUR_ACTION_LISTE_DEFAUT);
-  useLayoutEffect(() => {
-    const action = section.current?.querySelector<HTMLElement>('[data-action-liste]');
-    if (!action || typeof ResizeObserver === 'undefined') return;
-    const lire = () => setLargeurAction(action.getBoundingClientRect().width);
-    lire();
-    const obs = new ResizeObserver(lire);
-    obs.observe(action);
-    return () => obs.disconnect();
-  }, []);
+// sans titre devant, sur TOUTE la largeur de la colonne (décision de
+// l'utilisateur : le monstre actif n'est plus affiché à côté, ni ailleurs ;
+// la carte du membre choisi et l'exemplaire le disent). Les membres prennent au
+// plus la hauteur que « Monstre » leur laisse (`HauteurListeContext`, mesurée
+// par `PageBureau`), puis défilent. Le téléphone garde « Monstre & équipement ».
+export default function ListeDeTravailBureau({ listes, recherche, liste }: ListeDeTravailBureauProps) {
   return (
-    <section ref={section} aria-label={useTraduction().optimizer.criteres.listeDeTravail}>
+    <section aria-label={useTraduction().optimizer.criteres.listeDeTravail}>
       {listes}
       <div className="mt-2">
-        <MonstresDeLaListe
-          {...liste}
-          enTete={
-            <>
-              <div className="min-w-0 flex-1">{recherche}</div>
-              <div data-monstre-actif style={{ width: largeurAction }} className="flex h-8 flex-none items-center gap-2">
-                {monstreActif && (
-                  <>
-                    <MonsterAvatar monster={monstreActif} size={28} />
-                    <span className="min-w-0 line-clamp-1 text-[13px] font-semibold" title={monstreActif.name}>
-                      {monstreActif.name}
-                    </span>
-                  </>
-                )}
-              </div>
-            </>
-          }
-        />
+        <MonstresDeLaListe {...liste} enTete={<div className="min-w-0 flex-1">{recherche}</div>} />
       </div>
     </section>
   );

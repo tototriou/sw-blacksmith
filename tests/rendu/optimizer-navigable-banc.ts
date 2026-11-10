@@ -110,7 +110,11 @@ export async function navigateurOptimizer(telephone = false, entreeBanc = 'tests
     // ⚠️ `locale` : l'app suit la langue du navigateur (« Auto »), et ces
     // vérifications cherchent des libellés français. Sans elle, un Chromium en
     // anglais (celui de la CI) afficherait l'app en anglais.
-    const page = await browser.newPage({ viewport: telephone ? { width: 390, height: 844 } : { width: 1440, height: 1000 }, isMobile: telephone, hasTouch: telephone, locale: 'fr-FR' });
+    // Au bureau, 1 400 px de haut : les scénarios les plus chargés (rapport,
+    // build validé et ses absences) y gardent l'exemplaire sous la liste dans
+    // « Monstre » ; plus bas, il passerait dans son onglet, forme vérifiée par
+    // les gabarits (optimizer-gabarits-navigateur.test.ts).
+    const page = await browser.newPage({ viewport: telephone ? { width: 390, height: 844 } : { width: 1440, height: 1400 }, isMobile: telephone, hasTouch: telephone, locale: 'fr-FR' });
     const erreurs: string[] = [];
     page.on('pageerror', erreur => erreurs.push(erreur.stack ?? erreur.message));
     const publicRoot = resolve('public');

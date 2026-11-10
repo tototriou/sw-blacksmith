@@ -179,7 +179,7 @@ import ReglagesAvancesBureau from './optimizer/bureau/ReglagesAvancesBureau';
 import ExemplaireBureau from './optimizer/bureau/ExemplaireBureau';
 import ObjectifEtRechercherBureau from './optimizer/bureau/ObjectifEtRechercherBureau';
 import ResultatsBureau from './optimizer/bureau/ResultatsBureau';
-import { attenteResultats, type ColonneReglage } from '../../lib/optimizerColonnes';
+import { attenteResultats, type ColonneReglage, type OngletBureau } from '../../lib/optimizerColonnes';
 import { PREFIXE_FICHIER } from '../../marque';
 import { useLangue, useTraduction } from '../../hooks/useLangue';
 import type { Dictionnaire } from '../../i18n/fr';
@@ -2051,7 +2051,7 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
   const interrupteurResPreBureauRef = useRef<HTMLDivElement>(null);
   const interrupteurResPrePanneauRef = useRef<HTMLDivElement>(null);
   // L'onglet du groupe, local à l'écran : une recherche ne le réinitialise pas.
-  const [ongletBureau, setOngletBureau] = useState<ColonneReglage | null>(null);
+  const [ongletBureau, setOngletBureau] = useState<OngletBureau | null>(null);
   const [guideCriteres, setGuideCriteres] = useState<number | null>(null);
   const dernierGuideSet = useRef<number | null>(null);
   useEffect(() => {
@@ -3401,7 +3401,6 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
           <ListeDeTravailBureau
             listes={listesBureau}
             recherche={<MonsterSourcePicker mode="bestiary" candidates={allMonsters} onPick={pickSpecies} disponibilite={disponibiliteEspece} />}
-            monstreActif={selected?.monster ?? null}
             liste={proprietesListe}
           />
         }
