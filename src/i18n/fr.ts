@@ -1699,9 +1699,12 @@ export const fr = {
     consignes: 'consignes',
     replierTous: 'Replier tous les decks',
     deplierTous: 'Déplier tous les decks',
-    colOffense: 'Offense · sets visés',
+    colOffense: 'Offense',
     colFortContre: 'Fort contre',
     colVerdict: 'Verdict',
+    colActions: 'Actions',
+    stats: 'Stats',
+    statsEnTete: { stat: 'Stat', baseBonus: 'Base + bonus', total: 'Total' },
     ajouterDeck: 'Ajouter un deck vide',
     sansOffense:
       "Aucune équipe d'offense : importe ton compte (barre du haut) après avoir sauvegardé tes attaques en jeu.",

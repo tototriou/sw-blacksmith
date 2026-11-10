@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Plus, Trash2, Gauge, Wand2, Upload, Download } from 'lucide-react';
-import { IconeDefense, IconeOffense } from '../IconesAtelier';
+import { IconeDefense, IconeOffense, IconeOptimizer } from '../IconesAtelier';
 import { Monster, ElementKey, SiegeTeam as SiegeTeamData } from '../../types';
 import { LoadState } from '../../hooks/useMonsters';
 import { SiegeSide, UseSiegeState } from '../../hooks/useSiegeState';
@@ -376,7 +376,7 @@ export default function SiegeBoard({
               },
             },
             ...(side === 'defense' ? [{
-              cle: 'optimizer', libelle: textes.commun.exporterOptimizer, icone: <Upload size={15} />,
+              cle: 'optimizer', libelle: textes.commun.exporterOptimizer, icone: <IconeOptimizer size={15} />,
               disabled: !!disponibiliteExport.defenses,
               title: disponibiliteExport.defenses ?? b.exportDefensesAide,
               onClick: exporterDefensesOptimizer,
@@ -528,7 +528,7 @@ export default function SiegeBoard({
       <MobileSheet ouvert={menuOuvert} onFermer={onFermerMenu} titre={b.actions(noun)}>
         <div data-rangee-actions>{actions}</div>
         {side === 'defense' && <Bouton className="mt-3" pleineLargeur
-          libelle={textes.commun.exporterOptimizer} icone={<Upload size={15} />}
+          libelle={textes.commun.exporterOptimizer} icone={<IconeOptimizer size={15} />}
           disabled={!!disponibiliteExport.defenses}
           title={disponibiliteExport.defenses ?? b.exportDefensesAide}
           onClick={exporterDefensesOptimizer} />}

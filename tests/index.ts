@@ -393,7 +393,7 @@ import { testRenduChangementCompte } from './rendu/changement-compte.test';
 import { testRenduIcones } from './rendu/icones.test';
 import { testRenduAttaqueConjointeEcran } from './rendu/attaque-conjointe-ecran.test';
 import { testRenduEffetsEntreCoupsEcran, testRenduEffetsEntreCoupsAnglais } from './rendu/effets-entre-coups-ecran.test';
-import { testRenduRecosPage, testRenduRecosEnTete, testRenduRecosDeploiement, testRenduRecosEdition, testRenduRecosVueDefense, testRenduRecosTicks, testRenduRecosAnnulerEdition, testRenduRecosStatsEnTotal } from './rendu/recos.test';
+import { testRenduRecosPage, testRenduRecosEnTete, testRenduRecosLigneDeckReduite, testRenduRecosDeploiement, testRenduRecosEdition, testRenduRecosVueDefense, testRenduRecosTicks, testRenduRecosAnnulerEdition, testRenduRecosStatsEnTotal } from './rendu/recos.test';
 import testAnnulerEdition from './annuler-edition.test';
 import { testRenduRunesResume, testRenduRunesListe, testRenduRunesCourbes, testRenduRunesComparaison, testRenduRunesOptimisation, testRenduRunesAVenir, testRenduRunesFiltresLigne, testRenduRunesTriOnglets, testRenduRunesResumeSouris, testRenduRunesListeSouris, testRenduRunesVuesSouris } from './rendu/runes.test';
 import { testRenduCompteMonstres, testRenduCompteArtefactsResume, testRenduCompteArtefactsListe, testRenduCompteArtefactsTop, testRenduCompteSouris, testRenduCompteEffacerFiltres } from './rendu/compte.test';
@@ -591,6 +591,7 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testRenduSiegeEdition', testRenduSiegeEdition],
   ['testRenduRecosPage', testRenduRecosPage],
   ['testRenduRecosEnTete', testRenduRecosEnTete],
+  ['testRenduRecosLigneDeckReduite', testRenduRecosLigneDeckReduite],
   ['testRenduRecosDeploiement', testRenduRecosDeploiement],
   ['testRenduRecosEdition', testRenduRecosEdition],
   ['testRenduRecosVueDefense', testRenduRecosVueDefense],

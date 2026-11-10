@@ -1,7 +1,7 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
-import { Search, Plus, Users, Swords, X, Zap, Gauge, Eye, EyeOff, Download, Upload, Check, Scissors, Play, ChevronUp, ChevronDown, Sparkles, CopyPlus } from 'lucide-react';
+import { Search, Plus, Users, Swords, X, Zap, Gauge, Eye, EyeOff, Download, Check, Scissors, Play, ChevronUp, ChevronDown, Sparkles, CopyPlus } from 'lucide-react';
 // Le chronomètre de l'entrée « Speed tuning » de la nav.
-import { IconeSpeedTuning } from '../IconesAtelier';
+import { IconeOptimizer, IconeSpeedTuning } from '../IconesAtelier';
 import { Monster, SiegeTeam } from '../../types';
 import { LeadInfo, combatSpeed, leadsDeVitesse, runeSpeedForTarget, SIEGE_TICKS } from '../../lib/speed';
 import {
@@ -1598,7 +1598,7 @@ function CampPanneau({
           </div>
         )}
         {onExporterOptimizer && (
-          <Bouton pleineLargeur icone={<Upload size={14} />} libelle={c.exporter}
+          <Bouton pleineLargeur icone={<IconeOptimizer size={14} />} libelle={c.exporter}
             disabled={!!raisonExportOptimizer} title={raisonExportOptimizer ?? c.exporterAide}
             onClick={onExporterOptimizer} />
         )}

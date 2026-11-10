@@ -84,24 +84,39 @@ recommandation liée sur l'appareil :
 
 ## En-tête d'une recommandation et actions d'un deck
 
-⚠️ **À la souris, l'en-tête d'une recommandation tient sur UNE ligne** :
-chevron · titre · Importée · decks · auteur, un ressort, puis **au bout**
-« Analyser mes decks » (bouton **à cadre**, comme les autres boutons à libellé
-de la page : fantôme, il ne se lirait pas comme un bouton parmi les icônes
-nues), un filet vertical et Exporter / Éditer / Supprimer. Au doigt, l'en-tête
-tient sur deux rangées.
+⚠️ **L'en-tête d'une recommandation se lit de haut en bas, aux deux
+formats** : le **nom** de la recommandation en titre ; **dessous**, le nombre
+de decks, l'auteur et les contributeurs ; **enfin** la source et les autres
+étiquettes (son salon ou « Sur cet appareil » avec l'état du salon,
+« Importée »), quand il y en a. À la souris, c'est une grille : le chevron devant le titre, et
+**au bout**, sur toute la hauteur, « Analyser mes decks » et « Publier dans… »
+(boutons **à cadre**, comme les autres boutons à libellé de la page), un filet
+vertical et Exporter / Éditer / Supprimer. Au doigt, les icônes restent à côté
+du titre.
 
-⚠️ **À la souris, le crayon d'un deck n'est pas dans la ligne** : la ligne n'a
-que ses quatre colonnes (chevron · offense · fort contre · verdict, ce dernier
-aligné à droite), et l'édition est **« Éditer ce deck » écrit en toutes
-lettres, en PIED du détail déplié**, à droite, sous un filet (en édition :
-« Terminer l'édition de ce deck »), avec **« Supprimer ce deck » à l'autre
-bout, TOUJOURS présent** — la confirmation est le garde-fou. Au doigt aussi,
-la corbeille suit le crayon en permanence. Ces boutons ont un **CADRE** à la
-souris, comme les autres boutons à libellé : `BoutonIcone`
-`libelleALaSouris`. Replié, un deck ne montre donc pas d'action d'édition : on
-le déplie d'abord. C'est le MÊME bouton qu'au doigt, placé sur la 3ᵉ rangée de
-la grille du deck. **En édition de la recommandation**, Ajouter un deck vide
+⚠️ **Une recommandation repliée montre une pastille par deck** (par défense
+visée, en vue Défense) **sur DEUX LIGNES au plus** : ce qui ne tient pas se
+résume en « +N », les noms cachés en infobulle, et « Consignes » suit toujours.
+La place se MESURE (largeur de la carte, longueur des noms), avant la première
+peinture, et se remesure au redimensionnement (`ApercuDeuxLignes`).
+
+⚠️ **Un deck réduit est compact : ses portraits seuls**, ni noms ni runes —
+le nom passe en infobulle du portrait, et noms et runage s'écrivent dans le
+deck ouvert, sur la fiche de chaque monstre (parties titrées : Runage, Stats,
+Artéfacts ; le tableau des stats a son en-tête : Stat, Base + bonus ou Total,
+Actuel après une analyse).
+
+⚠️ **Les actions d'un deck sont sur SA LIGNE, replié ou non** : Exporter vers
+l'Optimizer, Éditer ce deck, Supprimer ce deck (toujours présent : la
+suppression se défait par la notification). **« Éditer ce deck » ouvre le deck
+en édition directement**, sans éditer la recommandation ni le déplier d'abord.
+À la souris, elles forment la 5ᵉ colonne de la ligne (chevron · offense · fort
+contre · verdict · actions) ; au doigt, la rangée sous les portraits, verdict à
+gauche et actions à droite, en cibles de 40 px. Une place est **réservée** à
+« Annuler les modifications » devant elles : invisible hors édition, elle
+apparaît en édition, et ✎ devient ✓ à la même place — aucun bouton ne bouge
+sous le clic. Aucune icône ne chevauche sa voisine. **En édition de la
+recommandation**, Ajouter un deck vide
 et Importer un deck d'offense forment le **pied du tableau des decks**, à
 droite, en boutons **pointillés à fond**. **« + Défense »** est un bouton `sm`
 pointillé à fond au bout de la rangée des défenses visées : fantômes, ces
