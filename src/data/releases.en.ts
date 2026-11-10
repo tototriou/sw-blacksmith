@@ -9,7 +9,7 @@ import type { Release } from './releases';
 
 export const RELEASES_EN: Release[] = [
   {
-    version: null,
+    version: '2.4.0',
     date: '2026-11-10',
     title: 'Siege recommendations shared on Discord',
     highlights: [

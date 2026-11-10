@@ -70,7 +70,7 @@ export function journal(langue: Langue): Release[] {
 // Si une ligne dépasse ~15 mots, c'est qu'elle raconte l'implémentation.
 export const RELEASES: Release[] = [
   {
-    version: null,
+    version: '2.4.0',
     date: '2026-11-10',
     title: 'Les recommandations de siège partagées sur Discord',
     highlights: [
