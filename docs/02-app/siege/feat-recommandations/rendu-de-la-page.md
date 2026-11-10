@@ -73,8 +73,8 @@ recommandation liée sur l'appareil :
   l'application de bureau, « Coller le code de connexion » (les trois étapes,
   le champ, une ligne réservée pour un code refusé, « Rouvrir la page dans le
   navigateur » ; « Annuler » abandonne la connexion) ; sur le site, au retour
-  d'une connexion demandée par l'application, le code en lecture seule et
-  « Copier le code » ; l'installation du bot (les cinq étapes du
+  d'une connexion demandée par l'application, l'avertissement « Ne donne ce
+  code à personne », le code en lecture seule et « Copier le code » ; l'installation du bot (les cinq étapes du
   [guide](installer-le-bot.md), « Inviter le bot », qui ouvre l'invitation
   dans un nouvel onglet — dans le navigateur du système pour l'application de
   bureau —, le lien vers le Discord de l'app, « Fermer ») ; la fusion (ce qui a passé seul, puis chaque

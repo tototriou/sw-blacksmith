@@ -1484,6 +1484,7 @@ export const en: Dictionnaire = {
     codeSite: {
       titre: 'Desktop app sign-in',
       texte: 'Copy this code and paste it into SW Blacksmith on your computer. It is valid for 10 minutes, and only works for the app that asked for it.',
+      avertissement: 'Never give this code to anyone: it opens your Discord connection. If you did not start this sign-in from your SW Blacksmith app, close this page.',
       champ: 'Sign-in code',
       copier: 'Copy the code',
       copie: 'Code copied: paste it into the app.',

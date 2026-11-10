@@ -1579,6 +1579,7 @@ export const fr = {
     codeSite: {
       titre: "Connexion de l'application de bureau",
       texte: "Copie ce code et colle-le dans SW Blacksmith, sur ton ordinateur. Il vaut 10 minutes, et ne sert qu'à l'application qui l'a demandé.",
+      avertissement: "Ne donne ce code à personne : il ouvre ta connexion Discord. Si tu n'as pas lancé cette connexion depuis ton application SW Blacksmith, ferme cette page.",
       champ: 'Code de connexion',
       copier: 'Copier le code',
       copie: "Code copié : colle-le dans l'application.",
