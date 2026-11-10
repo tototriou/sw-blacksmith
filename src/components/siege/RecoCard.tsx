@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 // L'épée de la section Offense, à la place des deux épées de lucide :
 // « Importer un deck d'offense », « Fort contre ».
-import { IconeOffense } from '../IconesAtelier';
+import { IconeOffense, IconeOptimizer } from '../IconesAtelier';
 import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   ARTIFACT_KINDS,
@@ -1750,7 +1750,7 @@ function DeckBlock({
               tabIndex={editing ? undefined : -1}
               aria-hidden={editing ? undefined : true}
             />
-            <Bouton aria-label={textes.commun.exporterOptimizer} icone={<Upload size={14} />} taille="carre" trait="aucun" fond="vide"
+            <Bouton aria-label={textes.commun.exporterOptimizer} icone={<IconeOptimizer size={14} />} taille="carre" trait="aucun" fond="vide"
               disabled={!!raisonExportOptimizer} title={raisonExportOptimizer ?? textes.commun.exporterOptimizer}
               onClick={onExporterOptimizer} className={`h-7 w-7 ${ICONE_LG}`} />
             <BoutonIcone
@@ -2522,7 +2522,7 @@ function TableauDefenses({
           ))}
         </span>
         <span className="text-xs text-ink">{deckLabel(deck, monsterByCom2us, deckIndex)}</span>
-        <Bouton aria-label={textes.commun.exporterOptimizer} icone={<Upload size={14} />} taille="carre" trait="aucun" fond="vide"
+        <Bouton aria-label={textes.commun.exporterOptimizer} icone={<IconeOptimizer size={14} />} taille="carre" trait="aucun" fond="vide"
           disabled={!!raisonsExportOptimizer[deckIndex]} title={raisonsExportOptimizer[deckIndex] ?? textes.commun.exporterOptimizer}
           onClick={() => onExporterDeckOptimizer(deck)} className={`h-7 w-7 ${ICONE_LG}`} />
         {note && <span className="text-micro text-ink-dim">— {note}</span>}

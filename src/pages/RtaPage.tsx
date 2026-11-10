@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Plus, Trash2, Swords, Wand2, Upload } from 'lucide-react';
+import { Plus, Trash2, Swords, Wand2 } from 'lucide-react';
 import {
   Monster,
   ElementKey,
@@ -33,6 +33,7 @@ import CreateMonster from '../components/CreateMonster';
 import { CustomLead } from '../hooks/useCustomMonsters';
 import { Bouton, Onglets, Selecteur } from '../ui';
 import RuneIcon from '../components/RuneIcon';
+import { IconeOptimizer } from '../components/IconesAtelier';
 import IndicateurSauvegarde from '../components/rta/IndicateurSauvegarde';
 import { useNotifier } from '../ui/Notification';
 import type { RtaSub } from '../App';
@@ -368,7 +369,7 @@ export default function RtaPage({
           onCreateMonster={onCreateMonster}
           disposition="menu"
           entreesEnPlus={[
-            { cle: 'optimizer', libelle: textes.commun.exporterOptimizer, icone: <Upload size={14} />,
+            { cle: 'optimizer', libelle: textes.commun.exporterOptimizer, icone: <IconeOptimizer size={14} />,
               disabled: !!raisonExport, title: raisonExport, onClick: exporterOptimizer },
             {
               cle: 'creer',
@@ -469,7 +470,7 @@ export default function RtaPage({
               qu'aucune ne paraisse plus importante. */}
           {creation}
 
-          <Bouton libelle={textes.commun.exporterOptimizer} icone={<Upload size={14} />}
+          <Bouton libelle={textes.commun.exporterOptimizer} icone={<IconeOptimizer size={14} />}
             disabled={!!raisonExport} title={raisonExport} onClick={exporterOptimizer} />
 
           <div data-grille-actions className="flex flex-col gap-1.5">
