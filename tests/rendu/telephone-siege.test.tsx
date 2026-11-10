@@ -112,9 +112,10 @@ export function testRenduTelephoneRecos() {
   const ferme = rendreRecos(false);
   const t = texteVisible(ferme);
   egal(dialogues(ferme), 0, 'panneau « Options » fermé : aucun dialogue');
-  ok(t.includes('Contres des défenses feu Consulter 2 decks · par Joueur Analyser mes decks Publier dans… Lushen - Veromos - Chasun Galleon - Belladeon - Chasun'),
-    'une recommandation : nom, decks, auteur, analyse, « Publier dans… », compositions');
-  ok(t.includes('Defs de guilde Consulter Importée 1 deck · par Ami'), 'une recommandation importée, marquée');
+  ok(t.includes('Contres des défenses feu Consulter Analyser mes decks Publier dans… 2 decks · par Joueur Lushen - Veromos - Chasun Galleon - Belladeon - Chasun'),
+    'une recommandation : nom, analyse, « Publier dans… », puis decks et auteur sous le nom, compositions');
+  ok(t.includes('Defs de guilde Consulter Analyser mes decks Publier dans… 1 deck · par Ami Importée'),
+    'une recommandation importée : le nom, les decks et l\'auteur, puis l\'étiquette « Importée »');
 
   const ouvert = rendreRecos(true);
   const to = texteVisible(ouvert);

@@ -37,6 +37,8 @@ export function testRenduRecosDiscordPage() {
   ok(/aria-current="true"[^>]*>(?:(?!<\/button>)[\s\S])*Toutes les recommandations/.test(html), '« Toutes les recommandations » choisie à l\'ouverture');
   ok(t.includes('Contres des défenses feu') && t.includes('Defs de guilde') && t.includes('Défenses GvO'), '« Toutes » montre les recommandations locales et celle du salon');
   ok(html.includes('data-provenance-carte'), 'les cartes portent leur provenance quand il y a des salons');
+  ok(t.includes('Défenses GvO Consulter Analyser mes decks 1 deck · par Toto · avec Lulu blacksmith-reco-siege À jour Importée'),
+    'l\'en-tête se lit de haut en bas : le nom, puis les decks et l\'auteur, enfin la source et les étiquettes');
   const b = boutons(html);
   ok(b.some((x) => x.ariaLabel === 'Détacher de ce salon'), 'la recommandation liée se détache, elle ne se supprime pas');
   ok(b.filter((x) => x.texte === 'Publier dans…').every((x) => x.desactive && x.title === 'Connecte-toi à Discord pour publier'),
