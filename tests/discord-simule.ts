@@ -111,7 +111,7 @@ export function simulateur(w: Monde) {
     const user = auth.startsWith('Bearer ') ? 'U' : 'B';
     if (chemin === '/users/@me') return r(user === 'U' ? w.membres.U.user : { id: 'B', username: 'bot' });
     if (chemin === '/users/@me/guilds') return r(user === 'U' ? [{ id: S, name: 'Ma guilde', icon: null }, { id: 'G9', name: 'Sans bot', icon: null }] : [{ id: S }]);
-    if (chemin === `/guilds/${S}`) return r({ id: S, name: 'Ma guilde', icon: null, owner_id: 'O', roles: w.roles });
+    if (chemin === `/guilds/${S}`) return r({ id: S, name: 'Ma guilde', icon: null, owner_id: 'O', roles: w.roles, preferred_locale: 'fr' });
     if (chemin === `/guilds/${S}/channels`) return r(w.salons);
     const membre = chemin.match(/^\/guilds\/G1\/members\/(\w+)$/);
     if (membre) return w.membres[membre[1]] ? r(w.membres[membre[1]]) : r({ code: 10007 }, 404);

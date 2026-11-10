@@ -6,9 +6,12 @@
   nom commence par `blacksmith-reco` et que le bot voit. Une guilde qui partage plusieurs
   recommandations ouvre plusieurs salons. La provenance d'une recommandation liée est
   `discord:<serveur>:<salon>`, dans le champ `source` du format de partage.
-- **Chaque publication est un nouveau message du bot**, qui ne contient que le fichier JSON de la
-  recommandation. Les messages précédents restent dans le salon : l'historique vit dans Discord,
-  et le bot ne supprime jamais rien de lui-même.
+- **Chaque publication est un nouveau message du bot** : le fichier JSON de la recommandation, et
+  une ligne qui dit qui a publié (« Recommandation publiée par @membre », « modifiée par » sur
+  une version existante), dans la langue du serveur, sans notifier personne. Le message est celui
+  du bot : sans cette ligne, le salon ne dirait pas qui a fait le changement. Les messages
+  précédents restent dans le salon : l'historique vit dans Discord, et le bot ne supprime jamais
+  rien de lui-même.
 - **La version courante est le plus récent fichier valide du salon**, parmi les 100 derniers
   messages, qu'il ait été posté par le bot ou déposé à la main par un membre (un export de
   l'app) ; l'app ne montre que celle-là. Un fichier compte s'il est une pièce jointe `.json` de

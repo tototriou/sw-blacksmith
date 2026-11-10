@@ -82,13 +82,18 @@ puis les exceptions du salon (`@everyone`, rôles, membre).
    ⚠️ Ces trois champs viennent de la session et du salon, jamais du fichier
    reçu : un membre ne publie pas sous le nom d'un autre. Le nom du publieur
    est son surnom du serveur, à défaut son nom d'affichage.
-6. Le bot poste un **nouveau message** qui ne contient que le fichier
-   `recommandation-<identifiant du membre>.json`, sans texte ni mention
-   possible (`allowed_mentions` vide) ; la réponse (201) rend la version
-   publiée. ⚠️ Dans Discord, le message est celui du **bot** : c'est le nom du
-   fichier, et sa description (`SW Blacksmith · <surnom> (<identifiant>)`), qui
-   disent aux modérateurs quel membre a publié. L'identifiant vient de la
-   session, jamais du fichier.
+6. Le bot poste un **nouveau message** : le fichier
+   `recommandation-<identifiant du membre>.json`, et une ligne qui dit qui a
+   publié — « Recommandation publiée par @membre », ou « modifiée par » quand
+   le salon portait déjà une recommandation. La ligne est dans la langue du
+   serveur (`preferred_locale` : français, sinon anglais) ; la mention
+   s'affiche sous le nom du membre sans le notifier (`allowed_mentions`
+   vide). La réponse (201) rend la version publiée.
+   ⚠️ Dans Discord, le message est celui du **bot** : la ligne, le nom du
+   fichier et sa description (`SW Blacksmith · <surnom> (<identifiant>)`)
+   disent quel membre a publié. L'identifiant vient de la session, jamais du
+   fichier, et la ligne ne reprend rien du fichier (ni nom ni texte qu'un
+   membre pourrait y glisser).
 
 La version courante d'un salon est le plus récent fichier **valide**, parmi
 les 100 derniers messages, qu'il vienne du bot ou d'un membre
