@@ -9,6 +9,29 @@ import type { Release } from './releases';
 
 export const RELEASES_EN: Release[] = [
   {
+    version: null,
+    date: '2026-11-10',
+    title: 'Siege recommendations shared on Discord',
+    highlights: [
+      'Find your guild’s recommendations in its Discord channels, and publish your own',
+      'The Optimizer looks for runes that hold your team’s speed tune',
+    ],
+    changes: [
+      { kind: 'feat', scope: 'Recommendations', text: 'Connect to Discord to read the recommendations published in your guild’s channels.' },
+      { kind: 'feat', scope: 'Recommendations', text: 'Publish a recommendation to a channel; if it changed in the meantime, you choose deck by deck.' },
+      { kind: 'feat', scope: 'Recommendations', text: 'The bot installs on a server in a few steps, guided from the page.' },
+      { kind: 'feat', scope: 'Recommendations', text: 'Author and contributors are written by Discord on every publication.' },
+      { kind: 'feat', scope: 'Recommendations', text: 'Compact decks: portraits only, actions on the row, and a deck is edited without opening the recommendation.' },
+      { kind: 'feat', scope: 'Application', text: 'The desktop app connects to Discord, and keeps the connection with “Keep my data”.' },
+      { kind: 'feat', scope: 'Optimizer', text: 'A team exported from speed tuning keeps its plan: the search aims for speeds that hold the order.' },
+      { kind: 'feat', scope: 'Optimizer', text: 'A team’s speed tune is set without leaving the Optimizer.' },
+      { kind: 'feat', scope: 'Optimizer', text: 'On computer, the settings sit in fixed columns that each scroll on their own.' },
+      { kind: 'feat', scope: 'Interface', text: '“Export to the Optimizer” carries the Optimizer’s icon.' },
+      { kind: 'fix', scope: 'Speed tuning', text: 'A monster that plays again waits for its skill’s cooldown again.' },
+      { kind: 'fix', scope: 'Speed tuning', text: '“No skill” on an added turn no longer recasts the first turn’s skill.' },
+    ],
+  },
+  {
     version: '2.3.0',
     date: '2026-11-04',
     title: 'SW Blacksmith in English',
