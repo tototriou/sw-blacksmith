@@ -1,7 +1,5 @@
-import { useState } from 'react';
-import { ChevronDown, Hash, HelpCircle, LayoutList, LogOut, RefreshCw, Smartphone, Star, AlertTriangle } from 'lucide-react';
+import { Hash, HelpCircle, LayoutList, LogOut, RefreshCw, Smartphone, Star, AlertTriangle } from 'lucide-react';
 import { Bouton, BoutonIcone, ZoneCliquable } from '../../../ui';
-import MobileSheet from '../../../ui/MobileSheet';
 import { useTraduction } from '../../../hooks/useLangue';
 import { memeProvenance, type EtatAffiche, type GroupeServeur, type Provenance } from '../../../lib/provenancesRecos';
 import type { EtatDiscord } from '../../../hooks/useDiscord';
@@ -9,8 +7,8 @@ import type { EtatDiscord } from '../../../hooks/useDiscord';
 // Les provenances de la page Recommandations : « Toutes les recommandations »,
 // « Sur cet appareil », puis un groupe par serveur Discord et ses salons, et le
 // compte Discord en pied. À l'ordinateur, une COLONNE à gauche du contenu ; au
-// téléphone, un SÉLECTEUR pleine largeur qui ouvre la même liste dans une
-// feuille (docs/02-app/siege/feat-recommandations/rendu-de-la-page.md).
+// téléphone, le même bloc en tête de la page, à plat
+// (docs/02-app/siege/feat-recommandations/rendu-de-la-page.md).
 
 // Mêmes jetons que les pastilles de statut des decks (`PASTILLE_STATUT`,
 // RecoCard.tsx) : fond doux du ton, texte du ton, sans contour.
@@ -137,6 +135,8 @@ export function CompteDiscord(p: PropsProvenances) {
             {d.utilisateur.nom.slice(0, 1).toUpperCase()}
           </span>
           <span className="min-w-0 flex-1 truncate text-sm text-ink">{d.utilisateur.nom}</span>
+          {/* Connecté aussi, un admin peut vouloir installer le bot ailleurs. */}
+          <BoutonIcone onClick={p.onAideInstallation} taille="serre" icone={<HelpCircle size={13} />} libelle={t.connexion.installer} />
           <BoutonIcone onClick={p.onActualiser} disabled={d.statut === 'lecture'} taille="serre"
             icone={<RefreshCw size={13} className={d.statut === 'lecture' ? 'animate-spin motion-reduce:animate-none' : ''} />}
             libelle={t.compte.actualiserAide} />
@@ -172,35 +172,16 @@ export function ColonneProvenances(p: PropsProvenances) {
   );
 }
 
-// Au téléphone : le sélecteur pleine largeur, et la feuille qu'il ouvre.
-export function SelecteurProvenance(p: PropsProvenances & { etatChoisi: EtatAffiche | null; nomChoisi: string; serveurChoisi: string | null }) {
-  const t = useTraduction().recosDiscord;
-  const [ouvert, setOuvert] = useState(false);
+// Au téléphone : la même liste et le même compte, EN TÊTE de la page et à
+// plat — aucun sélecteur à dérouler (choix du mainteneur, 2026-11-10) : la
+// provenance choisie et les autres se voient d'un coup d'œil.
+export function ProvenancesTelephone(p: PropsProvenances) {
   return (
-    <>
-      <ZoneCliquable
-        onClick={() => setOuvert(true)}
-        aria-haspopup="dialog"
-        className="flex min-h-12 w-full items-center gap-2 rounded-lg border border-border bg-panel px-3 py-1.5 text-left"
-        data-selecteur-provenance
-      >
-        <span className="flex min-w-0 flex-1 flex-col">
-          <span className="truncate text-sm font-semibold text-ink">{p.nomChoisi}</span>
-          {(p.serveurChoisi || p.etatChoisi) && (
-            <span className="flex items-center gap-1.5 text-micro text-ink-dim">
-              {p.serveurChoisi && <span className="truncate">{p.serveurChoisi}</span>}
-              {p.etatChoisi && <PastilleEtat etat={p.etatChoisi} />}
-            </span>
-          )}
-        </span>
-        <ChevronDown size={16} className="flex-none text-ink-dim" />
-      </ZoneCliquable>
-      <MobileSheet ouvert={ouvert} onFermer={() => setOuvert(false)} titre={t.provenances}>
-        <ListeProvenances {...p} auDoigt onChoisir={(x) => { p.onChoisir(x); setOuvert(false); }} />
-        <div className="mt-3 border-t border-border pt-3">
-          <CompteDiscord {...p} auDoigt />
-        </div>
-      </MobileSheet>
-    </>
+    <section className="flex flex-col gap-2 rounded-xl border border-border-soft bg-panel p-2" data-provenances-telephone>
+      <ListeProvenances {...p} auDoigt />
+      <div className="mt-1 border-t border-border-soft pt-2">
+        <CompteDiscord {...p} auDoigt />
+      </div>
+    </section>
   );
 }

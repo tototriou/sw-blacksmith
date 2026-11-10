@@ -89,6 +89,7 @@ lecteur côté page (`estBureau()` = l'objet présent, avec `bureau: true`).
 | `session.sauvegarder(texte, nomPropose)`, `sauvegarderSous(texte, nomPropose)` | `bureau:session-sauvegarder`, `bureau:session-sauvegarder-sous` (`invoke`) | rendent l'issue de l'écriture |
 | `session.surEtat(rappel)` | `bureau:session-etat` | bureau → page |
 | `discord.etat()`, `connecter()`, `annuler()`, `code(code)` | `bureau:discord-etat`, `bureau:discord-connecter`, `bureau:discord-annuler`, `bureau:discord-code` (`invoke`) | la connexion à Discord (voir « Discord ») |
+| `discord.inviter()` | `bureau:discord-inviter` (`invoke`) | ouvre l'invitation du bot dans le navigateur du système (la page ne connaît pas l'adresse du service) |
 | `discord.appeler(chemin, methode, corps)` | `bureau:discord-appeler` (`invoke`) | un appel au service, que le processus principal fait avec la session ; rend `{ statut, corps }` |
 
 Le processus principal n'accepte un message que de la page de SA fenêtre
@@ -202,6 +203,8 @@ côté du service : [service-discord.md § Application de bureau](../siege/feat-
   blancs retirés) s'échange contre la session avec le secret. Un code refusé
   laisse le dialogue ouvert ; « Rouvrir la page dans le navigateur » tire un
   nouveau secret ; « Annuler » abandonne la connexion.
+- **« Inviter le bot »** (guide d'installation) : le processus principal ouvre
+  `<service>/api/discord/invitation` dans le navigateur du système.
 - ⚠️ **La page ne voit jamais la session** : elle demande une route au
   processus principal (`discord.appeler`), qui l'appelle avec la session en
   `Authorization: Bearer` et rend le statut et le corps. Seules les routes de

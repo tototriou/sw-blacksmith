@@ -249,6 +249,15 @@ export function creerRouteur(d: Dependances) {
       return redirection(`https://discord.com/oauth2/authorize?${params}`, [cookie(COOKIE_ETAT, defi ? `${etat}.${defi}` : etat, DUREE_ETAT_S, securise)]);
     }
 
+    // L'invitation du bot sur un serveur, SANS AUCUN DROIT : l'admin l'ajoute
+    // ensuite aux salons de recommandations, avec les quatre droits qu'il y
+    // faut. L'identifiant vient de l'environnement : un aperçu invite le bot
+    // de test, la production le sien.
+    if (route === 'GET invitation') {
+      const params = new URLSearchParams({ client_id: d.env.clientId, scope: 'bot', permissions: '0' });
+      return redirection(`https://discord.com/oauth2/authorize?${params}`);
+    }
+
     if (route === 'GET callback') {
       const efface = cookieEfface(COOKIE_ETAT, securise);
       const [etat, defi] = (lireCookies(requete.headers.get('cookie')).get(COOKIE_ETAT) ?? '').split('.');

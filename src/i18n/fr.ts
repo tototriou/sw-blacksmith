@@ -1586,12 +1586,14 @@ export const fr = {
     installation: {
       titre: 'Installer le bot sur ton serveur',
       etapes: [
-        "Le bot est d'abord ouvert à quelques guildes : demande-le sur le Discord de l'app.",
+        "Invite le bot sur ton serveur (il faut le droit « Gérer le serveur »). Il arrive sans aucun droit : il ne voit que les salons où tu l'ajoutes.",
         'Crée un salon dont le nom commence par blacksmith-reco (un salon par recommandation).',
         "Ajoute le bot à ce salon avec quatre droits : voir le salon, voir les anciens messages, envoyer des messages, joindre des fichiers. Il n'a besoin d'aucun autre droit.",
         "Réserve le salon aux recommandations : l'app ne relit que les 100 derniers messages. Un membre peut aussi y déposer le fichier exporté par l'app : le plus récent fichier valide fait foi.",
+        "Chaque membre se connecte à Discord depuis cette page : il voit les salons qu'il peut lire, et publie dans ceux où il peut écrire.",
       ],
-      discordApp: "Discord de l'app",
+      inviter: 'Inviter le bot',
+      question: "Une question ? Le Discord de l'app",
     },
     compte: {
       actualiser: 'Actualiser',

@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
 import { Copy, ExternalLink, Hash } from 'lucide-react';
 import { Bouton, Champ, Modale, Option, useNotifier } from '../../../ui';
-import type { IssueCodeDiscord } from '../../../lib/bureau';
+import { discordBureau, type IssueCodeDiscord } from '../../../lib/bureau';
+import { URL_INVITATION } from '../../../lib/discordClient';
 import Segmented from '../../../ui/Segmented';
 import { useLangue, useTraduction } from '../../../hooks/useLangue';
 import { formatDateHeure } from '../../../i18n/format';
@@ -120,17 +121,39 @@ export function CorpsCodeSite({ code }: { code: string }) {
   );
 }
 
+// L'invitation passe par le service, qui connaît l'identifiant du bot de son
+// environnement. Dans l'application de bureau, la page ne connaît pas
+// l'adresse du service : le processus principal ouvre le navigateur.
+function inviterLeBot() {
+  const pont = discordBureau();
+  if (pont) void pont.inviter();
+  else window.open(URL_INVITATION, '_blank', 'noopener');
+}
+
 export function DialogueInstallation({ onFermer }: { onFermer: () => void }) {
   const t = useTraduction().recosDiscord.installation;
   return (
-    <Modale onClose={onFermer} labelledBy="discord-installation-titre" croix largeur="max-w-[480px]" titre={t.titre}>
+    <Modale onClose={onFermer} labelledBy="discord-installation-titre" croix largeur="max-w-[480px]" titre={t.titre}
+      actions={<Bouton onClick={onFermer} libelle={useTraduction().commun.fermer} />}
+    >
+      <CorpsInstallation onInviter={inviterLeBot} />
+    </Modale>
+  );
+}
+
+// Le corps, rendu seul dans les tests (la coquille passe par un portail).
+export function CorpsInstallation({ onInviter }: { onInviter: () => void }) {
+  const t = useTraduction().recosDiscord.installation;
+  return (
+    <div className="flex flex-col gap-3">
       <ol className="flex list-decimal flex-col gap-2 pl-5 text-sm text-ink-dim">
         {t.etapes.map((e, i) => <li key={i}>{e}</li>)}
       </ol>
-      <a href={LIEN_DISCORD_APP} target="_blank" rel="noreferrer" className="mt-3 inline-block text-sm text-accent-lisible underline">
-        {t.discordApp}
+      <Bouton onClick={onInviter} fond="plein" ton="accent" icone={<ExternalLink size={14} />} libelle={t.inviter} className="self-start" data-inviter-bot />
+      <a href={LIEN_DISCORD_APP} target="_blank" rel="noreferrer" className="text-sm text-accent-lisible underline">
+        {t.question}
       </a>
-    </Modale>
+    </div>
   );
 }
 

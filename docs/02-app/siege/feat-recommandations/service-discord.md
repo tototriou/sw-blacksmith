@@ -29,6 +29,7 @@ code (`erreur`), que la page traduit.
 | --- | --- |
 | `GET login` | Renvoie vers l'autorisation Discord (scopes `identify` et `guilds`), avec un état anti-falsification gardé 10 minutes dans un cookie. `?bureau=<défi>` : la connexion est demandée par l'application de bureau (voir « Application de bureau ») ; le défi est gardé avec l'état, et un défi mal formé est refusé (400). |
 | `GET callback` | Retour de Discord : vérifie l'état, échange le code contre les jetons, pose la session, renvoie vers `/#/siege/recommandations`. Refus du membre : `/?discord=refus#…` ; état faux ou échange raté : `/?discord=erreur#…`, sans session. Pour l'application de bureau : aucune session sur le site, renvoi vers `/?discord-bureau=<code>#…` (le code à copier), ou `refus-bureau` / `erreur-bureau`. |
+| `GET invitation` | Renvoie vers l'invitation du bot sur un serveur (scope `bot`, **aucun droit** : `permissions=0`) ; l'admin l'ajoute ensuite aux salons de recommandations ([guide](installer-le-bot.md)). L'identifiant vient de l'environnement : un aperçu invite le bot de test. Sans session. |
 | `POST bureau-echange` | Corps `{ code, secret }` : le code collé dans l'application de bureau, et le secret dont le défi est l'empreinte. Rend `{ session, utilisateur }` — la session scellée, que l'app garde ; 400 si le code est illisible, a plus de 10 minutes, ou si le secret ne correspond pas. |
 | `GET session` | `{ connecte, utilisateur }` ; 401 sans session valide. |
 | `POST deconnexion` | Révoque le jeton chez Discord et efface le cookie (204). |

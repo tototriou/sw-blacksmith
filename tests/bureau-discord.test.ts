@@ -10,7 +10,7 @@
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import {
-  adresseConnexion, adresseService, chiffrementSur, codeColle, corpsAutorise, lireFichierSession, nouveauSecret, routeAutorisee, SERVICE_PAR_DEFAUT,
+  adresseConnexion, adresseInvitation, adresseService, chiffrementSur, codeColle, corpsAutorise, lireFichierSession, nouveauSecret, routeAutorisee, SERVICE_PAR_DEFAUT,
 } from '../bureau/discordPur';
 import { ENTETE_SESSION, FORME_DEFI } from '../api/_source/service/session';
 import { ENTETE_SESSION as ENTETE_BUREAU } from '../bureau/discordPur';
@@ -32,6 +32,7 @@ export default async function testBureauDiscord() {
   ok(FORME_DEFI.test(defi) && defi === createHash('sha256').update(secret).digest('base64url'), 'le défi est l\'empreinte du secret, dans la forme que le service accepte');
   ok(nouveauSecret().secret !== secret, 'un secret neuf à chaque connexion');
   egal(adresseConnexion('https://s.example', defi), `https://s.example/api/discord/login?bureau=${defi}`, 'le navigateur ne reçoit que le défi');
+  egal(adresseInvitation('https://s.example'), 'https://s.example/api/discord/invitation', 'l\'invitation passe par le service, qui connaît le bot');
   egal(ENTETE_BUREAU, ENTETE_SESSION, 'la session renouvelée est lue dans l\'en-tête que le service écrit');
 
   const code = 'A'.repeat(60);
@@ -54,7 +55,7 @@ export default async function testBureauDiscord() {
   // Le relais de la page : chaque appel du client passe par le pont.
   const appels: unknown[][] = [];
   const pont = (statut: number, corps: string): PontDiscord => ({
-    etat: async () => null, connecter: async () => true, annuler: async () => null, code: async () => null,
+    etat: async () => null, connecter: async () => true, inviter: async () => true, annuler: async () => null, code: async () => null,
     appeler: async (...a: unknown[]) => { appels.push(a); return { statut, corps }; },
   });
   const tout = await lireTout(recupererParLeBureau(pont(200, JSON.stringify({ utilisateur: { id: 'U', nom: 'T' }, serveurs: [], versions: {} }))));
@@ -67,7 +68,7 @@ export default async function testBureauDiscord() {
   // processus principal, branchés dans main.ts et suivis par la session.
   const preload = sansCommentaires(readFileSync('bureau/preload.ts', 'utf8'));
   const discord = sansCommentaires(readFileSync('bureau/discord.ts', 'utf8'));
-  for (const canal of ['etat', 'connecter', 'annuler', 'code', 'appeler']) {
+  for (const canal of ['etat', 'connecter', 'inviter', 'annuler', 'code', 'appeler']) {
     ok(preload.includes(`ipcRenderer.invoke('bureau:discord-${canal}'`), `préchargement : bureau:discord-${canal}`);
     ok(new RegExp(`ipcMain\\.handle\\('bureau:discord-${canal}',[^]*?deLaPage\\(e\\)`).test(discord), `processus principal : bureau:discord-${canal}, de la page seulement`);
   }

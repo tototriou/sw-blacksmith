@@ -53,6 +53,8 @@ export interface PontDiscord {
   // la fermeture) ; `attente` : une connexion attend son code.
   etat: () => Promise<{ conservable: boolean; attente: boolean } | null>;
   connecter: () => Promise<boolean>;
+  // Ouvre l'invitation du bot dans le navigateur du système.
+  inviter: () => Promise<boolean>;
   annuler: () => Promise<null>;
   code: (code: string) => Promise<IssueCodeDiscord | null>;
   appeler: (chemin: string, methode: string, corps?: string) => Promise<{ statut: number; corps: string } | null>;

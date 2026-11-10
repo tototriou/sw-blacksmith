@@ -37,7 +37,7 @@ import {
   type Provenance, type SalonDePublication,
 } from '../../lib/provenancesRecos';
 import type { VersionSalon } from '../../types';
-import { ColonneProvenances, SelecteurProvenance, type PropsProvenances } from './discord/Provenances';
+import { ColonneProvenances, ProvenancesTelephone, type PropsProvenances } from './discord/Provenances';
 import BandeauSalon from './discord/BandeauSalon';
 import {
   DialogueCodeBureau, DialogueCodeSite, DialogueConnexion, DialogueFusion, DialogueInstallation, DialoguePublierDans,
@@ -434,9 +434,6 @@ export default function RecoBoard({
     onDeconnecter: () => void discord.deconnecter(),
     onAideInstallation: () => setInstallationOuverte(true),
   };
-  const salonChoisi = provenance.type === 'salon'
-    ? groupes.flatMap((g) => g.salons).find((l) => l.salonId === provenance.salonId) ?? null
-    : null;
 
   // Recherche par monstre. `null` = aucune recherche en cours (état neutre de la
   // page : rien n'est filtré, rien n'est déplié d'office). Elle porte sur la
@@ -747,6 +744,13 @@ export default function RecoBoard({
         }}
       />
 
+      {/* Au téléphone, EN TÊTE de la page : les provenances à plat et le
+          compte Discord — aucun sélecteur à dérouler (choix du mainteneur,
+          2026-11-10). À l'ordinateur, la colonne plus bas. */}
+      <div className="mt-3 lg:hidden">
+        <ProvenancesTelephone {...propsProvenances} />
+      </div>
+
       {msg && (
         <p className={`mt-3 text-sm ${msg.error ? 'text-bad' : 'text-good'}`}>{msg.text}</p>
       )}
@@ -923,22 +927,13 @@ export default function RecoBoard({
       </div>
 
       {/* ⚠️ **Les provenances** : à l'ordinateur, une COLONNE à gauche du
-          contenu ; au téléphone, un SÉLECTEUR pleine largeur au-dessus de la
-          liste, qui ouvre la même liste dans une feuille (maquette validée le
-          2026-11-09). Le compte Discord est en pied de l'une et de l'autre. */}
+          contenu ; au téléphone, en tête de la page (plus haut). Le compte
+          Discord est en pied de l'une et de l'autre. */}
       <div className="mt-4 lg:grid lg:grid-cols-[256px_minmax(0,1fr)] lg:items-start lg:gap-4">
       <div className="hidden lg:block">
         <ColonneProvenances {...propsProvenances} />
       </div>
       <div className="min-w-0">
-      <div className="lg:hidden">
-        <SelecteurProvenance
-          {...propsProvenances}
-          nomChoisi={provenance.type === 'toutes' ? td.toutes : provenance.type === 'appareil' ? td.appareil : `#${salonChoisi?.nom ?? ''}`}
-          serveurChoisi={salonChoisi ? groupes.find((g) => g.serveurId === salonChoisi.serveurId)?.nom ?? null : null}
-          etatChoisi={salonChoisi?.etat ?? null}
-        />
-      </div>
       {all.length === 0 ? (
         <div className="mt-4 flex flex-col items-center justify-center text-center rounded-2xl border border-dashed border-border bg-panel/40 py-16 px-6 lg:mt-0">
           <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-panel2 border border-border mb-4">

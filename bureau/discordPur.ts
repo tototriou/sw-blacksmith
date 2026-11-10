@@ -35,6 +35,8 @@ export function nouveauSecret(): { secret: string; defi: string } {
 }
 
 export const adresseConnexion = (service: string, defi: string) => `${service}/api/discord/login?bureau=${encodeURIComponent(defi)}`;
+// L'invitation du bot sur un serveur, ouverte dans le navigateur du système.
+export const adresseInvitation = (service: string) => `${service}/api/discord/invitation`;
 
 // Le code collé par l'utilisateur : les blancs (retour à la ligne d'un
 // copier-coller) retirés ; base64url seulement, d'une longueur plausible.

@@ -18,7 +18,7 @@ import { app, BrowserWindow, ipcMain, net, safeStorage, shell } from 'electron';
 import { readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
-  adresseConnexion, chiffrementSur, codeColle, corpsAutorise, ENTETE_SESSION, lireFichierSession, nouveauSecret, routeAutorisee,
+  adresseConnexion, adresseInvitation, chiffrementSur, codeColle, corpsAutorise, ENTETE_SESSION, lireFichierSession, nouveauSecret, routeAutorisee,
 } from './discordPur';
 
 export type IssueCode = 'connecte' | 'invalide' | 'sans-demande' | 'indisponible';
@@ -88,6 +88,15 @@ export function brancherDiscord(fenetre: BrowserWindow, options: OptionsDiscord)
     const s = nouveauSecret();
     secret = s.secret;
     const adresse = adresseConnexion(options.service, s.defi);
+    if (options.preuve) options.preuve.liensOuverts.push(adresse);
+    else void shell.openExternal(adresse);
+    return true;
+  });
+
+  // « Inviter le bot » : la page ne connaît pas l'adresse du service.
+  ipcMain.handle('bureau:discord-inviter', (e) => {
+    if (!deLaPage(e)) return false;
+    const adresse = adresseInvitation(options.service);
     if (options.preuve) options.preuve.liensOuverts.push(adresse);
     else void shell.openExternal(adresse);
     return true;

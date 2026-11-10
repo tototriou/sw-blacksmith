@@ -6,6 +6,8 @@ import type { VersionSalon } from '../types';
 import type { SalonAccessible, VersionValide } from './recoDiscord';
 
 export const URL_CONNEXION = '/api/discord/login';
+// L'invitation du bot sur un serveur (sans aucun droit), sur le site.
+export const URL_INVITATION = '/api/discord/invitation';
 const BASE = '/api/discord';
 
 export type Recuperer = (url: string, init?: RequestInit) => Promise<Response>;

@@ -91,6 +91,7 @@ contextBridge.exposeInMainWorld(
     discord: Object.freeze({
       etat: () => ipcRenderer.invoke('bureau:discord-etat'),
       connecter: () => ipcRenderer.invoke('bureau:discord-connecter'),
+      inviter: () => ipcRenderer.invoke('bureau:discord-inviter'),
       annuler: () => ipcRenderer.invoke('bureau:discord-annuler'),
       code: (code: string) => ipcRenderer.invoke('bureau:discord-code', code),
       appeler: (chemin: string, methode: string, corps?: string) => ipcRenderer.invoke('bureau:discord-appeler', chemin, methode, corps),
