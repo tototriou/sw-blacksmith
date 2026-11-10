@@ -115,6 +115,10 @@ export function CorpsCodeSite({ code }: { code: string }) {
   return (
     <div className="flex flex-col gap-3">
       <p className="text-sm text-ink-dim">{t.texte}</p>
+      {/* Le code ouvre la connexion Discord du membre à qui détient
+          l'application qui l'a demandé : qu'on le lui fasse recopier, et
+          c'est sa connexion qui part. */}
+      <p className="rounded-lg bg-warn-soft px-3 py-2 text-sm text-warn" data-avertissement-code>{t.avertissement}</p>
       <Champ value={code} readOnly aria-label={t.champ} onFocus={(e) => e.target.select()} className="font-mono" data-code-bureau />
       <Bouton onClick={copier} fond="plein" ton="accent" icone={<Copy size={14} />} libelle={t.copier} className="self-start" autoFocus />
     </div>

@@ -10,13 +10,19 @@ import type { Dictionnaire } from '../../../src/i18n/fr';
 import type { RecoPayload } from '../../../src/types';
 import { client, ErreurDiscord, API, type Recuperer } from './discordApi';
 import { droitsServeur, droitsSurSalon, estAdministrateur, resumeDroits, type DroitsSalon, type Exception, type Role, type Salon } from './droits';
-import { candidats, lireVersion, nomDuMembre, NOM_FICHIER, preparerPublication, sourceDuSalon, TAILLE_MAX, type MessageDiscord } from './recoSalon';
+import { candidats, descriptionPublication, lireVersion, nomDeFichier, nomDuMembre, preparerPublication, sourceDuSalon, TAILLE_MAX, type MessageDiscord } from './recoSalon';
 import {
   COOKIE_ETAT, COOKIE_SESSION, cookie, cookieEfface, desceller, DUREE_CODE_S, DUREE_ETAT_S, DUREE_SESSION_S, empreinte, ENTETE_SESSION, estCodeBureau,
   estSession, FORME_DEFI, jetonPorteur, lireCookies, sceller, signer, verifierSignature, type Cle, type CodeBureau, type Session,
 } from './session';
 
 export const PREFIXE_SALON = 'blacksmith-reco';
+// ⚠️ Un identifiant Discord (snowflake) : des chiffres seulement. Un identifiant
+// reçu de la page entre tel quel dans un chemin de l'API de Discord, appelé avec
+// le jeton du bot : `../`, `?` ou `#` y feraient appeler une autre route.
+// (Les adresses internes `brut` et `salons-serveur` n'en ont pas besoin : leur
+// signature prouve que le service a lui-même tiré l'identifiant de Discord.)
+export const FORME_ID = /^\d{1,20}$/;
 const ROUTE_RECOS = '#/siege/recommandations';
 export const PAGE_RECOS = `/${ROUTE_RECOS}`;
 // ⚠️ Le paramètre AVANT la route : `/?discord=refus#/siege/…`. Collé après
@@ -242,9 +248,13 @@ export function creerRouteur(d: Dependances) {
       const defi = url.searchParams.get('bureau');
       if (defi !== null && !FORME_DEFI.test(defi)) return json(400, { erreur: 'defi' });
       const etat = Buffer.from(crypto.getRandomValues(new Uint8Array(16))).toString('base64url');
+      // ⚠️ `prompt=none` (pas d'écran de Discord pour un membre qui a déjà
+      // autorisé l'app) SEULEMENT sur le site : pour l'application de bureau,
+      // l'écran de Discord reste — un lien de connexion envoyé par un tiers
+      // n'afficherait sinon qu'un code, qu'on pourrait lui recopier.
       const params = new URLSearchParams({
         response_type: 'code', client_id: d.env.clientId, scope: 'identify guilds',
-        redirect_uri: `${url.origin}/api/discord/callback`, state: etat, prompt: 'none',
+        redirect_uri: `${url.origin}/api/discord/callback`, state: etat, ...(defi ? {} : { prompt: 'none' }),
       });
       return redirection(`https://discord.com/oauth2/authorize?${params}`, [cookie(COOKIE_ETAT, defi ? `${etat}.${defi}` : etat, DUREE_ETAT_S, securise)]);
     }
@@ -323,13 +333,17 @@ export function creerRouteur(d: Dependances) {
       return lue ? repondre(200, { connecte: true, utilisateur: lue.session.utilisateur }) : nonConnecte();
     }
 
+    // ⚠️ Les DEUX jetons sont révoqués : la session est sans état, le service
+    // ne peut pas l'oublier ; une copie volée du cookie ne vaut plus rien dès
+    // que Discord refuse ses jetons — celui d'accès comme celui qui le renouvelle.
     if (route === 'POST deconnexion') {
       if (lue) {
-        await d.recuperer(`${API}/oauth2/token/revoke`, {
+        const revoquer = (token: string, token_type_hint: string) => d.recuperer(`${API}/oauth2/token/revoke`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: new URLSearchParams({ token: lue.session.acces, token_type_hint: 'access_token', client_id: d.env.clientId, client_secret: d.env.clientSecret }),
+          body: new URLSearchParams({ token, token_type_hint, client_id: d.env.clientId, client_secret: d.env.clientSecret }),
         }).catch(() => undefined);
+        await Promise.all([revoquer(lue.session.acces, 'access_token'), revoquer(lue.session.renouvellement, 'refresh_token')]);
       }
       return json(204, null, {}, [cookieEfface(COOKIE_SESSION, securise)]);
     }
@@ -377,6 +391,7 @@ export function creerRouteur(d: Dependances) {
 
       if (route === 'GET salon') {
         const salonId = url.searchParams.get('id') ?? '';
+        if (!FORME_ID.test(salonId)) return repondre(400, { erreur: 'salon' });
         const a = await acces(salonId, session.utilisateur.id);
         if (!a || !a.utilisateur.lire || !a.bot.lire) return repondre(403, { acces: false });
         const version = versionLue(await lireEnCache(url.origin, salonId));
@@ -388,7 +403,7 @@ export function creerRouteur(d: Dependances) {
         if (texte.length > TAILLE_MAX * 2) return repondre(413, { erreur: 'trop-gros' });
         let corps: { salon?: unknown; base?: unknown; contenu?: unknown };
         try { corps = JSON.parse(texte); } catch { return repondre(400, { erreur: 'corps' }); }
-        if (typeof corps.salon !== 'string' || typeof corps.contenu !== 'string' || (corps.base !== null && typeof corps.base !== 'string')) {
+        if (typeof corps.salon !== 'string' || !FORME_ID.test(corps.salon) || typeof corps.contenu !== 'string' || (corps.base !== null && typeof corps.base !== 'string')) {
           return repondre(400, { erreur: 'corps' });
         }
         const a = await acces(corps.salon, session.utilisateur.id);
@@ -402,9 +417,16 @@ export function creerRouteur(d: Dependances) {
         const publieur = nomDuMembre(a.membre) || session.utilisateur.nom;
         const p = preparerPublication(corps.contenu, publieur, precedente, sourceDuSalon(a.serveurId, corps.salon), d.t);
         if (!p.ok) return repondre(400, { erreur: 'contenu', details: p.erreurs });
+        // Dans Discord, le message est celui du BOT : le membre qui a publié
+        // se lit dans le nom du fichier (son identifiant, que le JSON ne peut
+        // pas forger) et dans sa description, pour la modération.
+        const nom = nomDeFichier(session.utilisateur.id);
         const fd = new FormData();
-        fd.append('payload_json', JSON.stringify({ attachments: [{ id: 0, filename: NOM_FICHIER }] }));
-        fd.append('files[0]', new Blob([p.texte], { type: 'application/json' }), NOM_FICHIER);
+        fd.append('payload_json', JSON.stringify({
+          attachments: [{ id: 0, filename: nom, description: descriptionPublication(publieur, session.utilisateur.id) }],
+          allowed_mentions: { parse: [] },
+        }));
+        fd.append('files[0]', new Blob([p.texte], { type: 'application/json' }), nom);
         const message = await discord.bot<{ id: string; timestamp: string }>(`/channels/${corps.salon}/messages`, { method: 'POST', body: fd });
         return repondre(201, { version: { messageId: message.id, date: message.timestamp, reco: p.reco } });
       }

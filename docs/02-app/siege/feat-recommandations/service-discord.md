@@ -15,7 +15,7 @@ Fichiers :
 - [session.ts](../../../../api/_source/service/session.ts) — cookie chiffré, signature des lectures internes.
 - [discordApi.ts](../../../../api/_source/service/discordApi.ts) — les appels à l'API de Discord.
 - [scripts/construire-api.mjs](../../../../scripts/construire-api.mjs) — l'empaquetage au build.
-- [vercel.json](../../../../vercel.json) — région et réécriture des routes.
+- [vercel.json](../../../../vercel.json) — région, réécriture des routes, en-têtes de sécurité du site.
 - Tests : [tests/discord-service.test.ts](../../../../tests/discord-service.test.ts), devant un Discord simulé ([tests/discord-simule.ts](../../../../tests/discord-simule.ts)), qui sert aussi à la preuve de l'application de bureau (`npm run bureau:preuve -- --discord`).
 
 ## Routes
@@ -27,12 +27,12 @@ code (`erreur`), que la page traduit.
 
 | Route | Rôle |
 | --- | --- |
-| `GET login` | Renvoie vers l'autorisation Discord (scopes `identify` et `guilds`), avec un état anti-falsification gardé 10 minutes dans un cookie. `?bureau=<défi>` : la connexion est demandée par l'application de bureau (voir « Application de bureau ») ; le défi est gardé avec l'état, et un défi mal formé est refusé (400). |
+| `GET login` | Renvoie vers l'autorisation Discord (scopes `identify` et `guilds`), avec un état anti-falsification gardé 10 minutes dans un cookie. Sur le site, `prompt=none` : un membre qui a déjà autorisé l'app passe sans écran. `?bureau=<défi>` : la connexion est demandée par l'application de bureau (voir « Application de bureau ») ; le défi est gardé avec l'état, un défi mal formé est refusé (400), et ⚠️ l'écran de Discord s'affiche toujours. |
 | `GET callback` | Retour de Discord : vérifie l'état, échange le code contre les jetons, pose la session, renvoie vers `/#/siege/recommandations`. Refus du membre : `/?discord=refus#…` ; état faux ou échange raté : `/?discord=erreur#…`, sans session. Pour l'application de bureau : aucune session sur le site, renvoi vers `/?discord-bureau=<code>#…` (le code à copier), ou `refus-bureau` / `erreur-bureau`. |
 | `GET invitation` | Renvoie vers l'invitation du bot sur un serveur (scope `bot`, **aucun droit** : `permissions=0`) ; l'admin l'ajoute ensuite aux salons de recommandations ([guide](installer-le-bot.md)). L'identifiant vient de l'environnement : un aperçu invite le bot de test. Sans session. |
 | `POST bureau-echange` | Corps `{ code, secret }` : le code collé dans l'application de bureau, et le secret dont le défi est l'empreinte. Rend `{ session, utilisateur }` — la session scellée, que l'app garde ; 400 si le code est illisible, a plus de 10 minutes, ou si le secret ne correspond pas. |
 | `GET session` | `{ connecte, utilisateur }` ; 401 sans session valide. |
-| `POST deconnexion` | Révoque le jeton chez Discord et efface le cookie (204). |
+| `POST deconnexion` | Révoque chez Discord les **deux** jetons (accès et renouvellement) et efface le cookie (204) : la session est sans état, une copie volée du cookie ne vaut plus rien une fois ses jetons révoqués. |
 | `GET sources` | Les serveurs communs au membre et au bot, et dans chacun les salons `blacksmith-reco…` que le bot et le membre peuvent lire, avec le droit de publier (`ecrire`) ; `botAdmin` signale un bot administrateur, sans bloquer. Un serveur sans tel salon n'est pas renvoyé. |
 | `GET tout` | La lecture d'ouverture de la page, en une requête : les sources, puis `versions`, la version courante de chaque salon lisible. Le serveur, le bot et le membre n'y sont lus qu'une fois. |
 | `GET salon?id=` | La version courante du salon (`messageId`, `date`, `reco`, ou `null` si le salon n'a jamais été publié) et `ecrire`. 403 si le membre ou le bot ne le lit pas, ou si ce n'est pas un salon de recommandations. |
@@ -42,6 +42,13 @@ code (`erreur`), que la page traduit.
 
 Une erreur `429` de Discord au-delà de l'attente tolérée répond `503 { erreur: 'limite' }` :
 la page dit de réessayer dans une minute, plutôt qu'une panne.
+
+⚠️ **Un identifiant de salon reçu de la page** (`salon?id=`, `salon` de
+`publier`) n'est fait que de chiffres (`FORME_ID`), sinon 400 avant tout appel
+à Discord : il entre tel quel dans un chemin de l'API appelé avec le jeton du
+bot, où `../`, `?` ou `#` feraient appeler une autre route. Les adresses
+internes signées n'en ont pas besoin : leur signature prouve que l'identifiant
+vient du service.
 
 ## Droits
 
@@ -75,8 +82,13 @@ puis les exceptions du salon (`@everyone`, rôles, membre).
    ⚠️ Ces trois champs viennent de la session et du salon, jamais du fichier
    reçu : un membre ne publie pas sous le nom d'un autre. Le nom du publieur
    est son surnom du serveur, à défaut son nom d'affichage.
-6. Le bot poste un **nouveau message** qui ne contient que
-   `recommandation.json` ; la réponse (201) rend la version publiée.
+6. Le bot poste un **nouveau message** qui ne contient que le fichier
+   `recommandation-<identifiant du membre>.json`, sans texte ni mention
+   possible (`allowed_mentions` vide) ; la réponse (201) rend la version
+   publiée. ⚠️ Dans Discord, le message est celui du **bot** : c'est le nom du
+   fichier, et sa description (`SW Blacksmith · <surnom> (<identifiant>)`), qui
+   disent aux modérateurs quel membre a publié. L'identifiant vient de la
+   session, jamais du fichier.
 
 La version courante d'un salon est le plus récent fichier **valide**, parmi
 les 100 derniers messages, qu'il vienne du bot ou d'un membre
@@ -121,6 +133,11 @@ L'app n'a ni cookie ni origine web
 2. Au retour de Discord, le service scelle la session avec le défi et une
    échéance de **10 minutes** : c'est le **code**, que le site affiche, à
    copier dans l'app. Il ne pose aucune session sur le site.
+   ⚠️ **Hameçonnage** : qui détient le secret d'une connexion qu'il a lancée
+   et obtient le code d'un autre membre obtient sa session. D'où l'écran de
+   Discord toujours affiché pour une connexion bureau (le membre voit ce qu'il
+   autorise), et l'avertissement de la page du code : « Ne donne ce code à
+   personne ».
 3. L'app envoie le code et son secret à `bureau-echange`, qui rend la session
    scellée. ⚠️ Le service ne garde rien : il ne peut pas empêcher qu'un code
    serve deux fois en 10 minutes ; sans le secret, qui n'a jamais quitté
@@ -167,14 +184,31 @@ L'app n'a ni cookie ni origine web
   `api/_source/` avec esbuild ; la fonction `api/discord.mjs` charge le
   paquet. Un dossier dont le nom commence par `_` ne devient pas une fonction.
 - **Région** : Paris (`cdg1`), dans `vercel.json`.
+- **En-têtes du site** (`vercel.json`, toutes les adresses) : aucune mise en
+  cadre par un autre site (`frame-ancestors 'none'`, `X-Frame-Options`), pas
+  de reniflage de type (`nosniff`), et `Referrer-Policy: same-origin` —
+  l'adresse peut porter le code de l'application de bureau, elle ne part pas
+  vers un autre site.
 - **Variables d'environnement** (Vercel, jamais dans le dépôt) :
   `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`, `DISCORD_BOT_TOKEN` et
   `CLE_SESSION` (32 octets aléatoires en base64). Production : l'application
   Discord de production ; Preview et Development : l'application de test.
+  ⚠️ **Les secrets de production ne vivent QUE dans l'environnement
+  Production**, avec une `CLE_SESSION` qui leur est propre : le dépôt est
+  public, et un aperçu exécute le code de sa branche — une PR venue d'un fork
+  ne se déploie qu'après autorisation (protection des forks de Vercel,
+  activée).
+- **Coupe-circuit** : changer `CLE_SESSION` (puis redéployer) déconnecte
+  tous les membres d'un coup, cookies et sessions de l'application de bureau
+  compris. Le jeton du bot se régénère dans le portail Discord.
+- **Débit** : aucune limite par membre dans le service, qui ne garde rien ;
+  une règle de limite de débit du pare-feu Vercel sur `/api/discord/*`
+  protège le quota du bot, partagé par toutes les guildes.
 - **Adresses de retour** déclarées dans l'application Discord :
-  `<origine>/api/discord/callback` — la production
-  (`https://sw-blacksmith.vercel.app`), l'alias d'aperçu de la branche testée
-  et `http://localhost:3000` pour le développement.
+  `<origine>/api/discord/callback`. L'application de **production** n'en
+  déclare qu'une, `https://sw-blacksmith.vercel.app/api/discord/callback` ;
+  celle de **test**, l'alias d'aperçu de la branche testée et
+  `http://localhost:3000` pour le développement.
 - **En local** : `npm run dev:api` empaquette le service puis lance
   `vercel dev` (site et fonctions sur `http://localhost:3000`), avec les
   variables de l'environnement Development du projet. À relancer après une

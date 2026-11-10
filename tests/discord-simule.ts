@@ -18,14 +18,24 @@ export const bits = (...b: bigint[]) => b.reduce((a, x) => a | x, 0n).toString()
 export const LIRE = bits(VOIR_LE_SALON, HISTORIQUE);
 export const TOUT_SALON = bits(VOIR_LE_SALON, HISTORIQUE, ENVOYER, JOINDRE);
 
+// Une publication reçue par le faux Discord : le fichier, et ce que dit le
+// message (`payload_json`).
+export interface Poste {
+  salon: string;
+  texte: string;
+  nomFichier: string;
+  charge: { attachments: { id: number; filename: string; description?: string }[]; allowed_mentions?: { parse: string[] }; content?: string };
+}
+
 export interface Monde {
   roles: Role[];
   salons: { id: string; name: string; type: number; permission_overwrites?: Salon['permission_overwrites'] }[];
   membres: Record<string, { roles: string[]; nick?: string | null; user: { id: string; username: string; global_name?: string | null } }>;
   messages: Record<string, MessageDiscord[]>;
   pieces: Record<string, string>;
-  postes: { salon: string; texte: string }[];
+  postes: Poste[];
   appels: string[];
+  revoques: string[]; // « jeton:type » de chaque révocation
   jetonRefuse?: boolean;
 }
 
@@ -33,19 +43,20 @@ export function monde(): Monde {
   return {
     roles: [{ id: S, permissions: LIRE }, { id: 'officier', permissions: bits(ENVOYER, JOINDRE) }],
     salons: [
-      { id: 'C1', name: 'blacksmith-reco-siege', type: 0 },
-      { id: 'C2', name: 'general', type: 0 },
-      { id: 'C3', name: 'blacksmith-reco-cache', type: 0, permission_overwrites: [{ id: S, type: 0, allow: '0', deny: bits(VOIR_LE_SALON) }] },
+      { id: '1001', name: 'blacksmith-reco-siege', type: 0 },
+      { id: '1002', name: 'general', type: 0 },
+      { id: '1003', name: 'blacksmith-reco-cache', type: 0, permission_overwrites: [{ id: S, type: 0, allow: '0', deny: bits(VOIR_LE_SALON) }] },
     ],
     membres: {
       B: { roles: ['officier'], user: { id: 'B', username: 'bot' } },
       U: { roles: ['officier'], nick: 'Toto le chef', user: { id: 'U', username: 'toto', global_name: 'Toto' } },
       L: { roles: [], user: { id: 'L', username: 'lulu' } },
     },
-    messages: { C1: [] },
+    messages: { '1001': [] },
     pieces: {},
     postes: [],
     appels: [],
+    revoques: [],
   };
 }
 
@@ -66,9 +77,9 @@ export function recoSimple(nom: string, monstre = 14105): Reco {
 // connecte est `U` (« Toto »).
 export function serviceDePreuve() {
   const w = monde();
-  w.salons.push({ id: 'C4', name: 'blacksmith-reco-offs', type: 0 });
-  deposer(w, 'C1', '501', encodeRecosJson([recoSimple('Défenses GvO')]));
-  deposer(w, 'C4', '502', encodeRecosJson([recoSimple('Offs de guilde')]));
+  w.salons.push({ id: '1004', name: 'blacksmith-reco-offs', type: 0 });
+  deposer(w, '1001', '501', encodeRecosJson([recoSimple('Défenses GvO')]));
+  deposer(w, '1004', '502', encodeRecosJson([recoSimple('Offs de guilde')]));
   const routeur = creerRouteur({
     env: { clientId: 'client', clientSecret: 'secret', jetonBot: 'bot', cle: new Uint8Array(32).fill(5) },
     recuperer: simulateur(w), maintenant: () => Date.now(), attendre: async () => {}, t: fr, lectureEnCache: false,
@@ -92,7 +103,11 @@ export function simulateur(w: Monde) {
       if (w.jetonRefuse) return r({ error: 'invalid_grant' }, 400);
       return r({ access_token: `acces-${p.get('grant_type')}`, refresh_token: 'renouv-2', expires_in: 604800 });
     }
-    if (chemin === '/oauth2/token/revoke') return new Response(null, { status: 200 });
+    if (chemin === '/oauth2/token/revoke') {
+      const p = init.body as URLSearchParams;
+      w.revoques.push(`${p.get('token')}:${p.get('token_type_hint')}`);
+      return new Response(null, { status: 200 });
+    }
     const user = auth.startsWith('Bearer ') ? 'U' : 'B';
     if (chemin === '/users/@me') return r(user === 'U' ? w.membres.U.user : { id: 'B', username: 'bot' });
     if (chemin === '/users/@me/guilds') return r(user === 'U' ? [{ id: S, name: 'Ma guilde', icon: null }, { id: 'G9', name: 'Sans bot', icon: null }] : [{ id: S }]);
@@ -108,7 +123,8 @@ export function simulateur(w: Monde) {
       const fd = init.body as FormData;
       const texte = await (fd.get('files[0]') as Blob).text();
       const id = String(++n);
-      w.postes.push({ salon: msgs[1], texte });
+      const charge = JSON.parse(String(fd.get('payload_json'))) as Poste['charge'];
+      w.postes.push({ salon: msgs[1], texte, charge, nomFichier: (fd.get('files[0]') as File).name });
       deposer(w, msgs[1], id, texte);
       return r({ id, timestamp: `t${id}` });
     }

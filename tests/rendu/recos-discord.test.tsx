@@ -109,6 +109,8 @@ export function testRenduRecosDiscordComposants() {
   const site = rendre(<CorpsCodeSite code="abc-123_XYZ" />);
   ok(site.includes('value="abc-123_XYZ"') && /readOnly=""|readonly=""/.test(site), 'site : le code, en lecture seule');
   ok(boutons(site).some((x) => x.texte === 'Copier le code'), 'site : « Copier le code »');
+  ok(texteVisible(site).includes('Ne donne ce code à personne') && site.indexOf('data-avertissement-code') < site.indexOf('value="abc-123_XYZ"'),
+    'site : l\'avertissement contre l\'hameçonnage, avant le code');
 
   const publier = (r: Reco, connecte = true) => boutons(rendre(<BandeauSalon reco={r} connecte={connecte} enCours={false} onPublier={() => {}} onFusionner={() => {}} />));
   egal(publier(a).map((x) => [x.texte, x.desactive, x.title]), [['Publier', true, 'Rien à publier : la recommandation est celle du salon']], 'à jour : « Publier » désactivé, avec sa raison');

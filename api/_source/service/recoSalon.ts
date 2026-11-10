@@ -15,7 +15,13 @@ export interface MessageDiscord {
   attachments: { url: string; filename: string; size: number }[];
 }
 
-export const NOM_FICHIER = 'recommandation.json';
+// Le fichier posté par le bot porte l'identifiant Discord du membre qui a
+// publié : le message est celui du bot, c'est par là qu'un modérateur
+// retrouve qui l'a envoyé. La description (texte alternatif de la pièce
+// jointe) le redit en clair, sans langue : une guilde peut être anglophone.
+// L'identifiant vient de la session, jamais du fichier reçu.
+export const nomDeFichier = (membreId: string) => `recommandation-${membreId}.json`;
+export const descriptionPublication = (publieur: string, membreId: string) => `SW Blacksmith · ${publieur} (${membreId})`.slice(0, 1024);
 const collecteur = (): Issues => ({ errors: [], warnings: [] });
 // Une recommandation pèse quelques dizaines de Ko ; au-delà, ce n'en est pas une.
 export const TAILLE_MAX = 256 * 1024;
