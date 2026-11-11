@@ -5,15 +5,16 @@ compétitifs : composer ses équipes de siège et vérifier leur speed tuning, c
 la RTA, analyser ses runes et son compte, chercher le meilleur build d'un monstre, partager des
 recommandations de decks avec sa guilde.
 
-En ligne : <https://sw-forge.vercel.app>. La même app existe en **application de bureau** (Windows,
+En ligne : <https://sw-blacksmith.vercel.app>. La même app existe en **application de bureau** (Windows,
 Linux), proposée par la page Télécharger du site.
 
-## Tout reste sur ta machine
+## Local par défaut
 
-Il n'y a **pas de serveur, pas de compte, pas d'authentification**. L'export de compte qu'on
-importe est lu **dans la page** : il n'est jamais téléversé. Rien n'est conservé sans accord : un
-seul interrupteur décide pour toute l'app, et « Tout supprimer » efface tout. Aucune mesure
-d'audience.
+Il n'y a **pas de compte à créer**. L'export de compte qu'on importe est lu **dans la page** : il
+n'est jamais téléversé. Rien ne quitte l'appareil sans un geste de l'utilisateur
+([local-par-defaut.md](../04-decisions/adr/local-par-defaut.md)). Rien n'est conservé sans
+accord : un seul interrupteur décide pour toute l'app, et « Tout supprimer » efface tout. Aucune
+mesure d'audience.
 
 ## Ce qu'on y trouve
 

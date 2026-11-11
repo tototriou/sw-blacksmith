@@ -11,6 +11,11 @@
 // l'ancienne adresse reste relue.
 export const NOM_APP = 'SW Blacksmith';
 
+// L'invitation au serveur Discord de l'app (questions, idées, bugs), écrite
+// une fois : l'accueil, le pied de page et le guide d'installation du bot y
+// renvoient.
+export const LIEN_DISCORD = 'https://discord.gg/R2Fe4GJZET';
+
 // Préfixe des fichiers téléchargés (`swblacksmith-prepa-rta-….json`) — décision
 // 14 du rebranding. Seul le NOM change : contenu et format sont les mêmes, et
 // l'import ne regarde jamais le nom d'un fichier — un ancien `swforge-…` se

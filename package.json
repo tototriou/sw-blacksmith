@@ -1,17 +1,18 @@
 {
   "name": "swblacksmith",
   "private": true,
-  "version": "2.3.0",
+  "version": "2.4.0",
   "type": "module",
   "main": "dist-bureau/main.cjs",
-  "description": "SW Blacksmith — boîte à outils Summoners War : siège, RTA, runes et analyse de compte. 100 % local, aucune donnée envoyée.",
+  "description": "SW Blacksmith — boîte à outils Summoners War : siège, RTA, runes et analyse de compte. Local par défaut, rien n'est envoyé sans ton accord.",
   "author": "SW Blacksmith",
   "engines": {
-    "node": ">=24"
+    "node": "24.x"
   },
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && node scripts/construire-api.mjs",
+    "dev:api": "node scripts/construire-api.mjs && vercel dev",
     "preview": "vite preview",
     "fetch-data": "node scripts/fetch-monsters.mjs && node scripts/fetch-skills.mjs && node scripts/link-collabs.mjs",
     "fetch-skills": "node scripts/fetch-skills.mjs",

@@ -88,6 +88,9 @@ lecteur côté page (`estBureau()` = l'objet présent, avec `bureau: true`).
 | `session.etat()`, `retenir(oui)`, `choisirDossier()`, `oublierDossier()`, `oublier()` | `bureau:session-etat`, `bureau:session-retenir`, `bureau:session-choisir-dossier`, `bureau:session-oublier-dossier`, `bureau:session-oublier` (`invoke`) | rendent l'état : session en cours, dossier SW Blacksmith |
 | `session.sauvegarder(texte, nomPropose)`, `sauvegarderSous(texte, nomPropose)` | `bureau:session-sauvegarder`, `bureau:session-sauvegarder-sous` (`invoke`) | rendent l'issue de l'écriture |
 | `session.surEtat(rappel)` | `bureau:session-etat` | bureau → page |
+| `discord.etat()`, `connecter()`, `annuler()`, `code(code)` | `bureau:discord-etat`, `bureau:discord-connecter`, `bureau:discord-annuler`, `bureau:discord-code` (`invoke`) | la connexion à Discord (voir « Discord ») |
+| `discord.inviter()` | `bureau:discord-inviter` (`invoke`) | ouvre l'invitation du bot dans le navigateur du système (la page ne connaît pas l'adresse du service) |
+| `discord.appeler(chemin, methode, corps)` | `bureau:discord-appeler` (`invoke`) | un appel au service, que le processus principal fait avec la session ; rend `{ statut, corps }` |
 
 Le processus principal n'accepte un message que de la page de SA fenêtre
 (`evenement.sender`), et vérifie son contenu.
@@ -120,6 +123,8 @@ change pas. Ce qui en dépend aujourd'hui :
 | — | la sauvegarde de session : « Sauvegarder » (barre du haut aux deux formats, ligne « Session » des Paramètres, palette, Ctrl+S) réécrit la session en cours ; « Sauvegarder sous… » dans la barre du haut et la palette ([transverse/](../transverse/) (sauvegarde de session)) |
 | Textes qui parlent du navigateur (« dans ton navigateur », « en fermant l'onglet », « ta prochaine visite », thème « Auto », « un autre navigateur ») | leur variante : « sur ta machine », « en fermant l'application »… (`selonSupport(site, app)`) |
 | Workers de la recherche de runes : la moitié des fils logiques moins deux (`navigator.hardwareConcurrency`) | les cœurs physiques moins deux, lus par le bureau (« Les cœurs physiques ») ; la règle du site si la lecture échoue |
+| Connexion à Discord : le navigateur part vers Discord et revient connecté (cookie) | le navigateur du système, puis un code à coller ; la session gardée par le processus principal (« Discord ») |
+| — | les étoiles de favoris des salons (Recommandations) |
 
 ## La coquille
 
@@ -183,6 +188,45 @@ toute réponse qui n'est pas un entier positif ; le hook de la recherche
 chaque demande au Worker de recherche (`DemandeDeRecherche.coeursPhysiques`),
 qui n'a pas accès au pont.
 
+## Discord
+
+La connexion à Discord des recommandations de siège
+([synchronisation-discord.md](../siege/feat-recommandations/synchronisation-discord.md)).
+`bureau/discord.ts` (branchement), `bureau/discordPur.ts` (pur, testé). Le
+côté du service : [service-discord.md § Application de bureau](../siege/feat-recommandations/service-discord.md#application-de-bureau).
+
+- **La connexion** : « Se connecter à Discord », puis « Continuer vers
+  Discord », tire un secret dans le processus principal et ouvre le
+  navigateur du système sur le service, avec le défi (l'empreinte du secret)
+  seulement. Au retour de Discord, le site affiche un code ; la page de l'app
+  ouvre le dialogue « Coller le code de connexion ». Le code collé (les
+  blancs retirés) s'échange contre la session avec le secret. Un code refusé
+  laisse le dialogue ouvert ; « Rouvrir la page dans le navigateur » tire un
+  nouveau secret ; « Annuler » abandonne la connexion.
+- **« Inviter le bot »** (guide d'installation) : le processus principal ouvre
+  `<service>/api/discord/invitation` dans le navigateur du système.
+- ⚠️ **La page ne voit jamais la session** : elle demande une route au
+  processus principal (`discord.appeler`), qui l'appelle avec la session en
+  `Authorization: Bearer` et rend le statut et le corps. Seules les routes de
+  la page passent (`session`, `sources`, `tout`, `salon?id=`, `publier`,
+  `deconnexion` ; `routeAutorisee`), avec leur méthode : jamais une adresse
+  quelconque. Côté page, `recupererParLeBureau` (`src/lib/bureau.ts`) en
+  fait le `fetch` du client : la synchronisation est celle du site.
+- **La session** : remplacée par celle que rend le service quand il la
+  renouvelle (en-tête `x-session-discord`) ; oubliée à la déconnexion, à un
+  401, et par « Tout supprimer ». Un appel attend la première réponse de la
+  page à « Garder mes données » (5 s au plus), pour reprendre la session
+  retenue avant de dire « non connecté ».
+- ⚠️ **Retenue après fermeture seulement avec « Garder mes données »**, dans
+  `discord.json`, chiffrée par le système (`safeStorage`) ; « Garder mes
+  données » et « Tout supprimer » lui parviennent par `bureau/session.ts`.
+  **Sans chiffrement sûr** — Linux sans trousseau, où Electron se rabat sur
+  une clé connue de tous (`basic_text`) —, elle reste en mémoire et le pied
+  de la colonne le dit.
+- **L'adresse du service** : la production, ou `SWBLACKSMITH_SERVICE_DISCORD`
+  (`https`, ou `http` sur la machine) — `vercel dev` en développement
+  (`http://localhost:3000`), le faux service de la preuve.
+
 ## Les données
 
 - **Le stockage est celui de la page**, comme sur le site : `localStorage`
@@ -196,6 +240,8 @@ qui n'a pas accès au pont.
   retenu même sans « Garder mes données » ; **la session en cours**
   (`session.json`) seulement avec (`bureau/session.ts`,
   [transverse/feat-sauvegarde-session.md](../transverse/feat-sauvegarde-session.md#la-session-en-cours-application-de-bureau) (sauvegarde de session) § La session en cours (application de bureau)).
+- **La connexion à Discord** (`discord.json`, chiffrée) : seulement avec
+  « Garder mes données » (« Discord »).
 - `npm run bureau:local` garde ses données à part (`%APPDATA%\swblacksmith`,
   nom npm) : il ne touche jamais celles de l'app installée.
 - **Données du jeu** : celles de l'installeur, rafraîchies à chaque version
@@ -368,9 +414,10 @@ npm run bureau:preuve                  # l'app se contrôle elle-même (resultat
 npm run bureau:preuve -- --conservation  # les données et la session en cours survivent à la fermeture
 npm run bureau:preuve -- --swex        # le dossier SW Exporter, sur des fixtures : choix, sauvegarde proposée, import complet, exports suivants
 npm run bureau:preuve -- --session     # « Sauvegarder », « Sauvegarder sous… », conservation refusée
+npm run bureau:preuve -- --discord     # la connexion à Discord, devant le vrai service et un Discord simulé : code collé, conservation refusée puis acceptée, favori, réouverture, déconnexion
 npm run bureau:preuve -- <dossier> --exe "<app installée>"  # la même chose, sur l'app installée
 npm run bureau:local                   # la regarder
-node tests/run.mjs bureau              # protocole, fenêtre, mise à jour, noms de fichiers, cœurs physiques, lancement
+node tests/run.mjs bureau              # protocole, fenêtre, mise à jour, noms de fichiers, cœurs physiques, lancement, Discord
 ```
 
 Le mode preuve (`bureau/preuve.ts`, variables `SWBLACKSMITH_PREUVE` et

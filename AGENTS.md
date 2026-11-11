@@ -1,8 +1,9 @@
 # SW Blacksmith — guide agents & contributeurs
 
 Boîte à outils **Summoners War** : préparation RTA et siège, exploration du compte, Optimizer de
-runes, speed tuning, dégâts réels. **100 % local** : une app web sans serveur, qui lit un export de
-compte dans le navigateur et n'envoie rien. La même app existe en **application de bureau**
+runes, speed tuning, dégâts réels. **Local par défaut** : une app web qui lit un export de compte
+dans le navigateur, et dont rien ne part sans un geste de l'utilisateur
+([local-par-defaut.md](docs/04-decisions/adr/local-par-defaut.md)). La même app existe en **application de bureau**
 (Electron, Windows et Linux). Le dépôt est **public**.
 
 > Documentation : [`docs/`](docs/) (carte : [docs/README.md](docs/README.md)). Où se trouve quoi,
@@ -35,7 +36,7 @@ commit** que le code.
 
 | Couche | Techno |
 | --- | --- |
-| Runtime | **Node ≥ 24** (`.nvmrc`), npm, ESM (`"type": "module"`) |
+| Runtime | **Node 24** (`.nvmrc`, `engines` à `24.x`), npm, ESM (`"type": "module"`) |
 | App | **React 18** + **TypeScript 5**, **sans router** : routage par `window.location.hash` (`src/App.tsx`) |
 | Build & style | **Vite 5**, **Tailwind 3** (PostCSS + autoprefixer, déclarés dans `vite.config.ts` avec le plugin de l'écran partagé `scripts/lib/postcssVolets.ts` ; requêtes de conteneur `@container` par `@tailwindcss/container-queries`), tokens CSS dans `src/index.css` |
 | Dépendances runtime | `lucide-react` (icônes), `framer-motion` (animation), `react-resizable-panels` (séparateur de l'écran partagé, derrière `src/ui/DeuxVolets.tsx`) — aucune mesure d'audience |
@@ -43,8 +44,9 @@ commit** que le code.
 | Langues | **français et anglais**, par dictionnaires TypeScript typés (`src/i18n/`), sans bibliothèque de traduction |
 | Stockage | `localStorage` (prépa, équipes, réglages) + **IndexedDB** (compte importé), tous deux opt-in |
 | Bureau | **Electron** + `electron-builder` + `electron-updater` (`bureau/`, hors de `src/`) |
+| Service | **Fonction Vercel** sans état (`api/`, hors de `src/`) : la synchronisation Discord des recommandations, empaquetée au build par esbuild |
 | Tests | lanceur maison `tests/run.mjs` (registre `tests/index.ts`), `fake-indexeddb`, rendu par `react-dom/server`, polices de l'app pour le Chromium des tests (`@fontsource`) |
-| Qualité | `tsc` strict (couvre `src/`, `scripts/`, `tests/`), ESLint (flat config) |
+| Qualité | `tsc` strict (couvre `src/`, `scripts/`, `tests/`, `bureau/`, `api/`), ESLint (flat config) |
 
 ## Structure
 
@@ -66,6 +68,8 @@ src/
   workers/       # Web Workers de l'Optimizer (recherche, appariement parallèle, classement, résolution)
   data/          # contenu statique (journal des versions : releases.ts, releases.en.ts)
 bureau/          # application de bureau Electron (main, protocole, session, SW Exporter, mise à jour)
+api/             # service Discord des recommandations : discord.mjs (la fonction Vercel), _source/ (le
+                 # service en TypeScript, empaqueté au build dans _paquet/, non suivi)
 public/          # icônes, portraits, données SWARFARM (public/data, régénérées par npm run fetch-data)
 scripts/         # outillage Node : données, benchmarks, harnais de diagnostic, hooks, bureau
 tests/           # vérifications (run.mjs + index.ts), fixtures, tests de rendu (tests/rendu/)
@@ -78,9 +82,10 @@ docs/            # documentation en sections (01-presentation … 05-feuille-de-
 ```bash
 npm install                    # dépendances + installation des hooks Git (script prepare)
 npm run dev                    # serveur de dev Vite
-npm run build                  # build de production (Tailwind n'émet que ce qu'il trouve dans le SOURCE)
+npm run build                  # build de production (Tailwind n'émet que ce qu'il trouve dans le SOURCE), puis le service api/
+npm run dev:api                # le site ET le service Discord en local (vercel dev, http://localhost:3000)
 npm run lint                   # ESLint sur tout le dépôt
-npx tsc --noEmit               # types : src/, scripts/ et tests/
+npx tsc --noEmit               # types : src/, scripts/, tests/, bureau/ et api/
 node tests/run.mjs <filtre>    # les vérifications d'une zone (ex. speed-tune) ; plusieurs filtres possibles
 node tests/run.mjs --depuis origin/<base>   # celles que touchent les fichiers modifiés depuis la base
 node tests/run.mjs --lister <filtre>        # prévisualise la sélection finale sans lancer de vérification
@@ -100,8 +105,9 @@ npm run bureau:preuve          # la vérification de l'application de bureau
 
 - ⚠️ **Le dépôt est public** : jamais d'export de compte, de données personnelles ni de capture
   d'écran dans un commit.
-- **Rien ne quitte le navigateur** : l'export de compte (SWEX) se lit en local, aucune requête ne
-  l'envoie. Les données de jeu viennent de SWARFARM, figées dans `public/data`.
+- **Rien ne quitte l'appareil sans un geste de l'utilisateur** : l'export de compte (SWEX) se lit
+  en local, aucune requête ne l'envoie. Les données de jeu viennent de SWARFARM, figées dans
+  `public/data`.
 - **Un seul interrupteur de conservation** : `usePersistence` — aucun hook n'appelle
   `localStorage.setItem` directement, tout passe par `saveLocal` ; clés préfixées `swblacksmith-`.
   Les données (prépa, équipes, recommandations, monstres perso, compte) ne sont conservées que si
@@ -133,6 +139,7 @@ npm run bureau:preuve          # la vérification de l'application de bureau
 | `src/i18n/`, `src/hooks/useLangue.ts`, `scripts/lib/regleTexteEnDur.mjs`, un texte affiché | [transverse/feat-langues.md](docs/02-app/transverse/feat-langues.md) |
 | `src/pages/BestiaryPage.tsx`, `src/components/MonsterGrid.tsx`, `src/components/FilterBar.tsx` | [bestiaire/](docs/02-app/bestiaire/README.md) |
 | `src/pages/MechanicsPage.tsx` | [mecaniques/](docs/02-app/mecaniques/README.md) |
+| `api/`, `vercel.json`, `scripts/construire-api.mjs` | [service-discord.md](docs/02-app/siege/feat-recommandations/service-discord.md) |
 | `bureau/`, `src/lib/bureau.ts`, `electron-builder.yml`, `src/pages/TelechargerPage.tsx` | [bureau/](docs/02-app/bureau/README.md), [telecharger/](docs/02-app/telecharger/README.md) |
 | `src/ui/`, `src/index.css`, `tailwind.config.js`, tout rendu d'écran | [03-developpeur/interface/](docs/03-developpeur/interface/README.md) |
 | `eslint.config.js`, `.githooks/`, `scripts/installer-hooks.mjs`, `.github/workflows/` | [qualite-code.md](docs/03-developpeur/qualite-code.md) |

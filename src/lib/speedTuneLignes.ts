@@ -293,6 +293,20 @@ function sortsDesTours(l: Ligne, d: DonneesKit, choix: ChoixSorts) {
   });
 }
 
+// Regroupement par tick NATUREL (vitesse seule, sans modificateur) : le repère
+// des ticks pose chaque portrait dans la case qui correspond à sa vitesse.
+// ⚠️ Le gain de passif (`d`) en fait partie, comme dans la card et le tableau.
+export function parTickNaturel(lignes: Ligne[], leads: Leads, d: DonneesKit): Map<number, Ligne[]> {
+  const map = new Map<number, Ligne[]>();
+  for (const l of visibles(lignes)) {
+    const c = combatDe(l, leadDe(leads, l.camp), d);
+    if (c == null || c <= 0) continue;
+    const n = Math.ceil(10000 / (7 * c));
+    (map.get(n) ?? map.set(n, []).get(n)!).push(l);
+  }
+  return map;
+}
+
 export function tuneDe(lignes: Ligne[], leads: Leads, d: DonneesKit, choix: ChoixSorts): TuneMonstre[] {
   const out: TuneMonstre[] = [];
   // ⚠️ L'amplification d'un camp entre dans `artefactBuff` — le moteur ne connaît

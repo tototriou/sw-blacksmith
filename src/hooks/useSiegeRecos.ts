@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ArtifactKind,
   MAX_ARTIFACT_SUBS,
@@ -20,6 +20,11 @@ import { fr } from '../i18n/fr';
 import { avecContenuDeck, ContenuDeck } from '../lib/annulerEdition';
 import type { MonstresConnus } from '../lib/recoDefenses';
 import { appliquerImport, BilanImport } from '../lib/recoFusion';
+import {
+  apresConflit, apresPublication, appliquerFusion, delier, lireLien, synchroniser,
+  type BilanSynchro, type ChoixFusion, type Fusion, type SalonAccessible, type VersionValide,
+} from '../lib/recoDiscord';
+import type { VersionSalon } from '../types';
 import { reinsererA } from '../lib/reinsererA';
 import { saveLocal, usePersistence } from './usePersistence';
 
@@ -111,6 +116,31 @@ function loadCounter(raw: unknown): RecoCounter {
   return { monsters, note: typeof c.note === 'string' ? c.note : '' };
 }
 
+// Le contenu d'une recommandation relu du stockage — la recommandation
+// elle-même, ou une version d'un salon gardée dans son lien.
+function loadContenu(raw: unknown): RecoPayload {
+  const r = (raw ?? {}) as Partial<Reco>;
+  // Migration : ancienne forme « une reco = un deck » (champ `slots`).
+  const legacy = (r as unknown as { slots?: unknown[] })?.slots;
+  const rawDecks = Array.isArray(r?.decks)
+    ? r.decks
+    : Array.isArray(legacy)
+      ? [{ name: '', note: '', slots: legacy }]
+      : [];
+  const decks = rawDecks.map(loadDeck);
+  const contributeurs = Array.isArray(r.contributeurs) ? r.contributeurs.filter((n): n is string => typeof n === 'string' && !!n) : [];
+  return {
+    name: typeof r?.name === 'string' ? r.name : '',
+    author: typeof r?.author === 'string' ? r.author : '',
+    note: typeof r?.note === 'string' ? r.note : '',
+    decks: decks.length ? decks : [emptyRecoDeck()], // jamais zéro deck
+    // Provenance stable (voir lib/recoFusion.ts) : relue, sinon la
+    // prochaine fusion ne la reconnaîtrait plus après un rechargement.
+    ...(typeof r?.source === 'string' && r.source ? { source: r.source } : {}),
+    ...(contributeurs.length ? { contributeurs } : {}),
+  };
+}
+
 function load(): RecoState {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -119,25 +149,15 @@ function load(): RecoState {
     if (!Array.isArray(parsed.recos)) return { recos: [] };
     return {
       recos: parsed.recos.map((r) => {
-        // Migration : ancienne forme « une reco = un deck » (champ `slots`).
-        const legacy = (r as unknown as { slots?: unknown[] })?.slots;
-        const rawDecks = Array.isArray(r?.decks)
-          ? r.decks
-          : Array.isArray(legacy)
-            ? [{ name: '', note: '', slots: legacy }]
-            : [];
-        const decks = rawDecks.map(loadDeck);
+        // Le lien à un salon Discord : relu tel quel, ou perdu s'il est
+        // illisible (la recommandation reste, locale).
+        const lien = lireLien(r?.lien, (x) => (x && typeof x === 'object' ? loadContenu(x) : null));
         return {
           id: typeof r?.id === 'string' ? r.id : newId(),
           // Enregistrement d'avant l'origine → considéré comme créé localement.
           origin: r?.origin === 'imported' ? 'imported' : 'mine',
-          name: typeof r?.name === 'string' ? r.name : '',
-          author: typeof r?.author === 'string' ? r.author : '',
-          note: typeof r?.note === 'string' ? r.note : '',
-          decks: decks.length ? decks : [emptyRecoDeck()], // jamais zéro deck
-          // Provenance stable (voir lib/recoFusion.ts) : relue, sinon la
-          // prochaine fusion ne la reconnaîtrait plus après un rechargement.
-          ...(typeof r?.source === 'string' && r.source ? { source: r.source } : {}),
+          ...loadContenu(r),
+          ...(lien ? { lien } : {}),
         };
       }),
     };
@@ -189,6 +209,14 @@ export interface UseRecoState {
   // d'une équipe (lib/recoDefenses.ts, `cleEquipe`).
   importRecos: (recos: RecoPayload[], fusionner: boolean, connus: MonstresConnus) => BilanImport;
   clearAll: () => void;
+  // Salons Discord (lib/recoDiscord.ts) : les recommandations après une
+  // lecture des salons accessibles, et les gestes sur une recommandation liée.
+  synchroniserDiscord: (salons: SalonAccessible[], versions: ReadonlyMap<string, VersionSalon | null>) => BilanSynchro;
+  delierReco: (id: string) => void;
+  apresPublicationDiscord: (id: string, version: VersionValide) => void;
+  apresConflitDiscord: (id: string, version: VersionSalon | null) => void;
+  // `false` tant qu'un choix manque : rien n'est écrit.
+  fusionnerDiscord: (id: string, fusion: Fusion, choix: ChoixFusion) => boolean;
 }
 
 export function useSiegeRecos(): UseRecoState {
@@ -462,6 +490,44 @@ export function useSiegeRecos(): UseRecoState {
 
   const clearAll = useCallback(() => setState({ recos: [] }), []);
 
+  // ⚠️ Appelé APRÈS une lecture réseau : calculé sur le DERNIER état connu
+  // (`dernier`), jamais sur celui du rendu qui a lancé la lecture — une
+  // modification faite pendant l'attente serait écrasée.
+  const dernier = useRef(state);
+  dernier.current = state;
+  const synchroniserDiscord = useCallback(
+    (salons: SalonAccessible[], versions: ReadonlyMap<string, VersionSalon | null>) => {
+      const res = synchroniser(dernier.current.recos, salons, versions, newId);
+      dernier.current = { recos: res.recos };
+      setState(dernier.current);
+      return res.bilan;
+    },
+    []
+  );
+
+  const delierReco = useCallback((id: string) => update(id, delier), [update]);
+
+  const apresPublicationDiscord = useCallback(
+    (id: string, version: VersionValide) => update(id, (r) => apresPublication(r, version)),
+    [update]
+  );
+
+  const apresConflitDiscord = useCallback(
+    (id: string, version: VersionSalon | null) => update(id, (r) => apresConflit(r, version)),
+    [update]
+  );
+
+  const fusionnerDiscord = useCallback(
+    (id: string, fusion: Fusion, choix: ChoixFusion) => {
+      const r = dernier.current.recos.find((x) => x.id === id);
+      const fusionnee = r ? appliquerFusion(r, fusion, choix) : null;
+      if (!fusionnee) return false;
+      update(id, () => fusionnee);
+      return true;
+    },
+    [update]
+  );
+
   return {
     state,
     addReco,
@@ -489,5 +555,10 @@ export function useSiegeRecos(): UseRecoState {
     swapSlots,
     importRecos,
     clearAll,
+    synchroniserDiscord,
+    delierReco,
+    apresPublicationDiscord,
+    apresConflitDiscord,
+    fusionnerDiscord,
   };
 }

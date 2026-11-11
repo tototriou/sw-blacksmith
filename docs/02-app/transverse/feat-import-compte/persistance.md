@@ -219,7 +219,8 @@ Rien n'est envoyé à un serveur. Aucune authentification.
 - **Exception** : les **réglages** restent écrits, par leur propre hook — choix
   de conservation, mesure de score, langue, thème, overcap, adversaire de référence,
   builds les plus rapides, forme des résultats de l'Optimizer (cartes ou
-  tableau). Ce
+  tableau), « Discord activé » et salons favoris des recommandations
+  ([synchronisation-discord.md](../../siege/feat-recommandations/synchronisation-discord.md)). Ce
   ne sont pas les données de l'utilisateur, et le refus lui-même doit être
   mémorisé pour ne pas reposer la question.
 - ⚠️ **Toute clé de réglage est déclarée dans `CLES_DE_REGLAGE`.** Une clé qui
@@ -250,7 +251,9 @@ Ce qui part :
 - **les équipes de « Mes équipes »**, dans leur propre base IndexedDB
   (`viderEquipes()`, attendu avec le compte) ;
 - dans l'**application de bureau**, la **session en cours** est oubliée : l'app
-  repart vide, et un Ctrl+S réécrirait le fichier avec ce vide.
+  repart vide, et un Ctrl+S réécrirait le fichier avec ce vide. La
+  **connexion à Discord** aussi (`discord.json`), comme toute donnée gardée
+  avec « Garder mes données ».
 
 Ce qui reste :
 

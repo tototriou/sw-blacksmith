@@ -33,7 +33,9 @@ partagées, dont la navigation et le pied de page, dans
   `localStorage.setItem`, sous une clé préfixée `swblacksmith-`. Détail :
   [persistance.md](../02-app/transverse/feat-import-compte/persistance.md).
 - **Aucune mesure d'audience**, sur le site comme dans l'application de
-  bureau : « 100 % local » veut dire que rien ne quitte le navigateur. ⚠️ Ne
+  bureau : « local par défaut » veut dire que rien ne quitte l'appareil sans
+  un geste de l'utilisateur
+  ([local-par-defaut.md](../04-decisions/adr/local-par-defaut.md)). ⚠️ Ne
   pas en réintroduire sans décision.
 - **Fenêtres modales** : aucun `confirm()` ni `prompt()` du navigateur, et le
   défaut d'une confirmation ne perd jamais rien. Détail :

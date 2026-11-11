@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
-import { Crown, X, GripVertical, Trash2, AlertTriangle, Pencil, ChevronLeft, ChevronRight, Upload } from 'lucide-react';
-import { IconeSpeedTuning } from '../IconesAtelier';
+import { Crown, X, GripVertical, Trash2, AlertTriangle, Pencil, ChevronLeft, ChevronRight } from 'lucide-react';
+import { IconeOptimizer, IconeSpeedTuning } from '../IconesAtelier';
 
 const SPD_ICON = `${import.meta.env.BASE_URL}stats/spd.png`; // icône vitesse du jeu (SWARFARM)
 import { Monster, SiegeTeam as SiegeTeamType } from '../../types';
@@ -341,7 +341,7 @@ export default function SiegeTeam({
         <Bouton onClick={onExporterOptimizer} disabled={!!raisonExportOptimizer}
           title={raisonExportOptimizer ?? e.exportAide}
           aria-label={textes.commun.exporterOptimizer} libelle={textes.commun.exporterOptimizer}
-          icone={<Upload size={13} />} taille="sm" nuAuDoigt libelleAuDoigt={false} />
+          icone={<IconeOptimizer size={13} />} taille="sm" nuAuDoigt libelleAuDoigt={false} />
 
         {/* ⚠️ **Icône nue au doigt** (`nuAuDoigt`) — ni cadre, ni bordure, ni
             fond. L'en-tête d'équipe porte déjà le titre, la pastille d'état et

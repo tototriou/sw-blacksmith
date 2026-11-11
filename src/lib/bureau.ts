@@ -42,6 +42,39 @@ interface PontBureau {
     oublierDossier: () => Promise<EtatSession | null>;
     oublier: () => Promise<EtatSession | null>;
   };
+  discord: PontDiscord;
+}
+
+// La connexion à Discord de l'application de bureau (voir bureau/discord.ts) :
+// la session reste dans le processus principal, la page ne la voit jamais.
+export type IssueCodeDiscord = 'connecte' | 'invalide' | 'sans-demande' | 'indisponible';
+export interface PontDiscord {
+  // `conservable` : le système sait chiffrer la session (sinon, gardée jusqu'à
+  // la fermeture) ; `attente` : une connexion attend son code.
+  etat: () => Promise<{ conservable: boolean; attente: boolean } | null>;
+  connecter: () => Promise<boolean>;
+  // Ouvre l'invitation du bot dans le navigateur du système.
+  inviter: () => Promise<boolean>;
+  annuler: () => Promise<null>;
+  code: (code: string) => Promise<IssueCodeDiscord | null>;
+  appeler: (chemin: string, methode: string, corps?: string) => Promise<{ statut: number; corps: string } | null>;
+}
+
+// Le pont Discord, ou `null` sur le site (qui appelle le service lui-même).
+export function discordBureau(): PontDiscord | null {
+  return pont()?.discord ?? null;
+}
+
+// Le `fetch` de la page vers le service, dans l'application de bureau : par
+// le processus principal, qui y ajoute la session. Un service injoignable
+// (`statut` 0) rejette, comme `fetch`.
+export function recupererParLeBureau(d: PontDiscord): (url: string, init?: RequestInit) => Promise<Response> {
+  return async (url, init) => {
+    const chemin = url.replace(/^\/api\/discord\//, '');
+    const r = await d.appeler(chemin, init?.method ?? 'GET', typeof init?.body === 'string' ? init.body : undefined);
+    if (!r || r.statut === 0) throw new Error('service injoignable');
+    return new Response(r.statut === 204 || r.corps === '' ? null : r.corps, { status: r.statut });
+  };
 }
 
 // La session en cours (voir bureau/session.ts) : le fichier que

@@ -8,6 +8,7 @@ import RtaPage from '../../src/pages/RtaPage';
 import { useRtaState } from '../../src/hooks/useRtaState';
 import type { Monster, RtaState } from '../../src/types';
 import type { RtaSub } from '../../src/App';
+import { fr } from '../../src/i18n/fr';
 import { egal, faussLocalStorage, monstersJson, ok, titre } from '../outils';
 import { auTelephone, boutons, onglets, rendre, texteVisible, valeurs } from './outils-rendu';
 
@@ -60,9 +61,13 @@ export function testRenduTelephoneAccueil() {
   ok(t.startsWith('SW Blacksmith La boîte à outils pour Summoners War.'), 'le nom et l\'accroche');
   ok(t.includes('Dépose ton fichier .json ici ou clique pour parcourir Export SWEX (.json) lu dans la page, jamais envoyé'), 'l\'import, et ce qu\'il devient');
   ok(t.includes('Ton espace Prépa RTA 3 monstres Défense de siège 2 équipes Offense de siège 1 équipe Recommandations 4 recos'), '« Ton espace » et ses quatre compteurs');
-  ok(t.includes('Comment ça marche 01 Exporte ton compte') && t.includes('03 Prépare et optimise'), 'les trois étapes');
-  for (const f of ['Préparation RTA', 'Prépa d\'un ami', 'Défenses et offenses', 'Recommandations', 'Analyse de runes', 'Analyse d\'artéfacts', 'Optimiseur de runes', 'Speed tuning', 'Bestiaire', 'Mécaniques', 'Nouveautés', 'Arène classique'])
-    ok(t.includes(f), `tuile « ${f} »`);
+  // Les quatre outils montrés, puis les autres en pastilles (l'accueil vitrine).
+  const o = fr.accueil.vitrine.outils;
+  for (const f of [o.rta.titre, o.recos.titre, o.optimizer.titre, o.speed.titre])
+    ok(t.includes(f), `outil « ${f} »`);
+  for (const f of ['Prépa d\'un ami', 'Défenses et offenses', 'Analyse de runes', 'Analyse d\'artéfacts', 'Bestiaire', 'Mécaniques', 'Arène classique'])
+    ok(t.includes(f), `pastille « ${f} »`);
+  ok(t.includes('Rejoins la communauté'), 'la communauté');
   ok(t.includes('Prêt à préparer tes équipes ?') && t.includes('Importer mon compte'), 'l\'appel final à importer');
 }
 

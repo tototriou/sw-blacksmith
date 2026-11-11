@@ -64,6 +64,21 @@ La même app sert les deux. Le code propre au bureau vit dans `bureau/`, hors de
 dans Node. Côté page, `src/lib/bureau.ts` (`estBureau()`) dit si l'on est au bureau. Détail :
 [bureau/](../02-app/bureau/README.md).
 
+## Le service Discord
+
+```mermaid
+flowchart LR
+  Page["page Recommandations"] -->|"/api/discord/*"| Fonction["api/discord.mjs<br/>(fonction Vercel, Paris)"]
+  Source["api/_source/ + src/lib/recoShare.ts"] -->|"npm run build (esbuild)"| Fonction
+  Fonction -->|"API REST, jeton du bot ou du membre"| Discord[("salons blacksmith-reco…")]
+  Fonction -->|"lecture d'un salon, 15 s"| CDN["CDN Vercel"]
+```
+
+Seule voie réseau de l'app, et seulement sur demande : se connecter à Discord, lire et publier les
+recommandations d'une guilde. Le service ne garde rien ; la session vit dans un cookie chiffré.
+Détail : [service-discord.md](../02-app/siege/feat-recommandations/service-discord.md) ; décisions :
+[local-par-defaut.md](../04-decisions/adr/local-par-defaut.md).
+
 ## Le shell — `src/App.tsx`
 
 Fichier central, gros et volontairement : il tient tout ce qui doit être partagé entre pages.
@@ -96,7 +111,7 @@ tous les autres dans n'importe quelle analyse de dépendances.
 
 | Écran | Route | Page | Composants propres | Fiche |
 | --- | --- | --- | --- | --- |
-| Accueil | `#/` | `src/pages/HomePage.tsx` | `ElementIcon`, `src/data/releases.ts` | [accueil/](../02-app/accueil/README.md) |
+| Accueil | `#/` | `src/pages/HomePage.tsx` | `src/components/accueil/ExemplesAccueil.tsx` (les vrais composants des outils en exemple), `src/lib/demoAccueil.ts` (leurs équipes de démo), `ElementIcon`, `src/data/releases.ts` | [accueil/](../02-app/accueil/README.md) |
 | **RTA** | `#/rta`, `#/rta/ami` | `src/pages/RtaPage.tsx` | tout `src/components/rta/` | [rta/](../02-app/rta/README.md) |
 | **Siège** | `#/siege/defense`, `/offense`, `/recommandations` | `src/pages/SiegePage.tsx` | tout `src/components/siege/` | [siege/](../02-app/siege/README.md) |
 | **Mon compte** | `#/compte`, `/runes`, `/artefacts`, `/equipes` | `src/pages/AccountPage.tsx` ; « Mes équipes » : `EquipesSection`, rendue par `App.tsx` avant elle | tout `src/components/account/` | [compte/](../02-app/compte/README.md) |
@@ -241,7 +256,8 @@ aucune règle métier n'y vit. Le modèle de l'écran (une `Ligne` = un monstre 
 tout ce qu'on en déduit — vitesse de combat, sort actif, entrée du moteur, référence, estimations)
 est dans `src/lib/speedTuneLignes.ts` ; l'état, les actions et les dérivées sont dans
 `src/hooks/useSpeedTune.ts`. Un champ qui manque à l'un des deux écrans se voit donc en test, pas à
-l'œil. Calcul pur `src/lib/speedTune.ts` (règle des ticks, simulation « un seul monstre par tick »
+l'œil. Les vues de résultat (repère des ticks, ordre de tour, barre d'action par tick) sont dans
+`src/components/outils/speedTune/VuesSpeedTune.tsx`, partagées avec l'accueil. Calcul pur `src/lib/speedTune.ts` (règle des ticks, simulation « un seul monstre par tick »
 et verdict de chaîne « le combo passe-t-il ? » + vitesses requises), vitesse de combat via
 `src/lib/speed.ts`. S'ouvre aussi **en modale depuis un deck de siège**
 (`src/components/outils/SpeedTuneModale.tsx`, monté par `src/components/siege/SiegeBoard.tsx`) :

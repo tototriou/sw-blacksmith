@@ -10,7 +10,9 @@ Partie de [Navigation](README.md). Le pied de page vit dans [App.tsx](../../../.
 - **Au téléphone, une colonne centrée** : logo, liens sur une ligne en libellés
   courts (« GitHub », « Discord »), mentions.
 - Police du texte, pas la mono. Liens en encre secondaire, braise au survol ;
-  mentions en encre tertiaire.
+  mentions en encre tertiaire. Le lien Discord porte le logo de Discord
+  (`LogoDiscord`) et l'adresse partagée `LIEN_DISCORD` (`src/marque.ts`), la
+  même que l'accueil ([accueil/](../../accueil/README.md)).
 - Rappel « données 100 % locales » ; crédit Com2uS / source SWARFARM.
 - **Absent en écran partagé**, et **sur l'Optimizer au format bureau** : la
   page y tient dans la fenêtre et chaque colonne défile seule, jusqu'au bas
