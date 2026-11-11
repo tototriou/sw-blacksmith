@@ -24,8 +24,8 @@ name: Actualiser les données (SWARFARM)
 on:
   workflow_dispatch: {}
   schedule:
-    # Tous les lundis à 6h00 UTC
-    - cron: '0 6 * * 1'
+    # Le 1er de chaque mois à 6h00 UTC
+    - cron: '0 6 1 * *'
 
 permissions:
   contents: write # pousser la branche de données

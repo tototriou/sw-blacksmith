@@ -205,7 +205,7 @@ pour les tests de rendu qui pilotent l'app), les types (`npx tsc --noEmit`),
 le lint (`npm run lint`), la suite complète (`npm test`) et le build. Ce que couvre la suite, et les vérifications ignorées faute
 d'export de compte réel : [tests/README.md](../../tests/README.md).
 
-La pull request hebdomadaire des données SWARFARM fait exception : ouverte par
+La pull request mensuelle des données SWARFARM fait exception : ouverte par
 `.github/workflows/update-data.yml` avec `GITHUB_TOKEN`, elle ne déclenche
 aucun workflow. Ce job lance donc `tests.yml` lui-même (`workflow_dispatch`)
 sur sa branche, `chore/donnees-swarfarm` ; le rejeu des garde-fous de commit,
