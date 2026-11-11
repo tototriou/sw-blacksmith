@@ -103,7 +103,11 @@ du titre.
 visée, en vue Défense) **sur DEUX LIGNES au plus** : ce qui ne tient pas se
 résume en « +N », les noms cachés en infobulle, et « Consignes » suit toujours.
 La place se MESURE (largeur de la carte, longueur des noms), avant la première
-peinture, et se remesure au redimensionnement (`ApercuDeuxLignes`).
+peinture, et se remesure au redimensionnement (`ApercuDeuxLignes`). Le nombre
+de pastilles se cherche **par dichotomie** ([apercuDeuxLignes.ts](src/lib/apercuDeuxLignes.ts)),
+jamais une pastille de moins par rendu : chaque essai est un rendu synchrone,
+et au-delà de 50 React démonte toute l'app — une recommandation de plus de
+200 decks laissait la page vide.
 
 ⚠️ **Un deck réduit est compact : ses portraits seuls**, ni noms ni runes —
 le nom passe en infobulle du portrait, et noms et runage s'écrivent dans le

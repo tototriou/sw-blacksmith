@@ -59,7 +59,7 @@ for (const [id, m] of apres) {
 const lignes = [];
 lignes.push(
   'Rafraîchissement automatique de `public/data/` (monstres, compétences, liens de collaboration),',
-  'par le cron hebdomadaire — voir `.github/workflows/update-data.yml`.',
+  'par le cron mensuel — voir `.github/workflows/update-data.yml`.',
   ''
 );
 
