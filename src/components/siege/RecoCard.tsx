@@ -43,6 +43,7 @@ import { VueDefenses, VueRecos, vueDefenses } from '../../lib/recoDefenses';
 import { Bouton, BoutonIcone, Champ, Flottant, Selecteur, ZoneCliquable, useNotifier } from '../../ui';
 import { NOTE_MAX, DECK_NOTE_MAX, COUNTER_NOTE_MAX } from '../../lib/recoShare';
 import { deckFromSiegeTeam } from '../../lib/recoFromSiege';
+import { compterLignes, etapeRecherche, rechercheInitiale } from '../../lib/apercuDeuxLignes';
 import {
   artifactSubLabel,
   artifactSubsFor,
@@ -1000,43 +1001,38 @@ export default function RecoCard({
 //
 // ⚠️ **On MESURE, on ne devine pas** (même principe que BarreActions) : la
 // place dépend de la largeur de la carte et de la longueur de chaque nom. On
-// rend tout, puis on retire une pastille tant que l'aperçu dépasse deux
-// lignes — avant la première peinture (`useLayoutEffect`) : rien ne saute à
-// l'écran. Un redimensionnement recommence depuis toutes les pastilles. En
-// rendu serveur, tout est rendu.
-function ApercuDeuxLignes({ pastilles, fin }: {
+// cherche, par dichotomie, le plus grand nombre de pastilles qui tient sur
+// deux lignes avec le « +N » et la fin — avant la première peinture
+// (`useLayoutEffect`) : rien ne saute à l'écran. ⚠️ Jamais une pastille de
+// moins par rendu : au-delà de 50 rendus imbriqués, React démonte toute l'app
+// (src/lib/apercuDeuxLignes.ts). Un redimensionnement relance la recherche.
+// En rendu serveur, tout est rendu.
+export function ApercuDeuxLignes({ pastilles, fin }: {
   pastilles: { cle: string; nom: string; noeud: React.ReactNode }[];
   fin: React.ReactNode;
 }) {
   const zone = useRef<HTMLDivElement>(null);
-  const [visibles, setVisibles] = useState(pastilles.length);
   const [largeur, setLargeur] = useState(0);
 
-  // Le contenu, en une chaîne : une pastille renommée relance la mesure.
+  // Le contenu, en une chaîne : une pastille renommée relance la recherche,
+  // comme un changement de largeur.
   const signature = pastilles.map((p) => `${p.cle}:${p.nom}`).join('|');
+  const cle = `${largeur}|${signature}`;
+  const [etat, setEtat] = useState(() => rechercheInitiale(cle, pastilles.length));
+  // Une autre clé : la recherche repart de toutes les pastilles dès ce rendu.
+  const recherche = etat.cle === cle ? etat : rechercheInitiale(cle, pastilles.length);
+  const visibles = recherche.essai;
 
-  // Toutes les pastilles à chaque changement de contenu ou de largeur.
-  useLayoutEffect(() => setVisibles(pastilles.length), [signature, pastilles.length, largeur]);
-
-  // Une de moins tant que l'aperçu dépasse deux lignes (chaque pastille, le
-  // « +N » et la fin comptés à leur rangée).
+  // Chaque essai rendu est mesuré (chaque pastille, le « +N » et la fin
+  // comptés à leur rangée) ; l'essai suivant n'est rendu que s'il y en a un.
+  // `fin` en dépendance : elle prend de la place sans entrer dans la clé.
   useLayoutEffect(() => {
     const el = zone.current;
     if (!el) return;
-    // ⚠️ Rangées comptées par CHEVAUCHEMENT vertical, pas par `offsetTop` :
-    // centrés sur leur ligne, deux éléments de hauteurs différentes n'ont pas
-    // le même haut, et chaque écart de 1 px comptait une ligne de plus.
-    let lignes = 0;
-    let basDeLigne = -Infinity;
-    for (const c of el.children) {
-      const r = c.getBoundingClientRect();
-      if (r.top >= basDeLigne - 1) {
-        lignes += 1;
-        basDeLigne = r.bottom;
-      } else basDeLigne = Math.max(basDeLigne, r.bottom);
-    }
-    if (lignes > 2 && visibles > 0) setVisibles(visibles - 1);
-  }, [visibles, signature, largeur]);
+    const tient = compterLignes(Array.from(el.children, (c) => c.getBoundingClientRect())) <= 2;
+    const suivante = etapeRecherche(recherche, tient);
+    if (suivante) setEtat(suivante);
+  }, [recherche, fin]);
 
   useLayoutEffect(() => {
     const el = zone.current;
