@@ -3,12 +3,20 @@ name: Actualiser les données (SWARFARM)
 # Récupère les données SWARFARM (côté CI, pas de navigateur => pas de CORS) et
 # OUVRE UNE PR si `public/data/` a changé.
 #
-# ⚠️ **Une PR, pas un commit sur `main`.** Le job poussait directement sur
-# `main` ; depuis que la branche est protégée, le push est refusé
-# (« push declined due to repository rule violations ») et le cron échouait en
-# silence toutes les semaines — les données n'étaient plus rafraîchies du tout.
-# La règle vaut pour tout le monde, y compris un bot : il passe donc par une PR
-# comme n'importe quel changement.
+# ⚠️ **Une PR, pas un commit sur `main`.** La branche est protégée : un push
+# direct est refusé (« push declined due to repository rule violations ») et les
+# données ne seraient plus rafraîchies du tout. La règle vaut pour tout le
+# monde, y compris un bot : il passe donc par une PR comme n'importe quel
+# changement, que quelqu'un approuve puis fusionne.
+#
+# ⚠️ **La PR s'ouvre avec `GITHUB_TOKEN`, ce que le dépôt doit autoriser** :
+# Settings → Actions → General → Workflow permissions → « Allow GitHub Actions
+# to create and approve pull requests ». Sans ce réglage, la branche est poussée
+# mais `gh pr create` échoue (« GitHub Actions is not permitted to create or
+# approve pull requests ») et le job tombe en échec.
+#
+# La PR a pour auteur `github-actions[bot]` : le propriétaire du dépôt peut
+# donc l'approuver lui-même, puis la fusionner.
 #
 # Le déploiement Vercel se déclenche à la FUSION de la PR, plus au commit du
 # job.
@@ -22,6 +30,7 @@ on:
 permissions:
   contents: write # pousser la branche de données
   pull-requests: write # ouvrir (ou mettre à jour) la PR
+  actions: write # lancer « Tests » sur la branche de données
 
 concurrency:
   group: update-data
@@ -60,7 +69,7 @@ jobs:
 
       # ⚠️ **Une seule branche, réutilisée** (`chore/donnees-swarfarm`, la
       # convention du dépôt : `<type>/<sujet>`, jamais un numéro ni une date). Une
-      # branche neuve par semaine accumulerait des PR quasi identiques que
+      # branche neuve par exécution accumulerait des PR quasi identiques que
       # personne ne fermerait ; ici la PR ouverte se met à jour toute seule
       # jusqu'à ce qu'on la fusionne.
       - name: Ouvrir une PR si changement
@@ -94,13 +103,20 @@ jobs:
           # historique précédent n'a plus de sens.
           git push --force -u origin "$BRANCHE"
 
+          # ⚠️ **« Tests » se lance ici, à la main** : un push ou une PR faits
+          # avec `GITHUB_TOKEN` ne déclenchent aucun workflow (seul
+          # `workflow_dispatch` fait exception). Sans cette ligne, la PR de
+          # données n'aurait jamais de vérification. Le résultat s'affiche sur
+          # la PR : il porte sur le même commit.
+          gh workflow run tests.yml --ref "$BRANCHE"
+
           # Une PR déjà ouverte a été mise à jour par le push : on ne la double
           # pas. `gh pr list` plutôt que `gh pr create || true`, qui masquerait
           # une VRAIE erreur de création.
           #
           # ⚠️ Son CORPS est réécrit : la branche repart de `main` à chaque
           # exécution, donc le rapport porte sur l'écart complet. Laisser celui
-          # de la semaine dernière annoncerait des monstres déjà fusionnés et
+          # de l'exécution précédente annoncerait des monstres déjà fusionnés et
           # tairait les nouveaux.
           NUM="$(gh pr list --head "$BRANCHE" --state open --json number --jq '.[0].number')"
           if [ -n "$NUM" ]; then

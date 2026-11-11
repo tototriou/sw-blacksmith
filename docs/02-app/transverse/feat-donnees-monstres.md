@@ -47,8 +47,12 @@ RTA et Siège.
 - Rafraîchissement planifié via GitHub Actions (cron hebdo + manuel) → **PR**
   ouverte sur `chore/donnees-swarfarm` → redéploiement Vercel à la fusion.
   ⚠️ **Une PR, pas un commit sur `main`** : la branche est protégée, un job
-  qui y pousserait directement échouerait en silence toutes les semaines. Le job
-  n'ouvre **que** la PR — il ne fusionne rien, et son token n'en a pas le droit.
+  qui y pousserait directement échouerait à chaque exécution. Le job
+  n'ouvre **que** la PR — il ne fusionne rien : quelqu'un l'approuve et la
+  fusionne. Il l'ouvre avec `GITHUB_TOKEN`, ce que le dépôt doit autoriser
+  (« Allow GitHub Actions to create and approve pull requests », réglages
+  Actions) ; cette PR ne déclenchant aucun workflow, le job lance lui-même
+  « Tests » sur la branche.
 - ⚠️ **Le corps de la PR est un RAPPORT de ce qui a changé**
   ([rapport-donnees.mjs](scripts/rapport-donnees.mjs)) : les **vitesses de base
   modifiées d'abord** — ce sont elles qui déplacent des ticks et peuvent décaler
