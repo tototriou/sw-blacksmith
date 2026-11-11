@@ -2,7 +2,7 @@ import Conditions, { type ConditionsProps } from '../Conditions';
 import { useTraduction } from '../../../../hooks/useLangue';
 
 // La largeur d'une section de « Critères » en colonne. La section prend la
-// largeur qu'on lui donne (plus large en deux piles) ; la grille y est
+// largeur qu'on lui donne (celle du panneau hors du groupe de 320 px) ; la grille y est
 // centrée, à la largeur de son contenu.
 export const LARGEUR_CONDITIONS = 294;
 

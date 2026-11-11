@@ -345,6 +345,7 @@ function contexteDePaires(cas: Cas, inventaire: ArtifactDetail[]): ArtifactSearc
       porteur: { element: 'fire', archetype: 'attack' }, inventaire, reserves: AUCUN_ARTEFACT_RESERVE, equipes: [],
       optimiserArtefacts: true, principaleParSorte: LIBRE, lignesVerrouillees: [], damageSetup: setup, maxStats: {},
       sortDegats: degats.profile.skillCom2usId,
+      speedTune: null,
     }),
     evaluer: representatif,
   };
@@ -490,6 +491,7 @@ export function testDominanceLignesProducteurs() {
       porteur: { element: 'wind', archetype: 'attack' }, inventaire: loaded.allArtifacts, reserves, equipes: loaded.gear.artifacts,
       optimiserArtefacts, principaleParSorte: { element: 'libre', archetype: 'libre' }, lignesVerrouillees: [], damageSetup: DEFAULT_DAMAGE_SETUP, maxStats: {},
       sortDegats: artefactsDuCli(recette({}), loaded)!.degats?.profile.skillCom2usId ?? null,
+      speedTune: null,
     }),
     evaluer,
   });

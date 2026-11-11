@@ -27,6 +27,7 @@ import { ARTIFACT_MAIN, CODES_SOUS_PROPRIETES, StatKey, artifactSubKinds, valeur
 // de VIT, pour ne pas en faire une seconde constante à tenir à jour. Aucune
 // logique de dégâts n'entre ici — l'évaluateur reste fourni par l'appelant.
 import { CODE_AMPLI_VIT } from './damage';
+import type { ContrainteSpeedTune } from './contrainteSpeedTune';
 
 // Ce qu'on impose à la stat principale d'un emplacement.
 //
@@ -117,6 +118,48 @@ export function paireRespecteLignes(artefacts: ArtifactDetail[], lignes: LigneVe
     if (valeurLigne(artefacts, l.code) < l.min - EPSILON_VALEUR) return false;
   }
   return true;
+}
+
+/**
+ * Une ligne dont le cumul sur la PAIRE doit tomber dans l'une des plages
+ * (bornes incluses, même tolérance que les verrous). Aucune plage : aucune
+ * paire ne convient.
+ *
+ * ⚠️ **Ce n'est pas un verrou.** Un verrou n'a qu'un minimum, et « plus »
+ * y est toujours au moins aussi bon : il entre dans l'obligation et dans les
+ * dimensions croissantes de la dominance. Une ligne bornée, elle, peut être
+ * tenue par une valeur plus FAIBLE et cassée par une plus forte — la
+ * contrainte de speed tune, où un 206 trop fort fait jouer trop tôt. Elle ne
+ * réduit donc rien avant la paire : son code doit être INCOMPARABLE pour la
+ * dominance (`ArtifactSearchParams.codesIncomparables`), sinon l'élagage
+ * aurait déjà jeté la seule pièce qui la tient.
+ */
+export interface LigneBornee {
+  code: number;
+  plages: { min: number; max: number }[];
+}
+
+// Cette paire tient-elle TOUTES les lignes bornées ?
+export function paireRespecteBornes(artefacts: ArtifactDetail[], bornes: LigneBornee[] | undefined): boolean {
+  if (!bornes?.length) return true;
+  for (const b of bornes) {
+    const v = valeurLigne(artefacts, b.code);
+    if (!b.plages.some((p) => v >= p.min - EPSILON_VALEUR && v <= p.max + EPSILON_VALEUR)) return false;
+  }
+  return true;
+}
+
+// Les lignes bornées des paramètres, après contrôle de leur garde : chaque
+// code borné est incomparable pour la dominance. Une ligne bornée sans cette
+// garde a pu perdre sa seule pièce au préfiltre : une erreur, jamais un repli.
+export function lignesBorneesDe(params: Pick<ArtifactSearchParams, 'lignesBornees' | 'codesIncomparables'>): LigneBornee[] {
+  const bornes = params.lignesBornees ?? [];
+  for (const b of bornes) {
+    if (!params.codesIncomparables?.includes(b.code)) {
+      throw new Error(`lignesBorneesDe : la ligne ${b.code} est bornée sans être incomparable pour la dominance — producteur incohérent.`);
+    }
+  }
+  return bornes;
 }
 
 /**
@@ -231,6 +274,32 @@ export interface ArtifactSearchParams {
    * Absent : la dominance s'applique, comportement d'avant.
    */
   sansDominance?: boolean;
+  /**
+   * Les sous-propriétés INCOMPARABLES pour la dominance : deux artéfacts qui
+   * y diffèrent ne s'éliminent jamais l'un l'autre, quelle que soit la note.
+   * Posé par `parametresArtefactsFiche` sous une contrainte de speed tune
+   * (le 206), pour que chaque valeur distincte survive jusqu'à la paire.
+   * Même règle que `maxStatsActifs` pour une principale.
+   *
+   * Absent : la dominance d'avant, byte-identique.
+   */
+  codesIncomparables?: number[];
+  /**
+   * Les lignes que la paire doit tenir dans des plages (`LigneBornee`) —
+   * celles d'UN build : la contrainte de speed tune les tire de sa VIT de
+   * fiche et de ses sets (`entreeResolutionDuBuild`). Lues par la seule
+   * double boucle, jamais par le préfiltre ; chaque code doit être dans
+   * `codesIncomparables` (`lignesBorneesDe`).
+   */
+  lignesBornees?: LigneBornee[];
+  /**
+   * La contrainte de speed tune du membre, en données seules. Ce module ne la
+   * lit pas : `entreeResolutionDuBuild` (relicQueue.ts) en tire les
+   * `lignesBornees` de chaque build. Elle voyage ici pour suivre les
+   * paramètres de la fiche partout où ils vont (écran, CLI, Workers de
+   * résolution). Posée avec `codesIncomparables` par `parametresArtefactsFiche`.
+   */
+  speedTune?: ContrainteSpeedTune;
   /**
    * Chiffrer aussi ce que les verrous coûtent SUR CE BUILD.
    *
@@ -393,7 +462,8 @@ export function preFiltrerCandidats(
   lignes: LigneVerrouillee[] = [],
   pertinence?: Pertinence,
   maxStatsActifs?: StatKey[],
-  sansDominance = false
+  sansDominance = false,
+  codesIncomparables: number[] = []
 ): (ArtifactDetail | null)[] {
   const obligatoires = seuilsObligatoires(lignes, kind);
   const verrous = lignes.filter((l) => l.min > 0);
@@ -480,6 +550,10 @@ export function preFiltrerCandidats(
       // commentaire sur `mainsExclues` ci-dessus. S'ils s'y valent, la
       // comparaison continue normalement : rien ne change.
       if (mainsExclues.some((m) => mainValue(survivants[i]!, m) !== mainValue(survivants[j]!, m))) continue;
+      // ⚠️ Même règle pour une sous-propriété incomparable
+      // (`ArtifactSearchParams.codesIncomparables`) : la paire qui la tient
+      // peut être celle qui en porte MOINS.
+      if (codesIncomparables.some((c) => valeurSur(survivants[i]!, c) !== valeurSur(survivants[j]!, c))) continue;
       const vi = vecteurs[i]!;
       const vj = vecteurs[j]!;
       let auMoinsEgal = true;
@@ -601,7 +675,7 @@ function candidatsPourRecherche(
 ): (ArtifactDetail | null)[] {
   const complets = candidatsParSorte(params, kind);
   const lignes = params.avecCoutDesVerrous ? [] : (params.lignesVerrouillees ?? []);
-  return preFiltrerCandidats(complets, kind, lignes, pertinence, params.maxStatsActifs, params.sansDominance);
+  return preFiltrerCandidats(complets, kind, lignes, pertinence, params.maxStatsActifs, params.sansDominance, params.codesIncomparables);
 }
 
 // Au plus tant de listes en mémoire (`MemoPreFiltre`) : deux sortes par
@@ -636,6 +710,7 @@ export class MemoPreFiltre {
     const entrees = [
       params.inventaire, params.equipes, params.porteur, params.principaleParSorte,
       params.lignesVerrouillees, params.avecCoutDesVerrous, params.maxStatsActifs, params.sansDominance,
+      params.codesIncomparables,
     ];
     if (!this.entrees || entrees.some((v, i) => v !== this.entrees![i])) {
       this.parCle.clear();
@@ -749,6 +824,7 @@ function collecterPaires(params: ArtifactSearchParams, memo: MemoPreFiltre | und
   );
   const [candidatsElement, candidatsArchetype] = parSorte;
   const verrous = params.lignesVerrouillees?.filter((l) => l.min > 0) ?? [];
+  const bornes = lignesBorneesDe(params);
   const trouvees: PaireArtefacts[] = [];
   // ⚠️ Chiffré SEULEMENT si l'appelant l'a demandé : sans ça, l'élagage par
   // obligation a déjà retiré les paires non conformes, et le « meilleur sans
@@ -765,6 +841,9 @@ function collecterPaires(params: ArtifactSearchParams, memo: MemoPreFiltre | und
       paire.length = 0;
       if (element) paire.push(element);
       if (archetype) paire.push(archetype);
+      // ⚠️ Les lignes bornées AVANT la note : ce ne sont pas des verrous, le
+      // « meilleur sans verrous » ne compte que les paires qui les tiennent.
+      if (!paireRespecteBornes(paire, bornes)) continue;
       const score = params.evaluer(paire);
       if (meilleurSansVerrous !== null && score > meilleurSansVerrous) meilleurSansVerrous = score;
       if (!paireRespecteLignes(paire, verrous)) continue;

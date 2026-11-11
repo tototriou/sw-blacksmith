@@ -5,6 +5,7 @@ import type { Dictionnaire } from '../i18n/fr';
 import { exclusionSelectorKey, resolveExclusionEntry, type ExclusionSelector, type ExclusionSourceData } from './optimizerExclusion';
 import { contenuListeValide, enregistrerMemoireMembre, type ContenuListeOptimizer, type StockageOptimizer } from './optimizerMemberStorage';
 import { enregistrerIdentiteMembre } from './optimizerRattachement';
+import type { SpeedTuneEquipe } from './speedTuneEquipe';
 
 export interface MembreImportOptimizer {
   selector: ExclusionSelector;
@@ -17,6 +18,9 @@ export interface EquipeImportOptimizer {
   members: ExclusionSelector[];
   leader?: ExclusionSelector;
   lead: LeaderSkill | null;
+  // Le speed tune de l'équipe : ses liens ne gardent, à la consommation, que
+  // les membres acceptés (feat-contrainte-speed-tune.md, « Membres et lignes »).
+  speedTune?: SpeedTuneEquipe;
 }
 export interface MonstreIgnoreImportOptimizer {
   selector: ExclusionSelector;
@@ -191,7 +195,9 @@ export function consommerImportOptimizer(
       const lead = equipe.lead ? m.lead(equipe.lead.stat ?? m.statInconnue, equipe.lead.amount, equipe.lead.area) : m.aucunLead;
       rapport.messages.push(m.leadNonApplique(equipe.libelle, lead, creation.rapport.join(' ')));
     } else {
-      nouveau.teams.push(creation.equipe);
+      const speedTune = equipe.speedTune && { plan: structuredClone(equipe.speedTune.plan),
+        membres: structuredClone(equipe.speedTune.membres.filter((l) => acceptes.has(exclusionSelectorKey(l.selector)))) };
+      nouveau.teams.push(speedTune ? { ...creation.equipe, speedTune } : creation.equipe);
       idsEquipes.add(id);
       rapport.equipesCreees++;
       for (const selector of members) {

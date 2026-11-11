@@ -85,5 +85,16 @@ contextBridge.exposeInMainWorld(
       oublierDossier: () => ipcRenderer.invoke('bureau:session-oublier-dossier'),
       oublier: () => ipcRenderer.invoke('bureau:session-oublier'),
     }),
+    // La connexion à Discord (voir bureau/discord.ts) : la session reste dans
+    // le processus principal ; la page demande une route autorisée et reçoit
+    // le statut et le corps de la réponse.
+    discord: Object.freeze({
+      etat: () => ipcRenderer.invoke('bureau:discord-etat'),
+      connecter: () => ipcRenderer.invoke('bureau:discord-connecter'),
+      inviter: () => ipcRenderer.invoke('bureau:discord-inviter'),
+      annuler: () => ipcRenderer.invoke('bureau:discord-annuler'),
+      code: (code: string) => ipcRenderer.invoke('bureau:discord-code', code),
+      appeler: (chemin: string, methode: string, corps?: string) => ipcRenderer.invoke('bureau:discord-appeler', chemin, methode, corps),
+    }),
   })
 );

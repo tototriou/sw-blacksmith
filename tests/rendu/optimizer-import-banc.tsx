@@ -256,15 +256,18 @@ globalThis.Worker = ClassementVideTest as unknown as typeof Worker;
     const recherche = [...document.querySelectorAll<HTMLInputElement>('input[placeholder="Rechercher un monstre…"]')].find(visible)!;
     // Bureau : la liste de travail ouvre les essentiels — « Liste active » et
     // l'import en tête, puis la carte de la liste, dont la rangée du titre
-    // porte la recherche et, à sa droite, le monstre choisi. Téléphone : le
-    // monstre choisi entre sa recherche et les contrôles de liste.
+    // porte la recherche seule, sur toute la largeur : le monstre choisi n'est
+    // plus affiché à côté (décision de l'utilisateur). Téléphone : le monstre
+    // choisi entre sa recherche et les contrôles de liste.
     const auBureau = innerWidth >= 1024;
+    const surLaRangee = (e: Element) => position(e).y >= position(recherche).y
+      && position(e).y + position(e).height <= position(recherche).y + position(recherche).height;
     const choisi = [...document.querySelectorAll('span')].find(e => visible(e) && e.textContent === 'Monstre 1' && (auBureau
-      ? position(e).x >= position(recherche).x + position(recherche).width && position(e).y >= position(recherche).y
-        && position(e).y + position(e).height <= position(recherche).y + position(recherche).height && position(e).y >= position(ancre).y + position(ancre).height
+      ? surLaRangee(e)
       : position(e).y >= position(recherche).y + position(recherche).height && position(e).y + position(e).height <= position(ancre).y));
-    verifier(!!choisi, auBureau ? 'bureau : le monstre choisi à droite de sa recherche, sur la rangée du titre de la liste, sous l’import'
-      : 'le monstre choisi reste entre sa recherche et les contrôles de liste, sans bouton intercalé');
+    verifier(auBureau ? !choisi && position(recherche).y >= position(ancre).y + position(ancre).height : !!choisi,
+      auBureau ? 'bureau : la recherche seule sur la rangée du titre de la liste, sous l’import, sans le monstre choisi à côté'
+        : 'le monstre choisi reste entre sa recherche et les contrôles de liste, sans bouton intercalé');
     const pliListe = bouton('Gérer mes listes');
     if (pliListe) await geste(() => pliListe.click());
     const selecteurListe = bouton('Ancienne - Guilde');

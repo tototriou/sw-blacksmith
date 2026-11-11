@@ -56,6 +56,7 @@ export function bornesDe(p: SearchParams, inventaire: ArtifactDetail[]) {
     principaleParSorte: {}, lignesVerrouillees: [], damageSetup: DEFAULT_DAMAGE_SETUP, maxStats: p.requirement.maxStats ?? {},
     // Objectif « Efficience » : aucune note de dégâts.
     sortDegats: null,
+    speedTune: null,
   });
   const poses = (o: Partial<Record<StatKey, number>> | undefined) => (Object.keys(o ?? {}) as StatKey[]).filter((k) => (o?.[k] ?? 0) > 0);
   return bornesArtefacts({ ...ap, evaluer: () => 0 }, poses(p.requirement.minStats), poses(p.requirement.maxStats));

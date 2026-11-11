@@ -6,6 +6,7 @@ import { rattacherStockageOptimizer } from './optimizerRattachement';
 import { bornesAvecMesure, bornesBienFormees, triDesResultats, type ColonneResultat } from './colonnesResultats';
 import type { OptimMetric } from './runeOptim';
 import type { Dictionnaire } from '../i18n/fr';
+import { lireSpeedTuneEquipe, type SpeedTuneEquipe } from './speedTuneEquipe';
 export type { RapportReverificationOptimizer } from './optimizerRattachement';
 import {
   exclusionSelectorKey, resolveExclusionEntry,
@@ -21,6 +22,9 @@ export interface EquipeOptimizer {
   members: ExclusionSelector[];
   leader?: ExclusionSelector;
   lead: LeaderSkill | null;
+  // Le speed tune exporté avec l'équipe (feat-contrainte-speed-tune.md,
+  // « Persistance ») ; absent : l'équipe se lit comme avant.
+  speedTune?: SpeedTuneEquipe;
 }
 export interface MemoireMembreOptimizer {
   listId: string;
@@ -125,8 +129,19 @@ export function validerEquipesOptimizer(valeur: unknown, t: Dictionnaire): { tea
       rejets.push(v); rapport.push(r.equipeDejaAffectee(index + 1)); continue;
     }
     ids.add(v.id); cles.forEach((k) => affectes.add(k));
+    // Un speed tune malformé est écarté et signalé, jamais l'équipe avec lui ;
+    // sa valeur brute rejoint les rejets, pour ne pas être perdue en silence.
+    const st = v.speedTune === undefined ? undefined : lireSpeedTuneEquipe(v.speedTune, selecteurValide);
+    if (st === null) {
+      rejets.push({ id: v.id, speedTune: v.speedTune }); rapport.push(r.speedTuneMalforme(index + 1));
+    } else if (st && st.plan === null) {
+      // Un plan déjà relu perdu se réécrit `null` : seul le premier écart garde sa valeur brute.
+      if (objet(v.speedTune) && v.speedTune.plan !== null) rejets.push({ id: v.id, speedTune: v.speedTune });
+      rapport.push(r.planSpeedTunePerdu(index + 1));
+    }
     teams.push({ id: v.id, listId: v.listId, members: v.members, lead: v.lead,
-      ...(v.leader === undefined ? {} : { leader: v.leader as ExclusionSelector }) });
+      ...(v.leader === undefined ? {} : { leader: v.leader as ExclusionSelector }),
+      ...(st ? { speedTune: st } : {}) });
   }
   return { teams, rejets, rapport };
 }

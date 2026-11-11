@@ -1,6 +1,6 @@
 import OptimizerBackupBar from '../OptimizerBackupBar';
 import { Bouton, ZoneCliquable, BoutonIcone } from '../../../ui';
-import { CheckCircle2, Trash2, Unlock } from 'lucide-react';
+import { CheckCircle2, Gauge, Trash2, Unlock } from 'lucide-react';
 import OptimizerLeadInactif, { MotifHorsFlux } from '../OptimizerLeadInactif';
 import { resolveExclusionEntry, exclusionSelectorKey, findValidatedBuild, runesManquantesDuBuild, artefactsManquantsDuBuild, type OptimizerList, type OptimizerListMember, type ExclusionSourceData, type ExclusionSelector } from '../../../lib/optimizerExclusion';
 import { leadEffectifMembreOptimizer } from '../../../lib/equipesOptimizer';
@@ -11,7 +11,8 @@ import MonsterAvatar from '../../MonsterAvatar';
 import IconeInterdite from '../../IconeInterdite';
 import { WHEEL_IMG } from '../../RuneWheel';
 import GameIcon from '../../GameIcon';
-import { type Dispatch, type ReactNode, type SetStateAction } from 'react';
+import { useContext, type Dispatch, type ReactNode, type SetStateAction } from 'react';
+import { HauteurListeContext } from './bureau/hauteurListe';
 import { type EquipeOptimizer } from '../../../lib/optimizerMemberStorage';
 import { type UseOptimizerLists } from '../../../hooks/useOptimizerLists';
 import { type OptimizerState } from '../../../hooks/useOptimizerState';
@@ -45,9 +46,12 @@ export interface MonstresDeLaListeProps {
   // (« Rechercher un monstre… », le monstre actif), sans titre devant, pour
   // laisser au champ toute la largeur (décision de l'utilisateur).
   enTete?: ReactNode;
+  // « Régler / Modifier le speed tune » sur une équipe : absent hors d'une
+  // liste de siège (feat-speed-tune-depuis-optimizer.md).
+  onSpeedTune?: (equipe: EquipeOptimizer) => void;
 }
 
-export default function MonstresDeLaListe({ activeList, activeMembers, setEquipeOuverte, lists, optimizer, exclusionData, artifacts, rapportZoneC, groupesMembres, runeById, artifactById, choisirMembreDeLaListe, membreChoisi, setReleaseConfirm, setReleaseArtifactsConfirm, setRemoveMemberConfirm, rappelAuras, listHasValidated, setReleaseAllConfirm, enTete }: MonstresDeLaListeProps) {
+export default function MonstresDeLaListe({ activeList, activeMembers, setEquipeOuverte, lists, optimizer, exclusionData, artifacts, rapportZoneC, groupesMembres, runeById, artifactById, choisirMembreDeLaListe, membreChoisi, setReleaseConfirm, setReleaseArtifactsConfirm, setRemoveMemberConfirm, rappelAuras, listHasValidated, setReleaseAllConfirm, enTete, onSpeedTune }: MonstresDeLaListeProps) {
   const textes = useTraduction();
   const jeu = textes.jeu;
   const o = textes.optimizer;
@@ -67,6 +71,8 @@ export default function MonstresDeLaListe({ activeList, activeMembers, setEquipe
   // « Panneaux et sections ») ; chaque monstre garde sa propre carte. Le
   // téléphone garde aussi la carte de la liste.
   const bureau = enTete !== undefined;
+  // Au bureau, la hauteur que « Monstre » laisse à la liste (`PageBureau`).
+  const hauteurListe = useContext(HauteurListeContext);
   return (
     <div className={bureau ? 'relative' : 'rounded-lg border border-border-soft bg-panel2/60 p-2.5'}>
       {enTete ? (
@@ -92,9 +98,19 @@ export default function MonstresDeLaListe({ activeList, activeMembers, setEquipe
           {activeList ? z.listeVide : z.choisirListe}
         </p>
       ) : (
-        // Bornés à 308 px aux deux formats : la liste prend la hauteur de ses
+        // Au téléphone, bornés à 308 px : la liste prend la hauteur de ses
         // membres jusque-là, puis défile pour garder les critères accessibles.
-        <div className="mt-1 max-h-[308px] space-y-1 overflow-y-auto">
+        // ⚠️ Au bureau, aucune borne fixe : la liste prend au plus la hauteur
+        // que la colonne « Monstre » lui laisse (`HauteurListeContext`), et
+        // défile seule au-delà ; la colonne ne défile pas (décision de
+        // l'utilisateur).
+        // ⚠️ `relative` : la liste contient ses descendants en absolu (les
+        // textes `sr-only` des équipes et des membres). Sans elle, leur
+        // ancêtre positionné était la racine : la liste ne les rognait pas,
+        // et ceux des membres cachés sous son bas allongeaient la colonne
+        // « Monstre », qui défilait alors que tout semblait tenir.
+        <div data-liste-membres="" className={`relative mt-1 space-y-1 overflow-y-auto ${bureau ? '' : 'max-h-[308px]'}`}
+          style={bureau && hauteurListe != null ? { maxHeight: hauteurListe } : undefined}>
           {groupesMembres.filter(g => g.members.length > 0).map((g, numero) => {
             const membres = g.members.map(m => {
               const resolved = resolveExclusionEntry(m.selector, exclusionData);
@@ -103,17 +119,25 @@ export default function MonstresDeLaListe({ activeList, activeMembers, setEquipe
             });
             const inactifs = membres.filter(m => m.motif).length;
             return <section key={g.equipe?.id ?? 'sans-equipe'} aria-label={g.equipe ? z.equipe(numero + 1) : z.sansEquipe} className={`space-y-0.5 ${g.equipe ? `rounded-lg p-1.5 ${numero % 2 === 0 ? 'bg-equipe-a' : 'bg-equipe-b'}` : ''}`}>
-            {g.equipe && <div className="grid grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-x-1 py-0.5">
-              {/* Lead, numéro et leader se lisent sur une seule ligne. */}
+            {g.equipe && <div className="grid grid-cols-[auto_minmax(0,1fr)_auto_auto_auto] items-center gap-x-1 py-0.5">
+              {/* Lead, numéro, compte des leads inactifs et gestes de l'équipe sur une seule ligne. */}
               <span className="flex h-7 items-center whitespace-nowrap">
                 {g.equipe.lead ? <LeadPill ls={g.equipe.lead} titre={z.leadEquipe(g.equipe.lead.amount, nomStatLead(jeu, g.equipe.lead.stat), nomZoneLead(jeu, g.equipe.lead.area))} /> : <span className="text-xs text-ink-dim">{z.sansLead}</span>}
               </span>
-              <span title={`${z.equipe(numero + 1)}${g.equipe.leader ? ` · ${z.leader(resolveExclusionEntry(g.equipe.leader, exclusionData)?.monster.name ?? o.equipe.introuvable)}` : ''}`} className="min-w-0 truncate text-xs font-semibold text-ink">{z.equipe(numero + 1)}
-                {g.equipe.leader && <span className="ml-1 font-normal text-ink-dim">· {z.leader(resolveExclusionEntry(g.equipe.leader, exclusionData)?.monster.name ?? o.equipe.introuvable)}</span>}
+              {/* Le numéro seul : le leader, tronqué à toutes les largeurs, ne se lisait jamais. */}
+              <span title={z.equipe(numero + 1)} className="min-w-0 truncate text-xs font-semibold text-ink">{z.equipe(numero + 1)}</span>
+              {/* Le compte en court (« ⚠ 2 »), la phrase en infobulle et pour les lecteurs
+                  d'écran : en toutes lettres, sa place réservée chassait les gestes de la ligne. */}
+              <span className="inline-grid whitespace-nowrap text-micro text-warn" title={inactifs ? z.leadsInactifs(inactifs) : undefined}>
+                <span className="invisible col-start-1 row-start-1" aria-hidden>⚠ 5</span>
+                <span className={`col-start-1 row-start-1 ${inactifs ? '' : 'invisible'}`} aria-hidden>⚠ {inactifs}</span>
+                {inactifs > 0 && <span className="sr-only">{z.leadsInactifs(inactifs)}</span>}
               </span>
-              <span className="inline-grid whitespace-nowrap text-micro text-warn">
-                <span className="invisible col-start-1 row-start-1" aria-hidden>⚠ {z.leadsInactifs(5)}</span>
-                <span className={`col-start-1 row-start-1 ${inactifs ? '' : 'invisible'}`} aria-hidden={!inactifs}>⚠ {z.leadsInactifs(inactifs)}</span>
+              {/* Place réservée hors siège : changer le contenu de la liste ne déplace pas « Modifier ». */}
+              <span className={onSpeedTune ? '' : 'invisible'} aria-hidden={!onSpeedTune}>
+                <Bouton taille="xs" fond="doux" ton="accent" icone={<Gauge size={12} />} libelle={o.speedTune.titre} disabled={!onSpeedTune} tabIndex={onSpeedTune ? undefined : -1}
+                  aria-label={g.equipe.speedTune?.plan ? o.speedTune.modifier : o.speedTune.regler}
+                  title={g.equipe.speedTune?.plan ? o.speedTune.modifier : o.speedTune.regler} onClick={() => onSpeedTune?.(g.equipe!)} />
               </span>
               <Bouton taille="xs" fond="vide" libelle={o.equipe.modifier} onClick={() => setEquipeOuverte({ listId: g.equipe!.listId, equipe: g.equipe })} />
             </div>}
@@ -137,7 +161,7 @@ export default function MonstresDeLaListe({ activeList, activeMembers, setEquipe
               // l'utilisateur : seules les couleurs du contour et du fond
               // changent, la carte ne bouge pas. ⚠️ Jamais le fond même de la
               // bande : la carte s'y fondait et semblait désélectionnée.
-              <div key={key} data-membre-optimizer={resolved?.monster.com2usId} aria-current={choisi || undefined}
+              <div key={key} data-carte-membre="" data-membre-optimizer={resolved?.monster.com2usId} aria-current={choisi || undefined}
                 className={`flex flex-wrap items-center gap-x-2 rounded-lg border px-2 py-1.5 ${!choisi ? 'border-border-soft bg-panel/60'
                   : g.equipe && numero % 2 === 1 ? 'border-equipe-b-trait bg-equipe-b-trait/25' : 'border-equipe-a-trait bg-equipe-a-trait/25'}`}>
                 <ZoneCliquable

@@ -33,6 +33,9 @@ tout** dès que le rechargement l'en empêche.
 - ⚠️ **Rien n'est deviné pour un tour supplémentaire.** L'analyse remplit les
   sorts manquants du 1ᵉʳ tour, jamais ceux d'un tour ajouté : c'est un combo
   qu'on décrit, pas un défaut qu'on suppose.
+  ⚠️ **« Aucun sort » sur un tour ajouté est un effet vide** : le monstre ne
+  lance rien à ce tour. Un tour ajouté **sans choix**, lui, relance le sort du
+  1ᵉʳ tour quand son rechargement le permet, comme un tour au-delà de la liste.
 - Une croix retire un tour ajouté. ⚠️ **Le 1ᵉʳ ne se retire pas** : il n'est pas
   un ajout, c'est la présence du monstre dans l'ordre.
 - ⚠️ **Ajouter une ligne RANGE l'ordre** (`ordreRange`). Sans ça, la
@@ -70,6 +73,13 @@ sa clé.
 ⚠️ **À ne pas confondre avec `rejoue`** (Kroa), qui est un tour pris au **même
 tick**, sans qu'aucune horloge ne tourne : celui-là garde son champ `sort2` et
 son marqueur « rejoue » sur la ligne du 1ᵉʳ tour.
+
+⚠️ **Le tour rendu appartient au sort lancé.** Il n'a lieu qu'aux tours où le
+sort qui le rend part vraiment : pas pendant son rechargement, pas à un tour
+où un autre sort est choisi. Avec les sorts (`EffetSort.rejoue`), le moteur le
+lit sur le sort du tour ; avec les grilles de l'écran, où les sorts ne voyagent
+pas, il le lit par tour (`rejoueParTour`) et compte le rechargement du sort en
+tours du lanceur (`rejoueCooldown`), sans simulation.
 
 #### Ce que l'analyse remplit, et ce qui la relance
 

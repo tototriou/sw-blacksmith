@@ -41,6 +41,8 @@ import {
   respecteConditionsPaireFixe,
 } from './runeBuildOptim';
 import { RelicContext } from './relicOptim';
+import { lignesBorneesDuBuild } from './contrainteSpeedTune';
+import type { LigneBornee } from './artifactOptim';
 import { ResultatArtefacts } from './artifactQueue';
 import { CacheProfilsParPaire, DegatsContext, RegimeArtefacts, evaluerPourRegime } from './artifactEvaluation';
 import { DamageSetup, PreparationReglage, aurasPropresDesRunes, statsDuLanceurLuesParLaNote } from './damage';
@@ -55,8 +57,9 @@ import { CachesResolutionRapide, DominanceReliques, estExceptionRegleR, resoudre
  * rapide (`CachesResolutionRapide`, sur les entrées de `candidatsParSorte`),
  * et ce que le calcul des dégâts réels lit du seul réglage
  * (`PreparationReglage`, damage.ts, sur ses entrées par identité : le contexte
- * de dégâts de la file). Les deux premiers sont bornés ; le troisième ne
- * garde qu'un jeu de formes ; la préparation a ses bornes.
+ * de dégâts de la file), et les lignes bornées de la contrainte de speed
+ * tune. Les deux premiers sont bornés ; le troisième ne garde qu'un jeu de
+ * formes ; la préparation et les lignes bornées ont leurs bornes.
  *
  * ⚠️ **Durée de vie : une file** — créés par l'écran avec la signature des
  * réglages et les paramètres de paires (donc l'inventaire), par le Worker de
@@ -68,12 +71,16 @@ export interface CachesResolution {
   preFiltre: MemoPreFiltre;
   rapide: CachesResolutionRapide;
   reglage: PreparationReglage;
+  // Les lignes bornées de la contrainte de speed tune, une par ensemble de
+  // plages (`lignesBorneesDuBuild`) : deux builds aux mêmes 206 admissibles
+  // partagent le même objet, donc les mémoires indexées par identité.
+  bornesSpeedTune: Map<string, LigneBornee[]>;
 }
 
 export function nouveauxCachesResolution(): CachesResolution {
   return {
     profils: new CacheProfilsParPaire(), preFiltre: new MemoPreFiltre(), rapide: new CachesResolutionRapide(),
-    reglage: new PreparationReglage(),
+    reglage: new PreparationReglage(), bornesSpeedTune: new Map(),
   };
 }
 
@@ -241,6 +248,22 @@ export function entreeResolutionDuBuild(e: {
   // `respecteConditionsAvecRelique` (minimums ET maximums, avec la
   // candidate) le remplace.
   const conditionsPosees = conditionsPaireFixePosees(e.requirement);
+  // ⚠️ **La contrainte de speed tune se juge sur la VRAIE paire de CE
+  // build.** Sa VIT de fiche (ni artéfact ni relique ne porte la VIT) et ses
+  // sets activés donnent les 206 admissibles (`lignesBorneesDuBuild`) ;
+  // aucune paire hors de ces plages n'est notée ni retenue. Les autres
+  // champs gardent leur identité : les mémoires de la file restent valides.
+  const artifactParams: Omit<ArtifactSearchParams, 'evaluer'> = e.artifactParams.speedTune
+    ? {
+        ...e.artifactParams,
+        lignesBornees: lignesBorneesDuBuild(
+          e.artifactParams.speedTune,
+          computeStats(gear).find((s) => s.key === 'spd')?.total ?? 0,
+          gear.runes.map((r) => r.set),
+          e.caches?.bornesSpeedTune
+        ),
+      }
+    : e.artifactParams;
   return {
     gear,
     // ⚠️ `relique` : la candidate que la résolution exacte essaie
@@ -270,9 +293,9 @@ export function entreeResolutionDuBuild(e: {
         e.regime === 'degats_reels'
           ? evaluerPourRegime(e.regime, statsAvec, propres, e.degats!, exclusive, e.caches?.profils, e.caches?.reglage)
           : evaluerPourRegime(e.regime, statsAvec, propres, exclusive);
-      return { ...e.artifactParams, evaluer };
+      return { ...artifactParams, evaluer };
     },
-    artifactParams: e.artifactParams,
+    artifactParams,
     respecteConditions: conditionsPosees
       ? (arts) => respecteConditionsPaireFixe(computeStats({ ...gear, artifacts: arts }), e.requirement, propres)
       : null,

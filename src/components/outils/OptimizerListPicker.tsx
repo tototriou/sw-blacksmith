@@ -73,9 +73,7 @@ export default function OptimizerListPicker({ lists, activeListId, memberCounts,
             </span>}
           />
         </div>
-        {/* `data-action-liste` : la page du bureau en lit la largeur, pour
-            aligner la recherche du monstre sur la droite de la liste. */}
-        {action && <div ref={actionRef} data-action-liste>{action}</div>}
+        {action && <div ref={actionRef}>{action}</div>}
 
       {open && (
         <Flottant aria-label={l.menu} rembourrage="aucun" className="flex max-h-[320px] flex-col">

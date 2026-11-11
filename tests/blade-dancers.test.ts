@@ -413,7 +413,7 @@ export function testBladeDancersRecette() {
   const signature = (damageSetup: DamageSetup) => signatureArtefacts({ monstreCom2usId: CORDELIA, damageSetup,
     compterAurasResPre: true, regimeEquipement: 'degats_reels', ignoreArtifacts: false, principaleParSorte: {},
     lignesVerrouillees: [], relique: null, nbArtefacts: 0, empreinteRelique: null,
-    requirement: { minStats: {}, maxStats: {} }, artefactsReserves: [], piecesFigees: [], importDuCompte: 0 });
+    requirement: { minStats: {}, maxStats: {} }, artefactsReserves: [], piecesFigees: [], importDuCompte: 0, empreinteSpeedTune: null });
   ok(signature(cliRang2.ctx.setup) !== signature(cliRang3.ctx.setup), 'cache de la file : changer de rang invalide la signature');
   egal(signature(cliRang2.ctx.setup), signature(parLeCli(recetteCordelia({ 14808: 2 })).ctx.setup), 'cache de la file : même rang, même signature');
 }

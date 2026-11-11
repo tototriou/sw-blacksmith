@@ -4,16 +4,28 @@
 
 Une boîte à outils pour Summoners War.
 
-**En ligne : https://sw-forge.vercel.app** — et en application de bureau (Windows, Linux), depuis
+**En ligne : https://sw-blacksmith.vercel.app** — et en application de bureau (Windows, Linux), depuis
 la page Télécharger du site. L'app existe en français et en anglais.
 
 SW Blacksmith aide à préparer ses contenus compétitifs : composer ses équipes de siège et vérifier
 leur speed tuning, classer ses monstres pour la RTA, analyser ses runes et son compte, chercher le
 meilleur build d'un monstre, partager des recommandations de decks avec sa guilde.
 
-**Tout reste dans ton navigateur.** Pas de serveur, pas de compte, pas d'authentification : l'export
-de compte que tu importes est lu dans la page et n'est jamais envoyé nulle part. Rien n'est conservé
-sans ton accord, et « Tout supprimer » efface tout.
+**Local par défaut.** Pas de compte à créer : l'export de compte que tu importes est lu dans la page
+et n'est jamais envoyé nulle part. Rien ne quitte ton appareil sans un geste de ta part, rien n'est
+conservé sans ton accord, et « Tout supprimer » efface tout.
+
+## Le bot Discord
+
+Un bot Discord permet à une guilde de partager ses recommandations de siège dans un salon, sans
+fichier à s'échanger : chaque membre connecté les retrouve dans l'app et peut y publier les
+siennes. C'est une option : sans connexion à Discord, rien ne change.
+
+Pour l'installer sur ton serveur : [invite le bot](https://sw-blacksmith.vercel.app/api/discord/invitation)
+(il arrive sans aucun droit), crée un salon dont le
+nom commence par `blacksmith-reco`, et ajoute-y le bot avec quatre droits. Le guide pas à pas est
+dans l'app (page Recommandations, « Installer le bot sur ton serveur ») et dans
+[docs/02-app/siege/feat-recommandations/installer-le-bot.md](docs/02-app/siege/feat-recommandations/installer-le-bot.md).
 
 ## Documentation
 

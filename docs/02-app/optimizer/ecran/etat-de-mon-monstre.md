@@ -13,15 +13,17 @@
 
    **Au téléphone**, la carte suit « Artéfacts et relique » et porte tout
    ce contenu, sets d'aura compris. **Au bureau**, elle est réduite aux
-   buffs et au lead, dernière section de « Critères » (294 px), sous la
-   statistique principale imposée (`EtatMonstreEssentiels`) : les
-   trois vignettes de buff **sur une rangée** (56 px chacune), puis le lead :
-   « Lead », l'icône, la liste de la stat
-   et, sous elle, celle du pourcentage, sans boîte autour, la liste de la
-   stat entière ; le motif d'un lead inactif (seulement s'il existe) et les
-   rappels. Son aide ne nomme ni les sets d'aura ni ce qui décrit le
+   buffs et au lead, dernière section de « Critères » (294 px de contenu
+   dans le groupe, la largeur du panneau ailleurs), sous la statistique
+   principale imposée (`EtatMonstreEssentiels`). ⚠️ **Le lead d'abord, les
+   buffs dessous** (décision de l'utilisateur) : le lead sur une rangée
+   (« Lead », l'icône, la liste de la stat, puis celle du pourcentage à sa
+   droite, sans boîte autour, la liste de la stat entière), puis les trois
+   vignettes de buff (56 px chacune), ensemble sur leur rangée, réparties
+   sur toute la largeur. Dessous, le motif d'un lead inactif (seulement s'il
+   existe) et les rappels. Son aide ne nomme ni les sets d'aura ni ce qui décrit le
    combat. Les sets d'aura des autres monstres ont leur propre carte, en
-   tête de la colonne « Aura, exclusion, avancés »
+   tête de l'onglet « Options » (« Aura, exclusion, avancés »)
    ([Sets d'aura des autres monstres](#sets-daura-des-autres-monstres)).
    ⚠️ **Aucune phrase sur l'amplification d'un buff par un artéfact**
    (« l'artéfact … amplifie ce buff de N % »), aux deux formats (décision de
@@ -82,20 +84,19 @@
    buffs et lead sont sans cadre dans « Critères », et les auras forment
    une section sans cadre de leur colonne.
 
-   Dans le groupe **Lead**, au bureau, les deux menus (type et valeur) ont la
-   **même largeur** : la valeur se pose sous le type, dans la même colonne de
-   grille, en `w-full`. La largeur se déduit donc du plus large des deux —
-   aucune valeur en dur à tenir à jour quand un libellé change. Au téléphone,
-   la valeur se pose à droite du type, sur la même rangée, pour tenir moins de
-   hauteur ; sa place reste réservée avant le choix d'un lead.
+   Dans le groupe **Lead**, aux deux formats, la valeur se pose **à droite
+   du type**, sur la même rangée, pour tenir moins de hauteur (décision de
+   l'utilisateur : sous le type, au bureau, elle allongeait la section d'une
+   rangée) ; sa place reste réservée avant le choix d'un lead (un menu
+   figurant, invisible), pour que rien ne bouge au premier choix.
 
    Pour un membre lié, le menu montre le **lead effectif**, ou « Aucun » avec
    son motif si le lead n’agit pas sur lui. Le type et la valeur changent le
    lead partagé ; portée et élément se règlent dans le dialogue d’équipe. Au
    téléphone, le motif a une place réservée sous les deux groupes ; au
-   bureau, il ne paraît que s’il existe, sous le lead, sans place réservée
-   (décision de l’utilisateur) : le lead ne bouge pas, seuls les rappels
-   dessous descendent. ⚠️ **Aucune phrase d’explication du lead d’équipe, et jamais le
+   bureau, il ne paraît que s’il existe, sous le lead et les buffs, sans
+   place réservée (décision de l’utilisateur) : le lead ne bouge pas, seuls
+   les rappels dessous descendent. ⚠️ **Aucune phrase d’explication du lead d’équipe, et jamais le
    motif « contenu de combat de la liste non défini »** (décision de
    l’utilisateur : « Je ne veux jamais le voir ») : la carte filtre ce motif
    (`motifLeadAffiche`, equipesOptimizer.ts), que le repère ⚠ de la liste et
@@ -114,8 +115,8 @@
 
    **Sets d'aura des autres monstres** — au téléphone, une troisième
    boîte d'« État de mon monstre », sous les groupes pour éviter le
-   débordement ; au bureau, une section de 294 px, en tête de la
-   colonne « Aura, exclusion, avancés », ou de l'onglet « Options » (`SetsAuraBureau`), avec la
+   débordement ; au bureau, une section de 294 px, en tête de
+   l'onglet « Options » (`SetsAuraBureau`), avec la
    même saisie (`AurasExternesSaisie`). Elle saisit `DamageSetup.setsAuraExternes` : les sets Fight,
    Determination, Enhance, Accuracy et Tolerance portés par les **autres**
    monstres de l'équipe (voir

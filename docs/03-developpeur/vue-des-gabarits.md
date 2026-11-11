@@ -1,6 +1,6 @@
 # Vue des gabarits de l'Optimizer
 
-Une vue de développement qui montre les quatre configurations et chaque boîte de bureau de l'Optimizer
+Une vue de développement qui montre les trois configurations et chaque boîte de bureau de l'Optimizer
 ([02-app/optimizer/ecran/](../02-app/optimizer/ecran/README.md), « Mise en page d'ensemble »),
 seule, à sa largeur, dans chacun de ses états. Code :
 [VueGabarits.tsx](../../src/components/outils/optimizer/gabarits/VueGabarits.tsx), son registre
@@ -41,7 +41,7 @@ configuration ; les onglets restent cliquables sans modifier l'Optimizer.
 « Monstre » rassemble la liste et l'exemplaire, dont la fiche reste repliée. Les trois colonnes
 de réglages et les résultats suivent l'ordre de la
 [spec de l'écran](../02-app/optimizer/ecran/README.md#mise-en-page-densemble).
-Chaque panneau défile seul ; en deux piles, le groupe, le bloc et les résultats défilent ensemble.
+Le cadre de chaque panneau reste fixe, son contenu défile seul dedans ; en quatre onglets, l'objectif et les résultats défilent dans leur onglet.
 
 - ⚠️ **Rien n'y est tassé** : la boîte porte sa largeur déclarée, son contenu garde la sienne ; un
   contenu qui ne tient pas déborde, et la mesure le dit en rouge.
@@ -90,7 +90,7 @@ pilote un Chromium sur les boîtes dont le sens tient à un geste
 ouvert pendant la composition et fermé à six emplacements pleins, les principales en surbrillance
 (résumé fermé entier sans que rien bouge au choix), l'aide et les buffs d'« État de mon monstre »,
 le coffre en 3 + 4 colonnes, la fiche toujours repliée et le passage de Rechercher sous import/export.
-Il mesure aussi les quatre configurations de la vraie page, leurs onglets exclusifs, leur stabilité
+Il mesure aussi les configurations de la vraie page, leurs trois onglets, leur stabilité
 au clic et au redimensionnement, leur hauteur visible et leurs défilements confinés. Le banc
 d'affichage décrit dans [tests/README.md](../../tests/README.md#le-banc-daffichage) exerce la page
 complète avec un compte.

@@ -510,8 +510,9 @@ le stockage et compter un artéfact absent comme réservé, jusqu’à la procha
 revérification dans une version actuelle, qui recalcule la marque.
 
 Le rattachement migre simultanément identité, mémoire, place et leader dans
-l’équipe, builds et propriétaire affiché, y compris lors d’une permutation de
-slots. Aucun lead ni critère personnel n’est réécrit. Les contenus et rejets
+l’équipe, liens du speed tune de l’équipe
+([contrainte de speed tune](feat-contrainte-speed-tune.md#membres-et-lignes)),
+builds et propriétaire affiché, y compris lors d’une permutation de slots. Aucun lead ni critère personnel n’est réécrit. Les contenus et rejets
 existants restent conservés. `App.tsx` applique le résultat par
 `replaceAfterRevalidation`, migre le propriétaire par
 `appliquerReverificationMembres` et affiche un message par membre rattaché.

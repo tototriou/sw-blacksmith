@@ -18,7 +18,7 @@ productName: SW Blacksmith
 extraMetadata:
   productName: SW Blacksmith
   # Linux : la page du projet, exigée par un `.deb` (`apt show`).
-  homepage: https://sw-forge.vercel.app
+  homepage: https://sw-blacksmith.vercel.app
   # Linux : Electron en tire l'identifiant de sa fenêtre (`app_id` sous
   # Wayland, `WM_CLASS` sous X11) ; il doit être le nom du `.desktop` installé
   # (`syncDesktopName`) pour que le bureau rattache la fenêtre à son lanceur et

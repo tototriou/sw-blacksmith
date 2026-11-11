@@ -322,7 +322,7 @@ function testExceptionCeres() {
   // Le producteur de l'écran, du CLI et du différentiel.
   const artifactParams = parametresArtefactsFiche({
     porteur: PORTEUR, inventaire: inv, reserves: AUCUN_ARTEFACT_RESERVE, equipes: [], optimiserArtefacts: true,
-    principaleParSorte: {}, lignesVerrouillees: [], damageSetup: setup, maxStats: {}, sortDegats: LAST_SHOT,
+    principaleParSorte: {}, lignesVerrouillees: [], damageSetup: setup, maxStats: {}, sortDegats: LAST_SHOT, speedTune: null,
   });
   egal(artifactParams.sansDominance, true, 'le producteur retire la dominance du préfiltre des artéfacts pour Ceres, Last Shot');
   const ctx = resoudreContexteRelique({ mode: 'recherche', principale: 'libre', type: 'libre', seuil: 0 }, pool[pool.length - 1], pool);

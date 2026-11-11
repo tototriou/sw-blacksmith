@@ -141,10 +141,9 @@ export function testRenduOptimizerGabaritsVue() {
   }
   ok(texte.includes('Réel : non mesuré'), 'sans navigateur, la taille réelle n\'est pas inventée');
   egal(GABARITS.filter(g => g.id.startsWith('configuration-')).map(g => [g.id, g.largeur]), [
-    ['configuration-deux-piles', 752], ['configuration-groupe', 1200],
-    ['configuration-criteres-et-groupe', 1500], ['configuration-colonnes', 1800],
-  ], 'la galerie assemble les quatre configurations, chacune à sa largeur');
-  egal((html.match(/data-page-fenetre=""/g) ?? []).length, 4, 'chaque configuration monte la vraie page de bureau');
+    ['configuration-quatre-onglets', 752], ['configuration-groupe', 1120], ['configuration-groupe-large', 1800],
+  ], 'la galerie assemble les trois configurations, chacune à sa largeur');
+  egal((html.match(/data-page-fenetre=""/g) ?? []).length, 3, 'chaque configuration monte la vraie page de bureau');
 
   // La liste de travail : vide, remplie, réelle.
   const liste = html.split('data-gabarit="liste"')[1].split('data-gabarit=')[0];
@@ -155,8 +154,10 @@ export function testRenduOptimizerGabaritsVue() {
   const remplie = liste.split('data-etat="remplie"')[1].split('data-etat=')[0];
   ok(texteVisible(remplie).includes('Équipe 1') && texteVisible(remplie).includes('Sans équipe'), 'liste remplie : une équipe et des membres sans équipe');
   ok(/placeholder="Rechercher un monstre/.test(remplie), 'liste : « Rechercher un monstre… » dans la carte de la liste');
-  ok(texteVisible(remplie).includes(BOX[0].monster.name), 'liste remplie : le monstre actif est nommé');
-  ok(/max-h-\[308px\]/.test(remplie) && !/max-h-\[164px\]/.test(remplie), 'liste : les membres s\'étirent jusqu\'à 308 px (plus les ≈ 4 lignes d\'avant), puis défilent');
+  ok(!/data-monstre-actif/.test(remplie) && /<div class="mb-1\.5 flex items-center gap-2"><div class="min-w-0 flex-1">[\s\S]*?placeholder="Rechercher un monstre/.test(remplie),
+    'liste : « Rechercher un monstre… » seul sur sa rangée, toute la largeur, sans le monstre actif à côté');
+  ok(/data-liste-membres="" class="relative mt-1 space-y-1 overflow-y-auto "/.test(remplie) && !/max-h-\[308px\]/.test(remplie) && !/max-h-\[164px\]/.test(remplie),
+    'liste au bureau : sans borne fixe, elle prend la hauteur que « Monstre » lui laisse, puis défile');
 
   // Les états qui partent de l'état réel.
   const setReel = html.split('data-gabarit="set"')[1].split('data-etat="reel"')[1].split('data-etat=')[0];

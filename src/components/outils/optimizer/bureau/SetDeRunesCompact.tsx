@@ -80,8 +80,8 @@ export default function SetDeRunesCompact({ setPickerSectionRef, setPickerInvali
         className={setPickerInvalid ? 'rounded-lg border border-bad bg-bad/15 p-2 -m-2 transition' : 'transition'}
       >
         {/* Le message reste sur la ligne du titre tant qu'il y garde 120 px ;
-            dans la section la plus étroite (155 px, en deux piles), il passe
-            dessous plutôt que de déborder. */}
+            dans une section plus étroite, il passe dessous plutôt que de
+            déborder. */}
         <div className="mb-1.5 flex flex-wrap items-baseline justify-between gap-x-2">
           <p className="label flex-none">{c.setRecherche}</p>
           {setPickerInvalid ? (

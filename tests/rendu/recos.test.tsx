@@ -192,6 +192,27 @@ export function testRenduRecosEnTete() {
   ok(horsMenu.some((b) => b.texte === 'Créer une recommandation'), '« Créer une recommandation » reste visible');
 }
 
+// Un deck RÉDUIT (décision du 2026-11-10) : ses portraits seuls, ni noms ni
+// runes — ceux-ci s'écrivent dans le deck ouvert ; ses actions sur sa ligne,
+// et « Éditer ce deck » sans éditer la recommandation.
+export function testRenduRecosLigneDeckReduite() {
+  titre('rendu · Siège · Recommandations — un deck réduit');
+  const html = rendreCarte(true, false);
+  const t = texteVisible(html);
+  ok(!/Lushen|Veromos|Galleon|Belladeon|Chasun/.test(t), 'deck réduit : aucun nom de monstre écrit');
+  ok(!/runes\/[a-z]+\.png/.test(html), 'deck réduit : aucune icône de set de runes');
+  ok(/title="Lushen"/.test(html), 'le nom reste en infobulle du portrait');
+  const b = boutons(html);
+  const nombre = (nom: string) => b.filter((x) => x.ariaLabel === nom && !x.desactive).length;
+  egal([nombre('Éditer ce deck'), nombre('Supprimer ce deck')], [2, 2], 'chaque deck réduit porte « Éditer ce deck » et « Supprimer ce deck », actifs');
+  egal(b.filter((x) => x.ariaLabel === 'Exporter vers l\'Optimizer').length, 2, 'et « Exporter vers l\'Optimizer »');
+  ok(b.filter((x) => x.ariaLabel === 'Éditer ce deck').every((x) => x.presse === false), 'éditer un deck ne demande pas d\'éditer la recommandation');
+  ok(/data-actions-deck/.test(html), 'les actions sont sur la ligne du deck');
+  // Ouvert (une recherche le déplie), le deck écrit ses noms et ses runes.
+  const ouvert = texteVisible(rendreCarte(true, false, 'Lushen'));
+  ok(ouvert.includes('Lushen') && ouvert.includes('Runage'), 'deck ouvert : le nom du monstre et son runage');
+}
+
 export function testRenduRecosDeploiement() {
   titre('rendu · Siège · Recommandations — une recommandation dépliée, ses decks ouverts');
   // La recherche « Chasun » ouvre les deux decks (il est dans les deux).
@@ -204,7 +225,8 @@ export function testRenduRecosDeploiement() {
   ok(t.includes('Consignes du deck Lushen ouvre.'), 'les consignes du deck');
   ok(/Lushen \+33%/.test(t) && /Galleon \+24%/.test(t), 'le bonus du leader de chaque deck');
   ok(t.includes('×4 ×2'), 'les sets recommandés (4 pièces + 2 pièces)');
-  ok(boutons(html).some((b) => b.texte === 'VIT 103 +97' && b.title === 'Voir les valeurs totales'), 'la stat recommandée (VIT, base + bonus), bascule vers les totaux');
+  ok(boutons(html).some((b) => b.texte === 'Stat Base + bonus VIT 103 +97' && b.title === 'Voir les valeurs totales'),
+    'la stat recommandée (VIT, base + bonus) sous l\'en-tête de son tableau, bascule vers les totaux');
   ok(t.includes('Aucun set recommandé') && t.includes('Aucune stat recommandée'), 'un monstre sans consigne le dit');
   // (Compté hors de la rangée d'intitulés des colonnes, qui porte
   // elle aussi le mot « Fort contre ».)
@@ -340,10 +362,16 @@ export function testRenduRecosStatsEnTotal() {
 // est testée dans annuler-edition.test.ts.
 export function testRenduRecosAnnulerEdition() {
   titre('rendu · Siège · Recommandations — annuler une édition');
-  const annuler = (html: string) => boutons(html).filter((b) => b.ariaLabel === 'Annuler les modifications');
+  // Les boutons VISIBLES : la ligne d'un deck réserve la place d'« Annuler »
+  // hors édition, par un bouton invisible et masqué au lecteur d'écran.
+  const reserves = (html: string) => [...html.matchAll(/<button\b[^>]*aria-hidden="true"[^>]*aria-label="Annuler les modifications"|<button\b[^>]*aria-label="Annuler les modifications"[^>]*aria-hidden="true"/g)].length;
+  const annuler = (html: string) => boutons(html.replace(/<button\b[^>]*aria-hidden="true"[^>]*>[\s\S]*?<\/button>/g, '')).filter((b) => b.ariaLabel === 'Annuler les modifications');
 
-  // Hors édition : aucun bouton d'annulation.
-  egal(annuler(rendreCarte(true, false)).length, 0, 'hors édition : pas de « Annuler les modifications »');
+  // Hors édition : aucun bouton d'annulation visible, mais sa place réservée
+  // sur chaque deck (aucun bouton ne bouge quand l'édition s'ouvre).
+  const ferme = rendreCarte(true, false);
+  egal(annuler(ferme).length, 0, 'hors édition : pas de « Annuler les modifications »');
+  ok(reserves(ferme) > 0 && /invisible/.test(ferme), 'hors édition : la place d\'« Annuler » est réservée sur la ligne du deck');
 
   // Recommandation en édition : un bouton, grisé (rien n'a encore changé).
   const reco = annuler(rendreCarte(true, true));

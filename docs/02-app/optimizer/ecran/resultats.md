@@ -549,14 +549,14 @@ garde les cartes** : le réglage s'y affiche aussi, son aide dit « Au bureau
 seulement », et il n'y change rien.
 
 ⚠️ **Le choix est dans les Paramètres, pas au-dessus des résultats**
-(décision de l'utilisateur) : en tableau, la page range ses réglages en
-onglets, deux piles comprises, pour laisser au tableau sa largeur
-(`configurationBureau`, `RESULTATS_TABLEAU` = 661 + 32 px, voir
-[README.md](README.md#les-quatre-configurations)) ; choisi dans l'en-tête,
+(décision de l'utilisateur) : en tableau, la page prend la configuration
+la plus large qui laisse au tableau sa largeur
+(`configurationBureau`, `RESULTATS_TABLEAU` = 661 + 26 px, voir
+[README.md](README.md#les-trois-configurations)) ; choisi dans l'en-tête,
 le clic aurait déplacé ce qu'on venait de cliquer. En tableau : 2560 plein
-en colonnes, 1920 plein en groupe de trois (barre latérale repliée :
-« Critères » et le groupe de deux), portable et 2560 scindé en deux piles ;
-1920 scindé reste trop étroit, en cartes avec leur raison. À droite de
+et 1920 plein avec le groupe large, portable et
+2560 scindé en quatre onglets ; 1920 scindé reste trop étroit, en cartes
+avec leur raison. À droite de
 l'en-tête, une place partagée, de la largeur du plus large de ses deux
 occupants, porte « Filtrer l'affichage » (cartes, et tableau sous le seuil)
 ou « Stats totales / Stats bonus » (tableau affiché) ; les deux y sont

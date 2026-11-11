@@ -163,7 +163,7 @@ export function testResolutionProducteurPartage() {
   // Raccordement : l'écran appelle CE producteur, avec ses propres valeurs.
   const ecran = readFileSync('src/components/outils/OptimizerSection.tsx', 'utf8');
   ok(ecran.includes('const photo = contexteResultat({ params, fiche: selected.gear,')
-    && ecran.includes('resolution: artifactParams && optimiserArtefacts ? { fiche: selected.gear, artifactParams,'),
+    && ecran.includes('resolution: artifactParams && (optimiserArtefacts || contrainteSpeedTune) ? { fiche: selected.gear, artifactParams,'),
     'écran : la photographie porte les paramètres communs de la résolution, sans assemblage local par build');
   ok(ecran.includes('regime: regimeEquipement, degats: contexteDegatsArtefacts, exclusive: contexteExclusive,')
     && ecran.includes('requirement: requirementAvecAuras, relicContext: params.relicContext'),

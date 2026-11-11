@@ -325,12 +325,12 @@ export function testAurasPariteEcranCliEtCache() {
   const signature = (compterAurasResPre: boolean) => signatureArtefacts({ monstreCom2usId: 1, damageSetup: SETUP,
     compterAurasResPre, regimeEquipement: 'ehp', ignoreArtifacts: false, principaleParSorte: {},
     lignesVerrouillees: [], relique: null, nbArtefacts: 0, empreinteRelique: null,
-    requirement: { minStats: { res: 8 }, maxStats: {} }, artefactsReserves: [], piecesFigees: [], importDuCompte: 0 });
+    requirement: { minStats: { res: 8 }, maxStats: {} }, artefactsReserves: [], piecesFigees: [], importDuCompte: 0, empreinteSpeedTune: null });
   ok(signature(true) !== signature(false), 'le toggle invalide le cache');
   ok(signatureArtefacts({ monstreCom2usId: 1, damageSetup: { ...SETUP, setsAuraExternes: [] },
     compterAurasResPre: true, regimeEquipement: 'ehp', ignoreArtifacts: false, principaleParSorte: {},
     lignesVerrouillees: [], relique: null, nbArtefacts: 0, empreinteRelique: null,
-    requirement: { minStats: { res: 8 }, maxStats: {} }, artefactsReserves: [], piecesFigees: [], importDuCompte: 0 }) !== signature(true), 'la liste invalide le cache');
+    requirement: { minStats: { res: 8 }, maxStats: {} }, artefactsReserves: [], piecesFigees: [], importDuCompte: 0, empreinteSpeedTune: null }) !== signature(true), 'la liste invalide le cache');
 
   // Cache. La signature GLOBALE suit le nombre d'auras
   // externes, le toggle et le régime ; la clé PAR BUILD (six runeIds, sans
@@ -338,7 +338,7 @@ export function testAurasPariteEcranCliEtCache() {
   const sig = (externes: Partial<Record<SetAura, number>>, compter: boolean, regime: string) => signatureArtefacts({
     monstreCom2usId: 1, damageSetup: avecExternes(externes), compterAurasResPre: compter, regimeEquipement: regime,
     ignoreArtifacts: false, principaleParSorte: {}, lignesVerrouillees: [], relique: null, nbArtefacts: 0,
-    empreinteRelique: null, requirement: { minStats: { res: 8 }, maxStats: {} }, artefactsReserves: [], piecesFigees: [], importDuCompte: 0 });
+    empreinteRelique: null, requirement: { minStats: { res: 8 }, maxStats: {} }, artefactsReserves: [], piecesFigees: [], importDuCompte: 0, empreinteSpeedTune: null });
   ok(sig({ fight: 3 }, true, 'degats_reels') !== sig({ fight: 2 }, true, 'degats_reels'), 'cache : 3 → 2 Fight externes invalide');
   ok(sig({ fight: 3 }, true, 'degats_reels') !== sig({ fight: 3 }, false, 'degats_reels'), 'cache : toggle RES/PRE invalide');
   ok(sig({ fight: 3 }, true, 'degats_reels') !== sig({ fight: 3 }, true, 'ehp'), 'cache : changement de régime invalide');

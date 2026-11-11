@@ -11,15 +11,17 @@
 
 import { Monster } from '../types';
 import { LeadInfo, combatSpeed, isSiegeLeadActive, siegeLeadFor, speedLeadOf } from './speed';
-import { Camp, ModParTick, TuneMonstre } from './speedTune';
+import { Camp, ModParTick, TuneMonstre, cleOccurrence, litOccurrence } from './speedTune';
 import { SortVitesse } from './speedTuneKit';
 import { PassifVitesse, pointsDeGain } from './speedTunePassif';
 import {
   ChoixSorts,
   DonneesKit,
   ModsAuto,
+  CasesAuto,
   EntreeAuto,
   cumulsEstimes,
+  rejoueEnGrilles,
   sortRetenu,
   sortSecondRetenu,
 } from './speedTuneAuto';
@@ -35,6 +37,9 @@ export interface Ligne {
   camp: Camp;
   atbMod: ModParTick;
   atbAuto?: ModParTick; // cases adverses issues de l’analyse, recalculables
+  // Provenance des cases des deux grilles, dans les deux camps (voir
+  // `CasesAuto`). Absent sur une ligne enregistrée avant ce champ.
+  casesAuto?: CasesAuto;
   speedMod: ModParTick;
   // Bonus d'artéfact « augmente l'effet du buff de vitesse » (%). Renseigné pour
   // les alliés seulement (on ne connaît pas les artéfacts d'en face).
@@ -94,6 +99,7 @@ export function ligneVierge(monster: Monster, camp: Camp): Ligne {
     camp,
     atbMod: {},
     speedMod: {},
+    casesAuto: { atb: {}, speed: {} },
     artefactBuff: null,
     masque: false,
   };
@@ -128,6 +134,7 @@ export const entreeDe = (l: Ligne): EntreeAuto => ({
   atbMod: l.atbMod,
   atbAuto: l.atbAuto,
   speedMod: l.speedMod,
+  casesAuto: l.casesAuto,
 });
 
 // ⚠️ **L'ORDRE DE L'ÉQUIPE EST UNE DONNÉE DU CALCUL, pas une présentation.**
@@ -266,6 +273,40 @@ export function plateauDeLignes(lignes: Ligne[], leads: Leads): EntreeAuto[] {
 // dans les grilles par l'analyse ; le rappliquer le compterait deux fois. Seul le
 // tour rendu reste — c'est une structure (qui joue, combien de fois), pas une
 // valeur.
+// Les sorts des tours AJOUTÉS d'une ligne (index 0 = son 1ᵉʳ tour, laissé vide :
+// il suit `sortActif`). `undefined` = tour sans choix, qui relance le 1ᵉʳ sort ;
+// « Aucun sort » donne un effet vide. Rien quand aucun tour n'est ajouté.
+function sortsDesTours(l: Ligne, d: DonneesKit, choix: ChoixSorts) {
+  let dernier = 1;
+  for (const cle of Object.keys(choix.sort ?? {})) {
+    const { id, n } = litOccurrence(cle);
+    if (id === l.uid && n > dernier) dernier = n;
+  }
+  if (dernier <= 1) return undefined;
+  return Array.from({ length: dernier }, (_, i) => {
+    if (i === 0) return undefined;
+    const nom = choix.sort?.[cleOccurrence(l.uid, i + 1)];
+    if (nom === '') return { rejoue: false, cooldown: 0 };
+    if (nom == null) return undefined;
+    const x = sortsDe(l, d).find((s) => s.nom === nom);
+    return x ? { rejoue: x.rejoue, cooldown: x.cooldown } : undefined;
+  });
+}
+
+// Regroupement par tick NATUREL (vitesse seule, sans modificateur) : le repère
+// des ticks pose chaque portrait dans la case qui correspond à sa vitesse.
+// ⚠️ Le gain de passif (`d`) en fait partie, comme dans la card et le tableau.
+export function parTickNaturel(lignes: Ligne[], leads: Leads, d: DonneesKit): Map<number, Ligne[]> {
+  const map = new Map<number, Ligne[]>();
+  for (const l of visibles(lignes)) {
+    const c = combatDe(l, leadDe(leads, l.camp), d);
+    if (c == null || c <= 0) continue;
+    const n = Math.ceil(10000 / (7 * c));
+    (map.get(n) ?? map.set(n, []).get(n)!).push(l);
+  }
+  return map;
+}
+
 export function tuneDe(lignes: Ligne[], leads: Leads, d: DonneesKit, choix: ChoixSorts): TuneMonstre[] {
   const out: TuneMonstre[] = [];
   // ⚠️ L'amplification d'un camp entre dans `artefactBuff` — le moteur ne connaît
@@ -289,6 +330,7 @@ export function tuneDe(lignes: Ligne[], leads: Leads, d: DonneesKit, choix: Choi
       artefactBuff: (l.artefactBuff ?? 0) + ampli[l.camp],
       ampliBuff: ampli[l.camp],
       rejoue: sortActif(l, d, choix)?.rejoue ?? false,
+      ...rejoueEnGrilles(sortActif(l, d, choix), sortsDesTours(l, d, choix)),
     });
   }
   return out;
@@ -427,7 +469,25 @@ export function modifierMod(
     ...aLaMain(l),
     [champ]: majMod(l[champ], tick, v),
     ...(champ === 'atbMod' && l.atbAuto ? { atbAuto: majMod(l.atbAuto, tick, null) } : {}),
+    ...(l.casesAuto
+      ? {
+          casesAuto: {
+            ...l.casesAuto,
+            [champ === 'atbMod' ? 'atb' : 'speed']: majMod(l.casesAuto[champ === 'atbMod' ? 'atb' : 'speed'], tick, null),
+          },
+        }
+      : {}),
   };
+}
+
+// La provenance des cases d'une ligne : `null` quand elle est inconnue (grilles
+// non vides sans `casesAuto`, état enregistré avant ce marquage).
+export function casesSaisies(l: Ligne): { atb: ModParTick; speed: ModParTick } | null {
+  const vide = Object.keys(l.atbMod).length === 0 && Object.keys(l.speedMod).length === 0;
+  if (!l.casesAuto) return vide ? { atb: {}, speed: {} } : null;
+  const garder = (m: ModParTick, auto: ModParTick) =>
+    Object.fromEntries(Object.entries(m).filter(([t, v]) => auto[Number(t)] !== v));
+  return { atb: garder(l.atbMod, l.casesAuto.atb), speed: garder(l.speedMod, l.casesAuto.speed) };
 }
 
 // Ce que l'analyse a écrit, reporté sur les lignes.

@@ -1,5 +1,5 @@
 import { CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Github, MessageCircle, Download, Plus, Gauge, Save, SunMoon, FilePlus, AlertTriangle } from 'lucide-react';
+import { Github, Download, Plus, Gauge, Save, SunMoon, FilePlus, AlertTriangle } from 'lucide-react';
 import {
   IconeAtelier,
   IconeAccueil,
@@ -153,10 +153,10 @@ import { mapRtaItems, mapSiegeTeams, mapBoxMonsters, BoxItem } from './lib/apply
 import { photographierMemoire, reinitialiserSticky, useStickyState } from './hooks/useStickyState';
 import { PREFIXE_SPEED_TUNE } from './hooks/useSpeedTune';
 import { VUES_INVENTAIRE, hashVue, vueParDefaut, vueValide, type CleNavigation } from './lib/accountViews';
-import { NOM_APP } from './marque';
+import { LIEN_DISCORD, NOM_APP } from './marque';
 import { CLASSE_NOM, SymboleLogo } from './components/Logo';
+import { LogoDiscord } from './components/IconesSystemes';
 
-const DISCORD_INVITE = 'https://discord.gg/R2Fe4GJZET';
 // Adresses affichées telles quelles dans le pied de page, dans toutes les langues.
 const SITE_SWARFARM = 'swarfarm.com';
 const SITE_GITHUB = 'github.com/tototriou';
@@ -1872,6 +1872,7 @@ function Application() {
           recos: recos.state.recos.length,
         }}
         onImport={importAccount}
+        monstres={data.monsters}
       />
     );
 
@@ -2223,13 +2224,13 @@ function Application() {
             {/* Lien vers le SERVEUR plutôt qu'un pseudo : un pseudo se recopie
                 à la main et ne mène nulle part au clic. */}
             <a
-              href={DISCORD_INVITE}
+              href={LIEN_DISCORD}
               target="_blank"
               rel="noreferrer"
               className="inline-flex items-center gap-1.5 text-ink-dim hoverable:text-accent transition"
               title={textes.piedDePage.discordAide(NOM_APP)}
             >
-              <MessageCircle size={13} /> <span className="lg:hidden">{textes.piedDePage.discord}</span>
+              <LogoDiscord size={13} /> <span className="lg:hidden">{textes.piedDePage.discord}</span>
               <span className="hidden lg:inline">{textes.piedDePage.rejoindreDiscord}</span>
             </a>
           </p>

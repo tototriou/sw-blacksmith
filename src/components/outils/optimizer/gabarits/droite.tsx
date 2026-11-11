@@ -2,7 +2,7 @@ import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Segmented } from '../../../../ui';
 import ExemplaireBureau from '../bureau/ExemplaireBureau';
 import PageBureau from '../bureau/PageBureau';
-import { configurationBureau, type ColonneReglage } from '../../../../lib/optimizerColonnes';
+import { configurationBureau, type ColonneReglage, type OngletBureau } from '../../../../lib/optimizerColonnes';
 import { GABARITS_ESSENTIELS } from './essentiels';
 import { GABARITS_COLONNES } from './colonnes';
 import ObjectifEtRechercherBureau, { LARGEUR_OBJECTIF_LARGE_MIN } from '../bureau/ObjectifEtRechercherBureau';
@@ -92,7 +92,7 @@ interface EtatObjectif {
   message?: boolean;
   refus?: RelicVide;
 }
-export function ObjectifGabarit({ ctx, etat, cadre = true, partie = 'tout' }: { ctx: ContexteGabarits; etat: EtatObjectif; cadre?: boolean; partie?: import('../bureau/ObjectifEtRechercherBureau').PartieObjectif }) {
+export function ObjectifGabarit({ ctx, etat, cadre = true }: { ctx: ContexteGabarits; etat: EtatObjectif; cadre?: boolean }) {
   const exemplaire = etat.sansMonstre ? null : exemplaireDuCompte(ctx);
   const [objectif, setObjectif] = useState<Objective>(etat.objectif ?? ctx.optimizer.objective);
   const [statut, setStatut] = useState<BuildOptimStatus>(etat.statut ?? 'idle');
@@ -100,7 +100,7 @@ export function ObjectifGabarit({ ctx, etat, cadre = true, partie = 'tout' }: { 
   const sets = etat.sansMonstre ? [] : ctx.optimizer.comboSets.length > 0 ? ctx.optimizer.comboSets : ['violent'];
   return (
     <ObjectifEtRechercherBureau
-      cadre={cadre} partie={partie}
+      cadre={cadre}
       estimation={exemplaire && sets.length > 0 ? <EstimationPool estimate={estimationDeVue(ctx.runes)} /> : null}
       messageImport={<MessageImportRecette message={etat.message && exemplaire ? { text: `Réglages importés pour ${exemplaire.monster.name} — monstre sélectionné automatiquement.` } : null} />}
       progression={{ progress: statut === 'running' ? etat.progression ?? null : null,
@@ -221,7 +221,7 @@ export const GABARITS_DROITE: Gabarit[] = [
       'Le résumé du combat paraît sous « Dégâts réels » seulement.',
       '« Rechercher » plus grand (taille lg) ; « Arrêter » prend sa place exacte pendant une recherche (carré plein), inactif 300 ms, au lieu de s\'ajouter à côté de « Recherche… ».',
       '« Exporter » · « Importer » en libellé court au bureau (le libellé long reste le nom et l\'infobulle).',
-      'Progression compacte sans barre, sous les actions ; en deux piles, « Rechercher » à 240 px reste à sa place, sans coller au bas.',
+      'Progression compacte sans barre, sous les actions ; « Rechercher » à 240 px reste à sa place, sans coller au bas.',
       'Aux deux formats : plus de phrase « Le budget de recherche s\'élargit automatiquement… » (l\'escalade n\'existe plus dans le moteur).',
       'Dans cette vue : « Rechercher » bascule sur « Arrêter » sans lancer de recherche.',
     ],
@@ -260,7 +260,7 @@ function enveloppe(rendu: (ctx: ContexteGabarits) => JSX.Element, largeur: numbe
 // La vraie page à largeur imposée, dans son propre corps visible : les
 // mesures de hauteur ne dépendent pas de sa position dans la galerie.
 function ConfigurationGabarit({ ctx, largeur }: { ctx: ContexteGabarits; largeur: number }) {
-  const [onglet, setOnglet] = useState<ColonneReglage | null>(null);
+  const [onglet, setOnglet] = useState<OngletBureau | null>(null);
   const cadre = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
     // La page défile dans son cadre de démonstration : son marqueur global
@@ -279,14 +279,16 @@ function ConfigurationGabarit({ ctx, largeur }: { ctx: ContexteGabarits; largeur
   </div>;
 }
 
-export const GABARITS_CONFIGURATIONS: Gabarit[] = [752, 1200, 1500, 1800].map(largeur => ({
+export const GABARITS_CONFIGURATIONS: Gabarit[] = [752, 1120, 1800].map(largeur => ({
   id: `configuration-${configurationBureau(largeur).configuration}`,
   nom: `Configuration : ${configurationBureau(largeur).configuration}`,
   largeur, hauteurEstimee: 730, composant: 'PageBureau (bureau/PageBureau.tsx)',
   telephone: 'Le téléphone garde sa page et son panneau « Options ».',
   changements: [
-    'La largeur seule range les réglages en onglets ; Monstre et résultats restent visibles.',
-    'Chaque panneau défile seul ; en deux piles, le groupe, le bloc et les résultats défilent ensemble.',
+    'Les réglages sont toujours en onglets ; le groupe s’élargit quand la place le permet, et l’objectif et les résultats deviennent un quatrième onglet quand elle manque.',
+    'Dans chaque onglet, les sections restent l’une sous l’autre, à la largeur du groupe.',
+    '« Monstre » ne défile pas : la liste défile seule, l’exemplaire dessous ; seulement quand même une liste réduite à trois monstres et l’exemplaire ne tiennent pas ensemble en hauteur, l’exemplaire passe dans un onglet (« Liste active » · « Exemplaire »).',
+    'Le cadre de chaque panneau reste fixe, son contenu défile dedans, la barre dans le panneau ; en quatre onglets, l’objectif et les résultats défilent dans leur onglet.',
   ],
   etats: [{ id: 'page', nom: 'Liste remplie, réglages locaux et résultats en attente', rendu: ctx => <ConfigurationGabarit ctx={ctx} largeur={largeur} /> }],
 }));

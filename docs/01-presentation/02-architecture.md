@@ -64,6 +64,21 @@ La même app sert les deux. Le code propre au bureau vit dans `bureau/`, hors de
 dans Node. Côté page, `src/lib/bureau.ts` (`estBureau()`) dit si l'on est au bureau. Détail :
 [bureau/](../02-app/bureau/README.md).
 
+## Le service Discord
+
+```mermaid
+flowchart LR
+  Page["page Recommandations"] -->|"/api/discord/*"| Fonction["api/discord.mjs<br/>(fonction Vercel, Paris)"]
+  Source["api/_source/ + src/lib/recoShare.ts"] -->|"npm run build (esbuild)"| Fonction
+  Fonction -->|"API REST, jeton du bot ou du membre"| Discord[("salons blacksmith-reco…")]
+  Fonction -->|"lecture d'un salon, 15 s"| CDN["CDN Vercel"]
+```
+
+Seule voie réseau de l'app, et seulement sur demande : se connecter à Discord, lire et publier les
+recommandations d'une guilde. Le service ne garde rien ; la session vit dans un cookie chiffré.
+Détail : [service-discord.md](../02-app/siege/feat-recommandations/service-discord.md) ; décisions :
+[local-par-defaut.md](../04-decisions/adr/local-par-defaut.md).
+
 ## Le shell — `src/App.tsx`
 
 Fichier central, gros et volontairement : il tient tout ce qui doit être partagé entre pages.
@@ -96,7 +111,7 @@ tous les autres dans n'importe quelle analyse de dépendances.
 
 | Écran | Route | Page | Composants propres | Fiche |
 | --- | --- | --- | --- | --- |
-| Accueil | `#/` | `src/pages/HomePage.tsx` | `ElementIcon`, `src/data/releases.ts` | [accueil/](../02-app/accueil/README.md) |
+| Accueil | `#/` | `src/pages/HomePage.tsx` | `src/components/accueil/ExemplesAccueil.tsx` (les vrais composants des outils en exemple), `src/lib/demoAccueil.ts` (leurs équipes de démo), `ElementIcon`, `src/data/releases.ts` | [accueil/](../02-app/accueil/README.md) |
 | **RTA** | `#/rta`, `#/rta/ami` | `src/pages/RtaPage.tsx` | tout `src/components/rta/` | [rta/](../02-app/rta/README.md) |
 | **Siège** | `#/siege/defense`, `/offense`, `/recommandations` | `src/pages/SiegePage.tsx` | tout `src/components/siege/` | [siege/](../02-app/siege/README.md) |
 | **Mon compte** | `#/compte`, `/runes`, `/artefacts` | `src/pages/AccountPage.tsx` | tout `src/components/account/` | [compte/](../02-app/compte/README.md) |
@@ -184,24 +199,28 @@ partagées : `src/components/outils/optimizer/constantes.ts` ; types :
 Au format bureau, `OptimizerSection` rend la page en colonnes
 ([02-app/optimizer/ecran/](../02-app/optimizer/ecran/README.md)) par `PageBureau`
 (`src/components/outils/optimizer/bureau/PageBureau.tsx`) : largeur de conteneur mesurée,
-quatre configurations (toutes les colonnes, Critères et groupe de deux, groupe de trois,
-deux piles), page à hauteur de fenêtre partout. Chaque colonne ou pile défile seule ;
+trois configurations (« Monstre », le groupe des trois onglets de réglages, large ou non, et
+les résultats ; ou « Monstre » et un groupe de quatre onglets, les résultats en dernier), page
+à hauteur de fenêtre partout. Le cadre de chaque colonne reste fixe, son contenu défile seul
+dedans ;
 les places, les seuils calculés et la résolution de l'onglet ouvert viennent de
 `src/lib/optimizerColonnes.ts`. Le groupe utilise `Onglets` de `src/ui/`, et son état reste
 local à `OptimizerSection`, guidages vers Critères et Options compris. Le téléphone
 garde la grille des cartes ci-dessus. Les boîtes de cette page vivent dans
 `src/components/outils/optimizer/bureau/` : la liste de
-travail (`ListeDeTravailBureau`) puis la fiche repliée (`ExemplaireBureau`) dans « Monstre » ;
-dans « Critères », le set de runes compact ou déplié (`SetDeRunesCompact`), les principales
+travail (`ListeDeTravailBureau`) puis la fiche repliée (`ExemplaireBureau`) dans « Monstre »,
+en onglets quand la place verticale manque (`hauteurListe.ts` : la hauteur laissée à la
+liste) ;
+dans l'onglet « Critères », le set de runes compact ou déplié (`SetDeRunesCompact`), les principales
 imposées (`PrincipalesImposeesBureau`), les conditions (`ConditionsBureau`), l'état du monstre
-réduit aux buffs et au lead (`EtatMonstreEssentiels`) ; dans la colonne
-« Artéfacts et relique », la carte des artéfacts et de la relique (`ArtefactsEtReliqueBureau`) et
-celle des meilleurs artéfacts (`MeilleursArtefactsBureau`) ; dans la colonne « Aura, exclusion,
-avancés », les sets d'aura (`SetsAuraBureau`), l'exclusion de runes (`ExclusionRunesBureau`) et les
-réglages avancés (`ReglagesAvancesBureau`), en ligne ; dans la colonne des résultats,
+réduit aux buffs et au lead (`EtatMonstreEssentiels`) ; dans l'onglet
+« Artéfacts », la carte des artéfacts et de la relique (`ArtefactsEtReliqueBureau`) et
+celle des meilleurs artéfacts (`MeilleursArtefactsBureau`) ; dans l'onglet « Options »,
+les sets d'aura (`SetsAuraBureau`), l'exclusion de runes (`ExclusionRunesBureau`) et les
+réglages avancés (`ReglagesAvancesBureau`), en ligne ; dans la colonne ou l'onglet des résultats,
 le bloc « Objectif et Rechercher » à une forme (`ObjectifEtRechercherBureau`),
 puis les résultats (`ResultatsBureau`, autour des composants des
-résultats plus bas). Elles se voient seules et assemblées dans les quatre configurations
+résultats plus bas). Elles se voient seules et assemblées dans les trois configurations
 dans la vue de développement `#/outils/optimizer/gabarits`
 (`src/components/outils/optimizer/gabarits/`, adresse dans `src/lib/optimizerGabarits.ts`) :
 [03-developpeur/vue-des-gabarits.md](../03-developpeur/vue-des-gabarits.md).
@@ -233,11 +252,13 @@ aucune règle métier n'y vit. Le modèle de l'écran (une `Ligne` = un monstre 
 tout ce qu'on en déduit — vitesse de combat, sort actif, entrée du moteur, référence, estimations)
 est dans `src/lib/speedTuneLignes.ts` ; l'état, les actions et les dérivées sont dans
 `src/hooks/useSpeedTune.ts`. Un champ qui manque à l'un des deux écrans se voit donc en test, pas à
-l'œil. Calcul pur `src/lib/speedTune.ts` (règle des ticks, simulation « un seul monstre par tick »
+l'œil. Les vues de résultat (repère des ticks, ordre de tour, barre d'action par tick) sont dans
+`src/components/outils/speedTune/VuesSpeedTune.tsx`, partagées avec l'accueil. Calcul pur `src/lib/speedTune.ts` (règle des ticks, simulation « un seul monstre par tick »
 et verdict de chaîne « le combo passe-t-il ? » + vitesses requises), vitesse de combat via
 `src/lib/speed.ts`. S'ouvre aussi **en modale depuis un deck de siège**
 (`src/components/outils/SpeedTuneModale.tsx`, monté par `src/components/siege/SiegeBoard.tsx`) :
-même composant, mêmes réglages — la page dessous ne bouge pas, fermer rend sa place. Ne dépend pas
+même composant, mêmes réglages — la page dessous ne bouge pas, fermer rend sa place. Ouverte depuis une
+équipe de l'Optimizer, elle travaille sur un état à part (clés `speedTune.optimizer.`). Ne dépend pas
 d'un compte importé — mais sait **importer une équipe de siège** dans « Ton équipe »
 (`src/lib/speedTuneDeck.ts`) et **lire le kit** des monstres pour en déduire boosts de barre et
 buffs de vitesse (`src/lib/speedTuneKit.ts`, d'après `public/data/skills`). Analyse poussée (ordre
@@ -328,6 +349,7 @@ Fonctions **pures**, testables sans rendu. C'est ici que va toute logique, jamai
 | Siège / recos | `recoMatch.ts`, `recoSearch.ts`, `recoShare.ts`, `recoFromSiege.ts`, `recoDefenses.ts`, `recoFusion.ts` (import qui fusionne dans la recommandation qu'il complète), `ownedBuilds.ts`, `annulerEdition.ts` (« Annuler les modifications » d'une reco ou d'un deck en édition), `reinsererA.ts` (« Annuler » une suppression : l'élément revient à sa place, équipes et recos) |
 | Optimizer — listes et équipes | `optimizerMemberStorage.ts` (stockage indépendant des membres, de leurs identités et des équipes ; contenu de liste), `equipesOptimizer.ts` (équipes, lead effectif d'un membre selon le contenu), `criteresOptimizer.ts` (classement des champs en critères personnels du membre ou globaux), `optimizerCriteriaOwner.ts` (à quel membre appartiennent les critères affichés), `optimizerRattachement.ts` (re-rattachement des membres et revérification au réimport du compte), `optimizerBackup.ts` (point de sauvegarde des listes), `optimizerListNames.ts` (premier nom « Liste N » libre), `combatListeOptimizer.ts` + `competencesInvocateur.ts` (le contenu de la liste décide des compétences d'invocateur ; lecture commune de ce réglage) |
 | Optimizer — import d'équipes | `importEquipes.ts` (import commun : rapport, création de liste et d'équipes), `actionImportOptimizer.ts` (action d'import et navigation après acceptation), `importRecoOptimizer.ts` (deck recommandé → membres), `importSpeedTuneOptimizer.ts` (lignes du speed tuning → membres), `deckCompositionOptimizer.ts` (retrouve le deck de siège d'une recommandation ou d'un speed tuning) |
+| Optimizer — speed tune | `planSpeedTune.ts` (le plan photographié à l'export : plateau, verdict, zone d'un membre, sets des cumuls), `contrainteSpeedTune.ts` (la contrainte telle que la recherche la lit : enveloppe des runes, plages de 206 d'un build), `speedTuneEquipe.ts` (le speed tune stocké sur l'équipe, ses liens lignes ↔ membres), `speedTuneMembre.ts` (lignes de l'équipe, bornes du membre, verdict, écarts, Recalculer et Restaurer) ; `src/hooks/useZoneSpeedTune.ts` et `src/workers/zoneSpeedTune.worker.ts` (kits du plan, zone hors du fil de l'interface), `src/hooks/useSpeedTuneMembre.ts` (assemblage sur l'état de l'Optimizer), `src/components/outils/optimizer/SpeedTuneEncart.tsx` (l'encart) — [feat-contrainte-speed-tune.md](../02-app/optimizer/feat-contrainte-speed-tune.md) ; `src/lib/speedTuneDepuisPlan.ts` (l'outil rouvert sur un plan ou sur les membres, « Appliquer à l'équipe » jugé, liens et replis reconstruits) et `src/hooks/useSpeedTuneDepuisOptimizer.ts` (la modale de l'outil ouverte sur une équipe, `SpeedTuneModale.tsx` en mode « appliquer ») — [feat-speed-tune-depuis-optimizer.md](../02-app/optimizer/feat-speed-tune-depuis-optimizer.md) |
 | Session | `session.ts` (format `swblacksmith/session` : composer, écrire, relire), `sessionOptimizer.ts` (photo de l'Optimizer), `telechargement.ts` (un texte téléchargé en fichier) |
 | Fichiers exportés | `formatsExport.ts` (identifiant `swblacksmith/<nom>` écrit, l'ancien `sw-forge/<nom>` relu — lu par `rtaShare`, `recoShare`, `siegeShare`, `runeCurveShare`) |
 | Bureau | `bureau.ts` (`estBureau()`, couleurs du thème, mise à jour, `TELECHARGEMENTS`) |

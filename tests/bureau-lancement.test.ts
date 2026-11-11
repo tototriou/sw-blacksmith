@@ -84,8 +84,9 @@ export default function testBureauLancement() {
     'electron.mjs importe la règle, en JavaScript : chargée par tout Node, sans compilation ni option');
   ok(/const environnement = \(supplement\) => environnementElectron\(process\.env, supplement\);/.test(lanceur),
     'electron.mjs : l’environnement est celui du processus, nettoyé');
-  egal((lanceur.match(/env: environnement\(supplement\)/g) ?? []).length, 2,
-    'electron.mjs : `lancerElectron` et `lancerElectronEtAttendre` lancent tous deux avec lui');
+  const lancements = (lanceur.match(/\bspawn(Sync)?\(/g) ?? []).length;
+  ok(lancements >= 3 && (lanceur.match(/env: environnement\(supplement\)/g) ?? []).length === lancements,
+    'electron.mjs : chaque lancement (`lancerElectron`, `lancerElectronEtAttendre`, `lancerElectronEnFond`) se fait avec lui');
   const icone = sansCommentaires(readFileSync('scripts/generer-icone-bureau.mjs', 'utf8'));
   ok(/import \{ environnementElectron \} from '\.\/lib\/environnementElectron\.mjs';/.test(icone)
     && /const env = environnementElectron\(process\.env\);/.test(icone) && /spawnSync\(electron, \[[^\]]*\], \{ stdio: 'inherit', env \}\)/.test(icone),

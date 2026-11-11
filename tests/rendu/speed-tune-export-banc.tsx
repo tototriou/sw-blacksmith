@@ -156,18 +156,36 @@ export async function scenario(nom: string, telephone: boolean): Promise<[boolea
       verifier(equipe?.members.length === membres.length && equipe?.lead?.stat === 'Attack Speed' && equipe.lead.amount === 24 && equipe.lead.area === 'Guild'
         && (repli ? !equipe.leader : exclusionSelectorKey(equipe.leader!) === `${prefixe}0`), 'équipe, lead actuel et leader exacts');
       verifier(exclusionSelectorKey(etat.sourceSelector!) === `${prefixe}${repli ? 1 : 0}` && etat.proprietaireCriteres?.listId === id, 'premier membre choisi et propriétaire après réconciliation');
-      const attendus = baseCompleteCriteres(gear); attendus.minStats = { spd: 250 }; attendus.comboSets = ['swift']; attendus.lignesVerrouillees = [{ code: 206, min: 8 }];
+      // Le plan de speed tune est posé : un membre d'une ligne visible est
+      // attaché, sans VIT minimum ni verrou 206 ; la ligne masquée garde
+      // l'export d'avant (feat-contrainte-speed-tune.md).
+      const masquee = (i: number) => nom === 'page' && i === 2;
+      const attendus = baseCompleteCriteres(gear); attendus.comboSets = ['swift'];
       ajouterLeadEquipe(attendus, { stat: 'Attack Speed', pct: 24 });
-      verifier(JSON.stringify(photoCriteres(etat, { type: 'personnel' })) === JSON.stringify(attendus), 'VIT, Swift, ligne 206 et tous les critères personnels de base');
+      verifier(JSON.stringify(photoCriteres(etat, { type: 'personnel' })) === JSON.stringify(attendus), 'attaché : Swift et critères personnels de base, sans VIT minimum ni ligne 206');
       verifier(membres.every((m, i) => {
         const photo = [...listes.memories.values()].find(p => p.listId === id && exclusionSelectorKey(p.selector) === exclusionSelectorKey(m.selector));
-        return photo?.criteres.minStats.spd === 250 + i && photo.criteres.lignesVerrouillees[0]?.min === 8 + i
-          && photo.criteres.comboSets.length === (i === 0 ? 1 : 0);
+        return photo?.criteres.minStats.spd === (masquee(i) ? 250 + i : undefined)
+          && photo?.criteres.lignesVerrouillees[0]?.min === (masquee(i) ? 8 + i : undefined)
+          && photo?.criteres.comboSets.length === (i === 0 ? 1 : 0);
       }), 'critères attribués à chaque membre, jamais ceux du voisin');
-      verifier(texteRapport().includes('ne garantit pas l’ordre des tours') && texteRapport().includes(`${membres.length} monstre(s), 1 équipe(s)`), 'rapport de conversion rendu par l’action');
+      const liens = equipe?.speedTune?.membres ?? [];
+      verifier(liens.length === membres.filter((_, i) => !masquee(i)).length && liens.every(l => l.attache)
+        && liens[0]?.repli.vitesseMin === 250 && liens[0]?.repli.effet206 === 8, 'plan posé sur l’équipe, membres visibles liés avec leurs valeurs de repli');
+      verifier(texteRapport().includes('Le plan de speed tune est posé') && texteRapport().includes(`${membres.length} monstre(s), 1 équipe(s)`), 'rapport de conversion rendu par l’action');
       await geste(() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })));
       const minimum = [...document.querySelectorAll<HTMLInputElement>('[aria-label="VIT minimum"]')].find(visible);
-      verifier(minimum?.value === '150', 'VIT importée lue dans l’Optimizer après atterrissage');
+      const encart = [...document.querySelectorAll<HTMLElement>('section[aria-label="Speed tune"]')].find(visible);
+      verifier(!minimum && !!encart && encart.innerText.includes('Détacher le speed tune'), 'Optimizer après atterrissage : encart Speed tune à la place de la VIT minimum');
+      const detacher = [...(encart?.querySelectorAll<HTMLButtonElement>('button') ?? [])].find(e => e.textContent?.trim() === 'Détacher le speed tune');
+      if (detacher) await geste(() => detacher.click());
+      const champRepli = [...document.querySelectorAll<HTMLInputElement>('[aria-label="VIT minimum"]')].find(visible);
+      verifier(champRepli?.value === '150' && JSON.stringify(etat.lignesVerrouillees) === JSON.stringify([{ code: 206, min: 8 }])
+        && listes.teams.find(e => e.listId === id)?.speedTune?.membres[0]?.attache === false, 'Détacher : VIT minimum et verrou 206 de repli posés, lien détaché');
+      const rattacher = [...document.querySelectorAll<HTMLButtonElement>('section[aria-label="Speed tune"] button')].find(e => visible(e) && e.textContent?.trim() === 'Rattacher');
+      if (rattacher) await geste(() => rattacher.click());
+      verifier(![...document.querySelectorAll<HTMLInputElement>('[aria-label="VIT minimum"]')].some(visible)
+        && listes.teams.find(e => e.listId === id)?.speedTune?.membres[0]?.attache === true, 'Rattacher : la VIT minimum ne se saisit plus');
       verifier(etat.search.result === null && etat.search.status === 'idle', 'aucune recherche lancée');
     }
   }

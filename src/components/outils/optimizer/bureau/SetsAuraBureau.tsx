@@ -3,9 +3,10 @@ import { AurasExternesSaisie } from '../../EtatMonstre';
 import { useTraduction } from '../../../../hooks/useLangue';
 
 // La place de la colonne « Aura, exclusion, avancés », celle d'« Artéfacts et
-// relique » (décision de l'utilisateur) : son panneau en prend 312
-// (`RETRAIT_PANNEAU`), ses sections 294.
-export const LARGEUR_COMPLEMENTS = 320;
+// relique » (décision de l'utilisateur) : son panneau en prend 320
+// (`RETRAIT_PANNEAU`), ses sections 294 (la barre de défilement est dans le
+// panneau).
+export const LARGEUR_COMPLEMENTS = 328;
 
 // « Sets d'aura des autres monstres », au bureau : en tête de la colonne
 // repliable « Aura, exclusion, avancés », sa section du panneau. La saisie est
