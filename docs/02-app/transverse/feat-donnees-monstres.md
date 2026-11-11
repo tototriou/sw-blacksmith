@@ -44,11 +44,16 @@ RTA et Siège.
   local, pas seulement en CI Linux.
 - **Fallback démo** : si l'API échoue, un jeu de démo déterministe est généré
   (labellisé `source: 'demo'`) pour que le site reste déployable et testable.
-- Rafraîchissement planifié via GitHub Actions (cron hebdo + manuel) → **PR**
-  ouverte sur `chore/donnees-swarfarm` → redéploiement Vercel à la fusion.
+- Rafraîchissement planifié via GitHub Actions (cron mensuel, le 1er du mois,
+  + manuel) → **PR** ouverte sur `chore/donnees-swarfarm` → redéploiement
+  Vercel à la fusion.
   ⚠️ **Une PR, pas un commit sur `main`** : la branche est protégée, un job
-  qui y pousserait directement échouerait en silence toutes les semaines. Le job
-  n'ouvre **que** la PR — il ne fusionne rien, et son token n'en a pas le droit.
+  qui y pousserait directement échouerait à chaque exécution. Le job
+  n'ouvre **que** la PR — il ne fusionne rien : quelqu'un l'approuve et la
+  fusionne. Il l'ouvre avec `GITHUB_TOKEN`, ce que le dépôt doit autoriser
+  (« Allow GitHub Actions to create and approve pull requests », réglages
+  Actions) ; cette PR ne déclenchant aucun workflow, le job lance lui-même
+  « Tests » sur la branche.
 - ⚠️ **Le corps de la PR est un RAPPORT de ce qui a changé**
   ([rapport-donnees.mjs](scripts/rapport-donnees.mjs)) : les **vitesses de base
   modifiées d'abord** — ce sont elles qui déplacent des ticks et peuvent décaler
@@ -84,7 +89,7 @@ de base ni leur kit.
 ⚠️ **Une moisson incomplète ÉCHOUE**, elle ne se publie pas : si la boucle
 s'arrête alors que l'API annonce une suite, ou si le nombre de monstres lus
 est inférieur au `count` annoncé, le script lève. Un fichier partiel est pire
-qu'un fichier vieux d'une semaine : il fait disparaître des monstres que les
+qu'un fichier vieux d'un mois : il fait disparaître des monstres que les
 comptes possèdent. Les résultats sont en outre **dédoublonnés par
 `com2us_id`**, pour qu'une page servie deux fois ne masque pas le trou.
 

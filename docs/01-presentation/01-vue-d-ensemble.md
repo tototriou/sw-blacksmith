@@ -43,7 +43,8 @@ La liste complète des pages, leurs routes et leur ordre : [02-app/](../02-app/R
   `/api/v2/`. Elles sont récupérées **hors du navigateur** (Node, donc sans CORS) par
   `scripts/fetch-monsters.mjs` et `scripts/fetch-skills.mjs`, écrites dans `public/data/`, puis
   servies avec le site. Le workflow `.github/workflows/update-data.yml` les rafraîchit chaque
-  semaine (ou à la demande) et commite le résultat. Si l'API est indisponible, un jeu de démonstration déterministe
+  mois (ou à la demande) et ouvre une pull request avec le résultat, qu'il reste à approuver
+  et à fusionner. Si l'API est indisponible, un jeu de démonstration déterministe
   est généré à la place, et le bandeau de statut le dit clairement : le site reste déployable et
   testable. Détail : [transverse/feat-donnees-monstres.md](../02-app/transverse/feat-donnees-monstres.md).
 - **Les icônes** (éléments, runes, stats, artéfacts, leader skills) sont servies en local depuis
