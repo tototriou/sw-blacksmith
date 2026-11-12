@@ -15,6 +15,10 @@ export const langueDe = (locale: string | undefined): Langue => ((locale ?? '').
 const COULEUR_OK = 0x23a55a;
 const COULEUR_KO = 0xf0b232;
 const COULEUR_ERREUR = 0xf23f43;
+// La carte d'un attaquant : vert s'il joue avant la défense, rouge s'il est
+// coupé, gris s'il ne joue pas dans l'horizon simulé.
+const COULEUR_COUPE = 0xf23f43;
+const COULEUR_NEUTRE = 0x80848e;
 
 export interface Embed {
   title: string;
@@ -22,6 +26,8 @@ export interface Embed {
   color: number;
   fields?: { name: string; value: string; inline?: boolean }[];
   footer?: { text: string };
+  thumbnail?: { url: string };
+  url?: string;
 }
 
 // Un menu déroulant (string select) dans sa rangée d'actions.
@@ -72,14 +78,15 @@ const TEXTES = {
     lead: (nom: string, p: number) => `Leader : **${nom}** · VIT d'attaque **+${p} %**`,
     sansLead: 'Aucun lead de vitesse actif en siège',
     reference: (v: number) => `Contre une défense aussi rapide que ton plus rapide (**${v}** de VIT de combat).`,
-    ordre: 'Ordre de jeu',
-    ligne: (rang: number, nom: string, vit: number, joue: boolean) => `${rang}. **${nom}** · ${vit} VIT${joue ? '' : ' · ne joue pas'}`,
-    fiche: (base: number, runes: number) => ` (base ${base} + runes ${runes})`,
-    sort: (s: string) => ` · ${s}`,
-    corriger: 'À corriger',
-    requis: (nom: string, actuel: number, requis: number) => `**${nom}** : ${requis} de VIT de combat (**+${requis - actuel}**)`,
-    requisRunes: (runes: number) => `, soit ${runes} de VIT de runes`,
-    horsDePortee: (nom: string) => `**${nom}** : coupé quelle que soit sa VIT`,
+    carteTitre: (rang: number, nom: string) => `${rang}. ${nom}`,
+    carteVit: (vit: number) => `**${vit}** de VIT de combat`,
+    carteFiche: (base: number, runes: number) => `Fiche : ${base} + ${runes}`,
+    carteSort: (s: string) => `Sort : **${s}**`,
+    carteOk: '✅ Joue avant la défense',
+    carteRequis: (requis: number, ecart: number) => `❌ Coupé — viser **${requis}** de VIT de combat (+${ecart})`,
+    carteRequisRunes: (base: number, runes: number) => `soit une fiche à ${base} + ${runes}`,
+    carteHors: '❌ Coupé quelle que soit sa VIT',
+    carteNeJoue: '⏸️ Ne joue pas dans les premiers tours',
     defense: 'Défense lue',
     pied: 'Lecture automatique de la capture — vérifie les monstres et les VIT lus. Même calcul que l\'outil de speed tuning de SW Blacksmith.',
     douteux: (quoi: string) => `⚠️ Lecture incertaine : ${quoi}`,
@@ -114,14 +121,15 @@ const TEXTES = {
     lead: (nom: string, p: number) => `Leader: **${nom}** · Attack Speed **+${p}%**`,
     sansLead: 'No speed lead active in siege',
     reference: (v: number) => `Against a defense as fast as your fastest (**${v}** combat SPD).`,
-    ordre: 'Turn order',
-    ligne: (rang: number, nom: string, vit: number, joue: boolean) => `${rang}. **${nom}** · ${vit} SPD${joue ? '' : ' · does not act'}`,
-    fiche: (base: number, runes: number) => ` (base ${base} + runes ${runes})`,
-    sort: (s: string) => ` · ${s}`,
-    corriger: 'To fix',
-    requis: (nom: string, actuel: number, requis: number) => `**${nom}**: ${requis} combat SPD (**+${requis - actuel}**)`,
-    requisRunes: (runes: number) => `, i.e. ${runes} rune SPD`,
-    horsDePortee: (nom: string) => `**${nom}**: cut whatever their SPD`,
+    carteTitre: (rang: number, nom: string) => `${rang}. ${nom}`,
+    carteVit: (vit: number) => `**${vit}** combat SPD`,
+    carteFiche: (base: number, runes: number) => `Stats: ${base} + ${runes}`,
+    carteSort: (s: string) => `Skill: **${s}**`,
+    carteOk: '✅ Moves before the defense',
+    carteRequis: (requis: number, ecart: number) => `❌ Cut — aim for **${requis}** combat SPD (+${ecart})`,
+    carteRequisRunes: (base: number, runes: number) => `i.e. ${base} + ${runes} in stats`,
+    carteHors: '❌ Cut whatever their SPD',
+    carteNeJoue: '⏸️ Does not move in the first turns',
     defense: 'Defense read',
     pied: 'Automatic reading of the screenshot — check the monsters and SPD read. Same computation as the SW Blacksmith speed tuning tool.',
     douteux: (quoi: string) => `⚠️ Uncertain reading: ${quoi}`,
@@ -201,30 +209,52 @@ export function messageQuestion(langue: Langue, equipe: { nom: string; combat: n
   };
 }
 
-export function embedResultat(langue: Langue, r: ResultatSpeedTune, defense: Monster[], douteux: string[], precisions: Precision[] = []): Embed {
+// Le résultat en cartes : un en-tête (verdict, lead, valeurs précisées,
+// doutes), une carte par attaquant DANS L'ORDRE DE JEU avec l'icône du monstre
+// du jeu (celle de SWARFARM, comme dans l'app), puis la défense lue. Discord
+// accepte dix cartes par message : on en envoie cinq au plus.
+export function embedsResultat(langue: Langue, r: ResultatSpeedTune, defense: Monster[], douteux: string[], precisions: Precision[] = []): Embed[] {
   const t = TEXTES[langue];
   const plusRapide = r.reference ?? Math.max(...r.lignes.map((l) => l.combat));
-  const description = [
-    r.lead ? t.lead(r.lead.monster.name, r.lead.pourcent) : t.sansLead,
-    t.reference(plusRapide),
-    ...precisions.map((p) => (p.sorte === 'cumuls' ? t.cumulsRetenus(p.nom, p.cumuls, p.points)
-      : p.sorte === 'arte' ? t.arteRetenu(p.nom, p.arte, p.buff)
-      : t.swiftRetenu(p.noms.join(', ') || t.aucun))),
-    ...douteux.map(t.douteux),
-  ].join('\n');
-  const fields: NonNullable<Embed['fields']> = [{
-    name: t.ordre,
-    value: r.lignes.map((l, i) => t.ligne(i + 1, l.monster.name, l.combat, l.tick != null)
-      + (l.base != null && l.runes != null ? t.fiche(l.base, l.runes) : '')
-      + (l.sort ? t.sort(l.sort) : '')).join('\n'),
-  }];
-  const aCorriger = r.lignes.flatMap((l) => {
-    // Chaque point de VIT de combat en plus est un point de runes en plus.
-    if (l.requis != null) return [t.requis(l.monster.name, l.combat, l.requis) + (l.runes != null ? t.requisRunes(l.runes + l.requis - l.combat) : '')];
-    if (l.horsDePortee) return [t.horsDePortee(l.monster.name)];
-    return [];
+  const entete: Embed = {
+    title: r.ok ? t.titreOk : t.titreKo,
+    description: [
+      r.lead ? t.lead(r.lead.monster.name, r.lead.pourcent) : t.sansLead,
+      t.reference(plusRapide),
+      ...precisions.map((p) => (p.sorte === 'cumuls' ? t.cumulsRetenus(p.nom, p.cumuls, p.points)
+        : p.sorte === 'arte' ? t.arteRetenu(p.nom, p.arte, p.buff)
+        : t.swiftRetenu(p.noms.join(', ') || t.aucun))),
+      ...douteux.map(t.douteux),
+    ].join('\n'),
+    color: r.ok ? COULEUR_OK : COULEUR_KO,
+  };
+  const cartes: Embed[] = r.lignes.map((l, i) => {
+    const coupe = l.requis != null || l.horsDePortee;
+    const fiche = l.base != null && l.runes != null;
+    const lignes = [
+      t.carteVit(l.combat) + (fiche ? ` · ${t.carteFiche(l.base!, l.runes!)}` : ''),
+      ...(l.sort ? [t.carteSort(l.sort)] : []),
+      l.tick == null ? t.carteNeJoue
+        : l.requis != null
+          // Chaque point de VIT de combat en plus est un point de runes en plus.
+          ? t.carteRequis(l.requis, l.requis - l.combat) + (fiche ? `, ${t.carteRequisRunes(l.base!, l.runes! + l.requis - l.combat)}` : '')
+          : l.horsDePortee ? t.carteHors : t.carteOk,
+    ];
+    return {
+      title: t.carteTitre(i + 1, l.monster.name),
+      description: lignes.join('\n'),
+      color: l.tick == null ? COULEUR_NEUTRE : coupe ? COULEUR_COUPE : COULEUR_OK,
+      ...(l.monster.image ? { thumbnail: { url: l.monster.image } } : {}),
+    };
   });
-  if (aCorriger.length) fields.push({ name: t.corriger, value: aCorriger.join('\n') });
-  if (defense.length) fields.push({ name: t.defense, value: defense.map((m) => m.name).join(' · ') });
-  return { title: r.ok ? t.titreOk : t.titreKo, description, color: r.ok ? COULEUR_OK : COULEUR_KO, fields, footer: { text: t.pied } };
+  const pied: Embed = defense.length
+    ? {
+      title: t.defense,
+      description: defense.map((m) => `**${m.name}**`).join(' · '),
+      color: COULEUR_NEUTRE,
+      ...(defense[0].image ? { thumbnail: { url: defense[0].image } } : {}),
+      footer: { text: t.pied },
+    }
+    : { title: t.defense, description: '—', color: COULEUR_NEUTRE, footer: { text: t.pied } };
+  return [entete, ...cartes, pied];
 }

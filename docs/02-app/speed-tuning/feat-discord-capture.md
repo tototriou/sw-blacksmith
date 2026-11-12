@@ -19,17 +19,22 @@ Voir aussi : README.md, feat-competences.md, feat-deux-camps.md,
    processeur 1 à 3 s, il passait avant l'envoi de la réponse.
 3. En tâche de fond (`waitUntil` de Vercel) : la pièce jointe est téléchargée
    — seulement sur le CDN de Discord, en PNG ou JPEG, 10 Mo au plus —, lue,
-   analysée, puis la réponse différée est remplacée par un message :
-   - le leader et le pourcentage de son lead, s'il vaut en siège ;
-   - l'**ordre de jeu** : chaque attaquant, sa VIT de combat, le sort de
-     vitesse retenu par l'analyse (pas le tick : la simulation le calcule pour
-     l'ordre, le message ne l'affiche pas) ;
-   - **à corriger** : la VIT de combat à atteindre (et l'écart) pour un allié
-     coupé, ou « coupé quelle que soit sa VIT » ;
-   - la **défense lue** (noms seulement : l'écran ne montre pas sa VIT) ;
-   - ce qui reste **incertain** dans la lecture : deux portraits proches, une
-     VIT lue avec une confiance faible ;
-   - les valeurs **précisées** par le joueur (voir ci-dessous).
+   analysée, puis la réponse différée est remplacée par un message en
+   **cartes** (des embeds Discord, cinq au plus) :
+   - un **en-tête** coloré selon le verdict : le leader et le pourcentage de
+     son lead s'il vaut en siège, la VIT de l'adversaire de référence, les
+     valeurs **précisées** par le joueur (voir ci-dessous) et ce qui reste
+     **incertain** dans la lecture (deux portraits proches, une VIT lue avec
+     une confiance faible) ;
+   - une **carte par attaquant, dans l'ordre de jeu**, avec l'icône du monstre
+     (celle de SWARFARM, comme dans l'app) : sa VIT de combat et sa VIT de
+     fiche (`base + runes`), le sort de vitesse retenu par l'analyse, puis
+     « joue avant la défense » (barre verte), ou la VIT de combat à viser et
+     la fiche correspondante, ou « coupé quelle que soit sa VIT » (barre
+     rouge). Pas de tick : la simulation le calcule pour l'ordre, le message
+     ne l'affiche pas ;
+   - la **défense lue** (noms seulement : l'écran ne montre pas sa VIT), avec
+     l'icône de son leader.
 
 ### Ce que la capture ne montre pas : la question
 

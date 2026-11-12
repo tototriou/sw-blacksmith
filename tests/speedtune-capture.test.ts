@@ -379,16 +379,20 @@ export async function testSpeedtuneInteractions() {
   ok(embed.description?.includes('**Susano** : Effet aug. VIT +4 % (buff de VIT +31 %)') === true, 'l\'effet aug. VIT retenu est rappelé');
   ok(embed.description?.includes('Set Rapide : Tarq') === true, 'le set Rapide retenu est rappelé');
   ok(embed.description?.includes('Susano') === true && embed.description.includes('+30 %'), 'le leader et son lead');
-  const ordre = embed.fields?.[0].value ?? '';
-  ok(ordre.startsWith('1. **Chilling** · 367 VIT'), 'l\'ordre de jeu (passif compris) et la VIT lue');
-  ok(!/tick/i.test(ordre), 'aucun tick affiché');
-  ok(['Susano', 'Tarq'].every((n) => ordre.includes(n)), 'les trois attaquants y figurent');
+  // Une carte par attaquant, dans l'ordre de jeu, avec l'icône du monstre.
+  const cartes = final.corps.embeds.slice(1, 4);
+  egal(cartes.map((c) => c.title), ['1. Chilling', '2. Tarq', '3. Susano'], 'une carte par attaquant, dans l\'ordre de jeu (passif compris)');
+  egal(cartes.map((c) => c.thumbnail?.url), [chilling.image, tarq.image, susano.image], 'chaque carte porte l\'icône du monstre');
+  ok(cartes[0].description?.startsWith('**367** de VIT de combat') === true, 'la VIT lue');
+  ok(cartes.every((c) => !/tick/i.test(c.description ?? '')), 'aucun tick affiché');
+  egal(final.corps.embeds[4].title, 'Défense lue', 'la défense lue, en dernière carte');
+  const ordre = cartes.map((c) => c.description).join('\n');
   // La VIT de fiche (base + bonus, comme le monstre la montre hors combat),
   // déduite de la VIT lue. ⚠️ Le bonus de fiche contient DÉJÀ le Rapide : il
   // n'y change que l'arrondi (le jeu arrondit la somme des pourcentages).
   const runesDe = (m: Monster, combat: number, swift: boolean) => runeSpeedForTarget(m.stats.speed, siegeLeadFor(speedLeadOf(susano), m.element), combat, swift);
-  ok(ordre.includes(`**Tarq** · 385 VIT (base ${tarq.stats.speed} + runes ${runesDe(tarq, 385, true)})`), 'Tarq en Rapide : sa VIT de runes');
-  ok(ordre.includes(`(base ${susano.stats.speed} + runes ${runesDe(susano, 357, false)})`), 'Susano sans Rapide : sa VIT de runes');
+  ok(cartes[1].description?.includes(`Fiche : ${tarq.stats.speed} + ${runesDe(tarq, 385, true)}`) === true, 'Tarq en Rapide : sa VIT de fiche');
+  ok(ordre.includes(`Fiche : ${susano.stats.speed} + ${runesDe(susano, 357, false)}`), 'Susano sans Rapide : sa VIT de fiche');
   ok(Math.abs(runesDe(tarq, 385, true)! - runesDe(tarq, 385, false)!) <= 1, 'le Rapide ne change la VIT de fiche que d\'un point d\'arrondi');
   egal(final.corps, { ...final.corps, allowed_mentions: { parse: [] } }, 'aucune mention possible');
 

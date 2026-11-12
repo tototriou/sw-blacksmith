@@ -31,7 +31,7 @@ import type { Banque } from '../capture/portraits';
 import type { Gabarits } from '../capture/chiffres';
 import { lireEcranPreparation, type LectureEcran } from '../capture/ecranPreparation';
 import { analyserEquipe } from './analyse';
-import { embedErreur, embedResultat, langueDe, messageQuestion, texteEphemere, type Demande, type Embed, type Langue, type Message, type Precision } from './message';
+import { embedErreur, embedsResultat, langueDe, messageQuestion, texteEphemere, type Demande, type Embed, type Langue, type Message, type Precision } from './message';
 import { ARTE_MAX, CUMULS_MAX, decoderEtat, encoderEtat, type Etat } from './etat';
 
 export const COMMANDE = 'speedtune';
@@ -325,5 +325,5 @@ export async function repondre(res: Ressources, etat: Etat, langue: Langue): Pro
     donnees
   );
   const defense = etat.defense.map((id) => res.monstre(id)).filter((m): m is Monster => m !== undefined);
-  return { embeds: [embedResultat(langue, resultat, defense, douteux, precisions)], components: [] };
+  return { embeds: embedsResultat(langue, resultat, defense, douteux, precisions), components: [] };
 }
