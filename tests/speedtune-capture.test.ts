@@ -17,7 +17,7 @@ import { lireNombre, type Gabarits } from '../api/_source/capture/chiffres';
 import { DISPOSITIONS, lireEcranPreparation } from '../api/_source/capture/ecranPreparation';
 import { analyserEquipe } from '../api/_source/speedtune/analyse';
 import { creerInteractions, signatureValide, tranchesArte, type Ressources } from '../api/_source/speedtune/interactions';
-import { embedErreur, ICONE_APP, langueDe, type Embed, type Rangee } from '../api/_source/speedtune/message';
+import { embedErreur, ICONE_APP, LIEN_OUTIL, langueDe, type Embed, type Menu, type Rangee } from '../api/_source/speedtune/message';
 import { decoderEtat, encoderEtat, LONGUEUR_MAX, type Etat } from '../api/_source/speedtune/etat';
 import { creerEmojis } from '../api/_source/speedtune/emojis';
 import gabaritsJson from '../api/_source/capture/chiffres-gabarits.json';
@@ -354,7 +354,7 @@ export async function testSpeedtuneInteractions() {
   // Chilling a un passif qui se cumule : la question d'abord, un menu à lui.
   const question = dernier();
   egal(question.url, 'https://discord.com/api/v10/webhooks/APP/T/messages/@original', 'la question remplace la réponse différée');
-  const menusDe = (m: typeof question) => (m.corps.components ?? []).map((r) => r.components[0]);
+  const menusDe = (m: typeof question) => (m.corps.components ?? []).map((r) => r.components[0] as Menu);
   const menus = menusDe(question);
   // Chilling : son passif se cumule ; et son S2 (Song of the Night Wind) buffe
   // la VIT de toute l'équipe : l'effet aug. VIT de chacun compte.
@@ -399,7 +399,9 @@ export async function testSpeedtuneInteractions() {
   await Promise.all(travaux);
   const final = dernier();
   egal(final.url, 'https://discord.com/api/v10/webhooks/APP/C/messages/@original', 'le résultat remplace la question');
-  egal(final.corps.components, [], 'les menus disparaissent');
+  egal(final.corps.components, [{ type: 1, components: [{ type: 2, style: 5, label: 'Ouvrir l\'outil de speed tuning', url: LIEN_OUTIL }] }],
+    'les menus disparaissent ; reste le bouton vers l\'outil de speed tuning');
+  egal(LIEN_OUTIL, 'https://sw-blacksmith.vercel.app/#/outils/speed-tuning', 'l\'outil du site de production');
   egal(final.corps.embeds.length, 1, 'un seul encart, compact');
   const embed = final.corps.embeds[0];
   const champ = (nom: string) => embed.fields?.find((f) => f.name === nom)?.value ?? '';

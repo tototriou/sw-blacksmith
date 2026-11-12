@@ -37,7 +37,10 @@ Voir aussi : README.md, feat-competences.md, feat-deux-camps.md,
    - les autres valeurs **précisées** par le joueur (voir ci-dessous) ;
    - la **défense lue**, icônes et noms (l'écran ne montre pas sa VIT) ;
    - en description, ce qui reste **incertain** dans la lecture (deux
-     portraits proches, une VIT lue avec une confiance faible).
+     portraits proches, une VIT lue avec une confiance faible) ;
+   - sous l'encart, un bouton **« Ouvrir l'outil de speed tuning »** : l'outil
+     du site de production (`#/outils/speed-tuning`), pour régler l'équipe à
+     la main. Il s'ouvre vide : l'équipe lue n'y est pas reportée.
 
    Les icônes dans le texte sont des **émojis d'application** du bot
    ([emojis.ts](../../../api/_source/speedtune/emojis.ts)) : nommés

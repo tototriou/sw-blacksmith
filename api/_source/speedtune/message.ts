@@ -18,7 +18,12 @@ const COULEUR_ERREUR = 0xf23f43;
 // L'icône de l'app en vignette du résultat. ⚠️ Celle du site de PRODUCTION,
 // même depuis un aperçu : Discord télécharge l'image lui-même, et un aperçu
 // protégé la lui refuserait.
-export const ICONE_APP = 'https://sw-blacksmith.vercel.app/favicon.png?v=2';
+export const SITE = 'https://sw-blacksmith.vercel.app';
+export const ICONE_APP = `${SITE}/favicon.png?v=2`;
+// L'outil de speed tuning du site, où l'on règle l'équipe à la main. Celui de
+// PRODUCTION, comme l'icône : un aperçu protégé demanderait une connexion
+// Vercel.
+export const LIEN_OUTIL = `${SITE}/#/outils/speed-tuning`;
 
 
 export interface Embed {
@@ -31,15 +36,17 @@ export interface Embed {
   url?: string;
 }
 
-// Un menu déroulant (string select) dans sa rangée d'actions.
+// Une rangée d'actions : un menu déroulant (string select), ou un bouton lien.
+export interface Menu {
+  type: 3;
+  custom_id: string;
+  placeholder: string;
+  options: { label: string; value: string; description?: string; default?: boolean }[];
+}
+export interface BoutonLien { type: 2; style: 5; label: string; url: string }
 export interface Rangee {
   type: 1;
-  components: {
-    type: 3;
-    custom_id: string;
-    placeholder: string;
-    options: { label: string; value: string; description?: string; default?: boolean }[];
-  }[];
+  components: (Menu | BoutonLien)[];
 }
 
 // Ce qui remplace le message : `components` vide retire les menus d'une
@@ -94,6 +101,7 @@ const TEXTES = {
     viserFiche: (base: number, runes: number) => `soit ${base} + ${runes}`,
     horsDePortee: 'quelle que soit sa VIT',
     defense: 'Défense lue',
+    ouvrirOutil: 'Ouvrir l\'outil de speed tuning',
     pied: 'Lecture automatique de la capture — vérifie les monstres et les VIT lus. Même calcul que l\'outil de speed tuning de SW Blacksmith.',
     douteux: (quoi: string) => `⚠️ Lecture incertaine : ${quoi}`,
     erreurTitre: '⚡ Speed tune — capture illisible',
@@ -142,6 +150,7 @@ const TEXTES = {
     viserFiche: (base: number, runes: number) => `i.e. ${base} + ${runes}`,
     horsDePortee: 'whatever their SPD',
     defense: 'Defense read',
+    ouvrirOutil: 'Open the speed tuning tool',
     pied: 'Automatic reading of the screenshot — check the monsters and SPD read. Same computation as the SW Blacksmith speed tuning tool.',
     douteux: (quoi: string) => `⚠️ Uncertain reading: ${quoi}`,
     erreurTitre: '⚡ Speed tune — unreadable screenshot',
@@ -178,6 +187,12 @@ export function embedErreur(langue: Langue, erreur: Erreur | { vitIllisible: str
   const description = typeof erreur === 'string' ? t[erreur] : t.vitIllisible(erreur.vitIllisible.join(', '));
   return { title: t.erreurTitre, description, color: COULEUR_ERREUR };
 }
+
+// Le bouton sous le résultat : l'outil de l'app, pour aller plus loin.
+export const rangeeOutil = (langue: Langue): Rangee => ({
+  type: 1,
+  components: [{ type: 2, style: 5, label: TEXTES[langue].ouvrirOutil, url: LIEN_OUTIL }],
+});
 
 export const texteEphemere = (langue: Langue, quoi: 'pasAuteur' | 'perime') => TEXTES[langue][quoi];
 

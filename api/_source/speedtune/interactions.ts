@@ -31,7 +31,7 @@ import type { Banque } from '../capture/portraits';
 import type { Gabarits } from '../capture/chiffres';
 import { lireEcranPreparation, type LectureEcran } from '../capture/ecranPreparation';
 import { analyserEquipe } from './analyse';
-import { embedErreur, embedResultat, langueDe, messageQuestion, texteEphemere, type Demande, type Embed, type Langue, type Message, type Precision } from './message';
+import { embedErreur, embedResultat, langueDe, messageQuestion, rangeeOutil, texteEphemere, type Demande, type Embed, type Langue, type Message, type Precision } from './message';
 import { ARTE_MAX, CUMULS_MAX, decoderEtat, encoderEtat, type Etat } from './etat';
 import type { Emojis } from './emojis';
 
@@ -330,5 +330,5 @@ export async function repondre(res: Ressources, etat: Etat, langue: Langue): Pro
   );
   const defense = etat.defense.map((id) => res.monstre(id)).filter((m): m is Monster => m !== undefined);
   const icones = res.emojis ? await res.emojis([...monstres.map((m) => m!), ...defense]) : new Map<number, string>();
-  return { embeds: [embedResultat(langue, resultat, defense, douteux, precisions, icones)], components: [] };
+  return { embeds: [embedResultat(langue, resultat, defense, douteux, precisions, icones)], components: [rangeeOutil(langue)] };
 }
