@@ -161,10 +161,22 @@ export async function testRenduOptimizerTableauBonusSousLaBase() {
 }
 
 export async function testRenduOptimizerTableauEtats() {
-  titre('rendu · tableau des résultats — tri par en-tête, minimum > maximum, colonne indisponible');
+  titre('rendu · tableau des résultats — ligne de la fiche, tri par en-tête, minimum > maximum, colonne indisponible');
   const { browser, page } = await navigateurOptimizer(false, BANC);
   try {
     await monter(page, { largeur: 900, force: false, bornes: 'aucune' });
+    // La ligne de la fiche : sous les bornes, dernière rangée de l'en-tête, son nom au-dessus d'elle.
+    const ficheLue = () => page.evaluate(() => {
+      const ligne = document.querySelector('[data-tableau-resultats] thead tr:last-child');
+      return { estFiche: ligne?.hasAttribute('data-ligne-fiche') ?? false,
+        titre: document.querySelector('[data-ligne-fiche-titre]')?.textContent?.trim() ?? '',
+        valeurs: [...(ligne?.querySelectorAll('td[data-colonne-tableau]') ?? [])].map((td) => (td.textContent ?? '').replace(/\s/g, ' ')),
+        grises: [...(ligne?.querySelectorAll('td[data-colonne-tableau]') ?? [])].map((td) => td.className.includes('text-ink-dimmer')) };
+    });
+    const fiche = await ficheLue();
+    ok(fiche.estFiche && fiche.titre === 'Build validé'
+      && JSON.stringify(fiche.valeurs) === JSON.stringify(['98 999', '3 999', '3 899', '318', '110%', '299%', '120%', '120%', '118.6%', '888 888', '999 999']),
+      `ligne de la fiche sous les bornes, nommée « ${fiche.titre} », ses onze valeurs en total (${fiche.valeurs.join(' | ')})`);
     const tri = () => page.evaluate(() => [...document.querySelectorAll('th[aria-sort]')]
       .filter((t) => t.getAttribute('aria-sort') !== 'none').map((t) => `${t.textContent?.trim()}:${t.getAttribute('aria-sort')}`));
     ok(JSON.stringify(await tri()) === JSON.stringify(['VIT:descending']), `tri de départ annoncé sur son en-tête (${await tri()})`);
@@ -188,6 +200,14 @@ export async function testRenduOptimizerTableauEtats() {
     ok(contradiction.lignes === 1 && /^Vue vide : le minimum de VIT \(220\) dépasse son maximum \(200\)\.$/.test(contradiction.vide),
       `… et la vue vide dite à la place des lignes (« ${contradiction.vide} »)`);
 
+    await monter(page, { largeur: 900, force: false, bornes: 'aucune', sansSort: true });
+    const ficheSansSort = await ficheLue();
+    ok(ficheSansSort.valeurs[9] === '—' && ficheSansSort.grises[9] && ficheSansSort.valeurs[10] === '999 999',
+      `sans sort calculable : la fiche n'écrit pas de dégâts (« ${ficheSansSort.valeurs[9]} »), ses PV effectifs restent`);
+    await monter(page, { largeur: 900, force: false, bornes: 'aucune', enBonus: true });
+    const ficheBonus = await ficheLue();
+    ok(JSON.stringify(ficheBonus.valeurs.slice(0, 5)) === JSON.stringify(['79 244', '2 999', '2 999', '199', '110%']),
+      `en Stats bonus : PV, ATQ, DEF et VIT de la fiche sans la base, le reste en total (${ficheBonus.valeurs.slice(0, 5).join(' | ')})`);
     await monter(page, { largeur: 900, force: false, bornes: 'aucune', sansSort: true });
     const indispo = await page.evaluate(() => {
       const tete = [...document.querySelectorAll('th[aria-sort] button')].find((b) => b.getAttribute('aria-label')?.startsWith('Dégâts réels')) as HTMLButtonElement | undefined;

@@ -585,6 +585,22 @@ toujours, superposés, l'absent invisible (`VISIBLE_AVEC_LE_TABLEAU`,
   (« Build n° 3 », croix) : « Comparer » et « Valider » y sont. Les places
   « Vérification… » sont des lignes. La vue demande alors les onze valeurs
   de chaque build (`colonnesCompletes`), dès celle du lancement (`run`).
+- **La ligne de la fiche** (demande d'utilisateur : voir l'efficience, les
+  dégâts et les PV effectifs du runage porté sans ouvrir « Comparer ») : sous
+  les bornes, dernière rangée de l'en-tête, les onze valeurs de la fiche
+  affichée dans « Exemplaire », sur fond `panel2`, au-dessus du premier build.
+  Son nom est celui de la vue, sur sa propre rangée : « Build actuel »,
+  « Build validé » ou « Aperçu » (`vueFiche`) ; dans la colonne du rang, il
+  aurait élargi le tableau, dont le seuil est mesuré. ⚠️ **Les valeurs sont
+  les références de « Comparer »** (`statsReference`, `refMetric`,
+  `refEhpResultat`, `refDegatsResultat`, OptimizerSection.tsx), réunies par
+  `valeursDeLaFiche` (valeursAffichees.ts) : la ligne et l'écart d'une carte
+  disent le même chiffre, et une fiche identique à un build écrit ses
+  valeurs. Elles suivent le tableau : « Stats bonus », dépassement masqué,
+  colonne grisée sans sort calculable ; l'efficience n'est écrite que dans la
+  mesure de la page publiée (« — » tant qu'elle est dans l'autre, comme
+  l'écart d'une carte). Pas de fiche (aucun monstre) : pas de ligne. Les
+  cartes n'en ont pas : « Comparer » y sert.
 - ⚠️ **Largeurs selon le contenu** : la mise en page automatique du
   `<table>` ; un en-tête de deux mots passe sur deux lignes ; chaque borne a
   la largeur de la plus grande valeur de sa colonne (`CHIFFRES_MAX_COLONNE`,

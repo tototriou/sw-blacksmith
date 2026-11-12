@@ -2575,6 +2575,7 @@ export const fr = {
       autreMonstre: 'un autre monstre',
       buildActuel: 'Build actuel',
       buildValide: 'Build validé',
+      apercuCourt: 'Aperçu',
       aucunBuildValide: 'Aucun build validé pour ce membre',
       apercu: (monstre: string, source: string) => `Aperçu : ${monstre} · ${source}. Ce n'est pas l'exemplaire de la liste.`,
       revenir: 'Revenir',
