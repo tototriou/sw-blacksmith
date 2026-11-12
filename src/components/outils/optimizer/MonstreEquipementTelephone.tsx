@@ -38,10 +38,12 @@ export interface MonstreEquipementTelephoneProps {
   selectionFiche: Selected;
   setSelectionFiche: (s: Selected) => void;
   relicUsageById: Record<number, number>;
+  // Mesure moyenne, PV effectifs et dégâts de la fiche (`MesuresDeLaFiche`).
+  mesuresFiche: ReactNode;
   validateBuildButton: ReactNode;
 }
 
-export default function MonstreEquipementTelephone({ allMonsters, pickSpecies, disponibiliteEspece, ligneMonstreTelephoneRef, selected, selectionAffichee, sourcesImport, importerDepuisEcran, rapportImport, setZoneCOpen, zoneCOpen, eclatImport, listesTelephone, sourceOptions, vuesExemplaire, gearSource, pickSource, allSourcesEmpty, zoneDOpen, zoneDList, zoneCContent, validatedBadge, selectionFiche, setSelectionFiche, relicUsageById, validateBuildButton }: MonstreEquipementTelephoneProps) {
+export default function MonstreEquipementTelephone({ allMonsters, pickSpecies, disponibiliteEspece, ligneMonstreTelephoneRef, selected, selectionAffichee, sourcesImport, importerDepuisEcran, rapportImport, setZoneCOpen, zoneCOpen, eclatImport, listesTelephone, sourceOptions, vuesExemplaire, gearSource, pickSource, allSourcesEmpty, zoneDOpen, zoneDList, zoneCContent, validatedBadge, selectionFiche, setSelectionFiche, relicUsageById, mesuresFiche, validateBuildButton }: MonstreEquipementTelephoneProps) {
   const c = useTraduction().optimizer.criteres;
   return (
     <div className="space-y-3">
@@ -106,6 +108,7 @@ export default function MonstreEquipementTelephone({ allMonsters, pickSpecies, d
           onSelectionChange={setSelectionFiche}
           relicUsageById={relicUsageById}
         />
+          {mesuresFiche}
           {validateBuildButton}
       </div>
     </div>

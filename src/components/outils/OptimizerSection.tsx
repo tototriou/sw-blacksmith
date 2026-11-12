@@ -161,6 +161,7 @@ import GrilleResultats from './optimizer/GrilleResultats';
 import BandeDeTri, { type TriResultats } from './optimizer/TetesDeTri';
 import TableauResultats, { CARTES_SOUS_LE_SEUIL, TABLEAU_VISIBLE, type LigneFiche } from './optimizer/TableauResultats';
 import { valeursDeLaFiche } from '../../lib/valeursAffichees';
+import MesuresDeLaFiche from './optimizer/MesuresDeLaFiche';
 import BuildCandidateCard from './BuildCandidateCard';
 import { useFormeResultats, type FormeResultats } from '../../hooks/useFormeResultats';
 import { libelleColonne } from '../../lib/filtresAffichage';
@@ -2384,6 +2385,19 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
       degatsReels: refDegatsResultat,
     }, afficherDepassementDesCartes),
   } : null, [statsReference, vueFiche, os, refMetric, mesureDesCartes, metric, refEhpResultat, refDegatsResultat, afficherDepassementDesCartes]);
+  // Les mêmes références sous la fiche d'« Exemplaire », quand les résultats
+  // sont en cartes (le téléphone l'est toujours) : en tableau, la ligne de la
+  // fiche les porte.
+  const enemyHpReference = contexteReferenceResultat.damageSetup.enemyHp;
+  const mesuresFiche = statsReference && refMetric != null && (formeResultats !== 'tableau' || sousLg) ? (
+    <MesuresDeLaFiche
+      mesureTotale={refMetric}
+      metric={metric}
+      pvEffectifs={refEhpResultat}
+      degats={refDegatsResultat != null
+        ? { total: refDegatsResultat, partPvCible: enemyHpReference > 0 ? (refDegatsResultat / enemyHpReference) * 100 : 0 } : null}
+    />
+  ) : null;
 
   // Le compte du MOTEUR : le nombre du bilan à la fin, le compte de la
   // progression pendant l'appariement (non plafonné, contrairement à l'aperçu).
@@ -3394,6 +3408,7 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
     selectionFiche,
     setSelectionFiche,
     relicUsageById,
+    mesuresFiche,
     validateBuildButton,
   };
 
@@ -3617,6 +3632,7 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
             selectionFiche={selectionFiche}
             setSelectionFiche={setSelectionFiche}
             relicUsageById={relicUsageById}
+            mesuresFiche={mesuresFiche}
             validateBuildButton={validateBuildButton}
           />
       </MonstreEquipement>

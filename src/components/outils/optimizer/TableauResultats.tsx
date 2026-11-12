@@ -193,11 +193,13 @@ export default function TableauResultats({ cartes, premierRang, placesEnAttente,
           {/* La fiche d'« Exemplaire » : ses valeurs se lisent contre celles
               des builds, sans ouvrir « Comparer ». Son nom sur sa propre
               rangée : dans la colonne du rang, il élargirait le tableau, dont
-              le seuil est mesuré. */}
+              le seuil est mesuré (un mot par ligne à sa gauche : 27 px de
+              plus en anglais, « Validated »). */}
           {fiche && (
             <>
               <tr className="border-t border-border-soft bg-panel2" data-ligne-fiche-titre="">
-                <th scope="colgroup" colSpan={largeurTotale} className="px-2 pt-1 text-left text-micro font-semibold text-ink-dim">{fiche.libelle}</th>
+                {/* Sans rembourrage bas ni interligne : le nom tient contre ses valeurs (demande de l'utilisateur). */}
+                <th scope="colgroup" colSpan={largeurTotale} className="px-2 pt-0.5 text-left text-micro font-semibold leading-none text-ink-dim">{fiche.libelle}</th>
               </tr>
               <tr className="border-b border-border bg-panel2" data-ligne-fiche="">
                 <td className="px-1 pb-1" />
