@@ -23,7 +23,7 @@ import { creerEmojis } from '../api/_source/speedtune/emojis';
 import gabaritsJson from '../api/_source/capture/chiffres-gabarits.json';
 import { combatSpeed, runeSpeedForTarget, siegeLeadFor, speedLeadOf } from '../src/lib/speed';
 import { kitVitesse, sortsVitesse } from '../src/lib/speedTuneKit';
-import { passifsVitesse } from '../src/lib/speedTunePassif';
+import { passifsVitesse, pointsDeGain } from '../src/lib/speedTunePassif';
 import type { DonneesKit } from '../src/lib/speedTuneAuto';
 import type { DetailMonstre } from '../src/lib/monsterSkills';
 import type { Monster } from '../src/types';
@@ -236,6 +236,14 @@ export function testSpeedtuneAnalyse() {
   const avecCumul = analyserEquipe(equipe.map((a) => (a.monster === chilling ? { ...a, cumuls: 1 } : a)), donneesKit(equipe.map((a) => a.monster)));
   egal(avecCumul.lignes[0].monster.name, 'Chilling', 'un cumul du passif de Chilling le fait jouer le premier');
   egal(avecCumul.reference, 387, 'la référence copie le plus rapide, passif compris');
+
+  // La VIT à viser se donne dans l'échelle de la VIT LUE (sans le passif) :
+  // Miles à 2 cumuls en a déjà le gain, la cible lue baisse d'autant.
+  const miles = monstreNomme('Miles', 'water');
+  const avecMiles = (cumuls: number) => analyserEquipe([{ monster: tarq, combat: 300 }, { monster: miles, combat: 240, cumuls }, { monster: susano, combat: 200 }],
+    donneesKit([tarq, miles, susano])).lignes.find((l) => l.monster === miles)!.requis;
+  const passifMiles = passifsVitesse(ficheDe(miles.com2usId!)).find((x) => x.gain)!;
+  egal(avecMiles(2), avecMiles(0)! - pointsDeGain(passifMiles.gain, miles.stats.speed, 2), 'VIT à viser : le gain du passif n\'est pas compté deux fois');
   egal(r.reference, 385, 'sans cumul, la référence est Tarq');
 }
 

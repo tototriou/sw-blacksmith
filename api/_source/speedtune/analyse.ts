@@ -37,7 +37,8 @@ export interface LigneResultat {
   // Le sort de vitesse retenu par l'analyse : son numéro (S1, S2…) se lit
   // mieux que son nom, que peu de joueurs connaissent.
   sort: { nom: string; slot: number | null } | null;
-  // VIT de combat à atteindre pour ne plus être coupé, `null` si rien à faire
+  // VIT de combat à atteindre pour ne plus être coupé, dans l'échelle de la VIT
+  // LUE (sans le passif, comme l'écran de préparation), `null` si rien à faire
   // ou hors de portée (voir `horsDePortee`).
   requis: number | null;
   horsDePortee: boolean;
@@ -79,6 +80,12 @@ export function analyserEquipe(attaquants: AttaquantAnalyse[], donnees: DonneesK
   const resultat: LigneResultat[] = [...parId].map(([uid, { l, a, entree }]) => {
     const q = requisDe.get(uid);
     const coupe = coupes.has(uid);
+    // ⚠️ Le moteur raisonne en VIT de combat PASSIF COMPRIS (`combatActuel`,
+    // `combatRequis`) ; la capture montre la VIT SANS le passif. On garde donc
+    // l'écart du moteur, appliqué à la VIT lue : comparer `combatRequis` à la
+    // VIT lue comptait le gain du passif deux fois (Miles à 2 cumuls : « viser
+    // 300 » au lieu de 300 moins son gain).
+    const ecart = q?.combatRequis != null ? q.combatRequis - q.combatActuel : 0;
     return {
       monster: a.monster,
       combat: a.combat,
@@ -89,7 +96,7 @@ export function analyserEquipe(attaquants: AttaquantAnalyse[], donnees: DonneesK
         const s = sortRetenu(entree, donnees);
         return s ? { nom: s.nom, slot: s.slot } : null;
       })(),
-      requis: coupe && q?.combatRequis != null && q.combatRequis > a.combat ? q.combatRequis : null,
+      requis: coupe && ecart > 0 ? a.combat + ecart : null,
       horsDePortee: coupe && q?.combatRequis == null,
     };
   });
