@@ -29,8 +29,9 @@ const commande = {
     type: 11, // pièce jointe
     name: 'capture',
     name_localizations: { 'en-US': 'screenshot', 'en-GB': 'screenshot' },
-    description: 'Screenshot of the preparation screen: your three attackers on the left, their SPD under each portrait',
-    description_localizations: { fr: 'Capture de l\'écran de préparation : tes trois attaquants à gauche, leur VIT sous chaque portrait' },
+    // ⚠️ Discord refuse une description de plus de 100 caractères (HTTP 400).
+    description: 'Preparation screen: your three attackers on the left, SPD under each portrait',
+    description_localizations: { fr: 'Écran de préparation : tes trois attaquants à gauche, VIT sous chaque portrait' },
     required: true,
   }],
 };
