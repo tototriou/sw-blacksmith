@@ -19,7 +19,9 @@ Voir aussi : README.md, feat-competences.md, feat-deux-camps.md,
    processeur 1 à 3 s, il passait avant l'envoi de la réponse.
 3. En tâche de fond (`waitUntil` de Vercel) : la pièce jointe est téléchargée
    — seulement sur le CDN de Discord, en PNG ou JPEG, 10 Mo au plus —, lue,
-   analysée, puis la réponse différée est remplacée par **un seul encart**
+   analysée, puis la réponse différée est remplacée (si Discord refuse le
+   message, le refus est journalisé et remplacé par le message de panne) par
+   **un seul encart**
    compact, coloré selon le verdict, à la manière des bots de statistiques :
    - la **vignette** : l'icône de l'app (celle du site de production : Discord
      télécharge l'image lui-même, un aperçu protégé la lui refuserait) ;

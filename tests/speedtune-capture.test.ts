@@ -472,4 +472,26 @@ export async function testSpeedtuneInteractions() {
   egal(await titreDe({ url: 'https://cdn.discordapp.com/c.gif', content_type: 'image/gif', size: 10 }), embedErreur('en', 'pasImage').description, 'ni PNG ni JPEG : refusé');
   egal(await titreDe({ url: 'https://cdn.discordapp.com/c.png', content_type: 'image/png', size: 11 * 1024 * 1024 }), embedErreur('en', 'tropLourde').description, 'plus de 10 Mo : refusé avant téléchargement');
   egal([langueDe('fr'), langueDe('en-GB'), langueDe(undefined)], ['fr', 'en', 'en'], 'langue : français, sinon anglais');
+
+  // Discord refuse le message (corps invalide, jeton expiré…) : ce n'est pas
+  // une exception, mais le service doit le voir et retomber sur la panne
+  // plutôt que laisser « réfléchit… » pour toujours.
+  const tentatives: string[] = [];
+  const refuse = creerInteractions({
+    clePublique: cle,
+    applicationId: 'APP',
+    recuperer: async (url, init) => {
+      if (url === 'https://cdn.discordapp.com/c.png') return new Response(new Uint8Array(octets));
+      const corps = JSON.parse(String(init?.body)) as { embeds: Embed[] };
+      tentatives.push(corps.embeds[0].description ?? corps.embeds[0].title);
+      return tentatives.length === 1 ? new Response('{"code":50035}', { status: 400 }) : new Response(null, { status: 204 });
+    },
+    differer: (t) => travaux.push(t),
+    ressources: async () => ressources,
+  });
+  travaux.length = 0;
+  const corpsRefus = JSON.stringify(commande({ url: 'https://cdn.discordapp.com/c.png', content_type: 'image/png', size: octets.length }));
+  await refuse.traiter(new Request('https://x/api/interactions', { method: 'POST', body: corpsRefus, headers: { 'x-signature-ed25519': sign(null, Buffer.from('7' + corpsRefus), privateKey).toString('hex'), 'x-signature-timestamp': '7' } }));
+  await Promise.all(travaux);
+  egal([tentatives.length, tentatives[1]], [2, embedErreur('fr', 'panne').description], 'message refusé par Discord : le service le voit et envoie la panne');
 }

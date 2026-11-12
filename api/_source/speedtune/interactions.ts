@@ -103,11 +103,16 @@ const json = (corps: unknown, statut = 200) => Response.json(corps, { status: st
 export function creerInteractions(d: DependancesInteractions) {
   async function remplacer(token: string, contenu: Embed | Message) {
     const message: Message = 'embeds' in contenu ? contenu : { embeds: [contenu], components: [] };
-    await d.recuperer(`${API}/webhooks/${d.applicationId}/${token}/messages/@original`, {
+    const r = await d.recuperer(`${API}/webhooks/${d.applicationId}/${token}/messages/@original`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...message, allowed_mentions: { parse: [] } }),
     });
+    // ⚠️ Un refus de Discord (corps invalide, jeton expiré, limite) n'est pas
+    // une exception : sans ce contrôle, le message restait sur « réfléchit… »
+    // sans rien dans le journal. L'erreur remonte aux appelants, qui
+    // retombent sur le message de panne.
+    if (!r.ok) throw new Error(`message Discord refusé : HTTP ${r.status} ${await r.text().catch(() => '')}`.trim());
   }
 
   // Un cumul choisi dans un menu : l'état revient complet, on le recalcule.
