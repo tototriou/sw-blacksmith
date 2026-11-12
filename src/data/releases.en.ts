@@ -9,6 +9,14 @@ import type { Release } from './releases';
 
 export const RELEASES_EN: Release[] = [
   {
+    version: '2.4.1',
+    date: '2026-11-11',
+    title: 'Recommendations with hundreds of decks display again',
+    changes: [
+      { kind: 'fix', scope: 'Recommendations', text: 'A recommendation with a great many decks no longer leaves the page blank.' },
+    ],
+  },
+  {
     version: '2.4.0',
     date: '2026-11-10',
     title: 'Siege recommendations shared on Discord',

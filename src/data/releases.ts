@@ -70,6 +70,14 @@ export function journal(langue: Langue): Release[] {
 // Si une ligne dépasse ~15 mots, c'est qu'elle raconte l'implémentation.
 export const RELEASES: Release[] = [
   {
+    version: '2.4.1',
+    date: '2026-11-11',
+    title: 'Les recommandations de centaines de decks s’affichent',
+    changes: [
+      { kind: 'fix', scope: 'Recommandations', text: 'Une recommandation de très nombreux decks ne laisse plus la page vide.' },
+    ],
+  },
+  {
     version: '2.4.0',
     date: '2026-11-10',
     title: 'Les recommandations de siège partagées sur Discord',

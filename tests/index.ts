@@ -369,6 +369,8 @@ import testSiegeSlotSuivant from './siege-slot-suivant.test';
 import testRecoDefenses from './reco-defenses.test';
 import { testRecoFusionCorrespondance, testRecoFusionDecks, testRecoFusionChef, testRecoFusionImport, testRecoFusionSource } from './reco-fusion.test';
 import { testRenduRecoFusionChoix, testRenduRecoFusionStockage } from './rendu/reco-fusion.test';
+import { testApercuDeuxLignesRecherche, testApercuDeuxLignesBorne, testApercuDeuxLignesNonMonotone, testApercuDeuxLignesFinQuiGrandit, testApercuDeuxLignesRangees } from './apercu-deux-lignes.test';
+import { testRenduRecosApercuCentainesDeDecks } from './rendu/apercu-recos.test';
 import { testDiscordDroits, testDiscordSession, testDiscordRecoSalon, testDiscordContributeursFormat, testDiscordRouteurConnexion,
   testDiscordRouteurBureau, testDiscordRouteurSources, testDiscordRouteurSalonEtPublication, testDiscordRouteurToutEtLimites } from './discord-service.test';
 import { testRecoDiscordEtat, testRecoDiscordRecevoir, testRecoDiscordSynchro, testRecoDiscordPublication, testRecoDiscordFusion,
@@ -590,6 +592,12 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testRecoFusionSource', testRecoFusionSource],
   ['testRenduRecoFusionChoix', testRenduRecoFusionChoix],
   ['testRenduRecoFusionStockage', testRenduRecoFusionStockage],
+  ['testApercuDeuxLignesRecherche', testApercuDeuxLignesRecherche],
+  ['testApercuDeuxLignesBorne', testApercuDeuxLignesBorne],
+  ['testApercuDeuxLignesNonMonotone', testApercuDeuxLignesNonMonotone],
+  ['testApercuDeuxLignesFinQuiGrandit', testApercuDeuxLignesFinQuiGrandit],
+  ['testApercuDeuxLignesRangees', testApercuDeuxLignesRangees],
+  ['testRenduRecosApercuCentainesDeDecks', testRenduRecosApercuCentainesDeDecks],
   ['testSiegePartage', testSiegePartage],
   ['testMarque', testMarque],
   ['testRenduSiegeDefense', testRenduSiegeDefense],
