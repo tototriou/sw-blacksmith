@@ -288,7 +288,8 @@ export async function testSpeedtuneInteractions() {
   const embed = final.corps.embeds[0];
   ok(embed.description?.includes('Susano') === true && embed.description.includes('+30 %'), 'le leader et son lead');
   const ordre = embed.fields?.[0].value ?? '';
-  ok(ordre.startsWith('1. **Tarq** · 385 VIT · tick'), 'l\'ordre de jeu, VIT et tick');
+  ok(ordre.startsWith('1. **Tarq** · 385 VIT'), 'l\'ordre de jeu et la VIT');
+  ok(!/tick/i.test(ordre), 'aucun tick affiché');
   ok(['Susano', 'Chilling'].every((n) => ordre.includes(n)), 'les trois attaquants y figurent');
   egal(final.corps, { ...final.corps, allowed_mentions: { parse: [] } }, 'aucune mention possible');
 

@@ -32,7 +32,7 @@ const TEXTES = {
     sansLead: 'Aucun lead de vitesse actif en siège',
     reference: (v: number) => `Contre une défense aussi rapide que ton plus rapide (**${v}** de VIT de combat).`,
     ordre: 'Ordre de jeu',
-    ligne: (rang: number, nom: string, vit: number, tick: number | null) => `${rang}. **${nom}** · ${vit} VIT · ${tick == null ? 'ne joue pas' : `tick ${tick}`}`,
+    ligne: (rang: number, nom: string, vit: number, joue: boolean) => `${rang}. **${nom}** · ${vit} VIT${joue ? '' : ' · ne joue pas'}`,
     sort: (s: string) => ` · ${s}`,
     corriger: 'À corriger',
     requis: (nom: string, actuel: number, requis: number) => `**${nom}** : ${requis} de VIT de combat (**+${requis - actuel}**)`,
@@ -54,7 +54,7 @@ const TEXTES = {
     sansLead: 'No speed lead active in siege',
     reference: (v: number) => `Against a defense as fast as your fastest (**${v}** combat SPD).`,
     ordre: 'Turn order',
-    ligne: (rang: number, nom: string, vit: number, tick: number | null) => `${rang}. **${nom}** · ${vit} SPD · ${tick == null ? 'does not act' : `tick ${tick}`}`,
+    ligne: (rang: number, nom: string, vit: number, joue: boolean) => `${rang}. **${nom}** · ${vit} SPD${joue ? '' : ' · does not act'}`,
     sort: (s: string) => ` · ${s}`,
     corriger: 'To fix',
     requis: (nom: string, actuel: number, requis: number) => `**${nom}**: ${requis} combat SPD (**+${requis - actuel}**)`,
@@ -89,7 +89,7 @@ export function embedResultat(langue: Langue, r: ResultatSpeedTune, defense: Mon
   ].join('\n');
   const fields: NonNullable<Embed['fields']> = [{
     name: t.ordre,
-    value: r.lignes.map((l, i) => t.ligne(i + 1, l.monster.name, l.combat, l.tick) + (l.sort ? t.sort(l.sort) : '')).join('\n'),
+    value: r.lignes.map((l, i) => t.ligne(i + 1, l.monster.name, l.combat, l.tick != null) + (l.sort ? t.sort(l.sort) : '')).join('\n'),
   }];
   const aCorriger = r.lignes.flatMap((l) => {
     if (l.requis != null) return [t.requis(l.monster.name, l.combat, l.requis)];

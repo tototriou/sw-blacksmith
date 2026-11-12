@@ -21,8 +21,9 @@ Voir aussi : README.md, feat-competences.md, feat-deux-camps.md,
    — seulement sur le CDN de Discord, en PNG ou JPEG, 10 Mo au plus —, lue,
    analysée, puis la réponse différée est remplacée par un message :
    - le leader et le pourcentage de son lead, s'il vaut en siège ;
-   - l'**ordre de jeu** : chaque attaquant, sa VIT de combat, le tick de son
-     premier tour, le sort de vitesse retenu par l'analyse ;
+   - l'**ordre de jeu** : chaque attaquant, sa VIT de combat, le sort de
+     vitesse retenu par l'analyse (pas le tick : la simulation le calcule pour
+     l'ordre, le message ne l'affiche pas) ;
    - **à corriger** : la VIT de combat à atteindre (et l'écart) pour un allié
      coupé, ou « coupé quelle que soit sa VIT » ;
    - la **défense lue** (noms seulement : l'écran ne montre pas sa VIT) ;
