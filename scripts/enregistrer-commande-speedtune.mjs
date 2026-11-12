@@ -1,12 +1,16 @@
 // Déclare la commande slash `/speedtune` auprès de l'application Discord.
 // Une fois suffit (ou après un changement de la commande) : Discord la garde.
 //
-//   DISCORD_CLIENT_ID=… DISCORD_BOT_TOKEN=… node scripts/enregistrer-commande-speedtune.mjs [--serveur <id>]
+//   DISCORD_CLIENT_ID=… DISCORD_BOT_TOKEN=… node scripts/enregistrer-commande-speedtune.mjs [--serveur <id>] [--retirer]
 //
-// `--serveur` : la commande ne vaut que sur ce serveur, et y apparaît aussitôt
-// (pour tester avec l'application de test). Sans lui, elle vaut partout où le
-// bot est installé. Les deux variables sont celles de l'application visée
-// (Vercel : `vercel env pull`), jamais écrites dans le dépôt.
+// Sans option : la commande est GLOBALE, elle vaut sur tous les serveurs où le
+// bot est installé, présents et à venir (quelques minutes pour apparaître).
+// C'est la déclaration normale, pour l'application de prod comme pour celle de
+// test. `--serveur` : elle ne vaut que sur ce serveur, et y apparaît aussitôt.
+// `--retirer` : retire la commande (globale, ou de ce serveur) au lieu de la
+// déclarer — une commande déclarée sur un serveur ET globalement y apparaît
+// deux fois. Les deux variables sont celles de l'application visée (Vercel :
+// `vercel env pull`), jamais écrites dans le dépôt.
 
 const API = 'https://discord.com/api/v10';
 const { DISCORD_CLIENT_ID: app, DISCORD_BOT_TOKEN: jeton } = process.env;
@@ -37,14 +41,33 @@ const commande = {
 };
 
 const chemin = serveur ? `/applications/${app}/guilds/${serveur}/commands` : `/applications/${app}/commands`;
-const r = await fetch(API + chemin, {
-  method: 'POST',
-  headers: { Authorization: `Bot ${jeton}`, 'Content-Type': 'application/json' },
-  body: JSON.stringify(commande),
-});
+const ou = serveur ? `sur le serveur ${serveur}` : 'partout';
+const entetes = { Authorization: `Bot ${jeton}`, 'Content-Type': 'application/json' };
+
+if (process.argv.includes('--retirer')) {
+  const liste = await fetch(API + chemin, { headers: entetes });
+  if (!liste.ok) {
+    console.error(`Refusé par Discord (HTTP ${liste.status}) :`, await liste.text());
+    process.exit(1);
+  }
+  const existante = (await liste.json()).find((c) => c.name === commande.name);
+  if (!existante) {
+    console.log(`/speedtune n'était pas déclarée ${ou} : rien à retirer.`);
+    process.exit(0);
+  }
+  const r = await fetch(`${API}${chemin}/${existante.id}`, { method: 'DELETE', headers: entetes });
+  if (!r.ok) {
+    console.error(`Refusé par Discord (HTTP ${r.status}) :`, await r.text());
+    process.exit(1);
+  }
+  console.log(`/speedtune retirée ${ou}.`);
+  process.exit(0);
+}
+
+const r = await fetch(API + chemin, { method: 'POST', headers: entetes, body: JSON.stringify(commande) });
 const corps = await r.json().catch(() => ({}));
 if (!r.ok) {
   console.error(`Refusé par Discord (HTTP ${r.status}) :`, JSON.stringify(corps));
   process.exit(1);
 }
-console.log(`/speedtune déclarée ${serveur ? `sur le serveur ${serveur}` : 'partout'} (commande ${corps.id}).`);
+console.log(`/speedtune déclarée ${ou} (commande ${corps.id}).`);

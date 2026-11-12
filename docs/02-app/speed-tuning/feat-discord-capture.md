@@ -128,10 +128,17 @@ protégé).
    — l'aperçu est protégé, Discord ne passerait pas sans le secret de
    contournement. Discord vérifie l'adresse en l'enregistrant (un PING signé,
    puis un faux).
-3. Déclarer la commande, une fois :
-   `DISCORD_CLIENT_ID=… DISCORD_BOT_TOKEN=… node scripts/enregistrer-commande-speedtune.mjs --serveur <id>`
-   ([le script](../../../scripts/enregistrer-commande-speedtune.mjs) ; sans
-   `--serveur`, elle vaut partout où le bot est installé).
+3. Déclarer la commande, une fois, **globalement** — comme en prod :
+   `DISCORD_CLIENT_ID=… DISCORD_BOT_TOKEN=… node scripts/enregistrer-commande-speedtune.mjs`
+   ([le script](../../../scripts/enregistrer-commande-speedtune.mjs)). Elle
+   vaut sur tous les serveurs où le bot est installé, présents et à venir
+   (quelques minutes pour apparaître) ; à refaire seulement si la commande
+   change (nom, description, options), pas pour un changement du traitement.
+   `--serveur <id>` la limite à un serveur, où elle apparaît aussitôt ;
+   `--retirer` (avec ou sans `--serveur`) la retire — une commande déclarée
+   sur un serveur ET globalement y apparaît deux fois.
+4. Un serveur l'obtient en invitant le bot avec les scopes `bot` et
+   `applications.commands` (portail Discord, *OAuth2 → URL Generator*).
 
 ## Limites du prototype
 
