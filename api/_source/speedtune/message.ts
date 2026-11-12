@@ -76,13 +76,13 @@ const TEXTES = {
   fr: {
     titreOk: '⚡ Speed tune — personne n\'est coupé',
     titreKo: '⚡ Speed tune — coupé',
-    sansLead: 'Aucun lead de vitesse actif en siège',
-    champLeader: 'Leader',
+    champEquipe: 'Équipe',
+    leadEquipe: (p: number) => `Lead +${p} %`,
+    sansLeadCourt: 'Sans lead de VIT',
     champReference: 'Défense à battre',
     champSwift: 'Set Rapide',
     champOrdre: 'Ordre de jeu',
     champPrecise: 'Précisé',
-    leadValeur: (p: number) => `+${p} %`,
     vit: (v: number) => `${v} VIT`,
     ligneOrdre: (rang: number, icone: string, nom: string, vit: number, verdict: string) => `**${rang}.** ${icone}**${nom}** · **${vit}** VIT · ${verdict}`,
     detail: (morceaux: string[]) => `\u3000↳ ${morceaux.join(' · ')}`,
@@ -124,13 +124,13 @@ const TEXTES = {
   en: {
     titreOk: '⚡ Speed tune — nobody gets cut',
     titreKo: '⚡ Speed tune — cut',
-    sansLead: 'No speed lead active in siege',
-    champLeader: 'Leader',
+    champEquipe: 'Team',
+    leadEquipe: (p: number) => `Lead +${p}%`,
+    sansLeadCourt: 'No SPD lead',
     champReference: 'Defense to beat',
     champSwift: 'Swift set',
     champOrdre: 'Turn order',
     champPrecise: 'Filled in',
-    leadValeur: (p: number) => `+${p}%`,
     vit: (v: number) => `${v} SPD`,
     ligneOrdre: (rang: number, icone: string, nom: string, vit: number, verdict: string) => `**${rang}.** ${icone}**${nom}** · **${vit}** SPD · ${verdict}`,
     detail: (morceaux: string[]) => `\u3000↳ ${morceaux.join(' · ')}`,
@@ -247,13 +247,22 @@ export function embedResultat(
         // Chaque point de VIT de combat en plus est un point de runes en plus.
         ? [t.viser(l.requis, l.requis - l.combat), ...(fiche ? [t.viserFiche(l.base!, l.runes! + l.requis - l.combat)] : [])]
         : l.horsDePortee ? [t.horsDePortee] : fiche ? [t.fiche(l.base!, l.runes!)] : []),
-      ...(l.sort ? [l.sort] : []),
+      ...(l.sort ? [l.sort.slot != null ? `S${l.sort.slot}` : l.sort.nom] : []),
     ];
     return [t.ligneOrdre(i + 1, icone(l.monster), l.monster.name, l.combat, verdict), ...(details.length ? [t.detail(details)] : [])];
   });
 
   const fields: NonNullable<Embed['fields']> = [
-    { name: t.champLeader, value: r.lead ? `${icone(r.lead.monster)}${r.lead.monster.name} ${t.leadValeur(r.lead.pourcent)}` : t.sansLead, inline: true },
+    // L'équipe à régler, dans l'ordre de la capture (leader en premier) : les
+    // trois icônes, sinon les noms ; son lead dessous.
+    {
+      name: t.champEquipe,
+      value: [
+        r.equipe.every((m) => icone(m)) ? r.equipe.map((m) => icone(m).trim()).join(' ') : r.equipe.map((m) => m.name).join(', '),
+        r.lead ? t.leadEquipe(r.lead.pourcent) : t.sansLeadCourt,
+      ].join('\n'),
+      inline: true,
+    },
     { name: t.champReference, value: t.vit(plusRapide), inline: true },
     ...(swift ? [{ name: t.champSwift, value: swift.noms.join(', ') || t.aucun, inline: true }] : []),
     { name: t.champOrdre, value: ordre.join('\n') },

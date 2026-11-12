@@ -23,13 +23,15 @@ Voir aussi : README.md, feat-competences.md, feat-deux-camps.md,
    compact, coloré selon le verdict, à la manière des bots de statistiques :
    - la **vignette** : l'icône de l'app (celle du site de production : Discord
      télécharge l'image lui-même, un aperçu protégé la lui refuserait) ;
-   - trois **champs côte à côte** : le leader et son lead s'il vaut en
-     siège, la VIT de la défense à battre (l'adversaire de référence, passif
+   - trois **champs côte à côte** : l'**équipe** à régler (les trois icônes
+     dans l'ordre de la capture, leader en premier, et son lead s'il vaut en
+     siège), la VIT de la défense à battre (l'adversaire de référence, passif
      compris), le set Rapide ;
    - l'**ordre de jeu**, une ligne par attaquant avec son icône **dans le
      texte** : rang, VIT de combat lue, ✅ ou ❌ coupé ; en dessous, sa VIT de
      fiche (`base + runes`) ou la VIT de combat à viser et la fiche
-     correspondante, et le sort de vitesse retenu par l'analyse. Pas de
+     correspondante, et le sort de vitesse retenu par l'analyse, par son
+     **numéro** (S1, S2…) : peu de joueurs en connaissent le nom. Pas de
      tick : la simulation le calcule pour l'ordre, le message ne l'affiche
      pas ;
    - les autres valeurs **précisées** par le joueur (voir ci-dessous) ;

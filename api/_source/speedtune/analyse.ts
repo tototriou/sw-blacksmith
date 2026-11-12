@@ -34,7 +34,9 @@ export interface LigneResultat {
   base: number | null;
   runes: number | null;
   tick: number | null; // tick de son premier tour, `null` s'il ne joue pas dans l'horizon
-  sort: string | null; // le sort de vitesse retenu par l'analyse
+  // Le sort de vitesse retenu par l'analyse : son numéro (S1, S2…) se lit
+  // mieux que son nom, que peu de joueurs connaissent.
+  sort: { nom: string; slot: number | null } | null;
   // VIT de combat à atteindre pour ne plus être coupé, `null` si rien à faire
   // ou hors de portée (voir `horsDePortee`).
   requis: number | null;
@@ -45,6 +47,7 @@ export interface ResultatSpeedTune {
   lead: { monster: Monster; pourcent: number } | null;
   ok: boolean;
   lignes: LigneResultat[]; // dans l'ordre de jeu
+  equipe: Monster[]; // les attaquants dans l'ordre de la capture, leader en premier
   // VIT de combat de l'adversaire de référence : celle du plus rapide, passif
   // compris (Chilling à 367 lu, +20 par cumul, peut devenir le plus rapide).
   reference: number | null;
@@ -82,7 +85,10 @@ export function analyserEquipe(attaquants: AttaquantAnalyse[], donnees: DonneesK
       base: a.monster.stats.speed ?? null,
       runes: l.runeSpeed,
       tick: tickDe.get(uid) ?? null,
-      sort: sortRetenu(entree, donnees)?.nom ?? null,
+      sort: (() => {
+        const s = sortRetenu(entree, donnees);
+        return s ? { nom: s.nom, slot: s.slot } : null;
+      })(),
       requis: coupe && q?.combatRequis != null && q.combatRequis > a.combat ? q.combatRequis : null,
       horsDePortee: coupe && q?.combatRequis == null,
     };
@@ -92,6 +98,7 @@ export function analyserEquipe(attaquants: AttaquantAnalyse[], donnees: DonneesK
     lead: leadActif ? { monster: attaquants[0].monster, pourcent: leadActif.amount } : null,
     ok: r.verdict.ok,
     lignes: resultat,
+    equipe: attaquants.map((a) => a.monster),
     reference: r.reference ? (r.combats.get(r.reference.id) ?? null) : null,
   };
 }

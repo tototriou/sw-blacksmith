@@ -406,7 +406,10 @@ export async function testSpeedtuneInteractions() {
   ok(champ('Précisé').includes('Passif de **Chilling** : 1 cumul (+20 VIT)'), 'les cumuls retenus sont rappelés');
   ok(champ('Précisé').includes('**Susano** : Effet aug. VIT +4 % (buff de VIT +31 %)'), 'l\'effet aug. VIT retenu est rappelé');
   egal(champ('Set Rapide'), 'Tarq', 'le set Rapide retenu, en champ');
-  egal(champ('Leader'), `<:m${susano.com2usId}:9> Susano +30 %`, 'le leader, son icône et son lead');
+  egal(champ('Équipe'), `<:m${susano.com2usId}:9> <:m${chilling.com2usId}:9> <:m${tarq.com2usId}:9>\nLead +30 %`,
+    'l\'équipe à régler : ses trois icônes dans l\'ordre de la capture, et son lead');
+  ok(/↳ .*· S\d/.test(champ('Ordre de jeu')), 'le sort retenu, par son numéro (S1, S2…)');
+  ok(!champ('Ordre de jeu').includes('Song of the Night Wind'), 'pas le nom du sort');
   egal(embed.thumbnail?.url, ICONE_APP, 'la vignette est l\'icône de l\'app');
   // L'ordre de jeu : une ligne par monstre, son icône dans le texte.
   const ordre = champ('Ordre de jeu');
