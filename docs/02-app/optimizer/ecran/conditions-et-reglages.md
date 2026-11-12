@@ -183,6 +183,35 @@ Ce document décrit les conditions, l'inventaire et les réglages avancés.
    décoche PAS automatiquement dans l'autre sens. Pour le moteur, un
    préréglage ne change que `slotFilterCap` (et ce qui en dérive :
    `bucketCap` et les préréglages plus étroits emboîtés). Sous ce réglage :
+   - **« Simuler +15 et max meules/gemmes »**, désactivé par défaut, en
+     tête des interrupteurs (rendu sans condition : rien au-dessus ne le
+     décale). Activé, la recherche porte sur une copie MAXÉE du pool
+     (`poolDeRecherche`, [runesMaxees.ts](src/lib/runesMaxees.ts), même
+     producteur pour l'écran et le CLI) : la principale d'une rune 6★,
+     antique comprise, prend sa valeur à +15 (`MAINSTAT_MAX`) et son
+     niveau passe à 15 ; une ligne déjà meulée prend la meule légendaire
+     maximale de sa stat, une ligne déjà gemmée la base de gemme
+     légendaire maximale — tables antiques pour une rune antique, celles
+     du potentiel de Mon compte → Runes → Optimisation
+     (`meuleMaxLegendaire`, `gemmeMaxLegendaire`, runeOptim.ts). Exemple de
+     la demande : VIT gemmée 7 meulée +3 → 10 +5. Rien ne descend
+     (`Math.max`). ⚠️ **Ne PAS** meuler une ligne qui n'a pas de meule, ni
+     gemmer une rune vierge, ni changer la stat d'une gemme : le réglage
+     pousse ce qui est posé, il ne choisit rien (décision de
+     l'utilisateur). ⚠️ Les sous-propriétés d'une rune pas encore à +12 ne
+     sont pas devinées (les améliorations tombent au hasard), et une rune
+     de moins de 6★ garde sa principale et son niveau : l'app n'a pas de
+     table de principale par étoile. La copie garde l'identifiant de la
+     rune (réservation, verrous, exclusion la désignent comme la vraie) et
+     porte `avantSimulation`, les valeurs réelles, que le détail de rune
+     des résultats colore (resultats.md § Résultats). Le pool
+     simulé alimente aussi l'estimation, les diagnostics avant recherche
+     et les bornes du speed tune. **Photographié au clic « Rechercher »**
+     dans le pool du contexte : le basculer ne change pas un résultat
+     affiché. Il entre dans la signature du cache de résolution
+     (`signatureArtefacts`, `runesMaxees`) : les runes simulées gardent les
+     identifiants qui en sont les clés. Fait partie de la recette (champ
+     optionnel `simulerRunesMaxees`) et de la session.
    - **« Rechercher jusqu'à épuisement complet »**, décoché par défaut :
      retire le filet de temps de 10 minutes (voir
      ../feat-interruption.md § Interruption — filet de temps, pré-filtrage et arrêt manuel) — la

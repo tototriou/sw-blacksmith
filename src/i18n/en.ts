@@ -489,6 +489,7 @@ export const en: Dictionnaire = {
     proprieteModifiee: 'Modified property',
     voirDetailMeule: 'Show the detail (original value + grind)',
     voirTotalMeule: 'Show the total values, grind included',
+    simulee: (reelle: string) => `Simulated (maxed) — actual value: ${reelle}`,
     ameliorations: (n: number) => `${n} upgrade${n > 1 ? 's' : ''} on this line`,
     relique: 'Relic',
     reliqueEnAttente: 'Relic: pending',
@@ -2181,6 +2182,16 @@ export const en: Dictionnaire = {
     avances: {
       profondeur: 'Search depth',
       pool: (n: string) => `Rune pool = ${n}`,
+      runesMaxees: 'Simulate +15 and max grinds/gems',
+      runesMaxeesAide: {
+        debut: 'On, the search assumes your runes are maxed: the main stat of each 6★ rune goes to its value ',
+        niveau: 'at +15',
+        meules: ', and each grind or gem already applied takes its ',
+        legendaire: 'maximum legendary value',
+        fin: ' (ancient on an ancient rune). No grind or gem is added elsewhere, and the upcoming substats of a rune not yet at +12 are not guessed.',
+        couleur:
+          'In the detail of a result rune, what was simulated is shown in purple. The setting applies to the next search: the results shown do not change.',
+      },
       exhaustif: 'Search until fully exhausted',
       exhaustifAide:
         'Removes the 10-minute time limit: the search goes on as long as combinations remain to examine. Can take a very long time on a search with few conditions — the ',

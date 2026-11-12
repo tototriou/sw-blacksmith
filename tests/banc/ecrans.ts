@@ -401,8 +401,8 @@ export const ECRANS: Ecran[] = [
           ordinateur: [choisirReglage('Options', 'complements')],
         },
         atteint: {
-          telephone: [{ role: 'dialog', nom: 'Options de recherche' }],
-          ordinateur: [{ role: 'switch', nom: "Rechercher jusqu'à épuisement complet" }],
+          telephone: [{ role: 'dialog', nom: 'Options de recherche' }, { role: 'switch', nom: 'Simuler +15 et max meules/gemmes' }],
+          ordinateur: [{ role: 'switch', nom: "Rechercher jusqu'à épuisement complet" }, { role: 'switch', nom: 'Simuler +15 et max meules/gemmes' }],
         },
       },
       {

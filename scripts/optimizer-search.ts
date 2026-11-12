@@ -126,7 +126,8 @@ console.log(
     `métrique ${recipe.metric} — préfiltrage ${recipe.slotFilterPreset} — ` +
     `exclure les runes déjà utilisées ${
       recipe.excludeUsedRunes ? `ON (${recipe.excludeUsedScope})` : 'off'
-    } — vérifier toutes les combinaisons trouvées ${toutVerifierDeLaRecette(recipe) ? 'ON' : 'off'}`
+    } — vérifier toutes les combinaisons trouvées ${toutVerifierDeLaRecette(recipe) ? 'ON' : 'off'} — ` +
+    `simuler +15 et max meules/gemmes ${(recipe.simulerRunesMaxees ?? false) ? 'ON' : 'off'}`
 );
 console.log(`minStats : ${JSON.stringify(recipe.requirement.minStats)}`);
 console.log(

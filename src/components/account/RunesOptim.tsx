@@ -15,6 +15,7 @@ import { useRuneMetric, formatRuneMetric, convertirPalier, runeMetricValue } fro
 import { useStickyState } from '../../hooks/useStickyState';
 import { useMediaQuery, SOUS_LG } from '../../hooks/useMediaQuery';
 import RuneSlotIcon from '../RuneSlotIcon';
+import { VIOLET } from '../PieceDetail';
 import Pager from './Pager';
 import SetFilter from './SetFilter';
 import SlotFilter from './SlotFilter';
@@ -1018,8 +1019,8 @@ export const OptimTile = memo(function OptimTile({
 
 // Le violet qui signale « ce qui change » dans un plan d'optimisation. Même
 // teinte que l'héroïque, donc même token : il suit le thème et reste lisible
-// sur fond clair. Voir docs/03-developpeur/interface/.
-const VIOLET = 'rgb(var(--rarity-4))';
+// sur fond clair. Voir docs/03-developpeur/interface/. Partagé avec le détail
+// d'une rune simulée par l'Optimizer (PieceDetail.tsx).
 
 // Ligne de substat façon carte de jeu : base + grind + ↻. Chaque partie peut
 // être mise en violet indépendamment (seul ce qui change passe en violet).
