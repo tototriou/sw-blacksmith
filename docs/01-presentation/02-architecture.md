@@ -79,6 +79,12 @@ recommandations d'une guilde. Le service ne garde rien ; la session vit dans un 
 Détail : [service-discord.md](../02-app/siege/feat-recommandations/service-discord.md) ; décisions :
 [local-par-defaut.md](../04-decisions/adr/local-par-defaut.md).
 
+**Prototype** : une seconde fonction, `api/interactions.mjs`, répond à la commande Discord
+`/speedtune` — la lecture d'une capture de l'écran de préparation de siège
+(`api/_source/capture/`), puis le moteur de speed tuning de l'app (`api/_source/speedtune/`). Elle ne
+touche pas l'app : c'est le joueur qui envoie sa capture à Discord. Détail :
+[feat-discord-capture.md](../02-app/speed-tuning/feat-discord-capture.md).
+
 ## Le shell — `src/App.tsx`
 
 Fichier central, gros et volontairement : il tient tout ce qui doit être partagé entre pages.

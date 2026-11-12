@@ -44,7 +44,7 @@ commit** que le code.
 | Langues | **français et anglais**, par dictionnaires TypeScript typés (`src/i18n/`), sans bibliothèque de traduction |
 | Stockage | `localStorage` (prépa, équipes, réglages) + **IndexedDB** (compte importé), tous deux opt-in |
 | Bureau | **Electron** + `electron-builder` + `electron-updater` (`bureau/`, hors de `src/`) |
-| Service | **Fonction Vercel** sans état (`api/`, hors de `src/`) : la synchronisation Discord des recommandations, empaquetée au build par esbuild |
+| Service | **Fonction Vercel** sans état (`api/`, hors de `src/`) : la synchronisation Discord des recommandations, empaquetée au build par esbuild ; en prototype, la commande Discord `/speedtune` (lecture d'une capture, `pngjs`, `jpeg-js`, `@vercel/functions`) |
 | Tests | lanceur maison `tests/run.mjs` (registre `tests/index.ts`), `fake-indexeddb`, rendu par `react-dom/server`, polices de l'app pour le Chromium des tests (`@fontsource`) |
 | Qualité | `tsc` strict (couvre `src/`, `scripts/`, `tests/`, `bureau/`, `api/`), ESLint (flat config) |
 
@@ -69,7 +69,8 @@ src/
   data/          # contenu statique (journal des versions : releases.ts, releases.en.ts)
 bureau/          # application de bureau Electron (main, protocole, session, SW Exporter, mise à jour)
 api/             # service Discord des recommandations : discord.mjs (la fonction Vercel), _source/ (le
-                 # service en TypeScript, empaqueté au build dans _paquet/, non suivi)
+                 # service en TypeScript, empaqueté au build dans _paquet/, non suivi) ; interactions.mjs
+                 # (prototype : /speedtune, lecture de capture dans _source/capture/ et _source/speedtune/)
 public/          # icônes, portraits, données SWARFARM (public/data, régénérées par npm run fetch-data)
 scripts/         # outillage Node : données, benchmarks, harnais de diagnostic, hooks, bureau
 tests/           # vérifications (run.mjs + index.ts), fixtures, tests de rendu (tests/rendu/)
@@ -140,6 +141,7 @@ npm run bureau:preuve          # la vérification de l'application de bureau
 | `src/pages/BestiaryPage.tsx`, `src/components/MonsterGrid.tsx`, `src/components/FilterBar.tsx` | [bestiaire/](docs/02-app/bestiaire/README.md) |
 | `src/pages/MechanicsPage.tsx` | [mecaniques/](docs/02-app/mecaniques/README.md) |
 | `api/`, `vercel.json`, `scripts/construire-api.mjs` | [service-discord.md](docs/02-app/siege/feat-recommandations/service-discord.md) |
+| `api/interactions.mjs`, `api/_source/capture/`, `api/_source/speedtune/`, `scripts/construire-banque-portraits.*`, `scripts/construire-gabarits-chiffres.*`, `scripts/enregistrer-commande-speedtune.mjs` | [feat-discord-capture.md](docs/02-app/speed-tuning/feat-discord-capture.md) |
 | `bureau/`, `src/lib/bureau.ts`, `electron-builder.yml`, `src/pages/TelechargerPage.tsx` | [bureau/](docs/02-app/bureau/README.md), [telecharger/](docs/02-app/telecharger/README.md) |
 | `src/ui/`, `src/index.css`, `tailwind.config.js`, tout rendu d'écran | [03-developpeur/interface/](docs/03-developpeur/interface/README.md) |
 | `eslint.config.js`, `.githooks/`, `scripts/installer-hooks.mjs`, `.github/workflows/` | [qualite-code.md](docs/03-developpeur/qualite-code.md) |
