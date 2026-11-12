@@ -69,9 +69,11 @@ function coller(dst: Image, src: Image, x0: number, y0: number, l: number, h: nu
 
 // Un nombre en blanc, chiffre par chiffre depuis les gabarits (2ᵉ modèle :
 // Inter 600), sur fond sombre.
-function nombre(texte: string, hGlyphe: number): Image {
+function nombre(texte: string, hGlyphe: number, soudes = false): Image {
   const lG = Math.round((hGlyphe * gabarits.l) / gabarits.h);
-  const pas = lG + Math.max(2, Math.round(hGlyphe / 6));
+  // `soudes` : chiffres collés, sans colonne vide entre eux (les petits
+  // caractères de la fenêtre PC, que l'anticrénelage soude).
+  const pas = soudes ? lG : lG + Math.max(2, Math.round(hGlyphe / 6));
   const img = imageUnie(texte.length * pas + 8, hGlyphe + 8, [40, 40, 44]);
   [...texte].forEach((c, k) => {
     const m = gabarits.chiffres[c][1];
@@ -96,14 +98,19 @@ function banqueDe(entrees: { id: number; img: Image }[]): Banque {
 // L'écran de préparation recomposé : fond sombre, six cartes à leur place
 // (disposition « hauteur », téléphone 2556 × 1179), cadre doré, VIT des trois
 // attaquants dans une pastille en bas à droite.
-function ecran(portraits: Image[], vitesses: string[], l = 2556, h = 1179): Image {
+function ecran(portraits: Image[], vitesses: string[], l = 2556, h = 1179, disposition: keyof typeof DISPOSITIONS = 'hauteur'): Image {
   const img = imageUnie(l, h, [52, 40, 30]);
   portraits.forEach((p, k) => {
-    const [x, y, c] = DISPOSITIONS.hauteur.carte(img, k);
+    const [x, y, c] = DISPOSITIONS[disposition].carte(img, k);
     coller(img, imageUnie(4, 4, [200, 160, 80]), x, y, c, c);
     const cadre = Math.round(c * 0.04);
     coller(img, p, x + cadre, y + cadre, c - 2 * cadre, c - 2 * cadre);
-    if (k < 3) {
+    if (k < 3 && disposition === 'fenetre') {
+      // PC : des chiffres de 9 pixels, plus bas dans la carte.
+      const n = nombre(vitesses[k], Math.round(c * 0.096));
+      coller(img, imageUnie(4, 4, [40, 40, 44]), x + 0.62 * c, y + 0.83 * c, 0.34 * c, 0.13 * c);
+      coller(img, n, x + 0.66 * c, y + 0.845 * c - 4, n.largeur, n.hauteur);
+    } else if (k < 3) {
       const n = nombre(vitesses[k], Math.round(c * 0.105));
       coller(img, imageUnie(4, 4, [40, 40, 44]), x + 0.62 * c, y + 0.79 * c, 0.34 * c, 0.16 * c);
       coller(img, n, x + 0.66 * c, y + 0.8 * c, n.largeur, n.hauteur);
@@ -180,6 +187,9 @@ export function testCaptureChiffres() {
   // Petits caractères (capture réduite) : encore lisibles à 12 pixels.
   egal(lireNombre(nombre('357', 12), gabarits)?.texte, '357', 'lisible à 12 pixels de haut');
   egal(lireNombre(imageUnie(40, 20, [40, 40, 44]), gabarits), null, 'zone sans chiffre : rien');
+  // Chiffres soudés (aucune colonne vide entre eux) : séparés à leur colonne
+  // la moins encrée, plutôt que lus comme un seul glyphe.
+  egal(lireNombre(nombre('364', 19, true), gabarits)?.texte, '364', 'chiffres soudés : séparés');
 }
 
 // ---- Écran de préparation ----------------------------------------------------
@@ -194,6 +204,12 @@ export function testCaptureEcran() {
   // Un écran moitié moins grand se lit encore.
   const petit = lireEcranPreparation(ecran(portraits, ['239', '286', '301'], 1278, 590), banque, gabarits);
   egal(petit.attaquants.map((a) => a.vitesse?.valeur), [239, 286, 301], 'capture en demi-résolution : VIT lues');
+  // La fenêtre du jeu sur PC (1417 × 784) : cartes plus petites, défense plus
+  // loin, chiffres de 9 pixels.
+  const pc = lireEcranPreparation(ecran(portraits, ['364', '396', '361'], 1417, 784, 'fenetre'), banque, gabarits);
+  egal(pc.disposition, 'fenetre', 'fenêtre PC : sa mise en page retenue');
+  egal(pc.attaquants.map((a) => [a.portrait?.meilleur.com2usId, a.vitesse?.valeur]), [[1, 364], [2, 396], [3, 361]], 'fenêtre PC : attaquants et VIT');
+  egal(pc.defense.map((d) => d.portrait?.meilleur.com2usId), [4, 5, 6], 'fenêtre PC : la défense');
   // Une VIT hors de portée du jeu n'est pas une VIT.
   const absurde = lireEcranPreparation(ecran(portraits, ['9', '999', '357']), banque, gabarits);
   egal(absurde.attaquants.map((a) => a.vitesse?.valeur ?? null), [null, null, 357], 'VIT invraisemblable : écartée');

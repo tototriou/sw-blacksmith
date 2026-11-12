@@ -10,6 +10,15 @@
 //     (12 × 18 valeurs d'encre) le sont.
 //
 //   node scripts/construire-gabarits-chiffres.mjs [capture.png 322,268,286]…
+//   node scripts/construire-gabarits-chiffres.mjs --ajouter capture.png 364,396,361
+//
+// `--ajouter` complète le fichier existant avec les glyphes des captures
+// données, sans rien refaire : les glyphes déjà relevés viennent de captures
+// qu'on n'a plus forcément (elles ne sont pas versionnées), et une
+// reconstruction complète les perdrait.
+//
+// La mise en page de chaque capture (téléphone, fenêtre PC…) est celle dont
+// les trois zones de VIT donnent le nombre de chiffres attendu.
 //
 // ⚠️ Chromium vient de Playwright, et la police Inter doit être installée sur
 // le poste.
@@ -53,19 +62,21 @@ function releves(args: string[]): Record<string, number[][]> {
     const img = decoderImage(readFileSync(args[i]));
     if (!img) throw new Error(`${args[i]} : image illisible`);
     const attendus = args[i + 1].split(',');
-    attendus.forEach((texte, k) => {
-      const zone = zoneVitesse(img, DISPOSITIONS.hauteur, k);
+    const lus = Object.values(DISPOSITIONS).map((d) => attendus.map((texte, k) => {
+      const zone = zoneVitesse(img, d, k);
       const m = zone && masqueClair(zone);
-      const gs = m ? glyphes(m) : [];
-      if (!m || gs.length !== texte.length) throw new Error(`${args[i]}, carte ${k + 1} : ${gs.length} glyphes pour « ${texte} »`);
-      gs.forEach((g, j) => (sortie[texte[j]] ??= []).push(arrondi(normaliser(m, g))));
-    });
+      return m && glyphes(m).length === texte.length ? { m, gs: glyphes(m) } : null;
+    })).find((cartes) => cartes.every((c) => c));
+    if (!lus) throw new Error(`${args[i]} : aucune mise en page ne donne les chiffres de « ${args[i + 1]} »`);
+    lus.forEach((c, k) => c!.gs.forEach((g, j) => (sortie[attendus[k][j]] ??= []).push(arrondi(normaliser(c!.m, g)))));
   }
   return sortie;
 }
 
-const chiffres = await rendus();
-for (const [c, vs] of Object.entries(releves(process.argv.slice(2)))) chiffres[c].push(...vs);
+const ajouter = process.argv.includes('--ajouter');
+const args = process.argv.slice(2).filter((a) => a !== '--ajouter');
+const chiffres = ajouter ? (JSON.parse(readFileSync(SORTIE, 'utf8')) as Gabarits).chiffres : await rendus();
+for (const [c, vs] of Object.entries(releves(args))) (chiffres[c] ??= []).push(...vs);
 const gabarits: Gabarits = { l: GL, h: GH, chiffres };
 writeFileSync(SORTIE, JSON.stringify(gabarits) + '\n');
 console.log(`gabarits : ${Object.entries(chiffres).map(([c, v]) => `${c}×${v.length}`).join(' ')} → ${SORTIE}`);

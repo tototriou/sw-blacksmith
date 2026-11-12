@@ -117,11 +117,15 @@ reconnu, VIT illisible (avec les monstres concernés).
   milliards de pixels).
 - [ecranPreparation.ts](../../../api/_source/capture/ecranPreparation.ts) —
   les six cartes de l'écran (trois attaquants à gauche, leader en premier ;
-  la défense à droite) placées par des proportions de l'écran. Deux mises à
+  la défense à droite) placées par des proportions de l'écran. Trois mises à
   l'échelle : à la **hauteur** (centré en largeur, relevé sur un téléphone
-  2556 × 1179) et à la **largeur** (centré en hauteur) ; le premier portrait
-  départage. La VIT se lit en bas à droite de chaque carte d'attaquant ; hors
-  de 50 à 450, elle est écartée.
+  2556 × 1179), à la **largeur** (centré en hauteur) et la **fenêtre** du jeu
+  sur PC (Steam, relevée sur une capture de la fenêtre en 1417 × 784, barre de
+  titre comprise : cartes plus petites, défense plus loin) ; le premier
+  portrait départage. La VIT se lit en bas à droite de chaque carte
+  d'attaquant, dans une zone propre à la fenêtre PC (plus basse : le bas du
+  portrait, clair, gênait des chiffres de 9 pixels) ; hors de 50 à 450, elle
+  est écartée.
 - [portraits.ts](../../../api/_source/capture/portraits.ts) — le monstre
   reconnu à son portrait, porté du projet « Youtube-to-offenses-decks »
   (portraits.py) : zone centrale ramenée à 24 × 24 en Lab, centrée-réduite,
@@ -131,15 +135,17 @@ reconnu, VIT illisible (avec les monstres concernés).
   juste : 0,8 à 0,93 ; sous 0,5, l'écran n'est pas reconnu.
 - [chiffres.ts](../../../api/_source/capture/chiffres.ts) — la VIT : seuil
   d'Otsu sur la plus petite composante (l'écriture est claire), découpage par
-  colonnes (un morceau collé au bord gauche est l'icône de vitesse), chaque
-  glyphe ramené à 12 × 18 et comparé aux gabarits.
+  colonnes (un morceau collé au bord gauche est l'icône de vitesse), un
+  glyphe plus large que 0,9 fois sa hauteur coupé à sa colonne la moins
+  encrée (deux chiffres soudés par l'anticrénelage, courant à la taille PC),
+  chaque glyphe ramené à 12 × 18 et comparé aux gabarits.
 
 Les données voyagent dans le paquet de la fonction :
 
 | Fichier | Contenu | Reconstruit par |
 | --- | --- | --- |
 | `banque-portraits.json` (2,7 Mo) | une signature par icône SWARFARM de monstre obtenable et éveillé (1 171) | `node scripts/construire-banque-portraits.mjs`, après une mise à jour de `public/data/monsters.json` |
-| `chiffres-gabarits.json` | les dix chiffres d'Inter 500/600/700, plus ceux relevés sur de vraies captures | `node scripts/construire-gabarits-chiffres.mjs [capture.png 357,367,385]…` (Chromium de Playwright, police Inter installée) |
+| `chiffres-gabarits.json` | les dix chiffres d'Inter 500/600/700, plus ceux relevés sur de vraies captures | `node scripts/construire-gabarits-chiffres.mjs [capture.png 357,367,385]…` (Chromium de Playwright, police Inter installée) ; `--ajouter capture.png 364,396,361` complète le fichier sans le refaire — les captures déjà relevées ne sont pas versionnées, une reconstruction perdrait leurs glyphes |
 
 ⚠️ **Inter** est la police installée la plus proche de celle du jeu : seule,
 parmi onze familles et quatre graisses, à lire sans erreur les 18 chiffres
@@ -187,10 +193,15 @@ protégé).
 - **Validé sur deux captures d'un seul téléphone** (2556 × 1179) : en pleine
   résolution, en JPEG, et réduites de moitié. Au tiers (843 × 389), les
   chiffres font 6 pixels et la VIT n'est plus lue — la commande le dit.
-  Les autres formats d'écran (tablette, téléphone moins allongé) n'ont pas
+- **Validé sur une capture de la fenêtre PC** (1417 × 784, barre de titre
+  comprise) : telle quelle, en JPEG, agrandie de 25 et 50 %, réduite de 15 %.
+  Ses chiffres servent aussi de gabarits : la lecture d'autres captures PC
+  reste à confirmer, tout comme une capture sans la barre de titre (elle
+  décalerait les cartes).
+- Les autres formats d'écran (tablette, téléphone moins allongé) n'ont pas
   été vus : la mise à l'échelle « largeur » est une supposition.
-- Les chiffres **0, 1, 4 et 9** n'apparaissaient sur aucune capture : ils ne
-  sont lus qu'avec les gabarits d'Inter.
+- Le chiffre **0** n'apparaissait sur aucune capture : il n'est lu qu'avec les
+  gabarits d'Inter.
 - Rien ne se corrige depuis Discord : un monstre mal reconnu ou une VIT mal
   lue fausse le résultat, que le message signale comme incertain.
 

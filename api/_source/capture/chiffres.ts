@@ -79,7 +79,27 @@ export function glyphes(m: Masque): Glyphe[] {
   const hMax = Math.max(0, ...boites.map((b) => b.h));
   // Un morceau collé au bord gauche est la fin de l'icône de vitesse, coupée
   // par la zone : jamais un chiffre, qui commence après elle.
-  return boites.filter((b) => b.h >= hMax * 0.7 && b.l >= 1 && b.x > 0);
+  return boites.filter((b) => b.h >= hMax * 0.7 && b.l >= 1 && b.x > 0).flatMap((b) => separer(m, b));
+}
+
+// Un chiffre n'est jamais plus large que 0,9 fois sa hauteur. Au-delà, ce sont
+// deux chiffres que l'anticrénelage a soudés — sur PC, les chiffres ne font que
+// 9 pixels et « 64 » se touche par un pixel adouci. On coupe à la colonne la
+// moins encrée du milieu du glyphe, et on recommence sur chaque moitié.
+const LARGEUR_CHIFFRE_MAX = 0.9;
+
+function separer(m: Masque, b: Glyphe): Glyphe[] {
+  if (b.l <= LARGEUR_CHIFFRE_MAX * b.h || b.l < 4) return [b];
+  let coupe = -1, minimum = Infinity;
+  for (let x = b.x + Math.ceil(b.l * 0.25); x <= b.x + Math.floor(b.l * 0.75); x++) {
+    let s = 0;
+    for (let y = b.y; y < b.y + b.h; y++) s += m.encre[y * m.largeur + x];
+    if (s < minimum) { minimum = s; coupe = x; }
+  }
+  if (coupe < 0) return [b];
+  const gauche = { ...b, l: coupe - b.x };
+  const droite = { ...b, x: coupe + 1, l: b.x + b.l - coupe - 1 };
+  return [gauche, droite].filter((g) => g.l >= 1).flatMap((g) => separer(m, g));
 }
 
 // Le glyphe ramené à GL × GH, encre moyenne par case, centré dans sa largeur

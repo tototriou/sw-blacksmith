@@ -3,21 +3,29 @@
 // son portrait (lead et totem compris) ; à droite la défense, sans VIT.
 //
 // L'interface du jeu est fixe : les cartes se placent par des proportions de
-// l'écran. Deux mises à l'échelle possibles, faute de captures de toutes les
+// l'écran. Trois mises à l'échelle possibles, faute de captures de toutes les
 // tailles d'écran : à la HAUTEUR (centré en largeur, relevé sur un téléphone
-// 2556 × 1179) et à la LARGEUR (centré en hauteur, pour un écran moins
-// allongé). La lecture garde celle dont les portraits se reconnaissent le
-// mieux.
+// 2556 × 1179), à la LARGEUR (centré en hauteur, pour un écran moins
+// allongé) et la FENÊTRE du jeu sur PC (Steam, relevée sur une capture de la
+// fenêtre en 1417 × 784, barre de titre comprise : les cartes y sont plus
+// petites et l'écart avec la défense plus grand). La lecture garde celle dont
+// les portraits se reconnaissent le mieux.
 
 import { decouper, type Image } from './image';
 import { lireNombre, type Gabarits, type NombreLu } from './chiffres';
 import { variantes, type Banque, type Reconnaissance } from './portraits';
 
 export interface Disposition {
-  nom: 'hauteur' | 'largeur';
+  nom: 'hauteur' | 'largeur' | 'fenetre';
   // Le rectangle de la carte k (0, 1, 2 : les attaquants ; 3, 4, 5 : la défense).
   carte: (img: Image, k: number) => [number, number, number, number];
+  // La zone de la VIT dans la carte, en fractions de son côté : x, y, largeur,
+  // hauteur. Absente : celle du téléphone (ZONE_VIT).
+  vitesse?: [number, number, number, number];
 }
+
+// La VIT : en bas à droite de la carte, après l'icône de vitesse.
+const ZONE_VIT: [number, number, number, number] = [0.6, 0.78, 0.37, 0.18];
 
 // Bord gauche de chaque carte, en fraction de la HAUTEUR, depuis le centre de
 // l'écran ; haut et côté de toutes les cartes.
@@ -29,6 +37,12 @@ const COTE_HAUTEUR = 0.1535;
 const X_LARGEUR = [0.16, 0.2434, 0.3271, 0.6006, 0.6839, 0.7676];
 const Y_LARGEUR = -0.1117;
 const COTE_LARGEUR = 0.0708;
+// La fenêtre PC, en fraction de la HAUTEUR comme la première (bord gauche
+// depuis le centre, haut depuis le haut) : mesurées aux cadres des cartes,
+// bleus pour les attaquants, dorés pour la défense.
+const X_FENETRE = [-0.6473, -0.5057, -0.3629, 0.2328, 0.3756, 0.5185];
+const Y_FENETRE = 0.2793;
+const COTE_FENETRE = 0.1199;
 
 export const DISPOSITIONS: Record<Disposition['nom'], Disposition> = {
   hauteur: {
@@ -45,12 +59,23 @@ export const DISPOSITIONS: Record<Disposition['nom'], Disposition> = {
       return [X_LARGEUR[k] * l, img.hauteur / 2 + Y_LARGEUR * l, COTE_LARGEUR * l, COTE_LARGEUR * l];
     },
   },
+  fenetre: {
+    nom: 'fenetre',
+    // ⚠️ Plus basse et plus étroite que sur téléphone : les chiffres n'y font
+    // que 9 pixels, et le bas du portrait, clair, qui entrait dans la zone du
+    // téléphone se mêlait à l'encre.
+    vitesse: [0.6, 0.83, 0.37, 0.13],
+    carte: (img, k) => {
+      const h = img.hauteur;
+      return [img.largeur / 2 + X_FENETRE[k] * h, Y_FENETRE * h, COTE_FENETRE * h, COTE_FENETRE * h];
+    },
+  },
 };
 
-// La VIT : en bas à droite de la carte, après l'icône de vitesse.
 export function zoneVitesse(img: Image, d: Disposition, k: number): Image | null {
   const [x, y, c] = d.carte(img, k);
-  return decouper(img, x + 0.6 * c, y + 0.78 * c, 0.37 * c, 0.18 * c);
+  const [zx, zy, zl, zh] = d.vitesse ?? ZONE_VIT;
+  return decouper(img, x + zx * c, y + zy * c, zl * c, zh * c);
 }
 
 export interface MonstreLu {
@@ -72,8 +97,8 @@ export const VIT_MIN = 50;
 export const VIT_MAX = 450;
 
 export function lireEcranPreparation(img: Image, banque: Banque, gabarits: Gabarits): LectureEcran {
-  // Le premier attaquant départage les deux mises à l'échelle : une seule
-  // reconnaissance de plus.
+  // Le premier attaquant départage les mises à l'échelle : une reconnaissance
+  // de plus par disposition essayée.
   const essais = Object.values(DISPOSITIONS).map((d) => ({ d, r: banque.reconnaitre(variantes(img, d.carte(img, 0))) }));
   essais.sort((a, b) => (b.r?.meilleur.score ?? -1) - (a.r?.meilleur.score ?? -1));
   const { d, r: premier } = essais[0];
