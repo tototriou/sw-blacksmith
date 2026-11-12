@@ -25,10 +25,10 @@ Voir aussi : README.md, feat-competences.md, feat-deux-camps.md,
    compact, coloré selon le verdict, à la manière des bots de statistiques :
    - la **vignette** : l'icône de l'app (celle du site de production : Discord
      télécharge l'image lui-même, un aperçu protégé la lui refuserait) ;
-   - trois **champs côte à côte** : l'**équipe** à régler (les trois icônes
+   - deux **champs côte à côte** : l'**équipe** à régler (les trois icônes
      dans l'ordre de la capture, leader en premier, et son lead s'il vaut en
-     siège), la VIT de la défense à battre (l'adversaire de référence, passif
-     compris), le set Rapide ;
+     siège) et la VIT de la défense à battre (l'adversaire de référence,
+     passif compris) ;
    - l'**ordre de jeu**, une ligne par attaquant avec son icône **dans le
      texte** : rang, VIT de combat lue, ✅ ou ❌ cut (le mot des joueurs, en français aussi) ; en dessous, sa VIT de
      fiche (`base + runes`) ou la VIT de combat à viser — dans l'échelle
@@ -41,8 +41,8 @@ Voir aussi : README.md, feat-competences.md, feat-deux-camps.md,
    - la **défense lue**, icônes et noms (l'écran ne montre pas sa VIT) ;
    - en description, ce qui reste **incertain** dans la lecture (deux
      portraits proches, une VIT lue avec une confiance faible) ;
-   - sous l'encart, les **boutons Rapide** (voir plus bas), puis un bouton
-     **« Ouvrir l'outil de speed tuning »** : l'outil
+   - en pied, que la fiche est calculée sans le set Rapide (voir plus bas) ;
+   - sous l'encart, un bouton **« Ouvrir l'outil de speed tuning »** : l'outil
      du site de production (`#/outils/speed-tuning`), pour régler l'équipe à
      la main. Il s'ouvre vide : l'équipe lue n'y est pas reportée.
 
@@ -79,16 +79,15 @@ attendent une réponse passent d'abord) :
   d'artéfact (`⌊30 × (100 + a) / 100⌋`, la troncature de la simulation),
   chaque tranche vaut sa borne basse et donne exactement le même calcul.
 
-Le **set Rapide** ne se demande pas avant le résultat : il ne change rien à
-l'ordre (la VIT de combat lue le contient) et ne sert qu'à retrouver la **VIT
-de fiche** exacte (`base + runes`, le « +X » que le monstre montre hors
-combat, Rapide compris comme dans l'app, voir `swiftFlat` de
-[speed.ts](../../../src/lib/speed.ts)) — fausse d'un point au plus sans lui,
-le jeu arrondissant la somme des pourcentages (totem, lead, Rapide). Personne
-n'est en Rapide par défaut ; sous le résultat, **un bouton par attaquant**
-(« Tarq en Rapide », avec son icône) fait office de case à cocher : gris
-éteint, vert allumé, un clic bascule et recalcule le message. Discord n'a pas
-de case à cocher dans un message.
+Le **set Rapide** ne se demande pas : il ne change rien à l'ordre, ni à qui
+se fait cut, ni à la VIT de combat à viser (la VIT lue le contient). Il ne
+jouerait que sur la **VIT de fiche** (`base + runes`, le « +X » que le
+monstre montre hors combat, Rapide compris comme dans l'app, voir
+`swiftFlat` de [speed.ts](../../../src/lib/speed.ts)), d'un point au plus :
+le jeu arrondit la somme des pourcentages (totem, lead, Rapide). La fiche
+est donc calculée sans lui, et le pied du message le dit. Une première
+version le demandait par des boutons sous le résultat ; retirés, ils
+coûtaient un clic pour un point d'arrondi.
 
 Le service reste **sans état** : la lecture entière (monstres, VIT, valeurs
 déjà choisies, doutes, défense) voyage dans le `custom_id` de chaque menu

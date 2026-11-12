@@ -44,11 +44,9 @@ export interface Menu {
   options: { label: string; value: string; description?: string; default?: boolean }[];
 }
 export interface BoutonLien { type: 2; style: 5; label: string; url: string }
-// Un bouton à bascule : vert (3, « success ») allumé, gris (2) éteint.
-export interface BoutonBascule { type: 2; style: 2 | 3; label: string; custom_id: string; emoji?: { id: string; name: string } }
 export interface Rangee {
   type: 1;
-  components: (Menu | BoutonLien | BoutonBascule)[];
+  components: (Menu | BoutonLien)[];
 }
 
 // Ce qui remplace le message : `components` vide retire les menus d'une
@@ -77,8 +75,7 @@ export type Demande = {
 // Ce qui a été précisé, rappelé dans le résultat.
 export type Precision =
   | { sorte: 'cumuls'; nom: string; cumuls: number; points: number }
-  | { sorte: 'arte'; nom: string; de: number; a: number }
-  | { sorte: 'swift'; noms: string[] };
+  | { sorte: 'arte'; nom: string; de: number; a: number };
 
 const TEXTES = {
   fr: {
@@ -89,7 +86,6 @@ const TEXTES = {
     leadEquipe: (p: number) => `Lead +${p} %`,
     sansLeadCourt: 'Sans lead de VIT',
     champReference: 'Défense à battre',
-    champSwift: 'Set Rapide',
     champOrdre: 'Ordre de jeu',
     champPrecise: 'Précisé',
     vit: (v: number) => `${v} VIT`,
@@ -104,8 +100,10 @@ const TEXTES = {
     horsDePortee: 'quelle que soit sa VIT',
     defense: 'Défense lue',
     ouvrirOutil: 'Ouvrir l\'outil de speed tuning',
-    boutonSwift: (nom: string) => `${nom} en Rapide`,
     pied: 'Lecture automatique de la capture — vérifie les monstres et les VIT lus. Même calcul que l\'outil de speed tuning de SW Blacksmith.',
+    // Le set Rapide ne se voit pas sur la capture et ne change pas l'ordre : la
+    // fiche le suppose absent, à un point d'arrondi près s'il est porté.
+    piedResultat: 'Fiche calculée sans le set Rapide (un point d\'écart possible s\'il est porté). Lecture automatique de la capture : vérifie les monstres et les VIT lus.',
     douteux: (quoi: string) => `⚠️ Lecture incertaine : ${quoi}`,
     erreurTitre: '⚡ Speed tune — capture illisible',
     pasImage: 'La pièce jointe n\'est pas une image PNG ou JPEG.',
@@ -125,7 +123,6 @@ const TEXTES = {
     tranche: (de: number, a: number) => (de === a ? `Effet aug. VIT +${de} %` : `Effet aug. VIT +${de} à ${a} %`),
     cumulsRetenus: (nom: string, n: number, pts: number) => `Passif de **${nom}** : ${n} cumul${n > 1 ? 's' : ''} (+${pts} VIT)`,
     arteRetenu: (nom: string, de: number, a: number) => `**${nom}** : Effet aug. VIT +${de === a ? de : `${de} à ${a}`} %`,
-    swiftRetenu: (noms: string) => `Set Rapide : ${noms}`,
     pasAuteur: 'Seul l\'auteur de la commande peut répondre.',
     perime: 'Ce message ne correspond plus à une lecture valide. Relance /speedtune.',
   },
@@ -136,7 +133,6 @@ const TEXTES = {
     leadEquipe: (p: number) => `Lead +${p}%`,
     sansLeadCourt: 'No SPD lead',
     champReference: 'Defense to beat',
-    champSwift: 'Swift set',
     champOrdre: 'Turn order',
     champPrecise: 'Filled in',
     vit: (v: number) => `${v} SPD`,
@@ -151,8 +147,8 @@ const TEXTES = {
     horsDePortee: 'whatever their SPD',
     defense: 'Defense read',
     ouvrirOutil: 'Open the speed tuning tool',
-    boutonSwift: (nom: string) => `${nom} on Swift`,
     pied: 'Automatic reading of the screenshot — check the monsters and SPD read. Same computation as the SW Blacksmith speed tuning tool.',
+    piedResultat: 'Stats assume no Swift set (one point off if it is worn). Automatic reading of the screenshot: check the monsters and SPD read.',
     douteux: (quoi: string) => `⚠️ Uncertain reading: ${quoi}`,
     erreurTitre: '⚡ Speed tune — unreadable screenshot',
     pasImage: 'The attachment is not a PNG or JPEG image.',
@@ -172,7 +168,6 @@ const TEXTES = {
     tranche: (de: number, a: number) => (de === a ? `SPD Increasing Effect +${de}%` : `SPD Increasing Effect +${de} to ${a}%`),
     cumulsRetenus: (nom: string, n: number, pts: number) => `**${nom}**'s passive: ${n} stack${n === 1 ? '' : 's'} (+${pts} SPD)`,
     arteRetenu: (nom: string, de: number, a: number) => `**${nom}**: SPD Increasing Effect +${de === a ? de : `${de} to ${a}`}%`,
-    swiftRetenu: (noms: string) => `Swift set: ${noms}`,
     pasAuteur: 'Only the author of the command can answer.',
     perime: 'This message no longer matches a valid reading. Run /speedtune again.',
   },
@@ -184,30 +179,6 @@ export function embedErreur(langue: Langue, erreur: Erreur | { vitIllisible: str
   const t = TEXTES[langue];
   const description = typeof erreur === 'string' ? t[erreur] : t.vitIllisible(erreur.vitIllisible.join(', '));
   return { title: t.erreurTitre, description, color: COULEUR_ERREUR };
-}
-
-// Sous le résultat, un bouton par attaquant pour le set Rapide : vert s'il le
-// porte, gris sinon ; un clic bascule et recalcule. Rapide ne change que la
-// VIT de fiche (d'un point au plus) : « aucun » par défaut, sans rien demander
-// avant le résultat.
-export function rangeeSwift(
-  langue: Langue,
-  attaquants: { monster: Monster; swift: boolean; customId: string }[],
-  icones: Map<number, string>
-): Rangee {
-  return {
-    type: 1,
-    components: attaquants.map(({ monster, swift, customId }) => {
-      const emoji = /^<:(\w+):(\d+)>$/.exec(monster.com2usId != null ? (icones.get(monster.com2usId) ?? '') : '');
-      return {
-        type: 2,
-        style: swift ? 3 : 2,
-        label: TEXTES[langue].boutonSwift(monster.name),
-        custom_id: customId,
-        ...(emoji ? { emoji: { name: emoji[1], id: emoji[2] } } : {}),
-      };
-    }),
-  };
 }
 
 // Le bouton sous le résultat : l'outil de l'app, pour aller plus loin.
@@ -255,8 +226,8 @@ export function messageQuestion(langue: Langue, equipe: { nom: string; combat: n
 }
 
 // Le résultat en UN encart compact, à la manière des bots de statistiques :
-// l'icône de l'app en vignette, champs côte à côte (leader, défense de référence, set
-// Rapide), l'ordre de jeu une ligne par monstre avec son icône DANS le texte
+// l'icône de l'app en vignette, champs côte à côte (équipe, défense à battre),
+// l'ordre de jeu une ligne par monstre avec son icône DANS le texte
 // (émojis du bot, voir emojis.ts), puis la défense lue. Sans émoji, le nom
 // seul : le message reste juste.
 export function embedResultat(
@@ -270,8 +241,6 @@ export function embedResultat(
   const t = TEXTES[langue];
   const icone = (m: Monster) => (m.com2usId != null && icones.has(m.com2usId) ? `${icones.get(m.com2usId)} ` : '');
   const plusRapide = r.reference ?? Math.max(...r.lignes.map((l) => l.combat));
-  const swift = precisions.find((p) => p.sorte === 'swift');
-  const autres = precisions.filter((p) => p.sorte !== 'swift');
 
   const ordre = r.lignes.flatMap((l, i) => {
     const fiche = l.base != null && l.runes != null;
@@ -298,11 +267,10 @@ export function embedResultat(
       inline: true,
     },
     { name: t.champReference, value: t.vit(plusRapide), inline: true },
-    ...(swift ? [{ name: t.champSwift, value: swift.noms.join(', ') || t.aucun, inline: true }] : []),
     { name: t.champOrdre, value: ordre.join('\n') },
-    ...(autres.length ? [{
+    ...(precisions.length ? [{
       name: t.champPrecise,
-      value: autres.map((p) => (p.sorte === 'cumuls' ? t.cumulsRetenus(p.nom, p.cumuls, p.points) : p.sorte === 'arte' ? t.arteRetenu(p.nom, p.de, p.a) : '')).join('\n'),
+      value: precisions.map((p) => (p.sorte === 'cumuls' ? t.cumulsRetenus(p.nom, p.cumuls, p.points) : t.arteRetenu(p.nom, p.de, p.a))).join('\n'),
     }] : []),
     { name: t.defense, value: defense.length ? defense.map((m) => `${icone(m)}${m.name}`).join(' · ') : '—' },
   ];
@@ -312,6 +280,6 @@ export function embedResultat(
     color: r.ok ? COULEUR_OK : COULEUR_KO,
     fields,
     thumbnail: { url: ICONE_APP },
-    footer: { text: t.pied },
+    footer: { text: t.piedResultat },
   };
 }

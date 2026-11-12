@@ -17,7 +17,7 @@ import { lireNombre, type Gabarits } from '../api/_source/capture/chiffres';
 import { DISPOSITIONS, lireEcranPreparation } from '../api/_source/capture/ecranPreparation';
 import { analyserEquipe } from '../api/_source/speedtune/analyse';
 import { creerInteractions, signatureValide, tranchesArte, type Ressources } from '../api/_source/speedtune/interactions';
-import { embedErreur, ICONE_APP, LIEN_OUTIL, langueDe, type BoutonBascule, type Embed, type Menu, type Rangee } from '../api/_source/speedtune/message';
+import { embedErreur, ICONE_APP, LIEN_OUTIL, langueDe, type Embed, type Menu, type Rangee } from '../api/_source/speedtune/message';
 import { decoderEtat, encoderEtat, LONGUEUR_MAX, type Etat } from '../api/_source/speedtune/etat';
 import { creerEmojis } from '../api/_source/speedtune/emojis';
 import gabaritsJson from '../api/_source/capture/chiffres-gabarits.json';
@@ -303,26 +303,23 @@ export function testSpeedtuneEtat() {
       { id: 19214, combat: 99, cumuls: 0, arte: 0, vitDouteuse: false, autrePortrait: null },
     ],
     defense: [10111, 20222, 30333],
-    swift: 5,
     auteur: '1569358973419659324',
   };
   egal(decoderEtat(encoderEtat('s1', etat)), { action: 's1', etat }, 'aller-retour sans perte');
   const pire: Etat = {
     attaquants: [0, 1, 2].map(() => ({ id: 99999, combat: 450, cumuls: 24, arte: 60, vitDouteuse: true, autrePortrait: 99999 })),
     defense: [99999, 99999, 99999],
-    swift: 7,
     auteur: '18446744073709551615', // le plus grand identifiant Discord possible
   };
   ok(encoderEtat('c2', pire).length <= LONGUEUR_MAX, 'le pire cas tient dans un custom_id (100 caractères), doutes compris');
   egal(decoderEtat(encoderEtat('c2', pire))?.etat.attaquants[0].autrePortrait, 99999, 'le pire cas garde ses doutes');
   egal(decoderEtat(encoderEtat('c2', pire))?.etat.auteur, '18446744073709551615', 'l\'auteur relu au chiffre près (au-delà de la précision d\'un nombre)');
-  egal(decoderEtat('st2:c0:1.2.p...:::1'), null, 'plus de cumuls qu\'un menu n\'en propose : refusé');
-  egal(decoderEtat('st2:a0:1.2..1p..:::1'), null, 'plus de 60 % d\'effet aug. VIT : refusé');
-  egal(decoderEtat('st2:w:1.2....::2:1'), null, 'set Rapide sur un attaquant qui n\'existe pas : refusé');
-  egal(decoderEtat('st2:c0:1.2...x.:::1'), null, 'champ inattendu : refusé');
-  egal(decoderEtat('st2:c0:1.2....:::'), null, 'sans auteur : refusé');
+  egal(decoderEtat('st3:c0:1.2.p...::1'), null, 'plus de cumuls qu\'un menu n\'en propose : refusé');
+  egal(decoderEtat('st3:a0:1.2..1p..::1'), null, 'plus de 60 % d\'effet aug. VIT : refusé');
+  egal(decoderEtat('st3:c0:1.2...x.::1'), null, 'champ inattendu : refusé');
+  egal(decoderEtat('st3:c0:1.2....::'), null, 'sans auteur : refusé');
+  egal(decoderEtat('st2:c0:1.2....:::1'), null, 'ancien format (avec le set Rapide) : refusé');
   egal(decoderEtat('st1:c0:1.2....::'), null, 'ancien format (avant l\'auteur) : refusé');
-  egal(decoderEtat('st2:w:1.2....:::1')?.etat.swift, null, 'set Rapide pas encore précisé');
 
   // Les tranches d'effet aug. VIT : chacune donne un buff différent, et la
   // borne basse le même buff que toute la tranche.
@@ -410,7 +407,7 @@ export async function testSpeedtuneInteractions() {
   travaux.length = 0;
   const intrus = await (await envoyer(choix('1', '222'))).json() as { type: number; data: { flags: number } };
   egal([intrus.type, intrus.data.flags, travaux.length], [4, 64, 0], 'un autre que l\'auteur : message privé, rien recalculé');
-  const perime = await (await envoyer(choix('1', '111', 'st2:s0:abc'))).json() as { type: number };
+  const perime = await (await envoyer(choix('1', '111', 'st3:s0:abc'))).json() as { type: number };
   egal(perime.type, 4, 'un custom_id illisible : message privé');
 
   egal(await (await envoyer(choix('1'))).json(), { type: 6 }, 'le choix met à jour le message en différé');
@@ -425,31 +422,12 @@ export async function testSpeedtuneInteractions() {
     await envoyer(choix(k === 0 ? '4' : '0', '111', m.custom_id));
     await Promise.all(travaux);
   }
-  // Tout est précisé : le résultat, sans Rapide par défaut, et sous lui un
-  // bouton Rapide par attaquant, puis le lien vers l'outil.
-  const sansSwift = dernier();
-  egal(sansSwift.url, 'https://discord.com/api/v10/webhooks/APP/C/messages/@original', 'le résultat remplace la question');
-  const boutons = (m: typeof question) => (m.corps.components?.[0].components ?? []) as BoutonBascule[];
-  egal(boutons(sansSwift).map((b) => [b.label, b.style]), [['Susano en Rapide', 2], ['Chilling en Rapide', 2], ['Tarq en Rapide', 2]],
-    'un bouton Rapide par attaquant, dans l\'ordre de la capture, tous éteints (gris)');
-  egal(boutons(sansSwift)[2].emoji, { name: `m${tarq.com2usId}`, id: '9' }, 'chaque bouton porte l\'icône du monstre');
-  egal(sansSwift.corps.components?.[1], { type: 1, components: [{ type: 2, style: 5, label: 'Ouvrir l\'outil de speed tuning', url: LIEN_OUTIL }] },
-    'puis le bouton vers l\'outil de speed tuning');
-  egal(sansSwift.corps.embeds[0].fields?.find((f) => f.name === 'Set Rapide')?.value, 'Aucun', 'par défaut, personne en Rapide');
-  const clic = (customId: string, qui = '111') => ({
-    type: 3, token: 'C', locale: 'fr', member: { user: { id: qui } }, data: { custom_id: customId, component_type: 2 },
-  });
-  travaux.length = 0;
-  egal(await (await envoyer(clic(boutons(sansSwift)[2].custom_id, '222'))).json() as unknown, { type: 4, data: { content: 'Seul l\'auteur de la commande peut répondre.', flags: 64 } },
-    'un bouton Rapide cliqué par un autre : refusé');
-  egal(await (await envoyer(clic(boutons(sansSwift)[2].custom_id))).json(), { type: 6 }, 'un clic bascule Tarq en Rapide');
-  await Promise.all(travaux);
+  // Tout est précisé : le résultat, et sous lui le seul lien vers l'outil.
   const final = dernier();
-  egal(boutons(final).map((b) => b.style), [2, 2, 3], 'Tarq allumé (vert), les autres éteints');
-  travaux.length = 0;
-  await envoyer(clic(boutons(final)[2].custom_id));
-  await Promise.all(travaux);
-  egal(boutons(dernier()).map((b) => b.style), [2, 2, 2], 'un second clic l\'éteint');
+  egal(final.url, 'https://discord.com/api/v10/webhooks/APP/C/messages/@original', 'le résultat remplace la question');
+  egal(final.corps.components, [{ type: 1, components: [{ type: 2, style: 5, label: 'Ouvrir l\'outil de speed tuning', url: LIEN_OUTIL }] }],
+    'les menus disparaissent ; reste le bouton vers l\'outil de speed tuning, sans bouton Rapide');
+  ok(final.corps.embeds[0].footer?.text.startsWith('Fiche calculée sans le set Rapide') === true, 'la fiche se dit calculée sans le set Rapide');
   egal(LIEN_OUTIL, 'https://sw-blacksmith.vercel.app/#/outils/speed-tuning', 'l\'outil du site de production');
   egal(final.corps.embeds.length, 1, 'un seul encart, compact');
   ok(['⚡ Speed tune — personne ne se fait cut', '⚡ Speed tune — quelqu\'un se fait cut'].includes(final.corps.embeds[0].title), 'le titre parle comme les joueurs : « se faire cut »');
@@ -458,7 +436,7 @@ export async function testSpeedtuneInteractions() {
   ok(champ('Précisé').includes('Passif de **Chilling** : 1 cumul (+20 VIT)'), 'les cumuls retenus sont rappelés');
   ok(champ('Précisé').includes('**Susano** : Effet aug. VIT +4 à 6 %'), 'l\'effet aug. VIT retenu est rappelé, par sa tranche');
   ok(!/buff/i.test(champ('Précisé')), 'sans la valeur du buff');
-  egal(champ('Set Rapide'), 'Tarq', 'le set Rapide retenu, en champ');
+  ok(!embed.fields?.some((f) => f.name === 'Set Rapide'), 'plus de champ Set Rapide');
   egal(champ('Équipe'), `<:m${susano.com2usId}:9> <:m${chilling.com2usId}:9> <:m${tarq.com2usId}:9>\nLead +30 %`,
     'l\'équipe à régler : ses trois icônes dans l\'ordre de la capture, et son lead');
   ok(/↳ .*· S\d/.test(champ('Ordre de jeu')), 'le sort retenu, par son numéro (S1, S2…)');
@@ -472,7 +450,7 @@ export async function testSpeedtuneInteractions() {
   ok(!/tick/i.test(ordre), 'aucun tick affiché');
   ok(champ('Défense lue') !== '', 'la défense lue, en dernier champ');
   const runesDe = (m: Monster, combat: number, swift: boolean) => runeSpeedForTarget(m.stats.speed, siegeLeadFor(speedLeadOf(susano), m.element), combat, swift);
-  ok(ordre.includes(`fiche ${tarq.stats.speed} + ${runesDe(tarq, 385, true)}`), 'Tarq en Rapide : sa VIT de fiche');
+  ok(ordre.includes(`fiche ${tarq.stats.speed} + ${runesDe(tarq, 385, false)}`), 'Tarq : sa VIT de fiche, sans Rapide');
   ok(ordre.includes(`${susano.stats.speed} + `), 'Susano : sa VIT de fiche (ou celle à viser)');
   ok(Math.abs(runesDe(tarq, 385, true)! - runesDe(tarq, 385, false)!) <= 1, 'le Rapide ne change la VIT de fiche que d\'un point d\'arrondi');
   egal(final.corps, { ...final.corps, allowed_mentions: { parse: [] } }, 'aucune mention possible');

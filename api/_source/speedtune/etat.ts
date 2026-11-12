@@ -2,7 +2,7 @@
 // message : le service reste sans état. Quand l'équipe compte un monstre dont
 // le passif de vitesse se CUMULE (Chilling, Miles…), ou qui reçoit un buff de
 // VIT, le bot demande ce que la capture ne montre pas (nombre de cumuls, effet
-// aug. VIT des artéfacts, set Rapide) ; chaque choix revient avec la lecture entière, sans
+// aug. VIT des artéfacts) ; chaque choix revient avec la lecture entière, sans
 // base de données ni nouvelle lecture de la capture.
 //
 // ⚠️ **L'auteur de la commande voyage avec l'état** : seul lui peut répondre
@@ -12,8 +12,8 @@
 //
 // ⚠️ Un `custom_id` fait 100 caractères au plus (Discord) : les nombres s'y
 // écrivent en base 36. Au pire — trois attaquants et leurs doutes, trois
-// défenseurs, le set Rapide, l'auteur — on en écrit 96 ; au-delà, les doutes
-// tombent (voir `encoderEtat`).
+// défenseurs, l'auteur — on en écrit 94 ; au-delà, les doutes tombent (voir
+// `encoderEtat`).
 //
 // ⚠️ Un `custom_id` revient du client : il se relit strictement (chiffres,
 // bornes) et un monstre inconnu est refusé par l'appelant, comme une lecture
@@ -31,14 +31,11 @@ export interface AttaquantEtat {
 export interface Etat {
   attaquants: AttaquantEtat[];
   defense: number[];
-  // Les attaquants en set Rapide (Swift), un bit par place ; `null` tant que
-  // non précisé. Sans effet sur l'ordre (la VIT de combat lue le contient),
-  // il dit la VIT de RUNES derrière la VIT lue.
-  swift: number | null;
   auteur: string; // l'identifiant Discord de qui a lancé la commande
 }
 
-export const PREFIXE_ETAT = 'st2';
+// st3 : sans le set Rapide (st2 le portait, st1 n'avait pas l'auteur).
+export const PREFIXE_ETAT = 'st3';
 export const LONGUEUR_MAX = 100;
 export const CUMULS_MAX = 24; // 25 options au plus dans un menu Discord
 export const ARTE_MAX = 60; // deux artéfacts à 30 % au plus (ARTE_MAX de speedTune.ts)
@@ -65,7 +62,6 @@ export function encoderEtat(action: string, e: Etat): string {
         ].join('.'))
         .join(','),
       e.defense.map(b36).join(','),
-      e.swift ?? '',
       idEnB36(e.auteur),
     ].join(':');
   const complet = ecrire(true);
@@ -78,7 +74,7 @@ const ATTAQUANT = /^([0-9a-z]{1,4})\.([0-9a-z]{1,2})\.([0-9a-z]?)\.([0-9a-z]{0,2
 
 export function decoderEtat(customId: string): { action: string; etat: Etat } | null {
   const parts = customId.split(':');
-  if (parts.length !== 6 || parts[0] !== PREFIXE_ETAT || !/^[a-z]\d?$/.test(parts[1])) return null;
+  if (parts.length !== 5 || parts[0] !== PREFIXE_ETAT || !/^[a-z]\d?$/.test(parts[1])) return null;
   const attaquants: AttaquantEtat[] = [];
   for (const brut of parts[2].split(',')) {
     const m = ATTAQUANT.exec(brut);
@@ -91,9 +87,6 @@ export function decoderEtat(customId: string): { action: string; etat: Etat } | 
   if (attaquants.length < 1 || attaquants.length > 3) return null;
   const defense = parts[3] === '' ? [] : parts[3].split(',');
   if (defense.length > 3 || defense.some((x) => !/^[0-9a-z]{1,4}$/.test(x))) return null;
-  if (!/^\d?$/.test(parts[4])) return null;
-  const swift = parts[4] === '' ? null : Number(parts[4]);
-  if (swift != null && swift >= 1 << attaquants.length) return null;
-  if (!/^[0-9a-z]{1,13}$/.test(parts[5])) return null;
-  return { action: parts[1], etat: { attaquants, defense: defense.map(deB36), swift, auteur: idDeB36(parts[5]) } };
+  if (!/^[0-9a-z]{1,13}$/.test(parts[4])) return null;
+  return { action: parts[1], etat: { attaquants, defense: defense.map(deB36), auteur: idDeB36(parts[4]) } };
 }

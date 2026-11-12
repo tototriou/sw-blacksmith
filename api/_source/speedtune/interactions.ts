@@ -31,7 +31,7 @@ import type { Banque } from '../capture/portraits';
 import type { Gabarits } from '../capture/chiffres';
 import { lireEcranPreparation, type LectureEcran } from '../capture/ecranPreparation';
 import { analyserEquipe } from './analyse';
-import { embedErreur, embedResultat, langueDe, messageQuestion, rangeeOutil, rangeeSwift, texteEphemere, type Demande, type Embed, type Langue, type Message, type Precision } from './message';
+import { embedErreur, embedResultat, langueDe, messageQuestion, rangeeOutil, texteEphemere, type Demande, type Embed, type Langue, type Message, type Precision } from './message';
 import { ARTE_MAX, CUMULS_MAX, decoderEtat, encoderEtat, type Etat } from './etat';
 import type { Emojis } from './emojis';
 
@@ -182,12 +182,6 @@ export function creerInteractions(d: DependancesInteractions) {
         const sorte = lu.action[0];
         const cible = lu.etat.attaquants[Number(lu.action.slice(1))];
         const valeur = interaction.data?.values?.[0] ?? '';
-        // Un bouton Rapide (sous le résultat) : il bascule ce monstre.
-        if (sorte === 't' && cible) {
-          lu.etat.swift = (lu.etat.swift ?? 0) ^ (1 << Number(lu.action.slice(1)));
-          d.differer(traiterChoix(interaction.token, langue, lu.etat));
-          return json({ type: 6 });
-        }
         const max = sorte === 'c' ? CUMULS_MAX : ARTE_MAX;
         if (!cible || (sorte !== 'c' && sorte !== 'a') || !/^\d{1,2}$/.test(valeur) || Number(valeur) > max) return ephemere('perime');
         if (sorte === 'c') cible.cumuls = Number(valeur);
@@ -224,7 +218,6 @@ export function etatDeLecture(res: Ressources, lecture: LectureEcran, auteur: st
     defense: lecture.defense
       .filter((x) => x.portrait && x.portrait.meilleur.score >= SCORE_PORTRAIT_MIN && res.monstre(x.portrait.meilleur.com2usId))
       .map((x) => x.portrait!.meilleur.com2usId),
-    swift: null,
     auteur,
   };
 }
@@ -321,22 +314,18 @@ export async function repondre(res: Ressources, etat: Etat, langue: Langue): Pro
     const tranche = tranchesArte(base).find((x) => x.de === a.arte);
     if (a.arte != null) precisions.push({ sorte: 'arte', nom, de: a.arte, a: tranche?.a ?? a.arte });
   }
-  // Le set Rapide ne se demande pas : « aucun » par défaut, et des boutons
-  // sous le résultat le basculent (`rangeeSwift`).
-  const enSwift = (i: number) => ((etat.swift ?? 0) & (1 << i)) !== 0;
-  precisions.push({ sorte: 'swift', noms: monstres.filter((_, i) => enSwift(i)).map((m) => m!.name) });
+  // Le set Rapide ne se demande pas : il ne change pas l'ordre (la VIT lue le
+  // contient), seulement la fiche d'un point d'arrondi ; elle le suppose absent.
 
   if (demandes.some((x) => x.choisi == null)) {
     return messageQuestion(langue, etat.attaquants.map((a, i) => ({ nom: monstres[i]!.name, combat: a.combat })), demandes, douteux);
   }
 
   const resultat = analyserEquipe(
-    etat.attaquants.map((a, i) => ({ monster: monstres[i]!, combat: a.combat, cumuls: a.cumuls, arte: a.arte, swift: enSwift(i) })),
+    etat.attaquants.map((a, i) => ({ monster: monstres[i]!, combat: a.combat, cumuls: a.cumuls, arte: a.arte })),
     donnees
   );
   const defense = etat.defense.map((id) => res.monstre(id)).filter((m): m is Monster => m !== undefined);
   const icones = res.emojis ? await res.emojis([...monstres.map((m) => m!), ...defense]) : new Map<number, string>();
-  const etatSwift = { ...etat, swift: etat.swift ?? 0 };
-  const boutons = rangeeSwift(langue, etat.attaquants.map((_, i) => ({ monster: monstres[i]!, swift: enSwift(i), customId: encoderEtat(`t${i}`, etatSwift) })), icones);
-  return { embeds: [embedResultat(langue, resultat, defense, douteux, precisions, icones)], components: [boutons, rangeeOutil(langue)] };
+  return { embeds: [embedResultat(langue, resultat, defense, douteux, precisions, icones)], components: [rangeeOutil(langue)] };
 }
