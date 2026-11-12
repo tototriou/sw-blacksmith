@@ -2186,9 +2186,9 @@ export const en: Dictionnaire = {
       runesMaxeesAide: {
         debut: 'On, the search assumes your runes are maxed: the main stat of each 6★ rune goes to its value ',
         niveau: 'at +15',
-        meules: ', and each grind or gem already applied takes its ',
-        legendaire: 'maximum legendary value',
-        fin: ' (ancient on an ancient rune). No grind or gem is added elsewhere, and the upcoming substats of a rune not yet at +12 are not guessed.',
+        meules: ', every grindable line (HP, ATK, DEF, SPD), ground or not, gets the ',
+        legendaire: 'maximum legendary grind',
+        fin: ', and each gem already applied its maximum legendary value (ancient on an ancient rune). No gem is added, and the upcoming substats of a rune not yet at +12 are not guessed.',
         couleur:
           'In the detail of a result rune, what was simulated is shown in purple. The setting applies to the next search: the results shown do not change.',
       },

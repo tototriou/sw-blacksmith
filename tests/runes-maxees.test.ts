@@ -1,7 +1,7 @@
 // « Simuler +15 et max meules/gemmes » (réglage avancé de l'Optimizer,
 // désactivé par défaut) : la recherche porte sur l'inventaire maxé —
-// principale d'une rune 6★ à +15, meules et gemmes déjà posées à leur
-// maximum légendaire. Ici : la fonction pure (`runeMaxee`), le producteur du
+// principale d'une rune 6★ à +15, toute ligne meulable à la meule
+// légendaire maximale, gemmes déjà posées à leur base légendaire maximale. Ici : la fonction pure (`runeMaxee`), le producteur du
 // pool (`poolDeRecherche`) partagé par l'écran et le CLI (`resolvePool`), la
 // recette et la clé du cache de résolution. Le rendu du détail d'une rune
 // simulée : rendu/rune-simulee.test.tsx ; l'interrupteur et le non-effet sur
@@ -19,7 +19,7 @@ import { egal, ok, titre } from './outils';
 import { fr } from '../src/i18n/fr';
 
 // Une rune 6★ légendaire à +12 : VIT gemmée 7 meulée +3 (le cas de la
-// demande), ATQ % meulée +5, PV % vierge, Tx critiq. 6.
+// demande), ATQ % meulée +5, PV % jamais meulée, Tx critiq. 6 (non meulable).
 const RUNE: RuneDetail = {
   id: 11, slot: 2, set: 'swift', rank: 6, rarity: 5, level: 12,
   main: { code: 4, value: 47 },
@@ -48,7 +48,9 @@ export function testRunesMaxees() {
     egal([r.level, r.main.value], [15, MAINSTAT_MAX[4]], '+12 → +15 : niveau 15, principale ATQ % à sa valeur à +15 (63)');
     egal(r.subs[0], { code: 8, value: 15, grind: 5, enchant: true }, 'VIT gemmée 7 +3 → gemme légendaire 10, meule légendaire +5 (le cas de la demande)');
     egal(r.subs[1], { code: 4, value: 17, grind: 10 }, 'ATQ % meulée +5 → meule légendaire +10, base inchangée');
-    ok(r.subs[2] === RUNE.subs[2] && r.subs[3] === RUNE.subs[3], 'ligne sans meule ni gemme : inchangée, rien n’est posé de nouveau');
+    egal(r.subs[2], { code: 2, value: 16, grind: 10 }, 'PV % jamais meulée : meulée quand même, meule légendaire +10 (toute ligne meulable)');
+    ok(r.subs[3] === RUNE.subs[3], 'Tx critiq. (non meulable) : inchangée');
+    ok(r.subs.every((s, i) => !!s.enchant === !!RUNE.subs[i].enchant), 'aucune gemme posée sur une ligne qui n’en a pas');
     egal([r.id, r.slot, r.set, r.rank, r.rarity], [RUNE.id, RUNE.slot, RUNE.set, RUNE.rank, RUNE.rarity], 'identité gardée : même identifiant, emplacement, set');
     egal(r.avantSimulation, { level: 12, main: 47, subs: [{ value: 10, grind: 3 }, { value: 12, grind: 5 }, { value: 6, grind: 0 }, { value: 6, grind: 0 }] },
       'les valeurs réelles voyagent avec la copie (`avantSimulation`)');
@@ -57,19 +59,22 @@ export function testRunesMaxees() {
   {
     const antique: RuneDetail = { ...RUNE, rank: 16, level: 15, main: { code: 4, value: 63 } };
     const r = runeMaxee(antique);
-    egal([r.subs[0].value, r.subs[0].grind, r.subs[1].value, r.subs[1].grind], [17, 6, 19, 12], 'rune antique : tables antiques (gemme VIT 11 +6, meule ATQ % +12)');
+    egal([r.subs[0].value, r.subs[0].grind, r.subs[1].value, r.subs[1].grind, r.subs[2].value, r.subs[2].grind], [17, 6, 19, 12, 18, 12],
+      'rune antique : tables antiques (gemme VIT 11 +6, meule ATQ % +12, PV % vierge +12)');
     egal([r.level, r.main.value], [15, 63], 'antique déjà à +15 : principale et niveau inchangés');
   }
   {
     const maxee: RuneDetail = { ...RUNE, level: 15, main: { code: 4, value: 63 },
       subs: [{ code: 8, value: 15, grind: 5, enchant: true }, { code: 4, value: 17, grind: 10 }, { code: 9, value: 6 }] };
     ok(runeMaxee(maxee) === maxee, 'rune déjà maxée : la même référence, sans `avantSimulation`');
-    const vierge: RuneDetail = { ...RUNE, level: 15, main: { code: 4, value: 63 }, subs: [{ code: 9, value: 6 }, { code: 2, value: 8 }] };
-    ok(runeMaxee(vierge) === vierge, 'rune +15 sans meule ni gemme : inchangée');
+    const nonMeulable: RuneDetail = { ...RUNE, level: 15, main: { code: 4, value: 63 }, subs: [{ code: 9, value: 6 }, { code: 10, value: 7 }] };
+    ok(runeMaxee(nonMeulable) === nonMeulable, 'rune +15 sans ligne meulable (Tx critiq., Dégâts critiq.) : inchangée');
+    const gemmeNonMeulee: RuneDetail = { ...maxee, subs: [{ code: 2, value: 9, enchant: true }] };
+    egal(runeMaxee(gemmeNonMeulee).subs[0], { code: 2, value: 23, enchant: true, grind: 10 }, 'PV % gemmée 9 jamais meulée : gemme légendaire 13 ET meule légendaire +10');
     const auDela: RuneDetail = { ...maxee, subs: [{ code: 2, value: 16, grind: 0, enchant: true }] };
-    egal(runeMaxee(auDela).subs[0].value, 16, 'jamais à la baisse : une base au-dessus de la table reste où elle est');
+    egal(runeMaxee(auDela).subs[0], { code: 2, value: 26, grind: 10, enchant: true }, 'jamais à la baisse : une base au-dessus de la table reste où elle est (16, meule +10 en plus)');
     const gemmeTc: RuneDetail = { ...maxee, subs: [{ code: 9, value: 5, enchant: true }] };
-    ok(runeMaxee(gemmeTc) === gemmeTc, 'stat sans table de gemme (Tx critiq.) : inchangée');
+    ok(runeMaxee(gemmeTc) === gemmeTc, 'stat sans table de gemme ni de meule (Tx critiq.) : inchangée');
   }
   {
     const cinq: RuneDetail = { ...RUNE, rank: 5, level: 12, main: { code: 4, value: 40 } };

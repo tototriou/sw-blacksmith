@@ -2330,9 +2330,9 @@ export const fr = {
       runesMaxeesAide: {
         debut: 'Activé, la recherche suppose tes runes maxées : la principale de chaque rune 6★ passe à sa valeur ',
         niveau: 'à +15',
-        meules: ', et chaque meule ou gemme déjà posée prend sa valeur ',
+        meules: ', chaque ligne meulable (PV, ATQ, DEF, VIT), meulée ou non, reçoit la meule ',
         legendaire: 'légendaire maximale',
-        fin: ' (antique sur une rune antique). Aucune meule ni gemme n’est ajoutée ailleurs, et les sous-propriétés à venir d’une rune pas encore à +12 ne sont pas devinées.',
+        fin: ', et chaque gemme déjà posée sa valeur légendaire maximale (antique sur une rune antique). Aucune gemme n’est ajoutée, et les sous-propriétés à venir d’une rune pas encore à +12 ne sont pas devinées.',
         couleur:
           'Dans le détail d’une rune des résultats, ce qui a été simulé est en violet. Le réglage vaut pour la prochaine recherche : les résultats affichés ne changent pas.',
       },

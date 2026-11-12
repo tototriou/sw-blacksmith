@@ -189,16 +189,17 @@ Ce document décrit les conditions, l'inventaire et les réglages avancés.
      (`poolDeRecherche`, [runesMaxees.ts](src/lib/runesMaxees.ts), même
      producteur pour l'écran et le CLI) : la principale d'une rune 6★,
      antique comprise, prend sa valeur à +15 (`MAINSTAT_MAX`) et son
-     niveau passe à 15 ; une ligne déjà meulée prend la meule légendaire
-     maximale de sa stat, une ligne déjà gemmée la base de gemme
+     niveau passe à 15 ; TOUTE ligne meulable (PV, ATQ, DEF en plat ou
+     en %, VIT), meulée ou non, gemmée comprise, prend la meule légendaire
+     maximale de sa stat, et une ligne déjà gemmée la base de gemme
      légendaire maximale — tables antiques pour une rune antique, celles
      du potentiel de Mon compte → Runes → Optimisation
      (`meuleMaxLegendaire`, `gemmeMaxLegendaire`, runeOptim.ts). Exemple de
-     la demande : VIT gemmée 7 meulée +3 → 10 +5. Rien ne descend
-     (`Math.max`). ⚠️ **Ne PAS** meuler une ligne qui n'a pas de meule, ni
-     gemmer une rune vierge, ni changer la stat d'une gemme : le réglage
-     pousse ce qui est posé, il ne choisit rien (décision de
-     l'utilisateur). ⚠️ Les sous-propriétés d'une rune pas encore à +12 ne
+     la demande : VIT gemmée 7 meulée +3 → 10 +5 ; une PV % jamais meulée
+     prend +10. Rien ne descend (`Math.max`). ⚠️ Toujours meuler au max
+     (décision de l'utilisateur), mais **ne PAS** gemmer une ligne qui ne
+     l'est pas ni changer la stat d'une gemme : choisir la gemme serait le
+     travail du plan d'optimisation, pas de ce réglage. ⚠️ Les sous-propriétés d'une rune pas encore à +12 ne
      sont pas devinées (les améliorations tombent au hasard), et une rune
      de moins de 6★ garde sa principale et son niveau : l'app n'a pas de
      table de principale par étoile. La copie garde l'identifiant de la

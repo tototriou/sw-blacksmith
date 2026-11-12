@@ -7,11 +7,12 @@
 //   bougent pas : les améliorations à venir tombent au hasard, rien ne dit
 //   lesquelles. Une rune de moins de 6★ n'est pas montée (aucune table de
 //   principale par étoile dans l'app) ;
-// - **meules et gemmes posées** : une ligne déjà meulée prend la meule
-//   LÉGENDAIRE maximale de sa stat, une ligne déjà gemmée la base de gemme
-//   légendaire maximale (tables antiques pour une rune antique). Une ligne
-//   sans meule ni gemme ne change pas : on ne pose rien de nouveau, on ne
-//   change jamais la stat d'une gemme. Rien ne descend (`Math.max`).
+// - **meules et gemmes** : TOUTE ligne meulable (PV, ATQ, DEF, en plat ou en
+//   %, et VIT), meulée ou non, gemmée comprise, prend la meule LÉGENDAIRE
+//   maximale de sa stat ; une ligne déjà gemmée prend la base de gemme
+//   légendaire maximale (tables antiques pour une rune antique). Aucune
+//   gemme n'est posée sur une rune qui n'en a pas, et la stat d'une gemme
+//   ne change jamais. Rien ne descend (`Math.max`).
 //
 // Les tables sont celles du potentiel de « Mon compte > Runes >
 // Optimisation » (runeOptim.ts), jamais recopiées. La rune simulée garde son
@@ -39,7 +40,7 @@ export function runeMaxee(rune: RuneDetail): RuneDetail {
     let base = s.value - meule;
     let meuleMaxee = meule;
     if (s.enchant) base = Math.max(base, gemmeMaxLegendaire(s.code, antique) ?? base);
-    if (meule > 0) meuleMaxee = Math.max(meule, meuleMaxLegendaire(s.code, antique) ?? meule);
+    meuleMaxee = Math.max(meule, meuleMaxLegendaire(s.code, antique) ?? meule);
     if (base + meuleMaxee === s.value && meuleMaxee === meule) return s;
     change = true;
     return { ...s, value: base + meuleMaxee, grind: meuleMaxee };
