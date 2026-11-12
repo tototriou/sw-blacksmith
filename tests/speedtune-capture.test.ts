@@ -247,18 +247,22 @@ export function testSpeedtuneEtat() {
       { id: 19214, combat: 99, cumuls: 0, arte: 0, vitDouteuse: false, autrePortrait: null },
     ],
     defense: [10111, 20222, 30333],
+    swift: 5,
   };
   egal(decoderEtat(encoderEtat('s1', etat)), { action: 's1', etat }, 'aller-retour sans perte');
   const pire: Etat = {
     attaquants: [0, 1, 2].map(() => ({ id: 99999, combat: 450, cumuls: 24, arte: 60, vitDouteuse: true, autrePortrait: 99999 })),
     defense: [99999, 99999, 99999],
+    swift: 7,
   };
   ok(encoderEtat('c2', pire).length <= LONGUEUR_MAX, 'le pire cas tient dans un custom_id (100 caractères), doutes compris');
   egal(decoderEtat(encoderEtat('c2', pire))?.etat.attaquants[0].autrePortrait, 99999, 'le pire cas garde ses doutes');
-  egal(decoderEtat('st1:c0:1.2.25...:'), null, 'plus de cumuls qu\'un menu n\'en propose : refusé');
-  egal(decoderEtat('st1:a0:1.2..61..:'), null, 'plus de 60 % d\'effet aug. VIT : refusé');
-  egal(decoderEtat('st1:c0:1.2...x.:'), null, 'champ inattendu : refusé');
-  egal(decoderEtat('autre:c0:1.2....:'), null, 'autre préfixe : refusé');
+  egal(decoderEtat('st1:c0:1.2.25...::'), null, 'plus de cumuls qu\'un menu n\'en propose : refusé');
+  egal(decoderEtat('st1:a0:1.2..61..::'), null, 'plus de 60 % d\'effet aug. VIT : refusé');
+  egal(decoderEtat('st1:w:1.2....::2'), null, 'set Rapide sur un attaquant qui n\'existe pas : refusé');
+  egal(decoderEtat('st1:c0:1.2...x.::'), null, 'champ inattendu : refusé');
+  egal(decoderEtat('autre:c0:1.2....::'), null, 'autre préfixe : refusé');
+  egal(decoderEtat('st1:w:1.2....::')?.etat.swift, null, 'set Rapide pas encore précisé');
 
   // Les tranches d'effet aug. VIT : chacune donne un buff différent, et la
   // borne basse le même buff que toute la tranche.
@@ -328,11 +332,14 @@ export async function testSpeedtuneInteractions() {
   const menus = menusDe(question);
   // Chilling : son passif se cumule ; et son S2 (Song of the Night Wind) buffe
   // la VIT de toute l'équipe : l'effet aug. VIT de chacun compte.
-  egal(menus.map((m) => m.placeholder), ['Chilling : nombre de cumuls', 'Susano : Effet aug. VIT', 'Chilling : Effet aug. VIT', 'Tarq : Effet aug. VIT'],
+  egal(menus.map((m) => m.placeholder),
+    ['Chilling : nombre de cumuls', 'Susano : Effet aug. VIT', 'Chilling : Effet aug. VIT', 'Tarq : Effet aug. VIT', 'Set Rapide : qui le porte ?'],
     'un menu par valeur que la capture ne montre pas');
+  egal(menus[4].options.map((o) => o.label).slice(0, 4), ['Aucun', 'Susano', 'Chilling', 'Tarq'], 'set Rapide : une option par combinaison, aucun d\'abord');
+  egal(menus[4].options.length, 8, 'trois attaquants : huit combinaisons');
   const menu = menus[0];
   egal(menu.options[1].description, '+20 VIT', 'chaque cumul avec la VIT qu\'il ajoute');
-  egal([menus[1].options[1].label, menus[1].options[1].description], ['4 à 6 %', 'Buff de VIT : +31 %'], 'chaque tranche d\'artéfact avec le buff qu\'elle donne');
+  egal([menus[1].options[1].label, menus[1].options[1].description], ['Effet aug. VIT +4 à 6 %', 'Buff de VIT : +31 %'], 'chaque tranche d\'artéfact, nommée comme dans le jeu, avec le buff qu\'elle donne');
   ok(question.corps.embeds[0].description?.includes('The Cunning') === true, 'le passif est nommé comme dans le jeu');
 
   // Le choix de quelqu'un d'autre est refusé, en privé.
@@ -350,7 +357,7 @@ export async function testSpeedtuneInteractions() {
   egal(await (await envoyer(choix('1'))).json(), { type: 6 }, 'le choix met à jour le message en différé');
   await Promise.all(travaux);
   const apresUn = dernier();
-  egal(apresUn.corps.components?.length, 4, 'tant qu\'il manque une valeur, la question reste');
+  egal(apresUn.corps.components?.length, 5, 'tant qu\'il manque une valeur, la question reste');
   egal(menusDe(apresUn)[0].options.find((o) => o.default)?.value, '1', 'le choix fait reste affiché, à sa place');
   // Les trois effets aug. VIT, chacun depuis le dernier message.
   for (const k of [0, 1, 2]) {
@@ -359,17 +366,30 @@ export async function testSpeedtuneInteractions() {
     await envoyer(choix(k === 0 ? '4' : '0', 'U1', m.custom_id));
     await Promise.all(travaux);
   }
+  egal(dernier().corps.components?.length, 5, 'sans le set Rapide, la question reste');
+  travaux.length = 0;
+  const menuSwift = menusDe(dernier()).find((x) => x.placeholder.startsWith('Set Rapide'))!;
+  await envoyer(choix('4', 'U1', menuSwift.custom_id)); // Tarq seul
+  await Promise.all(travaux);
   const final = dernier();
   egal(final.url, 'https://discord.com/api/v10/webhooks/APP/C/messages/@original', 'le résultat remplace la question');
   egal(final.corps.components, [], 'les menus disparaissent');
   const embed = final.corps.embeds[0];
   ok(embed.description?.includes('Passif de **Chilling** : 1 cumul (+20 VIT)') === true, 'les cumuls retenus sont rappelés');
   ok(embed.description?.includes('**Susano** : Effet aug. VIT +4 % (buff de VIT +31 %)') === true, 'l\'effet aug. VIT retenu est rappelé');
+  ok(embed.description?.includes('Set Rapide : Tarq') === true, 'le set Rapide retenu est rappelé');
   ok(embed.description?.includes('Susano') === true && embed.description.includes('+30 %'), 'le leader et son lead');
   const ordre = embed.fields?.[0].value ?? '';
   ok(ordre.startsWith('1. **Chilling** · 367 VIT'), 'l\'ordre de jeu (passif compris) et la VIT lue');
   ok(!/tick/i.test(ordre), 'aucun tick affiché');
   ok(['Susano', 'Tarq'].every((n) => ordre.includes(n)), 'les trois attaquants y figurent');
+  // La VIT de fiche (base + bonus, comme le monstre la montre hors combat),
+  // déduite de la VIT lue. ⚠️ Le bonus de fiche contient DÉJÀ le Rapide : il
+  // n'y change que l'arrondi (le jeu arrondit la somme des pourcentages).
+  const runesDe = (m: Monster, combat: number, swift: boolean) => runeSpeedForTarget(m.stats.speed, siegeLeadFor(speedLeadOf(susano), m.element), combat, swift);
+  ok(ordre.includes(`**Tarq** · 385 VIT (base ${tarq.stats.speed} + runes ${runesDe(tarq, 385, true)})`), 'Tarq en Rapide : sa VIT de runes');
+  ok(ordre.includes(`(base ${susano.stats.speed} + runes ${runesDe(susano, 357, false)})`), 'Susano sans Rapide : sa VIT de runes');
+  ok(Math.abs(runesDe(tarq, 385, true)! - runesDe(tarq, 385, false)!) <= 1, 'le Rapide ne change la VIT de fiche que d\'un point d\'arrondi');
   egal(final.corps, { ...final.corps, allowed_mentions: { parse: [] } }, 'aucune mention possible');
 
   // Les refus, en anglais quand Discord est en anglais.

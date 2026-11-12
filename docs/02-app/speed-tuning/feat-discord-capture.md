@@ -52,7 +52,16 @@ attendent une réponse passent d'abord) :
   sur un allié — n'importe lequel, le lanceur compris). Le menu propose des
   **tranches** : le buff de 30 % ne prend que 19 valeurs de 0 à 60 %
   d'artéfact (`⌊30 × (100 + a) / 100⌋`, la troncature de la simulation),
-  chaque tranche vaut sa borne basse et donne exactement le même calcul.
+  chaque tranche vaut sa borne basse et donne exactement le même calcul ;
+- le **set Rapide** : un seul menu pour l'équipe, une option par combinaison
+  (« Aucun », « Tarq », « Susano + Tarq »… huit pour trois attaquants),
+  toujours demandé. Il ne change rien à l'ordre (la VIT de combat lue le
+  contient) : il sert à retrouver la **VIT de fiche** (`base + runes`, le
+  « +X » que le monstre montre hors combat, Rapide compris comme dans l'app,
+  voir `swiftFlat` de [speed.ts](../../../src/lib/speed.ts)), donnée pour
+  chaque attaquant et pour la VIT à viser. Sans lui, elle pourrait être
+  fausse d'un point : le jeu arrondit la somme des pourcentages (totem, lead,
+  Rapide), pas chacun.
 
 Le service reste **sans état** : la lecture entière (monstres, VIT, valeurs
 déjà choisies, doutes, défense) voyage dans le `custom_id` de chaque menu
@@ -149,8 +158,6 @@ protégé).
   été vus : la mise à l'échelle « largeur » est une supposition.
 - Les chiffres **0, 1, 4 et 9** n'apparaissaient sur aucune capture : ils ne
   sont lus qu'avec les gabarits d'Inter.
-- Le set **Rapidité** ne se voit pas : il n'importe pas à l'ordre, la VIT de
-  combat lue le contient.
 - Rien ne se corrige depuis Discord : un monstre mal reconnu ou une VIT mal
   lue fausse le résultat, que le message signale comme incertain.
 

@@ -22,11 +22,17 @@ export interface AttaquantAnalyse {
   cumuls?: number | null;
   // Effet aug. VIT de ses artéfacts (%), précisé par le joueur. Absent : 0.
   arte?: number | null;
+  // En set Rapide : sans effet sur l'ordre, il change la VIT de runes déduite.
+  swift?: boolean;
 }
 
 export interface LigneResultat {
   monster: Monster;
   combat: number;
+  // VIT de fiche : base + runes (ce que montre le monstre hors combat), la VIT
+  // de runes déduite de celle lue (lead, totem et set Rapide retirés).
+  base: number | null;
+  runes: number | null;
   tick: number | null; // tick de son premier tour, `null` s'il ne joue pas dans l'horizon
   sort: string | null; // le sort de vitesse retenu par l'analyse
   // VIT de combat à atteindre pour ne plus être coupé, `null` si rien à faire
@@ -54,7 +60,8 @@ export function analyserEquipe(attaquants: AttaquantAnalyse[], donnees: DonneesK
     const pourcent = siegeLeadFor(leadActif, a.monster.element);
     return {
       ...l,
-      runeSpeed: runeSpeedForTarget(a.monster.stats.speed ?? null, pourcent, a.combat),
+      runeSpeed: runeSpeedForTarget(a.monster.stats.speed ?? null, pourcent, a.combat, a.swift ?? false),
+      swift: a.swift ?? false,
       ...(a.cumuls != null ? { cumulsPassif: a.cumuls } : {}),
       ...(a.arte != null ? { artefactBuff: a.arte } : {}),
     };
@@ -66,12 +73,14 @@ export function analyserEquipe(attaquants: AttaquantAnalyse[], donnees: DonneesK
   const tickDe = new Map(r.ordre.map((o) => [o.id, o.tick]));
   const requisDe = new Map(r.requis.map((q) => [q.id, q]));
   const coupes = new Set(r.verdict.coupes.map((c) => c.id));
-  const resultat: LigneResultat[] = [...parId].map(([uid, { a, entree }]) => {
+  const resultat: LigneResultat[] = [...parId].map(([uid, { l, a, entree }]) => {
     const q = requisDe.get(uid);
     const coupe = coupes.has(uid);
     return {
       monster: a.monster,
       combat: a.combat,
+      base: a.monster.stats.speed ?? null,
+      runes: l.runeSpeed,
       tick: tickDe.get(uid) ?? null,
       sort: sortRetenu(entree, donnees)?.nom ?? null,
       requis: coupe && q?.combatRequis != null && q.combatRequis > a.combat ? q.combatRequis : null,

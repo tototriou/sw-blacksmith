@@ -172,6 +172,11 @@ export function creerInteractions(d: DependancesInteractions) {
         const sorte = lu?.action[0];
         const cible = lu?.etat.attaquants[Number(lu.action.slice(1))];
         const valeur = interaction.data?.values?.[0] ?? '';
+        if (lu && sorte === 'w' && /^\d$/.test(valeur) && Number(valeur) < 1 << lu.etat.attaquants.length) {
+          lu.etat.swift = Number(valeur);
+          d.differer(traiterChoix(interaction.token, langue, lu.etat));
+          return json({ type: 6 });
+        }
         const max = sorte === 'c' ? CUMULS_MAX : ARTE_MAX;
         if (!lu || !cible || (sorte !== 'c' && sorte !== 'a') || !/^\d{1,2}$/.test(valeur) || Number(valeur) > max) return ephemere('perime');
         if (sorte === 'c') cible.cumuls = Number(valeur);
@@ -208,6 +213,7 @@ export function etatDeLecture(res: Ressources, lecture: LectureEcran): Etat | { 
     defense: lecture.defense
       .filter((x) => x.portrait && x.portrait.meilleur.score >= SCORE_PORTRAIT_MIN && res.monstre(x.portrait.meilleur.com2usId))
       .map((x) => x.portrait!.meilleur.com2usId),
+    swift: null,
   };
 }
 
@@ -302,12 +308,20 @@ export async function repondre(res: Ressources, etat: Etat, langue: Langue): Pro
     demandes.push({ sorte: 'arte', nom, options: tranchesArte(base), choisi: a.arte, customId: encoderEtat(`a${i}`, etat) });
     if (a.arte != null) precisions.push({ sorte: 'arte', nom, arte: a.arte, buff: buffAmplifie(base, a.arte) });
   }
+  // Le set Rapide, toujours demandé : sans lui, pas de VIT de runes. Une
+  // option par combinaison (8 pour trois attaquants), « aucun » d'abord.
+  const noms = monstres.map((m) => m!.name);
+  const enSwift = (masque: number) => noms.filter((_, i) => masque & (1 << i));
+  const masques = Array.from({ length: 1 << noms.length }, (_, m) => m).sort((x, y) => enSwift(x).length - enSwift(y).length || x - y);
+  demandes.push({ sorte: 'swift', nom: '', options: masques.map((masque) => ({ masque, noms: enSwift(masque) })), choisi: etat.swift, customId: encoderEtat('w', etat) });
+  if (etat.swift != null) precisions.push({ sorte: 'swift', noms: enSwift(etat.swift) });
+
   if (demandes.some((x) => x.choisi == null)) {
     return messageQuestion(langue, etat.attaquants.map((a, i) => ({ nom: monstres[i]!.name, combat: a.combat })), demandes, douteux);
   }
 
   const resultat = analyserEquipe(
-    etat.attaquants.map((a, i) => ({ monster: monstres[i]!, combat: a.combat, cumuls: a.cumuls, arte: a.arte })),
+    etat.attaquants.map((a, i) => ({ monster: monstres[i]!, combat: a.combat, cumuls: a.cumuls, arte: a.arte, swift: ((etat.swift ?? 0) & (1 << i)) !== 0 })),
     donnees
   );
   const defense = etat.defense.map((id) => res.monstre(id)).filter((m): m is Monster => m !== undefined);
