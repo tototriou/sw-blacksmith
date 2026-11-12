@@ -500,6 +500,14 @@ export function RuneDetailBox({
               </>
             )}
             {s.enchant && <RotateCw size={11} className="flex-none text-orange-400" />}
+            {/* Le gain TOTAL de la simulation sur la ligne (gemme + meule),
+                dans l'unité de la stat : ce que maxer la ligne rapporterait. */}
+            {reelle != null && s.value > reelle.value && (
+              <span data-gain-simule="" className="whitespace-nowrap" style={{ color: VIOLET }}>
+                (+{s.value - reelle.value}
+                {suffix})
+              </span>
+            )}
           </Ligne>
         );
       })}

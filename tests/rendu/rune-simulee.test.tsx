@@ -37,7 +37,10 @@ export function testRenduRuneSimulee() {
     ok(v.includes('ATQ 13%') && v.includes('+10%'), `${format} : gemme ATQ % 7 → 13 et sa meule +3 → +10, chacune en violet`);
     ok(v.includes('+10%') && !v.some((x) => x.startsWith('PV')), `${format} : PV % meulée — seule la meule (+10 %) en violet, la base reste blanche`);
     ok(!v.some((x) => x.includes('critiq')), `${format} : ligne sans meule ni gemme, couleur inchangée`);
-    const titres = [...simulee.matchAll(/title="([^"]*Simulé[^"]*)"/g)].map((m) => decoder(m[1]));
+    const gains = [...simulee.matchAll(/<span data-gain-simule=""[^>]*>([^<]*(?:<!-- -->[^<]*)*)<\/span>/g)].map((m) => m[1].replace(/<!-- -->/g, ''));
+    ok(gains.length === 2 && gains[0] === '(+13%)' && gains[1] === '(+5%)',
+      `${format} : gain total à droite de chaque ligne simulée — ATQ % 10 → 23 (+13 %), PV % 12 → 17 (+5 %), aucun sur Tx critiq. (${gains.join(' | ')})`);
+    ok(!reelle.includes('data-gain-simule'), `${format} : rune de l’inventaire, aucun gain affiché`);    const titres = [...simulee.matchAll(/title="([^"]*Simulé[^"]*)"/g)].map((m) => decoder(m[1]));
     ok(titres.includes('Simulé (maxé) — valeur réelle : VIT +31') && titres.includes('Simulé (maxé) — valeur réelle : ATQ 7% +3%')
       && titres.includes('Simulé (maxé) — valeur réelle : PV 7% +5%'), `${format} : la valeur réelle en infobulle (${titres.join(' | ')})`);
     ok(texteVisible(simulee).includes('PV 7%'), `${format} : la base non simulée reste lisible telle quelle`);

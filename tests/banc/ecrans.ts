@@ -465,6 +465,22 @@ export const ECRANS: Ecran[] = [
         atteint: [...OPT_CARTES, repere('[data-colonne="complements"]'), { role: 'switch', nom: "Rechercher jusqu'à épuisement complet" }],
       },
       {
+        // « Simuler +15 et max meules/gemmes » activé APRÈS l'import (la
+        // recette du banc ne porte pas le champ, son import le remet à
+        // `false`) : le détail d'une rune simulée, violet et gain « (+X) »
+        // à droite des lignes, dans son flottant de 260 px.
+        id: 'rune-simulee', libelle: 'résultats sous « Simuler +15 », détail d’une rune simulée ouvert', tailles: OPT_COLONNE_RESULTATS,
+        preparation: [
+          ...OPT_LISTE, VOIR_RESULTATS, OPT_IMPORT, choisirReglage('Options', 'complements'),
+          { cliquer: { role: 'switch', nom: 'Simuler +15 et max meules/gemmes' } },
+          { cliquer: bouton('Rechercher') },
+          { attendre: repere('[data-carte-resultat]:nth-child(2)'), delaiMs: 30000 },
+          { attendre: bouton('Rechercher'), delaiMs: 30000 },
+          { cliquer: repere('[data-carte-resultat]:first-child [title^="Slot 2"]') },
+        ],
+        atteint: [...OPT_CARTES, repere('[data-gain-simule]')],
+      },
+      {
         id: 'guidage-set', libelle: 'Rechercher sans set ouvre Critères et montre le set', tailles: OPT_BUREAU,
         preparation: [...OPT_LISTE, choisirReglage('Options', 'complements'), VOIR_RESULTATS, { cliquer: bouton('Rechercher') }],
         atteint: [repere('[data-colonne="criteres"]'), { role: 'texte', nom: 'Sélectionne au moins un set avant de lancer la recherche.' }],
