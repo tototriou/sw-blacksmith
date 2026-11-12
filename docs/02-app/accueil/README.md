@@ -97,7 +97,7 @@ réalisables avec l'appli »), sur des équipes de démonstration passées par l
 
 Puis **les autres outils, en pastilles** (tuile ronde à la teinte, titre), dans
 l'ordre de la navigation : Prépa d'un ami, Défenses et offenses, Analyse de
-runes, Analyse d'artéfacts, Bestiaire, Mécaniques, Application de bureau
+runes, Analyse d'artéfacts, Mes équipes, Bestiaire, Mécaniques, Application de bureau
 (**site seulement**), Arène classique · bientôt (atténuée, lien vers le
 placeholder).
 

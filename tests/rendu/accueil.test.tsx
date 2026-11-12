@@ -82,7 +82,7 @@ export function testRenduAccueil() {
   ok(!html.includes('data-exemple'), 'sans les données du jeu : aucun exemple');
 
   // Les autres outils, en pastilles, dans l'ordre de la navigation.
-  const PASTILLES = ['#/rta/ami', '#/siege/defense', '#/compte/runes', '#/compte/artefacts', '#/bestiary', '#/mecaniques', '#/telecharger', '#/arene'];
+  const PASTILLES = ['#/rta/ami', '#/siege/defense', '#/compte/runes', '#/compte/artefacts', '#/compte/equipes', '#/bestiary', '#/mecaniques', '#/telecharger', '#/arene'];
   const autres = tous.filter((l) => PASTILLES.includes(l.href) && l.texte !== v.application).map((l) => l.href);
   egal(autres, PASTILLES, 'les autres outils, en pastilles, dans l’ordre');
   ok(tous.some((l) => l.href === '#/arene' && l.texte === `${a.cartes.arene.titre}${a.bientot}`), 'l’Arène, marquée « bientôt »');

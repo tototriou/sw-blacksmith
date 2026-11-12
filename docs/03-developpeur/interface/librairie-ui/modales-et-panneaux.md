@@ -9,7 +9,7 @@ pas — il remplit trois emplacements :
 
 | Bande | Contenu | Rendue par |
 |-------|---------|------------|
-| **En-tête** | icône, `titre` à gauche, `sousTitre`, croix à **droite** | la coquille |
+| **En-tête** | icône, `titre` à gauche, `sousTitre` (un texte : un paragraphe ; des blocs, liste ou champ : un `div`), croix à **droite** | la coquille |
 | **Corps** | `children` — la bande qui défile (avec `corpsFixeBas`, voir plus bas) | l'appelant |
 | **Pied** | `actions` — les boutons, toujours en bas | la coquille |
 
