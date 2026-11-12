@@ -50,8 +50,11 @@ export default {
       if (!env.DISCORD_PUBLIC_KEY || !env.DISCORD_CLIENT_ID) throw new Error('variables Discord manquantes');
       origine = new URL(requete.url).origin;
       return await creerInteractions({
-        clePublique: env.DISCORD_PUBLIC_KEY,
-        applicationId: env.DISCORD_CLIENT_ID,
+        // ⚠️ Sans espaces autour : une clé collée avec un espace ou un saut de
+        // ligne ne fait plus 64 caractères hexadécimaux, et TOUTE signature
+        // était refusée — Discord n'arrivait pas à valider l'adresse.
+        clePublique: env.DISCORD_PUBLIC_KEY.trim(),
+        applicationId: env.DISCORD_CLIENT_ID.trim(),
         recuperer: (url, init) => fetch(url, init),
         differer: (travail) => waitUntil(travail),
         ressources: async () => obtenirRessources(),
