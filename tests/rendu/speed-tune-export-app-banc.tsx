@@ -17,8 +17,12 @@ const equipe: SiegeTeam = { id: 'o1', lead: 0, tickAlertDismissed: false,
 const pause = () => new Promise(r => setTimeout(r, 80));
 async function geste(action: () => void) { flushSync(action); await pause(); }
 async function attendre(lire: () => boolean) {
-  for (let i = 0; i < 60; i++) { if (lire()) return; await pause(); }
-  throw new Error('Écran attendu absent après montage d’App.');
+  if (!(await patienter(lire))) throw new Error('Écran attendu absent après montage d’App.');
+}
+// Le même délai, sans lever : la vérification qui suit dira ce qui manque.
+async function patienter(lire: () => boolean): Promise<boolean> {
+  for (let i = 0; i < 60; i++) { if (lire()) return true; await pause(); }
+  return false;
 }
 const rapport = () => document.querySelector<HTMLElement>('[aria-labelledby="rapport-export-optimizer"]');
 const modale = () => document.querySelector<HTMLElement>('[aria-labelledby="speed-tune-modale"]');
@@ -116,9 +120,14 @@ export async function scenario(reset?: { monstres: Monster[]; details: DetailMon
           if (!accepte) monstres.forEach(m => { m.com2usId = null; });
           exportation.click();
         });
+        // ⚠️ Le rapport s'écrit après le geste, plus ou moins vite selon la
+        // charge de la machine : le lire après une pause fixe faisait échouer
+        // la vérification une fois sur deux sous charge. On attend son texte.
+        const attendu = accepte ? 'Le plan de speed tune est posé' : 'ne garantit pas l’ordre des tours';
+        await patienter(() => (rapport()?.innerText ?? '').includes(attendu));
         const texte = rapport()?.innerText ?? '';
         verifier(!!rapport() && visible(rapport()!), `${accepte ? 'accepté' : 'refusé'} : rapport global visible`);
-        verifier(texte.includes(accepte ? 'Le plan de speed tune est posé' : 'ne garantit pas l’ordre des tours'), `${accepte ? 'accepté : plan posé' : 'refusé : sans plan, avertissement de conversion'} lu à l’écran`);
+        verifier(texte.includes(attendu), `${accepte ? 'accepté : plan posé' : 'refusé : sans plan, avertissement de conversion'} lu à l’écran`);
         verifier(accepte ? texte.includes('3 monstre(s), 1 équipe(s)') : texte.includes('Aucune liste créée') && texte.includes('identité d’espèce inutilisable'),
           accepte ? 'accepté : compte des membres et équipe lu à l’écran' : 'refusé : motif lu à l’écran');
         verifier(accepte ? !modale() : !!modale(), accepte ? 'accepté : speed tuning fermé' : 'refusé : speed tuning conservé');
