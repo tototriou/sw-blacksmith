@@ -15,6 +15,10 @@ export const langueDe = (locale: string | undefined): Langue => ((locale ?? '').
 const COULEUR_OK = 0x23a55a;
 const COULEUR_KO = 0xf0b232;
 const COULEUR_ERREUR = 0xf23f43;
+// L'icône de l'app en vignette du résultat. ⚠️ Celle du site de PRODUCTION,
+// même depuis un aperçu : Discord télécharge l'image lui-même, et un aperçu
+// protégé la lui refuserait.
+export const ICONE_APP = 'https://sw-blacksmith.vercel.app/favicon.png?v=2';
 
 
 export interface Embed {
@@ -217,7 +221,7 @@ export function messageQuestion(langue: Langue, equipe: { nom: string; combat: n
 }
 
 // Le résultat en UN encart compact, à la manière des bots de statistiques :
-// vignette du leader, champs côte à côte (leader, défense de référence, set
+// l'icône de l'app en vignette, champs côte à côte (leader, défense de référence, set
 // Rapide), l'ordre de jeu une ligne par monstre avec son icône DANS le texte
 // (émojis du bot, voir emojis.ts), puis la défense lue. Sans émoji, le nom
 // seul : le message reste juste.
@@ -259,13 +263,12 @@ export function embedResultat(
     }] : []),
     { name: t.defense, value: defense.length ? defense.map((m) => `${icone(m)}${m.name}`).join(' · ') : '—' },
   ];
-  const leader = r.lead?.monster ?? r.lignes[0]?.monster;
   return {
     title: r.ok ? t.titreOk : t.titreKo,
     ...(douteux.length ? { description: douteux.map(t.douteux).join('\n') } : {}),
     color: r.ok ? COULEUR_OK : COULEUR_KO,
     fields,
-    ...(leader?.image ? { thumbnail: { url: leader.image } } : {}),
+    thumbnail: { url: ICONE_APP },
     footer: { text: t.pied },
   };
 }

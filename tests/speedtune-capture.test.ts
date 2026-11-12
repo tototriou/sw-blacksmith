@@ -17,7 +17,7 @@ import { lireNombre, type Gabarits } from '../api/_source/capture/chiffres';
 import { DISPOSITIONS, lireEcranPreparation } from '../api/_source/capture/ecranPreparation';
 import { analyserEquipe } from '../api/_source/speedtune/analyse';
 import { creerInteractions, signatureValide, tranchesArte, type Ressources } from '../api/_source/speedtune/interactions';
-import { embedErreur, langueDe, type Embed, type Rangee } from '../api/_source/speedtune/message';
+import { embedErreur, ICONE_APP, langueDe, type Embed, type Rangee } from '../api/_source/speedtune/message';
 import { decoderEtat, encoderEtat, LONGUEUR_MAX, type Etat } from '../api/_source/speedtune/etat';
 import { creerEmojis } from '../api/_source/speedtune/emojis';
 import gabaritsJson from '../api/_source/capture/chiffres-gabarits.json';
@@ -407,7 +407,7 @@ export async function testSpeedtuneInteractions() {
   ok(champ('Précisé').includes('**Susano** : Effet aug. VIT +4 % (buff de VIT +31 %)'), 'l\'effet aug. VIT retenu est rappelé');
   egal(champ('Set Rapide'), 'Tarq', 'le set Rapide retenu, en champ');
   egal(champ('Leader'), `<:m${susano.com2usId}:9> Susano +30 %`, 'le leader, son icône et son lead');
-  egal(embed.thumbnail?.url, susano.image, 'la vignette est l\'icône du leader');
+  egal(embed.thumbnail?.url, ICONE_APP, 'la vignette est l\'icône de l\'app');
   // L'ordre de jeu : une ligne par monstre, son icône dans le texte.
   const ordre = champ('Ordre de jeu');
   const lignesOrdre = ordre.split('\n').filter((l) => /^\*\*\d\.\*\*/.test(l));
