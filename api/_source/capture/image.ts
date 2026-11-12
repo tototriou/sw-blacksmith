@@ -22,12 +22,25 @@ export const PIXELS_MAX = 16_000_000;
 const estPng = (o: Uint8Array) => o.length > 8 && o[0] === 0x89 && o[1] === 0x50 && o[2] === 0x4e && o[3] === 0x47;
 const estJpeg = (o: Uint8Array) => o.length > 3 && o[0] === 0xff && o[1] === 0xd8 && o[2] === 0xff;
 
+// La taille annoncée par l'en-tête d'un PNG : le premier bloc est toujours
+// IHDR (longueur sur 4 octets, « IHDR », puis largeur et hauteur sur 4 octets
+// chacune, gros-boutistes). `null` si l'en-tête n'est pas celui attendu.
+export function dimensionsPng(o: Uint8Array): { largeur: number; hauteur: number } | null {
+  if (o.length < 24 || o[12] !== 0x49 || o[13] !== 0x48 || o[14] !== 0x44 || o[15] !== 0x52) return null;
+  const vue = new DataView(o.buffer, o.byteOffset, o.byteLength);
+  return { largeur: vue.getUint32(16), hauteur: vue.getUint32(20) };
+}
+
 // `null` : ni PNG ni JPEG, illisible, ou trop grande.
 export function decoderImage(octets: Uint8Array): Image | null {
   try {
     if (estPng(octets)) {
+      // ⚠️ La taille se lit dans l'en-tête IHDR AVANT de décoder : un PNG d'une
+      // couleur unie se compresse à presque rien, et 10 Mo peuvent en cacher
+      // des milliards de pixels — la fonction manquait de mémoire au décodage.
+      const dims = dimensionsPng(octets);
+      if (!dims || dims.largeur * dims.hauteur > PIXELS_MAX) return null;
       const png = PNG.sync.read(Buffer.from(octets));
-      if (png.width * png.height > PIXELS_MAX) return null;
       return { largeur: png.width, hauteur: png.height, rgba: new Uint8Array(png.data.buffer, png.data.byteOffset, png.data.length) };
     }
     if (estJpeg(octets)) {

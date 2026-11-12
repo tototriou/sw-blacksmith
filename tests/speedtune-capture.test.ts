@@ -11,7 +11,7 @@ import { generateKeyPairSync, sign } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { PNG } from 'pngjs';
 import jpeg from 'jpeg-js';
-import { decoderImage, decouper, reduire, type Image } from '../api/_source/capture/image';
+import { decoderImage, decouper, dimensionsPng, reduire, type Image } from '../api/_source/capture/image';
 import { Banque, quantifier, signature, TAILLE, COTE, type BanqueSerialisee } from '../api/_source/capture/portraits';
 import { lireNombre, type Gabarits } from '../api/_source/capture/chiffres';
 import { DISPOSITIONS, lireEcranPreparation } from '../api/_source/capture/ecranPreparation';
@@ -129,6 +129,13 @@ export function testCaptureImage() {
   const lj = decoderImage(new Uint8Array(j));
   ok(lj?.largeur === 16 && lj.hauteur === 8 && Math.abs(lj.rgba[0] - 200) < 8, 'JPEG décodé');
   egal(decoderImage(new TextEncoder().encode('pas une image')), null, 'ni PNG ni JPEG : refusé');
+  egal(dimensionsPng(new Uint8Array(PNG.sync.write(png))), { largeur: 3, hauteur: 2 }, 'la taille d\'un PNG se lit dans son en-tête');
+  // Un en-tête qui annonce 40 000 × 40 000 : refusé SANS décoder (un PNG uni
+  // se compresse à presque rien et se décoderait en plusieurs Go).
+  const geant = new Uint8Array(PNG.sync.write(png));
+  new DataView(geant.buffer, geant.byteOffset).setUint32(16, 40000);
+  new DataView(geant.buffer, geant.byteOffset).setUint32(20, 40000);
+  egal(decoderImage(geant), null, 'PNG annoncé trop grand : refusé avant décodage');
 
   const img = imageUnie(10, 10, [1, 2, 3]);
   egal([decouper(img, 8, 8, 5, 5)?.largeur, decouper(img, -3, 0, 5, 5)?.largeur], [2, 2], 'découpe ramenée dans l\'image');

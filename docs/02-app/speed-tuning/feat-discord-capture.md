@@ -110,7 +110,9 @@ reconnu, VIT illisible (avec les monstres concernés).
 
 - [image.ts](../../../api/_source/capture/image.ts) — décodage PNG
   (`pngjs`) et JPEG (`jpeg-js`), découpe, réduction par moyenne de surface.
-  Plus de 16 millions de pixels : refusée avant décodage.
+  Plus de 16 millions de pixels : refusée avant décodage — pour un PNG, la
+  taille se lit dans son en-tête IHDR (un PNG uni de 10 Mo peut annoncer des
+  milliards de pixels).
 - [ecranPreparation.ts](../../../api/_source/capture/ecranPreparation.ts) —
   les six cartes de l'écran (trois attaquants à gauche, leader en premier ;
   la défense à droite) placées par des proportions de l'écran. Deux mises à
