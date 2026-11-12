@@ -367,6 +367,8 @@ import { testApercuDeuxLignesRecherche, testApercuDeuxLignesBorne, testApercuDeu
 import { testRenduRecosApercuCentainesDeDecks } from './rendu/apercu-recos.test';
 import { testDiscordDroits, testDiscordSession, testDiscordRecoSalon, testDiscordContributeursFormat, testDiscordRouteurConnexion,
   testDiscordRouteurBureau, testDiscordRouteurSources, testDiscordRouteurSalonEtPublication, testDiscordRouteurToutEtLimites } from './discord-service.test';
+import { testCaptureImage, testCapturePortraits, testCaptureChiffres, testCaptureEcran, testSpeedtuneAnalyse,
+  testSpeedtuneInteractions } from './speedtune-capture.test';
 import { testRecoDiscordEtat, testRecoDiscordRecevoir, testRecoDiscordSynchro, testRecoDiscordPublication, testRecoDiscordFusion,
   testRecoDiscordFavorisEtStockage } from './reco-discord.test';
 import { testRenduRecoDiscordStockage } from './rendu/reco-discord-stockage.test';
@@ -568,6 +570,12 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testDiscordRouteurSources', testDiscordRouteurSources],
   ['testDiscordRouteurSalonEtPublication', testDiscordRouteurSalonEtPublication],
   ['testDiscordRouteurToutEtLimites', testDiscordRouteurToutEtLimites],
+  ['testCaptureImage', testCaptureImage],
+  ['testCapturePortraits', testCapturePortraits],
+  ['testCaptureChiffres', testCaptureChiffres],
+  ['testCaptureEcran', testCaptureEcran],
+  ['testSpeedtuneAnalyse', testSpeedtuneAnalyse],
+  ['testSpeedtuneInteractions', testSpeedtuneInteractions],
   ['testRecoDiscordEtat', testRecoDiscordEtat],
   ['testRecoDiscordRecevoir', testRecoDiscordRecevoir],
   ['testRecoDiscordSynchro', testRecoDiscordSynchro],

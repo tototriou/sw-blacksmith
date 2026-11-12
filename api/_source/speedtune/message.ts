@@ -1,0 +1,102 @@
+// Le message Discord de `/speedtune` : ce qui a été lu sur la capture, puis le
+// verdict et l'ordre de jeu. Dans la langue de l'interaction (`locale` de
+// Discord) : français, sinon anglais — comme la ligne de publication des
+// recommandations (recoSalon.ts).
+//
+// ⚠️ Rien n'y vient du texte de la capture : les noms sont ceux des données des
+// monstres, les nombres ceux qu'on a lus et calculés.
+
+import type { Monster } from '../../../src/types';
+import type { ResultatSpeedTune } from './analyse';
+
+export type Langue = 'fr' | 'en';
+export const langueDe = (locale: string | undefined): Langue => ((locale ?? '').startsWith('fr') ? 'fr' : 'en');
+
+const COULEUR_OK = 0x23a55a;
+const COULEUR_KO = 0xf0b232;
+const COULEUR_ERREUR = 0xf23f43;
+
+export interface Embed {
+  title: string;
+  description?: string;
+  color: number;
+  fields?: { name: string; value: string; inline?: boolean }[];
+  footer?: { text: string };
+}
+
+const TEXTES = {
+  fr: {
+    titreOk: '⚡ Speed tune — personne n\'est coupé',
+    titreKo: '⚡ Speed tune — coupé',
+    lead: (nom: string, p: number) => `Leader : **${nom}** · VIT d'attaque **+${p} %**`,
+    sansLead: 'Aucun lead de vitesse actif en siège',
+    reference: (v: number) => `Contre une défense aussi rapide que ton plus rapide (**${v}** de VIT de combat).`,
+    ordre: 'Ordre de jeu',
+    ligne: (rang: number, nom: string, vit: number, tick: number | null) => `${rang}. **${nom}** · ${vit} VIT · ${tick == null ? 'ne joue pas' : `tick ${tick}`}`,
+    sort: (s: string) => ` · ${s}`,
+    corriger: 'À corriger',
+    requis: (nom: string, actuel: number, requis: number) => `**${nom}** : ${requis} de VIT de combat (**+${requis - actuel}**)`,
+    horsDePortee: (nom: string) => `**${nom}** : coupé quelle que soit sa VIT`,
+    defense: 'Défense lue',
+    pied: 'Lecture automatique de la capture — vérifie les monstres et les VIT lus. Même calcul que l\'outil de speed tuning de SW Blacksmith.',
+    douteux: (quoi: string) => `⚠️ Lecture incertaine : ${quoi}`,
+    erreurTitre: '⚡ Speed tune — capture illisible',
+    pasImage: 'La pièce jointe n\'est pas une image PNG ou JPEG.',
+    tropLourde: 'L\'image est trop lourde (10 Mo au plus).',
+    illisible: 'Je n\'ai pas reconnu l\'écran de préparation d\'un combat de siège : les trois attaquants à gauche, leur VIT sous chaque portrait.',
+    vitIllisible: (noms: string) => `VIT illisible sous : ${noms}. Envoie une capture en pleine résolution, sans recadrage.`,
+    panne: 'Le calcul a échoué. Réessaie dans un instant.',
+  },
+  en: {
+    titreOk: '⚡ Speed tune — nobody gets cut',
+    titreKo: '⚡ Speed tune — cut',
+    lead: (nom: string, p: number) => `Leader: **${nom}** · Attack Speed **+${p}%**`,
+    sansLead: 'No speed lead active in siege',
+    reference: (v: number) => `Against a defense as fast as your fastest (**${v}** combat SPD).`,
+    ordre: 'Turn order',
+    ligne: (rang: number, nom: string, vit: number, tick: number | null) => `${rang}. **${nom}** · ${vit} SPD · ${tick == null ? 'does not act' : `tick ${tick}`}`,
+    sort: (s: string) => ` · ${s}`,
+    corriger: 'To fix',
+    requis: (nom: string, actuel: number, requis: number) => `**${nom}**: ${requis} combat SPD (**+${requis - actuel}**)`,
+    horsDePortee: (nom: string) => `**${nom}**: cut whatever their SPD`,
+    defense: 'Defense read',
+    pied: 'Automatic reading of the screenshot — check the monsters and SPD read. Same computation as the SW Blacksmith speed tuning tool.',
+    douteux: (quoi: string) => `⚠️ Uncertain reading: ${quoi}`,
+    erreurTitre: '⚡ Speed tune — unreadable screenshot',
+    pasImage: 'The attachment is not a PNG or JPEG image.',
+    tropLourde: 'The image is too large (10 MB max).',
+    illisible: 'I did not recognize the battle preparation screen of a siege fight: the three attackers on the left, their SPD under each portrait.',
+    vitIllisible: (noms: string) => `SPD unreadable under: ${noms}. Send a full-resolution screenshot, uncropped.`,
+    panne: 'The computation failed. Try again in a moment.',
+  },
+} as const;
+
+export type Erreur = 'pasImage' | 'tropLourde' | 'illisible' | 'panne';
+
+export function embedErreur(langue: Langue, erreur: Erreur | { vitIllisible: string[] }): Embed {
+  const t = TEXTES[langue];
+  const description = typeof erreur === 'string' ? t[erreur] : t.vitIllisible(erreur.vitIllisible.join(', '));
+  return { title: t.erreurTitre, description, color: COULEUR_ERREUR };
+}
+
+export function embedResultat(langue: Langue, r: ResultatSpeedTune, defense: Monster[], douteux: string[]): Embed {
+  const t = TEXTES[langue];
+  const plusRapide = Math.max(...r.lignes.map((l) => l.combat));
+  const description = [
+    r.lead ? t.lead(r.lead.monster.name, r.lead.pourcent) : t.sansLead,
+    t.reference(plusRapide),
+    ...douteux.map(t.douteux),
+  ].join('\n');
+  const fields: NonNullable<Embed['fields']> = [{
+    name: t.ordre,
+    value: r.lignes.map((l, i) => t.ligne(i + 1, l.monster.name, l.combat, l.tick) + (l.sort ? t.sort(l.sort) : '')).join('\n'),
+  }];
+  const aCorriger = r.lignes.flatMap((l) => {
+    if (l.requis != null) return [t.requis(l.monster.name, l.combat, l.requis)];
+    if (l.horsDePortee) return [t.horsDePortee(l.monster.name)];
+    return [];
+  });
+  if (aCorriger.length) fields.push({ name: t.corriger, value: aCorriger.join('\n') });
+  if (defense.length) fields.push({ name: t.defense, value: defense.map((m) => m.name).join(' · ') });
+  return { title: r.ok ? t.titreOk : t.titreKo, description, color: r.ok ? COULEUR_OK : COULEUR_KO, fields, footer: { text: t.pied } };
+}

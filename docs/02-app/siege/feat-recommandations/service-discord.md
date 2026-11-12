@@ -188,6 +188,11 @@ L'app n'a ni cookie ni origine web
   `scripts/construire-api.mjs`, qui empaquette chaque point d'entrée de
   `api/_source/` avec esbuild ; la fonction `api/discord.mjs` charge le
   paquet. Un dossier dont le nom commence par `_` ne devient pas une fonction.
+  Le paquet est en ESM avec un `require` recréé (`createRequire`) : une
+  dépendance en CommonJS (`pngjs`) y fait des `require` de modules de Node.
+  Un second point d'entrée, `interactions.ts`, sert la fonction prototype
+  `api/interactions.mjs` (`/speedtune`, variable `DISCORD_PUBLIC_KEY` en
+  plus) : [feat-discord-capture.md](../../speed-tuning/feat-discord-capture.md).
 - **Région** : Paris (`cdg1`), dans `vercel.json`.
 - **En-têtes du site** (`vercel.json`, toutes les adresses) : aucune mise en
   cadre par un autre site (`frame-ancestors 'none'`, `X-Frame-Options`), pas
