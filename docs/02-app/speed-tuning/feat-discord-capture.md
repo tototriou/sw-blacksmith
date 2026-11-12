@@ -86,10 +86,13 @@ attendent une réponse passent d'abord) :
 
 Le service reste **sans état** : la lecture entière (monstres, VIT, valeurs
 déjà choisies, doutes, défense) voyage dans le `custom_id` de chaque menu
-([etat.ts](../../../api/_source/speedtune/etat.ts), 100 caractères au plus,
-relu strictement). Chaque choix revient en interaction de composant
+([etat.ts](../../../api/_source/speedtune/etat.ts), relu strictement). Chaque choix revient en interaction de composant
 (type 3) : seul l'auteur de la commande peut répondre (les autres reçoivent un
-message que seuls eux voient), le message est mis à jour en différé (type 6),
+message que seuls eux voient). ⚠️ Son identifiant voyage **dans l'état**,
+écrit à la commande : les métadonnées du message que Discord renvoie avec un
+clic peuvent manquer, et la première version, qui s'y fiait, laissait alors
+répondre n'importe qui. Les nombres de l'état s'écrivent en base 36 pour
+tenir, auteur compris, dans les 100 caractères ; le message est mis à jour en différé (type 6),
 puis remplacé par le résultat une fois tout précisé — les menus disparaissent.
 
 Le message est en français si Discord l'est (`locale`), sinon en anglais ;

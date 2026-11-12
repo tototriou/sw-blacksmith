@@ -88,9 +88,6 @@ interface Interaction {
   guild_locale?: string;
   member?: { user?: Utilisateur };
   user?: Utilisateur;
-  // Le message qui porte le menu (interaction de composant) : il dit qui a
-  // lancé la commande.
-  message?: { interaction_metadata?: { user?: Utilisateur }; interaction?: { user?: Utilisateur } };
   data?: {
     name?: string;
     options?: { name: string; value: string }[];
@@ -124,7 +121,7 @@ export function creerInteractions(d: DependancesInteractions) {
     }
   }
 
-  async function traiterCapture(token: string, langue: Langue, piece: PieceJointe | undefined) {
+  async function traiterCapture(token: string, langue: Langue, piece: PieceJointe | undefined, auteur: string) {
     // ⚠️ La lecture occupe le processeur 1 à 3 s d'un bloc : lancée tout de
     // suite, elle passait AVANT l'envoi de la réponse différée (mesuré : 2,3 s
     // de retard), et Discord abandonne l'interaction à 3 s. On rend d'abord la
@@ -142,7 +139,7 @@ export function creerInteractions(d: DependancesInteractions) {
       const img = decoderImage(octets);
       if (!img) return await remplacer(token, embedErreur(langue, 'pasImage'));
       const res = await d.ressources();
-      const etat = etatDeLecture(res, lireEcranPreparation(img, res.banque, res.gabarits));
+      const etat = etatDeLecture(res, lireEcranPreparation(img, res.banque, res.gabarits), auteur);
       return await remplacer(token, 'erreur' in etat ? embedErreur(langue, etat.erreur) : await repondre(res, etat, langue));
     } catch (e) {
       console.error(e);
@@ -162,27 +159,31 @@ export function creerInteractions(d: DependancesInteractions) {
       if (interaction.type === 2 && interaction.data?.name === COMMANDE) {
         const id = interaction.data.options?.find((o) => o.name === OPTION_CAPTURE)?.value;
         const piece = id ? interaction.data.resolved?.attachments?.[id] : undefined;
-        d.differer(traiterCapture(interaction.token, langueDe(interaction.locale ?? interaction.guild_locale), piece));
+        const auteur = interaction.member?.user?.id ?? interaction.user?.id ?? '';
+        if (!/^\d{1,20}$/.test(auteur)) return json({ erreur: 'interaction' }, 400);
+        d.differer(traiterCapture(interaction.token, langueDe(interaction.locale ?? interaction.guild_locale), piece, auteur));
         return json({ type: 5 }); // réponse différée
       }
       if (interaction.type === 3) {
         const langue = langueDe(interaction.locale ?? interaction.guild_locale);
         const ephemere = (quoi: 'pasAuteur' | 'perime') => json({ type: 4, data: { content: texteEphemere(langue, quoi), flags: 64 } });
-        // Le message est public : seul celui qui a lancé la commande répond.
-        const auteur = interaction.message?.interaction_metadata?.user?.id ?? interaction.message?.interaction?.user?.id;
-        const qui = interaction.member?.user?.id ?? interaction.user?.id;
-        if (auteur && qui !== auteur) return ephemere('pasAuteur');
         const lu = decoderEtat(interaction.data?.custom_id ?? '');
-        const sorte = lu?.action[0];
-        const cible = lu?.etat.attaquants[Number(lu.action.slice(1))];
+        if (!lu) return ephemere('perime');
+        // ⚠️ Le message est public : seul celui qui a lancé la commande répond.
+        // Son identifiant vient de l'état (etat.ts), jamais des métadonnées du
+        // message, qui peuvent manquer — et rien ne passe sans lui.
+        const qui = interaction.member?.user?.id ?? interaction.user?.id;
+        if (qui !== lu.etat.auteur) return ephemere('pasAuteur');
+        const sorte = lu.action[0];
+        const cible = lu.etat.attaquants[Number(lu.action.slice(1))];
         const valeur = interaction.data?.values?.[0] ?? '';
-        if (lu && sorte === 'w' && /^\d$/.test(valeur) && Number(valeur) < 1 << lu.etat.attaquants.length) {
+        if (sorte === 'w' && /^\d$/.test(valeur) && Number(valeur) < 1 << lu.etat.attaquants.length) {
           lu.etat.swift = Number(valeur);
           d.differer(traiterChoix(interaction.token, langue, lu.etat));
           return json({ type: 6 });
         }
         const max = sorte === 'c' ? CUMULS_MAX : ARTE_MAX;
-        if (!lu || !cible || (sorte !== 'c' && sorte !== 'a') || !/^\d{1,2}$/.test(valeur) || Number(valeur) > max) return ephemere('perime');
+        if (!cible || (sorte !== 'c' && sorte !== 'a') || !/^\d{1,2}$/.test(valeur) || Number(valeur) > max) return ephemere('perime');
         if (sorte === 'c') cible.cumuls = Number(valeur);
         else cible.arte = Number(valeur);
         d.differer(traiterChoix(interaction.token, langue, lu.etat));
@@ -194,7 +195,7 @@ export function creerInteractions(d: DependancesInteractions) {
 }
 
 // La lecture → l'état : refus si l'écran n'est pas reconnu.
-export function etatDeLecture(res: Ressources, lecture: LectureEcran): Etat | { erreur: 'illisible' | { vitIllisible: string[] } } {
+export function etatDeLecture(res: Ressources, lecture: LectureEcran, auteur: string): Etat | { erreur: 'illisible' | { vitIllisible: string[] } } {
   const att = lecture.attaquants;
   if (att.some((a) => !a.portrait || a.portrait.meilleur.score < SCORE_PORTRAIT_MIN)) return { erreur: 'illisible' };
   const monstres = att.map((a) => res.monstre(a.portrait!.meilleur.com2usId));
@@ -218,6 +219,7 @@ export function etatDeLecture(res: Ressources, lecture: LectureEcran): Etat | { 
       .filter((x) => x.portrait && x.portrait.meilleur.score >= SCORE_PORTRAIT_MIN && res.monstre(x.portrait.meilleur.com2usId))
       .map((x) => x.portrait!.meilleur.com2usId),
     swift: null,
+    auteur,
   };
 }
 

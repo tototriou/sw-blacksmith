@@ -273,21 +273,25 @@ export function testSpeedtuneEtat() {
     ],
     defense: [10111, 20222, 30333],
     swift: 5,
+    auteur: '1569358973419659324',
   };
   egal(decoderEtat(encoderEtat('s1', etat)), { action: 's1', etat }, 'aller-retour sans perte');
   const pire: Etat = {
     attaquants: [0, 1, 2].map(() => ({ id: 99999, combat: 450, cumuls: 24, arte: 60, vitDouteuse: true, autrePortrait: 99999 })),
     defense: [99999, 99999, 99999],
     swift: 7,
+    auteur: '18446744073709551615', // le plus grand identifiant Discord possible
   };
   ok(encoderEtat('c2', pire).length <= LONGUEUR_MAX, 'le pire cas tient dans un custom_id (100 caractères), doutes compris');
   egal(decoderEtat(encoderEtat('c2', pire))?.etat.attaquants[0].autrePortrait, 99999, 'le pire cas garde ses doutes');
-  egal(decoderEtat('st1:c0:1.2.25...::'), null, 'plus de cumuls qu\'un menu n\'en propose : refusé');
-  egal(decoderEtat('st1:a0:1.2..61..::'), null, 'plus de 60 % d\'effet aug. VIT : refusé');
-  egal(decoderEtat('st1:w:1.2....::2'), null, 'set Rapide sur un attaquant qui n\'existe pas : refusé');
-  egal(decoderEtat('st1:c0:1.2...x.::'), null, 'champ inattendu : refusé');
-  egal(decoderEtat('autre:c0:1.2....::'), null, 'autre préfixe : refusé');
-  egal(decoderEtat('st1:w:1.2....::')?.etat.swift, null, 'set Rapide pas encore précisé');
+  egal(decoderEtat(encoderEtat('c2', pire))?.etat.auteur, '18446744073709551615', 'l\'auteur relu au chiffre près (au-delà de la précision d\'un nombre)');
+  egal(decoderEtat('st2:c0:1.2.p...:::1'), null, 'plus de cumuls qu\'un menu n\'en propose : refusé');
+  egal(decoderEtat('st2:a0:1.2..1p..:::1'), null, 'plus de 60 % d\'effet aug. VIT : refusé');
+  egal(decoderEtat('st2:w:1.2....::2:1'), null, 'set Rapide sur un attaquant qui n\'existe pas : refusé');
+  egal(decoderEtat('st2:c0:1.2...x.:::1'), null, 'champ inattendu : refusé');
+  egal(decoderEtat('st2:c0:1.2....:::'), null, 'sans auteur : refusé');
+  egal(decoderEtat('st1:c0:1.2....::'), null, 'ancien format (avant l\'auteur) : refusé');
+  egal(decoderEtat('st2:w:1.2....:::1')?.etat.swift, null, 'set Rapide pas encore précisé');
 
   // Les tranches d'effet aug. VIT : chacune donne un buff différent, et la
   // borne basse le même buff que toute la tranche.
@@ -339,7 +343,7 @@ export async function testSpeedtuneInteractions() {
       : { method: methode }));
   };
   const commande = (piece: unknown, locale = 'fr') => ({
-    type: 2, token: 'T', locale, data: { name: 'speedtune', options: [{ name: 'capture', value: '9' }], resolved: { attachments: { 9: piece } } },
+    type: 2, token: 'T', locale, member: { user: { id: '111' } }, data: { name: 'speedtune', options: [{ name: 'capture', value: '9' }], resolved: { attachments: { 9: piece } } },
   });
 
   egal(await (await envoyer({ type: 1 })).json(), { type: 1 }, 'PING → PONG');
@@ -369,15 +373,15 @@ export async function testSpeedtuneInteractions() {
   ok(question.corps.embeds[0].description?.includes('The Cunning') === true, 'le passif est nommé comme dans le jeu');
 
   // Le choix de quelqu'un d'autre est refusé, en privé.
-  const choix = (valeur: string, qui = 'U1', customId = menu.custom_id) => ({
+  // ⚠️ Aucune métadonnée du message : l'auteur ne vient que de l'état.
+  const choix = (valeur: string, qui = '111', customId = menu.custom_id) => ({
     type: 3, token: 'C', locale: 'fr', member: { user: { id: qui } },
-    message: { interaction_metadata: { user: { id: 'U1' } } },
     data: { custom_id: customId, component_type: 3, values: [valeur] },
   });
   travaux.length = 0;
-  const intrus = await (await envoyer(choix('1', 'U2'))).json() as { type: number; data: { flags: number } };
+  const intrus = await (await envoyer(choix('1', '222'))).json() as { type: number; data: { flags: number } };
   egal([intrus.type, intrus.data.flags, travaux.length], [4, 64, 0], 'un autre que l\'auteur : message privé, rien recalculé');
-  const perime = await (await envoyer(choix('1', 'U1', 'st1:s0:abc'))).json() as { type: number };
+  const perime = await (await envoyer(choix('1', '111', 'st2:s0:abc'))).json() as { type: number };
   egal(perime.type, 4, 'un custom_id illisible : message privé');
 
   egal(await (await envoyer(choix('1'))).json(), { type: 6 }, 'le choix met à jour le message en différé');
@@ -389,13 +393,13 @@ export async function testSpeedtuneInteractions() {
   for (const k of [0, 1, 2]) {
     travaux.length = 0;
     const m = menusDe(dernier()).find((x) => x.placeholder.endsWith('Effet aug. VIT') && !x.options.some((o) => o.default))!;
-    await envoyer(choix(k === 0 ? '4' : '0', 'U1', m.custom_id));
+    await envoyer(choix(k === 0 ? '4' : '0', '111', m.custom_id));
     await Promise.all(travaux);
   }
   egal(dernier().corps.components?.length, 5, 'sans le set Rapide, la question reste');
   travaux.length = 0;
   const menuSwift = menusDe(dernier()).find((x) => x.placeholder.startsWith('Set Rapide'))!;
-  await envoyer(choix('4', 'U1', menuSwift.custom_id)); // Tarq seul
+  await envoyer(choix('4', '111', menuSwift.custom_id)); // Tarq seul
   await Promise.all(travaux);
   const final = dernier();
   egal(final.url, 'https://discord.com/api/v10/webhooks/APP/C/messages/@original', 'le résultat remplace la question');
