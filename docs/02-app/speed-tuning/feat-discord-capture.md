@@ -28,7 +28,7 @@ Voir aussi : README.md, feat-competences.md, feat-deux-camps.md,
      siège), la VIT de la défense à battre (l'adversaire de référence, passif
      compris), le set Rapide ;
    - l'**ordre de jeu**, une ligne par attaquant avec son icône **dans le
-     texte** : rang, VIT de combat lue, ✅ ou ❌ coupé ; en dessous, sa VIT de
+     texte** : rang, VIT de combat lue, ✅ ou ❌ cut (le mot des joueurs, en français aussi) ; en dessous, sa VIT de
      fiche (`base + runes`) ou la VIT de combat à viser et la fiche
      correspondante, et le sort de vitesse retenu par l'analyse, par son
      **numéro** (S1, S2…) : peu de joueurs en connaissent le nom. Pas de

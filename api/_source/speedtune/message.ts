@@ -69,19 +69,22 @@ export type Demande = {
   customId: string;
 } & (
   | { sorte: 'cumuls'; passif: string; texte: string; options: { valeur: number; points: number }[] }
-  | { sorte: 'arte'; options: { de: number; a: number; buff: number }[] }
+  // ⚠️ Sans la valeur du buff qui en résulte : à côté de l'Effet aug. VIT
+  // qu'on saisit, un second pourcentage embrouillait le choix.
+  | { sorte: 'arte'; options: { de: number; a: number }[] }
 );
 
 // Ce qui a été précisé, rappelé dans le résultat.
 export type Precision =
   | { sorte: 'cumuls'; nom: string; cumuls: number; points: number }
-  | { sorte: 'arte'; nom: string; arte: number; buff: number }
+  | { sorte: 'arte'; nom: string; de: number; a: number }
   | { sorte: 'swift'; noms: string[] };
 
 const TEXTES = {
   fr: {
-    titreOk: '⚡ Speed tune — personne n\'est coupé',
-    titreKo: '⚡ Speed tune — coupé',
+    // Le vocabulaire des joueurs : on « se fait cut », on n'est pas « coupé ».
+    titreOk: '⚡ Speed tune — personne ne se fait cut',
+    titreKo: '⚡ Speed tune — quelqu\'un se fait cut',
     champEquipe: 'Équipe',
     leadEquipe: (p: number) => `Lead +${p} %`,
     sansLeadCourt: 'Sans lead de VIT',
@@ -94,7 +97,7 @@ const TEXTES = {
     detail: (morceaux: string[]) => `\u3000↳ ${morceaux.join(' · ')}`,
     fiche: (base: number, runes: number) => `fiche ${base} + ${runes}`,
     ok: '✅',
-    coupe: '❌ coupé',
+    coupe: '❌ cut',
     neJoue: '⏸️ ne joue pas',
     viser: (requis: number, ecart: number) => `viser **${requis}** (+${ecart})`,
     viserFiche: (base: number, runes: number) => `soit ${base} + ${runes}`,
@@ -120,9 +123,8 @@ const TEXTES = {
     menuArte: (nom: string) => `${nom} : Effet aug. VIT`,
     gain: (pts: number) => `+${pts} VIT`,
     tranche: (de: number, a: number) => (de === a ? `Effet aug. VIT +${de} %` : `Effet aug. VIT +${de} à ${a} %`),
-    buff: (b: number) => `Buff de VIT : +${b} %`,
     cumulsRetenus: (nom: string, n: number, pts: number) => `Passif de **${nom}** : ${n} cumul${n > 1 ? 's' : ''} (+${pts} VIT)`,
-    arteRetenu: (nom: string, a: number, b: number) => `**${nom}** : Effet aug. VIT +${a} % (buff de VIT +${b} %)`,
+    arteRetenu: (nom: string, de: number, a: number) => `**${nom}** : Effet aug. VIT +${de === a ? de : `${de} à ${a}`} %`,
     swiftRetenu: (noms: string) => `Set Rapide : ${noms}`,
     pasAuteur: 'Seul l\'auteur de la commande peut répondre.',
     perime: 'Ce message ne correspond plus à une lecture valide. Relance /speedtune.',
@@ -168,9 +170,8 @@ const TEXTES = {
     menuArte: (nom: string) => `${nom}: SPD Increasing Effect`,
     gain: (pts: number) => `+${pts} SPD`,
     tranche: (de: number, a: number) => (de === a ? `SPD Increasing Effect +${de}%` : `SPD Increasing Effect +${de} to ${a}%`),
-    buff: (b: number) => `SPD buff: +${b}%`,
     cumulsRetenus: (nom: string, n: number, pts: number) => `**${nom}**'s passive: ${n} stack${n === 1 ? '' : 's'} (+${pts} SPD)`,
-    arteRetenu: (nom: string, a: number, b: number) => `**${nom}**: SPD Increasing Effect +${a}% (SPD buff +${b}%)`,
+    arteRetenu: (nom: string, de: number, a: number) => `**${nom}**: SPD Increasing Effect +${de === a ? de : `${de} to ${a}`}%`,
     swiftRetenu: (noms: string) => `Swift set: ${noms}`,
     pasAuteur: 'Only the author of the command can answer.',
     perime: 'This message no longer matches a valid reading. Run /speedtune again.',
@@ -247,7 +248,7 @@ export function messageQuestion(langue: Langue, equipe: { nom: string; combat: n
         placeholder: d.sorte === 'cumuls' ? t.menuCumuls(d.nom) : t.menuArte(d.nom),
         options: d.sorte === 'cumuls'
           ? d.options.map((o) => ({ label: String(o.valeur), value: String(o.valeur), description: t.gain(o.points), ...(d.choisi === o.valeur ? { default: true } : {}) }))
-          : d.options.map((o) => ({ label: t.tranche(o.de, o.a), value: String(o.de), description: t.buff(o.buff), ...(d.choisi === o.de ? { default: true } : {}) })),
+          : d.options.map((o) => ({ label: t.tranche(o.de, o.a), value: String(o.de), ...(d.choisi === o.de ? { default: true } : {}) })),
       }],
     })),
   };
@@ -301,7 +302,7 @@ export function embedResultat(
     { name: t.champOrdre, value: ordre.join('\n') },
     ...(autres.length ? [{
       name: t.champPrecise,
-      value: autres.map((p) => (p.sorte === 'cumuls' ? t.cumulsRetenus(p.nom, p.cumuls, p.points) : p.sorte === 'arte' ? t.arteRetenu(p.nom, p.arte, p.buff) : '')).join('\n'),
+      value: autres.map((p) => (p.sorte === 'cumuls' ? t.cumulsRetenus(p.nom, p.cumuls, p.points) : p.sorte === 'arte' ? t.arteRetenu(p.nom, p.de, p.a) : '')).join('\n'),
     }] : []),
     { name: t.defense, value: defense.length ? defense.map((m) => `${icone(m)}${m.name}`).join(' · ') : '—' },
   ];

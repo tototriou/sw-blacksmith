@@ -313,7 +313,8 @@ export async function repondre(res: Ressources, etat: Etat, langue: Langue): Pro
     const a = etat.attaquants[i];
     const nom = monstres[i]!.name;
     demandes.push({ sorte: 'arte', nom, options: tranchesArte(base), choisi: a.arte, customId: encoderEtat(`a${i}`, etat) });
-    if (a.arte != null) precisions.push({ sorte: 'arte', nom, arte: a.arte, buff: buffAmplifie(base, a.arte) });
+    const tranche = tranchesArte(base).find((x) => x.de === a.arte);
+    if (a.arte != null) precisions.push({ sorte: 'arte', nom, de: a.arte, a: tranche?.a ?? a.arte });
   }
   // Le set Rapide ne se demande pas : « aucun » par défaut, et des boutons
   // sous le résultat le basculent (`rangeeSwift`).

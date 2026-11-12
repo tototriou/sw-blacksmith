@@ -367,7 +367,7 @@ export async function testSpeedtuneInteractions() {
     'un menu par valeur que la capture ne montre pas ; le set Rapide ne se demande pas');
   const menu = menus[0];
   egal(menu.options[1].description, '+20 VIT', 'chaque cumul avec la VIT qu\'il ajoute');
-  egal([menus[1].options[1].label, menus[1].options[1].description], ['Effet aug. VIT +4 à 6 %', 'Buff de VIT : +31 %'], 'chaque tranche d\'artéfact, nommée comme dans le jeu, avec le buff qu\'elle donne');
+  egal([menus[1].options[1].label, menus[1].options[1].description], ['Effet aug. VIT +4 à 6 %', undefined], 'chaque tranche d\'artéfact, nommée comme dans le jeu, sans le buff qui en résulte');
   ok(question.corps.embeds[0].description?.includes('The Cunning') === true, 'le passif est nommé comme dans le jeu');
 
   // Le choix de quelqu'un d'autre est refusé, en privé.
@@ -421,10 +421,12 @@ export async function testSpeedtuneInteractions() {
   egal(boutons(dernier()).map((b) => b.style), [2, 2, 2], 'un second clic l\'éteint');
   egal(LIEN_OUTIL, 'https://sw-blacksmith.vercel.app/#/outils/speed-tuning', 'l\'outil du site de production');
   egal(final.corps.embeds.length, 1, 'un seul encart, compact');
+  ok(['⚡ Speed tune — personne ne se fait cut', '⚡ Speed tune — quelqu\'un se fait cut'].includes(final.corps.embeds[0].title), 'le titre parle comme les joueurs : « se faire cut »');
   const embed = final.corps.embeds[0];
   const champ = (nom: string) => embed.fields?.find((f) => f.name === nom)?.value ?? '';
   ok(champ('Précisé').includes('Passif de **Chilling** : 1 cumul (+20 VIT)'), 'les cumuls retenus sont rappelés');
-  ok(champ('Précisé').includes('**Susano** : Effet aug. VIT +4 % (buff de VIT +31 %)'), 'l\'effet aug. VIT retenu est rappelé');
+  ok(champ('Précisé').includes('**Susano** : Effet aug. VIT +4 à 6 %'), 'l\'effet aug. VIT retenu est rappelé, par sa tranche');
+  ok(!/buff/i.test(champ('Précisé')), 'sans la valeur du buff');
   egal(champ('Set Rapide'), 'Tarq', 'le set Rapide retenu, en champ');
   egal(champ('Équipe'), `<:m${susano.com2usId}:9> <:m${chilling.com2usId}:9> <:m${tarq.com2usId}:9>\nLead +30 %`,
     'l\'équipe à régler : ses trois icônes dans l\'ordre de la capture, et son lead');
