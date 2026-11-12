@@ -16,8 +16,9 @@ import { Banque, quantifier, signature, TAILLE, COTE, type BanqueSerialisee } fr
 import { lireNombre, type Gabarits } from '../api/_source/capture/chiffres';
 import { DISPOSITIONS, lireEcranPreparation } from '../api/_source/capture/ecranPreparation';
 import { analyserEquipe } from '../api/_source/speedtune/analyse';
-import { creerInteractions, signatureValide, type Ressources } from '../api/_source/speedtune/interactions';
-import { embedErreur, langueDe, type Embed } from '../api/_source/speedtune/message';
+import { creerInteractions, signatureValide, tranchesArte, type Ressources } from '../api/_source/speedtune/interactions';
+import { embedErreur, langueDe, type Embed, type Rangee } from '../api/_source/speedtune/message';
+import { decoderEtat, encoderEtat, LONGUEUR_MAX, type Etat } from '../api/_source/speedtune/etat';
 import gabaritsJson from '../api/_source/capture/chiffres-gabarits.json';
 import { combatSpeed, runeSpeedForTarget, siegeLeadFor, speedLeadOf } from '../src/lib/speed';
 import { kitVitesse, sortsVitesse } from '../src/lib/speedTuneKit';
@@ -227,6 +228,43 @@ export function testSpeedtuneAnalyse() {
   const sansLead = analyserEquipe([{ monster: tarq, combat: 300 }, { monster: chilling, combat: 250 }, { monster: susano, combat: 200 }], donneesKit([tarq, chilling, susano]));
   egal(sansLead.lead, null, 'un leader sans lead de vitesse : pas de lead');
   ok(!sansLead.ok && sansLead.lignes.some((l) => l.requis !== null), 'des alliés coupés : la VIT à atteindre est donnée');
+
+  // Les cumuls du passif précisés par le joueur : Chilling (+20 par buff) à
+  // 367 lu et 1 cumul passe à 387, devant Tarq à 385 — et devient le modèle
+  // de l'adversaire de référence.
+  const avecCumul = analyserEquipe(equipe.map((a) => (a.monster === chilling ? { ...a, cumuls: 1 } : a)), donneesKit(equipe.map((a) => a.monster)));
+  egal(avecCumul.lignes[0].monster.name, 'Chilling', 'un cumul du passif de Chilling le fait jouer le premier');
+  egal(avecCumul.reference, 387, 'la référence copie le plus rapide, passif compris');
+  egal(r.reference, 385, 'sans cumul, la référence est Tarq');
+}
+
+export function testSpeedtuneEtat() {
+  titre('Speed tune par capture — état porté par les menus Discord');
+  const etat: Etat = {
+    attaquants: [
+      { id: 20711, combat: 367, cumuls: null, arte: 14, vitDouteuse: false, autrePortrait: null },
+      { id: 25311, combat: 385, cumuls: 12, arte: null, vitDouteuse: true, autrePortrait: 20701 },
+      { id: 19214, combat: 99, cumuls: 0, arte: 0, vitDouteuse: false, autrePortrait: null },
+    ],
+    defense: [10111, 20222, 30333],
+  };
+  egal(decoderEtat(encoderEtat('s1', etat)), { action: 's1', etat }, 'aller-retour sans perte');
+  const pire: Etat = {
+    attaquants: [0, 1, 2].map(() => ({ id: 99999, combat: 450, cumuls: 24, arte: 60, vitDouteuse: true, autrePortrait: 99999 })),
+    defense: [99999, 99999, 99999],
+  };
+  ok(encoderEtat('c2', pire).length <= LONGUEUR_MAX, 'le pire cas tient dans un custom_id (100 caractères), doutes compris');
+  egal(decoderEtat(encoderEtat('c2', pire))?.etat.attaquants[0].autrePortrait, 99999, 'le pire cas garde ses doutes');
+  egal(decoderEtat('st1:c0:1.2.25...:'), null, 'plus de cumuls qu\'un menu n\'en propose : refusé');
+  egal(decoderEtat('st1:a0:1.2..61..:'), null, 'plus de 60 % d\'effet aug. VIT : refusé');
+  egal(decoderEtat('st1:c0:1.2...x.:'), null, 'champ inattendu : refusé');
+  egal(decoderEtat('autre:c0:1.2....:'), null, 'autre préfixe : refusé');
+
+  // Les tranches d'effet aug. VIT : chacune donne un buff différent, et la
+  // borne basse le même buff que toute la tranche.
+  const tranches = tranchesArte(30);
+  egal([tranches.length, tranches[0], tranches[1], tranches[tranches.length - 1]],
+    [19, { de: 0, a: 3, buff: 30 }, { de: 4, a: 6, buff: 31 }, { de: 60, a: 60, buff: 48 }], 'buff de 30 % : 19 tranches de 0 à 60 %');
 }
 
 // ---- Interactions Discord ------------------------------------------------------
@@ -250,7 +288,7 @@ export async function testSpeedtuneInteractions() {
     banque, gabarits, monstre: (id) => MONSTRES.find((m) => m.com2usId === id), detail: async (id) => ficheDe(id),
   };
 
-  const envois: { url: string; corps: { embeds: Embed[] } }[] = [];
+  const envois: { url: string; corps: { embeds: Embed[]; components?: Rangee[] } }[] = [];
   const travaux: Promise<unknown>[] = [];
   const service = creerInteractions({
     clePublique: cle,
@@ -283,14 +321,55 @@ export async function testSpeedtuneInteractions() {
   egal(await r.json(), { type: 5 }, 'la commande répond aussitôt « en cours »');
   await Promise.all(travaux);
   const dernier = () => envois[envois.length - 1];
+  // Chilling a un passif qui se cumule : la question d'abord, un menu à lui.
+  const question = dernier();
+  egal(question.url, 'https://discord.com/api/v10/webhooks/APP/T/messages/@original', 'la question remplace la réponse différée');
+  const menusDe = (m: typeof question) => (m.corps.components ?? []).map((r) => r.components[0]);
+  const menus = menusDe(question);
+  // Chilling : son passif se cumule ; et son S2 (Song of the Night Wind) buffe
+  // la VIT de toute l'équipe : l'effet aug. VIT de chacun compte.
+  egal(menus.map((m) => m.placeholder), ['Chilling : nombre de cumuls', 'Susano : Effet aug. VIT', 'Chilling : Effet aug. VIT', 'Tarq : Effet aug. VIT'],
+    'un menu par valeur que la capture ne montre pas');
+  const menu = menus[0];
+  egal(menu.options[1].description, '+20 VIT', 'chaque cumul avec la VIT qu\'il ajoute');
+  egal([menus[1].options[1].label, menus[1].options[1].description], ['4 à 6 %', 'Buff de VIT : +31 %'], 'chaque tranche d\'artéfact avec le buff qu\'elle donne');
+  ok(question.corps.embeds[0].description?.includes('The Cunning') === true, 'le passif est nommé comme dans le jeu');
+
+  // Le choix de quelqu'un d'autre est refusé, en privé.
+  const choix = (valeur: string, qui = 'U1', customId = menu.custom_id) => ({
+    type: 3, token: 'C', locale: 'fr', member: { user: { id: qui } },
+    message: { interaction_metadata: { user: { id: 'U1' } } },
+    data: { custom_id: customId, component_type: 3, values: [valeur] },
+  });
+  travaux.length = 0;
+  const intrus = await (await envoyer(choix('1', 'U2'))).json() as { type: number; data: { flags: number } };
+  egal([intrus.type, intrus.data.flags, travaux.length], [4, 64, 0], 'un autre que l\'auteur : message privé, rien recalculé');
+  const perime = await (await envoyer(choix('1', 'U1', 'st1:s0:abc'))).json() as { type: number };
+  egal(perime.type, 4, 'un custom_id illisible : message privé');
+
+  egal(await (await envoyer(choix('1'))).json(), { type: 6 }, 'le choix met à jour le message en différé');
+  await Promise.all(travaux);
+  const apresUn = dernier();
+  egal(apresUn.corps.components?.length, 4, 'tant qu\'il manque une valeur, la question reste');
+  egal(menusDe(apresUn)[0].options.find((o) => o.default)?.value, '1', 'le choix fait reste affiché, à sa place');
+  // Les trois effets aug. VIT, chacun depuis le dernier message.
+  for (const k of [0, 1, 2]) {
+    travaux.length = 0;
+    const m = menusDe(dernier()).find((x) => x.placeholder.endsWith('Effet aug. VIT') && !x.options.some((o) => o.default))!;
+    await envoyer(choix(k === 0 ? '4' : '0', 'U1', m.custom_id));
+    await Promise.all(travaux);
+  }
   const final = dernier();
-  egal(final.url, 'https://discord.com/api/v10/webhooks/APP/T/messages/@original', 'le résultat remplace la réponse différée');
+  egal(final.url, 'https://discord.com/api/v10/webhooks/APP/C/messages/@original', 'le résultat remplace la question');
+  egal(final.corps.components, [], 'les menus disparaissent');
   const embed = final.corps.embeds[0];
+  ok(embed.description?.includes('Passif de **Chilling** : 1 cumul (+20 VIT)') === true, 'les cumuls retenus sont rappelés');
+  ok(embed.description?.includes('**Susano** : Effet aug. VIT +4 % (buff de VIT +31 %)') === true, 'l\'effet aug. VIT retenu est rappelé');
   ok(embed.description?.includes('Susano') === true && embed.description.includes('+30 %'), 'le leader et son lead');
   const ordre = embed.fields?.[0].value ?? '';
-  ok(ordre.startsWith('1. **Tarq** · 385 VIT'), 'l\'ordre de jeu et la VIT');
+  ok(ordre.startsWith('1. **Chilling** · 367 VIT'), 'l\'ordre de jeu (passif compris) et la VIT lue');
   ok(!/tick/i.test(ordre), 'aucun tick affiché');
-  ok(['Susano', 'Chilling'].every((n) => ordre.includes(n)), 'les trois attaquants y figurent');
+  ok(['Susano', 'Tarq'].every((n) => ordre.includes(n)), 'les trois attaquants y figurent');
   egal(final.corps, { ...final.corps, allowed_mentions: { parse: [] } }, 'aucune mention possible');
 
   // Les refus, en anglais quand Discord est en anglais.

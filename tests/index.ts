@@ -368,7 +368,7 @@ import { testRenduRecosApercuCentainesDeDecks } from './rendu/apercu-recos.test'
 import { testDiscordDroits, testDiscordSession, testDiscordRecoSalon, testDiscordContributeursFormat, testDiscordRouteurConnexion,
   testDiscordRouteurBureau, testDiscordRouteurSources, testDiscordRouteurSalonEtPublication, testDiscordRouteurToutEtLimites } from './discord-service.test';
 import { testCaptureImage, testCapturePortraits, testCaptureChiffres, testCaptureEcran, testSpeedtuneAnalyse,
-  testSpeedtuneInteractions } from './speedtune-capture.test';
+  testSpeedtuneEtat, testSpeedtuneInteractions } from './speedtune-capture.test';
 import { testRecoDiscordEtat, testRecoDiscordRecevoir, testRecoDiscordSynchro, testRecoDiscordPublication, testRecoDiscordFusion,
   testRecoDiscordFavorisEtStockage } from './reco-discord.test';
 import { testRenduRecoDiscordStockage } from './rendu/reco-discord-stockage.test';
@@ -575,6 +575,7 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testCaptureChiffres', testCaptureChiffres],
   ['testCaptureEcran', testCaptureEcran],
   ['testSpeedtuneAnalyse', testSpeedtuneAnalyse],
+  ['testSpeedtuneEtat', testSpeedtuneEtat],
   ['testSpeedtuneInteractions', testSpeedtuneInteractions],
   ['testRecoDiscordEtat', testRecoDiscordEtat],
   ['testRecoDiscordRecevoir', testRecoDiscordRecevoir],

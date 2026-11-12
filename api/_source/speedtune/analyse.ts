@@ -17,6 +17,11 @@ import { ligneVierge, plateauDeLignes } from '../../../src/lib/speedTuneLignes';
 export interface AttaquantAnalyse {
   monster: Monster;
   combat: number; // VIT de combat lue
+  // Cumuls du passif de vitesse, précisés par le joueur (la capture ne les
+  // montre pas). Absents : l'analyse les estime, comme l'outil.
+  cumuls?: number | null;
+  // Effet aug. VIT de ses artéfacts (%), précisé par le joueur. Absent : 0.
+  arte?: number | null;
 }
 
 export interface LigneResultat {
@@ -34,6 +39,9 @@ export interface ResultatSpeedTune {
   lead: { monster: Monster; pourcent: number } | null;
   ok: boolean;
   lignes: LigneResultat[]; // dans l'ordre de jeu
+  // VIT de combat de l'adversaire de référence : celle du plus rapide, passif
+  // compris (Chilling à 367 lu, +20 par cumul, peut devenir le plus rapide).
+  reference: number | null;
 }
 
 export function analyserEquipe(attaquants: AttaquantAnalyse[], donnees: DonneesKit): ResultatSpeedTune {
@@ -44,7 +52,12 @@ export function analyserEquipe(attaquants: AttaquantAnalyse[], donnees: DonneesK
   const lignes = attaquants.map((a) => {
     const l = ligneVierge(a.monster, 'allie');
     const pourcent = siegeLeadFor(leadActif, a.monster.element);
-    return { ...l, runeSpeed: runeSpeedForTarget(a.monster.stats.speed ?? null, pourcent, a.combat) };
+    return {
+      ...l,
+      runeSpeed: runeSpeedForTarget(a.monster.stats.speed ?? null, pourcent, a.combat),
+      ...(a.cumuls != null ? { cumulsPassif: a.cumuls } : {}),
+      ...(a.arte != null ? { artefactBuff: a.arte } : {}),
+    };
   });
   const plateau = plateauDeLignes(lignes, { allie: leadActif, ennemi: null });
   const r = analyseAutomatique(plateau, 0, donnees);
@@ -70,5 +83,6 @@ export function analyserEquipe(attaquants: AttaquantAnalyse[], donnees: DonneesK
     lead: leadActif ? { monster: attaquants[0].monster, pourcent: leadActif.amount } : null,
     ok: r.verdict.ok,
     lignes: resultat,
+    reference: r.reference ? (r.combats.get(r.reference.id) ?? null) : null,
   };
 }

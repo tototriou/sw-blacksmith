@@ -28,7 +28,39 @@ Voir aussi : README.md, feat-competences.md, feat-deux-camps.md,
      coupé, ou « coupé quelle que soit sa VIT » ;
    - la **défense lue** (noms seulement : l'écran ne montre pas sa VIT) ;
    - ce qui reste **incertain** dans la lecture : deux portraits proches, une
-     VIT lue avec une confiance faible.
+     VIT lue avec une confiance faible ;
+   - les valeurs **précisées** par le joueur (voir ci-dessous).
+
+### Ce que la capture ne montre pas : la question
+
+Deux choses font la VIT en combat sans se voir sur l'écran de préparation.
+Quand l'une compte, le message pose d'abord la question, avec un menu
+déroulant par valeur manquante (cinq au plus, la limite de Discord ; ceux qui
+attendent une réponse passent d'abord) :
+
+- un **passif de vitesse qui se cumule** (`gain.parCumul` de
+  [speedTunePassif.ts](../../../src/lib/speedTunePassif.ts)) : buffs portés
+  (Chilling), buffs posés (Miles, Elsharion), tours adverses (Monkey King)…
+  48 monstres. Le menu propose le **nombre de cumuls au premier tour**, de 0
+  au plafond du passif (10 sans plafond, 24 au plus), chacun avec la VIT qu'il
+  ajoute. C'est la case « cumuls » de l'outil
+  ([feat-passifs-vitesse.md](feat-passifs-vitesse.md)). Les passifs qui dépendent des PV
+  (Shumar, Hellhound…) ne sont pas demandés : au premier tour, les PV sont
+  pleins ;
+- l'**Effet aug. VIT** des artéfacts, pour chaque attaquant qui **reçoit un
+  buff de VIT** d'un sort retenu par l'analyse (de toute l'équipe, sur soi, ou
+  sur un allié — n'importe lequel, le lanceur compris). Le menu propose des
+  **tranches** : le buff de 30 % ne prend que 19 valeurs de 0 à 60 %
+  d'artéfact (`⌊30 × (100 + a) / 100⌋`, la troncature de la simulation),
+  chaque tranche vaut sa borne basse et donne exactement le même calcul.
+
+Le service reste **sans état** : la lecture entière (monstres, VIT, valeurs
+déjà choisies, doutes, défense) voyage dans le `custom_id` de chaque menu
+([etat.ts](../../../api/_source/speedtune/etat.ts), 100 caractères au plus,
+relu strictement). Chaque choix revient en interaction de composant
+(type 3) : seul l'auteur de la commande peut répondre (les autres reçoivent un
+message que seuls eux voient), le message est mis à jour en différé (type 6),
+puis remplacé par le résultat une fois tout précisé — les menus disparaissent.
 
 Le message est en français si Discord l'est (`locale`), sinon en anglais ;
 aucune mention n'y est possible (`allowed_mentions` vide). Un refus dit
@@ -110,9 +142,8 @@ protégé).
   été vus : la mise à l'échelle « largeur » est une supposition.
 - Les chiffres **0, 1, 4 et 9** n'apparaissaient sur aucune capture : ils ne
   sont lus qu'avec les gabarits d'Inter.
-- Ni le set **Rapidité** ni le **bonus d'artéfact** « effet du buff de
-  vitesse » ne se voient : le premier n'importe pas à l'ordre (la VIT de
-  combat lue le contient), le second est compté à 0.
+- Le set **Rapidité** ne se voit pas : il n'importe pas à l'ordre, la VIT de
+  combat lue le contient.
 - Rien ne se corrige depuis Discord : un monstre mal reconnu ou une VIT mal
   lue fausse le résultat, que le message signale comme incertain.
 
@@ -121,6 +152,7 @@ protégé).
 [tests/speedtune-capture.test.ts](../../../tests/speedtune-capture.test.ts),
 sans aucune vraie capture : écrans recomposés aux positions réelles avec des
 portraits synthétiques et des chiffres dessinés depuis les gabarits ; calcul
-sur les vrais monstres et leurs vrais kits (Susano, Chilling, Tarq) ;
-interactions signées, réponse différée et message final devant un Discord
-simulé.
+sur les vrais monstres et leurs vrais kits (Susano, Chilling, Tarq) ; état
+des menus (aller-retour, pire cas sous 100 caractères, refus) ; interactions
+signées, réponse différée, question, choix (y compris d'un autre que
+l'auteur) et message final devant un Discord simulé.

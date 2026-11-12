@@ -10,21 +10,29 @@
 //      3 s, la lecture d'une capture en prend 1 à 3 ;
 //   3. en tâche de fond (`differer`, le `waitUntil` de Vercel) : téléchargement,
 //      lecture de l'écran de préparation, analyse, puis le message est remplacé
-//      par le résultat.
+//      par le résultat ;
+//   4. si la capture ne suffit pas — un passif de vitesse qui se CUMULE
+//      (Chilling, Miles…), un buff de VIT que reçoivent des alliés dont on ne
+//      voit pas l'effet aug. VIT des artéfacts —, le message pose d'abord la
+//      question : un menu par valeur manquante. Chaque choix revient ici
+//      (interaction de composant, type 3) avec toute la lecture dans son
+//      `custom_id` (etat.ts) ; le résultat remplace la question quand tout est
+//      précisé.
 
 import { createPublicKey, verify } from 'node:crypto';
 import type { Monster } from '../../../src/types';
 import type { DetailMonstre } from '../../../src/lib/monsterSkills';
 import { kitVitesse, sortsVitesse } from '../../../src/lib/speedTuneKit';
-import { passifsVitesse } from '../../../src/lib/speedTunePassif';
-import type { DonneesKit } from '../../../src/lib/speedTuneAuto';
+import { passifsVitesse, pointsDeGain, type PassifVitesse } from '../../../src/lib/speedTunePassif';
+import { sortRetenu, sortSecondRetenu, type DonneesKit, type EntreeAuto } from '../../../src/lib/speedTuneAuto';
 import { API, type Recuperer } from '../service/discordApi';
 import { decoderImage } from '../capture/image';
 import type { Banque } from '../capture/portraits';
 import type { Gabarits } from '../capture/chiffres';
 import { lireEcranPreparation, type LectureEcran } from '../capture/ecranPreparation';
 import { analyserEquipe } from './analyse';
-import { embedErreur, embedResultat, langueDe, type Embed, type Langue } from './message';
+import { embedErreur, embedResultat, langueDe, messageQuestion, texteEphemere, type Demande, type Embed, type Langue, type Message, type Precision } from './message';
+import { ARTE_MAX, CUMULS_MAX, decoderEtat, encoderEtat, type Etat } from './etat';
 
 export const COMMANDE = 'speedtune';
 export const OPTION_CAPTURE = 'capture';
@@ -68,27 +76,48 @@ export function signatureValide(clePublique: string, signature: string, horodata
 }
 
 interface PieceJointe { url: string; content_type?: string; size: number }
+interface Utilisateur { id: string }
 interface Interaction {
   type: number;
   token: string;
   locale?: string;
   guild_locale?: string;
+  member?: { user?: Utilisateur };
+  user?: Utilisateur;
+  // Le message qui porte le menu (interaction de composant) : il dit qui a
+  // lancé la commande.
+  message?: { interaction_metadata?: { user?: Utilisateur }; interaction?: { user?: Utilisateur } };
   data?: {
-    name: string;
+    name?: string;
     options?: { name: string; value: string }[];
     resolved?: { attachments?: Record<string, PieceJointe> };
+    custom_id?: string;
+    component_type?: number;
+    values?: string[];
   };
 }
 
 const json = (corps: unknown, statut = 200) => Response.json(corps, { status: statut });
 
 export function creerInteractions(d: DependancesInteractions) {
-  async function remplacer(token: string, embed: Embed) {
+  async function remplacer(token: string, contenu: Embed | Message) {
+    const message: Message = 'embeds' in contenu ? contenu : { embeds: [contenu], components: [] };
     await d.recuperer(`${API}/webhooks/${d.applicationId}/${token}/messages/@original`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ embeds: [embed], allowed_mentions: { parse: [] } }),
+      body: JSON.stringify({ ...message, allowed_mentions: { parse: [] } }),
     });
+  }
+
+  // Un cumul choisi dans un menu : l'état revient complet, on le recalcule.
+  async function traiterChoix(token: string, langue: Langue, etat: Etat) {
+    await new Promise((ok) => setTimeout(ok, ATTENTE_AVANT_CALCUL_MS));
+    try {
+      await remplacer(token, await repondre(await d.ressources(), etat, langue));
+    } catch (e) {
+      console.error(e);
+      await remplacer(token, embedErreur(langue, 'panne')).catch((e2) => console.error(e2));
+    }
   }
 
   async function traiterCapture(token: string, langue: Langue, piece: PieceJointe | undefined) {
@@ -109,7 +138,8 @@ export function creerInteractions(d: DependancesInteractions) {
       const img = decoderImage(octets);
       if (!img) return await remplacer(token, embedErreur(langue, 'pasImage'));
       const res = await d.ressources();
-      return await remplacer(token, await calculer(res, lireEcranPreparation(img, res.banque, res.gabarits), langue));
+      const etat = etatDeLecture(res, lireEcranPreparation(img, res.banque, res.gabarits));
+      return await remplacer(token, 'erreur' in etat ? embedErreur(langue, etat.erreur) : await repondre(res, etat, langue));
     } catch (e) {
       console.error(e);
       await remplacer(token, embedErreur(langue, 'panne')).catch((e2) => console.error(e2));
@@ -131,41 +161,155 @@ export function creerInteractions(d: DependancesInteractions) {
         d.differer(traiterCapture(interaction.token, langueDe(interaction.locale ?? interaction.guild_locale), piece));
         return json({ type: 5 }); // réponse différée
       }
+      if (interaction.type === 3) {
+        const langue = langueDe(interaction.locale ?? interaction.guild_locale);
+        const ephemere = (quoi: 'pasAuteur' | 'perime') => json({ type: 4, data: { content: texteEphemere(langue, quoi), flags: 64 } });
+        // Le message est public : seul celui qui a lancé la commande répond.
+        const auteur = interaction.message?.interaction_metadata?.user?.id ?? interaction.message?.interaction?.user?.id;
+        const qui = interaction.member?.user?.id ?? interaction.user?.id;
+        if (auteur && qui !== auteur) return ephemere('pasAuteur');
+        const lu = decoderEtat(interaction.data?.custom_id ?? '');
+        const sorte = lu?.action[0];
+        const cible = lu?.etat.attaquants[Number(lu.action.slice(1))];
+        const valeur = interaction.data?.values?.[0] ?? '';
+        const max = sorte === 'c' ? CUMULS_MAX : ARTE_MAX;
+        if (!lu || !cible || (sorte !== 'c' && sorte !== 'a') || !/^\d{1,2}$/.test(valeur) || Number(valeur) > max) return ephemere('perime');
+        if (sorte === 'c') cible.cumuls = Number(valeur);
+        else cible.arte = Number(valeur);
+        d.differer(traiterChoix(interaction.token, langue, lu.etat));
+        return json({ type: 6 }); // mise à jour différée du message
+      }
       return json({ erreur: 'interaction' }, 400);
     },
   };
 }
 
-// La lecture → le message : refus si l'écran n'est pas reconnu, sinon
-// l'analyse, avec ce qui reste incertain dans la lecture.
-export async function calculer(res: Ressources, lecture: LectureEcran, langue: Langue): Promise<Embed> {
+// La lecture → l'état : refus si l'écran n'est pas reconnu.
+export function etatDeLecture(res: Ressources, lecture: LectureEcran): Etat | { erreur: 'illisible' | { vitIllisible: string[] } } {
   const att = lecture.attaquants;
-  if (att.some((a) => !a.portrait || a.portrait.meilleur.score < SCORE_PORTRAIT_MIN)) return embedErreur(langue, 'illisible');
+  if (att.some((a) => !a.portrait || a.portrait.meilleur.score < SCORE_PORTRAIT_MIN)) return { erreur: 'illisible' };
   const monstres = att.map((a) => res.monstre(a.portrait!.meilleur.com2usId));
-  if (monstres.some((m) => !m)) return embedErreur(langue, 'illisible');
+  if (monstres.some((m) => !m)) return { erreur: 'illisible' };
   const sansVit = att.flatMap((a, i) => (a.vitesse ? [] : [monstres[i]!.name]));
-  if (sansVit.length) return embedErreur(langue, { vitIllisible: sansVit });
+  if (sansVit.length) return { erreur: { vitIllisible: sansVit } };
+  return {
+    attaquants: att.map((a) => {
+      const p = a.portrait!;
+      const suivant = p.suivants[0];
+      return {
+        id: p.meilleur.com2usId,
+        combat: a.vitesse!.valeur,
+        cumuls: null,
+        arte: null,
+        vitDouteuse: a.vitesse!.confiance < CONFIANCE_VIT_MIN,
+        autrePortrait: suivant && p.meilleur.score - suivant.score < ECART_DOUTE ? suivant.com2usId : null,
+      };
+    }),
+    defense: lecture.defense
+      .filter((x) => x.portrait && x.portrait.meilleur.score >= SCORE_PORTRAIT_MIN && res.monstre(x.portrait.meilleur.com2usId))
+      .map((x) => x.portrait!.meilleur.com2usId),
+  };
+}
 
-  const douteux: string[] = [];
-  att.forEach((a, i) => {
-    const p = a.portrait!;
-    const suivant = p.suivants[0];
-    if (suivant && p.meilleur.score - suivant.score < ECART_DOUTE) douteux.push(`${monstres[i]!.name} / ${res.monstre(suivant.com2usId)?.name ?? '?'}`);
-    if (a.vitesse!.confiance < CONFIANCE_VIT_MIN) douteux.push(`${monstres[i]!.name} ${a.vitesse!.texte}`);
+// Le passif de vitesse qui se cumule, s'il y en a un — celui que l'analyse
+// retient (`passifDe` de speedTuneAuto.ts : le premier qui a un gain).
+const passifCumulable = (passifs: PassifVitesse[]): PassifVitesse | null => {
+  const p = passifs.find((x) => x.gain || x.amplifieBuff) ?? null;
+  return p?.gain?.parCumul ? p : null;
+};
+
+// Le nombre de cumuls proposé : jusqu'au plafond du passif (Miles : 100 % par
+// 5 %, 20 cumuls), sinon 10 ; jamais plus que ce qu'un menu contient. Un
+// cumul déjà choisi reste proposé.
+const cumulsProposes = (p: PassifVitesse, choisi: number | null) =>
+  Math.max(choisi ?? 0, Math.min(CUMULS_MAX, p.gain!.plafond != null ? Math.ceil(p.gain!.plafond / p.gain!.valeur) : 10));
+
+// Le buff de VIT reçu, amplifié par l'effet aug. VIT : la MÊME troncature que
+// la simulation (speedTune.ts), multiplication avant division.
+const buffAmplifie = (base: number, arte: number) => Math.floor((base * (100 + arte)) / 100);
+
+// Les tranches d'effet aug. VIT qui donnent le même buff : de 0 à 60 %, le buff
+// de 30 % ne prend que 19 valeurs (30, 31… 48). Chaque option vaut sa borne
+// basse — le résultat est exact pour toute la tranche, et le menu tient dans
+// les 25 options de Discord.
+export function tranchesArte(base: number): { de: number; a: number; buff: number }[] {
+  const tranches: { de: number; a: number; buff: number }[] = [];
+  for (let arte = 0; arte <= ARTE_MAX; arte++) {
+    const buff = buffAmplifie(base, arte);
+    const derniere = tranches[tranches.length - 1];
+    if (derniere && derniere.buff === buff) derniere.a = arte;
+    else tranches.push({ de: arte, a: arte, buff });
+  }
+  return tranches;
+}
+
+// Qui reçoit un buff de VIT, d'après les sorts que l'analyse retient (premier
+// et second tour), et le plus fort de ces buffs. Un buff « sur un allié » peut
+// viser n'importe qui, le lanceur compris : tous le reçoivent alors.
+function buffsDeVitesse(etat: Etat, d: DonneesKit): { receveurs: Set<number>; base: number } {
+  const receveurs = new Set<number>();
+  let base = 0;
+  etat.attaquants.forEach((a, i) => {
+    const e = { id: String(i), monster: { com2usId: a.id } } as EntreeAuto;
+    for (const sort of [sortRetenu(e, d), sortSecondRetenu(e, d)]) {
+      const effet = sort?.effet;
+      if (!effet) continue;
+      const tous = etat.attaquants.map((_, k) => k);
+      const touches = effet.buffEquipe ? tous.filter((k) => !(effet.buffEquipeSansSoi && k === i))
+        : effet.buffAllie ? tous
+        : effet.buffSoi ? [i]
+        : [];
+      touches.forEach((k) => receveurs.add(k));
+      base = Math.max(base, effet.buffEquipe ?? 0, effet.buffAllie ?? 0, effet.buffSoi ?? 0);
+    }
   });
+  return { receveurs, base };
+}
+
+// L'état → le message : la question tant qu'une valeur manque, sinon
+// l'analyse, avec ce qui reste incertain dans la lecture.
+export async function repondre(res: Ressources, etat: Etat, langue: Langue): Promise<Message> {
+  const monstres = etat.attaquants.map((a) => res.monstre(a.id));
+  if (monstres.some((m) => !m)) return { embeds: [embedErreur(langue, 'illisible')], components: [] };
+  const douteux = etat.attaquants.flatMap((a, i) => [
+    ...(a.autrePortrait != null ? [`${monstres[i]!.name} / ${res.monstre(a.autrePortrait)?.name ?? '?'}`] : []),
+    ...(a.vitDouteuse ? [`${monstres[i]!.name} ${a.combat}`] : []),
+  ]);
 
   const donnees: DonneesKit = { kits: new Map(), sorts: new Map(), passifs: new Map() };
-  await Promise.all(att.map(async (a) => {
-    const id = a.portrait!.meilleur.com2usId;
-    const detail = await res.detail(id);
-    donnees.kits.set(id, kitVitesse(detail));
-    donnees.sorts.set(id, sortsVitesse(detail));
-    donnees.passifs.set(id, passifsVitesse(detail));
+  await Promise.all(etat.attaquants.map(async (a) => {
+    const detail = await res.detail(a.id);
+    donnees.kits.set(a.id, kitVitesse(detail));
+    donnees.sorts.set(a.id, sortsVitesse(detail));
+    donnees.passifs.set(a.id, passifsVitesse(detail));
   }));
-  const resultat = analyserEquipe(att.map((a, i) => ({ monster: monstres[i]!, combat: a.vitesse!.valeur })), donnees);
-  const defense = lecture.defense
-    .filter((x) => x.portrait && x.portrait.meilleur.score >= SCORE_PORTRAIT_MIN)
-    .map((x) => res.monstre(x.portrait!.meilleur.com2usId))
-    .filter((m): m is Monster => m !== undefined);
-  return embedResultat(langue, resultat, defense, douteux);
+
+  const demandes: Demande[] = [];
+  const precisions: Precision[] = [];
+  etat.attaquants.forEach((a, i) => {
+    const monster = monstres[i]!;
+    const p = passifCumulable(donnees.passifs.get(a.id) ?? []);
+    if (!p) return;
+    const points = (n: number) => pointsDeGain(p.gain, monster.stats.speed ?? null, n);
+    const options = Array.from({ length: cumulsProposes(p, a.cumuls) + 1 }, (_, n) => ({ valeur: n, points: points(n) }));
+    demandes.push({ sorte: 'cumuls', nom: monster.name, passif: p.nom, texte: p.texte, options, choisi: a.cumuls, customId: encoderEtat(`c${i}`, etat) });
+    if (a.cumuls != null) precisions.push({ sorte: 'cumuls', nom: monster.name, cumuls: a.cumuls, points: points(a.cumuls) });
+  });
+  const { receveurs, base } = buffsDeVitesse(etat, donnees);
+  for (const i of receveurs) {
+    const a = etat.attaquants[i];
+    const nom = monstres[i]!.name;
+    demandes.push({ sorte: 'arte', nom, options: tranchesArte(base), choisi: a.arte, customId: encoderEtat(`a${i}`, etat) });
+    if (a.arte != null) precisions.push({ sorte: 'arte', nom, arte: a.arte, buff: buffAmplifie(base, a.arte) });
+  }
+  if (demandes.some((x) => x.choisi == null)) {
+    return messageQuestion(langue, etat.attaquants.map((a, i) => ({ nom: monstres[i]!.name, combat: a.combat })), demandes, douteux);
+  }
+
+  const resultat = analyserEquipe(
+    etat.attaquants.map((a, i) => ({ monster: monstres[i]!, combat: a.combat, cumuls: a.cumuls, arte: a.arte })),
+    donnees
+  );
+  const defense = etat.defense.map((id) => res.monstre(id)).filter((m): m is Monster => m !== undefined);
+  return { embeds: [embedResultat(langue, resultat, defense, douteux, precisions)], components: [] };
 }
