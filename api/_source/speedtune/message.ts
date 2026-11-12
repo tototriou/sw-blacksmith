@@ -15,10 +15,7 @@ export const langueDe = (locale: string | undefined): Langue => ((locale ?? '').
 const COULEUR_OK = 0x23a55a;
 const COULEUR_KO = 0xf0b232;
 const COULEUR_ERREUR = 0xf23f43;
-// La carte d'un attaquant : vert s'il joue avant la défense, rouge s'il est
-// coupé, gris s'il ne joue pas dans l'horizon simulé.
-const COULEUR_COUPE = 0xf23f43;
-const COULEUR_NEUTRE = 0x80848e;
+
 
 export interface Embed {
   title: string;
@@ -75,18 +72,23 @@ const TEXTES = {
   fr: {
     titreOk: '⚡ Speed tune — personne n\'est coupé',
     titreKo: '⚡ Speed tune — coupé',
-    lead: (nom: string, p: number) => `Leader : **${nom}** · VIT d'attaque **+${p} %**`,
     sansLead: 'Aucun lead de vitesse actif en siège',
-    reference: (v: number) => `Contre une défense aussi rapide que ton plus rapide (**${v}** de VIT de combat).`,
-    carteTitre: (rang: number, nom: string) => `${rang}. ${nom}`,
-    carteVit: (vit: number) => `**${vit}** de VIT de combat`,
-    carteFiche: (base: number, runes: number) => `Fiche : ${base} + ${runes}`,
-    carteSort: (s: string) => `Sort : **${s}**`,
-    carteOk: '✅ Joue avant la défense',
-    carteRequis: (requis: number, ecart: number) => `❌ Coupé — viser **${requis}** de VIT de combat (+${ecart})`,
-    carteRequisRunes: (base: number, runes: number) => `soit une fiche à ${base} + ${runes}`,
-    carteHors: '❌ Coupé quelle que soit sa VIT',
-    carteNeJoue: '⏸️ Ne joue pas dans les premiers tours',
+    champLeader: 'Leader',
+    champReference: 'Défense à battre',
+    champSwift: 'Set Rapide',
+    champOrdre: 'Ordre de jeu',
+    champPrecise: 'Précisé',
+    leadValeur: (p: number) => `+${p} %`,
+    vit: (v: number) => `${v} VIT`,
+    ligneOrdre: (rang: number, icone: string, nom: string, vit: number, verdict: string) => `**${rang}.** ${icone}**${nom}** · **${vit}** VIT · ${verdict}`,
+    detail: (morceaux: string[]) => `\u3000↳ ${morceaux.join(' · ')}`,
+    fiche: (base: number, runes: number) => `fiche ${base} + ${runes}`,
+    ok: '✅',
+    coupe: '❌ coupé',
+    neJoue: '⏸️ ne joue pas',
+    viser: (requis: number, ecart: number) => `viser **${requis}** (+${ecart})`,
+    viserFiche: (base: number, runes: number) => `soit ${base} + ${runes}`,
+    horsDePortee: 'quelle que soit sa VIT',
     defense: 'Défense lue',
     pied: 'Lecture automatique de la capture — vérifie les monstres et les VIT lus. Même calcul que l\'outil de speed tuning de SW Blacksmith.',
     douteux: (quoi: string) => `⚠️ Lecture incertaine : ${quoi}`,
@@ -118,18 +120,23 @@ const TEXTES = {
   en: {
     titreOk: '⚡ Speed tune — nobody gets cut',
     titreKo: '⚡ Speed tune — cut',
-    lead: (nom: string, p: number) => `Leader: **${nom}** · Attack Speed **+${p}%**`,
     sansLead: 'No speed lead active in siege',
-    reference: (v: number) => `Against a defense as fast as your fastest (**${v}** combat SPD).`,
-    carteTitre: (rang: number, nom: string) => `${rang}. ${nom}`,
-    carteVit: (vit: number) => `**${vit}** combat SPD`,
-    carteFiche: (base: number, runes: number) => `Stats: ${base} + ${runes}`,
-    carteSort: (s: string) => `Skill: **${s}**`,
-    carteOk: '✅ Moves before the defense',
-    carteRequis: (requis: number, ecart: number) => `❌ Cut — aim for **${requis}** combat SPD (+${ecart})`,
-    carteRequisRunes: (base: number, runes: number) => `i.e. ${base} + ${runes} in stats`,
-    carteHors: '❌ Cut whatever their SPD',
-    carteNeJoue: '⏸️ Does not move in the first turns',
+    champLeader: 'Leader',
+    champReference: 'Defense to beat',
+    champSwift: 'Swift set',
+    champOrdre: 'Turn order',
+    champPrecise: 'Filled in',
+    leadValeur: (p: number) => `+${p}%`,
+    vit: (v: number) => `${v} SPD`,
+    ligneOrdre: (rang: number, icone: string, nom: string, vit: number, verdict: string) => `**${rang}.** ${icone}**${nom}** · **${vit}** SPD · ${verdict}`,
+    detail: (morceaux: string[]) => `\u3000↳ ${morceaux.join(' · ')}`,
+    fiche: (base: number, runes: number) => `stats ${base} + ${runes}`,
+    ok: '✅',
+    coupe: '❌ cut',
+    neJoue: '⏸️ does not move',
+    viser: (requis: number, ecart: number) => `aim for **${requis}** (+${ecart})`,
+    viserFiche: (base: number, runes: number) => `i.e. ${base} + ${runes}`,
+    horsDePortee: 'whatever their SPD',
     defense: 'Defense read',
     pied: 'Automatic reading of the screenshot — check the monsters and SPD read. Same computation as the SW Blacksmith speed tuning tool.',
     douteux: (quoi: string) => `⚠️ Uncertain reading: ${quoi}`,
@@ -209,52 +216,56 @@ export function messageQuestion(langue: Langue, equipe: { nom: string; combat: n
   };
 }
 
-// Le résultat en cartes : un en-tête (verdict, lead, valeurs précisées,
-// doutes), une carte par attaquant DANS L'ORDRE DE JEU avec l'icône du monstre
-// du jeu (celle de SWARFARM, comme dans l'app), puis la défense lue. Discord
-// accepte dix cartes par message : on en envoie cinq au plus.
-export function embedsResultat(langue: Langue, r: ResultatSpeedTune, defense: Monster[], douteux: string[], precisions: Precision[] = []): Embed[] {
+// Le résultat en UN encart compact, à la manière des bots de statistiques :
+// vignette du leader, champs côte à côte (leader, défense de référence, set
+// Rapide), l'ordre de jeu une ligne par monstre avec son icône DANS le texte
+// (émojis du bot, voir emojis.ts), puis la défense lue. Sans émoji, le nom
+// seul : le message reste juste.
+export function embedResultat(
+  langue: Langue,
+  r: ResultatSpeedTune,
+  defense: Monster[],
+  douteux: string[],
+  precisions: Precision[] = [],
+  icones: Map<number, string> = new Map()
+): Embed {
   const t = TEXTES[langue];
+  const icone = (m: Monster) => (m.com2usId != null && icones.has(m.com2usId) ? `${icones.get(m.com2usId)} ` : '');
   const plusRapide = r.reference ?? Math.max(...r.lignes.map((l) => l.combat));
-  const entete: Embed = {
-    title: r.ok ? t.titreOk : t.titreKo,
-    description: [
-      r.lead ? t.lead(r.lead.monster.name, r.lead.pourcent) : t.sansLead,
-      t.reference(plusRapide),
-      ...precisions.map((p) => (p.sorte === 'cumuls' ? t.cumulsRetenus(p.nom, p.cumuls, p.points)
-        : p.sorte === 'arte' ? t.arteRetenu(p.nom, p.arte, p.buff)
-        : t.swiftRetenu(p.noms.join(', ') || t.aucun))),
-      ...douteux.map(t.douteux),
-    ].join('\n'),
-    color: r.ok ? COULEUR_OK : COULEUR_KO,
-  };
-  const cartes: Embed[] = r.lignes.map((l, i) => {
-    const coupe = l.requis != null || l.horsDePortee;
+  const swift = precisions.find((p) => p.sorte === 'swift');
+  const autres = precisions.filter((p) => p.sorte !== 'swift');
+
+  const ordre = r.lignes.flatMap((l, i) => {
     const fiche = l.base != null && l.runes != null;
-    const lignes = [
-      t.carteVit(l.combat) + (fiche ? ` · ${t.carteFiche(l.base!, l.runes!)}` : ''),
-      ...(l.sort ? [t.carteSort(l.sort)] : []),
-      l.tick == null ? t.carteNeJoue
-        : l.requis != null
-          // Chaque point de VIT de combat en plus est un point de runes en plus.
-          ? t.carteRequis(l.requis, l.requis - l.combat) + (fiche ? `, ${t.carteRequisRunes(l.base!, l.runes! + l.requis - l.combat)}` : '')
-          : l.horsDePortee ? t.carteHors : t.carteOk,
+    const verdict = l.tick == null ? t.neJoue : l.requis != null || l.horsDePortee ? t.coupe : t.ok;
+    const details = [
+      ...(l.requis != null
+        // Chaque point de VIT de combat en plus est un point de runes en plus.
+        ? [t.viser(l.requis, l.requis - l.combat), ...(fiche ? [t.viserFiche(l.base!, l.runes! + l.requis - l.combat)] : [])]
+        : l.horsDePortee ? [t.horsDePortee] : fiche ? [t.fiche(l.base!, l.runes!)] : []),
+      ...(l.sort ? [l.sort] : []),
     ];
-    return {
-      title: t.carteTitre(i + 1, l.monster.name),
-      description: lignes.join('\n'),
-      color: l.tick == null ? COULEUR_NEUTRE : coupe ? COULEUR_COUPE : COULEUR_OK,
-      ...(l.monster.image ? { thumbnail: { url: l.monster.image } } : {}),
-    };
+    return [t.ligneOrdre(i + 1, icone(l.monster), l.monster.name, l.combat, verdict), ...(details.length ? [t.detail(details)] : [])];
   });
-  const pied: Embed = defense.length
-    ? {
-      title: t.defense,
-      description: defense.map((m) => `**${m.name}**`).join(' · '),
-      color: COULEUR_NEUTRE,
-      ...(defense[0].image ? { thumbnail: { url: defense[0].image } } : {}),
-      footer: { text: t.pied },
-    }
-    : { title: t.defense, description: '—', color: COULEUR_NEUTRE, footer: { text: t.pied } };
-  return [entete, ...cartes, pied];
+
+  const fields: NonNullable<Embed['fields']> = [
+    { name: t.champLeader, value: r.lead ? `${icone(r.lead.monster)}${r.lead.monster.name} ${t.leadValeur(r.lead.pourcent)}` : t.sansLead, inline: true },
+    { name: t.champReference, value: t.vit(plusRapide), inline: true },
+    ...(swift ? [{ name: t.champSwift, value: swift.noms.join(', ') || t.aucun, inline: true }] : []),
+    { name: t.champOrdre, value: ordre.join('\n') },
+    ...(autres.length ? [{
+      name: t.champPrecise,
+      value: autres.map((p) => (p.sorte === 'cumuls' ? t.cumulsRetenus(p.nom, p.cumuls, p.points) : p.sorte === 'arte' ? t.arteRetenu(p.nom, p.arte, p.buff) : '')).join('\n'),
+    }] : []),
+    { name: t.defense, value: defense.length ? defense.map((m) => `${icone(m)}${m.name}`).join(' · ') : '—' },
+  ];
+  const leader = r.lead?.monster ?? r.lignes[0]?.monster;
+  return {
+    title: r.ok ? t.titreOk : t.titreKo,
+    ...(douteux.length ? { description: douteux.map(t.douteux).join('\n') } : {}),
+    color: r.ok ? COULEUR_OK : COULEUR_KO,
+    fields,
+    ...(leader?.image ? { thumbnail: { url: leader.image } } : {}),
+    footer: { text: t.pied },
+  };
 }

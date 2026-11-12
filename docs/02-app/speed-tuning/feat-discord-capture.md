@@ -19,22 +19,32 @@ Voir aussi : README.md, feat-competences.md, feat-deux-camps.md,
    processeur 1 à 3 s, il passait avant l'envoi de la réponse.
 3. En tâche de fond (`waitUntil` de Vercel) : la pièce jointe est téléchargée
    — seulement sur le CDN de Discord, en PNG ou JPEG, 10 Mo au plus —, lue,
-   analysée, puis la réponse différée est remplacée par un message en
-   **cartes** (des embeds Discord, cinq au plus) :
-   - un **en-tête** coloré selon le verdict : le leader et le pourcentage de
-     son lead s'il vaut en siège, la VIT de l'adversaire de référence, les
-     valeurs **précisées** par le joueur (voir ci-dessous) et ce qui reste
-     **incertain** dans la lecture (deux portraits proches, une VIT lue avec
-     une confiance faible) ;
-   - une **carte par attaquant, dans l'ordre de jeu**, avec l'icône du monstre
-     (celle de SWARFARM, comme dans l'app) : sa VIT de combat et sa VIT de
-     fiche (`base + runes`), le sort de vitesse retenu par l'analyse, puis
-     « joue avant la défense » (barre verte), ou la VIT de combat à viser et
-     la fiche correspondante, ou « coupé quelle que soit sa VIT » (barre
-     rouge). Pas de tick : la simulation le calcule pour l'ordre, le message
-     ne l'affiche pas ;
-   - la **défense lue** (noms seulement : l'écran ne montre pas sa VIT), avec
-     l'icône de son leader.
+   analysée, puis la réponse différée est remplacée par **un seul encart**
+   compact, coloré selon le verdict, à la manière des bots de statistiques :
+   - la **vignette** : l'icône du leader ;
+   - trois **champs côte à côte** : le leader et son lead s'il vaut en
+     siège, la VIT de la défense à battre (l'adversaire de référence, passif
+     compris), le set Rapide ;
+   - l'**ordre de jeu**, une ligne par attaquant avec son icône **dans le
+     texte** : rang, VIT de combat lue, ✅ ou ❌ coupé ; en dessous, sa VIT de
+     fiche (`base + runes`) ou la VIT de combat à viser et la fiche
+     correspondante, et le sort de vitesse retenu par l'analyse. Pas de
+     tick : la simulation le calcule pour l'ordre, le message ne l'affiche
+     pas ;
+   - les autres valeurs **précisées** par le joueur (voir ci-dessous) ;
+   - la **défense lue**, icônes et noms (l'écran ne montre pas sa VIT) ;
+   - en description, ce qui reste **incertain** dans la lecture (deux
+     portraits proches, une VIT lue avec une confiance faible).
+
+   Les icônes dans le texte sont des **émojis d'application** du bot
+   ([emojis.ts](../../../api/_source/speedtune/emojis.ts)) : nommés
+   `m<com2usId>`, utilisables sur tous les serveurs où le bot est installé.
+   Ils sont créés à la demande : la première fois qu'un monstre paraît, son
+   icône SWARFARM (celle de l'app) est téléversée ; la liste se lit une fois
+   par instance. Une application en porte 2 000 au plus, plus que les
+   monstres reconnaissables (1 171). Il faut pour cela `DISCORD_BOT_TOKEN`
+   (celui du service des recos) ; sans lui, ou si Discord refuse, le monstre
+   s'écrit sans icône — la réponse ne dépend jamais des émojis.
 
 ### Ce que la capture ne montre pas : la question
 
@@ -136,7 +146,8 @@ protégé).
 
 1. Variable d'environnement Vercel (Preview) : `DISCORD_PUBLIC_KEY`, la clé
    publique de l'application de test (portail Discord, *General
-   Information*). `DISCORD_CLIENT_ID` y est déjà.
+   Information*). `DISCORD_CLIENT_ID` et `DISCORD_BOT_TOKEN` y sont déjà
+   (le second sert aux icônes des monstres).
 2. Portail Discord, application de test, *Interactions Endpoint URL* :
    `<alias de la branche>/api/interactions?x-vercel-protection-bypass=<secret>`
    — l'aperçu est protégé, Discord ne passerait pas sans le secret de

@@ -16,6 +16,7 @@ import gabarits from './capture/chiffres-gabarits.json';
 import { Banque, type BanqueSerialisee } from './capture/portraits';
 import type { Gabarits } from './capture/chiffres';
 import { creerInteractions, type Ressources } from './speedtune/interactions';
+import { creerEmojis } from './speedtune/emojis';
 
 let ressources: Ressources | null = null;
 let origine = '';
@@ -29,6 +30,11 @@ function obtenirRessources(): Ressources {
       banque: new Banque(banqueSerialisee as BanqueSerialisee),
       gabarits: gabarits as Gabarits,
       monstre: (id) => parId.get(id),
+      // Le jeton du bot (celui du service des recos) gère ses émojis ; sans
+      // lui, pas d'icônes dans le texte.
+      ...(process.env.DISCORD_BOT_TOKEN && process.env.DISCORD_CLIENT_ID
+        ? { emojis: creerEmojis((url, init) => fetch(url, init), process.env.DISCORD_CLIENT_ID.trim(), process.env.DISCORD_BOT_TOKEN.trim()) }
+        : {}),
       async detail(id) {
         if (fiches.has(id)) return fiches.get(id) ?? null;
         // Sur un aperçu protégé, le site ne répond qu'avec le secret de

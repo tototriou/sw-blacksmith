@@ -19,6 +19,7 @@ import { analyserEquipe } from '../api/_source/speedtune/analyse';
 import { creerInteractions, signatureValide, tranchesArte, type Ressources } from '../api/_source/speedtune/interactions';
 import { embedErreur, langueDe, type Embed, type Rangee } from '../api/_source/speedtune/message';
 import { decoderEtat, encoderEtat, LONGUEUR_MAX, type Etat } from '../api/_source/speedtune/etat';
+import { creerEmojis } from '../api/_source/speedtune/emojis';
 import gabaritsJson from '../api/_source/capture/chiffres-gabarits.json';
 import { combatSpeed, runeSpeedForTarget, siegeLeadFor, speedLeadOf } from '../src/lib/speed';
 import { kitVitesse, sortsVitesse } from '../src/lib/speedTuneKit';
@@ -238,6 +239,30 @@ export function testSpeedtuneAnalyse() {
   egal(r.reference, 385, 'sans cumul, la référence est Tarq');
 }
 
+export async function testSpeedtuneEmojis() {
+  titre('Speed tune par capture — icônes des monstres en émojis du bot');
+  const chilling = monstreNomme('Chilling', 'water'), tarq = monstreNomme('Tarq', 'water');
+  const appels: string[] = [];
+  let panne = false;
+  const emojis = creerEmojis(async (url, init) => {
+    appels.push(`${init?.method ?? 'GET'} ${url}`);
+    if (panne) return new Response(null, { status: 500 });
+    if (url.endsWith('/emojis') && !init?.method) return Response.json({ items: [{ id: '11', name: `m${chilling.com2usId}` }] });
+    if (url === tarq.image) return new Response(new Uint8Array([137, 80, 78, 71]));
+    if (init?.method === 'POST') return Response.json({ id: '22', name: JSON.parse(String(init.body)).name });
+    return new Response(null, { status: 404 });
+  }, 'APP', 'JETON');
+  const r = await emojis([chilling, tarq, chilling]);
+  egal([r.get(chilling.com2usId!), r.get(tarq.com2usId!)], [`<:m${chilling.com2usId}:11>`, `<:m${tarq.com2usId}:22>`], 'un émoji connu, un émoji créé à la demande');
+  egal(appels.filter((a) => a.startsWith('POST')).length, 1, 'seul le monstre sans émoji est téléversé, une fois');
+  appels.length = 0;
+  await emojis([chilling, tarq]);
+  egal(appels, [], 'la liste et les créations sont gardées : aucun nouvel appel');
+  panne = true;
+  const sansListe = creerEmojis(async () => new Response(null, { status: 500 }), 'APP', 'JETON');
+  egal((await sansListe([chilling])).size, 0, 'Discord en panne : aucune icône, aucune erreur');
+}
+
 export function testSpeedtuneEtat() {
   titre('Speed tune par capture — état porté par les menus Discord');
   const etat: Etat = {
@@ -290,6 +315,7 @@ export async function testSpeedtuneInteractions() {
   const octets = PNG.sync.write(Object.assign(new PNG({ width: capture.largeur, height: capture.hauteur }), { data: Buffer.from(capture.rgba) }));
   const ressources: Ressources = {
     banque, gabarits, monstre: (id) => MONSTRES.find((m) => m.com2usId === id), detail: async (id) => ficheDe(id),
+    emojis: async (ms) => new Map(ms.map((m) => [m.com2usId!, `<:m${m.com2usId}:9>`])),
   };
 
   const envois: { url: string; corps: { embeds: Embed[]; components?: Rangee[] } }[] = [];
@@ -374,25 +400,24 @@ export async function testSpeedtuneInteractions() {
   const final = dernier();
   egal(final.url, 'https://discord.com/api/v10/webhooks/APP/C/messages/@original', 'le résultat remplace la question');
   egal(final.corps.components, [], 'les menus disparaissent');
+  egal(final.corps.embeds.length, 1, 'un seul encart, compact');
   const embed = final.corps.embeds[0];
-  ok(embed.description?.includes('Passif de **Chilling** : 1 cumul (+20 VIT)') === true, 'les cumuls retenus sont rappelés');
-  ok(embed.description?.includes('**Susano** : Effet aug. VIT +4 % (buff de VIT +31 %)') === true, 'l\'effet aug. VIT retenu est rappelé');
-  ok(embed.description?.includes('Set Rapide : Tarq') === true, 'le set Rapide retenu est rappelé');
-  ok(embed.description?.includes('Susano') === true && embed.description.includes('+30 %'), 'le leader et son lead');
-  // Une carte par attaquant, dans l'ordre de jeu, avec l'icône du monstre.
-  const cartes = final.corps.embeds.slice(1, 4);
-  egal(cartes.map((c) => c.title), ['1. Chilling', '2. Tarq', '3. Susano'], 'une carte par attaquant, dans l\'ordre de jeu (passif compris)');
-  egal(cartes.map((c) => c.thumbnail?.url), [chilling.image, tarq.image, susano.image], 'chaque carte porte l\'icône du monstre');
-  ok(cartes[0].description?.startsWith('**367** de VIT de combat') === true, 'la VIT lue');
-  ok(cartes.every((c) => !/tick/i.test(c.description ?? '')), 'aucun tick affiché');
-  egal(final.corps.embeds[4].title, 'Défense lue', 'la défense lue, en dernière carte');
-  const ordre = cartes.map((c) => c.description).join('\n');
-  // La VIT de fiche (base + bonus, comme le monstre la montre hors combat),
-  // déduite de la VIT lue. ⚠️ Le bonus de fiche contient DÉJÀ le Rapide : il
-  // n'y change que l'arrondi (le jeu arrondit la somme des pourcentages).
+  const champ = (nom: string) => embed.fields?.find((f) => f.name === nom)?.value ?? '';
+  ok(champ('Précisé').includes('Passif de **Chilling** : 1 cumul (+20 VIT)'), 'les cumuls retenus sont rappelés');
+  ok(champ('Précisé').includes('**Susano** : Effet aug. VIT +4 % (buff de VIT +31 %)'), 'l\'effet aug. VIT retenu est rappelé');
+  egal(champ('Set Rapide'), 'Tarq', 'le set Rapide retenu, en champ');
+  egal(champ('Leader'), `<:m${susano.com2usId}:9> Susano +30 %`, 'le leader, son icône et son lead');
+  egal(embed.thumbnail?.url, susano.image, 'la vignette est l\'icône du leader');
+  // L'ordre de jeu : une ligne par monstre, son icône dans le texte.
+  const ordre = champ('Ordre de jeu');
+  const lignesOrdre = ordre.split('\n').filter((l) => /^\*\*\d\.\*\*/.test(l));
+  egal(lignesOrdre.map((l) => /\*\*([A-Za-z]+)\*\* ·/.exec(l)?.[1]), ['Chilling', 'Tarq', 'Susano'], 'l\'ordre de jeu, passif compris');
+  ok(lignesOrdre[0].startsWith(`**1.** <:m${chilling.com2usId}:9> **Chilling** · **367** VIT`), 'l\'icône du monstre dans la ligne, et la VIT lue');
+  ok(!/tick/i.test(ordre), 'aucun tick affiché');
+  ok(champ('Défense lue') !== '', 'la défense lue, en dernier champ');
   const runesDe = (m: Monster, combat: number, swift: boolean) => runeSpeedForTarget(m.stats.speed, siegeLeadFor(speedLeadOf(susano), m.element), combat, swift);
-  ok(cartes[1].description?.includes(`Fiche : ${tarq.stats.speed} + ${runesDe(tarq, 385, true)}`) === true, 'Tarq en Rapide : sa VIT de fiche');
-  ok(ordre.includes(`Fiche : ${susano.stats.speed} + ${runesDe(susano, 357, false)}`), 'Susano sans Rapide : sa VIT de fiche');
+  ok(ordre.includes(`fiche ${tarq.stats.speed} + ${runesDe(tarq, 385, true)}`), 'Tarq en Rapide : sa VIT de fiche');
+  ok(ordre.includes(`${susano.stats.speed} + `), 'Susano : sa VIT de fiche (ou celle à viser)');
   ok(Math.abs(runesDe(tarq, 385, true)! - runesDe(tarq, 385, false)!) <= 1, 'le Rapide ne change la VIT de fiche que d\'un point d\'arrondi');
   egal(final.corps, { ...final.corps, allowed_mentions: { parse: [] } }, 'aucune mention possible');
 

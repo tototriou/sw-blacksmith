@@ -31,8 +31,9 @@ import type { Banque } from '../capture/portraits';
 import type { Gabarits } from '../capture/chiffres';
 import { lireEcranPreparation, type LectureEcran } from '../capture/ecranPreparation';
 import { analyserEquipe } from './analyse';
-import { embedErreur, embedsResultat, langueDe, messageQuestion, texteEphemere, type Demande, type Embed, type Langue, type Message, type Precision } from './message';
+import { embedErreur, embedResultat, langueDe, messageQuestion, texteEphemere, type Demande, type Embed, type Langue, type Message, type Precision } from './message';
 import { ARTE_MAX, CUMULS_MAX, decoderEtat, encoderEtat, type Etat } from './etat';
+import type { Emojis } from './emojis';
 
 export const COMMANDE = 'speedtune';
 export const OPTION_CAPTURE = 'capture';
@@ -52,6 +53,9 @@ export interface Ressources {
   gabarits: Gabarits;
   monstre: (com2usId: number) => Monster | undefined;
   detail: (com2usId: number) => Promise<DetailMonstre | null>;
+  // Les icônes des monstres en émojis du bot (emojis.ts) ; absent, le message
+  // s'écrit sans icône.
+  emojis?: Emojis;
 }
 
 export interface DependancesInteractions {
@@ -325,5 +329,6 @@ export async function repondre(res: Ressources, etat: Etat, langue: Langue): Pro
     donnees
   );
   const defense = etat.defense.map((id) => res.monstre(id)).filter((m): m is Monster => m !== undefined);
-  return { embeds: embedsResultat(langue, resultat, defense, douteux, precisions), components: [] };
+  const icones = res.emojis ? await res.emojis([...monstres.map((m) => m!), ...defense]) : new Map<number, string>();
+  return { embeds: [embedResultat(langue, resultat, defense, douteux, precisions, icones)], components: [] };
 }
