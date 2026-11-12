@@ -31,7 +31,7 @@ import type { Banque } from '../capture/portraits';
 import type { Gabarits } from '../capture/chiffres';
 import { lireEcranPreparation, type LectureEcran } from '../capture/ecranPreparation';
 import { analyserEquipe } from './analyse';
-import { embedErreur, embedResultat, langueDe, messageQuestion, rangeeOutil, texteEphemere, type Demande, type Embed, type Langue, type Message, type Precision } from './message';
+import { embedErreur, embedResultat, langueDe, messageQuestion, rangeeOutil, rangeeSwift, texteEphemere, type Demande, type Embed, type Langue, type Message, type Precision } from './message';
 import { ARTE_MAX, CUMULS_MAX, decoderEtat, encoderEtat, type Etat } from './etat';
 import type { Emojis } from './emojis';
 
@@ -177,8 +177,9 @@ export function creerInteractions(d: DependancesInteractions) {
         const sorte = lu.action[0];
         const cible = lu.etat.attaquants[Number(lu.action.slice(1))];
         const valeur = interaction.data?.values?.[0] ?? '';
-        if (sorte === 'w' && /^\d$/.test(valeur) && Number(valeur) < 1 << lu.etat.attaquants.length) {
-          lu.etat.swift = Number(valeur);
+        // Un bouton Rapide (sous le résultat) : il bascule ce monstre.
+        if (sorte === 't' && cible) {
+          lu.etat.swift = (lu.etat.swift ?? 0) ^ (1 << Number(lu.action.slice(1)));
           d.differer(traiterChoix(interaction.token, langue, lu.etat));
           return json({ type: 6 });
         }
@@ -314,23 +315,22 @@ export async function repondre(res: Ressources, etat: Etat, langue: Langue): Pro
     demandes.push({ sorte: 'arte', nom, options: tranchesArte(base), choisi: a.arte, customId: encoderEtat(`a${i}`, etat) });
     if (a.arte != null) precisions.push({ sorte: 'arte', nom, arte: a.arte, buff: buffAmplifie(base, a.arte) });
   }
-  // Le set Rapide, toujours demandé : sans lui, pas de VIT de runes. Une
-  // option par combinaison (8 pour trois attaquants), « aucun » d'abord.
-  const noms = monstres.map((m) => m!.name);
-  const enSwift = (masque: number) => noms.filter((_, i) => masque & (1 << i));
-  const masques = Array.from({ length: 1 << noms.length }, (_, m) => m).sort((x, y) => enSwift(x).length - enSwift(y).length || x - y);
-  demandes.push({ sorte: 'swift', nom: '', options: masques.map((masque) => ({ masque, noms: enSwift(masque) })), choisi: etat.swift, customId: encoderEtat('w', etat) });
-  if (etat.swift != null) precisions.push({ sorte: 'swift', noms: enSwift(etat.swift) });
+  // Le set Rapide ne se demande pas : « aucun » par défaut, et des boutons
+  // sous le résultat le basculent (`rangeeSwift`).
+  const enSwift = (i: number) => ((etat.swift ?? 0) & (1 << i)) !== 0;
+  precisions.push({ sorte: 'swift', noms: monstres.filter((_, i) => enSwift(i)).map((m) => m!.name) });
 
   if (demandes.some((x) => x.choisi == null)) {
     return messageQuestion(langue, etat.attaquants.map((a, i) => ({ nom: monstres[i]!.name, combat: a.combat })), demandes, douteux);
   }
 
   const resultat = analyserEquipe(
-    etat.attaquants.map((a, i) => ({ monster: monstres[i]!, combat: a.combat, cumuls: a.cumuls, arte: a.arte, swift: ((etat.swift ?? 0) & (1 << i)) !== 0 })),
+    etat.attaquants.map((a, i) => ({ monster: monstres[i]!, combat: a.combat, cumuls: a.cumuls, arte: a.arte, swift: enSwift(i) })),
     donnees
   );
   const defense = etat.defense.map((id) => res.monstre(id)).filter((m): m is Monster => m !== undefined);
   const icones = res.emojis ? await res.emojis([...monstres.map((m) => m!), ...defense]) : new Map<number, string>();
-  return { embeds: [embedResultat(langue, resultat, defense, douteux, precisions, icones)], components: [rangeeOutil(langue)] };
+  const etatSwift = { ...etat, swift: etat.swift ?? 0 };
+  const boutons = rangeeSwift(langue, etat.attaquants.map((_, i) => ({ monster: monstres[i]!, swift: enSwift(i), customId: encoderEtat(`t${i}`, etatSwift) })), icones);
+  return { embeds: [embedResultat(langue, resultat, defense, douteux, precisions, icones)], components: [boutons, rangeeOutil(langue)] };
 }

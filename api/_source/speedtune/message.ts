@@ -44,9 +44,11 @@ export interface Menu {
   options: { label: string; value: string; description?: string; default?: boolean }[];
 }
 export interface BoutonLien { type: 2; style: 5; label: string; url: string }
+// Un bouton à bascule : vert (3, « success ») allumé, gris (2) éteint.
+export interface BoutonBascule { type: 2; style: 2 | 3; label: string; custom_id: string; emoji?: { id: string; name: string } }
 export interface Rangee {
   type: 1;
-  components: (Menu | BoutonLien)[];
+  components: (Menu | BoutonLien | BoutonBascule)[];
 }
 
 // Ce qui remplace le message : `components` vide retire les menus d'une
@@ -61,8 +63,6 @@ export interface Message {
 //     option dit la VIT qu'elle ajoute ;
 //   - `arte` : l'effet aug. VIT des artéfacts d'un monstre qui reçoit un buff de
 //     VIT ; chaque option est une TRANCHE d'artéfact qui donne le même buff ;
-//   - `swift` : qui porte le set Rapide, UN menu pour l'équipe (chaque
-//     combinaison est une option) ; il donne la VIT de runes.
 export type Demande = {
   nom: string; // le monstre (vide pour une question d'équipe)
   choisi: number | null;
@@ -70,7 +70,6 @@ export type Demande = {
 } & (
   | { sorte: 'cumuls'; passif: string; texte: string; options: { valeur: number; points: number }[] }
   | { sorte: 'arte'; options: { de: number; a: number; buff: number }[] }
-  | { sorte: 'swift'; options: { masque: number; noms: string[] }[] }
 );
 
 // Ce qui a été précisé, rappelé dans le résultat.
@@ -102,6 +101,7 @@ const TEXTES = {
     horsDePortee: 'quelle que soit sa VIT',
     defense: 'Défense lue',
     ouvrirOutil: 'Ouvrir l\'outil de speed tuning',
+    boutonSwift: (nom: string) => `${nom} en Rapide`,
     pied: 'Lecture automatique de la capture — vérifie les monstres et les VIT lus. Même calcul que l\'outil de speed tuning de SW Blacksmith.',
     douteux: (quoi: string) => `⚠️ Lecture incertaine : ${quoi}`,
     erreurTitre: '⚡ Speed tune — capture illisible',
@@ -114,8 +114,6 @@ const TEXTES = {
     questionIntro: 'La capture ne montre pas tout ce qui fait la VIT en combat. Précise-le dans les menus ci-dessous :',
     questionCumuls: (nom: string, passif: string, texte: string) => `**${nom}** — ${passif} : nombre de cumuls à son premier tour\n> ${texte}`,
     questionArte: (noms: string) => `**Effet aug. VIT** de leurs artéfacts (ils reçoivent un buff de VIT) : ${noms}`,
-    questionSwift: '**Set Rapide** : qui le porte ? (pour retrouver la VIT de runes derrière la VIT lue)',
-    menuSwift: 'Set Rapide : qui le porte ?',
     aucun: 'Aucun',
     lu: (equipe: string) => `Lu : ${equipe}`,
     menuCumuls: (nom: string) => `${nom} : nombre de cumuls`,
@@ -151,6 +149,7 @@ const TEXTES = {
     horsDePortee: 'whatever their SPD',
     defense: 'Defense read',
     ouvrirOutil: 'Open the speed tuning tool',
+    boutonSwift: (nom: string) => `${nom} on Swift`,
     pied: 'Automatic reading of the screenshot — check the monsters and SPD read. Same computation as the SW Blacksmith speed tuning tool.',
     douteux: (quoi: string) => `⚠️ Uncertain reading: ${quoi}`,
     erreurTitre: '⚡ Speed tune — unreadable screenshot',
@@ -163,8 +162,6 @@ const TEXTES = {
     questionIntro: 'The screenshot does not show everything that makes combat SPD. Fill it in with the menus below:',
     questionCumuls: (nom: string, passif: string, texte: string) => `**${nom}** — ${passif}: number of stacks at their first turn\n> ${texte}`,
     questionArte: (noms: string) => `**SPD Increasing Effect** of their artifacts (they receive a SPD buff): ${noms}`,
-    questionSwift: '**Swift set**: who wears it? (to find the rune SPD behind the SPD read)',
-    menuSwift: 'Swift set: who wears it?',
     aucun: 'None',
     lu: (equipe: string) => `Read: ${equipe}`,
     menuCumuls: (nom: string) => `${nom}: number of stacks`,
@@ -186,6 +183,30 @@ export function embedErreur(langue: Langue, erreur: Erreur | { vitIllisible: str
   const t = TEXTES[langue];
   const description = typeof erreur === 'string' ? t[erreur] : t.vitIllisible(erreur.vitIllisible.join(', '));
   return { title: t.erreurTitre, description, color: COULEUR_ERREUR };
+}
+
+// Sous le résultat, un bouton par attaquant pour le set Rapide : vert s'il le
+// porte, gris sinon ; un clic bascule et recalcule. Rapide ne change que la
+// VIT de fiche (d'un point au plus) : « aucun » par défaut, sans rien demander
+// avant le résultat.
+export function rangeeSwift(
+  langue: Langue,
+  attaquants: { monster: Monster; swift: boolean; customId: string }[],
+  icones: Map<number, string>
+): Rangee {
+  return {
+    type: 1,
+    components: attaquants.map(({ monster, swift, customId }) => {
+      const emoji = /^<:(\w+):(\d+)>$/.exec(monster.com2usId != null ? (icones.get(monster.com2usId) ?? '') : '');
+      return {
+        type: 2,
+        style: swift ? 3 : 2,
+        label: TEXTES[langue].boutonSwift(monster.name),
+        custom_id: customId,
+        ...(emoji ? { emoji: { name: emoji[1], id: emoji[2] } } : {}),
+      };
+    }),
+  };
 }
 
 // Le bouton sous le résultat : l'outil de l'app, pour aller plus loin.
@@ -211,7 +232,6 @@ export function messageQuestion(langue: Langue, equipe: { nom: string; combat: n
     t.questionIntro,
     ...demandes.flatMap((d) => (d.sorte === 'cumuls' ? [t.questionCumuls(d.nom, d.passif, raccourcir(d.texte))] : [])),
     ...(arte.length ? [t.questionArte(arte.join(', '))] : []),
-    ...(demandes.some((d) => d.sorte === 'swift') ? [t.questionSwift] : []),
   ].join('\n');
   // Plus de menus que de rangées (rare : trois passifs cumulables et un buff
   // de VIT) : ceux qui attendent une réponse passent d'abord, les autres
@@ -224,12 +244,10 @@ export function messageQuestion(langue: Langue, equipe: { nom: string; combat: n
       components: [{
         type: 3,
         custom_id: d.customId,
-        placeholder: d.sorte === 'cumuls' ? t.menuCumuls(d.nom) : d.sorte === 'arte' ? t.menuArte(d.nom) : t.menuSwift,
+        placeholder: d.sorte === 'cumuls' ? t.menuCumuls(d.nom) : t.menuArte(d.nom),
         options: d.sorte === 'cumuls'
           ? d.options.map((o) => ({ label: String(o.valeur), value: String(o.valeur), description: t.gain(o.points), ...(d.choisi === o.valeur ? { default: true } : {}) }))
-          : d.sorte === 'arte'
-            ? d.options.map((o) => ({ label: t.tranche(o.de, o.a), value: String(o.de), description: t.buff(o.buff), ...(d.choisi === o.de ? { default: true } : {}) }))
-            : d.options.map((o) => ({ label: o.noms.join(' + ') || t.aucun, value: String(o.masque), ...(d.choisi === o.masque ? { default: true } : {}) })),
+          : d.options.map((o) => ({ label: t.tranche(o.de, o.a), value: String(o.de), description: t.buff(o.buff), ...(d.choisi === o.de ? { default: true } : {}) })),
       }],
     })),
   };

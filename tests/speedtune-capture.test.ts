@@ -17,7 +17,7 @@ import { lireNombre, type Gabarits } from '../api/_source/capture/chiffres';
 import { DISPOSITIONS, lireEcranPreparation } from '../api/_source/capture/ecranPreparation';
 import { analyserEquipe } from '../api/_source/speedtune/analyse';
 import { creerInteractions, signatureValide, tranchesArte, type Ressources } from '../api/_source/speedtune/interactions';
-import { embedErreur, ICONE_APP, LIEN_OUTIL, langueDe, type Embed, type Menu, type Rangee } from '../api/_source/speedtune/message';
+import { embedErreur, ICONE_APP, LIEN_OUTIL, langueDe, type BoutonBascule, type Embed, type Menu, type Rangee } from '../api/_source/speedtune/message';
 import { decoderEtat, encoderEtat, LONGUEUR_MAX, type Etat } from '../api/_source/speedtune/etat';
 import { creerEmojis } from '../api/_source/speedtune/emojis';
 import gabaritsJson from '../api/_source/capture/chiffres-gabarits.json';
@@ -363,10 +363,8 @@ export async function testSpeedtuneInteractions() {
   // Chilling : son passif se cumule ; et son S2 (Song of the Night Wind) buffe
   // la VIT de toute l'équipe : l'effet aug. VIT de chacun compte.
   egal(menus.map((m) => m.placeholder),
-    ['Chilling : nombre de cumuls', 'Susano : Effet aug. VIT', 'Chilling : Effet aug. VIT', 'Tarq : Effet aug. VIT', 'Set Rapide : qui le porte ?'],
-    'un menu par valeur que la capture ne montre pas');
-  egal(menus[4].options.map((o) => o.label).slice(0, 4), ['Aucun', 'Susano', 'Chilling', 'Tarq'], 'set Rapide : une option par combinaison, aucun d\'abord');
-  egal(menus[4].options.length, 8, 'trois attaquants : huit combinaisons');
+    ['Chilling : nombre de cumuls', 'Susano : Effet aug. VIT', 'Chilling : Effet aug. VIT', 'Tarq : Effet aug. VIT'],
+    'un menu par valeur que la capture ne montre pas ; le set Rapide ne se demande pas');
   const menu = menus[0];
   egal(menu.options[1].description, '+20 VIT', 'chaque cumul avec la VIT qu\'il ajoute');
   egal([menus[1].options[1].label, menus[1].options[1].description], ['Effet aug. VIT +4 à 6 %', 'Buff de VIT : +31 %'], 'chaque tranche d\'artéfact, nommée comme dans le jeu, avec le buff qu\'elle donne');
@@ -387,7 +385,7 @@ export async function testSpeedtuneInteractions() {
   egal(await (await envoyer(choix('1'))).json(), { type: 6 }, 'le choix met à jour le message en différé');
   await Promise.all(travaux);
   const apresUn = dernier();
-  egal(apresUn.corps.components?.length, 5, 'tant qu\'il manque une valeur, la question reste');
+  egal(apresUn.corps.components?.length, 4, 'tant qu\'il manque une valeur, la question reste');
   egal(menusDe(apresUn)[0].options.find((o) => o.default)?.value, '1', 'le choix fait reste affiché, à sa place');
   // Les trois effets aug. VIT, chacun depuis le dernier message.
   for (const k of [0, 1, 2]) {
@@ -396,15 +394,31 @@ export async function testSpeedtuneInteractions() {
     await envoyer(choix(k === 0 ? '4' : '0', '111', m.custom_id));
     await Promise.all(travaux);
   }
-  egal(dernier().corps.components?.length, 5, 'sans le set Rapide, la question reste');
+  // Tout est précisé : le résultat, sans Rapide par défaut, et sous lui un
+  // bouton Rapide par attaquant, puis le lien vers l'outil.
+  const sansSwift = dernier();
+  egal(sansSwift.url, 'https://discord.com/api/v10/webhooks/APP/C/messages/@original', 'le résultat remplace la question');
+  const boutons = (m: typeof question) => (m.corps.components?.[0].components ?? []) as BoutonBascule[];
+  egal(boutons(sansSwift).map((b) => [b.label, b.style]), [['Susano en Rapide', 2], ['Chilling en Rapide', 2], ['Tarq en Rapide', 2]],
+    'un bouton Rapide par attaquant, dans l\'ordre de la capture, tous éteints (gris)');
+  egal(boutons(sansSwift)[2].emoji, { name: `m${tarq.com2usId}`, id: '9' }, 'chaque bouton porte l\'icône du monstre');
+  egal(sansSwift.corps.components?.[1], { type: 1, components: [{ type: 2, style: 5, label: 'Ouvrir l\'outil de speed tuning', url: LIEN_OUTIL }] },
+    'puis le bouton vers l\'outil de speed tuning');
+  egal(sansSwift.corps.embeds[0].fields?.find((f) => f.name === 'Set Rapide')?.value, 'Aucun', 'par défaut, personne en Rapide');
+  const clic = (customId: string, qui = '111') => ({
+    type: 3, token: 'C', locale: 'fr', member: { user: { id: qui } }, data: { custom_id: customId, component_type: 2 },
+  });
   travaux.length = 0;
-  const menuSwift = menusDe(dernier()).find((x) => x.placeholder.startsWith('Set Rapide'))!;
-  await envoyer(choix('4', '111', menuSwift.custom_id)); // Tarq seul
+  egal(await (await envoyer(clic(boutons(sansSwift)[2].custom_id, '222'))).json() as unknown, { type: 4, data: { content: 'Seul l\'auteur de la commande peut répondre.', flags: 64 } },
+    'un bouton Rapide cliqué par un autre : refusé');
+  egal(await (await envoyer(clic(boutons(sansSwift)[2].custom_id))).json(), { type: 6 }, 'un clic bascule Tarq en Rapide');
   await Promise.all(travaux);
   const final = dernier();
-  egal(final.url, 'https://discord.com/api/v10/webhooks/APP/C/messages/@original', 'le résultat remplace la question');
-  egal(final.corps.components, [{ type: 1, components: [{ type: 2, style: 5, label: 'Ouvrir l\'outil de speed tuning', url: LIEN_OUTIL }] }],
-    'les menus disparaissent ; reste le bouton vers l\'outil de speed tuning');
+  egal(boutons(final).map((b) => b.style), [2, 2, 3], 'Tarq allumé (vert), les autres éteints');
+  travaux.length = 0;
+  await envoyer(clic(boutons(final)[2].custom_id));
+  await Promise.all(travaux);
+  egal(boutons(dernier()).map((b) => b.style), [2, 2, 2], 'un second clic l\'éteint');
   egal(LIEN_OUTIL, 'https://sw-blacksmith.vercel.app/#/outils/speed-tuning', 'l\'outil du site de production');
   egal(final.corps.embeds.length, 1, 'un seul encart, compact');
   const embed = final.corps.embeds[0];

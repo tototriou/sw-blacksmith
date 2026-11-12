@@ -38,7 +38,8 @@ Voir aussi : README.md, feat-competences.md, feat-deux-camps.md,
    - la **défense lue**, icônes et noms (l'écran ne montre pas sa VIT) ;
    - en description, ce qui reste **incertain** dans la lecture (deux
      portraits proches, une VIT lue avec une confiance faible) ;
-   - sous l'encart, un bouton **« Ouvrir l'outil de speed tuning »** : l'outil
+   - sous l'encart, les **boutons Rapide** (voir plus bas), puis un bouton
+     **« Ouvrir l'outil de speed tuning »** : l'outil
      du site de production (`#/outils/speed-tuning`), pour régler l'équipe à
      la main. Il s'ouvre vide : l'équipe lue n'y est pas reportée.
 
@@ -73,16 +74,18 @@ attendent une réponse passent d'abord) :
   sur un allié — n'importe lequel, le lanceur compris). Le menu propose des
   **tranches** : le buff de 30 % ne prend que 19 valeurs de 0 à 60 %
   d'artéfact (`⌊30 × (100 + a) / 100⌋`, la troncature de la simulation),
-  chaque tranche vaut sa borne basse et donne exactement le même calcul ;
-- le **set Rapide** : un seul menu pour l'équipe, une option par combinaison
-  (« Aucun », « Tarq », « Susano + Tarq »… huit pour trois attaquants),
-  toujours demandé. Il ne change rien à l'ordre (la VIT de combat lue le
-  contient) : il sert à retrouver la **VIT de fiche** (`base + runes`, le
-  « +X » que le monstre montre hors combat, Rapide compris comme dans l'app,
-  voir `swiftFlat` de [speed.ts](../../../src/lib/speed.ts)), donnée pour
-  chaque attaquant et pour la VIT à viser. Sans lui, elle pourrait être
-  fausse d'un point : le jeu arrondit la somme des pourcentages (totem, lead,
-  Rapide), pas chacun.
+  chaque tranche vaut sa borne basse et donne exactement le même calcul.
+
+Le **set Rapide** ne se demande pas avant le résultat : il ne change rien à
+l'ordre (la VIT de combat lue le contient) et ne sert qu'à retrouver la **VIT
+de fiche** exacte (`base + runes`, le « +X » que le monstre montre hors
+combat, Rapide compris comme dans l'app, voir `swiftFlat` de
+[speed.ts](../../../src/lib/speed.ts)) — fausse d'un point au plus sans lui,
+le jeu arrondissant la somme des pourcentages (totem, lead, Rapide). Personne
+n'est en Rapide par défaut ; sous le résultat, **un bouton par attaquant**
+(« Tarq en Rapide », avec son icône) fait office de case à cocher : gris
+éteint, vert allumé, un clic bascule et recalcule le message. Discord n'a pas
+de case à cocher dans un message.
 
 Le service reste **sans état** : la lecture entière (monstres, VIT, valeurs
 déjà choisies, doutes, défense) voyage dans le `custom_id` de chaque menu
