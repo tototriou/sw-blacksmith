@@ -166,6 +166,16 @@ export interface OptimizerRecipe {
    * file le lit. Purement de la saisie, rien à re-résoudre chez qui importe.
    */
   verifierToutesLesCombinaisons?: boolean;
+  /**
+   * « Simuler +15 et max meules/gemmes » : la recherche porte sur l'inventaire
+   * maxé (`poolDeRecherche`, runesMaxees.ts) — principale à +15, meules et
+   * gemmes posées à leur maximum légendaire.
+   *
+   * ⚠️ **OPTIONNEL, et il doit le rester** : une recette exportée avant ce
+   * champ ne le porte pas, et tout lecteur applique `?? false` — l'écran
+   * (`importRecipe`), le CLI (`resolvePool`, recipeToSearchParams.ts).
+   */
+  simulerRunesMaxees?: boolean;
   // ⚠️ Remplace l'ancien `exploreAll` (COCHÉ par défaut, portait uniquement
   // sur la box, signification inverse) — voir OptimizerSection.tsx pour le
   // repli de lecture appliqué aux recettes exportées AVANT ce renommage.
@@ -558,7 +568,7 @@ export function parseOptimizerRecipe(text: string, t: Dictionnaire): RecipeValid
     }
   }
 
-  for (const champ of ['exhaustiveSearch', 'excludeUsedRunes', 'ignoreArtifacts', 'compterAurasResPre', 'verifierToutesLesCombinaisons']) {
+  for (const champ of ['exhaustiveSearch', 'excludeUsedRunes', 'ignoreArtifacts', 'compterAurasResPre', 'verifierToutesLesCombinaisons', 'simulerRunesMaxees']) {
     if (d[champ] !== undefined && typeof d[champ] !== 'boolean') return echec(erreur(champ, (a) => a.booleen));
   }
   if (d.excludeUsedScope !== undefined && !['rta', 'siege-defense', 'box'].includes(String(d.excludeUsedScope))) {

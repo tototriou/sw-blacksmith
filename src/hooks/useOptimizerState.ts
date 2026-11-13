@@ -289,6 +289,14 @@ export interface OptimizerState {
   // de runes. Gardé dans la recette (`OptimizerRecipe.verifierToutesLesCombinaisons`).
   verifierToutesLesCombinaisons: boolean;
   setVerifierToutesLesCombinaisons: Dispatch<SetStateAction<boolean>>;
+  // Toggle « Simuler +15 et max meules/gemmes » — désactivé par défaut. Un
+  // RÉGLAGE AVANCÉ de la recherche, comme `exhaustiveSearch` : `resetSearch`
+  // ne le remet pas à zéro, et il n'agit qu'au clic sur « Rechercher »
+  // (`poolDeRecherche`, runesMaxees.ts) ; le changer ne touche pas un
+  // résultat déjà affiché. Gardé dans la recette
+  // (`OptimizerRecipe.simulerRunesMaxees`).
+  simulerRunesMaxees: boolean;
+  setSimulerRunesMaxees: Dispatch<SetStateAction<boolean>>;
   sortBy: OptimizerSortKey;
   setSortBy: Dispatch<SetStateAction<OptimizerSortKey>>;
   // Le sens du tri des résultats et leurs filtres d'affichage (une borne
@@ -462,6 +470,7 @@ export function useOptimizerState(contexte?: ContexteMembresOptimizer): Optimize
   const [excludedSelectors, setExcludedSelectors] = useState<ExclusionSelector[]>([]);
   const [exhaustiveSearch, setExhaustiveSearch] = useState(false);
   const [verifierToutesLesCombinaisons, setVerifierToutesLesCombinaisons] = useState(false);
+  const [simulerRunesMaxees, setSimulerRunesMaxees] = useState(false);
   const [sortBy, setSortBy] = useState<OptimizerSortKey>(base.sortBy);
   const [sensTri, setSensTri] = useState<SensTri>(base.sensTri);
   const [bornesResultats, setBornesResultats] = useState<BornesResultats>(base.bornesResultats);
@@ -916,6 +925,8 @@ export function useOptimizerState(contexte?: ContexteMembresOptimizer): Optimize
     setExhaustiveSearch,
     verifierToutesLesCombinaisons,
     setVerifierToutesLesCombinaisons,
+    simulerRunesMaxees,
+    setSimulerRunesMaxees,
     sortBy,
     setSortBy: saisie('sortBy', setSortBy),
     sensTri,

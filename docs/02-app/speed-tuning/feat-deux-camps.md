@@ -13,17 +13,19 @@ distingue les raisons, et deux d'entre elles ne disent pas la même chose :
 | Raison | Ce qui se passe |
 |---|---|
 | `trop-tot` / `trop-tard` | l'ordre **entre alliés** n'est pas celui demandé |
-| `apres-adverse` | l'ordre est **bon**, mais un adverse s'intercale — l'équipe se fait **couper** |
+| `apres-adverse` | l'ordre est **bon**, mais un adverse s'intercale — l'équipe se fait **cut** |
 
 ⚠️ Quand **tous** les ennuis sont des `apres-adverse`, les alliés jouent bel et
 bien dans l'ordre demandé. Le titre le dit : « Ton équipe joue dans l'ordre
-demandé, mais elle se fait couper. » Le message d'ordre raté enverrait corriger
+demandé, mais elle se fait cut. » Le message d'ordre raté enverrait corriger
 un ordre qui n'a rien à se reprocher.
 
-Et le monstre concerné **se fait couper** plutôt qu'il n'« est trop lent » : il
+Et le monstre concerné **se fait cut** plutôt qu'il n'« est trop lent » : il
 peut parfaitement tenir son rang parmi les alliés — ce qu'il rate, c'est de
 passer avant l'adverse. C'est le même mot que l'autre branche de l'écran
-(« pour ne pas se faire cut ») : un même défaut doit se dire pareil partout.
+(« pour ne pas se faire cut ») : un même défaut doit se dire pareil partout,
+et avec le mot des joueurs — « se faire cut », en français aussi, jamais
+« se faire couper ».
 
 ### Copier un monstre en face
 

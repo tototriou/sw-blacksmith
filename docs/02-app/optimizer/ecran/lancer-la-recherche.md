@@ -60,6 +60,11 @@ et la progression.
     propriétaire des critères et sans écraser les mémoires ou équipes
     existantes. Voir ../feat-listes-equipes-et-sauvegarde.md
     § Lead effectif d’un membre.
+    « Simuler +15 et max meules/gemmes » voyage dans le champ optionnel
+    `simulerRunesMaxees` (booléen, toute autre valeur refusée avec son
+    chemin) ; absent d'une recette antérieure = désactivé, à l'écran
+    (`importRecipe`) comme au CLI (`resolvePool`), qui l'ajoute à sa ligne
+    de résumé.
     Le champ retiré `adaptiveTrancheWeighting` est ignoré à la lecture par
     `parseOptimizerRecipe`, qu'il soit vrai ou faux, sans erreur ni
     avertissement ; les recettes exportées ne le portent plus.

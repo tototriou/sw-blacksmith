@@ -31,8 +31,11 @@
     "bureau:paquet": "vite build && node scripts/construire-bureau.mjs && electron-builder --publish never"
   },
   "dependencies": {
+    "@vercel/functions": "^3.11.1",
     "framer-motion": "^11.3.19",
+    "jpeg-js": "^0.4.4",
     "lucide-react": "^0.407.0",
+    "pngjs": "^7.0.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-resizable-panels": "^4.14.5"
@@ -43,6 +46,7 @@
     "@fontsource/source-sans-3": "^5.3.1",
     "@tailwindcss/container-queries": "0.1.1",
     "@types/node": "^26.4.0",
+    "@types/pngjs": "^6.0.5",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.1",

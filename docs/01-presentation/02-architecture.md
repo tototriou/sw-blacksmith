@@ -79,6 +79,12 @@ recommandations d'une guilde. Le service ne garde rien ; la session vit dans un 
 Détail : [service-discord.md](../02-app/siege/feat-recommandations/service-discord.md) ; décisions :
 [local-par-defaut.md](../04-decisions/adr/local-par-defaut.md).
 
+**Prototype** : une seconde fonction, `api/interactions.mjs`, répond à la commande Discord
+`/speedtune` — la lecture d'une capture de l'écran de préparation de siège
+(`api/_source/capture/`), puis le moteur de speed tuning de l'app (`api/_source/speedtune/`). Elle ne
+touche pas l'app : c'est le joueur qui envoie sa capture à Discord. Détail :
+[feat-discord-capture.md](../02-app/speed-tuning/feat-discord-capture.md).
+
 ## Le shell — `src/App.tsx`
 
 Fichier central, gros et volontairement : il tient tout ce qui doit être partagé entre pages.
@@ -339,7 +345,7 @@ Fonctions **pures**, testables sans rendu. C'est ici que va toute logique, jamai
 | --- | --- |
 | Vitesse & stats | `speed.ts` (source de vérité), `stats.ts` |
 | Speed tuning | `speedTune.ts` (moteur de ticks), `speedTuneLignes.ts` (modèle de l'écran), `speedTuneAuto.ts` (analyse partagée outil/siège), `speedTuneKit.ts` + `speedTunePassif.ts` (lecture des kits), `speedTuneDeck.ts` (import d'un deck), `siegeStatut.ts` (statut d'une équipe de siège) |
-| Runes | `runeOptim.ts`, `runeBuildOptim.ts` (moteur, référence), `rechercheRunes.ts` (orchestration : `searchBuilds`, `construireMoitie`, `apparier`), `constructionRapide.ts`, `appariementRapide.ts` et `validationRapide.ts` (noyaux sur tableaux typés), `retentionEmboitee.ts` (union des rétentions des préréglages emboîtés) et `constructionEmboitee.ts` (un Worker de construction par moitié et par préréglage), `appariementRapideParallele.ts` (appariement parallèle) et `travailleurAppariement.ts` (ce que fait chacun de ses Workers), `runeSort.ts`, `runeCurveShare.ts` |
+| Runes | `runeOptim.ts`, `runesMaxees.ts` (inventaire maxé de « Simuler +15 et max meules/gemmes »), `runeBuildOptim.ts` (moteur, référence), `rechercheRunes.ts` (orchestration : `searchBuilds`, `construireMoitie`, `apparier`), `constructionRapide.ts`, `appariementRapide.ts` et `validationRapide.ts` (noyaux sur tableaux typés), `retentionEmboitee.ts` (union des rétentions des préréglages emboîtés) et `constructionEmboitee.ts` (un Worker de construction par moitié et par préréglage), `appariementRapideParallele.ts` (appariement parallèle) et `travailleurAppariement.ts` (ce que fait chacun de ses Workers), `runeSort.ts`, `runeCurveShare.ts` |
 | Résultats Optimizer | `contexteResultat.ts` (photographie pure partagée Node), `candidatsCompacts.ts` (stockage), `classementCompact.ts` (index et corps propriétaire), `cacheResolutionCompact.ts` (cache typé), `cession.ts` (cession entre deux tranches), `colonnesResultats.ts` (les onze colonnes des résultats, et la lecture d'un objectif ou d'un tri enregistré comme colonne), `filtresResultats.ts` (bornes min/max par colonne : validation, valeur comparée, catégorie de chaque ligne), `valeursAffichees.ts` (ce qu'une carte de résultat écrit d'une valeur, en nombre : la moyenne par rune et ses chiffres, l'entier des PV effectifs et des dégâts), `filtresAffichage.ts` (ce que l'écran écrit des onze colonnes : libellés, unités, résumé des bornes, ligne de comptes), `epinglesOptimizer.ts` (les builds épinglés : dix au plus par membre, ordre et numéros, libération) ; `classement.worker.ts` et `classementDistant.ts` (transport, versions et instantané de la page) ; `useBuildOptimSearch` garde les Workers vivants pendant la navigation et reçoit l'instantané de la vue |
 | Reliques | `relicOptim.ts` (choix de la meilleure relique pour un build, pertinence et dominance structurelle) ; `relicQueue.ts` (résolution EXACTE de l'équipement d'un build — paire d'artéfacts ET relique, ensemble — la partie pure de la file du classeur, et l'état de la relique d'un candidat pour l'écran) ; `resolutionRapide.ts` (la résolution de l'app, appelée par `relicQueue.ts` : elle ne note que les paires faisables) ; `resolutionExhaustive.ts` (la même résolution, toutes les paires notées : référence des tests et diagnostic d'un build rejeté, à la demande) |
 | Tri | `tri.ts` (le SENS d'un tri, partagé par toutes les listes) |

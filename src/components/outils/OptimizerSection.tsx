@@ -14,6 +14,7 @@ import { etatReliqueDuBuild } from '../../lib/relicQueue';
 import { resoudreContexteRelique } from '../../lib/relicOptim';
 import { artifactConditionFloor, relicConditionFloor } from '../../lib/artifactConditionFloor';
 import { contexteResultat, runesDuContexte, type ContexteResultat } from '../../lib/contexteResultat';
+import { poolDeRecherche } from '../../lib/runesMaxees';
 import {
   basculerEpingle, cleEpingle, cleMembreEpingles, epinglesDe, liberer, libererTout, numeroEpingle, placeLibre, type BuildEpingle,
 } from '../../lib/epinglesOptimizer';
@@ -463,6 +464,8 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
     setExhaustiveSearch,
     verifierToutesLesCombinaisons,
     setVerifierToutesLesCombinaisons,
+    simulerRunesMaxees,
+    setSimulerRunesMaxees,
     sortBy,
     setSortBy,
     sensTri,
@@ -1283,7 +1286,7 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
   // leurs propres commentaires).
   const selectedUnitKey = sourceSelector?.source === 'box' ? sourceSelector.unitKey : null;
 
-  const pool = useMemo(() => {
+  const poolInventaire = useMemo(() => {
     if (!selected) return runes;
     // Se SUPERPOSENT, ne se remplacent pas : `excludeUsedRunes` l'exclusion
     // automatique (un périmètre entier, RTA/Défenses siège/Box),
@@ -1302,6 +1305,13 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
     if (auto.size === 0 && manual.size === 0 && reserved.size === 0) return runes;
     return runes.filter((r) => !auto.has(r.id) && !manual.has(r.id) && !reserved.has(r.id));
   }, [selected, selectedUnitKey, excludeUsedRunes, excludeUsedScope, excludedSelectors, exclusionData, runes, lists.validated, lists.activeListId, ownSelectorKey]);
+  // Le pool de la RECHERCHE : l'inventaire filtré, maxé sous « Simuler +15
+  // et max meules/gemmes » (runesMaxees.ts, même producteur que le CLI).
+  // Estimation, diagnostics avant recherche, bornes du speed tune et
+  // `handleSearch` le lisent ; un résultat affiché garde le pool photographié
+  // à son lancement (`runesDuContexte`), si bien que basculer le réglage ne
+  // le change pas.
+  const pool = useMemo(() => poolDeRecherche(poolInventaire, simulerRunesMaxees), [poolInventaire, simulerRunesMaxees]);
 
   // Le speed tune du membre, s'il est lié à une ligne d'un plan de son équipe
   // (feat-contrainte-speed-tune.md). Attaché, il possède la VIT minimum et le
@@ -1955,6 +1965,7 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
       // Toujours `false`, comme la recherche (`handleSearch`).
       exhaustiveSearch,
       verifierToutesLesCombinaisons,
+      simulerRunesMaxees,
       excludeUsedRunes,
       excludeUsedScope,
       excludedSelectors,
@@ -2175,6 +2186,8 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
       // ⚠️ `?? false`, même repli : une recette exportée avant ce
       // champ ne le porte pas — désactivé, le défaut.
       setVerifierToutesLesCombinaisons(recipe.verifierToutesLesCombinaisons ?? false);
+      // ⚠️ `?? false`, même repli : désactivé, le défaut.
+      setSimulerRunesMaxees(recipe.simulerRunesMaxees ?? false);
       // ⚠️ Repli sur l'ANCIEN champ `exploreAll` (recette exportée avant ce
       // renommage/inversion) : `exploreAll` coché = pas d'exclusion
       // (`excludeUsedRunes = false`, comportement identique) ; décoché =
@@ -2354,8 +2367,10 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
         // compte ; chaque import vide le cache.
         importDuCompte,
         empreinteSpeedTune: empreinteSpeedTune(contrainteSpeedTune),
+        // Les runes simulées gardent leurs identifiants, clés du cache.
+        runesMaxees: simulerRunesMaxees,
       }),
-    [selected?.monster.com2usId, selected?.gear.relic, selected?.gear.artifacts, damageSetup, compterAurasResPre, regimeEquipement, optimiserArtefacts, artifactMainByKind, lignesVerrouillees, artifacts.length, relicContextRecherche?.empreinte, requirementAvecAuras, artefactsReserves, importDuCompte, contrainteSpeedTune]
+    [selected?.monster.com2usId, selected?.gear.relic, selected?.gear.artifacts, damageSetup, compterAurasResPre, regimeEquipement, optimiserArtefacts, artifactMainByKind, lignesVerrouillees, artifacts.length, relicContextRecherche?.empreinte, requirementAvecAuras, artefactsReserves, importDuCompte, contrainteSpeedTune, simulerRunesMaxees]
   );
 
   // Les chiffres des cartes lisent la photographie et l'instantané du classeur.
@@ -3679,6 +3694,8 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
               optimiserArtefacts={optimiserArtefacts}
               verifierToutesLesCombinaisons={verifierToutesLesCombinaisons}
               setVerifierToutesLesCombinaisons={setVerifierToutesLesCombinaisons}
+              simulerRunesMaxees={simulerRunesMaxees}
+              setSimulerRunesMaxees={setSimulerRunesMaxees}
               interrupteurResPrePanneauRef={interrupteurResPrePanneauRef}
               interrupteurResPreBureauRef={interrupteurResPreBureauRef}
               attentionResPre={attentionResPre}
@@ -3863,6 +3880,8 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
             optimiserArtefacts={optimiserArtefacts}
             verifierToutesLesCombinaisons={verifierToutesLesCombinaisons}
             setVerifierToutesLesCombinaisons={setVerifierToutesLesCombinaisons}
+            simulerRunesMaxees={simulerRunesMaxees}
+            setSimulerRunesMaxees={setSimulerRunesMaxees}
             interrupteurResPrePanneauRef={interrupteurResPrePanneauRef}
             interrupteurResPreBureauRef={interrupteurResPreBureauRef}
             attentionResPre={attentionResPre}

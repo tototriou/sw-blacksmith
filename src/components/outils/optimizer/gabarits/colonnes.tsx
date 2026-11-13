@@ -124,13 +124,15 @@ function AvancesGabarit({ ctx, initial }: { ctx: ContexteGabarits; initial: Regl
   const [diagnostic, setDiagnostic] = useState(initial.diagnostic ?? false);
   const [toutes, setToutes] = useState(initial.toutes ?? o.verifierToutesLesCombinaisons);
   const [auras, setAuras] = useState(initial.auras ?? o.compterAurasResPre);
+  const [maxees, setMaxees] = useState(o.simulerRunesMaxees);
   const ref = { current: null };
   return (
     <ReglagesAvancesBureau>
       <ReglagesAvancesContenu slotFilterPreset={prefiltrage} handleSlotFilterPresetChange={setPrefiltrage} dansPanneau={false} estimate={null}
         exhaustiveSearch={epuisement} setExhaustiveSearch={setEpuisement} diagnoseBlockingEnabled={diagnostic} setDiagnoseBlockingEnabled={setDiagnostic}
         optimiserArtefacts={o.optimiserArtefacts}
-        verifierToutesLesCombinaisons={toutes} setVerifierToutesLesCombinaisons={setToutes} interrupteurResPrePanneauRef={ref}
+        verifierToutesLesCombinaisons={toutes} setVerifierToutesLesCombinaisons={setToutes}
+        simulerRunesMaxees={maxees} setSimulerRunesMaxees={setMaxees} interrupteurResPrePanneauRef={ref}
         interrupteurResPreBureauRef={ref} attentionResPre={null} compterAurasResPre={auras} setCompterAurasResPre={setAuras} bureau />
     </ReglagesAvancesBureau>
   );

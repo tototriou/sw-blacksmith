@@ -519,6 +519,7 @@ export const fr = {
     proprieteModifiee: 'Propriété modifiée',
     voirDetailMeule: 'Voir le détail (valeur d’origine + meule)',
     voirTotalMeule: 'Voir les valeurs totales, meule comprise',
+    simulee: (reelle: string) => `Simulé (maxé) — valeur réelle : ${reelle}`,
     ameliorations: (n: number) => `${n} amélioration${n > 1 ? 's' : ''} sur cette ligne`,
     relique: 'Relique',
     reliqueEnAttente: 'Relique : en attente',
@@ -2325,6 +2326,16 @@ export const fr = {
     avances: {
       profondeur: 'Profondeur de recherche',
       pool: (n: string) => `Pool de runes = ${n}`,
+      runesMaxees: 'Simuler +15 et max meules/gemmes',
+      runesMaxeesAide: {
+        debut: 'Activé, la recherche suppose tes runes maxées : la principale de chaque rune 6★ passe à sa valeur ',
+        niveau: 'à +15',
+        meules: ', chaque ligne meulable (PV, ATQ, DEF, VIT), meulée ou non, reçoit la meule ',
+        legendaire: 'légendaire maximale',
+        fin: ', et chaque gemme déjà posée sa valeur légendaire maximale (antique sur une rune antique). Aucune gemme n’est ajoutée, et les sous-propriétés à venir d’une rune pas encore à +12 ne sont pas devinées.',
+        couleur:
+          'Dans le détail d’une rune des résultats, ce qui a été simulé est en violet. Le réglage vaut pour la prochaine recherche : les résultats affichés ne changent pas.',
+      },
       exhaustif: "Rechercher jusqu'à épuisement complet",
       exhaustifAide:
         "Retire la limite de temps de 10 minutes : la recherche continue tant qu'il reste des combinaisons à examiner. Peut prendre très longtemps sur une recherche avec peu de conditions — le bouton ",
@@ -3043,12 +3054,12 @@ export const fr = {
       equipeVide: "Ajoute d'abord des monstres à ton équipe.",
       analyserAide:
         "Lit les kits et POSE le résultat dans les grilles, comme si tu les remplissais à la main. Ensuite tout est modifiable : l'analyse ne repasse plus, sauf si tu changes un sort.",
-      ajouterPourVerifier: 'Ajoute des monstres à ton équipe pour vérifier que rien ne la coupe.',
-      coupee: 'Ton équipe joue dans l’ordre demandé, mais elle se fait couper.',
+      ajouterPourVerifier: 'Ajoute des monstres à ton équipe pour vérifier qu’elle ne se fait pas cut.',
+      coupee: 'Ton équipe joue dans l’ordre demandé, mais elle se fait cut.',
       ordreImpossible: "Les vitesses de tes monstres ne permettent pas de jouer dans l'ordre demandé.",
       neJouePas: (rang: number) => `ne joue pas une ${rang}ᵉ fois`,
       nAgitPas: "n'agit pas",
-      seFaitCouper: 'se fait couper',
+      seFaitCouper: 'se fait cut',
       tropRapide: 'est trop rapide',
       tropLent: 'est trop lent',
       pasTune: 'Les vitesses de tes monstres ne sont pas suffisantes pour être speed tune.',

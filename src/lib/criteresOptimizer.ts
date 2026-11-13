@@ -22,7 +22,7 @@ export const CLASSEMENT_CHAMPS_OPTIMIZER = {
   selectedId: 'global', gearSource: 'global', sourceSelector: 'global',
   relicMinUpgrade: 'global', excludeUsedRunes: 'global', excludeUsedScope: 'global',
   excludedSelectors: 'global', exhaustiveSearch: 'global',
-  verifierToutesLesCombinaisons: 'global', slotFilterPreset: 'global',
+  verifierToutesLesCombinaisons: 'global', simulerRunesMaxees: 'global', slotFilterPreset: 'global',
   setPickerInvalid: 'global', resultsPage: 'global', openDetailKey: 'global', epingles: 'global',
   diagnoseBlockingEnabled: 'global', stoppedManually: 'global', importDuCompte: 'global',
   importReliqueTraite: 'global', search: 'global',

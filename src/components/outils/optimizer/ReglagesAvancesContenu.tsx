@@ -19,6 +19,8 @@ export interface ReglagesAvancesContenuProps {
   optimiserArtefacts: boolean;
   verifierToutesLesCombinaisons: boolean;
   setVerifierToutesLesCombinaisons: Dispatch<SetStateAction<boolean>>;
+  simulerRunesMaxees: boolean;
+  setSimulerRunesMaxees: Dispatch<SetStateAction<boolean>>;
   interrupteurResPrePanneauRef: RefObject<HTMLDivElement>;
   interrupteurResPreBureauRef: RefObject<HTMLDivElement>;
   attentionResPre: number | null;
@@ -60,7 +62,7 @@ function LibelleEtAide({ bureau, etire = false, libelle, aide, interrupteur }: {
   );
 }
 
-export default function ReglagesAvancesContenu({ slotFilterPreset, handleSlotFilterPresetChange, dansPanneau, estimate, exhaustiveSearch, setExhaustiveSearch, diagnoseBlockingEnabled, setDiagnoseBlockingEnabled, optimiserArtefacts, verifierToutesLesCombinaisons, setVerifierToutesLesCombinaisons, interrupteurResPrePanneauRef, interrupteurResPreBureauRef, attentionResPre, compterAurasResPre, setCompterAurasResPre, bureau = false }: ReglagesAvancesContenuProps) {
+export default function ReglagesAvancesContenu({ slotFilterPreset, handleSlotFilterPresetChange, dansPanneau, estimate, exhaustiveSearch, setExhaustiveSearch, diagnoseBlockingEnabled, setDiagnoseBlockingEnabled, optimiserArtefacts, verifierToutesLesCombinaisons, setVerifierToutesLesCombinaisons, simulerRunesMaxees, setSimulerRunesMaxees, interrupteurResPrePanneauRef, interrupteurResPreBureauRef, attentionResPre, compterAurasResPre, setCompterAurasResPre, bureau = false }: ReglagesAvancesContenuProps) {
   // ⚠️ **Au bureau, deux sections sans boîte**, empilées sous un trait fin
   // (`SECTIONS`, bureau/panneau.ts) : la colonne « Aura, exclusion, avancés »
   // est un panneau, et une boîte de plus y ferait la mosaïque que le trait
@@ -110,9 +112,36 @@ export default function ReglagesAvancesContenu({ slotFilterPreset, handleSlotFil
     {/* Au bureau, le trait entre deux interrupteurs est celui des sections
         (`border-soft`) : plus appuyé, il dominerait le trait de section. */}
     <div className={`divide-y ${bureau ? 'divide-border-soft' : 'divide-border'} ${boite}`}>
+      {/* « Simuler +15 et max meules/gemmes » : désactivé par défaut. Il
+          change le pool de la recherche (`poolDeRecherche`, runesMaxees.ts),
+          lu au clic sur « Rechercher » : un résultat affiché garde le pool
+          de son lancement. En tête : rendu sans condition, rien au-dessus
+          ne le décale. */}
+      <div className="flex items-center justify-between gap-2 py-3 first:pt-0">
+        <LibelleEtAide
+          bureau={bureau}
+          libelle={r.runesMaxees}
+          interrupteur={
+            <Interrupteur
+              actif={simulerRunesMaxees}
+              onChange={setSimulerRunesMaxees}
+              aria-label={r.runesMaxees}
+            />
+          }
+          aide={
+          <HelpPopover title={r.runesMaxees}>
+            {r.runesMaxeesAide.debut}<b className="text-ink">{r.runesMaxeesAide.niveau}</b>{r.runesMaxeesAide.meules}<b className="text-ink">{r.runesMaxeesAide.legendaire}</b>{r.runesMaxeesAide.fin}
+            <br />
+            <br />
+            {r.runesMaxeesAide.couleur}
+          </HelpPopover>
+          }
+        />
+      </div>
+
       {/* Désactivé par défaut, lu par `handleSearch` au clic sur
           « Rechercher », jamais un bouton qui lance sa propre recherche. */}
-      <div className="flex items-center justify-between gap-2 py-3 first:pt-0">
+      <div className="flex items-center justify-between gap-2 py-3">
         <LibelleEtAide
           bureau={bureau}
           libelle={r.exhaustif}

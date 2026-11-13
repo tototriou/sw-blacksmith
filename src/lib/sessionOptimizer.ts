@@ -39,6 +39,7 @@ export const CHAMPS_OPTIMIZER_SESSION = [
   'excludedSelectors',
   'exhaustiveSearch',
   'verifierToutesLesCombinaisons',
+  'simulerRunesMaxees',
   'slotFilterPreset',
   'sortBy',
   // Les filtres d'affichage des résultats voyagent avec le tri.

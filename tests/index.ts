@@ -128,6 +128,8 @@ import { testRenduOptimizerEpingles, testRenduOptimizerEpinglesTableau } from '.
 import { testFileConfirmees } from './file-confirmees.test';
 import { testCompteConfirme } from './compte-confirme.test';
 import { testVerifierToutes } from './verifier-toutes.test';
+import { testRunesMaxees } from './runes-maxees.test';
+import { testRenduRuneSimulee } from './rendu/rune-simulee.test';
 import { testProsesSortAuClic, testEffetsActifsInfobulle } from './proses-sort.test';
 import { testProseStatsCombat, testProseStatsCombatCarte, testProseStatsCombatPassifMasque } from './prose-stats-combat.test';
 import { testBuffsDePassifTable, testBuffsDePassifRappel, testBuffsDePassifEcran } from './buffs-de-passif.test';
@@ -369,6 +371,8 @@ import { testApercuDeuxLignesRecherche, testApercuDeuxLignesBorne, testApercuDeu
 import { testRenduRecosApercuCentainesDeDecks } from './rendu/apercu-recos.test';
 import { testDiscordDroits, testDiscordSession, testDiscordRecoSalon, testDiscordContributeursFormat, testDiscordRouteurConnexion,
   testDiscordRouteurBureau, testDiscordRouteurSources, testDiscordRouteurSalonEtPublication, testDiscordRouteurToutEtLimites } from './discord-service.test';
+import { testCaptureImage, testCapturePortraits, testCaptureChiffres, testCaptureEcran, testSpeedtuneAnalyse,
+  testSpeedtuneEtat, testSpeedtuneEmojis, testSpeedtuneInteractions } from './speedtune-capture.test';
 import { testRecoDiscordEtat, testRecoDiscordRecevoir, testRecoDiscordSynchro, testRecoDiscordPublication, testRecoDiscordFusion,
   testRecoDiscordFavorisEtStockage } from './reco-discord.test';
 import { testRenduRecoDiscordStockage } from './rendu/reco-discord-stockage.test';
@@ -570,6 +574,14 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testDiscordRouteurSources', testDiscordRouteurSources],
   ['testDiscordRouteurSalonEtPublication', testDiscordRouteurSalonEtPublication],
   ['testDiscordRouteurToutEtLimites', testDiscordRouteurToutEtLimites],
+  ['testCaptureImage', testCaptureImage],
+  ['testCapturePortraits', testCapturePortraits],
+  ['testCaptureChiffres', testCaptureChiffres],
+  ['testCaptureEcran', testCaptureEcran],
+  ['testSpeedtuneAnalyse', testSpeedtuneAnalyse],
+  ['testSpeedtuneEtat', testSpeedtuneEtat],
+  ['testSpeedtuneEmojis', testSpeedtuneEmojis],
+  ['testSpeedtuneInteractions', testSpeedtuneInteractions],
   ['testRecoDiscordEtat', testRecoDiscordEtat],
   ['testRecoDiscordRecevoir', testRecoDiscordRecevoir],
   ['testRecoDiscordSynchro', testRecoDiscordSynchro],
@@ -1129,6 +1141,8 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testFileConfirmees', testFileConfirmees],
   ['testCompteConfirme', testCompteConfirme],
   ['testVerifierToutes', testVerifierToutes],
+  ['testRunesMaxees', testRunesMaxees],
+  ['testRenduRuneSimulee', testRenduRuneSimulee],
   ['testProsesSortAuClic', testProsesSortAuClic],
   ['testEffetsActifsInfobulle', testEffetsActifsInfobulle],
   ['testProseStatsCombat', testProseStatsCombat],
