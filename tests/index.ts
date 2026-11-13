@@ -123,6 +123,8 @@ import { testCompteAffichable } from './compte-affichable.test';
 import { testOptimizerFormatBig } from './format-big.test';
 import { testVoieDeLaFile } from './file-voie.test';
 import { testCompositionDePage } from './composition-page.test';
+import { testEpinglesOptimizer } from './epingles-optimizer.test';
+import { testRenduOptimizerEpingles, testRenduOptimizerEpinglesTableau } from './rendu/optimizer-epingles.test';
 import { testFileConfirmees } from './file-confirmees.test';
 import { testCompteConfirme } from './compte-confirme.test';
 import { testVerifierToutes } from './verifier-toutes.test';
@@ -410,7 +412,7 @@ import { testRenduOptimizerGabaritsComposants, testRenduOptimizerGabaritsVue, te
 import { testRenduOptimizerGabaritsColonnes, testRenduOptimizerGabaritsDroite, testRenduOptimizerPageBureauDroite } from './rendu/optimizer-gabarits-droite.test';
 import { testRenduSpeedTuneEncart } from './rendu/speed-tune-encart.test';
 import { testRenduOptimizerGabaritsGestes, testRenduOptimizerGabaritsLargeurs } from './rendu/optimizer-gabarits-navigateur.test';
-import { testRenduOptimizerCarteResultatBureau, testRenduOptimizerCarteResultatTelephone } from './rendu/optimizer-carte-resultat-navigateur.test';
+import { testRenduOptimizerCarteResultatBureau, testRenduOptimizerCarteResultatTelephone, testRenduOptimizerCarteEpingle } from './rendu/optimizer-carte-resultat-navigateur.test';
 import { testRenduOptimizerComparerValidationBureau, testRenduOptimizerComparerValidationTelephone,
   testRenduOptimizerComparerValidationReliqueBureau, testRenduOptimizerComparerValidationReliqueTelephone } from './rendu/optimizer-comparer-validation.test';
 import { testRenduOptimizerNonRelanceBureau, testRenduOptimizerNonRelanceTelephone, testRenduOptimizerPageInterrompueBureau, testRenduOptimizerPageInterrompueTelephone } from './rendu/optimizer-non-relance.test';
@@ -653,6 +655,7 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testRenduOptimizerGabaritsLargeurs', testRenduOptimizerGabaritsLargeurs],
   ['testRenduOptimizerCarteResultatBureau', testRenduOptimizerCarteResultatBureau],
   ['testRenduOptimizerCarteResultatTelephone', testRenduOptimizerCarteResultatTelephone],
+  ['testRenduOptimizerCarteEpingle', testRenduOptimizerCarteEpingle],
   ['testRenduOptimizerComparerValidationBureau', testRenduOptimizerComparerValidationBureau],
   ['testRenduOptimizerNonRelanceBureau', testRenduOptimizerNonRelanceBureau],
   ['testRenduOptimizerNonRelanceTelephone', testRenduOptimizerNonRelanceTelephone],
@@ -1132,6 +1135,9 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testOptimizerFormatBig', testOptimizerFormatBig],
   ['testVoieDeLaFile', testVoieDeLaFile],
   ['testCompositionDePage', testCompositionDePage],
+  ['testEpinglesOptimizer', testEpinglesOptimizer],
+  ['testRenduOptimizerEpingles', testRenduOptimizerEpingles],
+  ['testRenduOptimizerEpinglesTableau', testRenduOptimizerEpinglesTableau],
   ['testFileConfirmees', testFileConfirmees],
   ['testCompteConfirme', testCompteConfirme],
   ['testVerifierToutes', testVerifierToutes],

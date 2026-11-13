@@ -319,6 +319,10 @@ Une entrée = une règle qu'un chantier qui l'ignore casse, avec sa source. Ce f
 
 - « Éditer la liste » garde un brouillon de nom et de contenu jusqu’à « Enregistrer », qui les publie ensemble sans retirer membres, mémoires, équipes ni rejets. La liste active et le menu affichent « Nom - Contenu », ou « Sans contenu » pour une liste antérieure ; le contenu se règle seulement dans le dialogue. Sources : ../../02-app/optimizer/feat-listes-et-reservation.md § Créer, valider et réserver dans une liste ; ../../02-app/optimizer/feat-listes-equipes-et-sauvegarde.md § Contenu de combat des listes
 
+### Builds épinglés
+
+- Un build épinglé est une photographie (carte publiée par le classeur et `ContexteResultat` de sa recherche), jamais une référence à la page : tri, filtres, page et nouvelle recherche ne le retirent ni ne le recalculent ; il s'affiche en tête (une ligne compacte en cartes, une ligne en tête du corps en tableau), sans tri, filtre ni pagination, même sous une vue vide. Dix au plus par membre (liste active et exemplaire), aucun remplacement silencieux ; numérotés dans l'ordre d'épinglage, renumérotés sans trou. Épingler ne réserve aucune rune ; « Libérer tous les builds épinglés » est toujours présent avec les résultats, désactivé sans épinglé, et confirme par la fenêtre des suppressions. Hors recette, mémoires et session ; un compte importé les efface. Source : ../../02-app/optimizer/ecran/resultats.md § Builds épinglés
+
 ### Disposition des cartes et équipes
 
 - « Lier une équipe » est actif dès qu'une liste est active. Le dialogue compte les membres libres de cette liste, exclut ceux des autres équipes et, si moins de deux restent, affiche « Pas assez de monstres pour faire une équipe : rajoute des monstres dans la liste. » au-dessus du membre restant ou à la place des propositions vides. Lier est désactivé ; Annuler et la croix ferment. La modification garde ses membres proposés sans ce message. Source : ../../02-app/optimizer/feat-listes-equipes-et-sauvegarde.md § Équipes à l'écran

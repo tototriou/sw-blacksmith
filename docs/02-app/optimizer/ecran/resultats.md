@@ -599,7 +599,8 @@ toujours, superposés, l'absent invisible (`VISIBLE_AVEC_LE_TABLEAU`,
 - **La ligne de la fiche** (demande d'utilisateur : voir l'efficience, les
   dégâts et les PV effectifs du runage porté sans ouvrir « Comparer ») : sous
   les bornes, dernière rangée de l'en-tête, les onze valeurs de la fiche
-  affichée dans « Exemplaire », sur fond `panel2`, au-dessus du premier build.
+  affichée dans « Exemplaire », sur fond `panel2`, au-dessus des builds épinglés
+  (même fond, § Builds épinglés) et du premier build.
   Son nom est celui de la vue, sur sa propre rangée : « Build actuel »,
   « Build validé » ou « Aperçu » (`vueFiche`) ; dans la colonne du rang, il
   aurait élargi le tableau, dont le seuil est mesuré. ⚠️ **Les valeurs sont
@@ -645,6 +646,102 @@ toujours, superposés, l'absent invisible (`VISIBLE_AVEC_LE_TABLEAU`,
   « Stats de base exclues » de la grille des filtres en cartes (§ À l'écran) :
   basculer l'un bascule l'autre. Les valeurs des cartes gardent leur bascule
   propre (clic sur la fiche).
+
+## Builds épinglés
+
+Demande de l'utilisateur (forum Discord, « marquage de runages », spécifiée
+le 2026-11-12) : garder sous les yeux des builds qui ont retenu l'attention,
+pour les comparer, même quand on change les critères, les filtres
+d'affichage ou le tri. Calcul pur : `epinglesOptimizer.ts` ; l'état
+(`epingles`) vit dans `useOptimizerState.ts`, à côté des résultats.
+
+- **Épingler** : un bouton d'icône (punaise) sur chaque carte, entre
+  « Comparer » et « Valider ce build ». ⚠️ **Sans libellé** : au bureau, la
+  carte au plancher (328 px) contient tout juste « Comparer » et « Valider »
+  à 160 px ; un troisième bouton écrit faisait passer la rangée à la ligne.
+  Le geste se nomme en infobulle et pour le lecteur d'écran (« Épingler ce
+  build ») ; épinglé, le bouton reste enclenché (`aria-pressed`) et devient
+  « Libérer ce build épinglé ». « Comparer » reste « Comparer » : comparer
+  les épinglés à la fiche est le but de la demande (lecture retenue de
+  « le bouton comparer se transformera en libérer »). Vérifié au navigateur
+  aux deux formats : les trois sur une rangée, rien ne déborde, et le clic ne
+  déplace ni le bouton, ni ses voisins, ni l'en-tête de la carte
+  (`testRenduOptimizerCarteEpingle`). Dans le tableau, on épingle depuis la
+  modale de la ligne, qui montre la carte telle quelle.
+- **Dix au plus par monstre** (`MAX_EPINGLES`). À dix, le bouton des autres
+  cartes est désactivé et dit pourquoi (« 10 builds épinglés au plus :
+  libères-en un pour épingler celui-ci. ») ; rien n'est remplacé en silence.
+- **Une photographie** : l'épingle garde la carte que le classeur a publiée
+  (runes, paire d'artéfacts, relique retenue, PV effectifs et dégâts) et le
+  contexte de la recherche qui l'a produite (`ContexteResultat` : pool,
+  fiche, combat, relique). Le classeur n'envoie que la page affichée : un
+  tri, un filtre ou une nouvelle recherche la remplacent, l'épinglé reste.
+  Ses rangées « PV effectifs » et « Dégâts » sont celles qu'il montrait au
+  geste ; la valeur moyenne suit la mesure courante, comme toute carte.
+  L'identité d'un épinglé : ses six runes, sa paire et sa relique
+  (`cleEpingle`) — mêmes runes et autre paire font deux builds, comme pour
+  « Valider les artéfacts ».
+- **En cartes**, une **ligne compacte** par épinglé (`ListeEpingles.tsx`),
+  au-dessus de la bande de tri et de la grille, sur toutes les pages, dans
+  l'ordre d'épinglage : punaise et numéro (« 1 » à « 10 »), sets, valeur
+  de la **colonne de tri** et « Libérer ce build épinglé ». ⚠️ La valeur suit
+  le tri, pas l'objectif (demande de l'utilisateur) : c'est elle qui range la
+  page, donc celle qu'on compare. Trié par efficience, la ligne écrit
+  « Efficience moyenne : … » comme la carte ; trié par une stat, « VIT : … » ;
+  une colonne indisponible (dégâts sans sort) retombe sur l'efficience. Un clic sur
+  la ligne ouvre la carte entière dans la modale « Build épinglé n° N »
+  (contour en accent, numéro à la place du rang), d'où l'on compare, valide ou
+  libère. ⚠️ **Pourquoi des lignes et pas des cartes** (choix de
+  l'utilisateur, 2026-11-13) : la demande voulait les épinglés dans les
+  premiers emplacements de la grille, mais dix cartes repoussaient la page de
+  quatre écrans au bureau, contre le but même de la fonction (comparer les
+  épinglés aux nouveaux résultats) ; une modale les aurait cachés. Un épinglé
+  encore présent dans la page y garde sa carte et son rang ; seul son bouton
+  enclenché dit qu'il est épinglé : un numéro de plus dans l'en-tête le
+  faisait passer à la ligne au bureau. ⚠️ Épingler ajoute une ligne
+  au-dessus de la grille : les cartes descendent de sa hauteur, une exception
+  assumée à « un clic ne déplace jamais ce qu'on vient de cliquer », signalée
+  à la relecture.
+- **En tableau**, une ligne par épinglé en tête du corps, au-dessus du
+  build n° 1, le numéro à la place du rang, un trait plein sous la dernière,
+  sur le fond de la ligne de la fiche d'« Exemplaire » (`bg-panel2`, demande
+  de l'utilisateur), juste sous elle ;
+  un clic ouvre la modale « Build épinglé n° N », comme les autres lignes.
+  Les valeurs s'écrivent avec les runes et la base de SA recherche.
+- **Ni triés, ni filtrés, ni paginés** : sous une vue vide (bornes
+  contradictoires, rien sous les filtres) ou « Aucune combinaison… », les
+  épinglés restent affichés au-dessus de la phrase.
+- **Numérotés dans l'ordre d'épinglage**, renumérotés sans trou quand on en
+  libère un (`liberer`).
+- **« Libérer tous les builds épinglés »** : dans l'en-tête des résultats, à
+  gauche de « Filtrer l'affichage » (cartes) et de « Stats totales / Stats
+  bonus » (tableau), son libellé sur deux lignes au bureau, centré sur les
+  deux axes ; au téléphone, à
+  gauche de « Filtrer l'affichage », les deux à parts égales. ⚠️ Toujours
+  présent avec les résultats, désactivé sans épinglé : épingler ne fait
+  apparaître aucun bouton qui décalerait l'en-tête. Il demande confirmation
+  par la fenêtre des suppressions de données (`ConfirmDialog` `destructif`,
+  « Annuler » par défaut) et ne libère que les épinglés du monstre affiché.
+  Les runes ne sont pas touchées : épingler ne réserve rien, contrairement à
+  « Valider ».
+- **Propres à chaque monstre de la liste** : rangés par liste active et
+  exemplaire (`cleMembreEpingles`), comme les mémoires des membres. Passer à
+  un autre monstre n'en montre aucun autre ; y revenir rend les siens, même
+  sans résultats (changer de monstre efface les résultats) : ils s'affichent
+  alors sous un en-tête réduit, « N build(s) épinglé(s) » et « Libérer tous
+  les builds épinglés ».
+- **Leurs gestes ne dépendent d'aucune page publiée** : « Comparer » note la
+  fiche dans le contexte de LA recherche de l'épinglé (`scoreDeReference`),
+  « Valider » réserve ses runes, sa paire et sa relique, sous la même garde
+  anti-double-réservation ; ils restent possibles quand le classeur est
+  perdu. Le détail d'une rune ou d'un artéfact s'ouvre à part de celui de
+  son double dans la page (`cleCarte`).
+- **Durée de vie** : ils survivent aux critères, au tri, aux filtres, à une
+  nouvelle recherche et au changement d'onglet (l'état est remonté dans
+  App.tsx). Ni dans la recette, ni dans les mémoires, ni dans la session, ni
+  sur disque (`CHAMPS_OPTIMIZER_HORS_SESSION`) : un affichage de travail,
+  comme les résultats. Un compte importé les efface tous
+  (`resetSearch('compte')`) : leurs runes sont celles de l'ancien pool.
 
 ## Valeur d'objectif affichée sur les cartes
 

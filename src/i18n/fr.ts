@@ -2597,6 +2597,13 @@ export const fr = {
       vueVide: 'Aucune combinaison confirmée ne passe ces filtres.',
       tropEtroit: 'Trop étroit pour le tableau : cartes affichées',
       buildNumero: (n: number) => `Build n° ${n}`,
+      buildEpingle: (n: number) => `Build épinglé n° ${n}`,
+      epinglesTitre: (n: number) => `${n} build(s) épinglé(s)`,
+      libererEpingles: 'Libérer tous les builds épinglés',
+      libererEpinglesTitre: 'Libérer tous les builds épinglés ?',
+      libererEpinglesMessage: (n: number) =>
+        `Les ${n} build(s) épinglé(s) de ce monstre ne seront plus affichés. Les runes ne sont pas touchées, et les builds validés restent validés.`,
+      libererEpinglesAction: 'Tout libérer',
       creerEtValider: 'Créer et valider',
     },
     // Les résultats : en-tête, tri, filtres d'affichage, tableau, progression,
@@ -2665,6 +2672,7 @@ export const fr = {
       statsBonus: 'Stats bonus',
       statsBonusAide: 'PV, ATQ, DEF et VIT sans la base du monstre. Affichage seulement.',
       detailBuild: (n: number) => `Détail du build n° ${n}`,
+      detailEpingle: (n: number) => `Détail du build épinglé n° ${n}`,
       verification: 'Vérification…',
       pagination: {
         precedente: 'Page précédente',
@@ -2741,6 +2749,10 @@ export const fr = {
       degats: 'Dégâts',
       tueLaCible: 'tue la cible',
       partPv: (pct: number) => `${pct} % des PV`,
+      epingler: 'Épingler ce build',
+      liberer: 'Libérer ce build épinglé',
+      epinglesComplets: '10 builds épinglés au plus : libères-en un pour épingler celui-ci.',
+      epingleNumero: (n: number) => `Build épinglé n° ${n}`,
     },
     // Le point de sauvegarde de toutes les listes.
     sauvegarde: {

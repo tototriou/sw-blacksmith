@@ -2434,6 +2434,13 @@ export const en: Dictionnaire = {
       vueVide: 'No confirmed combination passes these filters.',
       tropEtroit: 'Too narrow for the table: cards shown',
       buildNumero: (n: number) => `Build #${n}`,
+      buildEpingle: (n: number) => `Pinned build #${n}`,
+      epinglesTitre: (n: number) => `${n} pinned build(s)`,
+      libererEpingles: 'Unpin all pinned builds',
+      libererEpinglesTitre: 'Unpin all pinned builds?',
+      libererEpinglesMessage: (n: number) =>
+        `The ${n} pinned build(s) of this monster will no longer be shown. Runes are not touched, and validated builds stay validated.`,
+      libererEpinglesAction: 'Unpin all',
       creerEtValider: 'Create and validate',
     },
     resultats: {
@@ -2496,6 +2503,7 @@ export const en: Dictionnaire = {
       statsBonus: 'Bonus stats',
       statsBonusAide: 'HP, ATK, DEF and SPD without the monster’s base. Display only.',
       detailBuild: (n: number) => `Details of build #${n}`,
+      detailEpingle: (n: number) => `Details of pinned build #${n}`,
       verification: 'Checking…',
       pagination: {
         precedente: 'Previous page',
@@ -2566,6 +2574,10 @@ export const en: Dictionnaire = {
       degats: 'Damage',
       tueLaCible: 'kills the target',
       partPv: (pct: number) => `${pct}% of HP`,
+      epingler: 'Pin this build',
+      liberer: 'Unpin this build',
+      epinglesComplets: '10 pinned builds at most: unpin one to pin this one.',
+      epingleNumero: (n: number) => `Pinned build #${n}`,
     },
     sauvegarde: {
       titre: 'Save point of the lists',
