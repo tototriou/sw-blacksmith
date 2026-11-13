@@ -1,4 +1,4 @@
-import { type ComponentProps, type RefObject } from 'react';
+import { type ComponentProps, type ReactNode, type RefObject } from 'react';
 import BuildCandidateCard, { PlaceEnVerification } from '../BuildCandidateCard';
 import { type BuildCandidate } from '../../../lib/runeBuildOptim';
 import { type CompositionDePage } from '../../../lib/artifactQueue';
@@ -19,9 +19,13 @@ export interface GrilleResultatsProps {
   hauteurCarte: number | null;
   // Le rendu des cartes au bureau (`BuildCandidateCard`, `bureau`).
   bureau?: boolean;
+  // Les cartes des builds épinglés, rendues par l'écran : elles prennent les
+  // premiers emplacements de la grille, sur toutes les pages (resultats.md,
+  // § Builds épinglés).
+  epingles?: ReactNode;
 }
 
-export default function GrilleResultats({ grilleResultatsRef, composition, runeById, relicUsageById, metric, openDetailKey, onToggleDetail, proprietesCarte, hauteurCarte, bureau = false }: GrilleResultatsProps) {
+export default function GrilleResultats({ grilleResultatsRef, composition, runeById, relicUsageById, metric, openDetailKey, onToggleDetail, proprietesCarte, hauteurCarte, bureau = false, epingles }: GrilleResultatsProps) {
   return (
     // Au bureau, à la souris, une carte tient dans 328 px (fiche de stats
     // resserrée, `StatPanel`) : une carte de plus par rangée (resultats.md).
@@ -34,6 +38,7 @@ export default function GrilleResultats({ grilleResultatsRef, composition, runeB
           : 'grid-cols-[repeat(auto-fill,minmax(min(360px,100%),1fr))]'
       }`}
     >
+      {epingles}
       {composition.cartes.map((c, i) => (
         <BuildCandidateCard
           key={c.runeIds.join('-')}

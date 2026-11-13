@@ -20,6 +20,7 @@ import { LigneVerrouillee } from '../lib/artifactOptim';
 import { useBuildOptimSearch } from './useBuildOptimSearch';
 import { useRuneMetric } from './useRuneMetric';
 import { combatSelonContenuListeOptimizer } from '../lib/combatListeOptimizer';
+import type { BuildEpingle, EpinglesParMembre } from '../lib/epinglesOptimizer';
 
 
 export type { SlotFilterPresetKey };
@@ -341,6 +342,16 @@ export interface OptimizerState {
   openDetailKey: string | null;
   setOpenDetailKey: Dispatch<SetStateAction<string | null>>;
   /**
+   * Les builds épinglés, par membre (`cleMembreEpingles`, epinglesOptimizer.ts) :
+   * jusqu'à dix photographies de cartes de résultat par monstre, qui survivent
+   * aux critères, au tri, aux filtres d'affichage, à une nouvelle recherche et
+   * au changement d'onglet. Ni dans la recette, ni dans les mémoires, ni sur
+   * disque : un affichage de travail. Un compte importé les efface tous
+   * (`resetSearch('compte')`) : leurs runes sont celles de l'ancien pool.
+   */
+  epingles: EpinglesParMembre<BuildEpingle>;
+  setEpingles: Dispatch<SetStateAction<EpinglesParMembre<BuildEpingle>>>;
+  /**
    * L'IDENTITÉ de l'import du compte : son numéro dans la session, avancé
    * d'une unité par CHAQUE `resetSearch('compte')` — App.tsx l'appelle à
    * chaque import réel, jamais à la relecture du compte conservé. 0 tant
@@ -479,6 +490,7 @@ export function useOptimizerState(contexte?: ContexteMembresOptimizer): Optimize
   const [diagnoseBlockingEnabled, setDiagnoseBlockingEnabled] = useState(false);
   const [stoppedManually, setStoppedManually] = useState(false);
   const [openDetailKey, setOpenDetailKey] = useState<string | null>(null);
+  const [epingles, setEpingles] = useState<EpinglesParMembre<BuildEpingle>>({});
   const [importDuCompte, setImportDuCompte] = useState(0);
   const importReliqueTraite = useRef(0);
   const search = useBuildOptimSearch();
@@ -815,6 +827,9 @@ export function useOptimizerState(contexte?: ContexteMembresOptimizer): Optimize
     // et une nouvelle recherche reprenait du cache des paires de l'ancien
     // compte. Avancé ici, la signature change à coup sûr.
     if (motif === 'compte') setImportDuCompte((n) => n + 1);
+    // Les épinglés photographient des runes de l'ancien compte : ils tombent
+    // avec lui. Un changement de monstre les garde, rangés par membre.
+    if (motif === 'compte') setEpingles({});
     // Le tri suit l'objectif (`handleSearch` le repose dessus au lancement) :
     // il retombe avec lui ici, et reste avec lui au changement d'exemplaire.
     setSortBy(suivant.sortBy);
@@ -917,6 +932,8 @@ export function useOptimizerState(contexte?: ContexteMembresOptimizer): Optimize
     setStoppedManually,
     openDetailKey,
     setOpenDetailKey,
+    epingles,
+    setEpingles,
     importDuCompte,
     importReliqueTraite,
     search,

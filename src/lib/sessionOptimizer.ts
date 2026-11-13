@@ -54,6 +54,10 @@ export const CHAMPS_OPTIMIZER_HORS_SESSION = [
   'setPickerInvalid',
   'resultsPage',
   'openDetailKey',
+  // Les builds épinglés photographient des cartes et le contexte de leur
+  // recherche (le pool de runes compris) : un affichage de travail, comme
+  // les résultats, qui ne se rejoue pas à la reprise.
+  'epingles',
   // Cran remonté pour la navigation seulement ; format de session inchangé.
   'critereArtefacts',
   // Passager : diagnostic, arrêt manuel, compteurs d'import.

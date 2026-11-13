@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Filter } from 'lucide-react';
+import { Filter, PinOff } from 'lucide-react';
 import HelpPopover from '../../HelpPopover';
 import BoutonSensTri from '../../BoutonSensTri';
 import { Bouton, Flottant, MobileSheet, Segmented, Selecteur } from '../../../ui';
@@ -59,10 +59,15 @@ export interface EnteteResultatsProps {
   // d'affichage, pas « Stats de base exclues ».
   bonus?: boolean;
   setBonus?: (bonus: boolean) => void;
+  // « Libérer tous les builds épinglés » : toujours présent avec les
+  // résultats, désactivé sans épinglé — épingler un build ne fait pas
+  // apparaître un bouton qui décalerait l'en-tête. `demander` ouvre la
+  // confirmation (OptimizerSection.tsx).
+  libererEpingles?: { nombre: number; demander: () => void };
 }
 
 export default function EnteteResultats({ result, compteConfirmes, avecFile, tri, trier, metric, disponible, enAttente, interrompu = false,
-  compteAffiche, bureau = false, filtres, forme = 'cartes', setForme, bonus = false, setBonus }: EnteteResultatsProps) {
+  compteAffiche, bureau = false, filtres, forme = 'cartes', setForme, bonus = false, setBonus, libererEpingles }: EnteteResultatsProps) {
   // ⚠️ Le compte des CONFIRMÉES (`compteConfirmes`) : seulement les builds
   // vérifiés (résolus et conformes), un compte qui ne baisse jamais pendant
   // une recherche — les filtres d'affichage ne le changent pas, ils répartissent
@@ -204,6 +209,21 @@ export default function EnteteResultats({ result, compteConfirmes, avecFile, tri
     </div>
   );
 
+  // Deux lignes au plus (`max-w`) : le libellé est long, l'en-tête du bureau
+  // tient sur une rangée.
+  const boutonLibererEpingles = libererEpingles && (
+    <Bouton
+      taille="sm"
+      icone={<PinOff size={13} />}
+      libelle={<span className="block max-w-[9rem] whitespace-normal text-left leading-tight">{textes.optimizer.section.libererEpingles}</span>}
+      aria-label={textes.optimizer.section.libererEpingles}
+      disabled={libererEpingles.nombre === 0}
+      onClick={libererEpingles.demander}
+      pleineLargeur={!bureau}
+      data-liberer-epingles=""
+    />
+  );
+
   return (
     <>
       {bureau ? (
@@ -241,6 +261,10 @@ export default function EnteteResultats({ result, compteConfirmes, avecFile, tri
                     plus large des deux quelle que soit la forme : choisir
                     « Cartes » ou « Tableau » ne déplace ni le choix cliqué, ni
                     rien d'autre, et ne fait jamais passer la rangée à la ligne. */}
+                {/* À gauche de « Filtrer l'affichage » (cartes) ou de « Stats
+                    totales / Stats bonus » (tableau) : la même place dans les
+                    deux formes. */}
+                {boutonLibererEpingles}
                 <div className="grid items-center justify-items-start" data-place-forme="">
                   {boutonFiltrerBureau}
                   {setBonus && (
@@ -285,9 +309,14 @@ export default function EnteteResultats({ result, compteConfirmes, avecFile, tri
                 <p className="text-ink">{comptes}</p>
                 {resume && <p className="truncate" title={resume}>{resume}</p>}
               </div>
-              <div className="mb-3">
-                <Bouton taille="md" pleineLargeur icone={<Filter size={15} />} libelle={libelleFiltrer}
-                  disabled={interrompu} onClick={() => setOuvert(true)} />
+              {/* Au téléphone, « Libérer tous les builds épinglés » à gauche de
+                  « Filtrer l'affichage », les deux à parts égales. */}
+              <div className="mb-3 flex items-stretch gap-2">
+                {boutonLibererEpingles && <div className="flex min-w-0 flex-1">{boutonLibererEpingles}</div>}
+                <div className="flex min-w-0 flex-1">
+                  <Bouton taille="md" pleineLargeur icone={<Filter size={15} />} libelle={libelleFiltrer}
+                    disabled={interrompu} onClick={() => setOuvert(true)} />
+                </div>
               </div>
               <MobileSheet ouvert={ouvert} onFermer={() => setOuvert(false)} titre={r.filtrer}>
                 {grille}

@@ -1,5 +1,6 @@
 import { useCallback, useLayoutEffect, useMemo, useRef, useState, useEffect } from 'react';
 import { Bouton, ConfirmDialog, Segmented } from '../../ui';
+import { PinOff } from 'lucide-react';
 import type { ContenuListeOptimizer, EquipeOptimizer } from '../../lib/optimizerMemberStorage';
 import OptimizerEquipeDialog from './OptimizerEquipeDialog';
 import OptimizerCreateListDialog from './OptimizerCreateListDialog';
@@ -12,7 +13,10 @@ import { compteAffichable, compteConfirmeDesComptes, pagesDesResultats, signatur
 import { etatReliqueDuBuild } from '../../lib/relicQueue';
 import { resoudreContexteRelique } from '../../lib/relicOptim';
 import { artifactConditionFloor, relicConditionFloor } from '../../lib/artifactConditionFloor';
-import { contexteResultat, runesDuContexte } from '../../lib/contexteResultat';
+import { contexteResultat, runesDuContexte, type ContexteResultat } from '../../lib/contexteResultat';
+import {
+  basculerEpingle, cleEpingle, cleMembreEpingles, epinglesDe, libererTout, numeroEpingle, placeLibre, type BuildEpingle,
+} from '../../lib/epinglesOptimizer';
 import { TAILLE_PAGE_CLASSEMENT, type CarteClassement } from '../../lib/classementCompact';
 import { bornesMisesDeCote, bornesSousMesure, triDesResultats } from '../../lib/colonnesResultats';
 import { avecBorne, colonneDisponible, objectifsMontres } from '../../lib/filtresResultats';
@@ -472,6 +476,8 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
     setStoppedManually,
     openDetailKey,
     setOpenDetailKey,
+    epingles,
+    setEpingles,
     importDuCompte,
     traiterReliqueImportee,
     search,
@@ -2929,30 +2935,78 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
     if (intent !== 'validate' || canValidateDisplayed) optimizer.capturerMembre(id, sourceSelector);
   }
 
+  // ── Builds épinglés ────────────────────────────────────────────────────
+  // Ceux du membre affiché seulement : la liste active et l'exemplaire. Ni le
+  // tri, ni les filtres, ni la page, ni une nouvelle recherche n'y touchent.
+  const membreEpingles = cleMembreEpingles(lists.activeListId, ownSelectorKey);
+  const epinglesAffiches = epinglesDe(epingles, membreEpingles);
+  const [libererEpinglesConfirm, setLibererEpinglesConfirm] = useState(false);
+
   // Ce que chaque carte de résultat reçoit de l'écran : sa paire, sa relique,
   // ses chiffres de classement et ses gestes (comparer, valider).
   function proprietesCarte(c: BuildCandidate, rang: number) {
-    const photo = contexteResultatAffiche;
-    const carte = cartes[rang];
+    return proprietesDe(c, cartes[rang], contexteResultatAffiche, null);
+  }
+  // Une carte épinglée : la même construction, sur SA photographie — la carte
+  // publiée au geste et le contexte de la recherche qui l'a produite —, jamais
+  // sur la page ni la recherche courantes (resultats.md, § Builds épinglés).
+  function proprietesEpingle(e: BuildEpingle) {
+    return { ...proprietesDe(e.carte.candidat, e.carte, e.contexte, e), cleCarte: `epingle:${e.cle}` };
+  }
+  function proprietesDe(c: BuildCandidate, carte: CarteClassement | undefined, photo: ContexteResultat | null, epingle: BuildEpingle | null) {
     const objectifDesCartes = photo?.recherche.objective ?? objective;
     const triDesCartes = instantane?.vue.tri ?? sortBy;
     // Les rangées « PV effectifs » et « Dégâts » de la carte : la valeur qui
     // la classe, ou celle qu'une borne active juge (même règle que le classeur).
-    const montres = objectifsMontres(objectifDesCartes, triDesCartes, instantane?.filtre.bornes.actives ?? []);
+    // Un épinglé garde celles qu'il montrait au geste : ses chiffres viennent
+    // du classeur de SA recherche, aucun autre n'est calculable ici.
+    const montres = epingle ? epingle.montres : objectifsMontres(objectifDesCartes, triDesCartes, instantane?.filtre.bornes.actives ?? []);
     const degatsDesCartes = photo ? photo.realDamage : realDamage;
     const combatDesCartes = photo?.damageSetup ?? damageSetup;
     const artefactsDesCartes = photo?.recherche.artifacts ?? searchArtifacts;
     const artefactsDeLaCarte = carte?.resultat?.artefacts ?? artefactsDesCartes;
     const versions = instantane?.versions;
-    // Classeur perdu : la page reste visible, aucun geste ne part.
-    const encoreCourante = () => versions != null && !interrompu
+    // Classeur perdu : la page reste visible, aucun geste ne part. Un épinglé
+    // ne dépend d'aucune page publiée : ses gestes restent possibles.
+    const encoreCourante = () => epingle != null || (versions != null && !interrompu
       && publicationCouranteRef.current?.idRecherche === versions.idRecherche
-      && publicationCouranteRef.current?.revisionPubliee === versions.revisionPubliee;
+      && publicationCouranteRef.current?.revisionPubliee === versions.revisionPubliee);
     const etatRelique = etatReliqueDuBuild(carte?.resultat ?? undefined, photo?.recherche.relicContext, photo?.fiche.relic);
     // La relique que la carte compte : celle que « Valider » mémorise et que
     // le badge « Validé » compare.
     const reliqueDeLaCarte = 'relique' in etatRelique ? etatRelique.relique?.id : undefined;
+    // La clé de comparaison : un épinglé se compare à part de son double
+    // éventuel dans la page.
+    const cle = epingle ? `epingle:${epingle.cle}` : c.runeIds.join('-');
+    const compare = compareKey === cle && statsReference != null;
+    // Les références « PV effectifs » et « Dégâts » de la comparaison : la fiche
+    // notée dans le contexte de LA recherche de la carte. Pour un épinglé, ce
+    // contexte peut être celui d'une recherche précédente : calculée seulement
+    // pour l'épinglé comparé.
+    const refContexte = (critere: 'ehp' | 'degats_reels') => {
+      if (!epingle) return critere === 'ehp' ? refEhpResultat : refDegatsResultat;
+      if (!compare || !ficheDeReference) return null;
+      return scoreDeReference(critere, ficheDeReference, { degats: photo!.realDamage, damageSetup: photo!.damageSetup, exclusive: photo!.exclusive });
+    };
+    const runesDeLaCarte = epingle ? runesDuContexte(epingle.contexte) : runesDesCartes;
+    const mesureDeLaCarte = epingle ? metric : mesureDesCartes;
+    // Épingler : la photographie de CETTE carte (sa paire, sa relique, ses
+    // chiffres) et de sa recherche. Sans exemplaire résolu, pas de bouton.
+    const identite = cleEpingle(c.runeIds, artefactsDeLaCarte.map((a) => a.id), reliqueDeLaCarte);
+    const proprieteEpingle = membreEpingles && carte && photo
+      ? {
+          numero: numeroEpingle(epinglesAffiches, epingle ? epingle.cle : identite),
+          zone: epingle != null,
+          complet: !placeLibre(epinglesAffiches),
+          basculer: () => {
+            if (!encoreCourante()) return;
+            const photoEpingle: BuildEpingle = epingle ?? { cle: identite, carte, contexte: photo, montres };
+            setEpingles((etat) => basculerEpingle(etat, membreEpingles, photoEpingle));
+          },
+        }
+      : undefined;
     return {
+      epingle: proprieteEpingle,
       // ⚠️ La paire de CE build, jamais une paire commune : deux
       // builds voisins n'appellent pas les mêmes artéfacts, et ce
       // sont ces pièces-là qui ont servi à calculer ses stats.
@@ -2970,9 +3024,9 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
       ...(() => {
         // ⚠️ Comparaison contre les stats de la FICHE — donc contre
         // le build validé quand il en existe un, sans avoir à le
-        // redemander ici (voir `statsReference`).
-        const cle = c.runeIds.join('-');
-        const compare = compareKey === cle && statsReference != null;
+        // redemander ici (voir `statsReference`). `cle` et `compare` :
+        // plus haut, partagés avec les références.
+        const refEhp = montres.ehp && compare ? refContexte('ehp') : null;
         return {
           onCompare: statsReference ? () => { if (encoreCourante()) setCompareKey((k) => (k === cle ? null : cle)); } : undefined,
           // ⚠️ Affichée dès que les PV effectifs sont le critère de
@@ -2987,14 +3041,14 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
             montres.ehp && carte?.pvEffectifs != null
               ? (() => {
                   const total = carte?.pvEffectifs as number;
-                  return { total, delta: compare && refEhpResultat != null ? total - refEhpResultat : undefined };
+                  return { total, delta: compare && refEhp != null ? total - refEhp : undefined };
                 })()
               : undefined,
           metricDelta:
             // La référence est dans la mesure courante : pas d'écart tant que
             // la page publiée est encore dans l'autre.
-            compare && refMetric != null && mesureDesCartes === metric
-              ? candidateMetricTotal(c, runesDesCartes, mesureDesCartes) - refMetric
+            compare && refMetric != null && mesureDeLaCarte === metric
+              ? candidateMetricTotal(c, runesDeLaCarte, mesureDeLaCarte) - refMetric
               : undefined,
           // ⚠️ Le delta est calculé PAR STAT contre la référence, et
           // seulement pour la carte comparée : le faire pour les 20
@@ -3034,10 +3088,10 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
                 // stats, SA paire d'artéfacts et SA relique — jamais
                 // contre le total d'un autre candidat, jamais avec
                 // la paire de la recherche.
-                delta:
-                  compareKey === c.runeIds.join('-') && refDegatsResultat != null
-                    ? total - refDegatsResultat
-                    : undefined,
+                delta: (() => {
+                  const ref = compare ? refContexte('degats_reels') : null;
+                  return ref != null ? total - ref : undefined;
+                })(),
               };
             })()
           : undefined,
@@ -3084,7 +3138,7 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
         artefactsDeLaCarte.map((a) => a.id),
         reliqueDeLaCarte
       ),
-      inactif: interrompu,
+      inactif: epingle ? false : interrompu,
       // La valeur triée, mise en avant sur la carte (le tri publié).
       colonneTriee: triDesCartes,
       conflit: (() => {
@@ -3134,9 +3188,14 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
   // quelle, dans une modale. Retenu par les runes du build : une nouvelle page
   // sans lui la ferme.
   const indexDetail = detailTableau ? composition.cartes.findIndex((c) => c.runeIds.join('-') === detailTableau) : -1;
+  // Le détail d'un épinglé se retient par sa clé d'épingle (`epingle:<clé>`) :
+  // libéré, ou d'un autre membre, son détail se ferme.
+  const epingleDetail = detailTableau?.startsWith('epingle:')
+    ? epinglesAffiches.find((e) => `epingle:${e.cle}` === detailTableau) ?? null
+    : null;
   // Un build sorti de la page ferme son détail pour de bon : il ne se rouvrira
   // pas de lui-même s'il y revient.
-  useEffect(() => { if (detailTableau && indexDetail < 0) setDetailTableau(null); }, [detailTableau, indexDetail]);
+  useEffect(() => { if (detailTableau && indexDetail < 0 && !epingleDetail) setDetailTableau(null); }, [detailTableau, indexDetail, epingleDetail]);
   const proprietesGrille = {
     runeById: runesDesCartes,
     relicUsageById,
@@ -3148,14 +3207,51 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
       setOpenDetailKey((cur) => (cur === key ? null : key));
     },
   };
+  // Les épinglés, en cartes : les premiers emplacements de la grille, sur
+  // toutes les pages ; leurs runes et leur relique sont celles de LEUR
+  // recherche, leur mesure la mesure courante (comme toute carte, recalculée
+  // à l'affichage). Leur détail ne dépend d'aucune page publiée.
+  const carteEpinglee = (e: BuildEpingle, numero: number) => (
+    <BuildCandidateCard
+      key={`epingle-${e.cle}`}
+      rank={numero}
+      candidate={e.carte.candidat}
+      runeById={runesDuContexte(e.contexte)}
+      relicUsageById={relicUsageById}
+      metric={metric}
+      openDetailKey={openDetailKey}
+      onToggleDetail={(key: string) => setOpenDetailKey((cur) => (cur === key ? null : key))}
+      bureau={!sousLg}
+      {...proprietesEpingle(e)}
+    />
+  );
+  const cartesEpinglees = epinglesAffiches.length > 0 ? epinglesAffiches.map((e, i) => carteEpinglee(e, i + 1)) : null;
+  const libererEpingles = membreEpingles
+    ? { nombre: epinglesAffiches.length, demander: () => setLibererEpinglesConfirm(true) }
+    : undefined;
+  // Des épinglés sans résultats (autre monstre puis retour, nouvelle
+  // recherche pas encore lancée) : ils restent affichés, sous un en-tête
+  // réduit à leur compte et au bouton qui les libère.
+  const seulementEpingles = !resultatsPresents && epinglesAffiches.length > 0;
+  // Les grilles et le tableau se montrent aussi sous « Aucune combinaison… »
+  // quand des épinglés les occupent.
+  const grilleVisible = !compteConfirmes.aucune || epinglesAffiches.length > 0;
 
   const blocResultats = (
     <>
-      {resultatsPresents && (
+      {(resultatsPresents || seulementEpingles) && (
         // Le conteneur nommé `resultats` : le tableau ne paraît qu'à partir de
         // sa largeur minimale mesurée (`TABLEAU_VISIBLE`), les cartes dessous.
         <div className="@container/resultats" data-forme-resultats={formeResultats}>
+          {seulementEpingles ? (
+            <div className="mb-2 flex flex-wrap items-center justify-between gap-2" data-entete-epingles="">
+              <p className="label">{os.epinglesTitre(epinglesAffiches.length)}</p>
+              <Bouton taille="sm" icone={<PinOff size={13} />} libelle={os.libererEpingles}
+                onClick={() => setLibererEpinglesConfirm(true)} data-liberer-epingles="" />
+            </div>
+          ) : (
           <EnteteResultats
+            libererEpingles={libererEpingles}
             result={result}
             compteConfirmes={compteConfirmes}
             avecFile={avecFile}
@@ -3173,7 +3269,8 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
             // réorganise la page, l'en-tête ne la porte plus.
             {...(sousLg ? {} : { forme: formeResultats, bonus: bonusAffichage, setBonus: setBonusAffichage })}
           />
-  
+          )}
+
           <DiagnosticsSansResultat
             bureau={!sousLg}
             result={result}
@@ -3207,7 +3304,7 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
           {/* Les cartes : au bureau, la bande de onze têtes de tri au-dessus
               (le téléphone trie par sa liste, dans l'en-tête). En forme
               tableau, elles ne paraissent que sous la largeur du tableau. */}
-          {!compteConfirmes.aucune && (
+          {grilleVisible && (
             <div className={formeResultats === 'tableau' ? CARTES_SOUS_LE_SEUIL : undefined}>
               {/* Le tableau choisi, mais la zone est plus étroite que lui :
                   on le dit, plutôt que de laisser « Tableau » sans effet visible. */}
@@ -3216,12 +3313,25 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
                   {os.tropEtroit}
                 </p>
               )}
-              {!sousLg && (
+              {!sousLg && resultatsPresents && !compteConfirmes.aucune && (
                 <BandeDeTri courant={triAffiche} trier={trier} metric={mesureDesCartes} disponible={colonneLibre}
                   bornee={(c) => bornesVue[c]?.min != null || bornesVue[c]?.max != null} inactif={interrompu} />
               )}
-              {vueVide ? (
-                <p className="mb-3 rounded-lg border border-dashed border-border-soft px-3 py-6 text-center text-xs text-ink-dim" data-vue-vide="">{vueVide}</p>
+              {/* Sous une vue vide, les épinglés restent : un filtre ne les
+                  masque pas. */}
+              {vueVide || compteConfirmes.aucune || seulementEpingles ? (
+                <>
+                  {cartesEpinglees && (
+                    <div className={`mb-3 grid gap-3 ${!sousLg
+                      ? 'grid-cols-[repeat(auto-fill,minmax(min(328px,100%),1fr))] compact:grid-cols-[repeat(auto-fill,minmax(min(360px,100%),1fr))]'
+                      : 'grid-cols-[repeat(auto-fill,minmax(min(360px,100%),1fr))]'}`}>
+                      {cartesEpinglees}
+                    </div>
+                  )}
+                  {vueVide && (
+                    <p className="mb-3 rounded-lg border border-dashed border-border-soft px-3 py-6 text-center text-xs text-ink-dim" data-vue-vide="">{vueVide}</p>
+                  )}
+                </>
               ) : (
                 <GrilleResultats
                   bureau={!sousLg}
@@ -3230,16 +3340,20 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
                   {...proprietesGrille}
                   proprietesCarte={proprietesCarte}
                   hauteurCarte={hauteurCarte}
+                  epingles={cartesEpinglees}
                 />
               )}
             </div>
           )}
-          {formeResultats === 'tableau' && !compteConfirmes.aucune && (
+          {formeResultats === 'tableau' && grilleVisible && (
             <div className={TABLEAU_VISIBLE}>
               <TableauResultats
-                cartes={cartes}
+                epingles={epinglesAffiches.map((e, i) => ({ cle: e.cle, numero: i + 1, carte: e.carte,
+                  runeById: runesDuContexte(e.contexte), base: e.contexte.recherche.base ?? baseAffichee }))}
+                ouvrirEpingle={(cle) => setDetailTableau(`epingle:${cle}`)}
+                cartes={compteConfirmes.aucune || seulementEpingles ? AUCUNE_CARTE : cartes}
                 premierRang={composition.premierRang}
-                placesEnAttente={composition.placesEnAttente}
+                placesEnAttente={compteConfirmes.aucune || seulementEpingles ? 0 : composition.placesEnAttente}
                 runeById={runesDesCartes}
                 metric={mesureDesCartes}
                 afficherDepassement={instantane?.vue.afficherDepassement ?? afficherDepassement}
@@ -3268,6 +3382,25 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
               />
             </Modale>
           )}
+          {epingleDetail && (() => {
+            const numero = numeroEpingle(epinglesAffiches, epingleDetail.cle)!;
+            return (
+              <Modale onClose={() => setDetailTableau(null)} labelledBy="optimizer-detail-epingle" croix largeur="max-w-[420px]"
+                titre={os.buildEpingle(numero)}>
+                <BuildCandidateCard
+                  rank={numero}
+                  candidate={epingleDetail.carte.candidat}
+                  bureau
+                  runeById={runesDuContexte(epingleDetail.contexte)}
+                  relicUsageById={relicUsageById}
+                  metric={metric}
+                  openDetailKey={openDetailKey}
+                  onToggleDetail={(key: string) => setOpenDetailKey((cur) => (cur === key ? null : key))}
+                  {...proprietesEpingle(epingleDetail)}
+                />
+              </Modale>
+            );
+          })()}
   
           {/* Pagination — remplace l'ancienne troncature dure à 20 : la
               liste complète (jusqu'à MAX_COLLECTED, un million, voir runeBuildOptim.ts)
@@ -3331,6 +3464,21 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
           libelleAction={textes.optimizer.speedTune.validerQuandMeme}
           onConfirm={() => { confirmSpeedTune(); setConfirmSpeedTune(null); }}
           onCancel={() => setConfirmSpeedTune(null)}
+        />
+      )}
+      {/* « Libérer tous les builds épinglés » : la confirmation des
+          suppressions de données ; le défaut (Annuler) ne perd rien. */}
+      {libererEpinglesConfirm && (
+        <ConfirmDialog
+          titre={os.libererEpinglesTitre}
+          message={os.libererEpinglesMessage(epinglesAffiches.length)}
+          libelleAction={os.libererEpinglesAction}
+          destructif
+          onConfirm={() => {
+            if (membreEpingles) setEpingles((etat) => libererTout(etat, membreEpingles));
+            setLibererEpinglesConfirm(false);
+          }}
+          onCancel={() => setLibererEpinglesConfirm(false)}
         />
       )}
       <ConfirmationsLiberation
@@ -3542,7 +3690,7 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
             stop={stop}
           />
         )}
-        resultats={<ResultatsBureau attente={attenteResultats(selected != null, resultatsPresents, status)}>{blocResultats}</ResultatsBureau>}
+        resultats={<ResultatsBureau attente={attenteResultats(selected != null, resultatsPresents || epinglesAffiches.length > 0, status)}>{blocResultats}</ResultatsBureau>}
         onglet={ongletBureau}
         onOnglet={setOngletBureau}
         rappelAuras={rappelAuras !== null}

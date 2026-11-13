@@ -1,4 +1,5 @@
 import { type ReactNode } from 'react';
+import { Pin } from 'lucide-react';
 import { Bouton, NumberField, ZoneCliquable } from '../../../ui';
 import { COLONNES_RESULTATS, type ColonneResultat } from '../../../lib/colonnesResultats';
 import type { BornesResultats } from '../../../lib/filtresResultats';
@@ -92,10 +93,23 @@ export interface TableauResultatsProps {
   // « Stats bonus » : PV, ATQ, DEF et VIT en total − base du monstre (`base`), valeurs comme bornes.
   enBonus?: boolean;
   base?: Partial<Record<StatKey, number>>;
+  // Les builds épinglés du monstre, en tête, dans l'ordre d'épinglage : ni
+  // triés, ni filtrés, ni paginés (resultats.md, § Builds épinglés). Chacun
+  // s'écrit avec SES runes et SA base, celles de la recherche qui l'a produit.
+  epingles?: LigneEpinglee[];
+  ouvrirEpingle?: (cle: string) => void;
+}
+
+export interface LigneEpinglee {
+  cle: string;
+  numero: number;
+  carte: CarteClassement;
+  runeById: Map<number, RuneDetail>;
+  base: Partial<Record<StatKey, number>>;
 }
 
 export default function TableauResultats({ cartes, premierRang, placesEnAttente, runeById, metric, afficherDepassement, tri, trier,
-  bornes, poserBorne, disponible, ouvrirDetail, vide, inactif = false, enBonus = false, base = {} }: TableauResultatsProps) {
+  bornes, poserBorne, disponible, ouvrirDetail, vide, inactif = false, enBonus = false, base = {}, epingles = [], ouvrirEpingle }: TableauResultatsProps) {
   const textes = useTraduction();
   const r = textes.optimizer.resultats;
   const k = textes.optimizer.conditions;
@@ -183,6 +197,34 @@ export default function TableauResultats({ cartes, premierRang, placesEnAttente,
           ))}
         </thead>
         <tbody>
+          {/* Les épinglés d'abord, au-dessus des résultats de la recherche, et
+              même sous une vue vide : un filtre ne les masque pas. Le dernier
+              porte le trait plein qui les sépare de la page. */}
+          {epingles.map((e, i) => (
+            <tr key={`epingle-${e.cle}`} onClick={() => ouvrirEpingle?.(e.cle)} data-ligne-epinglee=""
+              className={`cursor-pointer hoverable:bg-panel2 ${i === epingles.length - 1 ? 'border-b border-border' : 'border-b border-border-soft'}`}>
+              <td className="px-1 py-1 text-center">
+                <ZoneCliquable
+                  onClick={(ev) => { ev.stopPropagation(); ouvrirEpingle?.(e.cle); }}
+                  aria-label={r.detailEpingle(e.numero)}
+                  data-cible-fine=""
+                  className="inline-flex items-center gap-0.5 font-mono font-bold text-accent"
+                >
+                  <Pin size={11} aria-hidden />
+                  {e.numero}
+                </ZoneCliquable>
+              </td>
+              {COLONNES_RESULTATS.map((c) => {
+                const v = disponible(c) ? valeurDeColonne(c, e.carte, e.runeById, metric, afficherDepassement) : null;
+                return (
+                  <td key={c} data-colonne-tableau={c} className={`whitespace-nowrap px-1 py-1 text-center font-mono ${teinte(c)} ${
+                    !disponible(c) ? 'text-ink-dimmer' : tri.tri === c ? 'font-semibold text-ink' : 'text-ink'}`}>
+                    {texteValeurColonne(c, v === null ? null : versAffichage(c, v, e.base, enBonus), metric, textes)}
+                  </td>
+                );
+              })}
+            </tr>
+          ))}
           {vide ? (
             <tr>
               <td colSpan={largeurTotale} className="px-3 py-6 text-center text-xs text-ink-dim">{vide}</td>

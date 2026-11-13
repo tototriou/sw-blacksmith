@@ -1,5 +1,5 @@
 import { ReactNode, RefObject, useLayoutEffect, useState } from 'react';
-import { ArrowLeftRight, CheckCircle2 } from 'lucide-react';
+import { ArrowLeftRight, CheckCircle2, Pin, PinOff } from 'lucide-react';
 import { ArtifactDetail, RelicDetail, RuneDetail } from '../../types';
 import { BuildCandidate, candidateMetricTotal } from '../../lib/runeBuildOptim';
 import { activeSets } from '../../lib/effects';
@@ -13,7 +13,7 @@ import ArtifactSlots from '../ArtifactSlots';
 import RelicSlot, { RelicDetailBox } from '../RelicSlot';
 import StatPanel from '../StatPanel';
 import { COMPACT, useMediaQuery } from '../../hooks/useMediaQuery';
-import { Bouton, FlottantAuto } from '../../ui';
+import { Bouton, BoutonIcone, FlottantAuto } from '../../ui';
 import { useLangue, useTraduction } from '../../hooks/useLangue';
 import { formatNombre } from '../../i18n/format';
 import { nomSet } from '../../i18n/jeu';
@@ -132,6 +132,21 @@ interface Props {
   // PV effectifs et dégâts ont déjà leur rangée). La couleur seulement :
   // rien ne change de taille quand le tri change.
   colonneTriee?: ColonneResultat | null;
+  /**
+   * L'identité de la carte pour les détails ouverts (`openDetailKey`), quand
+   * elle n'est pas celle de ses runes : un build épinglé peut aussi figurer
+   * dans la page affichée, et ses deux cartes ne doivent ouvrir qu'UN détail
+   * à la fois chacune. Défaut : les runes du candidat.
+   */
+  cleCarte?: string;
+  /**
+   * Les builds épinglés (resultats.md, § Builds épinglés). `numero` : le
+   * numéro d'épinglage de ce build, `null` s'il n'est pas épinglé ; `zone` :
+   * la carte est rendue parmi les épinglés, son numéro remplace son rang.
+   * `basculer` épingle ou libère ; `complet` : dix déjà épinglés, le bouton ne
+   * peut plus que libérer. Absent : pas de bouton (aucun monstre résolu).
+   */
+  epingle?: { numero: number | null; zone: boolean; basculer: () => void; complet: boolean };
 }
 
 // ⚠️ Même FORME que l'affichage de l'équipement actuellement équipé (RTA/
@@ -211,6 +226,8 @@ export default function BuildCandidateCard({
   metricDelta,
   bureau = false,
   colonneTriee = null,
+  cleCarte,
+  epingle,
 }: Props) {
   const textes = useTraduction();
   const langue = useLangue();
@@ -222,7 +239,7 @@ export default function BuildCandidateCard({
   // bonne rune revient souvent) : identifier par le seul `rune.id` ferait
   // s'ouvrir deux popovers d'un coup si cette rune figure dans deux cartes.
   // La clé combine donc la carte (runeIds du candidat) et le slot.
-  const candidateKey = candidate.runeIds.join('-');
+  const candidateKey = cleCarte ?? candidate.runeIds.join('-');
   // ⚠️ PAS `candidate.effTotal` : figé dans la mesure active au moment de la
   // recherche, il devient incohérent avec le popover d'une rune individuelle
   // (recalculé en direct) si l'utilisateur bascule Efficience ↔ Score après
@@ -319,7 +336,19 @@ export default function BuildCandidateCard({
     />
   );
 
-  const rang = <span className="font-mono text-xs font-bold text-star">#{rank}</span>;
+  // Parmi les épinglés, le numéro d'épinglage remplace le rang : il ne dit
+  // plus rien d'une recherche peut-être déjà remplacée. Dans la page, un build
+  // aussi épinglé garde son rang seul — son bouton enclenché dit qu'il l'est :
+  // un numéro ajouté à l'en-tête le ferait passer à la ligne au bureau, et la
+  // carte grandirait sous le bouton qu'on vient de cliquer.
+  const rang = epingle?.zone && epingle.numero != null
+    ? (
+      <span className="inline-flex items-center gap-0.5 font-mono text-xs font-bold text-accent" aria-label={ca.epingleNumero(epingle.numero)}>
+        <Pin size={12} aria-hidden />
+        {epingle.numero}
+      </span>
+    )
+    : <span className="font-mono text-xs font-bold text-star">#{rank}</span>;
   // Une phrase : police du texte (la mono ne sert qu'aux chiffres seuls) ;
   // `tabular-nums` aligne la valeur d'une carte à l'autre.
   const texteMoyen = (
@@ -359,7 +388,25 @@ export default function BuildCandidateCard({
   // lui-même ne s'applique pas : le `flex-none` du socle de `Bouton`
   // l'emporte dans la feuille de style.
   const place = (bouton: ReactNode) => (bureau ? bouton : <div className="flex min-w-0 flex-1">{bouton}</div>);
-  const boutons = (onValidate || onCompare) && (
+  // « Épingler » : une icône, entre « Comparer » et « Valider ». ⚠️ Pas de
+  // libellé : au bureau, la carte la plus étroite (328 px) contient tout juste
+  // « Comparer » et « Valider » à sa largeur fixe de 160 px ; un troisième
+  // bouton écrit les faisait passer à la ligne. Le geste se nomme en infobulle
+  // et pour le lecteur d'écran ; épinglé, le bouton reste enclenché (`actif`)
+  // et libère.
+  const epinglee = epingle?.numero != null;
+  const boutonEpingle = epingle && (
+    <BoutonIcone
+      icone={epinglee ? <PinOff size={14} /> : <Pin size={14} />}
+      libelle={epinglee ? ca.liberer : epingle.complet ? ca.epinglesComplets : ca.epingler}
+      cadre
+      actif={epinglee}
+      disabled={!epinglee && epingle.complet}
+      onClick={epingle.basculer}
+      className="aspect-square self-center"
+    />
+  );
+  const boutons = (onValidate || onCompare || epingle) && (
     <div className="mt-2.5 flex items-stretch gap-2">
       {onCompare && place(
         <Bouton
@@ -373,6 +420,7 @@ export default function BuildCandidateCard({
           pleineLargeur={!bureau}
         />
       )}
+      {boutonEpingle}
       {onValidate && place(
         <Bouton
           onClick={onValidate}
@@ -423,7 +471,9 @@ export default function BuildCandidateCard({
       // de résultats, plus tard dans l'ordre du DOM — même sans chevauchement
       // apparent, l'empilement par défaut suit l'ordre du DOM, pas la
       // position à l'écran.
-      className={`rounded-xl border border-border bg-panel p-2.5 ${
+      // Un épinglé, parmi les épinglés, porte son contour en accent : le même
+      // trait de 1 px, une autre couleur, pour séparer les épinglés de la page.
+      className={`rounded-xl border ${epingle?.zone ? 'border-accent' : 'border-border'} bg-panel p-2.5 ${
         detailOuvertIci ? 'relative z-10' : ''
       }`}
       // Lu par `useHauteurDesCartes` : les places « Vérification… » prennent

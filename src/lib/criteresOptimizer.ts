@@ -23,7 +23,7 @@ export const CLASSEMENT_CHAMPS_OPTIMIZER = {
   relicMinUpgrade: 'global', excludeUsedRunes: 'global', excludeUsedScope: 'global',
   excludedSelectors: 'global', exhaustiveSearch: 'global',
   verifierToutesLesCombinaisons: 'global', slotFilterPreset: 'global',
-  setPickerInvalid: 'global', resultsPage: 'global', openDetailKey: 'global',
+  setPickerInvalid: 'global', resultsPage: 'global', openDetailKey: 'global', epingles: 'global',
   diagnoseBlockingEnabled: 'global', stoppedManually: 'global', importDuCompte: 'global',
   importReliqueTraite: 'global', search: 'global',
   proprietaireCriteres: 'global', rapportCriteres: 'global',
