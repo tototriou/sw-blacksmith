@@ -320,7 +320,7 @@ Une entrée = une règle qu'un chantier qui l'ignore casse, avec sa source. Ce f
 
 ### Builds épinglés
 
-- Un build épinglé est une photographie (carte publiée par le classeur et `ContexteResultat` de sa recherche), jamais une référence à la page : tri, filtres, page et nouvelle recherche ne le retirent ni ne le recalculent ; il s'affiche en tête, sans tri, filtre ni pagination, même sous une vue vide. Dix au plus par membre (liste active et exemplaire), aucun remplacement silencieux ; numérotés dans l'ordre d'épinglage, renumérotés sans trou. Épingler ne réserve aucune rune ; « Libérer tous les builds épinglés » est toujours présent avec les résultats, désactivé sans épinglé, et confirme par la fenêtre des suppressions. Hors recette, mémoires et session ; un compte importé les efface. Source : ../../02-app/optimizer/ecran/resultats.md § Builds épinglés
+- Un build épinglé est une photographie (carte publiée par le classeur et `ContexteResultat` de sa recherche), jamais une référence à la page : tri, filtres, page et nouvelle recherche ne le retirent ni ne le recalculent ; il s'affiche en tête (une ligne compacte en cartes, une ligne en tête du corps en tableau), sans tri, filtre ni pagination, même sous une vue vide. Dix au plus par membre (liste active et exemplaire), aucun remplacement silencieux ; numérotés dans l'ordre d'épinglage, renumérotés sans trou. Épingler ne réserve aucune rune ; « Libérer tous les builds épinglés » est toujours présent avec les résultats, désactivé sans épinglé, et confirme par la fenêtre des suppressions. Hors recette, mémoires et session ; un compte importé les efface. Source : ../../02-app/optimizer/ecran/resultats.md § Builds épinglés
 
 ### Disposition des cartes et équipes
 

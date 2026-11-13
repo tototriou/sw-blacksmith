@@ -235,7 +235,8 @@ Min / Max des filtres d'affichage (`FiltresResultats`, flottant au bureau, panne
 téléphone), la bande des têtes de tri (`TetesDeTri`), le tableau des résultats
 (`TableauResultats`), les blocs de 0 résultat (`DiagnosticsSansResultat` : `DiagnosticFaisabilite`,
 `DiagnosticApprofondi`, `QuasiSucces`), `AvisRechercheTronquee`, la grille des cartes
-(`GrilleResultats`), `PaginationResultats` et les confirmations de libération
+(`GrilleResultats`), les lignes compactes des builds épinglés au-dessus d'elle (`ListeEpingles`),
+`PaginationResultats` et les confirmations de libération
 (`ConfirmationsLiberation`). Ce que reçoit chaque carte (`proprietesCarte`) et la création
 d'une liste depuis sa fenêtre (`creerListeDepuisDialogue`) restent calculés par l'écran.
 

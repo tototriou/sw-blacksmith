@@ -455,15 +455,15 @@ export const ECRANS: Ecran[] = [
         atteint: [...OPT_CARTES, { role: 'dialog', nom: "Filtrer l'affichage" }],
       },
       {
-        // Deux builds épinglés : le premier puis le troisième enfant de la
-        // grille (le premier épinglé y a pris la première place, et la carte
-        // de la page qu'il double y est restée, son bouton devenu « Libérer »).
-        id: 'resultats-epingles', libelle: 'résultats, deux builds épinglés en tête des cartes', tailles: OPT_BUREAU,
+        // Deux builds épinglés depuis les deux premières cartes : deux lignes
+        // compactes au-dessus de la grille, qui garde ses cartes (leur bouton
+        // devenu « Libérer »).
+        id: 'resultats-epingles', libelle: 'résultats, deux builds épinglés en lignes au-dessus des cartes', tailles: OPT_BUREAU,
         preparation: [...OPT_RESULTATS,
           { cliquer: repere('[data-carte-resultat]:nth-child(1) button[aria-label="Épingler ce build"]') },
-          { cliquer: repere('[data-carte-resultat]:nth-child(3) button[aria-label="Épingler ce build"]') },
-          { montrer: repere('[data-carte-resultat]:first-child') }],
-        atteint: [...OPT_CARTES, repere('[data-carte-resultat]:nth-child(2) [aria-label="Build épinglé n° 2"]'),
+          { cliquer: repere('[data-carte-resultat]:nth-child(2) button[aria-label="Épingler ce build"]') },
+          { montrer: repere('[data-liste-epingles]') }],
+        atteint: [...OPT_CARTES, repere('[data-liste-epingles] li:nth-child(2)'),
           repere('button[data-liberer-epingles]:not([disabled])')],
       },
       {

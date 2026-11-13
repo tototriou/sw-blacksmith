@@ -15,7 +15,7 @@ import { resoudreContexteRelique } from '../../lib/relicOptim';
 import { artifactConditionFloor, relicConditionFloor } from '../../lib/artifactConditionFloor';
 import { contexteResultat, runesDuContexte, type ContexteResultat } from '../../lib/contexteResultat';
 import {
-  basculerEpingle, cleEpingle, cleMembreEpingles, epinglesDe, libererTout, numeroEpingle, placeLibre, type BuildEpingle,
+  basculerEpingle, cleEpingle, cleMembreEpingles, epinglesDe, liberer, libererTout, numeroEpingle, placeLibre, type BuildEpingle,
 } from '../../lib/epinglesOptimizer';
 import { TAILLE_PAGE_CLASSEMENT, type CarteClassement } from '../../lib/classementCompact';
 import { bornesMisesDeCote, bornesSousMesure, triDesResultats } from '../../lib/colonnesResultats';
@@ -128,6 +128,7 @@ import { type Selected as SelectionGear } from '../MonsterGear';
 import { useHauteurDesCartes } from './BuildCandidateCard';
 import DamageSetupModale from './DamageSetupModale';
 import BoutonValiderBuild from './optimizer/BoutonValiderBuild';
+import ListeEpingles from './optimizer/ListeEpingles';
 import BandeauBuildValide from './optimizer/BandeauBuildValide';
 import type { EtatValidation } from './optimizer/types';
 import { CONFIGURABLE_SLOTS } from './optimizer/constantes';
@@ -3207,25 +3208,18 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
       setOpenDetailKey((cur) => (cur === key ? null : key));
     },
   };
-  // Les épinglés, en cartes : les premiers emplacements de la grille, sur
-  // toutes les pages ; leurs runes et leur relique sont celles de LEUR
-  // recherche, leur mesure la mesure courante (comme toute carte, recalculée
-  // à l'affichage). Leur détail ne dépend d'aucune page publiée.
-  const carteEpinglee = (e: BuildEpingle, numero: number) => (
-    <BuildCandidateCard
-      key={`epingle-${e.cle}`}
-      rank={numero}
-      candidate={e.carte.candidat}
-      runeById={runesDuContexte(e.contexte)}
-      relicUsageById={relicUsageById}
+  // Les épinglés, en cartes : une ligne compacte chacun, au-dessus de la
+  // grille, sur toutes les pages (`ListeEpingles`). La valeur se calcule avec
+  // les runes de LEUR recherche et la mesure courante ; un clic ouvre la carte
+  // entière dans la modale « Build épinglé n° N », comme une ligne du tableau.
+  const listeEpingles = membreEpingles && epinglesAffiches.length > 0 ? (
+    <ListeEpingles
+      epingles={epinglesAffiches.map((e, i) => ({ cle: e.cle, numero: i + 1, candidat: e.carte.candidat, runeById: runesDuContexte(e.contexte) }))}
       metric={metric}
-      openDetailKey={openDetailKey}
-      onToggleDetail={(key: string) => setOpenDetailKey((cur) => (cur === key ? null : key))}
-      bureau={!sousLg}
-      {...proprietesEpingle(e)}
+      ouvrir={(cle) => setDetailTableau(`epingle:${cle}`)}
+      liberer={(cle) => setEpingles((etat) => liberer(etat, membreEpingles, cle))}
     />
-  );
-  const cartesEpinglees = epinglesAffiches.length > 0 ? epinglesAffiches.map((e, i) => carteEpinglee(e, i + 1)) : null;
+  ) : null;
   const libererEpingles = membreEpingles
     ? { nombre: epinglesAffiches.length, demander: () => setLibererEpinglesConfirm(true) }
     : undefined;
@@ -3313,21 +3307,15 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
                   {os.tropEtroit}
                 </p>
               )}
+              {/* Les épinglés au-dessus de la bande de tri : ni triés, ni
+                  filtrés, et sous une vue vide ils restent. */}
+              {listeEpingles}
               {!sousLg && resultatsPresents && !compteConfirmes.aucune && (
                 <BandeDeTri courant={triAffiche} trier={trier} metric={mesureDesCartes} disponible={colonneLibre}
                   bornee={(c) => bornesVue[c]?.min != null || bornesVue[c]?.max != null} inactif={interrompu} />
               )}
-              {/* Sous une vue vide, les épinglés restent : un filtre ne les
-                  masque pas. */}
               {vueVide || compteConfirmes.aucune || seulementEpingles ? (
                 <>
-                  {cartesEpinglees && (
-                    <div className={`mb-3 grid gap-3 ${!sousLg
-                      ? 'grid-cols-[repeat(auto-fill,minmax(min(328px,100%),1fr))] compact:grid-cols-[repeat(auto-fill,minmax(min(360px,100%),1fr))]'
-                      : 'grid-cols-[repeat(auto-fill,minmax(min(360px,100%),1fr))]'}`}>
-                      {cartesEpinglees}
-                    </div>
-                  )}
                   {vueVide && (
                     <p className="mb-3 rounded-lg border border-dashed border-border-soft px-3 py-6 text-center text-xs text-ink-dim" data-vue-vide="">{vueVide}</p>
                   )}
@@ -3340,7 +3328,6 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
                   {...proprietesGrille}
                   proprietesCarte={proprietesCarte}
                   hauteurCarte={hauteurCarte}
-                  epingles={cartesEpinglees}
                 />
               )}
             </div>

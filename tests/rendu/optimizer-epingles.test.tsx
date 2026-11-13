@@ -1,6 +1,6 @@
 // Tests de rendu — les builds épinglés de l'Optimizer (resultats.md, § Builds
-// épinglés) : le bouton de chaque carte, les épinglés en tête de la grille et
-// du tableau, numérotés, « Libérer tous les builds épinglés » dans l'en-tête,
+// épinglés) : le bouton de chaque carte, les épinglés en lignes compactes
+// au-dessus de la grille et en tête du tableau, numérotés, « Libérer tous les builds épinglés » dans l'en-tête,
 // et des épinglés propres au membre affiché. Écran entier pour le branchement,
 // composants seuls pour le tableau et l'en-tête. Les gestes (épingler,
 // libérer, confirmer) : le banc d'affichage et la carte au navigateur.
@@ -14,6 +14,7 @@ import { cleEpingle, cleMembreEpingles, MAX_EPINGLES, type BuildEpingle } from '
 import { exclusionSelectorKey, type ExclusionSelector } from '../../src/lib/optimizerExclusion';
 import TableauResultats from '../../src/components/outils/optimizer/TableauResultats';
 import EnteteResultats from '../../src/components/outils/optimizer/EnteteResultats';
+import ListeEpingles from '../../src/components/outils/optimizer/ListeEpingles';
 
 const EPINGLER = 'Épingler ce build';
 const LIBERER = 'Libérer ce build épinglé';
@@ -47,11 +48,12 @@ function photo(r: Reel, i: number): BuildEpingle {
 const ecran = (selector: ExclusionSelector, epingles: (r: Reel) => Record<string, BuildEpingle[]>, avecResultats = true) =>
   rendreOptimizer((r: Reel) => ({ ...AVEC_MONSTRE, optimiserArtefacts: false, sourceSelector: selector, epingles: epingles(r),
     ...(avecResultats ? { search: { ...r.search, ...page(r, 3) } } : {}) }));
+const LIGNE = (n: number) => `aria-label="Détail du build épinglé n° ${n}"`;
 const rangs = (html: string) => [...texteVisible(html).matchAll(/#(\d+)\b/g)].map((m) => Number(m[1]));
 const nommes = (html: string, nom: string) => boutons(html).filter((b) => b.ariaLabel === nom);
 
 export function testRenduOptimizerEpingles() {
-  titre('rendu · Optimizer — builds épinglés : bouton, tête de la grille, en-tête, propres au membre');
+  titre('rendu · Optimizer — builds épinglés : bouton, lignes au-dessus de la grille, en-tête, propres au membre');
 
   // Sans épinglé : un bouton par carte, « Libérer tous… » présent et désactivé.
   const sans = ecran(membre, () => ({}));
@@ -59,20 +61,22 @@ export function testRenduOptimizerEpingles() {
   const tout = boutons(sans).find((b) => b.ariaLabel === TOUT);
   ok(!!tout && tout.desactive, 'sans épinglé : « Libérer tous les builds épinglés » présent et désactivé (sa place est réservée)');
 
-  // Le deuxième build épinglé : en tête de la grille, numéroté 1, sans rang ;
-  // son double dans la page garde son rang et dit « Libérer ».
+  // Le deuxième build épinglé : une ligne compacte au-dessus de la grille,
+  // numérotée 1, sans rang ni carte entière ; son double dans la page garde
+  // son rang et dit « Libérer ».
   const un = ecran(membre, (r) => ({ [MEMBRE]: [photo(r, 1)] }));
   egal(rangs(un), [1, 2, 3], 'épinglé : la page garde ses rangs, l’épinglé n’en écrit pas');
-  ok(un.indexOf('aria-label="Build épinglé n° 1"') >= 0 && un.indexOf('aria-label="Build épinglé n° 1"') < un.indexOf('#1'),
-    'épinglé : numéroté 1, avant la première carte de la page');
-  egal(nommes(un, LIBERER).length, 2, 'épinglé : « Libérer » sur sa carte épinglée et sur son double de la page');
+  ok(un.includes('data-liste-epingles') && un.indexOf(LIGNE(1)) >= 0 && un.indexOf(LIGNE(1)) < un.indexOf('#1'),
+    'épinglé : une ligne numérotée 1, avant la première carte de la page');
+  egal((un.match(/data-carte-resultat/g) ?? []).length, 3, 'épinglé : pas de carte entière en plus, la grille garde ses 3 cartes');
+  egal(nommes(un, LIBERER).length, 2, 'épinglé : « Libérer » sur sa ligne et sur son double de la page');
   egal(nommes(un, EPINGLER).length, 2, 'épinglé : les deux autres cartes de la page restent épinglables');
   ok(boutons(un).some((b) => b.ariaLabel === TOUT && !b.desactive), 'épinglé : « Libérer tous les builds épinglés » actif');
-  egal(boutons(un).filter((b) => b.ariaLabel === LIBERER).map((b) => b.presse), [true, true], 'le bouton d’un épinglé est enclenché');
+  egal(boutons(un).filter((b) => b.ariaLabel === LIBERER && b.presse).length, 1, 'le bouton de son double dans la page est enclenché');
 
   // Deux épinglés : numérotés dans l'ordre d'épinglage.
   const deux = ecran(membre, (r) => ({ [MEMBRE]: [photo(r, 2), photo(r, 0)] }));
-  ok(deux.indexOf('Build épinglé n° 1') < deux.indexOf('Build épinglé n° 2') && deux.indexOf('Build épinglé n° 2') < deux.indexOf('#1'),
+  ok(deux.indexOf(LIGNE(1)) >= 0 && deux.indexOf(LIGNE(1)) < deux.indexOf(LIGNE(2)) && deux.indexOf(LIGNE(2)) < deux.indexOf('#1'),
     'deux épinglés : 1 puis 2, avant la page');
 
   // Dix épinglés : plus de place, le bouton des autres cartes le dit, désactivé.
@@ -82,19 +86,19 @@ export function testRenduOptimizerEpingles() {
 
   // Propres au membre : un autre exemplaire n'en montre aucun.
   const ailleurs = ecran(autre, (r) => ({ [MEMBRE]: [photo(r, 1)] }));
-  ok(!ailleurs.includes('Build épinglé n° 1') && nommes(ailleurs, LIBERER).length === 0, 'un autre membre ne voit pas les épinglés de celui-ci');
+  ok(!ailleurs.includes(LIGNE(1)) && nommes(ailleurs, LIBERER).length === 0, 'un autre membre ne voit pas les épinglés de celui-ci');
 
   // Sans résultats (retour sur le monstre) : les épinglés restent, sous un
   // en-tête réduit à leur compte et à « Libérer tous… ».
   const seul = ecran(membre, (r) => ({ [MEMBRE]: [photo(r, 1)] }), false);
   const t = texteVisible(seul);
-  ok(t.includes('1 build(s) épinglé(s)') && seul.includes('aria-label="Build épinglé n° 1"') && rangs(seul).length === 0,
+  ok(t.includes('1 build(s) épinglé(s)') && seul.includes(LIGNE(1)) && rangs(seul).length === 0,
     'sans résultats : l’épinglé reste affiché, sous « 1 build(s) épinglé(s) »');
   ok(boutons(seul).some((b) => b.texte.includes(TOUT) && !b.desactive), 'sans résultats : « Libérer tous les builds épinglés » actif');
 }
 
 export function testRenduOptimizerEpinglesTableau() {
-  titre('rendu · Optimizer — builds épinglés : lignes en tête du tableau, bouton de l’en-tête');
+  titre('rendu · Optimizer — builds épinglés : lignes en tête du tableau, lignes compactes des cartes, bouton de l’en-tête');
   let photoTableau: BuildEpingle | null = null;
   rendreOptimizer((r: Reel) => { photoTableau = photo(r, 1); return { ...AVEC_MONSTRE }; });
   const e = photoTableau!;
@@ -111,6 +115,18 @@ export function testRenduOptimizerEpinglesTableau() {
   const vide = tableau('Vue vide : rien ne passe.');
   ok(vide.includes('data-ligne-epinglee') && texteVisible(vide).includes('Vue vide : rien ne passe.'),
     'tableau : sous une vue vide, l’épinglé reste (un filtre ne le masque pas)');
+
+  // Les lignes compactes du mode cartes : numéro, sets, valeur moyenne, et
+  // « Libérer » ; la ligne elle-même ouvre le détail.
+  const liste = rendre(
+    <ListeEpingles epingles={[{ cle: e.cle, numero: 1, candidat: e.carte.candidat, runeById }, { cle: 'autre', numero: 2, candidat: e.carte.candidat, runeById }]}
+      metric="eff" ouvrir={() => {}} liberer={() => {}} />,
+  );
+  ok(liste.indexOf('aria-label="Détail du build épinglé n° 1"') >= 0 && liste.indexOf('aria-label="Détail du build épinglé n° 1"') < liste.indexOf('aria-label="Détail du build épinglé n° 2"'),
+    'lignes compactes : une par épinglé, dans l’ordre, chacune ouvre son détail');
+  egal(nommes(liste, LIBERER).length, 2, 'lignes compactes : « Libérer » sur chacune');
+  ok(texteVisible(liste).includes('Efficience moyenne'), 'lignes compactes : la valeur moyenne de la mesure courante');
+  egal(rendre(<ListeEpingles epingles={[]} metric="eff" ouvrir={() => {}} liberer={() => {}} />), '', 'sans épinglé : aucune liste');
 
   const entete = (nombre: number, bureau: boolean) => rendre(
     <EnteteResultats result={{ nombre: 3, explored: 10, truncated: false, nearMissByCondition: [], globalNearMiss: null }}

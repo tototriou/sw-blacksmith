@@ -653,16 +653,23 @@ d'affichage ou le tri. Calcul pur : `epinglesOptimizer.ts` ; l'état
   L'identité d'un épinglé : ses six runes, sa paire et sa relique
   (`cleEpingle`) — mêmes runes et autre paire font deux builds, comme pour
   « Valider les artéfacts ».
-- **En cartes**, les épinglés prennent les premiers emplacements de la
-  grille, sur toutes les pages, dans l'ordre d'épinglage, contour en accent.
-  Leur numéro (punaise et « 1 » à « 10 ») remplace le rang. Un épinglé encore
-  présent dans la page y garde sa carte et son rang ; seul son bouton
+- **En cartes**, une **ligne compacte** par épinglé (`ListeEpingles.tsx`),
+  au-dessus de la bande de tri et de la grille, sur toutes les pages, dans
+  l'ordre d'épinglage : punaise et numéro (« 1 » à « 10 »), sets, valeur
+  moyenne de la mesure courante, et « Libérer ce build épinglé ». Un clic sur
+  la ligne ouvre la carte entière dans la modale « Build épinglé n° N »
+  (contour en accent, numéro à la place du rang), d'où l'on compare, valide ou
+  libère. ⚠️ **Pourquoi des lignes et pas des cartes** (choix de
+  l'utilisateur, 2026-11-13) : la demande voulait les épinglés dans les
+  premiers emplacements de la grille, mais dix cartes repoussaient la page de
+  quatre écrans au bureau, contre le but même de la fonction (comparer les
+  épinglés aux nouveaux résultats) ; une modale les aurait cachés. Un épinglé
+  encore présent dans la page y garde sa carte et son rang ; seul son bouton
   enclenché dit qu'il est épinglé : un numéro de plus dans l'en-tête le
-  faisait passer à la ligne au bureau, et la carte grandissait sous le
-  bouton cliqué. ⚠️ Épingler fait entrer une carte en tête de la grille, et
-  les cartes de la page glissent d'un emplacement : c'est la disposition
-  demandée (« les premiers emplacements »), une exception assumée à « un clic
-  ne déplace jamais ce qu'on vient de cliquer », signalée à la relecture.
+  faisait passer à la ligne au bureau. ⚠️ Épingler ajoute une ligne
+  au-dessus de la grille : les cartes descendent de sa hauteur, une exception
+  assumée à « un clic ne déplace jamais ce qu'on vient de cliquer », signalée
+  à la relecture.
 - **En tableau**, une ligne par épinglé en tête du corps, au-dessus du
   build n° 1, le numéro à la place du rang, un trait plein sous la dernière ;
   un clic ouvre la modale « Build épinglé n° N », comme les autres lignes.

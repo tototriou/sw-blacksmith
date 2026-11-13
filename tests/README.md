@@ -163,7 +163,7 @@ déplacement rend l'état non atteint.
 |---|---|
 | `liste-remplie` | Liste Arène, Vanessa et Cassie ajoutées par la recherche |
 | `resultats`, `resultats-tableau`, `resultats-filtres` | Import de [optimizer-banc-recette.json](fixtures/optimizer-banc-recette.json), recherche Rapide terminée, deux cartes exigées ; tableau et filtre selon l'état |
-| `resultats-epingles` | Même recherche, deux builds épinglés depuis les cartes : en tête de la grille, « Libérer tous les builds épinglés » actif |
+| `resultats-epingles` | Même recherche, deux builds épinglés depuis les cartes : deux lignes compactes au-dessus de la grille, « Libérer tous les builds épinglés » actif |
 | `resultats-tableau-epingles` | Tableau, la ligne n° 1 épinglée depuis sa modale : la ligne épinglée en tête du tableau |
 | `artefacts`, `complements` | Même recherche, puis sélection de l'onglet correspondant |
 | `guidage-set` | Options, puis Rechercher sans set : Critères et message d'erreur visibles |
