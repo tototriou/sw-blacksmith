@@ -210,12 +210,14 @@ export default function EnteteResultats({ result, compteConfirmes, avecFile, tri
   );
 
   // Deux lignes au plus (`max-w`) : le libellé est long, l'en-tête du bureau
-  // tient sur une rangée.
+  // tient sur une rangée. Centré dans le bouton, sur ses deux axes (demande de
+  // l'utilisateur) : le bouton est centré par `Bouton`, les lignes du libellé
+  // par `text-center`.
   const boutonLibererEpingles = libererEpingles && (
     <Bouton
       taille="sm"
       icone={<PinOff size={13} />}
-      libelle={<span className="block max-w-[9rem] whitespace-normal text-left leading-tight">{textes.optimizer.section.libererEpingles}</span>}
+      libelle={<span className="block max-w-[9rem] whitespace-normal text-center leading-tight">{textes.optimizer.section.libererEpingles}</span>}
       aria-label={textes.optimizer.section.libererEpingles}
       disabled={libererEpingles.nombre === 0}
       onClick={libererEpingles.demander}
