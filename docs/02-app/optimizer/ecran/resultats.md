@@ -675,7 +675,9 @@ d'affichage ou le tri. Calcul pur : `epinglesOptimizer.ts` ; l'état
   assumée à « un clic ne déplace jamais ce qu'on vient de cliquer », signalée
   à la relecture.
 - **En tableau**, une ligne par épinglé en tête du corps, au-dessus du
-  build n° 1, le numéro à la place du rang, un trait plein sous la dernière ;
+  build n° 1, le numéro à la place du rang, un trait plein sous la dernière,
+  sur le fond de « Build actuel » enclenché (aplat d'accent, texte
+  `accent-ink`, demande de l'utilisateur ; la colonne triée s'y lit en gras) ;
   un clic ouvre la modale « Build épinglé n° N », comme les autres lignes.
   Les valeurs s'écrivent avec les runes et la base de SA recherche.
 - **Ni triés, ni filtrés, ni paginés** : sous une vue vide (bornes
