@@ -3209,13 +3209,16 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
     },
   };
   // Les épinglés, en cartes : une ligne compacte chacun, au-dessus de la
-  // grille, sur toutes les pages (`ListeEpingles`). La valeur se calcule avec
-  // les runes de LEUR recherche et la mesure courante ; un clic ouvre la carte
+  // grille, sur toutes les pages (`ListeEpingles`). La valeur est celle de la
+  // colonne de tri, calculée avec les runes de LEUR recherche ; un clic ouvre la carte
   // entière dans la modale « Build épinglé n° N », comme une ligne du tableau.
   const listeEpingles = membreEpingles && epinglesAffiches.length > 0 ? (
     <ListeEpingles
-      epingles={epinglesAffiches.map((e, i) => ({ cle: e.cle, numero: i + 1, candidat: e.carte.candidat, runeById: runesDuContexte(e.contexte) }))}
+      epingles={epinglesAffiches.map((e, i) => ({ cle: e.cle, numero: i + 1, carte: e.carte, runeById: runesDuContexte(e.contexte) }))}
       metric={metric}
+      colonne={triAffiche.tri}
+      disponible={colonneLibre}
+      afficherDepassement={instantane?.vue.afficherDepassement ?? afficherDepassement}
       ouvrir={(cle) => setDetailTableau(`epingle:${cle}`)}
       liberer={(cle) => setEpingles((etat) => liberer(etat, membreEpingles, cle))}
     />

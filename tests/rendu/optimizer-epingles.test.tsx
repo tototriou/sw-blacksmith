@@ -118,15 +118,21 @@ export function testRenduOptimizerEpinglesTableau() {
 
   // Les lignes compactes du mode cartes : numéro, sets, valeur moyenne, et
   // « Libérer » ; la ligne elle-même ouvre le détail.
-  const liste = rendre(
-    <ListeEpingles epingles={[{ cle: e.cle, numero: 1, candidat: e.carte.candidat, runeById }, { cle: 'autre', numero: 2, candidat: e.carte.candidat, runeById }]}
-      metric="eff" ouvrir={() => {}} liberer={() => {}} />,
+  const lignes = [{ cle: e.cle, numero: 1, carte: e.carte, runeById }, { cle: 'autre', numero: 2, carte: e.carte, runeById }];
+  const listeTriee = (colonne: 'efficience' | 'atk' | 'degats_reels') => rendre(
+    <ListeEpingles epingles={lignes} metric="eff" colonne={colonne} disponible={(c) => c !== 'degats_reels'} afficherDepassement
+      ouvrir={() => {}} liberer={() => {}} />,
   );
+  const liste = listeTriee('efficience');
   ok(liste.indexOf('aria-label="Détail du build épinglé n° 1"') >= 0 && liste.indexOf('aria-label="Détail du build épinglé n° 1"') < liste.indexOf('aria-label="Détail du build épinglé n° 2"'),
     'lignes compactes : une par épinglé, dans l’ordre, chacune ouvre son détail');
   egal(nommes(liste, LIBERER).length, 2, 'lignes compactes : « Libérer » sur chacune');
-  ok(texteVisible(liste).includes('Efficience moyenne'), 'lignes compactes : la valeur moyenne de la mesure courante');
-  egal(rendre(<ListeEpingles epingles={[]} metric="eff" ouvrir={() => {}} liberer={() => {}} />), '', 'sans épinglé : aucune liste');
+  ok(texteVisible(liste).includes('Efficience moyenne'), 'lignes compactes, tri par efficience : la valeur moyenne de la mesure courante');
+  const parAtq = texteVisible(listeTriee('atk'));
+  ok(parAtq.includes('ATQ : 1 000') && !parAtq.includes('Efficience moyenne'), `lignes compactes, tri par ATQ : la valeur suit le tri (« ${parAtq} »)`);
+  ok(texteVisible(listeTriee('degats_reels')).includes('Efficience moyenne'), 'lignes compactes, tri sur une colonne indisponible : l’efficience moyenne');
+  egal(rendre(<ListeEpingles epingles={[]} metric="eff" colonne="efficience" disponible={() => true} afficherDepassement ouvrir={() => {}} liberer={() => {}} />), '',
+    'sans épinglé : aucune liste');
 
   const entete = (nombre: number, bureau: boolean) => rendre(
     <EnteteResultats result={{ nombre: 3, explored: 10, truncated: false, nearMissByCondition: [], globalNearMiss: null }}

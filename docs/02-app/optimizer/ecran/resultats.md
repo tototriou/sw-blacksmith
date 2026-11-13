@@ -656,7 +656,11 @@ d'affichage ou le tri. Calcul pur : `epinglesOptimizer.ts` ; l'état
 - **En cartes**, une **ligne compacte** par épinglé (`ListeEpingles.tsx`),
   au-dessus de la bande de tri et de la grille, sur toutes les pages, dans
   l'ordre d'épinglage : punaise et numéro (« 1 » à « 10 »), sets, valeur
-  moyenne de la mesure courante, et « Libérer ce build épinglé ». Un clic sur
+  de la **colonne de tri** et « Libérer ce build épinglé ». ⚠️ La valeur suit
+  le tri, pas l'objectif (demande de l'utilisateur) : c'est elle qui range la
+  page, donc celle qu'on compare. Trié par efficience, la ligne écrit
+  « Efficience moyenne : … » comme la carte ; trié par une stat, « VIT : … » ;
+  une colonne indisponible (dégâts sans sort) retombe sur l'efficience. Un clic sur
   la ligne ouvre la carte entière dans la modale « Build épinglé n° N »
   (contour en accent, numéro à la place du rang), d'où l'on compare, valide ou
   libère. ⚠️ **Pourquoi des lignes et pas des cartes** (choix de
@@ -681,7 +685,8 @@ d'affichage ou le tri. Calcul pur : `epinglesOptimizer.ts` ; l'état
   libère un (`liberer`).
 - **« Libérer tous les builds épinglés »** : dans l'en-tête des résultats, à
   gauche de « Filtrer l'affichage » (cartes) et de « Stats totales / Stats
-  bonus » (tableau), son libellé sur deux lignes au bureau ; au téléphone, à
+  bonus » (tableau), son libellé sur deux lignes au bureau, centré sur les
+  deux axes ; au téléphone, à
   gauche de « Filtrer l'affichage », les deux à parts égales. ⚠️ Toujours
   présent avec les résultats, désactivé sans épinglé : épingler ne fait
   apparaître aucun bouton qui décalerait l'en-tête. Il demande confirmation
