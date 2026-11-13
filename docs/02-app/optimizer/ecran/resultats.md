@@ -588,7 +588,8 @@ toujours, superposés, l'absent invisible (`VISIBLE_AVEC_LE_TABLEAU`,
 - **La ligne de la fiche** (demande d'utilisateur : voir l'efficience, les
   dégâts et les PV effectifs du runage porté sans ouvrir « Comparer ») : sous
   les bornes, dernière rangée de l'en-tête, les onze valeurs de la fiche
-  affichée dans « Exemplaire », sur fond `panel2`, au-dessus du premier build.
+  affichée dans « Exemplaire », sur fond `panel2`, au-dessus des builds épinglés
+  (même fond, § Builds épinglés) et du premier build.
   Son nom est celui de la vue, sur sa propre rangée : « Build actuel »,
   « Build validé » ou « Aperçu » (`vueFiche`) ; dans la colonne du rang, il
   aurait élargi le tableau, dont le seuil est mesuré. ⚠️ **Les valeurs sont
@@ -692,8 +693,8 @@ d'affichage ou le tri. Calcul pur : `epinglesOptimizer.ts` ; l'état
   à la relecture.
 - **En tableau**, une ligne par épinglé en tête du corps, au-dessus du
   build n° 1, le numéro à la place du rang, un trait plein sous la dernière,
-  sur le fond de « Build actuel » enclenché (aplat d'accent, texte
-  `accent-ink`, demande de l'utilisateur ; la colonne triée s'y lit en gras) ;
+  sur le fond de la ligne de la fiche d'« Exemplaire » (`bg-panel2`, demande
+  de l'utilisateur), juste sous elle ;
   un clic ouvre la modale « Build épinglé n° N », comme les autres lignes.
   Les valeurs s'écrivent avec les runes et la base de SA recherche.
 - **Ni triés, ni filtrés, ni paginés** : sous une vue vide (bornes

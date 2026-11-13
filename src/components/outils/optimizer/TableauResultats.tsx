@@ -234,19 +234,18 @@ export default function TableauResultats({ cartes, premierRang, placesEnAttente,
           {/* Les épinglés d'abord, au-dessus des résultats de la recherche, et
               même sous une vue vide : un filtre ne les masque pas. Le dernier
               porte le trait plein qui les sépare de la page.
-              ⚠️ Fond en aplat d'accent, texte `accent-ink` : celui de « Build
-              actuel » enclenché (`Segmented`), demande de l'utilisateur. La
-              teinte de la colonne triée ne s'y pose pas : l'aplat la
-              couvrirait, la colonne se lit en gras. */}
+              ⚠️ Le fond de la ligne de la fiche (`bg-panel2`, demande de
+              l'utilisateur) : la fiche et les épinglés sont les builds qu'on
+              garde sous les yeux pour comparer la page. */}
           {epingles.map((e, i) => (
             <tr key={`epingle-${e.cle}`} onClick={() => ouvrirEpingle?.(e.cle)} data-ligne-epinglee=""
-              className={`cursor-pointer bg-accent text-accent-ink hoverable:bg-accent-hover ${i === epingles.length - 1 ? 'border-b border-border' : 'border-b border-accent-hover'}`}>
+              className={`cursor-pointer bg-panel2 ${i === epingles.length - 1 ? 'border-b border-border' : 'border-b border-border-soft'}`}>
               <td className="px-1 py-1 text-center">
                 <ZoneCliquable
                   onClick={(ev) => { ev.stopPropagation(); ouvrirEpingle?.(e.cle); }}
                   aria-label={r.detailEpingle(e.numero)}
                   data-cible-fine=""
-                  className="inline-flex items-center gap-0.5 font-mono font-bold text-accent-ink"
+                  className="inline-flex items-center gap-0.5 font-mono font-bold text-accent"
                 >
                   <Pin size={11} aria-hidden />
                   {e.numero}
@@ -255,8 +254,8 @@ export default function TableauResultats({ cartes, premierRang, placesEnAttente,
               {COLONNES_RESULTATS.map((c) => {
                 const v = disponible(c) ? valeurDeColonne(c, e.carte, e.runeById, metric, afficherDepassement) : null;
                 return (
-                  <td key={c} data-colonne-tableau={c} className={`whitespace-nowrap px-1 py-1 text-center font-mono ${
-                    !disponible(c) ? 'text-accent-ink/60' : tri.tri === c ? 'font-bold' : ''}`}>
+                  <td key={c} data-colonne-tableau={c} className={`whitespace-nowrap px-1 py-1 text-center font-mono ${teinte(c)} ${
+                    !disponible(c) ? 'text-ink-dimmer' : tri.tri === c ? 'font-semibold text-ink' : 'text-ink'}`}>
                     {texteValeurColonne(c, v === null ? null : versAffichage(c, v, e.base, enBonus), metric, textes)}
                   </td>
                 );
