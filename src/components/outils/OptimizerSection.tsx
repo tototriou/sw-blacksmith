@@ -164,7 +164,9 @@ import EnteteResultats from './optimizer/EnteteResultats';
 import DiagnosticsSansResultat from './optimizer/DiagnosticsSansResultat';
 import GrilleResultats from './optimizer/GrilleResultats';
 import BandeDeTri, { type TriResultats } from './optimizer/TetesDeTri';
-import TableauResultats, { CARTES_SOUS_LE_SEUIL, TABLEAU_VISIBLE } from './optimizer/TableauResultats';
+import TableauResultats, { CARTES_SOUS_LE_SEUIL, TABLEAU_VISIBLE, type LigneFiche } from './optimizer/TableauResultats';
+import { valeursDeLaFiche } from '../../lib/valeursAffichees';
+import MesuresDeLaFiche from './optimizer/MesuresDeLaFiche';
 import BuildCandidateCard from './BuildCandidateCard';
 import { useFormeResultats, type FormeResultats } from '../../hooks/useFormeResultats';
 import { libelleColonne } from '../../lib/filtresAffichage';
@@ -1227,6 +1229,9 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
     if (showRealGear && sourceSelector) return resolveExclusionEntry(sourceSelector, exclusionData) ?? selected;
     return selected;
   }, [apercu, showRealGear, sourceSelector, exclusionData, selected]);
+  // La vue de la fiche, nommée comme ses deux choix (et l'aperçu, hors des deux) :
+  // le choix pressé dans « Exemplaire » et la ligne de la fiche du tableau.
+  const vueFiche: 'apercu' | 'valide' | 'actuel' = apercu ? 'apercu' : ownValidatedBuild && !showRealGear ? 'valide' : 'actuel';
 
   // Un réimport du compte remet les critères à zéro (`resetSearch('compte')`,
   // App.tsx) sans connaître le monstre resté sélectionné : le défaut de
@@ -2374,6 +2379,32 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
   const ficheDeReference = selectionAffichee?.gear;
   const refEhpResultat = useMemo(() => ficheDeReference ? scoreDeReference('ehp', ficheDeReference, contexteReferenceResultat) : null, [ficheDeReference, contexteReferenceResultat]);
   const refDegatsResultat = useMemo(() => ficheDeReference ? scoreDeReference('degats_reels', ficheDeReference, contexteReferenceResultat) : null, [ficheDeReference, contexteReferenceResultat]);
+  // La ligne de la fiche du tableau : les références de « Comparer », dans la
+  // mesure des cartes (aucune efficience tant que la page publiée est dans
+  // l'autre, comme l'écart d'une carte).
+  const afficherDepassementDesCartes = instantane?.vue.afficherDepassement ?? afficherDepassement;
+  const ligneFiche = useMemo<LigneFiche | null>(() => statsReference ? {
+    libelle: vueFiche === 'apercu' ? os.apercuCourt : vueFiche === 'valide' ? os.buildValide : os.buildActuel,
+    valeurs: valeursDeLaFiche({
+      stats: statsReference,
+      mesureTotale: refMetric != null && mesureDesCartes === metric ? refMetric : null,
+      pvEffectifs: refEhpResultat,
+      degatsReels: refDegatsResultat,
+    }, afficherDepassementDesCartes),
+  } : null, [statsReference, vueFiche, os, refMetric, mesureDesCartes, metric, refEhpResultat, refDegatsResultat, afficherDepassementDesCartes]);
+  // Les mêmes références sous la fiche d'« Exemplaire », quand les résultats
+  // sont en cartes (le téléphone l'est toujours) : en tableau, la ligne de la
+  // fiche les porte.
+  const enemyHpReference = contexteReferenceResultat.damageSetup.enemyHp;
+  const mesuresFiche = statsReference && refMetric != null && (formeResultats !== 'tableau' || sousLg) ? (
+    <MesuresDeLaFiche
+      mesureTotale={refMetric}
+      metric={metric}
+      pvEffectifs={refEhpResultat}
+      degats={refDegatsResultat != null
+        ? { total: refDegatsResultat, partPvCible: enemyHpReference > 0 ? (refDegatsResultat / enemyHpReference) * 100 : 0 } : null}
+    />
+  ) : null;
 
   // Le compte du MOTEUR : le nombre du bilan à la fin, le compte de la
   // progression pendant l'appariement (non plafonné, contrairement à l'aperçu).
@@ -2735,7 +2766,7 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
       { key: 'actuel', label: os.buildActuel },
       { key: 'valide', label: os.buildValide, disabled: !ownValidatedBuild, hint: !ownValidatedBuild ? os.aucunBuildValide : undefined },
     ]}
-    value={apercu ? null : ownValidatedBuild && !showRealGear ? 'valide' : 'actuel'}
+    value={vueFiche === 'apercu' ? null : vueFiche}
     onChange={vue => { setApercu(null); setZoneDOpen(false); setShowRealGear(vue === 'actuel'); }}
   />;
   const bandeauApercu = apercu && <div className="mb-2 flex items-center gap-2 rounded-lg bg-warn-soft px-2 py-1 text-micro text-warn">
@@ -3346,7 +3377,7 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
                 placesEnAttente={compteConfirmes.aucune || seulementEpingles ? 0 : composition.placesEnAttente}
                 runeById={runesDesCartes}
                 metric={mesureDesCartes}
-                afficherDepassement={instantane?.vue.afficherDepassement ?? afficherDepassement}
+                afficherDepassement={afficherDepassementDesCartes}
                 tri={triAffiche}
                 trier={trier}
                 bornes={bornesVue}
@@ -3357,6 +3388,7 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
                 inactif={interrompu}
                 enBonus={bonusAffichage}
                 base={baseAffichee}
+                fiche={ligneFiche}
               />
             </div>
           )}
@@ -3514,6 +3546,7 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
     selectionFiche,
     setSelectionFiche,
     relicUsageById,
+    mesuresFiche,
     validateBuildButton,
   };
 
@@ -3737,6 +3770,7 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
             selectionFiche={selectionFiche}
             setSelectionFiche={setSelectionFiche}
             relicUsageById={relicUsageById}
+            mesuresFiche={mesuresFiche}
             validateBuildButton={validateBuildButton}
           />
       </MonstreEquipement>

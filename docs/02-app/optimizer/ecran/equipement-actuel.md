@@ -158,3 +158,20 @@ réduit, d'une échelle continue, pour tenir à côté du panneau dans les
 358 px de contenu de la colonne « Monstre ». Le bandeau d'aperçu ou du build
 validé, au-dessus, et « Valider ce build », dessous, prennent la largeur de
 la section.
+
+## Mesures de la fiche
+
+Sous la fiche, au-dessus de « Valider ce build », un bloc
+(`MesuresDeLaFiche.tsx`) écrit, comme les rangées d'une carte de résultat, la
+**mesure moyenne** du runage affiché (« Efficience moyenne » ou « Score
+moyen »), ses **PV effectifs** et ses **dégâts** avec la part des PV de la
+cible (demande d'utilisateur : voir ces valeurs sans ouvrir « Comparer »).
+La rangée des dégâts n'est écrite qu'avec un sort calculable. Le bloc n'existe
+que quand les résultats sont **en cartes** (téléphone compris) : en tableau,
+la ligne de la fiche du tableau porte les mêmes valeurs
+([resultats.md](resultats.md), § Cartes ou tableau). ⚠️ **Ce sont les
+références de « Comparer »** (`refMetric`, `refEhpResultat`,
+`refDegatsResultat`, OptimizerSection.tsx) : notées dans le contexte de la
+recherche affichée quand il y en a une, dans les réglages courants sinon,
+pour que le bloc, l'écart d'une carte et la ligne du tableau disent le même
+chiffre. La mesure suit le réglage Efficience/Score courant.

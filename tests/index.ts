@@ -110,7 +110,7 @@ import { testTriSansNouvelleResolution, testToutVerifierPhotographie, testPlaces
 import { testObjectifVitesseMigration } from './objectif-vitesse.test';
 import { testColonnesTriAscendant } from './colonnes-tri.test';
 import { testFiltresResultatsBornes, testFiltresResultatsReversibles, testFiltresResultatsIndetermines, testFiltresResultatsComptesPages,
-  testFiltresResultatsDifferentiel, testFiltresResultatsPlafondAffiche } from './filtres-resultats.test';
+  testFiltresResultatsDifferentiel, testFiltresResultatsPlafondAffiche, testFiltresResultatsLigneFiche } from './filtres-resultats.test';
 import { testFiltresResultatsDoublonsTaches } from './filtres-resultats-doublons.test';
 import { testFiltresResultatsChangementDeMesure, testFiltresResultatsMemoire } from './filtres-memoire.test';
 import { testFiltresResultatsAvecBorne } from './filtres-avec-borne.test';
@@ -1101,6 +1101,7 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testFiltresResultatsComptesPages', testFiltresResultatsComptesPages],
   ['testFiltresResultatsDifferentiel', testFiltresResultatsDifferentiel],
   ['testFiltresResultatsPlafondAffiche', testFiltresResultatsPlafondAffiche],
+  ['testFiltresResultatsLigneFiche', testFiltresResultatsLigneFiche],
   ['testFiltresResultatsDoublonsTaches', testFiltresResultatsDoublonsTaches],
   ['testFiltresResultatsMemoire', testFiltresResultatsMemoire],
   ['testFiltresResultatsChangementDeMesure', testFiltresResultatsChangementDeMesure],

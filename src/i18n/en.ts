@@ -2413,6 +2413,7 @@ export const en: Dictionnaire = {
       autreMonstre: 'another monster',
       buildActuel: 'Current build',
       buildValide: 'Validated build',
+      apercuCourt: 'Preview',
       aucunBuildValide: 'No validated build for this member',
       apercu: (monstre: string, source: string) => `Preview: ${monstre} · ${source}. This is not the list’s copy.`,
       revenir: 'Go back',

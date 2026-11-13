@@ -93,11 +93,20 @@ export interface TableauResultatsProps {
   // « Stats bonus » : PV, ATQ, DEF et VIT en total − base du monstre (`base`), valeurs comme bornes.
   enBonus?: boolean;
   base?: Partial<Record<StatKey, number>>;
+  // La fiche affichée dans « Exemplaire » (build actuel, build validé ou
+  // aperçu), en total : une ligne sous les bornes, au-dessus du premier build.
+  fiche?: LigneFiche | null;
   // Les builds épinglés du monstre, en tête, dans l'ordre d'épinglage : ni
   // triés, ni filtrés, ni paginés (resultats.md, § Builds épinglés). Chacun
   // s'écrit avec SES runes et SA base, celles de la recherche qui l'a produit.
   epingles?: LigneEpinglee[];
   ouvrirEpingle?: (cle: string) => void;
+}
+
+/** La ligne de la fiche : son nom (la vue d'« Exemplaire ») et ses onze valeurs (`valeursDeLaFiche`). */
+export interface LigneFiche {
+  libelle: string;
+  valeurs: Record<ColonneResultat, number | null>;
 }
 
 export interface LigneEpinglee {
@@ -109,7 +118,7 @@ export interface LigneEpinglee {
 }
 
 export default function TableauResultats({ cartes, premierRang, placesEnAttente, runeById, metric, afficherDepassement, tri, trier,
-  bornes, poserBorne, disponible, ouvrirDetail, vide, inactif = false, enBonus = false, base = {}, epingles = [], ouvrirEpingle }: TableauResultatsProps) {
+  bornes, poserBorne, disponible, ouvrirDetail, vide, inactif = false, enBonus = false, base = {}, fiche = null, epingles = [], ouvrirEpingle }: TableauResultatsProps) {
   const textes = useTraduction();
   const r = textes.optimizer.resultats;
   const k = textes.optimizer.conditions;
@@ -164,7 +173,7 @@ export default function TableauResultats({ cartes, premierRang, placesEnAttente,
             })}
           </tr>
           {(['min', 'max'] as const).map((cote) => (
-            <tr key={cote} className={cote === 'max' ? 'border-b border-border' : ''}>
+            <tr key={cote} className={cote === 'max' && !fiche ? 'border-b border-border' : ''}>
               <th scope="row" className="px-1 py-0.5 text-center text-micro font-semibold text-ink-dim">{cote === 'min' ? k.min : k.max}</th>
               {COLONNES_RESULTATS.map((c) => {
                 const libre = disponible(c), nom = libelleColonne(c, metric, textes), suffixe = suffixeColonne(c, metric);
@@ -195,6 +204,31 @@ export default function TableauResultats({ cartes, premierRang, placesEnAttente,
               })}
             </tr>
           ))}
+          {/* La fiche d'« Exemplaire » : ses valeurs se lisent contre celles
+              des builds, sans ouvrir « Comparer ». Son nom sur sa propre
+              rangée : dans la colonne du rang, il élargirait le tableau, dont
+              le seuil est mesuré (un mot par ligne à sa gauche : 27 px de
+              plus en anglais, « Validated »). */}
+          {fiche && (
+            <>
+              <tr className="border-t border-border-soft bg-panel2" data-ligne-fiche-titre="">
+                {/* Sans rembourrage bas ni interligne : le nom tient contre ses valeurs (demande de l'utilisateur). */}
+                <th scope="colgroup" colSpan={largeurTotale} className="px-2 pt-0.5 text-left text-micro font-semibold leading-none text-ink-dim">{fiche.libelle}</th>
+              </tr>
+              <tr className="border-b border-border bg-panel2" data-ligne-fiche="">
+                <td className="px-1 pb-1" />
+                {COLONNES_RESULTATS.map((c) => {
+                  const v = disponible(c) ? fiche.valeurs[c] : null;
+                  return (
+                    <td key={c} data-colonne-tableau={c} className={`whitespace-nowrap px-1 pb-1 text-center font-mono font-normal ${teinte(c)} ${
+                      disponible(c) ? 'text-ink' : 'text-ink-dimmer'}`}>
+                      {texteValeurColonne(c, v === null ? null : versAffichage(c, v, base, enBonus), metric, textes)}
+                    </td>
+                  );
+                })}
+              </tr>
+            </>
+          )}
         </thead>
         <tbody>
           {/* Les épinglés d'abord, au-dessus des résultats de la recherche, et

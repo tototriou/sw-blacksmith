@@ -5,8 +5,8 @@ import { contexteResultat, optionsDuContexte, type ContexteResultat } from '../s
 import { CacheResolutionJournalise, cleBuild, journalResolution, type ResultatArtefacts } from '../src/lib/artifactQueue';
 import { candidateMetricTotal, scoreDuCandidat, statTotal, type BuildCandidate } from '../src/lib/runeBuildOptim';
 import { COLONNES_RESULTATS, type ColonneResultat } from '../src/lib/colonnesResultats';
-import { CATEGORIE_LIGNE, COLONNES_IMMUABLES, categorieDeLaLigne, etatDesBornes, filtreDesLignes, valeurAffichee, type BornesResultats } from '../src/lib/filtresResultats';
-import { chiffresMesureRune, displayedTotal, moyenneParRune } from '../src/lib/valeursAffichees';
+import { CATEGORIE_LIGNE, COLONNES_IMMUABLES, categorieDeLaLigne, estColonneDeStat, etatDesBornes, filtreDesLignes, valeurAffichee, type BornesResultats } from '../src/lib/filtresResultats';
+import { chiffresMesureRune, displayedTotal, moyenneParRune, valeursDeLaFiche } from '../src/lib/valeursAffichees';
 import { displayedTotal as displayedTotalDuPanneau } from '../src/hooks/useOvercapDisplay';
 import { formatRuneMetric } from '../src/hooks/useRuneMetric';
 import { computeStats } from '../src/lib/stats';
@@ -350,4 +350,33 @@ export function testFiltresResultatsPlafondAffiche() {
   b.changer({ bornes: { atk: { min: 0, max: null } } }); b.changer({ page: 2 });
   const avant = priorite(), comptes = b.changer({ afficherDepassement: true }).filtre.comptes;
   ok(avant && priorite() && comptes.masquesConfirmes === 0, 'sans borne plafonnée, le réglage ne change ni la vue ni la priorité de page');
+}
+
+export function testFiltresResultatsLigneFiche() {
+  titre('Tableau des résultats — la ligne de la fiche s’écrit comme un build');
+  // Une fiche qui porte exactement le build : ses onze valeurs sont celles de la carte.
+  const b = banc(4, { avecFile: false });
+  const options = optionsDuContexte(b.photo, null, 'eff');
+  for (const c of b.candidats) {
+    const fiche = valeursDeLaFiche({
+      stats: c.stats,
+      mesureTotale: candidateMetricTotal(c, options.runeById!, 'eff'),
+      pvEffectifs: scoreDuCandidat(c, 'ehp', options),
+      degatsReels: scoreDuCandidat(c, 'degats_reels', options),
+    }, true);
+    const ecrite = (col: ColonneResultat) => {
+      const v = fiche[col];
+      if (v === null) return null;
+      return col === 'efficience' ? Number(chiffresMesureRune(v, 'eff')) : estColonneDeStat(col) ? v : Math.round(v);
+    };
+    egal(COLONNES_RESULTATS.map(ecrite), COLONNES_RESULTATS.map((col) => valeurAffichee(col, c, options)),
+      `build ${c.runeIds[0]} : les onze valeurs de la fiche sont celles de la carte`);
+  }
+  const stats = computeStats({ base: { hp: 10000, atk: 800, def: 600, spd: 100, cr: 15, cd: 50, res: 15, acc: 0 }, runes: [], artifacts: [] });
+  const auDela = stats.map((s) => s.key === 'cr' ? { ...s, total: 115 } : s);
+  const sansMesure = valeursDeLaFiche({ stats: auDela, mesureTotale: null, pvEffectifs: null, degatsReels: null }, false);
+  egal([sansMesure.cr, sansMesure.efficience, sansMesure.ehp, sansMesure.degats_reels, sansMesure.hp], [100, null, null, null, 10000],
+    'dépassement masqué : 100 % ; sans mesure (page dans l’autre mesure) ni score : aucune valeur');
+  egal(valeursDeLaFiche({ stats: auDela, mesureTotale: 600, pvEffectifs: 1, degatsReels: 2 }, true).cr, 115, 'dépassement affiché : 115 %');
+  egal(valeursDeLaFiche({ stats: auDela, mesureTotale: 600, pvEffectifs: 1, degatsReels: 2 }, true).efficience, moyenneParRune(600), 'efficience : moyenne par rune');
 }

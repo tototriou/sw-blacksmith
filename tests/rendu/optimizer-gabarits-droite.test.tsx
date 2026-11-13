@@ -12,6 +12,7 @@ import ReglagesAvancesBureau from '../../src/components/outils/optimizer/bureau/
 import ExclusionMonstrePrecis from '../../src/components/outils/optimizer/ExclusionMonstrePrecis';
 import RunesImposees from '../../src/components/outils/optimizer/RunesImposees';
 import ExemplaireBureau from '../../src/components/outils/optimizer/bureau/ExemplaireBureau';
+import MesuresDeLaFiche from '../../src/components/outils/optimizer/MesuresDeLaFiche';
 import ObjectifEtRechercherBureau, { type ObjectifEtRechercherBureauProps } from '../../src/components/outils/optimizer/bureau/ObjectifEtRechercherBureau';
 import ResultatsBureau from '../../src/components/outils/optimizer/bureau/ResultatsBureau';
 import { ResumeCombat } from '../../src/components/outils/optimizer/ObjectifEtActions';
@@ -119,9 +120,18 @@ export function testRenduOptimizerGabaritsDroite() {
   // Exemplaire : les quatre puces, la fiche, « Valider ce build ».
   const exemplaire = rendre(<ExemplaireBureau zoneDRef={ref} sourceOptions={SOURCE_OPTIONS.map((o) => ({ ...o, disabled: o.key !== 'box' }))}
     vuesExemplaire={null} gearSource="box" pickSource={rien} allSourcesEmpty={false} zoneDOpen={false} zoneDList={null}
-    validatedBadge={null} selected={null} selectionFiche={null} setSelectionFiche={rien} relicUsageById={{}} validateBuildButton={<button type="button">Valider ce build</button>} />);
+    validatedBadge={null} selected={null} selectionFiche={null} setSelectionFiche={rien} relicUsageById={{}} mesuresFiche={null} validateBuildButton={<button type="button">Valider ce build</button>} />);
   ok(/aria-label="Exemplaire"/.test(exemplaire) && ['Box', 'RTA', 'Défenses siège', 'Offenses siège', 'Valider ce build'].every((n) => !!bouton(exemplaire, n)),
     'exemplaire : une carte nommée, les quatre puces et « Valider ce build »');
+
+  // Sous la fiche, en cartes : la mesure moyenne, les PV effectifs et les dégâts du runage affiché.
+  const mesures = texteVisible(rendre(<MesuresDeLaFiche mesureTotale={6 * 112.5} metric="eff" pvEffectifs={79536.4} degats={{ total: 17726, partPvCible: 44.3 }} />))
+    .replace(/\s/g, ' ');
+  ok(['Efficience moyenne', '112.5%', 'PV effectifs', '79 536', 'Dégâts', '17 726', '44 % des PV'].every((m) => mesures.includes(m)),
+    `fiche : mesure moyenne, PV effectifs et dégâts, écrits comme sur une carte (${mesures})`);
+  const sansSort = texteVisible(rendre(<MesuresDeLaFiche mesureTotale={0} metric="score" pvEffectifs={null} degats={null} />));
+  ok(sansSort.includes('Score moyen') && !sansSort.includes('PV effectifs') && !sansSort.includes('Dégâts'),
+    `fiche sans score ni sort calculable : la mesure seule (${sansSort})`);
 
   // Objectif et Rechercher, forme étroite, au repos.
   const repos = rendre(<ObjectifEtRechercherBureau {...props({ estimation: <EstimationPool estimate={{ perSlot: [1, 2, 3, 4, 5, 6], product: 720 }} /> })} />);
