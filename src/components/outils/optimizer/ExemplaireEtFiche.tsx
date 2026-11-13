@@ -21,10 +21,12 @@ export interface ExemplaireEtFicheProps {
   selectionFiche: Selected;
   setSelectionFiche: (s: Selected) => void;
   relicUsageById: Record<number, number>;
+  // Mesure moyenne, PV effectifs et dégâts de la fiche (`MesuresDeLaFiche`), en cartes seulement.
+  mesuresFiche: ReactNode;
   validateBuildButton: ReactNode;
 }
 
-export default function ExemplaireEtFiche({ zoneDRef, sourceOptions, vuesExemplaire, gearSource, pickSource, allSourcesEmpty, zoneDOpen, zoneDList, validatedBadge, selected, selectionFiche, setSelectionFiche, relicUsageById, validateBuildButton }: ExemplaireEtFicheProps) {
+export default function ExemplaireEtFiche({ zoneDRef, sourceOptions, vuesExemplaire, gearSource, pickSource, allSourcesEmpty, zoneDOpen, zoneDList, validatedBadge, selected, selectionFiche, setSelectionFiche, relicUsageById, mesuresFiche, validateBuildButton }: ExemplaireEtFicheProps) {
   const c = useTraduction().optimizer.criteres;
   return (
     <div className="flex flex-col gap-3">
@@ -64,6 +66,7 @@ export default function ExemplaireEtFiche({ zoneDRef, sourceOptions, vuesExempla
           relicUsageById={relicUsageById}
           carte
         />
+        {mesuresFiche}
         {validateBuildButton}
       </div>
     </div>
