@@ -126,6 +126,8 @@ import { testCompositionDePage } from './composition-page.test';
 import { testFileConfirmees } from './file-confirmees.test';
 import { testCompteConfirme } from './compte-confirme.test';
 import { testVerifierToutes } from './verifier-toutes.test';
+import { testRunesMaxees } from './runes-maxees.test';
+import { testRenduRuneSimulee } from './rendu/rune-simulee.test';
 import { testProsesSortAuClic, testEffetsActifsInfobulle } from './proses-sort.test';
 import { testProseStatsCombat, testProseStatsCombatCarte, testProseStatsCombatPassifMasque } from './prose-stats-combat.test';
 import { testBuffsDePassifTable, testBuffsDePassifRappel, testBuffsDePassifEcran } from './buffs-de-passif.test';
@@ -1132,6 +1134,8 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testFileConfirmees', testFileConfirmees],
   ['testCompteConfirme', testCompteConfirme],
   ['testVerifierToutes', testVerifierToutes],
+  ['testRunesMaxees', testRunesMaxees],
+  ['testRenduRuneSimulee', testRenduRuneSimulee],
   ['testProsesSortAuClic', testProsesSortAuClic],
   ['testEffetsActifsInfobulle', testEffetsActifsInfobulle],
   ['testProseStatsCombat', testProseStatsCombat],

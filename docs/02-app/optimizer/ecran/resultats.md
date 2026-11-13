@@ -126,7 +126,18 @@ sans relance automatique ni reconstruction d'un résultat depuis l'écran.
     ⚠️ **Cliquer sur une rune** d'un résultat ouvre son détail complet
     (`RuneDetailBox`, partagé avec Mon compte → Runes) : dans un
     `FlottantAuto` ancré sur la rune à la souris, en ligne sous la carte
-    au doigt. Les runes d'un candidat sont de vraies runes du compte.
+    au doigt. Les runes d'un candidat sont de vraies runes du compte —
+    sauf sous « Simuler +15 et max meules/gemmes » (voir
+    conditions-et-reglages.md § Réglages avancés) : ce sont alors les
+    copies maxées du pool photographié, mêmes identifiants. Le détail écrit
+    en **violet** (`VIOLET` de `PieceDetail.tsx`, la teinte du plan
+    « Actuel | Optimisé » de Mon compte → Runes → Optimisation) ce que la
+    simulation a changé, chaque partie seule : principale montée à +15,
+    base d'une gemme, part de meule ; la valeur réelle en infobulle
+    (`avantSimulation`). À droite d'une sous-propriété simulée, en violet,
+    le gain TOTAL de la ligne, gemme et meule cumulées, dans l'unité de la
+    stat : « (+13%) » pour une ATQ % passée de 10 à 23, « (+5) » pour une
+    VIT. Une rune de l'inventaire n'en porte aucune trace.
     La rune ouverte porte le **même halo orange** que la sélection dans
     `MonsterGear` (`brightness` + `drop-shadow`, voir `RuneWheel.tsx`) — la
     roue de résultat se comporte comme n'importe quelle roue de l'app. Une

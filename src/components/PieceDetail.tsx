@@ -284,6 +284,7 @@ export function PieceDetailBox({
 function Ligne({
   resserre,
   vise = false,
+  title,
   children,
 }: {
   resserre: boolean;
@@ -291,10 +292,13 @@ function Ligne({
   // d'artéfact. Les compensations annulent exactement le liseré, sinon la ligne
   // visée se décale par rapport aux autres.
   vise?: boolean;
+  // Infobulle de la ligne : la valeur réelle d'une ligne simulée.
+  title?: string;
   children: ReactNode;
 }) {
   return (
     <div
+      title={title}
       className={`flex items-start gap-1 leading-tight ${resserre ? 'text-micro' : 'text-xs'} ${
         vise ? '-mx-1 rounded border-l-2 border-accent bg-accent/[0.08] pl-[2px] pr-1' : ''
       }`}
@@ -323,6 +327,13 @@ function AncientMark({ size = 12, color = 'currentColor' }: { size?: number; col
 }
 
 // ── Rune ────────────────────────────────────────────────────────────────────
+
+// Ce qui CHANGE sur une rune, lu dans la couleur de la rareté héroïque : le
+// plan « Actuel | Optimisé » de l'onglet Optimisation (RunesOptim.tsx) et ce
+// que l'Optimizer a simulé (`avantSimulation`, runesMaxees.ts). Une seule
+// couleur pour les deux : c'est la même lecture, « cette valeur n'est pas
+// encore sur la rune ».
+export const VIOLET = 'rgb(var(--rarity-4))';
 
 export function RuneDetailBox({
   rune,
@@ -377,6 +388,11 @@ export function RuneDetailBox({
   // Une rune sans aucune meule n'a rien à basculer : les deux lectures y sont
   // identiques, et un clic sans effet se lit comme un défaut.
   const aDeLaMeule = rune.subs.some((s) => (s.grind ?? 0) > 0);
+  // Une rune simulée par l'Optimizer (« Simuler +15 et max meules/gemmes ») :
+  // ce qui diffère de la vraie rune s'écrit en violet, la valeur réelle en
+  // `title`. Absent sur une rune de l'inventaire : rien ne change.
+  const avant = rune.avantSimulation;
+  const principaleSimulee = avant != null && avant.main !== rune.main.value;
 
   return (
     <PieceDetailBox
@@ -385,7 +401,18 @@ export function RuneDetailBox({
       etroit={etroit}
       encadre={encadre}
       imbrique={imbrique}
-      principale={formatRuneEffect(rune.main, jeu)}
+      principale={
+        principaleSimulee ? (
+          <span
+            style={{ color: VIOLET }}
+            title={textes.pieces.simulee(formatRuneEffect({ ...rune.main, value: avant.main }, jeu))}
+          >
+            {formatRuneEffect(rune.main, jeu)}
+          </span>
+        ) : (
+          formatRuneEffect(rune.main, jeu)
+        )
+      }
       secondaire={rune.innate ? formatRuneEffect(rune.innate, jeu) : undefined}
       rarete={{
         label: nomGrade(jeu, grade),
@@ -430,24 +457,42 @@ export function RuneDetailBox({
         const suffix = def?.suffix ?? '';
         const grind = s.grind ?? 0;
         const base = s.value - grind;
+        // La gemme simulée change la base, la meule simulée la part de meule :
+        // chacune se colore seule, comme dans le plan de l'onglet Optimisation.
+        const reelle = avant?.subs[i];
+        const baseSimulee = reelle != null && reelle.value - reelle.grind !== base;
+        const meuleSimulee = reelle != null && reelle.grind !== grind;
+        const titreSimule = reelle != null && (baseSimulee || meuleSimulee)
+          ? textes.pieces.simulee(`${label} ${reelle.value - reelle.grind}${suffix}${reelle.grind > 0 ? ` +${reelle.grind}${suffix}` : ''}`)
+          : undefined;
         return (
-          <Ligne key={i} resserre={resserre} vise={cherches?.has(s.code) ?? false}>
+          <Ligne key={i} resserre={resserre} vise={cherches?.has(s.code) ?? false} title={titreSimule}>
             {total ? (
               // Cumulé. ⚠️ En ORANGE (la couleur du bonus) dès qu'une meule
               // entre dedans : le nombre n'est plus la valeur d'origine, et le
               // laisser en blanc ferait croire qu'on lit toujours la base.
-              <span className={grind > 0 ? 'font-semibold text-orange-400' : 'text-ink'}>
+              // En violet si une partie en est simulée.
+              <span
+                className={baseSimulee || meuleSimulee ? 'font-semibold' : grind > 0 ? 'font-semibold text-orange-400' : 'text-ink'}
+                style={baseSimulee || meuleSimulee ? { color: VIOLET } : undefined}
+              >
                 {label} {s.value}
                 {suffix}
               </span>
             ) : (
               <>
-                <span className="text-ink">
+                <span
+                  className={baseSimulee ? 'font-semibold' : 'text-ink'}
+                  style={baseSimulee ? { color: VIOLET } : undefined}
+                >
                   {label} {base}
                   {suffix}
                 </span>
                 {grind > 0 && (
-                  <span className="font-semibold text-orange-400">
+                  <span
+                    className={meuleSimulee ? 'font-semibold' : 'font-semibold text-orange-400'}
+                    style={meuleSimulee ? { color: VIOLET } : undefined}
+                  >
                     +{grind}
                     {suffix}
                   </span>
@@ -455,6 +500,14 @@ export function RuneDetailBox({
               </>
             )}
             {s.enchant && <RotateCw size={11} className="flex-none text-orange-400" />}
+            {/* Le gain TOTAL de la simulation sur la ligne (gemme + meule),
+                dans l'unité de la stat : ce que maxer la ligne rapporterait. */}
+            {reelle != null && s.value > reelle.value && (
+              <span data-gain-simule="" className="whitespace-nowrap" style={{ color: VIOLET }}>
+                (+{s.value - reelle.value}
+                {suffix})
+              </span>
+            )}
           </Ligne>
         );
       })}

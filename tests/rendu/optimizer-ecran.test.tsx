@@ -17,6 +17,7 @@ import EnteteResultats from '../../src/components/outils/optimizer/EnteteResulta
 import PaginationResultats from '../../src/components/outils/optimizer/PaginationResultats';
 import { rechercheClasseeTest } from './optimizer-classement-banc';
 
+const MAXEES = 'Simuler +15 et max meules/gemmes';
 const EPUISEMENT = "Rechercher jusqu'à épuisement complet";
 const DIAGNOSTIC = 'Diagnostic approfondi sur 0 résultat';
 // Retiré de l'écran : ne doit plus apparaître dans aucun format.
@@ -56,9 +57,10 @@ export function testRenduOptimizerReglagesAvancesContenu() {
   const telephone = options(MONSTRE);
   const aidesFixes = [...telephone.matchAll(/<div class="flex-none"><div class="relative"><button\b[^>]*aria-label="([^"]+)"/g)].map((m) => decoder(m[1]));
   ok(aidesFixes.includes(COMPTER), 'panneau « Options » : l’aide des auras garde sa largeur, seul le libellé peut rétrécir');
-  egal(noms(telephone), [EPUISEMENT, DIAGNOSTIC, VERIFIER, COMPTER], 'panneau « Options » : les interrupteurs, l’interrupteur des auras en dernier');
+  egal(noms(telephone), [MAXEES, EPUISEMENT, DIAGNOSTIC, VERIFIER, COMPTER],
+    'panneau « Options » : les interrupteurs, « Simuler +15… » en tête, l’interrupteur des auras en dernier');
   const sansFile = options({ ...MONSTRE, optimiserArtefacts: false });
-  egal(noms(sansFile), [EPUISEMENT, DIAGNOSTIC, COMPTER],
+  egal(noms(sansFile), [MAXEES, EPUISEMENT, DIAGNOSTIC, COMPTER],
     'sans optimisation d’artéfacts : « Vérifier toutes… » masqué, l’interrupteur des auras rendu sans condition, en dernier');
 
   const etat = (html: string, nom: string) => interrupteurs(html, ANCRE).find((x) => x.nom === nom)?.coche;
@@ -66,6 +68,9 @@ export function testRenduOptimizerReglagesAvancesContenu() {
     'l’interrupteur des auras affiche `compterAurasResPre`');
   ok(etat(telephone, VERIFIER) === false && etat(options({ ...MONSTRE, verifierToutesLesCombinaisons: true }), VERIFIER) === true,
     '« Vérifier toutes… » affiche `verifierToutesLesCombinaisons`');
+  ok(etat(telephone, MAXEES) === false && etat(options({ ...MONSTRE, simulerRunesMaxees: true }), MAXEES) === true,
+    '« Simuler +15… » : désactivé par défaut, affiche `simulerRunesMaxees`');
+  ok(boutons(telephone).some((b) => b.ariaLabel === MAXEES), '« Simuler +15… » a son aide');
 
   for (const [nom, html] of [['téléphone', telephone]] as const) {
     const t = texteVisible(html);
