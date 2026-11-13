@@ -578,10 +578,17 @@ export function testRelicReferenceComparer() {
 
   /* ── L'écran : les deux écarts lisent CE producteur ──────────────────── */
   const ecran = readFileSync('src/components/outils/OptimizerSection.tsx', 'utf8');
-  ok(/scoreDeReference\('degats_reels', ficheDeReference, contexteReferenceResultat\)/.test(ecran) && /total - refDegatsResultat/.test(ecran),
-    'écran : l’écart « Dégâts réels » se calcule contre scoreDeReference');
-  ok(/scoreDeReference\('ehp', ficheDeReference, contexteReferenceResultat\)/.test(ecran) && /total - refEhpResultat/.test(ecran),
-    'écran : l’écart « PV effectifs » se calcule contre scoreDeReference');
+  // Les deux écarts passent par `refContexte` : pour une carte de la page, les
+  // références de la recherche courante ; pour un build épinglé, la fiche notée
+  // dans le contexte photographié de SA recherche — scoreDeReference dans les deux cas.
+  const refPage = /return critere === 'ehp' \? refEhpResultat : refDegatsResultat;/.test(ecran);
+  const refEpingle = /return scoreDeReference\(critere, ficheDeReference, \{ degats: photo!\.realDamage, damageSetup: photo!\.damageSetup, exclusive: photo!\.exclusive \}\)/.test(ecran);
+  ok(/scoreDeReference\('degats_reels', ficheDeReference, contexteReferenceResultat\)/.test(ecran) && refPage && refEpingle
+    && /const ref = compare \? refContexte\('degats_reels'\) : null;\s*return ref != null \? total - ref : undefined;/.test(ecran),
+    'écran : l’écart « Dégâts réels » se calcule contre scoreDeReference (page et épinglés)');
+  ok(/scoreDeReference\('ehp', ficheDeReference, contexteReferenceResultat\)/.test(ecran) && refPage && refEpingle
+    && /const refEhp = montres\.ehp && compare \? refContexte\('ehp'\) : null;/.test(ecran) && /total - refEhp : undefined/.test(ecran),
+    'écran : l’écart « PV effectifs » se calcule contre scoreDeReference (page et épinglés)');
   ok(!/computeTotalDamage\(/.test(ecran), 'écran : plus aucun computeTotalDamage recopié (ni candidat, ni référence)');
   ok(/const contexteReference = useMemo\([\s\S]{0,200}?\[contexteDegatsArtefacts, damageSetup, contexteExclusive\]/.test(ecran)
     && ecran.includes('const ficheDeReference = selectionAffichee?.gear;')
