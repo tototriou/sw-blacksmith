@@ -371,5 +371,5 @@ réponse est à droite.
       quand même nécessaire, sa fidélité au chemin de prod a été diffée
       explicitement.
 - [ ] `npx tsc --noEmit`, `npm run lint`, `node tests/run.mjs <filtre>` (la
-      zone touchée) et `npm run build` passent ; `npm test` seulement avant une
-      fusion sur `main` ou dans une branche `release/*` (`CLAUDE.md`).
+      zone touchée) et `npm run build` passent ; `npm test` tourne dans la CI
+      de la pull request, en local seulement sur demande (`AGENTS.md`).
