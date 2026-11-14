@@ -94,7 +94,7 @@ node tests/run.mjs --max-entrees 30 <filtre> # refuse avant lancement si la sél
 node tests/run.mjs --silencieux …           # sortie réduite aux échecs et au bilan (ajoutable aux lignes ci-dessus)
 node tests/banc/run.mjs --ecrans <id>       # le banc d'affichage, aux deux formats (il construit l'app)
 node tests/banc/run.mjs --ecrans <id> --etats <id> --tailles <id>   # un état, une taille : environ 30 s
-npm test                       # TOUTES les vérifications — seulement avant une fusion sur main ou dans une release
+npm test                       # TOUTES les vérifications — la CI les passe sur chaque PR ; en local, seulement sur demande
 npm run test:suivi [-- …]      # les mêmes, suivies en direct dans le terminal (--web : aussi dans le navigateur)
 npm run fetch-data             # régénère les données SWARFARM de public/data
 node scripts/inventaire-competences.mjs --aide   # balayer les compétences du corpus, formule retenue par l'app
@@ -222,9 +222,11 @@ La liste complète, à parcourir avant de proposer la fusion :
 
 ## Vérifier
 
-Les commandes sont dans « Commandes essentielles » ; pendant le travail, lancer celles qui
-portent sur ce que le changement peut casser, sans procédure fixe. La suite complète
-(`npm test`) se lance avant une fusion sur `main` ou dans une branche `release/*`.
+Les commandes sont dans « Commandes essentielles » ; pendant le travail comme avant d'ouvrir
+une pull request, on ne lance que les vérifications liées au changement (par filtre, ou
+`--depuis origin/<base>`), sans procédure fixe. ⚠️ **La suite complète (`npm test`) ne se lance
+pas en local, sauf si l'utilisateur la demande** : la CI la passe sur chaque pull request vers
+`main` ou `release/**` ([qualite-code.md](docs/03-developpeur/qualite-code.md)).
 Le filtre se compare au nom de la vérification, mis à plat (`speed-tune`, `speedtune`, `SpeedTune`) ;
 un filtre qui ne correspond à rien échoue en listant ce qui existe. La sélection par fichiers
 modifiés (`--depuis`, `--plage`), le manifeste et le banc d'affichage :

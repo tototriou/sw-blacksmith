@@ -458,8 +458,8 @@ import { testExecutionProuveeCas, testExecutionProuveeEmplacement, testExecution
 //     node tests/run.mjs speed-tune       (tout ce dont le nom contient « speedtune »)
 //     node tests/run.mjs rune-optim vitesse
 //     node tests/run.mjs --depuis main     (ce que touchent les fichiers modifiés : tests/selection.ts)
-// Sans argument, tout tourne — c'est ce que fait `npm test`, et ce qu'il FAUT
-// faire avant une fusion sur `main` (voir CLAUDE.md).
+// Sans argument, tout tourne — c'est ce que fait `npm test`, que la CI passe sur
+// chaque pull request ; en local, seulement sur demande (voir AGENTS.md).
 const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testRenduOptimizerCreationObligatoire', testRenduOptimizerCreationObligatoire],
   ['testRenduOptimizerEquipeImpossibleZeroLibre', testRenduOptimizerEquipeImpossibleZeroLibre],
@@ -1452,7 +1452,7 @@ async function main() {
       `[33mVérifications ciblées[0m (${liste.length}/${VERIFICATIONS.length}) : ` +
         (process.argv.includes('--silencieux') ? '(liste omise : --silencieux)' : liste.map(([n]) => n).join(', ')) +
         `
-[33m⚠️  La suite complète reste obligatoire avant une fusion sur main.[0m
+[33m⚠️  La suite complète tourne dans la CI de la pull request.[0m
 `
     );
   }
