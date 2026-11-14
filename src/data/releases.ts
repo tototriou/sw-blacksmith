@@ -81,6 +81,7 @@ export const RELEASES: Release[] = [
       { kind: 'feat', scope: 'Optimizer', text: 'Épingle jusqu’à dix builds par monstre : ils restent affichés quels que soient les critères, les filtres et le tri.' },
       { kind: 'feat', scope: 'Optimizer', text: '« Simuler +15 et max meules/gemmes » cherche comme si tes runes étaient montées et meulées au max.' },
       { kind: 'feat', scope: 'Optimizer', text: 'L’efficience, les PV effectifs et les dégâts de ton runage actuel, sans passer par « Comparer ».' },
+      { kind: 'feat', scope: 'Speed tuning', text: 'Sur Discord, /speedtune lit une capture de ta préparation de siège et donne l’ordre de jeu de ton équipe.' },
     ],
   },
   {

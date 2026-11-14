@@ -20,6 +20,7 @@ export const RELEASES_EN: Release[] = [
       { kind: 'feat', scope: 'Optimizer', text: 'Pin up to ten builds per monster: they stay shown whatever the criteria, filters and sorting.' },
       { kind: 'feat', scope: 'Optimizer', text: '“Simulate +15 and max grinds/gems” searches as if your runes were powered up and ground to the max.' },
       { kind: 'feat', scope: 'Optimizer', text: 'Efficiency, effective HP and damage of your current build, without going through “Compare”.' },
+      { kind: 'feat', scope: 'Speed tuning', text: 'On Discord, /speedtune reads a screenshot of your siege preparation and gives your team’s turn order.' },
     ],
   },
   {
