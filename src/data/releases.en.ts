@@ -9,6 +9,20 @@ import type { Release } from './releases';
 
 export const RELEASES_EN: Release[] = [
   {
+    version: '2.4.2',
+    date: '2026-11-14',
+    title: 'Pinned builds in the Optimizer',
+    highlights: [
+      'Pin up to ten builds per monster to keep them in view while you search',
+      'Simulate your runes at +15, with grinds and gems maxed',
+    ],
+    changes: [
+      { kind: 'feat', scope: 'Optimizer', text: 'Pin up to ten builds per monster: they stay shown whatever the criteria, filters and sorting.' },
+      { kind: 'feat', scope: 'Optimizer', text: '“Simulate +15 and max grinds/gems” searches as if your runes were powered up and ground to the max.' },
+      { kind: 'feat', scope: 'Optimizer', text: 'Efficiency, effective HP and damage of your current build, without going through “Compare”.' },
+    ],
+  },
+  {
     version: '2.4.1',
     date: '2026-11-11',
     title: 'Recommendations with hundreds of decks display again',
