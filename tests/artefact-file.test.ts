@@ -183,7 +183,7 @@ export default function testArtefactFile() {
       requirement: { minStats: { atk: 100 }, maxStats: { def: 2000 } },
       artefactsReserves: [] as Iterable<number>,
       piecesFigees: [] as readonly unknown[],
-      importDuCompte: 0, empreinteSpeedTune: null,
+      importDuCompte: 0, empreinteSpeedTune: null, runesMaxees: false,
     };
     const s = signatureReglages(base);
     // ⚠️ Tout ce qui change quelles LIGNES comptent change la paire gagnante
@@ -356,7 +356,7 @@ export default function testArtefactFile() {
       requirement: { minStats: {}, maxStats: {} },
       artefactsReserves: [] as Iterable<number>,
       piecesFigees: [] as readonly unknown[],
-      importDuCompte: 0, empreinteSpeedTune: null,
+      importDuCompte: 0, empreinteSpeedTune: null, runesMaxees: false,
     };
     const s2 = signatureArtefacts(base2);
     egal(

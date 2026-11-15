@@ -785,7 +785,7 @@ export default function SpeedTuningSection({
                             // tout : ce n'est pas un rang raté de peu, et
                             // envoyer corriger une vitesse serait un faux
                             // conseil.
-                            // ⚠️ « se fait couper » plutôt que « est trop lent »
+                            // ⚠️ « se fait cut » plutôt que « est trop lent »
                             // pour un `apres-adverse` : le monstre peut très bien
                             // tenir son rang parmi les alliés — ce qu'il rate,
                             // c'est de passer avant l'adverse. Le même mot que

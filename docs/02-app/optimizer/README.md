@@ -53,7 +53,7 @@ partagés avec `MonsterGear.tsx` (RTA/Siège/« Équipement actuel »), voir
 | les sous-propriétés verrouillées | [ecran/sous-proprietes-verrouillees.md](ecran/sous-proprietes-verrouillees.md) |
 | les conditions, l'inventaire et les réglages avancés | [ecran/conditions-et-reglages.md](ecran/conditions-et-reglages.md) |
 | « Lancer la recherche » | [ecran/lancer-la-recherche.md](ecran/lancer-la-recherche.md) |
-| les résultats, `src/components/outils/BuildCandidateCard.tsx` | [ecran/resultats.md](ecran/resultats.md) |
+| les résultats, `src/components/outils/BuildCandidateCard.tsx`, les builds épinglés (`src/lib/epinglesOptimizer.ts`) | [ecran/resultats.md](ecran/resultats.md) |
 | `src/hooks/useOptimizerLists.ts`, `src/components/outils/OptimizerListPicker.tsx`, la réservation de runes | [feat-listes-et-reservation.md](feat-listes-et-reservation.md) |
 | `src/lib/optimizerMemberStorage.ts`, `src/lib/equipesOptimizer.ts`, `src/lib/optimizerBackup.ts`, `src/components/outils/OptimizerBackupBar.tsx`, `src/components/outils/OptimizerEquipeDialog.tsx`, `src/components/outils/OptimizerCreateListDialog.tsx` | [feat-listes-equipes-et-sauvegarde.md](feat-listes-equipes-et-sauvegarde.md) |
 | `src/lib/importEquipes.ts`, `src/lib/actionImportOptimizer.ts`, `src/lib/importRecoOptimizer.ts`, `src/lib/importSpeedTuneOptimizer.ts`, `src/components/outils/OptimizerImportButton.tsx`, `src/components/outils/OptimizerImportRapport.tsx` | [feat-import-equipes.md](feat-import-equipes.md) |

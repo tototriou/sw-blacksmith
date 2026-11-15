@@ -48,6 +48,18 @@ const GEM_LEGEND_ANC: Tbl = { 2: 15, 4: 15, 6: 15, 8: 11, 1: 640, 3: 44, 5: 44 }
 // Stats gemmables candidates (% d'abord, flats ensuite ; on maximise l'efficience).
 const GEM_STATS = [2, 4, 6, 8, 1, 3, 5];
 
+// Le plafond LÉGENDAIRE d'une meule (valeur ajoutée) et d'une gemme (base
+// avant meule), tables antiques pour une rune antique : les mêmes tables que
+// le potentiel, lues par la simulation de l'Optimizer (runesMaxees.ts) pour
+// qu'aucun autre fichier n'en garde une copie. `undefined` = stat sans meule
+// (RES, Précision, Taux Crit, Dgts Crit) ou sans gemme connue.
+export function meuleMaxLegendaire(code: number, antique: boolean): number | undefined {
+  return (antique ? GRIND_LEGEND_ANC : GRIND_LEGEND)[code];
+}
+export function gemmeMaxLegendaire(code: number, antique: boolean): number | undefined {
+  return (antique ? GEM_LEGEND_ANC : GEM_LEGEND)[code];
+}
+
 export interface RunePotential {
   eff: number; // valeur actuelle, dans la mesure demandée
   heroEff: number; // valeur max (gemme+grind) en héroïque

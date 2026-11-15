@@ -401,8 +401,8 @@ export const ECRANS: Ecran[] = [
           ordinateur: [choisirReglage('Options', 'complements')],
         },
         atteint: {
-          telephone: [{ role: 'dialog', nom: 'Options de recherche' }],
-          ordinateur: [{ role: 'switch', nom: "Rechercher jusqu'à épuisement complet" }],
+          telephone: [{ role: 'dialog', nom: 'Options de recherche' }, { role: 'switch', nom: 'Simuler +15 et max meules/gemmes' }],
+          ordinateur: [{ role: 'switch', nom: "Rechercher jusqu'à épuisement complet" }, { role: 'switch', nom: 'Simuler +15 et max meules/gemmes' }],
         },
       },
       {
@@ -455,6 +455,33 @@ export const ECRANS: Ecran[] = [
         atteint: [...OPT_CARTES, { role: 'dialog', nom: "Filtrer l'affichage" }],
       },
       {
+        // Deux builds épinglés depuis les deux premières cartes : deux lignes
+        // compactes au-dessus de la grille, qui garde ses cartes (leur bouton
+        // devenu « Libérer »).
+        id: 'resultats-epingles', libelle: 'résultats, deux builds épinglés en lignes au-dessus des cartes', tailles: OPT_BUREAU,
+        preparation: [...OPT_RESULTATS,
+          { cliquer: repere('[data-carte-resultat]:nth-child(1) button[aria-label="Épingler ce build"]') },
+          { cliquer: repere('[data-carte-resultat]:nth-child(2) button[aria-label="Épingler ce build"]') },
+          { montrer: repere('[data-liste-epingles]') }],
+        atteint: [...OPT_CARTES, repere('[data-liste-epingles] li:nth-child(2)'),
+          repere('button[data-liberer-epingles]:not([disabled])')],
+      },
+      {
+        // En tableau : la première ligne ouverte, épinglée depuis sa modale ;
+        // la ligne épinglée passe en tête, au-dessus des résultats.
+        // Seulement aux tailles où le tableau paraît : en dessous (1920
+        // scindé, conteneurs de 752 et 753 px), les cartes le remplacent, et
+        // `resultats-epingles` les mesure.
+        id: 'resultats-tableau-epingles', libelle: 'résultats en tableau, un build épinglé en tête', tableau: true,
+        tailles: OPT_BUREAU.filter((t) => !['volet-quatre-onglets', 'conteneur-752', 'conteneur-753'].includes(t)),
+        preparation: [{ cliquer: bouton('Paramètres') }, { cliquer: bouton('Tableau') }, { cliquer: bouton('Fermer les paramètres') }, ...OPT_RESULTATS_FORME,
+          { cliquer: { role: 'button', nom: 'Détail du build n° 1' } },
+          { cliquer: { role: 'button', nom: 'Épingler ce build', dans: '[role="dialog"]' } },
+          { cliquer: { role: 'button', nom: 'Fermer', dans: '[role="dialog"]' } }],
+        atteint: [...OPT_MEMBRES, repere('[data-forme-resultats="tableau"]'), repere('[data-ligne-epinglee]'),
+          repere('button[data-liberer-epingles]:not([disabled])')],
+      },
+      {
         id: 'artefacts', libelle: 'résultats et onglet Artéfacts ouvert', tailles: OPT_COLONNE_RESULTATS,
         preparation: [...OPT_RESULTATS, choisirReglage('Artéfacts', 'artefacts')],
         atteint: [...OPT_CARTES, repere('[data-colonne="artefacts"]')],
@@ -463,6 +490,22 @@ export const ECRANS: Ecran[] = [
         id: 'complements', libelle: 'résultats et onglet Options ouvert', tailles: OPT_COLONNE_RESULTATS,
         preparation: [...OPT_RESULTATS, choisirReglage('Options', 'complements')],
         atteint: [...OPT_CARTES, repere('[data-colonne="complements"]'), { role: 'switch', nom: "Rechercher jusqu'à épuisement complet" }],
+      },
+      {
+        // « Simuler +15 et max meules/gemmes » activé APRÈS l'import (la
+        // recette du banc ne porte pas le champ, son import le remet à
+        // `false`) : le détail d'une rune simulée, violet et gain « (+X) »
+        // à droite des lignes, dans son flottant de 260 px.
+        id: 'rune-simulee', libelle: 'résultats sous « Simuler +15 », détail d’une rune simulée ouvert', tailles: OPT_COLONNE_RESULTATS,
+        preparation: [
+          ...OPT_LISTE, VOIR_RESULTATS, OPT_IMPORT, choisirReglage('Options', 'complements'),
+          { cliquer: { role: 'switch', nom: 'Simuler +15 et max meules/gemmes' } },
+          { cliquer: bouton('Rechercher') },
+          { attendre: repere('[data-carte-resultat]:nth-child(2)'), delaiMs: 30000 },
+          { attendre: bouton('Rechercher'), delaiMs: 30000 },
+          { cliquer: repere('[data-carte-resultat]:first-child [title^="Slot 2"]') },
+        ],
+        atteint: [...OPT_CARTES, repere('[data-gain-simule]')],
       },
       {
         id: 'guidage-set', libelle: 'Rechercher sans set ouvre Critères et montre le set', tailles: OPT_BUREAU,

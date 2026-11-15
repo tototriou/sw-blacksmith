@@ -65,5 +65,7 @@ Chaque niveau que la fonctionnalité touche a sa vérification, inscrite au regi
 
 - La documentation et les tests ci-dessus sont dans la branche.
 - `npx tsc --noEmit`, `npm run lint`, `npm run build` passent.
-- La suite complète passe (`npm test`, ou `npm run test:suivi` pour la suivre en direct).
+- Les vérifications liées au changement passent (`node tests/run.mjs --depuis origin/<base>`, ou
+  par filtre). La suite complète, c'est la CI de la pull request qui la passe ; en local, elle ne
+  se lance que sur demande.
 - Ce qui ne se vérifie qu'à l'écran (un geste, un rendu) est listé dans la PR, pour la relecture.

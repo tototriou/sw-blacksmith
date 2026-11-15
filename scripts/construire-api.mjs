@@ -24,6 +24,10 @@ await build({
   platform: 'node',
   format: 'esm',
   target: 'node24',
+  // Les dépendances en CommonJS (pngjs, de la lecture de capture) font des
+  // `require` de modules de Node : un paquet ESM n'en a pas sans ce `require`
+  // recréé.
+  banner: { js: "import { createRequire } from 'node:module'; const require = createRequire(import.meta.url);" },
   logLevel: 'warning',
 });
 console.log(`api : ${Object.keys(entrees).map((e) => `api/_paquet/${e}.mjs`).join(', ')}`);

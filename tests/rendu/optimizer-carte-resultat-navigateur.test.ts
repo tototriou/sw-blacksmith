@@ -133,3 +133,45 @@ export async function testRenduOptimizerCarteResultatTelephone() {
       `téléphone : « Valider ce build » seul prend toute la largeur (${un.valider[2]} px)`);
   } finally { await browser.close(); }
 }
+
+// « Épingler » entre « Comparer » et « Valider ce build » (resultats.md,
+// § Builds épinglés) : les trois tiennent sur une rangée dans la carte la plus
+// étroite du bureau (328 px) et dans celle du téléphone, et épingler ne déplace
+// ni le bouton cliqué, ni ses voisins, ni l'en-tête de la carte.
+async function epinglerImmobile(page: Page, format: string) {
+  const releve = () => page.evaluate(() => {
+    const carte = document.querySelector('[data-carte-resultat]')!;
+    const b = (nom: string) => { const e = carte.querySelector(`button[aria-label="${nom}"]`) ?? [...carte.querySelectorAll('button')].find((x) => x.textContent!.trim().startsWith(nom)); if (!e) return null; const r = e.getBoundingClientRect(); return [r.left, r.top, r.width, r.height].map((v) => Math.round(v * 10) / 10); };
+    const cb = carte.getBoundingClientRect();
+    const deborde = [...carte.querySelectorAll('*')].filter((e) => { const r = e.getBoundingClientRect(); return r.width > 0 && (r.right > cb.right + 0.5 || r.left < cb.left - 0.5); }).length;
+    return { comparer: b('Comparer'), epingler: b('Épingler ce build') ?? b('Libérer ce build épinglé'), valider: b('Valider'),
+      entete: (() => { const r = carte.firstElementChild!.getBoundingClientRect(); return [r.top, r.height].map((v) => Math.round(v * 10) / 10); })(),
+      numero: !!carte.querySelector('button[aria-label="Libérer ce build épinglé"][aria-pressed="true"]'), deborde };
+  });
+  const avant = await releve();
+  ok(!!avant.comparer && !!avant.epingler && !!avant.valider && Math.abs(avant.comparer[1] - avant.valider[1]) <= 0.5 && Math.abs(avant.epingler[1] + avant.epingler[3] / 2 - (avant.valider[1] + avant.valider[3] / 2)) <= 1
+    && avant.comparer[0] + avant.comparer[2] <= avant.epingler[0] && avant.epingler[0] + avant.epingler[2] <= avant.valider[0] && avant.deborde === 0,
+    `${format} : « Comparer », « Épingler » et « Valider ce build » sur une rangée, sans rien faire déborder (${JSON.stringify([avant.comparer, avant.epingler, avant.valider])})`);
+  await page.locator('[data-carte-resultat]').getByRole('button', { name: 'Épingler ce build', exact: true }).click();
+  await page.waitForTimeout(100);
+  const apres = await releve();
+  ok(apres.numero && JSON.stringify([avant.comparer, avant.epingler, avant.valider, avant.entete]) === JSON.stringify([apres.comparer, apres.epingler, apres.valider, apres.entete]),
+    `${format} : épinglé, le bouton passe à « Libérer » (enclenché) et rien ne bouge (en-tête ${avant.entete.join('/')} → ${apres.entete.join('/')})`);
+  await page.locator('[data-carte-resultat]').getByRole('button', { name: 'Libérer ce build épinglé', exact: true }).click();
+  await page.waitForTimeout(100);
+  ok(!(await releve()).numero, `${format} : « Libérer » rend « Épingler ce build »`);
+}
+
+export async function testRenduOptimizerCarteEpingle() {
+  titre('rendu · carte de résultat de l’Optimizer — « Épingler » entre « Comparer » et « Valider », immobile');
+  const bureau = await navigateurOptimizer(false, BANC);
+  try {
+    await monter(bureau.page, { bureau: true, largeur: 328, boutons: 2, objectif: 'ehp', epingle: true });
+    await epinglerImmobile(bureau.page, 'bureau, 328 px');
+  } finally { await bureau.browser.close(); }
+  const telephone = await navigateurOptimizer(true, BANC);
+  try {
+    await monter(telephone.page, { bureau: false, largeur: 348, boutons: 2, objectif: null, epingle: true });
+    await epinglerImmobile(telephone.page, 'téléphone, 348 px');
+  } finally { await telephone.browser.close(); }
+}

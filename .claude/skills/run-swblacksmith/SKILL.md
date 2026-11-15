@@ -210,9 +210,9 @@ headless — c'est le chemin agent (`driver.mjs`) qui s'applique ici.
 npx tsc --noEmit && npm run lint && node tests/run.mjs <filtre> && npm run build
 ```
 
-⚠️ Voir `CLAUDE.md` à la racine : pendant le travail on ne lance QUE la zone
-touchée (`node tests/run.mjs <filtre>`), la suite complète (`npm test`)
-uniquement avant une fusion sur `main` ou dans une branche `release/*`. Un
+⚠️ Voir `AGENTS.md` à la racine : on ne lance QUE la zone touchée
+(`node tests/run.mjs <filtre>`) ; la suite complète (`npm test`) tourne dans
+la CI de la pull request, en local seulement sur demande. Un
 compte de vérifications figé se démode à chaque commit : ne pas le recopier
 ici, le lire dans la sortie de `npm test` du jour.
 

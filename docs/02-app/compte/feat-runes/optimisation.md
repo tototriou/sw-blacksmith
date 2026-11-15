@@ -50,6 +50,12 @@ distinctes**) :
 classiques/antiques, héro/légend) et l'**algorithme complet** `best()` sont dans
 [feat-calcul-runes.md §4](../feat-calcul-runes.md).
 
+Les mêmes tables légendaires servent à l'Optimizer, sous « Simuler +15 et max
+meules/gemmes » (`meuleMaxLegendaire`, `gemmeMaxLegendaire`) : il y meule au
+maximum toute ligne meulable, pousse les gemmes déjà posées sans en ajouter, et colore ce qu'il a simulé du
+même violet que le plan ci-dessous (voir
+[optimizer/ecran/conditions-et-reglages.md](../../optimizer/ecran/conditions-et-reglages.md)).
+
 ### Modes
 
 - **Gemme + meule** (défaut) : potentiel complet ci-dessus.

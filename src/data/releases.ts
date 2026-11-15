@@ -70,6 +70,21 @@ export function journal(langue: Langue): Release[] {
 // Si une ligne dépasse ~15 mots, c'est qu'elle raconte l'implémentation.
 export const RELEASES: Release[] = [
   {
+    version: '2.4.2',
+    date: '2026-11-14',
+    title: 'Des builds épinglés dans l’Optimizer',
+    highlights: [
+      'Épingle jusqu’à dix builds par monstre pour les garder sous les yeux pendant la recherche',
+      'Simule tes runes à +15, meules et gemmes au max',
+    ],
+    changes: [
+      { kind: 'feat', scope: 'Optimizer', text: 'Épingle jusqu’à dix builds par monstre : ils restent affichés quels que soient les critères, les filtres et le tri.' },
+      { kind: 'feat', scope: 'Optimizer', text: '« Simuler +15 et max meules/gemmes » cherche comme si tes runes étaient montées et meulées au max.' },
+      { kind: 'feat', scope: 'Optimizer', text: 'L’efficience, les PV effectifs et les dégâts de ton runage actuel, sans passer par « Comparer ».' },
+      { kind: 'feat', scope: 'Speed tuning', text: 'Sur Discord, /speedtune lit une capture de ta préparation de siège et donne l’ordre de jeu de ton équipe.' },
+    ],
+  },
+  {
     version: '2.4.1',
     date: '2026-11-11',
     title: 'Les recommandations de centaines de decks s’affichent',

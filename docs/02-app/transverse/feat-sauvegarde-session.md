@@ -185,7 +185,8 @@ compact (`composerSession`, `ecrireSession`, `src/lib/session.ts`) :
   classé, un champ classé disparu, ou un champ de la session sans `set…`.
 - **Pas dans le fichier** : la page affichée ; « Garder mes données » ; la
   barre latérale repliée et l'avertissement mobile fermé ; les résultats de
-  l'Optimizer ; ce qu'un écran oublie déjà en changeant de page.
+  l'Optimizer et ses builds épinglés (`epingles`, photographies de cartes
+  et de leur recherche) ; ce qu'un écran oublie déjà en changeant de page.
 - Une clé de stockage ou un état `useStickyState` ajoutés entrent dans
   `CLES_SESSION`, ou dans `STICKY_HORS_SESSION` s'ils ne doivent pas
   voyager.

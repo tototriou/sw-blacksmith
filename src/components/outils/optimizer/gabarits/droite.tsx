@@ -11,6 +11,10 @@ import ResultatsBureau, { LARGEUR_RESULTATS_MIN, type AttenteResultats } from '.
 import BandeauBuildValide from '../BandeauBuildValide';
 import BoutonValiderBuild from '../BoutonValiderBuild';
 import ChoixExemplaire from '../ChoixExemplaire';
+import MesuresDeLaFiche from '../MesuresDeLaFiche';
+import { runeEfficiency } from '../../../../lib/effects';
+import { aurasPropresDesRunes } from '../../../../lib/damage';
+import { pvEffectifs } from '../../../../lib/runeBuildOptim';
 import EstimationPool from '../EstimationPool';
 import MessageImportRecette from '../MessageImportRecette';
 import EnteteResultats from '../EnteteResultats';
@@ -70,6 +74,10 @@ function ExemplaireGabarit({ ctx, mode }: { ctx: ContexteGabarits; mode: 'vide' 
       validatedBadge={<BandeauBuildValide ownValidatedBuild={valide} showRealGear={reel} runesAbsentesValidees={[]} artefactsAbsentsValides={[]} />}
       selected={exemplaire ? { monster: exemplaire.monster, gear: exemplaire.gear } : null} selectionFiche={selection} setSelectionFiche={setSelection}
       relicUsageById={{}}
+      // La mesure et les PV effectifs de la fiche, sans sort résolu (la vue ne monte pas le combat).
+      mesuresFiche={exemplaire && <MesuresDeLaFiche metric="eff" degats={null}
+        mesureTotale={exemplaire.gear.runes.reduce((n, r) => n + runeEfficiency(r), 0)}
+        pvEffectifs={pvEffectifs(computeStats(exemplaire.gear), aurasPropresDesRunes(exemplaire.gear.runes))} />}
       validateBuildButton={<BoutonValiderBuild handleValidateDisplayed={rien} canValidateDisplayed={exemplaire != null}
         matchesValidatedBuild={valide != null && !reel} etatFiche={valide != null ? 'oui' : 'non'} displayedRuneConflicts={[]} />}
     />

@@ -10,6 +10,7 @@ import { BuildCandidate, SearchParams, SlotFilterPresetKey, SLOT_FILTER_PRESETS,
 import { exigenceSousSpeedTune } from '../../src/lib/contrainteSpeedTune';
 import { ExclusionSourceData, autoExcludedRuneIds, resolveExcludedRuneIds } from '../../src/lib/optimizerExclusion';
 import { OptimizerRecipe } from '../../src/lib/optimizerRecipe';
+import { poolDeRecherche } from '../../src/lib/runesMaxees';
 import { DEFAULT_RELIC_MIN_UPGRADE, RelicIntent, defaultRelicMainChoice } from '../../src/hooks/useOptimizerState';
 import { resoudreContexteRelique } from '../../src/lib/relicOptim';
 import {
@@ -452,8 +453,9 @@ export function resolvePool(
     }
     return resolveExcludedRuneIds(recipe.excludedSelectors, exclusionData, String(loaded.unitId), loaded.com2usId);
   })();
-  if (auto.size === 0 && manual.size === 0) return loaded.allRunes;
-  return loaded.allRunes.filter((r) => !auto.has(r.id) && !manual.has(r.id));
+  const filtre = auto.size === 0 && manual.size === 0 ? loaded.allRunes : loaded.allRunes.filter((r) => !auto.has(r.id) && !manual.has(r.id));
+  // Même producteur que l'écran (`handleSearch`), même repli `?? false`.
+  return poolDeRecherche(filtre, recipe.simulerRunesMaxees ?? false);
 }
 
 // Stats à privilégier au pré-filtrage quand l'objectif est « Dégâts réels » —

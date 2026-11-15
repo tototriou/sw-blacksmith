@@ -16,7 +16,7 @@ commits, vérifications) sont dans [AGENTS.md](../../AGENTS.md) et
 | Langues | français et anglais, par dictionnaires TypeScript typés (`src/i18n/`), sans bibliothèque de traduction ; règle ESLint locale `swblacksmith/texte-en-dur` ([feat-langues.md](../02-app/transverse/feat-langues.md)) |
 | Stockage | `localStorage` (prépa, équipes, réglages) + **IndexedDB** (compte importé) |
 | Déploiement du site | Vercel (preset Vite, sortie `dist`, projet `sw-blacksmith`) : déploiement automatique sur `main`, preview par branche |
-| Service | une fonction Vercel sans état, `api/discord.mjs`, à Paris : la synchronisation Discord des recommandations ([service-discord.md](../02-app/siege/feat-recommandations/service-discord.md)) |
+| Service | une fonction Vercel sans état, `api/discord.mjs`, à Paris : la synchronisation Discord des recommandations ([service-discord.md](../02-app/siege/feat-recommandations/service-discord.md)). Prototype : `api/interactions.mjs`, la commande `/speedtune` qui lit une capture ([feat-discord-capture.md](../02-app/speed-tuning/feat-discord-capture.md)), avec `pngjs`, `jpeg-js` (décodage en JavaScript pur, empaquetable) et `@vercel/functions` (`waitUntil`) |
 | Application de bureau | Electron, voir ci-dessous |
 
 Développer sur une version de Node et vérifier sur une autre laisse passer des écarts d'API — c'est
