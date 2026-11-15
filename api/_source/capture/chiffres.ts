@@ -50,14 +50,14 @@ function otsu(histo: Float64Array, n: number): number {
 
 export interface Glyphe { x: number; y: number; l: number; h: number }
 
-// Les glyphes : colonnes contiguës qui portent de l'encre, puis leurs bornes
-// verticales. Un morceau beaucoup plus bas que le plus haut (bruit, contour de
-// la pastille) est écarté ; deux chiffres collés (rare à cette taille) ne sont
-// pas séparés : le nombre lu sera alors refusé à la validation.
-export function glyphes(m: Masque): Glyphe[] {
+// Les boîtes des rangées [ya, yb) : colonnes contiguës qui y portent de
+// l'encre, puis leurs bornes verticales — la plus longue bande de rangées
+// encrées (un trou d'une rangée, que le seuil peut creuser dans un trait fin,
+// ne la coupe pas).
+function boites(m: Masque, ya: number, yb: number): Glyphe[] {
   const colonne = (x: number) => {
     let s = 0;
-    for (let y = 0; y < m.hauteur; y++) s += m.encre[y * m.largeur + x];
+    for (let y = ya; y < yb; y++) s += m.encre[y * m.largeur + x];
     return s;
   };
   const runs: [number, number][] = [];
@@ -67,19 +67,45 @@ export function glyphes(m: Masque): Glyphe[] {
     if (plein && debut < 0) debut = x;
     if (!plein && debut >= 0) { runs.push([debut, x]); debut = -1; }
   }
-  const boites = runs.map(([x0, x1]) => {
-    let y0 = m.hauteur, y1 = -1;
-    for (let y = 0; y < m.hauteur; y++) {
-      for (let x = x0; x < x1; x++) {
-        if (m.encre[y * m.largeur + x] >= 0.5) { y0 = Math.min(y0, y); y1 = Math.max(y1, y); break; }
-      }
+  return runs.map(([x0, x1]) => {
+    const encree = (y: number) => {
+      for (let x = x0; x < x1; x++) if (m.encre[y * m.largeur + x] >= 0.5) return true;
+      return false;
+    };
+    let y0 = 0, y1 = -1, debutY = -1, fin = -1;
+    for (let y = ya; y < yb; y++) {
+      if (!encree(y)) continue;
+      if (debutY < 0 || y - fin > 2) debutY = y;
+      fin = y;
+      if (fin - debutY > y1 - y0) { y0 = debutY; y1 = fin; }
     }
     return { x: x0, y: y0, l: x1 - x0, h: y1 - y0 + 1 };
   }).filter((b) => b.h > 0);
-  const hMax = Math.max(0, ...boites.map((b) => b.h));
-  // Un morceau collé au bord gauche est la fin de l'icône de vitesse, coupée
-  // par la zone : jamais un chiffre, qui commence après elle.
-  return boites.filter((b) => b.h >= hMax * 0.7 && b.l >= 1 && b.x > 0).flatMap((b) => separer(m, b));
+}
+
+// La hauteur d'un chiffre : celle de la boîte notable la plus à DROITE, le
+// dernier chiffre (la pastille se termine sur le nombre). Pas celle de la plus
+// haute : l'icône de vitesse, à gauche, l'est souvent, grandie d'un bout de
+// portrait au-dessus d'elle.
+function dernierChiffre(bs: Glyphe[]): Glyphe | undefined {
+  const hMax = Math.max(0, ...bs.map((b) => b.h));
+  return [...bs].reverse().find((b) => b.h >= 0.5 * hMax);
+}
+
+// Les glyphes du nombre. Les colonnes se comptent dans la seule BANDE des
+// chiffres (celle du dernier) : un bout du portrait au-dessus de la pastille
+// relierait sinon les colonnes de deux chiffres, ou d'un chiffre et du vide.
+// Les glyphes d'une autre hauteur ne sont pas des chiffres. Un morceau collé
+// au bord gauche est la fin de l'icône, coupée par la zone : jamais un
+// chiffre, qui commence après elle.
+export function glyphes(m: Masque): Glyphe[] {
+  const repere = dernierChiffre(boites(m, 0, m.hauteur));
+  if (!repere) return [];
+  const marge = Math.ceil(0.15 * repere.h);
+  const bs = boites(m, Math.max(0, repere.y - marge), Math.min(m.hauteur, repere.y + repere.h + marge));
+  const dernier = dernierChiffre(bs);
+  if (!dernier) return [];
+  return bs.filter((b) => b.h >= dernier.h * 0.7 && b.h <= dernier.h * 1.3 && b.l >= 1 && b.x > 0).flatMap((b) => separer(m, b));
 }
 
 // Un chiffre n'est jamais plus large que 0,9 fois sa hauteur. Au-delà, ce sont
@@ -179,24 +205,42 @@ export interface NombreLu { valeur: number; texte: string; confiance: number; ma
 export const HAUTEUR_CHIFFRE_MIN = 8;
 
 // Le nombre est le groupe de glyphes le plus à droite : des chiffres serrés.
-// L'icône de vitesse, à sa gauche, en est séparée par un écart plus grand
-// qu'entre deux chiffres — une zone large peut donc la contenir.
-const ECART_DANS_NOMBRE = 0.45;
+// L'icône de vitesse, à sa gauche dans la pastille, en est séparée par un
+// écart plus grand qu'entre deux chiffres : plus de 0,8 fois leur hauteur,
+// ou — dès qu'un écart entre deux chiffres est connu — plus de 0,3 fois et le
+// double du plus grand de ces écarts. Relevé : l'icône est à 0,75 fois la
+// hauteur des chiffres sur PC (deux chiffres à 0,25), à 0,4 sur un grand
+// écran (deux chiffres à 0,1). Le seuil absolu reste haut : à pas fixe, un
+// « 1 », étroit, laisse plus de 0,5 fois la hauteur de blanc de chaque côté.
+const ECART_DANS_NOMBRE = 0.8;
+const ECART_ICONE_MIN = 0.3;
 
 function nombreADroite(gs: Glyphe[]): Glyphe[] {
   const h = Math.max(...gs.map((x) => x.h));
-  let debut = gs.length - 1;
-  while (debut > 0 && gs[debut].x - (gs[debut - 1].x + gs[debut - 1].l) <= ECART_DANS_NOMBRE * h) debut--;
+  let debut = gs.length - 1, ecartChiffres = -1;
+  while (debut > 0) {
+    const e = gs[debut].x - (gs[debut - 1].x + gs[debut - 1].l);
+    if (e > ECART_DANS_NOMBRE * h) break;
+    if (ecartChiffres >= 0 && e > ECART_ICONE_MIN * h && e > 2 * Math.max(ecartChiffres, 0.15 * h)) break;
+    ecartChiffres = Math.max(ecartChiffres, e);
+    debut--;
+  }
   return gs.slice(debut);
+}
+
+// Les glyphes du nombre de la zone, icône de vitesse écartée. Aussi l'entrée
+// des gabarits relevés sur de vraies captures
+// (scripts/construire-gabarits-chiffres.ts), découpés comme à la lecture.
+export function glyphesDuNombre(m: Masque): Glyphe[] {
+  const tous = glyphes(m);
+  return tous.length ? nombreADroite(tous) : [];
 }
 
 // Le nombre de la zone, `null` si elle n'en porte pas un lisible.
 export function lireNombre(zone: Image, g: Gabarits): NombreLu | null {
   const m = masqueClair(zone);
-  const tous = glyphes(m);
-  if (tous.length === 0) return null;
-  const gs = nombreADroite(tous);
-  if (gs.length > 4 || Math.max(...gs.map((x) => x.h)) < HAUTEUR_CHIFFRE_MIN) return null;
+  const gs = glyphesDuNombre(m);
+  if (gs.length === 0 || gs.length > 4 || Math.max(...gs.map((x) => x.h)) < HAUTEUR_CHIFFRE_MIN) return null;
   const lus = gs.map((x) => reconnaitreChiffre(decoupesVoisines(m, x).map((v) => normaliser(m, v)), g));
   const texte = lus.map((l) => l.chiffre).join('');
   return { valeur: Number(texte), texte, confiance: Math.min(...lus.map((l) => l.score)), marge: Math.min(...lus.map((l) => l.ecart)) };

@@ -9,6 +9,16 @@ import type { Release } from './releases';
 
 export const RELEASES_EN: Release[] = [
   {
+    version: '2.4.4',
+    date: '2026-11-15',
+    title: '/speedtune reads cards of every colour',
+    changes: [
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune finds the cards whatever the colour of their frame, bronze included.' },
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune finds the SPD in each card, even next to a dark portrait.' },
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune no longer mistakes the monster list for the team.' },
+    ],
+  },
+  {
     version: '2.4.3',
     date: '2026-11-15',
     title: '/speedtune reads screenshots from every screen',

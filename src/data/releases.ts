@@ -70,6 +70,16 @@ export function journal(langue: Langue): Release[] {
 // Si une ligne dépasse ~15 mots, c'est qu'elle raconte l'implémentation.
 export const RELEASES: Release[] = [
   {
+    version: '2.4.4',
+    date: '2026-11-15',
+    title: '/speedtune lit les cartes de toutes les couleurs',
+    changes: [
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune trouve les cartes quelle que soit la couleur de leur cadre, bronze compris.' },
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune trouve la VIT dans chaque carte, même près d’un portrait sombre.' },
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune ne prend plus la liste des monstres pour l’équipe.' },
+    ],
+  },
+  {
     version: '2.4.3',
     date: '2026-11-15',
     title: '/speedtune lit les captures de tous les écrans',
