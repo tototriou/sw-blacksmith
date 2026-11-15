@@ -67,18 +67,31 @@ function coller(dst: Image, src: Image, x0: number, y0: number, l: number, h: nu
   }
 }
 
-// Un nombre en blanc, chiffre par chiffre depuis les gabarits (2ᵉ modèle :
-// Inter 600), sur fond sombre.
+// Un nombre en blanc, chiffre par chiffre depuis les gabarits (le dernier
+// modèle de chaque chiffre : un glyphe relevé sur une vraie capture), sur fond
+// sombre. Chaque pixel est la MOYENNE du gabarit sur sa surface, comme
+// l'anticrénelage du jeu : un échantillonnage au plus proche voisin donne, à
+// 8 pixels, des chiffres en escalier qu'aucune capture ne montre.
 function nombre(texte: string, hGlyphe: number, soudes = false): Image {
   const lG = Math.round((hGlyphe * gabarits.l) / gabarits.h);
   // `soudes` : chiffres collés, sans colonne vide entre eux (les petits
   // caractères de la fenêtre PC, que l'anticrénelage soude).
   const pas = soudes ? lG : lG + Math.max(2, Math.round(hGlyphe / 6));
   const img = imageUnie(texte.length * pas + 8, hGlyphe + 8, [40, 40, 44]);
+  const moyenne = (m: number[], x0: number, x1: number, y0: number, y1: number) => {
+    let s = 0, p = 0;
+    for (let y = Math.floor(y0); y < Math.ceil(y1); y++) for (let x = Math.floor(x0); x < Math.ceil(x1); x++) {
+      const w = (Math.min(x + 1, x1) - Math.max(x, x0)) * (Math.min(y + 1, y1) - Math.max(y, y0));
+      if (w > 0) { s += m[y * gabarits.l + x] * w; p += w; }
+    }
+    return p ? s / p : 0;
+  };
   [...texte].forEach((c, k) => {
-    const m = gabarits.chiffres[c][1];
+    const modeles = gabarits.chiffres[c];
+    const m = modeles[modeles.length - 1];
     for (let y = 0; y < hGlyphe; y++) for (let x = 0; x < lG; x++) {
-      const v = m[Math.floor((y / hGlyphe) * gabarits.h) * gabarits.l + Math.floor((x / lG) * gabarits.l)];
+      const fx = gabarits.l / lG, fy = gabarits.h / hGlyphe;
+      const v = moyenne(m, x * fx, (x + 1) * fx, y * fy, (y + 1) * fy);
       const i = ((y + 4) * img.largeur + 4 + k * pas + x) * 4;
       const p = 40 + v * 215;
       img.rgba[i] = p; img.rgba[i + 1] = p; img.rgba[i + 2] = p;
@@ -96,20 +109,23 @@ function banqueDe(entrees: { id: number; img: Image }[]): Banque {
 }
 
 type Rect = [number, number, number, number];
-const CADRE_BLEU: [number, number, number] = [100, 155, 255];
-const CADRE_DORE: [number, number, number] = [200, 160, 80];
+type Rvb = [number, number, number];
+const CADRE_BLEU: Rvb = [100, 155, 255];
+const CADRE_DORE: Rvb = [200, 160, 80];
+const CADRE_GRIS: Rvb = [120, 120, 120];
 
 // L'écran de préparation recomposé : fond brun, les cartes à leur place, cadre
-// BLEU pour les attaquants et DORÉ pour la défense (comme dans le jeu), VIT
-// des attaquants dans une pastille en bas à droite (`pc` : chiffres de la
-// fenêtre PC, plus petits et plus bas). `cadresBleus: false` : tous les cadres
-// dorés — aucun cadre d'attaquant à trouver.
-function dessiner(l: number, h: number, rects: Rect[], portraits: Image[], vitesses: string[], pc: boolean, cadresBleus = true): Image {
+// BLEU pour les attaquants (ou `cadreAttaque` : doré selon les monstres) et
+// DORÉ pour la défense, comme dans le jeu ; VIT des attaquants dans une
+// pastille en bas à droite (`pc` : chiffres de la fenêtre PC, plus petits et
+// plus bas). `cadreDefense` gris avec un `cadreAttaque` gris : aucun cadre à
+// trouver.
+function dessiner(l: number, h: number, rects: Rect[], portraits: Image[], vitesses: string[], pc: boolean, cadreAttaque: Rvb = CADRE_BLEU, cadreDefense: Rvb = CADRE_DORE): Image {
   const img = imageUnie(l, h, [52, 40, 30]);
   portraits.forEach((p, k) => {
     if (!rects[k]) return;
     const [x, y, cl, ch] = rects[k];
-    coller(img, imageUnie(4, 4, k < 3 && cadresBleus ? CADRE_BLEU : CADRE_DORE), x, y, cl, ch);
+    coller(img, imageUnie(4, 4, k < 3 ? cadreAttaque : cadreDefense), x, y, cl, ch);
     const cadre = Math.round(cl * 0.04);
     coller(img, p, x + cadre, y + cadre, cl - 2 * cadre, ch - 2 * cadre);
     if (k < 3 && pc) {
@@ -134,18 +150,18 @@ const MISES_EN_PAGE = {
   fenetre: { x: [-0.6473, -0.5057, -0.3629, 0.2328, 0.3756, 0.5185], y: 0.2793, cote: 0.1199 }, // 1417 × 784, barre de titre comprise
 };
 
-function ecran(portraits: Image[], vitesses: string[], l = 2556, h = 1179, mise: keyof typeof MISES_EN_PAGE = 'telephone', cadresBleus = true): Image {
+function ecran(portraits: Image[], vitesses: string[], l = 2556, h = 1179, mise: keyof typeof MISES_EN_PAGE = 'telephone', cadreAttaque: Rvb = CADRE_BLEU, cadreDefense: Rvb = CADRE_DORE): Image {
   const m = MISES_EN_PAGE[mise];
   const rects = m.x.map((x): Rect => [l / 2 + x * h, m.y * h, m.cote * h, m.cote * h]);
-  return dessiner(l, h, rects, portraits, vitesses, mise === 'fenetre', cadresBleus);
+  return dessiner(l, h, rects, portraits, vitesses, mise === 'fenetre', cadreAttaque, cadreDefense);
 }
 
 // Une mise en page libre : taille, pas et position des cartes donnés ; des
 // cartes carrées sauf hauteur donnée.
-function ecranLibre(l: number, h: number, x0: number, y: number, c: number, pas: number, x0Defense: number | null, portraits: Image[], vitesses: string[], pc: boolean, hauteur = c): Image {
+function ecranLibre(l: number, h: number, x0: number, y: number, c: number, pas: number, x0Defense: number | null, portraits: Image[], vitesses: string[], pc: boolean, hauteur = c, cadreAttaque: Rvb = CADRE_BLEU): Image {
   const rects: Rect[] = [0, 1, 2].map((k) => [x0 + k * pas, y, c, hauteur]);
   if (x0Defense !== null) rects.push(...[0, 1, 2].map((k): Rect => [x0Defense + k * pas, y, c, hauteur]));
-  return dessiner(l, h, rects, portraits, vitesses, pc);
+  return dessiner(l, h, rects, portraits, vitesses, pc, cadreAttaque);
 }
 
 const ROUGE: [number, number, number] = [230, 70, 60];
@@ -273,9 +289,14 @@ export function testCaptureEcran() {
   // Des chiffres trop petits : VIT non lue, plutôt que fausse.
   egal(lire(ecranLibre(594, 323, 80, 81, 41, 48, 376, portraits, ['339', '384', '363'], true))?.att.map((a) => a[1]), [null, null, null],
     'capture trop réduite : VIT non lues');
-  // Sans les trois cadres bleus des attaquants : écran non reconnu, aucune
-  // position supposée.
-  egal(lire(ecran(portraits, ['357', '367', '385'], 2556, 1179, 'telephone', false)), null, 'sans cadre d\'attaquant : écran non reconnu');
+  // Des attaquants à cadres DORÉS, comme la défense (selon les monstres) : le
+  // trio le plus à gauche.
+  egal(lire(ecran(portraits, ['316', '201', '227'], 1417, 784, 'fenetre', CADRE_DORE)), { att: [[1, 316], [2, 201], [3, 227]], def: [4, 5, 6] },
+    'attaquants à cadres dorés : le trio de gauche');
+  egal(lire(ecranLibre(317, 125, 20, 22, 80, 94, null, portraits.slice(0, 3), ['316', '201', '227'], true, 80, CADRE_DORE)), { att: [[1, 316], [2, 201], [3, 227]], def: [] },
+    'trois cartes dorées seules');
+  // Sans cadre bleu ni doré : écran non reconnu, aucune position supposée.
+  egal(lire(ecran(portraits, ['357', '367', '385'], 2556, 1179, 'telephone', CADRE_GRIS, CADRE_GRIS)), null, 'sans cadre de carte : écran non reconnu');
   // Une VIT hors de portée du jeu n'est pas une VIT.
   const absurde = lireEcranPreparation(ecran(portraits, ['9', '999', '357']), banque, gabarits)!;
   egal(absurde.attaquants.map((a) => a.vitesse?.valeur ?? null), [null, null, 357], 'VIT invraisemblable : écartée');

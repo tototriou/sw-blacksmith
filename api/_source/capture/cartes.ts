@@ -3,15 +3,15 @@
 // de la fenêtre PC (barre de titre ou non) et du recadrage de la capture, que
 // des proportions figées ne couvrent pas toutes.
 //
-// Les cartes des attaquants ont un cadre BLEU vif, fin, posé sur le fond brun
-// de l'écran ; celles de la défense, emplacements vides compris, un cadre DORÉ.
-// Le bord haut d'un cadre est une ligne droite de la largeur de la carte, sans
-// cadre au-dessus : on cherche trois de ces lignes, de même longueur, à la même
-// hauteur et à pas régulier ; puis les bords gauche, droit et bas de chaque
-// cadre (une carte n'est pas forcément carrée). La défense est sur la même
-// ligne, au même pas ;
-// sans cadre doré trouvé, elle est le symétrique des attaquants par rapport au
-// centre de l'image (la mise en page du jeu l'est).
+// Une carte a un cadre fin posé sur le fond brun de l'écran : BLEU vif ou DORÉ
+// pour les attaquants (selon les monstres), DORÉ pour la défense, emplacements
+// vides compris. Le bord haut d'un cadre est une ligne droite de la largeur de
+// la carte, sans cadre au-dessus : on cherche trois de ces lignes d'une même
+// couleur, de même longueur, à la même hauteur et à pas régulier ; puis les
+// bords gauche, droit et bas de chaque cadre (une carte n'est pas forcément
+// carrée). La défense est sur la même ligne, au même pas ; sans cadre doré
+// trouvé, elle est le symétrique des attaquants par rapport au centre de
+// l'image (la mise en page du jeu l'est).
 
 import type { Image } from './image';
 
@@ -19,9 +19,9 @@ export type Rect = [number, number, number, number]; // x, y, largeur, hauteur
 
 type Couleur = (r: number, v: number, b: number) => boolean;
 
-// Seuils relevés sur une capture de la fenêtre PC : cadre bleu (98, 152, 254)
-// à (63, 116, 216), doré (215, 168, 72), doré éteint d'un emplacement vide
-// (143, 112, 47) ; fond (44, 31, 17).
+// Seuils relevés sur des captures de la fenêtre PC : cadre bleu (98, 152, 254)
+// à (63, 116, 216), doré (215, 168, 72) à (191, 158, 106), doré éteint d'un
+// emplacement vide (143, 112, 47) ; fond (44, 31, 17).
 const bleu: Couleur = (r, v, b) => b >= 150 && b - r >= 60 && b - v >= 35;
 const dore: Couleur = (r, v, b) => r >= 110 && r - b >= 60 && v >= 0.6 * r && v <= 0.92 * r;
 
@@ -100,26 +100,40 @@ function hauteurCadre(est: (x: number, y: number) => boolean, x: number, y: numb
 
 export interface CartesTrouvees { attaquants: Rect[]; defense: Rect[] }
 
-export function trouverCartes(img: Image): CartesTrouvees | null {
-  const longMin = Math.max(12, Math.round(0.03 * img.largeur));
-  const bleus = traits(img, bleu, longMin).slice(0, 400);
-  // Trois bords hauts : même longueur, même hauteur, pas régulier un peu plus
-  // grand que la carte. Le plus grand trio l'emporte (les vignettes de la
-  // liste des monstres, en bas, sont plus petites).
-  let meilleur: Trait[] | null = null;
-  for (const a of bleus) for (const b of bleus) {
+// Les trios de bords hauts d'une couleur : même longueur, même hauteur, pas
+// régulier un peu plus grand que la carte.
+function trios(ts: Trait[]): Trait[][] {
+  const res: Trait[][] = [];
+  for (const a of ts) for (const b of ts) {
     if (b.x0 <= a.x1 || !proches(b.y, a.y, 2 + 0.02 * a.long) || !proches(b.long, a.long, 2 + 0.1 * a.long)) continue;
     const pas = b.x0 - a.x0;
     if (pas < a.long * 1.0 || pas > a.long * 1.5) continue;
-    for (const c of bleus) {
+    for (const c of ts) {
       if (!proches(c.y, a.y, 2 + 0.02 * a.long) || !proches(c.long, a.long, 2 + 0.1 * a.long)) continue;
-      if (!proches(c.x0 - b.x0, pas, 2 + 0.05 * a.long)) continue;
-      if (!meilleur || a.long > meilleur[0].long) meilleur = [a, b, c];
+      if (proches(c.x0 - b.x0, pas, 2 + 0.05 * a.long)) res.push([a, b, c]);
     }
   }
-  if (!meilleur) return null;
+  return res;
+}
+
+export function trouverCartes(img: Image): CartesTrouvees | null {
+  const longMin = Math.max(12, Math.round(0.03 * img.largeur));
+  const dores = traits(img, dore, longMin).slice(0, 400);
+  // Les attaquants : un trio de cadres BLEUS ou DORÉS (selon les monstres, les
+  // deux se voient), parmi les plus grands (les vignettes de la liste des
+  // monstres, en bas, sont plus petites), le plus à GAUCHE — quand la défense
+  // a des cadres de même taille, elle est à droite.
+  const candidats = [
+    ...trios(traits(img, bleu, longMin).slice(0, 400)).map((t) => ({ t, couleur: bleu })),
+    ...trios(dores).map((t) => ({ t, couleur: dore })),
+  ];
+  if (!candidats.length) return null;
+  const plusGrand = Math.max(...candidats.map((c) => c.t[0].long));
+  const { t: meilleur, couleur } = candidats
+    .filter((c) => c.t[0].long >= 0.9 * plusGrand)
+    .sort((p, q) => p.t[0].x0 - q.t[0].x0 || q.t[0].long - p.t[0].long)[0];
   const ecart = meilleur[1].x0 - meilleur[0].x1;
-  const attaquants = meilleur.map((t) => cadre(img, bleu, t, ecart));
+  const attaquants = meilleur.map((t) => cadre(img, couleur, t, ecart));
   // Une même taille et un même haut pour les trois : la largeur de la
   // première, la hauteur médiane (l'icône du sort de lead peut masquer le bas
   // d'une carte).
@@ -133,8 +147,8 @@ export function trouverCartes(img: Image): CartesTrouvees | null {
   // sur les seuls attaquants n'a pas de défense : le symétrique tomberait
   // sur eux, ou hors de l'image — aucune carte de défense alors.
   const finAttaque = alignes[2][0] + cote;
-  const premierDore = traits(img, dore, longMin)
-    .filter((t) => t.x0 > finAttaque && proches(t.y, meilleur![0].y, 2 + 0.03 * cote) && proches(t.long, meilleur![0].long, 2 + 0.15 * cote))
+  const premierDore = dores
+    .filter((t) => t.x0 > finAttaque && proches(t.y, meilleur[0].y, 2 + 0.03 * cote) && proches(t.long, meilleur[0].long, 2 + 0.15 * cote))
     .sort((p, q) => p.x0 - q.x0)[0];
   const x0Defense = premierDore ? cadre(img, dore, premierDore, ecart)[0] : img.largeur - finAttaque;
   const defense: Rect[] = [0, 1, 2]

@@ -48,13 +48,19 @@ export interface LectureEcran {
 export const VIT_MIN = 50;
 export const VIT_MAX = 450;
 
-// Sous cette confiance, le nombre n'est pas une VIT : un bout de portrait ou de
-// pastille découpé en « chiffres » (relevé : 0,14 à 0,20 pour ces faux nombres,
-// 0,49 et plus pour une VIT juste).
-export const CONFIANCE_VIT_PLANCHER = 0.35;
+// Une VIT FAUSSE est pire qu'un refus, qui demande une capture plus grande :
+// sous CONFIANCE_VIT_PLANCHER, la VIT n'est pas lue, ni sous
+// CONFIANCE_VIT_SURE quand un de ses chiffres est presque à égalité avec un
+// autre (MARGE_VIT_MIN). Relevé sur sept vraies captures, chacune lue avec
+// des gabarits qui n'ont pas ses chiffres, réduites, agrandies et compressées :
+// aucune lecture fausse ne passe ; les captures d'origine se lisent toutes.
+export const CONFIANCE_VIT_PLANCHER = 0.65;
+const CONFIANCE_VIT_SURE = 0.75;
+const MARGE_VIT_MIN = 0.05;
 
 const plausible = (lu: NombreLu | null): NombreLu | null =>
-  (lu && lu.valeur >= VIT_MIN && lu.valeur <= VIT_MAX && lu.confiance >= CONFIANCE_VIT_PLANCHER ? lu : null);
+  (lu && lu.valeur >= VIT_MIN && lu.valeur <= VIT_MAX && lu.confiance >= CONFIANCE_VIT_PLANCHER
+    && (lu.confiance >= CONFIANCE_VIT_SURE || lu.marge >= MARGE_VIT_MIN) ? lu : null);
 
 // `null` : les trois cadres des attaquants ne sont pas dans l'image.
 export function lireEcranPreparation(img: Image, banque: Banque, gabarits: Gabarits): LectureEcran | null {
