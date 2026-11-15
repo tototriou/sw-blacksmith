@@ -76,6 +76,7 @@ export const RELEASES: Release[] = [
     changes: [
       { kind: 'fix', scope: 'Speed tuning', text: '/speedtune lit les captures de tous les formats d’écran, PC avec ou sans barre de titre compris.' },
       { kind: 'fix', scope: 'Speed tuning', text: '/speedtune lit aussi une capture recadrée sur les trois cartes d’attaque.' },
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune reconnaît les attaquants à cadre doré, et plus seulement à cadre bleu.' },
       { kind: 'fix', scope: 'Speed tuning', text: 'Une capture trop petite est refusée au lieu de donner une VIT fausse.' },
     ],
   },
