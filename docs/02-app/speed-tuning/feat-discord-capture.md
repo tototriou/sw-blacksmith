@@ -118,8 +118,9 @@ reconnu, VIT illisible (avec les monstres concernés).
   **trouvées** dans l'image, quel que soit le format : téléphone, tablette,
   fenêtre PC avec ou sans barre de titre, capture décentrée ou recadrée sur
   les trois attaquants seuls. Une carte a un cadre fin posé sur le fond de
-  l'écran : bleu vif ou doré pour les attaquants (selon les monstres), doré
-  pour la défense. On cherche trois bords hauts de cadre d'une même couleur,
+  l'écran. Pour les attaquants, il dit d'où vient l'équipe : bleu vif pour un
+  deck préréglé, doré pour un deck composé sur le moment ; les deux se lisent.
+  Pour la défense, doré. On cherche trois bords hauts de cadre d'une même couleur,
   de même longueur, à la même hauteur et à pas régulier ; les attaquants sont
   le trio le plus à gauche parmi les plus grands (les vignettes de la liste
   des monstres sont plus petites ; une défense dorée de même taille est à

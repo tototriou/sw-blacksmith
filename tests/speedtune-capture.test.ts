@@ -115,7 +115,8 @@ const CADRE_DORE: Rvb = [200, 160, 80];
 const CADRE_GRIS: Rvb = [120, 120, 120];
 
 // L'écran de préparation recomposé : fond brun, les cartes à leur place, cadre
-// BLEU pour les attaquants (ou `cadreAttaque` : doré selon les monstres) et
+// BLEU pour les attaquants d'un deck préréglé (`cadreAttaque` : doré pour un
+// deck composé sur le moment) et
 // DORÉ pour la défense, comme dans le jeu ; VIT des attaquants dans une
 // pastille en bas à droite (`pc` : chiffres de la fenêtre PC, plus petits et
 // plus bas). `cadreDefense` gris avec un `cadreAttaque` gris : aucun cadre à
@@ -289,7 +290,7 @@ export function testCaptureEcran() {
   // Des chiffres trop petits : VIT non lue, plutôt que fausse.
   egal(lire(ecranLibre(594, 323, 80, 81, 41, 48, 376, portraits, ['339', '384', '363'], true))?.att.map((a) => a[1]), [null, null, null],
     'capture trop réduite : VIT non lues');
-  // Des attaquants à cadres DORÉS, comme la défense (selon les monstres) : le
+  // Un deck composé sur le moment : attaquants à cadres DORÉS, comme la défense ; le
   // trio le plus à gauche.
   egal(lire(ecran(portraits, ['316', '201', '227'], 1417, 784, 'fenetre', CADRE_DORE)), { att: [[1, 316], [2, 201], [3, 227]], def: [4, 5, 6] },
     'attaquants à cadres dorés : le trio de gauche');
