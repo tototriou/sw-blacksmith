@@ -17,9 +17,8 @@
 // qu'on n'a plus forcément (elles ne sont pas versionnées), et une
 // reconstruction complète les perdrait.
 //
-// Les cartes de chaque capture sont trouvées à leurs cadres, comme à la
-// lecture ; la zone de VIT retenue est la première qui donne le nombre de
-// chiffres attendu sur les trois cartes.
+// Les cartes de chaque capture et leur pastille de VIT sont trouvées comme à
+// la lecture, et les chiffres découpés de même.
 //
 // ⚠️ Chromium vient de Playwright, et la police Inter doit être installée sur
 // le poste.
@@ -27,8 +26,8 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { chromium } from 'playwright';
 import { decoderImage } from '../api/_source/capture/image';
-import { GH, GL, glyphes, masqueClair, normaliser, type Gabarits } from '../api/_source/capture/chiffres';
-import { zoneVitesse, ZONES_VIT } from '../api/_source/capture/ecranPreparation';
+import { GH, GL, glyphes, glyphesDuNombre, masqueClair, normaliser, type Gabarits } from '../api/_source/capture/chiffres';
+import { zoneVitesse } from '../api/_source/capture/ecranPreparation';
 import { trouverCartes } from '../api/_source/capture/cartes';
 
 const SORTIE = 'api/_source/capture/chiffres-gabarits.json';
@@ -66,13 +65,13 @@ function releves(args: string[]): Record<string, number[][]> {
     const attendus = args[i + 1].split(',');
     const cartes = trouverCartes(img);
     if (!cartes) throw new Error(`${args[i]} : les trois cadres des attaquants ne sont pas trouvés`);
-    const lus = ZONES_VIT.map((z) => attendus.map((texte, k) => {
-      const zone = zoneVitesse(img, cartes.attaquants[k], z);
+    attendus.forEach((texte, k) => {
+      const zone = zoneVitesse(img, cartes.attaquants[k]);
       const m = zone && masqueClair(zone);
-      return m && glyphes(m).length === texte.length ? { m, gs: glyphes(m) } : null;
-    })).find((cartes) => cartes.every((c) => c));
-    if (!lus) throw new Error(`${args[i]} : aucune zone de VIT ne donne les chiffres de « ${args[i + 1]} »`);
-    lus.forEach((c, k) => c!.gs.forEach((g, j) => (sortie[attendus[k][j]] ??= []).push(arrondi(normaliser(c!.m, g)))));
+      const gs = m ? glyphesDuNombre(m) : [];
+      if (!m || gs.length !== texte.length) throw new Error(`${args[i]} : la pastille de la carte ${k + 1} ne donne pas les chiffres de « ${texte} »`);
+      gs.forEach((g, j) => (sortie[texte[j]] ??= []).push(arrondi(normaliser(m, g))));
+    });
   }
   return sortie;
 }

@@ -117,31 +117,39 @@ reconnu, VIT illisible (avec les monstres concernés).
 - [cartes.ts](../../../api/_source/capture/cartes.ts) — les cartes
   **trouvées** dans l'image, quel que soit le format : téléphone, tablette,
   fenêtre PC avec ou sans barre de titre, capture décentrée ou recadrée sur
-  les trois attaquants seuls. Une carte a un cadre fin posé sur le fond de
-  l'écran. Pour les attaquants, il dit d'où vient l'équipe : bleu vif pour un
-  deck préréglé, doré pour un deck composé sur le moment ; les deux se lisent.
-  Pour la défense, doré. On cherche trois bords hauts de cadre d'une même couleur,
-  de même longueur, à la même hauteur et à pas régulier ; les attaquants sont
-  le trio le plus à gauche parmi les plus grands (les vignettes de la liste
-  des monstres sont plus petites ; une défense dorée de même taille est à
-  droite). Les bords gauche et droit se
-  mesurent vers le haut de la carte, sans dépasser la moitié de l'écart avec
-  la carte voisine ; le bord bas, sur cinq colonnes du milieu (médiane) : une
-  carte n'est pas forcément carrée. La défense est le premier cadre doré de
-  même taille sur la même ligne (emplacements vides compris), sinon le
-  symétrique des attaquants par rapport au centre ; une capture recadrée sur
-  les attaquants n'en a pas.
+  les trois attaquants seuls. Une carte est un carré à cadre fin, net sur le
+  fond uni de l'écran. ⚠️ La couleur du cadre ne compte pas : elle varie
+  (bleu d'un deck préréglé, doré d'un deck composé sur le moment, bronze
+  sombre, emplacements vides éteints) ; seul son contour sert. Un bord est un
+  écart de couleur de plus de 60 (somme R, V, B) entre deux pixels à deux pas
+  l'un de l'autre. On cherche trois bords hauts horizontaux de même longueur,
+  à la même rangée (à un pixel près) et à pas régulier, chacun avec un bord
+  gauche et un bord droit à mi-hauteur (la recherche ne dépasse pas la
+  moitié de l'écart avec la carte voisine). Le bord bas est le trait le plus
+  bas sous la carte, de presque sa largeur (médiane des trois) : une carte
+  n'est pas forcément carrée. Les attaquants sont exactement **trois**
+  carrés : un trio que prolonge un quatrième au même pas est la liste des
+  monstres. Parmi les grands trios restants, la rangée la plus haute (la
+  liste est en dessous, avec des vignettes presque de la taille des cartes),
+  le trio le plus à gauche de cette rangée. La défense est le premier trio de
+  même taille à droite sur la même ligne, sinon le symétrique des attaquants
+  par rapport au centre ; une capture recadrée sur les attaquants n'en a pas.
 - [ecranPreparation.ts](../../../api/_source/capture/ecranPreparation.ts) —
   la lecture des cartes trouvées. ⚠️ Aucune position n'est supposée : sans
-  les trois cadres des attaquants, l'écran n'est pas reconnu. La VIT se lit
-  en bas à droite de chaque carte d'attaquant, en fractions de sa largeur et
-  de sa hauteur, dans la zone du téléphone, dans celle du PC (plus basse : le
-  bas du portrait, clair, gênait des chiffres de 9 pixels) et dans chacune
-  élargie vers la gauche ; la zone qui lit le plus de VIT plausibles, puis la
-  plus sûre, l'emporte. ⚠️ Une VIT fausse est pire qu'un refus : hors de 50
-  à 450, sous une confiance de 0,65, ou sous 0,75 quand un de ses chiffres
-  est presque à égalité avec un autre (écart sous 0,05), la VIT n'est pas
-  lue. Entre 0,65 et 0,75, le message la dit incertaine.
+  trois carrés trouvés, l'écran n'est pas reconnu. La VIT est écrite en blanc
+  dans une pastille sombre, en bas à droite de la carte ; la pastille est
+  **trouvée** dans la carte, pas placée par des proportions. Son bas : la
+  plus basse rangée sombre (plus sombre que 60) qui va jusqu'au bord droit de
+  la carte, sur au moins 0,25 fois sa largeur. Au-dessus, les rangées qui
+  portent du blanc (plus faible composante d'au moins 150) posé sur du
+  sombre, des deux côtés à moins d'un dixième de la carte ; la première qui
+  n'en porte plus est le haut. Un portrait n'a pas ce blanc encadré de
+  sombre, même quand il est sombre lui-même ou blanc au coin de la pastille.
+  À gauche, la zone part du premier blanc (l'icône de vitesse), avec une
+  marge. ⚠️ Une VIT fausse est pire qu'un refus : hors de 50 à 450, sous une
+  confiance de 0,65, ou sous 0,75 quand un de ses chiffres est presque à
+  égalité avec un autre (écart sous 0,05), la VIT n'est pas lue. Entre 0,65
+  et 0,75, le message la dit incertaine.
 - [portraits.ts](../../../api/_source/capture/portraits.ts) — le monstre
   reconnu à son portrait, porté du projet « Youtube-to-offenses-decks »
   (portraits.py) : zone centrale ramenée à 24 × 24 en Lab, centrée-réduite,
@@ -151,14 +159,21 @@ reconnu, VIT illisible (avec les monstres concernés).
   juste : 0,8 à 0,93 ; sous 0,5, l'écran n'est pas reconnu.
 - [chiffres.ts](../../../api/_source/capture/chiffres.ts) — la VIT : seuil
   d'Otsu sur la plus petite composante (l'écriture est claire), découpage par
-  colonnes (un morceau collé au bord gauche est l'icône de vitesse), un
-  glyphe plus large que 0,9 fois sa hauteur coupé à sa colonne la moins
-  encrée (deux chiffres soudés par l'anticrénelage, courant à la taille PC),
-  chaque glyphe ramené à 12 × 18 et comparé aux gabarits, sous sa découpe et
-  ses huit voisines d'un pixel (à 8 pixels de haut, un pixel d'anticrénelage
-  gardé ou perdu change la forme). Le nombre est le groupe de glyphes le plus
-  à droite : l'icône de vitesse, plus écartée des chiffres qu'ils ne le sont
-  entre eux (0,45 fois leur hauteur), n'est pas lue. Sous 8 pixels de haut,
+  colonnes. La hauteur d'un chiffre est celle du glyphe notable le plus à
+  droite (le dernier chiffre), pas du plus haut (l'icône de vitesse, grandie
+  d'un bout de portrait) ; les colonnes se recomptent dans la seule bande de
+  ses rangées, et chaque glyphe se borne à sa plus longue bande d'encre
+  continue — un bout de portrait au-dessus ne relie ni ne grandit les
+  chiffres. Un morceau collé au bord gauche est l'icône ; un glyphe plus
+  large que 0,9 fois sa hauteur est coupé à sa colonne la moins encrée (deux
+  chiffres soudés par l'anticrénelage, courant à la taille PC). Chaque glyphe
+  est ramené à 12 × 18 et comparé aux gabarits, sous sa découpe et ses huit
+  voisines d'un pixel (à 8 pixels de haut, un pixel d'anticrénelage gardé ou
+  perdu change la forme). Le nombre est le groupe de glyphes le plus à
+  droite ; l'icône de vitesse en est séparée par plus de 0,8 fois la hauteur
+  des chiffres, ou — dès qu'un écart entre deux chiffres est connu — par
+  plus de 0,3 fois et le double de cet écart (sur un grand écran, l'icône
+  n'est qu'à 0,4 fois, deux chiffres à 0,1). Sous 8 pixels de haut,
   les chiffres ne sont pas lus : ils se liraient faux (un 2 pour un 1, un 6
   pour un 4), et la commande demande une capture plus grande.
 
@@ -216,7 +231,8 @@ protégé).
   fenêtre PC** (1417 × 784, 1199 × 682, 1184 × 662 avec la barre de titre ;
   1187 × 646 sans elle ; en anglais et en français), **de l'écran recadré**
   (le milieu seul, les trois cartes seules, plus larges que hautes ou non),
-  avec des attaquants à cadres bleus et à cadres dorés. Chaque capture a été
+  avec des attaquants à cadres bleus, dorés et bronze (1229 × 415, 596 × 249,
+  en français). Chaque capture a été
   lue avec des gabarits qui n'avaient pas ses chiffres, telle quelle,
   réduite, agrandie et en JPEG : les cartes sont toujours trouvées, les
   captures d'origine se lisent toutes, et aucune VIT fausse ne passe. Leurs
@@ -234,11 +250,12 @@ protégé).
 
 [tests/speedtune-capture.test.ts](../../../tests/speedtune-capture.test.ts),
 sans aucune vraie capture : écrans recomposés aux positions réelles avec des
-portraits synthétiques, des cadres bleus et dorés et des chiffres dessinés
-depuis les gabarits — téléphone, fenêtre PC avec et sans barre de titre,
-tablette 4:3, téléphone 20:9, cartes plus larges que hautes, attaquants
-seuls, attaquants à cadres dorés, capture trop réduite, écran sans cadre de
-carte ; calcul
+portraits synthétiques (sombres, jusque contre la pastille), des cadres de
+plusieurs couleurs et des chiffres dessinés depuis les gabarits — téléphone,
+fenêtre PC avec et sans barre de titre, tablette 4:3, téléphone 20:9, cartes
+plus larges que hautes, attaquants seuls, attaquants à cadres dorés, bronze
+et gris, liste des monstres sous l'équipe, rangée de six carrés seule,
+capture trop réduite, une seule carte, écran vide ; calcul
 sur les vrais monstres et leurs vrais kits (Susano, Chilling, Tarq) ; état
 des menus (aller-retour, pire cas sous 100 caractères, refus) ; interactions
 signées, réponse différée, question, choix (y compris d'un autre que

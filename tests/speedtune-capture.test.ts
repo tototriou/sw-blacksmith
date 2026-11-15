@@ -113,14 +113,13 @@ type Rvb = [number, number, number];
 const CADRE_BLEU: Rvb = [100, 155, 255];
 const CADRE_DORE: Rvb = [200, 160, 80];
 const CADRE_GRIS: Rvb = [120, 120, 120];
+const CADRE_BRONZE: Rvb = [97, 72, 33];
 
 // L'écran de préparation recomposé : fond brun, les cartes à leur place, cadre
 // BLEU pour les attaquants d'un deck préréglé (`cadreAttaque` : doré pour un
-// deck composé sur le moment) et
-// DORÉ pour la défense, comme dans le jeu ; VIT des attaquants dans une
-// pastille en bas à droite (`pc` : chiffres de la fenêtre PC, plus petits et
-// plus bas). `cadreDefense` gris avec un `cadreAttaque` gris : aucun cadre à
-// trouver.
+// deck composé sur le moment, bronze, gris…) et DORÉ pour la défense, comme
+// dans le jeu ; VIT des attaquants dans une pastille en bas à droite (`pc` :
+// chiffres de la fenêtre PC, plus petits et plus bas).
 function dessiner(l: number, h: number, rects: Rect[], portraits: Image[], vitesses: string[], pc: boolean, cadreAttaque: Rvb = CADRE_BLEU, cadreDefense: Rvb = CADRE_DORE): Image {
   const img = imageUnie(l, h, [52, 40, 30]);
   portraits.forEach((p, k) => {
@@ -296,8 +295,22 @@ export function testCaptureEcran() {
     'attaquants à cadres dorés : le trio de gauche');
   egal(lire(ecranLibre(317, 125, 20, 22, 80, 94, null, portraits.slice(0, 3), ['316', '201', '227'], true, 80, CADRE_DORE)), { att: [[1, 316], [2, 201], [3, 227]], def: [] },
     'trois cartes dorées seules');
-  // Sans cadre bleu ni doré : écran non reconnu, aucune position supposée.
-  egal(lire(ecran(portraits, ['357', '367', '385'], 2556, 1179, 'telephone', CADRE_GRIS, CADRE_GRIS)), null, 'sans cadre de carte : écran non reconnu');
+  // La couleur du cadre ne compte pas : les cartes se trouvent à leur contour.
+  egal(lire(ecranLibre(596, 249, 77, 63, 132, 151, null, portraits.slice(0, 3), ['337', '404', '368'], false, 134, CADRE_BRONZE)),
+    { att: [[1, 337], [2, 404], [3, 368]], def: [] }, 'cadres bronze, cartes seules');
+  egal(lire(ecran(portraits, ['357', '367', '385'], 2556, 1179, 'telephone', CADRE_GRIS, CADRE_GRIS)),
+    { att: [[1, 357], [2, 367], [3, 385]], def: [4, 5, 6] }, 'cadres gris : lus comme les autres');
+  // Une équipe, c'est TROIS carrés : la liste des monstres, en dessous, aligne
+  // des vignettes presque de la même taille, plus de trois à la suite.
+  const liste = [0, 1, 2, 3, 4, 5].map((k): Rect => [161 + k * 85, 470, 77, 77]);
+  const avecListe = dessiner(1187, 646, [[161, 162, 81, 81], [257, 162, 81, 81], [353, 162, 81, 81], ...liste], [...portraits.slice(0, 3), ...portraits, portraits[0]], ['339', '384', '363'], true);
+  egal(lire(avecListe)?.att, [[1, 339], [2, 384], [3, 363]], 'liste des monstres sous l\'équipe : écartée');
+  egal(lire(dessiner(700, 200, liste.map(([x, , c]): Rect => [x - 100, 60, c, c]), portraits, ['100', '100', '100'], true, CADRE_GRIS, CADRE_GRIS)), null,
+    'une rangée de six carrés seule : pas une équipe');
+  // Sans trois carrés égaux à pas régulier : écran non reconnu, aucune
+  // position supposée.
+  egal(lire(dessiner(600, 300, [[100, 100, 81, 81]], portraits.slice(0, 1), ['339'], true)), null, 'une seule carte : écran non reconnu');
+  egal(lire(imageUnie(800, 400, [52, 40, 30])), null, 'écran vide : non reconnu');
   // Une VIT hors de portée du jeu n'est pas une VIT.
   const absurde = lireEcranPreparation(ecran(portraits, ['9', '999', '357']), banque, gabarits)!;
   egal(absurde.attaquants.map((a) => a.vitesse?.valeur ?? null), [null, null, 357], 'VIT invraisemblable : écartée');

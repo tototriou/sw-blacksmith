@@ -196,7 +196,7 @@ export function creerInteractions(d: DependancesInteractions) {
 }
 
 // La lecture → l'état : refus si l'écran n'est pas reconnu (`null` : les trois
-// cadres des attaquants ne sont pas dans l'image).
+// cartes des attaquants ne sont pas dans l'image).
 export function etatDeLecture(res: Ressources, lecture: LectureEcran | null, auteur: string): Etat | { erreur: 'illisible' | { vitIllisible: string[] } } {
   if (!lecture) return { erreur: 'illisible' };
   const att = lecture.attaquants;
