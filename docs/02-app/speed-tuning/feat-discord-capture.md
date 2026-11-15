@@ -146,10 +146,12 @@ reconnu, VIT illisible (avec les monstres concernés).
   n'en porte plus est le haut. Un portrait n'a pas ce blanc encadré de
   sombre, même quand il est sombre lui-même ou blanc au coin de la pastille.
   À gauche, la zone part du premier blanc (l'icône de vitesse), avec une
-  marge. ⚠️ Une VIT fausse est pire qu'un refus : hors de 50 à 450, sous une
-  confiance de 0,65, ou sous 0,75 quand un de ses chiffres est presque à
-  égalité avec un autre (écart sous 0,05), la VIT n'est pas lue. Entre 0,65
-  et 0,75, le message la dit incertaine.
+  marge. ⚠️ Une VIT fausse est pire qu'un refus : hors de 100 à 450 (en
+  siège, aucune vitesse réglée n'est sous 100 ; un chiffre perdu, « 66 »
+  pour 314, y tombe), sous une confiance de 0,7, ou quand un de ses chiffres
+  est presque à égalité avec un autre (écart sous 0,05) sans que la lecture
+  agrandie donne le même nombre, la VIT n'est pas lue. Entre 0,7 et 0,75,
+  le message la dit incertaine.
 - [portraits.ts](../../../api/_source/capture/portraits.ts) — le monstre
   reconnu à son portrait, porté du projet « Youtube-to-offenses-decks »
   (portraits.py) : zone centrale ramenée à 24 × 24 en Lab, centrée-réduite,
@@ -166,16 +168,22 @@ reconnu, VIT illisible (avec les monstres concernés).
   continue — un bout de portrait au-dessus ne relie ni ne grandit les
   chiffres. Un morceau collé au bord gauche est l'icône ; un glyphe plus
   large que 0,9 fois sa hauteur est coupé à sa colonne la moins encrée (deux
-  chiffres soudés par l'anticrénelage, courant à la taille PC). Chaque glyphe
-  est ramené à 12 × 18 et comparé aux gabarits, sous sa découpe et ses huit
-  voisines d'un pixel (à 8 pixels de haut, un pixel d'anticrénelage gardé ou
-  perdu change la forme). Le nombre est le groupe de glyphes le plus à
-  droite ; l'icône de vitesse en est séparée par plus de 0,8 fois la hauteur
-  des chiffres, ou — dès qu'un écart entre deux chiffres est connu — par
-  plus de 0,3 fois et le double de cet écart (sur un grand écran, l'icône
-  n'est qu'à 0,4 fois, deux chiffres à 0,1). Sous 8 pixels de haut,
-  les chiffres ne sont pas lus : ils se liraient faux (un 2 pour un 1, un 6
-  pour un 4), et la commande demande une capture plus grande.
+  chiffres soudés par l'anticrénelage, courant à la taille PC). Le nombre est
+  le groupe de glyphes le plus à droite ; l'icône de vitesse en est séparée
+  par plus de 0,8 fois la hauteur des chiffres, ou — dès qu'un écart entre
+  deux chiffres est connu — par plus de 0,3 fois et le double de cet écart
+  (sur un grand écran, l'icône n'est qu'à 0,4 fois, deux chiffres à 0,1).
+  ⚠️ **Chaque chiffre se compare à sa taille d'origine** : agrandi à
+  12 × 18, un chiffre de 7 pixels n'a plus sa forme (un 9 y ressemble à un
+  3). Chaque gabarit est au contraire réduit à la taille exacte du glyphe,
+  par moyenne de surface (l'anticrénelage du jeu), sous de petits décalages
+  d'une fraction de pixel (hauteur ± 0,5, haut et centre ± 0,5), et corrélé
+  à la luminosité brute de la zone (sans seuil). La même méthode vaut à
+  toutes les tailles. L'ancienne lecture (glyphe agrandi à 12 × 18, sous sa
+  découpe et ses huit voisines d'un pixel) sert de second avis : un nombre
+  que les deux donnent est lu même quand deux chiffres sont proches. Sous 5
+  pixels de haut, un chiffre n'a plus que trois colonnes : il n'est pas lu,
+  et la commande demande une capture plus grande.
 
 Les données voyagent dans le paquet de la fonction :
 
@@ -232,15 +240,16 @@ protégé).
   1187 × 646 sans elle ; en anglais et en français), **de l'écran recadré**
   (le milieu seul, les trois cartes seules, plus larges que hautes ou non),
   avec des attaquants à cadres bleus, dorés et bronze (1229 × 415, 596 × 249,
-  en français). Chaque capture a été
-  lue avec des gabarits qui n'avaient pas ses chiffres, telle quelle,
-  réduite, agrandie et en JPEG : les cartes sont toujours trouvées, les
-  captures d'origine se lisent toutes, et aucune VIT fausse ne passe. Leurs
-  chiffres servent ensuite de gabarits.
-- **Une capture réduite sous sa taille d'origine n'est souvent pas lue** :
-  sur PC, les chiffres font 8 pixels, le plancher ; une fenêtre PC plus
-  petite que 1187 × 646 environ, ou une capture très compressée, fait
-  demander une capture plus grande.
+  en français), et de la gestion des decks d'attaque dans une petite fenêtre
+  PC (705 × 276, chiffres de 7 pixels). Chaque capture a été lue avec des
+  gabarits qui n'avaient pas ses chiffres, telle quelle, réduite, agrandie
+  et en JPEG : les cartes sont toujours trouvées, aucune VIT fausse ne passe
+  (169 justes, 17 refusées sur 186). Leurs chiffres servent ensuite de
+  gabarits.
+- **Une capture très réduite ou très compressée n'est pas toujours lue** :
+  sous 5 pixels de haut, les chiffres ne sont pas lus ; un JPEG très
+  compressé de chiffres de 7 pixels peut être refusé. La commande demande
+  alors une capture plus grande.
 - La tablette et les autres formats de téléphone ne sont vérifiés que sur des
   écrans recomposés.
 - Rien ne se corrige depuis Discord : un monstre mal reconnu ou une VIT mal
@@ -255,7 +264,8 @@ plusieurs couleurs et des chiffres dessinés depuis les gabarits — téléphone
 fenêtre PC avec et sans barre de titre, tablette 4:3, téléphone 20:9, cartes
 plus larges que hautes, attaquants seuls, attaquants à cadres dorés, bronze
 et gris, liste des monstres sous l'équipe, rangée de six carrés seule,
-capture trop réduite, une seule carte, écran vide ; calcul
+capture trop réduite, une seule carte, écran vide ; chiffres de 7 à 9 pixels
+lus, de 4 non ; calcul
 sur les vrais monstres et leurs vrais kits (Susano, Chilling, Tarq) ; état
 des menus (aller-retour, pire cas sous 100 caractères, refus) ; interactions
 signées, réponse différée, question, choix (y compris d'un autre que

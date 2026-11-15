@@ -242,9 +242,10 @@ export function testCaptureChiffres() {
   coller(avecIcone, imageUnie(2, 2, [240, 240, 240]), 2, 4, 11, 14);
   coller(avecIcone, n, 24, 0, n.largeur, n.hauteur);
   egal(lireNombre(avecIcone, gabarits)?.texte, '314', 'icône de vitesse à gauche : écartée du nombre');
-  // Sous 7 pixels, un chiffre se lirait faux : pas lu du tout.
-  egal(lireNombre(nombre('339', 6), gabarits), null, `chiffres de 6 pixels (< ${HAUTEUR_CHIFFRE_MIN}) : non lus`);
-  egal(lireNombre(nombre('339', HAUTEUR_CHIFFRE_MIN + 1), gabarits)?.texte, '339', `chiffres de ${HAUTEUR_CHIFFRE_MIN + 1} pixels : lus`);
+  // Les gabarits sont rendus à la taille du chiffre : les petits caractères
+  // d'une fenêtre PC réduite se lisent ; sous 5 pixels, plus rien.
+  for (const h of [7, 8, 9]) egal(lireNombre(nombre('349', h), gabarits)?.texte, '349', `chiffres de ${h} pixels : lus`);
+  egal(lireNombre(nombre('339', HAUTEUR_CHIFFRE_MIN - 1), gabarits), null, `chiffres de ${HAUTEUR_CHIFFRE_MIN - 1} pixels (< ${HAUTEUR_CHIFFRE_MIN}) : non lus`);
 }
 
 // ---- Écran de préparation ----------------------------------------------------

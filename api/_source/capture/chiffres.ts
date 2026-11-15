@@ -1,6 +1,7 @@
 // Lecture d'un nombre écrit en clair sur un fond sombre (la VIT sous un
 // portrait de l'écran de préparation) : seuil, découpage des glyphes par
-// colonnes, puis chaque glyphe comparé à des gabarits de chiffres.
+// colonnes, puis chaque glyphe comparé à des gabarits de chiffres rendus à sa
+// taille (voir « Lecture à la taille d'origine »).
 //
 // Les gabarits (chiffres-gabarits.json) sont construits hors ligne par
 // scripts/construire-gabarits-chiffres.ts.
@@ -195,14 +196,99 @@ function decoupesVoisines(m: Masque, g: Glyphe): Glyphe[] {
   return res;
 }
 
-// `confiance` : le plus faible score de ses chiffres ; `marge` : le plus faible
-// écart entre le chiffre lu et le suivant, pour un de ses chiffres.
-export interface NombreLu { valeur: number; texte: string; confiance: number; marge: number }
+// ---- Lecture à la taille d'origine ------------------------------------------
+//
+// ⚠️ Un chiffre de 7 pixels AGRANDI à 12 × 18 n'a plus sa forme : l'agrandir
+// invente du flou, et un 9 y ressemble à un 3. On fait l'inverse : chaque
+// gabarit est RÉDUIT à la taille exacte du glyphe lu, par moyenne de surface
+// (l'anticrénelage du jeu), sous de petits décalages d'une fraction de pixel
+// (la place du chiffre dans la grille de pixels change sa forme rendue), et
+// comparé à la luminosité brute de la capture, sans seuil. La même méthode
+// vaut à toutes les tailles.
 
-// Sous 7 pixels de haut, un chiffre se lit FAUX plutôt que pas du tout (un 9
-// pris pour un 3, un 8 pour un 6) : on ne le lit pas, et la commande demande
-// une capture plus grande.
-export const HAUTEUR_CHIFFRE_MIN = 8;
+// La luminosité de la zone ramenée de 0 (fond de la pastille) à 1 (blanc des
+// chiffres) : la plus petite composante, entre le 30e centile (le fond, qui
+// occupe la plus grande part) et le 99e (le cœur des traits).
+function luminosite(zone: Image): Float32Array {
+  const n = zone.largeur * zone.hauteur;
+  const v = new Float32Array(n);
+  for (let i = 0; i < n; i++) v[i] = Math.min(zone.rgba[i * 4], zone.rgba[i * 4 + 1], zone.rgba[i * 4 + 2]);
+  const tri = Float32Array.from(v).sort();
+  const bas = tri[Math.floor(n * 0.3)], haut = tri[Math.min(n - 1, Math.floor(n * 0.99))];
+  for (let i = 0; i < n; i++) v[i] = Math.max(0, Math.min(1, (v[i] - bas) / Math.max(1, haut - bas)));
+  return v;
+}
+
+// La moyenne d'un gabarit (constant par case) sur le rectangle [u0, u1] × [v0, v1]
+// de ses coordonnées : la valeur d'un pixel qui le recouvre.
+function moyenneGabarit(m: number[], gl: number, gh: number, u0: number, u1: number, v0: number, v1: number): number {
+  let s = 0;
+  for (let y = Math.max(0, Math.floor(v0)); y < Math.min(gh, Math.ceil(v1)); y++) {
+    const py = Math.min(y + 1, v1) - Math.max(y, v0);
+    if (py <= 0) continue;
+    for (let x = Math.max(0, Math.floor(u0)); x < Math.min(gl, Math.ceil(u1)); x++) {
+      const px = Math.min(x + 1, u1) - Math.max(x, u0);
+      if (px > 0) s += m[y * gl + x] * px * py;
+    }
+  }
+  return s / ((u1 - u0) * (v1 - v0));
+}
+
+function correlationTableaux(a: Float32Array, b: Float32Array): number {
+  let ma = 0, mb = 0;
+  for (let i = 0; i < a.length; i++) { ma += a[i]; mb += b[i]; }
+  ma /= a.length; mb /= a.length;
+  let ab = 0, aa = 0, bb = 0;
+  for (let i = 0; i < a.length; i++) {
+    const x = a[i] - ma, y = b[i] - mb;
+    ab += x * y; aa += x * x; bb += y * y;
+  }
+  return ab / (Math.sqrt(aa * bb) + 1e-9);
+}
+
+// Les décalages essayés, en pixels : hauteur rendue, haut et centre du glyphe.
+// La boîte du glyphe vient d'un seuil : ses bords sont justes à un
+// demi-pixel près.
+const DECALAGES_H = [-0.5, 0, 0.5];
+const DECALAGES_Y = [-0.5, -0.25, 0, 0.25];
+const DECALAGES_X = [-0.5, -0.25, 0, 0.25, 0.5];
+
+// Le chiffre du glyphe `b`, comparé sur sa boîte élargie d'un pixel. Un
+// gabarit normalisé a la hauteur du glyphe sur ses GH rangées, centré dans
+// ses GL colonnes à l'échelle (voir `normaliser`).
+export function reconnaitreATaille(lum: Float32Array, largeur: number, hauteur: number, b: Glyphe, g: Gabarits): ChiffreLu {
+  const x0 = Math.max(0, b.x - 1), x1 = Math.min(largeur, b.x + b.l + 1);
+  const y0 = Math.max(0, b.y - 1), y1 = Math.min(hauteur, b.y + b.h + 1);
+  const lu = new Float32Array((x1 - x0) * (y1 - y0));
+  for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) lu[(y - y0) * (x1 - x0) + x - x0] = lum[y * largeur + x];
+  const rendu = new Float32Array(lu.length);
+  const scores = Object.entries(g.chiffres).map(([c, modeles]) => {
+    let meilleur = -1;
+    for (const m of modeles) for (const dh of DECALAGES_H) for (const dy of DECALAGES_Y) for (const dx of DECALAGES_X) {
+      const echelle = (b.h + dh) / g.h, haut = b.y + dy, centre = b.x + b.l / 2 + dx;
+      for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) {
+        rendu[(y - y0) * (x1 - x0) + x - x0] = moyenneGabarit(m, g.l, g.h,
+          (x - centre) / echelle + g.l / 2, (x + 1 - centre) / echelle + g.l / 2, (y - haut) / echelle, (y + 1 - haut) / echelle);
+      }
+      meilleur = Math.max(meilleur, correlationTableaux(lu, rendu));
+    }
+    return [c, meilleur] as const;
+  });
+  scores.sort((a, b2) => b2[1] - a[1]);
+  return { chiffre: scores[0][0], score: scores[0][1], ecart: scores[0][1] - (scores[1]?.[1] ?? 0) };
+}
+
+// `confiance` : le plus faible score de ses chiffres ; `marge` : le plus faible
+// écart entre le chiffre lu et le suivant, pour un de ses chiffres. `accord` :
+// la lecture agrandie (chaque glyphe ramené à 12 × 18, l'ancienne méthode)
+// donne le même nombre, avec une confiance d'au moins 0,65 — deux méthodes
+// différentes qui s'accordent.
+export interface NombreLu { valeur: number; texte: string; confiance: number; marge: number; accord: boolean }
+
+// Sous 5 pixels de haut, un chiffre n'a plus que trois colonnes : on ne le lit
+// pas, et la commande demande une capture plus grande.
+export const HAUTEUR_CHIFFRE_MIN = 5;
+const CONFIANCE_ACCORD = 0.65;
 
 // Le nombre est le groupe de glyphes le plus à droite : des chiffres serrés.
 // L'icône de vitesse, à sa gauche dans la pastille, en est séparée par un
@@ -241,7 +327,10 @@ export function lireNombre(zone: Image, g: Gabarits): NombreLu | null {
   const m = masqueClair(zone);
   const gs = glyphesDuNombre(m);
   if (gs.length === 0 || gs.length > 4 || Math.max(...gs.map((x) => x.h)) < HAUTEUR_CHIFFRE_MIN) return null;
-  const lus = gs.map((x) => reconnaitreChiffre(decoupesVoisines(m, x).map((v) => normaliser(m, v)), g));
+  const lum = luminosite(zone);
+  const lus = gs.map((x) => reconnaitreATaille(lum, zone.largeur, zone.hauteur, x, g));
   const texte = lus.map((l) => l.chiffre).join('');
-  return { valeur: Number(texte), texte, confiance: Math.min(...lus.map((l) => l.score)), marge: Math.min(...lus.map((l) => l.ecart)) };
+  const agrandis = gs.map((x) => reconnaitreChiffre(decoupesVoisines(m, x).map((v) => normaliser(m, v)), g));
+  const accord = agrandis.map((l) => l.chiffre).join('') === texte && Math.min(...agrandis.map((l) => l.score)) >= CONFIANCE_ACCORD;
+  return { valeur: Number(texte), texte, confiance: Math.min(...lus.map((l) => l.score)), marge: Math.min(...lus.map((l) => l.ecart)), accord };
 }

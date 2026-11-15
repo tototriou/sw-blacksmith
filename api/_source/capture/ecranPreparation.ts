@@ -113,24 +113,25 @@ export interface LectureEcran {
   defense: MonstreLu[];
 }
 
-// Une VIT de combat possible : au-delà, ce n'est pas une VIT (une capture d'un
-// autre écran, un nombre mal découpé).
-export const VIT_MIN = 50;
+// Une VIT de combat possible en siège, où l'on règle des vitesses : au-delà,
+// ce n'est pas une VIT (une capture d'un autre écran, un nombre mal découpé,
+// un chiffre perdu — « 66 » pour 314).
+export const VIT_MIN = 100;
 export const VIT_MAX = 450;
 
 // Une VIT FAUSSE est pire qu'un refus, qui demande une capture plus grande :
-// sous CONFIANCE_VIT_PLANCHER, la VIT n'est pas lue, ni sous
-// CONFIANCE_VIT_SURE quand un de ses chiffres est presque à égalité avec un
-// autre (MARGE_VIT_MIN). Relevé sur sept vraies captures, chacune lue avec
-// des gabarits qui n'ont pas ses chiffres, réduites, agrandies et compressées :
-// aucune lecture fausse ne passe ; les captures d'origine se lisent toutes.
-export const CONFIANCE_VIT_PLANCHER = 0.65;
-const CONFIANCE_VIT_SURE = 0.75;
+// sous CONFIANCE_VIT_PLANCHER, la VIT n'est pas lue, ni quand un de ses
+// chiffres est presque à égalité avec un autre (MARGE_VIT_MIN) sans que la
+// lecture agrandie donne le même nombre. Relevé sur onze vraies captures,
+// chacune lue avec des gabarits qui n'ont pas ses chiffres, réduites jusqu'à
+// des chiffres de 5 pixels, agrandies et compressées : aucune lecture fausse
+// ne passe ; les fausses avaient toutes un écart sous 0,04.
+export const CONFIANCE_VIT_PLANCHER = 0.7;
 const MARGE_VIT_MIN = 0.05;
 
 const plausible = (lu: NombreLu | null): NombreLu | null =>
   (lu && lu.valeur >= VIT_MIN && lu.valeur <= VIT_MAX && lu.confiance >= CONFIANCE_VIT_PLANCHER
-    && (lu.confiance >= CONFIANCE_VIT_SURE || lu.marge >= MARGE_VIT_MIN) ? lu : null);
+    && (lu.marge >= MARGE_VIT_MIN || lu.accord) ? lu : null);
 
 // `null` : les trois cartes des attaquants ne sont pas dans l'image.
 export function lireEcranPreparation(img: Image, banque: Banque, gabarits: Gabarits): LectureEcran | null {
