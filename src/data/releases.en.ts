@@ -9,7 +9,7 @@ import type { Release } from './releases';
 
 export const RELEASES_EN: Release[] = [
   {
-    version: null,
+    version: '2.4.5',
     date: '2026-11-16',
     title: '/speedtune reads small digits and every image',
     changes: [
