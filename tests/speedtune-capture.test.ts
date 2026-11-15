@@ -16,7 +16,7 @@ import { Banque, quantifier, signature, TAILLE, COTE, type BanqueSerialisee } fr
 import { HAUTEUR_CHIFFRE_MIN, lireNombre, type Gabarits } from '../api/_source/capture/chiffres';
 import { lireEcranPreparation } from '../api/_source/capture/ecranPreparation';
 import { analyserEquipe } from '../api/_source/speedtune/analyse';
-import { creerInteractions, signatureValide, tranchesArte, type Ressources } from '../api/_source/speedtune/interactions';
+import { adresseEnPng, creerInteractions, signatureValide, tranchesArte, type Ressources } from '../api/_source/speedtune/interactions';
 import { embedErreur, ICONE_APP, LIEN_OUTIL, langueDe, type Embed, type Menu, type Rangee } from '../api/_source/speedtune/message';
 import { decoderEtat, encoderEtat, LONGUEUR_MAX, type Etat } from '../api/_source/speedtune/etat';
 import { creerEmojis } from '../api/_source/speedtune/emojis';
@@ -454,11 +454,23 @@ export async function testSpeedtuneInteractions() {
 
   const envois: { url: string; corps: { embeds: Embed[]; components?: Rangee[] } }[] = [];
   const travaux: Promise<unknown>[] = [];
+  const telecharges: string[] = [];
+  // Le CDN de Discord : la capture en PNG, la même en WebP (que le proxy
+  // d'images rend en PNG sur demande), un GIF qu'il ne convertit pas.
+  const webp = new TextEncoder().encode('RIFF\0\0\0\0WEBPVP8 ');
+  const fichiers: Record<string, Response | (() => Response)> = {
+    'https://cdn.discordapp.com/c.png': () => new Response(new Uint8Array(octets)),
+    'https://cdn.discordapp.com/c.webp': () => new Response(webp),
+    'https://media.discordapp.net/c.webp?format=png': () => new Response(new Uint8Array(octets)),
+    'https://cdn.discordapp.com/c.gif': () => new Response(new TextEncoder().encode('GIF89a')),
+    'https://media.discordapp.net/c.gif?format=png': () => new Response(null, { status: 415 }),
+  };
   const service = creerInteractions({
     clePublique: cle,
     applicationId: 'APP',
     recuperer: async (url, init) => {
-      if (url === 'https://cdn.discordapp.com/c.png') return new Response(new Uint8Array(octets));
+      const f = fichiers[url];
+      if (f) { telecharges.push(url); return typeof f === 'function' ? f() : f; }
       envois.push({ url, corps: JSON.parse(String(init?.body)) });
       return new Response(null, { status: 204 });
     },
@@ -565,7 +577,16 @@ export async function testSpeedtuneInteractions() {
     return dernier().corps.embeds[0].description;
   };
   egal(await titreDe({ url: 'https://ailleurs.example/c.png', content_type: 'image/png', size: 10 }), embedErreur('en', 'pasImage').description, 'une adresse hors du CDN de Discord n\'est pas téléchargée');
-  egal(await titreDe({ url: 'https://cdn.discordapp.com/c.gif', content_type: 'image/gif', size: 10 }), embedErreur('en', 'pasImage').description, 'ni PNG ni JPEG : refusé');
+  egal(await titreDe({ url: 'https://cdn.discordapp.com/c.gif', content_type: 'image/gif', size: 10 }), embedErreur('en', 'pasImage').description,
+    'ni PNG ni JPEG, et Discord ne la convertit pas : refusée');
+  egal(await titreDe({ url: 'https://cdn.discordapp.com/c.pdf', content_type: 'application/pdf', size: 10 }), embedErreur('en', 'pasImage').description,
+    'pas une image : refusée sans téléchargement');
+  telecharges.length = 0;
+  ok(await titreDe({ url: 'https://cdn.discordapp.com/c.webp', content_type: 'image/webp', size: webp.length }) !== embedErreur('en', 'pasImage').description
+    && telecharges.includes('https://media.discordapp.net/c.webp?format=png'), 'une capture WebP : rendue en PNG par Discord, puis lue');
+  egal(adresseEnPng({ url: 'https://cdn.discordapp.com/a/b.webp?ex=1', proxy_url: 'https://media.discordapp.net/a/b.webp?ex=1', size: 1 }),
+    'https://media.discordapp.net/a/b.webp?ex=1&format=png', 'la conversion passe par le proxy d\'images, paramètres gardés');
+  egal(adresseEnPng({ url: 'https://ailleurs.example/b.webp', proxy_url: 'https://ailleurs.example/b.webp', size: 1 }), null, 'jamais hors de Discord');
   egal(await titreDe({ url: 'https://cdn.discordapp.com/c.png', content_type: 'image/png', size: 11 * 1024 * 1024 }), embedErreur('en', 'tropLourde').description, 'plus de 10 Mo : refusé avant téléchargement');
   egal([langueDe('fr'), langueDe('en-GB'), langueDe(undefined)], ['fr', 'en', 'en'], 'langue : français, sinon anglais');
 

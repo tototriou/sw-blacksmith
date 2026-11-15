@@ -31,6 +31,13 @@ export function dimensionsPng(o: Uint8Array): { largeur: number; hauteur: number
   return { largeur: vue.getUint32(16), hauteur: vue.getUint32(20) };
 }
 
+// Un PNG dont l'en-tête annonce plus de PIXELS_MAX pixels : à refuser comme
+// trop lourd, pas comme illisible.
+export function imageTropGrande(octets: Uint8Array): boolean {
+  const dims = estPng(octets) ? dimensionsPng(octets) : null;
+  return !!dims && dims.largeur * dims.hauteur > PIXELS_MAX;
+}
+
 // `null` : ni PNG ni JPEG, illisible, ou trop grande.
 export function decoderImage(octets: Uint8Array): Image | null {
   try {

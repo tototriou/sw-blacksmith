@@ -18,7 +18,11 @@ Voir aussi : README.md, feat-competences.md, feat-deux-camps.md,
    3 s. ⚠️ Le calcul n'est lancé qu'après 50 ms : sinon, en occupant le
    processeur 1 à 3 s, il passait avant l'envoi de la réponse.
 3. En tâche de fond (`waitUntil` de Vercel) : la pièce jointe est téléchargée
-   — seulement sur le CDN de Discord, en PNG ou JPEG, 10 Mo au plus —, lue,
+   — seulement sur le CDN de Discord, 10 Mo au plus ; toute image
+   s'accepte : ni PNG ni JPEG (WebP d'une image copiée depuis Discord, GIF,
+   AVIF…), elle est redemandée au proxy d'images de Discord, rendue en PNG
+   (`format=png`) ; un refus est journalisé avec le type reçu et les premiers
+   octets —, lue,
    analysée, puis la réponse différée est remplacée (si Discord refuse le
    message, le refus est journalisé et remplacé par le message de panne) par
    **un seul encart**
@@ -250,6 +254,9 @@ protégé).
   sous 5 pixels de haut, les chiffres ne sont pas lus ; un JPEG très
   compressé de chiffres de 7 pixels peut être refusé. La commande demande
   alors une capture plus grande.
+- La conversion d'une image ni PNG ni JPEG compte sur le proxy d'images de
+  Discord (`format=png`) ; s'il la refuse, le journal de la fonction donne le
+  type reçu.
 - La tablette et les autres formats de téléphone ne sont vérifiés que sur des
   écrans recomposés.
 - Rien ne se corrige depuis Discord : un monstre mal reconnu ou une VIT mal
@@ -269,4 +276,5 @@ lus, de 4 non ; calcul
 sur les vrais monstres et leurs vrais kits (Susano, Chilling, Tarq) ; état
 des menus (aller-retour, pire cas sous 100 caractères, refus) ; interactions
 signées, réponse différée, question, choix (y compris d'un autre que
-l'auteur) et message final devant un Discord simulé.
+l'auteur), capture WebP rendue en PNG par Discord, GIF non converti refusé,
+et message final devant un Discord simulé.
