@@ -40,12 +40,13 @@ export const OPTION_CAPTURE = 'capture';
 export const TAILLE_MAX_IMAGE = 10 * 1024 * 1024;
 const CDN_DISCORD = /^https:\/\/(cdn\.discordapp\.com|media\.discordapp\.net)\//;
 // Sous ce score, le portrait n'est pas celui d'un monstre : la capture n'est
-// pas l'écran attendu, ou elle est recadrée (un portrait juste dépasse 0,8).
+// pas l'écran attendu (un portrait juste dépasse 0,8).
 export const SCORE_PORTRAIT_MIN = 0.5;
 // Écart au deuxième candidat sous lequel le portrait est dit incertain.
 export const ECART_DOUTE = 0.05;
-// Sous cette confiance, la VIT lue est dite incertaine.
-export const CONFIANCE_VIT_MIN = 0.6;
+// Sous cette confiance, la VIT lue est dite incertaine (sous 0,65, elle n'est
+// pas lue du tout : CONFIANCE_VIT_PLANCHER).
+export const CONFIANCE_VIT_MIN = 0.75;
 const ATTENTE_AVANT_CALCUL_MS = 50;
 
 export interface Ressources {
@@ -194,8 +195,10 @@ export function creerInteractions(d: DependancesInteractions) {
   };
 }
 
-// La lecture → l'état : refus si l'écran n'est pas reconnu.
-export function etatDeLecture(res: Ressources, lecture: LectureEcran, auteur: string): Etat | { erreur: 'illisible' | { vitIllisible: string[] } } {
+// La lecture → l'état : refus si l'écran n'est pas reconnu (`null` : les trois
+// cadres des attaquants ne sont pas dans l'image).
+export function etatDeLecture(res: Ressources, lecture: LectureEcran | null, auteur: string): Etat | { erreur: 'illisible' | { vitIllisible: string[] } } {
+  if (!lecture) return { erreur: 'illisible' };
   const att = lecture.attaquants;
   if (att.some((a) => !a.portrait || a.portrait.meilleur.score < SCORE_PORTRAIT_MIN)) return { erreur: 'illisible' };
   const monstres = att.map((a) => res.monstre(a.portrait!.meilleur.com2usId));
