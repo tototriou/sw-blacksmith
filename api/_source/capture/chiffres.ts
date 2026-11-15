@@ -156,12 +156,31 @@ export function reconnaitreChiffre(v: Float32Array, g: Gabarits): ChiffreLu {
 
 export interface NombreLu { valeur: number; texte: string; confiance: number }
 
+// Sous 7 pixels de haut, un chiffre se lit FAUX plutôt que pas du tout (un 9
+// pris pour un 3, un 8 pour un 6) : on ne le lit pas, et la commande demande
+// une capture plus grande.
+export const HAUTEUR_CHIFFRE_MIN = 7;
+
+// Le nombre est le groupe de glyphes le plus à droite : des chiffres serrés.
+// L'icône de vitesse, à sa gauche, en est séparée par un écart plus grand
+// qu'entre deux chiffres — une zone large peut donc la contenir.
+const ECART_DANS_NOMBRE = 0.45;
+
+function nombreADroite(gs: Glyphe[]): Glyphe[] {
+  const h = Math.max(...gs.map((x) => x.h));
+  let debut = gs.length - 1;
+  while (debut > 0 && gs[debut].x - (gs[debut - 1].x + gs[debut - 1].l) <= ECART_DANS_NOMBRE * h) debut--;
+  return gs.slice(debut);
+}
+
 // Le nombre de la zone, `null` si elle n'en porte pas un lisible. `confiance` :
 // le plus faible score de ses chiffres.
 export function lireNombre(zone: Image, g: Gabarits): NombreLu | null {
   const m = masqueClair(zone);
-  const gs = glyphes(m);
-  if (gs.length === 0 || gs.length > 4) return null;
+  const tous = glyphes(m);
+  if (tous.length === 0) return null;
+  const gs = nombreADroite(tous);
+  if (gs.length > 4 || Math.max(...gs.map((x) => x.h)) < HAUTEUR_CHIFFRE_MIN) return null;
   const lus = gs.map((x) => reconnaitreChiffre(normaliser(m, x), g));
   const texte = lus.map((l) => l.chiffre).join('');
   return { valeur: Number(texte), texte, confiance: Math.min(...lus.map((l) => l.score)) };

@@ -17,8 +17,9 @@
 // qu'on n'a plus forcément (elles ne sont pas versionnées), et une
 // reconstruction complète les perdrait.
 //
-// La mise en page de chaque capture (téléphone, fenêtre PC…) est celle dont
-// les trois zones de VIT donnent le nombre de chiffres attendu.
+// Les cartes de chaque capture sont trouvées à leurs cadres, comme à la
+// lecture (repli : les mises en page figées) ; la zone de VIT retenue est la
+// première qui donne le nombre de chiffres attendu sur les trois cartes.
 //
 // ⚠️ Chromium vient de Playwright, et la police Inter doit être installée sur
 // le poste.
@@ -27,7 +28,7 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { chromium } from 'playwright';
 import { decoderImage } from '../api/_source/capture/image';
 import { GH, GL, glyphes, masqueClair, normaliser, type Gabarits } from '../api/_source/capture/chiffres';
-import { zoneVitesse, DISPOSITIONS } from '../api/_source/capture/ecranPreparation';
+import { zoneVitesse, dispositionsPossibles } from '../api/_source/capture/ecranPreparation';
 
 const SORTIE = 'api/_source/capture/chiffres-gabarits.json';
 const arrondi = (v: Float32Array) => Array.from(v, (x) => Math.round(x * 1000) / 1000);
@@ -62,7 +63,7 @@ function releves(args: string[]): Record<string, number[][]> {
     const img = decoderImage(readFileSync(args[i]));
     if (!img) throw new Error(`${args[i]} : image illisible`);
     const attendus = args[i + 1].split(',');
-    const lus = Object.values(DISPOSITIONS).map((d) => attendus.map((texte, k) => {
+    const lus = dispositionsPossibles(img).map((d) => attendus.map((texte, k) => {
       const zone = zoneVitesse(img, d, k);
       const m = zone && masqueClair(zone);
       return m && glyphes(m).length === texte.length ? { m, gs: glyphes(m) } : null;

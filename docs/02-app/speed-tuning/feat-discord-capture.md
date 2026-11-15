@@ -114,17 +114,30 @@ reconnu, VIT illisible (avec les monstres concernés).
   Plus de 16 millions de pixels : refusée avant décodage — pour un PNG, la
   taille se lit dans son en-tête IHDR (un PNG uni de 10 Mo peut annoncer des
   milliards de pixels).
+- [cartes.ts](../../../api/_source/capture/cartes.ts) — les cartes
+  **trouvées** dans l'image, quel que soit le format : téléphone, tablette,
+  fenêtre PC avec ou sans barre de titre, capture décentrée ou recadrée sur
+  les trois attaquants seuls. Les attaquants ont un cadre bleu vif posé sur le
+  fond de l'écran : on cherche trois bords hauts de cadre de même longueur, à
+  la même hauteur et à pas régulier (le plus grand trio, les vignettes de la
+  liste des monstres étant plus petites). Les bords gauche et droit se
+  mesurent à mi-hauteur, sans dépasser la moitié de l'écart avec la carte
+  voisine. La défense est le premier cadre doré de même taille sur la même
+  ligne (emplacements vides compris), sinon le symétrique des attaquants par
+  rapport au centre ; une capture recadrée sur les attaquants n'en a pas.
 - [ecranPreparation.ts](../../../api/_source/capture/ecranPreparation.ts) —
-  les six cartes de l'écran (trois attaquants à gauche, leader en premier ;
-  la défense à droite) placées par des proportions de l'écran. Trois mises à
-  l'échelle : à la **hauteur** (centré en largeur, relevé sur un téléphone
-  2556 × 1179), à la **largeur** (centré en hauteur) et la **fenêtre** du jeu
-  sur PC (Steam, relevée sur une capture de la fenêtre en 1417 × 784, barre de
-  titre comprise : cartes plus petites, défense plus loin) ; le premier
-  portrait départage. La VIT se lit en bas à droite de chaque carte
-  d'attaquant, dans une zone propre à la fenêtre PC (plus basse : le bas du
-  portrait, clair, gênait des chiffres de 9 pixels) ; hors de 50 à 450, elle
-  est écartée.
+  la lecture des cartes. Les cartes trouvées l'emportent ; trois mises en
+  page figées restent en repli si les cadres ne se trouvent pas : à la
+  **hauteur** (téléphone 2556 × 1179), à la **largeur** et la **fenêtre** PC
+  (1417 × 784, barre de titre comprise). Une mise en page figée ne prend la
+  place des cartes trouvées que si elle reconnaît nettement mieux le premier
+  portrait (+0,1) ; un premier portrait reconnu à 0,6 ou plus dans les cartes
+  trouvées dispense de les essayer. La VIT se lit en bas à droite de chaque
+  carte d'attaquant, dans la zone du téléphone, dans celle du PC (plus basse :
+  le bas du portrait, clair, gênait des chiffres de 9 pixels) et dans chacune
+  élargie vers la gauche ; la zone qui lit le plus de VIT plausibles, puis la
+  plus sûre, l'emporte. Hors de 50 à 450, ou sous une confiance de 0,35, ce
+  n'est pas une VIT.
 - [portraits.ts](../../../api/_source/capture/portraits.ts) — le monstre
   reconnu à son portrait, porté du projet « Youtube-to-offenses-decks »
   (portraits.py) : zone centrale ramenée à 24 × 24 en Lab, centrée-réduite,
@@ -137,7 +150,11 @@ reconnu, VIT illisible (avec les monstres concernés).
   colonnes (un morceau collé au bord gauche est l'icône de vitesse), un
   glyphe plus large que 0,9 fois sa hauteur coupé à sa colonne la moins
   encrée (deux chiffres soudés par l'anticrénelage, courant à la taille PC),
-  chaque glyphe ramené à 12 × 18 et comparé aux gabarits.
+  chaque glyphe ramené à 12 × 18 et comparé aux gabarits. Le nombre est le
+  groupe de glyphes le plus à droite : l'icône de vitesse, plus écartée des
+  chiffres qu'ils ne le sont entre eux (0,45 fois leur hauteur), n'est pas lue.
+  Sous 7 pixels de haut, les chiffres ne sont pas lus : ils se liraient faux
+  (un 9 pour un 3), et la commande demande une capture plus grande.
 
 Les données voyagent dans le paquet de la fonction :
 
@@ -190,15 +207,18 @@ protégé).
 ## Limites du prototype
 
 - **Validé sur deux captures d'un seul téléphone** (2556 × 1179) : en pleine
-  résolution, en JPEG, et réduites de moitié. Au tiers (843 × 389), les
-  chiffres font 6 pixels et la VIT n'est plus lue — la commande le dit.
-- **Validé sur une capture de la fenêtre PC** (1417 × 784, barre de titre
-  comprise) : telle quelle, en JPEG, agrandie de 25 et 50 %, réduite de 15 %.
-  Ses chiffres servent aussi de gabarits : la lecture d'autres captures PC
-  reste à confirmer, tout comme une capture sans la barre de titre (elle
-  décalerait les cartes).
-- Les autres formats d'écran (tablette, téléphone moins allongé) n'ont pas
-  été vus : la mise à l'échelle « largeur » est une supposition.
+  résolution, en JPEG, et réduites de moitié.
+- **Validé sur deux captures de la fenêtre PC** : 1417 × 784 avec la barre de
+  titre ; 1187 × 646 sans elle, entière, recadrée sur les trois attaquants
+  (au ras des cadres compris), décentrée, entourée de fond jusqu'au 4:3 et au
+  21:9, agrandie jusqu'à 2,5 fois et en JPEG. Leurs chiffres servent aussi de
+  gabarits.
+- **Une capture trop réduite n'est pas lue** : sous 7 pixels de haut pour les
+  chiffres (moins de 0,8 fois la fenêtre PC de 1187 × 646, le tiers d'un
+  téléphone 2556 × 1179), la commande demande une capture plus grande.
+- La tablette et les autres formats de téléphone ne sont vérifiés que sur des
+  écrans recomposés : les cartes y sont trouvées à leurs cadres, sans
+  proportion supposée.
 - Le chiffre **0** n'apparaissait sur aucune capture : il n'est lu qu'avec les
   gabarits d'Inter.
 - Rien ne se corrige depuis Discord : un monstre mal reconnu ou une VIT mal
@@ -208,7 +228,10 @@ protégé).
 
 [tests/speedtune-capture.test.ts](../../../tests/speedtune-capture.test.ts),
 sans aucune vraie capture : écrans recomposés aux positions réelles avec des
-portraits synthétiques et des chiffres dessinés depuis les gabarits ; calcul
+portraits synthétiques, des cadres bleus et dorés et des chiffres dessinés
+depuis les gabarits — téléphone, fenêtre PC avec et sans barre de titre,
+tablette 4:3, téléphone 20:9, attaquants seuls, capture trop réduite, repli
+sans cadre bleu ; calcul
 sur les vrais monstres et leurs vrais kits (Susano, Chilling, Tarq) ; état
 des menus (aller-retour, pire cas sous 100 caractères, refus) ; interactions
 signées, réponse différée, question, choix (y compris d'un autre que
