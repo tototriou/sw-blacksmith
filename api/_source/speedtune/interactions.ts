@@ -194,8 +194,10 @@ export function creerInteractions(d: DependancesInteractions) {
   };
 }
 
-// La lecture → l'état : refus si l'écran n'est pas reconnu.
-export function etatDeLecture(res: Ressources, lecture: LectureEcran, auteur: string): Etat | { erreur: 'illisible' | { vitIllisible: string[] } } {
+// La lecture → l'état : refus si l'écran n'est pas reconnu (`null` : les trois
+// cadres des attaquants ne sont pas dans l'image).
+export function etatDeLecture(res: Ressources, lecture: LectureEcran | null, auteur: string): Etat | { erreur: 'illisible' | { vitIllisible: string[] } } {
+  if (!lecture) return { erreur: 'illisible' };
   const att = lecture.attaquants;
   if (att.some((a) => !a.portrait || a.portrait.meilleur.score < SCORE_PORTRAIT_MIN)) return { erreur: 'illisible' };
   const monstres = att.map((a) => res.monstre(a.portrait!.meilleur.com2usId));

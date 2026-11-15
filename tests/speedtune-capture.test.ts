@@ -14,7 +14,7 @@ import jpeg from 'jpeg-js';
 import { decoderImage, decouper, dimensionsPng, reduire, type Image } from '../api/_source/capture/image';
 import { Banque, quantifier, signature, TAILLE, COTE, type BanqueSerialisee } from '../api/_source/capture/portraits';
 import { HAUTEUR_CHIFFRE_MIN, lireNombre, type Gabarits } from '../api/_source/capture/chiffres';
-import { DISPOSITIONS, lireEcranPreparation } from '../api/_source/capture/ecranPreparation';
+import { lireEcranPreparation } from '../api/_source/capture/ecranPreparation';
 import { analyserEquipe } from '../api/_source/speedtune/analyse';
 import { creerInteractions, signatureValide, tranchesArte, type Ressources } from '../api/_source/speedtune/interactions';
 import { embedErreur, ICONE_APP, LIEN_OUTIL, langueDe, type Embed, type Menu, type Rangee } from '../api/_source/speedtune/message';
@@ -103,40 +103,48 @@ const CADRE_DORE: [number, number, number] = [200, 160, 80];
 // BLEU pour les attaquants et DORÉ pour la défense (comme dans le jeu), VIT
 // des attaquants dans une pastille en bas à droite (`pc` : chiffres de la
 // fenêtre PC, plus petits et plus bas). `cadresBleus: false` : tous les cadres
-// dorés, que la détection ne trouve pas (repli sur les mises en page figées).
+// dorés — aucun cadre d'attaquant à trouver.
 function dessiner(l: number, h: number, rects: Rect[], portraits: Image[], vitesses: string[], pc: boolean, cadresBleus = true): Image {
   const img = imageUnie(l, h, [52, 40, 30]);
   portraits.forEach((p, k) => {
     if (!rects[k]) return;
-    const [x, y, c] = rects[k];
-    coller(img, imageUnie(4, 4, k < 3 && cadresBleus ? CADRE_BLEU : CADRE_DORE), x, y, c, c);
-    const cadre = Math.round(c * 0.04);
-    coller(img, p, x + cadre, y + cadre, c - 2 * cadre, c - 2 * cadre);
+    const [x, y, cl, ch] = rects[k];
+    coller(img, imageUnie(4, 4, k < 3 && cadresBleus ? CADRE_BLEU : CADRE_DORE), x, y, cl, ch);
+    const cadre = Math.round(cl * 0.04);
+    coller(img, p, x + cadre, y + cadre, cl - 2 * cadre, ch - 2 * cadre);
     if (k < 3 && pc) {
       // PC : des chiffres de 9 pixels, plus bas dans la carte.
-      const n = nombre(vitesses[k], Math.round(c * 0.096));
-      coller(img, imageUnie(4, 4, [40, 40, 44]), x + 0.62 * c, y + 0.83 * c, 0.34 * c, 0.13 * c);
-      coller(img, n, x + 0.66 * c, y + 0.845 * c - 4, n.largeur, n.hauteur);
+      const n = nombre(vitesses[k], Math.round(ch * 0.096));
+      coller(img, imageUnie(4, 4, [40, 40, 44]), x + 0.62 * cl, y + 0.83 * ch, 0.34 * cl, 0.13 * ch);
+      coller(img, n, x + 0.66 * cl, y + 0.845 * ch - 4, n.largeur, n.hauteur);
     } else if (k < 3) {
-      const n = nombre(vitesses[k], Math.round(c * 0.105));
-      coller(img, imageUnie(4, 4, [40, 40, 44]), x + 0.62 * c, y + 0.79 * c, 0.34 * c, 0.16 * c);
-      coller(img, n, x + 0.66 * c, y + 0.8 * c, n.largeur, n.hauteur);
+      const n = nombre(vitesses[k], Math.round(ch * 0.105));
+      coller(img, imageUnie(4, 4, [40, 40, 44]), x + 0.62 * cl, y + 0.79 * ch, 0.34 * cl, 0.16 * ch);
+      coller(img, n, x + 0.66 * cl, y + 0.8 * ch, n.largeur, n.hauteur);
     }
   });
   return img;
 }
 
-// Aux positions d'une mise en page figée (« hauteur » : téléphone 2556 × 1179).
-function ecran(portraits: Image[], vitesses: string[], l = 2556, h = 1179, disposition: keyof typeof DISPOSITIONS = 'hauteur', cadresBleus = true): Image {
-  const taille: Image = { largeur: l, hauteur: h, rgba: new Uint8Array(0) }; // `carte` ne lit que la taille
-  const rects = [0, 1, 2, 3, 4, 5].map((k) => DISPOSITIONS[disposition].carte(taille, k));
-  return dessiner(l, h, rects, portraits, vitesses, disposition === 'fenetre', cadresBleus);
+// Des mises en page relevées sur de vraies captures, pour placer les cartes :
+// bord gauche de chaque carte en fraction de la hauteur depuis le centre,
+// haut et côté en fraction de la hauteur. Le lecteur, lui, ne les connaît pas.
+const MISES_EN_PAGE = {
+  telephone: { x: [-0.7371, -0.5564, -0.3749, 0.218, 0.3986, 0.5801], y: 0.2578, cote: 0.1535 }, // 2556 × 1179
+  fenetre: { x: [-0.6473, -0.5057, -0.3629, 0.2328, 0.3756, 0.5185], y: 0.2793, cote: 0.1199 }, // 1417 × 784, barre de titre comprise
+};
+
+function ecran(portraits: Image[], vitesses: string[], l = 2556, h = 1179, mise: keyof typeof MISES_EN_PAGE = 'telephone', cadresBleus = true): Image {
+  const m = MISES_EN_PAGE[mise];
+  const rects = m.x.map((x): Rect => [l / 2 + x * h, m.y * h, m.cote * h, m.cote * h]);
+  return dessiner(l, h, rects, portraits, vitesses, mise === 'fenetre', cadresBleus);
 }
 
-// Une mise en page libre : côté, pas et position des cartes donnés.
-function ecranLibre(l: number, h: number, x0: number, y: number, c: number, pas: number, x0Defense: number | null, portraits: Image[], vitesses: string[], pc: boolean): Image {
-  const rects: Rect[] = [0, 1, 2].map((k) => [x0 + k * pas, y, c, c]);
-  if (x0Defense !== null) rects.push(...[0, 1, 2].map((k): Rect => [x0Defense + k * pas, y, c, c]));
+// Une mise en page libre : taille, pas et position des cartes donnés ; des
+// cartes carrées sauf hauteur donnée.
+function ecranLibre(l: number, h: number, x0: number, y: number, c: number, pas: number, x0Defense: number | null, portraits: Image[], vitesses: string[], pc: boolean, hauteur = c): Image {
+  const rects: Rect[] = [0, 1, 2].map((k) => [x0 + k * pas, y, c, hauteur]);
+  if (x0Defense !== null) rects.push(...[0, 1, 2].map((k): Rect => [x0Defense + k * pas, y, c, hauteur]));
   return dessiner(l, h, rects, portraits, vitesses, pc);
 }
 
@@ -184,7 +192,7 @@ export function testCapturePortraits() {
     { id: 4, img: portrait(33, VERT) },
   ]);
   const ecr = ecran([portrait(11, ROUGE), portrait(22, VERT), portrait(33, VERT), portrait(22, BLEU), portrait(11, ROUGE), portrait(33, VERT)], ['100', '100', '100']);
-  const lecture = lireEcranPreparation(ecr, banque, gabarits);
+  const lecture = lireEcranPreparation(ecr, banque, gabarits)!;
   egal(lecture.attaquants.map((a) => a.portrait?.meilleur.com2usId), [1, 3, 4], 'les trois attaquants, dans l\'ordre');
   egal(lecture.defense.map((d) => d.portrait?.meilleur.com2usId), [2, 1, 4], 'la défense');
   const vert = lecture.attaquants[1].portrait!;
@@ -229,51 +237,47 @@ export function testCaptureEcran() {
   titre('Speed tune par capture — écran de préparation : monstres et VIT');
   const banque = banqueDe([1, 2, 3, 4, 5, 6].map((id) => ({ id, img: portrait(id * 7, [ROUGE, BLEU, VERT][id % 3]) })));
   const portraits = [1, 2, 3, 4, 5, 6].map((id) => portrait(id * 7, [ROUGE, BLEU, VERT][id % 3]));
-  const l = lireEcranPreparation(ecran(portraits, ['357', '367', '385']), banque, gabarits);
-  egal(l.attaquants.map((a) => [a.portrait?.meilleur.com2usId, a.vitesse?.valeur]), [[1, 357], [2, 367], [3, 385]], 'attaquants et VIT de combat');
-  egal(l.disposition, 'cadres', 'téléphone : cartes trouvées à leurs cadres');
-  egal(l.defense.map((d) => d.portrait?.meilleur.com2usId), [4, 5, 6], 'téléphone : la défense, à ses cadres dorés');
-  // Un écran moitié moins grand se lit encore.
-  const petit = lireEcranPreparation(ecran(portraits, ['239', '286', '301'], 1278, 590), banque, gabarits);
-  egal(petit.attaquants.map((a) => a.vitesse?.valeur), [239, 286, 301], 'capture en demi-résolution : VIT lues');
-  // La fenêtre du jeu sur PC (1417 × 784) : cartes plus petites, défense plus
-  // loin, chiffres de 9 pixels.
-  const pc = lireEcranPreparation(ecran(portraits, ['364', '396', '361'], 1417, 784, 'fenetre'), banque, gabarits);
-  egal(pc.disposition, 'cadres', 'fenêtre PC : cartes trouvées à leurs cadres');
-  egal(pc.attaquants.map((a) => [a.portrait?.meilleur.com2usId, a.vitesse?.valeur]), [[1, 364], [2, 396], [3, 361]], 'fenêtre PC : attaquants et VIT');
-  egal(pc.defense.map((d) => d.portrait?.meilleur.com2usId), [4, 5, 6], 'fenêtre PC : la défense');
-
-  // Des formats qu'aucune mise en page figée ne couvre : cartes trouvées à
-  // leurs cadres. Fenêtre PC sans barre de titre (relevé : 1187 × 646, cartes
-  // de 81 px au pas de 96, défense à 752).
+  // Le lecteur ne connaît aucune mise en page : les cartes se trouvent à leurs
+  // cadres, quel que soit le format.
   const lire = (img: Image) => {
     const r = lireEcranPreparation(img, banque, gabarits);
-    return { disposition: r.disposition, att: r.attaquants.map((a) => [a.portrait?.meilleur.com2usId, a.vitesse?.valeur ?? null]), def: r.defense.map((d) => d.portrait?.meilleur.com2usId) };
+    return r && { att: r.attaquants.map((a) => [a.portrait?.meilleur.com2usId, a.vitesse?.valeur ?? null]), def: r.defense.map((d) => d.portrait?.meilleur.com2usId) };
   };
+  egal(lire(ecran(portraits, ['357', '367', '385'])), { att: [[1, 357], [2, 367], [3, 385]], def: [4, 5, 6] }, 'téléphone 2556 × 1179 : attaquants, VIT et défense');
+  egal(lire(ecran(portraits, ['239', '286', '301'], 1278, 590))?.att.map((a) => a[1]), [239, 286, 301], 'téléphone en demi-résolution : VIT lues');
+  // La fenêtre du jeu sur PC (1417 × 784) : cartes plus petites, défense plus
+  // loin, chiffres de 9 pixels.
+  egal(lire(ecran(portraits, ['364', '396', '361'], 1417, 784, 'fenetre')), { att: [[1, 364], [2, 396], [3, 361]], def: [4, 5, 6] }, 'fenêtre PC avec barre de titre');
+  // Fenêtre PC sans barre de titre (relevé : 1187 × 646, cartes de 81 px au
+  // pas de 96, défense à 752).
   egal(lire(ecranLibre(1187, 646, 161, 162, 81, 96, 752, portraits, ['339', '384', '363'], true)),
-    { disposition: 'cadres', att: [[1, 339], [2, 384], [3, 363]], def: [4, 5, 6] }, 'fenêtre PC sans barre de titre');
+    { att: [[1, 339], [2, 384], [3, 363]], def: [4, 5, 6] }, 'fenêtre PC sans barre de titre');
   egal(lire(ecranLibre(2048, 1536, 260, 610, 200, 236, 1112, portraits, ['301', '298', '402'], false)),
-    { disposition: 'cadres', att: [[1, 301], [2, 298], [3, 402]], def: [4, 5, 6] }, 'tablette 4:3');
+    { att: [[1, 301], [2, 298], [3, 402]], def: [4, 5, 6] }, 'tablette 4:3');
   egal(lire(ecranLibre(3200, 1440, 610, 380, 220, 262, 2034, portraits, ['250', '311', '199'], false)),
-    { disposition: 'cadres', att: [[1, 250], [2, 311], [3, 199]], def: [4, 5, 6] }, 'téléphone 20:9, plus grand');
+    { att: [[1, 250], [2, 311], [3, 199]], def: [4, 5, 6] }, 'téléphone 20:9, plus grand');
+  // Des cartes plus larges que hautes : la VIT se cherche dans la carte
+  // mesurée, pas dans un carré qui déborderait sous elle.
+  egal(lire(ecranLibre(420, 110, 60, 8, 107, 116, null, portraits.slice(0, 3), ['314', '404', '355'], false, 92)),
+    { att: [[1, 314], [2, 404], [3, 355]], def: [] }, 'cartes plus larges que hautes');
   // Recadrée sur les seuls attaquants : pas de défense, et le symétrique des
   // attaquants ne retombe pas sur eux.
   egal(lire(ecranLibre(330, 130, 31, 22, 81, 96, null, portraits.slice(0, 3), ['339', '384', '363'], true)),
-    { disposition: 'cadres', att: [[1, 339], [2, 384], [3, 363]], def: [] }, 'les trois attaquants seuls');
+    { att: [[1, 339], [2, 384], [3, 363]], def: [] }, 'les trois attaquants seuls');
   egal(lire(ecranLibre(276, 84, 1, 1, 81, 96, null, portraits.slice(0, 3), ['339', '384', '363'], true)),
-    { disposition: 'cadres', att: [[1, 339], [2, 384], [3, 363]], def: [] }, 'les trois attaquants, au ras des cadres');
+    { att: [[1, 339], [2, 384], [3, 363]], def: [] }, 'les trois attaquants, au ras des cadres');
   // Sans la défense à droite (cadres dorés absents) : le symétrique des
   // attaquants par rapport au centre.
-  egal(lire(ecranLibre(1187, 646, 161, 162, 81, 96, null, portraits.slice(0, 3), ['339', '384', '363'], true)).def.length, 3,
+  egal(lire(ecranLibre(1187, 646, 161, 162, 81, 96, null, portraits.slice(0, 3), ['339', '384', '363'], true))?.def.length, 3,
     'défense non trouvée : trois cartes au symétrique des attaquants');
   // Des chiffres trop petits : VIT non lue, plutôt que fausse.
-  egal(lire(ecranLibre(594, 323, 80, 81, 41, 48, 376, portraits, ['339', '384', '363'], true)).att.map((a) => a[1]), [null, null, null],
+  egal(lire(ecranLibre(594, 323, 80, 81, 41, 48, 376, portraits, ['339', '384', '363'], true))?.att.map((a) => a[1]), [null, null, null],
     'capture trop réduite : VIT non lues');
-  // Sans cadre bleu trouvé : repli sur les mises en page figées.
-  const repli = lireEcranPreparation(ecran(portraits, ['357', '367', '385'], 2556, 1179, 'hauteur', false), banque, gabarits);
-  egal([repli.disposition, repli.attaquants.map((a) => a.vitesse?.valeur)], ['hauteur', [357, 367, 385]], 'cadres non trouvés : mise en page figée');
+  // Sans les trois cadres bleus des attaquants : écran non reconnu, aucune
+  // position supposée.
+  egal(lire(ecran(portraits, ['357', '367', '385'], 2556, 1179, 'telephone', false)), null, 'sans cadre d\'attaquant : écran non reconnu');
   // Une VIT hors de portée du jeu n'est pas une VIT.
-  const absurde = lireEcranPreparation(ecran(portraits, ['9', '999', '357']), banque, gabarits);
+  const absurde = lireEcranPreparation(ecran(portraits, ['9', '999', '357']), banque, gabarits)!;
   egal(absurde.attaquants.map((a) => a.vitesse?.valeur ?? null), [null, null, 357], 'VIT invraisemblable : écartée');
 }
 

@@ -121,20 +121,18 @@ reconnu, VIT illisible (avec les monstres concernés).
   fond de l'écran : on cherche trois bords hauts de cadre de même longueur, à
   la même hauteur et à pas régulier (le plus grand trio, les vignettes de la
   liste des monstres étant plus petites). Les bords gauche et droit se
-  mesurent à mi-hauteur, sans dépasser la moitié de l'écart avec la carte
-  voisine. La défense est le premier cadre doré de même taille sur la même
-  ligne (emplacements vides compris), sinon le symétrique des attaquants par
-  rapport au centre ; une capture recadrée sur les attaquants n'en a pas.
+  mesurent vers le haut de la carte, sans dépasser la moitié de l'écart avec
+  la carte voisine ; le bord bas, sur cinq colonnes du milieu (médiane) : une
+  carte n'est pas forcément carrée. La défense est le premier cadre doré de
+  même taille sur la même ligne (emplacements vides compris), sinon le
+  symétrique des attaquants par rapport au centre ; une capture recadrée sur
+  les attaquants n'en a pas.
 - [ecranPreparation.ts](../../../api/_source/capture/ecranPreparation.ts) —
-  la lecture des cartes. Les cartes trouvées l'emportent ; trois mises en
-  page figées restent en repli si les cadres ne se trouvent pas : à la
-  **hauteur** (téléphone 2556 × 1179), à la **largeur** et la **fenêtre** PC
-  (1417 × 784, barre de titre comprise). Une mise en page figée ne prend la
-  place des cartes trouvées que si elle reconnaît nettement mieux le premier
-  portrait (+0,1) ; un premier portrait reconnu à 0,6 ou plus dans les cartes
-  trouvées dispense de les essayer. La VIT se lit en bas à droite de chaque
-  carte d'attaquant, dans la zone du téléphone, dans celle du PC (plus basse :
-  le bas du portrait, clair, gênait des chiffres de 9 pixels) et dans chacune
+  la lecture des cartes trouvées. ⚠️ Aucune position n'est supposée : sans
+  les trois cadres des attaquants, l'écran n'est pas reconnu. La VIT se lit
+  en bas à droite de chaque carte d'attaquant, en fractions de sa largeur et
+  de sa hauteur, dans la zone du téléphone, dans celle du PC (plus basse : le
+  bas du portrait, clair, gênait des chiffres de 9 pixels) et dans chacune
   élargie vers la gauche ; la zone qui lit le plus de VIT plausibles, puis la
   plus sûre, l'emporte. Hors de 50 à 450, ou sous une confiance de 0,35, ce
   n'est pas une VIT.
@@ -216,9 +214,8 @@ protégé).
 - **Une capture trop réduite n'est pas lue** : sous 7 pixels de haut pour les
   chiffres (moins de 0,8 fois la fenêtre PC de 1187 × 646, le tiers d'un
   téléphone 2556 × 1179), la commande demande une capture plus grande.
-- La tablette et les autres formats de téléphone ne sont vérifiés que sur des
-  écrans recomposés : les cartes y sont trouvées à leurs cadres, sans
-  proportion supposée.
+- La tablette, les autres formats de téléphone et les cartes plus larges que
+  hautes ne sont vérifiés que sur des écrans recomposés.
 - Le chiffre **0** n'apparaissait sur aucune capture : il n'est lu qu'avec les
   gabarits d'Inter.
 - Rien ne se corrige depuis Discord : un monstre mal reconnu ou une VIT mal
@@ -230,8 +227,8 @@ protégé).
 sans aucune vraie capture : écrans recomposés aux positions réelles avec des
 portraits synthétiques, des cadres bleus et dorés et des chiffres dessinés
 depuis les gabarits — téléphone, fenêtre PC avec et sans barre de titre,
-tablette 4:3, téléphone 20:9, attaquants seuls, capture trop réduite, repli
-sans cadre bleu ; calcul
+tablette 4:3, téléphone 20:9, cartes plus larges que hautes, attaquants
+seuls, capture trop réduite, écran sans cadre d'attaquant ; calcul
 sur les vrais monstres et leurs vrais kits (Susano, Chilling, Tarq) ; état
 des menus (aller-retour, pire cas sous 100 caractères, refus) ; interactions
 signées, réponse différée, question, choix (y compris d'un autre que
