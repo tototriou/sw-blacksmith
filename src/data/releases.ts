@@ -70,6 +70,15 @@ export function journal(langue: Langue): Release[] {
 // Si une ligne dépasse ~15 mots, c'est qu'elle raconte l'implémentation.
 export const RELEASES: Release[] = [
   {
+    version: null,
+    date: '2026-11-16',
+    title: '/speedtune lit les petits chiffres et toutes les images',
+    changes: [
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune lit la VIT d’une petite fenêtre PC, chiffres de 7 pixels compris.' },
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune accepte une capture en WebP, comme une image copiée depuis Discord.' },
+    ],
+  },
+  {
     version: '2.4.4',
     date: '2026-11-15',
     title: '/speedtune lit les cartes de toutes les couleurs',

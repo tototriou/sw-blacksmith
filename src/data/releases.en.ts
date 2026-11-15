@@ -9,6 +9,15 @@ import type { Release } from './releases';
 
 export const RELEASES_EN: Release[] = [
   {
+    version: null,
+    date: '2026-11-16',
+    title: '/speedtune reads small digits and every image',
+    changes: [
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune reads the SPD of a small PC window, 7-pixel digits included.' },
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune accepts a WebP screenshot, like an image copied from Discord.' },
+    ],
+  },
+  {
     version: '2.4.4',
     date: '2026-11-15',
     title: '/speedtune reads cards of every colour',
