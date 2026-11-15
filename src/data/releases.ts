@@ -70,6 +70,17 @@ export function journal(langue: Langue): Release[] {
 // Si une ligne dépasse ~15 mots, c'est qu'elle raconte l'implémentation.
 export const RELEASES: Release[] = [
   {
+    version: null,
+    date: '2026-11-15',
+    title: '/speedtune lit les captures de tous les écrans',
+    changes: [
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune lit les captures de tous les formats d’écran, PC avec ou sans barre de titre compris.' },
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune lit aussi une capture recadrée sur les trois cartes d’attaque.' },
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune reconnaît les attaquants à cadre doré, et plus seulement à cadre bleu.' },
+      { kind: 'fix', scope: 'Speed tuning', text: 'Une capture trop petite est refusée au lieu de donner une VIT fausse.' },
+    ],
+  },
+  {
     version: '2.4.2',
     date: '2026-11-14',
     title: 'Des builds épinglés dans l’Optimizer',

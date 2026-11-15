@@ -9,6 +9,17 @@ import type { Release } from './releases';
 
 export const RELEASES_EN: Release[] = [
   {
+    version: null,
+    date: '2026-11-15',
+    title: '/speedtune reads screenshots from every screen',
+    changes: [
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune reads screenshots of every screen format, including PC with or without the title bar.' },
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune also reads a screenshot cropped to the three attack cards.' },
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune recognizes attackers with a gold frame, not only a blue one.' },
+      { kind: 'fix', scope: 'Speed tuning', text: 'A screenshot that is too small is refused instead of giving a wrong SPD.' },
+    ],
+  },
+  {
     version: '2.4.2',
     date: '2026-11-14',
     title: 'Pinned builds in the Optimizer',

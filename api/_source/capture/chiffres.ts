@@ -148,21 +148,56 @@ function correlation(a: Float32Array, b: number[]): number {
 
 export interface ChiffreLu { chiffre: string; score: number; ecart: number }
 
-export function reconnaitreChiffre(v: Float32Array, g: Gabarits): ChiffreLu {
-  const scores = Object.entries(g.chiffres).map(([c, modeles]) => [c, Math.max(...modeles.map((m) => correlation(v, m)))] as const);
+// `vs` : un même glyphe normalisé sous plusieurs découpes ; chaque chiffre
+// garde sa meilleure correspondance sur l'ensemble.
+export function reconnaitreChiffre(v: Float32Array | Float32Array[], g: Gabarits): ChiffreLu {
+  const vs = Array.isArray(v) ? v : [v];
+  const scores = Object.entries(g.chiffres).map(([c, modeles]) => [c, Math.max(...vs.flatMap((x) => modeles.map((m) => correlation(x, m))))] as const);
   scores.sort((a, b) => b[1] - a[1]);
   return { chiffre: scores[0][0], score: scores[0][1], ecart: scores[0][1] - (scores[1]?.[1] ?? 0) };
 }
 
-export interface NombreLu { valeur: number; texte: string; confiance: number }
+// Un glyphe et ses découpes voisines, d'un pixel plus large, plus étroite,
+// plus haute ou plus basse de chaque côté : à 8 pixels de haut, un pixel
+// d'anticrénelage gardé ou perdu par le seuil change la forme comparée.
+function decoupesVoisines(m: Masque, g: Glyphe): Glyphe[] {
+  const res: Glyphe[] = [g];
+  for (const [dx, dl, dy, dh] of [[-1, 1, 0, 0], [0, 1, 0, 0], [1, -1, 0, 0], [0, -1, 0, 0], [0, 0, -1, 1], [0, 0, 0, 1], [0, 0, 1, -1], [0, 0, 0, -1]]) {
+    const v = { x: g.x + dx, l: g.l + dl, y: g.y + dy, h: g.h + dh };
+    if (v.x >= 0 && v.y >= 0 && v.l >= 1 && v.h >= 2 && v.x + v.l <= m.largeur && v.y + v.h <= m.hauteur) res.push(v);
+  }
+  return res;
+}
 
-// Le nombre de la zone, `null` si elle n'en porte pas un lisible. `confiance` :
-// le plus faible score de ses chiffres.
+// `confiance` : le plus faible score de ses chiffres ; `marge` : le plus faible
+// écart entre le chiffre lu et le suivant, pour un de ses chiffres.
+export interface NombreLu { valeur: number; texte: string; confiance: number; marge: number }
+
+// Sous 7 pixels de haut, un chiffre se lit FAUX plutôt que pas du tout (un 9
+// pris pour un 3, un 8 pour un 6) : on ne le lit pas, et la commande demande
+// une capture plus grande.
+export const HAUTEUR_CHIFFRE_MIN = 8;
+
+// Le nombre est le groupe de glyphes le plus à droite : des chiffres serrés.
+// L'icône de vitesse, à sa gauche, en est séparée par un écart plus grand
+// qu'entre deux chiffres — une zone large peut donc la contenir.
+const ECART_DANS_NOMBRE = 0.45;
+
+function nombreADroite(gs: Glyphe[]): Glyphe[] {
+  const h = Math.max(...gs.map((x) => x.h));
+  let debut = gs.length - 1;
+  while (debut > 0 && gs[debut].x - (gs[debut - 1].x + gs[debut - 1].l) <= ECART_DANS_NOMBRE * h) debut--;
+  return gs.slice(debut);
+}
+
+// Le nombre de la zone, `null` si elle n'en porte pas un lisible.
 export function lireNombre(zone: Image, g: Gabarits): NombreLu | null {
   const m = masqueClair(zone);
-  const gs = glyphes(m);
-  if (gs.length === 0 || gs.length > 4) return null;
-  const lus = gs.map((x) => reconnaitreChiffre(normaliser(m, x), g));
+  const tous = glyphes(m);
+  if (tous.length === 0) return null;
+  const gs = nombreADroite(tous);
+  if (gs.length > 4 || Math.max(...gs.map((x) => x.h)) < HAUTEUR_CHIFFRE_MIN) return null;
+  const lus = gs.map((x) => reconnaitreChiffre(decoupesVoisines(m, x).map((v) => normaliser(m, v)), g));
   const texte = lus.map((l) => l.chiffre).join('');
-  return { valeur: Number(texte), texte, confiance: Math.min(...lus.map((l) => l.score)) };
+  return { valeur: Number(texte), texte, confiance: Math.min(...lus.map((l) => l.score)), marge: Math.min(...lus.map((l) => l.ecart)) };
 }

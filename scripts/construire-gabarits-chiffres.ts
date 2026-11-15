@@ -17,8 +17,9 @@
 // qu'on n'a plus forcément (elles ne sont pas versionnées), et une
 // reconstruction complète les perdrait.
 //
-// La mise en page de chaque capture (téléphone, fenêtre PC…) est celle dont
-// les trois zones de VIT donnent le nombre de chiffres attendu.
+// Les cartes de chaque capture sont trouvées à leurs cadres, comme à la
+// lecture ; la zone de VIT retenue est la première qui donne le nombre de
+// chiffres attendu sur les trois cartes.
 //
 // ⚠️ Chromium vient de Playwright, et la police Inter doit être installée sur
 // le poste.
@@ -27,7 +28,8 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { chromium } from 'playwright';
 import { decoderImage } from '../api/_source/capture/image';
 import { GH, GL, glyphes, masqueClair, normaliser, type Gabarits } from '../api/_source/capture/chiffres';
-import { zoneVitesse, DISPOSITIONS } from '../api/_source/capture/ecranPreparation';
+import { zoneVitesse, ZONES_VIT } from '../api/_source/capture/ecranPreparation';
+import { trouverCartes } from '../api/_source/capture/cartes';
 
 const SORTIE = 'api/_source/capture/chiffres-gabarits.json';
 const arrondi = (v: Float32Array) => Array.from(v, (x) => Math.round(x * 1000) / 1000);
@@ -62,12 +64,14 @@ function releves(args: string[]): Record<string, number[][]> {
     const img = decoderImage(readFileSync(args[i]));
     if (!img) throw new Error(`${args[i]} : image illisible`);
     const attendus = args[i + 1].split(',');
-    const lus = Object.values(DISPOSITIONS).map((d) => attendus.map((texte, k) => {
-      const zone = zoneVitesse(img, d, k);
+    const cartes = trouverCartes(img);
+    if (!cartes) throw new Error(`${args[i]} : les trois cadres des attaquants ne sont pas trouvés`);
+    const lus = ZONES_VIT.map((z) => attendus.map((texte, k) => {
+      const zone = zoneVitesse(img, cartes.attaquants[k], z);
       const m = zone && masqueClair(zone);
       return m && glyphes(m).length === texte.length ? { m, gs: glyphes(m) } : null;
     })).find((cartes) => cartes.every((c) => c));
-    if (!lus) throw new Error(`${args[i]} : aucune mise en page ne donne les chiffres de « ${args[i + 1]} »`);
+    if (!lus) throw new Error(`${args[i]} : aucune zone de VIT ne donne les chiffres de « ${args[i + 1]} »`);
     lus.forEach((c, k) => c!.gs.forEach((g, j) => (sortie[attendus[k][j]] ??= []).push(arrondi(normaliser(c!.m, g)))));
   }
   return sortie;
