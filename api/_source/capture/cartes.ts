@@ -3,8 +3,9 @@
 // de la fenêtre PC (barre de titre ou non) et du recadrage de la capture, que
 // des proportions figées ne couvrent pas toutes.
 //
-// Une carte a un cadre fin posé sur le fond brun de l'écran : BLEU vif ou DORÉ
-// pour les attaquants (selon les monstres), DORÉ pour la défense, emplacements
+// Une carte a un cadre fin posé sur le fond brun de l'écran. Pour les
+// attaquants, il dit d'où vient l'équipe : BLEU vif pour un deck préréglé,
+// DORÉ pour un deck composé sur le moment. Pour la défense, DORÉ, emplacements
 // vides compris. Le bord haut d'un cadre est une ligne droite de la largeur de
 // la carte, sans cadre au-dessus : on cherche trois de ces lignes d'une même
 // couleur, de même longueur, à la même hauteur et à pas régulier ; puis les
@@ -119,8 +120,8 @@ function trios(ts: Trait[]): Trait[][] {
 export function trouverCartes(img: Image): CartesTrouvees | null {
   const longMin = Math.max(12, Math.round(0.03 * img.largeur));
   const dores = traits(img, dore, longMin).slice(0, 400);
-  // Les attaquants : un trio de cadres BLEUS ou DORÉS (selon les monstres, les
-  // deux se voient), parmi les plus grands (les vignettes de la liste des
+  // Les attaquants : un trio de cadres BLEUS (deck préréglé) ou DORÉS (deck
+  // composé sur le moment), parmi les plus grands (les vignettes de la liste des
   // monstres, en bas, sont plus petites), le plus à GAUCHE — quand la défense
   // a des cadres de même taille, elle est à droite.
   const candidats = [

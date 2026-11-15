@@ -15,7 +15,7 @@ export const RELEASES_EN: Release[] = [
     changes: [
       { kind: 'fix', scope: 'Speed tuning', text: '/speedtune reads screenshots of every screen format, including PC with or without the title bar.' },
       { kind: 'fix', scope: 'Speed tuning', text: '/speedtune also reads a screenshot cropped to the three attack cards.' },
-      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune recognizes attackers with a gold frame, not only a blue one.' },
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune also reads a team built on the spot (gold frames), not only a preset deck.' },
       { kind: 'fix', scope: 'Speed tuning', text: 'A screenshot that is too small is refused instead of giving a wrong SPD.' },
     ],
   },
