@@ -162,7 +162,10 @@ reconnu, VIT illisible (avec les monstres concernés).
   n'en porte plus est le haut. Un portrait n'a pas ce blanc encadré de
   sombre, même quand il est sombre lui-même ou blanc au coin de la pastille.
   À gauche, la zone part du premier blanc (l'icône de vitesse), avec une
-  marge. Une carte porte un **nombre net** quand sa zone se découpe en deux à
+  marge ; ⚠️ à droite, la même marge au-delà de la rangée sombre du bas : elle
+  s'arrête au coin arrondi de la pastille, et le dernier chiffre la dépasse
+  parfois (1 à 2 pixels sur une capture de téléphone en 2640 × 1080, qui
+  coupaient le 8 de 328). Une carte porte un **nombre net** quand sa zone se découpe en deux à
   quatre glyphes : un coin de portrait sombre au reflet clair ressemble à une
   pastille, surtout en JPEG, pas à un nombre.
 - [ecranPreparation.ts](../../../api/_source/capture/ecranPreparation.ts) —
@@ -257,7 +260,8 @@ protégé).
 
 ## Limites du prototype
 
-- **Validé sur des captures d'un téléphone** (2556 × 1179, français), **de la
+- **Validé sur des captures d'un téléphone** (2556 × 1179, français ; la
+  gestion des decks en 2640 × 1080, chiffres de 17 pixels plus fins), **de la
   fenêtre PC** (1417 × 784, 1199 × 682, 1184 × 662 avec la barre de titre ;
   1187 × 646 sans elle ; en anglais et en français), **de l'écran recadré**
   (le milieu seul, les trois cartes seules, plus larges que hautes ou non),
