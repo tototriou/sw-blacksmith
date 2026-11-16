@@ -58,6 +58,8 @@ export const en: Dictionnaire = {
     speedTuning: 'Speed tuning',
     defense: 'Defense',
     offense: 'Offense',
+    interserveur: 'Cross-server defense',
+    areneDimensionnelle: 'Dimensional Arena',
     recommandations: 'Recommendations',
     bestiaire: 'Bestiary',
     mecaniques: 'Mechanics',
@@ -321,7 +323,8 @@ export const en: Dictionnaire = {
       speedTuning: { rubrique: 'Tools', titre: 'Speed tuning' },
       bestiaire: { rubrique: 'Data', titre: 'Bestiary' },
       mecaniques: { rubrique: 'Docs', titre: 'Mechanics' },
-      arene: { rubrique: 'Arena', titre: 'Classic arena' },
+      arene: { rubrique: 'Arena', titre: 'Arena' },
+      areneDimensionnelle: { rubrique: 'Arena', titre: 'Dimensional Arena' },
     },
     application: {
       titre: 'Desktop app',
@@ -564,6 +567,7 @@ export const en: Dictionnaire = {
     monstresRta: (n: number) => `${n} RTA monsters`,
     defenses: (n: number) => `${n} defenses`,
     attaques: (n: number) => `${n} attacks`,
+    equipesArene: (n: number) => `${n} arena team${n > 1 ? "s" : ""}`,
     bilan: (parts: string) => `Import: ${parts}`,
     introuvables: (n: number) => ` · ${n} monster(s) not found, to create by hand`,
   },
@@ -980,11 +984,10 @@ export const en: Dictionnaire = {
       raisonRefus: 'it refuses writing',
       raisonIntrouvable: 'it can’t be found or accessed',
     },
-    areneBientot: 'Classic arena team preparation (offense and defense).',
     redimensionner: 'Resize both pages (double-click: half and half)',
     remplacerTitre: 'Replace the current data?',
     remplacerMessage:
-      'This import will replace your RTA prep, your siege teams and your box with the content of the file. Your saved recommendations are not touched.',
+      'This import will replace your RTA prep, your siege and arena teams and your box with the content of the file. Your saved recommendations are not touched.',
     supprimerTitre: 'Delete all your data?',
     supprimerMessage:
       'RTA prep, siege teams, recommendations, custom monsters and imported account will be erased from this device. This cannot be undone.',
@@ -1014,7 +1017,7 @@ export const en: Dictionnaire = {
   changementCompte: {
     titre: 'Save your session?',
     texte:
-      'The SW Exporter account will replace your RTA prep, your siege teams and your box. Changes made since your last save will be lost if you do not save.',
+      'The SW Exporter account will replace your RTA prep, your siege and arena teams and your box. Changes made since your last save will be lost if you do not save.',
     sansSauvegarder: 'Switch without saving',
     sauvegarderEtChanger: 'Save and switch',
   },
@@ -1295,6 +1298,19 @@ export const en: Dictionnaire = {
     actif: (montant: number, stat: string, element: string | null) =>
       `Leader skill: +${montant}% ${stat}${element ? ` — ${element} allies only` : ''}`,
     inactif: (montant: number, stat: string, portee: string) => `Lead +${montant}% ${stat}${portee} — no effect in siege`,
+    guilde: ' (guild)',
+    inactifArene: (montant: number, stat: string, portee: string) => `Lead +${montant}% ${stat}${portee} — no effect in arena`,
+  },
+
+  arene: {
+    cote: {
+      defense: { titre: 'Defense', nom: 'defense', de: 'defense' },
+      offense: { titre: 'Offense', nom: 'attack', de: 'attack' },
+      interserveur: { titre: 'Cross-server defense', nom: 'cross-server defense', de: 'cross-server defense' },
+    },
+    retiree: (cote: 'defense' | 'offense' | 'interserveur') =>
+      `Team removed from the ${cote === 'offense' ? 'offense' : cote === 'interserveur' ? 'cross-server defense' : 'defense'}`,
+    dimensionnelleBientot: 'The Dimensional Arena: its teams will come here.',
   },
 
   siege: {

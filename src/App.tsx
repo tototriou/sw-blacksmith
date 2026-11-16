@@ -45,6 +45,7 @@ import AccountPage from './pages/AccountPage';
 import OutilsPage from './pages/OutilsPage';
 import OptimizerImportRapport from './components/outils/OptimizerImportRapport';
 import ComingSoon from './pages/ComingSoon';
+import ArenePage from './pages/ArenePage';
 import SettingsPage from './pages/SettingsPage';
 import AccountImportControl from './components/AccountImportControl';
 import SettingsMenu from './components/SettingsMenu';
@@ -117,13 +118,14 @@ import {
   COULEUR_SECTION,
   COULEUR_RTA_SUB,
   COULEUR_SIEGE_SUB,
+  COULEUR_ARENE_SUB,
   COULEUR_COMPTE_SUB,
 } from './data/couleursSection';
 import { ArtifactDetail, CraftLine, Monster, RelicDetail, RuneDetail } from './types';
 import { useMonsters } from './hooks/useMonsters';
 import { useCustomMonsters } from './hooks/useCustomMonsters';
 import { useRtaState } from './hooks/useRtaState';
-import { useSiegeState } from './hooks/useSiegeState';
+import { useEquipesArene, useSiegeState, type CoteArene } from './hooks/useSiegeState';
 import { useSiegeRecos } from './hooks/useSiegeRecos';
 import { useOptimizerState } from './hooks/useOptimizerState';
 import { avecNavigationImportOptimizer } from './lib/actionImportOptimizer';
@@ -141,6 +143,9 @@ import {
   parseAccountSource,
   parseSiegeDefense,
   parseSiegeOffense,
+  parseArenaDefense,
+  parseArenaInterserveurDefense,
+  parseArenaOffense,
   parseAccountBox,
   parseAccountInventory,
   parseUsedRuneIdsParPerimetre,
@@ -173,7 +178,7 @@ const SITE_GITHUB = 'github.com/tototriou';
 // ⚠️ Même chose pour Accueil, Mécaniques, Nouveautés et Paramètres : aucune
 // action à y loger. Leur ouvrir un panneau vide serait pire que ne rien
 // proposer — c'est la règle qui décide de l'appartenance à cette liste.
-const PAGES_AVEC_MENU = new Set<Route>(['rta', 'siege', 'bestiary', 'compte', 'outils']);
+const PAGES_AVEC_MENU = new Set<Route>(['rta', 'siege', 'arene', 'bestiary', 'compte', 'outils']);
 
 // La page d'une adresse porte-t-elle un panneau d'actions au format téléphone ?
 // Au téléphone, pour la page affichée ; en écran partagé, pour celle de chaque
@@ -203,6 +208,7 @@ type Route =
   | 'rta'
   | 'siege'
   | 'arene'
+  | 'arene-dimensionnelle'
   | 'mecaniques'
   | 'compte'
   | 'outils'
@@ -244,6 +250,7 @@ export function parseHash(hash: string = window.location.hash): {
   route: Route;
   rtaSub: RtaSub;
   siegeTab: SiegeTab;
+  areneTab: CoteArene;
   accountSub: AccountSub;
   accountView: AccountView;
   toolSub: ToolSub;
@@ -252,6 +259,7 @@ export function parseHash(hash: string = window.location.hash): {
   const base = {
     rtaSub: 'prepa' as RtaSub,
     siegeTab: 'defense' as SiegeTab,
+    areneTab: 'defense' as CoteArene,
     accountSub: 'monstres' as AccountSub,
     accountView: 'resume' as AccountView,
     toolSub: 'optimizer' as ToolSub,
@@ -261,7 +269,12 @@ export function parseHash(hash: string = window.location.hash): {
     return { route: 'rta', ...base, rtaSub: sub === 'ami' ? 'ami' : 'prepa' };
   }
   if (h === 'bestiary') return { route: 'bestiary', ...base };
-  if (h === 'arene') return { route: 'arene', ...base };
+  // `#/arene` mène à la défense, comme `#/siege`.
+  if (h === 'arene' || h.startsWith('arene/')) {
+    const areneTab: CoteArene = h === 'arene/offense' ? 'offense' : h === 'arene/interserveur' ? 'interserveur' : 'defense';
+    return { route: 'arene', ...base, areneTab };
+  }
+  if (h === 'arene-dimensionnelle') return { route: 'arene-dimensionnelle', ...base };
   if (h === 'compte' || h.startsWith('compte/')) {
     // `compte/runes/courbes` → sous-section « runes », vue « courbes ».
     const [, sub, vue] = h.split('/');
@@ -271,6 +284,7 @@ export function parseHash(hash: string = window.location.hash): {
       route: 'compte',
       rtaSub: 'prepa',
       siegeTab: 'defense',
+      areneTab: 'defense',
       accountSub,
       // ⚠️ Défaut « resume » : on arrive sur l'état du stock, pas sur 2 000
       // tuiles. C'était déjà le défaut des onglets internes.
@@ -322,7 +336,24 @@ const NAV: NavItem[] = [
   { key: 'siege', texte: 'siege', icon: IconeSiege, hash: '#/siege/defense', couleur: COULEUR_SECTION.siege },
 ];
 
-const ARENE_ITEM: NavItem = { key: 'arene', texte: 'arene', icon: IconeArene, hash: '#/arene', couleur: COULEUR_SECTION.arene };
+const ARENE_ITEM: NavItem = { key: 'arene', texte: 'arene', icon: IconeArene, hash: '#/arene/defense', couleur: COULEUR_SECTION.arene };
+// L'arène dimensionnelle : une section à part, à venir.
+const ARENE_DIMENSIONNELLE_ITEM: NavItem = {
+  key: 'arene-dimensionnelle',
+  texte: 'areneDimensionnelle',
+  icon: IconeArene,
+  hash: '#/arene-dimensionnelle',
+  couleur: COULEUR_SECTION['arene-dimensionnelle'],
+};
+
+// Sous-sections de « Arène » : la défense, l'offense (commune aux deux arènes)
+// et la défense interserveur — portées par la barre latérale et le panneau de
+// navigation, comme celles du Siège.
+const ARENE_SUBS: { tab: CoteArene; texte: CleNavigation; icon: IconeAtelier; hash: string; couleur: string }[] = [
+  { tab: 'defense', texte: 'defense', icon: IconeDefense, hash: '#/arene/defense', couleur: COULEUR_ARENE_SUB.defense },
+  { tab: 'offense', texte: 'offense', icon: IconeOffense, hash: '#/arene/offense', couleur: COULEUR_ARENE_SUB.offense },
+  { tab: 'interserveur', texte: 'interserveur', icon: IconeDefense, hash: '#/arene/interserveur', couleur: COULEUR_ARENE_SUB.interserveur },
+];
 
 // Sous-sections de « RTA » (dropdown de nav).
 // ⚠️ `prepa` porte le hash NU `#/rta` : c'est l'écran historique, et les liens
@@ -401,6 +432,9 @@ function Application() {
   const rta = useRtaState();
   const siegeDef = useSiegeState('defense');
   const siegeOff = useSiegeState('offense');
+  const areneDef = useEquipesArene('defense');
+  const areneOff = useEquipesArene('offense');
+  const areneInter = useEquipesArene('interserveur');
   const recos = useSiegeRecos();
   // Listes de travail de l'Optimizer — SÉPARÉES de `useOptimizerState`,
   // voir useOptimizerLists.ts : c'est la seule part de l'écran Optimizer qui
@@ -537,7 +571,7 @@ function Application() {
   // on compare les runes — et rien ne disait lequel était affiché.
   const [accountName, setAccountName] = useState<string | null>(null);
 
-  const [{ route, rtaSub, siegeTab, accountSub, accountView, toolSub }, setNav] = useState(parseHash);
+  const [{ route, rtaSub, siegeTab, areneTab, accountSub, accountView, toolSub }, setNav] = useState(parseHash);
 
   // Écran d'où l'on vient, pour que le bouton ⚙ RAMÈNE là où on était.
   //
@@ -604,7 +638,7 @@ function Application() {
   // milliers de tuiles à montrer — chaque rangée de filtre leur prend un écran de
   // résultats. **Avoir des filtres ne suffit donc pas : il faut aussi que la page
   // ait de quoi remplir la place qu'ils libèrent.**
-  const pageAPanneau = aPanneau({ route, rtaSub, siegeTab, accountSub, accountView, toolSub });
+  const pageAPanneau = aPanneau({ route, rtaSub, siegeTab, areneTab, accountSub, accountView, toolSub });
 
   // Écran partagé : le panneau d'actions d'un volet ÉTROIT, qui a pris la mise
   // en page de téléphone de sa page (voir VoletEcran). Un par volet : celui du
@@ -794,7 +828,10 @@ function Application() {
     const aDejaDesDonnees =
       Object.keys(rta.state.entries).length > 0 ||
       siegeDef.state.teams.length > 0 ||
-      siegeOff.state.teams.length > 0;
+      siegeOff.state.teams.length > 0 ||
+      areneDef.state.teams.length > 0 ||
+      areneOff.state.teams.length > 0 ||
+      areneInter.state.teams.length > 0;
     if (aDejaDesDonnees) {
       setImportEnAttente(text);
       return;
@@ -831,6 +868,11 @@ function Application() {
     const rtaItems = rtaRes.units ? mapRtaItems(rtaRes.units, monsterByCom2us) : [];
     const def = mapSiegeTeams(defRes.decks ?? [], monsterByCom2us);
     const off = mapSiegeTeams(offRes.decks ?? [], monsterByCom2us);
+    // L'arène : ses équipes de 4, avec les leads d'arène. Un compte sans arène
+    // ne la vide pas (seules les cibles qui ont des données sont touchées).
+    const areneDefRes = mapSiegeTeams(parseArenaDefense(data, textes).decks, monsterByCom2us, 'arene');
+    const areneOffRes = mapSiegeTeams(parseArenaOffense(data, textes).decks, monsterByCom2us, 'arene');
+    const areneInterRes = mapSiegeTeams(parseArenaInterserveurDefense(data, textes).decks, monsterByCom2us, 'arene');
     const { boxItems } = compte;
 
     if (
@@ -853,6 +895,9 @@ function Application() {
     }
     if (def.teams.length) siegeDef.importTeams(def.teams);
     if (off.teams.length) siegeOff.importTeams(off.teams);
+    if (areneDefRes.teams.length) areneDef.importTeams(areneDefRes.teams);
+    if (areneOffRes.teams.length) areneOff.importTeams(areneOffRes.teams);
+    if (areneInterRes.teams.length) areneInter.importTeams(areneInterRes.teams);
 
     appliquerCompte(data, compte);
 
@@ -862,7 +907,9 @@ function Application() {
     if (rtaItems.length) parts.push(ic.monstresRta(rtaItems.length));
     if (def.teams.length) parts.push(ic.defenses(def.teams.length));
     if (off.teams.length) parts.push(ic.attaques(off.teams.length));
-    const missing = def.missing + off.missing;
+    const equipesArene = areneDefRes.teams.length + areneOffRes.teams.length + areneInterRes.teams.length;
+    if (equipesArene) parts.push(ic.equipesArene(equipesArene));
+    const missing = def.missing + off.missing + areneDefRes.missing + areneOffRes.missing + areneInterRes.missing;
     setImportMsg({
       ok: true,
       text: ic.bilan(parts.join(' · ')) + (missing > 0 ? ic.introuvables(missing) : '') + '.',
@@ -1121,7 +1168,8 @@ function Application() {
   function avantChangementCompte(changer: () => void) {
     // Ce que le changement remplacerait — ce qui serait perdu.
     const aDuTravail =
-      Object.keys(rta.state.entries).length > 0 || siegeDef.state.teams.length > 0 || siegeOff.state.teams.length > 0;
+      Object.keys(rta.state.entries).length > 0 || siegeDef.state.teams.length > 0 || siegeOff.state.teams.length > 0 ||
+      areneDef.state.teams.length > 0 || areneOff.state.teams.length > 0 || areneInter.state.teams.length > 0;
     const empreinte = empreinteTravail(sessionCourante(new Date()));
     if (travailNonSauvegarde(empreinte, empreinteSauvegardeRef.current, aDuTravail)) setChangementCompte(() => changer);
     else changer();
@@ -1256,6 +1304,22 @@ function Application() {
     ],
   };
 
+  const sectionArene: SidebarSection = {
+    titre: nomNav('arene'),
+    icon: <IconeArene size={17} color={COULEUR_SECTION.arene} />,
+    groupes: [
+      {
+        liens: ARENE_SUBS.map((t) => ({
+          key: t.tab,
+          label: nomNav(t.texte),
+          hash: t.hash,
+          icon: <t.icon size={17} color={t.couleur} />,
+          actif: route === 'arene' && areneTab === t.tab,
+        })),
+      },
+    ],
+  };
+
   const sectionRta: SidebarSection = {
     titre: nomNav('rta'),
     icon: <IconeRta size={17} color={COULEUR_SECTION.rta} />,
@@ -1323,6 +1387,8 @@ function Application() {
       ? sectionRta
       : route === 'siege'
       ? sectionSiege
+      : route === 'arene'
+      ? sectionArene
       : route === 'compte'
         ? sectionCompte
         : route === 'outils'
@@ -1365,6 +1431,11 @@ function Application() {
     icon: <IconeSiege size={16} />,
     groupes: [{ liens: SIEGE_SUBS.map((t) => ({ key: t.tab, label: nomNav(t.texte), hash: t.hash, icon: <t.icon size={16} />, actif: route === 'siege' && siegeTab === t.tab })) }],
   };
+  const sectionAreneBureau: SidebarSection = {
+    titre: nomNav('arene'),
+    icon: <IconeArene size={16} />,
+    groupes: [{ liens: ARENE_SUBS.map((t) => ({ key: t.tab, label: nomNav(t.texte), hash: t.hash, icon: <t.icon size={16} />, actif: route === 'arene' && areneTab === t.tab })) }],
+  };
   // Un inventaire à plusieurs vues devient une section à part entière (Runes,
   // Artéfacts) : ses vues en entrées, sans le niveau « Mon compte » au-dessus.
   const sectionInventaireBureau = (sub: AccountSub): SidebarSection => {
@@ -1400,7 +1471,15 @@ function Application() {
       liens: [
         { key: 'rta', label: nomNav('rta'), icon: <IconeRta size={16} />, ouvre: sectionRtaBureau, actif: route === 'rta' },
         { key: 'siege', label: nomNav('siege'), icon: <IconeSiege size={16} />, ouvre: sectionSiegeBureau, actif: route === 'siege' },
-        { key: ARENE_ITEM.key, label: nomNav(ARENE_ITEM.texte), hash: ARENE_ITEM.hash, icon: <ARENE_ITEM.icon size={16} />, badge: nomNav('bientot'), actif: route === 'arene' },
+        { key: ARENE_ITEM.key, label: nomNav(ARENE_ITEM.texte), icon: <ARENE_ITEM.icon size={16} />, ouvre: sectionAreneBureau, actif: route === 'arene' },
+        {
+          key: ARENE_DIMENSIONNELLE_ITEM.key,
+          label: nomNav(ARENE_DIMENSIONNELLE_ITEM.texte),
+          hash: ARENE_DIMENSIONNELLE_ITEM.hash,
+          icon: <ARENE_DIMENSIONNELLE_ITEM.icon size={16} />,
+          badge: nomNav('bientot'),
+          actif: route === 'arene-dimensionnelle',
+        },
       ],
     },
     {
@@ -1452,10 +1531,11 @@ function Application() {
   // l'onglet du bas au doigt, l'en-tête de section de la barre latérale à la
   // souris. Nommer la sous-section apprend où l'on est au lieu de répéter le
   // niveau au-dessus.
-  const entreeCourante = [...NAV, ARENE_ITEM, ...RESOURCES].find((i) => i.key === route);
+  const entreeCourante = [...NAV, ARENE_ITEM, ARENE_DIMENSIONNELLE_ITEM, ...RESOURCES].find((i) => i.key === route);
   const rtaSubItem = route === 'rta' ? RTA_SUBS.find((s) => s.sub === rtaSub) : null;
   const compteSub = route === 'compte' ? ACCOUNT_SUBS.find((s) => s.sub === accountSub) : null;
   const siegeSub = route === 'siege' ? SIEGE_SUBS.find((s) => s.tab === siegeTab) : null;
+  const areneSub = route === 'arene' ? ARENE_SUBS.find((s) => s.tab === areneTab) : null;
   // ⚠️ Sur « Mon compte », le titre nomme l'inventaire ET SA VUE
   // (« Runes · Liste »). Il ne disait que l'inventaire : la vue était portée par
   // une rangée d'onglets dans la page, qui est passée dans le panneau de
@@ -1474,6 +1554,7 @@ function Application() {
     (compteSub ? `${nomNav(compteSub.texte)}${compteVue ? ` · ${compteVue}` : ''}` : null) ??
     (rtaSubItem ? nomNav(rtaSubItem.texte) : null) ??
     (siegeSub ? nomNav(siegeSub.texte) : null) ??
+    (areneSub ? nomNav(areneSub.texte) : null) ??
     sectionOuverte?.titre ??
     (entreeCourante ? nomNav(entreeCourante.texte) : null) ??
     (route === 'parametres' ? nomNav('parametres') : NOM_APP);
@@ -1553,6 +1634,8 @@ function Application() {
     <rtaSubItem.icon size={16} color={rtaSubItem.couleur} />
   ) : siegeSub ? (
     <siegeSub.icon size={16} color={siegeSub.couleur} />
+  ) : areneSub ? (
+    <areneSub.icon size={16} color={areneSub.couleur} />
   ) : (
     sectionOuverte?.icon ??
     (entreeCourante ? <entreeCourante.icon size={16} color={entreeCourante.couleur} /> : null) ??
@@ -1614,11 +1697,18 @@ function Application() {
       icon: <sub.icon size={16} />,
       contexte: nomNav('outils'),
     })),
+    ...ARENE_SUBS.map((t) => ({
+      key: `arene-${t.tab}`,
+      label: nomNav(t.texte),
+      hash: t.hash,
+      icon: <t.icon size={16} />,
+      contexte: nomNav('arene'),
+    })),
     {
-      key: ARENE_ITEM.key,
-      label: nomNav(ARENE_ITEM.texte),
-      hash: ARENE_ITEM.hash,
-      icon: <ARENE_ITEM.icon size={16} />,
+      key: ARENE_DIMENSIONNELLE_ITEM.key,
+      label: nomNav(ARENE_DIMENSIONNELLE_ITEM.texte),
+      hash: ARENE_DIMENSIONNELLE_ITEM.hash,
+      icon: <ARENE_DIMENSIONNELLE_ITEM.icon size={16} />,
     },
     ...RESOURCES.map((i) => ({
       key: i.key,
@@ -1724,15 +1814,38 @@ function Application() {
     { key: 'rta', label: nomNav('rta'), ouvre: sectionRta.titre, icon: <IconeRta size={17} color={COULEUR_SECTION.rta} />, actif: route === 'rta' },
     { key: 'siege', label: nomNav('siege'), ouvre: sectionSiege.titre, icon: <IconeSiege size={17} color={COULEUR_SECTION.siege} />, actif: route === 'siege' },
     { key: 'compte', label: nomNav('compte'), ouvre: sectionCompte.titre, icon: <IconeCompte size={17} color={COULEUR_SECTION.compte} />, actif: route === 'compte' },
-    { key: 'outils', label: nomNav('outils'), ouvre: sectionOutils.titre, icon: <IconeOutils size={17} color={COULEUR_SECTION.outils} />, actif: route === 'outils' || route === 'bestiary' || route === 'mecaniques' || route === 'releases' || route === 'telecharger' || route === 'arene' },
+    { key: 'outils', label: nomNav('outils'), ouvre: sectionOutils.titre, icon: <IconeOutils size={17} color={COULEUR_SECTION.outils} />, actif: route === 'outils' || route === 'bestiary' || route === 'mecaniques' || route === 'releases' || route === 'telecharger' || route === 'arene' || route === 'arene-dimensionnelle' },
   ];
 
   // La section dont on choisit la sous-section, sur téléphone.
   // ⚠️ Son TITRE, jamais son objet : un objet mémorisé se fige à l'instant du
   // clic et son surlignage reste en arrière de la navigation — la barre
   // latérale a déjà payé cette leçon (voir Sidebar, `ouverte`).
+  // ⚠️ L'Arène n'a pas d'onglet du bas : comme avant elle, elle vit sous
+  // « Outils », dont le panneau porte un groupe « Arène » — ses trois
+  // sous-sections et l'arène dimensionnelle.
+  const sectionOutilsMobile: SidebarSection = {
+    ...sectionOutils,
+    groupes: [
+      ...sectionOutils.groupes,
+      {
+        titre: nomNav('arene'),
+        icone: <IconeArene size={17} color={COULEUR_SECTION.arene} />,
+        liens: [
+          ...(sectionArene.groupes[0]?.liens ?? []),
+          {
+            key: ARENE_DIMENSIONNELLE_ITEM.key,
+            label: nomNav(ARENE_DIMENSIONNELLE_ITEM.texte),
+            hash: ARENE_DIMENSIONNELLE_ITEM.hash,
+            icon: <ARENE_DIMENSIONNELLE_ITEM.icon size={17} color={ARENE_DIMENSIONNELLE_ITEM.couleur} />,
+            actif: route === 'arene-dimensionnelle',
+          },
+        ],
+      },
+    ],
+  };
   const sectionMobile =
-    [sectionRta, sectionSiege, sectionCompte, sectionOutils].find((s) => s.titre === navMobileOuverte) ??
+    [sectionRta, sectionSiege, sectionCompte, sectionOutilsMobile].find((s) => s.titre === navMobileOuverte) ??
     null;
 
   // La page d'une adresse. ⚠️ Appelée UNE fois en pleine page, une fois PAR
@@ -1792,10 +1905,27 @@ function Application() {
         onFermerMenu={menu.fermer}
       />
     ) : n.route === 'arene' ? (
+      <ArenePage
+        tab={n.areneTab}
+        onImporterEquipe={importerEquipe}
+        sourcesOptimizer={optimizerData}
+        compteCharge={box.length > 0 || runes.length > 0}
+        equipes={n.areneTab === 'offense' ? areneOff : n.areneTab === 'interserveur' ? areneInter : areneDef}
+        siegeDefenseTeams={siegeDef.state.teams}
+        siegeOffenseTeams={siegeOff.state.teams}
+        monsters={allMonsters}
+        loadState={data.loadState}
+        onCreateMonster={custom.addCustomMonster}
+        customMonsters={custom.customMonsters}
+        onDeleteMonster={custom.removeCustomMonster}
+        menuOuvert={menu.ouvert}
+        onFermerMenu={menu.fermer}
+      />
+    ) : n.route === 'arene-dimensionnelle' ? (
       <ComingSoon
-        title={textes.navigation.arene}
+        title={textes.navigation.areneDimensionnelle}
         icon={IconeArene}
-        description={textes.donnees.areneBientot}
+        description={textes.arene.dimensionnelleBientot}
       />
     ) : n.route === 'compte' ? (
       <AccountPage
@@ -1882,7 +2012,7 @@ function Application() {
   // fil : il montre le sélecteur de page.
   const vide = coteVide(volets);
   const navDuCote = (cote: Cote) =>
-    cote === volets.actif ? { route, rtaSub, siegeTab, accountSub, accountView, toolSub } : navAutre;  // Le sélecteur d'un volet vide : les pages de la palette Ctrl K, sans celle
+    cote === volets.actif ? { route, rtaSub, siegeTab, areneTab, accountSub, accountView, toolSub } : navAutre;  // Le sélecteur d'un volet vide : les pages de la palette Ctrl K, sans celle
   // déjà affichée à côté. Choisir une page navigue, et la navigation remplit
   // le volet vide (src/lib/volets.ts).
   const groupesPagesVolet = (saisie: string) =>
@@ -2144,7 +2274,7 @@ function Application() {
             libelleSeparateur={textes.donnees.redimensionner}
           />
         ) : (
-          pageDe({ route, rtaSub, siegeTab, accountSub, accountView, toolSub })
+          pageDe({ route, rtaSub, siegeTab, areneTab, accountSub, accountView, toolSub })
         )}
 
         {/* ⚠️ **Le pied de page de la toile : UNE rangée** (rebranding R4 —

@@ -67,6 +67,8 @@ export const fr = {
     speedTuning: 'Speed tuning',
     defense: 'Défense',
     offense: 'Offense',
+    interserveur: 'Défense interserveur',
+    areneDimensionnelle: 'Arène dimensionnelle',
     recommandations: 'Recommandations',
     bestiaire: 'Bestiaire',
     mecaniques: 'Mécaniques',
@@ -341,7 +343,8 @@ export const fr = {
       speedTuning: { rubrique: 'Outils', titre: 'Speed tuning' },
       bestiaire: { rubrique: 'Données', titre: 'Bestiaire' },
       mecaniques: { rubrique: 'Doc', titre: 'Mécaniques' },
-      arene: { rubrique: 'Arène', titre: 'Arène classique' },
+      arene: { rubrique: 'Arène', titre: 'Arène' },
+      areneDimensionnelle: { rubrique: 'Arène', titre: 'Arène dimensionnelle' },
     },
     application: {
       titre: 'Application de bureau',
@@ -599,6 +602,7 @@ export const fr = {
     monstresRta: (n: number) => `${n} monstres RTA`,
     defenses: (n: number) => `${n} défenses`,
     attaques: (n: number) => `${n} attaques`,
+    equipesArene: (n: number) => `${n} équipe${n > 1 ? "s" : ""} d’arène`,
     bilan: (parts: string) => `Import : ${parts}`,
     introuvables: (n: number) => ` · ${n} monstre(s) introuvable(s), à créer à la main`,
   },
@@ -1035,11 +1039,10 @@ export const fr = {
       raisonRefus: 'il refuse l’écriture',
       raisonIntrouvable: 'il est introuvable ou inaccessible',
     },
-    areneBientot: "Préparation des équipes d'arène classique (offense et défense).",
     redimensionner: 'Redimensionner les deux pages (double-clic : moitié-moitié)',
     remplacerTitre: 'Remplacer les données présentes ?',
     remplacerMessage:
-      'Cet import va remplacer ta prépa RTA, tes équipes de siège et ta box par le contenu du fichier. Tes recommandations enregistrées ne sont pas touchées.',
+      'Cet import va remplacer ta prépa RTA, tes équipes de siège et d’arène et ta box par le contenu du fichier. Tes recommandations enregistrées ne sont pas touchées.',
     supprimerTitre: 'Supprimer toutes tes données ?',
     supprimerMessage:
       'Prépa RTA, équipes de siège, recommandations, monstres perso et compte importé seront effacés de cet appareil. Cette action est irréversible.',
@@ -1071,7 +1074,7 @@ export const fr = {
   changementCompte: {
     titre: 'Sauvegarder ta session ?',
     texte:
-      'Le compte de SW Exporter va remplacer ta prépa RTA, tes équipes de siège et ta box. Les changements faits depuis ta dernière sauvegarde seront perdus si tu ne sauvegardes pas.',
+      'Le compte de SW Exporter va remplacer ta prépa RTA, tes équipes de siège et d’arène et ta box. Les changements faits depuis ta dernière sauvegarde seront perdus si tu ne sauvegardes pas.',
     sansSauvegarder: 'Changer sans sauvegarder',
     sauvegarderEtChanger: 'Sauvegarder et changer',
   },
@@ -1373,6 +1376,21 @@ export const fr = {
     actif: (montant: number, stat: string, element: string | null) =>
       `Lead du leader : +${montant}% ${stat}${element ? ` — alliés ${element} uniquement` : ''}`,
     inactif: (montant: number, stat: string, portee: string) => `Lead +${montant}% ${stat}${portee} — sans effet en siège`,
+    guilde: ' (guilde)',
+    inactifArene: (montant: number, stat: string, portee: string) => `Lead +${montant}% ${stat}${portee} — sans effet en arène`,
+  },
+
+  // L'Arène (#/arene) : défense, offense et défense interserveur, des équipes
+  // de 4 monstres ; l'arène dimensionnelle (#/arene-dimensionnelle), à venir.
+  arene: {
+    cote: {
+      defense: { titre: 'Défense', nom: 'défense', de: 'de défense' },
+      offense: { titre: 'Offense', nom: 'attaque', de: "d'attaque" },
+      interserveur: { titre: 'Défense interserveur', nom: 'défense interserveur', de: 'de défense interserveur' },
+    },
+    retiree: (cote: 'defense' | 'offense' | 'interserveur') =>
+      `Équipe retirée ${cote === 'offense' ? "de l'offense" : cote === 'interserveur' ? 'de la défense interserveur' : 'de la défense'}`,
+    dimensionnelleBientot: "L'arène dimensionnelle : ses équipes viendront ici.",
   },
 
   // Le Siège (#/siege) : équipes de défense et d'offense.

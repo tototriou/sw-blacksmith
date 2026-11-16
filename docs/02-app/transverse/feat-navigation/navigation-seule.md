@@ -40,7 +40,8 @@ JOUER
    │ Défense                            ← sous-section active : fond
    │ Offense
    │ Recommandations
-🏆 Arène                      Bientôt
+🏆 Arène                            ›
+🏆 Arène dimensionnelle       Bientôt
 MON COMPTE · OUTILS · RESSOURCES …
 ───────────────────────────────────────
 ⚙  Paramètres
@@ -85,7 +86,8 @@ sous-section seraient larges comme leur texte et leur fond au survol
 s'arrêterait au milieu de la barre.
 
 Une entrée peut porter un **badge** à droite (`badge`) : « Bientôt » sur
-Arène, dont la page l'annonce déjà. Un état de la PAGE, pas de la navigation.
+l'Arène dimensionnelle, dont la page l'annonce déjà. Un état de la PAGE, pas de
+la navigation.
 
 ### Les icônes — des objets d'atelier
 

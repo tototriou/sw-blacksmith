@@ -5,7 +5,7 @@
 import { GearSet, Monster, RTA_OTHER, RTA_UNASSIGNED, RUNE_SETS } from '../types';
 import { BoxMonster, ImportedUnit, SiegeImportedDeck } from './importAccount';
 import { RtaVueAmi } from './rtaShare';
-import { SIEGE_TICKS, combatSpeed, siegeLeadFor, speedLeadOf } from './speed';
+import { SIEGE_TICKS, combatSpeed, leadPour, speedLeadOf, type RegleLead } from './speed';
 
 // Set principal pour pré-classer un monstre en RTA (4 pièces prioritaires).
 const RTA_SET_PRIORITY = ['violent', 'swift', 'despair', 'rage', 'fatal', 'vampire'];
@@ -154,10 +154,12 @@ export function mapBoxMonsters(box: BoxMonster[], byCom2us: Map<number, Monster>
   return out;
 }
 
-// Decks de siège → équipes { slots }. `missing` = monstres non trouvés (slots laissés vides).
+// Decks de siège (ou d'arène, `regle`) → équipes { slots }. `missing` =
+// monstres non trouvés (slots laissés vides).
 export function mapSiegeTeams(
   decks: SiegeImportedDeck[],
-  byCom2us: Map<number, Monster>
+  byCom2us: Map<number, Monster>,
+  regle: RegleLead = 'siege'
 ): { teams: { slots: MappedSlot[] }[]; missing: number } {
   let missing = 0;
   const teams = decks.map((dk) => {
@@ -180,7 +182,7 @@ export function mapSiegeTeams(
         const combat = combatSpeed(
           mon.stats.speed,
           runeSpeed,
-          siegeLeadFor(leadInfo, mon.element),
+          leadPour(regle, leadInfo, mon.element),
           slot.swift
         );
         return {

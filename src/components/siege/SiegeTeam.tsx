@@ -8,7 +8,8 @@ import {
   SIEGE_TICKS,
   combatSpeed,
   speedLeadOf,
-  siegeLeadFor,
+  leadPour,
+  type RegleLead,
   tickDanger,
   tickTeamMessage,
   LeadInfo,
@@ -31,8 +32,11 @@ import { useTraduction } from '../../hooks/useLangue';
 import { useMediaQuery, COMPACT } from '../../hooks/useMediaQuery';
 
 interface Props {
-  onExporterOptimizer: () => void;
+  // Absent : pas d'export vers l'Optimizer pour ce contenu (pas encore branché).
+  onExporterOptimizer?: () => void;
   raisonExportOptimizer?: string;
+  // Les règles de lead du contenu de l'équipe (siège par défaut).
+  regleLead?: RegleLead;
   team: SiegeTeamType;
   index: number;
   monsters: Monster[];
@@ -48,13 +52,15 @@ interface Props {
   // défaut) : sans lui, toutes les équipes restent neutres.
   checkTicks: boolean;
   onDismissAlert: (teamId: string, dismissed: boolean) => void;
-  onVoirSpeedTune: (teamId: string) => void;
+  // Absent : pas de speed tuning pour ce contenu (pas encore branché).
+  onVoirSpeedTune?: (teamId: string) => void;
   onSwap: (teamId: string, from: number, to: number) => void;
 }
 
 export default function SiegeTeam({
   onExporterOptimizer,
   raisonExportOptimizer,
+  regleLead = 'siege',
   team,
   index,
   monsters,
@@ -128,7 +134,7 @@ export default function SiegeTeam({
       // même `siegeLeadFor`). Auparavant la card affichait la vitesse avec le
       // lead d'élément et le speed tune la recalculait sans : deux nombres pour
       // un même monstre, et un « il manque X de VIT » sur une vitesse invisible.
-      lead: siegeLeadFor(leadInfo, m.element),
+      lead: leadPour(regleLead, leadInfo, m.element),
     };
     const equipe = team.slots.flatMap((sl, j) => {
       const autre = sl.monsterId ? monsterById.get(sl.monsterId) : null;
@@ -140,7 +146,7 @@ export default function SiegeTeam({
               runeSpeed: sl.runeSpeed,
               swift: (sl.sets ?? []).includes('swift'),
               sets: sl.sets ?? [],
-              lead: siegeLeadFor(leadInfo, autre.element),
+              lead: leadPour(regleLead, leadInfo, autre.element),
             } as EntreeAuto,
           ]
         : [];
@@ -181,9 +187,9 @@ export default function SiegeTeam({
   // tout le monde (General/Guild), sinon aucun — un lead d'élément ne se
   // transpose pas au modèle « un lead par camp » de l'outil.
   const deck = useMemo(
-    () => deckPourSpeedTune(team, monsterById),
+    () => deckPourSpeedTune(team, monsterById, regleLead),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [JSON.stringify(team.slots.map((sl) => [sl.monsterId, sl.runeSpeed, sl.sets, !!sl.gear, !!sl.gearPartage]))]
+    [JSON.stringify(team.slots.map((sl) => [sl.monsterId, sl.runeSpeed, sl.sets, !!sl.gear, !!sl.gearPartage])), regleLead]
   );
   const equipeAuto = useMemo<EntreeAuto[]>(
     () =>
@@ -337,11 +343,13 @@ export default function SiegeTeam({
             déplier. Le badge posé sur le portrait du leader reste, lui : il dit
             de quel monstre vient le lead — les deux répondent à deux questions
             différentes, ce n'est pas un doublon. */}
-        {leaderMonster?.leaderSkill && <LeadPill ls={leaderMonster.leaderSkill} />}
-        <Bouton onClick={onExporterOptimizer} disabled={!!raisonExportOptimizer}
-          title={raisonExportOptimizer ?? e.exportAide}
-          aria-label={textes.commun.exporterOptimizer} libelle={textes.commun.exporterOptimizer}
-          icone={<IconeOptimizer size={13} />} taille="sm" nuAuDoigt libelleAuDoigt={false} />
+        {leaderMonster?.leaderSkill && <LeadPill ls={leaderMonster.leaderSkill} regle={regleLead} />}
+        {onExporterOptimizer && (
+          <Bouton onClick={onExporterOptimizer} disabled={!!raisonExportOptimizer}
+            title={raisonExportOptimizer ?? e.exportAide}
+            aria-label={textes.commun.exporterOptimizer} libelle={textes.commun.exporterOptimizer}
+            icone={<IconeOptimizer size={13} />} taille="sm" nuAuDoigt libelleAuDoigt={false} />
+        )}
 
         {/* ⚠️ **Icône nue au doigt** (`nuAuDoigt`) — ni cadre, ni bordure, ni
             fond. L'en-tête d'équipe porte déjà le titre, la pastille d'état et
@@ -393,7 +401,7 @@ export default function SiegeTeam({
       // prend la hauteur de la plus haute des trois : la pastille de lead sous
       // le nom du leader ne décale plus sa vitesse ni ses ticks par rapport
       // aux deux autres. Au doigt (slots empilés), rien ne change.
-      <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3 lg:grid-rows-[repeat(3,auto)] lg:gap-y-0">
+      <div className={`grid grid-cols-1 gap-2.5 lg:grid-rows-[repeat(3,auto)] lg:gap-y-0 ${team.slots.length === 4 ? 'sm:grid-cols-4' : 'sm:grid-cols-3'}`}>
         {team.slots.map((slot, idx) => {
           const monster = slot.monsterId ? monsterById.get(slot.monsterId) ?? null : null;
           const slotDanger = statut === 'rouge' ? slotDangers[idx] : null;
@@ -429,6 +437,8 @@ export default function SiegeTeam({
                 slot={slot}
                 idx={idx}
                 isLeader={idx === 0}
+                dernier={team.slots.length - 1}
+                regleLead={regleLead}
                 leadInfo={leadInfo}
                 combat={slotInfos[idx].combat}
                 monsters={monsters}
@@ -704,7 +714,7 @@ export default function SiegeTeam({
                 une réponse à une alerte, c'est une question qu'on se pose sur
                 n'importe quel deck — y compris celui qui va bien, pour voir de
                 combien il passe. */}
-            {hasMonsters && (
+            {hasMonsters && onVoirSpeedTune && (
               <Bouton
                 onClick={() => onVoirSpeedTune(team.id)}
                 taille="sm"
@@ -766,6 +776,9 @@ interface SlotProps {
   slot: { monsterId: string | null; runeSpeed: number | null; tick: number; sets?: string[] };
   idx: number;
   isLeader: boolean;
+  // L'index de la dernière place (2 au siège, 3 en arène).
+  dernier: number;
+  regleLead: RegleLead;
   leadInfo: LeadInfo | null;
   // ⚠️ La vitesse de combat vient du PARENT, qui la calcule comme l'outil
   // (`combatAuto`, passif compris). La recalculer ici en repartait sans le
@@ -789,6 +802,8 @@ function SlotContent({
   slot,
   idx,
   isLeader,
+  dernier,
+  regleLead,
   leadInfo,
   combat,
   monsters,
@@ -837,7 +852,7 @@ function SlotContent({
   }
 
   const base = monster.stats.speed;
-  const lead = siegeLeadFor(leadInfo, monster.element);
+  const lead = leadPour(regleLead, leadInfo, monster.element);
   const tick = slot.tick;
 
   // Écart au tick : négatif = il manque de la vitesse, positif = surplus.
@@ -949,7 +964,7 @@ function SlotContent({
               y a la place, donc on montre le chiffre, pas seulement le badge. */}
           {isLeader && monster.leaderSkill && (
             <div className="mt-1">
-              <LeadPill ls={monster.leaderSkill} />
+              <LeadPill ls={monster.leaderSkill} regle={regleLead} />
             </div>
           )}
         </div>
@@ -980,10 +995,10 @@ function SlotContent({
           />
           <BoutonIcone
             libelle={
-              idx === 2 ? e.dejaDernier : idx === 0 ? e.droiteLeader : e.droite
+              idx === dernier ? e.dejaDernier : idx === 0 ? e.droiteLeader : e.droite
             }
             icone={<ChevronRight size={14} />}
-            disabled={idx === 2}
+            disabled={idx === dernier}
             onClick={() => onMoveTo(idx + 1)}
           />
         </span>
