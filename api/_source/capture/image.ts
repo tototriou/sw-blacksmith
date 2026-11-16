@@ -15,9 +15,12 @@ export interface Image {
   rgba: Uint8Array; // 4 octets par pixel, ligne par ligne
 }
 
-// Au-delà, la capture n'est pas un écran de téléphone : on refuse avant de
-// décoder (une image de 20 000 × 20 000 pèse 1,6 Go une fois décodée).
-export const PIXELS_MAX = 16_000_000;
+// Au-delà, on refuse avant de décoder (une image de 20 000 × 20 000 pèse
+// 1,6 Go une fois décodée). En deçà, toute capture d'écran passe, même de
+// tout un bureau : `Win + Impr. écran` prend tous les écrans d'un coup, et
+// deux écrans 4K font 16,6 millions de pixels ; un écran 8K (33 millions) se
+// lit en 2,3 s avec 0,5 Go de mémoire.
+export const PIXELS_MAX = 40_000_000;
 
 const estPng = (o: Uint8Array) => o.length > 8 && o[0] === 0x89 && o[1] === 0x50 && o[2] === 0x4e && o[3] === 0x47;
 const estJpeg = (o: Uint8Array) => o.length > 3 && o[0] === 0xff && o[1] === 0xd8 && o[2] === 0xff;

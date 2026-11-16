@@ -18,9 +18,11 @@ Voir aussi : README.md, feat-competences.md, feat-deux-camps.md,
    3 s. ⚠️ Le calcul n'est lancé qu'après 50 ms : sinon, en occupant le
    processeur 1 à 3 s, il passait avant l'envoi de la réponse.
 3. En tâche de fond (`waitUntil` de Vercel) : la pièce jointe est téléchargée
-   — seulement sur le CDN de Discord, 10 Mo au plus ; toute image
-   s'accepte : ni PNG ni JPEG (WebP d'une image copiée depuis Discord, GIF,
-   AVIF…), elle est redemandée au proxy d'images de Discord, rendue en PNG
+   — seulement sur le CDN de Discord, 25 Mo au plus ; toute pièce jointe
+   s'accepte, quel que soit son type annoncé (absent, ou quelconque pour une
+   capture collée par Ctrl+V) : ses octets décident. Ni PNG ni JPEG (WebP
+   d'une image copiée depuis Discord, GIF, AVIF…), elle est redemandée au
+   proxy d'images de Discord, rendue en PNG
    (`format=png`) ; un refus est journalisé avec le type reçu et les premiers
    octets —, lue,
    analysée, puis la réponse différée est remplacée (si Discord refuse le
@@ -115,32 +117,42 @@ reconnu, VIT illisible (avec les monstres concernés).
 
 - [image.ts](../../../api/_source/capture/image.ts) — décodage PNG
   (`pngjs`) et JPEG (`jpeg-js`), découpe, réduction par moyenne de surface.
-  Plus de 16 millions de pixels : refusée avant décodage — pour un PNG, la
+  Plus de 40 millions de pixels : refusée avant décodage — pour un PNG, la
   taille se lit dans son en-tête IHDR (un PNG uni de 10 Mo peut annoncer des
-  milliards de pixels).
+  milliards de pixels). En deçà, toute capture passe, même de tout un bureau
+  (`Win + Impr. écran` prend tous les écrans : deux écrans 4K font 16,6
+  millions de pixels) ; un écran 8K se lit en 2,3 s avec 0,5 Go de mémoire.
 - [cartes.ts](../../../api/_source/capture/cartes.ts) — les cartes
-  **trouvées** dans l'image, quel que soit le format : téléphone, tablette,
-  fenêtre PC avec ou sans barre de titre, capture décentrée ou recadrée sur
-  les trois attaquants seuls. Une carte est un carré à cadre fin, net sur le
-  fond uni de l'écran. ⚠️ La couleur du cadre ne compte pas : elle varie
-  (bleu d'un deck préréglé, doré d'un deck composé sur le moment, bronze
-  sombre, emplacements vides éteints) ; seul son contour sert. Un bord est un
-  écart de couleur de plus de 60 (somme R, V, B) entre deux pixels à deux pas
-  l'un de l'autre. On cherche trois bords hauts horizontaux de même longueur,
-  à la même rangée (à un pixel près) et à pas régulier, chacun avec un bord
-  gauche et un bord droit à mi-hauteur (la recherche ne dépasse pas la
-  moitié de l'écart avec la carte voisine). Le bord bas est le trait le plus
-  bas sous la carte, de presque sa largeur (médiane des trois) : une carte
-  n'est pas forcément carrée. Les attaquants sont exactement **trois**
-  carrés : un trio que prolonge un quatrième au même pas est la liste des
-  monstres. Parmi les grands trios restants, la rangée la plus haute (la
-  liste est en dessous, avec des vignettes presque de la taille des cartes),
-  le trio le plus à gauche de cette rangée. La défense est le premier trio de
-  même taille à droite sur la même ligne, sinon le symétrique des attaquants
-  par rapport au centre ; une capture recadrée sur les attaquants n'en a pas.
-- [ecranPreparation.ts](../../../api/_source/capture/ecranPreparation.ts) —
-  la lecture des cartes trouvées. ⚠️ Aucune position n'est supposée : sans
-  trois carrés trouvés, l'écran n'est pas reconnu. La VIT est écrite en blanc
+  **trouvées** dans l'image, quels que soient sa taille et son format :
+  téléphone, tablette, fenêtre PC avec ou sans barre de titre, capture
+  décentrée, recadrée sur les trois attaquants seuls, ou capture de tout
+  l'écran où la fenêtre du jeu n'occupe qu'un coin. Aucune taille, aucune
+  position n'est supposée.
+  1. **Tous les cadres** de l'image, de toute taille (un bord de 12 pixels au
+     moins : un seuil en pixels, pas en part de l'image). ⚠️ La couleur du
+     cadre ne compte pas : elle varie (bleu d'un deck préréglé, doré d'un deck
+     composé sur le moment, bronze sombre, emplacements vides éteints) ; seul
+     son contour sert. Un bord est un écart de couleur de plus de 60 (somme R,
+     V, B) entre deux pixels à deux pas l'un de l'autre. Un cadre : un bord
+     haut horizontal, qui le couvre d'un côté à l'autre à ses coins arrondis
+     près, des bords gauche et droit à mi-hauteur près de ses bouts (3 % de sa
+     longueur : plus loin, on prend le bord de ce qui est posé à côté), et un
+     bas là où ces bords s'arrêtent ; à peu près carré. Seconde source, pour
+     un liseré peu contrasté que l'agrandissement rend flou : trois bords
+     hauts de même longueur, à la même rangée et à pas régulier, dont les
+     côtés se cherchent jusqu'à la moitié de l'espace entre deux cartes.
+  2. **Les attaquants sont les cadres qui portent une VIT** (pastille.ts) :
+     sur cet écran, seuls eux l'affichent ; la défense et la liste des
+     monstres, aux vignettes presque de même taille, n'en ont pas. Il en faut
+     trois de même taille, sur une même ligne, côte à côte à pas régulier,
+     dont au moins deux où la pastille porte un nombre net. Plusieurs trios
+     (le contour et le bord intérieur des mêmes cartes) : celui aux trois
+     nombres nets, puis les plus grandes cartes.
+  3. **La défense** : les cadres de même taille, à droite, sur la même ligne ;
+     sinon le symétrique des attaquants par rapport au centre ; une capture
+     recadrée sur les attaquants n'en a pas.
+- [pastille.ts](../../../api/_source/capture/pastille.ts) — la pastille de
+  VIT d'une carte, ce qui en fait un attaquant. La VIT est écrite en blanc
   dans une pastille sombre, en bas à droite de la carte ; la pastille est
   **trouvée** dans la carte, pas placée par des proportions. Son bas : la
   plus basse rangée sombre (plus sombre que 60) qui va jusqu'au bord droit de
@@ -150,7 +162,13 @@ reconnu, VIT illisible (avec les monstres concernés).
   n'en porte plus est le haut. Un portrait n'a pas ce blanc encadré de
   sombre, même quand il est sombre lui-même ou blanc au coin de la pastille.
   À gauche, la zone part du premier blanc (l'icône de vitesse), avec une
-  marge. ⚠️ Une VIT fausse est pire qu'un refus : hors de 100 à 450 (en
+  marge. Une carte porte un **nombre net** quand sa zone se découpe en deux à
+  quatre glyphes : un coin de portrait sombre au reflet clair ressemble à une
+  pastille, surtout en JPEG, pas à un nombre.
+- [ecranPreparation.ts](../../../api/_source/capture/ecranPreparation.ts) —
+  la lecture des cartes trouvées. ⚠️ Aucune position n'est supposée : sans
+  trois attaquants trouvés, l'écran n'est pas reconnu. ⚠️ Une VIT fausse est
+  pire qu'un refus : hors de 100 à 450 (en
   siège, aucune vitesse réglée n'est sous 100 ; un chiffre perdu, « 66 »
   pour 314, y tombe), sous une confiance de 0,7, ou quand un de ses chiffres
   est presque à égalité avec un autre (écart sous 0,05) sans que la lecture
@@ -248,12 +266,18 @@ protégé).
   PC (705 × 276, chiffres de 7 pixels). Chaque capture a été lue avec des
   gabarits qui n'avaient pas ses chiffres, telle quelle, réduite, agrandie
   et en JPEG : les cartes sont toujours trouvées, aucune VIT fausse ne passe
-  (169 justes, 17 refusées sur 186). Leurs chiffres servent ensuite de
-  gabarits.
+  (168 justes, 18 refusées sur 186). Chacune a aussi été posée dans une
+  capture de tout un écran (3840 × 2160, 5120 × 1440, 1080 × 2400) : toutes
+  lues. Leurs chiffres servent ensuite de gabarits.
 - **Une capture très réduite ou très compressée n'est pas toujours lue** :
-  sous 5 pixels de haut, les chiffres ne sont pas lus ; un JPEG très
-  compressé de chiffres de 7 pixels peut être refusé. La commande demande
-  alors une capture plus grande.
+  sous 5 pixels de haut, les chiffres ne sont pas lus ; à 5 et 6 pixels, ils
+  ne le sont que si les deux lectures s'accordent, ce qui est rare (les
+  modèles, réduits depuis 12 × 18, ne ressemblent plus assez au rendu du
+  jeu) ; un JPEG très compressé de chiffres de 7 pixels peut être refusé. La
+  commande demande alors une capture plus grande.
+- **Seul l'écran de siège est reconnu** : trois attaquants côte à côte. Les
+  quatre monstres en losange d'un autre mode sont trouvés avec leurs VIT,
+  mais l'écran est refusé.
 - La conversion d'une image ni PNG ni JPEG compte sur le proxy d'images de
   Discord (`format=png`) ; s'il la refuse, le journal de la fonction donne le
   type reçu.
@@ -264,17 +288,28 @@ protégé).
 
 ## Vérifier
 
+**Les vraies captures** se posent en local dans `tests/captures-speedtune/`
+(gitignoré : le dépôt est public), et leurs valeurs attendues dans
+[attendus.json](../../../tests/captures-speedtune/attendus.json), versionné.
+`node tests/run.mjs testCapturesReelles` les lit toutes : telle quelle, chacune
+rend ses trois VIT et ses trois monstres ; réduite, agrandie, en JPEG ou
+posée dans un écran 4K, aucune VIT fausse. Deux captures aux chiffres de 5
+pixels y sont inscrites avec leurs VIT refusées (`vit` à `null`, les vraies
+dans `vitReelles`) : c'est la limite actuelle.
+
 [tests/speedtune-capture.test.ts](../../../tests/speedtune-capture.test.ts),
 sans aucune vraie capture : écrans recomposés aux positions réelles avec des
 portraits synthétiques (sombres, jusque contre la pastille), des cadres de
 plusieurs couleurs et des chiffres dessinés depuis les gabarits — téléphone,
 fenêtre PC avec et sans barre de titre, tablette 4:3, téléphone 20:9, cartes
 plus larges que hautes, attaquants seuls, attaquants à cadres dorés, bronze
-et gris, liste des monstres sous l'équipe, rangée de six carrés seule,
+et gris, liste des monstres sous l'équipe, rangée de six cartes sans VIT, cartes
+plus grandes sans VIT au-dessus de l'équipe, capture de tout un écran 4K,
 capture trop réduite, une seule carte, écran vide ; chiffres de 7 à 9 pixels
 lus, de 4 non ; calcul
 sur les vrais monstres et leurs vrais kits (Susano, Chilling, Tarq) ; état
 des menus (aller-retour, pire cas sous 100 caractères, refus) ; interactions
 signées, réponse différée, question, choix (y compris d'un autre que
-l'auteur), capture WebP rendue en PNG par Discord, GIF non converti refusé,
+l'auteur), capture collée (type annoncé absent ou quelconque) lue, capture
+WebP rendue en PNG par Discord, GIF non converti refusé,
 et message final devant un Discord simulé.

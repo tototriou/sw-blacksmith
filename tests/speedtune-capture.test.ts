@@ -4,14 +4,16 @@
 //
 // ⚠️ Aucune vraie capture dans le dépôt (public) : les écrans sont RECOMPOSÉS
 // aux positions de la mise en page réelle, avec des portraits synthétiques et
-// des chiffres dessinés depuis les gabarits. Le calcul, lui, part des vrais
-// monstres et de leurs vrais kits (public/data).
+// des chiffres dessinés depuis les gabarits. Les vraies captures, posées en
+// local dans tests/captures-speedtune/ (gitignoré), sont lues par
+// testCapturesReelles. Le calcul, lui, part des vrais monstres et de leurs
+// vrais kits (public/data).
 
 import { generateKeyPairSync, sign } from 'node:crypto';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { PNG } from 'pngjs';
 import jpeg from 'jpeg-js';
-import { decoderImage, decouper, dimensionsPng, reduire, type Image } from '../api/_source/capture/image';
+import { decoderImage, decouper, dimensionsPng, imageTropGrande, reduire, type Image } from '../api/_source/capture/image';
 import { Banque, quantifier, signature, TAILLE, COTE, type BanqueSerialisee } from '../api/_source/capture/portraits';
 import { HAUTEUR_CHIFFRE_MIN, lireNombre, type Gabarits } from '../api/_source/capture/chiffres';
 import { lireEcranPreparation } from '../api/_source/capture/ecranPreparation';
@@ -21,13 +23,14 @@ import { embedErreur, ICONE_APP, LIEN_OUTIL, langueDe, type Embed, type Menu, ty
 import { decoderEtat, encoderEtat, LONGUEUR_MAX, type Etat } from '../api/_source/speedtune/etat';
 import { creerEmojis } from '../api/_source/speedtune/emojis';
 import gabaritsJson from '../api/_source/capture/chiffres-gabarits.json';
+import banqueJson from '../api/_source/capture/banque-portraits.json';
 import { combatSpeed, runeSpeedForTarget, siegeLeadFor, speedLeadOf } from '../src/lib/speed';
 import { kitVitesse, sortsVitesse } from '../src/lib/speedTuneKit';
 import { passifsVitesse, pointsDeGain } from '../src/lib/speedTunePassif';
 import type { DonneesKit } from '../src/lib/speedTuneAuto';
 import type { DetailMonstre } from '../src/lib/monsterSkills';
 import type { Monster } from '../src/types';
-import { egal, monstersJson, ok, titre } from './outils';
+import { egal, ignore, monstersJson, ok, titre } from './outils';
 
 const gabarits = gabaritsJson as Gabarits;
 
@@ -118,8 +121,9 @@ const CADRE_BRONZE: Rvb = [97, 72, 33];
 // L'écran de préparation recomposé : fond brun, les cartes à leur place, cadre
 // BLEU pour les attaquants d'un deck préréglé (`cadreAttaque` : doré pour un
 // deck composé sur le moment, bronze, gris…) et DORÉ pour la défense, comme
-// dans le jeu ; VIT des attaquants dans une pastille en bas à droite (`pc` :
-// chiffres de la fenêtre PC, plus petits et plus bas).
+// dans le jeu ; VIT des attaquants (les trois premières cartes qui en ont une
+// dans `vitesses`) dans une pastille en bas à droite (`pc` : chiffres de la
+// fenêtre PC, plus petits et plus bas).
 function dessiner(l: number, h: number, rects: Rect[], portraits: Image[], vitesses: string[], pc: boolean, cadreAttaque: Rvb = CADRE_BLEU, cadreDefense: Rvb = CADRE_DORE): Image {
   const img = imageUnie(l, h, [52, 40, 30]);
   portraits.forEach((p, k) => {
@@ -128,12 +132,13 @@ function dessiner(l: number, h: number, rects: Rect[], portraits: Image[], vites
     coller(img, imageUnie(4, 4, k < 3 ? cadreAttaque : cadreDefense), x, y, cl, ch);
     const cadre = Math.round(cl * 0.04);
     coller(img, p, x + cadre, y + cadre, cl - 2 * cadre, ch - 2 * cadre);
-    if (k < 3 && pc) {
+    if (k >= 3 || vitesses[k] === undefined) return;
+    if (pc) {
       // PC : des chiffres de 9 pixels, plus bas dans la carte.
       const n = nombre(vitesses[k], Math.round(ch * 0.096));
       coller(img, imageUnie(4, 4, [40, 40, 44]), x + 0.62 * cl, y + 0.83 * ch, 0.34 * cl, 0.13 * ch);
       coller(img, n, x + 0.66 * cl, y + 0.845 * ch - 4, n.largeur, n.hauteur);
-    } else if (k < 3) {
+    } else {
       const n = nombre(vitesses[k], Math.round(ch * 0.105));
       coller(img, imageUnie(4, 4, [40, 40, 44]), x + 0.62 * cl, y + 0.79 * ch, 0.34 * cl, 0.16 * ch);
       coller(img, n, x + 0.66 * cl, y + 0.8 * ch, n.largeur, n.hauteur);
@@ -188,6 +193,10 @@ export function testCaptureImage() {
   new DataView(geant.buffer, geant.byteOffset).setUint32(16, 40000);
   new DataView(geant.buffer, geant.byteOffset).setUint32(20, 40000);
   egal(decoderImage(geant), null, 'PNG annoncé trop grand : refusé avant décodage');
+  // Deux écrans 4K, capturés d'un coup (Win + Impr. écran) : pas trop grand.
+  new DataView(geant.buffer, geant.byteOffset).setUint32(16, 7680);
+  new DataView(geant.buffer, geant.byteOffset).setUint32(20, 2160);
+  egal(imageTropGrande(geant), false, 'capture de deux écrans 4K (7680 × 2160) : acceptée');
 
   const img = imageUnie(10, 10, [1, 2, 3]);
   egal([decouper(img, 8, 8, 5, 5)?.largeur, decouper(img, -3, 0, 5, 5)?.largeur], [2, 2], 'découpe ramenée dans l\'image');
@@ -301,20 +310,117 @@ export function testCaptureEcran() {
     { att: [[1, 337], [2, 404], [3, 368]], def: [] }, 'cadres bronze, cartes seules');
   egal(lire(ecran(portraits, ['357', '367', '385'], 2556, 1179, 'telephone', CADRE_GRIS, CADRE_GRIS)),
     { att: [[1, 357], [2, 367], [3, 385]], def: [4, 5, 6] }, 'cadres gris : lus comme les autres');
-  // Une équipe, c'est TROIS carrés : la liste des monstres, en dessous, aligne
-  // des vignettes presque de la même taille, plus de trois à la suite.
+  // Les attaquants sont les cartes qui portent une VIT, quelles que soient
+  // leur taille et leur place : la liste des monstres aligne des vignettes
+  // presque de la même taille, sans VIT.
   const liste = [0, 1, 2, 3, 4, 5].map((k): Rect => [161 + k * 85, 470, 77, 77]);
   const avecListe = dessiner(1187, 646, [[161, 162, 81, 81], [257, 162, 81, 81], [353, 162, 81, 81], ...liste], [...portraits.slice(0, 3), ...portraits, portraits[0]], ['339', '384', '363'], true);
   egal(lire(avecListe)?.att, [[1, 339], [2, 384], [3, 363]], 'liste des monstres sous l\'équipe : écartée');
-  egal(lire(dessiner(700, 200, liste.map(([x, , c]): Rect => [x - 100, 60, c, c]), portraits, ['100', '100', '100'], true, CADRE_GRIS, CADRE_GRIS)), null,
-    'une rangée de six carrés seule : pas une équipe');
-  // Sans trois carrés égaux à pas régulier : écran non reconnu, aucune
-  // position supposée.
+  egal(lire(dessiner(700, 200, liste.map(([x, , c]): Rect => [x - 100, 60, c, c]), portraits, [], true, CADRE_GRIS, CADRE_GRIS)), null,
+    'une rangée de six cartes sans VIT : pas d\'attaquant');
+  const auDessus = [0, 1, 2].map((k): Rect => [40 + k * 130, 20, 110, 110]);
+  const sousGrandes = dessiner(1187, 646, [[161, 300, 81, 81], [257, 300, 81, 81], [353, 300, 81, 81], ...auDessus], [...portraits.slice(0, 3), ...portraits.slice(3, 6)], ['339', '384', '363'], true);
+  egal(lire(sousGrandes)?.att, [[1, 339], [2, 384], [3, 363]], 'des cartes plus grandes, sans VIT, au-dessus de l\'équipe : écartées');
+  // Une capture de tout l'écran (4K), la fenêtre du jeu dans un coin : des
+  // cartes de 81 pixels sur 3840, petites devant l'image.
+  egal(lire(ecranLibre(3840, 2160, 2900, 1700, 81, 96, 3491, portraits, ['339', '384', '363'], true)),
+    { att: [[1, 339], [2, 384], [3, 363]], def: [4, 5, 6] }, 'capture de tout un écran 4K : la fenêtre du jeu dans un coin');
+  // Sans trois cartes à VIT : écran non reconnu, aucune position supposée.
   egal(lire(dessiner(600, 300, [[100, 100, 81, 81]], portraits.slice(0, 1), ['339'], true)), null, 'une seule carte : écran non reconnu');
   egal(lire(imageUnie(800, 400, [52, 40, 30])), null, 'écran vide : non reconnu');
   // Une VIT hors de portée du jeu n'est pas une VIT.
   const absurde = lireEcranPreparation(ecran(portraits, ['9', '999', '357']), banque, gabarits)!;
   egal(absurde.attaquants.map((a) => a.vitesse?.valeur ?? null), [null, null, 357], 'VIT invraisemblable : écartée');
+}
+
+// ---- Vraies captures -----------------------------------------------------------
+
+// Les vraies captures de tests/captures-speedtune/ : IGNORÉES par Git (dépôt
+// public), seul attendus.json est versionné. Sur une machine qui ne les a
+// pas (la CI), la vérification s'affiche ignorée. Pour en ajouter une : la
+// poser dans le dossier et inscrire ses trois VIT et ses trois monstres dans
+// attendus.json — une capture sans valeurs attendues fait échouer. `vit` :
+// ce que la lecture doit rendre, `null` pour une VIT qu'elle refuse encore
+// (chiffres trop petits) ; `vitReelles` : les vraies, quand elles diffèrent,
+// pour qu'aucune lecture fausse ne passe.
+const DOSSIER_CAPTURES = 'tests/captures-speedtune';
+interface CaptureAttendue { ecran: string; vit: (number | null)[]; vitReelles?: number[]; monstres: number[] }
+
+// L'image à l'échelle k : moyenne de surface en réduction, bilinéaire en
+// agrandissement (ce que fait un logiciel de capture ou Discord).
+function aLEchelle(src: Image, k: number): Image {
+  const l = Math.round(src.largeur * k), h = Math.round(src.hauteur * k);
+  const rgba = new Uint8Array(l * h * 4);
+  const p = (x: number, y: number, c: number) => src.rgba[(y * src.largeur + x) * 4 + c];
+  for (let y = 0; y < h; y++) for (let x = 0; x < l; x++) for (let c = 0; c < 4; c++) {
+    let v: number;
+    if (k < 1) {
+      const x0 = Math.floor(x / k), x1 = Math.min(src.largeur, Math.max(x0 + 1, Math.floor((x + 1) / k)));
+      const y0 = Math.floor(y / k), y1 = Math.min(src.hauteur, Math.max(y0 + 1, Math.floor((y + 1) / k)));
+      let s = 0;
+      for (let yy = y0; yy < y1; yy++) for (let xx = x0; xx < x1; xx++) s += p(xx, yy, c);
+      v = s / ((y1 - y0) * (x1 - x0));
+    } else {
+      const fx = Math.min(src.largeur - 1.001, Math.max(0, (x + 0.5) / k - 0.5)), fy = Math.min(src.hauteur - 1.001, Math.max(0, (y + 0.5) / k - 0.5));
+      const x0 = Math.floor(fx), y0 = Math.floor(fy), ax = fx - x0, ay = fy - y0;
+      v = (1 - ay) * ((1 - ax) * p(x0, y0, c) + ax * p(x0 + 1, y0, c)) + ay * ((1 - ax) * p(x0, y0 + 1, c) + ax * p(x0 + 1, y0 + 1, c));
+    }
+    rgba[(y * l + x) * 4 + c] = v;
+  }
+  return { largeur: l, hauteur: h, rgba };
+}
+
+// La capture posée dans une capture de tout un écran 4K : bureau sombre, une
+// autre fenêtre claire à droite.
+function dansUnEcran(src: Image): Image {
+  const l = 3840, h = 2160;
+  const img = imageUnie(l, h, [32, 34, 40]);
+  coller(img, imageUnie(4, 4, [235, 235, 240]), 2900, 200, 900, 1100);
+  const x0 = Math.round((l - src.largeur) / 3), y0 = Math.round((h - src.hauteur) / 2);
+  for (let y = 0; y < src.hauteur; y++) img.rgba.set(src.rgba.subarray(y * src.largeur * 4, (y + 1) * src.largeur * 4), ((y0 + y) * l + x0) * 4);
+  return img;
+}
+
+export function testCapturesReelles() {
+  titre('Speed tune par capture — vraies captures (tests/captures-speedtune, hors du dépôt)');
+  const attendus = JSON.parse(readFileSync(`${DOSSIER_CAPTURES}/attendus.json`, 'utf8')) as Record<string, CaptureAttendue>;
+  const presentes = existsSync(DOSSIER_CAPTURES) ? readdirSync(DOSSIER_CAPTURES).filter((f) => f !== 'attendus.json') : [];
+  if (!presentes.length) {
+    ignore('vraies captures', 'aucune capture dans tests/captures-speedtune (gitignoré)');
+    return;
+  }
+  egal(presentes.filter((f) => !attendus[f]), [], 'chaque capture du dossier a ses valeurs attendues (attendus.json)');
+  const banque = new Banque(banqueJson as unknown as BanqueSerialisee);
+  const lire = (img: Image) => {
+    const r = lireEcranPreparation(img, banque, gabarits);
+    return r && { vit: r.attaquants.map((a) => a.vitesse?.valeur ?? null), monstres: r.attaquants.map((a) => a.portrait?.meilleur.com2usId ?? null) };
+  };
+  for (const [fichier, a] of Object.entries(attendus)) {
+    if (!presentes.includes(fichier)) {
+      ignore(fichier, 'capture absente de cette machine');
+      continue;
+    }
+    const img = decoderImage(new Uint8Array(readFileSync(`${DOSSIER_CAPTURES}/${fichier}`)));
+    if (!img) {
+      ok(false, `${fichier} : décodée`);
+      continue;
+    }
+    // Telle quelle : tout est lu, juste.
+    egal(lire(img), { vit: a.vit, monstres: a.monstres }, `${fichier} (${a.ecran}) : les trois VIT et les trois monstres`);
+    // Sous une autre forme : une VIT peut être refusée (chiffres trop petits),
+    // jamais fausse.
+    const formes: [string, Image][] = [
+      ['réduite à 85 %', aLEchelle(img, 0.85)],
+      ['agrandie à 130 %', aLEchelle(img, 1.3)],
+      ['en JPEG', decoderImage(new Uint8Array(jpeg.encode({ data: Buffer.from(img.rgba), width: img.largeur, height: img.hauteur }, 80).data))!],
+      ['posée dans une capture de tout un écran 4K', dansUnEcran(img)],
+    ];
+    for (const [forme, variante] of formes) {
+      const r = lire(variante);
+      const vraies = a.vitReelles ?? a.vit;
+      egal(r ? r.vit.filter((v, i) => v !== null && v !== vraies[i]) : [], [], `${fichier}, ${forme} : aucune VIT fausse`);
+    }
+  }
 }
 
 // ---- Analyse -------------------------------------------------------------------
@@ -464,6 +570,9 @@ export async function testSpeedtuneInteractions() {
     'https://media.discordapp.net/c.webp?format=png': () => new Response(new Uint8Array(octets)),
     'https://cdn.discordapp.com/c.gif': () => new Response(new TextEncoder().encode('GIF89a')),
     'https://media.discordapp.net/c.gif?format=png': () => new Response(null, { status: 415 }),
+    'https://cdn.discordapp.com/image.png': () => new Response(new Uint8Array(octets)),
+    'https://cdn.discordapp.com/c.pdf': () => new Response(new TextEncoder().encode('%PDF-1.7')),
+    'https://media.discordapp.net/c.pdf?format=png': () => new Response(null, { status: 415 }),
   };
   const service = creerInteractions({
     clePublique: cle,
@@ -580,14 +689,19 @@ export async function testSpeedtuneInteractions() {
   egal(await titreDe({ url: 'https://cdn.discordapp.com/c.gif', content_type: 'image/gif', size: 10 }), embedErreur('en', 'pasImage').description,
     'ni PNG ni JPEG, et Discord ne la convertit pas : refusée');
   egal(await titreDe({ url: 'https://cdn.discordapp.com/c.pdf', content_type: 'application/pdf', size: 10 }), embedErreur('en', 'pasImage').description,
-    'pas une image : refusée sans téléchargement');
+    'pas une image : ses octets le disent, refusée');
+  // Une capture collée (Ctrl+V) : son type annoncé ne compte pas, ses octets
+  // si.
+  for (const type of [undefined, 'application/octet-stream', 'image/png'])
+    ok(![embedErreur('en', 'pasImage').description, embedErreur('en', 'panne').description].includes(await titreDe({ url: 'https://cdn.discordapp.com/image.png', content_type: type, size: octets.length })),
+      `capture collée, type annoncé ${type ?? 'absent'} : lue`);
   telecharges.length = 0;
   ok(await titreDe({ url: 'https://cdn.discordapp.com/c.webp', content_type: 'image/webp', size: webp.length }) !== embedErreur('en', 'pasImage').description
     && telecharges.includes('https://media.discordapp.net/c.webp?format=png'), 'une capture WebP : rendue en PNG par Discord, puis lue');
   egal(adresseEnPng({ url: 'https://cdn.discordapp.com/a/b.webp?ex=1', proxy_url: 'https://media.discordapp.net/a/b.webp?ex=1', size: 1 }),
     'https://media.discordapp.net/a/b.webp?ex=1&format=png', 'la conversion passe par le proxy d\'images, paramètres gardés');
   egal(adresseEnPng({ url: 'https://ailleurs.example/b.webp', proxy_url: 'https://ailleurs.example/b.webp', size: 1 }), null, 'jamais hors de Discord');
-  egal(await titreDe({ url: 'https://cdn.discordapp.com/c.png', content_type: 'image/png', size: 11 * 1024 * 1024 }), embedErreur('en', 'tropLourde').description, 'plus de 10 Mo : refusé avant téléchargement');
+  egal(await titreDe({ url: 'https://cdn.discordapp.com/c.png', content_type: 'image/png', size: 26 * 1024 * 1024 }), embedErreur('en', 'tropLourde').description, 'plus de 25 Mo : refusé avant téléchargement');
   egal([langueDe('fr'), langueDe('en-GB'), langueDe(undefined)], ['fr', 'en', 'en'], 'langue : français, sinon anglais');
 
   // Discord refuse le message (corps invalide, jeton expiré…) : ce n'est pas
