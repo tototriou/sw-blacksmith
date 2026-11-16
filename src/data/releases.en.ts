@@ -9,6 +9,15 @@ import type { Release } from './releases';
 
 export const RELEASES_EN: Release[] = [
   {
+    version: null,
+    date: '2026-11-16',
+    title: '/speedtune: safe stats and all SPD entered at once',
+    changes: [
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune gives stats that are enough, Swift set worn or not.' },
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune asks for every misread SPD in a single window.' },
+    ],
+  },
+  {
     version: '2.4.6',
     date: '2026-11-16',
     title: '/speedtune reads the whole SPD on phones',
