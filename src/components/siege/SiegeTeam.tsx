@@ -401,7 +401,21 @@ export default function SiegeTeam({
       // prend la hauteur de la plus haute des trois : la pastille de lead sous
       // le nom du leader ne décale plus sa vitesse ni ses ticks par rapport
       // aux deux autres. Au doigt (slots empilés), rien ne change.
-      <div className={`grid grid-cols-1 gap-2.5 lg:grid-rows-[repeat(3,auto)] lg:gap-y-0 ${team.slots.length === 4 ? 'sm:grid-cols-4' : 'sm:grid-cols-3'}`}>
+      // ⚠️ **Quatre places (arène) : deux colonnes, quatre seulement si la
+      // CARTE fait 1 100 px.** Côte à côte sur la largeur où le siège en met
+      // trois, une place ne faisait plus que ~210 px : flèches et croix sur
+      // les sets, « VIT : » coupé, ticks hors de la carte. C'est la largeur
+      // de la carte qui décide (`@container`), pas celle de l'écran — la
+      // barre latérale en prend une part. Le siège garde sa grille : son
+      // enveloppe est en `contents`, elle ne crée aucune boîte.
+      <div className={team.slots.length === 4 ? '@container' : 'contents'}>
+      <div
+        className={
+          team.slots.length === 4
+            ? 'grid grid-cols-1 gap-2.5 sm:grid-cols-2 @[1100px]:grid-cols-4'
+            : 'grid grid-cols-1 gap-2.5 sm:grid-cols-3 lg:grid-rows-[repeat(3,auto)] lg:gap-y-0'
+        }
+      >
         {team.slots.map((slot, idx) => {
           const monster = slot.monsterId ? monsterById.get(slot.monsterId) ?? null : null;
           const slotDanger = statut === 'rouge' ? slotDangers[idx] : null;
@@ -459,6 +473,7 @@ export default function SiegeTeam({
           );
         })}
       </div>
+      </div>
       ) : (
         /* Vue compacte : cards des 3 monstres, clic = déplier le détail dessous.
            ⚠️ **En RANGÉE dès le plus petit écran.** Elles s'empilaient sous
@@ -467,8 +482,11 @@ export default function SiegeTeam({
            téléphone, là où le siège en compte huit à comparer. Une équipe EST
            une rangée de trois, l'empiler défait ce qu'on vient lire.
            Le portrait descend à 30 px et le nom passe en `text-micro` pour que
-           les trois tiennent sur 348 px. */
-        <div className="flex flex-row gap-1.5 compact:gap-1">
+           les trois tiennent sur 348 px.
+           ⚠️ Quatre (arène) n'y tiennent pas : ~84 px chacune, la vitesse et
+           les sets ne passent plus. Sous `sm`, deux rangées de deux, chacune
+           plus large qu'au siège ; au-dessus, la rangée. */
+        <div className={team.slots.length === 4 ? 'grid grid-cols-2 gap-1.5 compact:gap-1 sm:flex sm:flex-row' : 'flex flex-row gap-1.5 compact:gap-1'}>
           {slotInfos.map(({ monster, combat }, idx) => {
             const danger = statut === 'rouge' ? slotDangers[idx] : null;
             const sets = team.slots[idx].sets ?? [];
