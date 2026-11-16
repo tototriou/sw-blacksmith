@@ -91,5 +91,9 @@ export function deckPourSpeedTune(team: SiegeTeam, monsterById: Map<string, Mons
     });
   }
 
-  return { monstres, lead: isLeadActif(regle, info) ? info : null };
+  // ⚠️ Un lead d'ARÈNE, dans une équipe d'arène, vaut pour tous : il se pose
+  // comme un lead sans restriction (`General`). Le camp de l'outil applique la
+  // règle du siège (`siegeLeadFor`), qui l'aurait compté pour 0.
+  const actif = isLeadActif(regle, info) ? info : null;
+  return { monstres, lead: actif && actif.area === 'Arena' ? { ...actif, area: 'General' } : actif };
 }

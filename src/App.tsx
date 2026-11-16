@@ -125,7 +125,7 @@ import { ArtifactDetail, CraftLine, Monster, RelicDetail, RuneDetail } from './t
 import { useMonsters } from './hooks/useMonsters';
 import { useCustomMonsters } from './hooks/useCustomMonsters';
 import { useRtaState } from './hooks/useRtaState';
-import { useEquipesArene, useSiegeState, type CoteArene } from './hooks/useSiegeState';
+import { EquipesAreneContext, useEquipesArene, useSiegeState, type CoteArene } from './hooks/useSiegeState';
 import { useSiegeRecos } from './hooks/useSiegeRecos';
 import { useOptimizerState } from './hooks/useOptimizerState';
 import { avecNavigationImportOptimizer } from './lib/actionImportOptimizer';
@@ -435,6 +435,11 @@ function Application() {
   const areneDef = useEquipesArene('defense');
   const areneOff = useEquipesArene('offense');
   const areneInter = useEquipesArene('interserveur');
+  // Pour le speed tuning, où qu'il s'ouvre (voir EquipesAreneContext).
+  const equipesArene = useMemo(
+    () => ({ defense: areneDef.state.teams, offense: areneOff.state.teams, interserveur: areneInter.state.teams }),
+    [areneDef.state.teams, areneOff.state.teams, areneInter.state.teams]
+  );
   const recos = useSiegeRecos();
   // Listes de travail de l'Optimizer — SÉPARÉES de `useOptimizerState`,
   // voir useOptimizerLists.ts : c'est la seule part de l'écran Optimizer qui
@@ -2076,6 +2081,7 @@ function Application() {
     // Les deux accès au choix de l'invocateur (carte du compte, Réglages)
     // passent par la garde du changement de compte.
     <GardeChangementCompte.Provider value={gardeChangementCompte}>
+    <EquipesAreneContext.Provider value={equipesArene}>
     {/* Application de bureau : « Mise à jour prête · Redémarrer ». Inerte sur le site. */}
     <MiseAJourBureau />
     {/* Application de bureau : le dossier SW Exporter importe le compte
@@ -2482,6 +2488,7 @@ function Application() {
         />
       </div>
     </div>
+    </EquipesAreneContext.Provider>
     </GardeChangementCompte.Provider>
   );
 }

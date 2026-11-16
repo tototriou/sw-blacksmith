@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { createContext, useCallback, useEffect, useState } from 'react';
 import { SiegeState, SiegeTeam, SiegeSlot, GearSet } from '../types';
 import { saveLocal, usePersistence } from './usePersistence';
 import { reinsererA } from '../lib/reinsererA';
@@ -12,6 +12,19 @@ export type CoteArene = 'defense' | 'offense' | 'interserveur';
 const OLD_STORAGE_KEY = 'swblacksmith-siege-v1'; // ancienne clé unique (→ migrée vers défense)
 const storageKey = (side: SiegeSide) => `swblacksmith-siege-${side}-v1`;
 export const cleArene = (cote: CoteArene) => `swblacksmith-arene-${cote}-v1`;
+
+// Les équipes d'arène des trois côtés, telles que l'app les tient.
+export interface EquipesArene {
+  defense: SiegeTeam[];
+  offense: SiegeTeam[];
+  interserveur: SiegeTeam[];
+}
+export const AUCUNE_EQUIPE_ARENE: EquipesArene = { defense: [], offense: [], interserveur: [] };
+// ⚠️ **Un contexte, pas une prop** : le speed tuning s'ouvre depuis huit
+// endroits (page Outils, Optimizer, siège, arène, palette…), qui se passent les
+// équipes de siège de main en main. Les équipes d'arène n'ont pas à refaire ce
+// chemin : l'App les fournit, l'outil les lit. Sans fournisseur (un test), aucune.
+export const EquipesAreneContext = createContext<EquipesArene>(AUCUNE_EQUIPE_ARENE);
 
 // Les places d'une équipe : 3 au siège, 4 en arène.
 const PLACES_SIEGE = 3;

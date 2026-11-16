@@ -52,9 +52,13 @@ effacer », création d'un monstre.
   combat, le statut et l'analyse automatique de la carte, et à l'import.
   ⚠️ Pour l'**interserveur**, c'est une hypothèse non mesurée (voir
   `areneLeadFor`).
+- **Speed tuning** : « Voir le speed tune » ouvre l'outil avec l'équipe d'arène
+  (source `arene-<cote>`), et l'outil propose les équipes d'arène à l'import
+  de deck, avec leurs leads d'arène — voir
+  [feat-import-deck-siege.md](../speed-tuning/feat-import-deck-siege.md).
 - **Pas encore branchés** (le board les retire en mode arène) : l'export vers
-  l'Optimizer, « Voir le speed tune », l'export et l'import de fichiers
-  d'équipes (le format `swblacksmith/siege-equipes` porte des équipes de 3).
+  l'Optimizer, l'export et l'import de fichiers d'équipes (le format
+  `swblacksmith/siege-equipes` porte des équipes de 3).
 - « Vérifier mes speed » : un interrupteur par côté d'arène
   (`arene.checkTicks.<cote>`), non persisté.
 

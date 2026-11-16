@@ -31,8 +31,8 @@ interface Props {
   compteCharge: boolean;
   side: SiegeSide;
   // Présent : le board montre des équipes d'ARÈNE de ce côté — 4 places, leads
-  // d'arène, ses propres textes. L'export vers l'Optimizer, le speed tuning et
-  // l'export de fichiers d'équipes restent ceux du siège : absents ici.
+  // d'arène, ses propres textes. Le speed tuning s'y ouvre avec la source d'arène ;
+  // l'export vers l'Optimizer et les fichiers d'équipes restent ceux du siège.
   arene?: CoteArene;
   siege: UseSiegeState;
   monsters: Monster[];
@@ -94,7 +94,7 @@ export default function SiegeBoard({
   const [creationOuverte, setCreationOuverte] = useState(false);
 
   const cote = arene ? textes.arene.cote[arene] : b.cote[side];
-  const siegeSeul = !arene; // Optimizer, speed tuning, fichiers d'équipes
+  const siegeSeul = !arene; // export vers l'Optimizer, fichiers d'équipes
   const noun = cote.nom;
   // ⚠️ L'élision se choisit AVEC le mot : `d'${noun}` écrivait « équipes
   // d'défense ».
@@ -622,7 +622,7 @@ export default function SiegeBoard({
               monsters={monsters}
               monsterById={monsterById}
               checkTicks={checkTicks}
-              onVoirSpeedTune={siegeSeul ? setSpeedTune : undefined}
+              onVoirSpeedTune={setSpeedTune}
               expanded={expandedIds.has(team.id)}
               onToggleExpand={toggleExpand}
               onRemoveTeam={retirerEquipe}
@@ -673,7 +673,7 @@ export default function SiegeBoard({
           onImporterEquipe={onImporterEquipe}
           sourcesOptimizer={sourcesOptimizer}
           compteCharge={compteCharge}
-          deck={{ source: side, teamId: speedTune }}
+          deck={{ source: arene ? `arene-${arene}` as const : side, teamId: speedTune }}
           allMonsters={monsters}
           siegeDefenseTeams={siegeDefenseTeams}
           siegeOffenseTeams={siegeOffenseTeams}

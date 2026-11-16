@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Monster, SiegeTeam } from '../types';
-import { LeadInfo, runeSpeedForTarget } from '../lib/speed';
+import { LeadInfo, runeSpeedForTarget, type RegleLead } from '../lib/speed';
 import {
   ArtefactRequis,
   Camp,
@@ -63,11 +63,26 @@ import { useDonneesKitPlan } from './useZoneSpeedTune';
 import { useStickyState } from './useStickyState';
 import { etatDepuisPlan, type EtatOutil, type OuvertureOptimizer } from '../lib/speedTuneDepuisPlan';
 import { useTraduction } from './useLangue';
+import { EquipesAreneContext, type EquipesArene } from './useSiegeState';
 
-// Un deck proposé à l'import : une équipe de siège et le camp d'où elle vient.
+// D'où vient un deck : un côté du siège, ou un côté de l'arène.
+export type SourceDeck = 'defense' | 'offense' | 'arene-defense' | 'arene-offense' | 'arene-interserveur';
+
+// Les règles de lead d'un deck, selon sa source.
+export const regleDeSource = (source: SourceDeck): RegleLead => (source.startsWith('arene-') ? 'arene' : 'siege');
+
+// Les équipes d'une source.
+export function equipesDeSource(source: SourceDeck, siegeDefense: SiegeTeam[], siegeOffense: SiegeTeam[], arene: EquipesArene): SiegeTeam[] {
+  if (source === 'defense') return siegeDefense;
+  if (source === 'offense') return siegeOffense;
+  return arene[source === 'arene-defense' ? 'defense' : source === 'arene-offense' ? 'offense' : 'interserveur'];
+}
+
+// Un deck proposé à l'import : une équipe (de siège ou d'arène) et le camp
+// d'où elle vient.
 export interface DeckDispo {
   cle: string;
-  source: 'defense' | 'offense';
+  source: SourceDeck;
   team: SiegeTeam;
   libelle: string;
   monstres: Monster[];
@@ -75,9 +90,9 @@ export interface DeckDispo {
 
 export type ChampMod = 'atbMod' | 'speedMod';
 
-// L'équipe de siège avec laquelle l'outil s'ouvre, et le camp d'où elle vient.
+// L'équipe avec laquelle l'outil s'ouvre, et le camp d'où elle vient.
 export interface DeckInitial {
-  source: 'defense' | 'offense';
+  source: SourceDeck;
   teamId: string;
 }
 
@@ -118,6 +133,7 @@ export function useSpeedTune({
   const espace = useRef(ouverture ? ESPACE_SPEED_TUNE_OPTIMIZER : PREFIXE_SPEED_TUNE).current;
   const useCle = <T,>(cle: string, initial: T) => useStickyState<T>(espace + cle.slice(PREFIXE_SPEED_TUNE.length), initial);
   const equipeVide = useTraduction().siege.equipeVide;
+  const equipesArene = useContext(EquipesAreneContext);
   // ⚠️ **TOUTES les clés collantes de l'outil portent ce préfixe**, sans
   // exception : c'est lui qui permet de tout réinitialiser d'un coup quand on
   // importe le JSON d'un AUTRE compte (voir App.tsx). Une clé ajoutée en dehors
@@ -236,11 +252,11 @@ export function useSpeedTune({
   useEffect(() => {
     if (arrivee.current || !deckInitial) return;
     arrivee.current = true;
-    const teams = deckInitial.source === 'defense' ? siegeDefenseTeams : siegeOffenseTeams;
+    const teams = equipesDeSource(deckInitial.source, siegeDefenseTeams, siegeOffenseTeams, equipesArene);
     const team =
       teams.find((t) => t.id === deckInitial.teamId) ?? teams[Number(deckInitial.teamId)];
-    if (team && importerDeck('allie', team)) setAnalyseALOuverture(true);
-  }, [deckInitial, siegeDefenseTeams, siegeOffenseTeams]);
+    if (team && importerDeck('allie', team, regleDeSource(deckInitial.source))) setAnalyseALOuverture(true);
+  }, [deckInitial, siegeDefenseTeams, siegeOffenseTeams, equipesArene]);
 
 
 
@@ -327,7 +343,7 @@ export function useSpeedTune({
   // de listes différentes peuvent partager un id (voir OptimizerSection.tsx).
   const decks = useMemo<DeckDispo[]>(() => {
     const out: DeckDispo[] = [];
-    const ajouter = (source: 'defense' | 'offense', teams: SiegeTeam[]) => {
+    const ajouter = (source: SourceDeck, teams: SiegeTeam[]) => {
       teams.forEach((team, i) => {
         const monstres = team.slots
           .map((sl) => (sl.monsterId ? monsterById.get(sl.monsterId) : null))
@@ -338,8 +354,12 @@ export function useSpeedTune({
     };
     ajouter('defense', siegeDefenseTeams);
     ajouter('offense', siegeOffenseTeams);
+    // L'arène après le siège : ses équipes de 4, avec les leads d'arène.
+    ajouter('arene-defense', equipesArene.defense);
+    ajouter('arene-offense', equipesArene.offense);
+    ajouter('arene-interserveur', equipesArene.interserveur);
     return out;
-  }, [siegeDefenseTeams, siegeOffenseTeams, monsterById, equipeVide]);
+  }, [siegeDefenseTeams, siegeOffenseTeams, equipesArene, monsterById, equipeVide]);
 
   function ajouter(camp: Camp, id: string) {
     const uid = uidDe(camp, id);
@@ -362,8 +382,10 @@ export function useSpeedTune({
   // l'autre bord, et c'est même là qu'on la connaît le mieux (on l'a affrontée).
   // Rend `true` si l'équipe a bien été importée — un deck dont aucun monstre
   // n'est connu ne change rien, et l'appelant ne doit pas croire le contraire.
-  function importerDeck(camp: Camp, team: SiegeTeam): boolean {
-    const deck = deckPourSpeedTune(team, monsterById);
+  // `regle` : celle du contenu de l'équipe — une équipe d'arène applique les
+  // leads d'arène (voir `regleDeSource`).
+  function importerDeck(camp: Camp, team: SiegeTeam, regle: RegleLead = 'siege'): boolean {
+    const deck = deckPourSpeedTune(team, monsterById, regle);
     if (deck.monstres.length === 0) return false;
     // ⚠️ Changer de deck OUBLIE l'analyse précédente : elle portait sur une autre
     // composition, et la relancer toute seule écrirait par-dessus un réglage
