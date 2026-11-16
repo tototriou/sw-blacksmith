@@ -15,12 +15,12 @@ import { PNG } from 'pngjs';
 import jpeg from 'jpeg-js';
 import { decoderImage, decouper, demiTaille, dimensionsPng, imageTropGrande, reduire, type Image } from '../api/_source/capture/image';
 import { Banque, quantifier, signature, TAILLE, COTE, type BanqueSerialisee } from '../api/_source/capture/portraits';
-import { HAUTEUR_CHIFFRE_MIN, lireNombre, type Gabarits } from '../api/_source/capture/chiffres';
-import { lireEcranPreparation } from '../api/_source/capture/ecranPreparation';
+import { HAUTEUR_CHIFFRE_MIN, lireNombre, scoresParSynthese, type Gabarits } from '../api/_source/capture/chiffres';
+import { hypothesesVit, lireEcranPreparation } from '../api/_source/capture/ecranPreparation';
 import { analyserEquipe } from '../api/_source/speedtune/analyse';
-import { adresseEnPng, creerInteractions, signatureValide, tranchesArte, type Ressources } from '../api/_source/speedtune/interactions';
-import { embedErreur, ICONE_APP, LIEN_OUTIL, langueDe, type Embed, type Menu, type Rangee } from '../api/_source/speedtune/message';
-import { decoderEtat, encoderEtat, LONGUEUR_MAX, type Etat } from '../api/_source/speedtune/etat';
+import { adresseEnPng, creerInteractions, etatDeLecture, repondre, signatureValide, tranchesArte, valeurChamp, type Ressources } from '../api/_source/speedtune/interactions';
+import { embedErreur, ICONE_APP, LIEN_OUTIL, langueDe, type Bouton, type Embed, type Menu, type Modale, type Rangee } from '../api/_source/speedtune/message';
+import { decoderEtat, encoderEtat, LONGUEUR_MAX, VIT_INCONNUE, type Etat } from '../api/_source/speedtune/etat';
 import { creerEmojis } from '../api/_source/speedtune/emojis';
 import gabaritsJson from '../api/_source/capture/chiffres-gabarits.json';
 import banqueJson from '../api/_source/capture/banque-portraits.json';
@@ -254,9 +254,25 @@ export function testCaptureChiffres() {
   coller(avecIcone, n, 24, 0, n.largeur, n.hauteur);
   egal(lireNombre(avecIcone, gabarits)?.texte, '314', 'icône de vitesse à gauche : écartée du nombre');
   // Les gabarits sont rendus à la taille du chiffre : les petits caractères
-  // d'une fenêtre PC réduite se lisent ; sous 5 pixels, plus rien.
+  // d'une fenêtre PC réduite se lisent ; sous 3 pixels, plus rien.
   for (const h of [7, 8, 9]) egal(lireNombre(nombre('349', h), gabarits)?.texte, '349', `chiffres de ${h} pixels : lus`);
   egal(lireNombre(nombre('339', HAUTEUR_CHIFFRE_MIN - 1), gabarits), null, `chiffres de ${HAUTEUR_CHIFFRE_MIN - 1} pixels (< ${HAUTEUR_CHIFFRE_MIN}) : non lus`);
+
+  // Les hypothèses de VIT se départagent en ENTIER : un chiffre qui hésite seul
+  // (5 ou 3) se règle par ce qu'une VIT peut être (549 n'en est pas une).
+  const hesite = (fort: string, proche: string) => ({
+    aTaille: Object.fromEntries([...'0123456789'].map((c) => [c, c === fort ? 0.8 : c === proche ? 0.78 : 0.2])), agrandi: {},
+  });
+  const luDe = (chiffres: ReturnType<typeof hesite>[]) => ({ valeur: 0, texte: '', confiance: 0.5, marge: 0, accord: false, hauteur: 5, chiffres });
+  egal(hypothesesVit(null, luDe([hesite('5', '3'), hesite('4', '1'), hesite('9', '0')]), gabarits)[0], 349, 'chiffre hésitant : départagé par la plage des VIT');
+  egal(hypothesesVit(null, luDe([hesite('9', '7'), hesite('3', '8'), hesite('1', '7'), hesite('6', '5')]), gabarits)[0], 316, 'un glyphe intrus collé au nombre : écarté');
+  egal(hypothesesVit(null, luDe([hesite('3', '8')]), gabarits), [], 'ni trois glyphes ni zone : aucune hypothèse');
+  // Le nombre entier rendu et comparé : sans aucun découpage par chiffre.
+  for (const [texte, h] of [['349', 9], ['201', 7], ['416', 12]] as const) {
+    const sc = scoresParSynthese(nombre(texte, h), gabarits, [...Array(351).keys()].map((i) => 100 + i))!;
+    egal([...sc].sort((a, b) => b[1] - a[1])[0][0], Number(texte), `synthèse : « ${texte} » de ${h} pixels en tête`);
+  }
+  egal(scoresParSynthese(imageUnie(40, 20, [40, 40, 44]), gabarits, [349]), null, 'synthèse : zone sans encre, rien');
 }
 
 // ---- Écran de préparation ----------------------------------------------------
@@ -530,6 +546,11 @@ export function testSpeedtuneEtat() {
   egal(decoderEtat('st3:c0:1.2....::'), null, 'sans auteur : refusé');
   egal(decoderEtat('st2:c0:1.2....:::1'), null, 'ancien format (avec le set Rapide) : refusé');
   egal(decoderEtat('st1:c0:1.2....::'), null, 'ancien format (avant l\'auteur) : refusé');
+  const sansVit: Etat = { ...etat, attaquants: etat.attaquants.map((a, i) => (i === 0 ? { ...a, combat: VIT_INCONNUE, vitDouteuse: true } : a)) };
+  egal(decoderEtat(encoderEtat('s0', sansVit))?.etat, sansVit, 'une VIT inconnue fait l\'aller-retour');
+  egal(decoderEtat('st3:m0:1.rs....::1'), null, 'une VIT au-delà de 999 : refusée');
+  // Le doute sur la VIT porte le bouton qui la corrige : le pire cas le garde.
+  egal(decoderEtat(encoderEtat('c2', pire))?.etat.attaquants.map((a) => a.vitDouteuse), [true, true, true], 'le pire cas garde le doute sur chaque VIT');
 
   // Les tranches d'effet aug. VIT : chacune donne un buff différent, et la
   // borne basse le même buff que toute la tranche.
@@ -679,6 +700,64 @@ export async function testSpeedtuneInteractions() {
   ok(ordre.includes(`${susano.stats.speed} + `), 'Susano : sa VIT de fiche (ou celle à viser)');
   ok(Math.abs(runesDe(tarq, 385, true)! - runesDe(tarq, 385, false)!) <= 1, 'le Rapide ne change la VIT de fiche que d\'un point d\'arrondi');
   egal(final.corps, { ...final.corps, allowed_mentions: { parse: [] } }, 'aucune mention possible');
+
+  // ⚠️ Une VIT n'est jamais une raison de refuser. La lecture → l'état : la VIT
+  // sûre ; sinon, à demander, avec la meilleure hypothèse qui n'est pas sous la
+  // VIT de base du monstre pour la préremplir — toujours un état, jamais
+  // d'erreur.
+  const lecture = (vitesse: number | null, hypotheses: number[]) => ({
+    attaquants: equipe.map((m, k) => ({
+      rect: [0, 0, 1, 1] as Rect, portrait: { meilleur: { com2usId: m.com2usId!, score: 0.9 }, suivants: [] },
+      vitesse: k === 0 && vitesse != null ? { valeur: vitesse, texte: String(vitesse), confiance: 0.9, marge: 0.2, accord: true, hauteur: 9, chiffres: [] } : null,
+      hypotheses: k === 1 ? hypotheses : [],
+    })),
+    defense: [],
+  });
+  const lu = etatDeLecture(ressources, lecture(357, [chilling.stats.speed! - 1, 349]), '111') as Etat;
+  egal(lu.attaquants.map((a) => [a.combat, a.vitDouteuse]), [[357, false], [349, true], [VIT_INCONNUE, true]],
+    'VIT sûre prise ; mal lue, à demander, l\'hypothèse sous la VIT de base écartée ; sans hypothèse, rien à proposer');
+
+  // Une VIT mal lue se demande AVANT tout calcul : un bouton chacune.
+  const aSaisir = await repondre(ressources, lu, 'fr');
+  const boutons = aSaisir.components[0].components as Bouton[];
+  egal(boutons.map((b) => b.label), ['Saisir la VIT de Chilling', 'Saisir la VIT de Tarq'], 'un bouton par VIT mal lue, en tête du message');
+  const texte = aSaisir.embeds[0].description ?? '';
+  ok(texte.includes('**Susano** 357 · **Chilling** ? · **Tarq** ?') && texte.includes('**VIT** mal lue sur la capture : **Chilling**, **Tarq**'),
+    'les VIT mal lues sont marquées « ? » et demandées');
+  egal(aSaisir.embeds[0].title, '⚡ Speed tune — une précision', 'aucun résultat calculé sur une VIT mal lue');
+  ok(!/capture plus grande|larger screenshot/.test(JSON.stringify(aSaisir)), 'jamais de demande d\'une capture plus grande');
+
+  // Le bouton ouvre la saisie (modale), préremplie de la lecture la plus probable.
+  const clic = (customId: string, qui = '111') => ({ type: 3, token: 'B', locale: 'fr', member: { user: { id: qui } }, data: { custom_id: customId, component_type: 2 } });
+  const ouvrir = async (b: Bouton) => (await (await envoyer(clic(b.custom_id))).json()) as { type: number; data: Modale };
+  const [modaleChilling, modaleTarq] = [await ouvrir(boutons[0]), await ouvrir(boutons[1])];
+  egal([modaleChilling.type, modaleChilling.data.title, modaleChilling.data.components[0].components[0].value], [9, 'VIT de combat', '349'], 'la modale, préremplie de la lecture la plus probable');
+  egal(modaleTarq.data.components[0].components[0].value, undefined, 'sans lecture probable : la modale, vide');
+  egal(((await (await envoyer(clic(boutons[1].custom_id, '222'))).json()) as { type: number }).type, 4, 'un autre que l\'auteur : message privé, pas de modale');
+
+  // La saisie revient avec l'état, remplace la VIT et n'est plus à demander.
+  const soumettre = (customId: string, valeur: string) => ({
+    type: 5, token: 'M', locale: 'fr', member: { user: { id: '111' } },
+    data: { custom_id: customId, components: [{ type: 1, components: [{ type: 4, custom_id: 'vit', value: valeur }] }] },
+  });
+  const invalide = (await (await envoyer(soumettre(modaleTarq.data.custom_id, '3a'))).json()) as { type: number; data: { content: string; flags: number } };
+  egal([invalide.type, invalide.data.flags, invalide.data.content], [4, 64, 'Une VIT est un nombre de 1 à 999.'], 'saisie qui n\'est pas une VIT : message privé');
+  travaux.length = 0;
+  egal(await (await envoyer(soumettre(modaleTarq.data.custom_id, ' 385 '))).json(), { type: 6 }, 'saisie valide : mise à jour différée du message');
+  await Promise.all(travaux);
+  const apresSaisie = dernier();
+  egal(apresSaisie.url, 'https://discord.com/api/v10/webhooks/APP/M/messages/@original', 'le message est remplacé');
+  ok((apresSaisie.corps.embeds[0].description ?? '').includes('**Chilling** ? · **Tarq** 385'), 'la VIT saisie est prise ; l\'autre reste à saisir');
+  egal((apresSaisie.corps.components?.[0].components as Bouton[]).map((b) => b.label), ['Saisir la VIT de Chilling'], 'la VIT saisie n\'a plus de bouton');
+  travaux.length = 0;
+  const modaleChilling2 = (await (await envoyer(clic((apresSaisie.corps.components![0].components[0] as Bouton).custom_id))).json()) as { data: Modale };
+  await envoyer(soumettre(modaleChilling2.data.custom_id, '349'));
+  await Promise.all(travaux);
+  const toutSaisi = dernier();
+  ok(!(toutSaisi.corps.components ?? []).some((r) => r.components.some((c) => c.type === 2 && 'custom_id' in c)) && (toutSaisi.corps.embeds[0].description ?? '').includes('**Chilling** 349 · **Tarq** 385'),
+    'toutes les VIT données : plus aucun bouton de saisie, les autres questions suivent');
+  // Les modales à libellés rangent le champ dans `component`.
+  egal(valeurChamp([{ type: 18, component: { type: 4, custom_id: 'vit', value: '301' } }], 'vit'), '301', 'champ d\'une modale à libellé : trouvé');
 
   // Les refus, en anglais quand Discord est en anglais.
   const titreDe = async (piece: unknown) => {

@@ -76,6 +76,8 @@ export const RELEASES: Release[] = [
     changes: [
       { kind: 'fix', scope: 'Speed tuning', text: '/speedtune lit le dernier chiffre de la VIT quand il déborde de sa pastille (gestion des decks au téléphone).' },
       { kind: 'fix', scope: 'Speed tuning', text: '/speedtune lit les captures agrandies, réduites ou floutées, et ne donne jamais une VIT illisible.' },
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune reconnaît les monstres des captures en JPEG ou floutées.' },
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune ne demande plus de capture plus grande : une VIT mal lue se saisit d\'un clic, préremplie de la lecture la plus probable.' },
     ],
   },
   {
