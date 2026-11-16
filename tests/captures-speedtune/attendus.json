@@ -1,0 +1,19 @@
+{
+  "Capture d'écran 2026-11-15 185523.png": { "ecran": "fenêtre PC 1184 × 662, liste des monstres dessous (une vignette avec sa VIT)", "vit": [316, 201, 227], "monstres": [18311, 26311, 26113] },
+  "Capture d'écran 2026-11-15 185529.png": { "ecran": "les trois attaquants seuls, cadres dorés, 317 × 125", "vit": [316, 201, 227], "monstres": [18311, 26311, 26113] },
+  "Capture d'écran 2026-11-16 000626.png": { "ecran": "gestion des decks, recadrée, 209 × 66", "vit": [349, 364, 375], "monstres": [18311, 20711, 29313] },
+  "Capture d'écran 2026-11-16 000649.png": { "ecran": "gestion des decks, recadrée, 223 × 74", "vit": [349, 364, 375], "monstres": [18311, 20711, 29313] },
+  "Capture d'écran 2026-11-16 000810.png": { "ecran": "gestion des decks, recadrée, 316 × 130", "vit": [349, 364, 375], "monstres": [18311, 20711, 29313] },
+  "Capture d'écran 2026-11-16 000849.png": { "ecran": "gestion des decks, petite fenêtre PC, 705 × 276", "vit": [349, 364, 375], "monstres": [18311, 20711, 29313] },
+  "Capture d'écran 2026-11-16 111828.png": { "ecran": "petite fenêtre PC 747 × 401, cartes de 49 pixels, chiffres de 5 pixels, liste dessous", "vit": [null, null, null], "vitReelles": [350, 377, 205], "monstres": [18311, 21014, 13413] },
+  "Capture d'écran 2026-11-16 111851.png": { "ecran": "les trois attaquants seuls, 184 × 69, chiffres de 5 pixels", "vit": [null, null, null], "vitReelles": [350, 377, 205], "monstres": [18311, 21014, 13413] },
+  "Capture d'écran 2026-11-16 111909.png": { "ecran": "le milieu de l'écran, 1561 × 292", "vit": [350, 377, 205], "monstres": [18311, 21014, 13413] },
+  "Capture d'écran 2026-11-16 111913.png": { "ecran": "les attaquants, recadrée, 739 × 306", "vit": [350, 377, 205], "monstres": [18311, 21014, 13413] },
+  "image.png": { "ecran": "cadres bronze, 1229 × 415", "vit": [337, 404, 368], "monstres": [18311, 21015, 25812] },
+  "image111.png": { "ecran": "les trois attaquants collés, cadre doré du panneau à côté, 422 × 125", "vit": [314, 404, 355], "monstres": [18311, 21015, 25812] },
+  "image112.png": { "ecran": "cadres bronze, recadrée, 596 × 249", "vit": [337, 404, 368], "monstres": [18311, 21015, 25812] },
+  "image113.png": { "ecran": "fenêtre PC avec barre de titre, anglais, 1199 × 682, liste dessous (deux vignettes avec leur VIT)", "vit": [339, 384, 363], "monstres": [20115, 26311, 29311] },
+  "image114.png": { "ecran": "fenêtre PC sans barre de titre, 1187 × 646", "vit": [339, 384, 363], "monstres": [20115, 26311, 29311] },
+  "image115.png": { "ecran": "le milieu de l'écran, 1136 × 300", "vit": [339, 384, 363], "monstres": [20115, 26311, 29311] },
+  "telephone 2556x1179.png": { "ecran": "téléphone 2556 × 1179", "vit": [362, 383, 349], "monstres": [22712, 26311, 26113] }
+}

@@ -70,6 +70,17 @@ export function journal(langue: Langue): Release[] {
 // Si une ligne dépasse ~15 mots, c'est qu'elle raconte l'implémentation.
 export const RELEASES: Release[] = [
   {
+    version: '2.4.5',
+    date: '2026-11-16',
+    title: '/speedtune lit les petits chiffres et toutes les images',
+    changes: [
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune lit la VIT d’une petite fenêtre PC, chiffres de 7 pixels compris.' },
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune accepte une capture en WebP, comme une image copiée depuis Discord.' },
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune reconnaît l’équipe aux VIT affichées sur ses cartes, quelle que soit leur taille, même dans une capture de tout l’écran.' },
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune lit une capture collée dans Discord (Ctrl+V), et une capture de plusieurs écrans jusqu’à 25 Mo.' },
+    ],
+  },
+  {
     version: '2.4.4',
     date: '2026-11-15',
     title: '/speedtune lit les cartes de toutes les couleurs',

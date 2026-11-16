@@ -15,9 +15,12 @@ export interface Image {
   rgba: Uint8Array; // 4 octets par pixel, ligne par ligne
 }
 
-// Au-delà, la capture n'est pas un écran de téléphone : on refuse avant de
-// décoder (une image de 20 000 × 20 000 pèse 1,6 Go une fois décodée).
-export const PIXELS_MAX = 16_000_000;
+// Au-delà, on refuse avant de décoder (une image de 20 000 × 20 000 pèse
+// 1,6 Go une fois décodée). En deçà, toute capture d'écran passe, même de
+// tout un bureau : `Win + Impr. écran` prend tous les écrans d'un coup, et
+// deux écrans 4K font 16,6 millions de pixels ; un écran 8K (33 millions) se
+// lit en 2,3 s avec 0,5 Go de mémoire.
+export const PIXELS_MAX = 40_000_000;
 
 const estPng = (o: Uint8Array) => o.length > 8 && o[0] === 0x89 && o[1] === 0x50 && o[2] === 0x4e && o[3] === 0x47;
 const estJpeg = (o: Uint8Array) => o.length > 3 && o[0] === 0xff && o[1] === 0xd8 && o[2] === 0xff;
@@ -29,6 +32,13 @@ export function dimensionsPng(o: Uint8Array): { largeur: number; hauteur: number
   if (o.length < 24 || o[12] !== 0x49 || o[13] !== 0x48 || o[14] !== 0x44 || o[15] !== 0x52) return null;
   const vue = new DataView(o.buffer, o.byteOffset, o.byteLength);
   return { largeur: vue.getUint32(16), hauteur: vue.getUint32(20) };
+}
+
+// Un PNG dont l'en-tête annonce plus de PIXELS_MAX pixels : à refuser comme
+// trop lourd, pas comme illisible.
+export function imageTropGrande(octets: Uint8Array): boolean {
+  const dims = estPng(octets) ? dimensionsPng(octets) : null;
+  return !!dims && dims.largeur * dims.hauteur > PIXELS_MAX;
 }
 
 // `null` : ni PNG ni JPEG, illisible, ou trop grande.

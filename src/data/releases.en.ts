@@ -9,6 +9,17 @@ import type { Release } from './releases';
 
 export const RELEASES_EN: Release[] = [
   {
+    version: '2.4.5',
+    date: '2026-11-16',
+    title: '/speedtune reads small digits and every image',
+    changes: [
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune reads the SPD of a small PC window, 7-pixel digits included.' },
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune accepts a WebP screenshot, like an image copied from Discord.' },
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune recognises the team by the SPD shown on its cards, whatever their size, even in a full-screen capture.' },
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune reads a screenshot pasted into Discord (Ctrl+V), and a multi-screen capture up to 25 MB.' },
+    ],
+  },
+  {
     version: '2.4.4',
     date: '2026-11-15',
     title: '/speedtune reads cards of every colour',

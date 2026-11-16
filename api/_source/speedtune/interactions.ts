@@ -26,7 +26,7 @@ import { kitVitesse, sortsVitesse } from '../../../src/lib/speedTuneKit';
 import { passifsVitesse, pointsDeGain, type PassifVitesse } from '../../../src/lib/speedTunePassif';
 import { sortRetenu, sortSecondRetenu, type DonneesKit, type EntreeAuto } from '../../../src/lib/speedTuneAuto';
 import { API, type Recuperer } from '../service/discordApi';
-import { decoderImage } from '../capture/image';
+import { decoderImage, imageTropGrande } from '../capture/image';
 import type { Banque } from '../capture/portraits';
 import type { Gabarits } from '../capture/chiffres';
 import { lireEcranPreparation, type LectureEcran } from '../capture/ecranPreparation';
@@ -37,14 +37,16 @@ import type { Emojis } from './emojis';
 
 export const COMMANDE = 'speedtune';
 export const OPTION_CAPTURE = 'capture';
-export const TAILLE_MAX_IMAGE = 10 * 1024 * 1024;
+// Une capture PNG de deux écrans 4K chargés dépasse 10 Mo, et Discord Nitro
+// permet de l'envoyer : 25 Mo au plus.
+export const TAILLE_MAX_IMAGE = 25 * 1024 * 1024;
 const CDN_DISCORD = /^https:\/\/(cdn\.discordapp\.com|media\.discordapp\.net)\//;
 // Sous ce score, le portrait n'est pas celui d'un monstre : la capture n'est
 // pas l'écran attendu (un portrait juste dépasse 0,8).
 export const SCORE_PORTRAIT_MIN = 0.5;
 // Écart au deuxième candidat sous lequel le portrait est dit incertain.
 export const ECART_DOUTE = 0.05;
-// Sous cette confiance, la VIT lue est dite incertaine (sous 0,65, elle n'est
+// Sous cette confiance, la VIT lue est dite incertaine (sous 0,7, elle n'est
 // pas lue du tout : CONFIANCE_VIT_PLANCHER).
 export const CONFIANCE_VIT_MIN = 0.75;
 const ATTENTE_AVANT_CALCUL_MS = 50;
@@ -80,7 +82,20 @@ export function signatureValide(clePublique: string, signature: string, horodata
   }
 }
 
-interface PieceJointe { url: string; content_type?: string; size: number }
+interface PieceJointe { url: string; proxy_url?: string; content_type?: string; size: number }
+
+// Une image ni PNG ni JPEG (WebP — une image copiée ou enregistrée depuis
+// Discord l'est —, GIF, AVIF…) : le proxy d'images de Discord la rend en PNG
+// à la demande (`format=png`). `null` hors des adresses de Discord.
+export function adresseEnPng(piece: PieceJointe): string | null {
+  const base = piece.proxy_url && CDN_DISCORD.test(piece.proxy_url)
+    ? piece.proxy_url
+    : piece.url.replace(/^https:\/\/cdn\.discordapp\.com\//, 'https://media.discordapp.net/');
+  if (!CDN_DISCORD.test(base)) return null;
+  const u = new URL(base);
+  u.searchParams.set('format', 'png');
+  return u.toString();
+}
 interface Utilisateur { id: string }
 interface Interaction {
   type: number;
@@ -134,16 +149,31 @@ export function creerInteractions(d: DependancesInteractions) {
     // main, le temps que la réponse parte.
     await new Promise((ok) => setTimeout(ok, ATTENTE_AVANT_CALCUL_MS));
     try {
-      if (!piece || !CDN_DISCORD.test(piece.url) || !/^image\/(png|jpeg)$/.test(piece.content_type ?? '')) {
+      // ⚠️ Toute pièce jointe s'accepte, quel que soit son type annoncé (absent,
+      // WebP, `application/octet-stream` d'une image collée…) : il ne dit pas
+      // si on saura la lire, ses octets le disent — et sinon, la conversion
+      // de Discord.
+      if (!piece || !CDN_DISCORD.test(piece.url)) {
+        console.error(`capture refusée : pièce ${piece ? `de type ${piece.content_type ?? 'inconnu'}` : 'absente'}`);
         return await remplacer(token, embedErreur(langue, 'pasImage'));
       }
       if (piece.size > TAILLE_MAX_IMAGE) return await remplacer(token, embedErreur(langue, 'tropLourde'));
       const r = await d.recuperer(piece.url);
       if (!r.ok) throw new Error(`pièce jointe HTTP ${r.status}`);
       const octets = new Uint8Array(await r.arrayBuffer());
-      if (octets.length > TAILLE_MAX_IMAGE) return await remplacer(token, embedErreur(langue, 'tropLourde'));
-      const img = decoderImage(octets);
-      if (!img) return await remplacer(token, embedErreur(langue, 'pasImage'));
+      if (octets.length > TAILLE_MAX_IMAGE || imageTropGrande(octets)) return await remplacer(token, embedErreur(langue, 'tropLourde'));
+      let img = decoderImage(octets);
+      const enPng = img ? null : adresseEnPng(piece);
+      if (enPng) {
+        const rc = await d.recuperer(enPng);
+        const converti = rc.ok ? new Uint8Array(await rc.arrayBuffer()) : null;
+        if (converti && converti.length <= TAILLE_MAX_IMAGE) img = decoderImage(converti);
+      }
+      if (!img) {
+        const debut = Array.from(octets.subarray(0, 12), (o) => o.toString(16).padStart(2, '0')).join(' ');
+        console.error(`capture refusée : type ${piece.content_type ?? 'inconnu'}, ${octets.length} octets, début ${debut}`);
+        return await remplacer(token, embedErreur(langue, 'pasImage'));
+      }
       const res = await d.ressources();
       const etat = etatDeLecture(res, lireEcranPreparation(img, res.banque, res.gabarits), auteur);
       return await remplacer(token, 'erreur' in etat ? embedErreur(langue, etat.erreur) : await repondre(res, etat, langue));
