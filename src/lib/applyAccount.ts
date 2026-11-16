@@ -3,7 +3,17 @@
 // global (App) pour alimenter toutes les pages d'un coup.
 
 import { GearSet, Monster, RTA_OTHER, RTA_UNASSIGNED, RUNE_SETS } from '../types';
-import { BoxMonster, ImportedUnit, SiegeImportedDeck, parseDimensionDefense, parseDimensionOffense } from './importAccount';
+import {
+  AccountSource,
+  BoxMonster,
+  ImportedUnit,
+  SiegeImportedDeck,
+  parseArenaDefense,
+  parseArenaInterserveurDefense,
+  parseArenaOffense,
+  parseDimensionDefense,
+  parseDimensionOffense,
+} from './importAccount';
 import type { Dictionnaire } from '../i18n/fr';
 import { RtaVueAmi } from './rtaShare';
 import { SIEGE_TICKS, combatSpeed, leadPour, speedLeadOf, type RegleLead } from './speed';
@@ -197,6 +207,28 @@ export function mapSiegeTeams(
     };
   });
   return { teams, missing };
+}
+
+// Les équipes de l'arène classique d'un export, prêtes pour les états :
+// défense, offense, défense interserveur. Leads d'arène.
+export function equipesAreneClassique(
+  data: AccountSource,
+  byCom2us: Map<number, Monster>,
+  t: Dictionnaire
+): Record<'defense' | 'offense' | 'interserveur', ReturnType<typeof mapSiegeTeams>> {
+  return {
+    defense: mapSiegeTeams(parseArenaDefense(data, t).decks, byCom2us, 'arene'),
+    offense: mapSiegeTeams(parseArenaOffense(data, t).decks, byCom2us, 'arene'),
+    interserveur: mapSiegeTeams(parseArenaInterserveurDefense(data, t).decks, byCom2us, 'arene'),
+  };
+}
+
+// L'arène classique est-elle vide (aucune équipe d'aucun côté) ? Le dossier
+// SW Exporter la remplit alors depuis un export qui ne met à jour que « Mon
+// compte » : l'arène, arrivée après le choix de l'invocateur, n'attendrait
+// sinon qu'un nouveau choix.
+export function areneClassiqueVide(equipes: { defense: unknown[]; offense: unknown[]; interserveur: unknown[] }): boolean {
+  return equipes.defense.length === 0 && equipes.offense.length === 0 && equipes.interserveur.length === 0;
 }
 
 // Les équipes de l'arène dimensionnelle, prêtes pour les états : la défense de

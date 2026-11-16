@@ -80,7 +80,11 @@ latérale, qui devient alors un menu.
   plus récent que le dernier lu, puis à chaque écriture tant que l'app est
   ouverte — met à jour **« Mon compte » seulement** (box 6★, inventaire,
   reliques, runes utilisées, marqueurs), annoncé par « Compte de
-  <invocateur> mis à jour depuis SW Exporter ».
+  <invocateur> mis à jour depuis SW Exporter ». **Rattrapage** : si l'arène
+  classique est vide (aucune équipe d'aucun côté), ses équipes viennent de
+  cet export (`areneClassiqueVide`, `equipesAreneClassique`) — un dossier
+  suivi avant l'arrivée de l'arène n'aurait sinon d'import complet qu'au
+  prochain choix de l'invocateur.
 - ⚠️ **Après le choix, jamais la prépa RTA ni le siège.** L'import complet
   les REMPLACE (classement RTA, leads et ticks remis à zéro) : le faire à
   chaque connexion au jeu effacerait le travail de l'utilisateur. Le

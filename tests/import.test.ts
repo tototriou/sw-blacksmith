@@ -23,7 +23,7 @@ import {
   unionRunesUtilisees,
 } from '../src/lib/importAccount';
 import { estJournalSwex, lireSaisonDimension, saisonDeLInvocateur } from '../src/lib/journalSwex';
-import { equipesDimension } from '../src/lib/applyAccount';
+import { areneClassiqueVide, equipesAreneClassique, equipesDimension } from '../src/lib/applyAccount';
 import type { Monster } from '../src/types';
 import { formatRelicUnique } from '../src/lib/effects';
 import { egal, exportReel, exportExemplairesMultiples, exportSynthetique, ignore, journalSwexMiniature, journalSwexReel, ok, titre } from './outils';
@@ -278,6 +278,20 @@ export default function testImport() {
     [dim.defense.teams.map((e) => e.slots.map((s) => s.monsterId)), dim.offense.teams.length, dim.defense.missing + dim.offense.missing],
     [[['m15105', 'm14314', null, null]], 1, 0],
     'dimension : la défense et les attaques, prêtes pour les états'
+  );
+
+  // L'arène classique, prête pour les états — partagée par l'import complet et
+  // le rattrapage du dossier SW Exporter (arène vide).
+  const classique = equipesAreneClassique(objet, parCom2us, fr);
+  egal(
+    [classique.defense.teams.length, classique.offense.teams.length, classique.interserveur.teams.length],
+    [1, 1, 1],
+    'arène classique : défense, offense et interserveur de l’export'
+  );
+  ok(
+    areneClassiqueVide({ defense: [], offense: [], interserveur: [] }) &&
+      !areneClassiqueVide({ defense: [], offense: [{}], interserveur: [] }),
+    'arène classique vide : aucune équipe d’aucun côté, et elle seule'
   );
 
   /* --- Runes utilisées (decks tous contenus + RTA) --------------------- */

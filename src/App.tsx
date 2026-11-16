@@ -142,9 +142,6 @@ import {
   parseAccountSource,
   parseSiegeDefense,
   parseSiegeOffense,
-  parseArenaDefense,
-  parseArenaInterserveurDefense,
-  parseArenaOffense,
   parseAccountBox,
   parseAccountInventory,
   parseUsedRuneIdsParPerimetre,
@@ -153,7 +150,15 @@ import {
   RunesUtilisees,
   runesUtiliseesVides,
 } from './lib/importAccount';
-import { mapRtaItems, mapSiegeTeams, mapBoxMonsters, BoxItem, equipesDimension } from './lib/applyAccount';
+import {
+  mapRtaItems,
+  mapSiegeTeams,
+  mapBoxMonsters,
+  BoxItem,
+  areneClassiqueVide,
+  equipesAreneClassique,
+  equipesDimension,
+} from './lib/applyAccount';
 import { photographierMemoire, reinitialiserSticky, useStickyState } from './hooks/useStickyState';
 import { PREFIXE_SPEED_TUNE } from './hooks/useSpeedTune';
 import { VUES_INVENTAIRE, hashVue, vueParDefaut, vueValide, type CleNavigation } from './lib/accountViews';
@@ -897,9 +902,8 @@ function Application() {
     const off = mapSiegeTeams(offRes.decks ?? [], monsterByCom2us);
     // L'arène : ses équipes de 4, avec les leads d'arène. Un compte sans arène
     // ne la vide pas (seules les cibles qui ont des données sont touchées).
-    const areneDefRes = mapSiegeTeams(parseArenaDefense(data, textes).decks, monsterByCom2us, 'arene');
-    const areneOffRes = mapSiegeTeams(parseArenaOffense(data, textes).decks, monsterByCom2us, 'arene');
-    const areneInterRes = mapSiegeTeams(parseArenaInterserveurDefense(data, textes).decks, monsterByCom2us, 'arene');
+    const arene = equipesAreneClassique(data, monsterByCom2us, textes);
+    const { defense: areneDefRes, offense: areneOffRes, interserveur: areneInterRes } = arene;
     const { boxItems } = compte;
 
     if (
@@ -922,9 +926,7 @@ function Application() {
     }
     if (def.teams.length) siegeDef.importTeams(def.teams);
     if (off.teams.length) siegeOff.importTeams(off.teams);
-    if (areneDefRes.teams.length) areneDef.importTeams(areneDefRes.teams);
-    if (areneOffRes.teams.length) areneOff.importTeams(areneOffRes.teams);
-    if (areneInterRes.teams.length) areneInter.importTeams(areneInterRes.teams);
+    appliquerArene(arene);
 
     appliquerCompte(data, compte);
 
@@ -1057,8 +1059,21 @@ function Application() {
     const compte = preparerCompte(data);
     if (compte.boxItems.length === 0) return { ok: false, nom: null };
     if (complet) appliquerTout(data, compte, false);
-    else appliquerCompte(data, compte);
+    else {
+      appliquerCompte(data, compte);
+      // Rattrapage : l'arène classique, vide, se remplit de cet export — un
+      // dossier suivi avant l'arrivée de l'arène n'aurait sinon d'import
+      // complet qu'au prochain choix de l'invocateur.
+      if (areneClassiqueVide(equipesArene)) appliquerArene(equipesAreneClassique(data, monsterByCom2us, textes));
+    }
     return { ok: true, nom: compte.nomJoueur };
+  }
+
+  // Les équipes de l'arène classique : seuls les côtés qui en ont sont touchés.
+  function appliquerArene(arene: ReturnType<typeof equipesAreneClassique>) {
+    if (arene.defense.teams.length) areneDef.importTeams(arene.defense.teams);
+    if (arene.offense.teams.length) areneOff.importTeams(arene.offense.teams);
+    if (arene.interserveur.teams.length) areneInter.importTeams(arene.interserveur.teams);
   }
 
   // Le dossier SW Exporter : une nouvelle saison de l'arène dimensionnelle,

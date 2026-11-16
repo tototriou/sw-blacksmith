@@ -268,7 +268,8 @@ côté du service : [service-discord.md § Application de bureau](../siege/feat-
   pour l'export qui suit le choix d'un invocateur — ou d'un dossier qui en
   désigne un d'office —, après la proposition de sauvegarder la session si
   le travail a changé ; puis **« Mon compte » seulement** pour chaque export
-  suivant, jamais la prépa RTA ni le siège (voir [transverse/feat-import-compte/bouton-import.md](../transverse/feat-import-compte/bouton-import.md), § « Le dossier SW
+  suivant (et l'arène classique si elle est vide : rattrapage), jamais la
+  prépa RTA ni le siège (voir [transverse/feat-import-compte/bouton-import.md](../transverse/feat-import-compte/bouton-import.md), § « Le dossier SW
   Exporter »). Le processus principal marque `complet` l'export qui suit un
   choix (`bureau:swex-export`), jusqu'au `bureau:swex-lu` de la page.
 - **Quand** : au chargement de la page, si l'export est plus récent que le
