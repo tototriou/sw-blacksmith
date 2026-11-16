@@ -75,6 +75,7 @@ export const RELEASES: Release[] = [
     title: '/speedtune lit toute la VIT au téléphone',
     changes: [
       { kind: 'fix', scope: 'Speed tuning', text: '/speedtune lit le dernier chiffre de la VIT quand il déborde de sa pastille (gestion des decks au téléphone).' },
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune lit les captures agrandies, réduites ou floutées, et ne donne jamais une VIT illisible.' },
     ],
   },
   {
