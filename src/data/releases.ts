@@ -76,6 +76,8 @@ export const RELEASES: Release[] = [
     changes: [
       { kind: 'fix', scope: 'Speed tuning', text: '/speedtune lit la VIT d’une petite fenêtre PC, chiffres de 7 pixels compris.' },
       { kind: 'fix', scope: 'Speed tuning', text: '/speedtune accepte une capture en WebP, comme une image copiée depuis Discord.' },
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune reconnaît l’équipe aux VIT affichées sur ses cartes, quelle que soit leur taille, même dans une capture de tout l’écran.' },
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune lit une capture collée dans Discord (Ctrl+V), et une capture de plusieurs écrans jusqu’à 25 Mo.' },
     ],
   },
   {
