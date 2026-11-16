@@ -91,7 +91,13 @@ export function pastilleVitesse(img: Image, [x, y, l, h]: Rect): Rect | null {
   // pixels) est un mélange de blanc et de fond, sous le seuil du clair ; sans
   // elle, le chiffre perd son haut.
   const dessus = Math.max(yHaut, haut - 1);
-  return [debut, dessus, droite - debut + 1, bas - dessus + 1];
+  // À droite, la même marge qu'à gauche : la rangée sombre du bas s'arrête au
+  // coin arrondi de la pastille, et le dernier chiffre peut la dépasser (relevé :
+  // 1 à 2 pixels sur une capture de téléphone en 2640 × 1080, qui coupaient le
+  // 8 de 328 et de 368). Le cadre de la carte, s'il entre, n'est pas de l'encre :
+  // sa plus faible composante reste sous celle des chiffres blancs.
+  const fin = Math.min(largeur - 1, droite + Math.max(2, Math.round(0.3 * (bas - haut))));
+  return [debut, dessus, fin - debut + 1, bas - dessus + 1];
 }
 
 export function zoneVitesse(img: Image, carte: Rect): Image | null {

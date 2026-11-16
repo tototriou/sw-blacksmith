@@ -9,6 +9,14 @@ import type { Release } from './releases';
 
 export const RELEASES_EN: Release[] = [
   {
+    version: null,
+    date: '2026-11-16',
+    title: '/speedtune reads the whole SPD on phones',
+    changes: [
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune reads the last SPD digit when it overflows its pill (deck management on phones).' },
+    ],
+  },
+  {
     version: '2.4.5',
     date: '2026-11-16',
     title: '/speedtune reads small digits and every image',
