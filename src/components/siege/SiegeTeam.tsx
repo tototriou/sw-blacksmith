@@ -401,18 +401,15 @@ export default function SiegeTeam({
       // prend la hauteur de la plus haute des trois : la pastille de lead sous
       // le nom du leader ne décale plus sa vitesse ni ses ticks par rapport
       // aux deux autres. Au doigt (slots empilés), rien ne change.
-      // ⚠️ **Quatre places (arène) : deux colonnes, quatre seulement si la
-      // CARTE fait 1 100 px.** Côte à côte sur la largeur où le siège en met
-      // trois, une place ne faisait plus que ~210 px : flèches et croix sur
-      // les sets, « VIT : » coupé, ticks hors de la carte. C'est la largeur
-      // de la carte qui décide (`@container`), pas celle de l'écran — la
-      // barre latérale en prend une part. Le siège garde sa grille : son
-      // enveloppe est en `contents`, elle ne crée aucune boîte.
-      <div className={team.slots.length === 4 ? '@container' : 'contents'}>
+      // ⚠️ **Quatre places (arène) : une équipe tient sur UNE ligne**
+      // (le mainteneur). Chaque place est RESSERRÉE (`serre`, SlotContent) :
+      // sur la largeur où le siège en met trois, une place ne fait que
+      // ~210 px. Une ligne de plus (les ticks passent sous le champ SPD) :
+      // quatre lignes alignées au lieu de trois.
       <div
         className={
           team.slots.length === 4
-            ? 'grid grid-cols-1 gap-2.5 sm:grid-cols-2 @[1100px]:grid-cols-4'
+            ? 'grid grid-cols-1 gap-2 sm:grid-cols-4 lg:grid-rows-[repeat(4,auto)] lg:gap-y-0'
             : 'grid grid-cols-1 gap-2.5 sm:grid-cols-3 lg:grid-rows-[repeat(3,auto)] lg:gap-y-0'
         }
       >
@@ -431,7 +428,7 @@ export default function SiegeTeam({
                 e.preventDefault();
                 handleDrop(idx);
               }}
-              className={`rounded-xl border transition-colors lg:row-span-3 lg:grid lg:grid-rows-subgrid ${
+              className={`rounded-xl border transition-colors lg:grid lg:grid-rows-subgrid ${team.slots.length === 4 ? 'lg:row-span-4' : 'lg:row-span-3'} ${
                 overIdx === idx
                   ? 'border-accent bg-panel2'
                   : slotDanger
@@ -451,6 +448,7 @@ export default function SiegeTeam({
                 slot={slot}
                 idx={idx}
                 isLeader={idx === 0}
+                serre={team.slots.length === 4}
                 dernier={team.slots.length - 1}
                 regleLead={regleLead}
                 leadInfo={leadInfo}
@@ -473,7 +471,6 @@ export default function SiegeTeam({
           );
         })}
       </div>
-      </div>
       ) : (
         /* Vue compacte : cards des 3 monstres, clic = déplier le détail dessous.
            ⚠️ **En RANGÉE dès le plus petit écran.** Elles s'empilaient sous
@@ -483,10 +480,10 @@ export default function SiegeTeam({
            une rangée de trois, l'empiler défait ce qu'on vient lire.
            Le portrait descend à 30 px et le nom passe en `text-micro` pour que
            les trois tiennent sur 348 px.
-           ⚠️ Quatre (arène) n'y tiennent pas : ~84 px chacune, la vitesse et
-           les sets ne passent plus. Sous `sm`, deux rangées de deux, chacune
-           plus large qu'au siège ; au-dessus, la rangée. */
-        <div className={team.slots.length === 4 ? 'grid grid-cols-2 gap-1.5 compact:gap-1 sm:flex sm:flex-row' : 'flex flex-row gap-1.5 compact:gap-1'}>
+           ⚠️ Quatre (arène) restent sur UNE ligne (le mainteneur) : ~84 px
+           chacune sous `sm`, où la carte EMPILE le portrait au-dessus du nom et
+           de la ligne vitesse + sets — côte à côte, la vitesse ne passait plus. */
+        <div className="flex flex-row gap-1.5 compact:gap-1">
           {slotInfos.map(({ monster, combat }, idx) => {
             const danger = statut === 'rouge' ? slotDangers[idx] : null;
             const sets = team.slots[idx].sets ?? [];
@@ -510,7 +507,7 @@ export default function SiegeTeam({
                       ? textes.carteRta.voirRunes
                       : e.modifier
                 }
-                className={`flex-1 min-w-0 flex items-center gap-2 rounded-lg border
+                className={`flex-1 min-w-0 flex items-center gap-2 rounded-lg border ${team.slots.length === 4 ? 'max-sm:flex-col max-sm:items-stretch max-sm:gap-1' : ''}
                   px-2 py-1.5 compact:gap-1 compact:px-1 compact:py-1 transition hoverable:border-accent ${
                   active
                     ? // Bordure seule, sans anneau superposé — voir docs/03-developpeur/interface/design/tokens-couleurs.md.
@@ -534,7 +531,7 @@ export default function SiegeTeam({
                     <MonsterAvatar
                       monster={monster}
                       gabarit="div"
-                      classeTaille="w-[36px] h-[36px] compact:w-[30px] compact:h-[30px]"
+                      classeTaille={team.slots.length === 4 ? "w-[36px] h-[36px] compact:w-[30px] compact:h-[30px] max-sm:self-center" : "w-[36px] h-[36px] compact:w-[30px] compact:h-[30px]"}
                       classeInitiales="text-micro"
                       tailleElement={13}
                       lead={idx === 0 ? monster.leaderSkill : null}
@@ -795,6 +792,8 @@ interface SlotProps {
   idx: number;
   isLeader: boolean;
   // L'index de la dernière place (2 au siège, 3 en arène).
+  // Quatre places sur une ligne (arène) : la place se resserre.
+  serre: boolean;
   dernier: number;
   regleLead: RegleLead;
   leadInfo: LeadInfo | null;
@@ -821,6 +820,7 @@ function SlotContent({
   idx,
   isLeader,
   dernier,
+  serre,
   regleLead,
   leadInfo,
   combat,
@@ -851,7 +851,7 @@ function SlotContent({
       // slots sont dans une grille, qui les aligne déjà sur le plus haut.
       // `lg:grid-rows-subgrid` : l'étiquette tombe sur la ligne du monstre, le
       // champ de recherche sur celle de la vitesse — alignés sur les voisins.
-      <div className="flex flex-col justify-center p-2.5 compact:min-h-[110px] compact:p-2 lg:row-span-3 lg:grid lg:grid-rows-subgrid lg:content-start">
+      <div className={serre ? 'flex flex-col justify-center p-2 compact:min-h-[110px] lg:row-span-4 lg:grid lg:grid-rows-subgrid lg:content-start' : 'flex flex-col justify-center p-2.5 compact:min-h-[110px] compact:p-2 lg:row-span-3 lg:grid lg:grid-rows-subgrid lg:content-start'}>
         <div className="flex items-center gap-1.5 mb-2">
           {isLeader && <Crown size={13} className="text-star" />}
           <span className="label">
@@ -943,9 +943,16 @@ function SlotContent({
       //   3. la CONCLUSION, en bas : la vitesse de combat, sa base, l'écart au
       //      tick — demandé par le mainteneur : « la spd et la conclusion en bas, car
       //      c'est la conclusion ».
-      className="relative flex flex-col p-2.5 compact:min-h-[110px] compact:p-2 lg:row-span-3 lg:grid lg:grid-rows-subgrid lg:grid-cols-[auto_1fr] lg:items-center lg:gap-x-3"
+      // ⚠️ `serre` (quatre places sur une ligne, arène) : une seule colonne
+      // et quatre lignes — le monstre, le SPD, les ticks, la conclusion. Les
+      // ticks passent SOUS le champ SPD : à côté, ils sortaient de la place.
+      className={
+        serre
+          ? 'relative flex flex-col p-2 compact:min-h-[110px] lg:row-span-4 lg:grid lg:grid-rows-subgrid lg:grid-cols-1 lg:items-center'
+          : 'relative flex flex-col p-2.5 compact:min-h-[110px] compact:p-2 lg:row-span-3 lg:grid lg:grid-rows-subgrid lg:grid-cols-[auto_1fr] lg:items-center lg:gap-x-3'
+      }
     >
-      <div className="mb-2 flex items-center gap-1.5 compact:mb-1 lg:col-span-2">
+      <div className={serre ? 'mb-2 flex items-center gap-1 compact:mb-1' : 'mb-2 flex items-center gap-1.5 compact:mb-1 lg:col-span-2'}>
         <ZoneCliquable
           poignee
           draggable
@@ -966,21 +973,25 @@ function SlotContent({
         <MonsterAvatar
           monster={monster}
           gabarit="div"
-          classeTaille="w-[38px] h-[38px] compact:w-[32px] compact:h-[32px]"
+          classeTaille={serre ? 'w-[32px] h-[32px]' : 'w-[38px] h-[38px] compact:w-[32px] compact:h-[32px]'}
           classeInitiales="text-xs"
           element={false}
           lead={isLeader ? monster.leaderSkill : null}
         />
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-1.5">
-            <span className="truncate text-sm font-semibold leading-tight compact:text-xs">
+          {/* Resserré, les sets passent SOUS le nom, plus petits : à côté, ils
+              ne lui laissaient presque plus de place. */}
+          <div className={serre ? 'flex flex-col items-start gap-0.5' : 'flex items-center gap-1.5'}>
+            <span className={serre ? 'w-full truncate text-xs font-semibold leading-tight' : 'truncate text-sm font-semibold leading-tight compact:text-xs'}>
               {monster.name}
             </span>
-            <SetsPortes sets={slot.sets ?? []} max={3} taille={18} espacement="gap-1" className="flex-none" />
+            <SetsPortes sets={slot.sets ?? []} max={3} taille={serre ? 14 : 18} espacement="gap-1" className="flex-none" />
           </div>
           {/* Pastille complète (icône + montant) sous le nom du leader : ici il
-              y a la place, donc on montre le chiffre, pas seulement le badge. */}
-          {isLeader && monster.leaderSkill && (
+              y a la place, donc on montre le chiffre, pas seulement le badge.
+              Resserré, elle n'y est pas : l'en-tête de l'équipe la porte déjà, et
+              le badge du portrait dit qui est le leader. */}
+          {isLeader && monster.leaderSkill && !serre && (
             <div className="mt-1">
               <LeadPill ls={monster.leaderSkill} regle={regleLead} />
             </div>
@@ -1038,7 +1049,7 @@ function SlotContent({
       <div className="mt-1 flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 compact:mt-0.5 lg:contents">
         {/* Pas de filet au-dessus de la conclusion : essayé, retiré par
             Le mainteneur (« pas besoin de séparateur dans la card »). */}
-        <div className="lg:col-span-2 lg:row-start-3 lg:mt-2">
+        <div className={serre ? 'lg:row-start-4 lg:mt-2' : 'lg:col-span-2 lg:row-start-3 lg:mt-2'}>
           {/* ⚠️ 16 px au doigt contre 22 à la souris. Le
               nom du monstre est la RÉFÉRENCE de ce bloc : la vitesse doit rester
               au-dessus de lui sans l'écraser — un rapport de 1,3 à 1,6 suffit à
@@ -1074,7 +1085,7 @@ function SlotContent({
 
       {/* Tick cible, propre à ce monstre — à la souris, sur la ligne de la
           saisie, à droite du champ SPD. */}
-      <div className="mt-2 flex flex-wrap items-center gap-1.5 compact:mt-1 compact:gap-1 lg:col-start-2 lg:row-start-2 lg:mt-0">
+      <div className={serre ? 'mt-2 flex flex-wrap items-center gap-1.5 compact:mt-1 compact:gap-1 lg:col-start-1 lg:row-start-3' : 'mt-2 flex flex-wrap items-center gap-1.5 compact:mt-1 compact:gap-1 lg:col-start-2 lg:row-start-2 lg:mt-0'}>
         {/* ⚠️ **Recliquer sur le tick visé l'ENLÈVE** — demandé par le mainteneur,
             avec le retrait du bouton « Off » à la souris : un bouton à deux
             états s'éteint là où on l'a allumé, sans aller chercher un

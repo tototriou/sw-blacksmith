@@ -44,15 +44,18 @@ effacer », création d'un monstre.
 - **4 places par équipe.** Les flèches de position s'arrêtent à la 4ᵉ. Une
   colonne de la liste fait **640 px au moins** (480 au siège) : la largeur où
   quatre monstres repliés tiennent côte à côte, au même ratio que trois sur 480.
-- ⚠️ **La carte dépliée, au bureau : deux colonnes de deux places, quatre
-  seulement si la CARTE fait 1 100 px** (`@container`, `@[1100px]:grid-cols-4`).
-  Quatre colonnes sur la largeur où le siège en met trois laissaient ~210 px par
-  place : flèches et croix sur les sets, « VIT : » coupé, boutons de tick hors de
-  la carte. C'est la largeur de la carte qui décide, pas celle de l'écran (la
-  barre latérale en prend une part). Le siège garde sa grille.
-- **La vue repliée, au téléphone : deux rangées de deux** (sous `sm`). Quatre
-  sur une rangée de 348 px laissaient ~84 px par monstre, trop peu pour la
-  vitesse et les sets ; au-dessus de `sm`, une seule rangée.
+- ⚠️ **Une équipe tient sur UNE ligne** (le mainteneur), dépliée comme
+  repliée : sur la largeur où le siège met trois places, chacune est
+  **resserrée** (`serre`, SlotContent).
+  - Dépliée, au bureau (~210 px la place) : portrait à 32 px, sets à 14 px SOUS
+    le nom, pas de pastille de lead dans la place (l'en-tête de l'équipe la
+    porte, le badge du portrait dit qui est le leader), et une colonne de
+    QUATRE lignes alignées — le monstre, le champ SPD, les ticks (sous le champ,
+    plus à côté), la conclusion. À côté, les ticks sortaient de la place et
+    « VIT : » se coupait.
+  - Repliée, au téléphone (~84 px la carte sous `sm`) : la carte EMPILE le
+    portrait au-dessus du nom et de la ligne vitesse + sets.
+  - Le siège garde ses trois places et sa disposition.
 - **Leads d'arène** (`regleLead="arene"`) : un lead d'**Arène** ou **sans
   restriction** vaut pour tous, un lead d'**élément** pour son élément, un lead
   de **guilde** ou de **donjon** ne compte pas. La pastille de lead le dit
