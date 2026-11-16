@@ -392,8 +392,8 @@ export default function testImport() {
   );
   const marquees = parseAccountInventory(reelObjet, fr).runes.filter((r) => r.marker !== undefined).length;
   ok(marquees > 0, `export réel : ${marquees} runes marquées`);
-  // Arène : des attaques de 4 monstres (15 relevées), et deux défenses pleines,
-  // le même leader en tête (relevé : N1X, lead d'arène).
+  // Arène : des attaques de 4 monstres (15 relevées), et deux défenses pleines.
+  // Leur leader n'est pas forcément le même : le joueur compose chacune.
   const offAreneReel = parseArenaOffense(reelObjet, fr).decks;
   ok(
     offAreneReel.length > 0 && offAreneReel.every((dk) => dk.slots.length === 4 && dk.slots[0] !== null),
@@ -402,7 +402,7 @@ export default function testImport() {
   const defReel = parseArenaDefense(reelObjet, fr).decks[0];
   const interReel = parseArenaInterserveurDefense(reelObjet, fr).decks[0];
   ok(
-    !!defReel && !!interReel && defReel.slots.filter(Boolean).length === 4 && defReel.slots[0]?.com2usId === interReel.slots[0]?.com2usId,
-    'export réel : défense d’arène et défense interserveur pleines, même leader'
+    !!defReel && !!interReel && defReel.slots.every(Boolean) && interReel.slots.every(Boolean),
+    'export réel : défense d’arène et défense interserveur pleines'
   );
 }
