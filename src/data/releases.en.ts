@@ -15,6 +15,7 @@ export const RELEASES_EN: Release[] = [
     changes: [
       { kind: 'fix', scope: 'Speed tuning', text: '/speedtune gives stats that are enough, Swift set worn or not.' },
       { kind: 'fix', scope: 'Speed tuning', text: '/speedtune asks for every misread SPD in a single window.' },
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune has the SPD Increasing Effect entered in a window, like the SPD.' },
     ],
   },
   {

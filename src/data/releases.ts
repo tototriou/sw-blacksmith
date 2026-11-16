@@ -76,6 +76,7 @@ export const RELEASES: Release[] = [
     changes: [
       { kind: 'fix', scope: 'Speed tuning', text: '/speedtune donne des fiches qui suffisent, set Rapide porté ou non.' },
       { kind: 'fix', scope: 'Speed tuning', text: '/speedtune demande toutes les VIT mal lues dans une seule fenêtre.' },
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune fait saisir l\'Effet aug. VIT dans une fenêtre, comme les VIT.' },
     ],
   },
   {
