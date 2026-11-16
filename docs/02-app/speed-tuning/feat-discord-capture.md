@@ -47,8 +47,8 @@ Voir aussi : README.md, feat-competences.md, feat-deux-camps.md,
    - la **défense lue**, icônes et noms (l'écran ne montre pas sa VIT) ;
    - en description, ce qui reste **incertain** dans la lecture (deux
      portraits proches) ;
-   - en pied, que les fiches sont au cas le plus défavorable du set Rapide
-     (voir plus bas) ;
+   - sans pied : le set Rapide ne change rien à une VIT de combat (voir plus
+     bas) ;
    - sous l'encart, un bouton **« Ouvrir l'outil de speed tuning »** : l'outil
      du site de production (`#/outils/speed-tuning`), pour régler l'équipe à
      la main. Il s'ouvre vide : l'équipe lue n'y est pas reportée.
@@ -109,7 +109,8 @@ attendent une réponse passent d'abord) :
   chaque tranche vaut sa borne basse et donne exactement le même calcul.
 
 Le **set Rapide** ne se demande pas : il ne change rien à l'ordre, ni à qui
-se fait cut, ni à la VIT de combat à viser (la VIT lue le contient). Il ne
+se fait cut, ni à la VIT de combat à viser (la VIT lue ou saisie est celle du
+combat, qui le contient). Il ne
 jouerait que sur la **VIT de fiche** (`base + runes`, le « +X » que le
 monstre montre hors combat, Rapide compris comme dans l'app, voir
 `swiftFlat` de [speed.ts](../../../src/lib/speed.ts)), d'un point au plus :
@@ -119,9 +120,9 @@ le plus défavorable** : la plus haute des deux VIT de runes déduites, avec et
 sans le set (`runesAuPire` d'[analyse.ts](../../../api/_source/speedtune/analyse.ts)) —
 l'atteindre donne la VIT de combat dans les deux cas. La fiche à viser se
 déduit de la VIT à viser elle-même, pas de l'écart ajouté à la fiche
-actuelle. Le pied du message le précise. Une première version demandait le
-set par des boutons sous le résultat ; retirés, ils coûtaient un clic pour
-un point d'arrondi.
+actuelle. Le message n'en dit rien. Une première version demandait le set
+par des boutons sous le résultat ; retirés, ils coûtaient un clic pour un
+point d'arrondi.
 
 Le service reste **sans état** : la lecture entière (monstres, VIT, valeurs
 déjà choisies, doutes, défense) voyage dans le `custom_id` de chaque menu,

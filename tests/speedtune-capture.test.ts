@@ -679,8 +679,7 @@ export async function testSpeedtuneInteractions() {
   egal(final.url, 'https://discord.com/api/v10/webhooks/APP/C/messages/@original', 'le résultat remplace la question');
   egal(final.corps.components, [{ type: 1, components: [{ type: 2, style: 5, label: 'Ouvrir l\'outil de speed tuning', url: LIEN_OUTIL }] }],
     'les menus disparaissent ; reste le bouton vers l\'outil de speed tuning, sans bouton Rapide');
-  egal(final.corps.embeds[0].footer?.text, 'Fiches au cas le plus défavorable, set Rapide porté ou non : les atteindre suffit dans les deux cas.',
-    'les fiches se disent au cas le plus défavorable du set Rapide');
+  egal(final.corps.embeds[0].footer, undefined, 'aucun pied : le set Rapide ne change rien, les VIT sont celles du combat');
   egal(LIEN_OUTIL, 'https://sw-blacksmith.vercel.app/#/outils/speed-tuning', 'l\'outil du site de production');
   egal(final.corps.embeds.length, 1, 'un seul encart, compact');
   ok(['⚡ Speed tune — personne ne se fait cut', '⚡ Speed tune — quelqu\'un se fait cut'].includes(final.corps.embeds[0].title), 'le titre parle comme les joueurs : « se faire cut »');
