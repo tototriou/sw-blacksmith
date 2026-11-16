@@ -12,19 +12,26 @@
 //
 // ⚠️ Un `custom_id` fait 100 caractères au plus (Discord) : les nombres s'y
 // écrivent en base 36. Au pire — trois attaquants et leurs doutes, trois
-// défenseurs, l'auteur — on en écrit 94 ; au-delà, les doutes tombent (voir
-// `encoderEtat`).
+// défenseurs, l'auteur — on en écrit 94 ; au-delà, les portraits voisins
+// tombent (voir `encoderEtat`).
 //
 // ⚠️ Un `custom_id` revient du client : il se relit strictement (chiffres,
 // bornes) et un monstre inconnu est refusé par l'appelant, comme une lecture
 // ratée.
 
+// Une VIT à saisir sans lecture probable à proposer.
+export const VIT_INCONNUE = 0;
+// Une VIT saisie à la main : au-delà, ce n'est pas une VIT de combat.
+export const VIT_SAISIE_MAX = 999;
+
 export interface AttaquantEtat {
   id: number; // com2usId reconnu
-  combat: number; // VIT de combat lue
+  // VIT de combat lue ou saisie ; tant qu'elle est à saisir, la lecture la
+  // plus probable (qui préremplit la saisie), ou VIT_INCONNUE.
+  combat: number;
   cumuls: number | null; // cumuls du passif, `null` tant que non précisés
   arte: number | null; // effet aug. VIT des artéfacts (%), `null` tant que non précisé
-  vitDouteuse: boolean;
+  vitDouteuse: boolean; // VIT mal lue : demandée au joueur avant tout calcul
   autrePortrait: number | null; // le candidat trop proche, s'il y en a un
 }
 
@@ -51,22 +58,24 @@ function idDeB36(x: string): string {
 }
 
 export function encoderEtat(action: string, e: Etat): string {
-  const ecrire = (doutes: boolean) =>
+  const ecrire = (portraits: boolean) =>
     [
       PREFIXE_ETAT,
       action,
       e.attaquants
         .map((a) => [
           b36(a.id), b36(a.combat), a.cumuls == null ? '' : b36(a.cumuls), a.arte == null ? '' : b36(a.arte),
-          doutes && a.vitDouteuse ? 'v' : '', doutes && a.autrePortrait != null ? b36(a.autrePortrait) : '',
+          a.vitDouteuse ? 'v' : '', portraits && a.autrePortrait != null ? b36(a.autrePortrait) : '',
         ].join('.'))
         .join(','),
       e.defense.map(b36).join(','),
       idEnB36(e.auteur),
     ].join(':');
   const complet = ecrire(true);
-  // Les doutes sont un avertissement, pas l'état : on les perd plutôt que
-  // de dépasser la limite.
+  // Le portrait voisin est un avertissement, pas l'état : on le perd plutôt
+  // que de dépasser la limite. ⚠️ Jamais le doute sur la VIT : il la fait
+  // demander, et une VIT mal lue ne doit pas passer pour lue. Sans les
+  // portraits voisins, le pire cas tient en 82 caractères.
   return complet.length <= LONGUEUR_MAX ? complet : ecrire(false);
 }
 
@@ -81,7 +90,7 @@ export function decoderEtat(customId: string): { action: string; etat: Etat } | 
     if (!m) return null;
     const cumuls = m[3] === '' ? null : deB36(m[3]);
     const arte = m[4] === '' ? null : deB36(m[4]);
-    if ((cumuls != null && cumuls > CUMULS_MAX) || (arte != null && arte > ARTE_MAX)) return null;
+    if ((cumuls != null && cumuls > CUMULS_MAX) || (arte != null && arte > ARTE_MAX) || deB36(m[2]) > VIT_SAISIE_MAX) return null;
     attaquants.push({ id: deB36(m[1]), combat: deB36(m[2]), cumuls, arte, vitDouteuse: m[5] === 'v', autrePortrait: m[6] === '' ? null : deB36(m[6]) });
   }
   if (attaquants.length < 1 || attaquants.length > 3) return null;

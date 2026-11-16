@@ -46,7 +46,7 @@ Voir aussi : README.md, feat-competences.md, feat-deux-camps.md,
    - les autres valeurs **précisées** par le joueur (voir ci-dessous) ;
    - la **défense lue**, icônes et noms (l'écran ne montre pas sa VIT) ;
    - en description, ce qui reste **incertain** dans la lecture (deux
-     portraits proches, une VIT lue avec une confiance faible) ;
+     portraits proches) ;
    - en pied, que la fiche est calculée sans le set Rapide (voir plus bas) ;
    - sous l'encart, un bouton **« Ouvrir l'outil de speed tuning »** : l'outil
      du site de production (`#/outils/speed-tuning`), pour régler l'équipe à
@@ -61,6 +61,25 @@ Voir aussi : README.md, feat-competences.md, feat-deux-camps.md,
    monstres reconnaissables (1 171). Il faut pour cela `DISCORD_BOT_TOKEN`
    (celui du service des recos) ; sans lui, ou si Discord refuse, le monstre
    s'écrit sans icône — la réponse ne dépend jamais des émojis.
+
+### Une VIT mal lue : demandée — jamais un refus
+
+⚠️ **Les monstres d'abord** : sans eux, l'écran n'est pas reconnu. Une VIT,
+elle, n'est jamais une raison de refuser, et la commande ne demande **jamais
+une capture plus grande** : la capture est celle que le joueur a.
+
+- **VIT sûre** (règle de prudence, voir « La lecture de la capture ») :
+  prise telle quelle.
+- **VIT mal lue** (pas sûre, ou d'une confiance sous 0,75) : elle s'affiche
+  « ? » et le message la **demande avant tout calcul** — un bouton
+  **« Saisir la VIT de … »** ouvre une fenêtre de saisie (modale Discord),
+  préremplie de la plus probable des **hypothèses** du lecteur ; vide s'il
+  n'en a aucune. Une hypothèse sous la VIT de base du monstre est écartée
+  (lead, tour et runes s'y ajoutent toujours).
+
+Une VIT saisie (1 à 999) est prise : son bouton disparaît. Une saisie qui
+n'est pas une VIT reçoit un message que seul l'auteur voit. Les boutons
+tiennent sur une rangée, en tête des menus.
 
 ### Ce que la capture ne montre pas : la question
 
@@ -96,10 +115,13 @@ version le demandait par des boutons sous le résultat ; retirés, ils
 coûtaient un clic pour un point d'arrondi.
 
 Le service reste **sans état** : la lecture entière (monstres, VIT, valeurs
-déjà choisies, doutes, défense) voyage dans le `custom_id` de chaque menu
-([etat.ts](../../../api/_source/speedtune/etat.ts), relu strictement). Chaque choix revient en interaction de composant
-(type 3) : seul l'auteur de la commande peut répondre (les autres reçoivent un
-message que seuls eux voient). ⚠️ Son identifiant voyage **dans l'état**,
+déjà choisies, doutes, défense) voyage dans le `custom_id` de chaque menu,
+bouton et modale ([etat.ts](../../../api/_source/speedtune/etat.ts), relu
+strictement ; une VIT à saisir sans hypothèse s'y écrit 0). Chaque choix revient en
+interaction de composant (type 3) — un bouton de VIT y reçoit la modale (type
+9), dont la soumission revient en type 5 — : seul l'auteur de la commande
+peut répondre (les autres reçoivent un message que seuls eux voient). Le
+doute sur une VIT ne tombe jamais de l'état : il la fait demander. ⚠️ Son identifiant voyage **dans l'état**,
 écrit à la commande : les métadonnées du message que Discord renvoie avec un
 clic peuvent manquer, et la première version, qui s'y fiait, laissait alors
 répondre n'importe qui. Les nombres de l'état s'écrivent en base 36 pour
@@ -109,7 +131,7 @@ puis remplacé par le résultat une fois tout précisé — les menus disparaiss
 Le message est en français si Discord l'est (`locale`), sinon en anglais ;
 aucune mention n'y est possible (`allowed_mentions` vide). Un refus dit
 pourquoi : pièce jointe qui n'est pas une image, trop lourde, écran non
-reconnu, VIT illisible (avec les monstres concernés).
+reconnu. Une VIT n'en est jamais la cause.
 
 ## La lecture de la capture
 
@@ -194,15 +216,15 @@ reconnu, VIT illisible (avec les monstres concernés).
   pastille, surtout en JPEG, pas à un nombre.
 - [ecranPreparation.ts](../../../api/_source/capture/ecranPreparation.ts) —
   la lecture des cartes trouvées. ⚠️ Aucune position n'est supposée : sans
-  trois attaquants trouvés, l'écran n'est pas reconnu. ⚠️ Une VIT fausse est
-  pire qu'un refus : hors de 100 à 450 (en
+  trois attaquants trouvés, l'écran n'est pas reconnu. ⚠️ Une VIT fausse donnée
+  pour sûre est pire qu'une VIT demandée : hors de 100 à 450 (en
   siège, aucune vitesse réglée n'est sous 100 ; un chiffre perdu, « 66 »
   pour 314, y tombe), sous une confiance de 0,7, ou quand un de ses chiffres
   est presque à égalité avec un autre (écart sous 0,05) sans que la lecture
-  agrandie donne le même nombre, la VIT n'est pas lue. Sous 7 pixels, seul
-  l'accord des deux lectures vaut ; sous 6 pixels, la VIT n'est jamais lue —
+  agrandie donne le même nombre, la VIT n'est pas sûre. Sous 7 pixels, seul
+  l'accord des deux lectures vaut ; sous 6 pixels, la VIT n'est jamais sûre —
   à 5 pixels, les deux lectures se sont accordées sur un « 340 » pour 349.
-  Entre 0,7 et 0,75, le message la dit incertaine.
+  Sous 0,75, la commande la demande aussi.
 - [portraits.ts](../../../api/_source/capture/portraits.ts) — le monstre
   reconnu à son portrait, porté du projet « Youtube-to-offenses-decks »
   (portraits.py) : zone centrale ramenée à 24 × 24 en Lab, centrée-réduite,
@@ -234,9 +256,23 @@ reconnu, VIT illisible (avec les monstres concernés).
   par une application qui la redimensionne n'a plus de bord net. La même
   méthode vaut à toutes les tailles. L'ancienne lecture (glyphe agrandi à 12 × 18, sous sa
   découpe et ses huit voisines d'un pixel) sert de second avis : un nombre
-  que les deux donnent est lu même quand deux chiffres sont proches. Sous 5
-  pixels de haut, un chiffre n'a plus que trois colonnes : il n'est pas lu,
-  et la commande demande une capture plus grande.
+  que les deux donnent est lu même quand deux chiffres sont proches. Sous 3
+  pixels de haut, un chiffre n'a plus de forme : il n'est pas lu.
+- **Les hypothèses**, quand la VIT n'est pas sûre (`hypothesesVit`
+  d'[ecranPreparation.ts](../../../api/_source/capture/ecranPreparation.ts)) :
+  les 351 VIT possibles (100 à 450) sont classées **en entier** — un chiffre
+  qui hésite seul se départage par ce qu'une VIT peut être (549 n'en est pas
+  une). Trois glyphes ou plus : la somme des scores de ses chiffres à la
+  taille d'origine, sur chaque suite de trois glyphes (un intrus colle parfois
+  au nombre : « 3168 » pour 316). Moins de trois — chiffres soudés ou perdus
+  par le seuil, « 00 » pour 384 — : **le nombre entier est rendu** à partir
+  des gabarits dans la boîte de son encre (chaque chiffre à sa largeur,
+  l'espace restant partagé) et comparé à la zone, sans découpage
+  (`scoresParSynthese` de chiffres.ts ; moyenne d'un gabarit sur un pixel par
+  sa table de sommes cumulées, 16 ms par VIT). Relevé sur les VIT mal lues du
+  banc de stress : glyphes à la taille d'origine justes en tête 72 fois sur
+  100, y ajouter la lecture agrandie en perdait la moitié ; la synthèse, 50,
+  ne sert que sans glyphes.
 
 Les données voyagent dans le paquet de la fonction :
 
@@ -305,12 +341,13 @@ protégé).
   sous 6 pixels de haut, les chiffres ne sont pas lus ; à 6 pixels, ils ne le
   sont que si les deux lectures s'accordent ; un JPEG très compressé (qualité
   50 ou moins) de chiffres de 7 ou 8 pixels, ou une capture floutée à cette
-  taille, peut être refusé. Agrandir une capture aux chiffres trop petits n'y
-  ajoute rien. La commande demande alors une capture plus grande.
+  taille, peut être mal lu. Agrandir une capture aux chiffres trop petits n'y
+  ajoute rien. La commande demande alors la VIT au joueur, préremplie de la
+  lecture la plus probable (juste deux fois sur trois sur le banc de stress).
 - **Banc de stress** (19 vraies captures, chacune réduite de ×0,4 à ×3,
   compressée, floutée, recadrée, posée dans un écran 4K — 1 197 VIT) :
-  **aucune VIT fausse** ; les refus restants portent sur des chiffres sous
-  7 pixels, des JPEG très compressés et des captures floutées.
+  **aucune VIT fausse donnée pour sûre** ; les VIT demandées portent sur des
+  chiffres sous 7 pixels, des JPEG très compressés et des captures floutées.
 - **Seul l'écran de siège est reconnu** : trois attaquants côte à côte. Les
   quatre monstres en losange d'un autre mode sont trouvés avec leurs VIT,
   mais l'écran est refusé.
@@ -319,8 +356,9 @@ protégé).
   type reçu.
 - La tablette et les autres formats de téléphone ne sont vérifiés que sur des
   écrans recomposés.
-- Rien ne se corrige depuis Discord : un monstre mal reconnu ou une VIT mal
-  lue fausse le résultat, que le message signale comme incertain.
+- Un monstre mal reconnu ne se corrige pas depuis Discord : il fausse le
+  résultat, que le message signale comme incertain. Une VIT mal lue, elle,
+  est demandée.
 
 ## Vérifier
 
@@ -342,10 +380,12 @@ plus larges que hautes, attaquants seuls, attaquants à cadres dorés, bronze
 et gris, liste des monstres sous l'équipe, rangée de six cartes sans VIT, cartes
 plus grandes sans VIT au-dessus de l'équipe, capture de tout un écran 4K,
 capture trop réduite, une seule carte, écran vide ; chiffres de 7 à 9 pixels
-lus, de 4 non ; calcul
+lus, de 2 non ; hypothèses départagées en entier, glyphe intrus écarté,
+nombre rendu par synthèse ; calcul
 sur les vrais monstres et leurs vrais kits (Susano, Chilling, Tarq) ; état
 des menus (aller-retour, pire cas sous 100 caractères, refus) ; interactions
 signées, réponse différée, question, choix (y compris d'un autre que
-l'auteur), capture collée (type annoncé absent ou quelconque) lue, capture
+l'auteur), VIT mal lue demandée avant tout calcul (bouton, modale préremplie,
+saisie invalide refusée en privé), capture collée (type annoncé absent ou quelconque) lue, capture
 WebP rendue en PNG par Discord, GIF non converti refusé,
 et message final devant un Discord simulé.
