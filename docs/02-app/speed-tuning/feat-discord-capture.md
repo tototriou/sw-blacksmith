@@ -74,28 +74,28 @@ une capture plus grande** : la capture est celle que le joueur a.
 - **VIT mal lue** (pas sûre, ou d'une confiance sous 0,75) : elle s'affiche
   « ? » et le message la **demande avant tout calcul**.
 
-⚠️ **Toutes les VIT mal lues se saisissent ensemble** : un seul bouton,
+⚠️ **Toutes les VIT mal lues se saisissent ensemble** : un bouton,
 **« Saisir les VIT (… , …) »** (« Saisir la VIT de … » s'il n'y en a qu'une),
 en tête des menus, ouvre une fenêtre de saisie (modale Discord) avec **un
-champ par monstre**, prérempli de la plus probable des **hypothèses** du
-lecteur, vide s'il n'en a aucune. Une hypothèse sous la VIT de base du
-monstre est écartée (lead, tour et runes s'y ajoutent toujours). Les VIT
-saisies (1 à 999) sont prises et le bouton disparaît ; une seule qui n'est
-pas une VIT, et rien n'est pris — un message que seul l'auteur voit le dit.
-Les boutons d'un message de la 2.4.6, un par monstre, ouvrent la même
-fenêtre.
+champ par monstre**, « VIT de combat de … », prérempli de la plus probable
+des **hypothèses** du lecteur, vide s'il n'en a aucune. Une hypothèse sous
+la VIT de base du monstre est écartée (lead, tour et runes s'y ajoutent
+toujours). Les VIT saisies (1 à 999) sont prises et le bouton disparaît ;
+une seule qui n'est pas une VIT, et rien n'est pris — un message que seul
+l'auteur voit le dit. Les boutons d'un message de la 2.4.6, un par monstre,
+ouvrent la même fenêtre.
 
 ### Ce que la capture ne montre pas : la question
 
 Deux choses font la VIT en combat sans se voir sur l'écran de préparation.
-Quand l'une compte, le message pose d'abord la question, avec un menu
-déroulant par valeur manquante (cinq au plus, la limite de Discord ; ceux qui
-attendent une réponse passent d'abord) :
+Quand l'une compte, le message pose d'abord la question :
 
 - un **passif de vitesse qui se cumule** (`gain.parCumul` de
   [speedTunePassif.ts](../../../src/lib/speedTunePassif.ts)) : buffs portés
   (Chilling), buffs posés (Miles, Elsharion), tours adverses (Monkey King)…
-  48 monstres. Le menu propose le **nombre de cumuls au premier tour**, de 0
+  48 monstres. Un menu déroulant par passif (ceux qui attendent une réponse
+  passent d'abord, dans la limite de cinq rangées de Discord) propose le
+  **nombre de cumuls au premier tour**, de 0
   au plafond du passif (10 sans plafond, 24 au plus), chacun avec la VIT qu'il
   ajoute. C'est la case « cumuls » de l'outil
   ([feat-passifs-vitesse.md](feat-passifs-vitesse.md)). Les passifs qui dépendent des PV
@@ -103,10 +103,13 @@ attendent une réponse passent d'abord) :
   pleins ;
 - l'**Effet aug. VIT** des artéfacts, pour chaque attaquant qui **reçoit un
   buff de VIT** d'un sort retenu par l'analyse (de toute l'équipe, sur soi, ou
-  sur un allié — n'importe lequel, le lanceur compris). Le menu propose des
-  **tranches** : le buff de 30 % ne prend que 19 valeurs de 0 à 60 %
-  d'artéfact (`⌊30 × (100 + a) / 100⌋`, la troncature de la simulation),
-  chaque tranche vaut sa borne basse et donne exactement le même calcul.
+  sur un allié — n'importe lequel, le lanceur compris). ⚠️ Il se **saisit**,
+  comme les VIT mal lues : un second bouton, **« Saisir l'Effet aug. VIT
+  (… , …) »**, ouvre sa propre fenêtre, un champ par monstre buffé (« Effet
+  aug. VIT de … (%) », de 0 à 60), prérempli s'il est déjà donné. Le bouton
+  porte les places des monstres buffés (`e<masque>`) : la fenêtre se répond
+  sans relire les kits sur le site, dans les 3 s de Discord. Les menus d'un
+  message de la 2.4.6 se comprennent encore.
 
 Le **set Rapide** ne se demande pas : il ne change rien à l'ordre, ni à qui
 se fait cut, ni à la VIT de combat à viser (la VIT lue ou saisie est celle du
@@ -128,7 +131,7 @@ Le service reste **sans état** : la lecture entière (monstres, VIT, valeurs
 déjà choisies, doutes, défense) voyage dans le `custom_id` de chaque menu,
 bouton et modale ([etat.ts](../../../api/_source/speedtune/etat.ts), relu
 strictement ; une VIT à saisir sans hypothèse s'y écrit 0). Chaque choix revient en
-interaction de composant (type 3) — le bouton de saisie des VIT y reçoit la
+interaction de composant (type 3) — un bouton de saisie (VIT, Effet aug. VIT) y reçoit la
 modale (type 9), dont la soumission revient en type 5 — : seul l'auteur de la commande
 peut répondre (les autres reçoivent un message que seuls eux voient). Le
 doute sur une VIT ne tombe jamais de l'état : il la fait demander. ⚠️ Son identifiant voyage **dans l'état**,
@@ -398,6 +401,8 @@ des menus (aller-retour, pire cas sous 100 caractères, refus) ; interactions
 signées, réponse différée, question, choix (y compris d'un autre que
 l'auteur), VIT mal lues demandées avant tout calcul (un bouton, une modale
 au champ prérempli par monstre, saisie invalide refusée en privé, boutons de
-la 2.4.6 encore compris), capture collée (type annoncé absent ou quelconque) lue, capture
+la 2.4.6 encore compris), Effet aug. VIT saisi d'un second bouton (une
+fenêtre, un champ par monstre buffé, au-delà de 60 % refusé en privé), aucun
+pied sous le résultat, capture collée (type annoncé absent ou quelconque) lue, capture
 WebP rendue en PNG par Discord, GIF non converti refusé,
 et message final devant un Discord simulé.
