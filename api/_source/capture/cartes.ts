@@ -19,7 +19,7 @@
 //    sans eux, le symétrique des attaquants par rapport au centre de l'image
 //    (la mise en page du jeu l'est).
 
-import type { Image } from './image';
+import { demiTaille, type Image } from './image';
 import { pastilleVitesse, porteUneVit } from './pastille';
 
 export type Rect = [number, number, number, number]; // x, y, largeur, hauteur
@@ -52,6 +52,10 @@ function bordsHorizontaux(img: Image): Uint8Array {
 // bruit des portraits. Deux rangées voisines se cumulent ; un trou de trois
 // pixels ne coupe pas un trait. Un bord haut tombe sur la première rangée du
 // cadre.
+// ⚠️ Trois pixels, quelle que soit la taille de l'image : suivre sa taille
+// soudait, dans une capture de tout un écran 4K, les petits bords de la fenêtre
+// du jeu à ce qui les entoure. Une image agrandie, dont les bords se creusent
+// davantage, est relue réduite (`trouverCartesAToutesEchelles`).
 function traits(img: Image, bord: Uint8Array, longMin: number): Trait[] {
   const { largeur: l, hauteur: h } = img;
   const res: Trait[] = [];
@@ -275,7 +279,16 @@ export function trouverCartes(img: Image): CartesTrouvees | null {
   const nets = (t: Rect[]) => t.filter((r) => nombre.has(r)).length;
   trios.sort((p, q) => nets(q) - nets(p) || q[0][2] - p[0][2] || p[0][1] - q[0][1]);
   if (!trios.length) return null;
-  const trio = trios[0];
+  // ⚠️ Les nombres nets disent QUELLES cartes ; pour ces mêmes cartes, le
+  // plus grand cadre est leur contour (comme `contours`). Le portrait se
+  // reconnaît sur la carte entière : sur son bord intérieur, plus petit d'un
+  // huitième et décalé vers le bas, il sortait des découpes essayées
+  // (relevé : une capture de téléphone réduite de moitié, dont le premier
+  // nombre touchait l'icône du lead — le bord intérieur avait trois nombres
+  // nets, le contour deux, et un monstre tombait à 0,41).
+  const trio = trios
+    .filter((t) => t.every((r, k) => recouvrement(r, trios[0][k]) > 0.5))
+    .sort((p, q) => q[0][2] * q[0][3] - p[0][2] * p[0][3])[0];
   // Une même taille pour les trois (la médiane), chacune à sa place.
   const mediane = (v: number[]) => [...v].sort((a, b) => a - b)[1];
   const y = mediane(trio.map((r) => r[1])), cote = mediane(trio.map((r) => r[2])), hauteur = mediane(trio.map((r) => r[3]));
@@ -296,4 +309,29 @@ export function trouverCartes(img: Image): CartesTrouvees | null {
     .map((k): Rect => [x0Defense + k * pas, y, cote, hauteur])
     .filter(([x]) => x >= finAttaque + pas - cote && x + cote <= img.largeur);
   return { attaquants, defense };
+}
+
+// Les cartes, à l'échelle de l'image, ou — faute de les y trouver sur une
+// GRANDE image — sur une copie réduite de moitié, puis de moitié encore, les
+// cartes ramenées à la taille de l'image. ⚠️ Les seuils de la détection sont
+// au pixel près (contraste entre deux pixels à deux pas, trous tolérés dans un
+// bord, marges des côtés) : agrandie ×3, une capture étale ses bords et arrondit
+// ses coins au-delà de ce qu'ils couvrent, et ses cartes ne se trouvaient plus.
+// La pastille et les chiffres se lisent ensuite sur l'image ENTIÈRE : rien n'est
+// perdu de leur détail. Une image où les cartes se trouvent n'est jamais réduite.
+const COTE_REDUCTION_MIN = 1200; // en dessous, une moitié n'aurait plus de quoi montrer ses cartes
+
+export function trouverCartesAToutesEchelles(img: Image): CartesTrouvees | null {
+  let courante = img, facteur = 1;
+  for (;;) {
+    const cartes = trouverCartes(courante);
+    if (cartes) {
+      if (facteur === 1) return cartes;
+      const agrandir = ([x, y, l, h]: Rect): Rect => [x * facteur, y * facteur, l * facteur, h * facteur];
+      return { attaquants: cartes.attaquants.map(agrandir), defense: cartes.defense.map(agrandir) };
+    }
+    if (Math.max(courante.largeur, courante.hauteur) < COTE_REDUCTION_MIN) return null;
+    courante = demiTaille(courante);
+    facteur *= 2;
+  }
 }

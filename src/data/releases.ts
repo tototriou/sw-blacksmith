@@ -70,6 +70,17 @@ export function journal(langue: Langue): Release[] {
 // Si une ligne dépasse ~15 mots, c'est qu'elle raconte l'implémentation.
 export const RELEASES: Release[] = [
   {
+    version: '2.4.6',
+    date: '2026-11-16',
+    title: '/speedtune lit toute la VIT au téléphone',
+    changes: [
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune lit le dernier chiffre de la VIT quand il déborde de sa pastille (gestion des decks au téléphone).' },
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune lit les captures agrandies, réduites ou floutées, et ne donne jamais une VIT illisible.' },
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune reconnaît les monstres des captures en JPEG ou floutées.' },
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune ne demande plus de capture plus grande : une VIT mal lue se saisit d\'un clic, préremplie de la lecture la plus probable.' },
+    ],
+  },
+  {
     version: '2.4.5',
     date: '2026-11-16',
     title: '/speedtune lit les petits chiffres et toutes les images',

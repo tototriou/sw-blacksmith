@@ -21,24 +21,43 @@ import { glyphesDuNombre, masqueClair } from './chiffres';
 import type { Rect } from './cartes';
 
 const SOMBRE = 60;
+// ⚠️ Le sombre d'une pastille FLOUTÉE : une capture repassée par une
+// application qui la redimensionne mêle à la rangée du bas le cadre clair
+// dessous et les chiffres dessus — relevé : des cartes de 49 pixels, une
+// pastille de 8 pixels de haut, plus une rangée sous 60 au flou, et l'écran
+// n'était plus reconnu. Essayé seulement quand le seuil net ne trouve rien ;
+// une fausse pastille reste écartée par le nombre net et le trio de cartes.
+const SOMBRE_FLOU = 90;
 const CLAIR = 150;
 const SUITE_PASTILLE = 0.25; // longueur d'une rangée pleine de la pastille, en largeur de carte (relevé : 0,5 à 0,6)
 const HAUTEUR_PASTILLE_MAX = 0.3; // en hauteur de carte
+const TROU_PASTILLE = 0.025; // trou toléré dans la rangée sombre, en largeur de carte (2 pixels sur 80)
 
-export function pastilleVitesse(img: Image, [x, y, l, h]: Rect): Rect | null {
+export function pastilleVitesse(img: Image, carte: Rect): Rect | null {
+  return pastilleAuSeuil(img, carte, SOMBRE) ?? pastilleAuSeuil(img, carte, SOMBRE_FLOU);
+}
+
+function pastilleAuSeuil(img: Image, [x, y, l, h]: Rect, seuilSombre: number): Rect | null {
   const { largeur, rgba } = img;
   const x0 = Math.max(0, Math.round(x + 0.3 * l)), x1 = Math.min(largeur - 1, Math.round(x + l) - 1);
   const yHaut = Math.max(0, Math.round(y + 0.55 * h)), yBas = Math.min(img.hauteur - 1, Math.round(y + 0.97 * h));
   const sombre = (xx: number, yy: number) => {
     const i = (yy * largeur + xx) * 4;
-    return Math.max(rgba[i], rgba[i + 1], rgba[i + 2]) < SOMBRE;
+    return Math.max(rgba[i], rgba[i + 1], rgba[i + 2]) < seuilSombre;
   };
+  // ⚠️ Une suite sombre tolère de courts TROUS : la compression JPEG fait
+  // « sonner » les pixels près du cadre clair, et quelques-uns passent au-dessus
+  // du seuil du sombre — relevé : la fenêtre PC entière en JPEG de qualité 50
+  // perdait la pastille de la carte du milieu, et l'écran entier avec elle.
+  const trouMax = Math.max(1, Math.round(TROU_PASTILLE * l));
   const plusLongueSuite = (yy: number): [number, number] => {
-    let meilleure: [number, number] = [0, -1], debut = -1;
-    for (let xx = x0; xx <= x1 + 1; xx++) {
-      if (xx <= x1 && sombre(xx, yy)) { if (debut < 0) debut = xx; continue; }
-      if (debut >= 0 && xx - debut > meilleure[1] - meilleure[0] + 1) meilleure = [debut, xx - 1];
-      debut = -1;
+    let meilleure: [number, number] = [0, -1], debut = -1, fin = -1;
+    for (let xx = x0; xx <= x1 + trouMax + 1; xx++) {
+      if (xx <= x1 && sombre(xx, yy)) { if (debut < 0) debut = xx; fin = xx; continue; }
+      if (debut >= 0 && xx - fin > trouMax) {
+        if (fin - debut > meilleure[1] - meilleure[0]) meilleure = [debut, fin];
+        debut = -1;
+      }
     }
     return meilleure;
   };
@@ -87,11 +106,18 @@ export function pastilleVitesse(img: Image, [x, y, l, h]: Rect): Rect | null {
     if (p >= 0) premier = p;
   }
   const debut = Math.max(gauche, premier - Math.max(2, Math.round(0.3 * (bas - haut))));
-  // En haut, une rangée de marge : la première rangée d'un petit chiffre (5
-  // pixels) est un mélange de blanc et de fond, sous le seuil du clair ; sans
-  // elle, le chiffre perd son haut.
-  const dessus = Math.max(yHaut, haut - 1);
-  return [debut, dessus, droite - debut + 1, bas - dessus + 1];
+  // En haut, une marge d'un quart de la zone (une rangée au moins) : le haut
+  // d'un chiffre est un mélange de blanc et de fond, sous le seuil du clair —
+  // une rangée sur un chiffre de 5 pixels, deux ou trois sur une capture
+  // agrandie (relevé : le 205 d'une capture ×1,5 perdait son haut, et sa VIT).
+  const dessus = Math.max(yHaut, haut - Math.max(1, Math.round(0.25 * (bas - haut))));
+  // À droite, la même marge qu'à gauche : la rangée sombre du bas s'arrête au
+  // coin arrondi de la pastille, et le dernier chiffre peut la dépasser (relevé :
+  // 1 à 2 pixels sur une capture de téléphone en 2640 × 1080, qui coupaient le
+  // 8 de 328 et de 368). Le cadre de la carte, s'il entre, n'est pas de l'encre :
+  // sa plus faible composante reste sous celle des chiffres blancs.
+  const fin = Math.min(largeur - 1, droite + Math.max(2, Math.round(0.3 * (bas - haut))));
+  return [debut, dessus, fin - debut + 1, bas - dessus + 1];
 }
 
 export function zoneVitesse(img: Image, carte: Rect): Image | null {

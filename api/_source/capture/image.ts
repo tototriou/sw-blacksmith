@@ -113,3 +113,17 @@ export function reduire(img: Image, l: number, h: number): Float32Array {
   }
   return sortie;
 }
+
+// L'image réduite de moitié, par moyenne de chaque carré de 2 × 2 pixels (une
+// colonne ou une rangée impaire en trop est laissée).
+export function demiTaille(img: Image): Image {
+  const l = Math.floor(img.largeur / 2), h = Math.floor(img.hauteur / 2);
+  const rgba = new Uint8Array(l * h * 4);
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < l; x++) {
+      const a = ((2 * y) * img.largeur + 2 * x) * 4, b = a + img.largeur * 4, o = (y * l + x) * 4;
+      for (let c = 0; c < 4; c++) rgba[o + c] = (img.rgba[a + c] + img.rgba[a + 4 + c] + img.rgba[b + c] + img.rgba[b + 4 + c] + 2) >> 2;
+    }
+  }
+  return { largeur: l, hauteur: h, rgba };
+}

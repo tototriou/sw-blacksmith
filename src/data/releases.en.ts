@@ -9,6 +9,17 @@ import type { Release } from './releases';
 
 export const RELEASES_EN: Release[] = [
   {
+    version: '2.4.6',
+    date: '2026-11-16',
+    title: '/speedtune reads the whole SPD on phones',
+    changes: [
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune reads the last SPD digit when it overflows its pill (deck management on phones).' },
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune reads enlarged, shrunk or blurred captures, and never gives an unreadable SPD.' },
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune recognizes the monsters of JPEG or blurred captures.' },
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune no longer asks for a larger screenshot: a misread SPD is entered in one click, pre-filled with the most likely reading.' },
+    ],
+  },
+  {
     version: '2.4.5',
     date: '2026-11-16',
     title: '/speedtune reads small digits and every image',

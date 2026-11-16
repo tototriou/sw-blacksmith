@@ -44,10 +44,24 @@ export interface Menu {
   options: { label: string; value: string; description?: string; default?: boolean }[];
 }
 export interface BoutonLien { type: 2; style: 5; label: string; url: string }
+// Un bouton qui revient au bot (style secondaire) : il ouvre la saisie d'une VIT.
+export interface Bouton { type: 2; style: 2; label: string; custom_id: string }
 export interface Rangee {
   type: 1;
-  components: (Menu | BoutonLien)[];
+  components: (Menu | BoutonLien | Bouton)[];
 }
+
+// Une VIT mal lue, à saisir : un bouton chacune.
+export interface Saisie { nom: string; customId: string }
+
+// La fenêtre de saisie d'une VIT (modale Discord) : un champ texte, prérempli
+// de la lecture la plus probable s'il y en a une.
+export interface Modale {
+  custom_id: string;
+  title: string;
+  components: { type: 1; components: { type: 4; custom_id: string; label: string; style: 1; min_length: number; max_length: number; required: true; value?: string; placeholder?: string }[] }[];
+}
+export const CHAMP_VIT = 'vit';
 
 // Ce qui remplace le message : `components` vide retire les menus d'une
 // question à laquelle on a répondu.
@@ -109,8 +123,13 @@ const TEXTES = {
     pasImage: 'La pièce jointe n\'est pas une image lisible.',
     tropLourde: 'L\'image est trop lourde (25 Mo au plus).',
     illisible: 'Je n\'ai pas trouvé les trois attaquants d\'un combat de siège : leurs cartes, avec la VIT sous chaque portrait. L\'écran entier ou les trois cartes seules conviennent.',
-    vitIllisible: (noms: string) => `VIT illisible sous : ${noms}. Envoie une capture plus grande : en pleine résolution, ou les trois cartes recadrées sans les réduire.`,
     panne: 'Le calcul a échoué. Réessaie dans un instant.',
+    questionVit: (noms: string) => `**VIT** mal lue sur la capture : ${noms}. Saisis-la avec le bouton ci-dessous (la VIT de combat, sous le portrait) ; la lecture la plus probable y est proposée.`,
+    boutonSaisir: (nom: string) => `Saisir la VIT de ${nom}`,
+    modaleTitre: 'VIT de combat',
+    modaleChamp: (nom: string) => `VIT de ${nom}`,
+    modaleAide: 'La VIT sous le portrait, ex. 312',
+    vitInvalide: 'Une VIT est un nombre de 1 à 999.',
     questionTitre: '⚡ Speed tune — une précision',
     questionIntro: 'La capture ne montre pas tout ce qui fait la VIT en combat. Précise-le dans les menus ci-dessous :',
     questionCumuls: (nom: string, passif: string, texte: string) => `**${nom}** — ${passif} : nombre de cumuls à son premier tour\n> ${texte}`,
@@ -154,8 +173,13 @@ const TEXTES = {
     pasImage: 'The attachment is not a readable image.',
     tropLourde: 'The image is too large (25 MB max).',
     illisible: 'I did not find the three attackers of a siege fight: their cards, with the SPD under each portrait. The whole screen or just the three cards both work.',
-    vitIllisible: (noms: string) => `SPD unreadable under: ${noms}. Send a larger screenshot: full resolution, or the three cards cropped without shrinking them.`,
     panne: 'The computation failed. Try again in a moment.',
+    questionVit: (noms: string) => `**SPD** misread on the screenshot: ${noms}. Enter it with the button below (the combat SPD, under the portrait); the most likely reading is suggested.`,
+    boutonSaisir: (nom: string) => `Enter ${nom}'s SPD`,
+    modaleTitre: 'Combat SPD',
+    modaleChamp: (nom: string) => `${nom}'s SPD`,
+    modaleAide: 'The SPD under the portrait, e.g. 312',
+    vitInvalide: 'SPD is a number from 1 to 999.',
     questionTitre: '⚡ Speed tune — one detail',
     questionIntro: 'The screenshot does not show everything that makes combat SPD. Fill it in with the menus below:',
     questionCumuls: (nom: string, passif: string, texte: string) => `**${nom}** — ${passif}: number of stacks at their first turn\n> ${texte}`,
@@ -175,10 +199,9 @@ const TEXTES = {
 
 export type Erreur = 'pasImage' | 'tropLourde' | 'illisible' | 'panne';
 
-export function embedErreur(langue: Langue, erreur: Erreur | { vitIllisible: string[] }): Embed {
+export function embedErreur(langue: Langue, erreur: Erreur): Embed {
   const t = TEXTES[langue];
-  const description = typeof erreur === 'string' ? t[erreur] : t.vitIllisible(erreur.vitIllisible.join(', '));
-  return { title: t.erreurTitre, description, color: COULEUR_ERREUR };
+  return { title: t.erreurTitre, description: t[erreur], color: COULEUR_ERREUR };
 }
 
 // Le bouton sous le résultat : l'outil de l'app, pour aller plus loin.
@@ -187,31 +210,68 @@ export const rangeeOutil = (langue: Langue): Rangee => ({
   components: [{ type: 2, style: 5, label: TEXTES[langue].ouvrirOutil, url: LIEN_OUTIL }],
 });
 
-export const texteEphemere = (langue: Langue, quoi: 'pasAuteur' | 'perime') => TEXTES[langue][quoi];
+// Discord : 80 caractères au plus pour un libellé de bouton, 45 pour le titre
+// et le libellé d'une modale.
+const tronquer = (x: string, max: number) => (x.length > max ? `${x.slice(0, max - 1)}…` : x);
+
+// Les boutons de saisie des VIT : une rangée (trois attaquants au plus, cinq
+// boutons par rangée).
+export const rangeeSaisies = (langue: Langue, saisies: Saisie[]): Rangee => ({
+  type: 1,
+  components: saisies.map((s) => ({ type: 2, style: 2, custom_id: s.customId, label: tronquer(TEXTES[langue].boutonSaisir(s.nom), 80) })),
+});
+
+export function modaleVit(langue: Langue, nom: string, combat: number | null, customId: string): Modale {
+  const t = TEXTES[langue];
+  return {
+    custom_id: customId,
+    title: t.modaleTitre,
+    components: [{
+      type: 1,
+      components: [{
+        type: 4, custom_id: CHAMP_VIT, label: tronquer(t.modaleChamp(nom), 45), style: 1, min_length: 1, max_length: 3, required: true,
+        placeholder: t.modaleAide, ...(combat != null ? { value: String(combat) } : {}),
+      }],
+    }],
+  };
+}
+
+export const texteEphemere = (langue: Langue, quoi: 'pasAuteur' | 'perime' | 'vitInvalide') => TEXTES[langue][quoi];
 
 const TEXTE_PASSIF_MAX = 300;
 // Discord : 5 rangées d'actions au plus par message.
 export const MENUS_MAX = 5;
 
-export function messageQuestion(langue: Langue, equipe: { nom: string; combat: number }[], demandes: Demande[], douteux: string[]): Message {
+// `equipe` : `combat` null pour une VIT mal lue, que `saisies` demande.
+export function messageQuestion(
+  langue: Langue,
+  equipe: { nom: string; combat: number | null }[],
+  demandes: Demande[],
+  douteux: string[],
+  saisies: Saisie[] = []
+): Message {
   const t = TEXTES[langue];
   const raccourcir = (x: string) => (x.length > TEXTE_PASSIF_MAX ? `${x.slice(0, TEXTE_PASSIF_MAX - 1)}…` : x);
   const arte = demandes.filter((d) => d.sorte === 'arte').map((d) => d.nom);
+  const inconnues = equipe.filter((e) => e.combat == null).map((e) => `**${e.nom}**`);
   const description = [
-    t.lu(equipe.map((e) => `**${e.nom}** ${e.combat}`).join(' · ')),
+    t.lu(equipe.map((e) => `**${e.nom}** ${e.combat ?? '?'}`).join(' · ')),
     ...douteux.map(t.douteux),
     '',
-    t.questionIntro,
+    ...(inconnues.length ? [t.questionVit(inconnues.join(', '))] : []),
+    ...(demandes.length ? [t.questionIntro] : []),
     ...demandes.flatMap((d) => (d.sorte === 'cumuls' ? [t.questionCumuls(d.nom, d.passif, raccourcir(d.texte))] : [])),
     ...(arte.length ? [t.questionArte(arte.join(', '))] : []),
   ].join('\n');
   // Plus de menus que de rangées (rare : trois passifs cumulables et un buff
   // de VIT) : ceux qui attendent une réponse passent d'abord, les autres
-  // reviennent une fois la place libérée.
-  const visibles = [...demandes.filter((d) => d.choisi == null), ...demandes.filter((d) => d.choisi != null)].slice(0, MENUS_MAX);
+  // reviennent une fois la place libérée. La rangée des saisies de VIT prend
+  // une place.
+  const places = MENUS_MAX - (saisies.length ? 1 : 0);
+  const visibles = [...demandes.filter((d) => d.choisi == null), ...demandes.filter((d) => d.choisi != null)].slice(0, places);
   return {
     embeds: [{ title: t.questionTitre, description, color: COULEUR_KO, footer: { text: t.pied } }],
-    components: demandes.filter((d) => visibles.includes(d)).map((d) => ({
+    components: [...(saisies.length ? [rangeeSaisies(langue, saisies)] : []), ...demandes.filter((d) => visibles.includes(d)).map((d): Rangee => ({
       type: 1,
       components: [{
         type: 3,
@@ -221,7 +281,7 @@ export function messageQuestion(langue: Langue, equipe: { nom: string; combat: n
           ? d.options.map((o) => ({ label: String(o.valeur), value: String(o.valeur), description: t.gain(o.points), ...(d.choisi === o.valeur ? { default: true } : {}) }))
           : d.options.map((o) => ({ label: t.tranche(o.de, o.a), value: String(o.de), ...(d.choisi === o.de ? { default: true } : {}) })),
       }],
-    })),
+    }))],
   };
 }
 
