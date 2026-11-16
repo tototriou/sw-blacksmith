@@ -70,6 +70,14 @@ export function journal(langue: Langue): Release[] {
 // Si une ligne dépasse ~15 mots, c'est qu'elle raconte l'implémentation.
 export const RELEASES: Release[] = [
   {
+    version: null,
+    date: '2026-11-16',
+    title: '/speedtune lit toute la VIT au téléphone',
+    changes: [
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune lit le dernier chiffre de la VIT quand il déborde de sa pastille (gestion des decks au téléphone).' },
+    ],
+  },
+  {
     version: '2.4.5',
     date: '2026-11-16',
     title: '/speedtune lit les petits chiffres et toutes les images',
