@@ -463,6 +463,14 @@ d'avance ; c'est l'usage qui le mesure.
   inventaire, favoris RTA, défense, attaque).
   [fixtures/compte-exemplaires-multiples.json](fixtures/compte-exemplaires-multiples.json)
   y ajoute deux exemplaires d'un même monstre.
+- Les **vraies captures** de l'écran de préparation de `/speedtune` vont dans
+  `captures-speedtune/`, **gitignoré** (dépôt public) ; seul
+  [captures-speedtune/attendus.json](captures-speedtune/attendus.json) est
+  versionné : pour chaque capture, ses trois VIT et ses trois monstres.
+  `testCapturesReelles` lit chaque capture présente, telle quelle et sous
+  d'autres formes (réduite, agrandie, en JPEG, posée dans un écran 4K) ; une
+  capture du dossier sans valeurs attendues fait échouer. Sans le dossier (la
+  CI), la vérification s'affiche en `--`.
 - L'**export réel** du développeur (`tototriou-*.json`) est **gitignoré**. Les
   quelques vérifications qui s'en servent s'affichent en `--` (ignorées) quand il
   est absent, au lieu d'échouer sur les autres machines.

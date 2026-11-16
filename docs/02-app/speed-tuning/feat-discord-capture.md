@@ -288,17 +288,28 @@ protégé).
 
 ## Vérifier
 
+**Les vraies captures** se posent en local dans `tests/captures-speedtune/`
+(gitignoré : le dépôt est public), et leurs valeurs attendues dans
+[attendus.json](../../../tests/captures-speedtune/attendus.json), versionné.
+`node tests/run.mjs testCapturesReelles` les lit toutes : telle quelle, chacune
+rend ses trois VIT et ses trois monstres ; réduite, agrandie, en JPEG ou
+posée dans un écran 4K, aucune VIT fausse. Deux captures aux chiffres de 5
+pixels y sont inscrites avec leurs VIT refusées (`vit` à `null`, les vraies
+dans `vitReelles`) : c'est la limite actuelle.
+
 [tests/speedtune-capture.test.ts](../../../tests/speedtune-capture.test.ts),
 sans aucune vraie capture : écrans recomposés aux positions réelles avec des
 portraits synthétiques (sombres, jusque contre la pastille), des cadres de
 plusieurs couleurs et des chiffres dessinés depuis les gabarits — téléphone,
 fenêtre PC avec et sans barre de titre, tablette 4:3, téléphone 20:9, cartes
 plus larges que hautes, attaquants seuls, attaquants à cadres dorés, bronze
-et gris, liste des monstres sous l'équipe, rangée de six carrés seule,
+et gris, liste des monstres sous l'équipe, rangée de six cartes sans VIT, cartes
+plus grandes sans VIT au-dessus de l'équipe, capture de tout un écran 4K,
 capture trop réduite, une seule carte, écran vide ; chiffres de 7 à 9 pixels
 lus, de 4 non ; calcul
 sur les vrais monstres et leurs vrais kits (Susano, Chilling, Tarq) ; état
 des menus (aller-retour, pire cas sous 100 caractères, refus) ; interactions
 signées, réponse différée, question, choix (y compris d'un autre que
-l'auteur), capture WebP rendue en PNG par Discord, GIF non converti refusé,
+l'auteur), capture collée (type annoncé absent ou quelconque) lue, capture
+WebP rendue en PNG par Discord, GIF non converti refusé,
 et message final devant un Discord simulé.

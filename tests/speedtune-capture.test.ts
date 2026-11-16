@@ -23,13 +23,14 @@ import { embedErreur, ICONE_APP, LIEN_OUTIL, langueDe, type Embed, type Menu, ty
 import { decoderEtat, encoderEtat, LONGUEUR_MAX, type Etat } from '../api/_source/speedtune/etat';
 import { creerEmojis } from '../api/_source/speedtune/emojis';
 import gabaritsJson from '../api/_source/capture/chiffres-gabarits.json';
+import banqueJson from '../api/_source/capture/banque-portraits.json';
 import { combatSpeed, runeSpeedForTarget, siegeLeadFor, speedLeadOf } from '../src/lib/speed';
 import { kitVitesse, sortsVitesse } from '../src/lib/speedTuneKit';
 import { passifsVitesse, pointsDeGain } from '../src/lib/speedTunePassif';
 import type { DonneesKit } from '../src/lib/speedTuneAuto';
 import type { DetailMonstre } from '../src/lib/monsterSkills';
 import type { Monster } from '../src/types';
-import { egal, monstersJson, ok, titre } from './outils';
+import { egal, ignore, monstersJson, ok, titre } from './outils';
 
 const gabarits = gabaritsJson as Gabarits;
 
@@ -330,6 +331,96 @@ export function testCaptureEcran() {
   // Une VIT hors de portée du jeu n'est pas une VIT.
   const absurde = lireEcranPreparation(ecran(portraits, ['9', '999', '357']), banque, gabarits)!;
   egal(absurde.attaquants.map((a) => a.vitesse?.valeur ?? null), [null, null, 357], 'VIT invraisemblable : écartée');
+}
+
+// ---- Vraies captures -----------------------------------------------------------
+
+// Les vraies captures de tests/captures-speedtune/ : IGNORÉES par Git (dépôt
+// public), seul attendus.json est versionné. Sur une machine qui ne les a
+// pas (la CI), la vérification s'affiche ignorée. Pour en ajouter une : la
+// poser dans le dossier et inscrire ses trois VIT et ses trois monstres dans
+// attendus.json — une capture sans valeurs attendues fait échouer. `vit` :
+// ce que la lecture doit rendre, `null` pour une VIT qu'elle refuse encore
+// (chiffres trop petits) ; `vitReelles` : les vraies, quand elles diffèrent,
+// pour qu'aucune lecture fausse ne passe.
+const DOSSIER_CAPTURES = 'tests/captures-speedtune';
+interface CaptureAttendue { ecran: string; vit: (number | null)[]; vitReelles?: number[]; monstres: number[] }
+
+// L'image à l'échelle k : moyenne de surface en réduction, bilinéaire en
+// agrandissement (ce que fait un logiciel de capture ou Discord).
+function aLEchelle(src: Image, k: number): Image {
+  const l = Math.round(src.largeur * k), h = Math.round(src.hauteur * k);
+  const rgba = new Uint8Array(l * h * 4);
+  const p = (x: number, y: number, c: number) => src.rgba[(y * src.largeur + x) * 4 + c];
+  for (let y = 0; y < h; y++) for (let x = 0; x < l; x++) for (let c = 0; c < 4; c++) {
+    let v: number;
+    if (k < 1) {
+      const x0 = Math.floor(x / k), x1 = Math.min(src.largeur, Math.max(x0 + 1, Math.floor((x + 1) / k)));
+      const y0 = Math.floor(y / k), y1 = Math.min(src.hauteur, Math.max(y0 + 1, Math.floor((y + 1) / k)));
+      let s = 0;
+      for (let yy = y0; yy < y1; yy++) for (let xx = x0; xx < x1; xx++) s += p(xx, yy, c);
+      v = s / ((y1 - y0) * (x1 - x0));
+    } else {
+      const fx = Math.min(src.largeur - 1.001, Math.max(0, (x + 0.5) / k - 0.5)), fy = Math.min(src.hauteur - 1.001, Math.max(0, (y + 0.5) / k - 0.5));
+      const x0 = Math.floor(fx), y0 = Math.floor(fy), ax = fx - x0, ay = fy - y0;
+      v = (1 - ay) * ((1 - ax) * p(x0, y0, c) + ax * p(x0 + 1, y0, c)) + ay * ((1 - ax) * p(x0, y0 + 1, c) + ax * p(x0 + 1, y0 + 1, c));
+    }
+    rgba[(y * l + x) * 4 + c] = v;
+  }
+  return { largeur: l, hauteur: h, rgba };
+}
+
+// La capture posée dans une capture de tout un écran 4K : bureau sombre, une
+// autre fenêtre claire à droite.
+function dansUnEcran(src: Image): Image {
+  const l = 3840, h = 2160;
+  const img = imageUnie(l, h, [32, 34, 40]);
+  coller(img, imageUnie(4, 4, [235, 235, 240]), 2900, 200, 900, 1100);
+  const x0 = Math.round((l - src.largeur) / 3), y0 = Math.round((h - src.hauteur) / 2);
+  for (let y = 0; y < src.hauteur; y++) img.rgba.set(src.rgba.subarray(y * src.largeur * 4, (y + 1) * src.largeur * 4), ((y0 + y) * l + x0) * 4);
+  return img;
+}
+
+export function testCapturesReelles() {
+  titre('Speed tune par capture — vraies captures (tests/captures-speedtune, hors du dépôt)');
+  const attendus = JSON.parse(readFileSync(`${DOSSIER_CAPTURES}/attendus.json`, 'utf8')) as Record<string, CaptureAttendue>;
+  const presentes = existsSync(DOSSIER_CAPTURES) ? readdirSync(DOSSIER_CAPTURES).filter((f) => f !== 'attendus.json') : [];
+  if (!presentes.length) {
+    ignore('vraies captures', 'aucune capture dans tests/captures-speedtune (gitignoré)');
+    return;
+  }
+  egal(presentes.filter((f) => !attendus[f]), [], 'chaque capture du dossier a ses valeurs attendues (attendus.json)');
+  const banque = new Banque(banqueJson as unknown as BanqueSerialisee);
+  const lire = (img: Image) => {
+    const r = lireEcranPreparation(img, banque, gabarits);
+    return r && { vit: r.attaquants.map((a) => a.vitesse?.valeur ?? null), monstres: r.attaquants.map((a) => a.portrait?.meilleur.com2usId ?? null) };
+  };
+  for (const [fichier, a] of Object.entries(attendus)) {
+    if (!presentes.includes(fichier)) {
+      ignore(fichier, 'capture absente de cette machine');
+      continue;
+    }
+    const img = decoderImage(new Uint8Array(readFileSync(`${DOSSIER_CAPTURES}/${fichier}`)));
+    if (!img) {
+      ok(false, `${fichier} : décodée`);
+      continue;
+    }
+    // Telle quelle : tout est lu, juste.
+    egal(lire(img), { vit: a.vit, monstres: a.monstres }, `${fichier} (${a.ecran}) : les trois VIT et les trois monstres`);
+    // Sous une autre forme : une VIT peut être refusée (chiffres trop petits),
+    // jamais fausse.
+    const formes: [string, Image][] = [
+      ['réduite à 85 %', aLEchelle(img, 0.85)],
+      ['agrandie à 130 %', aLEchelle(img, 1.3)],
+      ['en JPEG', decoderImage(new Uint8Array(jpeg.encode({ data: Buffer.from(img.rgba), width: img.largeur, height: img.hauteur }, 80).data))!],
+      ['posée dans une capture de tout un écran 4K', dansUnEcran(img)],
+    ];
+    for (const [forme, variante] of formes) {
+      const r = lire(variante);
+      const vraies = a.vitReelles ?? a.vit;
+      egal(r ? r.vit.filter((v, i) => v !== null && v !== vraies[i]) : [], [], `${fichier}, ${forme} : aucune VIT fausse`);
+    }
+  }
 }
 
 // ---- Analyse -------------------------------------------------------------------
