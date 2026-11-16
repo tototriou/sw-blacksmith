@@ -262,6 +262,8 @@ export function reconnaitreATaille(lum: Float32Array, largeur: number, hauteur: 
   const lu = new Float32Array((x1 - x0) * (y1 - y0));
   for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) lu[(y - y0) * (x1 - x0) + x - x0] = lum[y * largeur + x];
   const rendu = new Float32Array(lu.length);
+  const flou = new Float32Array(lu.length);
+  const lw = x1 - x0, lh = y1 - y0;
   const scores = Object.entries(g.chiffres).map(([c, modeles]) => {
     let meilleur = -1;
     for (const m of modeles) for (const dh of DECALAGES_H) for (const dy of DECALAGES_Y) for (const dx of DECALAGES_X) {
@@ -271,6 +273,22 @@ export function reconnaitreATaille(lum: Float32Array, largeur: number, hauteur: 
           (x - centre) / echelle + g.l / 2, (x + 1 - centre) / echelle + g.l / 2, (y - haut) / echelle, (y + 1 - haut) / echelle);
       }
       meilleur = Math.max(meilleur, correlationTableaux(lu, rendu));
+      // ⚠️ Le même rendu, FLOUTÉ (noyau 3 × 3 de poids 1-2-1) : une capture
+      // repassée par une application qui la redimensionne n'a plus de bord
+      // net, et un chiffre flou ne ressemble plus assez à aucun gabarit net
+      // (relevé : des chiffres de 8 pixels lus justes à un écart de 0,01,
+      // donc refusés). Le meilleur des deux rendus compte.
+      for (let y = 0; y < lh; y++) for (let x = 0; x < lw; x++) {
+        let s = 0, n = 0;
+        for (let dy2 = -1; dy2 <= 1; dy2++) for (let dx2 = -1; dx2 <= 1; dx2++) {
+          const xx = x + dx2, yy = y + dy2;
+          if (xx < 0 || yy < 0 || xx >= lw || yy >= lh) continue;
+          const w = (dx2 === 0 ? 2 : 1) * (dy2 === 0 ? 2 : 1);
+          s += w * rendu[yy * lw + xx]; n += w;
+        }
+        flou[y * lw + x] = s / n;
+      }
+      meilleur = Math.max(meilleur, correlationTableaux(lu, flou));
     }
     return [c, meilleur] as const;
   });

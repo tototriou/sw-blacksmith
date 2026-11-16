@@ -87,10 +87,11 @@ export function pastilleVitesse(img: Image, [x, y, l, h]: Rect): Rect | null {
     if (p >= 0) premier = p;
   }
   const debut = Math.max(gauche, premier - Math.max(2, Math.round(0.3 * (bas - haut))));
-  // En haut, une rangée de marge : la première rangée d'un petit chiffre (5
-  // pixels) est un mélange de blanc et de fond, sous le seuil du clair ; sans
-  // elle, le chiffre perd son haut.
-  const dessus = Math.max(yHaut, haut - 1);
+  // En haut, une marge d'un quart de la zone (une rangée au moins) : le haut
+  // d'un chiffre est un mélange de blanc et de fond, sous le seuil du clair —
+  // une rangée sur un chiffre de 5 pixels, deux ou trois sur une capture
+  // agrandie (relevé : le 205 d'une capture ×1,5 perdait son haut, et sa VIT).
+  const dessus = Math.max(yHaut, haut - Math.max(1, Math.round(0.25 * (bas - haut))));
   // À droite, la même marge qu'à gauche : la rangée sombre du bas s'arrête au
   // coin arrondi de la pastille, et le dernier chiffre peut la dépasser (relevé :
   // 1 à 2 pixels sur une capture de téléphone en 2640 × 1080, qui coupaient le

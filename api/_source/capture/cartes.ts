@@ -19,7 +19,7 @@
 //    sans eux, le symétrique des attaquants par rapport au centre de l'image
 //    (la mise en page du jeu l'est).
 
-import type { Image } from './image';
+import { demiTaille, type Image } from './image';
 import { pastilleVitesse, porteUneVit } from './pastille';
 
 export type Rect = [number, number, number, number]; // x, y, largeur, hauteur
@@ -52,6 +52,10 @@ function bordsHorizontaux(img: Image): Uint8Array {
 // bruit des portraits. Deux rangées voisines se cumulent ; un trou de trois
 // pixels ne coupe pas un trait. Un bord haut tombe sur la première rangée du
 // cadre.
+// ⚠️ Trois pixels, quelle que soit la taille de l'image : suivre sa taille
+// soudait, dans une capture de tout un écran 4K, les petits bords de la fenêtre
+// du jeu à ce qui les entoure. Une image agrandie, dont les bords se creusent
+// davantage, est relue réduite (`trouverCartesAToutesEchelles`).
 function traits(img: Image, bord: Uint8Array, longMin: number): Trait[] {
   const { largeur: l, hauteur: h } = img;
   const res: Trait[] = [];
@@ -296,4 +300,29 @@ export function trouverCartes(img: Image): CartesTrouvees | null {
     .map((k): Rect => [x0Defense + k * pas, y, cote, hauteur])
     .filter(([x]) => x >= finAttaque + pas - cote && x + cote <= img.largeur);
   return { attaquants, defense };
+}
+
+// Les cartes, à l'échelle de l'image, ou — faute de les y trouver sur une
+// GRANDE image — sur une copie réduite de moitié, puis de moitié encore, les
+// cartes ramenées à la taille de l'image. ⚠️ Les seuils de la détection sont
+// au pixel près (contraste entre deux pixels à deux pas, trous tolérés dans un
+// bord, marges des côtés) : agrandie ×3, une capture étale ses bords et arrondit
+// ses coins au-delà de ce qu'ils couvrent, et ses cartes ne se trouvaient plus.
+// La pastille et les chiffres se lisent ensuite sur l'image ENTIÈRE : rien n'est
+// perdu de leur détail. Une image où les cartes se trouvent n'est jamais réduite.
+const COTE_REDUCTION_MIN = 1200; // en dessous, une moitié n'aurait plus de quoi montrer ses cartes
+
+export function trouverCartesAToutesEchelles(img: Image): CartesTrouvees | null {
+  let courante = img, facteur = 1;
+  for (;;) {
+    const cartes = trouverCartes(courante);
+    if (cartes) {
+      if (facteur === 1) return cartes;
+      const agrandir = ([x, y, l, h]: Rect): Rect => [x * facteur, y * facteur, l * facteur, h * facteur];
+      return { attaquants: cartes.attaquants.map(agrandir), defense: cartes.defense.map(agrandir) };
+    }
+    if (Math.max(courante.largeur, courante.hauteur) < COTE_REDUCTION_MIN) return null;
+    courante = demiTaille(courante);
+    facteur *= 2;
+  }
 }

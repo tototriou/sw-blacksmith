@@ -13,7 +13,7 @@ import { generateKeyPairSync, sign } from 'node:crypto';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { PNG } from 'pngjs';
 import jpeg from 'jpeg-js';
-import { decoderImage, decouper, dimensionsPng, imageTropGrande, reduire, type Image } from '../api/_source/capture/image';
+import { decoderImage, decouper, demiTaille, dimensionsPng, imageTropGrande, reduire, type Image } from '../api/_source/capture/image';
 import { Banque, quantifier, signature, TAILLE, COTE, type BanqueSerialisee } from '../api/_source/capture/portraits';
 import { HAUTEUR_CHIFFRE_MIN, lireNombre, type Gabarits } from '../api/_source/capture/chiffres';
 import { lireEcranPreparation } from '../api/_source/capture/ecranPreparation';
@@ -204,6 +204,8 @@ export function testCaptureImage() {
   const damier = imageUnie(2, 2, [0, 0, 0]);
   damier.rgba.set([200, 100, 0, 255], 0);
   egal(Array.from(reduire(damier, 1, 1)), [50, 25, 0], 'réduction : moyenne de surface');
+  const demi = demiTaille(damier);
+  egal([demi.largeur, demi.hauteur, Array.from(demi.rgba.subarray(0, 3))], [1, 1, [50, 25, 0]], 'demi-taille : la moyenne de chaque carré de 2 × 2');
 }
 
 // ---- Portraits --------------------------------------------------------------

@@ -151,6 +151,16 @@ reconnu, VIT illisible (avec les monstres concernés).
   3. **La défense** : les cadres de même taille, à droite, sur la même ligne ;
      sinon le symétrique des attaquants par rapport au centre ; une capture
      recadrée sur les attaquants n'en a pas.
+  4. ⚠️ **Une grande image sans équipe trouvée est relue réduite**
+     (`trouverCartesAToutesEchelles`) : de moitié, puis de moitié encore,
+     tant que son plus grand côté fait 1 200 pixels ; les cartes trouvées sont
+     ramenées à sa taille, et la pastille et les chiffres se lisent sur
+     l'image entière. Les seuils de la détection sont au pixel près : agrandie
+     ×3, une capture étale ses bords et arrondit ses coins au-delà de ce qu'ils
+     couvrent. Une image dont les cartes se trouvent n'est jamais réduite — ni
+     la fenêtre du jeu dans un coin d'un écran 4K, dont les petites cartes ne
+     survivraient pas à la réduction. Coût : 5 à 9 s pour une image de 3 700
+     à 7 900 pixels de large.
 - [pastille.ts](../../../api/_source/capture/pastille.ts) — la pastille de
   VIT d'une carte, ce qui en fait un attaquant. La VIT est écrite en blanc
   dans une pastille sombre, en bas à droite de la carte ; la pastille est
@@ -165,7 +175,10 @@ reconnu, VIT illisible (avec les monstres concernés).
   marge ; ⚠️ à droite, la même marge au-delà de la rangée sombre du bas : elle
   s'arrête au coin arrondi de la pastille, et le dernier chiffre la dépasse
   parfois (1 à 2 pixels sur une capture de téléphone en 2640 × 1080, qui
-  coupaient le 8 de 328). Une carte porte un **nombre net** quand sa zone se découpe en deux à
+  coupaient le 8 de 328) ; en haut, un quart de la hauteur de la zone (une
+  rangée au moins) : le haut d'un chiffre mêle blanc et fond, sous le seuil du
+  clair — deux ou trois rangées sur une capture agrandie, qui perdait sinon le
+  haut de ses chiffres. Une carte porte un **nombre net** quand sa zone se découpe en deux à
   quatre glyphes : un coin de portrait sombre au reflet clair ressemble à une
   pastille, surtout en JPEG, pas à un nombre.
 - [ecranPreparation.ts](../../../api/_source/capture/ecranPreparation.ts) —
@@ -175,8 +188,10 @@ reconnu, VIT illisible (avec les monstres concernés).
   siège, aucune vitesse réglée n'est sous 100 ; un chiffre perdu, « 66 »
   pour 314, y tombe), sous une confiance de 0,7, ou quand un de ses chiffres
   est presque à égalité avec un autre (écart sous 0,05) sans que la lecture
-  agrandie donne le même nombre, la VIT n'est pas lue. Entre 0,7 et 0,75,
-  le message la dit incertaine.
+  agrandie donne le même nombre, la VIT n'est pas lue. Sous 7 pixels, seul
+  l'accord des deux lectures vaut ; sous 6 pixels, la VIT n'est jamais lue —
+  à 5 pixels, les deux lectures se sont accordées sur un « 340 » pour 349.
+  Entre 0,7 et 0,75, le message la dit incertaine.
 - [portraits.ts](../../../api/_source/capture/portraits.ts) — le monstre
   reconnu à son portrait, porté du projet « Youtube-to-offenses-decks »
   (portraits.py) : zone centrale ramenée à 24 × 24 en Lab, centrée-réduite,
@@ -203,8 +218,10 @@ reconnu, VIT illisible (avec les monstres concernés).
   3). Chaque gabarit est au contraire réduit à la taille exacte du glyphe,
   par moyenne de surface (l'anticrénelage du jeu), sous de petits décalages
   d'une fraction de pixel (hauteur ± 0,5, haut et centre ± 0,5), et corrélé
-  à la luminosité brute de la zone (sans seuil). La même méthode vaut à
-  toutes les tailles. L'ancienne lecture (glyphe agrandi à 12 × 18, sous sa
+  à la luminosité brute de la zone (sans seuil), tel quel et flouté (noyau
+  3 × 3 de poids 1-2-1), le meilleur des deux comptant : une capture repassée
+  par une application qui la redimensionne n'a plus de bord net. La même
+  méthode vaut à toutes les tailles. L'ancienne lecture (glyphe agrandi à 12 × 18, sous sa
   découpe et ses huit voisines d'un pixel) sert de second avis : un nombre
   que les deux donnent est lu même quand deux chiffres sont proches. Sous 5
   pixels de haut, un chiffre n'a plus que trois colonnes : il n'est pas lu,
@@ -274,11 +291,15 @@ protégé).
   capture de tout un écran (3840 × 2160, 5120 × 1440, 1080 × 2400) : toutes
   lues. Leurs chiffres servent ensuite de gabarits.
 - **Une capture très réduite ou très compressée n'est pas toujours lue** :
-  sous 5 pixels de haut, les chiffres ne sont pas lus ; à 5 et 6 pixels, ils
-  ne le sont que si les deux lectures s'accordent, ce qui est rare (les
-  modèles, réduits depuis 12 × 18, ne ressemblent plus assez au rendu du
-  jeu) ; un JPEG très compressé de chiffres de 7 pixels peut être refusé. La
-  commande demande alors une capture plus grande.
+  sous 6 pixels de haut, les chiffres ne sont pas lus ; à 6 pixels, ils ne le
+  sont que si les deux lectures s'accordent ; un JPEG très compressé (qualité
+  50 ou moins) de chiffres de 7 ou 8 pixels, ou une capture floutée à cette
+  taille, peut être refusé. Agrandir une capture aux chiffres trop petits n'y
+  ajoute rien. La commande demande alors une capture plus grande.
+- **Banc de stress** (19 vraies captures, chacune réduite de ×0,4 à ×3,
+  compressée, floutée, recadrée, posée dans un écran 4K — 1 197 VIT) :
+  **aucune VIT fausse** ; les refus restants portent sur des chiffres sous
+  7 pixels, des JPEG très compressés et des captures floutées.
 - **Seul l'écran de siège est reconnu** : trois attaquants côte à côte. Les
   quatre monstres en losange d'un autre mode sont trouvés avec leurs VIT,
   mais l'écran est refusé.
