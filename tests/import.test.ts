@@ -14,14 +14,17 @@ import {
   parseArenaDefense,
   parseArenaInterserveurDefense,
   parseArenaOffense,
+  parseDimensionDefense,
+  parseDimensionOffense,
   parseRuneMarkerLabels,
   parseUsedRuneIds,
   parseUsedRuneIdsParPerimetre,
   parseWizardId,
   unionRunesUtilisees,
 } from '../src/lib/importAccount';
+import { estJournalSwex, lireSaisonDimension } from '../src/lib/journalSwex';
 import { formatRelicUnique } from '../src/lib/effects';
-import { egal, exportReel, exportExemplairesMultiples, exportSynthetique, ignore, ok, titre } from './outils';
+import { egal, exportReel, exportExemplairesMultiples, exportSynthetique, ignore, journalSwexMiniature, journalSwexReel, ok, titre } from './outils';
 import { fr } from '../src/i18n/fr';
 
 export default function testImport() {
@@ -206,6 +209,63 @@ export default function testImport() {
     [parseArenaOffense(sansArene, fr).error, parseArenaDefense(sansArene, fr).error, parseArenaInterserveurDefense(sansArene, fr).error],
     [fr.importCompte.sansOffenseArene, fr.importCompte.sansDefenseArene, fr.importCompte.sansDefenseInterserveur],
     'arène : sans ses données, chaque lecture dit ce qui manque'
+  );
+
+  /* --- Arène dimensionnelle : la box du journal SWEX -------------------- */
+
+  // Le journal miniature : une saison périmée, puis la saison à lire, puis une
+  // dernière occurrence tronquée (journal coupé en cours d'écriture).
+  const journal = journalSwexMiniature();
+  ok(estJournalSwex(journal) && !estJournalSwex(texte), 'journal SWEX : reconnu, et un export ne l’est pas');
+  const saison = lireSaisonDimension(journal);
+  egal(
+    saison?.defense_deck_info?.unit_id_list,
+    [[900002, 900001, 0, 0]],
+    'journal SWEX : la dernière saison lisible, pas la tronquée ni la périmée'
+  );
+  egal(lireSaisonDimension(JSON.stringify(saison))?.unit_list?.length, 3, 'journal SWEX : la réponse seule se lit aussi');
+  egal(lireSaisonDimension(texte), null, 'journal SWEX : un export de compte n’est pas une saison');
+
+  const defDim = parseDimensionDefense(saison, fr).decks[0];
+  egal(com2us(defDim), [15105, 14314, null, null], 'dimension défense : defense_deck_info, leader en tête, 4 places');
+  // 900001 sans rune : tout le build par défaut de 14314 (VIT 42 + 15,
+  // Violent + Volonté).
+  egal(
+    [defDim.slots[1]!.flatRuneSpeed, [...defDim.slots[1]!.sets].sort(), defDim.slots[1]!.gear!.runes.length],
+    [57, ['violent', 'will'], 6],
+    'dimension défense : un monstre sans rune porte le build par défaut de son espèce'
+  );
+  // 900002 : ses runes gagnées en 5 et 6, le build par défaut de 15105 en 1 à
+  // 4 (VIT 42 + 10 + 20 meulée +3 = 75) ; les VIT 30 des runes par défaut 5
+  // et 6 ne comptent pas.
+  egal(
+    [defDim.slots[0]!.flatRuneSpeed, defDim.slots[0]!.swift, defDim.slots[0]!.gear!.runes.map((r) => r.slot)],
+    [75, true, [1, 2, 3, 4, 5, 6]],
+    'dimension défense : un emplacement sans rune gagnée prend la rune par défaut, les autres gardent la leur'
+  );
+  egal(
+    [parseDimensionDefense(null, fr).error, parseDimensionDefense({ defense_deck_info: { unit_id_list: [[123, 0, 0, 0]] } }, fr).error],
+    [fr.importCompte.sansDefenseDimension, fr.importCompte.defenseDimensionVide],
+    'dimension défense : sans saison, ou sans monstre connu, la lecture le dit'
+  );
+
+  // L'attaque : les équipes de type 28 de l'export, résolues dans la box.
+  const avecAttaqueDim = {
+    ...objet,
+    deck_recent_list: [
+      { type: 1, sub_type: 1, unit_id_list: [101, 0, 0, 0], leader_unit_id: 101, equip: [] },
+      { type: 28, sub_type: 1, unit_id_list: [900001, 900003, 900002, 0, 0, 0, 0, 0], leader_unit_id: 900002, equip: [] },
+    ],
+  };
+  egal(
+    parseDimensionOffense(avecAttaqueDim, saison, fr).decks.map(com2us),
+    [[15105, 14314, 14314, null]],
+    'dimension attaque : les équipes de type 28, leader en tête'
+  );
+  egal(
+    [parseDimensionOffense(avecAttaqueDim, null, fr).error, parseDimensionOffense(objet, saison, fr).error],
+    [fr.importCompte.offenseDimensionSansJournal, fr.importCompte.sansOffenseDimension],
+    'dimension attaque : sans journal, ou sans équipe de type 28, la lecture le dit'
   );
 
   /* --- Runes utilisées (decks tous contenus + RTA) --------------------- */
@@ -404,5 +464,25 @@ export default function testImport() {
   ok(
     !!defReel && !!interReel && defReel.slots.every(Boolean) && interReel.slots.every(Boolean),
     'export réel : défense d’arène et défense interserveur pleines'
+  );
+
+  // Arène dimensionnelle : la défense du journal réel, pleine, chaque monstre
+  // avec 6 runes (les siennes ou celles du build par défaut) ; l'attaque de
+  // type 28 de l'export, résolue dans sa box.
+  const journalReel = journalSwexReel();
+  if (!journalReel) {
+    ignore('journal réel : box dimensionnelle', 'journal SWEX réel (full_log.txt) absent');
+    return;
+  }
+  const saisonReelle = lireSaisonDimension(journalReel);
+  const defDimReel = parseDimensionDefense(saisonReelle, fr).decks[0];
+  ok(
+    !!defDimReel && defDimReel.slots.every((s) => s !== null && s.gear!.runes.length === 6),
+    'journal réel : défense dimensionnelle pleine, 6 runes par monstre'
+  );
+  const offDimReel = parseDimensionOffense(reelObjet, saisonReelle, fr);
+  ok(
+    offDimReel.decks.length > 0 && offDimReel.decks.every((dk) => dk.slots.every((s) => s !== null)),
+    `journal réel : ${offDimReel.decks.length} attaque(s) dimensionnelle(s) de l'export, résolue(s) dans la box ${offDimReel.error ?? ''}`
   );
 }

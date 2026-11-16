@@ -597,9 +597,13 @@ export const fr = {
     offenseAreneVide: "Aucune équipe d'attaque d'arène configurée dans ce fichier.",
     sansDefenseInterserveur: "Aucune défense d'arène interserveur trouvée (server_arena_defense_deck_info).",
     defenseInterserveurVide: "Aucune défense d'arène interserveur configurée dans ce fichier.",
-    sansDefenseDimension: "Aucune défense d'arène dimensionnelle trouvée (deck_recent_list, type 28).",
-    defenseDimensionInconnue:
-      "La défense d'arène dimensionnelle de ce fichier désigne des monstres de la box dimensionnelle, que l'export ne décrit pas.",
+    sansDefenseDimension: "Aucune défense d'arène dimensionnelle trouvée dans le journal SWEX (defense_deck_info).",
+    defenseDimensionVide: "La défense d'arène dimensionnelle du journal SWEX ne désigne aucun monstre de la box dimensionnelle.",
+    sansOffenseDimension: "Aucune équipe d'attaque d'arène dimensionnelle trouvée (deck_recent_list, type 28).",
+    offenseDimensionSansJournal:
+      "Les équipes d'attaque d'arène dimensionnelle désignent des monstres de la box dimensionnelle : importe aussi le journal SWEX (full_log.txt) pour les reconnaître.",
+    offenseDimensionInconnue:
+      "Les équipes d'attaque d'arène dimensionnelle désignent des monstres absents de la box du journal SWEX.",
     rien: 'Rien à importer depuis ce fichier.',
     monstres6: (n: number) => `${n} monstres 6★`,
     monstresRta: (n: number) => `${n} monstres RTA`,

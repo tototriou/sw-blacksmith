@@ -1289,29 +1289,122 @@ export function parseArenaInterserveurDefense(src: AccountSource, t: Dictionnair
   return lireDefenseArene(src, t, 'server_arena_defense_deck_info', e.sansDefenseInterserveur, e.defenseInterserveurVide);
 }
 
-// La défense de l'arène DIMENSIONNELLE : la dernière équipe de type 28 de
-// `deck_recent_list` (`leader_unit_id` en tête, 4 places). Relevé sur un export
-// réel (2026-11) : la seule équipe de ce type, absente d'un export plus ancien,
-// et ses 4 unités sont d'une plage d'identifiants où n'est aucun monstre du
-// compte — la box dimensionnelle, à part, avec ses runes. Que ce soit la
-// DÉFENSE est le relevé de l'utilisateur.
-// ⚠️ L'export ne décrit pas cette box : un monstre qui n'est pas dans
-// `unit_list` laisse sa place vide, et une défense toute vide n'est pas
-// importée (`defenseDimensionInconnue`). Si un export la décrit un jour, ses
-// monstres se résolvent sans rien changer ici.
-const DIMENSION_DEFENSE_RECENT_TYPE = 28;
+/* --------------------------------------------------------------------------
+ * ARÈNE DIMENSIONNELLE — box, runes et équipes à part
+ *
+ * La box du mode n'est PAS dans l'export de compte : elle vient de la réponse
+ * `dimensionarena_getSeasonInfo` du journal SWEX (src/lib/journalSwex.ts), de
+ * la même forme qu'un export — relevé sur un journal réel (2026-11) :
+ *  - `unit_list` : les monstres obtenus dans le mode, chacun avec les runes
+ *    GAGNÉES qu'il porte (`runes`, de 0 à 6) ;
+ *  - `rune_list` : les runes gagnées en inventaire ;
+ *  - `default_unit_list` : un build de 6 runes par espèce (`is_default`),
+ *    celui avec lequel un monstre est invoqué ;
+ *  - `defense_deck_info.unit_id_list` : la défense, `[[id, id, id, id]]`,
+ *    leader en tête comme la défense d'arène.
+ * Pas d'artéfacts dans ce mode (`artifact_list` vide).
+ *
+ * ⚠️ **Un emplacement sans rune gagnée porte la rune du build par défaut de
+ * l'espèce.** Un monstre sans aucune rune porte tout ce build : relevé de
+ * l'utilisateur en jeu sur sa défense. Le complément emplacement par
+ * emplacement (un monstre qui porte 4 runes gagnées) en est le prolongement,
+ * non relevé.
+ *
+ * L'export, lui, garde la trace des équipes d'ATTAQUE jouées :
+ * `deck_recent_list` de type 28, des identifiants de la box dimensionnelle,
+ * sans runes (`equip` vide) — relevé : les 4 monstres de la dernière attaque,
+ * dont celui qui porte une rune retrouvée dans le journal.
+ * ----------------------------------------------------------------------- */
 
-export function parseArenaDimensionDefense(src: AccountSource, t: Dictionnaire): SiegeParseResult {
+// Le type des équipes d'attaque d'arène dimensionnelle dans `deck_recent_list`.
+const DIMENSION_OFFENSE_RECENT_TYPE = 28;
+
+// La box dimensionnelle sous la forme d'un export, pour les index communs :
+// les monstres de la box ET les builds par défaut (identifiants courts, 1001…,
+// disjoints de ceux de la box), les runes en inventaire.
+const donneesDimension = memoByData((saison: any) => ({
+  unit_list: [
+    ...(Array.isArray(saison?.unit_list) ? saison.unit_list : []),
+    ...(Array.isArray(saison?.default_unit_list) ? saison.default_unit_list : []),
+  ],
+  runes: Array.isArray(saison?.rune_list) ? saison.rune_list : [],
+}));
+
+// Build par défaut de chaque espèce : unit_master_id → ses runes.
+const buildsParDefaut = memoByData((saison: any): ReadonlyMap<number, any[]> => {
+  const m = new Map<number, any[]>();
+  for (const u of Array.isArray(saison?.default_unit_list) ? saison.default_unit_list : []) {
+    if (Array.isArray(u?.runes)) m.set(Number(u.unit_master_id), u.runes);
+  }
+  return m;
+});
+
+// Les runes que porte un monstre de la box : les siennes, et pour chaque
+// emplacement sans rune gagnée, celle du build par défaut de son espèce.
+function runesDimension(unit: any, saison: any): number[] {
+  const propres = Array.isArray(unit?.runes) ? unit.runes : [];
+  const occupes = new Set(propres.map((r: any) => Number(r?.slot_no)));
+  const defaut = (buildsParDefaut(saison).get(Number(unit?.unit_master_id)) ?? []).filter(
+    (r: any) => !occupes.has(Number(r?.slot_no))
+  );
+  return [...propres, ...defaut].map((r: any) => Number(r?.rune_id)).filter(Number.isFinite);
+}
+
+// Résout des équipes de la box dimensionnelle (identifiants ordonnés, leader
+// en tête) en decks de 4 places, chaque monstre avec ses runes du mode.
+function decksDimension(equipes: { deckId: number | string; ids: number[] }[], saison: any): SiegeImportedDeck[] {
+  const data = donneesDimension(saison);
+  const unitById = indexUnits(data);
+  const defs: DeckDef[] = equipes.map(({ deckId, ids }) => {
+    const unitIds = Array.from({ length: SLOTS_ARENE }, (_, k) => ids[k] ?? 0);
+    const runeIdsByUnit = new Map<number, any[]>();
+    for (const id of unitIds) {
+      const unit = unitById.get(id);
+      if (unit) runeIdsByUnit.set(id, runesDimension(unit, saison));
+    }
+    return { deckId, unitIds, runeIdsByUnit, artifactIdsByUnit: new Map() };
+  });
+  return buildSiegeDecks(defs, indexRunes(data), unitById, new Map(), new Map(), SLOTS_ARENE);
+}
+
+const idsNonNuls = (liste: any[]): number[] =>
+  liste.map(Number).filter((x: number) => Number.isFinite(x) && x !== 0);
+
+// La DÉFENSE de l'arène dimensionnelle, depuis la saison lue dans le journal
+// SWEX (`lireSaisonDimension`).
+export function parseDimensionDefense(saison: Record<string, any> | null, t: Dictionnaire): SiegeParseResult {
+  const e = t.importCompte;
+  const liste = saison?.defense_deck_info?.unit_id_list;
+  if (!Array.isArray(liste)) return { decks: [], error: e.sansDefenseDimension };
+  // `[[…]]` relevé ; une liste à plat est lue de même.
+  const ids = idsNonNuls(Array.isArray(liste[0]) ? liste[0] : liste);
+  const decks = decksDimension([{ deckId: 1, ids }], saison);
+  return decks.length ? { decks } : { decks: [], error: e.defenseDimensionVide };
+}
+
+// Les équipes d'ATTAQUE de l'arène dimensionnelle : celles de type 28 de
+// `deck_recent_list` dans l'export (`leader_unit_id` en tête), résolues dans
+// la box de la saison. Sans saison, leurs monstres sont inconnus.
+export function parseDimensionOffense(
+  src: AccountSource,
+  saison: Record<string, any> | null,
+  t: Dictionnaire
+): SiegeParseResult {
   const e = t.importCompte;
   const data = parseAccountSource(src);
   if (!data) return { decks: [], error: e.illisible };
-  if (!Array.isArray(data?.unit_list)) return { decks: [], error: e.pasDeUnitList };
   const recents = Array.isArray(data?.deck_recent_list) ? data.deck_recent_list : [];
-  const defense = recents.filter((dk: any) => Number(dk?.type) === DIMENSION_DEFENSE_RECENT_TYPE);
-  if (defense.length === 0) return { decks: [], error: e.sansDefenseDimension };
-  const defs = defense.slice(0, 1).map((dk: any, i: number) => deckEnregistre(dk, i, SLOTS_ARENE));
-  const decks = buildSiegeDecks(defs, indexRunes(data), indexUnits(data), indexArtifacts(data), indexRuneMarkers(data), SLOTS_ARENE);
-  return decks.length ? { decks } : { decks: [], error: e.defenseDimensionInconnue };
+  const equipes = recents
+    .filter((dk: any) => Number(dk?.type) === DIMENSION_OFFENSE_RECENT_TYPE)
+    .map((dk: any, i: number) => {
+      const ids = idsNonNuls(Array.isArray(dk?.unit_id_list) ? dk.unit_id_list : []);
+      const lead = Number(dk?.leader_unit_id);
+      return { deckId: i + 1, ids: ids.includes(lead) ? [lead, ...ids.filter((x) => x !== lead)] : ids };
+    });
+  if (equipes.length === 0) return { decks: [], error: e.sansOffenseDimension };
+  if (!saison) return { decks: [], error: e.offenseDimensionSansJournal };
+  const decks = decksDimension(equipes, saison);
+  return decks.length ? { decks } : { decks: [], error: e.offenseDimensionInconnue };
 }
 
 // Import des ÉQUIPES D'ATTAQUE d'arène.

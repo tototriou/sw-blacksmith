@@ -49,22 +49,48 @@ données présentes mais aucune place remplie : `defenseAreneVide`,
 
 ### Arène dimensionnelle
 
-### Défense de l'arène dimensionnelle — `parseArenaDimensionDefense`
+⚠️ **L'export de compte ne décrit pas la box dimensionnelle** : ses monstres et
+ses runes viennent du **journal complet de SWEX** (`full_log.txt`), réponse
+`dimensionarena_getSeasonInfo`, que le jeu envoie à l'ouverture du mode. Lecture
+du journal : [journalSwex.ts](src/lib/journalSwex.ts) — `lireSaisonDimension`
+prend la **dernière** réponse réussie de cette commande (une réponse tronquée,
+journal coupé en cours d'écriture, fait remonter à la précédente) ; la réponse
+seule, en JSON, se lit aussi.
+
+La réponse a la forme d'un export (relevé sur un journal réel, 2026-11) :
 
 | Clé | Rôle |
 |-----|------|
-| `deck_recent_list` filtré sur `type === 28` | La première de ces équipes : `{ type, sub_type, unit_id_list, leader_unit_id, equip }`, leader replacé en tête, 4 places ; `equip` vide. |
+| `unit_list` | Les monstres obtenus dans le mode, chacun avec les runes **gagnées** qu'il porte (`runes`, de 0 à 6). Identifiants d'une plage à part (quelques millions), sans lien avec la box du compte. |
+| `rune_list` | Les runes gagnées en inventaire. Toutes antiques, +15. |
+| `default_unit_list` | Un build de 6 runes par espèce (`is_default: 1`, identifiants courts 1001…), celui avec lequel un monstre est invoqué. |
+| `defense_deck_info.unit_id_list` | La défense : `[[id, id, id, id]]`, leader en tête. |
+| `artifact_list` | Vide : pas d'artéfacts dans ce mode. |
 
-- `type = 28` (`DIMENSION_DEFENSE_RECENT_TYPE`) : relevé sur un export réel de
-  2026-11 — la seule équipe de ce type, absente d'un export d'août, dont les
-  4 unités sont d'une plage d'identifiants (1,4 à 4,3 millions) où n'est aucun
-  monstre du compte (tous au-dessus de 5,7 millions). Que ce soit la **défense**
-  est le relevé de l'utilisateur.
-- ⚠️ **L'export ne décrit pas la box dimensionnelle** (box et runes à part,
-  runes antiques seulement) : une unité absente de `unit_list` laisse sa place
-  vide, et une défense toute vide n'est pas importée — `defenseDimensionInconnue`.
-  Sans équipe de type 28 : `sansDefenseDimension`. Si un export décrit un jour
-  ces unités dans `unit_list`, elles se résolvent sans rien changer ici.
+⚠️ **Un emplacement sans rune gagnée porte la rune du build par défaut de
+l'espèce** (`runesDimension`) : un monstre sans aucune rune porte tout ce build
+(relevé de l'utilisateur en jeu, sur sa défense). Le complément emplacement par
+emplacement, pour un monstre qui porte quelques runes gagnées, en est le
+prolongement, non relevé.
+
+#### Défense — `parseDimensionDefense(saison)`
+
+Depuis la saison du journal. Sans `defense_deck_info` : `sansDefenseDimension` ;
+aucun de ses monstres dans la box : `defenseDimensionVide`.
+
+#### Attaque — `parseDimensionOffense(export, saison)`
+
+| Clé | Rôle |
+|-----|------|
+| `deck_recent_list` filtré sur `type === 28` | Dans l'**export** : les équipes d'attaque jouées, `{ type, sub_type, unit_id_list, leader_unit_id, equip }` ; leader replacé en tête, 4 places ; `equip` vide. |
+
+- `type = 28` (`DIMENSION_OFFENSE_RECENT_TYPE`) : relevé — ses 4 unités sont des
+  monstres de la box du journal, dont celui qui porte une rune retrouvée par
+  l'utilisateur sur sa dernière attaque ; la défense, elle, est un autre
+  quatuor. Les runes sont celles que chaque monstre porte dans la box.
+- Aucune équipe de type 28 : `sansOffenseDimension` ; pas de journal :
+  `offenseDimensionSansJournal` ; aucun monstre dans la box :
+  `offenseDimensionInconnue`.
 - Le reste de l'arène dimensionnelle dans l'export — sa saison et l'état du
   joueur (`dimension_arena_status_info`, `dimension_arena_user_info`) — n'est
   pas lu.

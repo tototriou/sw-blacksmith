@@ -18,19 +18,20 @@ Relevé de l'utilisateur (2026-11) :
   runes, qu'on peut équiper ;
 - il n'y a que des **runes antiques**.
 
-## Ce que l'export en dit
+## D'où viennent les données
 
-- La saison et l'état du joueur (`dimension_arena_status_info`,
-  `dimension_arena_user_info` : énergie, parchemins, combats, palier).
-- La **défense** : la dernière équipe de type 28 de `deck_recent_list`
-  (`parseArenaDimensionDefense`), 4 unités, leader en tête. Ses unités sont
-  d'une plage d'identifiants où n'est aucun monstre du compte : la box
-  dimensionnelle. Que ce soit la défense est le relevé de l'utilisateur.
-- ⚠️ **L'export ne décrit pas cette box** : ni l'espèce, ni le niveau, ni les
-  runes de ses monstres. La défense importée reste donc vide
-  (`defenseDimensionInconnue`) et se **compose à la main** — l'onglet le dit
-  (`noteDimension`). Si un export la décrit un jour, ses monstres se résolvent
-  sans rien changer à la lecture.
+- ⚠️ **L'export de compte ne décrit pas la box dimensionnelle.** Elle vient du
+  **journal complet de SWEX** (`full_log.txt`), à la réponse
+  `dimensionarena_getSeasonInfo` que le jeu envoie quand on ouvre le mode :
+  les monstres de la box, leurs runes gagnées, les runes en inventaire, le
+  build par défaut de chaque espèce et la **défense**.
+- Un monstre porte ses runes gagnées et, sur chaque emplacement libre, la rune
+  du build par défaut de son espèce.
+- L'export garde les **équipes d'attaque** jouées (`deck_recent_list`, type 28),
+  dont les monstres se reconnaissent dans la box du journal.
+- L'export porte aussi la saison et l'état du joueur
+  (`dimension_arena_status_info`, `dimension_arena_user_info` : énergie,
+  parchemins, combats, palier), non lus.
 
 Détail : [equipes-arene.md](../transverse/feat-import-compte/equipes-arene.md).
 

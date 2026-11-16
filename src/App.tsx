@@ -145,7 +145,6 @@ import {
   parseArenaDefense,
   parseArenaInterserveurDefense,
   parseArenaOffense,
-  parseArenaDimensionDefense,
   parseAccountBox,
   parseAccountInventory,
   parseUsedRuneIdsParPerimetre,
@@ -886,8 +885,6 @@ function Application() {
     const areneDefRes = mapSiegeTeams(parseArenaDefense(data, textes).decks, monsterByCom2us, 'arene');
     const areneOffRes = mapSiegeTeams(parseArenaOffense(data, textes).decks, monsterByCom2us, 'arene');
     const areneInterRes = mapSiegeTeams(parseArenaInterserveurDefense(data, textes).decks, monsterByCom2us, 'arene');
-    // La défense dimensionnelle : vide tant que l'export ne décrit pas sa box.
-    const areneDimRes = mapSiegeTeams(parseArenaDimensionDefense(data, textes).decks, monsterByCom2us, 'arene');
     const { boxItems } = compte;
 
     if (
@@ -913,7 +910,6 @@ function Application() {
     if (areneDefRes.teams.length) areneDef.importTeams(areneDefRes.teams);
     if (areneOffRes.teams.length) areneOff.importTeams(areneOffRes.teams);
     if (areneInterRes.teams.length) areneInter.importTeams(areneInterRes.teams);
-    if (areneDimRes.teams.length) areneDimDef.importTeams(areneDimRes.teams);
 
     appliquerCompte(data, compte);
 
@@ -923,9 +919,9 @@ function Application() {
     if (rtaItems.length) parts.push(ic.monstresRta(rtaItems.length));
     if (def.teams.length) parts.push(ic.defenses(def.teams.length));
     if (off.teams.length) parts.push(ic.attaques(off.teams.length));
-    const equipesArene = areneDefRes.teams.length + areneOffRes.teams.length + areneInterRes.teams.length + areneDimRes.teams.length;
+    const equipesArene = areneDefRes.teams.length + areneOffRes.teams.length + areneInterRes.teams.length;
     if (equipesArene) parts.push(ic.equipesArene(equipesArene));
-    const missing = def.missing + off.missing + areneDefRes.missing + areneOffRes.missing + areneInterRes.missing + areneDimRes.missing;
+    const missing = def.missing + off.missing + areneDefRes.missing + areneOffRes.missing + areneInterRes.missing;
     setImportMsg({
       ok: true,
       text: ic.bilan(parts.join(' · ')) + (missing > 0 ? ic.introuvables(missing) : '') + '.',
