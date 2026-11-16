@@ -72,7 +72,11 @@ const TITRES: [string, string][] = [
   ['#/releases', 'Nouveautés'],
   ['#/telecharger', 'Télécharger'],
   ['#/parametres', 'Paramètres'],
-  ['#/arene', 'Arène'],
+  ['#/arene/defense', 'Défense'],
+  ['#/arene/offense', 'Offense'],
+  ['#/arene/interserveur', 'Défense interserveur'],
+  ['#/arene-dimensionnelle/defense', 'Défense'],
+  ['#/arene-dimensionnelle/offense', 'Offense'],
 ];
 
 // Ce que le menu bureau doit permettre d'atteindre par un lien. Hors liste :
@@ -110,7 +114,7 @@ export function testRenduAppNavigation() {
   // Au premier niveau, chaque section reste NOMMÉE (bouton ou titre de groupe).
   const accueil = barreLaterale(rendreApp('#/'));
   const t = texteVisible(accueil);
-  for (const nom of ['Accueil', 'RTA', 'Siège', 'Mon compte', 'Outils', 'Arène', 'Ressources', 'Bestiaire', 'Mécaniques', 'Nouveautés']) {
+  for (const nom of ['Accueil', 'RTA', 'Siège', 'Mon compte', 'Outils', 'Arène', 'Arène dimensionnelle', 'Ressources', 'Bestiaire', 'Mécaniques', 'Nouveautés']) {
     ok(t.includes(nom), `menu bureau, premier niveau : « ${nom} » présent`);
   }
 
@@ -139,7 +143,7 @@ export function testRenduAppNavigation() {
   // sections sont à l'écran en même temps.
   const siege = barreLaterale(rendreApp('#/siege/defense'));
   const hrefs = valeurs(siege, 'href');
-  for (const h of ['#/siege/defense', '#/siege/offense', '#/siege/recommandations', '#/', '#/arene', '#/bestiary'])
+  for (const h of ['#/siege/defense', '#/siege/offense', '#/siege/recommandations', '#/', '#/bestiary'])
     ok(hrefs.includes(h), `dans le Siège, la barre montre aussi ${h}`);
   const tSiege = texteVisible(siege);
   for (const nom of ['RTA', 'Mon compte', 'Runes', 'Outils', 'Ressources']) ok(tSiege.includes(nom), `dans le Siège : « ${nom} » reste visible`);
@@ -150,7 +154,12 @@ export function testRenduAppNavigation() {
     const lienSous = siege.match(new RegExp(`<a[^>]*href="${h}"[^>]*>[\\s\\S]*?</a>`))?.[0] ?? '';
     ok(lienSous.includes('<svg'), `la sous-section ${h} porte son icône`);
   }
-  ok(tSiege.includes('Bientôt'), 'Arène porte « Bientôt », comme sa page');
+  ok(tSiege.includes('Arène') && tSiege.includes('Arène dimensionnelle'), 'dans le Siège : Arène et arène dimensionnelle restent visibles');
+
+  // L'arène dimensionnelle se déroule comme l'Arène : sa défense et son offense.
+  const dimension = valeurs(barreLaterale(rendreApp('#/arene-dimensionnelle/offense')), 'href');
+  for (const h of ['#/arene-dimensionnelle/defense', '#/arene-dimensionnelle/offense'])
+    ok(dimension.includes(h), `dans l’arène dimensionnelle, la barre montre ${h}`);
 }
 
 // Fil d'Ariane de la barre du haut, bureau : le chemin du menu jusqu'à la page.
@@ -160,7 +169,8 @@ export function testRenduAppFil() {
     ['#/', 'Accueil'],
     ['#/siege/defense', 'Jouer Siège Défense'],
     ['#/rta/ami', 'Jouer RTA Ami'],
-    ['#/arene', 'Jouer Arène'],
+    ['#/arene', 'Jouer Arène Défense'],
+    ['#/arene-dimensionnelle/offense', 'Jouer Arène dimensionnelle Offense'],
     ['#/compte/monstres/liste', 'Mon compte Monstres'],
     ['#/compte/runes/liste', 'Mon compte Runes Liste'],
     // Vue hors menu ([retrait #6]) : elle garde son nom.

@@ -31,6 +31,8 @@ interface PontBureau {
     surExport: (rappel: (exp: ExportSwex) => void) => () => void;
     pret: (pageSansCompte: boolean) => void;
     lu: (modifie: number) => void;
+    surDimension: (rappel: (dim: DimensionSwex) => void) => () => void;
+    dimensionLue: (cle: number) => void;
   };
   session: {
     etat: () => Promise<EtatSession | null>;
@@ -152,6 +154,15 @@ export interface ExportSwex {
   nouveau: boolean;
   fichier: string;
   complet: boolean;
+}
+// L'arène dimensionnelle donnée à la page : la dernière saison de l'invocateur
+// suivi, lue dans le journal SWEX du dossier (`dimensionarena_getSeasonInfo`),
+// les équipes récentes de son export (les attaques), et la clé à renvoyer une
+// fois appliquée (l'heure serveur de la saison).
+export interface DimensionSwex {
+  saison: Record<string, any>;
+  recents: unknown[];
+  cle: number;
 }
 
 // Le pont du dossier SW Exporter, ou `null` sur le site.

@@ -64,6 +64,15 @@ contextBridge.exposeInMainWorld(
       },
       pret: (pageSansCompte: boolean) => ipcRenderer.send('bureau:swex-pret', pageSansCompte),
       lu: (modifie: number) => ipcRenderer.send('bureau:swex-lu', modifie),
+      // L'arène dimensionnelle, lue dans le journal SWEX du dossier.
+      surDimension: (rappel: (dim: unknown) => void) => {
+        const ecouteur = (_e: unknown, dim: unknown) => rappel(dim);
+        ipcRenderer.on('bureau:swex-dimension', ecouteur);
+        return () => {
+          ipcRenderer.removeListener('bureau:swex-dimension', ecouteur);
+        };
+      },
+      dimensionLue: (cle: number) => ipcRenderer.send('bureau:swex-dimension-lue', cle),
     }),
     // La session en cours (voir bureau/session.ts) : son état et ses
     // changements, « Garder mes données » redit à chaque changement,

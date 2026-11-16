@@ -34,18 +34,31 @@ export interface ReglageSwex {
   fichier: string | null;
   // Date de modification (ms) du dernier export APPLIQUÉ par la page.
   dernierLu: number | null;
+  // Heure serveur (`tvalue`) de la dernière saison de l'arène dimensionnelle
+  // APPLIQUÉE par la page, lue dans le journal SWEX (journalSwexDisque.ts).
+  dimensionLue: number | null;
 }
 
 export function lireReglage(brut: unknown): ReglageSwex {
   const o = (brut && typeof brut === 'object' ? brut : {}) as Record<string, unknown>;
   const texte = (v: unknown) => (typeof v === 'string' && v.trim() ? v : null);
+  const nombre = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : null);
   const fichier = texte(o.fichier);
   return {
     dossier: texte(o.dossier),
     // ⚠️ Un nom de fichier, jamais un chemin : il se joint au dossier.
     fichier: fichier && lireNomExport(fichier) && !/[\\/]/.test(fichier) ? fichier : null,
-    dernierLu: typeof o.dernierLu === 'number' && Number.isFinite(o.dernierLu) ? o.dernierLu : null,
+    dernierLu: nombre(o.dernierLu),
+    dimensionLue: nombre(o.dimensionLue),
   };
+}
+
+// Une saison de l'arène dimensionnelle est-elle à donner à la page ? Celle
+// d'une heure serveur (`tvalue`) postérieure à la dernière appliquée. Sans
+// heure lisible, jamais : on ne saurait pas dire si elle est déjà appliquée.
+export function dimensionADonner(tvalue: unknown, dimensionLue: number | null): boolean {
+  if (typeof tvalue !== 'number' || !Number.isFinite(tvalue)) return false;
+  return dimensionLue === null || tvalue > dimensionLue;
 }
 
 // Faut-il donner le fichier à la page ? `nouveau` : un export plus récent que

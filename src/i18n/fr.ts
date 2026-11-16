@@ -572,6 +572,9 @@ export const fr = {
     swexEnLecture: (date: string) => `Export du ${date} — lecture en cours…`,
     exportCharge: (nom: string | null) => `${nom ? `Compte de ${nom}` : 'Compte'} chargé depuis SW Exporter`,
     exportMisAJour: (nom: string | null) => `${nom ? `Compte de ${nom}` : 'Compte'} mis à jour depuis SW Exporter`,
+    // Une nouvelle saison de l'arène dimensionnelle, lue dans le journal SWEX.
+    dimensionMiseAJour: (n: number) =>
+      `Arène dimensionnelle mise à jour depuis le journal SWEX : ${n} équipe${n > 1 ? 's' : ''}`,
   },
 
   // L'import d'un export de compte SWEX : bouton, messages de src/lib/importAccount.ts
@@ -1388,20 +1391,23 @@ export const fr = {
   },
 
   // L'Arène (#/arene) : défense, offense et défense interserveur, des équipes
-  // de 4 monstres ; l'arène dimensionnelle (#/arene-dimensionnelle), à venir.
+  // de 4 monstres ; l'arène dimensionnelle (#/arene-dimensionnelle), défense
+  // et offense.
   arene: {
     cote: {
       defense: { titre: 'Défense', nom: 'défense', de: 'de défense' },
       offense: { titre: 'Offense', nom: 'attaque', de: "d'attaque" },
       interserveur: { titre: 'Défense interserveur', nom: 'défense interserveur', de: 'de défense interserveur' },
       'dimension-defense': { titre: 'Défense', nom: 'défense', de: 'de défense' },
+      'dimension-offense': { titre: 'Offense', nom: 'attaque', de: "d'attaque" },
     },
-    retiree: (cote: 'defense' | 'offense' | 'interserveur' | 'dimension-defense') =>
-      `Équipe retirée ${cote === 'offense' ? "de l'offense" : cote === 'interserveur' ? 'de la défense interserveur' : 'de la défense'}`,
-    // La box et les runes de l'arène dimensionnelle sont à part, et l'export
-    // de compte ne les décrit pas.
+    retiree: (cote: 'defense' | 'offense' | 'interserveur' | 'dimension-defense' | 'dimension-offense') =>
+      `Équipe retirée ${cote === 'offense' || cote === 'dimension-offense' ? "de l'offense" : cote === 'interserveur' ? 'de la défense interserveur' : 'de la défense'}`,
+    // La box et les runes de l'arène dimensionnelle sont à part : l'export de
+    // compte ne les décrit pas, le journal complet de SWEX, si — lu par
+    // l'application de bureau dans le dossier SW Exporter.
     noteDimension:
-      "L'export de compte ne décrit pas la box dimensionnelle (ses monstres et leurs runes) : compose ta défense à la main.",
+      "La box dimensionnelle (ses monstres et leurs runes) n'est pas dans l'export de compte. Dans l'application de bureau, avec le dossier SW Exporter choisi et le plugin Full Logger de SWEX actif, ces équipes se remplissent toutes seules quand tu ouvres l'arène dimensionnelle en jeu. Sinon, compose-les à la main.",
   },
 
   // Le Siège (#/siege) : équipes de défense et d'offense.
@@ -3202,6 +3208,7 @@ export const fr = {
         'arene-offense': 'Arène · Offense',
         'arene-interserveur': 'Arène · Défense interserveur',
         'arene-dimension-defense': 'Arène dimensionnelle · Défense',
+        'arene-dimension-offense': 'Arène dimensionnelle · Offense',
       },
     },
     recherche: {

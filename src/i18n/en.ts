@@ -540,6 +540,7 @@ export const en: Dictionnaire = {
     swexEnLecture: (date: string) => `Export of ${date} — reading…`,
     exportCharge: (nom: string | null) => `${nom ? `${nom}’s account` : 'Account'} loaded from SW Exporter`,
     exportMisAJour: (nom: string | null) => `${nom ? `${nom}’s account` : 'Account'} updated from SW Exporter`,
+    dimensionMiseAJour: (n: number) => `Dimensional Arena updated from the SWEX log: ${n} team${n > 1 ? 's' : ''}`,
   },
 
   importCompte: {
@@ -1314,10 +1315,12 @@ export const en: Dictionnaire = {
       offense: { titre: 'Offense', nom: 'attack', de: 'attack' },
       interserveur: { titre: 'Cross-server defense', nom: 'cross-server defense', de: 'cross-server defense' },
       'dimension-defense': { titre: 'Defense', nom: 'defense', de: 'defense' },
+      'dimension-offense': { titre: 'Offense', nom: 'attack', de: 'attack' },
     },
-    retiree: (cote: 'defense' | 'offense' | 'interserveur' | 'dimension-defense') =>
-      `Team removed from the ${cote === 'offense' ? 'offense' : cote === 'interserveur' ? 'cross-server defense' : 'defense'}`,
-    noteDimension: 'The account export does not describe the dimensional box (its monsters and their runes): build your defense by hand.',
+    retiree: (cote: 'defense' | 'offense' | 'interserveur' | 'dimension-defense' | 'dimension-offense') =>
+      `Team removed from the ${cote === 'offense' || cote === 'dimension-offense' ? 'offense' : cote === 'interserveur' ? 'cross-server defense' : 'defense'}`,
+    noteDimension:
+      'The dimensional box (its monsters and their runes) is not in the account export. In the desktop app, with the SW Exporter folder chosen and the SWEX Full Logger plugin on, these teams fill in by themselves when you open the Dimensional Arena in game. Otherwise, build them by hand.',
   },
 
   siege: {
@@ -3003,6 +3006,7 @@ export const en: Dictionnaire = {
         'arene-offense': 'Arena · Offense',
         'arene-interserveur': 'Arena · Cross-server defense',
         'arene-dimension-defense': 'Dimensional Arena · Defense',
+        'arene-dimension-offense': 'Dimensional Arena · Offense',
       },
     },
     recherche: {

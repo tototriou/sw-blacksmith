@@ -3,7 +3,8 @@
 // global (App) pour alimenter toutes les pages d'un coup.
 
 import { GearSet, Monster, RTA_OTHER, RTA_UNASSIGNED, RUNE_SETS } from '../types';
-import { BoxMonster, ImportedUnit, SiegeImportedDeck } from './importAccount';
+import { BoxMonster, ImportedUnit, SiegeImportedDeck, parseDimensionDefense, parseDimensionOffense } from './importAccount';
+import type { Dictionnaire } from '../i18n/fr';
 import { RtaVueAmi } from './rtaShare';
 import { SIEGE_TICKS, combatSpeed, leadPour, speedLeadOf, type RegleLead } from './speed';
 
@@ -196,4 +197,19 @@ export function mapSiegeTeams(
     };
   });
   return { teams, missing };
+}
+
+// Les équipes de l'arène dimensionnelle, prêtes pour les états : la défense de
+// la saison (journal SWEX), les attaques des équipes récentes de l'export
+// (`deck_recent_list`), reconnues dans la box de la saison. Leads d'arène.
+export function equipesDimension(
+  saison: Record<string, any>,
+  recents: unknown[],
+  byCom2us: Map<number, Monster>,
+  t: Dictionnaire
+): { defense: ReturnType<typeof mapSiegeTeams>; offense: ReturnType<typeof mapSiegeTeams> } {
+  return {
+    defense: mapSiegeTeams(parseDimensionDefense(saison, t).decks, byCom2us, 'arene'),
+    offense: mapSiegeTeams(parseDimensionOffense({ deck_recent_list: recents }, saison, t).decks, byCom2us, 'arene'),
+  };
 }

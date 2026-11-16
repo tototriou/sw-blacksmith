@@ -287,6 +287,36 @@ côté du service : [service-discord.md § Application de bureau](../siege/feat-
   diffusé entre-temps, et la surveillance revenue relit le dossier et
   l'export suivi.
 
+### L'arène dimensionnelle : le journal SWEX
+
+`bureau/journalSwexDisque.ts` (disque, testé), `src/lib/journalSwex.ts`
+(lecture du texte). Sa box n'est pas dans l'export : elle est dans le
+**journal complet de SWEX** (`full_log.txt`, plugin Full Logger), à la racine
+du même dossier — voir [arene-dimensionnelle/](../arene-dimensionnelle/README.md).
+
+- **Quand** : le jeu envoie la box à l'**ouverture du mode**, donc APRÈS
+  l'export, écrit à la connexion. Le journal est suivi pour lui-même : relu en
+  entier à la page prête, après un choix et au retour de la surveillance ;
+  puis, à chaque changement du dossier, **seulement ce qui s'y est ajouté**
+  (`ajoutContientSaison`) — il change à chaque commande pendant une partie.
+- **Ce qui est lu** : la dernière saison (`dimensionarena_getSeasonInfo`) de
+  l'**invocateur suivi** (`wizard_id` de la réponse = identifiant de l'export ;
+  un journal peut en suivre plusieurs), en lisant le fichier **par la fin**,
+  par fenêtres de 16 Mo qui grandissent (`saisonDuJournal`), jamais en entier
+  d'emblée : il grossit sans limite. Seule la réponse part à la page
+  (`bureau:swex-dimension`), avec les équipes récentes de l'export
+  (`deck_recent_list` : les attaques).
+- **Ce qui est importé** : la défense et les attaques de l'arène
+  dimensionnelle, **remplacées** à chaque nouvelle saison (un miroir du jeu ;
+  `appliquerDimension`, App.tsx), annoncées par une notification. Rien
+  d'autre ne bouge.
+- ⚠️ **La page confirme ce qu'elle a appliqué** (`bureau:swex-dimension-lue`,
+  l'heure serveur `tvalue` de la saison) : retenue dans `swex.json`
+  (`dimensionLue`), une saison n'est redonnée que plus récente. Choisir un
+  dossier ou un invocateur l'oublie.
+- **Sans journal** (plugin éteint) ou sans saison de l'invocateur : rien, en
+  silence ; les onglets disent comment l'obtenir.
+
 ## L'installeur
 
 `npm run bureau:paquet` → dossier `paquets`, non suivi (`electron-builder.yml`) :

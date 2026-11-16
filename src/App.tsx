@@ -153,7 +153,7 @@ import {
   RunesUtilisees,
   runesUtiliseesVides,
 } from './lib/importAccount';
-import { mapRtaItems, mapSiegeTeams, mapBoxMonsters, BoxItem } from './lib/applyAccount';
+import { mapRtaItems, mapSiegeTeams, mapBoxMonsters, BoxItem, equipesDimension } from './lib/applyAccount';
 import { photographierMemoire, reinitialiserSticky, useStickyState } from './hooks/useStickyState';
 import { PREFIXE_SPEED_TUNE } from './hooks/useSpeedTune';
 import { VUES_INVENTAIRE, hashVue, vueParDefaut, vueValide, type CleNavigation } from './lib/accountViews';
@@ -273,8 +273,11 @@ export function parseHash(hash: string = window.location.hash): {
     const areneTab: CoteArene = h === 'arene/offense' ? 'offense' : h === 'arene/interserveur' ? 'interserveur' : 'defense';
     return { route: 'arene', ...base, areneTab };
   }
-  // Un seul onglet pour l'instant, la défense : `#/arene-dimensionnelle` y mène.
-  if (h === 'arene-dimensionnelle' || h.startsWith('arene-dimensionnelle/')) return { route: 'arene-dimensionnelle', ...base, areneTab: 'dimension-defense' };
+  // `#/arene-dimensionnelle` mène à la défense, comme `#/arene`.
+  if (h === 'arene-dimensionnelle' || h.startsWith('arene-dimensionnelle/')) {
+    const areneTab: CoteArene = h === 'arene-dimensionnelle/offense' ? 'dimension-offense' : 'dimension-defense';
+    return { route: 'arene-dimensionnelle', ...base, areneTab };
+  }
   if (h === 'compte' || h.startsWith('compte/')) {
     // `compte/runes/courbes` → sous-section « runes », vue « courbes ».
     const [, sub, vue] = h.split('/');
@@ -337,7 +340,7 @@ const NAV: NavItem[] = [
 ];
 
 const ARENE_ITEM: NavItem = { key: 'arene', texte: 'arene', icon: IconeArene, hash: '#/arene/defense', couleur: COULEUR_SECTION.arene };
-// L'arène dimensionnelle : une section à part, à venir.
+// L'arène dimensionnelle : une section à part, sur sa propre box.
 const ARENE_DIMENSIONNELLE_ITEM: NavItem = {
   key: 'arene-dimensionnelle',
   texte: 'areneDimensionnelle',
@@ -353,6 +356,13 @@ const ARENE_SUBS: { tab: CoteArene; texte: CleNavigation; icon: IconeAtelier; ha
   { tab: 'defense', texte: 'defense', icon: IconeDefense, hash: '#/arene/defense', couleur: COULEUR_ARENE_SUB.defense },
   { tab: 'offense', texte: 'offense', icon: IconeOffense, hash: '#/arene/offense', couleur: COULEUR_ARENE_SUB.offense },
   { tab: 'interserveur', texte: 'interserveur', icon: IconeDefense, hash: '#/arene/interserveur', couleur: COULEUR_ARENE_SUB.interserveur },
+];
+
+// Sous-sections de l'arène dimensionnelle : sa défense et son offense, sur sa
+// propre box — mêmes gestes et mêmes teintes que celles de l'Arène.
+const ARENE_DIMENSIONNELLE_SUBS: { tab: CoteArene; texte: CleNavigation; icon: IconeAtelier; hash: string; couleur: string }[] = [
+  { tab: 'dimension-defense', texte: 'defense', icon: IconeDefense, hash: '#/arene-dimensionnelle/defense', couleur: COULEUR_ARENE_SUB.defense },
+  { tab: 'dimension-offense', texte: 'offense', icon: IconeOffense, hash: '#/arene-dimensionnelle/offense', couleur: COULEUR_ARENE_SUB.offense },
 ];
 
 // Sous-sections de « RTA » (dropdown de nav).
@@ -436,6 +446,7 @@ function Application() {
   const areneOff = useEquipesArene('offense');
   const areneInter = useEquipesArene('interserveur');
   const areneDimDef = useEquipesArene('dimension-defense');
+  const areneDimOff = useEquipesArene('dimension-offense');
   // Pour le speed tuning, où qu'il s'ouvre (voir EquipesAreneContext).
   const equipesArene = useMemo(
     () => ({
@@ -443,8 +454,9 @@ function Application() {
       offense: areneOff.state.teams,
       interserveur: areneInter.state.teams,
       'dimension-defense': areneDimDef.state.teams,
+      'dimension-offense': areneDimOff.state.teams,
     }),
-    [areneDef.state.teams, areneOff.state.teams, areneInter.state.teams, areneDimDef.state.teams]
+    [areneDef.state.teams, areneOff.state.teams, areneInter.state.teams, areneDimDef.state.teams, areneDimOff.state.teams]
   );
   const recos = useSiegeRecos();
   // Listes de travail de l'Optimizer — SÉPARÉES de `useOptimizerState`,
@@ -843,7 +855,8 @@ function Application() {
       areneDef.state.teams.length > 0 ||
       areneOff.state.teams.length > 0 ||
       areneInter.state.teams.length > 0 ||
-      areneDimDef.state.teams.length > 0;
+      areneDimDef.state.teams.length > 0 ||
+      areneDimOff.state.teams.length > 0;
     if (aDejaDesDonnees) {
       setImportEnAttente(text);
       return;
@@ -868,6 +881,8 @@ function Application() {
   // compte ». Partagé par l'import manuel et par le dossier SW Exporter
   // après le choix d'un invocateur — qui, lui, ne pose pas la question de
   // conservation (`demanderConservation`) : le dossier est un réglage.
+  // L'arène dimensionnelle n'en vient pas : sa box est dans le journal SWEX,
+  // lu par l'application de bureau (`appliquerDimension`).
   function appliquerTout(
     data: Record<string, any>,
     compte: ReturnType<typeof preparerCompte>,
@@ -1046,6 +1061,18 @@ function Application() {
     return { ok: true, nom: compte.nomJoueur };
   }
 
+  // Le dossier SW Exporter : une nouvelle saison de l'arène dimensionnelle,
+  // lue dans le journal SWEX (bureau/swex.ts). Elle REMPLACE la défense et les
+  // attaques de ce mode — un miroir du jeu, mis à jour à chaque ouverture du
+  // mode. Un côté sans équipe reconnue n'est pas touché. Rend le nombre
+  // d'équipes appliquées.
+  function appliquerDimension(saison: Record<string, any>, recents: unknown[]): number {
+    const { defense, offense } = equipesDimension(saison, recents, monsterByCom2us, textes);
+    if (defense.teams.length) areneDimDef.importTeams(defense.teams);
+    if (offense.teams.length) areneDimOff.importTeams(offense.teams);
+    return defense.teams.length + offense.teams.length;
+  }
+
   // Réponse à la fenêtre de choix. `null` = fermée sans répondre : on
   // n'enregistre rien et on redemandera, plutôt que d'interpréter un silence.
   function repondreConservation(keep: boolean | null, nePlusMontrer = false) {
@@ -1182,7 +1209,7 @@ function Application() {
     const aDuTravail =
       Object.keys(rta.state.entries).length > 0 || siegeDef.state.teams.length > 0 || siegeOff.state.teams.length > 0 ||
       areneDef.state.teams.length > 0 || areneOff.state.teams.length > 0 || areneInter.state.teams.length > 0 ||
-      areneDimDef.state.teams.length > 0;
+      areneDimDef.state.teams.length > 0 || areneDimOff.state.teams.length > 0;
     const empreinte = empreinteTravail(sessionCourante(new Date()));
     if (travailNonSauvegarde(empreinte, empreinteSauvegardeRef.current, aDuTravail)) setChangementCompte(() => changer);
     else changer();
@@ -1449,6 +1476,21 @@ function Application() {
     icon: <IconeArene size={16} />,
     groupes: [{ liens: ARENE_SUBS.map((t) => ({ key: t.tab, label: nomNav(t.texte), hash: t.hash, icon: <t.icon size={16} />, actif: route === 'arene' && areneTab === t.tab })) }],
   };
+  const sectionAreneDimensionnelleBureau: SidebarSection = {
+    titre: nomNav('areneDimensionnelle'),
+    icon: <IconeArene size={16} />,
+    groupes: [
+      {
+        liens: ARENE_DIMENSIONNELLE_SUBS.map((t) => ({
+          key: t.tab,
+          label: nomNav(t.texte),
+          hash: t.hash,
+          icon: <t.icon size={16} />,
+          actif: route === 'arene-dimensionnelle' && areneTab === t.tab,
+        })),
+      },
+    ],
+  };
   // Un inventaire à plusieurs vues devient une section à part entière (Runes,
   // Artéfacts) : ses vues en entrées, sans le niveau « Mon compte » au-dessus.
   const sectionInventaireBureau = (sub: AccountSub): SidebarSection => {
@@ -1488,8 +1530,8 @@ function Application() {
         {
           key: ARENE_DIMENSIONNELLE_ITEM.key,
           label: nomNav(ARENE_DIMENSIONNELLE_ITEM.texte),
-          hash: ARENE_DIMENSIONNELLE_ITEM.hash,
           icon: <ARENE_DIMENSIONNELLE_ITEM.icon size={16} />,
+          ouvre: sectionAreneDimensionnelleBureau,
           actif: route === 'arene-dimensionnelle',
         },
       ],
@@ -1547,7 +1589,12 @@ function Application() {
   const rtaSubItem = route === 'rta' ? RTA_SUBS.find((s) => s.sub === rtaSub) : null;
   const compteSub = route === 'compte' ? ACCOUNT_SUBS.find((s) => s.sub === accountSub) : null;
   const siegeSub = route === 'siege' ? SIEGE_SUBS.find((s) => s.tab === siegeTab) : null;
-  const areneSub = route === 'arene' ? ARENE_SUBS.find((s) => s.tab === areneTab) : null;
+  const areneSub =
+    route === 'arene'
+      ? ARENE_SUBS.find((s) => s.tab === areneTab)
+      : route === 'arene-dimensionnelle'
+        ? ARENE_DIMENSIONNELLE_SUBS.find((s) => s.tab === areneTab)
+        : null;
   // ⚠️ Sur « Mon compte », le titre nomme l'inventaire ET SA VUE
   // (« Runes · Liste »). Il ne disait que l'inventaire : la vue était portée par
   // une rangée d'onglets dans la page, qui est passée dans le panneau de
@@ -1716,12 +1763,13 @@ function Application() {
       icon: <t.icon size={16} />,
       contexte: nomNav('arene'),
     })),
-    {
-      key: ARENE_DIMENSIONNELLE_ITEM.key,
-      label: nomNav(ARENE_DIMENSIONNELLE_ITEM.texte),
-      hash: ARENE_DIMENSIONNELLE_ITEM.hash,
-      icon: <ARENE_DIMENSIONNELLE_ITEM.icon size={16} />,
-    },
+    ...ARENE_DIMENSIONNELLE_SUBS.map((t) => ({
+      key: `arene-dimensionnelle-${t.tab}`,
+      label: nomNav(t.texte),
+      hash: t.hash,
+      icon: <t.icon size={16} />,
+      contexte: nomNav('areneDimensionnelle'),
+    })),
     ...RESOURCES.map((i) => ({
       key: i.key,
       label: nomNav(i.texte),
@@ -1835,7 +1883,7 @@ function Application() {
   // latérale a déjà payé cette leçon (voir Sidebar, `ouverte`).
   // ⚠️ L'Arène n'a pas d'onglet du bas : comme avant elle, elle vit sous
   // « Outils », dont le panneau porte un groupe « Arène » — ses trois
-  // sous-sections et l'arène dimensionnelle.
+  // sous-sections — et un groupe « Arène dimensionnelle » — les deux siennes.
   const sectionOutilsMobile: SidebarSection = {
     ...sectionOutils,
     groupes: [
@@ -1843,16 +1891,18 @@ function Application() {
       {
         titre: nomNav('arene'),
         icone: <IconeArene size={17} color={COULEUR_SECTION.arene} />,
-        liens: [
-          ...(sectionArene.groupes[0]?.liens ?? []),
-          {
-            key: ARENE_DIMENSIONNELLE_ITEM.key,
-            label: nomNav(ARENE_DIMENSIONNELLE_ITEM.texte),
-            hash: ARENE_DIMENSIONNELLE_ITEM.hash,
-            icon: <ARENE_DIMENSIONNELLE_ITEM.icon size={17} color={ARENE_DIMENSIONNELLE_ITEM.couleur} />,
-            actif: route === 'arene-dimensionnelle',
-          },
-        ],
+        liens: sectionArene.groupes[0]?.liens ?? [],
+      },
+      {
+        titre: nomNav('areneDimensionnelle'),
+        icone: <IconeArene size={17} color={ARENE_DIMENSIONNELLE_ITEM.couleur} />,
+        liens: ARENE_DIMENSIONNELLE_SUBS.map((t) => ({
+          key: `arene-dimensionnelle-${t.tab}`,
+          label: nomNav(t.texte),
+          hash: t.hash,
+          icon: <t.icon size={17} color={t.couleur} />,
+          actif: route === 'arene-dimensionnelle' && areneTab === t.tab,
+        })),
       },
     ],
   };
@@ -1935,11 +1985,11 @@ function Application() {
       />
     ) : n.route === 'arene-dimensionnelle' ? (
       <ArenePage
-        tab="dimension-defense"
+        tab={n.areneTab}
         onImporterEquipe={importerEquipe}
         sourcesOptimizer={optimizerData}
         compteCharge={box.length > 0 || runes.length > 0}
-        equipes={areneDimDef}
+        equipes={n.areneTab === 'dimension-offense' ? areneDimOff : areneDimDef}
         siegeDefenseTeams={siegeDef.state.teams}
         siegeOffenseTeams={siegeOff.state.teams}
         monsters={allMonsters}
@@ -2106,6 +2156,7 @@ function Application() {
         choisi, puis met « Mon compte » à jour. Inerte sur le site. */}
     <SuiviSwex
       appliquer={rafraichirCompte}
+      appliquerDimension={appliquerDimension}
       pret={!accountHydrating && allMonsters.length > 0}
       sansCompte={box.length === 0}
     />

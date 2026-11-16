@@ -25,6 +25,9 @@ export function destination(hash: string): string {
       return `compte/${n.accountSub}/${vueValide(n.accountSub, n.accountView)}`;
     case 'outils':
       return `outils/${n.toolSub}`;
+    case 'arene':
+    case 'arene-dimensionnelle':
+      return `${n.route}/${n.areneTab}`;
     default:
       return n.route;
   }
@@ -53,7 +56,11 @@ export const ADRESSES: Record<string, string> = {
   '#/compte/artefacts': 'compte/artefacts/resume',
   '#/outils/optimizer': 'outils/optimizer',
   '#/outils/speed-tuning': 'outils/speed-tuning',
-  '#/arene': 'arene',
+  '#/arene/defense': 'arene/defense',
+  '#/arene/offense': 'arene/offense',
+  '#/arene/interserveur': 'arene/interserveur',
+  '#/arene-dimensionnelle/defense': 'arene-dimensionnelle/dimension-defense',
+  '#/arene-dimensionnelle/offense': 'arene-dimensionnelle/dimension-offense',
   '#/bestiary': 'bestiary',
   '#/mecaniques': 'mecaniques',
   '#/releases': 'releases',
@@ -94,11 +101,19 @@ export function testNavigationAdressesDefauts() {
   egal(destination('#/siege'), 'siege/defense', '#/siege → Défense');
   egal(destination('#/compte'), 'compte/monstres/liste', '#/compte → Monstres');
   egal(destination('#/outils'), 'outils/optimizer', '#/outils → Optimizer');
+  egal(destination('#/arene'), 'arene/defense', '#/arene → Défense');
+  egal(destination('#/arene-dimensionnelle'), 'arene-dimensionnelle/dimension-defense', '#/arene-dimensionnelle → Défense');
 
   // Sous-page inconnue : le défaut de SA section, pas l'accueil.
   egal(destination('#/rta/inconnu'), 'rta/prepa', 'RTA inconnue → Ma prépa');
   egal(destination('#/siege/inconnu'), 'siege/defense', 'Siège inconnu → Défense');
   egal(destination('#/outils/inconnu'), 'outils/optimizer', 'outil inconnu → Optimizer');
+  egal(destination('#/arene/inconnu'), 'arene/defense', 'Arène inconnue → Défense');
+  egal(
+    destination('#/arene-dimensionnelle/inconnu'),
+    'arene-dimensionnelle/dimension-defense',
+    'arène dimensionnelle inconnue → Défense'
+  );
   egal(destination('#/compte/inconnu/liste'), 'compte/monstres/liste', 'inventaire inconnu → Monstres');
   egal(destination('#/compte/runes/inconnue'), 'compte/runes/resume', 'vue de runes inconnue → Résumé');
   egal(

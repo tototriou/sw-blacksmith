@@ -350,7 +350,7 @@ import testMigrationStockage from './migration-stockage.test';
 import testBureauProtocole from './bureau-protocole.test';
 import testBureauFenetre from './bureau-fenetre.test';
 import testBureauMiseAJour from './bureau-mise-a-jour.test';
-import testBureauSwex from './bureau-swex.test';
+import testBureauSwex, { testBureauJournalSwex } from './bureau-swex.test';
 import testBureauSession from './bureau-session.test';
 import testBureauCoeurs from './bureau-coeurs.test';
 import testBureauLancement from './bureau-lancement.test';
@@ -1180,6 +1180,7 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testBureauFenetre', testBureauFenetre],
   ['testBureauMiseAJour', testBureauMiseAJour],
   ['testBureauSwex', testBureauSwex],
+  ['testBureauJournalSwex', testBureauJournalSwex],
   ['testBureauSession', async () => { await testBureauSession(); }],
   ['testBureauCoeurs', async () => { await testBureauCoeurs(); }],
   ['testBureauLancement', testBureauLancement],

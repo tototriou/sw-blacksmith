@@ -35,7 +35,7 @@ Fichiers : [importAccount.ts](src/lib/importAccount.ts) (parseurs) ·
 | [bouton-import.md](bouton-import.md) | Un seul bouton d'import invariant dans la barre de nav, le dossier SW Exporter de l'application de bureau, un seul `JSON.parse` par import. |
 | [box-rta.md](box-rta.md) | L'import de la box RTA : objectif métier, algorithme, constantes SW, consommation côté RTA. |
 | [equipes-siege.md](equipes-siege.md) | L'import des équipes de siège : défense (`parseSiegeDefense`), offense (`parseSiegeOffense`), modèle commun, mapping. |
-| [equipes-arene.md](equipes-arene.md) | L'import des équipes d'arène, sur 4 places : défense, défense interserveur, offense ; l'arène dimensionnelle, sans deck dans l'export. |
+| [equipes-arene.md](equipes-arene.md) | L'import des équipes d'arène, sur 4 places : défense, défense interserveur, offense ; l'arène dimensionnelle, depuis le journal complet de SWEX, lu par l'application de bureau. |
 | [mon-compte.md](mon-compte.md) | L'import pour « Mon compte » : box 6★, inventaire runes et artéfacts, marqueurs de runes, runes utilisées. |
 | [persistance.md](persistance.md) | L'interrupteur de conservation de toute l'app (`usePersistence.ts`) et la persistance optionnelle du compte (`accountStore.ts`, IndexedDB) : pourquoi pas `localStorage`, ce qu'on stocke, concurrence, la question posée à chaque import, cycle de vie, âge du compte, repli ; ce que « Tout supprimer » efface et garde ; la migration des clés d'un autre préfixe. |
 

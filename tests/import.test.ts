@@ -22,7 +22,9 @@ import {
   parseWizardId,
   unionRunesUtilisees,
 } from '../src/lib/importAccount';
-import { estJournalSwex, lireSaisonDimension } from '../src/lib/journalSwex';
+import { estJournalSwex, lireSaisonDimension, saisonDeLInvocateur } from '../src/lib/journalSwex';
+import { equipesDimension } from '../src/lib/applyAccount';
+import type { Monster } from '../src/types';
 import { formatRelicUnique } from '../src/lib/effects';
 import { egal, exportReel, exportExemplairesMultiples, exportSynthetique, ignore, journalSwexMiniature, journalSwexReel, ok, titre } from './outils';
 import { fr } from '../src/i18n/fr';
@@ -225,7 +227,6 @@ export default function testImport() {
   );
   egal(lireSaisonDimension(JSON.stringify(saison))?.unit_list?.length, 3, 'journal SWEX : la réponse seule se lit aussi');
   egal(lireSaisonDimension(texte), null, 'journal SWEX : un export de compte n’est pas une saison');
-
   const defDim = parseDimensionDefense(saison, fr).decks[0];
   egal(com2us(defDim), [15105, 14314, null, null], 'dimension défense : defense_deck_info, leader en tête, 4 places');
   // 900001 sans rune : tout le build par défaut de 14314 (VIT 42 + 15,
@@ -266,6 +267,17 @@ export default function testImport() {
     [parseDimensionOffense(avecAttaqueDim, null, fr).error, parseDimensionOffense(objet, saison, fr).error],
     [fr.importCompte.offenseDimensionSansJournal, fr.importCompte.sansOffenseDimension],
     'dimension attaque : sans journal, ou sans équipe de type 28, la lecture le dit'
+  );
+
+  // Ce que l'app applique à chaque saison du dossier SW Exporter : la défense
+  // et les attaques, avec les monstres de l'app.
+  const monstre = (id: string, speed: number) => ({ id, name: id, element: 'wind', stats: { speed } }) as unknown as Monster;
+  const parCom2us = new Map<number, Monster>([[14314, monstre('m14314', 100)], [15105, monstre('m15105', 105)]]);
+  const dim = equipesDimension(saison!, avecAttaqueDim.deck_recent_list, parCom2us, fr);
+  egal(
+    [dim.defense.teams.map((e) => e.slots.map((s) => s.monsterId)), dim.offense.teams.length, dim.defense.missing + dim.offense.missing],
+    [[['m15105', 'm14314', null, null]], 1, 0],
+    'dimension : la défense et les attaques, prêtes pour les états'
   );
 
   /* --- Runes utilisées (decks tous contenus + RTA) --------------------- */
@@ -475,6 +487,10 @@ export default function testImport() {
     return;
   }
   const saisonReelle = lireSaisonDimension(journalReel);
+  ok(
+    saisonDeLInvocateur(journalReel, Number(parseWizardId(reelObjet))) !== null,
+    'journal réel : la saison de l’invocateur de l’export (celle que lit l’application de bureau)'
+  );
   const defDimReel = parseDimensionDefense(saisonReelle, fr).decks[0];
   ok(
     !!defDimReel && defDimReel.slots.every((s) => s !== null && s.gear!.runes.length === 6),

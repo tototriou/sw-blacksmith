@@ -41,7 +41,7 @@ JOUER
    │ Offense
    │ Recommandations
 🏆 Arène                            ›
-🏆 Arène dimensionnelle
+🏆 Arène dimensionnelle              ›
 MON COMPTE · OUTILS · RESSOURCES …
 ───────────────────────────────────────
 ⚙  Paramètres

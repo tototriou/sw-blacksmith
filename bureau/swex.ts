@@ -17,11 +17,20 @@
 // redonné au prochain changement du fichier.
 // ⚠️ **On attend 1,5 s après la dernière écriture** : SW Exporter écrit un
 // fichier de plusieurs Mo, et le système signale chaque morceau.
+//
+// L'arène dimensionnelle : sa box n'est pas dans l'export mais dans le journal
+// complet de SWEX (`full_log.txt`, à la racine du même dossier), écrit quand
+// le joueur ouvre le mode — APRÈS l'export, écrit à la connexion. Le journal
+// est donc suivi pour lui-même : à chaque nouvelle saison de l'invocateur
+// suivi, elle part à la page (`bureau:swex-dimension`) avec les équipes
+// récentes de l'export (les attaques), et la page confirme l'avoir appliquée
+// (`bureau:swex-dimension-lue`).
 
 import { app, BrowserWindow, dialog, ipcMain } from 'electron';
 import { FSWatcher, promises, readdirSync, readFileSync, statSync, watch, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { aDonner, ExportCompte, exportsDuDossier, lireReglage, ReglageSwex } from './swexPur';
+import { aDonner, dimensionADonner, ExportCompte, exportsDuDossier, lireNomExport, lireReglage, ReglageSwex } from './swexPur';
+import { ajoutContientSaison, NOM_JOURNAL, saisonDuJournal } from './journalSwexDisque';
 import { textesBureau } from './textes';
 
 export interface EtatSwex {
@@ -68,6 +77,8 @@ export function brancherSwex(fenetre: BrowserWindow, preuve?: PreuveSwex) {
   // Le prochain export donné suit un choix : complet, jusqu'à ce que la page
   // l'ait appliqué (`bureau:swex-lu`) — un export illisible le garde complet.
   let complet = false;
+  // Octets du journal SWEX déjà examinés : seul ce qui s'y ajoute est relu.
+  let journalVu = 0;
 
   const deLaPage = (e: Electron.IpcMainEvent | Electron.IpcMainInvokeEvent) => e.sender === fenetre.webContents;
   const envoyer = (canal: string, valeur: unknown) => {
@@ -111,6 +122,38 @@ export function brancherSwex(fenetre: BrowserWindow, preuve?: PreuveSwex) {
     }
   }
 
+  // Donne à la page la dernière saison de l'arène dimensionnelle de
+  // l'invocateur suivi, si elle est plus récente que la dernière appliquée.
+  // `relire` : tout le journal (page prête, choix, surveillance revenue) ;
+  // sinon, seulement si ce qui s'y est ajouté contient une saison.
+  async function donnerDimension(relire: boolean) {
+    const { dossier, fichier } = reglage;
+    const id = Number(fichier ? lireNomExport(fichier)?.id : NaN);
+    if (!pagePrete || !dossier || !fichier || !Number.isFinite(id)) return;
+    const chemin = join(dossier, NOM_JOURNAL);
+    try {
+      if (relire) journalVu = (await promises.stat(chemin)).size;
+      else {
+        const ajout = await ajoutContientSaison(chemin, journalVu);
+        journalVu = ajout.taille;
+        if (!ajout.contient) return;
+      }
+      const saison = await saisonDuJournal(chemin, id);
+      if (!saison || !dimensionADonner(saison.tvalue, reglage.dimensionLue)) return;
+      // Les attaques jouées sont dans l'export (`deck_recent_list`).
+      let recents: unknown[] = [];
+      try {
+        const compte = JSON.parse(await promises.readFile(join(dossier, fichier), 'utf8'));
+        if (Array.isArray(compte?.deck_recent_list)) recents = compte.deck_recent_list;
+      } catch {
+        /* export illisible : la défense part seule */
+      }
+      envoyer('bureau:swex-dimension', { saison, recents, cle: saison.tvalue });
+    } catch {
+      /* pas de journal (plugin Full Logger éteint), ou verrouillé : rien */
+    }
+  }
+
   // ⚠️ **Une surveillance perdue se relance.** Sur une erreur (disque externe
   // démonté un instant, dossier synchronisé) ou un dossier illisible, elle
   // était fermée pour de bon : les nouveaux exports n'arrivaient plus dans
@@ -125,6 +168,7 @@ export function brancherSwex(fenetre: BrowserWindow, preuve?: PreuveSwex) {
       if (!surveiller()) return;
       envoyer('bureau:swex-etat', etat());
       void donner(false);
+      void donnerDimension(true);
     }, RELANCE);
   }
 
@@ -136,14 +180,15 @@ export function brancherSwex(fenetre: BrowserWindow, preuve?: PreuveSwex) {
     relance = null;
     if (!reglage.dossier) return false;
     try {
-      // Non récursif : seuls les exports de la RACINE comptent (`live` écrit
-      // en continu pendant une partie). Tout changement relance la liste ET
-      // l'export suivi, une fois le dossier calme.
+      // Non récursif : seuls les exports et le journal de la RACINE comptent
+      // (`live` écrit en continu pendant une partie). Tout changement relance
+      // la liste, l'export suivi et le journal, une fois le dossier calme.
       surveillance = watch(reglage.dossier, () => {
         if (minuterie) clearTimeout(minuterie);
         minuterie = setTimeout(() => {
           envoyer('bureau:swex-etat', etat());
           void donner(false);
+          void donnerDimension(false);
         }, ATTENTE);
       });
       surveillance.on('error', () => {
@@ -183,7 +228,7 @@ export function brancherSwex(fenetre: BrowserWindow, preuve?: PreuveSwex) {
       if (r.canceled || !r.filePaths[0]) return etat();
       dossier = r.filePaths[0];
     }
-    reglage = { dossier, fichier: null, dernierLu: null };
+    reglage = { dossier, fichier: null, dernierLu: null, dimensionLue: null };
     // Un seul invocateur dans le dossier : c'est lui.
     const seul = etat().exports;
     if (seul.length === 1) reglage.fichier = seul[0].fichier;
@@ -191,6 +236,7 @@ export function brancherSwex(fenetre: BrowserWindow, preuve?: PreuveSwex) {
     ecrire();
     surveiller();
     void donner(false);
+    void donnerDimension(true);
     return repondre();
   });
 
@@ -198,16 +244,17 @@ export function brancherSwex(fenetre: BrowserWindow, preuve?: PreuveSwex) {
     if (!deLaPage(e)) return null;
     // Seulement un export de CE dossier : jamais un chemin venu de la page.
     if (typeof fichier !== 'string' || !etat().exports.some((x) => x.fichier === fichier)) return etat();
-    reglage = { ...reglage, fichier, dernierLu: null };
+    reglage = { ...reglage, fichier, dernierLu: null, dimensionLue: null };
     complet = true;
     ecrire();
     void donner(false);
+    void donnerDimension(true);
     return repondre();
   });
 
   ipcMain.handle('bureau:swex-oublier', (e) => {
     if (!deLaPage(e)) return null;
-    reglage = { dossier: null, fichier: null, dernierLu: null };
+    reglage = { dossier: null, fichier: null, dernierLu: null, dimensionLue: null };
     complet = false;
     ecrire();
     surveiller();
@@ -220,6 +267,15 @@ export function brancherSwex(fenetre: BrowserWindow, preuve?: PreuveSwex) {
     if (!deLaPage(e)) return;
     pagePrete = true;
     void donner(pageSansCompte === true);
+    void donnerDimension(true);
+  });
+
+  // La page a APPLIQUÉ la saison de l'arène dimensionnelle de cette heure
+  // serveur : elle ne sera plus redonnée.
+  ipcMain.on('bureau:swex-dimension-lue', (e, cle: unknown) => {
+    if (!deLaPage(e) || typeof cle !== 'number' || !Number.isFinite(cle)) return;
+    reglage = { ...reglage, dimensionLue: cle };
+    ecrire();
   });
 
   // La page a APPLIQUÉ l'export de cette date.
