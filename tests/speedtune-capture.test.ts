@@ -120,8 +120,9 @@ const CADRE_BRONZE: Rvb = [97, 72, 33];
 // L'écran de préparation recomposé : fond brun, les cartes à leur place, cadre
 // BLEU pour les attaquants d'un deck préréglé (`cadreAttaque` : doré pour un
 // deck composé sur le moment, bronze, gris…) et DORÉ pour la défense, comme
-// dans le jeu ; VIT des attaquants dans une pastille en bas à droite (`pc` :
-// chiffres de la fenêtre PC, plus petits et plus bas).
+// dans le jeu ; VIT des attaquants (les trois premières cartes qui en ont une
+// dans `vitesses`) dans une pastille en bas à droite (`pc` : chiffres de la
+// fenêtre PC, plus petits et plus bas).
 function dessiner(l: number, h: number, rects: Rect[], portraits: Image[], vitesses: string[], pc: boolean, cadreAttaque: Rvb = CADRE_BLEU, cadreDefense: Rvb = CADRE_DORE): Image {
   const img = imageUnie(l, h, [52, 40, 30]);
   portraits.forEach((p, k) => {
@@ -130,12 +131,13 @@ function dessiner(l: number, h: number, rects: Rect[], portraits: Image[], vites
     coller(img, imageUnie(4, 4, k < 3 ? cadreAttaque : cadreDefense), x, y, cl, ch);
     const cadre = Math.round(cl * 0.04);
     coller(img, p, x + cadre, y + cadre, cl - 2 * cadre, ch - 2 * cadre);
-    if (k < 3 && pc) {
+    if (k >= 3 || vitesses[k] === undefined) return;
+    if (pc) {
       // PC : des chiffres de 9 pixels, plus bas dans la carte.
       const n = nombre(vitesses[k], Math.round(ch * 0.096));
       coller(img, imageUnie(4, 4, [40, 40, 44]), x + 0.62 * cl, y + 0.83 * ch, 0.34 * cl, 0.13 * ch);
       coller(img, n, x + 0.66 * cl, y + 0.845 * ch - 4, n.largeur, n.hauteur);
-    } else if (k < 3) {
+    } else {
       const n = nombre(vitesses[k], Math.round(ch * 0.105));
       coller(img, imageUnie(4, 4, [40, 40, 44]), x + 0.62 * cl, y + 0.79 * ch, 0.34 * cl, 0.16 * ch);
       coller(img, n, x + 0.66 * cl, y + 0.8 * ch, n.largeur, n.hauteur);
@@ -307,15 +309,22 @@ export function testCaptureEcran() {
     { att: [[1, 337], [2, 404], [3, 368]], def: [] }, 'cadres bronze, cartes seules');
   egal(lire(ecran(portraits, ['357', '367', '385'], 2556, 1179, 'telephone', CADRE_GRIS, CADRE_GRIS)),
     { att: [[1, 357], [2, 367], [3, 385]], def: [4, 5, 6] }, 'cadres gris : lus comme les autres');
-  // Une équipe, c'est TROIS carrés : la liste des monstres, en dessous, aligne
-  // des vignettes presque de la même taille, plus de trois à la suite.
+  // Les attaquants sont les cartes qui portent une VIT, quelles que soient
+  // leur taille et leur place : la liste des monstres aligne des vignettes
+  // presque de la même taille, sans VIT.
   const liste = [0, 1, 2, 3, 4, 5].map((k): Rect => [161 + k * 85, 470, 77, 77]);
   const avecListe = dessiner(1187, 646, [[161, 162, 81, 81], [257, 162, 81, 81], [353, 162, 81, 81], ...liste], [...portraits.slice(0, 3), ...portraits, portraits[0]], ['339', '384', '363'], true);
   egal(lire(avecListe)?.att, [[1, 339], [2, 384], [3, 363]], 'liste des monstres sous l\'équipe : écartée');
-  egal(lire(dessiner(700, 200, liste.map(([x, , c]): Rect => [x - 100, 60, c, c]), portraits, ['100', '100', '100'], true, CADRE_GRIS, CADRE_GRIS)), null,
-    'une rangée de six carrés seule : pas une équipe');
-  // Sans trois carrés égaux à pas régulier : écran non reconnu, aucune
-  // position supposée.
+  egal(lire(dessiner(700, 200, liste.map(([x, , c]): Rect => [x - 100, 60, c, c]), portraits, [], true, CADRE_GRIS, CADRE_GRIS)), null,
+    'une rangée de six cartes sans VIT : pas d\'attaquant');
+  const auDessus = [0, 1, 2].map((k): Rect => [40 + k * 130, 20, 110, 110]);
+  const sousGrandes = dessiner(1187, 646, [[161, 300, 81, 81], [257, 300, 81, 81], [353, 300, 81, 81], ...auDessus], [...portraits.slice(0, 3), ...portraits.slice(3, 6)], ['339', '384', '363'], true);
+  egal(lire(sousGrandes)?.att, [[1, 339], [2, 384], [3, 363]], 'des cartes plus grandes, sans VIT, au-dessus de l\'équipe : écartées');
+  // Une capture de tout l'écran (4K), la fenêtre du jeu dans un coin : des
+  // cartes de 81 pixels sur 3840, petites devant l'image.
+  egal(lire(ecranLibre(3840, 2160, 2900, 1700, 81, 96, 3491, portraits, ['339', '384', '363'], true)),
+    { att: [[1, 339], [2, 384], [3, 363]], def: [4, 5, 6] }, 'capture de tout un écran 4K : la fenêtre du jeu dans un coin');
+  // Sans trois cartes à VIT : écran non reconnu, aucune position supposée.
   egal(lire(dessiner(600, 300, [[100, 100, 81, 81]], portraits.slice(0, 1), ['339'], true)), null, 'une seule carte : écran non reconnu');
   egal(lire(imageUnie(800, 400, [52, 40, 30])), null, 'écran vide : non reconnu');
   // Une VIT hors de portée du jeu n'est pas une VIT.

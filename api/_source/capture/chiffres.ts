@@ -282,8 +282,8 @@ export function reconnaitreATaille(lum: Float32Array, largeur: number, hauteur: 
 // écart entre le chiffre lu et le suivant, pour un de ses chiffres. `accord` :
 // la lecture agrandie (chaque glyphe ramené à 12 × 18, l'ancienne méthode)
 // donne le même nombre, avec une confiance d'au moins 0,65 — deux méthodes
-// différentes qui s'accordent.
-export interface NombreLu { valeur: number; texte: string; confiance: number; marge: number; accord: boolean }
+// différentes qui s'accordent. `hauteur` : celle des chiffres, en pixels.
+export interface NombreLu { valeur: number; texte: string; confiance: number; marge: number; accord: boolean; hauteur: number }
 
 // Sous 5 pixels de haut, un chiffre n'a plus que trois colonnes : on ne le lit
 // pas, et la commande demande une capture plus grande.
@@ -326,11 +326,12 @@ export function glyphesDuNombre(m: Masque): Glyphe[] {
 export function lireNombre(zone: Image, g: Gabarits): NombreLu | null {
   const m = masqueClair(zone);
   const gs = glyphesDuNombre(m);
-  if (gs.length === 0 || gs.length > 4 || Math.max(...gs.map((x) => x.h)) < HAUTEUR_CHIFFRE_MIN) return null;
+  const hauteur = gs.length ? Math.max(...gs.map((x) => x.h)) : 0;
+  if (gs.length === 0 || gs.length > 4 || hauteur < HAUTEUR_CHIFFRE_MIN) return null;
   const lum = luminosite(zone);
   const lus = gs.map((x) => reconnaitreATaille(lum, zone.largeur, zone.hauteur, x, g));
   const texte = lus.map((l) => l.chiffre).join('');
   const agrandis = gs.map((x) => reconnaitreChiffre(decoupesVoisines(m, x).map((v) => normaliser(m, v)), g));
   const accord = agrandis.map((l) => l.chiffre).join('') === texte && Math.min(...agrandis.map((l) => l.score)) >= CONFIANCE_ACCORD;
-  return { valeur: Number(texte), texte, confiance: Math.min(...lus.map((l) => l.score)), marge: Math.min(...lus.map((l) => l.ecart)), accord };
+  return { valeur: Number(texte), texte, confiance: Math.min(...lus.map((l) => l.score)), marge: Math.min(...lus.map((l) => l.ecart)), accord, hauteur };
 }

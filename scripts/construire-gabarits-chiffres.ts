@@ -27,7 +27,7 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { chromium } from 'playwright';
 import { decoderImage } from '../api/_source/capture/image';
 import { GH, GL, glyphes, glyphesDuNombre, masqueClair, normaliser, type Gabarits } from '../api/_source/capture/chiffres';
-import { zoneVitesse } from '../api/_source/capture/ecranPreparation';
+import { zoneVitesse } from '../api/_source/capture/pastille';
 import { trouverCartes } from '../api/_source/capture/cartes';
 
 const SORTIE = 'api/_source/capture/chiffres-gabarits.json';
