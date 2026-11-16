@@ -51,17 +51,20 @@ export interface Rangee {
   components: (Menu | BoutonLien | Bouton)[];
 }
 
-// Une VIT mal lue, à saisir : un bouton chacune.
-export interface Saisie { nom: string; customId: string }
+// Les VIT mal lues, à saisir ENSEMBLE : un seul bouton, une seule fenêtre, un
+// champ par monstre. `index` : sa place dans l'équipe ; `combat` : la lecture
+// la plus probable, qui préremplit son champ (null : rien à proposer).
+export interface Saisie { nom: string; index: number; combat: number | null }
 
-// La fenêtre de saisie d'une VIT (modale Discord) : un champ texte, prérempli
-// de la lecture la plus probable s'il y en a une.
+// La fenêtre de saisie des VIT (modale Discord) : un champ texte par monstre
+// (cinq au plus, la limite de Discord ; trois attaquants ici).
 export interface Modale {
   custom_id: string;
   title: string;
   components: { type: 1; components: { type: 4; custom_id: string; label: string; style: 1; min_length: number; max_length: number; required: true; value?: string; placeholder?: string }[] }[];
 }
-export const CHAMP_VIT = 'vit';
+// Le champ de la VIT du monstre à la place `index`.
+export const champVit = (index: number) => `vit${index}`;
 
 // Ce qui remplace le message : `components` vide retire les menus d'une
 // question à laquelle on a répondu.
@@ -124,8 +127,8 @@ const TEXTES = {
     tropLourde: 'L\'image est trop lourde (25 Mo au plus).',
     illisible: 'Je n\'ai pas trouvé les trois attaquants d\'un combat de siège : leurs cartes, avec la VIT sous chaque portrait. L\'écran entier ou les trois cartes seules conviennent.',
     panne: 'Le calcul a échoué. Réessaie dans un instant.',
-    questionVit: (noms: string) => `**VIT** mal lue sur la capture : ${noms}. Saisis-la avec le bouton ci-dessous (la VIT de combat, sous le portrait) ; la lecture la plus probable y est proposée.`,
-    boutonSaisir: (nom: string) => `Saisir la VIT de ${nom}`,
+    questionVit: (noms: string) => `**VIT** mal lue sur la capture : ${noms}. Saisis-la avec le bouton ci-dessous (la VIT de combat, sous chaque portrait) ; la lecture la plus probable y est proposée.`,
+    boutonSaisir: (noms: string[]) => (noms.length === 1 ? `Saisir la VIT de ${noms[0]}` : `Saisir les VIT (${noms.join(', ')})`),
     modaleTitre: 'VIT de combat',
     modaleChamp: (nom: string) => `VIT de ${nom}`,
     modaleAide: 'La VIT sous le portrait, ex. 312',
@@ -174,8 +177,8 @@ const TEXTES = {
     tropLourde: 'The image is too large (25 MB max).',
     illisible: 'I did not find the three attackers of a siege fight: their cards, with the SPD under each portrait. The whole screen or just the three cards both work.',
     panne: 'The computation failed. Try again in a moment.',
-    questionVit: (noms: string) => `**SPD** misread on the screenshot: ${noms}. Enter it with the button below (the combat SPD, under the portrait); the most likely reading is suggested.`,
-    boutonSaisir: (nom: string) => `Enter ${nom}'s SPD`,
+    questionVit: (noms: string) => `**SPD** misread on the screenshot: ${noms}. Enter it with the button below (the combat SPD, under each portrait); the most likely reading is suggested.`,
+    boutonSaisir: (noms: string[]) => (noms.length === 1 ? `Enter ${noms[0]}'s SPD` : `Enter the SPD (${noms.join(', ')})`),
     modaleTitre: 'Combat SPD',
     modaleChamp: (nom: string) => `${nom}'s SPD`,
     modaleAide: 'The SPD under the portrait, e.g. 312',
@@ -214,25 +217,26 @@ export const rangeeOutil = (langue: Langue): Rangee => ({
 // et le libellé d'une modale.
 const tronquer = (x: string, max: number) => (x.length > max ? `${x.slice(0, max - 1)}…` : x);
 
-// Les boutons de saisie des VIT : une rangée (trois attaquants au plus, cinq
-// boutons par rangée).
-export const rangeeSaisies = (langue: Langue, saisies: Saisie[]): Rangee => ({
+// Le bouton qui ouvre la saisie de TOUTES les VIT mal lues.
+export interface DemandeSaisie { champs: Saisie[]; customId: string }
+export const rangeeSaisie = (langue: Langue, s: DemandeSaisie): Rangee => ({
   type: 1,
-  components: saisies.map((s) => ({ type: 2, style: 2, custom_id: s.customId, label: tronquer(TEXTES[langue].boutonSaisir(s.nom), 80) })),
+  components: [{ type: 2, style: 2, custom_id: s.customId, label: tronquer(TEXTES[langue].boutonSaisir(s.champs.map((c) => c.nom)), 80) }],
 });
 
-export function modaleVit(langue: Langue, nom: string, combat: number | null, customId: string): Modale {
+// Un champ par VIT à saisir, chacun dans sa rangée (la forme des modales).
+export function modaleVit(langue: Langue, champs: Saisie[], customId: string): Modale {
   const t = TEXTES[langue];
   return {
     custom_id: customId,
     title: t.modaleTitre,
-    components: [{
+    components: champs.map((c) => ({
       type: 1,
       components: [{
-        type: 4, custom_id: CHAMP_VIT, label: tronquer(t.modaleChamp(nom), 45), style: 1, min_length: 1, max_length: 3, required: true,
-        placeholder: t.modaleAide, ...(combat != null ? { value: String(combat) } : {}),
+        type: 4, custom_id: champVit(c.index), label: tronquer(t.modaleChamp(c.nom), 45), style: 1, min_length: 1, max_length: 3, required: true,
+        placeholder: t.modaleAide, ...(c.combat != null ? { value: String(c.combat) } : {}),
       }],
-    }],
+    })),
   };
 }
 
@@ -242,13 +246,13 @@ const TEXTE_PASSIF_MAX = 300;
 // Discord : 5 rangées d'actions au plus par message.
 export const MENUS_MAX = 5;
 
-// `equipe` : `combat` null pour une VIT mal lue, que `saisies` demande.
+// `equipe` : `combat` null pour une VIT mal lue, que `saisie` demande.
 export function messageQuestion(
   langue: Langue,
   equipe: { nom: string; combat: number | null }[],
   demandes: Demande[],
   douteux: string[],
-  saisies: Saisie[] = []
+  saisie: DemandeSaisie | null = null
 ): Message {
   const t = TEXTES[langue];
   const raccourcir = (x: string) => (x.length > TEXTE_PASSIF_MAX ? `${x.slice(0, TEXTE_PASSIF_MAX - 1)}…` : x);
@@ -265,13 +269,13 @@ export function messageQuestion(
   ].join('\n');
   // Plus de menus que de rangées (rare : trois passifs cumulables et un buff
   // de VIT) : ceux qui attendent une réponse passent d'abord, les autres
-  // reviennent une fois la place libérée. La rangée des saisies de VIT prend
-  // une place.
-  const places = MENUS_MAX - (saisies.length ? 1 : 0);
+  // reviennent une fois la place libérée. Le bouton de saisie des VIT prend
+  // une rangée.
+  const places = MENUS_MAX - (saisie ? 1 : 0);
   const visibles = [...demandes.filter((d) => d.choisi == null), ...demandes.filter((d) => d.choisi != null)].slice(0, places);
   return {
     embeds: [{ title: t.questionTitre, description, color: COULEUR_KO, footer: { text: t.pied } }],
-    components: [...(saisies.length ? [rangeeSaisies(langue, saisies)] : []), ...demandes.filter((d) => visibles.includes(d)).map((d): Rangee => ({
+    components: [...(saisie ? [rangeeSaisie(langue, saisie)] : []), ...demandes.filter((d) => visibles.includes(d)).map((d): Rangee => ({
       type: 1,
       components: [{
         type: 3,

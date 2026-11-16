@@ -731,45 +731,48 @@ export async function testSpeedtuneInteractions() {
   egal(lu.attaquants.map((a) => [a.combat, a.vitDouteuse]), [[357, false], [349, true], [VIT_INCONNUE, true]],
     'VIT sûre prise ; mal lue, à demander, l\'hypothèse sous la VIT de base écartée ; sans hypothèse, rien à proposer');
 
-  // Une VIT mal lue se demande AVANT tout calcul : un bouton chacune.
+  // Les VIT mal lues se demandent AVANT tout calcul, TOUTES ensemble : un
+  // bouton, une fenêtre, un champ par monstre.
   const aSaisir = await repondre(ressources, lu, 'fr');
   const boutons = aSaisir.components[0].components as Bouton[];
-  egal(boutons.map((b) => b.label), ['Saisir la VIT de Chilling', 'Saisir la VIT de Tarq'], 'un bouton par VIT mal lue, en tête du message');
+  egal(boutons.map((b) => b.label), ['Saisir les VIT (Chilling, Tarq)'], 'un seul bouton pour toutes les VIT mal lues, en tête du message');
   const texte = aSaisir.embeds[0].description ?? '';
   ok(texte.includes('**Susano** 357 · **Chilling** ? · **Tarq** ?') && texte.includes('**VIT** mal lue sur la capture : **Chilling**, **Tarq**'),
     'les VIT mal lues sont marquées « ? » et demandées');
   egal(aSaisir.embeds[0].title, '⚡ Speed tune — une précision', 'aucun résultat calculé sur une VIT mal lue');
   ok(!/capture plus grande|larger screenshot/.test(JSON.stringify(aSaisir)), 'jamais de demande d\'une capture plus grande');
 
-  // Le bouton ouvre la saisie (modale), préremplie de la lecture la plus probable.
+  // Le bouton ouvre UNE modale : un champ par VIT mal lue, prérempli de la
+  // lecture la plus probable.
   const clic = (customId: string, qui = '111') => ({ type: 3, token: 'B', locale: 'fr', member: { user: { id: qui } }, data: { custom_id: customId, component_type: 2 } });
-  const ouvrir = async (b: Bouton) => (await (await envoyer(clic(b.custom_id))).json()) as { type: number; data: Modale };
-  const [modaleChilling, modaleTarq] = [await ouvrir(boutons[0]), await ouvrir(boutons[1])];
-  egal([modaleChilling.type, modaleChilling.data.title, modaleChilling.data.components[0].components[0].value], [9, 'VIT de combat', '349'], 'la modale, préremplie de la lecture la plus probable');
-  egal(modaleTarq.data.components[0].components[0].value, undefined, 'sans lecture probable : la modale, vide');
-  egal(((await (await envoyer(clic(boutons[1].custom_id, '222'))).json()) as { type: number }).type, 4, 'un autre que l\'auteur : message privé, pas de modale');
+  const modale = (await (await envoyer(clic(boutons[0].custom_id))).json()) as { type: number; data: Modale };
+  egal([modale.type, modale.data.title], [9, 'VIT de combat'], 'le bouton ouvre la fenêtre de saisie');
+  egal(modale.data.components.map((r) => [r.components[0].custom_id, r.components[0].label, r.components[0].value]),
+    [['vit1', 'VIT de Chilling', '349'], ['vit2', 'VIT de Tarq', undefined]], 'un champ par monstre mal lu : prérempli de la lecture probable, vide sans elle');
+  egal(((await (await envoyer(clic(boutons[0].custom_id, '222'))).json()) as { type: number }).type, 4, 'un autre que l\'auteur : message privé, pas de modale');
 
-  // La saisie revient avec l'état, remplace la VIT et n'est plus à demander.
-  const soumettre = (customId: string, valeur: string) => ({
+  // Les saisies reviennent avec l'état, remplacent les VIT et ne sont plus à
+  // demander. Une seule invalide : rien n'est pris.
+  const soumettre = (customId: string, champs: Record<string, string>) => ({
     type: 5, token: 'M', locale: 'fr', member: { user: { id: '111' } },
-    data: { custom_id: customId, components: [{ type: 1, components: [{ type: 4, custom_id: 'vit', value: valeur }] }] },
+    data: { custom_id: customId, components: Object.entries(champs).map(([id, value]) => ({ type: 1, components: [{ type: 4, custom_id: id, value }] })) },
   });
-  const invalide = (await (await envoyer(soumettre(modaleTarq.data.custom_id, '3a'))).json()) as { type: number; data: { content: string; flags: number } };
-  egal([invalide.type, invalide.data.flags, invalide.data.content], [4, 64, 'Une VIT est un nombre de 1 à 999.'], 'saisie qui n\'est pas une VIT : message privé');
+  const invalide = (await (await envoyer(soumettre(modale.data.custom_id, { vit1: '349', vit2: '3a' }))).json()) as { type: number; data: { content: string; flags: number } };
+  egal([invalide.type, invalide.data.flags, invalide.data.content], [4, 64, 'Une VIT est un nombre de 1 à 999.'], 'une saisie qui n\'est pas une VIT : message privé, rien n\'est pris');
   travaux.length = 0;
-  egal(await (await envoyer(soumettre(modaleTarq.data.custom_id, ' 385 '))).json(), { type: 6 }, 'saisie valide : mise à jour différée du message');
-  await Promise.all(travaux);
-  const apresSaisie = dernier();
-  egal(apresSaisie.url, 'https://discord.com/api/v10/webhooks/APP/M/messages/@original', 'le message est remplacé');
-  ok((apresSaisie.corps.embeds[0].description ?? '').includes('**Chilling** ? · **Tarq** 385'), 'la VIT saisie est prise ; l\'autre reste à saisir');
-  egal((apresSaisie.corps.components?.[0].components as Bouton[]).map((b) => b.label), ['Saisir la VIT de Chilling'], 'la VIT saisie n\'a plus de bouton');
-  travaux.length = 0;
-  const modaleChilling2 = (await (await envoyer(clic((apresSaisie.corps.components![0].components[0] as Bouton).custom_id))).json()) as { data: Modale };
-  await envoyer(soumettre(modaleChilling2.data.custom_id, '349'));
+  egal(await (await envoyer(soumettre(modale.data.custom_id, { vit1: ' 352 ', vit2: '385' }))).json(), { type: 6 }, 'saisie valide : mise à jour différée du message');
   await Promise.all(travaux);
   const toutSaisi = dernier();
-  ok(!(toutSaisi.corps.components ?? []).some((r) => r.components.some((c) => c.type === 2 && 'custom_id' in c)) && (toutSaisi.corps.embeds[0].description ?? '').includes('**Chilling** 349 · **Tarq** 385'),
-    'toutes les VIT données : plus aucun bouton de saisie, les autres questions suivent');
+  egal(toutSaisi.url, 'https://discord.com/api/v10/webhooks/APP/M/messages/@original', 'le message est remplacé');
+  ok(!(toutSaisi.corps.components ?? []).some((r) => r.components.some((c) => c.type === 2 && 'custom_id' in c)) && (toutSaisi.corps.embeds[0].description ?? '').includes('**Chilling** 352 · **Tarq** 385'),
+    'toutes les VIT prises d\'une saisie : plus de bouton de saisie, les autres questions suivent');
+  // Les boutons d'un message de la 2.4.6 (`s1`, puis une modale `m2` au seul
+  // champ `vit`) marchent encore.
+  travaux.length = 0;
+  egal(((await (await envoyer(clic(encoderEtat('s1', lu)))).json()) as { data: Modale }).data.components.length, 2, 'ancien bouton : la même fenêtre, tous les champs');
+  await envoyer(soumettre(encoderEtat('m2', lu), { vit: '385' }));
+  await Promise.all(travaux);
+  ok((dernier().corps.embeds[0].description ?? '').includes('**Chilling** ? · **Tarq** 385'), 'ancienne fenêtre : sa VIT est prise, l\'autre reste à saisir');
   // Les modales à libellés rangent le champ dans `component`.
   egal(valeurChamp([{ type: 18, component: { type: 4, custom_id: 'vit', value: '301' } }], 'vit'), '301', 'champ d\'une modale à libellé : trouvé');
 

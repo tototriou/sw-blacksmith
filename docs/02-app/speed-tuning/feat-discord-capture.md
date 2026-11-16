@@ -72,15 +72,18 @@ une capture plus grande** : la capture est celle que le joueur a.
 - **VIT sûre** (règle de prudence, voir « La lecture de la capture ») :
   prise telle quelle.
 - **VIT mal lue** (pas sûre, ou d'une confiance sous 0,75) : elle s'affiche
-  « ? » et le message la **demande avant tout calcul** — un bouton
-  **« Saisir la VIT de … »** ouvre une fenêtre de saisie (modale Discord),
-  préremplie de la plus probable des **hypothèses** du lecteur ; vide s'il
-  n'en a aucune. Une hypothèse sous la VIT de base du monstre est écartée
-  (lead, tour et runes s'y ajoutent toujours).
+  « ? » et le message la **demande avant tout calcul**.
 
-Une VIT saisie (1 à 999) est prise : son bouton disparaît. Une saisie qui
-n'est pas une VIT reçoit un message que seul l'auteur voit. Les boutons
-tiennent sur une rangée, en tête des menus.
+⚠️ **Toutes les VIT mal lues se saisissent ensemble** : un seul bouton,
+**« Saisir les VIT (… , …) »** (« Saisir la VIT de … » s'il n'y en a qu'une),
+en tête des menus, ouvre une fenêtre de saisie (modale Discord) avec **un
+champ par monstre**, prérempli de la plus probable des **hypothèses** du
+lecteur, vide s'il n'en a aucune. Une hypothèse sous la VIT de base du
+monstre est écartée (lead, tour et runes s'y ajoutent toujours). Les VIT
+saisies (1 à 999) sont prises et le bouton disparaît ; une seule qui n'est
+pas une VIT, et rien n'est pris — un message que seul l'auteur voit le dit.
+Les boutons d'un message de la 2.4.6, un par monstre, ouvrent la même
+fenêtre.
 
 ### Ce que la capture ne montre pas : la question
 
@@ -124,8 +127,8 @@ Le service reste **sans état** : la lecture entière (monstres, VIT, valeurs
 déjà choisies, doutes, défense) voyage dans le `custom_id` de chaque menu,
 bouton et modale ([etat.ts](../../../api/_source/speedtune/etat.ts), relu
 strictement ; une VIT à saisir sans hypothèse s'y écrit 0). Chaque choix revient en
-interaction de composant (type 3) — un bouton de VIT y reçoit la modale (type
-9), dont la soumission revient en type 5 — : seul l'auteur de la commande
+interaction de composant (type 3) — le bouton de saisie des VIT y reçoit la
+modale (type 9), dont la soumission revient en type 5 — : seul l'auteur de la commande
 peut répondre (les autres reçoivent un message que seuls eux voient). Le
 doute sur une VIT ne tombe jamais de l'état : il la fait demander. ⚠️ Son identifiant voyage **dans l'état**,
 écrit à la commande : les métadonnées du message que Discord renvoie avec un
@@ -392,7 +395,8 @@ sur les vrais monstres et leurs vrais kits (Susano, Chilling, Tarq), fiches
 actuelle et à viser au pire du set Rapide ; état
 des menus (aller-retour, pire cas sous 100 caractères, refus) ; interactions
 signées, réponse différée, question, choix (y compris d'un autre que
-l'auteur), VIT mal lue demandée avant tout calcul (bouton, modale préremplie,
-saisie invalide refusée en privé), capture collée (type annoncé absent ou quelconque) lue, capture
+l'auteur), VIT mal lues demandées avant tout calcul (un bouton, une modale
+au champ prérempli par monstre, saisie invalide refusée en privé, boutons de
+la 2.4.6 encore compris), capture collée (type annoncé absent ou quelconque) lue, capture
 WebP rendue en PNG par Discord, GIF non converti refusé,
 et message final devant un Discord simulé.

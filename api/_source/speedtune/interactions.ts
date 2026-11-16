@@ -36,7 +36,7 @@ import type { Gabarits } from '../capture/chiffres';
 import { lireEcranPreparation, type LectureEcran } from '../capture/ecranPreparation';
 import { analyserEquipe } from './analyse';
 import {
-  CHAMP_VIT, embedErreur, embedResultat, langueDe, messageQuestion, modaleVit, rangeeOutil, texteEphemere,
+  champVit, embedErreur, embedResultat, langueDe, messageQuestion, modaleVit, rangeeOutil, texteEphemere,
   type Demande, type Embed, type Langue, type Message, type Precision, type Saisie,
 } from './message';
 import { ARTE_MAX, CUMULS_MAX, VIT_INCONNUE, VIT_SAISIE_MAX, decoderEtat, encoderEtat, type Etat } from './etat';
@@ -232,22 +232,32 @@ export function creerInteractions(d: DependancesInteractions) {
         const qui = interaction.member?.user?.id ?? interaction.user?.id;
         if (qui !== lu.etat.auteur) return ephemere('pasAuteur');
         const sorte = lu.action[0];
-        const cible = lu.etat.attaquants[Number(lu.action.slice(1))];
-        // Le bouton d'une VIT à saisir : la modale de saisie, préremplie de la
-        // lecture la plus probable, qui revient avec l'état sous l'action `m`.
+        const cible = lu.action.length > 1 ? lu.etat.attaquants[Number(lu.action.slice(1))] : undefined;
+        // Le bouton de saisie : UNE modale, un champ par VIT mal lue, chacun
+        // prérempli de la lecture la plus probable ; elle revient avec l'état
+        // sous l'action `m`. (`s0`, `m0`… : les boutons d'un message de la
+        // 2.4.6, un par monstre — ils ouvrent la même modale.)
         if (interaction.type === 3 && sorte === 's') {
-          const monstre = cible ? (await d.ressources()).monstre(cible.id) : undefined;
-          if (!cible || !monstre) return ephemere('perime');
-          const combat = cible.combat === VIT_INCONNUE ? null : cible.combat;
-          return json({ type: 9, data: modaleVit(langue, monstre.name, combat, encoderEtat(`m${lu.action.slice(1)}`, lu.etat)) });
+          const champs = champsASaisir(await d.ressources(), lu.etat);
+          if (!champs.length) return ephemere('perime');
+          return json({ type: 9, data: modaleVit(langue, champs, encoderEtat('m', lu.etat)) });
         }
-        // La VIT saisie : elle remplace la lecture, et n'est plus à demander.
+        // Les VIT saisies : elles remplacent les lectures, et ne sont plus à
+        // demander. Une seule invalide : rien n'est pris.
         if (interaction.type === 5) {
-          const saisie = (valeurChamp(interaction.data?.components, CHAMP_VIT) ?? '').trim();
-          if (!cible || sorte !== 'm') return ephemere('perime');
-          if (!/^\d{1,3}$/.test(saisie) || Number(saisie) < 1 || Number(saisie) > VIT_SAISIE_MAX) return ephemere('vitInvalide');
-          cible.combat = Number(saisie);
-          cible.vitDouteuse = false;
+          if (sorte !== 'm') return ephemere('perime');
+          const ancienChamp = valeurChamp(interaction.data?.components, 'vit');
+          const saisies = lu.etat.attaquants.map((a, i) => {
+            const v = valeurChamp(interaction.data?.components, champVit(i)) ?? (cible === a ? ancienChamp : null);
+            return v == null ? null : v.trim();
+          });
+          if (saisies.every((s) => s == null)) return ephemere('perime');
+          if (saisies.some((s) => s != null && (!/^\d{1,3}$/.test(s) || Number(s) < 1 || Number(s) > VIT_SAISIE_MAX))) return ephemere('vitInvalide');
+          saisies.forEach((s, i) => {
+            if (s == null) return;
+            lu.etat.attaquants[i].combat = Number(s);
+            lu.etat.attaquants[i].vitDouteuse = false;
+          });
           d.differer(traiterChoix(interaction.token, langue, lu.etat));
           return json({ type: 6 });
         }
@@ -358,16 +368,27 @@ function buffsDeVitesse(etat: Etat, d: DonneesKit): { receveurs: Set<number>; ba
   return { receveurs, base };
 }
 
+// Une VIT mal lue (ou inconnue) est à saisir avant tout calcul.
+const aSaisir = (a: Etat['attaquants'][number]) => a.vitDouteuse || a.combat === VIT_INCONNUE;
+
+// Les champs de la saisie : chaque VIT à saisir, préremplie de la lecture la
+// plus probable.
+function champsASaisir(res: Ressources, etat: Etat): Saisie[] {
+  return etat.attaquants.flatMap((a, index) => {
+    const m = res.monstre(a.id);
+    return aSaisir(a) && m ? [{ nom: m.name, index, combat: a.combat === VIT_INCONNUE ? null : a.combat }] : [];
+  });
+}
+
 // L'état → le message : la question tant qu'une valeur manque, sinon
 // l'analyse, avec ce qui reste incertain dans la lecture.
 export async function repondre(res: Ressources, etat: Etat, langue: Langue): Promise<Message> {
   const monstres = etat.attaquants.map((a) => res.monstre(a.id));
   if (monstres.some((m) => !m)) return { embeds: [embedErreur(langue, 'illisible')], components: [] };
   const douteux = etat.attaquants.flatMap((a, i) => (a.autrePortrait != null ? [`${monstres[i]!.name} / ${res.monstre(a.autrePortrait)?.name ?? '?'}`] : []));
-  // Une VIT mal lue : un bouton chacune, qui ouvre sa saisie ; rien ne se
-  // calcule avant qu'elle soit donnée.
-  const aSaisir = (a: Etat['attaquants'][number]) => a.vitDouteuse || a.combat === VIT_INCONNUE;
-  const saisies: Saisie[] = etat.attaquants.flatMap((a, i) => (aSaisir(a) ? [{ nom: monstres[i]!.name, customId: encoderEtat(`s${i}`, etat) }] : []));
+  // Les VIT mal lues : un bouton les fait toutes saisir ; rien ne se calcule
+  // avant qu'elles soient données.
+  const champs = champsASaisir(res, etat);
   const equipeLue = etat.attaquants.map((a, i) => ({ nom: monstres[i]!.name, combat: aSaisir(a) ? null : a.combat }));
 
   const donnees: DonneesKit = { kits: new Map(), sorts: new Map(), passifs: new Map() };
@@ -398,10 +419,11 @@ export async function repondre(res: Ressources, etat: Etat, langue: Langue): Pro
     if (a.arte != null) precisions.push({ sorte: 'arte', nom, de: a.arte, a: tranche?.a ?? a.arte });
   }
   // Le set Rapide ne se demande pas : il ne change pas l'ordre (la VIT lue le
-  // contient), seulement la fiche d'un point d'arrondi ; elle le suppose absent.
+  // contient), seulement la fiche d'un point d'arrondi ; elle est donnée au cas
+  // le plus défavorable (analyse.ts).
 
-  if (demandes.some((x) => x.choisi == null) || saisies.length) {
-    return messageQuestion(langue, equipeLue, demandes, douteux, saisies);
+  if (demandes.some((x) => x.choisi == null) || champs.length) {
+    return messageQuestion(langue, equipeLue, demandes, douteux, champs.length ? { champs, customId: encoderEtat('s', etat) } : null);
   }
 
   const resultat = analyserEquipe(
