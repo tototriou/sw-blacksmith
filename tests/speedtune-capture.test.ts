@@ -17,7 +17,7 @@ import { decoderImage, decouper, demiTaille, dimensionsPng, imageTropGrande, red
 import { Banque, quantifier, signature, TAILLE, COTE, type BanqueSerialisee } from '../api/_source/capture/portraits';
 import { HAUTEUR_CHIFFRE_MIN, lireNombre, scoresParSynthese, type Gabarits } from '../api/_source/capture/chiffres';
 import { hypothesesVit, lireEcranPreparation } from '../api/_source/capture/ecranPreparation';
-import { analyserEquipe } from '../api/_source/speedtune/analyse';
+import { analyserEquipe, runesAuPire } from '../api/_source/speedtune/analyse';
 import { adresseEnPng, creerInteractions, etatDeLecture, repondre, signatureValide, tranchesArte, valeurChamp, type Ressources } from '../api/_source/speedtune/interactions';
 import { embedErreur, ICONE_APP, LIEN_OUTIL, langueDe, type Bouton, type Embed, type Menu, type Modale, type Rangee } from '../api/_source/speedtune/message';
 import { decoderEtat, encoderEtat, LONGUEUR_MAX, VIT_INCONNUE, type Etat } from '../api/_source/speedtune/etat';
@@ -478,6 +478,12 @@ export function testSpeedtuneAnalyse() {
   const sansLead = analyserEquipe([{ monster: tarq, combat: 300 }, { monster: chilling, combat: 250 }, { monster: susano, combat: 200 }], donneesKit([tarq, chilling, susano]));
   egal(sansLead.lead, null, 'un leader sans lead de vitesse : pas de lead');
   ok(!sansLead.ok && sansLead.lignes.some((l) => l.requis !== null), 'des alliés coupés : la VIT à atteindre est donnée');
+  // Les fiches au cas le plus défavorable du set Rapide : la plus haute des
+  // deux VIT de runes, avec et sans lui — l'actuelle comme celle à viser.
+  const pire = (m: Monster, combat: number) => Math.max(runeSpeedForTarget(m.stats.speed, 0, combat, false)!, runeSpeedForTarget(m.stats.speed, 0, combat, true)!);
+  const coupees = sansLead.lignes.filter((l) => l.requis !== null);
+  ok(coupees.length > 0 && coupees.every((l) => l.runesRequis === pire(l.monster, l.requis!)) && sansLead.lignes.every((l) => l.runes === pire(l.monster, l.combat)),
+    'fiches actuelle et à viser : la plus haute des deux, avec et sans Rapide');
 
   // Les cumuls du passif précisés par le joueur : Chilling (+20 par buff) à
   // 367 lu et 1 cumul passe à 387, devant Tarq à 385 — et devient le modèle
@@ -673,7 +679,8 @@ export async function testSpeedtuneInteractions() {
   egal(final.url, 'https://discord.com/api/v10/webhooks/APP/C/messages/@original', 'le résultat remplace la question');
   egal(final.corps.components, [{ type: 1, components: [{ type: 2, style: 5, label: 'Ouvrir l\'outil de speed tuning', url: LIEN_OUTIL }] }],
     'les menus disparaissent ; reste le bouton vers l\'outil de speed tuning, sans bouton Rapide');
-  ok(final.corps.embeds[0].footer?.text.startsWith('Fiche calculée sans le set Rapide') === true, 'la fiche se dit calculée sans le set Rapide');
+  egal(final.corps.embeds[0].footer?.text, 'Fiches au cas le plus défavorable, set Rapide porté ou non : les atteindre suffit dans les deux cas.',
+    'les fiches se disent au cas le plus défavorable du set Rapide');
   egal(LIEN_OUTIL, 'https://sw-blacksmith.vercel.app/#/outils/speed-tuning', 'l\'outil du site de production');
   egal(final.corps.embeds.length, 1, 'un seul encart, compact');
   ok(['⚡ Speed tune — personne ne se fait cut', '⚡ Speed tune — quelqu\'un se fait cut'].includes(final.corps.embeds[0].title), 'le titre parle comme les joueurs : « se faire cut »');
@@ -696,7 +703,14 @@ export async function testSpeedtuneInteractions() {
   ok(!/tick/i.test(ordre), 'aucun tick affiché');
   ok(champ('Défense lue') !== '', 'la défense lue, en dernier champ');
   const runesDe = (m: Monster, combat: number, swift: boolean) => runeSpeedForTarget(m.stats.speed, siegeLeadFor(speedLeadOf(susano), m.element), combat, swift);
-  ok(ordre.includes(`fiche ${tarq.stats.speed} + ${runesDe(tarq, 385, false)}`), 'Tarq : sa VIT de fiche, sans Rapide');
+  const auPire = (m: Monster, combat: number) => Math.max(runesDe(m, combat, false)!, runesDe(m, combat, true)!);
+  egal(runesAuPire(tarq.stats.speed, siegeLeadFor(speedLeadOf(susano), tarq.element), 385), auPire(tarq, 385), 'fiche au pire : la plus haute des deux, avec et sans Rapide');
+  ok(ordre.includes(`fiche ${tarq.stats.speed} + ${auPire(tarq, 385)}`), 'Tarq : sa VIT de fiche, au cas le plus défavorable');
+  // Une fiche à viser : au pire aussi, déduite de la VIT à viser elle-même.
+  ok([...ordre.matchAll(/viser \*\*(\d+)\*\* \(\+\d+\) · soit (\d+) \+ (\d+)/g)].every(([, requis, base, runes]) => {
+    const m = MONSTRES.find((x) => x.stats.speed === Number(base) && [susano, chilling, tarq].includes(x))!;
+    return Number(runes) === auPire(m, Number(requis));
+  }), 'fiche à viser : la plus haute des deux, pour la VIT à viser');
   ok(ordre.includes(`${susano.stats.speed} + `), 'Susano : sa VIT de fiche (ou celle à viser)');
   ok(Math.abs(runesDe(tarq, 385, true)! - runesDe(tarq, 385, false)!) <= 1, 'le Rapide ne change la VIT de fiche que d\'un point d\'arrondi');
   egal(final.corps, { ...final.corps, allowed_mentions: { parse: [] } }, 'aucune mention possible');

@@ -47,7 +47,8 @@ Voir aussi : README.md, feat-competences.md, feat-deux-camps.md,
    - la **défense lue**, icônes et noms (l'écran ne montre pas sa VIT) ;
    - en description, ce qui reste **incertain** dans la lecture (deux
      portraits proches) ;
-   - en pied, que la fiche est calculée sans le set Rapide (voir plus bas) ;
+   - en pied, que les fiches sont au cas le plus défavorable du set Rapide
+     (voir plus bas) ;
    - sous l'encart, un bouton **« Ouvrir l'outil de speed tuning »** : l'outil
      du site de production (`#/outils/speed-tuning`), pour régler l'équipe à
      la main. Il s'ouvre vide : l'équipe lue n'y est pas reportée.
@@ -109,10 +110,15 @@ se fait cut, ni à la VIT de combat à viser (la VIT lue le contient). Il ne
 jouerait que sur la **VIT de fiche** (`base + runes`, le « +X » que le
 monstre montre hors combat, Rapide compris comme dans l'app, voir
 `swiftFlat` de [speed.ts](../../../src/lib/speed.ts)), d'un point au plus :
-le jeu arrondit la somme des pourcentages (totem, lead, Rapide). La fiche
-est donc calculée sans lui, et le pied du message le dit. Une première
-version le demandait par des boutons sous le résultat ; retirés, ils
-coûtaient un clic pour un point d'arrondi.
+le jeu arrondit la somme des pourcentages (totem, lead, Rapide). ⚠️ Les
+fiches affichées, l'actuelle comme celle à viser, sont donc celles du **cas
+le plus défavorable** : la plus haute des deux VIT de runes déduites, avec et
+sans le set (`runesAuPire` d'[analyse.ts](../../../api/_source/speedtune/analyse.ts)) —
+l'atteindre donne la VIT de combat dans les deux cas. La fiche à viser se
+déduit de la VIT à viser elle-même, pas de l'écart ajouté à la fiche
+actuelle. Le pied du message le précise. Une première version demandait le
+set par des boutons sous le résultat ; retirés, ils coûtaient un clic pour
+un point d'arrondi.
 
 Le service reste **sans état** : la lecture entière (monstres, VIT, valeurs
 déjà choisies, doutes, défense) voyage dans le `custom_id` de chaque menu,
@@ -382,7 +388,8 @@ plus grandes sans VIT au-dessus de l'équipe, capture de tout un écran 4K,
 capture trop réduite, une seule carte, écran vide ; chiffres de 7 à 9 pixels
 lus, de 2 non ; hypothèses départagées en entier, glyphe intrus écarté,
 nombre rendu par synthèse ; calcul
-sur les vrais monstres et leurs vrais kits (Susano, Chilling, Tarq) ; état
+sur les vrais monstres et leurs vrais kits (Susano, Chilling, Tarq), fiches
+actuelle et à viser au pire du set Rapide ; état
 des menus (aller-retour, pire cas sous 100 caractères, refus) ; interactions
 signées, réponse différée, question, choix (y compris d'un autre que
 l'auteur), VIT mal lue demandée avant tout calcul (bouton, modale préremplie,

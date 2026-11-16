@@ -115,9 +115,9 @@ const TEXTES = {
     defense: 'Défense lue',
     ouvrirOutil: 'Ouvrir l\'outil de speed tuning',
     pied: 'Lecture automatique de la capture — vérifie les monstres et les VIT lus. Même calcul que l\'outil de speed tuning de SW Blacksmith.',
-    // Le set Rapide ne se voit pas sur la capture et ne change pas l'ordre : la
-    // fiche le suppose absent, à un point d'arrondi près s'il est porté.
-    piedResultat: 'Fiche calculée sans le set Rapide (un point d\'écart possible s\'il est porté). Lecture automatique de la capture : vérifie les monstres et les VIT lus.',
+    // Le set Rapide ne se voit pas sur la capture et ne change pas l'ordre : les
+    // fiches sont celles du cas le plus défavorable (analyse.ts), dit ici.
+    piedResultat: 'Fiches au cas le plus défavorable, set Rapide porté ou non : les atteindre suffit dans les deux cas.',
     douteux: (quoi: string) => `⚠️ Lecture incertaine : ${quoi}`,
     erreurTitre: '⚡ Speed tune — capture illisible',
     pasImage: 'La pièce jointe n\'est pas une image lisible.',
@@ -167,7 +167,7 @@ const TEXTES = {
     defense: 'Defense read',
     ouvrirOutil: 'Open the speed tuning tool',
     pied: 'Automatic reading of the screenshot — check the monsters and SPD read. Same computation as the SW Blacksmith speed tuning tool.',
-    piedResultat: 'Stats assume no Swift set (one point off if it is worn). Automatic reading of the screenshot: check the monsters and SPD read.',
+    piedResultat: 'Stats for the worst case, Swift set worn or not: reaching them is enough either way.',
     douteux: (quoi: string) => `⚠️ Uncertain reading: ${quoi}`,
     erreurTitre: '⚡ Speed tune — unreadable screenshot',
     pasImage: 'The attachment is not a readable image.',
@@ -308,7 +308,7 @@ export function embedResultat(
     const details = [
       ...(l.requis != null
         // Chaque point de VIT de combat en plus est un point de runes en plus.
-        ? [t.viser(l.requis, l.requis - l.combat), ...(fiche ? [t.viserFiche(l.base!, l.runes! + l.requis - l.combat)] : [])]
+        ? [t.viser(l.requis, l.requis - l.combat), ...(l.base != null && l.runesRequis != null ? [t.viserFiche(l.base, l.runesRequis)] : [])]
         : l.horsDePortee ? [t.horsDePortee] : fiche ? [t.fiche(l.base!, l.runes!)] : []),
       ...(l.sort ? [l.sort.slot != null ? `S${l.sort.slot}` : l.sort.nom] : []),
     ];
