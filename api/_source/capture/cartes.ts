@@ -279,7 +279,16 @@ export function trouverCartes(img: Image): CartesTrouvees | null {
   const nets = (t: Rect[]) => t.filter((r) => nombre.has(r)).length;
   trios.sort((p, q) => nets(q) - nets(p) || q[0][2] - p[0][2] || p[0][1] - q[0][1]);
   if (!trios.length) return null;
-  const trio = trios[0];
+  // ⚠️ Les nombres nets disent QUELLES cartes ; pour ces mêmes cartes, le
+  // plus grand cadre est leur contour (comme `contours`). Le portrait se
+  // reconnaît sur la carte entière : sur son bord intérieur, plus petit d'un
+  // huitième et décalé vers le bas, il sortait des découpes essayées
+  // (relevé : une capture de téléphone réduite de moitié, dont le premier
+  // nombre touchait l'icône du lead — le bord intérieur avait trois nombres
+  // nets, le contour deux, et un monstre tombait à 0,41).
+  const trio = trios
+    .filter((t) => t.every((r, k) => recouvrement(r, trios[0][k]) > 0.5))
+    .sort((p, q) => q[0][2] * q[0][3] - p[0][2] * p[0][3])[0];
   // Une même taille pour les trois (la médiane), chacune à sa place.
   const mediane = (v: number[]) => [...v].sort((a, b) => a - b)[1];
   const y = mediane(trio.map((r) => r[1])), cote = mediane(trio.map((r) => r[2])), hauteur = mediane(trio.map((r) => r[3]));

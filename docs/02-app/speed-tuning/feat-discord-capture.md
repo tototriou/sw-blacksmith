@@ -145,9 +145,13 @@ reconnu, VIT illisible (avec les monstres concernés).
      sur cet écran, seuls eux l'affichent ; la défense et la liste des
      monstres, aux vignettes presque de même taille, n'en ont pas. Il en faut
      trois de même taille, sur une même ligne, côte à côte à pas régulier,
-     dont au moins deux où la pastille porte un nombre net. Plusieurs trios
-     (le contour et le bord intérieur des mêmes cartes) : celui aux trois
-     nombres nets, puis les plus grandes cartes.
+     dont au moins deux où la pastille porte un nombre net. Plusieurs trios :
+     les nombres nets disent **quelles** cartes (celui aux trois nombres
+     nets, puis les plus grandes) ; pour ces mêmes cartes (le contour et le
+     bord intérieur), ⚠️ le plus grand cadre est retenu — le portrait se
+     reconnaît sur la carte entière, et le bord intérieur, plus petit d'un
+     huitième et décalé, sortait des découpes essayées (un monstre à 0,41 sur
+     une capture de téléphone réduite de moitié).
   3. **La défense** : les cadres de même taille, à droite, sur la même ligne ;
      sinon le symétrique des attaquants par rapport au centre ; une capture
      recadrée sur les attaquants n'en a pas.
@@ -166,7 +170,14 @@ reconnu, VIT illisible (avec les monstres concernés).
   dans une pastille sombre, en bas à droite de la carte ; la pastille est
   **trouvée** dans la carte, pas placée par des proportions. Son bas : la
   plus basse rangée sombre (plus sombre que 60) qui va jusqu'au bord droit de
-  la carte, sur au moins 0,25 fois sa largeur. Au-dessus, les rangées qui
+  la carte, sur au moins 0,25 fois sa largeur. ⚠️ Cette rangée tolère des
+  trous de 2,5 % de la largeur de la carte : en JPEG, les pixels près du cadre
+  clair « sonnent » au-dessus du seuil (la fenêtre PC entière en qualité 50
+  perdait la pastille d'une carte, et l'écran avec elle). Sans pastille
+  trouvée sous 60, une seconde passe prend le sombre sous 90 : floutée, une
+  pastille de 8 pixels de haut n'a plus une rangée sous 60 (cartes de
+  49 pixels) ; une fausse pastille reste écartée par le nombre net et le
+  trio. Au-dessus, les rangées qui
   portent du blanc (plus faible composante d'au moins 150) posé sur du
   sombre, des deux côtés à moins d'un dixième de la carte ; la première qui
   n'en porte plus est le haut. Un portrait n'a pas ce blanc encadré de
