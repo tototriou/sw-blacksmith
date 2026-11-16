@@ -14,6 +14,7 @@ export const RELEASES_EN: Release[] = [
     title: '/speedtune reads the whole SPD on phones',
     changes: [
       { kind: 'fix', scope: 'Speed tuning', text: '/speedtune reads the last SPD digit when it overflows its pill (deck management on phones).' },
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune reads enlarged, shrunk or blurred captures, and never gives an unreadable SPD.' },
     ],
   },
   {

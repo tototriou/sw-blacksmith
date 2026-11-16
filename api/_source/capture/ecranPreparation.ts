@@ -11,7 +11,7 @@
 import type { Image } from './image';
 import { lireNombre, type Gabarits, type NombreLu } from './chiffres';
 import { variantes, type Banque, type Reconnaissance } from './portraits';
-import { trouverCartes, type Rect } from './cartes';
+import { trouverCartesAToutesEchelles, type Rect } from './cartes';
 import { zoneVitesse } from './pastille';
 
 export interface MonstreLu {
@@ -40,19 +40,22 @@ export const VIT_MAX = 450;
 // pixels. Relevé sur 17 vraies captures réduites jusqu'à des chiffres de 5
 // pixels et compressées : à 5 et 6 pixels, sans accord des deux lectures, 69
 // justes et 9 fausses (« 340 » pour 349, écart jusqu'à 0,07), aux écarts
-// mêlés ; seul l'accord y vaut (34 justes, aucune fausse). À 7 pixels et plus,
-// aucune fausse ne passe la règle de l'écart.
+// mêlés ; seul l'accord y vaut. À 7 pixels et plus, aucune fausse ne passe la
+// règle de l'écart. ⚠️ Sous HAUTEUR_LISIBLE, même l'accord ne suffit plus : à
+// 5 pixels, les deux lectures se sont accordées sur un « 340 » pour 349 (une
+// capture réduite à 75 % et compressée) — la VIT n'y est jamais lue.
 export const CONFIANCE_VIT_PLANCHER = 0.7;
 const MARGE_VIT_MIN = 0.05;
 const HAUTEUR_SURE = 7;
+const HAUTEUR_LISIBLE = 6;
 
 const plausible = (lu: NombreLu | null): NombreLu | null =>
-  (lu && lu.valeur >= VIT_MIN && lu.valeur <= VIT_MAX && lu.confiance >= CONFIANCE_VIT_PLANCHER
+  (lu && lu.valeur >= VIT_MIN && lu.valeur <= VIT_MAX && lu.confiance >= CONFIANCE_VIT_PLANCHER && lu.hauteur >= HAUTEUR_LISIBLE
     && (lu.accord || (lu.marge >= MARGE_VIT_MIN && lu.hauteur >= HAUTEUR_SURE)) ? lu : null);
 
 // `null` : les trois cartes des attaquants ne sont pas dans l'image.
 export function lireEcranPreparation(img: Image, banque: Banque, gabarits: Gabarits): LectureEcran | null {
-  const cartes = trouverCartes(img);
+  const cartes = trouverCartesAToutesEchelles(img);
   if (!cartes) return null;
   const monstre = (rect: Rect): MonstreLu => ({ rect, portrait: banque.reconnaitre(variantes(img, rect)) });
   const vitesse = (rect: Rect) => {
