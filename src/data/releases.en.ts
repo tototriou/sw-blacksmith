@@ -9,7 +9,7 @@ import type { Release } from './releases';
 
 export const RELEASES_EN: Release[] = [
   {
-    version: null,
+    version: '2.4.7',
     date: '2026-11-16',
     title: '/speedtune: safe stats and all SPD entered at once',
     changes: [
