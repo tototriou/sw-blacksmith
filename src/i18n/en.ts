@@ -553,6 +553,12 @@ export const en: Dictionnaire = {
     sansOffense:
       'No siege attack team found (deck_list). Save your guild siege attack teams in game before exporting.',
     offenseVide: 'No siege attack team set up in this file.',
+    sansDefenseArene: 'No arena defense found (defense_deck_info).',
+    defenseAreneVide: 'No arena defense set up in this file.',
+    sansOffenseArene: 'No arena attack team found (deck_list). Save your arena attack teams in game before exporting.',
+    offenseAreneVide: 'No arena attack team set up in this file.',
+    sansDefenseInterserveur: 'No cross-server arena defense found (server_arena_defense_deck_info).',
+    defenseInterserveurVide: 'No cross-server arena defense set up in this file.',
     rien: 'Nothing to import from this file.',
     monstres6: (n: number) => `${n} 6★ monsters`,
     monstresRta: (n: number) => `${n} RTA monsters`,

@@ -587,6 +587,13 @@ export const fr = {
     sansOffense:
       "Aucune équipe d'attaque de siège trouvée (deck_list). Sauvegarde tes équipes d'attaque de combat de guilde en jeu avant d'exporter.",
     offenseVide: "Aucune équipe d'attaque de siège configurée dans ce fichier.",
+    sansDefenseArene: "Aucune défense d'arène trouvée (defense_deck_info).",
+    defenseAreneVide: "Aucune défense d'arène configurée dans ce fichier.",
+    sansOffenseArene:
+      "Aucune équipe d'attaque d'arène trouvée (deck_list). Sauvegarde tes équipes d'attaque d'arène en jeu avant d'exporter.",
+    offenseAreneVide: "Aucune équipe d'attaque d'arène configurée dans ce fichier.",
+    sansDefenseInterserveur: "Aucune défense d'arène interserveur trouvée (server_arena_defense_deck_info).",
+    defenseInterserveurVide: "Aucune défense d'arène interserveur configurée dans ce fichier.",
     rien: 'Rien à importer depuis ce fichier.',
     monstres6: (n: number) => `${n} monstres 6★`,
     monstresRta: (n: number) => `${n} monstres RTA`,

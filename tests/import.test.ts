@@ -11,6 +11,9 @@ import {
   parseAccountSource,
   parseSiegeDefense,
   parseSiegeOffense,
+  parseArenaDefense,
+  parseArenaInterserveurDefense,
+  parseArenaOffense,
   parseRuneMarkerLabels,
   parseUsedRuneIds,
   parseUsedRuneIdsParPerimetre,
@@ -179,6 +182,31 @@ export default function testImport() {
   const off = parseSiegeOffense(objet, fr);
   egal(off.decks!.length, 1, 'siège attaque : seuls les decks de type 22');
   egal(off.decks![0].slots[0]!.com2usId, 14314, 'siège attaque : le leader est en tête');
+  egal(off.decks![0].slots.length, 3, 'siège attaque : trois places');
+
+  // Arène : des decks de 4 places. Le fichier d'exemple porte une attaque de
+  // type 1 (unité 101), une défense classique (unité 102, ids nus) et une
+  // défense interserveur (101 en position 1 et 102 en position 2, listées
+  // dans le désordre).
+  const com2us = (d: { slots: ({ com2usId: number } | null)[] }) => d.slots.map((s) => s?.com2usId ?? null);
+  const offArene = parseArenaOffense(objet, fr);
+  egal(offArene.decks.map(com2us), [[15105, null, null, null]], 'arène attaque : les decks de type 1, sur 4 places');
+  egal(com2us(parseArenaDefense(objet, fr).decks[0]), [14314, null, null, null], 'arène défense : defense_deck_info, sur 4 places');
+  egal(
+    com2us(parseArenaInterserveurDefense(objet, fr).decks[0]),
+    [15105, 14314, null, null],
+    'arène interserveur : l’ordre des positions, la position 1 en leader'
+  );
+  ok(
+    parseArenaInterserveurDefense(objet, fr).decks[0].slots[0]!.flatRuneSpeed > 0,
+    'arène interserveur : les runes du preset de la défense'
+  );
+  const sansArene = { ...objet, deck_list: [], defense_deck_info: undefined, server_arena_defense_deck_info: undefined };
+  egal(
+    [parseArenaOffense(sansArene, fr).error, parseArenaDefense(sansArene, fr).error, parseArenaInterserveurDefense(sansArene, fr).error],
+    [fr.importCompte.sansOffenseArene, fr.importCompte.sansDefenseArene, fr.importCompte.sansDefenseInterserveur],
+    'arène : sans ses données, chaque lecture dit ce qui manque'
+  );
 
   /* --- Runes utilisées (decks tous contenus + RTA) --------------------- */
 
@@ -364,4 +392,17 @@ export default function testImport() {
   );
   const marquees = parseAccountInventory(reelObjet, fr).runes.filter((r) => r.marker !== undefined).length;
   ok(marquees > 0, `export réel : ${marquees} runes marquées`);
+  // Arène : des attaques de 4 monstres (15 relevées), et deux défenses pleines,
+  // le même leader en tête (relevé : N1X, lead d'arène).
+  const offAreneReel = parseArenaOffense(reelObjet, fr).decks;
+  ok(
+    offAreneReel.length > 0 && offAreneReel.every((dk) => dk.slots.length === 4 && dk.slots[0] !== null),
+    `export réel : ${offAreneReel.length} attaques d'arène, leader en tête, sur 4 places`
+  );
+  const defReel = parseArenaDefense(reelObjet, fr).decks[0];
+  const interReel = parseArenaInterserveurDefense(reelObjet, fr).decks[0];
+  ok(
+    !!defReel && !!interReel && defReel.slots.filter(Boolean).length === 4 && defReel.slots[0]?.com2usId === interReel.slots[0]?.com2usId,
+    'export réel : défense d’arène et défense interserveur pleines, même leader'
+  );
 }
