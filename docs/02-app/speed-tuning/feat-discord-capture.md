@@ -18,9 +18,11 @@ Voir aussi : README.md, feat-competences.md, feat-deux-camps.md,
    3 s. ⚠️ Le calcul n'est lancé qu'après 50 ms : sinon, en occupant le
    processeur 1 à 3 s, il passait avant l'envoi de la réponse.
 3. En tâche de fond (`waitUntil` de Vercel) : la pièce jointe est téléchargée
-   — seulement sur le CDN de Discord, 10 Mo au plus ; toute image
-   s'accepte : ni PNG ni JPEG (WebP d'une image copiée depuis Discord, GIF,
-   AVIF…), elle est redemandée au proxy d'images de Discord, rendue en PNG
+   — seulement sur le CDN de Discord, 25 Mo au plus ; toute pièce jointe
+   s'accepte, quel que soit son type annoncé (absent, ou quelconque pour une
+   capture collée par Ctrl+V) : ses octets décident. Ni PNG ni JPEG (WebP
+   d'une image copiée depuis Discord, GIF, AVIF…), elle est redemandée au
+   proxy d'images de Discord, rendue en PNG
    (`format=png`) ; un refus est journalisé avec le type reçu et les premiers
    octets —, lue,
    analysée, puis la réponse différée est remplacée (si Discord refuse le

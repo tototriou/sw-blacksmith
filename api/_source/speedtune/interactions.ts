@@ -37,7 +37,9 @@ import type { Emojis } from './emojis';
 
 export const COMMANDE = 'speedtune';
 export const OPTION_CAPTURE = 'capture';
-export const TAILLE_MAX_IMAGE = 10 * 1024 * 1024;
+// Une capture PNG de deux écrans 4K chargés dépasse 10 Mo, et Discord Nitro
+// permet de l'envoyer : 25 Mo au plus.
+export const TAILLE_MAX_IMAGE = 25 * 1024 * 1024;
 const CDN_DISCORD = /^https:\/\/(cdn\.discordapp\.com|media\.discordapp\.net)\//;
 // Sous ce score, le portrait n'est pas celui d'un monstre : la capture n'est
 // pas l'écran attendu (un portrait juste dépasse 0,8).
@@ -147,9 +149,11 @@ export function creerInteractions(d: DependancesInteractions) {
     // main, le temps que la réponse parte.
     await new Promise((ok) => setTimeout(ok, ATTENTE_AVANT_CALCUL_MS));
     try {
-      // ⚠️ Toute image s'accepte : le type annoncé (absent, WebP…) ne dit pas
-      // si on saura la lire, ses octets le disent.
-      if (!piece || !CDN_DISCORD.test(piece.url) || !/^image\//.test(piece.content_type ?? 'image/')) {
+      // ⚠️ Toute pièce jointe s'accepte, quel que soit son type annoncé (absent,
+      // WebP, `application/octet-stream` d'une image collée…) : il ne dit pas
+      // si on saura la lire, ses octets le disent — et sinon, la conversion
+      // de Discord.
+      if (!piece || !CDN_DISCORD.test(piece.url)) {
         console.error(`capture refusée : pièce ${piece ? `de type ${piece.content_type ?? 'inconnu'}` : 'absente'}`);
         return await remplacer(token, embedErreur(langue, 'pasImage'));
       }

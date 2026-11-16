@@ -4,14 +4,16 @@
 //
 // ⚠️ Aucune vraie capture dans le dépôt (public) : les écrans sont RECOMPOSÉS
 // aux positions de la mise en page réelle, avec des portraits synthétiques et
-// des chiffres dessinés depuis les gabarits. Le calcul, lui, part des vrais
-// monstres et de leurs vrais kits (public/data).
+// des chiffres dessinés depuis les gabarits. Les vraies captures, posées en
+// local dans tests/captures-speedtune/ (gitignoré), sont lues par
+// testCapturesReelles. Le calcul, lui, part des vrais monstres et de leurs
+// vrais kits (public/data).
 
 import { generateKeyPairSync, sign } from 'node:crypto';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { PNG } from 'pngjs';
 import jpeg from 'jpeg-js';
-import { decoderImage, decouper, dimensionsPng, reduire, type Image } from '../api/_source/capture/image';
+import { decoderImage, decouper, dimensionsPng, imageTropGrande, reduire, type Image } from '../api/_source/capture/image';
 import { Banque, quantifier, signature, TAILLE, COTE, type BanqueSerialisee } from '../api/_source/capture/portraits';
 import { HAUTEUR_CHIFFRE_MIN, lireNombre, type Gabarits } from '../api/_source/capture/chiffres';
 import { lireEcranPreparation } from '../api/_source/capture/ecranPreparation';
@@ -188,6 +190,10 @@ export function testCaptureImage() {
   new DataView(geant.buffer, geant.byteOffset).setUint32(16, 40000);
   new DataView(geant.buffer, geant.byteOffset).setUint32(20, 40000);
   egal(decoderImage(geant), null, 'PNG annoncé trop grand : refusé avant décodage');
+  // Deux écrans 4K, capturés d'un coup (Win + Impr. écran) : pas trop grand.
+  new DataView(geant.buffer, geant.byteOffset).setUint32(16, 7680);
+  new DataView(geant.buffer, geant.byteOffset).setUint32(20, 2160);
+  egal(imageTropGrande(geant), false, 'capture de deux écrans 4K (7680 × 2160) : acceptée');
 
   const img = imageUnie(10, 10, [1, 2, 3]);
   egal([decouper(img, 8, 8, 5, 5)?.largeur, decouper(img, -3, 0, 5, 5)?.largeur], [2, 2], 'découpe ramenée dans l\'image');
@@ -464,6 +470,9 @@ export async function testSpeedtuneInteractions() {
     'https://media.discordapp.net/c.webp?format=png': () => new Response(new Uint8Array(octets)),
     'https://cdn.discordapp.com/c.gif': () => new Response(new TextEncoder().encode('GIF89a')),
     'https://media.discordapp.net/c.gif?format=png': () => new Response(null, { status: 415 }),
+    'https://cdn.discordapp.com/image.png': () => new Response(new Uint8Array(octets)),
+    'https://cdn.discordapp.com/c.pdf': () => new Response(new TextEncoder().encode('%PDF-1.7')),
+    'https://media.discordapp.net/c.pdf?format=png': () => new Response(null, { status: 415 }),
   };
   const service = creerInteractions({
     clePublique: cle,
@@ -580,14 +589,19 @@ export async function testSpeedtuneInteractions() {
   egal(await titreDe({ url: 'https://cdn.discordapp.com/c.gif', content_type: 'image/gif', size: 10 }), embedErreur('en', 'pasImage').description,
     'ni PNG ni JPEG, et Discord ne la convertit pas : refusée');
   egal(await titreDe({ url: 'https://cdn.discordapp.com/c.pdf', content_type: 'application/pdf', size: 10 }), embedErreur('en', 'pasImage').description,
-    'pas une image : refusée sans téléchargement');
+    'pas une image : ses octets le disent, refusée');
+  // Une capture collée (Ctrl+V) : son type annoncé ne compte pas, ses octets
+  // si.
+  for (const type of [undefined, 'application/octet-stream', 'image/png'])
+    ok(![embedErreur('en', 'pasImage').description, embedErreur('en', 'panne').description].includes(await titreDe({ url: 'https://cdn.discordapp.com/image.png', content_type: type, size: octets.length })),
+      `capture collée, type annoncé ${type ?? 'absent'} : lue`);
   telecharges.length = 0;
   ok(await titreDe({ url: 'https://cdn.discordapp.com/c.webp', content_type: 'image/webp', size: webp.length }) !== embedErreur('en', 'pasImage').description
     && telecharges.includes('https://media.discordapp.net/c.webp?format=png'), 'une capture WebP : rendue en PNG par Discord, puis lue');
   egal(adresseEnPng({ url: 'https://cdn.discordapp.com/a/b.webp?ex=1', proxy_url: 'https://media.discordapp.net/a/b.webp?ex=1', size: 1 }),
     'https://media.discordapp.net/a/b.webp?ex=1&format=png', 'la conversion passe par le proxy d\'images, paramètres gardés');
   egal(adresseEnPng({ url: 'https://ailleurs.example/b.webp', proxy_url: 'https://ailleurs.example/b.webp', size: 1 }), null, 'jamais hors de Discord');
-  egal(await titreDe({ url: 'https://cdn.discordapp.com/c.png', content_type: 'image/png', size: 11 * 1024 * 1024 }), embedErreur('en', 'tropLourde').description, 'plus de 10 Mo : refusé avant téléchargement');
+  egal(await titreDe({ url: 'https://cdn.discordapp.com/c.png', content_type: 'image/png', size: 26 * 1024 * 1024 }), embedErreur('en', 'tropLourde').description, 'plus de 25 Mo : refusé avant téléchargement');
   egal([langueDe('fr'), langueDe('en-GB'), langueDe(undefined)], ['fr', 'en', 'en'], 'langue : français, sinon anglais');
 
   // Discord refuse le message (corps invalide, jeton expiré…) : ce n'est pas
