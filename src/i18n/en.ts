@@ -562,6 +562,8 @@ export const en: Dictionnaire = {
     offenseAreneVide: 'No arena attack team set up in this file.',
     sansDefenseInterserveur: 'No cross-server arena defense found (server_arena_defense_deck_info).',
     defenseInterserveurVide: 'No cross-server arena defense set up in this file.',
+    sansDefenseDimension: 'No Dimensional Arena defense found (deck_recent_list, type 28).',
+    defenseDimensionInconnue: 'The Dimensional Arena defense in this file points to monsters of the dimensional box, which the export does not describe.',
     rien: 'Nothing to import from this file.',
     monstres6: (n: number) => `${n} 6★ monsters`,
     monstresRta: (n: number) => `${n} RTA monsters`,
@@ -1307,10 +1309,11 @@ export const en: Dictionnaire = {
       defense: { titre: 'Defense', nom: 'defense', de: 'defense' },
       offense: { titre: 'Offense', nom: 'attack', de: 'attack' },
       interserveur: { titre: 'Cross-server defense', nom: 'cross-server defense', de: 'cross-server defense' },
+      'dimension-defense': { titre: 'Defense', nom: 'defense', de: 'defense' },
     },
-    retiree: (cote: 'defense' | 'offense' | 'interserveur') =>
+    retiree: (cote: 'defense' | 'offense' | 'interserveur' | 'dimension-defense') =>
       `Team removed from the ${cote === 'offense' ? 'offense' : cote === 'interserveur' ? 'cross-server defense' : 'defense'}`,
-    dimensionnelleBientot: 'The Dimensional Arena: its teams will come here.',
+    noteDimension: 'The account export does not describe the dimensional box (its monsters and their runes): build your defense by hand.',
   },
 
   siege: {
@@ -2995,6 +2998,7 @@ export const en: Dictionnaire = {
         'arene-defense': 'Arena · Defense',
         'arene-offense': 'Arena · Offense',
         'arene-interserveur': 'Arena · Cross-server defense',
+        'arene-dimension-defense': 'Dimensional Arena · Defense',
       },
     },
     recherche: {

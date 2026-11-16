@@ -2,11 +2,13 @@ import { Monster, ElementKey, SiegeTeam as SiegeTeamData } from '../types';
 import { LoadState } from '../hooks/useMonsters';
 import { CoteArene, UseSiegeState } from '../hooks/useSiegeState';
 import SiegeBoard from '../components/siege/SiegeBoard';
+import { useTraduction } from '../hooks/useLangue';
 import { CustomLead } from '../hooks/useCustomMonsters';
 import type { ActionImportOptimizer } from '../lib/actionImportOptimizer';
 import type { ExclusionSourceData } from '../lib/optimizerExclusion';
 
-// L'Arène (#/arene/…) : la défense, l'offense et la défense interserveur, des
+// L'Arène (#/arene/…) : la défense, l'offense et la défense interserveur ; et
+// l'arène dimensionnelle (#/arene-dimensionnelle/defense), sa défense. Des
 // équipes de 4 monstres. Le board est celui du siège, en mode arène (4 places,
 // leads d'arène, ses textes) — voir docs/02-app/arene/.
 // ⚠️ Pas de sous-onglets ICI : comme au siège, ils sont dans la barre latérale
@@ -29,8 +31,15 @@ interface Props {
 }
 
 export default function ArenePage({ tab, equipes, ...boardProps }: Props) {
+  const textes = useTraduction();
   return (
-    // key={tab} pour réinitialiser l'état du board au changement de côté.
-    <SiegeBoard key={tab} side={tab === 'offense' ? 'offense' : 'defense'} arene={tab} siege={equipes} {...boardProps} />
+    <>
+      {/* La défense dimensionnelle se compose à la main : l'export ne décrit
+          pas la box dimensionnelle. On le dit, sans quoi un import qui ne la
+          remplit pas passerait pour une panne. */}
+      {tab === 'dimension-defense' && <p className="mt-4 text-sm text-ink-dim">{textes.arene.noteDimension}</p>}
+      {/* key={tab} pour réinitialiser l'état du board au changement de côté. */}
+      <SiegeBoard key={tab} side={tab === 'offense' ? 'offense' : 'defense'} arene={tab} siege={equipes} {...boardProps} />
+    </>
   );
 }

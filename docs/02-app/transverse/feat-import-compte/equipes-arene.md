@@ -49,9 +49,25 @@ données présentes mais aucune place remplie : `defenseAreneVide`,
 
 ### Arène dimensionnelle
 
-L'export ne porte que sa saison et l'énergie du joueur
-(`dimension_arena_status_info`, `dimension_arena_user_info`) : **aucun
-deck**. Rien n'en est lu.
+### Défense de l'arène dimensionnelle — `parseArenaDimensionDefense`
+
+| Clé | Rôle |
+|-----|------|
+| `deck_recent_list` filtré sur `type === 28` | La première de ces équipes : `{ type, sub_type, unit_id_list, leader_unit_id, equip }`, leader replacé en tête, 4 places ; `equip` vide. |
+
+- `type = 28` (`DIMENSION_DEFENSE_RECENT_TYPE`) : relevé sur un export réel de
+  2026-11 — la seule équipe de ce type, absente d'un export d'août, dont les
+  4 unités sont d'une plage d'identifiants (1,4 à 4,3 millions) où n'est aucun
+  monstre du compte (tous au-dessus de 5,7 millions). Que ce soit la **défense**
+  est le relevé de l'utilisateur.
+- ⚠️ **L'export ne décrit pas la box dimensionnelle** (box et runes à part,
+  runes antiques seulement) : une unité absente de `unit_list` laisse sa place
+  vide, et une défense toute vide n'est pas importée — `defenseDimensionInconnue`.
+  Sans équipe de type 28 : `sansDefenseDimension`. Si un export décrit un jour
+  ces unités dans `unit_list`, elles se résolvent sans rien changer ici.
+- Le reste de l'arène dimensionnelle dans l'export — sa saison et l'état du
+  joueur (`dimension_arena_status_info`, `dimension_arena_user_info`) — n'est
+  pas lu.
 
 ### Modèle retourné
 

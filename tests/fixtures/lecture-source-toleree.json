@@ -541,9 +541,24 @@
     },
     {
       "fichier": "tests/banc/ecrans.ts",
-      "cible": "src/pages/ComingSoon",
+      "cible": "src/pages/ArenePage",
+      "occurrences": 2,
+      "statut": "exception",
+      "justification": "Motif de sélection des écrans Arène et Arène dimensionnelle du banc : un chemin qui désigne les fichiers déclenchant l'écran, jamais lu."
+    },
+    {
+      "fichier": "tests/banc/ecrans.ts",
+      "cible": "src/components/siege/SiegeBoard",
       "occurrences": 1,
-      "statut": "stock"
+      "statut": "exception",
+      "justification": "Motif de sélection de l'écran Arène du banc (le board du siège en mode arène) : un chemin, jamais lu."
+    },
+    {
+      "fichier": "tests/banc/ecrans.ts",
+      "cible": "src/components/siege/SiegeTeam",
+      "occurrences": 1,
+      "statut": "exception",
+      "justification": "Motif de sélection de l'écran Arène du banc (la carte d'équipe en mode arène) : un chemin, jamais lu."
     },
     {
       "fichier": "tests/banc/ecrans.ts",

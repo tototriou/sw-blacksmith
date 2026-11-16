@@ -44,7 +44,6 @@ import TelechargerPage from './pages/TelechargerPage';
 import AccountPage from './pages/AccountPage';
 import OutilsPage from './pages/OutilsPage';
 import OptimizerImportRapport from './components/outils/OptimizerImportRapport';
-import ComingSoon from './pages/ComingSoon';
 import ArenePage from './pages/ArenePage';
 import SettingsPage from './pages/SettingsPage';
 import AccountImportControl from './components/AccountImportControl';
@@ -146,6 +145,7 @@ import {
   parseArenaDefense,
   parseArenaInterserveurDefense,
   parseArenaOffense,
+  parseArenaDimensionDefense,
   parseAccountBox,
   parseAccountInventory,
   parseUsedRuneIdsParPerimetre,
@@ -178,7 +178,7 @@ const SITE_GITHUB = 'github.com/tototriou';
 // ⚠️ Même chose pour Accueil, Mécaniques, Nouveautés et Paramètres : aucune
 // action à y loger. Leur ouvrir un panneau vide serait pire que ne rien
 // proposer — c'est la règle qui décide de l'appartenance à cette liste.
-const PAGES_AVEC_MENU = new Set<Route>(['rta', 'siege', 'arene', 'bestiary', 'compte', 'outils']);
+const PAGES_AVEC_MENU = new Set<Route>(['rta', 'siege', 'arene', 'arene-dimensionnelle', 'bestiary', 'compte', 'outils']);
 
 // La page d'une adresse porte-t-elle un panneau d'actions au format téléphone ?
 // Au téléphone, pour la page affichée ; en écran partagé, pour celle de chaque
@@ -274,7 +274,8 @@ export function parseHash(hash: string = window.location.hash): {
     const areneTab: CoteArene = h === 'arene/offense' ? 'offense' : h === 'arene/interserveur' ? 'interserveur' : 'defense';
     return { route: 'arene', ...base, areneTab };
   }
-  if (h === 'arene-dimensionnelle') return { route: 'arene-dimensionnelle', ...base };
+  // Un seul onglet pour l'instant, la défense : `#/arene-dimensionnelle` y mène.
+  if (h === 'arene-dimensionnelle' || h.startsWith('arene-dimensionnelle/')) return { route: 'arene-dimensionnelle', ...base, areneTab: 'dimension-defense' };
   if (h === 'compte' || h.startsWith('compte/')) {
     // `compte/runes/courbes` → sous-section « runes », vue « courbes ».
     const [, sub, vue] = h.split('/');
@@ -342,7 +343,7 @@ const ARENE_DIMENSIONNELLE_ITEM: NavItem = {
   key: 'arene-dimensionnelle',
   texte: 'areneDimensionnelle',
   icon: IconeArene,
-  hash: '#/arene-dimensionnelle',
+  hash: '#/arene-dimensionnelle/defense',
   couleur: COULEUR_SECTION['arene-dimensionnelle'],
 };
 
@@ -435,10 +436,16 @@ function Application() {
   const areneDef = useEquipesArene('defense');
   const areneOff = useEquipesArene('offense');
   const areneInter = useEquipesArene('interserveur');
+  const areneDimDef = useEquipesArene('dimension-defense');
   // Pour le speed tuning, où qu'il s'ouvre (voir EquipesAreneContext).
   const equipesArene = useMemo(
-    () => ({ defense: areneDef.state.teams, offense: areneOff.state.teams, interserveur: areneInter.state.teams }),
-    [areneDef.state.teams, areneOff.state.teams, areneInter.state.teams]
+    () => ({
+      defense: areneDef.state.teams,
+      offense: areneOff.state.teams,
+      interserveur: areneInter.state.teams,
+      'dimension-defense': areneDimDef.state.teams,
+    }),
+    [areneDef.state.teams, areneOff.state.teams, areneInter.state.teams, areneDimDef.state.teams]
   );
   const recos = useSiegeRecos();
   // Listes de travail de l'Optimizer — SÉPARÉES de `useOptimizerState`,
@@ -836,7 +843,8 @@ function Application() {
       siegeOff.state.teams.length > 0 ||
       areneDef.state.teams.length > 0 ||
       areneOff.state.teams.length > 0 ||
-      areneInter.state.teams.length > 0;
+      areneInter.state.teams.length > 0 ||
+      areneDimDef.state.teams.length > 0;
     if (aDejaDesDonnees) {
       setImportEnAttente(text);
       return;
@@ -878,6 +886,8 @@ function Application() {
     const areneDefRes = mapSiegeTeams(parseArenaDefense(data, textes).decks, monsterByCom2us, 'arene');
     const areneOffRes = mapSiegeTeams(parseArenaOffense(data, textes).decks, monsterByCom2us, 'arene');
     const areneInterRes = mapSiegeTeams(parseArenaInterserveurDefense(data, textes).decks, monsterByCom2us, 'arene');
+    // La défense dimensionnelle : vide tant que l'export ne décrit pas sa box.
+    const areneDimRes = mapSiegeTeams(parseArenaDimensionDefense(data, textes).decks, monsterByCom2us, 'arene');
     const { boxItems } = compte;
 
     if (
@@ -903,6 +913,7 @@ function Application() {
     if (areneDefRes.teams.length) areneDef.importTeams(areneDefRes.teams);
     if (areneOffRes.teams.length) areneOff.importTeams(areneOffRes.teams);
     if (areneInterRes.teams.length) areneInter.importTeams(areneInterRes.teams);
+    if (areneDimRes.teams.length) areneDimDef.importTeams(areneDimRes.teams);
 
     appliquerCompte(data, compte);
 
@@ -912,9 +923,9 @@ function Application() {
     if (rtaItems.length) parts.push(ic.monstresRta(rtaItems.length));
     if (def.teams.length) parts.push(ic.defenses(def.teams.length));
     if (off.teams.length) parts.push(ic.attaques(off.teams.length));
-    const equipesArene = areneDefRes.teams.length + areneOffRes.teams.length + areneInterRes.teams.length;
+    const equipesArene = areneDefRes.teams.length + areneOffRes.teams.length + areneInterRes.teams.length + areneDimRes.teams.length;
     if (equipesArene) parts.push(ic.equipesArene(equipesArene));
-    const missing = def.missing + off.missing + areneDefRes.missing + areneOffRes.missing + areneInterRes.missing;
+    const missing = def.missing + off.missing + areneDefRes.missing + areneOffRes.missing + areneInterRes.missing + areneDimRes.missing;
     setImportMsg({
       ok: true,
       text: ic.bilan(parts.join(' · ')) + (missing > 0 ? ic.introuvables(missing) : '') + '.',
@@ -1174,7 +1185,8 @@ function Application() {
     // Ce que le changement remplacerait — ce qui serait perdu.
     const aDuTravail =
       Object.keys(rta.state.entries).length > 0 || siegeDef.state.teams.length > 0 || siegeOff.state.teams.length > 0 ||
-      areneDef.state.teams.length > 0 || areneOff.state.teams.length > 0 || areneInter.state.teams.length > 0;
+      areneDef.state.teams.length > 0 || areneOff.state.teams.length > 0 || areneInter.state.teams.length > 0 ||
+      areneDimDef.state.teams.length > 0;
     const empreinte = empreinteTravail(sessionCourante(new Date()));
     if (travailNonSauvegarde(empreinte, empreinteSauvegardeRef.current, aDuTravail)) setChangementCompte(() => changer);
     else changer();
@@ -1482,7 +1494,6 @@ function Application() {
           label: nomNav(ARENE_DIMENSIONNELLE_ITEM.texte),
           hash: ARENE_DIMENSIONNELLE_ITEM.hash,
           icon: <ARENE_DIMENSIONNELLE_ITEM.icon size={16} />,
-          badge: nomNav('bientot'),
           actif: route === 'arene-dimensionnelle',
         },
       ],
@@ -1927,10 +1938,21 @@ function Application() {
         onFermerMenu={menu.fermer}
       />
     ) : n.route === 'arene-dimensionnelle' ? (
-      <ComingSoon
-        title={textes.navigation.areneDimensionnelle}
-        icon={IconeArene}
-        description={textes.arene.dimensionnelleBientot}
+      <ArenePage
+        tab="dimension-defense"
+        onImporterEquipe={importerEquipe}
+        sourcesOptimizer={optimizerData}
+        compteCharge={box.length > 0 || runes.length > 0}
+        equipes={areneDimDef}
+        siegeDefenseTeams={siegeDef.state.teams}
+        siegeOffenseTeams={siegeOff.state.teams}
+        monsters={allMonsters}
+        loadState={data.loadState}
+        onCreateMonster={custom.addCustomMonster}
+        customMonsters={custom.customMonsters}
+        onDeleteMonster={custom.removeCustomMonster}
+        menuOuvert={menu.ouvert}
+        onFermerMenu={menu.fermer}
       />
     ) : n.route === 'compte' ? (
       <AccountPage

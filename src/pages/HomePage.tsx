@@ -207,12 +207,12 @@ export default function HomePage({ stats, onImport, monstres = [] }: Props) {
           <PastilleOutil href="#/rta/ami" icon={IconeAmi} accent={COULEUR_RTA_SUB.ami} titre={a.cartes.ami.titre} />
           <PastilleOutil href="#/siege/defense" icon={IconeSiege} accent={COULEUR_SECTION.siege} titre={a.cartes.siege.titre} />
           <PastilleOutil href="#/arene/defense" icon={IconeArene} accent={COULEUR_SECTION.arene} titre={a.cartes.arene.titre} />
+          <PastilleOutil href="#/arene-dimensionnelle/defense" icon={IconeArene} accent={COULEUR_SECTION['arene-dimensionnelle']} titre={a.cartes.areneDimensionnelle.titre} />
           <PastilleOutil href="#/compte/runes" icon={IconeRunes} accent={COULEUR_COMPTE_SUB.runes} titre={a.cartes.runes.titre} />
           <PastilleOutil href="#/compte/artefacts" icon={IconeArtefacts} accent={COULEUR_COMPTE_SUB.artefacts} titre={a.cartes.artefacts.titre} />
           <PastilleOutil href="#/bestiary" icon={IconeBestiaire} accent={COULEUR_SECTION.bestiary} titre={a.cartes.bestiaire.titre} />
           <PastilleOutil href="#/mecaniques" icon={IconeMecaniques} accent={COULEUR_SECTION.mecaniques} titre={a.cartes.mecaniques.titre} />
           {!estBureau() && <PastilleOutil href="#/telecharger" icon={IconeTelecharger} accent={COULEUR_SECTION.telecharger} titre={a.application.titre} />}
-          <PastilleOutil href="#/arene-dimensionnelle" icon={IconeArene} accent={COULEUR_SECTION['arene-dimensionnelle']} titre={`${a.cartes.areneDimensionnelle.titre}${a.bientot}`} attenue />
         </nav>
       </motion.section>
 

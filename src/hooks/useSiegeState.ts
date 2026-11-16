@@ -5,21 +5,23 @@ import { reinsererA } from '../lib/reinsererA';
 
 // Défense et offense de siège = deux listes d'équipes indépendantes.
 export type SiegeSide = 'offense' | 'defense';
-// L'arène : la défense classique, l'offense (commune aux deux arènes) et la
-// défense interserveur — trois listes d'équipes de 4 monstres.
-export type CoteArene = 'defense' | 'offense' | 'interserveur';
+// L'arène : la défense classique, l'offense (commune aux deux arènes), la
+// défense interserveur, et la défense de l'arène dimensionnelle — des équipes de 4.
+export type CoteArene = 'defense' | 'offense' | 'interserveur' | 'dimension-defense';
 
 const OLD_STORAGE_KEY = 'swblacksmith-siege-v1'; // ancienne clé unique (→ migrée vers défense)
 const storageKey = (side: SiegeSide) => `swblacksmith-siege-${side}-v1`;
 export const cleArene = (cote: CoteArene) => `swblacksmith-arene-${cote}-v1`;
 
-// Les équipes d'arène des trois côtés, telles que l'app les tient.
+// Les équipes d'arène de chaque côté, telles que l'app les tient.
 export interface EquipesArene {
   defense: SiegeTeam[];
   offense: SiegeTeam[];
   interserveur: SiegeTeam[];
+  // La défense de l'arène dimensionnelle, sur sa propre box.
+  'dimension-defense': SiegeTeam[];
 }
-export const AUCUNE_EQUIPE_ARENE: EquipesArene = { defense: [], offense: [], interserveur: [] };
+export const AUCUNE_EQUIPE_ARENE: EquipesArene = { defense: [], offense: [], interserveur: [], 'dimension-defense': [] };
 // ⚠️ **Un contexte, pas une prop** : le speed tuning s'ouvre depuis huit
 // endroits (page Outils, Optimizer, siège, arène, palette…), qui se passent les
 // équipes de siège de main en main. Les équipes d'arène n'ont pas à refaire ce

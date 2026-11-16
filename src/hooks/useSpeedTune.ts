@@ -66,7 +66,7 @@ import { useTraduction } from './useLangue';
 import { EquipesAreneContext, type EquipesArene } from './useSiegeState';
 
 // D'où vient un deck : un côté du siège, ou un côté de l'arène.
-export type SourceDeck = 'defense' | 'offense' | 'arene-defense' | 'arene-offense' | 'arene-interserveur';
+export type SourceDeck = 'defense' | 'offense' | 'arene-defense' | 'arene-offense' | 'arene-interserveur' | 'arene-dimension-defense';
 
 // Les règles de lead d'un deck, selon sa source.
 export const regleDeSource = (source: SourceDeck): RegleLead => (source.startsWith('arene-') ? 'arene' : 'siege');
@@ -75,7 +75,7 @@ export const regleDeSource = (source: SourceDeck): RegleLead => (source.startsWi
 export function equipesDeSource(source: SourceDeck, siegeDefense: SiegeTeam[], siegeOffense: SiegeTeam[], arene: EquipesArene): SiegeTeam[] {
   if (source === 'defense') return siegeDefense;
   if (source === 'offense') return siegeOffense;
-  return arene[source === 'arene-defense' ? 'defense' : source === 'arene-offense' ? 'offense' : 'interserveur'];
+  return arene[source.slice('arene-'.length) as keyof EquipesArene];
 }
 
 // Un deck proposé à l'import : une équipe (de siège ou d'arène) et le camp
@@ -358,6 +358,7 @@ export function useSpeedTune({
     ajouter('arene-defense', equipesArene.defense);
     ajouter('arene-offense', equipesArene.offense);
     ajouter('arene-interserveur', equipesArene.interserveur);
+    ajouter('arene-dimension-defense', equipesArene['dimension-defense']);
     return out;
   }, [siegeDefenseTeams, siegeOffenseTeams, equipesArene, monsterById, equipeVide]);
 

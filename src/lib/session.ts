@@ -44,6 +44,7 @@ export const CLES_SESSION = [
   'swblacksmith-arene-defense-v1',
   'swblacksmith-arene-offense-v1',
   'swblacksmith-arene-interserveur-v1',
+  'swblacksmith-arene-dimension-defense-v1',
   'swblacksmith-siege-recos-v1',
   'swblacksmith-custom-monsters-v1',
   'swblacksmith-optimizer-lists-v1',

@@ -1289,6 +1289,31 @@ export function parseArenaInterserveurDefense(src: AccountSource, t: Dictionnair
   return lireDefenseArene(src, t, 'server_arena_defense_deck_info', e.sansDefenseInterserveur, e.defenseInterserveurVide);
 }
 
+// La défense de l'arène DIMENSIONNELLE : la dernière équipe de type 28 de
+// `deck_recent_list` (`leader_unit_id` en tête, 4 places). Relevé sur un export
+// réel (2026-11) : la seule équipe de ce type, absente d'un export plus ancien,
+// et ses 4 unités sont d'une plage d'identifiants où n'est aucun monstre du
+// compte — la box dimensionnelle, à part, avec ses runes. Que ce soit la
+// DÉFENSE est le relevé de l'utilisateur.
+// ⚠️ L'export ne décrit pas cette box : un monstre qui n'est pas dans
+// `unit_list` laisse sa place vide, et une défense toute vide n'est pas
+// importée (`defenseDimensionInconnue`). Si un export la décrit un jour, ses
+// monstres se résolvent sans rien changer ici.
+const DIMENSION_DEFENSE_RECENT_TYPE = 28;
+
+export function parseArenaDimensionDefense(src: AccountSource, t: Dictionnaire): SiegeParseResult {
+  const e = t.importCompte;
+  const data = parseAccountSource(src);
+  if (!data) return { decks: [], error: e.illisible };
+  if (!Array.isArray(data?.unit_list)) return { decks: [], error: e.pasDeUnitList };
+  const recents = Array.isArray(data?.deck_recent_list) ? data.deck_recent_list : [];
+  const defense = recents.filter((dk: any) => Number(dk?.type) === DIMENSION_DEFENSE_RECENT_TYPE);
+  if (defense.length === 0) return { decks: [], error: e.sansDefenseDimension };
+  const defs = defense.slice(0, 1).map((dk: any, i: number) => deckEnregistre(dk, i, SLOTS_ARENE));
+  const decks = buildSiegeDecks(defs, indexRunes(data), indexUnits(data), indexArtifacts(data), indexRuneMarkers(data), SLOTS_ARENE);
+  return decks.length ? { decks } : { decks: [], error: e.defenseDimensionInconnue };
+}
+
 // Import des ÉQUIPES D'ATTAQUE d'arène.
 export function parseArenaOffense(src: AccountSource, t: Dictionnaire): SiegeParseResult {
   const e = t.importCompte;

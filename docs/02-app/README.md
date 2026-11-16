@@ -22,7 +22,7 @@ l'application de bureau. Les fichiers de code à ouvrir pour changer une page :
 | [speed-tuning/](speed-tuning/README.md) | `#/outils/speed-tuning` | Live | Le speed tuning : formule ATB, chaîne d'ouverture, écran, export vers l'Optimizer, inventaire des passifs de vitesse |
 | [degats-reels/](degats-reels/README.md) | objectif « Dégâts réels » de l'Optimizer | Live | Le modèle de calcul des dégâts réels : formules, artéfacts, bombes, séquences de coups, passifs, effets d'équipe, conditions |
 | [arene/](arene/README.md) | `#/arene/defense`, `#/arene/offense`, `#/arene/interserveur` | Live | L'arène : défense, offense et défense interserveur, des équipes de 4 monstres, leads d'arène |
-| [arene-dimensionnelle/](arene-dimensionnelle/README.md) | `#/arene-dimensionnelle` | À venir | L'arène dimensionnelle, aujourd'hui un placeholder |
+| [arene-dimensionnelle/](arene-dimensionnelle/README.md) | `#/arene-dimensionnelle/defense` | Live | L'arène dimensionnelle : sa défense, composée à la main (l'export ne décrit pas sa box) |
 | [bestiaire/](bestiaire/README.md) | `#/bestiary` | Live | Le catalogue de tous les monstres |
 | [mecaniques/](mecaniques/README.md) | `#/mecaniques` | Live | La page de documentation des mécaniques de jeu : contenu statique et sommaire |
 | [nouveautes/](nouveautes/README.md) | `#/releases` | Live | Le journal des versions destiné aux joueurs |

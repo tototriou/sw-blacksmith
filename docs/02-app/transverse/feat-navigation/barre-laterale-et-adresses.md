@@ -17,7 +17,7 @@ C'est celui de [02-app/README.md](../../README.md) (« Ordre des pages »), issu
 
 ```
 Accueil
-JOUER        RTA ›  Siège ›  Arène ›  Arène dimensionnelle (Bientôt)
+JOUER        RTA ›  Siège ›  Arène ›  Arène dimensionnelle
 MON COMPTE   Monstres  Runes ›  Artéfacts ›
 OUTILS       Optimizer  Speed tuning
 RESSOURCES   Bestiaire  Mécaniques  Nouveautés  Télécharger
@@ -50,7 +50,8 @@ l'adresse et en déduit la page et ses sous-niveaux.
 | `#/compte/<inventaire>/<vue>` | Mon compte — vues de [accountViews.ts](src/lib/accountViews.ts) |
 | `#/outils/optimizer`, `/speed-tuning` | Outils |
 | `#/arene/defense`, `/offense`, `/interserveur` | Arène |
-| `#/arene-dimensionnelle`, `#/bestiary`, `#/mecaniques`, `#/releases`, `#/parametres` | une page chacune |
+| `#/arene-dimensionnelle/defense` | Arène dimensionnelle (`#/arene-dimensionnelle` y mène) |
+| `#/bestiary`, `#/mecaniques`, `#/releases`, `#/parametres` | une page chacune |
 | `#/telecharger` | Télécharger — **site seulement** ; dans l'app de bureau, l'accueil |
 
 - ⚠️ **Une adresse tronquée mène au défaut de sa section**, jamais à un écran

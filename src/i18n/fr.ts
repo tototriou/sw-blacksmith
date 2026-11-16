@@ -597,6 +597,9 @@ export const fr = {
     offenseAreneVide: "Aucune équipe d'attaque d'arène configurée dans ce fichier.",
     sansDefenseInterserveur: "Aucune défense d'arène interserveur trouvée (server_arena_defense_deck_info).",
     defenseInterserveurVide: "Aucune défense d'arène interserveur configurée dans ce fichier.",
+    sansDefenseDimension: "Aucune défense d'arène dimensionnelle trouvée (deck_recent_list, type 28).",
+    defenseDimensionInconnue:
+      "La défense d'arène dimensionnelle de ce fichier désigne des monstres de la box dimensionnelle, que l'export ne décrit pas.",
     rien: 'Rien à importer depuis ce fichier.',
     monstres6: (n: number) => `${n} monstres 6★`,
     monstresRta: (n: number) => `${n} monstres RTA`,
@@ -1387,10 +1390,14 @@ export const fr = {
       defense: { titre: 'Défense', nom: 'défense', de: 'de défense' },
       offense: { titre: 'Offense', nom: 'attaque', de: "d'attaque" },
       interserveur: { titre: 'Défense interserveur', nom: 'défense interserveur', de: 'de défense interserveur' },
+      'dimension-defense': { titre: 'Défense', nom: 'défense', de: 'de défense' },
     },
-    retiree: (cote: 'defense' | 'offense' | 'interserveur') =>
+    retiree: (cote: 'defense' | 'offense' | 'interserveur' | 'dimension-defense') =>
       `Équipe retirée ${cote === 'offense' ? "de l'offense" : cote === 'interserveur' ? 'de la défense interserveur' : 'de la défense'}`,
-    dimensionnelleBientot: "L'arène dimensionnelle : ses équipes viendront ici.",
+    // La box et les runes de l'arène dimensionnelle sont à part, et l'export
+    // de compte ne les décrit pas.
+    noteDimension:
+      "L'export de compte ne décrit pas la box dimensionnelle (ses monstres et leurs runes) : compose ta défense à la main.",
   },
 
   // Le Siège (#/siege) : équipes de défense et d'offense.
@@ -3190,6 +3197,7 @@ export const fr = {
         'arene-defense': 'Arène · Défense',
         'arene-offense': 'Arène · Offense',
         'arene-interserveur': 'Arène · Défense interserveur',
+        'arene-dimension-defense': 'Arène dimensionnelle · Défense',
       },
     },
     recherche: {
