@@ -62,6 +62,9 @@ touche pas l'arène dimensionnelle : ses équipes s'y composent à la main.
 - **Speed tuning** : la défense et l'offense s'y chargent (sources
   `arene-dimension-defense`, `arene-dimension-offense`), « Voir le speed tune »
   s'ouvre depuis elles.
+- **Artéfacts** : pas lus dans ce mode. Le contrôle d'équipement des équipes
+  ne les réclame pas (`avecArtefacts` de `SiegeTeam`) : seules les runes
+  manquantes y sont signalées.
 - Pas d'export vers l'Optimizer ni de fichiers d'équipes, comme l'arène.
 
 ## Navigation

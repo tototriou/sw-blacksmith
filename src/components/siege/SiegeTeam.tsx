@@ -37,6 +37,9 @@ interface Props {
   raisonExportOptimizer?: string;
   // Les règles de lead du contenu de l'équipe (siège par défaut).
   regleLead?: RegleLead;
+  // Le contenu a des artéfacts : leur absence rend l'équipement incomplet.
+  // Faux pour l'arène dimensionnelle, dont les artéfacts ne sont pas lus.
+  avecArtefacts?: boolean;
   team: SiegeTeamType;
   index: number;
   monsters: Monster[];
@@ -61,6 +64,7 @@ export default function SiegeTeam({
   onExporterOptimizer,
   raisonExportOptimizer,
   regleLead = 'siege',
+  avecArtefacts = true,
   team,
   index,
   monsters,
@@ -268,7 +272,7 @@ export default function SiegeTeam({
     const monster = slot.monsterId ? monsterById.get(slot.monsterId) ?? null : null;
     if (!monster || !slot.gear) return [];
     const manqueRunes = slot.gear.runes.length < 6;
-    const manqueArtes = slot.gear.artifacts.length < 2;
+    const manqueArtes = avecArtefacts && slot.gear.artifacts.length < 2;
     if (!manqueRunes && !manqueArtes) return [];
     return [{ id: slot.monsterId!, monster, manqueRunes, manqueArtes }];
   });

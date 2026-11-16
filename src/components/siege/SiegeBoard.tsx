@@ -3,7 +3,7 @@ import { Plus, Trash2, Gauge, Wand2, Upload, Download } from 'lucide-react';
 import { IconeDefense, IconeOffense, IconeOptimizer } from '../IconesAtelier';
 import { Monster, ElementKey, SiegeTeam as SiegeTeamData } from '../../types';
 import { LoadState } from '../../hooks/useMonsters';
-import { CoteArene, SiegeSide, UseSiegeState } from '../../hooks/useSiegeState';
+import { CoteArene, estDimension, SiegeSide, UseSiegeState } from '../../hooks/useSiegeState';
 import { useStickyState } from '../../hooks/useStickyState';
 import SiegeTeam from './SiegeTeam';
 import SpeedTuneModale from '../outils/SpeedTuneModale';
@@ -618,6 +618,7 @@ export default function SiegeBoard({
               onExporterOptimizer={siegeSeul ? () => onImporterEquipe((data, t) => produireEquipe(team.id, data, t)) : undefined}
               raisonExportOptimizer={disponibiliteExport.equipes.get(team.id)}
               regleLead={arene ? 'arene' : 'siege'}
+              avecArtefacts={!arene || !estDimension(arene)}
               index={rang}
               monsters={monsters}
               monsterById={monsterById}
