@@ -70,6 +70,16 @@ export function journal(langue: Langue): Release[] {
 // Si une ligne dépasse ~15 mots, c'est qu'elle raconte l'implémentation.
 export const RELEASES: Release[] = [
   {
+    version: '2.4.7',
+    date: '2026-11-16',
+    title: '/speedtune : fiches sûres et VIT saisies d\'un coup',
+    changes: [
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune donne des fiches qui suffisent, set Rapide porté ou non.' },
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune demande toutes les VIT mal lues dans une seule fenêtre.' },
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune fait saisir l\'Effet aug. VIT dans une fenêtre, comme les VIT.' },
+    ],
+  },
+  {
     version: '2.4.6',
     date: '2026-11-16',
     title: '/speedtune lit toute la VIT au téléphone',

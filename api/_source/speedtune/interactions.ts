@@ -36,8 +36,8 @@ import type { Gabarits } from '../capture/chiffres';
 import { lireEcranPreparation, type LectureEcran } from '../capture/ecranPreparation';
 import { analyserEquipe } from './analyse';
 import {
-  CHAMP_VIT, embedErreur, embedResultat, langueDe, messageQuestion, modaleVit, rangeeOutil, texteEphemere,
-  type Demande, type Embed, type Langue, type Message, type Precision, type Saisie,
+  champSaisie, embedErreur, embedResultat, langueDe, messageQuestion, modaleSaisie, rangeeOutil, texteEphemere,
+  type BoutonSaisie, type Demande, type Embed, type Langue, type Message, type Precision, type Saisie,
 } from './message';
 import { ARTE_MAX, CUMULS_MAX, VIT_INCONNUE, VIT_SAISIE_MAX, decoderEtat, encoderEtat, type Etat } from './etat';
 import type { Emojis } from './emojis';
@@ -223,7 +223,7 @@ export function creerInteractions(d: DependancesInteractions) {
       }
       if (interaction.type === 3 || interaction.type === 5) {
         const langue = langueDe(interaction.locale ?? interaction.guild_locale);
-        const ephemere = (quoi: 'pasAuteur' | 'perime' | 'vitInvalide') => json({ type: 4, data: { content: texteEphemere(langue, quoi), flags: 64 } });
+        const ephemere = (quoi: 'pasAuteur' | 'perime' | 'vitInvalide' | 'arteInvalide') => json({ type: 4, data: { content: texteEphemere(langue, quoi), flags: 64 } });
         const lu = decoderEtat(interaction.data?.custom_id ?? '');
         if (!lu) return ephemere('perime');
         // ⚠️ Le message est public : seul celui qui a lancé la commande répond.
@@ -232,25 +232,41 @@ export function creerInteractions(d: DependancesInteractions) {
         const qui = interaction.member?.user?.id ?? interaction.user?.id;
         if (qui !== lu.etat.auteur) return ephemere('pasAuteur');
         const sorte = lu.action[0];
-        const cible = lu.etat.attaquants[Number(lu.action.slice(1))];
-        // Le bouton d'une VIT à saisir : la modale de saisie, préremplie de la
-        // lecture la plus probable, qui revient avec l'état sous l'action `m`.
-        if (interaction.type === 3 && sorte === 's') {
-          const monstre = cible ? (await d.ressources()).monstre(cible.id) : undefined;
-          if (!cible || !monstre) return ephemere('perime');
-          const combat = cible.combat === VIT_INCONNUE ? null : cible.combat;
-          return json({ type: 9, data: modaleVit(langue, monstre.name, combat, encoderEtat(`m${lu.action.slice(1)}`, lu.etat)) });
+        const cible = lu.action.length > 1 ? lu.etat.attaquants[Number(lu.action.slice(1))] : undefined;
+        // Les boutons de saisie, chacun sa modale, qui revient avec l'état sous
+        // l'action `m` :
+        //   - `s` : un champ par VIT mal lue, prérempli de la lecture la plus
+        //     probable (`s0`, `s1`… : les boutons d'un message de la 2.4.6, un
+        //     par monstre — ils ouvrent la même modale) ;
+        //   - `e<masque>` : un champ par monstre qui reçoit un buff de VIT (le
+        //     masque de leurs places, porté par le bouton : la modale se
+        //     répond en 3 s, sans relire les kits sur le site).
+        if (interaction.type === 3 && (sorte === 's' || sorte === 'e')) {
+          const res = await d.ressources();
+          const champs = sorte === 's' ? champsVit(res, lu.etat) : champsArte(res, lu.etat, Number(lu.action.slice(1) || 0));
+          if (!champs.length) return ephemere('perime');
+          return json({ type: 9, data: modaleSaisie(langue, champs, encoderEtat('m', lu.etat)) });
         }
-        // La VIT saisie : elle remplace la lecture, et n'est plus à demander.
+        // Les saisies : elles remplacent les lectures, et une VIT n'est plus à
+        // demander. Une seule invalide : rien n'est pris.
         if (interaction.type === 5) {
-          const saisie = (valeurChamp(interaction.data?.components, CHAMP_VIT) ?? '').trim();
-          if (!cible || sorte !== 'm') return ephemere('perime');
-          if (!/^\d{1,3}$/.test(saisie) || Number(saisie) < 1 || Number(saisie) > VIT_SAISIE_MAX) return ephemere('vitInvalide');
-          cible.combat = Number(saisie);
-          cible.vitDouteuse = false;
+          if (sorte !== 'm') return ephemere('perime');
+          const lire = (id: string) => valeurChamp(interaction.data?.components, id)?.trim() ?? null;
+          const ancienChamp = lire('vit'); // la modale de la 2.4.6, au seul champ `vit`
+          const vits = lu.etat.attaquants.map((a, i) => lire(champSaisie('vit', i)) ?? (cible === a ? ancienChamp : null));
+          const artes = lu.etat.attaquants.map((_, i) => lire(champSaisie('arte', i)));
+          if ([...vits, ...artes].every((s) => s == null)) return ephemere('perime');
+          if (vits.some((s) => s != null && (!/^\d{1,3}$/.test(s) || Number(s) < 1 || Number(s) > VIT_SAISIE_MAX))) return ephemere('vitInvalide');
+          if (artes.some((s) => s != null && (!/^\d{1,2}$/.test(s) || Number(s) > ARTE_MAX))) return ephemere('arteInvalide');
+          lu.etat.attaquants.forEach((a, i) => {
+            if (vits[i] != null) { a.combat = Number(vits[i]); a.vitDouteuse = false; }
+            if (artes[i] != null) a.arte = Number(artes[i]);
+          });
           d.differer(traiterChoix(interaction.token, langue, lu.etat));
           return json({ type: 6 });
         }
+        // Les menus : les cumuls d'un passif ; `a` : l'Effet aug. VIT des menus
+        // d'un message de la 2.4.6.
         const valeur = interaction.data?.values?.[0] ?? '';
         const max = sorte === 'c' ? CUMULS_MAX : ARTE_MAX;
         if (!cible || (sorte !== 'c' && sorte !== 'a') || !/^\d{1,2}$/.test(valeur) || Number(valeur) > max) return ephemere('perime');
@@ -316,31 +332,11 @@ const passifCumulable = (passifs: PassifVitesse[]): PassifVitesse | null => {
 const cumulsProposes = (p: PassifVitesse, choisi: number | null) =>
   Math.max(choisi ?? 0, Math.min(CUMULS_MAX, p.gain!.plafond != null ? Math.ceil(p.gain!.plafond / p.gain!.valeur) : 10));
 
-// Le buff de VIT reçu, amplifié par l'effet aug. VIT : la MÊME troncature que
-// la simulation (speedTune.ts), multiplication avant division.
-const buffAmplifie = (base: number, arte: number) => Math.floor((base * (100 + arte)) / 100);
-
-// Les tranches d'effet aug. VIT qui donnent le même buff : de 0 à 60 %, le buff
-// de 30 % ne prend que 19 valeurs (30, 31… 48). Chaque option vaut sa borne
-// basse — le résultat est exact pour toute la tranche, et le menu tient dans
-// les 25 options de Discord.
-export function tranchesArte(base: number): { de: number; a: number; buff: number }[] {
-  const tranches: { de: number; a: number; buff: number }[] = [];
-  for (let arte = 0; arte <= ARTE_MAX; arte++) {
-    const buff = buffAmplifie(base, arte);
-    const derniere = tranches[tranches.length - 1];
-    if (derniere && derniere.buff === buff) derniere.a = arte;
-    else tranches.push({ de: arte, a: arte, buff });
-  }
-  return tranches;
-}
-
 // Qui reçoit un buff de VIT, d'après les sorts que l'analyse retient (premier
-// et second tour), et le plus fort de ces buffs. Un buff « sur un allié » peut
-// viser n'importe qui, le lanceur compris : tous le reçoivent alors.
-function buffsDeVitesse(etat: Etat, d: DonneesKit): { receveurs: Set<number>; base: number } {
+// et second tour). Un buff « sur un allié » peut viser n'importe qui, le
+// lanceur compris : tous le reçoivent alors.
+function receveursDeBuff(etat: Etat, d: DonneesKit): Set<number> {
   const receveurs = new Set<number>();
-  let base = 0;
   etat.attaquants.forEach((a, i) => {
     const e = { id: String(i), monster: { com2usId: a.id } } as EntreeAuto;
     for (const sort of [sortRetenu(e, d), sortSecondRetenu(e, d)]) {
@@ -352,10 +348,30 @@ function buffsDeVitesse(etat: Etat, d: DonneesKit): { receveurs: Set<number>; ba
         : effet.buffSoi ? [i]
         : [];
       touches.forEach((k) => receveurs.add(k));
-      base = Math.max(base, effet.buffEquipe ?? 0, effet.buffAllie ?? 0, effet.buffSoi ?? 0);
     }
   });
-  return { receveurs, base };
+  return receveurs;
+}
+
+// Une VIT mal lue (ou inconnue) est à saisir avant tout calcul.
+const aSaisir = (a: Etat['attaquants'][number]) => a.vitDouteuse || a.combat === VIT_INCONNUE;
+
+// Les champs de la fenêtre des VIT : chaque VIT à saisir, préremplie de la
+// lecture la plus probable.
+function champsVit(res: Ressources, etat: Etat): Saisie[] {
+  return etat.attaquants.flatMap((a, index) => {
+    const m = res.monstre(a.id);
+    return aSaisir(a) && m ? [{ sorte: 'vit' as const, nom: m.name, index, valeur: a.combat === VIT_INCONNUE ? null : a.combat }] : [];
+  });
+}
+
+// Les champs de la fenêtre de l'Effet aug. VIT : chaque monstre du masque
+// (bit k : la place k reçoit un buff de VIT), prérempli s'il est déjà donné.
+function champsArte(res: Ressources, etat: Etat, masque: number): Saisie[] {
+  return etat.attaquants.flatMap((a, index) => {
+    const m = res.monstre(a.id);
+    return masque & (1 << index) && m ? [{ sorte: 'arte' as const, nom: m.name, index, valeur: a.arte }] : [];
+  });
 }
 
 // L'état → le message : la question tant qu'une valeur manque, sinon
@@ -364,10 +380,9 @@ export async function repondre(res: Ressources, etat: Etat, langue: Langue): Pro
   const monstres = etat.attaquants.map((a) => res.monstre(a.id));
   if (monstres.some((m) => !m)) return { embeds: [embedErreur(langue, 'illisible')], components: [] };
   const douteux = etat.attaquants.flatMap((a, i) => (a.autrePortrait != null ? [`${monstres[i]!.name} / ${res.monstre(a.autrePortrait)?.name ?? '?'}`] : []));
-  // Une VIT mal lue : un bouton chacune, qui ouvre sa saisie ; rien ne se
-  // calcule avant qu'elle soit donnée.
-  const aSaisir = (a: Etat['attaquants'][number]) => a.vitDouteuse || a.combat === VIT_INCONNUE;
-  const saisies: Saisie[] = etat.attaquants.flatMap((a, i) => (aSaisir(a) ? [{ nom: monstres[i]!.name, customId: encoderEtat(`s${i}`, etat) }] : []));
+  // Les VIT mal lues : un bouton les fait toutes saisir ; rien ne se calcule
+  // avant qu'elles soient données.
+  const vits = champsVit(res, etat);
   const equipeLue = etat.attaquants.map((a, i) => ({ nom: monstres[i]!.name, combat: aSaisir(a) ? null : a.combat }));
 
   const donnees: DonneesKit = { kits: new Map(), sorts: new Map(), passifs: new Map() };
@@ -389,19 +404,27 @@ export async function repondre(res: Ressources, etat: Etat, langue: Langue): Pro
     demandes.push({ sorte: 'cumuls', nom: monster.name, passif: p.nom, texte: p.texte, options, choisi: a.cumuls, customId: encoderEtat(`c${i}`, etat) });
     if (a.cumuls != null) precisions.push({ sorte: 'cumuls', nom: monster.name, cumuls: a.cumuls, points: points(a.cumuls) });
   });
-  const { receveurs, base } = buffsDeVitesse(etat, donnees);
+  // L'Effet aug. VIT des monstres qui reçoivent un buff de VIT : un second
+  // bouton, sa fenêtre, un champ chacun.
+  const receveurs = [...receveursDeBuff(etat, donnees)].sort((x, y) => x - y);
   for (const i of receveurs) {
     const a = etat.attaquants[i];
-    const nom = monstres[i]!.name;
-    demandes.push({ sorte: 'arte', nom, options: tranchesArte(base), choisi: a.arte, customId: encoderEtat(`a${i}`, etat) });
-    const tranche = tranchesArte(base).find((x) => x.de === a.arte);
-    if (a.arte != null) precisions.push({ sorte: 'arte', nom, de: a.arte, a: tranche?.a ?? a.arte });
+    if (a.arte != null) precisions.push({ sorte: 'arte', nom: monstres[i]!.name, arte: a.arte });
   }
-  // Le set Rapide ne se demande pas : il ne change pas l'ordre (la VIT lue le
-  // contient), seulement la fiche d'un point d'arrondi ; elle le suppose absent.
+  const arteManquant = receveurs.some((i) => etat.attaquants[i].arte == null);
+  // Le set Rapide ne se demande pas : il ne change pas l'ordre (la VIT saisie
+  // ou lue est celle du combat) ; la fiche est donnée au cas le plus
+  // défavorable (analyse.ts).
 
-  if (demandes.some((x) => x.choisi == null) || saisies.length) {
-    return messageQuestion(langue, equipeLue, demandes, douteux, saisies);
+  if (demandes.some((x) => x.choisi == null) || vits.length || arteManquant) {
+    const boutons: BoutonSaisie[] = [
+      ...(vits.length ? [{ sorte: 'vit' as const, noms: vits.map((c) => c.nom), customId: encoderEtat('s', etat) }] : []),
+      ...(arteManquant ? [{
+        sorte: 'arte' as const, noms: receveurs.map((i) => monstres[i]!.name),
+        customId: encoderEtat(`e${receveurs.reduce((m, i) => m | (1 << i), 0)}`, etat),
+      }] : []),
+    ];
+    return messageQuestion(langue, equipeLue, demandes, douteux, boutons);
   }
 
   const resultat = analyserEquipe(

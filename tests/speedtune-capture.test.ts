@@ -17,8 +17,8 @@ import { decoderImage, decouper, demiTaille, dimensionsPng, imageTropGrande, red
 import { Banque, quantifier, signature, TAILLE, COTE, type BanqueSerialisee } from '../api/_source/capture/portraits';
 import { HAUTEUR_CHIFFRE_MIN, lireNombre, scoresParSynthese, type Gabarits } from '../api/_source/capture/chiffres';
 import { hypothesesVit, lireEcranPreparation } from '../api/_source/capture/ecranPreparation';
-import { analyserEquipe } from '../api/_source/speedtune/analyse';
-import { adresseEnPng, creerInteractions, etatDeLecture, repondre, signatureValide, tranchesArte, valeurChamp, type Ressources } from '../api/_source/speedtune/interactions';
+import { analyserEquipe, runesAuPire } from '../api/_source/speedtune/analyse';
+import { adresseEnPng, creerInteractions, etatDeLecture, repondre, signatureValide, valeurChamp, type Ressources } from '../api/_source/speedtune/interactions';
 import { embedErreur, ICONE_APP, LIEN_OUTIL, langueDe, type Bouton, type Embed, type Menu, type Modale, type Rangee } from '../api/_source/speedtune/message';
 import { decoderEtat, encoderEtat, LONGUEUR_MAX, VIT_INCONNUE, type Etat } from '../api/_source/speedtune/etat';
 import { creerEmojis } from '../api/_source/speedtune/emojis';
@@ -478,6 +478,12 @@ export function testSpeedtuneAnalyse() {
   const sansLead = analyserEquipe([{ monster: tarq, combat: 300 }, { monster: chilling, combat: 250 }, { monster: susano, combat: 200 }], donneesKit([tarq, chilling, susano]));
   egal(sansLead.lead, null, 'un leader sans lead de vitesse : pas de lead');
   ok(!sansLead.ok && sansLead.lignes.some((l) => l.requis !== null), 'des alliés coupés : la VIT à atteindre est donnée');
+  // Les fiches au cas le plus défavorable du set Rapide : la plus haute des
+  // deux VIT de runes, avec et sans lui — l'actuelle comme celle à viser.
+  const pire = (m: Monster, combat: number) => Math.max(runeSpeedForTarget(m.stats.speed, 0, combat, false)!, runeSpeedForTarget(m.stats.speed, 0, combat, true)!);
+  const coupees = sansLead.lignes.filter((l) => l.requis !== null);
+  ok(coupees.length > 0 && coupees.every((l) => l.runesRequis === pire(l.monster, l.requis!)) && sansLead.lignes.every((l) => l.runes === pire(l.monster, l.combat)),
+    'fiches actuelle et à viser : la plus haute des deux, avec et sans Rapide');
 
   // Les cumuls du passif précisés par le joueur : Chilling (+20 par buff) à
   // 367 lu et 1 cumul passe à 387, devant Tarq à 385 — et devient le modèle
@@ -551,12 +557,6 @@ export function testSpeedtuneEtat() {
   egal(decoderEtat('st3:m0:1.rs....::1'), null, 'une VIT au-delà de 999 : refusée');
   // Le doute sur la VIT porte le bouton qui la corrige : le pire cas le garde.
   egal(decoderEtat(encoderEtat('c2', pire))?.etat.attaquants.map((a) => a.vitDouteuse), [true, true, true], 'le pire cas garde le doute sur chaque VIT');
-
-  // Les tranches d'effet aug. VIT : chacune donne un buff différent, et la
-  // borne basse le même buff que toute la tranche.
-  const tranches = tranchesArte(30);
-  egal([tranches.length, tranches[0], tranches[1], tranches[tranches.length - 1]],
-    [19, { de: 0, a: 3, buff: 30 }, { de: 4, a: 6, buff: 31 }, { de: 60, a: 60, buff: 48 }], 'buff de 30 % : 19 tranches de 0 à 60 %');
 }
 
 // ---- Interactions Discord ------------------------------------------------------
@@ -629,19 +629,18 @@ export async function testSpeedtuneInteractions() {
   egal(await r.json(), { type: 5 }, 'la commande répond aussitôt « en cours »');
   await Promise.all(travaux);
   const dernier = () => envois[envois.length - 1];
-  // Chilling a un passif qui se cumule : la question d'abord, un menu à lui.
+  // Chilling a un passif qui se cumule : la question d'abord, un menu à lui ;
+  // et son S2 (Song of the Night Wind) buffe la VIT de toute l'équipe :
+  // l'Effet aug. VIT de chacun compte, saisi par un bouton.
   const question = dernier();
   egal(question.url, 'https://discord.com/api/v10/webhooks/APP/T/messages/@original', 'la question remplace la réponse différée');
-  const menusDe = (m: typeof question) => (m.corps.components ?? []).map((r) => r.components[0] as Menu);
+  const menusDe = (m: typeof question) => (m.corps.components ?? []).slice(1).map((r) => r.components[0] as Menu);
+  const boutonsDe = (m: typeof question) => (m.corps.components?.[0].components ?? []) as Bouton[];
+  egal(boutonsDe(question).map((b) => b.label), ['Saisir l\'Effet aug. VIT (Susano, Chilling, Tarq)'], 'l\'Effet aug. VIT : un bouton pour les trois monstres buffés');
   const menus = menusDe(question);
-  // Chilling : son passif se cumule ; et son S2 (Song of the Night Wind) buffe
-  // la VIT de toute l'équipe : l'effet aug. VIT de chacun compte.
-  egal(menus.map((m) => m.placeholder),
-    ['Chilling : nombre de cumuls', 'Susano : Effet aug. VIT', 'Chilling : Effet aug. VIT', 'Tarq : Effet aug. VIT'],
-    'un menu par valeur que la capture ne montre pas ; le set Rapide ne se demande pas');
+  egal(menus.map((m) => m.placeholder), ['Chilling : nombre de cumuls'], 'les cumuls du passif : un menu ; le set Rapide ne se demande pas');
   const menu = menus[0];
   egal(menu.options[1].description, '+20 VIT', 'chaque cumul avec la VIT qu\'il ajoute');
-  egal([menus[1].options[1].label, menus[1].options[1].description], ['Effet aug. VIT +4 à 6 %', undefined], 'chaque tranche d\'artéfact, nommée comme dans le jeu, sans le buff qui en résulte');
   ok(question.corps.embeds[0].description?.includes('The Cunning') === true, 'le passif est nommé comme dans le jeu');
 
   // Le choix de quelqu'un d'autre est refusé, en privé.
@@ -659,28 +658,37 @@ export async function testSpeedtuneInteractions() {
   egal(await (await envoyer(choix('1'))).json(), { type: 6 }, 'le choix met à jour le message en différé');
   await Promise.all(travaux);
   const apresUn = dernier();
-  egal(apresUn.corps.components?.length, 4, 'tant qu\'il manque une valeur, la question reste');
+  egal(apresUn.corps.components?.length, 2, 'tant qu\'il manque une valeur, la question reste');
   egal(menusDe(apresUn)[0].options.find((o) => o.default)?.value, '1', 'le choix fait reste affiché, à sa place');
-  // Les trois effets aug. VIT, chacun depuis le dernier message.
-  for (const k of [0, 1, 2]) {
-    travaux.length = 0;
-    const m = menusDe(dernier()).find((x) => x.placeholder.endsWith('Effet aug. VIT') && !x.options.some((o) => o.default))!;
-    await envoyer(choix(k === 0 ? '4' : '0', '111', m.custom_id));
-    await Promise.all(travaux);
-  }
+  // L'Effet aug. VIT : le bouton ouvre UNE fenêtre, un champ par monstre buffé.
+  const clicArte = { type: 3, token: 'C', locale: 'fr', member: { user: { id: '111' } }, data: { custom_id: boutonsDe(apresUn)[0].custom_id, component_type: 2 } };
+  const fenetre = (await (await envoyer(clicArte)).json()) as { type: number; data: Modale };
+  egal([fenetre.type, fenetre.data.title], [9, 'Effet aug. VIT des artéfacts'], 'le bouton ouvre la fenêtre de l\'Effet aug. VIT');
+  egal(fenetre.data.components.map((r) => [r.components[0].custom_id, r.components[0].label, r.components[0].value]),
+    [['arte0', 'Effet aug. VIT de Susano (%)', undefined], ['arte1', 'Effet aug. VIT de Chilling (%)', undefined], ['arte2', 'Effet aug. VIT de Tarq (%)', undefined]],
+    'un champ par monstre buffé, nommé comme dans le jeu');
+  const soumettreArte = (champs: Record<string, string>) => ({
+    type: 5, token: 'C', locale: 'fr', member: { user: { id: '111' } },
+    data: { custom_id: fenetre.data.custom_id, components: Object.entries(champs).map(([id, value]) => ({ type: 1, components: [{ type: 4, custom_id: id, value }] })) },
+  });
+  const arteInvalide = (await (await envoyer(soumettreArte({ arte0: '61', arte1: '0', arte2: '0' }))).json()) as { type: number; data: { content: string } };
+  egal([arteInvalide.type, arteInvalide.data.content], [4, 'Un Effet aug. VIT est un pourcentage de 0 à 60.'], 'au-delà de 60 % : message privé, rien n\'est pris');
+  travaux.length = 0;
+  egal(await (await envoyer(soumettreArte({ arte0: '4', arte1: '0', arte2: ' 0 ' }))).json(), { type: 6 }, 'les trois Effets aug. VIT saisis d\'un coup');
+  await Promise.all(travaux);
   // Tout est précisé : le résultat, et sous lui le seul lien vers l'outil.
   const final = dernier();
   egal(final.url, 'https://discord.com/api/v10/webhooks/APP/C/messages/@original', 'le résultat remplace la question');
   egal(final.corps.components, [{ type: 1, components: [{ type: 2, style: 5, label: 'Ouvrir l\'outil de speed tuning', url: LIEN_OUTIL }] }],
-    'les menus disparaissent ; reste le bouton vers l\'outil de speed tuning, sans bouton Rapide');
-  ok(final.corps.embeds[0].footer?.text.startsWith('Fiche calculée sans le set Rapide') === true, 'la fiche se dit calculée sans le set Rapide');
+    'les menus et boutons disparaissent ; reste le bouton vers l\'outil de speed tuning, sans bouton Rapide');
+  egal(final.corps.embeds[0].footer, undefined, 'aucun pied : le set Rapide ne change rien, les VIT sont celles du combat');
   egal(LIEN_OUTIL, 'https://sw-blacksmith.vercel.app/#/outils/speed-tuning', 'l\'outil du site de production');
   egal(final.corps.embeds.length, 1, 'un seul encart, compact');
   ok(['⚡ Speed tune — personne ne se fait cut', '⚡ Speed tune — quelqu\'un se fait cut'].includes(final.corps.embeds[0].title), 'le titre parle comme les joueurs : « se faire cut »');
   const embed = final.corps.embeds[0];
   const champ = (nom: string) => embed.fields?.find((f) => f.name === nom)?.value ?? '';
   ok(champ('Précisé').includes('Passif de **Chilling** : 1 cumul (+20 VIT)'), 'les cumuls retenus sont rappelés');
-  ok(champ('Précisé').includes('**Susano** : Effet aug. VIT +4 à 6 %'), 'l\'effet aug. VIT retenu est rappelé, par sa tranche');
+  ok(champ('Précisé').includes('**Susano** : Effet aug. VIT +4 %'), 'l\'Effet aug. VIT saisi est rappelé');
   ok(!/buff/i.test(champ('Précisé')), 'sans la valeur du buff');
   ok(!embed.fields?.some((f) => f.name === 'Set Rapide'), 'plus de champ Set Rapide');
   egal(champ('Équipe'), `<:m${susano.com2usId}:9> <:m${chilling.com2usId}:9> <:m${tarq.com2usId}:9>\nLead +30 %`,
@@ -696,7 +704,14 @@ export async function testSpeedtuneInteractions() {
   ok(!/tick/i.test(ordre), 'aucun tick affiché');
   ok(champ('Défense lue') !== '', 'la défense lue, en dernier champ');
   const runesDe = (m: Monster, combat: number, swift: boolean) => runeSpeedForTarget(m.stats.speed, siegeLeadFor(speedLeadOf(susano), m.element), combat, swift);
-  ok(ordre.includes(`fiche ${tarq.stats.speed} + ${runesDe(tarq, 385, false)}`), 'Tarq : sa VIT de fiche, sans Rapide');
+  const auPire = (m: Monster, combat: number) => Math.max(runesDe(m, combat, false)!, runesDe(m, combat, true)!);
+  egal(runesAuPire(tarq.stats.speed, siegeLeadFor(speedLeadOf(susano), tarq.element), 385), auPire(tarq, 385), 'fiche au pire : la plus haute des deux, avec et sans Rapide');
+  ok(ordre.includes(`fiche ${tarq.stats.speed} + ${auPire(tarq, 385)}`), 'Tarq : sa VIT de fiche, au cas le plus défavorable');
+  // Une fiche à viser : au pire aussi, déduite de la VIT à viser elle-même.
+  ok([...ordre.matchAll(/viser \*\*(\d+)\*\* \(\+\d+\) · soit (\d+) \+ (\d+)/g)].every(([, requis, base, runes]) => {
+    const m = MONSTRES.find((x) => x.stats.speed === Number(base) && [susano, chilling, tarq].includes(x))!;
+    return Number(runes) === auPire(m, Number(requis));
+  }), 'fiche à viser : la plus haute des deux, pour la VIT à viser');
   ok(ordre.includes(`${susano.stats.speed} + `), 'Susano : sa VIT de fiche (ou celle à viser)');
   ok(Math.abs(runesDe(tarq, 385, true)! - runesDe(tarq, 385, false)!) <= 1, 'le Rapide ne change la VIT de fiche que d\'un point d\'arrondi');
   egal(final.corps, { ...final.corps, allowed_mentions: { parse: [] } }, 'aucune mention possible');
@@ -717,45 +732,49 @@ export async function testSpeedtuneInteractions() {
   egal(lu.attaquants.map((a) => [a.combat, a.vitDouteuse]), [[357, false], [349, true], [VIT_INCONNUE, true]],
     'VIT sûre prise ; mal lue, à demander, l\'hypothèse sous la VIT de base écartée ; sans hypothèse, rien à proposer');
 
-  // Une VIT mal lue se demande AVANT tout calcul : un bouton chacune.
+  // Les VIT mal lues se demandent AVANT tout calcul, TOUTES ensemble : un
+  // bouton, une fenêtre, un champ par monstre.
   const aSaisir = await repondre(ressources, lu, 'fr');
   const boutons = aSaisir.components[0].components as Bouton[];
-  egal(boutons.map((b) => b.label), ['Saisir la VIT de Chilling', 'Saisir la VIT de Tarq'], 'un bouton par VIT mal lue, en tête du message');
+  egal(boutons.map((b) => b.label), ['Saisir les VIT (Chilling, Tarq)', 'Saisir l\'Effet aug. VIT (Susano, Chilling, Tarq)'],
+    'deux boutons en tête du message : un pour toutes les VIT mal lues, un pour l\'Effet aug. VIT');
   const texte = aSaisir.embeds[0].description ?? '';
-  ok(texte.includes('**Susano** 357 · **Chilling** ? · **Tarq** ?') && texte.includes('**VIT** mal lue sur la capture : **Chilling**, **Tarq**'),
+  ok(texte.includes('**Susano** 357 · **Chilling** ? · **Tarq** ?') && texte.includes('**VIT de combat** mal lue sur la capture : **Chilling**, **Tarq**'),
     'les VIT mal lues sont marquées « ? » et demandées');
   egal(aSaisir.embeds[0].title, '⚡ Speed tune — une précision', 'aucun résultat calculé sur une VIT mal lue');
   ok(!/capture plus grande|larger screenshot/.test(JSON.stringify(aSaisir)), 'jamais de demande d\'une capture plus grande');
 
-  // Le bouton ouvre la saisie (modale), préremplie de la lecture la plus probable.
+  // Le bouton ouvre UNE modale : un champ par VIT mal lue, prérempli de la
+  // lecture la plus probable.
   const clic = (customId: string, qui = '111') => ({ type: 3, token: 'B', locale: 'fr', member: { user: { id: qui } }, data: { custom_id: customId, component_type: 2 } });
-  const ouvrir = async (b: Bouton) => (await (await envoyer(clic(b.custom_id))).json()) as { type: number; data: Modale };
-  const [modaleChilling, modaleTarq] = [await ouvrir(boutons[0]), await ouvrir(boutons[1])];
-  egal([modaleChilling.type, modaleChilling.data.title, modaleChilling.data.components[0].components[0].value], [9, 'VIT de combat', '349'], 'la modale, préremplie de la lecture la plus probable');
-  egal(modaleTarq.data.components[0].components[0].value, undefined, 'sans lecture probable : la modale, vide');
-  egal(((await (await envoyer(clic(boutons[1].custom_id, '222'))).json()) as { type: number }).type, 4, 'un autre que l\'auteur : message privé, pas de modale');
+  const modale = (await (await envoyer(clic(boutons[0].custom_id))).json()) as { type: number; data: Modale };
+  egal([modale.type, modale.data.title], [9, 'VIT de combat'], 'le bouton ouvre la fenêtre de saisie');
+  egal(modale.data.components.map((r) => [r.components[0].custom_id, r.components[0].label, r.components[0].value]),
+    [['vit1', 'VIT de combat de Chilling', '349'], ['vit2', 'VIT de combat de Tarq', undefined]], 'un champ par monstre mal lu, qui demande la VIT de combat : prérempli de la lecture probable, vide sans elle');
+  egal(((await (await envoyer(clic(boutons[0].custom_id, '222'))).json()) as { type: number }).type, 4, 'un autre que l\'auteur : message privé, pas de modale');
 
-  // La saisie revient avec l'état, remplace la VIT et n'est plus à demander.
-  const soumettre = (customId: string, valeur: string) => ({
+  // Les saisies reviennent avec l'état, remplacent les VIT et ne sont plus à
+  // demander. Une seule invalide : rien n'est pris.
+  const soumettre = (customId: string, champs: Record<string, string>) => ({
     type: 5, token: 'M', locale: 'fr', member: { user: { id: '111' } },
-    data: { custom_id: customId, components: [{ type: 1, components: [{ type: 4, custom_id: 'vit', value: valeur }] }] },
+    data: { custom_id: customId, components: Object.entries(champs).map(([id, value]) => ({ type: 1, components: [{ type: 4, custom_id: id, value }] })) },
   });
-  const invalide = (await (await envoyer(soumettre(modaleTarq.data.custom_id, '3a'))).json()) as { type: number; data: { content: string; flags: number } };
-  egal([invalide.type, invalide.data.flags, invalide.data.content], [4, 64, 'Une VIT est un nombre de 1 à 999.'], 'saisie qui n\'est pas une VIT : message privé');
+  const invalide = (await (await envoyer(soumettre(modale.data.custom_id, { vit1: '349', vit2: '3a' }))).json()) as { type: number; data: { content: string; flags: number } };
+  egal([invalide.type, invalide.data.flags, invalide.data.content], [4, 64, 'Une VIT de combat est un nombre de 1 à 999.'], 'une saisie qui n\'est pas une VIT : message privé, rien n\'est pris');
   travaux.length = 0;
-  egal(await (await envoyer(soumettre(modaleTarq.data.custom_id, ' 385 '))).json(), { type: 6 }, 'saisie valide : mise à jour différée du message');
-  await Promise.all(travaux);
-  const apresSaisie = dernier();
-  egal(apresSaisie.url, 'https://discord.com/api/v10/webhooks/APP/M/messages/@original', 'le message est remplacé');
-  ok((apresSaisie.corps.embeds[0].description ?? '').includes('**Chilling** ? · **Tarq** 385'), 'la VIT saisie est prise ; l\'autre reste à saisir');
-  egal((apresSaisie.corps.components?.[0].components as Bouton[]).map((b) => b.label), ['Saisir la VIT de Chilling'], 'la VIT saisie n\'a plus de bouton');
-  travaux.length = 0;
-  const modaleChilling2 = (await (await envoyer(clic((apresSaisie.corps.components![0].components[0] as Bouton).custom_id))).json()) as { data: Modale };
-  await envoyer(soumettre(modaleChilling2.data.custom_id, '349'));
+  egal(await (await envoyer(soumettre(modale.data.custom_id, { vit1: ' 352 ', vit2: '385' }))).json(), { type: 6 }, 'saisie valide : mise à jour différée du message');
   await Promise.all(travaux);
   const toutSaisi = dernier();
-  ok(!(toutSaisi.corps.components ?? []).some((r) => r.components.some((c) => c.type === 2 && 'custom_id' in c)) && (toutSaisi.corps.embeds[0].description ?? '').includes('**Chilling** 349 · **Tarq** 385'),
-    'toutes les VIT données : plus aucun bouton de saisie, les autres questions suivent');
+  egal(toutSaisi.url, 'https://discord.com/api/v10/webhooks/APP/M/messages/@original', 'le message est remplacé');
+  ok((toutSaisi.corps.components?.[0].components as Bouton[]).every((b) => !b.label.startsWith('Saisir les VIT')) && (toutSaisi.corps.embeds[0].description ?? '').includes('**Chilling** 352 · **Tarq** 385'),
+    'toutes les VIT prises d\'une saisie : plus de bouton des VIT, l\'Effet aug. VIT reste à saisir');
+  // Les boutons d'un message de la 2.4.6 (`s1`, puis une modale `m2` au seul
+  // champ `vit`) marchent encore.
+  travaux.length = 0;
+  egal(((await (await envoyer(clic(encoderEtat('s1', lu)))).json()) as { data: Modale }).data.components.length, 2, 'ancien bouton : la même fenêtre, tous les champs');
+  await envoyer(soumettre(encoderEtat('m2', lu), { vit: '385' }));
+  await Promise.all(travaux);
+  ok((dernier().corps.embeds[0].description ?? '').includes('**Chilling** ? · **Tarq** 385'), 'ancienne fenêtre : sa VIT est prise, l\'autre reste à saisir');
   // Les modales à libellés rangent le champ dans `component`.
   egal(valeurChamp([{ type: 18, component: { type: 4, custom_id: 'vit', value: '301' } }], 'vit'), '301', 'champ d\'une modale à libellé : trouvé');
 
