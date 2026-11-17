@@ -61,6 +61,12 @@ passent par la garde `GardeChangementCompte`), `src/components/ChangementCompteD
 « Dossier SW Blacksmith » de `SettingsList`, bloc « Mes données »). Comportement :
 [bureau/](../02-app/bureau/README.md).
 
+**Plugin SWEX** (`plugin-swex/`, à la racine) : `plugin-swex/source/etatDirect.ts` (le compte tenu à jour, pur),
+`plugin-swex/source/guilde.ts` (les combats de guilde, pur), `plugin-swex/source/fichiers.ts` (noms et écriture atomique),
+`plugin-swex/source/plugin.ts` (ce que SWEX charge), assemblés par `scripts/lib/construirePluginSwex.mjs` en
+`dist/plugin-swex/SWBlacksmithLive.js` (`npm run build`, `npm run plugin-swex`). Comportement :
+[feat-swex-direct.md](../02-app/bureau/feat-swex-direct.md).
+
 ## Commandes
 
 ```bash
@@ -68,7 +74,8 @@ nvm use                # lit .nvmrc
 npm install            # installe aussi les hooks Git (script prepare → scripts/installer-hooks.mjs --automatique)
 npm run fetch-data     # régénère les données monstres et compétences depuis SWARFARM (mode démo si l'API est KO)
 npm run dev            # serveur de dev, http://localhost:5173
-npm run build          # build de prod (⚠️ seul endroit où l'on voit le CSS réellement émis), puis le service api/
+npm run build          # build de prod (⚠️ seul endroit où l'on voit le CSS réellement émis), puis le service api/, puis le plugin SWEX
+npm run plugin-swex    # le plugin SWEX seul (dist/plugin-swex/SWBlacksmithLive.js)
 npm run dev:api        # le site et le service Discord en local, http://localhost:3000 (vercel dev)
 npm test               # = node tests/run.mjs
 node tests/run.mjs --lister <filtre>        # sélection finale, sans exécution

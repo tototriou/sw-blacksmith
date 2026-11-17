@@ -10,6 +10,65 @@ Le plugin **SW Blacksmith Live** tient le compte à jour **pendant la partie**,
 
 Code : **`plugin-swex/`**, à la racine du dépôt, versionné avec l'app.
 
+## Le plugin — `plugin-swex/source/plugin.ts`
+
+Ce que SW Exporter charge depuis son dossier `plugins` : un **seul fichier**,
+`SWBlacksmithLive.js`, assemblé par esbuild
+(`scripts/lib/construirePluginSwex.mjs`, CommonJS, cible `node16` : SWEX
+embarque son propre Electron, parfois ancien).
+
+- **Construit par `npm run build`**, après Vite, dans
+  `dist/plugin-swex/SWBlacksmithLive.js` (non suivi, comme tout `dist/`) : le
+  site le sert, l'app de bureau l'embarque. `npm run plugin-swex` le construit
+  seul ; `node scripts/construire-plugin-swex.mjs <dossier>` l'écrit ailleurs.
+- ⚠️ **Sa version est celle de l'app** (`package.json`), injectée à la
+  construction (`__VERSION_PLUGIN__`) et écrite dans sa description et en tête
+  du fichier : l'app de bureau la compare à la sienne pour proposer la mise à
+  jour. Un test le vérifie sur le fichier construit.
+- Réglages dans SWEX : **activé**, et **combats de guilde** (tous deux par
+  défaut). Description et libellés en anglais et en français : SWEX n'a qu'une
+  langue.
+
+Ce qu'il fait :
+
+1. **À la connexion** (`HubUserLogin`), il repart de la réponse du serveur,
+   pour chaque invocateur (`wizard_id`), et reprend le fichier de guilde déjà
+   écrit. Le **nom de base** des fichiers est celui de l'export de ProfileExport
+   s'il est dans le dossier (`<nom>-<id>.json` : ProfileExport nettoie le pseudo
+   à sa façon, et l'app relie les fichiers par ce nom), sinon le pseudo sans les
+   caractères interdits.
+2. **À chaque commande** de cet invocateur, il applique le moteur ; si le compte
+   ou le contenu de guilde a changé, il réécrit le fichier concerné :
+   `<nom>-<id>.direct.json` (le compte) et `<nom>-<id>.guilde.json`. ⚠️ Ces
+   noms ne passent pas le filtre des exports de l'app (`<nom>-<id>.json`) : ils
+   ne s'ajoutent jamais à la liste des comptes.
+3. Avant la première connexion vue depuis le lancement de SWEX, il ne fait
+   rien : il n'a pas de compte de départ.
+
+L'écriture :
+
+- ⚠️ **Temporisée** : **2 s** après le dernier changement. Une série de meules
+  ne réécrit pas le compte à chaque coup.
+- ⚠️ **Atomique** (`ecrireAtomique`) : un fichier temporaire, puis renommé —
+  l'app relit le fichier dès qu'il change, et ne doit jamais lire un fichier à
+  moitié écrit. Sous Windows, le renommage échoue tant qu'un autre programme
+  lit le fichier (`EBUSY`, `EPERM`, `EACCES`) : on réessaie, de plus en plus
+  tard.
+- ⚠️ **Une écriture à la fois par fichier** : deux écritures qui se
+  chevauchent partageraient le fichier temporaire, et la seconde ne le
+  trouverait plus. Demandée pendant une écriture, la suivante attend sa fin et
+  écrit l'état le plus récent. Rejoué sur une journée réelle (4 206 échanges),
+  le plugin construit écrit sans une erreur.
+- Le compte s'écrit **compact** (3,4 Mo là où ProfileExport, indenté, en
+  écrit 8,2) et **sans la clé de session**.
+- ⚠️ **Jamais d'exception vers SWEX** : une erreur est écrite dans le journal
+  de SWEX, et le plugin continue. Une commande qu'il ne comprend pas ne doit
+  gêner ni le jeu ni les autres plugins.
+
+**Installer à la main** : déposer `SWBlacksmithLive.js` dans
+`Summoners War Exporter Files\plugins`, puis redémarrer SWEX. ProfileExport
+doit rester activé : c'est lui qui écrit l'export de départ.
+
 ## Le moteur — `plugin-swex/source/etatDirect.ts`
 
 Calcul pur, sans disque ni Electron, testé par

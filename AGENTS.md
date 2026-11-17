@@ -46,7 +46,7 @@ commit** que le code.
 | Bureau | **Electron** + `electron-builder` + `electron-updater` (`bureau/`, hors de `src/`) |
 | Service | **Fonction Vercel** sans état (`api/`, hors de `src/`) : la synchronisation Discord des recommandations, empaquetée au build par esbuild ; en prototype, la commande Discord `/speedtune` (lecture d'une capture, `pngjs`, `jpeg-js`, `@vercel/functions`) |
 | Tests | lanceur maison `tests/run.mjs` (registre `tests/index.ts`), `fake-indexeddb`, rendu par `react-dom/server`, polices de l'app pour le Chromium des tests (`@fontsource`) |
-| Qualité | `tsc` strict (couvre `src/`, `scripts/`, `tests/`, `bureau/`, `api/`), ESLint (flat config) |
+| Qualité | `tsc` strict (couvre `src/`, `scripts/`, `tests/`, `bureau/`, `api/`, `plugin-swex/`), ESLint (flat config) |
 
 ## Structure
 
@@ -84,10 +84,10 @@ docs/            # documentation en sections (01-presentation … 05-feuille-de-
 ```bash
 npm install                    # dépendances + installation des hooks Git (script prepare)
 npm run dev                    # serveur de dev Vite
-npm run build                  # build de production (Tailwind n'émet que ce qu'il trouve dans le SOURCE), puis le service api/
+npm run build                  # build de production (Tailwind n'émet que ce qu'il trouve dans le SOURCE), puis le service api/ et le plugin SWEX
 npm run dev:api                # le site ET le service Discord en local (vercel dev, http://localhost:3000)
 npm run lint                   # ESLint sur tout le dépôt
-npx tsc --noEmit               # types : src/, scripts/, tests/, bureau/ et api/
+npx tsc --noEmit               # types : src/, scripts/, tests/, bureau/, api/ et plugin-swex/
 node tests/run.mjs <filtre>    # les vérifications d'une zone (ex. speed-tune) ; plusieurs filtres possibles
 node tests/run.mjs --depuis origin/<base>   # celles que touchent les fichiers modifiés depuis la base
 node tests/run.mjs --lister <filtre>        # prévisualise la sélection finale sans lancer de vérification
@@ -98,6 +98,7 @@ node tests/banc/run.mjs --ecrans <id> --etats <id> --tailles <id>   # un état, 
 npm test                       # TOUTES les vérifications — la CI les passe sur chaque PR ; en local, seulement sur demande
 npm run test:suivi [-- …]      # les mêmes, suivies en direct dans le terminal (--web : aussi dans le navigateur)
 npm run fetch-data             # régénère les données SWARFARM de public/data
+npm run plugin-swex            # construit le plugin SWEX « SW Blacksmith Live » (dist/plugin-swex/SWBlacksmithLive.js)
 node scripts/inventaire-competences.mjs --aide   # balayer les compétences du corpus, formule retenue par l'app
 npm run bureau                 # l'application de bureau en développement
 npm run bureau:preuve          # la vérification de l'application de bureau

@@ -11,7 +11,8 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "vite build && node scripts/construire-api.mjs",
+    "build": "vite build && node scripts/construire-api.mjs && node scripts/construire-plugin-swex.mjs",
+    "plugin-swex": "node scripts/construire-plugin-swex.mjs",
     "dev:api": "node scripts/construire-api.mjs && vercel dev",
     "preview": "vite preview",
     "fetch-data": "node scripts/fetch-monsters.mjs && node scripts/fetch-skills.mjs && node scripts/link-collabs.mjs",

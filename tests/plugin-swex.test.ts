@@ -243,3 +243,68 @@ export function testPluginSwexGuilde() {
   egal(depuisFichierGuilde(fichier, AUTRE).vues.size, 0, 'fichier d’un autre invocateur : rien de repris');
   egal(depuisFichierGuilde({ format: 'autre' }, MOI).combats.length, 0, 'autre format : rien de repris');
 }
+
+// Le plugin CONSTRUIT (le fichier que SWEX charge), nourri par un faux SWEX :
+// sa version est celle de l'app, et il écrit les deux fichiers sans secret.
+export async function testPluginSwexPaquet() {
+  titre('Plugin SWEX — le fichier construit, chargé comme par SW Exporter');
+  const { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } = await import('node:fs');
+  const { tmpdir } = await import('node:os');
+  const { join } = await import('node:path');
+  const { createRequire } = await import('node:module');
+  const { construirePluginSwex, NOM_PLUGIN } = await import('../scripts/lib/construirePluginSwex.mjs');
+  const { nomDeBase } = await import('../plugin-swex/source/fichiers');
+
+  const racine = mkdtempSync(join(tmpdir(), 'plugin-swex-'));
+  try {
+    const { sortie, version } = await construirePluginSwex(join(racine, 'plugins'));
+    egal(sortie.endsWith(NOM_PLUGIN), true, `un seul fichier, ${NOM_PLUGIN}`);
+    const plugin = createRequire(join(racine, 'x.js'))(sortie);
+    egal(version, JSON.parse(readFileSync('package.json', 'utf8')).version, 'la version du plugin est celle de l’app');
+    egal(plugin.VERSION, version, 'la version est dans le plugin');
+    ok(typeof plugin.init === 'function' && plugin.pluginName === 'SWBlacksmithLive', 'ce que SWEX attend : init, pluginName');
+    egal(plugin.defaultConfig, { enabled: true, guilde: true }, 'réglages par défaut : activé, guilde comprise');
+
+    // Le dossier de SW Exporter, avec l'export de ProfileExport : le plugin
+    // reprend son nom (le pseudo nettoyé par ProfileExport).
+    const dossier = join(racine, 'swex');
+    const { mkdirSync } = await import('node:fs');
+    mkdirSync(dossier);
+    writeFileSync(join(dossier, 'Essai.Pro-100.json'), '{}');
+    egal(nomDeBase(dossier, MOI, 'Essai/Pro'), 'Essai.Pro-100', 'nom repris de l’export');
+    egal(nomDeBase(join(racine, 'absent'), MOI, 'Es:sai'), 'Essai-100', 'sans export : le pseudo nettoyé');
+
+    let ecouteur: (req: Json, res: Json) => void = () => {};
+    const journal: string[] = [];
+    const proxy = { on: (_: string, f: typeof ecouteur) => (ecouteur = f), log: (e: Json) => journal.push(`${e.type} ${e.message}`) };
+    const reglages = { enabled: true, guilde: true };
+    plugin.creerPlugin(0)(proxy, { Config: { App: { filesPath: dossier }, Plugins: { SWBlacksmithLive: reglages } } });
+
+    // Avant toute connexion : rien.
+    ecouteur(req({ command: 'AmplifyRune_v2' }), ok0({ rune: rune(12, {}) }));
+    ecouteur(req({ command: 'HubUserLogin' }), { ...connexion(), wizard_info: { wizard_id: MOI, wizard_name: 'Essai.Pro' } });
+    // Une série de meules, d'un coup : les écritures ne se marchent pas dessus.
+    for (let i = 0; i < 20; i++) ecouteur(req({ command: 'AmplifyRune_v2' }), ok0({ rune: rune(12, {}, 15, { sec_eff: [[4, 10, 0, i]] }) }));
+    ecouteur(req({ command: 'GetGuildSiegeMatchupInfo' }), ok0({ carte: 1, session_key: 'secret' }));
+    await new Promise((r) => setTimeout(r, 300));
+
+    egal(journal.filter((l) => l.startsWith('error')), [], 'aucune erreur d’écriture');
+    egal(
+      readdirSync(dossier).sort(),
+      ['Essai.Pro-100.direct.json', 'Essai.Pro-100.guilde.json', 'Essai.Pro-100.json'],
+      'les deux fichiers, à côté de l’export, sans fichier temporaire'
+    );
+    const direct = readFileSync(join(dossier, 'Essai.Pro-100.direct.json'), 'utf8');
+    egal(JSON.parse(direct).runes.find((r: Json) => r.rune_id === 12).sec_eff, [[4, 10, 0, 19]], 'le compte écrit est le dernier état');
+    ok(!direct.includes('secret') && !readFileSync(join(dossier, 'Essai.Pro-100.guilde.json'), 'utf8').includes('secret'), 'aucune clé de session écrite');
+
+    // Désactivé dans SWEX : plus rien n'est écrit.
+    reglages.enabled = false;
+    rmSync(join(dossier, 'Essai.Pro-100.direct.json'));
+    ecouteur(req({ command: 'AmplifyRune_v2' }), ok0({ rune: rune(12, {}) }));
+    await new Promise((r) => setTimeout(r, 100));
+    ok(!readdirSync(dossier).includes('Essai.Pro-100.direct.json'), 'plugin désactivé : rien n’est écrit');
+  } finally {
+    rmSync(racine, { recursive: true, force: true });
+  }
+}
