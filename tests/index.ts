@@ -406,7 +406,7 @@ import { testRenduRecosPage, testRenduRecosEnTete, testRenduRecosLigneDeckReduit
 import testAnnulerEdition from './annuler-edition.test';
 import { testRenduRunesResume, testRenduRunesListe, testRenduRunesCourbes, testRenduRunesComparaison, testRenduRunesOptimisation, testRenduRunesAVenir, testRenduRunesFiltresLigne, testRenduRunesTriOnglets, testRenduRunesResumeSouris, testRenduRunesListeSouris, testRenduRunesVuesSouris } from './rendu/runes.test';
 import { testRenduCompteMonstres, testRenduCompteArtefactsResume, testRenduCompteArtefactsListe, testRenduCompteArtefactsTop, testRenduCompteSouris, testRenduCompteEffacerFiltres } from './rendu/compte.test';
-import { testRenduSpeedTuneVide, testRenduSpeedTuneCamps, testRenduSpeedTuneAnalyse, testRenduSpeedTuneAppliquer } from './rendu/speed-tune.test';
+import { testRenduSpeedTuneVide, testRenduSpeedTuneCamps, testRenduSpeedTuneAnalyse, testRenduSpeedTuneAppliquer, testRenduSpeedTuneExportArene } from './rendu/speed-tune.test';
 import { testRenduOptimizerVide, testRenduOptimizerMonstre, testRenduOptimizerReglages, testRenduTelephoneOptimizer } from './rendu/optimizer.test';
 import { testRenduOptimizerGabaritsComposants, testRenduOptimizerGabaritsVue, testRenduOptimizerGabaritsAdresse } from './rendu/optimizer-gabarits.test';
 import { testRenduOptimizerGabaritsColonnes, testRenduOptimizerGabaritsDroite, testRenduOptimizerPageBureauDroite } from './rendu/optimizer-gabarits-droite.test';
@@ -644,6 +644,7 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testRenduSpeedTuneCamps', testRenduSpeedTuneCamps],
   ['testRenduSpeedTuneAnalyse', testRenduSpeedTuneAnalyse],
   ['testRenduSpeedTuneAppliquer', testRenduSpeedTuneAppliquer],
+  ['testRenduSpeedTuneExportArene', testRenduSpeedTuneExportArene],
   ['testRenduOptimizerVide', testRenduOptimizerVide],
   ['testRenduOptimizerGabaritsComposants', testRenduOptimizerGabaritsComposants],
   ['testRenduOptimizerGabaritsVue', testRenduOptimizerGabaritsVue],

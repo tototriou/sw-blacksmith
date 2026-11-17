@@ -2740,6 +2740,7 @@ export const en: Dictionnaire = {
         nomListe: 'Speed tuning',
         avertissement: 'The sheet’s minimum SPD does not guarantee the turn order; the analysis windows are not imported.',
         deckIntrouvable: 'Original deck not found: copy not established.',
+        deckDimensionnel: 'Dimensional Arena monster: the Optimizer works on your account’s runes.',
         sansEquipement: 'Real copy without resolvable gear.',
         horsDeck: (nom: string) => `${nom}: missing from the original deck’s available slots; copy chosen from the account.`,
         vitesseNonSaisie: 'Speed not entered or sheet SPD not established.',
@@ -2845,6 +2846,7 @@ export const en: Dictionnaire = {
       sansCompte: 'Load an account to export to the Optimizer.',
       indisponible: 'Export to the Optimizer unavailable.',
       vide: 'No importable monster in your team: pick a monster and its rune speed.',
+      dimension: 'The Optimizer works on your account’s runes, not on the Dimensional Arena’s.',
     },
     sort: {
       barresAZero: 'everyone’s bar to 0%',

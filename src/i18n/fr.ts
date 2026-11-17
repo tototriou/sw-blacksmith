@@ -2938,6 +2938,7 @@ export const fr = {
         nomListe: 'Speed tuning',
         avertissement: 'La VIT minimum de fiche ne garantit pas l’ordre des tours ; les fenêtres de l’analyse ne sont pas importées.',
         deckIntrouvable: 'Deck d’origine introuvable : exemplaire non établi.',
+        deckDimensionnel: 'Monstre de l’arène dimensionnelle : l’Optimizer travaille sur les runes de ton compte.',
         sansEquipement: 'Exemplaire réel sans équipement résolvable.',
         horsDeck: (nom: string) => `${nom} : absent des slots disponibles du deck d’origine ; exemplaire choisi dans le compte.`,
         vitesseNonSaisie: 'Vitesse non saisie ou VIT de fiche non établie.',
@@ -3048,6 +3049,7 @@ export const fr = {
       sansCompte: 'Charge un compte pour exporter vers l’Optimizer.',
       indisponible: 'Export vers l’Optimizer indisponible.',
       vide: 'Aucun monstre importable dans ton équipe : choisis un monstre et sa vitesse de runes.',
+      dimension: 'L’Optimizer travaille sur les runes de ton compte, pas sur celles de l’arène dimensionnelle.',
     },
     // Ce qu'un sort fait, en une ligne : les morceaux se joignent par « · ».
     sort: {
