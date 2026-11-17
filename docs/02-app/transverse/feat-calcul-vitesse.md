@@ -96,16 +96,23 @@ l'utilisateur est prise telle quelle.
 Un lead compte comme lead **de vitesse** seulement si `leaderSkill.stat ===
 'Attack Speed'` (⚠️ « Attack Speed », **pas** « Speed » — piège rencontré).
 
-Portée du lead (`area`) et activation **en siège** (`siegeLeadFor`) :
+Portée du lead (`area`) et activation selon le contenu — **en siège**
+(`siegeLeadFor`) et **en arène** (`areneLeadFor`) ; `leadPour(regle, …)` et
+`isLeadActif(regle, …)` choisissent selon la règle de l'équipe (`RegleLead`) :
 
-| `area` | Effet en siège |
-|--------|----------------|
-| `General`, `Guild` | Actif pour **tous** les alliés |
-| `Element` | Actif seulement pour les alliés du **même élément** que le leader |
-| `Arena`, `Dungeon` | **Inactif** en siège |
+| `area` | En siège | En arène |
+|--------|----------|----------|
+| `General` | Actif pour **tous** les alliés | Actif pour **tous** les alliés |
+| `Element` | Alliés du **même élément** que le leader | Alliés du **même élément** que le leader |
+| `Guild` | Actif pour **tous** | **Inactif** |
+| `Arena` | **Inactif** | Actif pour **tous** |
+| `Dungeon` | **Inactif** | **Inactif** |
 
-> ⚠️ La règle ci-dessus est **spécifique au siège**. L'Arène (à venir) inversera
-> une partie : `Arena` devra y être actif.
+La portée SWARFARM est celle que le lead annonce en jeu (« dans l'arène »,
+« dans les contenus de guilde », « dans les donjons ») : la règle de l'arène
+se lit dans la portée. ⚠️ Pour l'arène **interserveur**, c'est une hypothèse
+non mesurée — qu'elle applique les leads « dans l'arène » comme l'arène
+classique ; sinon, un lead d'arène y compte pour 0.
 
 ## Deux usages distincts des leads
 

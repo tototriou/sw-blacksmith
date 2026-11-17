@@ -3,6 +3,7 @@ import { nomElement, type LexiqueJeu } from '../../i18n/jeu';
 import type { StatKey } from '../../lib/effects';
 import type { Dictionnaire } from '../../i18n/fr';
 import { useTraduction } from '../../hooks/useLangue';
+import type { RegleLead } from '../../lib/speed';
 import ElementIcon from '../ElementIcon';
 
 // Icônes officielles des leader skills (SWARFARM), servies en local depuis
@@ -56,27 +57,31 @@ function elementLabel(jeu: LexiqueJeu, el: ElementKey | null): string {
   return el ? nomElement(jeu, el) : '—';
 }
 
-// « (arène) », « (donjon) » : la portée d'un lead qui ne compte pas en siège.
-function portee(ls: LeaderSkill, t: Dictionnaire): string {
-  return ls.area === 'Arena' ? t.lead.arene : ls.area === 'Dungeon' ? t.lead.donjon : '';
+// « (arène) », « (guilde) », « (donjon) » : la portée d'un lead qui ne compte
+// pas dans le contenu de l'équipe (`regle`).
+function portee(ls: LeaderSkill, t: Dictionnaire, regle: RegleLead = 'siege'): string {
+  if (ls.area === 'Dungeon') return t.lead.donjon;
+  if (regle === 'arene') return ls.area === 'Guild' ? t.lead.guilde : '';
+  return ls.area === 'Arena' ? t.lead.arene : '';
 }
 
-// Un lead s'applique-t-il en siège ? C'est une question de PORTÉE, pas de stat :
-// tout lead global / de guilde / élémentaire profite à l'équipe, quelle que soit
-// la stat (un lead PV ou DEF compte autant qu'un lead VIT). Seules les portées
-// Arène et Donjon ne concernent pas le contenu de guilde.
+// Un lead s'applique-t-il dans ce contenu ? C'est une question de PORTÉE, pas
+// de stat : un lead global ou élémentaire profite à l'équipe partout, quelle que
+// soit la stat (un lead PV ou DEF compte autant qu'un lead VIT) ; un lead de
+// guilde, en siège seulement ; un lead d'arène, en arène seulement ; un lead de
+// donjon, ni l'un ni l'autre (même règle que `isLeadActif`, speed.ts).
 // (Le calcul des ticks, lui, ne retient que la vitesse — voir
 // docs/02-app/transverse/.)
-export function leadIsActive(ls: LeaderSkill): boolean {
-  return ls.area === 'General' || ls.area === 'Guild' || ls.area === 'Element';
+export function leadIsActive(ls: LeaderSkill, regle: RegleLead = 'siege'): boolean {
+  if (ls.area === 'General' || ls.area === 'Element') return true;
+  return regle === 'arene' ? ls.area === 'Arena' : ls.area === 'Guild';
 }
 
 // Infobulle commune à la pastille et au badge, dans la langue de `t`.
-function leadTitle(ls: LeaderSkill, t: Dictionnaire): string {
+function leadTitle(ls: LeaderSkill, t: Dictionnaire, regle: RegleLead = 'siege'): string {
   const stat = nomStatLead(t.jeu, ls.stat);
-  return leadIsActive(ls)
-    ? t.lead.actif(ls.amount, stat, ls.area === 'Element' ? elementLabel(t.jeu, ls.element) : null)
-    : t.lead.inactif(ls.amount, stat, portee(ls, t));
+  if (leadIsActive(ls, regle)) return t.lead.actif(ls.amount, stat, ls.area === 'Element' ? elementLabel(t.jeu, ls.element) : null);
+  return regle === 'arene' ? t.lead.inactifArene(ls.amount, stat, portee(ls, t, regle)) : t.lead.inactif(ls.amount, stat, portee(ls, t, regle));
 }
 
 // Badge posé SUR le portrait du leader (coin bas-gauche), là où la place manque
@@ -134,6 +139,7 @@ export default function LeadPill({
   size = 'sm',
   pleineLargeur = false,
   titre,
+  regle = 'siege',
 }: {
   ls: LeaderSkill;
   // `lg` : version agrandie pour la FICHE d'un monstre, où le lead n'est plus un
@@ -148,15 +154,18 @@ export default function LeadPill({
   pleineLargeur?: boolean;
   /** Contexte autre que le siège : l'appelant donne l'activité propre à sa liste. */
   titre?: string;
+  // Le contenu de l'équipe : ses leads actifs et la portée dite (siège par
+  // défaut).
+  regle?: RegleLead;
 }) {
   const textes = useTraduction();
-  const scope = portee(ls, textes);
+  const scope = portee(ls, textes, regle);
   const icon = leadIconUrl(ls);
   const lg = size === 'lg';
 
   return (
     <span
-      title={titre ?? leadTitle(ls, textes)}
+      title={titre ?? leadTitle(ls, textes, regle)}
       className={`items-center gap-1 font-bold leading-none
         ${pleineLargeur ? 'flex w-full justify-center' : 'inline-flex'}
         ${lg ? 'rounded-xl py-1.5 pl-1.5 pr-3 text-base' : 'rounded-full py-0.5 pl-0.5 pr-2 text-xs'}

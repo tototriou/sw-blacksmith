@@ -34,6 +34,7 @@ Code dans **`bureau/`** (hors de `src/` : il tourne dans Node) :
   `preload.ts` ;
 - `miseAJour.ts` (mise à jour automatique, `electron-updater`) ;
 - `swex.ts` + `swexPur.ts` (dossier SW Exporter : « Mon compte » suit les exports) ;
+  `journalSwexDisque.ts` (le journal SWEX du même dossier : l'arène dimensionnelle) ;
 - `session.ts` + `sessionPur.ts` (session en cours : « Sauvegarder » la réécrit, « Sauvegarder
   sous… », `session.json` ; dossier SW Blacksmith et son sous-dossier `sessions`,
   `dossier-swblacksmith.json`) ;

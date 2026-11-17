@@ -58,6 +58,8 @@ export const en: Dictionnaire = {
     speedTuning: 'Speed tuning',
     defense: 'Defense',
     offense: 'Offense',
+    interserveur: 'Cross-server defense',
+    areneDimensionnelle: 'Dimensional Arena',
     recommandations: 'Recommendations',
     bestiaire: 'Bestiary',
     mecaniques: 'Mechanics',
@@ -321,7 +323,8 @@ export const en: Dictionnaire = {
       speedTuning: { rubrique: 'Tools', titre: 'Speed tuning' },
       bestiaire: { rubrique: 'Data', titre: 'Bestiary' },
       mecaniques: { rubrique: 'Docs', titre: 'Mechanics' },
-      arene: { rubrique: 'Arena', titre: 'Classic arena' },
+      arene: { rubrique: 'Arena', titre: 'Arena' },
+      areneDimensionnelle: { rubrique: 'Arena', titre: 'Dimensional Arena' },
     },
     application: {
       titre: 'Desktop app',
@@ -537,6 +540,7 @@ export const en: Dictionnaire = {
     swexEnLecture: (date: string) => `Export of ${date} — reading…`,
     exportCharge: (nom: string | null) => `${nom ? `${nom}’s account` : 'Account'} loaded from SW Exporter`,
     exportMisAJour: (nom: string | null) => `${nom ? `${nom}’s account` : 'Account'} updated from SW Exporter`,
+    dimensionMiseAJour: (n: number) => `Dimensional Arena updated from the SWEX log: ${n} team${n > 1 ? 's' : ''}`,
   },
 
   importCompte: {
@@ -553,11 +557,24 @@ export const en: Dictionnaire = {
     sansOffense:
       'No siege attack team found (deck_list). Save your guild siege attack teams in game before exporting.',
     offenseVide: 'No siege attack team set up in this file.',
+    sansDefenseArene: 'No arena defense found (defense_deck_info).',
+    defenseAreneVide: 'No arena defense set up in this file.',
+    sansOffenseArene: 'No arena attack team found (deck_list). Save your arena attack teams in game before exporting.',
+    offenseAreneVide: 'No arena attack team set up in this file.',
+    sansDefenseInterserveur: 'No cross-server arena defense found (server_arena_defense_deck_info).',
+    defenseInterserveurVide: 'No cross-server arena defense set up in this file.',
+    sansDefenseDimension: 'No Dimensional Arena defense found in the SWEX log (defense_deck_info).',
+    defenseDimensionVide: 'The Dimensional Arena defense in the SWEX log points to no monster of the dimensional box.',
+    sansOffenseDimension: 'No Dimensional Arena attack team found (deck_recent_list, type 28).',
+    offenseDimensionSansJournal:
+      'The Dimensional Arena attack teams point to monsters of the dimensional box: import the SWEX log (full_log.txt) too to recognize them.',
+    offenseDimensionInconnue: 'The Dimensional Arena attack teams point to monsters missing from the box in the SWEX log.',
     rien: 'Nothing to import from this file.',
     monstres6: (n: number) => `${n} 6★ monsters`,
     monstresRta: (n: number) => `${n} RTA monsters`,
     defenses: (n: number) => `${n} defenses`,
     attaques: (n: number) => `${n} attacks`,
+    equipesArene: (n: number) => `${n} arena team${n > 1 ? "s" : ""}`,
     bilan: (parts: string) => `Import: ${parts}`,
     introuvables: (n: number) => ` · ${n} monster(s) not found, to create by hand`,
   },
@@ -974,11 +991,10 @@ export const en: Dictionnaire = {
       raisonRefus: 'it refuses writing',
       raisonIntrouvable: 'it can’t be found or accessed',
     },
-    areneBientot: 'Classic arena team preparation (offense and defense).',
     redimensionner: 'Resize both pages (double-click: half and half)',
     remplacerTitre: 'Replace the current data?',
     remplacerMessage:
-      'This import will replace your RTA prep, your siege teams and your box with the content of the file. Your saved recommendations are not touched.',
+      'This import will replace your RTA prep, your siege and arena teams and your box with the content of the file. Your saved recommendations are not touched.',
     supprimerTitre: 'Delete all your data?',
     supprimerMessage:
       'RTA prep, siege teams, recommendations, custom monsters and imported account will be erased from this device. This cannot be undone.',
@@ -1008,7 +1024,7 @@ export const en: Dictionnaire = {
   changementCompte: {
     titre: 'Save your session?',
     texte:
-      'The SW Exporter account will replace your RTA prep, your siege teams and your box. Changes made since your last save will be lost if you do not save.',
+      'The SW Exporter account will replace your RTA prep, your siege and arena teams and your box. Changes made since your last save will be lost if you do not save.',
     sansSauvegarder: 'Switch without saving',
     sauvegarderEtChanger: 'Save and switch',
   },
@@ -1289,6 +1305,23 @@ export const en: Dictionnaire = {
     actif: (montant: number, stat: string, element: string | null) =>
       `Leader skill: +${montant}% ${stat}${element ? ` — ${element} allies only` : ''}`,
     inactif: (montant: number, stat: string, portee: string) => `Lead +${montant}% ${stat}${portee} — no effect in siege`,
+    guilde: ' (guild)',
+    inactifArene: (montant: number, stat: string, portee: string) => `Lead +${montant}% ${stat}${portee} — no effect in arena`,
+  },
+
+  arene: {
+    cote: {
+      defense: { titre: 'Defense', nom: 'defense', de: 'defense' },
+      offense: { titre: 'Offense', nom: 'attack', de: 'attack' },
+      interserveur: { titre: 'Cross-server defense', nom: 'cross-server defense', de: 'cross-server defense' },
+      'dimension-defense': { titre: 'Defense', nom: 'defense', de: 'defense' },
+      'dimension-offense': { titre: 'Offense', nom: 'attack', de: 'attack' },
+    },
+    retiree: (cote: 'defense' | 'offense' | 'interserveur' | 'dimension-defense' | 'dimension-offense') =>
+      `Team removed from the ${cote === 'offense' || cote === 'dimension-offense' ? 'offense' : cote === 'interserveur' ? 'cross-server defense' : 'defense'}`,
+    dimensionBureauSeulement: 'The Dimensional Arena is only available in the desktop app. The web version is coming soon.',
+    noteDimension:
+      'The dimensional box (its monsters and their runes) is not in the account export. With the SW Exporter folder chosen and the SWEX Full Logger plugin on, these tabs fill in by themselves when you open the Dimensional Arena in game. Otherwise, build your teams by hand.',
   },
 
   siege: {
@@ -2962,12 +2995,20 @@ export const en: Dictionnaire = {
       lancePar: (nom: string) => `Skill used by ${nom}`,
     },
     importDeck: {
-      libelle: 'Import a siege deck',
-      vide: 'No siege team saved — import your account, or build a defense / offense in Siege.',
-      aideAdverse: 'Use one of your siege teams as the opposing lineup — it REPLACES the opponent',
-      aideEquipe: 'Use one of your siege teams as your team — it REPLACES your current lineup',
-      liste: 'Siege decks',
-      sources: { defense: 'Defense', offense: 'Offense' },
+      libelle: 'Import a siege or arena deck',
+      vide: 'No siege or arena team saved — import your account, or build a defense / offense in Siege or Arena.',
+      aideAdverse: 'Use one of your siege or arena teams as the opposing lineup — it REPLACES the opponent',
+      aideEquipe: 'Use one of your siege or arena teams as your team — it REPLACES your current lineup',
+      liste: 'Siege and arena decks',
+      sources: {
+        defense: 'Defense',
+        offense: 'Offense',
+        'arene-defense': 'Arena · Defense',
+        'arene-offense': 'Arena · Offense',
+        'arene-interserveur': 'Arena · Cross-server defense',
+        'arene-dimension-defense': 'Dimensional Arena · Defense',
+        'arene-dimension-offense': 'Dimensional Arena · Offense',
+      },
     },
     recherche: {
       resultats: 'Search results',

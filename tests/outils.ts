@@ -98,6 +98,12 @@ export function exportExemplairesMultiples(): string {
   return readFileSync(resolve(racine, 'tests/fixtures/compte-exemplaires-multiples.json'), 'utf8');
 }
 
+// Journal SWEX miniature écrit à la main (`full_log.txt`), commité : la box de
+// l'arène dimensionnelle, sans donnée réelle — voir son `_lisezmoi`.
+export function journalSwexMiniature(): string {
+  return readFileSync(resolve(racine, 'tests/fixtures/journal-swex-miniature.txt'), 'utf8');
+}
+
 // ⚠️ Export RÉEL du développeur — **gitignoré**, donc absent partout ailleurs.
 // Les tests qui s'en servent (mesures, cas réels) s'ignorent quand il manque.
 export function exportReel(): string | null {
@@ -107,6 +113,13 @@ export function exportReel(): string | null {
     if (existsSync(chemin)) return readFileSync(chemin, 'utf8');
   }
   return null;
+}
+
+// ⚠️ Journal SWEX RÉEL du développeur (`full_log.txt`) — **gitignoré**, comme
+// l'export réel : les tests qui s'en servent s'ignorent quand il manque.
+export function journalSwexReel(): string | null {
+  const chemin = resolve(racine, 'full_log.txt');
+  return existsSync(chemin) ? readFileSync(chemin, 'utf8') : null;
 }
 
 export function monstersJson(): any[] {

@@ -65,7 +65,8 @@ export function testRenduTelephoneAccueil() {
   const o = fr.accueil.vitrine.outils;
   for (const f of [o.rta.titre, o.recos.titre, o.optimizer.titre, o.speed.titre])
     ok(t.includes(f), `outil « ${f} »`);
-  for (const f of ['Prépa d\'un ami', 'Défenses et offenses', 'Analyse de runes', 'Analyse d\'artéfacts', 'Bestiaire', 'Mécaniques', 'Arène classique'])
+  const c = fr.accueil.cartes;
+  for (const f of ['Prépa d\'un ami', 'Défenses et offenses', 'Analyse de runes', 'Analyse d\'artéfacts', 'Bestiaire', 'Mécaniques', c.arene.titre, c.areneDimensionnelle.titre])
     ok(t.includes(f), `pastille « ${f} »`);
   ok(t.includes('Rejoins la communauté'), 'la communauté');
   ok(t.includes('Prêt à préparer tes équipes ?') && t.includes('Importer mon compte'), 'l\'appel final à importer');

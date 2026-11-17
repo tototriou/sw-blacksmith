@@ -631,7 +631,8 @@ export const ECRANS: Ecran[] = [
     'src/components/SettingsMenu',
     'src/components/AccountImportControl',
   ]),
-  ouverture('arene', 'Arène', '#/arene', ['src/pages/ComingSoon']),
+  ouverture('arene', 'Arène', '#/arene/defense', ['src/pages/ArenePage', 'src/components/siege/SiegeBoard', 'src/components/siege/SiegeTeam']),
+  ouverture('arene-dimensionnelle', 'Arène dimensionnelle', '#/arene-dimensionnelle/defense', ['src/pages/ArenePage']),
 ];
 
 /** La suite d'étapes d'un état pour un format, ou son motif de non-exercice. */

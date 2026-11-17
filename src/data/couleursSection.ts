@@ -27,6 +27,7 @@ export const COULEUR_SECTION = {
   compte: '#4AD8D8',
   outils: '#FFA94D',
   arene: '#F2C24C',
+  'arene-dimensionnelle': '#F2C24C',
   bestiary: '#2FA0E0',
   mecaniques: '#8890B8',
   releases: '#C79BFF',
@@ -48,6 +49,18 @@ export const COULEUR_SIEGE_SUB = {
   defense: '#E4463A',
   offense: '#F2884C',
   recos: '#5EDB8F',
+} as const;
+
+// Sous-sections de l'Arène, indexées par `CoteArene`. Défense et offense
+// reprennent celles du siège (même geste, même teinte) ; la défense
+// interserveur, l'accent de l'arène. L'arène dimensionnelle, section à part,
+// prend aussi l'accent de l'arène.
+// ⚠️ Des teintes DÉJÀ présentes dans `TEINTE_CLAIRE` : une teinte nouvelle y
+// demanderait sa variante claire, calculée au contraste près.
+export const COULEUR_ARENE_SUB = {
+  defense: '#E4463A',
+  offense: '#F2884C',
+  interserveur: '#F2C24C',
 } as const;
 
 // Inventaires de « Mon compte », indexés par `AccountSub`.

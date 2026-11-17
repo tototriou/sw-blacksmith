@@ -25,9 +25,21 @@ trois vitesses de runes. Calcul pur dans
 - **Les deux camps** ont le bouton, sur la même liste : à gauche on reprend sa
   propre composition, à droite la **défense qu'on affronte** — c'est là qu'une
   équipe de siège enregistrée sert le plus (on l'a déjà rencontrée). Il ouvre un
-  **flottant** listant les équipes de **Défense** puis d'**Offense** du siège
+  **flottant** listant les équipes de **Défense** puis d'**Offense** du siège,
+  puis celles de l'**Arène** (Défense, Offense, Défense interserveur)
   (portraits + noms des monstres, `teamSummary`) — une équipe sans aucun monstre
   connu n'y figure pas.
+- **Les decks d'arène** (4 monstres) suivent les **leads d'arène**
+  (`regleDeSource` → `deckPourSpeedTune(…, 'arene')`) : chaque monstre reçoit
+  ce qu'un lead d'arène lui donne, et un lead de **portée Arène** se pose sur
+  le camp comme un lead **sans restriction** (`General`) — c'est ce qu'il est
+  en arène, et le camp de l'outil applique la règle du siège, qui l'aurait
+  compté pour 0. Un lead de guilde, sans effet en arène, ne se pose pas.
+  Les équipes d'arène arrivent par un **contexte** (`EquipesAreneContext`,
+  fourni par l'App), pas par les props : l'outil s'ouvre depuis huit endroits.
+  « Voir le speed tune » existe aussi sur les équipes d'arène
+  (`deckInitial.source` : `arene-defense`, `arene-offense`,
+  `arene-interserveur`).
 - **Toujours affiché, désactivé** sans compte chargé (aucune équipe) : son
   `title` dit pourquoi.
 - ⚠️ **Le lead du camp est un LEAD DE JEU, pas un pourcentage.** Il porte sa

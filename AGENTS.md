@@ -126,6 +126,7 @@ npm run bureau:preuve          # la vérification de l'application de bureau
 | `src/pages/HomePage.tsx`, `src/data/releases.ts` | [accueil/](docs/02-app/accueil/README.md), [nouveautes/](docs/02-app/nouveautes/README.md) |
 | `src/pages/RtaPage.tsx`, `src/components/rta/`, `src/lib/rtaShare.ts` | [rta/](docs/02-app/rta/README.md) |
 | `src/pages/SiegePage.tsx`, `src/components/siege/`, les `reco…` et `siege…` de `src/lib/` | [siege/](docs/02-app/siege/README.md) |
+| `src/pages/ArenePage.tsx`, le mode arène de `src/components/siege/SiegeBoard.tsx`, `useEquipesArene` | [arene/](docs/02-app/arene/README.md) |
 | `src/pages/AccountPage.tsx`, `src/components/account/`, `src/lib/runeOptim.ts`, `src/lib/artifacts.ts` | [compte/](docs/02-app/compte/README.md) |
 | `src/pages/OutilsPage.tsx`, la garde d'accès aux outils | [outils/](docs/02-app/outils/README.md) |
 | les `Optimizer…` de `src/components/outils/`, `src/components/outils/optimizer/`, `src/hooks/useOptimizerState.ts`, `src/hooks/useOptimizerLists.ts`, les `optimizer…` de `src/lib/`, `src/lib/equipesOptimizer.ts`, `src/lib/importEquipes.ts` | [optimizer/](docs/02-app/optimizer/README.md) |

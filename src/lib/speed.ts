@@ -232,3 +232,32 @@ export function leadsDeVitesse(monstres: Monster[]): LeadInfo[] {
 export function isSiegeLeadActive(lead: LeadInfo | null): boolean {
   return !!lead && (lead.area === 'General' || lead.area === 'Guild' || lead.area === 'Element');
 }
+
+// Le contenu dont une équipe suit les règles de lead.
+export type RegleLead = 'siege' | 'arene';
+
+// Lead effectif EN ARÈNE pour un allié d'élément donné.
+// Arena/General → tous ; Element → seulement l'élément ; Guild/Dungeon → inactif.
+// La portée SWARFARM (`area`) est celle que le lead annonce en jeu (« dans
+// l'arène », « dans les contenus de guilde », « dans les donjons ») : la règle
+// se lit dans la portée, sans analogie avec le siège.
+// ⚠️ HYPOTHÈSE pour l'arène INTERSERVEUR : qu'elle applique les leads « dans
+// l'arène » comme l'arène classique. Non mesuré en jeu ; si elle ne les
+// applique pas, un lead d'arène de +24 y compte pour 0.
+export function areneLeadFor(lead: LeadInfo | null, element: ElementKey): number {
+  if (!lead) return 0;
+  if (lead.area === 'General' || lead.area === 'Arena') return lead.amount;
+  if (lead.area === 'Element') return lead.element === element ? lead.amount : 0;
+  return 0;
+}
+
+// Le lead effectif selon le contenu de l'équipe.
+export function leadPour(regle: RegleLead, lead: LeadInfo | null, element: ElementKey): number {
+  return regle === 'arene' ? areneLeadFor(lead, element) : siegeLeadFor(lead, element);
+}
+
+// Le lead est-il actif dans ce contenu (indépendamment de l'élément de l'allié) ?
+export function isLeadActif(regle: RegleLead, lead: LeadInfo | null): boolean {
+  if (regle === 'siege') return isSiegeLeadActive(lead);
+  return !!lead && (lead.area === 'General' || lead.area === 'Arena' || lead.area === 'Element');
+}
