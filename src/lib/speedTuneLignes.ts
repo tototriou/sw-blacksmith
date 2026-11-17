@@ -21,6 +21,7 @@ import {
   CasesAuto,
   EntreeAuto,
   cumulsEstimes,
+  plateauAvecSorts,
   rejoueEnGrilles,
   sortRetenu,
   sortSecondRetenu,
@@ -488,6 +489,23 @@ export function casesSaisies(l: Ligne): { atb: ModParTick; speed: ModParTick } |
   const garder = (m: ModParTick, auto: ModParTick) =>
     Object.fromEntries(Object.entries(m).filter(([t, v]) => auto[Number(t)] !== v));
   return { atb: garder(l.atbMod, l.casesAuto.atb), speed: garder(l.speedMod, l.casesAuto.speed) };
+}
+
+// Le plateau où l'écran cherche les vitesses (et artéfacts) REQUIS, une fois
+// l'analyse passée : les sorts choisis, qui suivent leur lanceur, et les cases
+// SAISIES des alliés à leur tick — jamais les cases que l'analyse a écrites,
+// figées aux vitesses du moment (voir `plateauAvecSorts`). `null` quand la
+// provenance d'une grille alliée est inconnue : les grilles restent alors la
+// seule source sûre.
+export function plateauDesRequis(lignes: Ligne[], leads: Leads, d: DonneesKit, choix: ChoixSorts): TuneMonstre[] | null {
+  const saisies = new Map<string, { atb: ModParTick; speed: ModParTick }>();
+  for (const l of visibles(lignes)) {
+    if (l.camp !== 'allie') continue;
+    const s = casesSaisies(l);
+    if (!s) return null;
+    saisies.set(l.uid, s);
+  }
+  return plateauAvecSorts(plateauDeLignes(lignes, leads), 0, d, { choix, deviner: false, saisiesAllies: saisies });
 }
 
 // Ce que l'analyse a écrit, reporté sur les lignes.

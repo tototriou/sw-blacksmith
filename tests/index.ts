@@ -21,6 +21,7 @@ import { testRenduOptimizerBandesEquipesClair, testRenduOptimizerBandesEquipesSo
   testRenduTelephoneOptimizerBandesEquipesClair, testRenduTelephoneOptimizerBandesEquipesSombre,
   testOptimizerEquipesJetons } from './rendu/optimizer-bandes.test';
 import testImport from './import.test';
+import { testSpeedTuneDeuxBoostsAtb, testSpeedTuneDeuxBoostsAtbEcran } from './speed-tune-boosts.test';
 import { verificationsImportEquipes } from './import-equipes.test';
 import { testOptimizerImportNavigation } from './optimizer-import-navigation.test';
 import { testOptimizerColonnes, testOptimizerColonnesOnglet, testOptimizerColonnesGuidages, testOptimizerColonnesAttenteResultats, testOptimizerColonnesCoffreSets, testOptimizerColonnesTableau } from './optimizer-colonnes.test';
@@ -776,6 +777,8 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testRenduRtaAmi', testRenduRtaAmi],
   ['testSkillAdapters', testSkillAdapters],
   ['testImport', testImport],
+  ['testSpeedTuneDeuxBoostsAtb', testSpeedTuneDeuxBoostsAtb],
+  ['testSpeedTuneDeuxBoostsAtbEcran', testSpeedTuneDeuxBoostsAtbEcran],
   ['testBancSelection', testBancSelection],
   ['testNavigation', testNavigation],
   ['testNavigationAdresses', testNavigationAdresses],
