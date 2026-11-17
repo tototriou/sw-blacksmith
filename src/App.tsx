@@ -2193,6 +2193,7 @@ function Application() {
       appliquerDimension={appliquerDimension}
       pret={!accountHydrating && allMonsters.length > 0}
       sansCompte={box.length === 0}
+      sansDimension={runesDimension.runes.length === 0}
     />
     {/* ⚠️ `data-ctx` sur la RACINE : c'est lui qui décide de l'accent
         contextuel de tout l'écran (voir index.css). Une page qui parle d'un

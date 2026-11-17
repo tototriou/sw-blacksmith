@@ -119,12 +119,16 @@ export async function testBureauJournalSwex() {
   ok(dimensionADonner(2000, 1000), 'plus récente que la dernière appliquée : donnée');
   ok(!dimensionADonner(2000, 2000), 'déjà appliquée : rien');
   ok(!dimensionADonner(undefined, null), 'sans heure serveur lisible : jamais');
+  ok(dimensionADonner(2000, 2000, true), 'déjà appliquée, mais la page n’a rien de ce mode : redonnée');
 
   // Le passage à la page, sans Electron : un contrôle de source, comme plus haut.
   titre('bureau · SW Exporter — la saison part à la page, qui la confirme');
   const principal = readFileSync('bureau/swex.ts', 'utf8');
-  ok(principal.includes("envoyer('bureau:swex-dimension', { saison, recents, cle: saison.tvalue });"), 'bureau/swex.ts : la saison part avec les équipes récentes de l’export');
-  ok(/void donnerDimension\(false\);/.test(principal) && /pagePrete = true;[\s\S]*?void donnerDimension\(true\);/.test(principal), 'bureau/swex.ts : relue à la page prête, puis à chaque changement du dossier');
+  ok(principal.includes("envoyer('bureau:swex-dimension', { saison, recents, cle: saison.tvalue, nouvelle });"), 'bureau/swex.ts : la saison part avec les équipes récentes de l’export, nouvelle ou redonnée');
+  ok(
+    /void donnerDimension\(false\);/.test(principal) && /pagePrete = true;[\s\S]*?void donnerDimension\(true, pageSansDimension === true\);/.test(principal),
+    'bureau/swex.ts : relue à la page prête (redonnée si la page n’a rien de ce mode), puis à chaque changement du dossier'
+  );
   const preload = readFileSync('bureau/preload.ts', 'utf8');
   ok(preload.includes("'bureau:swex-dimension'") && preload.includes("'bureau:swex-dimension-lue'"), 'bureau/preload.ts : les deux canaux');
   egal(fr.application.dimensionMiseAJour(2), 'Arène dimensionnelle mise à jour depuis le journal SWEX : 2 équipes', 'l’annonce');

@@ -62,7 +62,8 @@ contextBridge.exposeInMainWorld(
           ipcRenderer.removeListener('bureau:swex-export', ecouteur);
         };
       },
-      pret: (pageSansCompte: boolean) => ipcRenderer.send('bureau:swex-pret', pageSansCompte),
+      pret: (pageSansCompte: boolean, pageSansDimension: boolean) =>
+        ipcRenderer.send('bureau:swex-pret', pageSansCompte, pageSansDimension),
       lu: (modifie: number) => ipcRenderer.send('bureau:swex-lu', modifie),
       // L'arène dimensionnelle, lue dans le journal SWEX du dossier.
       surDimension: (rappel: (dim: unknown) => void) => {

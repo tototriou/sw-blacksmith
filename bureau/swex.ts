@@ -123,10 +123,11 @@ export function brancherSwex(fenetre: BrowserWindow, preuve?: PreuveSwex) {
   }
 
   // Donne à la page la dernière saison de l'arène dimensionnelle de
-  // l'invocateur suivi, si elle est plus récente que la dernière appliquée.
+  // l'invocateur suivi, si elle est plus récente que la dernière appliquée,
+  // ou si la page n'a rien de ce mode (`pageSansDimension`, au lancement).
   // `relire` : tout le journal (page prête, choix, surveillance revenue) ;
   // sinon, seulement si ce qui s'y est ajouté contient une saison.
-  async function donnerDimension(relire: boolean) {
+  async function donnerDimension(relire: boolean, pageSansDimension = false) {
     const { dossier, fichier } = reglage;
     const id = Number(fichier ? lireNomExport(fichier)?.id : NaN);
     if (!pagePrete || !dossier || !fichier || !Number.isFinite(id)) return;
@@ -139,7 +140,7 @@ export function brancherSwex(fenetre: BrowserWindow, preuve?: PreuveSwex) {
         if (!ajout.contient) return;
       }
       const saison = await saisonDuJournal(chemin, id);
-      if (!saison || !dimensionADonner(saison.tvalue, reglage.dimensionLue)) return;
+      if (!saison || !dimensionADonner(saison.tvalue, reglage.dimensionLue, pageSansDimension)) return;
       // Les attaques jouées sont dans l'export (`deck_recent_list`).
       let recents: unknown[] = [];
       try {
@@ -148,7 +149,10 @@ export function brancherSwex(fenetre: BrowserWindow, preuve?: PreuveSwex) {
       } catch {
         /* export illisible : la défense part seule */
       }
-      envoyer('bureau:swex-dimension', { saison, recents, cle: saison.tvalue });
+      // `nouvelle` : plus récente que la dernière appliquée (annoncée) ; sinon
+      // redonnée en silence à une page qui n'a rien de ce mode.
+      const nouvelle = dimensionADonner(saison.tvalue, reglage.dimensionLue);
+      envoyer('bureau:swex-dimension', { saison, recents, cle: saison.tvalue, nouvelle });
     } catch {
       /* pas de journal (plugin Full Logger éteint), ou verrouillé : rien */
     }
@@ -263,11 +267,11 @@ export function brancherSwex(fenetre: BrowserWindow, preuve?: PreuveSwex) {
 
   // La page est prête (données des monstres chargées, compte conservé relu) :
   // l'export suivi peut lui être donné.
-  ipcMain.on('bureau:swex-pret', (e, pageSansCompte: unknown) => {
+  ipcMain.on('bureau:swex-pret', (e, pageSansCompte: unknown, pageSansDimension: unknown) => {
     if (!deLaPage(e)) return;
     pagePrete = true;
     void donner(pageSansCompte === true);
-    void donnerDimension(true);
+    void donnerDimension(true, pageSansDimension === true);
   });
 
   // La page a APPLIQUÉ la saison de l'arène dimensionnelle de cette heure

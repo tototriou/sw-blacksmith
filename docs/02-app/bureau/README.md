@@ -314,7 +314,11 @@ du même dossier — voir [arene-dimensionnelle/](../arene-dimensionnelle/README
 - ⚠️ **La page confirme ce qu'elle a appliqué** (`bureau:swex-dimension-lue`,
   l'heure serveur `tvalue` de la saison) : retenue dans `swex.json`
   (`dimensionLue`), une saison n'est redonnée que plus récente. Choisir un
-  dossier ou un invocateur l'oublie.
+  dossier ou un invocateur l'oublie. ⚠️ **Sauf à une page qui n'a rien de ce
+  mode** (aucune rune dimensionnelle : données non gardées, ou saison lue
+  avant l'onglet Runes) : au lancement, la dernière saison lui est redonnée
+  **en silence** (`pageSansDimension`, `nouvelle: false`), comme l'export
+  d'une page sans compte.
 - **Sans journal** (plugin éteint) ou sans saison de l'invocateur : rien, en
   silence ; les onglets disent comment l'obtenir.
 

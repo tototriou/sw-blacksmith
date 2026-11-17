@@ -54,11 +54,14 @@ export function lireReglage(brut: unknown): ReglageSwex {
 }
 
 // Une saison de l'arène dimensionnelle est-elle à donner à la page ? Celle
-// d'une heure serveur (`tvalue`) postérieure à la dernière appliquée. Sans
-// heure lisible, jamais : on ne saurait pas dire si elle est déjà appliquée.
-export function dimensionADonner(tvalue: unknown, dimensionLue: number | null): boolean {
+// d'une heure serveur (`tvalue`) postérieure à la dernière appliquée — ou
+// toute saison, si la page n'a rien de ce mode (`pageSansDimension` : données
+// non gardées, ou arrivées avant l'onglet qui les montre), comme l'export
+// d'une page sans compte (`aDonner`). Sans heure lisible, jamais : on ne
+// saurait pas dire si elle est déjà appliquée.
+export function dimensionADonner(tvalue: unknown, dimensionLue: number | null, pageSansDimension = false): boolean {
   if (typeof tvalue !== 'number' || !Number.isFinite(tvalue)) return false;
-  return dimensionLue === null || tvalue > dimensionLue;
+  return pageSansDimension || dimensionLue === null || tvalue > dimensionLue;
 }
 
 // Faut-il donner le fichier à la page ? `nouveau` : un export plus récent que

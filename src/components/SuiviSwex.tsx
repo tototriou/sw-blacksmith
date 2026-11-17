@@ -26,6 +26,7 @@ export default function SuiviSwex({
   appliquerDimension,
   pret,
   sansCompte,
+  sansDimension,
 }: {
   appliquer: (texte: string, complet: boolean) => { ok: boolean; nom: string | null };
   appliquerDimension: (saison: Record<string, any>, recents: unknown[]) => number;
@@ -33,6 +34,10 @@ export default function SuiviSwex({
   // La page n'a aucun compte (conservation refusée) : l'export se relit en
   // silence, même s'il a déjà été lu.
   sansCompte: boolean;
+  // La page n'a rien de l'arène dimensionnelle (conservation refusée, ou
+  // saison lue avant l'onglet qui la montre) : la dernière saison se redonne,
+  // même déjà lue.
+  sansDimension: boolean;
 }) {
   const notifier = useNotifier();
   // La langue au moment de la notification, sans réabonner le suivi.
@@ -47,6 +52,8 @@ export default function SuiviSwex({
   appliquerDimensionRef.current = appliquerDimension;
   const sansCompteRef = useRef(sansCompte);
   sansCompteRef.current = sansCompte;
+  const sansDimensionRef = useRef(sansDimension);
+  sansDimensionRef.current = sansDimension;
 
   useEffect(() => {
     const s = swex();
@@ -64,9 +71,9 @@ export default function SuiviSwex({
       const n = appliquerDimensionRef.current(dim.saison, dim.recents);
       if (n === 0) return;
       s.dimensionLue(dim.cle);
-      notifier({ message: textesVivants.current.application.dimensionMiseAJour(n) });
+      if (dim.nouvelle) notifier({ message: textesVivants.current.application.dimensionMiseAJour(n) });
     });
-    s.pret(sansCompteRef.current);
+    s.pret(sansCompteRef.current, sansDimensionRef.current);
     return () => {
       desabonner();
       desabonnerDimension();
