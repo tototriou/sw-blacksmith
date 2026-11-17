@@ -95,7 +95,7 @@ export async function scenario(nom: string, telephone: boolean): Promise<[boolea
   if (!modale) {
     verifier(!!exporter() && exporter().disabled && exporter().title.includes('Aucun monstre importable'), 'bouton présent sans ligne, raison dite');
     // Le vrai import de deck remplit les lignes ; la page ne stocke pas son origine.
-    await geste(() => boutons('Importer un deck de siège')[0].click());
+    await geste(() => boutons('Importer un deck de siège ou d’arène')[0].click());
     const options = [...outil().querySelectorAll<HTMLElement>('[role="option"]')];
     const option = options[options.length - 1];
     if (!option) throw new Error('Deck d’offense absent du flottant.');

@@ -235,7 +235,7 @@
     },
     {
       "fichier": "tests/banc-selection.test.ts",
-      "cible": "src/pages/ComingSoon.tsx",
+      "cible": "src/pages/ArenePage.tsx",
       "occurrences": 1,
       "statut": "stock"
     },
