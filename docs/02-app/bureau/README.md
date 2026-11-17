@@ -251,6 +251,8 @@ côté du service : [service-discord.md § Application de bureau](../siege/feat-
 
 `bureau/swex.ts` (disque, surveillance), `bureau/swexPur.ts` (pur, testé),
 `src/components/SuiviSwex.tsx` (page), bloc « Application » des Réglages.
+Le compte tenu à jour **pendant la partie** par le plugin SWEX du dépôt :
+[feat-swex-direct.md](feat-swex-direct.md).
 
 - **L'invocateur se choisit aussi depuis la carte du compte**, en tête de
   la barre latérale : avec un dossier choisi, la carte ouvre un menu — les

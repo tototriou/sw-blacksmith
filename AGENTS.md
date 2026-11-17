@@ -68,6 +68,7 @@ src/
   workers/       # Web Workers de l'Optimizer (recherche, appariement parallèle, classement, résolution)
   data/          # contenu statique (journal des versions : releases.ts, releases.en.ts)
 bureau/          # application de bureau Electron (main, protocole, session, SW Exporter, mise à jour)
+plugin-swex/     # plugin SWEX « SW Blacksmith Live » : le compte et les combats de guilde suivis pendant la partie
 api/             # service Discord des recommandations : discord.mjs (la fonction Vercel), _source/ (le
                  # service en TypeScript, empaqueté au build dans _paquet/, non suivi) ; interactions.mjs
                  # (prototype : /speedtune, lecture de capture dans _source/capture/ et _source/speedtune/)
@@ -144,6 +145,7 @@ npm run bureau:preuve          # la vérification de l'application de bureau
 | `api/`, `vercel.json`, `scripts/construire-api.mjs` | [service-discord.md](docs/02-app/siege/feat-recommandations/service-discord.md) |
 | `api/interactions.mjs`, `api/_source/capture/`, `api/_source/speedtune/`, `scripts/construire-banque-portraits.*`, `scripts/construire-gabarits-chiffres.*`, `scripts/enregistrer-commande-speedtune.mjs` | [feat-discord-capture.md](docs/02-app/speed-tuning/feat-discord-capture.md) |
 | `bureau/`, `src/lib/bureau.ts`, `electron-builder.yml`, `src/pages/TelechargerPage.tsx` | [bureau/](docs/02-app/bureau/README.md), [telecharger/](docs/02-app/telecharger/README.md) |
+| `plugin-swex/` (le plugin SWEX « SW Blacksmith Live ») | [feat-swex-direct.md](docs/02-app/bureau/feat-swex-direct.md) |
 | `src/ui/`, `src/index.css`, `tailwind.config.js`, tout rendu d'écran | [03-developpeur/interface/](docs/03-developpeur/interface/README.md) |
 | `eslint.config.js`, `.githooks/`, `scripts/installer-hooks.mjs`, `.github/workflows/` | [qualite-code.md](docs/03-developpeur/qualite-code.md) |
 | `tests/renvois.test.ts`, un fichier déplacé ou renommé | [renvois.md](docs/03-developpeur/renvois.md) |
