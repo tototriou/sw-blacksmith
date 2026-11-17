@@ -6,6 +6,7 @@
 
 import App from '../../src/App';
 import { egal, faussLocalStorage, ok, titre } from '../outils';
+import { fr } from '../../src/i18n/fr';
 import { ADRESSES, destination } from '../navigation-adresses.test';
 import { boutons, rendre, texteVisible, valeurs } from './outils-rendu';
 
@@ -77,6 +78,7 @@ const TITRES: [string, string][] = [
   ['#/arene/interserveur', 'Défense interserveur'],
   ['#/arene-dimensionnelle/defense', 'Défense'],
   ['#/arene-dimensionnelle/offense', 'Offense'],
+  ['#/arene-dimensionnelle/runes', 'Runes'],
 ];
 
 // Ce que le menu bureau doit permettre d'atteindre par un lien. Hors liste :
@@ -156,10 +158,38 @@ export function testRenduAppNavigation() {
   }
   ok(tSiege.includes('Arène') && tSiege.includes('Arène dimensionnelle'), 'dans le Siège : Arène et arène dimensionnelle restent visibles');
 
-  // L'arène dimensionnelle se déroule comme l'Arène : sa défense et son offense.
+  // L'arène dimensionnelle se déroule comme l'Arène : sa défense, son offense
+  // et ses runes.
   const dimension = valeurs(barreLaterale(rendreApp('#/arene-dimensionnelle/offense')), 'href');
-  for (const h of ['#/arene-dimensionnelle/defense', '#/arene-dimensionnelle/offense'])
+  for (const h of ['#/arene-dimensionnelle/defense', '#/arene-dimensionnelle/offense', '#/arene-dimensionnelle/runes'])
     ok(dimension.includes(h), `dans l’arène dimensionnelle, la barre montre ${h}`);
+}
+
+// L'arène dimensionnelle : sur le site, le seul message « application de
+// bureau » ; dans l'app, la note seule sans runes lues, la liste de runes
+// (filtres, tri) avec celles que le journal SWEX a données.
+export function testRenduAppRunesDimension() {
+  titre('rendu · App — l’arène dimensionnelle, sur le site et dans l’app de bureau');
+  for (const h of ['#/arene-dimensionnelle/defense', '#/arene-dimensionnelle/offense', '#/arene-dimensionnelle/runes']) {
+    const t = texteVisible(rendreApp(h));
+    ok(t.includes(fr.arene.dimensionBureauSeulement) && !t.includes(fr.arene.noteDimension), `site, ${h} : « disponible dans l’application de bureau »`);
+  }
+
+  const pont = globalThis as { swblacksmithBureau?: unknown };
+  pont.swblacksmithBureau = { bureau: true, plateforme: 'win32' };
+  try {
+    const sans = texteVisible(rendreApp('#/arene-dimensionnelle/runes'));
+    ok(sans.includes(fr.arene.noteDimension) && !sans.includes(fr.arene.dimensionBureauSeulement), 'app, sans runes lues : la note dit comment les obtenir');
+    ok(!sans.includes(fr.listeRunes.trierPar), 'app, sans runes lues : pas de liste vide');
+
+    const rune = { id: 1, slot: 2, set: 'violent', rank: 6, rarity: 5, level: 15, main: { code: 8, value: 42 }, subs: [] };
+    faussLocalStorage({ 'swblacksmith-arene-dimension-runes-v1': JSON.stringify([rune]) });
+    fenetre('#/arene-dimensionnelle/runes');
+    const avec = texteVisible(rendre(<App />));
+    ok(avec.includes(fr.listeRunes.trierPar) && avec.includes('1 rune'), 'app, avec les runes conservées : la liste, ses filtres et son tri');
+  } finally {
+    delete pont.swblacksmithBureau;
+  }
 }
 
 // Fil d'Ariane de la barre du haut, bureau : le chemin du menu jusqu'à la page.

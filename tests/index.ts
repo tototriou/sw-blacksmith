@@ -388,7 +388,7 @@ import { testPalette } from './palette.test';
 import { testLangueResolution, testLangueDictionnaires, testLangueFormats, testLangueReglage, testLangueTexteEnDur } from './langue.test';
 import { testRenduLangueReglage, testRenduLangueParametres, testRenduLangueApp, testRenduLangueFicheRune, testRenduLanguePagesPubliques, testRenduMecaniquesLangues, testRenduLangueRtaSiege, testRenduLangueCompte, testRenduLangueOptimizer, testRenduLangueOptimizerResultats, testRenduLangueSpeedTuning, testRenduLangueFusionRecos, testRenduLangueDegatsReels, testRenduLanguePhrasesDegats, testRenduLangueBureauControles } from './rendu/langue.test';
 import { testLexiqueJeuCouverture, testLexiqueJeuLibelles } from './lexique-jeu.test';
-import { testRenduAppRoutes, testRenduAppNavigation, testRenduAppMobile, testRenduAppFil, testRenduAppLiensMorts } from './rendu/app.test';
+import { testRenduAppRoutes, testRenduAppNavigation, testRenduAppMobile, testRenduAppFil, testRenduAppLiensMorts, testRenduAppRunesDimension } from './rendu/app.test';
 import { testEcranPartageMediaQueryVolet, testEcranPartageMemePage, testRenduEcranPartageApp,
   testRenduEcranPartageBarre, testRenduEcranPartageBouton, testRenduEcranPartageSelecteur,
   testRenduEcranPartageSeparateur, testRenduEcranPartageVolet } from './rendu/ecran-partage.test';
@@ -740,6 +740,7 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testRenduAppNavigation', testRenduAppNavigation],
   ['testRenduAppMobile', testRenduAppMobile],
   ['testRenduAppFil', testRenduAppFil],
+  ['testRenduAppRunesDimension', testRenduAppRunesDimension],
   ['testRenduEcranPartageVolet', testRenduEcranPartageVolet],
   ['testRenduEcranPartageBarre', testRenduEcranPartageBarre],
   ['testRenduEcranPartageSeparateur', testRenduEcranPartageSeparateur],

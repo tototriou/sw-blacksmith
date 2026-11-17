@@ -1406,8 +1406,12 @@ export const fr = {
     // La box et les runes de l'arène dimensionnelle sont à part : l'export de
     // compte ne les décrit pas, le journal complet de SWEX, si — lu par
     // l'application de bureau dans le dossier SW Exporter.
+    // Sur le site : la box du mode n'arrive que par le journal SWEX, lu par
+    // l'application de bureau.
+    dimensionBureauSeulement:
+      "L'arène dimensionnelle n'est disponible que dans l'application de bureau. La version web arrive prochainement.",
     noteDimension:
-      "La box dimensionnelle (ses monstres et leurs runes) n'est pas dans l'export de compte. Dans l'application de bureau, avec le dossier SW Exporter choisi et le plugin Full Logger de SWEX actif, ces équipes se remplissent toutes seules quand tu ouvres l'arène dimensionnelle en jeu. Sinon, compose-les à la main.",
+      "La box dimensionnelle (ses monstres et leurs runes) n'est pas dans l'export de compte. Avec le dossier SW Exporter choisi et le plugin Full Logger de SWEX actif, ces onglets se remplissent tout seuls quand tu ouvres l'arène dimensionnelle en jeu. Sinon, compose tes équipes à la main.",
   },
 
   // Le Siège (#/siege) : équipes de défense et d'offense.

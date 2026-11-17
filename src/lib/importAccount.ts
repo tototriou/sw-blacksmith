@@ -1370,6 +1370,20 @@ function decksDimension(equipes: { deckId: number | string; ids: number[] }[], s
 const idsNonNuls = (liste: any[]): number[] =>
   liste.map(Number).filter((x: number) => Number.isFinite(x) && x !== 0);
 
+// Les runes GAGNÉES dans l'arène dimensionnelle : en inventaire (`rune_list`)
+// et portées par les monstres de la box. Pas celles des builds par défaut,
+// que le joueur ne possède pas : elles comblent les emplacements libres.
+export function parseDimensionRunes(saison: Record<string, any> | null): RuneDetail[] {
+  const monstres = Array.isArray(saison?.unit_list) ? saison.unit_list : [];
+  const toutes = [
+    ...(Array.isArray(saison?.rune_list) ? saison.rune_list : []),
+    ...monstres.flatMap((u: any) => (Array.isArray(u?.runes) ? u.runes : [])),
+  ];
+  const parId = new Map<number, any>();
+  for (const r of toutes) if (Number.isFinite(Number(r?.rune_id))) parId.set(Number(r.rune_id), r);
+  return [...parId.values()].map((r) => runeToDetail(r, new Map())).filter((r) => r.main.code !== 0);
+}
+
 // La DÉFENSE de l'arène dimensionnelle, depuis la saison lue dans le journal
 // SWEX (`lireSaisonDimension`).
 export function parseDimensionDefense(saison: Record<string, any> | null, t: Dictionnaire): SiegeParseResult {

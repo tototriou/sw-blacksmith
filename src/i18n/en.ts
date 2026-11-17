@@ -1319,8 +1319,9 @@ export const en: Dictionnaire = {
     },
     retiree: (cote: 'defense' | 'offense' | 'interserveur' | 'dimension-defense' | 'dimension-offense') =>
       `Team removed from the ${cote === 'offense' || cote === 'dimension-offense' ? 'offense' : cote === 'interserveur' ? 'cross-server defense' : 'defense'}`,
+    dimensionBureauSeulement: 'The Dimensional Arena is only available in the desktop app. The web version is coming soon.',
     noteDimension:
-      'The dimensional box (its monsters and their runes) is not in the account export. In the desktop app, with the SW Exporter folder chosen and the SWEX Full Logger plugin on, these teams fill in by themselves when you open the Dimensional Arena in game. Otherwise, build them by hand.',
+      'The dimensional box (its monsters and their runes) is not in the account export. With the SW Exporter folder chosen and the SWEX Full Logger plugin on, these tabs fill in by themselves when you open the Dimensional Arena in game. Otherwise, build your teams by hand.',
   },
 
   siege: {

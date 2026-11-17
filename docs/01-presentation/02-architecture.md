@@ -128,7 +128,7 @@ tous les autres dans n'importe quelle analyse de dépendances.
 | Nouveautés | `#/releases` | `src/pages/ReleasesPage.tsx` | `src/data/releases.ts`, `src/data/releases.en.ts` (un journal par langue) | [nouveautes/](../02-app/nouveautes/README.md) |
 | Télécharger (site seulement) | `#/telecharger` | `src/pages/TelechargerPage.tsx` | `src/lib/bureau.ts` (`TELECHARGEMENTS`), `src/components/IconesSystemes.tsx` | [telecharger/](../02-app/telecharger/README.md) |
 | Arène | `#/arene/defense`, `/offense`, `/interserveur` | `src/pages/ArenePage.tsx` | `SiegeBoard` et `SiegeTeam` en mode arène, `useEquipesArene` | [arene/](../02-app/arene/README.md) |
-| Arène dimensionnelle | `#/arene-dimensionnelle/defense`, `/offense` | `src/pages/ArenePage.tsx` | `SiegeBoard` en mode arène, `useEquipesArene('dimension-defense' \| 'dimension-offense')` | [arene-dimensionnelle/](../02-app/arene-dimensionnelle/README.md) |
+| Arène dimensionnelle | `#/arene-dimensionnelle/defense`, `/offense`, `/runes` | `src/pages/ArenePage.tsx` | `SiegeBoard` en mode arène, `useEquipesArene('dimension-defense' \| 'dimension-offense')` ; `RunesDimensionPage` (`RunesList`, `useRunesDimension`) | [arene-dimensionnelle/](../02-app/arene-dimensionnelle/README.md) |
 
 ### Détail des écrans denses
 

@@ -35,7 +35,7 @@ Runes et Artéfacts (plusieurs vues) ouvrent leur niveau, comme RTA et Siège.
 Toutes les destinations y sont — vérifié par `tests/rendu/app.test.tsx`. Les
 onglets mobiles ont cinq entrées : l'Arène n'y a pas la sienne, le panneau
 « Outils » porte un groupe « Arène » (ses trois sous-sections) et un groupe
-« Arène dimensionnelle » (ses deux sous-sections).
+« Arène dimensionnelle » (ses trois sous-sections).
 
 ## Adresses — ce que lit la barre d'adresse
 
@@ -50,7 +50,7 @@ l'adresse et en déduit la page et ses sous-niveaux.
 | `#/compte/<inventaire>/<vue>` | Mon compte — vues de [accountViews.ts](src/lib/accountViews.ts) |
 | `#/outils/optimizer`, `/speed-tuning` | Outils |
 | `#/arene/defense`, `/offense`, `/interserveur` | Arène |
-| `#/arene-dimensionnelle/defense`, `/offense` | Arène dimensionnelle |
+| `#/arene-dimensionnelle/defense`, `/offense`, `/runes` | Arène dimensionnelle |
 | `#/bestiary`, `#/mecaniques`, `#/releases`, `#/parametres` | une page chacune |
 | `#/telecharger` | Télécharger — **site seulement** ; dans l'app de bureau, l'accueil |
 

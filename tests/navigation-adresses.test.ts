@@ -61,6 +61,7 @@ export const ADRESSES: Record<string, string> = {
   '#/arene/interserveur': 'arene/interserveur',
   '#/arene-dimensionnelle/defense': 'arene-dimensionnelle/dimension-defense',
   '#/arene-dimensionnelle/offense': 'arene-dimensionnelle/dimension-offense',
+  '#/arene-dimensionnelle/runes': 'arene-dimensionnelle/dimension-runes',
   '#/bestiary': 'bestiary',
   '#/mecaniques': 'mecaniques',
   '#/releases': 'releases',

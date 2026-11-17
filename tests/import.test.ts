@@ -16,6 +16,7 @@ import {
   parseArenaOffense,
   parseDimensionDefense,
   parseDimensionOffense,
+  parseDimensionRunes,
   parseRuneMarkerLabels,
   parseUsedRuneIds,
   parseUsedRuneIdsParPerimetre,
@@ -244,6 +245,14 @@ export default function testImport() {
     [75, true, [1, 2, 3, 4, 5, 6]],
     'dimension défense : un emplacement sans rune gagnée prend la rune par défaut, les autres gardent la leur'
   );
+  // Les runes gagnées : l'inventaire du mode et celles des monstres de la box,
+  // pas celles des builds par défaut.
+  egal(
+    parseDimensionRunes(saison).map((r) => r.id).sort(),
+    [2000005, 2000006, 2000100],
+    'dimension runes : l’inventaire et les runes portées, sans les builds par défaut'
+  );
+  egal(parseDimensionRunes(null), [], 'dimension runes : sans saison, aucune');
   egal(
     [parseDimensionDefense(null, fr).error, parseDimensionDefense({ defense_deck_info: { unit_id_list: [[123, 0, 0, 0]] } }, fr).error],
     [fr.importCompte.sansDefenseDimension, fr.importCompte.defenseDimensionVide],

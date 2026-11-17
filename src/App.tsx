@@ -44,7 +44,7 @@ import TelechargerPage from './pages/TelechargerPage';
 import AccountPage from './pages/AccountPage';
 import OutilsPage from './pages/OutilsPage';
 import OptimizerImportRapport from './components/outils/OptimizerImportRapport';
-import ArenePage from './pages/ArenePage';
+import ArenePage, { RunesDimensionPage } from './pages/ArenePage';
 import SettingsPage from './pages/SettingsPage';
 import AccountImportControl from './components/AccountImportControl';
 import SettingsMenu from './components/SettingsMenu';
@@ -125,6 +125,7 @@ import { useMonsters } from './hooks/useMonsters';
 import { useCustomMonsters } from './hooks/useCustomMonsters';
 import { useRtaState } from './hooks/useRtaState';
 import { EquipesAreneContext, useEquipesArene, useSiegeState, type CoteArene } from './hooks/useSiegeState';
+import { useRunesDimension } from './hooks/useRunesDimension';
 import { useSiegeRecos } from './hooks/useSiegeRecos';
 import { useOptimizerState } from './hooks/useOptimizerState';
 import { avecNavigationImportOptimizer } from './lib/actionImportOptimizer';
@@ -142,6 +143,7 @@ import {
   parseAccountSource,
   parseSiegeDefense,
   parseSiegeOffense,
+  parseDimensionRunes,
   parseAccountBox,
   parseAccountInventory,
   parseUsedRuneIdsParPerimetre,
@@ -245,6 +247,11 @@ export type AccountView =
   | 'meules'
   | 'gemmes';
 export type ToolSub = 'optimizer' | 'speed-tuning';
+// Les onglets de l'Arène et de l'arène dimensionnelle : un côté d'équipes, ou
+// les runes de l'arène dimensionnelle.
+export type OngletArene = CoteArene | 'dimension-runes';
+// Le côté d'équipes d'un onglet (celui des runes n'en a pas : la défense).
+const coteDe = (onglet: OngletArene): CoteArene => (onglet === 'dimension-runes' ? 'dimension-defense' : onglet);
 
 // Route + sous-route de siège (offense/défense) + sous-section « Mon compte »
 // + sous-section « Outils » déduites du hash.
@@ -254,7 +261,7 @@ export function parseHash(hash: string = window.location.hash): {
   route: Route;
   rtaSub: RtaSub;
   siegeTab: SiegeTab;
-  areneTab: CoteArene;
+  areneTab: OngletArene;
   accountSub: AccountSub;
   accountView: AccountView;
   toolSub: ToolSub;
@@ -263,7 +270,7 @@ export function parseHash(hash: string = window.location.hash): {
   const base = {
     rtaSub: 'prepa' as RtaSub,
     siegeTab: 'defense' as SiegeTab,
-    areneTab: 'defense' as CoteArene,
+    areneTab: 'defense' as OngletArene,
     accountSub: 'monstres' as AccountSub,
     accountView: 'resume' as AccountView,
     toolSub: 'optimizer' as ToolSub,
@@ -280,7 +287,12 @@ export function parseHash(hash: string = window.location.hash): {
   }
   // `#/arene-dimensionnelle` mène à la défense, comme `#/arene`.
   if (h === 'arene-dimensionnelle' || h.startsWith('arene-dimensionnelle/')) {
-    const areneTab: CoteArene = h === 'arene-dimensionnelle/offense' ? 'dimension-offense' : 'dimension-defense';
+    const areneTab: OngletArene =
+      h === 'arene-dimensionnelle/offense'
+        ? 'dimension-offense'
+        : h === 'arene-dimensionnelle/runes'
+          ? 'dimension-runes'
+          : 'dimension-defense';
     return { route: 'arene-dimensionnelle', ...base, areneTab };
   }
   if (h === 'compte' || h.startsWith('compte/')) {
@@ -364,10 +376,12 @@ const ARENE_SUBS: { tab: CoteArene; texte: CleNavigation; icon: IconeAtelier; ha
 ];
 
 // Sous-sections de l'arène dimensionnelle : sa défense et son offense, sur sa
-// propre box — mêmes gestes et mêmes teintes que celles de l'Arène.
-const ARENE_DIMENSIONNELLE_SUBS: { tab: CoteArene; texte: CleNavigation; icon: IconeAtelier; hash: string; couleur: string }[] = [
+// propre box — mêmes gestes et mêmes teintes que celles de l'Arène —, et ses
+// runes, avec l'icône et la teinte des Runes de « Mon compte ».
+const ARENE_DIMENSIONNELLE_SUBS: { tab: OngletArene; texte: CleNavigation; icon: IconeAtelier; hash: string; couleur: string }[] = [
   { tab: 'dimension-defense', texte: 'defense', icon: IconeDefense, hash: '#/arene-dimensionnelle/defense', couleur: COULEUR_ARENE_SUB.defense },
   { tab: 'dimension-offense', texte: 'offense', icon: IconeOffense, hash: '#/arene-dimensionnelle/offense', couleur: COULEUR_ARENE_SUB.offense },
+  { tab: 'dimension-runes', texte: 'runes', icon: IconeRunes, hash: '#/arene-dimensionnelle/runes', couleur: COULEUR_COMPTE_SUB.runes },
 ];
 
 // Sous-sections de « RTA » (dropdown de nav).
@@ -452,6 +466,7 @@ function Application() {
   const areneInter = useEquipesArene('interserveur');
   const areneDimDef = useEquipesArene('dimension-defense');
   const areneDimOff = useEquipesArene('dimension-offense');
+  const runesDimension = useRunesDimension();
   // Pour le speed tuning, où qu'il s'ouvre (voir EquipesAreneContext).
   const equipesArene = useMemo(
     () => ({
@@ -1077,14 +1092,16 @@ function Application() {
   }
 
   // Le dossier SW Exporter : une nouvelle saison de l'arène dimensionnelle,
-  // lue dans le journal SWEX (bureau/swex.ts). Elle REMPLACE la défense et les
-  // attaques de ce mode — un miroir du jeu, mis à jour à chaque ouverture du
-  // mode. Un côté sans équipe reconnue n'est pas touché. Rend le nombre
-  // d'équipes appliquées.
+  // lue dans le journal SWEX (bureau/swex.ts). Elle REMPLACE la défense, les
+  // attaques et les runes de ce mode — un miroir du jeu, mis à jour à chaque
+  // ouverture du mode. Un côté sans équipe reconnue n'est pas touché. Rend le
+  // nombre d'équipes appliquées.
   function appliquerDimension(saison: Record<string, any>, recents: unknown[]): number {
     const { defense, offense } = equipesDimension(saison, recents, monsterByCom2us, textes);
     if (defense.teams.length) areneDimDef.importTeams(defense.teams);
     if (offense.teams.length) areneDimOff.importTeams(offense.teams);
+    const runes = parseDimensionRunes(saison);
+    if (runes.length) runesDimension.remplacer(runes);
     return defense.teams.length + offense.teams.length;
   }
 
@@ -1983,7 +2000,7 @@ function Application() {
       />
     ) : n.route === 'arene' ? (
       <ArenePage
-        tab={n.areneTab}
+        tab={coteDe(n.areneTab)}
         onImporterEquipe={importerEquipe}
         sourcesOptimizer={optimizerData}
         compteCharge={box.length > 0 || runes.length > 0}
@@ -1998,9 +2015,11 @@ function Application() {
         menuOuvert={menu.ouvert}
         onFermerMenu={menu.fermer}
       />
+    ) : n.route === 'arene-dimensionnelle' && n.areneTab === 'dimension-runes' ? (
+      <RunesDimensionPage runes={runesDimension.runes} menuOuvert={menu.ouvert} onFermerMenu={menu.fermer} />
     ) : n.route === 'arene-dimensionnelle' ? (
       <ArenePage
-        tab={n.areneTab}
+        tab={coteDe(n.areneTab)}
         onImporterEquipe={importerEquipe}
         sourcesOptimizer={optimizerData}
         compteCharge={box.length > 0 || runes.length > 0}

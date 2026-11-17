@@ -1,19 +1,28 @@
 # Arène dimensionnelle (`#/arene-dimensionnelle/…`)
 
-Une section à part de l'[Arène](../arene/README.md), sur sa propre box. Deux
-onglets, des équipes de 4 monstres sur le board de l'arène (vitesse de combat,
-leads, « Vérifier mes speed », speed tuning) :
+Une section à part de l'[Arène](../arene/README.md), sur sa propre box. Trois
+onglets : deux d'équipes de 4 monstres sur le board de l'arène (vitesse de
+combat, leads, « Vérifier mes speed », speed tuning), et les runes du mode.
 
 | Onglet | Adresse | État | `localStorage` |
 | --- | --- | --- | --- |
 | **Défense** | `#/arene-dimensionnelle/defense` | `useEquipesArene('dimension-defense')` | `swblacksmith-arene-dimension-defense-v1` |
 | **Offense** | `#/arene-dimensionnelle/offense` | `useEquipesArene('dimension-offense')` | `swblacksmith-arene-dimension-offense-v1` |
+| **Runes** | `#/arene-dimensionnelle/runes` | `useRunesDimension` | `swblacksmith-arene-dimension-runes-v1` |
 
 `#/arene-dimensionnelle`, ou une sous-page inconnue, mène à la défense.
 
 Fichiers : [ArenePage.tsx](src/pages/ArenePage.tsx) (`tab="dimension-defense"`
-ou `"dimension-offense"`), le board du siège en mode arène. Les deux onglets
-portent une note qui dit comment obtenir la box (`noteDimension`).
+ou `"dimension-offense"`, le board du siège en mode arène ;
+`RunesDimensionPage` pour les runes). Les trois onglets portent une note qui
+dit comment obtenir la box (`noteDimension`).
+
+**Runes** : les runes **gagnées** dans le mode — en inventaire et portées par
+les monstres de la box (`parseDimensionRunes`), pas celles des builds par
+défaut, que le joueur ne possède pas. Elles s'affichent dans la liste de
+« Mon compte → Runes » (`RunesList`), avec ses filtres et son tri, retenus à
+part de ceux de « Mon compte » (`prefixeEtat="runesDimension"`). Sans runes
+lues, la note seule.
 
 ## Ce que l'on sait du contenu
 
@@ -47,11 +56,18 @@ Détail : [equipes-arene.md](../transverse/feat-import-compte/equipes-arene.md).
 **Application de bureau seulement, avec le dossier SW Exporter choisi** : le
 journal se lit tout seul dans ce dossier, à chaque ouverture du mode en jeu
 (détail : [bureau/](../bureau/README.md#larène-dimensionnelle--le-journal-swex)).
-La défense et les attaques de l'invocateur suivi sont alors **remplacées**
-(un miroir du jeu ; `appliquerDimension`, App.tsx), avec une notification.
+La défense, les attaques et les runes de l'invocateur suivi sont alors
+**remplacées** (un miroir du jeu ; `appliquerDimension`, App.tsx), avec une
+notification.
 
-Sur le site, et dans l'app sans dossier, l'import de compte (un `.json`) ne
-touche pas l'arène dimensionnelle : ses équipes s'y composent à la main.
+Dans l'app sans dossier, l'import de compte (un `.json`) ne touche pas
+l'arène dimensionnelle : ses équipes s'y composent à la main, et l'onglet
+Runes reste vide.
+
+⚠️ **Sur le site, l'arène dimensionnelle n'est pas proposée** : ses trois
+onglets n'affichent que « disponible dans l'application de bureau, version
+web à venir » (`dimensionBureauSeulement`, `ComingSoon`), sans board ni
+liste. Ses adresses et sa navigation restent, pour qu'on sache qu'elle existe.
 
 ## Règles
 
@@ -69,10 +85,10 @@ touche pas l'arène dimensionnelle : ses équipes s'y composent à la main.
 
 ## Navigation
 
-- Bureau : « Arène dimensionnelle » dans « Jouer » se déroule sur ses deux
+- Bureau : « Arène dimensionnelle » dans « Jouer » se déroule sur ses trois
   onglets, comme l'Arène.
 - Téléphone : son propre groupe « Arène dimensionnelle » dans le panneau
   « Outils », sous celui de l'Arène.
-- Palette (Ctrl K) : « Défense » et « Offense », dans le contexte « Arène
-  dimensionnelle ».
+- Palette (Ctrl K) : « Défense », « Offense » et « Runes », dans le contexte
+  « Arène dimensionnelle ».
 - Accueil : pastille à côté de l'Arène.

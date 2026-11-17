@@ -307,7 +307,7 @@ du même dossier — voir [arene-dimensionnelle/](../arene-dimensionnelle/README
   d'emblée : il grossit sans limite. Seule la réponse part à la page
   (`bureau:swex-dimension`), avec les équipes récentes de l'export
   (`deck_recent_list` : les attaques).
-- **Ce qui est importé** : la défense et les attaques de l'arène
+- **Ce qui est importé** : la défense, les attaques et les runes de l'arène
   dimensionnelle, **remplacées** à chaque nouvelle saison (un miroir du jeu ;
   `appliquerDimension`, App.tsx), annoncées par une notification. Rien
   d'autre ne bouge.
