@@ -14,6 +14,7 @@ import {
   IconeMecaniques,
   IconeNouveautes,
   IconeTelecharger,
+  IconeSwex,
   IconeOffense,
   IconeOptimizer,
   IconeOutils,
@@ -41,6 +42,7 @@ import SiegePage, { SiegeTab } from './pages/SiegePage';
 import MechanicsPage from './pages/MechanicsPage';
 import ReleasesPage from './pages/ReleasesPage';
 import TelechargerPage from './pages/TelechargerPage';
+import SwExporterPage from './pages/SwExporterPage';
 import AccountPage from './pages/AccountPage';
 import OutilsPage from './pages/OutilsPage';
 import OptimizerImportRapport from './components/outils/OptimizerImportRapport';
@@ -220,6 +222,7 @@ type Route =
   | 'outils'
   | 'releases'
   | 'telecharger'
+  | 'sw-exporter'
   | 'parametres';
 export type AccountSub = 'monstres' | 'runes' | 'artefacts';
 
@@ -322,6 +325,7 @@ export function parseHash(hash: string = window.location.hash): {
   // Site seulement (application de bureau) : dans l'app, on a
   // déjà l'app — l'adresse retombe sur l'accueil.
   if (h === 'telecharger' && !estBureau()) return { route: 'telecharger', ...base };
+  if (h === 'sw-exporter') return { route: 'sw-exporter', ...base };
   if (h === 'parametres') return { route: 'parametres', ...base };
   if (h === 'siege' || h.startsWith('siege/')) {
     const siegeTab: SiegeTab =
@@ -432,6 +436,8 @@ const RESOURCES: NavItem[] = [
   { key: 'bestiary', texte: 'bestiaire', icon: IconeBestiaire, hash: '#/bestiary', couleur: COULEUR_SECTION.bestiary },
   { key: 'mecaniques', texte: 'mecaniques', icon: IconeMecaniques, hash: '#/mecaniques', couleur: COULEUR_SECTION.mecaniques },
   { key: 'releases', texte: 'nouveautes', icon: IconeNouveautes, hash: '#/releases', couleur: COULEUR_SECTION.releases },
+  // Le plugin SWEX : sur le site ET dans l'app de bureau (c'est elle qui s'en sert).
+  { key: 'sw-exporter', texte: 'swExporter', icon: IconeSwex, hash: '#/sw-exporter', couleur: COULEUR_SECTION['sw-exporter'] },
   ...(estBureau()
     ? []
     : [{ key: 'telecharger' as const, texte: 'telecharger' as const, icon: IconeTelecharger, hash: '#/telecharger', couleur: COULEUR_SECTION.telecharger }]),
@@ -1906,7 +1912,7 @@ function Application() {
     { key: 'rta', label: nomNav('rta'), ouvre: sectionRta.titre, icon: <IconeRta size={17} color={COULEUR_SECTION.rta} />, actif: route === 'rta' },
     { key: 'siege', label: nomNav('siege'), ouvre: sectionSiege.titre, icon: <IconeSiege size={17} color={COULEUR_SECTION.siege} />, actif: route === 'siege' },
     { key: 'compte', label: nomNav('compte'), ouvre: sectionCompte.titre, icon: <IconeCompte size={17} color={COULEUR_SECTION.compte} />, actif: route === 'compte' },
-    { key: 'outils', label: nomNav('outils'), ouvre: sectionOutils.titre, icon: <IconeOutils size={17} color={COULEUR_SECTION.outils} />, actif: route === 'outils' || route === 'bestiary' || route === 'mecaniques' || route === 'releases' || route === 'telecharger' || route === 'arene' || route === 'arene-dimensionnelle' },
+    { key: 'outils', label: nomNav('outils'), ouvre: sectionOutils.titre, icon: <IconeOutils size={17} color={COULEUR_SECTION.outils} />, actif: route === 'outils' || route === 'bestiary' || route === 'mecaniques' || route === 'releases' || route === 'telecharger' || route === 'sw-exporter' || route === 'arene' || route === 'arene-dimensionnelle' },
   ];
 
   // La section dont on choisit la sous-section, sur téléphone.
@@ -2086,6 +2092,8 @@ function Application() {
       <ReleasesPage />
     ) : n.route === 'telecharger' ? (
       <TelechargerPage />
+    ) : n.route === 'sw-exporter' ? (
+      <SwExporterPage />
     ) : n.route === 'mecaniques' ? (
       <MechanicsPage />
     ) : n.route === 'parametres' ? (

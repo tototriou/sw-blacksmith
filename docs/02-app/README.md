@@ -26,6 +26,7 @@ l'application de bureau. Les fichiers de code à ouvrir pour changer une page :
 | [bestiaire/](bestiaire/README.md) | `#/bestiary` | Live | Le catalogue de tous les monstres |
 | [mecaniques/](mecaniques/README.md) | `#/mecaniques` | Live | La page de documentation des mécaniques de jeu : contenu statique et sommaire |
 | [nouveautes/](nouveautes/README.md) | `#/releases` | Live | Le journal des versions destiné aux joueurs |
+| [sw-exporter/](sw-exporter/README.md) | `#/sw-exporter` | Live | Le plugin SWEX « SW Blacksmith Live » : ce qu'il fait, son téléchargement, l'installation pas à pas |
 | [telecharger/](telecharger/README.md) | `#/telecharger` | Live, site seulement | La page du site qui propose l'application de bureau |
 
 ## Hors pages
@@ -45,9 +46,9 @@ Points d'entrée de l'Optimizer, avant un chantier qui le touche :
 ## Ordre des pages
 
 Ordre d'importance (nav & cartes d'accueil) : **Accueil → RTA → Siège → Mon
-compte → Outils → Arène**. Bestiaire, Mécaniques, Nouveautés et Télécharger
-sont regroupés sous « Ressources » (les moins centraux de l'outil) ;
-Télécharger n'existe que sur le site. Le regroupement de la barre latérale :
+compte → Outils → Arène**. Bestiaire, Mécaniques, Nouveautés, SW Exporter et
+Télécharger sont regroupés sous « Ressources » (les moins centraux de
+l'outil) ; Télécharger n'existe que sur le site. Le regroupement de la barre latérale :
 [barre-laterale-et-adresses.md](transverse/feat-navigation/barre-laterale-et-adresses.md).
 
 > ⚠️ **Règle permanente** : toute page ou section **ajoutée, renommée ou

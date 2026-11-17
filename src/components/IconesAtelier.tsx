@@ -74,6 +74,9 @@ export const IconeNouveautes = fabrique('M11 3l1.8 5.2L18 10l-5.2 1.8L11 17l-1.8
 // flèche qui descend dans le bac. Dessinée pour l'app, pas choisie sur
 // planche comme les autres : remplaçable par un objet d'atelier.
 export const IconeTelecharger = fabrique('M12 3v11M7.5 9.5 12 14l4.5-4.5M4 15v3a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-3');
+// La page « SW Exporter » : le compte qui suit le jeu — deux flèches en
+// boucle autour d'un point (le fichier tenu à jour).
+export const IconeSwex = fabrique('M20 12a8 8 0 0 1-14 5.3M4 12a8 8 0 0 1 14-5.3M18 3v3.7h-3.7M6 21v-3.7h3.7' + cercle(12, 12, 2));
 // Notions de la toile (« Défense », « Attaque »).
 export const IconeDefense = fabrique('M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6zM12 8v8M9 11h6');
 export const IconeOffense = fabrique('M14.5 17.5 3 6V3h3l11.5 11.5M13 19l6-6M16 16l4 4M19 21l2-2');

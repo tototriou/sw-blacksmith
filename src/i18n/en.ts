@@ -65,6 +65,7 @@ export const en: Dictionnaire = {
     mecaniques: 'Mechanics',
     nouveautes: "What's new",
     telecharger: 'Download',
+    swExporter: 'SW Exporter',
     parametres: 'Settings',
     jouer: 'Play',
     monCompte: 'My account',
@@ -325,6 +326,7 @@ export const en: Dictionnaire = {
       mecaniques: { rubrique: 'Docs', titre: 'Mechanics' },
       arene: { rubrique: 'Arena', titre: 'Arena' },
       areneDimensionnelle: { rubrique: 'Arena', titre: 'Dimensional Arena' },
+      swExporter: { rubrique: 'Account', titre: 'SW Exporter, live' },
     },
     application: {
       titre: 'Desktop app',
@@ -429,6 +431,66 @@ export const en: Dictionnaire = {
     auTelephone: 'Install it from a Windows or Linux computer.',
     versionProposee: (version: string) => `Version offered: ${version}`,
     toutesLesVersions: 'All versions on GitHub',
+  },
+
+  swExporter: {
+    titre: 'SW Exporter',
+    intro: (app: string) =>
+      `SW Exporter (SWEX) reads your account from the game and saves it to a file: that file is what ${app} imports. Its plugin keeps it up to date while you play.`,
+    atoutsTitre: 'What the plugin does',
+    atouts: [
+      {
+        titre: 'Your account, live',
+        texte:
+          'Without the plugin, SWEX only writes your account when you log in to the game. With it, every grind, gem, upgrade, sale or equipment change reaches “My account” two seconds later.',
+      },
+      {
+        titre: 'Your guild battles',
+        texte:
+          'Siege, guild war, labyrinth: the defenses you see, the attacks you make and the battle logs are kept as you play, for the guild screens to come.',
+      },
+      {
+        titre: 'Nothing leaves your computer',
+        texte:
+          'The plugin writes two files next to your export, in the SWEX folder. It sends nothing, and never writes your session key.',
+      },
+    ],
+    telecharger: 'Download the plugin',
+    fichier: (version: string) => `SWBlacksmithLive.js · version ${version}`,
+    avecBureau:
+      'It works with the desktop app, which follows the SWEX folder: a browser cannot read a folder on your computer. On the website, importing your account stays manual.',
+    telechargerApp: 'Download the app',
+    auTelephone: 'Install it from a computer, next to SW Exporter.',
+    tutoTitre: 'Install the plugin',
+    etapes: [
+      {
+        titre: 'Install SW Exporter',
+        texte:
+          'If you have not already: download it, run it and log in to the game once. Keep its ProfileExport plugin enabled: it writes the starting export.',
+      },
+      { titre: 'Download the plugin', texte: 'The button above gives you the SWBlacksmithLive.js file.' },
+      {
+        titre: 'Drop it in the plugins folder',
+        texte:
+          'The “Summoners War Exporter Files” folder, where SWEX saves your exports, contains a “plugins” folder: put the file in it.',
+      },
+      {
+        titre: 'Restart SW Exporter',
+        texte: '“SWBlacksmithLive” appears in its plugin list, enabled. Guild battles can be turned off in the same place.',
+      },
+      {
+        titre: 'Follow the folder in the app',
+        texte:
+          'In the desktop app: Settings › SW Exporter folder. Log in to the game: your account loads, then follows each of your actions.',
+      },
+    ],
+    swexSurGithub: 'SW Exporter on GitHub',
+    limitesTitre: 'What waits for the next login',
+    limites:
+      'Experience gained outside battles (buildings) and RTA and siege presets: they arrive at your next login to the game, which resets everything.',
+    miseAJourTitre: 'Updating the plugin',
+    miseAJour:
+      'The plugin carries the app version: when the app changes version, download it again and replace the old file, then restart SWEX.',
   },
 
   nouveautes: {

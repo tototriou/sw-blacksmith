@@ -31,6 +31,9 @@ export const COULEUR_SECTION = {
   bestiary: '#2FA0E0',
   mecaniques: '#8890B8',
   releases: '#C79BFF',
+  // Le plugin SWEX : la teinte du compte (c'est lui qu'il tient à jour), un
+  // ton plus vert pour s'en distinguer.
+  'sw-exporter': '#4AD8A8',
   // Application de bureau — site seulement.
   telecharger: '#7FD15B',
 } as const;

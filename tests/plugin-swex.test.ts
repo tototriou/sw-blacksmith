@@ -12,6 +12,13 @@ import {
   guildeVide,
   versFichierGuilde,
 } from '../plugin-swex/source/guilde';
+import { nomDeBase } from '../plugin-swex/source/fichiers';
+import { CHEMIN_PLUGIN, NOM_PLUGIN, construirePluginSwex } from '../scripts/lib/construirePluginSwex.mjs';
+import { CHEMIN_PLUGIN_SWEX, FICHIER_PLUGIN_SWEX } from '../src/lib/pluginSwex';
+import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { createRequire } from 'node:module';
 import { egal, ok, titre } from './outils';
 
 const MOI = 100;
@@ -248,12 +255,8 @@ export function testPluginSwexGuilde() {
 // sa version est celle de l'app, et il écrit les deux fichiers sans secret.
 export async function testPluginSwexPaquet() {
   titre('Plugin SWEX — le fichier construit, chargé comme par SW Exporter');
-  const { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } = await import('node:fs');
-  const { tmpdir } = await import('node:os');
-  const { join } = await import('node:path');
-  const { createRequire } = await import('node:module');
-  const { construirePluginSwex, NOM_PLUGIN } = await import('../scripts/lib/construirePluginSwex.mjs');
-  const { nomDeBase } = await import('../plugin-swex/source/fichiers');
+  // L'adresse que la page SW Exporter donne est celle où Vite émet le fichier.
+  egal([CHEMIN_PLUGIN_SWEX, FICHIER_PLUGIN_SWEX], [CHEMIN_PLUGIN, NOM_PLUGIN], 'la page et la construction : même adresse');
 
   const racine = mkdtempSync(join(tmpdir(), 'plugin-swex-'));
   try {
@@ -268,7 +271,6 @@ export async function testPluginSwexPaquet() {
     // Le dossier de SW Exporter, avec l'export de ProfileExport : le plugin
     // reprend son nom (le pseudo nettoyé par ProfileExport).
     const dossier = join(racine, 'swex');
-    const { mkdirSync } = await import('node:fs');
     mkdirSync(dossier);
     writeFileSync(join(dossier, 'Essai.Pro-100.json'), '{}');
     egal(nomDeBase(dossier, MOI, 'Essai/Pro'), 'Essai.Pro-100', 'nom repris de l’export');

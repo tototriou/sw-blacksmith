@@ -1,0 +1,105 @@
+import { ExternalLink } from 'lucide-react';
+import { IconeTelecharger } from '../components/IconesAtelier';
+import { useTraduction } from '../hooks/useLangue';
+import { estBureau } from '../lib/bureau';
+import { FICHIER_PLUGIN_SWEX, SW_EXPORTER, adressePluginSwex } from '../lib/pluginSwex';
+import { NOM_APP } from '../marque';
+import { Bouton } from '../ui';
+
+// La page « SW Exporter » (`#/sw-exporter`), sous Ressources : le plugin SWEX
+// « SW Blacksmith Live » — ce qu'il fait, son téléchargement, l'installation
+// pas à pas. Sur le site ET dans l'app de bureau.
+// Voir docs/02-app/sw-exporter/README.md.
+//
+// ⚠️ **Le bouton ENREGISTRE le fichier** (`telechargement`) : un `.js`, le
+// navigateur l'ouvrirait comme du texte à la place de l'app.
+// ⚠️ **Au téléphone, sans bouton** : le plugin s'installe à côté de SW
+// Exporter, sur un ordinateur (`lg:`, deux formats, deux contenus). Le reste
+// de la page — ce qu'il fait, comment l'installer — se lit partout.
+// Sur le SITE, une phrase dit qu'il sert avec l'application de bureau, avec
+// son lien : un navigateur ne peut pas suivre un dossier de l'ordinateur.
+
+export default function SwExporterPage() {
+  const t = useTraduction();
+  const s = t.swExporter;
+  const bureau = estBureau();
+  return (
+    <div className="mx-auto max-w-[760px]">
+      <h1 className="font-display font-black text-[clamp(28px,4vw,42px)] text-ink mb-2">{s.titre}</h1>
+      <p className="text-ink-dim text-sm leading-relaxed mb-6">{s.intro(NOM_APP)}</p>
+
+      <h2 className="label mb-2">{s.atoutsTitre}</h2>
+      <ul className="mb-8 grid gap-3 sm:grid-cols-3">
+        {s.atouts.map((a) => (
+          <li key={a.titre} className="rounded-xl border border-border-soft bg-panel px-4 py-3">
+            <p className="text-sm font-semibold text-ink">{a.titre}</p>
+            <p className="mt-1 text-xs leading-relaxed text-ink-dim">{a.texte}</p>
+          </li>
+        ))}
+      </ul>
+
+      {/* À l'ordinateur : le téléchargement. */}
+      <div className="hidden lg:block">
+        <div className="flex flex-wrap items-center gap-3">
+          <Bouton
+            ton="accent"
+            fond="plein"
+            href={adressePluginSwex()}
+            telechargement={FICHIER_PLUGIN_SWEX}
+            icone={<IconeTelecharger size={15} />}
+            libelle={s.telecharger}
+          />
+          <span className="font-mono text-xs text-ink-dim">{s.fichier(__APP_VERSION__)}</span>
+        </div>
+      </div>
+      {/* Au téléphone : rien à installer ici. */}
+      <p className="text-sm text-ink lg:hidden">{s.auTelephone}</p>
+
+      {!bureau && (
+        <p className="mt-3 max-w-xl text-xs leading-relaxed text-ink-dim">
+          {s.avecBureau}{' '}
+          <a href="#/telecharger" className="text-accent hoverable:text-ink transition">
+            {s.telechargerApp}
+          </a>
+        </p>
+      )}
+
+      <h2 className="label mt-8 mb-3">{s.tutoTitre}</h2>
+      <ol className="flex flex-col gap-3">
+        {s.etapes.map((e, i) => (
+          <li key={e.titre} className="flex gap-3 rounded-xl border border-border-soft bg-panel px-4 py-3">
+            <span className="flex h-6 w-6 flex-none items-center justify-center rounded-full bg-accent/15 font-mono text-xs font-bold text-accent-lisible">
+              {i + 1}
+            </span>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-ink">{e.titre}</p>
+              <p className="mt-1 text-xs leading-relaxed text-ink-dim">{e.texte}</p>
+              {/* La première étape mène à SW Exporter lui-même. */}
+              {i === 0 && (
+                <a
+                  href={SW_EXPORTER}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-1.5 inline-flex items-center gap-1 text-xs text-accent hoverable:text-ink transition"
+                >
+                  {s.swexSurGithub} <ExternalLink size={12} />
+                </a>
+              )}
+            </div>
+          </li>
+        ))}
+      </ol>
+
+      <div className="mt-8 grid gap-3 sm:grid-cols-2">
+        <section className="rounded-xl border border-border-soft bg-panel px-4 py-3">
+          <h2 className="text-sm font-semibold text-ink">{s.miseAJourTitre}</h2>
+          <p className="mt-1 text-xs leading-relaxed text-ink-dim">{s.miseAJour}</p>
+        </section>
+        <section className="rounded-xl border border-border-soft bg-panel px-4 py-3">
+          <h2 className="text-sm font-semibold text-ink">{s.limitesTitre}</h2>
+          <p className="mt-1 text-xs leading-relaxed text-ink-dim">{s.limites}</p>
+        </section>
+      </div>
+    </div>
+  );
+}

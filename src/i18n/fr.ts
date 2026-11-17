@@ -74,6 +74,7 @@ export const fr = {
     mecaniques: 'Mécaniques',
     nouveautes: 'Nouveautés',
     telecharger: 'Télécharger',
+    swExporter: 'SW Exporter',
     parametres: 'Paramètres',
     jouer: 'Jouer',
     monCompte: 'Mon compte',
@@ -345,6 +346,7 @@ export const fr = {
       mecaniques: { rubrique: 'Doc', titre: 'Mécaniques' },
       arene: { rubrique: 'Arène', titre: 'Arène' },
       areneDimensionnelle: { rubrique: 'Arène', titre: 'Arène dimensionnelle' },
+      swExporter: { rubrique: 'Compte', titre: 'SW Exporter en direct' },
     },
     application: {
       titre: 'Application de bureau',
@@ -456,6 +458,69 @@ export const fr = {
     auTelephone: 'À installer depuis un ordinateur Windows ou Linux.',
     versionProposee: (version: string) => `Version proposée : ${version}`,
     toutesLesVersions: 'Toutes les versions sur GitHub',
+  },
+
+  // La page SW Exporter (`#/sw-exporter`) : le plugin « SW Blacksmith Live ».
+  // ⚠️ « SW Exporter », « ProfileExport », « plugins » sont des noms de SWEX,
+  // jamais traduits.
+  swExporter: {
+    titre: 'SW Exporter',
+    intro: (app: string) =>
+      `SW Exporter (SWEX) lit ton compte depuis le jeu et l'enregistre dans un fichier : c'est ce fichier que ${app} importe. Son plugin le tient à jour pendant que tu joues.`,
+    atoutsTitre: 'Ce que fait le plugin',
+    atouts: [
+      {
+        titre: 'Ton compte en direct',
+        texte:
+          "Sans plugin, SWEX n'écrit ton compte qu'à la connexion au jeu. Avec lui, chaque meule, gemme, amélioration, vente ou changement d'équipement arrive dans « Mon compte » deux secondes plus tard.",
+      },
+      {
+        titre: 'Tes combats de guilde',
+        texte:
+          'Siège, guerre de guilde, labyrinthe : les défenses vues, les attaques faites et les journaux de combat sont gardés au fil de la partie, pour les écrans de guilde à venir.',
+      },
+      {
+        titre: 'Rien ne quitte ta machine',
+        texte:
+          "Le plugin écrit deux fichiers à côté de ton export, dans le dossier de SWEX. Il n'envoie rien, et n'écrit jamais ta clé de session.",
+      },
+    ],
+    telecharger: 'Télécharger le plugin',
+    fichier: (version: string) => `SWBlacksmithLive.js · version ${version}`,
+    avecBureau:
+      "Il sert avec l'application de bureau, qui suit le dossier de SWEX : un navigateur ne peut pas lire un dossier de ton ordinateur. Sur le site, l'import du compte reste manuel.",
+    telechargerApp: "Télécharger l'application",
+    auTelephone: "À installer depuis un ordinateur, à côté de SW Exporter.",
+    tutoTitre: 'Installer le plugin',
+    etapes: [
+      {
+        titre: 'Installe SW Exporter',
+        texte:
+          "Si ce n'est pas déjà fait : télécharge-le, lance-le et connecte-toi une fois au jeu. Laisse son plugin ProfileExport activé : c'est lui qui écrit l'export de départ.",
+      },
+      { titre: 'Télécharge le plugin', texte: 'Le bouton ci-dessus donne le fichier SWBlacksmithLive.js.' },
+      {
+        titre: 'Dépose-le dans le dossier plugins',
+        texte:
+          'Le dossier « Summoners War Exporter Files », où SWEX enregistre tes exports, contient un dossier « plugins » : place le fichier dedans.',
+      },
+      {
+        titre: 'Redémarre SW Exporter',
+        texte: '« SWBlacksmithLive » apparaît dans la liste de ses plugins, activé. Les combats de guilde se désactivent au même endroit.',
+      },
+      {
+        titre: 'Suis le dossier dans l’application',
+        texte:
+          "Dans l'application de bureau : Paramètres › Dossier SW Exporter. Connecte-toi au jeu : ton compte se charge, puis suit chacune de tes actions.",
+      },
+    ],
+    swexSurGithub: 'SW Exporter sur GitHub',
+    limitesTitre: "Ce qui attend la connexion suivante",
+    limites:
+      "L'expérience gagnée hors combat (bâtiments) et les préréglages de la RTA et du siège : ils arrivent à la prochaine connexion au jeu, qui remet tout à plat.",
+    miseAJourTitre: 'Mettre à jour le plugin',
+    miseAJour:
+      "Le plugin porte la version de l'application : quand l'application change de version, retélécharge-le et remplace l'ancien fichier, puis redémarre SWEX.",
   },
 
   nouveautes: {

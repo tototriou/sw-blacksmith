@@ -84,7 +84,7 @@ docs/            # documentation en sections (01-presentation … 05-feuille-de-
 ```bash
 npm install                    # dépendances + installation des hooks Git (script prepare)
 npm run dev                    # serveur de dev Vite
-npm run build                  # build de production (Tailwind n'émet que ce qu'il trouve dans le SOURCE), puis le service api/ et le plugin SWEX
+npm run build                  # build de production (Tailwind n'émet que ce qu'il trouve dans le SOURCE ; Vite y émet le plugin SWEX), puis le service api/
 npm run dev:api                # le site ET le service Discord en local (vercel dev, http://localhost:3000)
 npm run lint                   # ESLint sur tout le dépôt
 npx tsc --noEmit               # types : src/, scripts/, tests/, bureau/, api/ et plugin-swex/
@@ -147,6 +147,7 @@ npm run bureau:preuve          # la vérification de l'application de bureau
 | `api/interactions.mjs`, `api/_source/capture/`, `api/_source/speedtune/`, `scripts/construire-banque-portraits.*`, `scripts/construire-gabarits-chiffres.*`, `scripts/enregistrer-commande-speedtune.mjs` | [feat-discord-capture.md](docs/02-app/speed-tuning/feat-discord-capture.md) |
 | `bureau/`, `src/lib/bureau.ts`, `electron-builder.yml`, `src/pages/TelechargerPage.tsx` | [bureau/](docs/02-app/bureau/README.md), [telecharger/](docs/02-app/telecharger/README.md) |
 | `plugin-swex/` (le plugin SWEX « SW Blacksmith Live ») | [feat-swex-direct.md](docs/02-app/bureau/feat-swex-direct.md) |
+| `src/pages/SwExporterPage.tsx`, `src/lib/pluginSwex.ts` | [sw-exporter/](docs/02-app/sw-exporter/README.md), [feat-swex-direct.md](docs/02-app/bureau/feat-swex-direct.md) |
 | `src/ui/`, `src/index.css`, `tailwind.config.js`, tout rendu d'écran | [03-developpeur/interface/](docs/03-developpeur/interface/README.md) |
 | `eslint.config.js`, `.githooks/`, `scripts/installer-hooks.mjs`, `.github/workflows/` | [qualite-code.md](docs/03-developpeur/qualite-code.md) |
 | `tests/renvois.test.ts`, un fichier déplacé ou renommé | [renvois.md](docs/03-developpeur/renvois.md) |

@@ -17,10 +17,13 @@ Ce que SW Exporter charge depuis son dossier `plugins` : un **seul fichier**,
 (`scripts/lib/construirePluginSwex.mjs`, CommonJS, cible `node16` : SWEX
 embarque son propre Electron, parfois ancien).
 
-- **Construit par `npm run build`**, après Vite, dans
-  `dist/plugin-swex/SWBlacksmithLive.js` (non suivi, comme tout `dist/`) : le
-  site le sert, l'app de bureau l'embarque. `npm run plugin-swex` le construit
-  seul ; `node scripts/construire-plugin-swex.mjs <dossier>` l'écrit ailleurs.
+- **Émis par Vite** ([vite.config.ts](vite.config.ts), `pluginSwex`) : à la
+  construction dans `dist/plugin-swex/SWBlacksmithLive.js` (non suivi, comme
+  tout `dist/`) — le site le sert, l'app de bureau l'embarque —, et en
+  développement à la même adresse, reconstruit à chaque demande. La page
+  [SW Exporter](../sw-exporter/) le donne à télécharger. `npm run plugin-swex`
+  le construit seul ; `node scripts/construire-plugin-swex.mjs <dossier>`
+  l'écrit ailleurs.
 - ⚠️ **Sa version est celle de l'app** (`package.json`), injectée à la
   construction (`__VERSION_PLUGIN__`) et écrite dans sa description et en tête
   du fichier : l'app de bureau la compare à la sienne pour proposer la mise à

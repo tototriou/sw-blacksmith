@@ -15,6 +15,7 @@ import {
   IconeNouveautes,
   IconeOffense,
   IconeTelecharger,
+  IconeSwex,
   IconeOptimizer,
   IconeRecos,
   IconeRta,
@@ -212,6 +213,7 @@ export default function HomePage({ stats, onImport, monstres = [] }: Props) {
           <PastilleOutil href="#/compte/artefacts" icon={IconeArtefacts} accent={COULEUR_COMPTE_SUB.artefacts} titre={a.cartes.artefacts.titre} />
           <PastilleOutil href="#/bestiary" icon={IconeBestiaire} accent={COULEUR_SECTION.bestiary} titre={a.cartes.bestiaire.titre} />
           <PastilleOutil href="#/mecaniques" icon={IconeMecaniques} accent={COULEUR_SECTION.mecaniques} titre={a.cartes.mecaniques.titre} />
+          <PastilleOutil href="#/sw-exporter" icon={IconeSwex} accent={COULEUR_SECTION['sw-exporter']} titre={a.cartes.swExporter.titre} />
           {!estBureau() && <PastilleOutil href="#/telecharger" icon={IconeTelecharger} accent={COULEUR_SECTION.telecharger} titre={a.application.titre} />}
         </nav>
       </motion.section>

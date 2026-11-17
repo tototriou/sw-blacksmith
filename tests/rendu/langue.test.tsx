@@ -150,6 +150,10 @@ export function testRenduLanguePagesPubliques() {
   ok(telecharger.includes('Download for Windows') && telecharger.includes('Version offered: v'), 'Télécharger : boutons et version proposée');
   ok(telecharger.includes('Download for Linux (.deb)') && telecharger.includes('For another distribution: the AppImage'), 'Télécharger : le .deb, et l’AppImage pour les autres distributions');
 
+  const swex = enAnglais(() => texteVisible(rendreApp('#/sw-exporter')));
+  ok(swex.includes('Download the plugin') && swex.includes('Your account, live') && swex.includes('Install SW Exporter'), 'SW Exporter : le plugin, ce qu’il fait, le tuto');
+  ok(!swex.includes('Télécharger le plugin'), 'SW Exporter : pas de français');
+
   const mecaniques = enAnglais(() => rendre(<MechanicsPage />));
   ok(texteVisible(mecaniques).startsWith('Game mechanics The formulas behind Summoners War'), 'Mécaniques : l’article anglais');
   egal(boutons(mecaniques).map((b) => b.texte), mecaniquesEn.sections.map((s) => s.titre), 'Mécaniques : le sommaire anglais');

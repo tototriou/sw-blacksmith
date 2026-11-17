@@ -72,6 +72,7 @@ const TITRES: [string, string][] = [
   ['#/mecaniques', 'Mécaniques'],
   ['#/releases', 'Nouveautés'],
   ['#/telecharger', 'Télécharger'],
+  ['#/sw-exporter', 'SW Exporter'],
   ['#/parametres', 'Paramètres'],
   ['#/arene/defense', 'Défense'],
   ['#/arene/offense', 'Offense'],

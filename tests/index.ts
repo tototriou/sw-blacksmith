@@ -396,6 +396,7 @@ import { testEcranPartageMediaQueryVolet, testEcranPartageMemePage, testRenduEcr
 import { testRenduAccueil, testRenduAccueilBureau, testRenduAccueilDiscord, testRenduAccueilEspace, testRenduAccueilExemples } from './rendu/accueil.test';
 import { testDemoAccueil } from './demo-accueil.test';
 import { testRenduTelecharger } from './rendu/telecharger.test';
+import { testRenduSwExporter, testRenduSwExporterBureau } from './rendu/sw-exporter.test';
 import { testRenduBureauTextes } from './rendu/bureau-textes.test';
 import { testRenduBureauCoeursRecherche } from './rendu/recherche-coeurs.test';
 import { testRenduBarreSession } from './rendu/barre-session.test';
@@ -758,6 +759,8 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testRenduAccueilExemples', testRenduAccueilExemples],
   ['testDemoAccueil', testDemoAccueil],
   ['testRenduTelecharger', testRenduTelecharger],
+  ['testRenduSwExporter', testRenduSwExporter],
+  ['testRenduSwExporterBureau', testRenduSwExporterBureau],
   ['testRenduBureauTextes', testRenduBureauTextes],
   ['testRenduBureauCoeursRecherche', testRenduBureauCoeursRecherche],
   ['testRenduBarreSession', testRenduBarreSession],
