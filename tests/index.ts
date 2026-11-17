@@ -83,6 +83,7 @@ import { testOptimizerRattachementIdentites, verificationsOptimizerRattachementO
   testOptimizerRattachementCopiesSansExemplaire, testOptimizerRattachementPermutationEtProprietaire,
   testOptimizerRattachementRuneVendue, testOptimizerRattachementDefensesComplet, testOptimizerRattachementBranchement, testOptimizerRattachementSpeedTune } from './optimizer-rattachement.test';
 import testMeules, { testGemmeMemeStat, testRegemmeDifferent, testReserveParGrade, testPalier, testRegistre, testSansDowngrade } from './meules.test';
+import { testCourbesRunesParRang, testCourbesRunesRuneARune, testCourbesRunesSansGemmeSimulee } from './rune-courbes.test';
 import testArtefacts from './artefacts.test';
 import testArtefactsTop from './artefacts-top.test';
 import testArtefactOptim, {
@@ -1179,6 +1180,9 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testSansDowngrade', testSansDowngrade],
   ['testGemmeMemeStat', testGemmeMemeStat],
   ['testRegemmeDifferent', testRegemmeDifferent],
+  ['testCourbesRunesParRang', testCourbesRunesParRang],
+  ['testCourbesRunesRuneARune', testCourbesRunesRuneARune],
+  ['testCourbesRunesSansGemmeSimulee', testCourbesRunesSansGemmeSimulee],
   ['testReserveParGrade', testReserveParGrade],
   ['testPalier', testPalier],
   ['testMigrationStockage', testMigrationStockage],
