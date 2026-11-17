@@ -9,6 +9,23 @@ import type { Release } from './releases';
 
 export const RELEASES_EN: Release[] = [
   {
+    version: null,
+    date: '2026-11-17',
+    title: 'The Arena and the Dimensional Arena',
+    highlights: [
+      'An Arena page: your defense, cross-server defense and attacks, imported from your account.',
+      'The Dimensional Arena in the desktop app: your defense, attacks and runes for that mode.',
+    ],
+    changes: [
+      { kind: 'feat', scope: 'Arena', text: 'New Arena page: defense, cross-server defense and attacks, imported from your account.' },
+      { kind: 'feat', scope: 'Arena', text: 'Arena combat speeds use arena leader skills.' },
+      { kind: 'feat', scope: 'Speed tuning', text: 'Your arena teams load into speed tuning.' },
+      { kind: 'feat', scope: 'Dimensional Arena', text: 'In the desktop app, your defense, attacks and runes fill in when you open the mode in game.' },
+      { kind: 'feat', scope: 'Dimensional Arena', text: 'On the website, the web version is coming soon.' },
+      { kind: 'feat', scope: 'Application', text: 'With the SW Exporter folder, an empty arena fills in on the next export.' },
+    ],
+  },
+  {
     version: '2.4.4',
     date: '2026-11-15',
     title: '/speedtune reads cards of every colour',

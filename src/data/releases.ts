@@ -70,6 +70,23 @@ export function journal(langue: Langue): Release[] {
 // Si une ligne dépasse ~15 mots, c'est qu'elle raconte l'implémentation.
 export const RELEASES: Release[] = [
   {
+    version: null,
+    date: '2026-11-17',
+    title: 'L’Arène et l’arène dimensionnelle',
+    highlights: [
+      'Une page Arène : ta défense, ta défense interserveur et tes attaques, importées de ton compte.',
+      'L’arène dimensionnelle dans l’application de bureau : ta défense, tes attaques et tes runes du mode.',
+    ],
+    changes: [
+      { kind: 'feat', scope: 'Arène', text: 'Nouvelle page Arène : défense, défense interserveur et attaques, importées de ton compte.' },
+      { kind: 'feat', scope: 'Arène', text: 'Les vitesses de combat de l’arène tiennent compte des leads d’arène.' },
+      { kind: 'feat', scope: 'Speed tuning', text: 'Tes équipes d’arène se chargent dans le speed tuning.' },
+      { kind: 'feat', scope: 'Arène dimensionnelle', text: 'Dans l’application de bureau, ta défense, tes attaques et tes runes se remplissent quand tu ouvres le mode en jeu.' },
+      { kind: 'feat', scope: 'Arène dimensionnelle', text: 'Sur le site, la version web arrive prochainement.' },
+      { kind: 'feat', scope: 'Application', text: 'Avec le dossier SW Exporter, une arène vide se remplit au prochain export.' },
+    ],
+  },
+  {
     version: '2.4.4',
     date: '2026-11-15',
     title: '/speedtune lit les cartes de toutes les couleurs',
