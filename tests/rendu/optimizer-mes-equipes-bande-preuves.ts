@@ -28,11 +28,14 @@ export async function preuvesMesEquipesBande(b: Banc, enregistree: () => EquipeO
 
   const grise = groupe() && boutons(q.validerDAbord, groupe()!)[0];
   verifier(!!grise && grise.disabled && grise.title === q.validerDAbord, 'sans builds validés : grisé, l’infobulle dit de les valider d’abord');
-  const enTete = grise?.parentElement;
-  const ordre = enTete ? [...enTete.children] : [];
-  const numero = ordre.findIndex(e => e.textContent === 'Équipe 1');
-  const speedTune = ordre.findIndex(e => !!e.querySelector(`button[aria-label="${fr.optimizer.speedTune.regler}"]`));
-  verifier(numero >= 0 && numero < ordre.indexOf(grise!) && ordre.indexOf(grise!) < speedTune, 'entre « Équipe 1 » et le speed tune');
+  // Juste à côté du numéro, dans sa case, puis le speed tune plus loin sur la ligne.
+  const numero = grise?.previousElementSibling;
+  const st = groupe()?.querySelector<HTMLElement>(`button[aria-label="${fr.optimizer.speedTune.regler}"]`);
+  const [rg, rn, rs] = [grise, numero, st].map(e => e?.getBoundingClientRect());
+  verifier(numero?.textContent === 'Équipe 1' && !!rg && !!rn && !!rs && rg.left >= rn.right && rg.left - rn.right <= 6 && rg.right < rs.left
+    && Math.abs((rg.top + rg.bottom) / 2 - (rs.top + rs.bottom) / 2) < 2, 'juste à côté de « Équipe 1 », avant le speed tune, sur sa ligne');
+  const style = grise ? getComputedStyle(grise) : null;
+  verifier(!!style && style.borderTopWidth === '1px' && style.backgroundColor !== 'rgba(0, 0, 0, 0)', 'dans une case, comme « Speed tune »');
 
   // Le premier validé seul ne suffit pas : chaque membre, runes et paire.
   await b.geste(() => b.listes().validateBuild('a', b.premier, [1, 2, 3, 4, 5, 6], [1, 2], undefined, 10101));

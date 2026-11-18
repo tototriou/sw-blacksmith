@@ -122,15 +122,26 @@ export default function MonstresDeLaListe({ activeList, activeMembers, setEquipe
             });
             const inactifs = membres.filter(m => m.motif).length;
             return <section key={g.equipe?.id ?? 'sans-equipe'} aria-label={g.equipe ? z.equipe(numero + 1) : z.sansEquipe} className={`space-y-0.5 ${g.equipe ? `rounded-lg p-1.5 ${numero % 2 === 0 ? 'bg-equipe-a' : 'bg-equipe-b'}` : ''}`}>
-            {g.equipe && <div className="grid grid-cols-[auto_minmax(0,1fr)_auto_auto_auto_auto] items-center gap-x-0.5 py-0.5">
+            {g.equipe && <div className="grid grid-cols-[auto_minmax(0,1fr)_auto_auto_auto] items-center gap-x-0.5 py-0.5">
               {/* Lead, numéro, compte des leads inactifs et gestes de l'équipe sur une seule ligne.
-                  ⚠️ Six cases dans une colonne de 330 px : l'écart est serré et « Speed tune »
+                  ⚠️ Cinq cases dans une colonne de 330 px : l'écart est serré et « Speed tune »
                   perd son mot au doigt, sans quoi le numéro de l'équipe se tronque. */}
               <span className="flex h-7 items-center whitespace-nowrap">
                 {g.equipe.lead ? <LeadPill ls={g.equipe.lead} titre={z.leadEquipe(g.equipe.lead.amount, nomStatLead(jeu, g.equipe.lead.stat), nomZoneLead(jeu, g.equipe.lead.area))} /> : <span className="text-xs text-ink-dim">{z.sansLead}</span>}
               </span>
-              {/* Le numéro seul : le leader, tronqué à toutes les largeurs, ne se lisait jamais. */}
-              <span title={z.equipe(numero + 1)} className="min-w-0 truncate text-xs font-semibold text-ink">{z.equipe(numero + 1)}</span>
+              {/* Le numéro seul : le leader, tronqué à toutes les largeurs, ne se lisait jamais.
+                  Juste à côté, « Enregistrer dans Mes équipes », dans une case comme
+                  « Speed tune » : grisé tant qu'un membre n'a pas ses runes et ses
+                  artéfacts validés, l'infobulle dit pourquoi. */}
+              <span className="flex min-w-0 items-center gap-1">
+                <span title={z.equipe(numero + 1)} className="min-w-0 truncate text-xs font-semibold text-ink">{z.equipe(numero + 1)}</span>
+                {onEnregistrerEquipe && (() => {
+                  const pret = buildsEquipeValides(g.equipe, lists.validated);
+                  return <BoutonIcone taille="serre" forme="boite" cadre ton="accent" icone={<IconeEquipes size={16} />} disabled={!pret}
+                    className="flex-none" libelle={pret ? o.equipe.enregistrerMesEquipes : o.equipe.validerDAbord}
+                    onClick={() => onEnregistrerEquipe(g.equipe!)} />;
+                })()}
+              </span>
               {/* Le compte en court (« ⚠ 2 »), la phrase en infobulle et pour les lecteurs
                   d'écran : en toutes lettres, sa place réservée chassait les gestes de la ligne. */}
               <span className="inline-grid whitespace-nowrap text-micro text-warn" title={inactifs ? z.leadsInactifs(inactifs) : undefined}>
@@ -138,14 +149,6 @@ export default function MonstresDeLaListe({ activeList, activeMembers, setEquipe
                 <span className={`col-start-1 row-start-1 ${inactifs ? '' : 'invisible'}`} aria-hidden>⚠ {inactifs}</span>
                 {inactifs > 0 && <span className="sr-only">{z.leadsInactifs(inactifs)}</span>}
               </span>
-              {/* Entre le numéro et le speed tune : grisé tant qu'un membre n'a pas
-                  ses runes et ses artéfacts validés, l'infobulle dit pourquoi. */}
-              {onEnregistrerEquipe ? (() => {
-                const pret = buildsEquipeValides(g.equipe, lists.validated);
-                return <BoutonIcone taille="serre" icone={<IconeEquipes size={14} />} disabled={!pret}
-                  libelle={pret ? o.equipe.enregistrerMesEquipes : o.equipe.validerDAbord}
-                  onClick={() => onEnregistrerEquipe(g.equipe!)} />;
-              })() : <span />}
               {/* Place réservée hors siège : changer le contenu de la liste ne déplace pas « Modifier ». */}
               <span className={onSpeedTune ? '' : 'invisible'} aria-hidden={!onSpeedTune}>
                 <Bouton taille="xs" fond="doux" ton="accent" icone={<IconeSpeedTuning size={12} />} libelle={o.speedTune.titre} libelleAuDoigt={false} disabled={!onSpeedTune} tabIndex={onSpeedTune ? undefined : -1}

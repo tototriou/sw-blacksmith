@@ -36,7 +36,8 @@ export async function preuvesBandesEquipes(b: Banc): Promise<[boolean, string][]
   verifier(a.contains(a.querySelector('img[src*="leader_skill_"]')) && !a.textContent!.includes('Leader :')
     && cartes(a).length === 2 && [...a.querySelectorAll('button')].some(e => e.textContent === 'Modifier l’équipe'), 'bande : numéro sans leader, LeadPill, modifier et deux cartes');
   const centre = (e: Element) => { const r = e.getBoundingClientRect(); return r.top + r.height / 2; };
-  const titre = [...a.querySelectorAll('span')].find(e => e.textContent?.startsWith('Équipe 1'))!;
+  // Le numéro lui-même (son infobulle le porte), pas la case qu'il partage avec le bouton de Mes équipes.
+  const titre = a.querySelector<HTMLElement>('span[title="Équipe 1"]')!;
   const modifier = [...a.querySelectorAll('button')].find(e => e.textContent === 'Modifier l’équipe')!;
   // Une ligne : LeadPill, numéro lisible en entier, « Speed tune » et « Modifier l'équipe ».
   const speedTune = [...a.querySelectorAll('button')].find(e => e.textContent === 'Speed tune');
