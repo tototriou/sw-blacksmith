@@ -217,9 +217,13 @@ liée (`optimizer`, état `equipe-liee`).
   formats, sans glisser-déposer), désigner le leader, retirer un monstre. À deux
   monstres, la croix est désactivée, son infobulle dit « Une équipe garde au moins
   deux monstres. »
-- « Reprendre l'équipement actuel » sur une fiche de monstre remplace sa copie par
-  ce que son exemplaire porte aujourd'hui (provenance `porte`). Il n'existe que si
-  `unitId` est connu et présent dans la Box.
+- « Reprendre l'équipement porté » sur une fiche de monstre remplace sa copie par
+  ce que son exemplaire porte aujourd'hui (provenance `porte`), et son infobulle le
+  dit. Il n'existe que si `unitId` est connu, présent dans la Box, **et** équipé
+  autrement que la copie : quand l'exemplaire porte déjà la copie (« Équipé
+  ainsi »), le geste ne changerait rien et n'est pas proposé.
+- La fiche n'a pas de geste pour retirer la seule relique : l'équipement se
+  remplace en entier (« Reprendre l'équipement porté », ou l'Optimizer).
 - « Dupliquer » copie l'équipe dans le même onglet, nom suffixé, nouveaux `id` et
   `uid` ; le leader et les liens du speed tune suivent la correspondance ancien →
   nouveau `uid`, et les `uid` des lignes du plan restent. La copie n'a **pas** de
@@ -377,8 +381,7 @@ L'équipement de chaque monstre se reconstruit pièce par pièce :
   enregistrés, et la confirmation dit « artéfacts gardés » ; un build validé sans
   `reliqueId` garde la relique enregistrée,
   jamais la relique portée. La confirmation dit « relique gardée » : l'Optimizer ne
-  distingue pas un retrait volontaire de la relique d'un build validé sans relique,
-  et le retrait se refait à la main dans le détail (« Retirer la relique ») ;
+  distingue pas un retrait volontaire de la relique d'un build validé sans relique ;
 - les stats de base sont celles de l'exemplaire actuel s'il est dans la Box, sinon
   celles de la copie enregistrée du monstre, sinon celles de l'espèce (6★ niveau
   max, comme un monstre non possédé de l'Optimizer).

@@ -1160,7 +1160,8 @@ export const fr = {
       retirerLeader: 'Retirer le leader',
       position: 'Position',
       positionN: (n: number) => `Position ${n}`,
-      reprendre: 'Reprendre l’équipement actuel',
+      reprendre: 'Reprendre l’équipement porté',
+      reprendreAide: 'Remplace l’équipement enregistré par celui que porte ce monstre dans ton compte.',
       provenance: {
         porte: 'Équipement porté',
         'siege-defense': 'Défense de siège',
@@ -1184,7 +1185,6 @@ export const fr = {
       rune: (slot: number) => `Rune ${slot}`,
       artefact: (n: number) => `Artéfact ${n}`,
       relique: 'Relique',
-      retirerRelique: 'Retirer la relique',
       sansCompte: 'Importe ton compte pour comparer cet équipement au tien.',
     },
     ajout: {

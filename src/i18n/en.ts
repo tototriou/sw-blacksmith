@@ -1098,7 +1098,8 @@ export const en: Dictionnaire = {
       retirerLeader: 'Remove the leader',
       position: 'Position',
       positionN: (n: number) => `Position ${n}`,
-      reprendre: 'Take the current equipment',
+      reprendre: 'Take the worn equipment',
+      reprendreAide: 'Replaces the saved equipment with what this monster wears in your account.',
       provenance: {
         porte: 'Worn equipment',
         'siege-defense': 'Siege defense',
@@ -1122,7 +1123,6 @@ export const en: Dictionnaire = {
       rune: (slot: number) => `Rune ${slot}`,
       artefact: (n: number) => `Artifact ${n}`,
       relique: 'Relic',
-      retirerRelique: 'Remove the relic',
       sansCompte: 'Import your account to compare this equipment with yours.',
     },
     ajout: {

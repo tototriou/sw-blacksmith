@@ -86,7 +86,13 @@ export function testRenduEquipesDetail() {
   ok(t.includes(`${e.detail.rune(3)} : ${e.detail.etats.modifiee}`), 'la pièce modifiée nommée');
   egal(bouton(html, e.detail.minimum)?.desactive, true, 'à deux monstres, le retrait est refusé et l’infobulle dit pourquoi');
   ok(!texteVisible(html).includes(e.detail.brouillon), 'une équipe enregistrée n’est pas un brouillon');
-  ok(bouton(html, e.detail.reprendre) !== undefined, 'reprendre l’équipement actuel, l’exemplaire étant connu');
+  ok(bouton(html, e.detail.reprendre) === undefined, 'rien à reprendre : l’exemplaire porte déjà la copie');
+  ok(!t.includes('Retirer la relique') && !t.includes('Remove the relic'), 'aucun retrait de relique sur la fiche');
+  const autrement = [{ ...ctx().box[0], gear: equipementEx(2) }];
+  const hAutrement = rendre(<DetailEquipe equipe={EQUIPES[0]} onChanger={() => {}} monstreDe={(c) => MONSTRES.find((m) => m.com2usId === c)}
+    box={autrement} inventaire={INVENTAIRE} onAjouter={() => {}} />);
+  ok(texteVisible(hAutrement).includes(e.detail.exemplaire['equipe-autrement']), 'l’exemplaire est équipé autrement');
+  egal(bouton(hAutrement, e.detail.reprendre)?.title, e.detail.reprendreAide, 'reprendre l’équipement porté, son infobulle dit ce qu’il fait');
   egal(bouton(html, e.detail.ajouter)?.desactive, false, 'ajouter un monstre');
   // Une ligne par monstre au large : l'identité, puis stats, artéfacts, runes et relique.
   egal((html.match(/@4xl:flex-row/g) ?? []).length, EQUIPES[0].monstres.length, 'une ligne par monstre');

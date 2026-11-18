@@ -8,7 +8,7 @@ import MonsterGear from '../../MonsterGear';
 import { useTraduction } from '../../../hooks/useLangue';
 import {
   MONSTRES_MAX_EQUIPE, MONSTRES_MIN_EQUIPE, deplacerMonstre, designerLeader, etatExemplaire, etatsEquipement, modifierTextes,
-  remplacerEquipement, retirerMonstre, retirerRelique,
+  memeEquipement, remplacerEquipement, retirerMonstre,
   type EquipeEnregistree, type EtatPiece, type InventaireCompte, type MonstreEnregistre,
 } from '../../../lib/equipesEnregistrees';
 
@@ -117,17 +117,12 @@ function FicheMonstre({ m, position, total, leader, retirable, monstre, box, inv
             <BoutonIcone libelle={retirable ? d.retirer(nom) : d.minimum} icone={<X size={14} />} disabled={!retirable}
               onClick={() => onChanger((e, n) => retirerMonstre(e, m.uid, n))} />
           </div>
-          {(actuel?.gear || m.equipement?.relic) && (
-            <div className="mt-2 flex flex-wrap gap-2">
-              {/* N'existe que pour un exemplaire connu ET présent dans la Box. */}
-              {actuel?.gear && (
-                <Bouton taille="sm" icone={<RefreshCw size={14} />} libelle={d.reprendre}
-                  onClick={() => onChanger((e, n) => remplacerEquipement(e, m.uid, actuel.gear!, 'porte', n))} />
-              )}
-              {m.equipement?.relic && (
-                <Bouton taille="sm" icone={<X size={14} />} libelle={d.retirerRelique}
-                  onClick={() => onChanger((e, n) => retirerRelique(e, m.uid, n))} />
-              )}
+          {/* Seulement quand l'exemplaire, connu et dans la Box, porte autre
+              chose que la copie : sinon le geste ne changerait rien. */}
+          {actuel?.gear && !(m.equipement && memeEquipement(m.equipement, actuel.gear)) && (
+            <div className="mt-2">
+              <Bouton taille="sm" icone={<RefreshCw size={14} />} libelle={d.reprendre} title={d.reprendreAide}
+                onClick={() => onChanger((e, n) => remplacerEquipement(e, m.uid, actuel.gear!, 'porte', n))} />
             </div>
           )}
           {ecarts.length > 0 && <p className="mt-2 text-xs text-warn">{ecarts.join(' · ')}</p>}
