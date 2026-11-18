@@ -72,10 +72,11 @@ export const RELEASES: Release[] = [
   {
     version: null,
     date: '2026-11-17',
-    title: 'L’Arène et l’arène dimensionnelle',
+    title: 'L’Arène, l’arène dimensionnelle et ton compte en direct',
     highlights: [
       'Une page Arène : ta défense, ta défense interserveur et tes attaques, importées de ton compte.',
       'L’arène dimensionnelle dans l’application de bureau : ta défense, tes attaques et tes runes du mode.',
+      'Ton compte en direct : avec le plugin SW Exporter, « Mon compte » suit ta partie dans l’application de bureau.',
     ],
     changes: [
       { kind: 'feat', scope: 'Arène', text: 'Nouvelle page Arène : défense, défense interserveur et attaques, importées de ton compte.' },
@@ -84,6 +85,10 @@ export const RELEASES: Release[] = [
       { kind: 'feat', scope: 'Arène dimensionnelle', text: 'Dans l’application de bureau, ta défense, tes attaques et tes runes se remplissent quand tu ouvres le mode en jeu.' },
       { kind: 'feat', scope: 'Arène dimensionnelle', text: 'Sur le site, la version web arrive prochainement.' },
       { kind: 'feat', scope: 'Application', text: 'Avec le dossier SW Exporter, une arène vide se remplit au prochain export.' },
+      { kind: 'feat', scope: 'SW Exporter', text: 'Nouvelle page SW Exporter : le plugin SW Blacksmith Live à télécharger, et son tuto.' },
+      { kind: 'feat', scope: 'Mon compte', text: 'Dans l’application de bureau, « Direct » suit ta partie : meules, gemmes, ventes, runes posées.' },
+      { kind: 'feat', scope: 'SW Exporter', text: '« Mettre à jour mon compte » reporte ta session sans te reconnecter au jeu.' },
+      { kind: 'feat', scope: 'SW Exporter', text: 'Le plugin garde aussi tes combats de guilde, pour les écrans de guilde à venir.' },
     ],
   },
   {

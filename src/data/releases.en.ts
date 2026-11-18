@@ -11,10 +11,11 @@ export const RELEASES_EN: Release[] = [
   {
     version: null,
     date: '2026-11-17',
-    title: 'The Arena and the Dimensional Arena',
+    title: 'The Arena, the Dimensional Arena and your account live',
     highlights: [
       'An Arena page: your defense, cross-server defense and attacks, imported from your account.',
       'The Dimensional Arena in the desktop app: your defense, attacks and runes for that mode.',
+      'Your account live: with the SW Exporter plugin, “My account” follows your game in the desktop app.',
     ],
     changes: [
       { kind: 'feat', scope: 'Arena', text: 'New Arena page: defense, cross-server defense and attacks, imported from your account.' },
@@ -23,6 +24,10 @@ export const RELEASES_EN: Release[] = [
       { kind: 'feat', scope: 'Dimensional Arena', text: 'In the desktop app, your defense, attacks and runes fill in when you open the mode in game.' },
       { kind: 'feat', scope: 'Dimensional Arena', text: 'On the website, the web version is coming soon.' },
       { kind: 'feat', scope: 'Application', text: 'With the SW Exporter folder, an empty arena fills in on the next export.' },
+      { kind: 'feat', scope: 'SW Exporter', text: 'New SW Exporter page: download the SW Blacksmith Live plugin, with its guide.' },
+      { kind: 'feat', scope: 'My account', text: 'In the desktop app, “Live” follows your game: grinds, gems, sales, runes equipped.' },
+      { kind: 'feat', scope: 'SW Exporter', text: '“Update my account” applies your session without logging in to the game again.' },
+      { kind: 'feat', scope: 'SW Exporter', text: 'The plugin also keeps your guild battles, for the guild screens to come.' },
     ],
   },
   {
