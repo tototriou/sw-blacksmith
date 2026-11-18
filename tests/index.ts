@@ -351,7 +351,13 @@ import testBureauProtocole from './bureau-protocole.test';
 import testBureauFenetre from './bureau-fenetre.test';
 import testBureauMiseAJour from './bureau-mise-a-jour.test';
 import testBureauSwex, { testBureauJournalSwex } from './bureau-swex.test';
-import { testPluginSwexEtat, testPluginSwexGuilde, testPluginSwexPaquet } from './plugin-swex.test';
+import {
+  testPluginSwexArchive,
+  testPluginSwexEtat,
+  testPluginSwexGuilde,
+  testPluginSwexLive,
+  testPluginSwexPaquet,
+} from './plugin-swex.test';
 import testBureauSession from './bureau-session.test';
 import testBureauCoeurs from './bureau-coeurs.test';
 import testBureauLancement from './bureau-lancement.test';
@@ -1187,6 +1193,8 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testBureauMiseAJour', testBureauMiseAJour],
   ['testBureauSwex', testBureauSwex],
   ['testPluginSwexEtat', testPluginSwexEtat],
+  ['testPluginSwexLive', testPluginSwexLive],
+  ['testPluginSwexArchive', testPluginSwexArchive],
   ['testPluginSwexGuilde', testPluginSwexGuilde],
   ['testPluginSwexPaquet', testPluginSwexPaquet],
   ['testBureauJournalSwex', testBureauJournalSwex],

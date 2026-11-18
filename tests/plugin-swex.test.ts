@@ -3,7 +3,25 @@
 // piège relevé en rejouant un vrai journal — le journal réel ne vient pas ici,
 // il porte la clé de session du joueur.
 
-import { appliquer, depuisConnexion, versExport, type Json } from '../plugin-swex/source/etatDirect';
+import {
+  FORMAT_COMPTE_ARCHIVE,
+  FORMAT_COMPTE_LIVE,
+  appliquer,
+  depuisConnexion,
+  depuisLignesLive,
+  ligneConnexion,
+  versEtatArchive,
+  versExport,
+  type Json,
+} from '../plugin-swex/source/etatDirect';
+import {
+  ajouterAuFichier,
+  construireBloc,
+  empreinteDe,
+  lireEntete,
+  parcourirArchive,
+  type Bloc,
+} from '../plugin-swex/source/archive';
 import {
   COMBATS_MAX,
   FORMAT_GUILDE,
@@ -12,13 +30,21 @@ import {
   guildeVide,
   versFichierGuilde,
 } from '../plugin-swex/source/guilde';
-import { DOSSIER_PLUGIN, FICHIER_COMPTE, FICHIER_GUILDE, dossierInvocateur, nomDeBase } from '../plugin-swex/source/fichiers';
+import {
+  COMPTE_ARCHIVE,
+  COMPTE_LIVE,
+  DOSSIER_PLUGIN,
+  FICHIER_GUILDE,
+  dossierInvocateur,
+  nomDeBase,
+} from '../plugin-swex/source/fichiers';
 import { CHEMIN_PLUGIN, NOM_PLUGIN, construirePluginSwex } from '../scripts/lib/construirePluginSwex.mjs';
 import { CHEMIN_PLUGIN_SWEX, FICHIER_PLUGIN_SWEX } from '../src/lib/pluginSwex';
 import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createRequire } from 'node:module';
+import { gunzipSync, gzipSync } from 'node:zlib';
 import { egal, ok, titre } from './outils';
 
 const MOI = 100;
@@ -110,9 +136,17 @@ export function testPluginSwexEtat() {
 
   // Meule : la rune ET le lot de pierres.
   const e = depuisConnexion(connexion());
-  ok(
-    appliquer(e, 'AmplifyRune_v2', req(), ok0({ rune: rune(12, {}, 15, { sec_eff: [[4, 10, 0, 5]] }), rune_craft_item: craft(41, 2), tvalue: 1100 })),
-    'meule : le compte change'
+  const meule = appliquer(
+    e,
+    'AmplifyRune_v2',
+    req(),
+    ok0({ rune: rune(12, {}, 15, { sec_eff: [[4, 10, 0, 5]] }), rune_craft_item: craft(41, 2), tvalue: 1100 })
+  );
+  // Le changement rendu : l'état final de ce qui a bougé, rien d'autre.
+  egal(
+    [meule?.type, meule?.t, meule?.commande, meule?.maj.runes?.map((r) => r.rune_id), meule?.maj.crafts?.[0].amount, meule?.retires],
+    ['changement', 1100, 'AmplifyRune_v2', [12], 2, {}],
+    'meule : le changement dit la rune et le lot de pierres, à l’heure du serveur'
   );
   let x = versExport(e);
   egal(x.runes.find((r: Json) => r.rune_id === 12).sec_eff, [[4, 10, 0, 5]], 'meule : la rune est meulée');
@@ -124,15 +158,21 @@ export function testPluginSwexEtat() {
   egal(versExport(e).rune_craft_item_list.length, 0, 'dernière pierre : le lot disparaît');
 
   // Vente : la réponse renvoie les runes VENDUES (rachat) — elles ne reviennent pas.
-  appliquer(e, 'SellRune', req({ rune_id_list: [13] }), ok0({ runes: [rune(13, {})] }));
+  const vente = appliquer(e, 'SellRune', req({ rune_id_list: [13] }), ok0({ runes: [rune(13, {})] }));
   egal(idsInventaire(versExport(e)), [12], 'vente : la rune vendue disparaît, malgré la réponse qui la montre');
+  egal([vente?.retires, vente?.maj], [{ runes: [13] }, {}], 'vente : le changement dit la rune retirée');
 
   // Équipement : la rune 12 passe sur le monstre 1, la 11 retourne à l'inventaire.
-  appliquer(
+  const equipement = appliquer(
     e,
     'UpdateUnitEquip',
     req(),
     ok0({ EquipRuneList: { unit_info: unite(1, [rune(12, { unite: 1 })], [artefact(31, 1)], [relique(51)]) } })
+  );
+  egal(
+    [equipement?.maj.unites?.map((u) => [u.unit_id, u.runes, u.artifacts]), equipement?.maj.runes?.map((r) => r.rune_id).sort()],
+    [[[1, [], []]], [11, 12]],
+    'équipement : le monstre sans son équipement, les deux runes pour elles-mêmes'
   );
   x = versExport(e);
   egal([idsPortees(x, 1), idsInventaire(x)], [[12], [11]], 'équipement : la rune posée change de place, l’autre est rendue');
@@ -156,14 +196,17 @@ export function testPluginSwexEtat() {
 
   // Ce qui n'est PAS l'état du compte.
   const avant = JSON.stringify(versExport(e));
-  appliquer(e, 'GetBlackMarketList', req(), ok0({ market_list: [{ runes: [rune(90, {}, 0, { occupied_type: 3, occupied_id: 1 })] }] }));
-  appliquer(e, 'GetWizardDataPart1', req(), ok0({ deck: [{ unit_id: 1, unit_master_id: 13413, runes: [11, 12] }] }));
-  appliquer(e, 'BattleDungeonStart', req(), ok0({ dungeon_unit_list: [[{ unit_id: 14101, unit_master_id: 1, unit_level: 70, runes: [] }]] }));
-  appliquer(e, 'getPlayPassInfo', req(), ok0({ pass: [rune(0, {})] }));
-  appliquer(e, 'VisitFriend', req(), ok0({ unit_list: [{ ...unite(9, []), wizard_id: AUTRE }] }));
-  appliquer(e, 'GetGuildSiegeDefenseDeckListAlly', req(), ok0({ unit_list: [unite(1, [rune(11, { unite: 1 })])] }));
-  appliquer(e, 'GetRTPvPInfo_v3', req(), ok0({ unit_list: [unite(2, [])] }));
+  const rien = [
+    appliquer(e, 'GetBlackMarketList', req(), ok0({ market_list: [{ runes: [rune(90, {}, 0, { occupied_type: 3, occupied_id: 1 })] }] })),
+    appliquer(e, 'GetWizardDataPart1', req(), ok0({ deck: [{ unit_id: 1, unit_master_id: 13413, runes: [11, 12] }] })),
+    appliquer(e, 'BattleDungeonStart', req(), ok0({ dungeon_unit_list: [[{ unit_id: 14101, unit_master_id: 1, unit_level: 70, runes: [] }]] })),
+    appliquer(e, 'getPlayPassInfo', req(), ok0({ pass: [rune(0, {})] })),
+    appliquer(e, 'VisitFriend', req(), ok0({ unit_list: [{ ...unite(9, []), wizard_id: AUTRE }] })),
+    appliquer(e, 'GetGuildSiegeDefenseDeckListAlly', req(), ok0({ unit_list: [unite(1, [rune(11, { unite: 1 })])] })),
+    appliquer(e, 'GetRTPvPInfo_v3', req(), ok0({ unit_list: [unite(2, [])] })),
+  ];
   egal(JSON.stringify(versExport(e)), avant, 'marché noir, decks recommandés, ennemis, aperçus, amis, siège, RTA : rien ne change');
+  egal(rien, rien.map(() => null), 'aucun changement rendu : aucune ligne écrite');
 
   // Arène serveur : l'historique des récompenses montre une rune vendue depuis.
   appliquer(e, 'SellRune', req({ rune_id_list: [14] }), ok0());
@@ -197,6 +240,106 @@ export function testPluginSwexEtat() {
   ok(!appliquer(e, 'SellRune', req({ rune_id_list: [12] }), { ret_code: 1 }), 'commande en échec : ignorée');
   ok(!appliquer(e, 'SellRune', { wizard_id: AUTRE, rune_id_list: [12] }, ok0()), 'autre invocateur : ignoré');
   egal(JSON.stringify(versExport(e)), fige, 'rien n’a changé');
+}
+
+// Une partie fabriquée : meules, vente, équipement, combat, monstre mis en
+// stock, et des commandes qui ne changent rien.
+const PARTIE: [string, Json, Json][] = [
+  ['AmplifyRune_v2', req(), ok0({ rune: rune(12, {}, 15, { sec_eff: [[4, 10, 0, 5]] }), rune_craft_item: craft(41, 2), tvalue: 1100 })],
+  ['GetBlackMarketList', req(), ok0({ market_list: [{ runes: [rune(90, {}, 0, { occupied_type: 3 })] }] })],
+  ['SellRune', req({ rune_id_list: [13] }), ok0({ runes: [rune(13, {})], tvalue: 1200 })],
+  ['UpdateUnitEquip', req(), ok0({ EquipRuneList: { unit_info: unite(1, [rune(12, { unite: 1 })], [artefact(31, 1)], [relique(51)]) } })],
+  ['BattleDungeonResult_V2', req(), ok0({ unit_list: [unite(2, [], [], [relique(52, 3)], 41)], changed_item_list: [{ info: rune(14, {}, 0) }] })],
+  ['ConvertUnitToStorage', req({ unit_id_list: [2] }), ok0({ remove_unit_id_list: [2], tvalue: 1300 })],
+  ['AmplifyRune_v2', req(), ok0({ rune: rune(14, {}), rune_craft_item: craft(41, 0) })],
+];
+
+// Le compte écrit, rangé pour comparer : l'ordre de l'inventaire n'a pas de sens.
+const range = (x: Json) => ({
+  ...x,
+  runes: [...x.runes].sort((a, b) => a.rune_id - b.rune_id),
+  artifacts: [...x.artifacts].sort((a, b) => a.rid - b.rid),
+  unit_list: [...x.unit_list].sort((a, b) => a.unit_id - b.unit_id),
+});
+
+export function testPluginSwexLive() {
+  titre('Plugin SWEX — le fichier live, relu');
+  const e = depuisConnexion(connexion());
+  const lignes = [JSON.stringify(ligneConnexion(e, '9.9.9'))];
+  for (const [commande, rq, rs] of PARTIE) {
+    const c = appliquer(e, commande, rq, rs);
+    if (c) lignes.push(JSON.stringify(c));
+  }
+  egal(lignes.length, 1 + PARTIE.length - 1, 'une ligne par commande qui change le compte, aucune pour le marché noir');
+  const premiere = JSON.parse(lignes[0]);
+  egal([premiere.type, premiere.format, premiere.plugin, premiere.wizard_id], ['connexion', FORMAT_COMPTE_LIVE, '9.9.9', MOI], 'la première ligne : la connexion, et la version du plugin');
+  ok(!lignes.join('\n').includes('secret'), 'aucune clé de session dans le fichier live');
+
+  // Relu, le fichier donne exactement le compte que tient le plugin.
+  const relu = depuisLignesLive(lignes);
+  egal(range(versExport(relu!)), range(versExport(e)), 'relu : le même compte que celui du plugin');
+  egal(relu!.tvalue, 1300, 'relu : l’heure du dernier changement');
+  // Au milieu de la partie aussi.
+  const mi = depuisConnexion(connexion());
+  for (const [commande, rq, rs] of PARTIE.slice(0, 4)) appliquer(mi, commande, rq, rs);
+  egal(range(versExport(depuisLignesLive(lignes.slice(0, 4))!)), range(versExport(mi)), 'relu en cours de partie : le compte à cet instant');
+
+  // Une dernière ligne à moitié écrite : ce qui précède vaut.
+  egal(
+    range(versExport(depuisLignesLive([...lignes, lignes[1].slice(0, 20)])!)),
+    range(versExport(e)),
+    'dernière ligne coupée : ignorée'
+  );
+  egal(depuisLignesLive([JSON.stringify({ type: 'connexion', format: 'autre' })]), null, 'un autre format : rien');
+  egal(depuisLignesLive([lignes[1]]), null, 'sans connexion en tête : rien');
+
+  // L'état allégé, archivé à la connexion : les objets bruts, pas la session.
+  const etat = versEtatArchive(e);
+  egal(
+    [etat.format, etat.runes.length, etat.artefacts.length, etat.crafts.length, etat.unites],
+    [FORMAT_COMPTE_ARCHIVE, e.runes.size, e.artefacts.size, 0, [{ unit_id: 1, unit_master_id: 13413, class: 6, unit_level: 40 }]],
+    'état allégé : runes, artéfacts, pierres, monstres réduits'
+  );
+}
+
+export async function testPluginSwexArchive() {
+  titre('Plugin SWEX — l’archive, un bloc gzip par session');
+  const bloc = (texte: string, debut: number): Bloc => ({ texte, debut, fin: debut + 60, empreinte: empreinteDe(texte) });
+  const un = construireBloc(bloc('{"a":1}\n', 1000));
+  const deux = construireBloc(bloc('{"b":2}\n', 2000));
+  egal(lireEntete(un), { taille: un.length, debut: 1000, fin: 1060, empreinte: empreinteDe('{"a":1}\n') }, 'l’en-tête dit la taille, les dates, l’empreinte');
+  egal(gunzipSync(Buffer.concat([un, deux])).toString(), '{"a":1}\n{"b":2}\n', 'deux blocs à la suite : un seul texte, relu par gunzip');
+  egal(gunzipSync(deux).toString(), '{"b":2}\n', 'un bloc seul se décompresse');
+  egal(lireEntete(gzipSync('x')), null, 'un gzip ordinaire : pas un de nos blocs');
+
+  const racine = mkdtempSync(join(tmpdir(), 'archive-swex-'));
+  const chemin = join(racine, 'compte.jsonl.gz');
+  try {
+    ok(await ajouterAuFichier(chemin, bloc('{"a":1}\n', 1000)), 'premier bloc : l’archive est créée');
+    ok(!(await ajouterAuFichier(chemin, bloc('{"a":1}\n', 1100))), 'même empreinte que le dernier : pas ajouté deux fois');
+    ok(await ajouterAuFichier(chemin, bloc('{"b":2}\n', 2000)), 'autre contenu : ajouté');
+    let { blocs } = await parcourirArchive(chemin);
+    egal(blocs.map((b) => [b.position, b.debut]), [[0, 1000], [un.length, 2000]], 'les sessions listées sans décompresser');
+
+    // Un ajout interrompu : un bloc à moitié écrit en fin de fichier.
+    writeFileSync(chemin, Buffer.concat([readFileSync(chemin), construireBloc(bloc('{"c":3}\n', 3000)).subarray(0, 25)]));
+    let erreur = '';
+    try {
+      gunzipSync(readFileSync(chemin));
+    } catch (e) {
+      erreur = (e as NodeJS.ErrnoException).code ?? '';
+    }
+    egal(erreur, 'Z_BUF_ERROR', 'bloc tronqué : l’archive ne se relit plus d’un coup');
+    ok(await ajouterAuFichier(chemin, bloc('{"c":3}\n', 3000)), 'l’ajout suivant répare et ajoute');
+    egal(gunzipSync(readFileSync(chemin)).toString(), '{"a":1}\n{"b":2}\n{"c":3}\n', 'réparée : tout se relit, rien en double');
+    // Des octets étrangers en fin de fichier : coupés de même.
+    writeFileSync(chemin, Buffer.concat([readFileSync(chemin), Buffer.from('xyz')]));
+    ok(!(await ajouterAuFichier(chemin, bloc('{"c":3}\n', 3100))), 'même dernier bloc : rien d’ajouté…');
+    ({ blocs } = await parcourirArchive(chemin));
+    egal([blocs.length, readFileSync(chemin).length], [3, blocs[2].position + blocs[2].taille], '… mais les octets étrangers sont coupés');
+  } finally {
+    rmSync(racine, { recursive: true, force: true });
+  }
 }
 
 export function testPluginSwexGuilde() {
@@ -303,37 +446,65 @@ export async function testPluginSwexPaquet() {
     const journal: string[] = [];
     const proxy = { on: (_: string, f: typeof ecouteur) => (ecouteur = f), log: (e: Json) => journal.push(`${e.type} ${e.message}`) };
     const reglages = { enabled: true, guilde: true };
-    plugin.creerPlugin(0)(proxy, { Config: { App: { filesPath: dossier }, Plugins: { SWBlacksmithLive: reglages } } });
+    const instance = plugin.creerPlugin(0);
+    instance(proxy, { Config: { App: { filesPath: dossier }, Plugins: { SWBlacksmithLive: reglages } } });
+    // La file des écritures du compte, puis le fichier de guilde (temporisé).
+    const attendre = async () => {
+      await instance.ecritures();
+      await new Promise((r) => setTimeout(r, 100));
+    };
+    const seConnecter = (res: Json = connexion()) =>
+      ecouteur(req({ command: 'HubUserLogin' }), { ...res, wizard_info: { wizard_id: MOI, wizard_name: 'Essai.Pro' } });
+    const dossierSuivi = join(dossier, DOSSIER_PLUGIN, 'Essai.Pro-100');
+    const live = () => readFileSync(join(dossierSuivi, COMPTE_LIVE), 'utf8').split('\n').filter(Boolean);
+    const archive = () => gunzipSync(readFileSync(join(dossierSuivi, COMPTE_ARCHIVE))).toString().split('\n').filter(Boolean);
+    const meule = (i: number) => ecouteur(req({ command: 'AmplifyRune_v2' }), ok0({ rune: rune(12, {}, 15, { sec_eff: [[4, 10, 0, i]] }) }));
+    const sec12 = (lignes: string[]) => versExport(depuisLignesLive(lignes)!).runes.find((r: Json) => r.rune_id === 12).sec_eff;
 
     // Avant toute connexion : rien.
-    ecouteur(req({ command: 'AmplifyRune_v2' }), ok0({ rune: rune(12, {}) }));
-    ecouteur(req({ command: 'HubUserLogin' }), { ...connexion(), wizard_info: { wizard_id: MOI, wizard_name: 'Essai.Pro' } });
-    // Une série de meules, d'un coup : les écritures ne se marchent pas dessus.
-    for (let i = 0; i < 20; i++) ecouteur(req({ command: 'AmplifyRune_v2' }), ok0({ rune: rune(12, {}, 15, { sec_eff: [[4, 10, 0, i]] }) }));
+    meule(99);
+    seConnecter();
+    // Une série de meules, d'un coup : les lignes s'ajoutent dans l'ordre.
+    for (let i = 0; i < 20; i++) meule(i);
     ecouteur(req({ command: 'GetGuildSiegeMatchupInfo' }), ok0({ carte: 1, session_key: 'secret' }));
-    await new Promise((r) => setTimeout(r, 300));
+    await attendre();
 
     egal(journal.filter((l) => l.startsWith('error')), [], 'aucune erreur d’écriture');
-    egal(readdirSync(dossier).sort(), ['Essai.Pro-100.json', DOSSIER_PLUGIN].sort(),'à la racine : l’export et le dossier du plugin, rien d’autre');
-    const dossierSuivi = join(dossier, DOSSIER_PLUGIN, 'Essai.Pro-100');
+    egal(readdirSync(dossier).sort(), ['Essai.Pro-100.json', DOSSIER_PLUGIN].sort(), 'à la racine : l’export et le dossier du plugin, rien d’autre');
     egal(readdirSync(join(dossier, DOSSIER_PLUGIN)), ['Essai.Pro-100'], 'un dossier, au nom de l’export');
-    egal(readdirSync(dossierSuivi).sort(), [FICHIER_COMPTE, FICHIER_GUILDE], 'les deux fichiers, sans fichier temporaire');
-    const compte = readFileSync(join(dossierSuivi, FICHIER_COMPTE), 'utf8');
-    egal(JSON.parse(compte).runes.find((r: Json) => r.rune_id === 12).sec_eff, [[4, 10, 0, 19]], 'le compte écrit est le dernier état');
-    ok(!compte.includes('secret') && !readFileSync(join(dossierSuivi, FICHIER_GUILDE), 'utf8').includes('secret'), 'aucune clé de session écrite');
+    egal(readdirSync(dossierSuivi).sort(), [COMPTE_ARCHIVE, COMPTE_LIVE, FICHIER_GUILDE].sort(), 'live, archive et guilde, sans fichier temporaire');
+    egal(live().length, 21, 'le fichier live : la connexion, puis une ligne par meule');
+    egal(sec12(live()), [[4, 10, 0, 19]], 'relu, le fichier live donne le dernier état');
+    egal([archive().length, JSON.parse(archive()[0]).format], [1, FORMAT_COMPTE_ARCHIVE], 'l’archive : l’état de la connexion');
+    const tout = [COMPTE_LIVE, FICHIER_GUILDE].map((f) => readFileSync(join(dossierSuivi, f), 'utf8')).join('') + archive().join('');
+    ok(!tout.includes('secret'), 'aucune clé de session écrite, nulle part');
 
-    // Le dossier supprimé pendant la partie : il est recréé à l'écriture suivante.
+    // Reconnexion sans rien de changé : le live repart, l'archive ne double pas.
+    seConnecter();
+    await attendre();
+    egal([live().length, archive().length], [1, 1], 'reconnexion à l’identique : nouvelle session, pas de second état archivé');
+    // Reconnexion après une partie hors du plugin : un second état archivé.
+    const changee = connexion();
+    changee.runes[0] = rune(12, {}, 15, { sec_eff: [[4, 10, 0, 42]] });
+    seConnecter(changee);
+    await attendre();
+    egal(archive().length, 2, 'connexion sur un compte changé : un état de plus dans l’archive');
+    egal(sec12(live()), [[4, 10, 0, 42]], 'le live repart de la nouvelle connexion');
+
+    // Le dossier supprimé pendant la partie : le live repart de l'état tenu.
     rmSync(join(dossier, DOSSIER_PLUGIN), { recursive: true });
-    ecouteur(req({ command: 'AmplifyRune_v2' }), ok0({ rune: rune(12, {}) }));
-    await new Promise((r) => setTimeout(r, 100));
-    ok(readdirSync(dossierSuivi).includes(FICHIER_COMPTE), 'dossier supprimé : recréé');
+    meule(7);
+    meule(8);
+    await attendre();
+    egal(sec12(live()), [[4, 10, 0, 8]], 'dossier supprimé : recréé, le live relu donne le dernier état');
+    egal(JSON.parse(live()[0]).type, 'connexion', 'il commence par une ligne de connexion');
 
     // Désactivé dans SWEX : plus rien n'est écrit.
     reglages.enabled = false;
-    rmSync(join(dossierSuivi, FICHIER_COMPTE));
-    ecouteur(req({ command: 'AmplifyRune_v2' }), ok0({ rune: rune(12, {}) }));
-    await new Promise((r) => setTimeout(r, 100));
-    ok(!readdirSync(dossierSuivi).includes(FICHIER_COMPTE), 'plugin désactivé : rien n’est écrit');
+    const avant = live().length;
+    meule(9);
+    await attendre();
+    egal(live().length, avant, 'plugin désactivé : rien n’est écrit');
   } finally {
     rmSync(racine, { recursive: true, force: true });
   }

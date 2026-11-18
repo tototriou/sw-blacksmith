@@ -17,9 +17,9 @@ Fichiers : [SwExporterPage.tsx](src/pages/SwExporterPage.tsx) ·
   l'enregistre dans un fichier, que l'app importe ; son plugin le tient à jour
   pendant la partie.
 - **Ce que fait le plugin**, trois cartes : le compte en direct (meules,
-  gemmes, améliorations, ventes, équipement, deux secondes plus tard) ; les
+  gemmes, améliorations, ventes, équipement, pendant la partie) ; les
   combats de guilde (siège, guerre, labyrinthe), gardés pour les écrans de
-  guilde à venir ; « Rien ne quitte ta machine » (deux fichiers dans un
+  guilde à venir ; « Rien ne quitte ta machine » (ses fichiers dans un
   dossier `SWBlacksmith` du dossier de SWEX, rien d'envoyé, jamais la clé de
   session).
 - **À l'ordinateur** : « Télécharger le plugin » (`Bouton href` +

@@ -25,20 +25,23 @@ embarque son propre Electron, parfois ancien).
   le construit seul ; `node scripts/construire-plugin-swex.mjs <dossier>`
   l'écrit ailleurs.
 - ⚠️ **Sa version est celle de l'app** (`package.json`), injectée à la
-  construction (`__VERSION_PLUGIN__`) et écrite dans sa description et en tête
-  du fichier : l'app de bureau la compare à la sienne pour proposer la mise à
-  jour. Un test le vérifie sur le fichier construit.
+  construction (`__VERSION_PLUGIN__`), écrite dans sa description, en tête
+  du fichier et dans la première ligne de chaque session (`plugin`) : de quoi
+  la comparer, côté app, à celle de l'app. Un test le vérifie sur le fichier
+  construit.
 - Réglages dans SWEX : **activé**, et **combats de guilde** (tous deux par
   défaut). Description et libellés en anglais et en français : SWEX n'a qu'une
   langue.
 
 Ce qu'il fait :
 
-1. **À la connexion** (`HubUserLogin`), il repart de la réponse du serveur,
-   pour chaque invocateur (`wizard_id`), et reprend le fichier de guilde déjà
-   écrit.
+1. **À la connexion** (`HubUserLogin`), pour chaque invocateur (`wizard_id`),
+   il repart de la réponse du serveur : l'état allégé du compte s'ajoute à
+   l'**archive**, et une **nouvelle session** commence — le fichier live
+   repart de cette connexion. Il reprend aussi le fichier de guilde déjà écrit.
 2. **À chaque commande** de cet invocateur, il applique le moteur ; si le compte
-   ou le contenu de guilde a changé, il réécrit le fichier concerné.
+   a changé, une ligne s'ajoute **aussitôt** au fichier live ; si le contenu de
+   guilde a changé, il réécrit le fichier de guilde.
 3. Avant la première connexion vue depuis le lancement de SWEX, il ne fait
    rien : il n'a pas de compte de départ.
 
@@ -49,7 +52,8 @@ Summoners War Exporter Files/          ← le dossier de SWEX (son réglage)
   tototriou-12889591.json              ← l'export de ProfileExport
   SWBlacksmith/
     tototriou-12889591/                ← un dossier par invocateur
-      compte.json                      ← le compte tenu à jour
+      compte.live.jsonl                ← la session en cours
+      compte.jsonl.gz                  ← l'archive : un état par connexion
       guilde.json                      ← les combats de guilde
 ```
 
@@ -68,25 +72,94 @@ Summoners War Exporter Files/          ← le dossier de SWEX (son réglage)
   l'historique des combats de guilde ; si le renommage échoue (Windows, un
   fichier ouvert), il garde l'ancien.
 
-L'écriture :
+### Le compte : un fichier live, une archive
 
-- ⚠️ **Temporisée** : **2 s** après le dernier changement. Une série de meules
-  ne réécrit pas le compte à chaque coup.
-- ⚠️ **Atomique** (`ecrireAtomique`) : un fichier temporaire, puis renommé —
-  l'app relit le fichier dès qu'il change, et ne doit jamais lire un fichier à
-  moitié écrit. Sous Windows, le renommage échoue tant qu'un autre programme
-  lit le fichier (`EBUSY`, `EPERM`, `EACCES`) : on réessaie, de plus en plus
-  tard. Le dossier supprimé pendant la partie est recréé.
-- ⚠️ **Une écriture à la fois par fichier** : deux écritures qui se
-  chevauchent partageraient le fichier temporaire, et la seconde ne le
-  trouverait plus. Demandée pendant une écriture, la suivante attend sa fin et
-  écrit l'état le plus récent. Rejoué sur une journée réelle (4 206 échanges),
-  le plugin construit écrit sans une erreur.
-- Le compte s'écrit **compact** (3,4 Mo là où ProfileExport, indenté, en
-  écrit 8,2) et **sans la clé de session**.
+**`compte.live.jsonl`** — la session en cours, en JSON Lines (un objet JSON
+par ligne) :
+
+- la **première ligne** (`type: 'connexion'`, format
+  `swblacksmith/compte-live`, version 1) : le compte à la connexion — l'export
+  **compact** (3,4 Mo là où ProfileExport, indenté, en écrit 8,2) et **sans
+  la clé de session** —, l'invocateur, l'heure serveur et la version du
+  plugin ;
+- puis **une ligne par commande** qui a changé le compte
+  (`type: 'changement'`) : l'heure serveur, la commande, l'**état final** de
+  chaque objet touché (`maj`) et ce qui a disparu (`retires`). Quelques
+  centaines d'octets — un monstre y figure sans les runes ni les artéfacts
+  qu'il porte, qui y sont pour eux-mêmes.
+
+L'app le relit en repartant de la connexion et en posant chaque changement
+(`depuisLignesLive`, pur) : l'état final est celui que tient le plugin.
+
+- ⚠️ **Écrit aussitôt, ligne à ligne** : rien n'est temporisé, une meule
+  arrive dans le fichier dans la foulée. Seule la première ligne remplace le
+  fichier, en **atomique** (`ecrireAtomique` : un fichier temporaire, puis
+  renommé ; sous Windows, le renommage échoue tant qu'un autre programme lit
+  le fichier — `EBUSY`, `EPERM`, `EACCES` — : on réessaie, de plus en plus
+  tard). Une ligne qui s'ajoute n'en a pas besoin : **une dernière ligne
+  incomplète s'ignore** à la lecture.
+- ⚠️ **Une seule file d'écritures** : chaque ligne s'ajoute après la
+  précédente, et après la première ligne de sa session, jamais avant. Les
+  textes sont faits au moment de la commande, pas au tour d'écriture : le
+  compte aura bougé entre-temps.
+- ⚠️ **Le fichier a disparu** (dossier supprimé pendant la partie) : il repart
+  de l'état tenu. Les lignes encore en file disent l'état final de ce qu'elles
+  touchent : reposées après, elles ne changent rien.
+
+**`compte.jsonl.gz`** — l'archive, **un état par connexion**, pour retracer
+l'évolution du compte (courbes de runes, score, stock de meules et de
+gemmes) :
+
+- l'**état allégé** (`versEtatArchive`, format `swblacksmith/compte-archive`) :
+  les runes, les artéfacts, les pierres et les monstres réduits (identifiant,
+  espèce, étoiles, niveau). Les objets **bruts**, pas un score calculé : un
+  changement de formule dans l'app vaut pour toute la timeline. Environ
+  190 Ko compressé pour un compte de 3 253 runes ;
+- pas le détail des actions : il ne sert qu'au direct ;
+- ⚠️ **une reconnexion sans rien de changé n'ajoute rien** : l'empreinte de
+  l'état, heure exclue, est celle du dernier bloc.
+
+### L'archive — `plugin-swex/source/archive.ts`
+
+Un fichier, fait de **blocs gzip ajoutés à la suite**, un par session. Le
+format gzip permet d'enchaîner des blocs : `zcat`, 7-Zip ou le `zlib` de Node
+relisent le tout comme un seul texte JSON Lines. La compression, d'un bloc
+entier, divise la taille par dix (ligne par ligne, on perdrait plus de la
+moitié du gain).
+
+- ⚠️ **Chaque bloc dit sa taille, ses dates et son empreinte** dans un champ
+  prévu par le format gzip (FEXTRA, sous-champ `SB` : version, taille du bloc,
+  heures serveur de début et de fin, 8 octets de SHA-1), que les outils
+  ignorent — le principe du format BGZF. En sautant d'en-tête en en-tête,
+  lister les sessions coûte quelques octets lus par session, et on ne
+  décompresse que celles qu'on demande (`parcourirArchive`, `lireEntete`).
+- ⚠️ **Un ajout interrompu ne perd rien.** Un dernier bloc tronqué rendrait
+  toute l'archive illisible d'un seul `gunzip` (`Z_BUF_ERROR`). Avant chaque
+  ajout (`ajouterAuFichier`), la chaîne des en-têtes est parcourue : là où un
+  bloc annonce plus d'octets qu'il n'en reste, ou n'a pas d'en-tête valide,
+  l'archive est coupée. Un bloc dont l'empreinte est celle du dernier bloc
+  n'est pas ajouté deux fois.
+- **Pas de SQLite ni de format binaire** : le plugin tourne dans l'Electron de
+  SWEX, ancien et de version inconnue — un module natif peut ne pas s'y
+  charger, la version WebAssembly réécrit toute la base. Les formats binaires
+  (MessagePack, CBOR) gagnent bien moins que la compression, et ne se lisent
+  plus.
+
+### Pour tous les fichiers
+
 - ⚠️ **Jamais d'exception vers SWEX** : une erreur est écrite dans le journal
   de SWEX, et le plugin continue. Une commande qu'il ne comprend pas ne doit
   gêner ni le jeu ni les autres plugins.
+- Le plugin construit est vérifié sous Node 18 : SWEX embarque un Electron
+  ancien.
+
+### Le fichier de guilde
+
+`guilde.json`, réécrit en entier, **2 s** après le dernier changement, en
+atomique, **une écriture à la fois** : deux écritures qui se chevauchent
+partageraient le fichier temporaire, et la seconde ne le trouverait plus.
+Demandée pendant une écriture, la suivante attend sa fin et écrit l'état le
+plus récent.
 
 **Installer à la main** : déposer `SWBlacksmithLive.js` dans
 `Summoners War Exporter Files\plugins`, puis redémarrer SWEX. ProfileExport
@@ -101,11 +174,14 @@ Calcul pur, sans disque ni Electron, testé par
   ⚠️ C'est **exactement** l'export de ProfileExport : mêmes clés, mêmes runes,
   monstres et pierres (vérifié sur un compte réel).
 - **`appliquer(état, commande, requête, réponse)`** applique une commande
-  réussie (`ret_code` 0) de l'invocateur suivi ; `true` si le compte a changé.
-- **`versExport(état)`** rend le compte à écrire : la connexion, dont les
-  monstres, les runes, les artéfacts, les pierres (`rune_craft_item_list`) et
-  les reliques sont remplacés par l'état tenu. ⚠️ **Sans `session_key`,
+  réussie (`ret_code` 0) de l'invocateur suivi ; rend **ce qui a changé** (la
+  ligne du fichier live), ou `null` si rien n'a bougé.
+- **`versExport(état)`** rend le compte : la connexion, dont les monstres, les
+  runes, les artéfacts, les pierres (`rune_craft_item_list`) et les reliques
+  sont remplacés par l'état tenu. ⚠️ **Sans `session_key`,
   `session_key_node` ni `reqid`** : ProfileExport les écrit, le plugin jamais.
+- **`ligneConnexion`**, **`depuisLignesLive`**, **`versEtatArchive`** : la
+  première ligne du fichier live, sa relecture, l'état allégé archivé.
 
 ### ⚠️ Un registre, pas l'arbre de l'export
 
@@ -159,13 +235,21 @@ retirés (mis en stock, sacrifiés, convertis) se lisent dans
 
 ### Vérifié par rejeu d'un journal réel
 
-Un script hors dépôt rejoue le `full_log.txt` d'un compte réel : entre deux
-connexions, l'état reconstruit est comparé à celui de la connexion suivante
-(runes et leur place, artéfacts, monstres, pierres, reliques). Sur trois
-intervalles de jeu (99, 85 et 761 commandes appliquées), il est
-**identique**. Le journal réel ne vient pas dans le dépôt : il porte la clé de
-session du joueur. Les tests en reprennent chaque piège sur un compte
-fabriqué.
+Un script hors dépôt rejoue le `full_log.txt` d'un compte réel dans le
+plugin construit : à chaque connexion, le fichier live relu, puis l'état du
+moteur, sont comparés au compte que renvoie le serveur (runes et leur place,
+artéfacts, monstres, pierres, reliques). Le journal réel ne vient pas dans le
+dépôt : il porte la clé de session du joueur. Les tests en reprennent chaque
+piège sur un compte fabriqué.
+
+Sur un journal de 3 885 échanges (trois intervalles entre connexions, 276, 192
+et 990 lignes de changement) :
+
+- **le fichier live relu est identique à l'état du moteur**, sur chaque
+  intervalle ; le plugin écrit sans une erreur ;
+- **le moteur s'écarte du serveur** sur quelques objets (voir « Limites
+  connues ») : artéfacts et reliques exacts ; jusqu'à 27 monstres en trop
+  sur 825, 25 runes sur 4 426, 5 lots de pierres sur 968.
 
 ## Le contenu des combats de guilde — `plugin-swex/source/guilde.ts`
 
@@ -173,7 +257,7 @@ Siège, guerre de guilde, labyrinthe, rivaux, boss de guilde : rien de cela
 n'est dans l'export. Le jeu ne l'envoie qu'en le **montrant** (carte du
 siège, défenses d'une base, journaux de combat) ou en le **jouant** (début et
 fin d'un combat). Le plugin le garde dans un fichier à part,
-**`guilde.json`**, à côté de `compte.json` (format `swblacksmith/guilde-direct`, version 1),
+**`guilde.json`**, à côté des fichiers du compte (format `swblacksmith/guilde-direct`, version 1),
 pour ne pas mêler à l'export du compte des données d'une autre nature, plus
 fréquentes et plus lourdes (2,3 Mo pour une journée de siège).
 
@@ -204,6 +288,14 @@ combats. **L'app ne l'affiche pas encore** : ce sont les écrans d'un chantier
 
 ### Limites connues
 
+- ⚠️ **Écarts du moteur relevés au rejeu d'un journal réel**, rattrapés à la
+  connexion suivante :
+  - un monstre invoqué puis rangé dans le stockage (`MoveStorageFromTo`)
+    reste dans la box ;
+  - après certains combats (`BattleDungeonResult_V2`), les runes de l'équipe
+    diffèrent de celles du serveur (cause à établir) ;
+  - une rune rachetée (`RepurchaseRune`, hors lecture) ne revient pas, et les
+    meules qui la suivent non plus.
 - L'expérience gagnée **hors combat** (bâtiments) n'apparaît qu'à la
   connexion suivante.
 - Les préréglages de la RTA et du siège ne sont pas suivis ; l'app ne les relit

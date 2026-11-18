@@ -62,7 +62,8 @@ passent par la garde `GardeChangementCompte`), `src/components/ChangementCompteD
 [bureau/](../02-app/bureau/README.md).
 
 **Plugin SWEX** (`plugin-swex/`, à la racine) : `plugin-swex/source/etatDirect.ts` (le compte tenu à jour, pur),
-`plugin-swex/source/guilde.ts` (les combats de guilde, pur), `plugin-swex/source/fichiers.ts` (noms et écriture atomique),
+`plugin-swex/source/guilde.ts` (les combats de guilde, pur), `plugin-swex/source/archive.ts` (l'archive : un bloc gzip
+par session), `plugin-swex/source/fichiers.ts` (noms, dossier par invocateur, écriture atomique),
 `plugin-swex/source/plugin.ts` (ce que SWEX charge), assemblés par `scripts/lib/construirePluginSwex.mjs` en
 `dist/plugin-swex/SWBlacksmithLive.js` (émis par Vite, `pluginSwex` de `vite.config.ts` ; seul :
 `npm run plugin-swex`), téléchargeable depuis `src/pages/SwExporterPage.tsx`. Comportement :

@@ -442,7 +442,7 @@ export const en: Dictionnaire = {
       {
         titre: 'Your account, live',
         texte:
-          'Without the plugin, SWEX only writes your account when you log in to the game. With it, every grind, gem, upgrade, sale or equipment change reaches “My account” two seconds later.',
+          'Without the plugin, SWEX only writes your account when you log in to the game. With it, every grind, gem, upgrade, sale or equipment change reaches “My account” while you play.',
       },
       {
         titre: 'Your guild battles',
@@ -452,7 +452,7 @@ export const en: Dictionnaire = {
       {
         titre: 'Nothing leaves your computer',
         texte:
-          'The plugin writes two files in a SWBlacksmith folder, next to your export. It sends nothing, and never writes your session key.',
+          'The plugin writes its files in a SWBlacksmith folder, next to your export. It sends nothing, and never writes your session key.',
       },
     ],
     telecharger: 'Download the plugin',

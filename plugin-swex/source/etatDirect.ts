@@ -46,17 +46,34 @@ export interface EtatDirect {
   reliques: Map<number, Json>;
   // Heure serveur de la dernière réponse appliquée : la fraîcheur affichée.
   tvalue: number | null;
-  // Nombre d'écritures dans les registres : dit si une commande a changé le
-  // compte (le plugin ne réécrit le fichier que dans ce cas).
-  version: number;
+  // Ce que la commande en cours a touché, par registre : l'objet final, ou
+  // `null` s'il a disparu. Rempli par `mettre` et `oter`, rendu par `appliquer`.
+  touches: Record<NomRegistre, Map<number, Json | null>> | null;
 }
 
-function mettre(etat: EtatDirect, registre: Map<number, Json>, id: number, objet: Json) {
-  registre.set(id, objet);
-  etat.version++;
+// Les registres, sous les noms du fichier écrit.
+export const REGISTRES = ['runes', 'artefacts', 'unites', 'crafts', 'reliques'] as const;
+export type NomRegistre = (typeof REGISTRES)[number];
+
+// Ce qu'une commande a changé : l'état FINAL de chaque objet touché, et ce qui
+// a disparu. Une ligne du fichier live (`type: 'changement'`).
+export interface Changement {
+  type: 'changement';
+  t: number | null;
+  commande: string;
+  maj: Partial<Record<NomRegistre, Json[]>>;
+  retires: Partial<Record<NomRegistre, number[]>>;
 }
-function oter(etat: EtatDirect, registre: Map<number, Json>, id: number) {
-  if (registre.delete(id)) etat.version++;
+
+function noter(etat: EtatDirect, nom: NomRegistre, id: number, objet: Json | null) {
+  etat.touches?.[nom].set(id, objet);
+}
+function mettre(etat: EtatDirect, nom: NomRegistre, id: number, objet: Json) {
+  etat[nom].set(id, objet);
+  noter(etat, nom, id, objet);
+}
+function oter(etat: EtatDirect, nom: NomRegistre, id: number) {
+  if (etat[nom].delete(id)) noter(etat, nom, id, null);
 }
 
 // Les clés qui ne doivent JAMAIS sortir dans le fichier écrit : la session du
@@ -112,14 +129,13 @@ export function depuisConnexion(connexion: Json): EtatDirect {
     crafts: new Map(),
     reliques: new Map(),
     tvalue: typeof connexion.tvalue === 'number' ? connexion.tvalue : null,
-    version: 0,
+    touches: null,
   };
   for (const u of connexion.unit_list ?? []) poserUnite(etat, u, false);
   for (const r of connexion.runes ?? []) etat.runes.set(r.rune_id, r);
   for (const a of connexion.artifacts ?? []) etat.artefacts.set(a.rid, a);
   for (const c of connexion.rune_craft_item_list ?? []) etat.crafts.set(c.craft_item_id, c);
   for (const r of connexion.relics ?? []) etat.reliques.set(r.rid, r);
-  etat.version = 0;
   return etat;
 }
 
@@ -139,13 +155,13 @@ function poserUnite(etat: EtatDirect, u: Json, rendre = true) {
     const artefacts = new Set((u.artifacts ?? []).map((a: Json) => Number(a.rid)));
     for (const [rid, r] of etat.runes)
       if (Number(r.occupied_type) === 1 && Number(r.occupied_id) === id && !runes.has(rid))
-        mettre(etat, etat.runes, rid, { ...r, occupied_type: 2, occupied_id: 0 });
+        mettre(etat, 'runes', rid, { ...r, occupied_type: 2, occupied_id: 0 });
     for (const [aid, a] of etat.artefacts)
-      if (Number(a.occupied_id) === id && !artefacts.has(aid)) mettre(etat, etat.artefacts, aid, { ...a, occupied_id: 0, slot: 0 });
+      if (Number(a.occupied_id) === id && !artefacts.has(aid)) mettre(etat, 'artefacts', aid, { ...a, occupied_id: 0, slot: 0 });
   }
-  mettre(etat, etat.unites, id, u);
-  for (const r of u.runes ?? []) mettre(etat, etat.runes, r.rune_id, r);
-  for (const a of u.artifacts ?? []) mettre(etat, etat.artefacts, a.rid, a);
+  mettre(etat, 'unites', id, u);
+  for (const r of u.runes ?? []) mettre(etat, 'runes', r.rune_id, r);
+  for (const a of u.artifacts ?? []) mettre(etat, 'artefacts', a.rid, a);
 }
 
 // Les objets du compte vus dans une réponse, en profondeur. Seuls ceux de
@@ -201,10 +217,10 @@ function parcourir(x: unknown, moi: number, vus: Vus) {
 // joueur a vendu) ou dans la réponse (ce que le serveur dit avoir retiré).
 const RETRAITS: Record<string, (etat: EtatDirect, req: Json, res: Json) => void> = {
   SellRune: (e, req) => {
-    for (const id of req.rune_id_list ?? []) oter(e, e.runes, Number(id));
+    for (const id of req.rune_id_list ?? []) oter(e, 'runes', Number(id));
   },
   SellArtifacts: (e, req) => {
-    for (const id of req.artifact_ids ?? []) oter(e, e.artefacts, Number(id));
+    for (const id of req.artifact_ids ?? []) oter(e, 'artefacts', Number(id));
   },
   // Une pierre vendue : la réponse donne le lot restant (lu plus bas, même
   // pour ces commandes hors lecture générale).
@@ -216,14 +232,14 @@ const RETRAITS: Record<string, (etat: EtatDirect, req: Json, res: Json) => void>
     for (const c of req.craft_item_list ?? []) {
       const reste = restants.get(c.craft_item_id);
       if (reste) poserCraft(e, reste);
-      else oter(e, e.crafts, Number(c.craft_item_id));
+      else oter(e, 'crafts', Number(c.craft_item_id));
     }
   },
 };
 
 function poserCraft(etat: EtatDirect, c: Json) {
-  if (Number(c.amount) > 0) mettre(etat, etat.crafts, Number(c.craft_item_id), c);
-  else oter(etat, etat.crafts, Number(c.craft_item_id));
+  if (Number(c.amount) > 0) mettre(etat, 'crafts', Number(c.craft_item_id), c);
+  else oter(etat, 'crafts', Number(c.craft_item_id));
 }
 
 // Les monstres que le serveur dit avoir retirés (sacrifiés, mis en stock,
@@ -231,15 +247,15 @@ function poserCraft(etat: EtatDirect, c: Json) {
 function retirerUnites(etat: EtatDirect, req: Json, res: Json) {
   const ids: number[] = [...(res.remove_unit_id_list ?? []), ...(res.removed_unit_id_list ?? [])];
   for (const s of req.source_unit_list ?? []) ids.push(typeof s === 'object' ? s.unit_id : s);
-  for (const id of ids) oter(etat, etat.unites, Number(id));
+  for (const id of ids) oter(etat, 'unites', Number(id));
 }
 
-// Applique une commande réussie de l'invocateur suivi. `true` si le compte a
-// changé (le plugin réécrit alors le fichier).
-export function appliquer(etat: EtatDirect, commande: string, req: Json, res: Json): boolean {
-  if (!res || Number(res.ret_code) !== 0) return false;
-  if (Number(req?.wizard_id ?? res.wizard_info?.wizard_id) !== etat.wizardId) return false;
-  const avant = etat.version;
+// Applique une commande réussie de l'invocateur suivi. Rend ce qu'elle a
+// changé (le plugin l'ajoute au fichier live), ou `null` si rien n'a bougé.
+export function appliquer(etat: EtatDirect, commande: string, req: Json, res: Json): Changement | null {
+  if (!res || Number(res.ret_code) !== 0) return null;
+  if (Number(req?.wizard_id ?? res.wizard_info?.wizard_id) !== etat.wizardId) return null;
+  etat.touches = { runes: new Map(), artefacts: new Map(), unites: new Map(), crafts: new Map(), reliques: new Map() };
 
   RETRAITS[commande]?.(etat, req ?? {}, res);
   if (!HORS_LECTURE.test(commande)) {
@@ -251,14 +267,126 @@ export function appliquer(etat: EtatDirect, commande: string, req: Json, res: Js
     // runes vues seules ensuite (meule, amélioration d'une rune portée), qui
     // gardent leur porteur dans `occupied_id`.
     for (const u of vus.unites) poserUnite(etat, u);
-    for (const r of vus.runes) mettre(etat, etat.runes, Number(r.rune_id), r);
-    for (const a of vus.artefacts) mettre(etat, etat.artefacts, Number(a.rid), a);
+    for (const r of vus.runes) mettre(etat, 'runes', Number(r.rune_id), r);
+    for (const a of vus.artefacts) mettre(etat, 'artefacts', Number(a.rid), a);
     for (const c of vus.crafts) poserCraft(etat, c);
-    for (const r of vus.reliques) mettre(etat, etat.reliques, Number(r.rid), r);
+    for (const r of vus.reliques) mettre(etat, 'reliques', Number(r.rid), r);
     retirerUnites(etat, req ?? {}, res);
   }
   if (typeof res.tvalue === 'number') etat.tvalue = res.tvalue;
-  return etat.version !== avant;
+
+  const touches = etat.touches;
+  etat.touches = null;
+  const changement: Changement = { type: 'changement', t: etat.tvalue, commande, maj: {}, retires: {} };
+  let vide = true;
+  for (const nom of REGISTRES) {
+    for (const [id, objet] of touches[nom]) {
+      vide = false;
+      if (objet) (changement.maj[nom] ??= []).push(nom === 'unites' ? sansEquipement(objet) : objet);
+      else (changement.retires[nom] ??= []).push(id);
+    }
+  }
+  return vide ? null : changement;
+}
+
+// Un monstre, sans les runes ni les artéfacts qu'il porte : ils sont dans le
+// changement pour eux-mêmes (leur `occupied_id` dit qui les porte), et
+// `versExport` les range. Un monstre équipé pèse ainsi ~1 Ko au lieu de ~5.
+const sansEquipement = (u: Json): Json => ({ ...u, runes: [], artifacts: [] });
+
+// ── Le fichier live, relu ────────────────────────────────────────────────
+//
+// `compte.live.jsonl` : une ligne `connexion` (l'export à la connexion), puis
+// une ligne `changement` par commande qui a changé le compte. Le relire, c'est
+// repartir de la connexion et poser chaque changement : l'état final est celui
+// que tient le plugin. Pur, pour l'app de bureau et les tests.
+
+export const FORMAT_COMPTE_LIVE = 'swblacksmith/compte-live';
+export const VERSION_COMPTE_LIVE = 1;
+
+export interface LigneConnexion {
+  type: 'connexion';
+  format: typeof FORMAT_COMPTE_LIVE;
+  version: number;
+  wizard_id: number;
+  t: number | null;
+  // La version du plugin qui écrit : l'app la compare à la sienne.
+  plugin: string;
+  compte: Json;
+}
+
+export function ligneConnexion(etat: EtatDirect, plugin: string): LigneConnexion {
+  return {
+    type: 'connexion',
+    format: FORMAT_COMPTE_LIVE,
+    version: VERSION_COMPTE_LIVE,
+    wizard_id: etat.wizardId,
+    t: etat.tvalue,
+    plugin,
+    compte: versExport(etat),
+  };
+}
+
+// Pose un changement relu (l'état final de chaque objet touché).
+export function poserChangement(etat: EtatDirect, c: Changement) {
+  for (const nom of REGISTRES) {
+    for (const id of c.retires?.[nom] ?? []) etat[nom].delete(Number(id));
+    for (const o of c.maj?.[nom] ?? []) etat[nom].set(Number(cleDe(nom, o)), o);
+  }
+  if (typeof c.t === 'number') etat.tvalue = c.t;
+}
+
+const cleDe = (nom: NomRegistre, o: Json) =>
+  nom === 'runes' ? o.rune_id : nom === 'unites' ? o.unit_id : nom === 'crafts' ? o.craft_item_id : o.rid;
+
+// L'état tenu, relu depuis les lignes d'un fichier live. `null` si la première
+// ligne n'est pas une connexion de ce format. Une ligne illisible (la
+// dernière, à moitié écrite) arrête la lecture : ce qui précède vaut.
+export function depuisLignesLive(lignes: string[]): EtatDirect | null {
+  let etat: EtatDirect | null = null;
+  for (const texte of lignes) {
+    if (!texte.trim()) continue;
+    let ligne: Json;
+    try {
+      ligne = JSON.parse(texte);
+    } catch {
+      break;
+    }
+    if (!etat) {
+      if (ligne.type !== 'connexion' || ligne.format !== FORMAT_COMPTE_LIVE || ligne.version !== VERSION_COMPTE_LIVE) return null;
+      etat = depuisConnexion(ligne.compte);
+    } else if (ligne.type === 'changement') poserChangement(etat, ligne as Changement);
+  }
+  return etat;
+}
+
+// ── L'état allégé, archivé à chaque connexion ───────────────────────────
+//
+// Ce qu'il faut pour retracer l'évolution du compte (courbes de runes, score,
+// stock de meules et de gemmes) : les objets BRUTS, pas un score calculé — un
+// changement de formule dans l'app vaut alors pour toute la timeline. ~190 Ko
+// compressé pour un gros compte, sans le détail des actions.
+
+export const FORMAT_COMPTE_ARCHIVE = 'swblacksmith/compte-archive';
+export const VERSION_COMPTE_ARCHIVE = 1;
+
+export function versEtatArchive(etat: EtatDirect): Json {
+  return {
+    type: 'etat',
+    format: FORMAT_COMPTE_ARCHIVE,
+    version: VERSION_COMPTE_ARCHIVE,
+    wizard_id: etat.wizardId,
+    t: etat.tvalue,
+    runes: [...etat.runes.values()],
+    artefacts: [...etat.artefacts.values()],
+    crafts: [...etat.crafts.values()],
+    unites: [...etat.unites.values()].map((u) => ({
+      unit_id: u.unit_id,
+      unit_master_id: u.unit_master_id,
+      class: u.class,
+      unit_level: u.unit_level,
+    })),
+  };
 }
 
 // Le compte à écrire : la connexion, dont les listes tenues sont remplacées

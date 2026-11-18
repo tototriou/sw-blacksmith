@@ -472,7 +472,7 @@ export const fr = {
       {
         titre: 'Ton compte en direct',
         texte:
-          "Sans plugin, SWEX n'écrit ton compte qu'à la connexion au jeu. Avec lui, chaque meule, gemme, amélioration, vente ou changement d'équipement arrive dans « Mon compte » deux secondes plus tard.",
+          "Sans plugin, SWEX n'écrit ton compte qu'à la connexion au jeu. Avec lui, chaque meule, gemme, amélioration, vente ou changement d'équipement arrive dans « Mon compte » pendant la partie.",
       },
       {
         titre: 'Tes combats de guilde',
@@ -482,7 +482,7 @@ export const fr = {
       {
         titre: 'Rien ne quitte ta machine',
         texte:
-          "Le plugin écrit deux fichiers dans un dossier SWBlacksmith, à côté de ton export. Il n'envoie rien, et n'écrit jamais ta clé de session.",
+          "Le plugin écrit ses fichiers dans un dossier SWBlacksmith, à côté de ton export. Il n'envoie rien, et n'écrit jamais ta clé de session.",
       },
     ],
     telecharger: 'Télécharger le plugin',

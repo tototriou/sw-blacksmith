@@ -4,7 +4,9 @@
 //   <dossier de SWEX>/
 //     <nom>-<id>.json              ← l'export de ProfileExport (pas au plugin)
 //     SWBlacksmith/<nom>-<id>/
-//       compte.json                ← le compte tenu à jour
+//       compte.live.jsonl          ← la session en cours : la connexion, puis
+//                                    une ligne par changement
+//       compte.jsonl.gz            ← l'archive : l'état allégé à chaque connexion
 //       guilde.json                ← les combats de guilde
 
 import { existsSync, mkdirSync, promises, readdirSync, renameSync, statSync } from 'node:fs';
@@ -14,7 +16,8 @@ import { dirname, join } from 'node:path';
 // racine, ses fichiers ne passent jamais par la liste des comptes de l'app,
 // qui ne lit que les `<nom>-<id>.json` de la racine.
 export const DOSSIER_PLUGIN = 'SWBlacksmith';
-export const FICHIER_COMPTE = 'compte.json';
+export const COMPTE_LIVE = 'compte.live.jsonl';
+export const COMPTE_ARCHIVE = 'compte.jsonl.gz';
 export const FICHIER_GUILDE = 'guilde.json';
 
 // Le nom du dossier d'un invocateur : celui de l'export de ProfileExport
@@ -67,9 +70,11 @@ export function dossierInvocateur(dossierSwex: string, wizardId: number, base: s
 
 const attendre = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-// ⚠️ Écriture ATOMIQUE : un fichier temporaire, puis renommé. L'app relit le
-// fichier dès qu'il change ; écrit en place, elle pourrait lire 8 Mo à moitié
-// écrits. Sous Windows, le renommage échoue tant qu'un autre programme lit le
+// ⚠️ Écriture ATOMIQUE, pour ce qui REMPLACE un fichier (la première ligne
+// d'une session) : un fichier temporaire, puis renommé. L'app relit le
+// fichier dès qu'il change ; écrit en place, elle pourrait lire 3 Mo à moitié
+// écrits. Ce qui s'AJOUTE (une ligne) n'en a pas besoin : l'app ignore une
+// dernière ligne sans son retour à la ligne. Sous Windows, le renommage échoue tant qu'un autre programme lit le
 // fichier (`EBUSY`, `EPERM`, `EACCES`) : on réessaie un peu plus tard. Le
 // dossier est recréé s'il a été supprimé pendant la partie.
 export async function ecrireAtomique(chemin: string, texte: string, essais = 8, pause = 250): Promise<void> {

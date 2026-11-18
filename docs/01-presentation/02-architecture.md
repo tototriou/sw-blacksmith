@@ -65,8 +65,9 @@ dans Node. Côté page, `src/lib/bureau.ts` (`estBureau()`) dit si l'on est au b
 [bureau/](../02-app/bureau/README.md).
 
 Le plugin SWEX du dépôt, **`plugin-swex/`**, tient le compte à jour pendant la partie
-(`plugin-swex/source/etatDirect.ts` : le moteur, pur et testé) et garde le contenu des combats de
-guilde (`plugin-swex/source/guilde.ts`). Détail :
+(`plugin-swex/source/etatDirect.ts` : le moteur, pur et testé), archive l'état du compte à chaque
+connexion (`plugin-swex/source/archive.ts`) et garde le contenu des combats de guilde
+(`plugin-swex/source/guilde.ts`). Détail :
 [feat-swex-direct.md](../02-app/bureau/feat-swex-direct.md).
 
 ## Le service Discord
