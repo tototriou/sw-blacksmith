@@ -368,15 +368,36 @@ export interface OptionsAuto {
   deviner?: boolean;
   saisiesAllies?: Map<string, { atb: ModParTick; speed: ModParTick }>;
   plateauSeul?: boolean;
+  //   - `sortsSeuls` : le plateau AVEC SORTS, avant toute simulation — chaque
+  //     effet suit son lanceur (`plateauAvecSorts`).
+  sortsSeuls?: boolean;
 }
 
 export function analyseAutomatique(
   equipe: EntreeAuto[],
   lead: number,
   donnees: DonneesKit,
-  options: Omit<OptionsAuto, 'plateauSeul'> = {}
+  options: Omit<OptionsAuto, 'plateauSeul' | 'sortsSeuls'> = {}
 ): ResultatAuto {
-  return analyseEnDeuxPasses(equipe, lead, donnees, { ...options, plateauSeul: false }) as ResultatAuto;
+  return analyseEnDeuxPasses(equipe, lead, donnees, { ...options, plateauSeul: false, sortsSeuls: false }) as ResultatAuto;
+}
+
+// ⚠️⚠️ **LE PLATEAU OÙ SE CHERCHENT LES VITESSES (et artéfacts) REQUIS.** Les
+// grilles figent chaque effet de sort au tick où son lanceur jouait aux vitesses
+// du moment : une recherche qui fait monter un lanceur le fait jouer plus tôt,
+// mais son boost restait écrit à l'ancien tick — trop tard pour ceux qu'il
+// devait pousser. Avec deux boosts d'équipe à la suite (Kabilla puis Eludia),
+// les vitesses annoncées ne comptaient que celui du premier, déjà à sa place.
+// Ici, chaque effet est porté par le SORT de son lanceur et le suit ; seules
+// les cases SAISIES (`saisiesAllies`, et celles d'en face hors `atbAuto`)
+// restent à leur tick. Le verdict, lui, se lit sur les grilles, comme l'écran.
+export function plateauAvecSorts(
+  equipe: EntreeAuto[],
+  lead: number,
+  donnees: DonneesKit,
+  options: Omit<OptionsAuto, 'plateauSeul' | 'sortsSeuls'> = {}
+): TuneMonstre[] {
+  return analyseEnDeuxPasses(equipe, lead, donnees, { ...options, plateauSeul: false, sortsSeuls: true }) as TuneMonstre[];
 }
 
 // Le plateau final de l'analyse, sans verdict ni vitesses requises : ce que la
@@ -413,7 +434,7 @@ function analyseEnDeuxPasses(
   donnees: DonneesKit,
   options: OptionsAuto = {}
 ): ResultatAuto | TuneMonstre[] {
-  const { horizon = HORIZON_TICKS, choix, idReference, deviner = true, saisiesAllies, plateauSeul = false } = options;
+  const { horizon = HORIZON_TICKS, choix, idReference, deviner = true, saisiesAllies, plateauSeul = false, sortsSeuls = false } = options;
 
   // Le sort effectivement lancé : celui qu'on a désigné, sinon celui du kit.
   const sortDe = (e: EntreeAuto): SortVitesse | null => {
@@ -591,6 +612,14 @@ function analyseEnDeuxPasses(
     });
   }
 
+  // Le plateau AVEC SORTS, cases saisies des alliés comprises : celui où se
+  // cherchent les vitesses requises (voir `plateauAvecSorts`).
+  const avecSaisies: TuneMonstre[] = avecSorts.map((m) => {
+    const manuel = m.camp === 'allie' ? saisiesAllies?.get(m.id) : undefined;
+    return manuel ? { ...m, atbMod: { ...m.atbMod, ...manuel.atb }, speedMod: { ...m.speedMod, ...manuel.speed } } : m;
+  });
+  if (sortsSeuls) return avecSaisies;
+
   // 5. Ce que les sorts posent est ÉCRIT dans les grilles, puis rejoué.
   //
   // ⚠️ **Décalé d'un tick.** Dans le moteur, ce qu'une compétence pose arrive
@@ -680,13 +709,15 @@ function analyseEnDeuxPasses(
       casesAuto: { atb: atbAuto, speed: vitessesAuto.get(m.id) ?? {} },
     });
   }
+  // ⚠️ Les vitesses (et artéfacts) requis se cherchent sur le plateau AVEC
+  // SORTS, pas sur les grilles : voir `plateauAvecSorts`.
   return {
     mods,
     combats,
     reference: modele,
     verdict,
-    requis: verdict.ok ? [] : vitessesRequises(final, horizon),
-    arte: verdict.ok ? [] : artefactsRequis(final, horizon),
+    requis: verdict.ok ? [] : vitessesRequises(avecSaisies, horizon),
+    arte: verdict.ok ? [] : artefactsRequis(avecSaisies, horizon),
     ordre: premiersTours(simuler(final, horizon))
       .filter((a) => a.camp === 'allie')
       .map((a) => ({ id: a.id, tick: a.tick })),

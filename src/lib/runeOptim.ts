@@ -128,6 +128,11 @@ interface Best {
 //
 // `regemLibre` : une rune DÉJÀ gemmée peut voir sa ligne gemmée passer à une
 // autre stat (bouton « Autoriser un regemme différent », éteint par défaut).
+//
+// `gemmeExistanteSeule` : aucune gemme n'est SIMULÉE sur une rune qui n'en
+// porte pas — seule une gemme déjà posée peut être relancée (même stat). C'est
+// la lecture des Courbes : créditer chaque rune vierge de la meilleure gemme au
+// jet maximal la faisait passer devant des runes finies.
 function best(
   rune: RuneDetail,
   G: Tbl,
@@ -136,7 +141,8 @@ function best(
   metric: OptimMetric,
   noDowngrade = false,
   dispo?: CraftDispo,
-  regemLibre = false
+  regemLibre = false,
+  gemmeExistanteSeule = false
 ): Best {
   const subs = rune.subs.map((s) => ({
     code: s.code,
@@ -166,6 +172,7 @@ function best(
   if (!withGem) return { eff: bestEff, gemSlot: -1, gemCode: null }; // grind seul
 
   const gemmedIdx = subs.findIndex((s) => s.enchant);
+  if (gemmeExistanteSeule && gemmedIdx < 0) return { eff: bestEff, gemSlot: -1, gemCode: null };
 
   // Règles du jeu (relevées par l'utilisateur) : UNE seule ligne gemmée par
   // rune ; une rune vierge peut gemmer n'importe quelle ligne, une rune déjà
@@ -234,7 +241,8 @@ export function runePotential(
   metric: OptimMetric = 'eff',
   noDowngrade = false,
   dispo?: DispoParScenario,
-  regemLibre = false
+  regemLibre = false,
+  gemmeExistanteSeule = false
 ): RunePotential {
   const anc = rune.rank > 10;
   const eff = metric === 'eff' ? runeEfficiency(rune) : runeScore(rune);
@@ -246,7 +254,8 @@ export function runePotential(
     metric,
     noDowngrade,
     dispo?.hero,
-    regemLibre
+    regemLibre,
+    gemmeExistanteSeule
   );
   const l = best(
     rune,
@@ -256,7 +265,8 @@ export function runePotential(
     metric,
     noDowngrade,
     dispo?.legend,
-    regemLibre
+    regemLibre,
+    gemmeExistanteSeule
   );
   // Arrondi en sortie, puis gains calculés SUR LES VALEURS ARRONDIES : le gain
   // affiché est ainsi toujours exactement « potentiel − actuel » à l'écran.

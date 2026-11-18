@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
-import { Gem } from 'lucide-react';
+import { ListOrdered } from 'lucide-react';
 import { RuneDetail } from '../../types';
-import { runePotential } from '../../lib/runeOptim';
+import { distributionsCourbes } from '../../lib/runeCourbes';
 import { useRuneMetric } from '../../hooks/useRuneMetric';
 import { useStickyState } from '../../hooks/useStickyState';
 import SetFilter from './SetFilter';
@@ -46,9 +46,13 @@ export default function RunesCurve({ runes }: Props) {
   const [limit, setLimit] = useStickyState('runesCurve.limit', DEFAULT_LIMIT);
   const [hidden, setHidden] = useStickyState<Set<string>>('runesCurve.hidden', new Set());
   const [gemMode, setGemMode] = useStickyState<'gem' | 'grind'>('runesCurve.gemMode', 'gem');
-  // « Autoriser un regemme différent » — même réglage que l'onglet Optimisation,
-  // mémorisé à part comme le mode gemme/meule. Éteint par défaut.
-  const [regemLibre, setRegemLibre] = useStickyState('runesCurve.regemLibre', false);
+  // ⚠️ Pas de « Autoriser un regemme différent » ici : les Courbes ne changent
+  // jamais la stat d'une gemme, et n'en simulent aucune sur une rune qui n'en a
+  // pas (voir runeCourbes.ts).
+  // « Rune à rune » : les potentiels suivent le classement d'« Actuelle » au
+  // lieu d'être triés chacun de son côté (voir runeCourbes.ts). Éteint par
+  // défaut : la lecture classée reste celle qui compare des box.
+  const [runeARune, setRuneARune] = useStickyState('runesCurve.runeARune', false);
   const metric = useRuneMetric(); // réglage global : efficience ou score SW
   const withGem = gemMode === 'gem';
 
@@ -60,31 +64,17 @@ export default function RunesCurve({ runes }: Props) {
     });
   }
 
-  // Potentiels calculés sur les runes filtrées, puis 3 distributions triées ↓.
-  //
-  // ⚠️ Chaque distribution garde SA rune à côté de sa valeur : c'est ce qui
-  // permet d'ouvrir la rune d'un point du graphe. Les trois sont triées
-  // SÉPARÉMENT — le rang N d'« Actuelle » et celui de « Potentiel Légend » ne
-  // désignent pas la même rune —, donc chacune transporte son propre ordre.
-  const { cur, hero, legend } = useMemo(() => {
+  // Potentiels calculés sur les runes filtrées, puis 3 distributions triées ↓,
+  // chacune avec SES runes (voir runeCourbes.ts).
+  const { cur, hero, legend, potentiels } = useMemo(() => {
     const filtered = runes.filter((r) => {
       if (!sets.has(r.set)) return false;
       if (!slots.has(r.slot)) return false;
       if (!keepAncient(r, ancient)) return false;
       return true;
     });
-    const pots = filtered.map((r) => ({ rune: r, p: runePotential(r, withGem, metric, false, undefined, regemLibre) }));
-    // Trie sur une valeur donnée et renvoie valeurs + runes alignées.
-    const classe = (val: (p: ReturnType<typeof runePotential>) => number) => {
-      const tri = [...pots].sort((a, b) => val(b.p) - val(a.p));
-      return { effs: tri.map((t) => val(t.p)), runes: tri.map((t) => t.rune) };
-    };
-    return {
-      cur: classe((p) => p.eff),
-      hero: classe((p) => p.heroEff),
-      legend: classe((p) => p.legendEff),
-    };
-  }, [runes, sets, slots, ancient, withGem, metric, regemLibre]);
+    return distributionsCourbes(filtered, withGem, metric, runeARune);
+  }, [runes, sets, slots, ancient, withGem, metric, runeARune]);
 
   const total = cur.effs.length;
   const cap = Math.max(1, limit);
@@ -94,17 +84,34 @@ export default function RunesCurve({ runes }: Props) {
     runes: d.runes.slice(0, cap),
   });
 
-  // ⚠️ Seule « Actuelle » transporte ses runes : les potentiels ne sont pas
-  // d'autres runes, c'est la MÊME box projetée dans une autre hypothèse. Leur
-  // donner leurs runes ouvrirait trois cartes quasi identiques pour une seule
-  // question — « quelle est cette rune ? ». (En comparaison, c'est l'inverse :
-  // chaque courbe est un compte DIFFÉRENT, donc toutes sont ouvrables.)
+  // ⚠️ Les TROIS courbes transportent leurs runes. Triées chacune de son côté,
+  // elles ne désignent pas la même rune à un même rang : au 32ᵉ rang, la courbe
+  // héroïque montre la 32ᵉ meilleure rune EN POTENTIEL héroïque — souvent une
+  // rune vierge, créditée du jet maximal —, pas la rune d'« Actuelle »
+  // améliorée. Lue rune à rune, la courbe violette fait croire qu'un potentiel
+  // n'est jamais atteint, alors que bien des runes meulées le dépassent. Montrer
+  // la rune de chaque courbe au rang cliqué rend la lecture juste.
+  // « Rune à rune », les potentiels ne sont plus triés : tracés en segments.
   const allSeries: (CurveSeries & { cle: string })[] = [
     { cle: CLE.actuelle, name: k.actuelle, ...lim(cur), color: OWN_COLOR, own: true },
-    { cle: CLE.hero, name: k.potentielHero, effs: lim(hero).effs, color: HERO_COLOR, own: false },
-    { cle: CLE.legend, name: k.potentielLegend, effs: lim(legend).effs, color: LEGEND_COLOR, own: false },
+    { cle: CLE.hero, name: k.potentielHero, ...lim(hero), color: HERO_COLOR, own: false, lisse: !runeARune },
+    { cle: CLE.legend, name: k.potentielLegend, ...lim(legend), color: LEGEND_COLOR, own: false, lisse: !runeARune },
   ];
   const visible = allSeries.filter((s) => !hidden.has(s.cle));
+
+  // Sur la fiche d'une rune : sa valeur d'aujourd'hui et ses DEUX potentiels,
+  // quelle que soit la courbe qui l'a désignée — la carte du rang 32 de la
+  // courbe héroïque dit ainsi d'où part cette rune, et ce qu'elle vaudrait en
+  // légendaire.
+  const valeursRune = (r: RuneDetail) => {
+    const p = potentiels.get(r);
+    if (!p) return [];
+    return [
+      { name: k.actuelle, color: OWN_COLOR, val: p.eff },
+      { name: k.potentielHero, color: HERO_COLOR, val: p.heroEff },
+      { name: k.potentielLegend, color: LEGEND_COLOR, val: p.legendEff },
+    ];
+  };
 
   // Le texte d'aide, passé à HelpPopover (bulle à la souris, panneau montant au
   // doigt). Le titre est rendu par HelpPopover, pas répété ici.
@@ -120,19 +127,18 @@ export default function RunesCurve({ runes }: Props) {
           </li>
           <li>
             <span style={{ color: HERO_COLOR }}>●</span> <b className="text-ink">{k.potentielHero}</b> — {k.aideHero}{' '}
-            <b className="text-ink">{k.aideHeroGras}</b> <span className="text-ink-dim">{k.aideHeroTri}</span>.
+            <b className="text-ink">{k.aideHeroGras}</b>.
           </li>
           <li>
             <span style={{ color: LEGEND_COLOR }}>●</span> <b className="text-ink">{k.potentielLegend}</b> — {k.aideLegend}{' '}
-            <b className="text-ink">{textes.artefactsCompte.aucunQuadGras}</b>{' '}
-            <span className="text-ink-dim">{k.aideLegendTri}</span>.
+            <b className="text-ink">{textes.artefactsCompte.aucunQuadGras}</b>.
           </li>
         </ul>
+        <p className="mt-2">{k.aideRangs}</p>
         <p className="mt-2">
           {k.aideSelecteur} <b className="text-ink">{k.gemmeMeule} / {k.meuleSeule}</b> {k.aideSelecteur2}{' '}
-          <b className="text-ink">{k.gemmeMeule}</b> {k.aideGemmeMeule}{' '}
-          <b className="text-ink">{k.meuleSeule}</b> {k.aideMeuleSeule}{' '}
-          <b className="text-ink">{k.regemme}</b>.
+          <b className="text-ink">{k.gemmeMeule}</b> {k.aideGemmeMeuleCourbes}{' '}
+          <b className="text-ink">{k.meuleSeule}</b> {k.aideMeuleSeuleCourbes}
         </p>
         <p className="mt-2">
           {k.aideOnglet} <b className="text-ink">{k.optimisation}</b> {k.aidePourVoir}{' '}
@@ -198,7 +204,7 @@ export default function RunesCurve({ runes }: Props) {
               {
                 key: 'gem',
                 label: k.gemmeMeule,
-                hint: k.gemmeMeuleAide,
+                hint: k.gemmeMeuleAideCourbes,
               },
               {
                 key: 'grind',
@@ -207,17 +213,13 @@ export default function RunesCurve({ runes }: Props) {
               },
             ]}
           />
-          {/* Grisé en « Meule seule » : sans gemme, il n'y a rien à regemmer. */}
           <Bouton
-            onClick={() => setRegemLibre((v) => !v)}
-            disabled={!withGem}
-            actif={regemLibre}
+            onClick={() => setRuneARune((v) => !v)}
+            actif={runeARune}
             taille="sm"
-            title={
-              withGem ? k.regemmeAide : k.regemmeSansObjet
-            }
-            icone={<Gem size={14} />}
-            libelle={k.regemme}
+            title={k.runeARuneAide}
+            icone={<ListOrdered size={14} />}
+            libelle={k.runeARune}
           />
           <span className="font-mono text-xs text-ink-dim">
             {k.top(Math.min(cap, total))}
@@ -265,6 +267,8 @@ export default function RunesCurve({ runes }: Props) {
           series={visible}
           yLabel={metric === 'eff' ? k.axeEfficience : k.axeScore}
           unit={metric === 'eff' ? '%' : ''}
+          ordreCartes="series"
+          valeursRune={valeursRune}
         />
       </div>
 
