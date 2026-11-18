@@ -422,7 +422,8 @@ l'invocateur demandé comptent), elle tire :
   lit dans les vues qui suivent (carte, journaux de combat par deck ou par
   joueur).
 
-**L'app ne l'affiche pas encore** : ce sont les écrans d'un chantier à venir.
+**L'app ne l'affiche pas encore** : voir
+[pistes-guilde.md](../../05-feuille-de-route/pistes-guilde.md).
 
 ### Limites connues
 
