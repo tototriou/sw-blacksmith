@@ -124,12 +124,15 @@ export async function parcourirArchive(chemin: string): Promise<{ blocs: (Entete
 // empreinte. `false` si rien n'a été ajouté.
 // ⚠️ Ouvert en ajout (`a`) : chaque écriture va en fin de fichier, et la fin
 // est la partie saine une fois coupé ce qui la suivait.
+// ⚠️ Coupé par son chemin, AVANT l'ouverture : sous Windows, un descripteur
+// ouvert en ajout n'a pas le droit de tronquer (`EPERM` sur `ftruncate`).
 export async function ajouterAuFichier(chemin: string, bloc: Bloc): Promise<boolean> {
   const { blocs, fin: sain } = await parcourirArchive(chemin);
   const dernier = blocs[blocs.length - 1];
+  const taille = await promises.stat(chemin).then((s) => s.size, () => 0);
+  if (taille !== sain) await promises.truncate(chemin, sain);
   const fichier = await promises.open(chemin, 'a');
   try {
-    if ((await fichier.stat()).size !== sain) await fichier.truncate(sain);
     if (dernier && dernier.empreinte === bloc.empreinte) return false;
     const octets = construireBloc(bloc);
     await fichier.write(octets, 0, octets.length);
