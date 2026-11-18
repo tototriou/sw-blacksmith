@@ -41,7 +41,7 @@ Ce document décrit le choix du set de runes et des statistiques principales imp
    Conditions, empilés.
 
    **Au bureau**, le set de runes recherché est la première section de
-   « Critères » (colonne ou onglet), 294 px, **sans le titre « Critères de
+   « Critères » (colonne ou onglet), 302 px, **sans le titre « Critères de
    recherche »** du téléphone (le panneau et ses traits situent déjà la
    section). **En forme compacte** (`SetDeRunesCompact`) : le libellé seul
    (le message d'une recherche refusée sans set à sa droite), puis
@@ -111,7 +111,7 @@ Ce document décrit le choix du set de runes et des statistiques principales imp
    portent sur les runes elles-mêmes, groupées ensemble), séparée de lui par
    un trait.
 
-   **Au bureau**, une section de 294 px de « Critères », sous les
+   **Au bureau**, une section de 302 px de « Critères », sous les
    Conditions, au-dessus d'« État de mon monstre »
    (`PrincipalesImposeesBureau`) : une **rangée compacte par slot**, « Slot
    n » puis sa liste à choix multiples (`SelecteurMultiple`, forme

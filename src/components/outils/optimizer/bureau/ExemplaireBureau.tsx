@@ -1,7 +1,7 @@
 import ExemplaireEtFiche, { type ExemplaireEtFicheProps } from '../ExemplaireEtFiche';
 import { useTraduction } from '../../../../hooks/useLangue';
 
-// « Exemplaire », au bureau, section du panneau « Monstre » (358 px de
+// « Exemplaire », au bureau, section du panneau « Monstre » (366 px de
 // contenu). Le contenu est `ExemplaireEtFiche` : vues, puces Box / RTA /
 // Défenses siège / Offenses siège, choix de l'exemplaire en flottant, fiche
 // dépliée à la façon des cartes de résultat, « Valider ce build ». La carte

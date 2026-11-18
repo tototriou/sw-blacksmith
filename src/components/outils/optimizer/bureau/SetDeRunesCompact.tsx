@@ -77,7 +77,9 @@ export default function SetDeRunesCompact({ setPickerSectionRef, setPickerInvali
     <section aria-label={c.titre} data-set-optimizer={deplie ? 'deplie' : 'compact'}>
       <div
         ref={setPickerSectionRef}
-        className={setPickerInvalid ? 'rounded-lg border border-bad bg-bad/15 p-2 -m-2 transition' : 'transition'}
+        // Le cadre déborde en haut et en bas, jamais à droite : la colonne n'a
+        // pas de rembourrage de ce côté, la barre le rognerait.
+        className={setPickerInvalid ? 'rounded-lg border border-bad bg-bad/15 p-2 -my-2 transition' : 'transition'}
       >
         {/* Le message reste sur la ligne du titre tant qu'il y garde 120 px ;
             dans une section plus étroite, il passe dessous plutôt que de
