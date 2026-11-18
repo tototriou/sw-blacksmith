@@ -50,8 +50,10 @@ export async function preuvesBandesEquipes(b: Banc): Promise<[boolean, string][]
     }
     return hauts.size === 1;
   };
+  // Au doigt, « Speed tune » ne garde que son icône (son nom reste dans aria-label).
+  const auDoigt = matchMedia('(pointer: coarse)').matches;
   verifier([a.querySelector('img[src*="leader_skill_"]')!, modifier, ...(speedTune ? [speedTune] : [])].every(e => Math.abs(centre(e) - centre(titre)) < 2)
-    && titre.scrollWidth <= titre.clientWidth && [modifier, ...(speedTune ? [speedTune] : [])].every(unLigne),
+    && titre.scrollWidth <= titre.clientWidth && [modifier, ...(speedTune && !auDoigt ? [speedTune] : [])].every(unLigne),
     `en-tête : LeadPill, numéro entier, Speed tune et Modifier sur une seule ligne — ${[titre, modifier].map(centre).join(' / ')} · ${titre.scrollWidth}/${titre.clientWidth}`);
   verifier(libres.firstElementChild?.textContent === 'Sans équipe' && !!(a.compareDocumentPosition(libres) & Node.DOCUMENT_POSITION_FOLLOWING), 'les libres suivent sous Sans équipe');
   const styleA = getComputedStyle(a), styleB = getComputedStyle(autre);

@@ -2,7 +2,7 @@ import type { ElementKey, LeaderSkill } from '../types';
 import type { Dictionnaire } from '../i18n/fr';
 import { appliquerCriteres, baseCompleteCriteres, type LeadEffectifOptimizer } from './criteresOptimizer';
 import { LEADER_SKILL_STATS, type DamageSetup, type LeaderSkillStat } from './damage';
-import { exclusionSelectorKey, resolveExclusionEntry, type ExclusionSelector, type ExclusionSourceData } from './optimizerExclusion';
+import { exclusionSelectorKey, findValidatedBuild, resolveExclusionEntry, type ExclusionSelector, type ExclusionSourceData, type ValidatedBuild } from './optimizerExclusion';
 import {
   MEMBRES_MAX_EQUIPE_OPTIMIZER, MEMBRES_MIN_EQUIPE_OPTIMIZER, cleMemoireMembre, enregistrerMemoireMembre, validerEquipesOptimizer,
   type ContenuListeOptimizer, type EquipeOptimizer, type StockageOptimizer,
@@ -207,4 +207,14 @@ export function equipeApresFiltrageOptimizer(
   const resultat = creerEquipeOptimizer(contexte, creation, t);
   if (resultat.rapport.length) return { equipe: null, rapport: [...resultat.rapport, r.aucuneEquipeCreee] };
   return { equipe: resultat.teams.find(e => e.id === creation.id)!, rapport: [] };
+}
+
+// « Enregistrer dans Mes équipes » depuis la bande d'une équipe : chaque membre
+// a un build validé dans la liste, ses runes ET sa paire d'artéfacts — sans
+// quoi Mes équipes recevrait un équipement que la recherche n'a pas retenu.
+export function buildsEquipeValides(equipe: Pick<EquipeOptimizer, 'listId' | 'members'>, validated: ValidatedBuild[]): boolean {
+  return equipe.members.length > 0 && equipe.members.every((s) => {
+    const build = findValidatedBuild(validated, equipe.listId, exclusionSelectorKey(s));
+    return !!build && build.runeIds.length > 0 && (build.artifactIds ?? []).length > 0;
+  });
 }

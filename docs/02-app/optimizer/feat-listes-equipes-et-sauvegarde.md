@@ -404,7 +404,7 @@ affichée telle quelle, jamais remplacée en silence.
 
 « Lier une équipe » reste actif dès qu'une liste est active, quel que soit son nombre de membres, et ouvre `OptimizerEquipeDialog` hors du flux aux deux formats.
 Avec moins de deux membres libres, le corps affiche « Pas assez de monstres pour faire une équipe : rajoute des monstres dans la liste. » à la place des propositions vides, ou au-dessus du membre restant visible. « Lier » est désactivé ; Annuler et la croix ferment. La modification d'une équipe existante n'affiche pas ce message.
-La fenêtre propose deux à six membres, un leader facultatif (« Leader ») et le lead (type, valeur, portée et élément). En modification, « Enregistrer dans Mes équipes » (à droite du compte des membres) applique le brouillon puis passe l'équipe à Mes équipes ([feat-equipes.md](../compte/feat-equipes.md)) ; l'en-tête de la bande n'a pas la place d'un geste de plus au téléphone.
+La fenêtre propose deux à six membres, un leader facultatif (« Leader ») et le lead (type, valeur, portée et élément). L'enregistrement dans Mes équipes n'est pas dans la fenêtre : il est sur l'en-tête de la bande de l'équipe ([feat-equipes.md](../compte/feat-equipes.md)).
 Hors portée « Élément », le menu Élément reste affiché, désactivé et sans texte.
 Les membres déjà liés à une autre équipe de cette liste sont absents des propositions, à la création comme à la modification ; ceux de l’équipe modifiée restent proposés.
 Le leader se choisit par **espèce** : une seule option par espèce cochée,

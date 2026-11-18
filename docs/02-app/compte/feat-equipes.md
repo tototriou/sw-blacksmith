@@ -314,10 +314,13 @@ format.
 ### Mettre à jour depuis l'Optimizer
 
 Une équipe dont la liste liée existe encore propose « Mettre à jour depuis
-l'Optimizer ». Dans l'Optimizer, **chaque équipe d'une liste** porte « Enregistrer
-dans Mes équipes » dans sa fenêtre « Modifier l'équipe » (le brouillon de la fenêtre
-est appliqué d'abord ; l'en-tête de la bande n'a pas la place d'un geste de plus au
-téléphone). **L'enregistrement se fait équipe par équipe,
+l'Optimizer ». Dans l'Optimizer, **chaque équipe d'une liste** porte, sur l'en-tête
+de sa bande, entre « Équipe N » et « Speed tune », un bouton à l'icône de Mes
+équipes, aux deux formats. Son infobulle dit « Enregistrer dans Mes équipes ». Tant
+qu'un membre de l'équipe n'a pas de build validé portant ses runes **et** ses
+artéfacts (`buildsEquipeValides`), il reste grisé et son infobulle dit « Valide
+d'abord les builds des monstres de l'équipe ». La fenêtre « Modifier l'équipe »
+n'a plus ce geste. **L'enregistrement se fait équipe par équipe,
 jamais pour une liste entière** (décision de l'utilisateur). Le geste ouvre « Mes
 équipes » et, après sa relecture :
 

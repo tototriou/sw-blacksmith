@@ -379,12 +379,19 @@ const EQ_IMPORT: Record<Format, Etape[]> = {
   ordinateur: [{ cliquer: bouton('Importer une équipe') }, EQ_SOURCE_DEFENSE, EQ_FERMER_RAPPORT],
 };
 const EQ_CARTE: Cible = { role: 'button', nom: 'Ouvrir Défense 1' };
-// L'équipe envoyée à l'Optimizer : la fenêtre de son équipe de liste porte
-// « Enregistrer dans Mes équipes », comme toute équipe de l'Optimizer.
+// L'équipe envoyée à l'Optimizer : la bande de son équipe de liste porte le
+// bouton de Mes équipes, entre son numéro et le speed tune, grisé tant que
+// les builds de ses membres ne sont pas validés (ils ne le sont pas à l'export).
 // Au téléphone, les équipes de la liste vivent dans « Gérer mes listes », replié.
 const EQ_LISTES_TELEPHONE: Etape = { cliquer: { role: 'button', nom: 'Gérer mes listes', etendu: false } };
-// « Enregistrer dans Mes équipes » vit dans la fenêtre de l'équipe.
-const EQ_MODIFIER: Etape = { cliquer: bouton('Modifier l’équipe') };
+const EQ_A_VALIDER: Cible = { role: 'button', nom: 'Valide d’abord les builds des monstres de l’équipe' };
+// Le retour vers Mes équipes, par le menu de sa carte (le bouton de la bande
+// attend des builds validés, qu'aucune étape du banc ne produit).
+const EQ_METTRE_A_JOUR: Etape[] = [
+  { cliquer: { role: 'button', nom: 'Actions de l’équipe', pres: EQ_CARTE } },
+  { cliquer: repere('[role="menuitem"]:has-text("Mettre à jour depuis l’Optimizer")') },
+];
+const EQ_NOMMER: Etape[] = [{ cliquer: bouton('Nouvelle équipe') }];
 const EQ_EXPORTER: Etape[] = [
   { cliquer: { role: 'button', nom: 'Actions de l’équipe', pres: EQ_CARTE } },
   { cliquer: repere('[role="menuitem"]:has-text("Exporter vers l’Optimizer")') },
@@ -429,11 +436,11 @@ export const ECRANS: Ecran[] = [
       DEFAUT,
       {
         id: 'equipe-liee',
-        libelle: 'équipe exportée depuis Mes équipes, sa fenêtre ouverte : « Enregistrer dans Mes équipes »',
+        libelle: 'équipe exportée depuis Mes équipes : le bouton de Mes équipes grisé dans sa bande, builds à valider',
         // Pas en écran partagé : la barre latérale y mène le volet principal.
         tailles: ['telephone', 'ordinateur', 'bureau-portable', 'bureau-2560', 'conteneur-752', 'conteneur-1100'],
-        preparation: { telephone: [...EQ_LIEE.telephone, EQ_MODIFIER], ordinateur: [...EQ_LIEE.ordinateur, EQ_MODIFIER] },
-        atteint: [bouton('Enregistrer dans Mes équipes'), { role: 'dialog', nom: 'Modifier l’équipe' }],
+        preparation: { telephone: EQ_LIEE.telephone, ordinateur: EQ_LIEE.ordinateur },
+        atteint: [EQ_A_VALIDER],
       },
       {
         id: 'reglages-avances',
@@ -694,10 +701,10 @@ export const ECRANS: Ecran[] = [
       },
       {
         id: 'retour-optimizer',
-        libelle: 'exportée, puis « Enregistrer dans Mes équipes » depuis son équipe de l’Optimizer',
+        libelle: 'exportée, puis « Mettre à jour depuis l’Optimizer » de retour dans Mes équipes',
         preparation: {
-          telephone: [...EQ_IMPORT.telephone, ...EQ_EXPORTER, EQ_LISTES_TELEPHONE, EQ_MODIFIER, { cliquer: bouton('Enregistrer dans Mes équipes') }],
-          ordinateur: [...EQ_IMPORT.ordinateur, ...EQ_EXPORTER, EQ_MODIFIER, { cliquer: bouton('Enregistrer dans Mes équipes') }],
+          telephone: [...EQ_IMPORT.telephone, ...EQ_EXPORTER, ...EQ_ALLER.telephone, ...EQ_METTRE_A_JOUR],
+          ordinateur: [...EQ_IMPORT.ordinateur, ...EQ_EXPORTER, ...EQ_ALLER.ordinateur, ...EQ_METTRE_A_JOUR],
         },
         atteint: [{ role: 'dialog', nom: 'Mettre à jour depuis l’Optimizer ?' }],
       },

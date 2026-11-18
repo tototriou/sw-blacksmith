@@ -179,7 +179,10 @@ jeu, n'ont RIEN à voir l'un avec l'autre.
   L'en-tête tient sur une ligne : la pastille `LeadPill`, le numéro seul
   (« Équipe 1 », sans le leader, qui ne tenait jamais), le compte des leads
   inactifs en court (« ⚠ 2 », la phrase en infobulle et pour les lecteurs
-  d'écran), « Speed tune » (liste de siège, place réservée sinon, voir
+  d'écran), l'icône de Mes équipes (« Enregistrer dans Mes équipes », voir
+  [feat-equipes.md](../compte/feat-equipes.md#mettre-à-jour-depuis-loptimizer)),
+  « Speed tune » avec l'icône de l'outil Speed tuning (liste de siège, place
+  réservée sinon, voir
   [feat-speed-tune-depuis-optimizer.md](feat-speed-tune-depuis-optimizer.md))
   et « Modifier l’équipe ». Les cartes gardent l’aspect et la hauteur des cartes libres,
   qui suivent sous « Sans équipe ». « Lier une équipe » et « Modifier l’équipe » ouvrent
