@@ -37,6 +37,10 @@ export async function preuvesMesEquipesBande(b: Banc, enregistree: () => EquipeO
     && Math.abs((rg.top + rg.bottom) / 2 - (rs.top + rs.bottom) / 2) < 2,
     `centré entre « Équipe 1 » et le speed tune, sur sa ligne (${rg && Math.round((rg.left + rg.right) / 2)} pour ${Math.round(milieu)})`);
   verifier(!!numero && numero.scrollWidth <= numero.clientWidth, `avec le bouton, le numéro reste entier (${numero?.scrollWidth}/${numero?.clientWidth})`);
+  const modif = [...(groupe()?.querySelectorAll<HTMLElement>('button') ?? [])].find(e => e.textContent === q.modifier);
+  const rm = modif?.getBoundingClientRect();
+  verifier(!!rs && !!rm && Math.abs((rs.top + rs.bottom) / 2 - (rm.top + rm.bottom) / 2) < 0.5,
+    `« Speed tune » à la hauteur de « Modifier l’équipe » (${rs && (rs.top + rs.bottom) / 2} / ${rm && (rm.top + rm.bottom) / 2})`);
   const style = grise ? getComputedStyle(grise) : null;
   verifier(!!style && !!rg && !!rs && style.borderTopWidth === '1px' && style.backgroundColor !== 'rgba(0, 0, 0, 0)'
     && rg.width > rg.height && Math.abs(rg.height - rs.height) < 1, `dans une case oblongue de la hauteur de « Speed tune » (${rg?.width}×${rg?.height}, ${rs?.height})`);

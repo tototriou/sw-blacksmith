@@ -56,6 +56,8 @@ export async function preuvesBandesEquipes(b: Banc): Promise<[boolean, string][]
   verifier([a.querySelector('img[src*="leader_skill_"]')!, modifier, ...(speedTune ? [speedTune] : [])].every(e => Math.abs(centre(e) - centre(titre)) < 2)
     && titre.scrollWidth <= titre.clientWidth && [modifier, ...(speedTune && !auDoigt ? [speedTune] : [])].every(unLigne),
     `en-tête : LeadPill, numéro entier, Speed tune et Modifier sur une seule ligne — ${[titre, modifier].map(centre).join(' / ')} · ${titre.scrollWidth}/${titre.clientWidth}`);
+  verifier(!!speedTune && Math.abs(centre(speedTune) - centre(modifier)) < 0.5,
+    `« Speed tune » et « Modifier l’équipe » à la même hauteur (${speedTune && centre(speedTune)} / ${centre(modifier)})`);
   verifier(libres.firstElementChild?.textContent === 'Sans équipe' && !!(a.compareDocumentPosition(libres) & Node.DOCUMENT_POSITION_FOLLOWING), 'les libres suivent sous Sans équipe');
   const styleA = getComputedStyle(a), styleB = getComputedStyle(autre);
   const jeton = (nom: string) => `rgb(${getComputedStyle(document.documentElement).getPropertyValue(nom).trim().split(/\s+/).join(', ')})`;

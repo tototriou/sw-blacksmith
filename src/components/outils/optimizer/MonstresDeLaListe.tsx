@@ -158,7 +158,9 @@ export default function MonstresDeLaListe({ activeList, activeMembers, setEquipe
                 {onEnregistrerEquipe && <span aria-hidden className="invisible col-start-3 overflow-hidden whitespace-nowrap pl-px text-micro">⚠ 5</span>}
               </span>
               {/* Place réservée hors siège : changer le contenu de la liste ne déplace pas « Modifier ». */}
-              <span className={onSpeedTune ? '' : 'invisible'} aria-hidden={!onSpeedTune}>
+              {/* ⚠️ `flex` : en ligne, le bouton se posait sur la ligne de base de sa case et
+                  pouvait remonter d'un pixel par rapport à « Modifier l'équipe » selon la police. */}
+              <span className={`flex ${onSpeedTune ? '' : 'invisible'}`} aria-hidden={!onSpeedTune}>
                 <Bouton taille="xs" fond="doux" ton="accent" icone={<IconeSpeedTuning size={12} />} libelle={o.speedTune.titre} libelleAuDoigt={false} disabled={!onSpeedTune} tabIndex={onSpeedTune ? undefined : -1}
                   aria-label={g.equipe.speedTune?.plan ? o.speedTune.modifier : o.speedTune.regler}
                   title={g.equipe.speedTune?.plan ? o.speedTune.modifier : o.speedTune.regler} onClick={() => onSpeedTune?.(g.equipe!)} />
