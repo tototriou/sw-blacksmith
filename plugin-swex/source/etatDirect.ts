@@ -25,7 +25,7 @@
 //    INSTANTANÉS de monstres (défense posée il y a trois jours, préréglages de
 //    runes de la RTA, box dimensionnelle) : les reprendre écraserait les vrais.
 // Ces commandes sont écartées de la lecture générale (`HORS_LECTURE`), et ce
-// qu'elles retirent est appliqué par leur règle (`RETRAITS`).
+// qu'elles retirent — ou rachètent — est appliqué par leur règle (`REGLES`).
 
 export type Json = Record<string, any>;
 
@@ -69,8 +69,19 @@ function noter(etat: EtatDirect, nom: NomRegistre, id: number, objet: Json | nul
   etat.touches?.[nom].set(id, objet);
 }
 function mettre(etat: EtatDirect, nom: NomRegistre, id: number, objet: Json) {
-  etat[nom].set(id, objet);
-  noter(etat, nom, id, objet);
+  const o = nom === 'runes' ? avecSousStatsCompletes(objet) : objet;
+  etat[nom].set(id, o);
+  noter(etat, nom, id, o);
+}
+
+// ⚠️ Une rune GAGNÉE en combat (`changed_item_list`) arrive avec des sous-stats
+// en deux cases, `[type, valeur]` ; l'export les écrit en quatre,
+// `[type, valeur, gemme, meule]`. Une rune qui vient de tomber n'est ni gemmée
+// ni meulée : on complète par des zéros, comme le serveur à la connexion
+// suivante (vérifié au rejeu d'un journal réel).
+function avecSousStatsCompletes(r: Json): Json {
+  if (!Array.isArray(r.sec_eff) || r.sec_eff.every((s: unknown) => !Array.isArray(s) || s.length >= 4)) return r;
+  return { ...r, sec_eff: r.sec_eff.map((s: unknown) => (Array.isArray(s) && s.length < 4 ? [...s, 0, 0, 0, 0].slice(0, 4) : s)) };
 }
 function oter(etat: EtatDirect, nom: NomRegistre, id: number) {
   if (etat[nom].delete(id)) noter(etat, nom, id, null);
@@ -213,9 +224,18 @@ function parcourir(x: unknown, moi: number, vus: Vus) {
   for (const [k, v] of Object.entries(o)) if (!CLES_IGNOREES.test(k)) parcourir(v, moi, vus);
 }
 
-// Ce que chaque commande RETIRE du compte : lu dans la requête (ce que le
-// joueur a vendu) ou dans la réponse (ce que le serveur dit avoir retiré).
-const RETRAITS: Record<string, (etat: EtatDirect, req: Json, res: Json) => void> = {
+// Ce que changent les commandes qui ont leur RÈGLE, appliquée qu'elles soient
+// ou non hors lecture générale : ce qu'elles retirent du compte, lu dans la
+// requête (ce que le joueur a vendu) ou dans la réponse (ce que le serveur dit
+// avoir retiré) ; et le rachat.
+const REGLES: Record<string, (etat: EtatDirect, req: Json, res: Json) => void> = {
+  // ⚠️ Le rachat d'une rune vendue : hors lecture générale (les listes de
+  // rachat montrent des runes VENDUES), mais sa réponse donne la rune rachetée,
+  // revenue dans l'inventaire.
+  RepurchaseRune: (e, _req, res) => {
+    const r = res.rune;
+    if (r && typeof r === 'object' && Number(r.wizard_id) === e.wizardId && estRune(r)) mettre(e, 'runes', Number(r.rune_id), r);
+  },
   SellRune: (e, req) => {
     for (const id of req.rune_id_list ?? []) oter(e, 'runes', Number(id));
   },
@@ -244,8 +264,19 @@ function poserCraft(etat: EtatDirect, c: Json) {
 
 // Les monstres que le serveur dit avoir retirés (sacrifiés, mis en stock,
 // convertis), quelle que soit la commande.
+// ⚠️ La liste peut être IMBRIQUÉE : rangés dans le stockage
+// (`MoveStorageFromTo`), les monstres retirés sont dans
+// `result_to.remove_unit_id_list`. On la cherche donc à toute profondeur.
 function retirerUnites(etat: EtatDirect, req: Json, res: Json) {
-  const ids: number[] = [...(res.remove_unit_id_list ?? []), ...(res.removed_unit_id_list ?? [])];
+  const ids: number[] = [];
+  const chercher = (x: unknown) => {
+    if (!x || typeof x !== 'object' || Array.isArray(x)) return;
+    for (const [k, v] of Object.entries(x as Json)) {
+      if ((k === 'remove_unit_id_list' || k === 'removed_unit_id_list') && Array.isArray(v)) ids.push(...v);
+      else if (!CLES_IGNOREES.test(k)) chercher(v);
+    }
+  };
+  chercher(res);
   for (const s of req.source_unit_list ?? []) ids.push(typeof s === 'object' ? s.unit_id : s);
   for (const id of ids) oter(etat, 'unites', Number(id));
 }
@@ -257,7 +288,7 @@ export function appliquer(etat: EtatDirect, commande: string, req: Json, res: Js
   if (Number(req?.wizard_id ?? res.wizard_info?.wizard_id) !== etat.wizardId) return null;
   etat.touches = { runes: new Map(), artefacts: new Map(), unites: new Map(), crafts: new Map(), reliques: new Map() };
 
-  RETRAITS[commande]?.(etat, req ?? {}, res);
+  REGLES[commande]?.(etat, req ?? {}, res);
   if (!HORS_LECTURE.test(commande)) {
     const vus: Vus = { runes: [], artefacts: [], unites: [], crafts: [], reliques: [] };
     parcourir(res, etat.wizardId, vus);

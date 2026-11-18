@@ -227,9 +227,34 @@ export function testPluginSwexEtat() {
   x = versExport(e);
   ok(!idsInventaire(x).includes(14) && idsInventaire(x).includes(15), 'arène serveur : seule la récompense reçue est lue, pas l’historique');
 
+  // Une rune gagnée en combat arrive avec des sous-stats en deux cases : elle
+  // est complétée comme l'export l'écrit, `[type, valeur, gemme, meule]`.
+  appliquer(e, 'BattleDungeonResult_V2', req(), ok0({ changed_item_list: [{ info: rune(16, {}, 0, { sec_eff: [[4, 6], [8, 4]] }) }] }));
+  egal(
+    versExport(e).runes.find((r: Json) => r.rune_id === 16).sec_eff,
+    [[4, 6, 0, 0], [8, 4, 0, 0]],
+    'rune gagnée en combat : sous-stats complétées par des zéros'
+  );
+
+  // Le rachat d'une rune vendue : hors lecture générale, mais la rune revient.
+  appliquer(e, 'SellRune', req({ rune_id_list: [16] }), ok0());
+  appliquer(e, 'GetRuneRepurchaseList', req(), ok0({ runes: [rune(17, {})] }));
+  ok(!idsInventaire(versExport(e)).includes(17), 'liste de rachat : ses runes (vendues) ne reviennent pas');
+  appliquer(e, 'RepurchaseRune', req({ rune_id: 16 }), ok0({ rune: rune(16, {}, 0, { sec_eff: [[4, 6, 0, 0]] }) }));
+  ok(idsInventaire(versExport(e)).includes(16), 'rachat : la rune rachetée revient dans l’inventaire');
+
   // Monstres retirés (mis en stock, sacrifiés).
   appliquer(e, 'ConvertUnitToStorage', req({ unit_id_list: [1] }), ok0({ remove_unit_id_list: [1] }));
   egal(versExport(e).unit_list.map((u: Json) => u.unit_id), [2], 'monstre mis en stock : il disparaît');
+  // Rangés dans le stockage : la liste des retirés est imbriquée.
+  appliquer(e, 'SummonUnit', req(), ok0({ unit_list: [unite(5, []), unite(6, [])] }));
+  appliquer(
+    e,
+    'MoveStorageFromTo',
+    req({ from: 1, to: 3, unit_id_list: [5, 6] }),
+    ok0({ from: 1, to: 3, result_from: [], result_to: { ret_code: 0, remove_unit_id_list: [5, 6] } })
+  );
+  egal(versExport(e).unit_list.map((u: Json) => u.unit_id), [2], 'rangés dans le stockage : retirés de la box (liste imbriquée)');
 
   // Reliques : partagées, mises à jour à chaque vue.
   appliquer(e, 'BattleDungeonResult_V2', req(), ok0({ unit_list: [unite(2, [rune(12, { unite: 2 })], [], [relique(52, 3)])] }));

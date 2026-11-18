@@ -228,10 +228,21 @@ rachat, états « avant », historiques. ⚠️ `reward_result` de l'arène serv
 l'historique de **toutes** les récompenses de la saison : seule l'entrée de la
 récompense reçue est lue (`LECTURES_CIBLEES`).
 
-Ce qui disparaît a sa règle (`RETRAITS`) : runes et artéfacts vendus (lus
+Ce qui disparaît a sa règle (`REGLES`) : runes et artéfacts vendus (lus
 dans la requête), pierres vendues (le lot restant, ou retiré). Les monstres
 retirés (mis en stock, sacrifiés, convertis) se lisent dans
-`remove_unit_id_list` et `source_unit_list`.
+`remove_unit_id_list` — ⚠️ **à toute profondeur** : rangés dans le stockage
+(`MoveStorageFromTo`), ils sont dans `result_to.remove_unit_id_list` — et
+dans `source_unit_list` (requête).
+
+⚠️ **Le rachat** (`RepurchaseRune`) est hors lecture générale, comme tout ce
+qui touche aux listes de rachat (des runes vendues) ; sa règle pose la rune
+rachetée que donne sa réponse.
+
+⚠️ **Une rune gagnée en combat** (`changed_item_list`) arrive avec des
+sous-stats en deux cases, `[type, valeur]`, là où l'export en écrit quatre,
+`[type, valeur, gemme, meule]` : le moteur complète par des zéros — une rune
+qui vient de tomber n'est ni gemmée ni meulée.
 
 ### Vérifié par rejeu d'un journal réel
 
@@ -242,14 +253,22 @@ artéfacts, monstres, pierres, reliques). Le journal réel ne vient pas dans le
 dépôt : il porte la clé de session du joueur. Les tests en reprennent chaque
 piège sur un compte fabriqué.
 
-Sur un journal de 3 885 échanges (trois intervalles entre connexions, 276, 192
-et 990 lignes de changement) :
+Sur un journal de 3 885 échanges (trois intervalles entre connexions, 279, 192
+et 994 lignes de changement) :
 
 - **le fichier live relu est identique à l'état du moteur**, sur chaque
   intervalle ; le plugin écrit sans une erreur ;
-- **le moteur s'écarte du serveur** sur quelques objets (voir « Limites
-  connues ») : artéfacts et reliques exacts ; jusqu'à 27 monstres en trop
-  sur 825, 25 runes sur 4 426, 5 lots de pierres sur 968.
+- **le moteur est identique au serveur** sur les deux premiers intervalles
+  (runes et leur place, artéfacts, monstres, pierres, reliques) ;
+- sur le troisième, il garde 27 monstres (3★ et 4★, invoqués ou gagnés en
+  donjon), 3 runes et un lot de pierres que le serveur n'a plus, et il lui
+  manque 3 runes : **aucun échange du journal ne les mentionne** après leur
+  arrivée — le journal n'a pourtant ni trou de temps ni échange illisible.
+  Le moteur n'a rien à lire pour les suivre ; la connexion suivante remet
+  tout à plat.
+
+Trois écarts relevés ainsi ont été corrigés : les monstres rangés dans le
+stockage, les runes gagnées en combat, le rachat (voir plus haut).
 
 ## Le contenu des combats de guilde — `plugin-swex/source/guilde.ts`
 
@@ -288,14 +307,10 @@ combats. **L'app ne l'affiche pas encore** : ce sont les écrans d'un chantier
 
 ### Limites connues
 
-- ⚠️ **Écarts du moteur relevés au rejeu d'un journal réel**, rattrapés à la
-  connexion suivante :
-  - un monstre invoqué puis rangé dans le stockage (`MoveStorageFromTo`)
-    reste dans la box ;
-  - après certains combats (`BattleDungeonResult_V2`), les runes de l'équipe
-    diffèrent de celles du serveur (cause à établir) ;
-  - une rune rachetée (`RepurchaseRune`, hors lecture) ne revient pas, et les
-    meules qui la suivent non plus.
+- ⚠️ **Ce que le journal ne dit pas, le moteur ne le suit pas** : au rejeu
+  d'un journal réel, des monstres, des runes et des pierres ont disparu ou
+  sont apparus sans qu'aucun échange ne les mentionne (« Vérifié par rejeu
+  d'un journal réel »). Rattrapé à la connexion suivante.
 - L'expérience gagnée **hors combat** (bâtiments) n'apparaît qu'à la
   connexion suivante.
 - Les préréglages de la RTA et du siège ne sont pas suivis ; l'app ne les relit
