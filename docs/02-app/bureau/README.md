@@ -13,7 +13,7 @@ fichiers : [01-presentation/03-technique.md](../../01-presentation/03-technique.
 
 ## Construire et lancer
 
-Electron `44.5.1`, electron-builder `26.15.3`, electron-updater `6.8.9`
+Electron `44.11.4`, electron-builder `26.15.3`, electron-updater `6.8.9`
 (`package.json`, dont `main` désigne le `main.cjs` compilé).
 
 - `scripts/construire-bureau.mjs` compile `bureau/main.ts` et
