@@ -452,7 +452,7 @@ export const en: Dictionnaire = {
       {
         titre: 'Nothing leaves your computer',
         texte:
-          'The plugin writes two files next to your export, in the SWEX folder. It sends nothing, and never writes your session key.',
+          'The plugin writes two files in a SWBlacksmith folder, next to your export. It sends nothing, and never writes your session key.',
       },
     ],
     telecharger: 'Download the plugin',

@@ -482,7 +482,7 @@ export const fr = {
       {
         titre: 'Rien ne quitte ta machine',
         texte:
-          "Le plugin écrit deux fichiers à côté de ton export, dans le dossier de SWEX. Il n'envoie rien, et n'écrit jamais ta clé de session.",
+          "Le plugin écrit deux fichiers dans un dossier SWBlacksmith, à côté de ton export. Il n'envoie rien, et n'écrit jamais ta clé de session.",
       },
     ],
     telecharger: 'Télécharger le plugin',

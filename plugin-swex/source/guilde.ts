@@ -5,7 +5,7 @@
 // combat).
 //
 // Calcul PUR, comme etatDirect.ts : le plugin écrit `versFichierGuilde` dans
-// `<nom>-<id>.guilde.json`, à côté de l'export.
+// `SWBlacksmith/<nom>-<id>/guilde.json`, dans le dossier de SWEX.
 //
 // Deux parts :
 //  - **les vues** : la DERNIÈRE réponse de chaque écran, une par jeu de

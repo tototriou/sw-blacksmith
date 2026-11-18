@@ -12,10 +12,10 @@ import {
   guildeVide,
   versFichierGuilde,
 } from '../plugin-swex/source/guilde';
-import { nomDeBase } from '../plugin-swex/source/fichiers';
+import { DOSSIER_PLUGIN, FICHIER_COMPTE, FICHIER_GUILDE, dossierInvocateur, nomDeBase } from '../plugin-swex/source/fichiers';
 import { CHEMIN_PLUGIN, NOM_PLUGIN, construirePluginSwex } from '../scripts/lib/construirePluginSwex.mjs';
 import { CHEMIN_PLUGIN_SWEX, FICHIER_PLUGIN_SWEX } from '../src/lib/pluginSwex';
-import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createRequire } from 'node:module';
@@ -275,6 +275,29 @@ export async function testPluginSwexPaquet() {
     writeFileSync(join(dossier, 'Essai.Pro-100.json'), '{}');
     egal(nomDeBase(dossier, MOI, 'Essai/Pro'), 'Essai.Pro-100', 'nom repris de l’export');
     egal(nomDeBase(join(racine, 'absent'), MOI, 'Es:sai'), 'Essai-100', 'sans export : le pseudo nettoyé');
+    egal(nomDeBase(dossier, 1100, 'X'), 'X-1100', 'un export d’un autre identifiant (…-100) n’est pas pris');
+
+    // Pseudo changé : ProfileExport écrit un nouvel export, l'ancien reste. Le
+    // plus récent donne le nom.
+    const ailleurs = join(racine, 'renomme');
+    mkdirSync(ailleurs);
+    writeFileSync(join(ailleurs, 'Ancien-100.json'), '{}');
+    utimesSync(join(ailleurs, 'Ancien-100.json'), new Date(2026, 0, 1), new Date(2026, 0, 1));
+    writeFileSync(join(ailleurs, 'Nouveau-100.json'), '{}');
+    egal(nomDeBase(ailleurs, MOI, 'Nouveau'), 'Nouveau-100', 'plusieurs exports : le plus récent');
+
+    // Un dossier par invocateur, reconnu à son identifiant : le nom changé, il
+    // est renommé avec ce qu'il contient.
+    const dossierAncien = dossierInvocateur(ailleurs, MOI, 'Ancien-100');
+    egal(dossierAncien, join(ailleurs, DOSSIER_PLUGIN, 'Ancien-100'), 'SWBlacksmith/<nom>-<id>');
+    writeFileSync(join(dossierAncien, FICHIER_GUILDE), 'historique');
+    const dossierNouveau = dossierInvocateur(ailleurs, MOI, 'Nouveau-100');
+    egal(readdirSync(join(ailleurs, DOSSIER_PLUGIN)), ['Nouveau-100'], 'l’ancien dossier est renommé, pas doublé');
+    egal(readFileSync(join(dossierNouveau, FICHIER_GUILDE), 'utf8'), 'historique', 'son contenu le suit');
+    // Le dossier voulu existe déjà à côté d'un ancien : on s'y tient.
+    mkdirSync(join(ailleurs, DOSSIER_PLUGIN, 'Autre-100'));
+    egal(dossierInvocateur(ailleurs, MOI, 'Nouveau-100'), dossierNouveau, 'le dossier voulu existant est gardé');
+    egal(readdirSync(join(ailleurs, DOSSIER_PLUGIN)).sort(), ['Autre-100', 'Nouveau-100'], 'rien n’est écrasé');
 
     let ecouteur: (req: Json, res: Json) => void = () => {};
     const journal: string[] = [];
@@ -291,21 +314,26 @@ export async function testPluginSwexPaquet() {
     await new Promise((r) => setTimeout(r, 300));
 
     egal(journal.filter((l) => l.startsWith('error')), [], 'aucune erreur d’écriture');
-    egal(
-      readdirSync(dossier).sort(),
-      ['Essai.Pro-100.direct.json', 'Essai.Pro-100.guilde.json', 'Essai.Pro-100.json'],
-      'les deux fichiers, à côté de l’export, sans fichier temporaire'
-    );
-    const direct = readFileSync(join(dossier, 'Essai.Pro-100.direct.json'), 'utf8');
-    egal(JSON.parse(direct).runes.find((r: Json) => r.rune_id === 12).sec_eff, [[4, 10, 0, 19]], 'le compte écrit est le dernier état');
-    ok(!direct.includes('secret') && !readFileSync(join(dossier, 'Essai.Pro-100.guilde.json'), 'utf8').includes('secret'), 'aucune clé de session écrite');
+    egal(readdirSync(dossier).sort(), ['Essai.Pro-100.json', DOSSIER_PLUGIN].sort(),'à la racine : l’export et le dossier du plugin, rien d’autre');
+    const dossierSuivi = join(dossier, DOSSIER_PLUGIN, 'Essai.Pro-100');
+    egal(readdirSync(join(dossier, DOSSIER_PLUGIN)), ['Essai.Pro-100'], 'un dossier, au nom de l’export');
+    egal(readdirSync(dossierSuivi).sort(), [FICHIER_COMPTE, FICHIER_GUILDE], 'les deux fichiers, sans fichier temporaire');
+    const compte = readFileSync(join(dossierSuivi, FICHIER_COMPTE), 'utf8');
+    egal(JSON.parse(compte).runes.find((r: Json) => r.rune_id === 12).sec_eff, [[4, 10, 0, 19]], 'le compte écrit est le dernier état');
+    ok(!compte.includes('secret') && !readFileSync(join(dossierSuivi, FICHIER_GUILDE), 'utf8').includes('secret'), 'aucune clé de session écrite');
+
+    // Le dossier supprimé pendant la partie : il est recréé à l'écriture suivante.
+    rmSync(join(dossier, DOSSIER_PLUGIN), { recursive: true });
+    ecouteur(req({ command: 'AmplifyRune_v2' }), ok0({ rune: rune(12, {}) }));
+    await new Promise((r) => setTimeout(r, 100));
+    ok(readdirSync(dossierSuivi).includes(FICHIER_COMPTE), 'dossier supprimé : recréé');
 
     // Désactivé dans SWEX : plus rien n'est écrit.
     reglages.enabled = false;
-    rmSync(join(dossier, 'Essai.Pro-100.direct.json'));
+    rmSync(join(dossierSuivi, FICHIER_COMPTE));
     ecouteur(req({ command: 'AmplifyRune_v2' }), ok0({ rune: rune(12, {}) }));
     await new Promise((r) => setTimeout(r, 100));
-    ok(!readdirSync(dossier).includes('Essai.Pro-100.direct.json'), 'plugin désactivé : rien n’est écrit');
+    ok(!readdirSync(dossierSuivi).includes(FICHIER_COMPTE), 'plugin désactivé : rien n’est écrit');
   } finally {
     rmSync(racine, { recursive: true, force: true });
   }

@@ -5,14 +5,15 @@
 // SWEX donne au plugin chaque échange avec le jeu (`apiCommand`). À la
 // connexion, le plugin repart de la réponse du serveur (l'export de
 // ProfileExport) ; ensuite, chaque commande qui change le compte ou un combat
-// de guilde fait réécrire, après un temps calme, `<nom>-<id>.direct.json` et
-// `<nom>-<id>.guilde.json`, que l'application de bureau suit.
-// Voir docs/02-app/bureau/feat-swex-direct.md.
+// de guilde fait réécrire, après un temps calme, `compte.json` et
+// `guilde.json` dans `SWBlacksmith/<nom>-<id>/`, que l'application de bureau
+// suit. Voir docs/02-app/bureau/feat-swex-direct.md.
 
 import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { appliquer, depuisConnexion, versExport, type EtatDirect, type Json } from './etatDirect';
 import { appliquerGuilde, depuisFichierGuilde, versFichierGuilde, type EtatGuilde } from './guilde';
-import { chemin, ecrireAtomique, nomDeBase, nomDirect, nomGuilde } from './fichiers';
+import { FICHIER_COMPTE, FICHIER_GUILDE, dossierInvocateur, ecrireAtomique, nomDeBase } from './fichiers';
 
 declare const __VERSION_PLUGIN__: string;
 export const VERSION = typeof __VERSION_PLUGIN__ === 'string' ? __VERSION_PLUGIN__ : 'dev';
@@ -43,6 +44,8 @@ interface ConfigSwex {
 type Quoi = 'compte' | 'guilde';
 interface Suivi {
   base: string;
+  dossier: string; // SWBlacksmith/<nom>-<id>, dans le dossier de SWEX
+
   compte: EtatDirect;
   guilde: EtatGuilde;
   minuteries: Partial<Record<Quoi, ReturnType<typeof setTimeout>>>;
@@ -69,9 +72,10 @@ export function creerPlugin(delai = DELAI_ECRITURE) {
         return;
       }
       s.enCours[quoi] = true;
-      const nom = quoi === 'compte' ? nomDirect(s.base) : nomGuilde(s.base);
+      const fichier = quoi === 'compte' ? FICHIER_COMPTE : FICHIER_GUILDE;
+      const nom = `${s.base}/${fichier}`;
       const contenu = quoi === 'compte' ? versExport(s.compte) : versFichierGuilde(s.guilde);
-      ecrireAtomique(chemin(dossier(), nom), JSON.stringify(contenu))
+      ecrireAtomique(join(s.dossier, fichier), JSON.stringify(contenu))
         .then(
           () => journal('info', `${nom} mis à jour`),
           (e: Error) => journal('error', `${nom} : ${e.message}`)
@@ -103,11 +107,12 @@ export function creerPlugin(delai = DELAI_ECRITURE) {
           const id = Number(res.wizard_info?.wizard_id);
           if (!Number.isFinite(id)) return;
           const base = nomDeBase(dossier(), id, String(res.wizard_info?.wizard_name ?? ''));
+          const dossierSuivi = dossierInvocateur(dossier(), id, base);
           // Les combats de guilde déjà écrits sont repris : l'historique
           // survit au redémarrage de SWEX.
           let fichierGuilde: unknown = null;
           try {
-            fichierGuilde = JSON.parse(readFileSync(chemin(dossier(), nomGuilde(base)), 'utf8'));
+            fichierGuilde = JSON.parse(readFileSync(join(dossierSuivi, FICHIER_GUILDE), 'utf8'));
           } catch {
             /* pas encore de fichier, ou illisible : on repart de zéro */
           }
@@ -115,6 +120,7 @@ export function creerPlugin(delai = DELAI_ECRITURE) {
           for (const m of Object.values(ancien?.minuteries ?? {})) if (m) clearTimeout(m);
           suivis.set(id, {
             base,
+            dossier: dossierSuivi,
             compte: depuisConnexion(res),
             guilde: depuisFichierGuilde(fichierGuilde, id),
             minuteries: {},

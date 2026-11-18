@@ -36,17 +36,37 @@ Ce qu'il fait :
 
 1. **À la connexion** (`HubUserLogin`), il repart de la réponse du serveur,
    pour chaque invocateur (`wizard_id`), et reprend le fichier de guilde déjà
-   écrit. Le **nom de base** des fichiers est celui de l'export de ProfileExport
-   s'il est dans le dossier (`<nom>-<id>.json` : ProfileExport nettoie le pseudo
-   à sa façon, et l'app relie les fichiers par ce nom), sinon le pseudo sans les
-   caractères interdits.
+   écrit.
 2. **À chaque commande** de cet invocateur, il applique le moteur ; si le compte
-   ou le contenu de guilde a changé, il réécrit le fichier concerné :
-   `<nom>-<id>.direct.json` (le compte) et `<nom>-<id>.guilde.json`. ⚠️ Ces
-   noms ne passent pas le filtre des exports de l'app (`<nom>-<id>.json`) : ils
-   ne s'ajoutent jamais à la liste des comptes.
+   ou le contenu de guilde a changé, il réécrit le fichier concerné.
 3. Avant la première connexion vue depuis le lancement de SWEX, il ne fait
    rien : il n'a pas de compte de départ.
+
+Ses fichiers, dans **son dossier** à lui (`plugin-swex/source/fichiers.ts`) :
+
+```
+Summoners War Exporter Files/          ← le dossier de SWEX (son réglage)
+  tototriou-12889591.json              ← l'export de ProfileExport
+  SWBlacksmith/
+    tototriou-12889591/                ← un dossier par invocateur
+      compte.json                      ← le compte tenu à jour
+      guilde.json                      ← les combats de guilde
+```
+
+- ⚠️ **Hors de la racine** : l'app ne lit les exports (`<nom>-<id>.json`) qu'à
+  la racine, les fichiers du plugin ne s'ajoutent jamais à la liste des
+  comptes.
+- **Le nom du dossier** d'un invocateur est celui de son export s'il est là
+  (ProfileExport nettoie le pseudo à sa façon) — le plus récent s'il y en a
+  plusieurs, après un changement de pseudo —, sinon le pseudo sans les
+  caractères interdits.
+- ⚠️ **Le lien est l'identifiant, pas le nom** : le nom n'est qu'une
+  étiquette, qui peut différer de celui de l'export (première connexion avant
+  que ProfileExport n'écrive, pseudo changé). C'est par le `-<id>` final que le
+  dossier se relie à l'export. Le plugin tient **un dossier par
+  identifiant** : si le nom a changé, l'ancien dossier est renommé, avec
+  l'historique des combats de guilde ; si le renommage échoue (Windows, un
+  fichier ouvert), il garde l'ancien.
 
 L'écriture :
 
@@ -56,7 +76,7 @@ L'écriture :
   l'app relit le fichier dès qu'il change, et ne doit jamais lire un fichier à
   moitié écrit. Sous Windows, le renommage échoue tant qu'un autre programme
   lit le fichier (`EBUSY`, `EPERM`, `EACCES`) : on réessaie, de plus en plus
-  tard.
+  tard. Le dossier supprimé pendant la partie est recréé.
 - ⚠️ **Une écriture à la fois par fichier** : deux écritures qui se
   chevauchent partageraient le fichier temporaire, et la seconde ne le
   trouverait plus. Demandée pendant une écriture, la suivante attend sa fin et
@@ -153,7 +173,7 @@ Siège, guerre de guilde, labyrinthe, rivaux, boss de guilde : rien de cela
 n'est dans l'export. Le jeu ne l'envoie qu'en le **montrant** (carte du
 siège, défenses d'une base, journaux de combat) ou en le **jouant** (début et
 fin d'un combat). Le plugin le garde dans un fichier à part,
-**`<nom>-<id>.guilde.json`** (format `swblacksmith/guilde-direct`, version 1),
+**`guilde.json`**, à côté de `compte.json` (format `swblacksmith/guilde-direct`, version 1),
 pour ne pas mêler à l'export du compte des données d'une autre nature, plus
 fréquentes et plus lourdes (2,3 Mo pour une journée de siège).
 
