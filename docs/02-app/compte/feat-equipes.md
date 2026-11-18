@@ -242,6 +242,15 @@ Le menu « Importer » liste ses sources avec la grammaire de l'import de l'Opti
 sa raison). Chaque choix crée **une nouvelle équipe** ; rien d'existant n'est
 modifié.
 
+Les sources suivent l'**onglet ouvert** (décision de l'utilisateur,
+`ordonnerSourcesPourOnglet`) : d'abord le même mode du même côté, puis le même
+mode de l'autre côté, puis le reste dans l'ordre de base (défenses de siège,
+offenses de siège, arène, Optimizer). Siège et guerre de guilde sont un même mode :
+dans « Siège — défense » ou « Guerre de guilde — défense », les défenses de siège
+(l'export n'a pas de deck de guerre de guilde), puis les offenses de siège, puis
+l'arène et l'Optimizer ; dans « Arène — offense », les offenses d'arène, puis ses
+défenses, puis le reste. RTA et Cairos gardent l'ordre de base.
+
 | Source | Onglet de l'équipe créée | Équipement copié |
 | --- | --- | --- |
 | Une défense de siège | « Siège — défense » | le preset du deck |

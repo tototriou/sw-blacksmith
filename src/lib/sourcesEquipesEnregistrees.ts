@@ -127,7 +127,45 @@ const monstresConnus = (ids: (number | null)[], ctx: ContexteSourcesEquipes) =>
 const raisonDeck = (membres: MembreBrut[], connus: Monster[], im: Dictionnaire['equipes']['imports']) =>
   !membres.length ? im.aucunDeck : connus.slice(0, MONSTRES_MAX_EQUIPE).length < MONSTRES_MIN_EQUIPE ? im.moinsDeDeux : null;
 
+// L'ordre des sources pour l'onglet ouvert (décision de l'utilisateur) : d'abord
+// le même mode du même côté, puis le même mode de l'autre côté, puis le reste
+// dans l'ordre de base. Siège et guerre de guilde sont un même mode : dans
+// « Siège — défense », les défenses de siège, puis celles de guerre de guilde
+// (l'export n'en a pas), puis les offenses. RTA et Cairos gardent l'ordre de base.
+type ModeSource = 'guilde' | 'arene';
+const MODE_ONGLET: Partial<Record<OngletEquipes, { mode: ModeSource; cote: 'defense' | 'offense' }>> = {
+  'siege-defense': { mode: 'guilde', cote: 'defense' }, 'guerre-guilde-defense': { mode: 'guilde', cote: 'defense' },
+  'siege-attaque': { mode: 'guilde', cote: 'offense' }, 'guerre-guilde-offense': { mode: 'guilde', cote: 'offense' },
+  'arene-defense': { mode: 'arene', cote: 'defense' }, 'arene-attaque': { mode: 'arene', cote: 'offense' },
+};
+function genreSource(cle: string): { mode: ModeSource; cote: 'defense' | 'offense' | null } | null {
+  if (cle.startsWith('siege-defense:')) return { mode: 'guilde', cote: 'defense' };
+  if (cle.startsWith('siege-attaque:')) return { mode: 'guilde', cote: 'offense' };
+  if (cle.startsWith('arene:attaque:')) return { mode: 'arene', cote: 'offense' };
+  if (cle.startsWith('arene:')) return { mode: 'arene', cote: 'defense' };
+  if (cle === 'arene') return { mode: 'arene', cote: null };
+  return null;
+}
+export function ordonnerSourcesPourOnglet<T extends { cle: string }>(sources: T[], onglet: OngletEquipes): T[] {
+  const cible = MODE_ONGLET[onglet];
+  if (!cible) return sources;
+  const rang = (s: T) => {
+    const g = genreSource(s.cle);
+    if (!g || g.mode !== cible.mode) return 2;
+    return g.cote === null || g.cote === cible.cote ? 0 : 1;
+  };
+  // `sort` est stable : à rang égal, l'ordre de base.
+  return [...sources].sort((a, b) => rang(a) - rang(b));
+}
+
 export function sourcesImportEquipes(
+  ctx: ContexteSourcesEquipes, optimizer: { stockage: StockageOptimizer; data: ExclusionSourceData } | null,
+  inv: InventaireCompte, ongletOuvert: OngletEquipes, t: Dictionnaire
+): SourceImportEquipe[] {
+  return ordonnerSourcesPourOnglet(sourcesDansLOrdreDeBase(ctx, optimizer, inv, ongletOuvert, t), ongletOuvert);
+}
+
+function sourcesDansLOrdreDeBase(
   ctx: ContexteSourcesEquipes, optimizer: { stockage: StockageOptimizer; data: ExclusionSourceData } | null,
   inv: InventaireCompte, ongletOuvert: OngletEquipes, t: Dictionnaire
 ): SourceImportEquipe[] {

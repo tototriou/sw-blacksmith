@@ -9,7 +9,7 @@ import { egal, ok, titre } from './outils';
 import type { Monster, SiegeTeam } from '../src/types';
 import { fr } from '../src/i18n/fr';
 import { indexerInventaire } from '../src/lib/equipesEnregistrees';
-import { sourcesEquipementEspece, sourcesImportEquipes, type ContexteSourcesEquipes } from '../src/lib/sourcesEquipesEnregistrees';
+import { ordonnerSourcesPourOnglet, sourcesEquipementEspece, sourcesImportEquipes, type ContexteSourcesEquipes } from '../src/lib/sourcesEquipesEnregistrees';
 import { equipementEx } from './equipes-enregistrees.test';
 
 const T0 = new Date('2026-11-05T10:00:00Z');
@@ -78,7 +78,28 @@ function testEquipesSourcesImports() {
   egal(seul.raison, fr.equipes.imports.moinsDeDeux, 'une seule espèce connue : pas importable, une équipe a au moins deux monstres');
 }
 
+// Les premières sources sont celles de l'onglet ouvert (décision de l'utilisateur) :
+// le même mode du même côté, puis l'autre côté, puis le reste dans l'ordre de base.
+function testEquipesSourcesOrdreSelonOnglet() {
+  titre('Mes équipes — les sources d’import suivent l’onglet ouvert');
+  const base = ['siege-defense:d1', 'siege-defense:d2', 'siege-attaque:o1', 'arene:defense:0', 'arene:defense-serveur:0', 'arene:attaque:0', 'arene:attaque:1', 'optimizer:l:e']
+    .map((cle) => ({ cle }));
+  const ordre = (onglet: Parameters<typeof ordonnerSourcesPourOnglet>[1]) => ordonnerSourcesPourOnglet(base, onglet).map((x) => x.cle);
+  egal(ordre('siege-defense'), base.map((x) => x.cle), 'siège — défense : défenses de siège, offenses de siège, puis le reste');
+  egal(ordre('guerre-guilde-defense'), base.map((x) => x.cle), 'guerre de guilde — défense : les mêmes, le siège tenant lieu de guerre de guilde');
+  egal(ordre('siege-attaque'), ['siege-attaque:o1', 'siege-defense:d1', 'siege-defense:d2', 'arene:defense:0', 'arene:defense-serveur:0', 'arene:attaque:0', 'arene:attaque:1', 'optimizer:l:e'],
+    'siège — offense : les offenses d’abord, puis les défenses, puis le reste');
+  egal(ordre('guerre-guilde-offense'), ordre('siege-attaque'), 'guerre de guilde — offense : comme le siège');
+  egal(ordre('arene-attaque'), ['arene:attaque:0', 'arene:attaque:1', 'arene:defense:0', 'arene:defense-serveur:0', 'siege-defense:d1', 'siege-defense:d2', 'siege-attaque:o1', 'optimizer:l:e'],
+    'arène — offense : les offenses d’arène, les défenses d’arène, puis le reste');
+  egal(ordre('arene-defense').slice(0, 4), ['arene:defense:0', 'arene:defense-serveur:0', 'arene:attaque:0', 'arene:attaque:1'], 'arène — défense : les défenses d’abord');
+  for (const onglet of ['rta', 'pve'] as const) egal(ordre(onglet), base.map((x) => x.cle), `${onglet} : l’ordre de base`);
+  const reel = sourcesImportEquipes(contexte(), null, inv, 'arene-defense', fr);
+  egal(reel.map((x) => x.groupe), ['Arène', 'Défenses de siège', 'Offenses de siège', 'Optimizer'], 'appliqué aux sources réelles, chaque groupe d’un seul tenant');
+}
+
 export const verificationsEquipesSources: [string, () => void][] = [
+  ['testEquipesSourcesOrdreSelonOnglet', testEquipesSourcesOrdreSelonOnglet],
   ['testEquipesSourcesEquipement', testEquipesSourcesEquipement],
   ['testEquipesSourcesImports', testEquipesSourcesImports],
 ];
