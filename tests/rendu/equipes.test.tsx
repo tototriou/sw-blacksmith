@@ -7,9 +7,10 @@ import EquipesSection, { ConfirmationCreation } from '../../src/components/accou
 import NouvelleEquipeModale from '../../src/components/account/equipes/NouvelleEquipeModale';
 import DetailEquipe from '../../src/components/account/equipes/DetailEquipe';
 import ImportEquipeModale from '../../src/components/account/equipes/ImportEquipeModale';
+import { ChoixEquipement } from '../../src/components/account/equipes/AjoutMonstreModale';
 import type { EquipesEnregistreesApi } from '../../src/hooks/useEquipesEnregistrees';
 import { creerEquipe, indexerInventaire, type EquipeEnregistree } from '../../src/lib/equipesEnregistrees';
-import { sourcesImportEquipes, type ContexteSourcesEquipes } from '../../src/lib/sourcesEquipesEnregistrees';
+import { sourcesEquipementEspece, sourcesImportEquipes, type ContexteSourcesEquipes } from '../../src/lib/sourcesEquipesEnregistrees';
 import { fr } from '../../src/i18n/fr';
 import { egal, ok, titre } from '../outils';
 import { auTelephone, bouton, onglets, rendre, texteVisible, valeurs } from './outils-rendu';
@@ -146,7 +147,27 @@ export function testRenduEquipesCreationOptimizer() {
   }
 }
 
+// « Ajouter un monstre », une fois l'espèce choisie : la rangée du choix
+// d'exemplaire de l'Optimizer, avec les coéquipiers d'un deck.
+export function testRenduEquipesAjoutExemplaire() {
+  titre('rendu · Mes équipes — choisir l’exemplaire d’un monstre ajouté');
+  const avecDeck: ContexteSourcesEquipes = { ...ctx(), siegeDefenseTeams: [{ id: 'd1', lead: 0, tickAlertDismissed: false,
+    slots: ['2', '1', '3'].map((m, i) => ({ monsterId: m, runeSpeed: null, tick: 0, gear: equipementEx(10 * (i + 1)) })) }] };
+  const sources = sourcesEquipementEspece(1001, avecDeck, fr);
+  for (const telephone of [false, true]) {
+    const html = (telephone ? auTelephone : (f: () => string) => f())(() => rendre(<ChoixEquipement espece={MONSTRES[0]} sources={sources} onChoisir={() => {}} />));
+    const t = texteVisible(html);
+    const deck = bouton(html, e.ajout.defense(1));
+    ok(deck !== undefined && deck.desactive === false, `${telephone ? 'téléphone' : 'bureau'} : le deck se choisit`);
+    ok(['Monstre 2', 'Monstre 3'].every((n) => deck?.texte.includes(n)), 'ses coéquipiers sont montrés dans son choix');
+    ok(!!deck?.texte.includes(fr.optimizer.candidat.runes(6)), 'et ses runes, comme dans l’Optimizer');
+    ok(t.includes(e.ajout.equipement), 'sous « Équipement »');
+    ok(bouton(html, e.ajout.porte(40)) !== undefined && bouton(html, e.ajout.sansEquipement) !== undefined, 'la Box et « Sans équipement » restent');
+  }
+}
+
 export const verificationsRenduEquipes: [string, () => void][] = [
+  ['testRenduEquipesAjoutExemplaire', testRenduEquipesAjoutExemplaire],
   ['testRenduEquipesCreationOptimizer', testRenduEquipesCreationOptimizer],
   ['testRenduEquipesNouvelleNommee', testRenduEquipesNouvelleNommee],
   ['testRenduEquipesBureau', testRenduEquipesBureau],

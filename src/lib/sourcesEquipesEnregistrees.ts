@@ -41,6 +41,10 @@ export interface SourceEquipement {
   provenance: ProvenanceEquipement;
   unitId: number | null;
   equipement: GearSet | null;
+  // Un deck (siège, arène) : ses membres dans l'ordre des places (`null` =
+  // place vide ou espèce inconnue) et la place du monstre, de quoi
+  // distinguer deux decks par leurs coéquipiers, comme dans l'Optimizer.
+  equipe?: { membres: (Monster | null)[]; position: number };
 }
 
 // Les choix d'équipement d'une espèce, dans l'ordre de la spec : chaque
@@ -57,14 +61,16 @@ export function sourcesEquipementEspece(com2usId: number, ctx: ContexteSourcesEq
   const siege = (teams: readonly SiegeTeam[], provenance: ProvenanceEquipement, libelle: (n: number) => string) =>
     teams.forEach((team, i) => team.slots.forEach((slot, s) => {
       if (slot.monsterId !== null && slot.gear && ctx.monsterById.get(slot.monsterId)?.com2usId === com2usId)
-        res.push({ cle: `${provenance}:${team.id}:${s}`, libelle: libelle(i + 1), provenance, unitId: null, equipement: slot.gear });
+        res.push({ cle: `${provenance}:${team.id}:${s}`, libelle: libelle(i + 1), provenance, unitId: null, equipement: slot.gear,
+          equipe: { membres: team.slots.map((x) => (x.monsterId === null ? null : ctx.monsterById.get(x.monsterId) ?? null)), position: s } });
     }));
   siege(ctx.siegeDefenseTeams, 'siege-defense', a.defense);
   siege(ctx.siegeOffenseTeams, 'siege-attaque', a.attaque);
   for (const deck of ctx.arenaDecks ?? []) deck.slots.forEach((slot, s) => {
     if (slot.com2usId !== com2usId) return;
     const provenance: ProvenanceEquipement = deck.cle === 'attaque' ? 'arene-attaque' : 'arene-defense';
-    res.push({ cle: `arene:${deck.cle}:${deck.rang}:${s}`, libelle: libelleDeckArene(deck, a), provenance, unitId: slot.unitId, equipement: slot.gear });
+    res.push({ cle: `arene:${deck.cle}:${deck.rang}:${s}`, libelle: libelleDeckArene(deck, a), provenance, unitId: slot.unitId, equipement: slot.gear,
+      equipe: { membres: deck.slots.map((x) => ctx.monsterByCom2us.get(x.com2usId) ?? null), position: s } });
   });
   res.push({ cle: 'aucun', libelle: a.sansEquipement, provenance: 'aucun', unitId: null, equipement: null });
   return res;

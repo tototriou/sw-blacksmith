@@ -212,7 +212,11 @@ liée (`optimizer`, état `equipe-liee`).
   parmi ce que le compte connaît de cette espèce, chaque choix nommé par sa
   provenance : « Équipement porté » (chaque exemplaire de la Box),
   « Défense de siège N », « Offense de siège N », « Défense d'arène », « Offense
-  d'arène N », ou « Sans équipement ». Le choix copie l'équipement à cet instant.
+  d'arène N », ou « Sans équipement ». Chaque choix équipé montre la rangée du choix
+  d'exemplaire de l'Optimizer (`LigneExemplaire`, d'`ExclusionCandidateRow.tsx`) :
+  le monstre, ses sets actifs, son nombre de runes et, pour un deck de siège ou
+  d'arène, ses coéquipiers dans l'ordre des places, le monstre en gras. Le choix
+  copie l'équipement à cet instant.
 - Réordonner par un sélecteur de position (« Position N », le même geste aux deux
   formats, sans glisser-déposer), désigner le leader, retirer un monstre. À deux
   monstres, la croix est désactivée, son infobulle dit « Une équipe garde au moins

@@ -42,6 +42,9 @@ function testEquipesSourcesEquipement() {
 ['Défense de siège 1', 'siege-defense', null],
     ['Défense d’arène', 'arene-defense', 11], ['Sans équipement', 'aucun', null],
   ], 'chaque exemplaire de la Box, les decks ; un deck de siège sans unité garde unitId null');
+  egal(s.map((x) => x.equipe && [x.equipe.membres.map((m) => m?.name ?? null), x.equipe.position]), [
+    undefined, undefined, [['Monstre 1', 'Monstre 2', null], 0], [['Monstre 1', 'Monstre 2'], 0], undefined,
+  ], 'un deck dit ses coéquipiers et la place du monstre, une espèce inconnue reste une place vide');
   egal(sourcesEquipementEspece(1003, contexte(), fr).map((x) => x.provenance), ['aucun'], 'une espèce inconnue du compte : sans équipement seulement');
 }
 
