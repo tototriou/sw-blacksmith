@@ -694,9 +694,18 @@ export const ECRANS: Ecran[] = [
         atteint: [{ role: 'textbox', nom: 'Note' }, bouton('Toutes les équipes')],
       },
       {
+        id: 'nouvelle',
+        libelle: '« Nouvelle équipe » : le nom demandé, prérempli',
+        preparation: { telephone: EQ_NOMMER, ordinateur: EQ_NOMMER },
+        atteint: [{ role: 'dialog', nom: 'Nouvelle équipe' }, { role: 'textbox', nom: 'Nom de l’équipe' }],
+      },
+      {
         id: 'brouillon',
         libelle: '« Nouvelle équipe » : le brouillon, avant son deuxième monstre',
-        preparation: { telephone: [{ cliquer: bouton('Nouvelle équipe') }], ordinateur: [{ cliquer: bouton('Nouvelle équipe') }] },
+        preparation: {
+          telephone: [...EQ_NOMMER, { cliquer: repere('[role="dialog"] button:has-text("Créer")') }],
+          ordinateur: [...EQ_NOMMER, { cliquer: repere('[role="dialog"] button:has-text("Créer")') }],
+        },
         atteint: [repere('[role="status"]:has-text("deux monstres")'), bouton('Ajouter un monstre')],
       },
       {

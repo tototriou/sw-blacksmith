@@ -1,7 +1,7 @@
 import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
 import { ChevronLeft, Download, FolderInput, Plus, Upload } from 'lucide-react';
 import type { Monster } from '../../../types';
-import { Bouton, ConfirmDialog, Jeton, Menu, MobileSheet, Modale, Onglets, PiedDeDialogue, Selecteur, type ElementMenu } from '../../../ui';
+import { Bouton, Champ, ConfirmDialog, Jeton, Menu, MobileSheet, Modale, Onglets, PiedDeDialogue, Selecteur, type ElementMenu } from '../../../ui';
 import MonsterPicker from '../../MonsterPicker';
 import MonsterAvatar from '../../MonsterAvatar';
 import Pager from '../Pager';
@@ -9,6 +9,7 @@ import CarteEquipe from './CarteEquipe';
 import DetailEquipe from './DetailEquipe';
 import AjoutMonstreModale from './AjoutMonstreModale';
 import ImportEquipeModale from './ImportEquipeModale';
+import NouvelleEquipeModale from './NouvelleEquipeModale';
 import { useTraduction } from '../../../hooks/useLangue';
 import { useStickyState } from '../../../hooks/useStickyState';
 import { SOUS_LG, useMediaQuery } from '../../../hooks/useMediaQuery';
@@ -75,6 +76,8 @@ export default function EquipesSection({ api, ctx, inventaire, allMonsters, opti
   // le fermer avant l'abandonne.
   const [brouillon, setBrouillon] = useState<EquipeEnregistree | null>(null);
   const [ajout, setAjout] = useState(false);
+  // « Nouvelle équipe » demande d'abord le nom.
+  const [nommage, setNommage] = useState(false);
   const [imports, setImports] = useState(false);
   const [aSupprimer, setASupprimer] = useState<EquipeEnregistree | null>(null);
   const [retour, setRetour] = useState<RetourOptimizer | null>(null);
@@ -114,11 +117,12 @@ export default function EquipesSection({ api, ctx, inventaire, allMonsters, opti
     if (r.aEnregistrer) ajouterEquipes([r.aEnregistrer]);
   };
 
-  const nouvelle = () => {
+  const nouvelle = () => { setNommage(true); onFermerMenu(); };
+  const creerBrouillon = (nom: string) => {
     const id = tirerIdEquipe();
-    setBrouillon(creerEquipe(id, onglet, nomEquipeLibre(api.equipes, e.nomParDefaut), new Date()));
+    setNommage(false);
+    setBrouillon(creerEquipe(id, onglet, nom, new Date()));
     setOuverte(id);
-    onFermerMenu();
   };
 
   const exporterFichier = () => {
@@ -200,7 +204,7 @@ export default function EquipesSection({ api, ctx, inventaire, allMonsters, opti
     const liste = optimizer.stockage.lists.find((l) => l.id === demandeOptimizer.listId);
     const rang = optimizer.stockage.teams.filter((x) => x.listId === demandeOptimizer.listId).findIndex((x) => x.id === demandeOptimizer.equipeId);
     if (!liste || rang < 0) return setRapport({ titre: e.creation.titre, lignes: [e.retour.refus.equipeAbsente] });
-    const r = creerDepuisEquipeOptimizer({ ...demandeOptimizer, nom: e.imports.equipeListe(liste.name, rang + 1), onglet },
+    const r = creerDepuisEquipeOptimizer({ ...demandeOptimizer, nom: nomEquipeLibre(api.equipes, e.nomParDefaut), onglet },
       optimizer.stockage, optimizer.data, inventaire, tirerIdEquipe(), tirerUid, new Date());
     if (typeof r === 'string') return setRapport({ titre: e.creation.titre, lignes: [e.retour.refus[r]] });
     setCreation(r);
@@ -327,6 +331,9 @@ export default function EquipesSection({ api, ctx, inventaire, allMonsters, opti
         </MobileSheet>
       )}
 
+      {nommage && (
+        <NouvelleEquipeModale nomParDefaut={nomEquipeLibre(api.equipes, e.nomParDefaut)} onCreer={creerBrouillon} onFermer={() => setNommage(false)} />
+      )}
       {ajout && equipeOuverte && (
         <AjoutMonstreModale monstres={allMonsters} ctx={ctx} onChoisir={ajouterMonstreChoisi} onFermer={() => setAjout(false)} />
       )}
@@ -372,10 +379,17 @@ export function ConfirmationCreation({ creation, onChanger, onAnnuler, onConfirm
   creation: RetourOptimizer; onChanger: (r: RetourOptimizer) => void; onAnnuler: () => void; onConfirmer: (e: EquipeEnregistree) => void;
 }) {
   const e = useTraduction().equipes;
+  // Le nom proposé (« Équipe N ») : repris si le champ est laissé vide.
+  const [nomParDefaut] = useState(creation.equipe.nom);
+  const [nom, setNom] = useState(creation.equipe.nom);
   return (
     <ConfirmDialog titre={e.creation.titre} libelleAction={e.creation.action}
       message={<div className="flex flex-col gap-3">
-        <p>{e.creation.message(creation.equipe.nom)}</p>
+        <p>{e.creation.message}</p>
+        <label className="flex flex-col gap-1 text-xs text-ink-dim">
+          {e.creation.nom}
+          <Champ value={nom} onChange={(ev) => setNom(ev.target.value)} onBlur={() => setNom((v) => v.trim())} />
+        </label>
         <label className="flex flex-col gap-1 text-xs text-ink-dim">
           {e.creation.onglet}
           <Selecteur value={creation.equipe.onglet}
@@ -385,7 +399,7 @@ export function ConfirmationCreation({ creation, onChanger, onAnnuler, onConfirm
         </label>
         <LignesRetour retour={creation} resume={false} />
       </div>}
-      onCancel={onAnnuler} onConfirm={() => onConfirmer(creation.equipe)} />
+      onCancel={onAnnuler} onConfirm={() => onConfirmer({ ...creation.equipe, nom: nom.trim() || nomParDefaut })} />
   );
 }
 

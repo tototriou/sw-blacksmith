@@ -1127,6 +1127,7 @@ export const fr = {
     importerFichier: 'Importer un fichier',
     options: 'Options',
     nomParDefaut: (n: number) => `Équipe ${n}`,
+    nouvelleFenetre: { titre: 'Nouvelle équipe', nom: 'Nom de l’équipe', action: 'Créer' },
     copie: (nom: string) => `${nom} (copie)`,
     aucune: 'Aucune équipe dans cet onglet.',
     aucuneRecherche: 'Aucune équipe de cet onglet ne contient tous ces monstres.',
@@ -1246,7 +1247,8 @@ export const fr = {
     },
     creation: {
       titre: 'Enregistrer dans Mes équipes',
-      message: (nom: string) => `« ${nom} » devient une nouvelle équipe, liée à son équipe de l’Optimizer : l’enregistrer à nouveau la mettra à jour.`,
+      message: 'Elle devient une nouvelle équipe, liée à son équipe de l’Optimizer : l’enregistrer à nouveau la mettra à jour.',
+      nom: 'Nom de l’équipe',
       onglet: 'Onglet',
       action: 'Enregistrer',
     },

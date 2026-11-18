@@ -1065,6 +1065,7 @@ export const en: Dictionnaire = {
     importerFichier: 'Import a file',
     options: 'Options',
     nomParDefaut: (n: number) => `Team ${n}`,
+    nouvelleFenetre: { titre: 'New team', nom: 'Team name', action: 'Create' },
     copie: (nom: string) => `${nom} (copy)`,
     aucune: 'No team in this tab.',
     aucuneRecherche: 'No team of this tab contains all these monsters.',
@@ -1184,7 +1185,8 @@ export const en: Dictionnaire = {
     },
     creation: {
       titre: 'Save to My teams',
-      message: (nom: string) => `“${nom}” becomes a new team, linked to its Optimizer team: saving it again will update it.`,
+      message: 'It becomes a new team, linked to its Optimizer team: saving it again will update it.',
+      nom: 'Team name',
       onglet: 'Tab',
       action: 'Save',
     },

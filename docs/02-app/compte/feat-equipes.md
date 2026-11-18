@@ -203,7 +203,9 @@ liée (`optimizer`, état `equipe-liee`).
 
 ## Créer et modifier
 
-- « Nouvelle équipe » ouvre le détail d'un **brouillon** dans l'onglet ouvert (« L'équipe
+- « Nouvelle équipe » demande d'abord le nom de l'équipe (`NouvelleEquipeModale`,
+  prérempli du premier « Équipe N » libre ; vide, il garde ce nom), puis ouvre le
+  détail d'un **brouillon** dans l'onglet ouvert (« L'équipe
   s'enregistre dès qu'elle a deux monstres. ») : rien n'est enregistré avant le
   deuxième monstre (`gesteSurBrouillon`), et fermer le détail avant l'abandonne.
 - « Ajouter un monstre » : une recherche d'espèce, puis le choix de l'équipement
@@ -328,8 +330,8 @@ jamais pour une liste entière** (décision de l'utilisateur). Le geste ouvre «
   même `listId`, même `equipeId`) : la même confirmation que « Mettre à jour depuis
   l'Optimizer », sur l'onglet de l'équipe ;
 - sinon : « Enregistrer dans Mes équipes », une confirmation qui crée une **nouvelle**
-  équipe (`creerDepuisEquipeOptimizer`), nommée « liste — équipe N », avec un
-  sélecteur d'onglet (l'onglet ouvert par défaut : le contenu d'une liste de
+  équipe (`creerDepuisEquipeOptimizer`), avec un champ de nom prérempli du premier
+  « Équipe N » libre (`nomEquipeLibre`), un sélecteur d'onglet (l'onglet ouvert par défaut : le contenu d'une liste de
   l'Optimizer ne désigne pas un onglet) et les pièces introuvables nommées. L'équipe
   créée est **liée** : l'enregistrer à nouveau la met à jour au lieu d'en créer une
   autre. L'import « Optimizer » de Mes équipes, lui, crée une copie sans lien, pour

@@ -4,6 +4,7 @@
 
 import type { Monster } from '../../src/types';
 import EquipesSection, { ConfirmationCreation } from '../../src/components/account/equipes/EquipesSection';
+import NouvelleEquipeModale from '../../src/components/account/equipes/NouvelleEquipeModale';
 import DetailEquipe from '../../src/components/account/equipes/DetailEquipe';
 import ImportEquipeModale from '../../src/components/account/equipes/ImportEquipeModale';
 import type { EquipesEnregistreesApi } from '../../src/hooks/useEquipesEnregistrees';
@@ -110,6 +111,15 @@ export function testRenduEquipesImports() {
   ok(t.includes(e.imports.reimporter), 'avec sa raison');
 }
 
+export function testRenduEquipesNouvelleNommee() {
+  titre('rendu · Mes équipes — « Nouvelle équipe » demande son nom');
+  const html = auTelephone(() => rendre(<NouvelleEquipeModale nomParDefaut={e.nomParDefaut(3)} onCreer={() => {}} onFermer={() => {}} />));
+  const t = texteVisible(html);
+  ok(t.includes(e.nouvelleFenetre.titre) && t.includes(e.nouvelleFenetre.nom), 'la fenêtre et son champ');
+  ok(valeurs(html, 'value').includes(e.nomParDefaut(3)), 'le premier nom libre prérempli');
+  ok(bouton(html, e.nouvelleFenetre.action)?.desactive === false, '« Créer » utilisable');
+}
+
 export function testRenduEquipesCreationOptimizer() {
   titre('rendu · Mes équipes — enregistrer une équipe de l’Optimizer');
   const creation = { equipe: { ...EQUIPES[0], nom: 'Liste — équipe 1', lienOptimizer: { listId: 'l', equipeId: 'q', correspondance: [] } },
@@ -119,7 +129,8 @@ export function testRenduEquipesCreationOptimizer() {
   {
     const html = auTelephone(() => rendre(<ConfirmationCreation creation={creation} onChanger={() => {}} onAnnuler={() => {}} onConfirmer={() => {}} />));
     const t = texteVisible(html);
-    ok(t.includes(e.creation.message('Liste — équipe 1')), 'ce que crée l’enregistrement, et qu’il restera lié');
+    ok(t.includes(e.creation.message), 'ce que crée l’enregistrement, et qu’il restera lié');
+    ok(t.includes(e.creation.nom) && valeurs(html, 'value').includes('Liste — équipe 1'), 'le nom se donne avant d’enregistrer, le nom proposé prérempli');
     ok(t.includes(e.creation.onglet) && t.includes(e.onglets.rta), 'l’onglet se choisit, l’onglet ouvert par défaut');
     ok(t.includes(e.retour.manquante('Monstre 1', e.retour.pieces.rune, 999)), 'une pièce introuvable est nommée');
     ok(!t.includes(e.retour.resume(2, 9)), 'pas de résumé de changements : tout est nouveau');
@@ -131,6 +142,7 @@ export function testRenduEquipesCreationOptimizer() {
 
 export const verificationsRenduEquipes: [string, () => void][] = [
   ['testRenduEquipesCreationOptimizer', testRenduEquipesCreationOptimizer],
+  ['testRenduEquipesNouvelleNommee', testRenduEquipesNouvelleNommee],
   ['testRenduEquipesBureau', testRenduEquipesBureau],
   ['testRenduEquipesTelephone', testRenduEquipesTelephone],
   ['testRenduEquipesDetail', testRenduEquipesDetail],
