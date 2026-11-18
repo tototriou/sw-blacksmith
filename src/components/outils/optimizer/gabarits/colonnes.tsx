@@ -143,7 +143,7 @@ const TELEPHONE_INCHANGE = 'aucun composant modifié : le téléphone garde sa c
 export const GABARITS_COLONNES: Gabarit[] = [
   {
     id: 'artefacts', nom: 'Artéfacts et relique (colonne « Artéfacts et relique »)', largeur: LARGEUR_COLONNE_ETROITE, hauteurEstimee: 432,
-    composant: 'ArtefactsEtReliqueBureau (bureau/ArtefactsEtReliqueBureau.tsx) : section de 294 px, sans l\'encart des meilleurs artéfacts',
+    composant: 'ArtefactsEtReliqueBureau (bureau/ArtefactsEtReliqueBureau.tsx) : section de 302 px, sans l\'encart des meilleurs artéfacts',
     telephone: `ArtefactsEtReliques (partagé) repris tel quel ; ${TELEPHONE_INCHANGE}`,
     changements: [
       '« Meilleurs artéfacts offensifs pour ce build » quitte la carte (entre les sous-propriétés et la relique) pour sa propre carte, sous la relique.',

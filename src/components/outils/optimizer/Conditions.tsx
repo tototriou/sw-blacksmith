@@ -17,11 +17,11 @@ export interface ConditionsProps {
   setMinStats: Dispatch<SetStateAction<Partial<Record<StatKey, number>>>>;
   setMaxStats: Dispatch<SetStateAction<Partial<Record<StatKey, number>>>>;
   // Variante de « Critères » au bureau (`bureau/ConditionsBureau.tsx`, section
-  // de 294 px) : la colonne des libellés prend la largeur du plus long d'entre
+  // de 302 px) : la colonne des libellés prend la largeur du plus long d'entre
   // eux au lieu de 90 px au moins, les colonnes s'écartent de 12 px au lieu de
   // 16, et la grille est centrée dans la section. « Min » et « Max » y sont des
   // en-têtes de colonne posés une fois, comme au téléphone : collés à chaque
-  // champ, ils faisaient déborder la grille des 294 px (≈ 322). Le téléphone
+  // champ, ils faisaient déborder la grille de la colonne (≈ 322). Le téléphone
   // ne la passe pas.
   bureau?: boolean;
   // L'encart « Speed tune » du membre contraint

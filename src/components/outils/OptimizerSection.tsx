@@ -1,4 +1,4 @@
-import { useCallback, useLayoutEffect, useMemo, useRef, useState, useEffect } from 'react';
+import { useCallback, useLayoutEffect, useMemo, useRef, useState, useEffect, type ReactNode } from 'react';
 import { Bouton, ConfirmDialog, Segmented } from '../../ui';
 import { PinOff } from 'lucide-react';
 import type { ContenuListeOptimizer, EquipeOptimizer } from '../../lib/optimizerMemberStorage';
@@ -223,6 +223,9 @@ interface Props {
   // perdue au moindre aller-retour vers un autre onglet.
   optimizer: OptimizerState;
   onImporterEquipe: OptimizerState['importerEquipe'];
+  // « Enregistrer dans Mes équipes » (docs/02-app/compte/feat-equipes.md),
+  // dans l'en-tête de chaque équipe de la liste.
+  onEnregistrerEquipe?: (equipe: EquipeOptimizer) => void;
   // Pour l'exclusion manuelle de runes (RuneExclusionPicker) — RTA/Siège
   // n'étaient jusqu'ici jamais lus par cet écran, voir optimizerExclusion.ts.
   allMonsters: Monster[];
@@ -376,7 +379,7 @@ function memesIds(a: number[], b: number[]): boolean {
 const AUCUNE_RECOMMANDATION: Reco[] = [];
 const AUCUNE_CARTE: CarteClassement[] = [];
 
-export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATION, box, runes, artifacts, relics, relicUsageById, optimizer, onImporterEquipe, allMonsters, rtaEntries, siegeDefenseTeams, siegeOffenseTeams, lists, accountName, menuOuvert, onFermerMenu, onOuvrirMenu, onMonstreHorsVue }: Props) {
+export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATION, box, runes, artifacts, relics, relicUsageById, optimizer, onImporterEquipe, allMonsters, rtaEntries, siegeDefenseTeams, siegeOffenseTeams, lists, accountName, menuOuvert, onFermerMenu, onOuvrirMenu, onMonstreHorsVue, onEnregistrerEquipe }: Props) {
   const textes = useTraduction();
   const langue = useLangue();
   const jeu = textes.jeu;
@@ -2836,6 +2839,8 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
   );
 
   // Assemblage des cartes de réglage (composants d'`optimizer/`).
+  // ⚠️ La colonne d'action de la liste prend la largeur de son contenu : un
+  // seul bouton y tient (deux écrasaient la liste et la recherche).
   const listesBureau = (
     <SelecteurListes
       action={<OptimizerImportButton enLigne sources={sourcesImport} onImporter={importerDepuisEcran} rapport={rapportImport} />}
@@ -2955,6 +2960,7 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
     listHasValidated,
     setReleaseAllConfirm,
     onSpeedTune: activeList && lists.listContents.get(activeList.id) === 'guilde' ? speedTuneOutil.ouvrir : undefined,
+    onEnregistrerEquipe,
   };
   const zoneCContent = <MonstresDeLaListe {...proprietesListe} />;
 

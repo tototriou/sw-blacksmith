@@ -13,7 +13,7 @@
 
    **Au téléphone**, la carte suit « Artéfacts et relique » et porte tout
    ce contenu, sets d'aura compris. **Au bureau**, elle est réduite aux
-   buffs et au lead, dernière section de « Critères » (294 px de contenu
+   buffs et au lead, dernière section de « Critères » (302 px de contenu
    dans le groupe, la largeur du panneau ailleurs), sous la statistique
    principale imposée (`EtatMonstreEssentiels`). ⚠️ **Le lead d'abord, les
    buffs dessous** (décision de l'utilisateur) : le lead sur une rangée
@@ -115,7 +115,7 @@
 
    **Sets d'aura des autres monstres** — au téléphone, une troisième
    boîte d'« État de mon monstre », sous les groupes pour éviter le
-   débordement ; au bureau, une section de 294 px, en tête de
+   débordement ; au bureau, une section de 302 px, en tête de
    l'onglet « Options » (`SetsAuraBureau`), avec la
    même saisie (`AurasExternesSaisie`). Elle saisit `DamageSetup.setsAuraExternes` : les sets Fight,
    Determination, Enhance, Accuracy et Tolerance portés par les **autres**

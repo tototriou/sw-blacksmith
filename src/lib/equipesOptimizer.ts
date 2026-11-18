@@ -2,9 +2,9 @@ import type { ElementKey, LeaderSkill } from '../types';
 import type { Dictionnaire } from '../i18n/fr';
 import { appliquerCriteres, baseCompleteCriteres, type LeadEffectifOptimizer } from './criteresOptimizer';
 import { LEADER_SKILL_STATS, type DamageSetup, type LeaderSkillStat } from './damage';
-import { exclusionSelectorKey, resolveExclusionEntry, type ExclusionSelector, type ExclusionSourceData } from './optimizerExclusion';
+import { exclusionSelectorKey, findValidatedBuild, resolveExclusionEntry, type ExclusionSelector, type ExclusionSourceData, type ValidatedBuild } from './optimizerExclusion';
 import {
-  cleMemoireMembre, enregistrerMemoireMembre, validerEquipesOptimizer,
+  MEMBRES_MAX_EQUIPE_OPTIMIZER, MEMBRES_MIN_EQUIPE_OPTIMIZER, cleMemoireMembre, enregistrerMemoireMembre, validerEquipesOptimizer,
   type ContenuListeOptimizer, type EquipeOptimizer, type StockageOptimizer,
 } from './optimizerMemberStorage';
 
@@ -200,11 +200,21 @@ export function equipeApresFiltrageOptimizer(
 ): { equipe: EquipeOptimizer | null; rapport: string[] } {
   const r = t.optimizer.rapportsEquipe;
   const nombre = creation.members.length;
-  if (nombre < 2 || nombre > 5) {
-    const raison = nombre === 0 ? r.aucunMembre : nombre === 1 ? r.unSeulMembre : r.plusDeCinq;
+  if (nombre < MEMBRES_MIN_EQUIPE_OPTIMIZER || nombre > MEMBRES_MAX_EQUIPE_OPTIMIZER) {
+    const raison = nombre === 0 ? r.aucunMembre : nombre === 1 ? r.unSeulMembre : r.plusDeSix;
     return { equipe: null, rapport: [`${raison} ${r.aucuneEquipeCreee}`] };
   }
   const resultat = creerEquipeOptimizer(contexte, creation, t);
   if (resultat.rapport.length) return { equipe: null, rapport: [...resultat.rapport, r.aucuneEquipeCreee] };
   return { equipe: resultat.teams.find(e => e.id === creation.id)!, rapport: [] };
+}
+
+// « Enregistrer dans Mes équipes » depuis la bande d'une équipe : chaque membre
+// a un build validé dans la liste, ses runes ET sa paire d'artéfacts — sans
+// quoi Mes équipes recevrait un équipement que la recherche n'a pas retenu.
+export function buildsEquipeValides(equipe: Pick<EquipeOptimizer, 'listId' | 'members'>, validated: ValidatedBuild[]): boolean {
+  return equipe.members.length > 0 && equipe.members.every((s) => {
+    const build = findValidatedBuild(validated, equipe.listId, exclusionSelectorKey(s));
+    return !!build && build.runeIds.length > 0 && (build.artifactIds ?? []).length > 0;
+  });
 }

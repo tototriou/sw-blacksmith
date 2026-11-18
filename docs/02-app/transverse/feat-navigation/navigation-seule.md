@@ -97,8 +97,8 @@ Une entrée peut porter un **badge** à droite (`badge`), par exemple
 Offense), parchemin (Recommandations), coffre (Mon compte), pierre runique
 (Runes), grimoire griffé (Bestiaire), engrenage (Mécaniques), étincelle
 (Nouveautés), curseurs (Paramètres), coupe (Arène), compagnons (Ami), œuf
-fêlé (Monstres), médaillon (Artéfacts), tenailles (Outils), compas
-(Optimizer), chronomètre (Speed tuning). Grille 24, trait 2, `currentColor`,
+fêlé (Monstres), médaillon (Artéfacts), tenailles (Outils), enclume
+(Optimizer), dossier à l'étoile (Mes équipes), chronomètre (Speed tuning). Grille 24, trait 2, `currentColor`,
 au contrat de lucide (`size`, `color`). Les ACTIONS gardent lucide (importer,
 rechercher…).
 Hors de la nav, **une icône qui nomme une section prend la sienne** : cartes
@@ -108,7 +108,7 @@ côté, parchemin des Recommandations), « Voir le speed tune » (chronomètre),
 RTA, l'état vide, le bouton d'ouverture et l'en-tête d'une prépa d'« Ami »
 (compagnons) ; au Bestiaire, « Aucun monstre ne correspond » (grimoire) ; au
 Speed tuning, la pastille de l'en-tête au téléphone (chronomètre) ;
-« Exporter vers l'Optimizer » (compas), partout où l'action existe — Siège,
+« Exporter vers l'Optimizer » (enclume), partout où l'action existe — Siège,
 équipe, recommandations, RTA, Speed tuning. L'écran vide de l'Optimizer porte
 une clé à molette.
 ⚠️ `InventaireIcon` est le rendu du jeu des écrans du compte (tête de monstre,

@@ -3,7 +3,7 @@ import MonstresDeLaListe, { type MonstresDeLaListeProps } from '../MonstresDeLaL
 import { useTraduction } from '../../../../hooks/useLangue';
 
 // La place de « Monstre » (docs/02-app/optimizer/ecran/README.md,
-// « Mise en page d'ensemble ») : son panneau en prend 384 (358 de contenu,
+// « Mise en page d'ensemble ») : son panneau en prend 384 (366 de contenu,
 // sa barre de défilement comprise dedans), le reste va à l'écart avec la
 // colonne suivante (`RETRAIT_PANNEAU`, src/lib/optimizerColonnes.ts).
 export const LARGEUR_MONSTRE = 392;

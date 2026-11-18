@@ -12,7 +12,7 @@ import { SEUIL_TABLEAU_PX } from '../src/components/outils/optimizer/TableauResu
 // passent en cartes).
 export function testOptimizerColonnesTableau() {
   titre('Optimizer · configuration quand les résultats sont en tableau');
-  egal(RESULTATS_TABLEAU, SEUIL_TABLEAU_PX + 26, 'la largeur du tableau plus le contour, le rembourrage et la barre du panneau');
+  egal(RESULTATS_TABLEAU, SEUIL_TABLEAU_PX + 26, 'la largeur du tableau plus le contour, le rembourrage, la barre du panneau et 8 de marge');
   const cas: [number, string, string][] = [
     [2288, 'groupe-large', 'groupe-large'], // 2560 plein
     [1648, 'groupe-large', 'groupe-large'], // 1920 plein
@@ -53,8 +53,8 @@ export function testOptimizerColonnes() {
   egal(LARGEURS_BUREAU, { monstre: 392, reglage: 328, reglageLarge: 392, resultats: 360, gouttiere: 10 }, 'places de la spec');
   egal([LARGEUR_MONSTRE, LARGEUR_ARTEFACTS, LARGEUR_COMPLEMENTS], [392, 328, 328], 'les composants déclarent les mêmes places');
   egal(RETRAIT_PANNEAU + LARGEURS_BUREAU.gouttiere, 18, '10 + 8 = 18 entre panneaux');
-  // La barre est dans le panneau : place − retrait 8 − contour 2 − rembourrage 2 × 8 − barre 8.
-  egal([LARGEURS_BUREAU.reglage - 34, LARGEURS_BUREAU.monstre - 34], [294, 358], 'contenus : 294 px dans le groupe, 358 dans « Monstre »');
+  // La barre est dans le panneau : place − retrait 8 − contour 2 − rembourrage de gauche 8 − barre 8.
+  egal([LARGEURS_BUREAU.reglage - 26, LARGEURS_BUREAU.monstre - 26], [302, 366], 'contenus : 302 px dans le groupe, 366 dans « Monstre »');
   egal(SEUILS_BUREAU, { groupe: 1100, groupeLarge: 1164 }, 'seuils calculés sur les places');
   egal(LARGEURS_BUREAU.reglageLarge, LARGEURS_BUREAU.monstre, 'groupe large : la largeur de « Monstre »');
   const cas = [

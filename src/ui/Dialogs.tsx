@@ -373,13 +373,19 @@ export function Modale({
                   {titre}
                 </h2>
               )}
-              {sousTitre && (
+              {/* Un texte : un paragraphe ; un bloc (liste, champ) : un div, qu'un
+                  paragraphe ne peut pas contenir. */}
+              {sousTitre && (typeof sousTitre === 'string' || typeof sousTitre === 'number' ? (
                 <p
                   className={`${serre ? 'mt-0.5 leading-snug' : 'mt-1.5 leading-relaxed'} text-xs text-ink-dim`}
                 >
                   {sousTitre}
                 </p>
-              )}
+              ) : (
+                <div className={`${serre ? 'mt-0.5 leading-snug' : 'mt-1.5 leading-relaxed'} text-xs text-ink-dim`}>
+                  {sousTitre}
+                </div>
+              ))}
             </div>
             {/* Croix NUE : ni cadre, ni fond — c'est le défaut de BoutonIcone.
                 Encadrée, elle se lirait comme un bouton d'action de plus, au
