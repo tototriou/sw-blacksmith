@@ -46,7 +46,7 @@ function ExemplaireBanc() {
   const ref = useRef<HTMLDivElement>(null);
   return <ExemplaireBureau zoneDRef={ref} sourceOptions={SOURCE_OPTIONS.map((o) => ({ ...o, disabled: false }))} vuesExemplaire={null}
     gearSource="box" pickSource={rien} allSourcesEmpty={false} zoneDOpen={false} zoneDList={null} validatedBadge={null}
-    selected={null} selectionFiche={null} setSelectionFiche={rien} relicUsageById={{}}
+    selected={null} selectionFiche={null} setSelectionFiche={rien} relicUsageById={{}} mesuresFiche={null}
     validateBuildButton={<button type="button" data-valider style={{ display: 'block', width: '100%', height: 32 }}>Valider ce build</button>} />;
 }
 

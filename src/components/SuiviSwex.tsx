@@ -16,16 +16,28 @@ import { useNotifier } from '../ui/Notification';
 // relu** (App.tsx) : appliqué plus tôt, l'export donnerait une box vide
 // (sans l'index des monstres), ou serait écrasé par la relecture d'un compte
 // plus ancien.
+//
+// L'arène dimensionnelle arrive à part (`surDimension`), à chaque nouvelle
+// saison du journal SWEX : ses équipes sont appliquées (`appliquerDimension`,
+// leur nombre), annoncées, et la saison marquée lue. Aucune équipe reconnue :
+// rien n'est marqué, la prochaine saison sera redonnée.
 export default function SuiviSwex({
   appliquer,
+  appliquerDimension,
   pret,
   sansCompte,
+  sansDimension,
 }: {
   appliquer: (texte: string, complet: boolean) => { ok: boolean; nom: string | null };
+  appliquerDimension: (saison: Record<string, any>, recents: unknown[]) => number;
   pret: boolean;
   // La page n'a aucun compte (conservation refusée) : l'export se relit en
   // silence, même s'il a déjà été lu.
   sansCompte: boolean;
+  // La page n'a rien de l'arène dimensionnelle (conservation refusée, ou
+  // saison lue avant l'onglet qui la montre) : la dernière saison se redonne,
+  // même déjà lue.
+  sansDimension: boolean;
 }) {
   const notifier = useNotifier();
   // La langue au moment de la notification, sans réabonner le suivi.
@@ -36,8 +48,12 @@ export default function SuiviSwex({
   // change ; l'abonnement, lui, ne se refait pas à chaque rendu.
   const appliquerRef = useRef(appliquer);
   appliquerRef.current = appliquer;
+  const appliquerDimensionRef = useRef(appliquerDimension);
+  appliquerDimensionRef.current = appliquerDimension;
   const sansCompteRef = useRef(sansCompte);
   sansCompteRef.current = sansCompte;
+  const sansDimensionRef = useRef(sansDimension);
+  sansDimensionRef.current = sansDimension;
 
   useEffect(() => {
     const s = swex();
@@ -51,8 +67,17 @@ export default function SuiviSwex({
       s.lu(exp.modifie);
       if (exp.nouveau || complet) notifier({ message: messageExportSwex(r.nom, complet, textesVivants.current) });
     });
-    s.pret(sansCompteRef.current);
-    return desabonner;
+    const desabonnerDimension = s.surDimension((dim) => {
+      const n = appliquerDimensionRef.current(dim.saison, dim.recents);
+      if (n === 0) return;
+      s.dimensionLue(dim.cle);
+      if (dim.nouvelle) notifier({ message: textesVivants.current.application.dimensionMiseAJour(n) });
+    });
+    s.pret(sansCompteRef.current, sansDimensionRef.current);
+    return () => {
+      desabonner();
+      desabonnerDimension();
+    };
   }, [pret, notifier]);
 
   return null;

@@ -3,7 +3,7 @@ import { flushSync } from 'react-dom';
 import App from '../../src/App';
 import { saveAccount } from '../../src/lib/accountStore';
 import { runesUtiliseesVides } from '../../src/lib/importAccount';
-import { reinitialiserSticky } from '../../src/hooks/useStickyState';
+import { photographierMemoire, reinitialiserSticky } from '../../src/hooks/useStickyState';
 import { setPersistence } from '../../src/hooks/usePersistence';
 import type { GearSet, Monster, SiegeTeam } from '../../src/types';
 import type { DetailMonstre } from '../../src/lib/monsterSkills';
@@ -17,15 +17,19 @@ const equipe: SiegeTeam = { id: 'o1', lead: 0, tickAlertDismissed: false,
 const pause = () => new Promise(r => setTimeout(r, 80));
 async function geste(action: () => void) { flushSync(action); await pause(); }
 async function attendre(lire: () => boolean) {
-  for (let i = 0; i < 60; i++) { if (lire()) return; await pause(); }
-  throw new Error('Écran attendu absent après montage d’App.');
+  if (!(await patienter(lire))) throw new Error('Écran attendu absent après montage d’App.');
+}
+// Le même délai, sans lever : la vérification qui suit dira ce qui manque.
+async function patienter(lire: () => boolean): Promise<boolean> {
+  for (let i = 0; i < 60; i++) { if (lire()) return true; await pause(); }
+  return false;
 }
 const rapport = () => document.querySelector<HTMLElement>('[aria-labelledby="rapport-export-optimizer"]');
 const modale = () => document.querySelector<HTMLElement>('[aria-labelledby="speed-tune-modale"]');
 const visible = (e: Element) => e.getBoundingClientRect().width > 0 && getComputedStyle(e).visibility !== 'hidden';
 const bouton = (racine: Element, texte: string) => [...racine.querySelectorAll<HTMLButtonElement>('button')].find(b => visible(b) && (b.textContent?.trim() === texte || b.getAttribute('aria-label') === texte));
 
-async function ouvrirParPalette(recherche = 'Allié') {
+async function ouvrirParPalette(recherche = 'Allié', attendreOrdre = true) {
   await geste(() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true, bubbles: true })));
   const champ = document.querySelector<HTMLInputElement>('[aria-label="Rechercher une page, un monstre, une action"]');
   if (!champ) throw new Error('Palette d’App absente.');
@@ -37,6 +41,13 @@ async function ouvrirParPalette(recherche = 'Allié') {
   if (!choix) throw new Error('Équipe de la palette absente.');
   await geste(() => choix.click());
   await attendre(() => !!modale() && !!bouton(modale()!, "Exporter vers l'Optimizer") && !bouton(modale()!, "Exporter vers l'Optimizer")!.disabled);
+  // ⚠️ Le bouton s'active avant que l'outil ait posé l'ordre des tours (un
+  // effet, après les kits). Sous charge, le clic partait avant : l'export se
+  // faisait, à bon droit, SANS plan (« l'ordre voulu est vide »), et « plan
+  // posé » échouait. On attend que l'ordre soit dans l'état de l'outil —
+  // sauf pour un parcours qui analyse lui-même (le bouton Analyser
+  // disparaîtrait avant son clic).
+  if (attendreOrdre) await attendre(() => Object.entries(photographierMemoire()).some(([cle, v]) => cle.endsWith('.ordre') && Array.isArray(v) && v.length > 0));
 }
 
 export async function scenario(reset?: { monstres: Monster[]; details: DetailMonstre[] }): Promise<[boolean, string][]> {
@@ -67,7 +78,7 @@ export async function scenario(reset?: { monstres: Monster[]; details: DetailMon
     await geste(() => racine.render(<App />));
     await attendre(() => [...document.querySelectorAll('button')].some(b => b.textContent?.trim() === 'Importer une équipe'));
     if (reset) {
-      await ouvrirParPalette('Tablo');
+      await ouvrirParPalette('Tablo', false);
       await geste(() => bouton(modale()!, 'Analyser')!.click());
       const choixHomu = () => modale()!.querySelector<HTMLButtonElement>('button[title="Sort lancé par Homunculus(Support)"]');
       await attendre(() => !!choixHomu() && !!bouton(modale()!, 'Returned Dice'));
@@ -116,9 +127,13 @@ export async function scenario(reset?: { monstres: Monster[]; details: DetailMon
           if (!accepte) monstres.forEach(m => { m.com2usId = null; });
           exportation.click();
         });
+        // Le rapport s'écrit après le geste : on attend son texte plutôt
+        // qu'une pause fixe.
+        const attendu = accepte ? 'Le plan de speed tune est posé' : 'ne garantit pas l’ordre des tours';
+        await patienter(() => (rapport()?.innerText ?? '').includes(attendu));
         const texte = rapport()?.innerText ?? '';
         verifier(!!rapport() && visible(rapport()!), `${accepte ? 'accepté' : 'refusé'} : rapport global visible`);
-        verifier(texte.includes(accepte ? 'Le plan de speed tune est posé' : 'ne garantit pas l’ordre des tours'), `${accepte ? 'accepté : plan posé' : 'refusé : sans plan, avertissement de conversion'} lu à l’écran`);
+        verifier(texte.includes(attendu), `${accepte ? 'accepté : plan posé' : 'refusé : sans plan, avertissement de conversion'} lu à l’écran`);
         verifier(accepte ? texte.includes('3 monstre(s), 1 équipe(s)') : texte.includes('Aucune liste créée') && texte.includes('identité d’espèce inutilisable'),
           accepte ? 'accepté : compte des membres et équipe lu à l’écran' : 'refusé : motif lu à l’écran');
         verifier(accepte ? !modale() : !!modale(), accepte ? 'accepté : speed tuning fermé' : 'refusé : speed tuning conservé');

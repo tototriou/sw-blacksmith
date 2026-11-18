@@ -182,8 +182,8 @@ release tient le rôle que `main` tient d'ordinaire.
 - **L'étape 4 se fait une seule fois, sur la release** (entrée unique dans
   `releases.ts` — deux entrées `version: null` deviennent une, pas deux
   entrées au même numéro — numéro dans `package.json`, `tsc`, lint,
-  `npm test`, `build`), et c'est **elle** qui part en PR vers `main`
-  (étape 5).
+  `build`), et c'est **elle** qui part en PR vers `main` (étape 5), dont
+  la CI passe la suite complète.
 
 ### Les cinq étapes
 
@@ -204,7 +204,8 @@ release tient le rôle que `main` tient d'ordinaire.
      numérotation ci-dessous) ;
    - l'écrire dans `version` de [`package.json`](package.json) **et** dans
      l'entrée de `releases.ts` et de `releases.en.ts`, à la place du `null` ;
-   - vérifier `npx tsc --noEmit`, `npm run lint`, `npm test` et `npm run build`.
+   - vérifier `npx tsc --noEmit`, `npm run lint` et `npm run build` ; la
+     suite complète tourne dans la CI de la PR, pas en local (sauf demande).
 
    ⚠️ **ENTIÈREMENT avant d’ouvrir la PR, et l’ordre n’est pas indicatif.**
    Tout commit poussé après l’ouverture fait TOMBER les approbations déjà

@@ -5,7 +5,7 @@
 // Voir docs/02-app/speed-tuning/, « Importer un deck de siège ».
 
 import { Monster, SiegeSlot, SiegeTeam } from '../types';
-import { LeadInfo, isSiegeLeadActive, siegeLeadFor, speedLeadOf } from './speed';
+import { LeadInfo, isLeadActif, leadPour, speedLeadOf, type RegleLead } from './speed';
 
 // Propriété d'artéfact « Effet aug. VIT » (code 206 dans ARTIFACT_SUB) : elle
 // AMPLIFIE le buff de vitesse, c'est exactement ce que le speed tuning appelle
@@ -62,7 +62,8 @@ export interface DeckImporte {
   lead: LeadInfo | null;
 }
 
-export function deckPourSpeedTune(team: SiegeTeam, monsterById: Map<string, Monster>): DeckImporte {
+// `regle` : les règles de lead du contenu de l'équipe (siège ou arène).
+export function deckPourSpeedTune(team: SiegeTeam, monsterById: Map<string, Monster>, regle: RegleLead = 'siege'): DeckImporte {
   // Le leader est le slot 0 (convention du siège), pas `team.lead`. Lu AVANT la
   // boucle : chaque monstre a besoin de savoir ce que le lead lui donne, à lui.
   const leaderId = team.slots[0]?.monsterId ?? null;
@@ -86,9 +87,13 @@ export function deckPourSpeedTune(team: SiegeTeam, monsterById: Map<string, Mons
       // ⚠️ **La même fonction que la card de siège** (`siegeLeadFor`) : c'est ce
       // qui garantit que la vitesse affichée et celle du verdict sont le même
       // nombre. Deux calculs de lead, et l'écart revient.
-      lead: siegeLeadFor(info, monster.element),
+      lead: leadPour(regle, info, monster.element),
     });
   }
 
-  return { monstres, lead: isSiegeLeadActive(info) ? info : null };
+  // ⚠️ Un lead d'ARÈNE, dans une équipe d'arène, vaut pour tous : il se pose
+  // comme un lead sans restriction (`General`). Le camp de l'outil applique la
+  // règle du siège (`siegeLeadFor`), qui l'aurait compté pour 0.
+  const actif = isLeadActif(regle, info) ? info : null;
+  return { monstres, lead: actif && actif.area === 'Arena' ? { ...actif, area: 'General' } : actif };
 }

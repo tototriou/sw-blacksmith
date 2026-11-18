@@ -36,6 +36,10 @@ interface Props {
   // Panneau d'actions mobile — piloté par le bouton « Options » (voir App.tsx).
   menuOuvert: boolean;
   onFermerMenu: () => void;
+  // Préfixe des réglages mémorisés (filtres, tri) : une autre liste de runes —
+  // celle de l'arène dimensionnelle — garde les siens, sans toucher à ceux de
+  // « Mon compte ».
+  prefixeEtat?: string;
 }
 
 // Une rune enrichie de ses deux mesures (calculées une fois).
@@ -59,7 +63,7 @@ const MAX_SUBS = 4;
 // (« PV + », « PV % »), dans la langue affichée.
 const SUBS_CODES = Object.keys(RUNE_EFFECT).map(Number);
 
-export default function RunesList({ runes, menuOuvert, onFermerMenu }: Props) {
+export default function RunesList({ runes, menuOuvert, onFermerMenu, prefixeEtat = 'runesList' }: Props) {
   const textes = useTraduction();
   const jeu = textes.jeu;
   const l = textes.listeRunes;
@@ -69,20 +73,20 @@ export default function RunesList({ runes, menuOuvert, onFermerMenu }: Props) {
   // est AFFICHÉ ; par défaut tous le sont (tout est montré), et n'en cocher aucun
   // revient à ne rien vouloir voir. Défaut sets = tous les sets présents à
   // l'ouverture, défaut slots = les six.
-  const [sets, setSets] = useStickyState<Set<string>>('runesList.sets', new Set(runes.map((r) => r.set)));
-  const [slots, setSlots] = useStickyState<Set<number>>('runesList.slots', new Set([1, 2, 3, 4, 5, 6]));
-  const [ancientBrut, setAncient] = useStickyState<AncientFilterValue>('runesList.ancient', 'all');
+  const [sets, setSets] = useStickyState<Set<string>>(`${prefixeEtat}.sets`, new Set(runes.map((r) => r.set)));
+  const [slots, setSlots] = useStickyState<Set<number>>(`${prefixeEtat}.slots`, new Set([1, 2, 3, 4, 5, 6]));
+  const [ancientBrut, setAncient] = useStickyState<AncientFilterValue>(`${prefixeEtat}.ancient`, 'all');
   const ancient = normFiltreAntique(ancientBrut);
-  const [sortBrut, setSort] = useStickyState<RuneSortMode>('runesList.sort', 'score');
+  const [sortBrut, setSort] = useStickyState<RuneSortMode>(`${prefixeEtat}.sort`, 'score');
   // Sens du tri — un AXE à part du critère : il vaut pour celui qui est choisi,
   // quel qu'il soit (voir lib/tri.ts).
-  const [sens, setSens] = useStickyState<SensTri>('runesList.sens', SENS_PAR_DEFAUT);
+  const [sens, setSens] = useStickyState<SensTri>(`${prefixeEtat}.sens`, SENS_PAR_DEFAUT);
   // Propriétés cherchées, dans l'ordre de priorité — même grammaire que
   // l'inventaire d'artéfacts (voir SubSearchDialog).
   //
   // ⚠️ QUATRE au plus : une rune ne porte que 4 propriétés secondaires, un
   // cinquième critère ne pourrait jamais être satisfait.
-  const [criteres, setCriteres] = useStickyState<Critere[]>('runesList.criteres', []);
+  const [criteres, setCriteres] = useStickyState<Critere[]>(`${prefixeEtat}.criteres`, []);
   // La modale ne pose que des critères complets ; ce garde-fou couvre un état
   // mémorisé d'une version antérieure, où une case vide valait `{code: 0}`.
   const actifs = useMemo(() => criteres.filter((c) => c.code > 0), [criteres]);

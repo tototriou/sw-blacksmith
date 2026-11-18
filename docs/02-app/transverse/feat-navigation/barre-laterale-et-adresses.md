@@ -17,7 +17,7 @@ C'est celui de [02-app/README.md](../../README.md) (« Ordre des pages »), issu
 
 ```
 Accueil
-JOUER        RTA ›  Siège ›  Arène
+JOUER        RTA ›  Siège ›  Arène ›  Arène dimensionnelle ›
 MON COMPTE   Monstres  Runes ›  Artéfacts ›
 OUTILS       Optimizer  Speed tuning
 RESSOURCES   Bestiaire  Mécaniques  Nouveautés  Télécharger
@@ -33,7 +33,9 @@ c'est un mode de jeu. Les inventaires et les outils sont des entrées
 DIRECTES : Monstres (une seule vue) et les deux outils mènent à leur page ;
 Runes et Artéfacts (plusieurs vues) ouvrent leur niveau, comme RTA et Siège.
 Toutes les destinations y sont — vérifié par `tests/rendu/app.test.tsx`. Les
-onglets mobiles ont cinq entrées.
+onglets mobiles ont cinq entrées : l'Arène n'y a pas la sienne, le panneau
+« Outils » porte un groupe « Arène » (ses trois sous-sections) et un groupe
+« Arène dimensionnelle » (ses trois sous-sections).
 
 ## Adresses — ce que lit la barre d'adresse
 
@@ -47,11 +49,13 @@ l'adresse et en déduit la page et ses sous-niveaux.
 | `#/siege/defense`, `/offense`, `/recommandations` | Siège |
 | `#/compte/<inventaire>/<vue>` | Mon compte — vues de [accountViews.ts](src/lib/accountViews.ts) |
 | `#/outils/optimizer`, `/speed-tuning` | Outils |
-| `#/arene`, `#/bestiary`, `#/mecaniques`, `#/releases`, `#/parametres` | une page chacune |
+| `#/arene/defense`, `/offense`, `/interserveur` | Arène |
+| `#/arene-dimensionnelle/defense`, `/offense`, `/runes` | Arène dimensionnelle |
+| `#/bestiary`, `#/mecaniques`, `#/releases`, `#/parametres` | une page chacune |
 | `#/telecharger` | Télécharger — **site seulement** ; dans l'app de bureau, l'accueil |
 
 - ⚠️ **Une adresse tronquée mène au défaut de sa section**, jamais à un écran
-  vide : `#/siege` → Défense, `#/compte` → Monstres, `#/compte/runes` →
+  vide : `#/siege` → Défense, `#/arene` et `#/arene-dimensionnelle` → Défense, `#/compte` → Monstres, `#/compte/runes` →
   Résumé, `#/outils` → Optimizer. L'accueil s'en sert (`#/compte/runes`).
 - ⚠️ **Une sous-page inconnue retombe sur le défaut de SA section**
   (`#/compte/artefacts/courbes` → Artéfacts · Résumé, par `vueValide`) ; une

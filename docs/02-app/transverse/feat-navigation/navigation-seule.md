@@ -40,7 +40,8 @@ JOUER
    │ Défense                            ← sous-section active : fond
    │ Offense
    │ Recommandations
-🏆 Arène                      Bientôt
+🏆 Arène                            ›
+🏆 Arène dimensionnelle              ›
 MON COMPTE · OUTILS · RESSOURCES …
 ───────────────────────────────────────
 ⚙  Paramètres
@@ -84,8 +85,9 @@ fait `width: auto` même en `display: flex`. Sans lui, les entrées à
 sous-section seraient larges comme leur texte et leur fond au survol
 s'arrêterait au milieu de la barre.
 
-Une entrée peut porter un **badge** à droite (`badge`) : « Bientôt » sur
-Arène, dont la page l'annonce déjà. Un état de la PAGE, pas de la navigation.
+Une entrée peut porter un **badge** à droite (`badge`), par exemple
+« Bientôt » sur une page dont l'écran l'annonce déjà — aucune aujourd'hui. Un
+état de la PAGE, pas de la navigation.
 
 ### Les icônes — des objets d'atelier
 

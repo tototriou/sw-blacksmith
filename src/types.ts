@@ -136,6 +136,19 @@ export interface RuneDetail {
   // la rune n'en porte aucun. Le libellé, renommable en jeu, vit au niveau du
   // compte (`parseRuneMarkerLabels`), jamais recopié ici.
   marker?: number;
+  // Posé SEULEMENT sur une copie simulée par l'Optimizer (« Simuler +15 et
+  // max meules/gemmes », runesMaxees.ts) : les valeurs RÉELLES de ce que la
+  // simulation a changé, pour que le détail de la rune colore ces lignes.
+  // Absent d'une rune de l'inventaire.
+  avantSimulation?: RuneAvantSimulation;
+}
+
+// Les valeurs réelles d'une rune simulée : niveau, principale, et pour chaque
+// substat (même index que `subs`) sa valeur totale et sa meule.
+export interface RuneAvantSimulation {
+  level: number;
+  main: number;
+  subs: { value: number; grind: number }[];
 }
 
 /* --------------------------------------------------------------------------

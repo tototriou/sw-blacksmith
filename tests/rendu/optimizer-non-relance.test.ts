@@ -63,6 +63,14 @@ async function nonRelance(telephone: boolean) {
     await interrupteur.click();
     ok(await interrupteur.getAttribute('aria-checked') === 'true', `${format} : l’interrupteur est activé par un vrai clic`);
     const tout = await inchange('vérifier toutes les combinaisons');
+    // « Simuler +15 et max meules/gemmes », le vrai interrupteur, même surface : il
+    // ne prépare que la prochaine recherche, le pool photographié reste le réel.
+    ok(lance.simuleesPhoto === 0, `${format} : désactivé par défaut, la recherche lancée porte sur les runes réelles`);
+    const maxees = page.getByRole('switch', { name: 'Simuler +15 et max meules/gemmes' });
+    await maxees.click();
+    ok(await maxees.getAttribute('aria-checked') === 'true', `${format} : « Simuler +15… » activé par un vrai clic`);
+    const apresMaxees = await inchange('simuler +15 et max meules/gemmes');
+    egal([apresMaxees.simulerRunesMaxees, apresMaxees.simuleesPhoto], [true, 0], `${format} : le réglage est posé, le pool du résultat affiché reste le réel`);
     if (telephone) await appel(page, 'menuTelephone', false);
     else await page.getByRole('tab', { name: 'Critères', exact: true }).click();
     egal(tout.toutVerifierPhoto, false, `${format} : « Vérifier toutes les combinaisons » reste celui du lancement dans le contexte`);
@@ -102,6 +110,8 @@ async function nonRelance(telephone: boolean) {
       `${format} : Rechercher relance bien une nouvelle recherche, avec son nouveau contexte`);
     ok(relance.toutVerifierPhoto === true && JSON.stringify(relance.minStatsPhoto).includes('"spd":101'),
       `${format} : les réglages modifiés entrent dans la photographie de la nouvelle recherche seulement`);
+    ok(relance.simuleesPhoto === 18 && relance.cartes.length === 20,
+      `${format} : relancée, la recherche porte sur les 18 runes simulées (meule et principale maxées), ${relance.cartes.length} cartes (${relance.simuleesPhoto} simulées)`);
     // Monstre : un vrai clic sur un autre membre de la liste de travail (au téléphone,
     // la liste se déplie d'abord par « Gérer mes listes »).
     const membre = page.locator('[data-membre-optimizer="10102"]');

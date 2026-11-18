@@ -8,7 +8,8 @@ import {
   SIEGE_TICKS,
   combatSpeed,
   speedLeadOf,
-  siegeLeadFor,
+  leadPour,
+  type RegleLead,
   tickDanger,
   tickTeamMessage,
   LeadInfo,
@@ -31,8 +32,14 @@ import { useTraduction } from '../../hooks/useLangue';
 import { useMediaQuery, COMPACT } from '../../hooks/useMediaQuery';
 
 interface Props {
-  onExporterOptimizer: () => void;
+  // Absent : pas d'export vers l'Optimizer pour ce contenu (pas encore branché).
+  onExporterOptimizer?: () => void;
   raisonExportOptimizer?: string;
+  // Les règles de lead du contenu de l'équipe (siège par défaut).
+  regleLead?: RegleLead;
+  // Le contenu a des artéfacts : leur absence rend l'équipement incomplet.
+  // Faux pour l'arène dimensionnelle, dont les artéfacts ne sont pas lus.
+  avecArtefacts?: boolean;
   team: SiegeTeamType;
   index: number;
   monsters: Monster[];
@@ -48,13 +55,16 @@ interface Props {
   // défaut) : sans lui, toutes les équipes restent neutres.
   checkTicks: boolean;
   onDismissAlert: (teamId: string, dismissed: boolean) => void;
-  onVoirSpeedTune: (teamId: string) => void;
+  // Absent : pas de speed tuning pour ce contenu (pas encore branché).
+  onVoirSpeedTune?: (teamId: string) => void;
   onSwap: (teamId: string, from: number, to: number) => void;
 }
 
 export default function SiegeTeam({
   onExporterOptimizer,
   raisonExportOptimizer,
+  regleLead = 'siege',
+  avecArtefacts = true,
   team,
   index,
   monsters,
@@ -128,7 +138,7 @@ export default function SiegeTeam({
       // même `siegeLeadFor`). Auparavant la card affichait la vitesse avec le
       // lead d'élément et le speed tune la recalculait sans : deux nombres pour
       // un même monstre, et un « il manque X de VIT » sur une vitesse invisible.
-      lead: siegeLeadFor(leadInfo, m.element),
+      lead: leadPour(regleLead, leadInfo, m.element),
     };
     const equipe = team.slots.flatMap((sl, j) => {
       const autre = sl.monsterId ? monsterById.get(sl.monsterId) : null;
@@ -140,7 +150,7 @@ export default function SiegeTeam({
               runeSpeed: sl.runeSpeed,
               swift: (sl.sets ?? []).includes('swift'),
               sets: sl.sets ?? [],
-              lead: siegeLeadFor(leadInfo, autre.element),
+              lead: leadPour(regleLead, leadInfo, autre.element),
             } as EntreeAuto,
           ]
         : [];
@@ -181,9 +191,9 @@ export default function SiegeTeam({
   // tout le monde (General/Guild), sinon aucun — un lead d'élément ne se
   // transpose pas au modèle « un lead par camp » de l'outil.
   const deck = useMemo(
-    () => deckPourSpeedTune(team, monsterById),
+    () => deckPourSpeedTune(team, monsterById, regleLead),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [JSON.stringify(team.slots.map((sl) => [sl.monsterId, sl.runeSpeed, sl.sets, !!sl.gear, !!sl.gearPartage]))]
+    [JSON.stringify(team.slots.map((sl) => [sl.monsterId, sl.runeSpeed, sl.sets, !!sl.gear, !!sl.gearPartage])), regleLead]
   );
   const equipeAuto = useMemo<EntreeAuto[]>(
     () =>
@@ -262,7 +272,7 @@ export default function SiegeTeam({
     const monster = slot.monsterId ? monsterById.get(slot.monsterId) ?? null : null;
     if (!monster || !slot.gear) return [];
     const manqueRunes = slot.gear.runes.length < 6;
-    const manqueArtes = slot.gear.artifacts.length < 2;
+    const manqueArtes = avecArtefacts && slot.gear.artifacts.length < 2;
     if (!manqueRunes && !manqueArtes) return [];
     return [{ id: slot.monsterId!, monster, manqueRunes, manqueArtes }];
   });
@@ -337,11 +347,13 @@ export default function SiegeTeam({
             déplier. Le badge posé sur le portrait du leader reste, lui : il dit
             de quel monstre vient le lead — les deux répondent à deux questions
             différentes, ce n'est pas un doublon. */}
-        {leaderMonster?.leaderSkill && <LeadPill ls={leaderMonster.leaderSkill} />}
-        <Bouton onClick={onExporterOptimizer} disabled={!!raisonExportOptimizer}
-          title={raisonExportOptimizer ?? e.exportAide}
-          aria-label={textes.commun.exporterOptimizer} libelle={textes.commun.exporterOptimizer}
-          icone={<IconeOptimizer size={13} />} taille="sm" nuAuDoigt libelleAuDoigt={false} />
+        {leaderMonster?.leaderSkill && <LeadPill ls={leaderMonster.leaderSkill} regle={regleLead} />}
+        {onExporterOptimizer && (
+          <Bouton onClick={onExporterOptimizer} disabled={!!raisonExportOptimizer}
+            title={raisonExportOptimizer ?? e.exportAide}
+            aria-label={textes.commun.exporterOptimizer} libelle={textes.commun.exporterOptimizer}
+            icone={<IconeOptimizer size={13} />} taille="sm" nuAuDoigt libelleAuDoigt={false} />
+        )}
 
         {/* ⚠️ **Icône nue au doigt** (`nuAuDoigt`) — ni cadre, ni bordure, ni
             fond. L'en-tête d'équipe porte déjà le titre, la pastille d'état et
@@ -393,7 +405,18 @@ export default function SiegeTeam({
       // prend la hauteur de la plus haute des trois : la pastille de lead sous
       // le nom du leader ne décale plus sa vitesse ni ses ticks par rapport
       // aux deux autres. Au doigt (slots empilés), rien ne change.
-      <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3 lg:grid-rows-[repeat(3,auto)] lg:gap-y-0">
+      // ⚠️ **Quatre places (arène) : une équipe tient sur UNE ligne**
+      // (le mainteneur). Chaque place est RESSERRÉE (`serre`, SlotContent) :
+      // sur la largeur où le siège en met trois, une place ne fait que
+      // ~210 px. Une ligne de plus (les ticks passent sous le champ SPD) :
+      // quatre lignes alignées au lieu de trois.
+      <div
+        className={
+          team.slots.length === 4
+            ? 'grid grid-cols-1 gap-2 sm:grid-cols-4 lg:grid-rows-[repeat(4,auto)] lg:gap-y-0'
+            : 'grid grid-cols-1 gap-2.5 sm:grid-cols-3 lg:grid-rows-[repeat(3,auto)] lg:gap-y-0'
+        }
+      >
         {team.slots.map((slot, idx) => {
           const monster = slot.monsterId ? monsterById.get(slot.monsterId) ?? null : null;
           const slotDanger = statut === 'rouge' ? slotDangers[idx] : null;
@@ -409,7 +432,7 @@ export default function SiegeTeam({
                 e.preventDefault();
                 handleDrop(idx);
               }}
-              className={`rounded-xl border transition-colors lg:row-span-3 lg:grid lg:grid-rows-subgrid ${
+              className={`rounded-xl border transition-colors lg:grid lg:grid-rows-subgrid ${team.slots.length === 4 ? 'lg:row-span-4' : 'lg:row-span-3'} ${
                 overIdx === idx
                   ? 'border-accent bg-panel2'
                   : slotDanger
@@ -429,6 +452,9 @@ export default function SiegeTeam({
                 slot={slot}
                 idx={idx}
                 isLeader={idx === 0}
+                serre={team.slots.length === 4}
+                dernier={team.slots.length - 1}
+                regleLead={regleLead}
                 leadInfo={leadInfo}
                 combat={slotInfos[idx].combat}
                 monsters={monsters}
@@ -457,7 +483,10 @@ export default function SiegeTeam({
            téléphone, là où le siège en compte huit à comparer. Une équipe EST
            une rangée de trois, l'empiler défait ce qu'on vient lire.
            Le portrait descend à 30 px et le nom passe en `text-micro` pour que
-           les trois tiennent sur 348 px. */
+           les trois tiennent sur 348 px.
+           ⚠️ Quatre (arène) restent sur UNE ligne (le mainteneur) : ~84 px
+           chacune sous `sm`, où la carte EMPILE le portrait au-dessus du nom et
+           de la ligne vitesse + sets — côte à côte, la vitesse ne passait plus. */
         <div className="flex flex-row gap-1.5 compact:gap-1">
           {slotInfos.map(({ monster, combat }, idx) => {
             const danger = statut === 'rouge' ? slotDangers[idx] : null;
@@ -482,7 +511,7 @@ export default function SiegeTeam({
                       ? textes.carteRta.voirRunes
                       : e.modifier
                 }
-                className={`flex-1 min-w-0 flex items-center gap-2 rounded-lg border
+                className={`flex-1 min-w-0 flex items-center gap-2 rounded-lg border ${team.slots.length === 4 ? 'max-sm:flex-col max-sm:items-stretch max-sm:gap-1' : ''}
                   px-2 py-1.5 compact:gap-1 compact:px-1 compact:py-1 transition hoverable:border-accent ${
                   active
                     ? // Bordure seule, sans anneau superposé — voir docs/03-developpeur/interface/design/tokens-couleurs.md.
@@ -506,7 +535,7 @@ export default function SiegeTeam({
                     <MonsterAvatar
                       monster={monster}
                       gabarit="div"
-                      classeTaille="w-[36px] h-[36px] compact:w-[30px] compact:h-[30px]"
+                      classeTaille={team.slots.length === 4 ? "w-[36px] h-[36px] compact:w-[30px] compact:h-[30px] max-sm:self-center" : "w-[36px] h-[36px] compact:w-[30px] compact:h-[30px]"}
                       classeInitiales="text-micro"
                       tailleElement={13}
                       lead={idx === 0 ? monster.leaderSkill : null}
@@ -704,7 +733,7 @@ export default function SiegeTeam({
                 une réponse à une alerte, c'est une question qu'on se pose sur
                 n'importe quel deck — y compris celui qui va bien, pour voir de
                 combien il passe. */}
-            {hasMonsters && (
+            {hasMonsters && onVoirSpeedTune && (
               <Bouton
                 onClick={() => onVoirSpeedTune(team.id)}
                 taille="sm"
@@ -766,6 +795,11 @@ interface SlotProps {
   slot: { monsterId: string | null; runeSpeed: number | null; tick: number; sets?: string[] };
   idx: number;
   isLeader: boolean;
+  // L'index de la dernière place (2 au siège, 3 en arène).
+  // Quatre places sur une ligne (arène) : la place se resserre.
+  serre: boolean;
+  dernier: number;
+  regleLead: RegleLead;
   leadInfo: LeadInfo | null;
   // ⚠️ La vitesse de combat vient du PARENT, qui la calcule comme l'outil
   // (`combatAuto`, passif compris). La recalculer ici en repartait sans le
@@ -789,6 +823,9 @@ function SlotContent({
   slot,
   idx,
   isLeader,
+  dernier,
+  serre,
+  regleLead,
   leadInfo,
   combat,
   monsters,
@@ -818,7 +855,7 @@ function SlotContent({
       // slots sont dans une grille, qui les aligne déjà sur le plus haut.
       // `lg:grid-rows-subgrid` : l'étiquette tombe sur la ligne du monstre, le
       // champ de recherche sur celle de la vitesse — alignés sur les voisins.
-      <div className="flex flex-col justify-center p-2.5 compact:min-h-[110px] compact:p-2 lg:row-span-3 lg:grid lg:grid-rows-subgrid lg:content-start">
+      <div className={serre ? 'flex flex-col justify-center p-2 compact:min-h-[110px] lg:row-span-4 lg:grid lg:grid-rows-subgrid lg:content-start' : 'flex flex-col justify-center p-2.5 compact:min-h-[110px] compact:p-2 lg:row-span-3 lg:grid lg:grid-rows-subgrid lg:content-start'}>
         <div className="flex items-center gap-1.5 mb-2">
           {isLeader && <Crown size={13} className="text-star" />}
           <span className="label">
@@ -837,7 +874,7 @@ function SlotContent({
   }
 
   const base = monster.stats.speed;
-  const lead = siegeLeadFor(leadInfo, monster.element);
+  const lead = leadPour(regleLead, leadInfo, monster.element);
   const tick = slot.tick;
 
   // Écart au tick : négatif = il manque de la vitesse, positif = surplus.
@@ -910,9 +947,16 @@ function SlotContent({
       //   3. la CONCLUSION, en bas : la vitesse de combat, sa base, l'écart au
       //      tick — demandé par le mainteneur : « la spd et la conclusion en bas, car
       //      c'est la conclusion ».
-      className="relative flex flex-col p-2.5 compact:min-h-[110px] compact:p-2 lg:row-span-3 lg:grid lg:grid-rows-subgrid lg:grid-cols-[auto_1fr] lg:items-center lg:gap-x-3"
+      // ⚠️ `serre` (quatre places sur une ligne, arène) : une seule colonne
+      // et quatre lignes — le monstre, le SPD, les ticks, la conclusion. Les
+      // ticks passent SOUS le champ SPD : à côté, ils sortaient de la place.
+      className={
+        serre
+          ? 'relative flex flex-col p-2 compact:min-h-[110px] lg:row-span-4 lg:grid lg:grid-rows-subgrid lg:grid-cols-1 lg:items-center'
+          : 'relative flex flex-col p-2.5 compact:min-h-[110px] compact:p-2 lg:row-span-3 lg:grid lg:grid-rows-subgrid lg:grid-cols-[auto_1fr] lg:items-center lg:gap-x-3'
+      }
     >
-      <div className="mb-2 flex items-center gap-1.5 compact:mb-1 lg:col-span-2">
+      <div className={serre ? 'mb-2 flex items-center gap-1 compact:mb-1' : 'mb-2 flex items-center gap-1.5 compact:mb-1 lg:col-span-2'}>
         <ZoneCliquable
           poignee
           draggable
@@ -933,23 +977,27 @@ function SlotContent({
         <MonsterAvatar
           monster={monster}
           gabarit="div"
-          classeTaille="w-[38px] h-[38px] compact:w-[32px] compact:h-[32px]"
+          classeTaille={serre ? 'w-[32px] h-[32px]' : 'w-[38px] h-[38px] compact:w-[32px] compact:h-[32px]'}
           classeInitiales="text-xs"
           element={false}
           lead={isLeader ? monster.leaderSkill : null}
         />
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-1.5">
-            <span className="truncate text-sm font-semibold leading-tight compact:text-xs">
+          {/* Resserré, les sets passent SOUS le nom, plus petits : à côté, ils
+              ne lui laissaient presque plus de place. */}
+          <div className={serre ? 'flex flex-col items-start gap-0.5' : 'flex items-center gap-1.5'}>
+            <span className={serre ? 'w-full truncate text-xs font-semibold leading-tight' : 'truncate text-sm font-semibold leading-tight compact:text-xs'}>
               {monster.name}
             </span>
-            <SetsPortes sets={slot.sets ?? []} max={3} taille={18} espacement="gap-1" className="flex-none" />
+            <SetsPortes sets={slot.sets ?? []} max={3} taille={serre ? 14 : 18} espacement="gap-1" className="flex-none" />
           </div>
           {/* Pastille complète (icône + montant) sous le nom du leader : ici il
-              y a la place, donc on montre le chiffre, pas seulement le badge. */}
-          {isLeader && monster.leaderSkill && (
+              y a la place, donc on montre le chiffre, pas seulement le badge.
+              Resserré, elle n'y est pas : l'en-tête de l'équipe la porte déjà, et
+              le badge du portrait dit qui est le leader. */}
+          {isLeader && monster.leaderSkill && !serre && (
             <div className="mt-1">
-              <LeadPill ls={monster.leaderSkill} />
+              <LeadPill ls={monster.leaderSkill} regle={regleLead} />
             </div>
           )}
         </div>
@@ -980,10 +1028,10 @@ function SlotContent({
           />
           <BoutonIcone
             libelle={
-              idx === 2 ? e.dejaDernier : idx === 0 ? e.droiteLeader : e.droite
+              idx === dernier ? e.dejaDernier : idx === 0 ? e.droiteLeader : e.droite
             }
             icone={<ChevronRight size={14} />}
-            disabled={idx === 2}
+            disabled={idx === dernier}
             onClick={() => onMoveTo(idx + 1)}
           />
         </span>
@@ -1005,7 +1053,7 @@ function SlotContent({
       <div className="mt-1 flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 compact:mt-0.5 lg:contents">
         {/* Pas de filet au-dessus de la conclusion : essayé, retiré par
             Le mainteneur (« pas besoin de séparateur dans la card »). */}
-        <div className="lg:col-span-2 lg:row-start-3 lg:mt-2">
+        <div className={serre ? 'lg:row-start-4 lg:mt-2' : 'lg:col-span-2 lg:row-start-3 lg:mt-2'}>
           {/* ⚠️ 16 px au doigt contre 22 à la souris. Le
               nom du monstre est la RÉFÉRENCE de ce bloc : la vitesse doit rester
               au-dessus de lui sans l'écraser — un rapport de 1,3 à 1,6 suffit à
@@ -1041,7 +1089,7 @@ function SlotContent({
 
       {/* Tick cible, propre à ce monstre — à la souris, sur la ligne de la
           saisie, à droite du champ SPD. */}
-      <div className="mt-2 flex flex-wrap items-center gap-1.5 compact:mt-1 compact:gap-1 lg:col-start-2 lg:row-start-2 lg:mt-0">
+      <div className={serre ? 'mt-2 flex flex-wrap items-center gap-1.5 compact:mt-1 compact:gap-1 lg:col-start-1 lg:row-start-3' : 'mt-2 flex flex-wrap items-center gap-1.5 compact:mt-1 compact:gap-1 lg:col-start-2 lg:row-start-2 lg:mt-0'}>
         {/* ⚠️ **Recliquer sur le tick visé l'ENLÈVE** — demandé par le mainteneur,
             avec le retrait du bouton « Off » à la souris : un bouton à deux
             états s'éteint là où on l'a allumé, sans aller chercher un

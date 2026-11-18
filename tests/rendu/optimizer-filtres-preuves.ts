@@ -294,6 +294,12 @@ export async function preuvesFiltresBranchement(b: BancEcran & { fiche: () => Ge
       await attendre(300);
       preuves.push([presse(attendu) && !presse(attendu === 'Stats bonus' ? 'Stats totales' : 'Stats bonus'),
         `bureau, tableau : « ${attendu} », comme « Stats de base exclues » au lancement (${!excluAuMontage}), pas comme au montage`]);
+      // La ligne de la fiche : le build publié EST la fiche, ses onze valeurs sont donc celles de la ligne 1.
+      const cellules = (ligne: Element | null) => [...(ligne?.querySelectorAll('td[data-colonne-tableau]') ?? [])].map((td) => td.textContent?.trim() ?? '');
+      const ligneFiche = cellules(document.querySelector('[data-tableau-resultats] [data-ligne-fiche]'));
+      const ligneBuild = cellules(document.querySelector('[data-tableau-resultats] tbody tr'));
+      preuves.push([texteDe('[data-ligne-fiche-titre]') === 'Build actuel' && ligneFiche.length === 11 && json(ligneFiche) === json(ligneBuild),
+        `bureau, tableau : ligne « ${texteDe('[data-ligne-fiche-titre]')} » de la fiche, mêmes valeurs que le build identique (${ligneFiche.join(' | ')})`]);
       // Rebasculé sans relancer : le choix ne bouge pas (une photographie du lancement).
       await b.geste(() => interrupteurNomme(EXCLURE)!.click());
       preuves.push([b.etat().excludeBase === excluAuMontage && presse(attendu),

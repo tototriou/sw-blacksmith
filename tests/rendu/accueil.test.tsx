@@ -82,10 +82,25 @@ export function testRenduAccueil() {
   ok(!html.includes('data-exemple'), 'sans les données du jeu : aucun exemple');
 
   // Les autres outils, en pastilles, dans l'ordre de la navigation.
-  const PASTILLES = ['#/rta/ami', '#/siege/defense', '#/compte/runes', '#/compte/artefacts', '#/compte/equipes', '#/bestiary', '#/mecaniques', '#/telecharger', '#/arene'];
+  const PASTILLES = [
+    '#/rta/ami',
+    '#/siege/defense',
+    '#/arene/defense',
+    '#/arene-dimensionnelle/defense',
+    '#/compte/runes',
+    '#/compte/artefacts',
+    '#/compte/equipes',
+    '#/bestiary',
+    '#/mecaniques',
+    '#/telecharger',
+  ];
   const autres = tous.filter((l) => PASTILLES.includes(l.href) && l.texte !== v.application).map((l) => l.href);
   egal(autres, PASTILLES, 'les autres outils, en pastilles, dans l’ordre');
-  ok(tous.some((l) => l.href === '#/arene' && l.texte === `${a.cartes.arene.titre}${a.bientot}`), 'l’Arène, marquée « bientôt »');
+  ok(
+    tous.some((l) => l.href === '#/arene/defense' && l.texte === a.cartes.arene.titre) &&
+      tous.some((l) => l.href === '#/arene-dimensionnelle/defense' && l.texte === a.cartes.areneDimensionnelle.titre),
+    'l’Arène et l’arène dimensionnelle, sans « bientôt »'
+  );
 
   // La communauté : le Discord, la dernière version PUBLIÉE, le code.
   ok(t.includes(`${v.commuTitre} ${v.commuAccent}`), 'titre de la communauté');

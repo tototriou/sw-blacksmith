@@ -116,7 +116,7 @@ import { testTriSansNouvelleResolution, testToutVerifierPhotographie, testPlaces
 import { testObjectifVitesseMigration } from './objectif-vitesse.test';
 import { testColonnesTriAscendant } from './colonnes-tri.test';
 import { testFiltresResultatsBornes, testFiltresResultatsReversibles, testFiltresResultatsIndetermines, testFiltresResultatsComptesPages,
-  testFiltresResultatsDifferentiel, testFiltresResultatsPlafondAffiche } from './filtres-resultats.test';
+  testFiltresResultatsDifferentiel, testFiltresResultatsPlafondAffiche, testFiltresResultatsLigneFiche } from './filtres-resultats.test';
 import { testFiltresResultatsDoublonsTaches } from './filtres-resultats-doublons.test';
 import { testFiltresResultatsChangementDeMesure, testFiltresResultatsMemoire } from './filtres-memoire.test';
 import { testFiltresResultatsAvecBorne } from './filtres-avec-borne.test';
@@ -129,9 +129,13 @@ import { testCompteAffichable } from './compte-affichable.test';
 import { testOptimizerFormatBig } from './format-big.test';
 import { testVoieDeLaFile } from './file-voie.test';
 import { testCompositionDePage } from './composition-page.test';
+import { testEpinglesOptimizer } from './epingles-optimizer.test';
+import { testRenduOptimizerEpingles, testRenduOptimizerEpinglesTableau } from './rendu/optimizer-epingles.test';
 import { testFileConfirmees } from './file-confirmees.test';
 import { testCompteConfirme } from './compte-confirme.test';
 import { testVerifierToutes } from './verifier-toutes.test';
+import { testRunesMaxees } from './runes-maxees.test';
+import { testRenduRuneSimulee } from './rendu/rune-simulee.test';
 import { testProsesSortAuClic, testEffetsActifsInfobulle } from './proses-sort.test';
 import { testProseStatsCombat, testProseStatsCombatCarte, testProseStatsCombatPassifMasque } from './prose-stats-combat.test';
 import { testBuffsDePassifTable, testBuffsDePassifRappel, testBuffsDePassifEcran } from './buffs-de-passif.test';
@@ -352,7 +356,7 @@ import testMigrationStockage from './migration-stockage.test';
 import testBureauProtocole from './bureau-protocole.test';
 import testBureauFenetre from './bureau-fenetre.test';
 import testBureauMiseAJour from './bureau-mise-a-jour.test';
-import testBureauSwex from './bureau-swex.test';
+import testBureauSwex, { testBureauJournalSwex } from './bureau-swex.test';
 import testBureauSession from './bureau-session.test';
 import testBureauCoeurs from './bureau-coeurs.test';
 import testBureauLancement from './bureau-lancement.test';
@@ -373,6 +377,8 @@ import { testApercuDeuxLignesRecherche, testApercuDeuxLignesBorne, testApercuDeu
 import { testRenduRecosApercuCentainesDeDecks } from './rendu/apercu-recos.test';
 import { testDiscordDroits, testDiscordSession, testDiscordRecoSalon, testDiscordContributeursFormat, testDiscordRouteurConnexion,
   testDiscordRouteurBureau, testDiscordRouteurSources, testDiscordRouteurSalonEtPublication, testDiscordRouteurToutEtLimites } from './discord-service.test';
+import { testCaptureImage, testCapturePortraits, testCaptureChiffres, testCaptureEcran, testSpeedtuneAnalyse,
+  testSpeedtuneEtat, testSpeedtuneEmojis, testSpeedtuneInteractions } from './speedtune-capture.test';
 import { testRecoDiscordEtat, testRecoDiscordRecevoir, testRecoDiscordSynchro, testRecoDiscordPublication, testRecoDiscordFusion,
   testRecoDiscordFavorisEtStockage } from './reco-discord.test';
 import { testRenduRecoDiscordStockage } from './rendu/reco-discord-stockage.test';
@@ -381,14 +387,14 @@ import { testRenduRecosDiscordPage, testRenduRecosDiscordComposants } from './re
 import testSiegePartage from './siege-partage.test';
 import testMarque from './marque.test';
 import testSpeedTune, { testSpeedTuneDeck, testSpeedTuneChaine, testSpeedTuneKit, testSpeedTuneResetAtb, testSpeedTuneSequence, testSpeedTuneReference, testSpeedTunePassif, testSpeedTuneAuto, testSpeedTuneModele } from './speed-tune.test';
-import { testRenduSiegeDefense, testRenduSiegeOffense, testRenduSiegeEnTete, testRenduSiegeEdition } from './rendu/siege.test';
+import { testRenduSiegeDefense, testRenduSiegeOffense, testRenduSiegeEnTete, testRenduSiegeEdition, testRenduSiegeArtefactsDimension } from './rendu/siege.test';
 import { testRenduUiBouton, testRenduUiEtats, testRenduUiMenu, testRenduUiSelecteurMultiple, testRenduUiNotification, testRenduUiOnglets, testRenduPalette } from './rendu/ui.test';
 import { testRenduUiSelecteurTab, testRenduTelephoneUiSelecteurListe, testRenduUiFlottantBoiteQuiDefile, testRenduUiSegmentedDeuxLignes } from './rendu/ui-flottants.test';
 import { testPalette } from './palette.test';
 import { testLangueResolution, testLangueDictionnaires, testLangueFormats, testLangueReglage, testLangueTexteEnDur } from './langue.test';
 import { testRenduLangueReglage, testRenduLangueParametres, testRenduLangueApp, testRenduLangueFicheRune, testRenduLanguePagesPubliques, testRenduMecaniquesLangues, testRenduLangueRtaSiege, testRenduLangueCompte, testRenduLangueOptimizer, testRenduLangueOptimizerResultats, testRenduLangueSpeedTuning, testRenduLangueFusionRecos, testRenduLangueDegatsReels, testRenduLanguePhrasesDegats, testRenduLangueBureauControles } from './rendu/langue.test';
 import { testLexiqueJeuCouverture, testLexiqueJeuLibelles } from './lexique-jeu.test';
-import { testRenduAppRoutes, testRenduAppNavigation, testRenduAppMobile, testRenduAppFil, testRenduAppLiensMorts } from './rendu/app.test';
+import { testRenduAppRoutes, testRenduAppNavigation, testRenduAppMobile, testRenduAppFil, testRenduAppLiensMorts, testRenduAppRunesDimension } from './rendu/app.test';
 import { testEcranPartageMediaQueryVolet, testEcranPartageMemePage, testRenduEcranPartageApp,
   testRenduEcranPartageBarre, testRenduEcranPartageBouton, testRenduEcranPartageSelecteur,
   testRenduEcranPartageSeparateur, testRenduEcranPartageVolet } from './rendu/ecran-partage.test';
@@ -412,7 +418,7 @@ import { testRenduOptimizerGabaritsComposants, testRenduOptimizerGabaritsVue, te
 import { testRenduOptimizerGabaritsColonnes, testRenduOptimizerGabaritsDroite, testRenduOptimizerPageBureauDroite } from './rendu/optimizer-gabarits-droite.test';
 import { testRenduSpeedTuneEncart } from './rendu/speed-tune-encart.test';
 import { testRenduOptimizerGabaritsGestes, testRenduOptimizerGabaritsLargeurs } from './rendu/optimizer-gabarits-navigateur.test';
-import { testRenduOptimizerCarteResultatBureau, testRenduOptimizerCarteResultatTelephone } from './rendu/optimizer-carte-resultat-navigateur.test';
+import { testRenduOptimizerCarteResultatBureau, testRenduOptimizerCarteResultatTelephone, testRenduOptimizerCarteEpingle } from './rendu/optimizer-carte-resultat-navigateur.test';
 import { testRenduOptimizerComparerValidationBureau, testRenduOptimizerComparerValidationTelephone,
   testRenduOptimizerComparerValidationReliqueBureau, testRenduOptimizerComparerValidationReliqueTelephone } from './rendu/optimizer-comparer-validation.test';
 import { testRenduOptimizerNonRelanceBureau, testRenduOptimizerNonRelanceTelephone, testRenduOptimizerPageInterrompueBureau, testRenduOptimizerPageInterrompueTelephone } from './rendu/optimizer-non-relance.test';
@@ -458,8 +464,8 @@ import { testExecutionProuveeCas, testExecutionProuveeEmplacement, testExecution
 //     node tests/run.mjs speed-tune       (tout ce dont le nom contient « speedtune »)
 //     node tests/run.mjs rune-optim vitesse
 //     node tests/run.mjs --depuis main     (ce que touchent les fichiers modifiés : tests/selection.ts)
-// Sans argument, tout tourne — c'est ce que fait `npm test`, et ce qu'il FAUT
-// faire avant une fusion sur `main` (voir CLAUDE.md).
+// Sans argument, tout tourne — c'est ce que fait `npm test`, que la CI passe sur
+// chaque pull request ; en local, seulement sur demande (voir AGENTS.md).
 const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testRenduOptimizerCreationObligatoire', testRenduOptimizerCreationObligatoire],
   ['testRenduOptimizerEquipeImpossibleZeroLibre', testRenduOptimizerEquipeImpossibleZeroLibre],
@@ -574,6 +580,14 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testDiscordRouteurSources', testDiscordRouteurSources],
   ['testDiscordRouteurSalonEtPublication', testDiscordRouteurSalonEtPublication],
   ['testDiscordRouteurToutEtLimites', testDiscordRouteurToutEtLimites],
+  ['testCaptureImage', testCaptureImage],
+  ['testCapturePortraits', testCapturePortraits],
+  ['testCaptureChiffres', testCaptureChiffres],
+  ['testCaptureEcran', testCaptureEcran],
+  ['testSpeedtuneAnalyse', testSpeedtuneAnalyse],
+  ['testSpeedtuneEtat', testSpeedtuneEtat],
+  ['testSpeedtuneEmojis', testSpeedtuneEmojis],
+  ['testSpeedtuneInteractions', testSpeedtuneInteractions],
   ['testRecoDiscordEtat', testRecoDiscordEtat],
   ['testRecoDiscordRecevoir', testRecoDiscordRecevoir],
   ['testRecoDiscordSynchro', testRecoDiscordSynchro],
@@ -604,6 +618,7 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testRenduSiegeOffense', testRenduSiegeOffense],
   ['testRenduSiegeEnTete', testRenduSiegeEnTete],
   ['testRenduSiegeEdition', testRenduSiegeEdition],
+  ['testRenduSiegeArtefactsDimension', testRenduSiegeArtefactsDimension],
   ['testRenduRecosPage', testRenduRecosPage],
   ['testRenduRecosEnTete', testRenduRecosEnTete],
   ['testRenduRecosLigneDeckReduite', testRenduRecosLigneDeckReduite],
@@ -647,6 +662,7 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testRenduOptimizerGabaritsLargeurs', testRenduOptimizerGabaritsLargeurs],
   ['testRenduOptimizerCarteResultatBureau', testRenduOptimizerCarteResultatBureau],
   ['testRenduOptimizerCarteResultatTelephone', testRenduOptimizerCarteResultatTelephone],
+  ['testRenduOptimizerCarteEpingle', testRenduOptimizerCarteEpingle],
   ['testRenduOptimizerComparerValidationBureau', testRenduOptimizerComparerValidationBureau],
   ['testRenduOptimizerNonRelanceBureau', testRenduOptimizerNonRelanceBureau],
   ['testRenduOptimizerNonRelanceTelephone', testRenduOptimizerNonRelanceTelephone],
@@ -730,6 +746,7 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testRenduAppNavigation', testRenduAppNavigation],
   ['testRenduAppMobile', testRenduAppMobile],
   ['testRenduAppFil', testRenduAppFil],
+  ['testRenduAppRunesDimension', testRenduAppRunesDimension],
   ['testRenduEcranPartageVolet', testRenduEcranPartageVolet],
   ['testRenduEcranPartageBarre', testRenduEcranPartageBarre],
   ['testRenduEcranPartageSeparateur', testRenduEcranPartageSeparateur],
@@ -1109,6 +1126,7 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testFiltresResultatsComptesPages', testFiltresResultatsComptesPages],
   ['testFiltresResultatsDifferentiel', testFiltresResultatsDifferentiel],
   ['testFiltresResultatsPlafondAffiche', testFiltresResultatsPlafondAffiche],
+  ['testFiltresResultatsLigneFiche', testFiltresResultatsLigneFiche],
   ['testFiltresResultatsDoublonsTaches', testFiltresResultatsDoublonsTaches],
   ['testFiltresResultatsMemoire', testFiltresResultatsMemoire],
   ['testFiltresResultatsChangementDeMesure', testFiltresResultatsChangementDeMesure],
@@ -1130,9 +1148,14 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testOptimizerFormatBig', testOptimizerFormatBig],
   ['testVoieDeLaFile', testVoieDeLaFile],
   ['testCompositionDePage', testCompositionDePage],
+  ['testEpinglesOptimizer', testEpinglesOptimizer],
+  ['testRenduOptimizerEpingles', testRenduOptimizerEpingles],
+  ['testRenduOptimizerEpinglesTableau', testRenduOptimizerEpinglesTableau],
   ['testFileConfirmees', testFileConfirmees],
   ['testCompteConfirme', testCompteConfirme],
   ['testVerifierToutes', testVerifierToutes],
+  ['testRunesMaxees', testRunesMaxees],
+  ['testRenduRuneSimulee', testRenduRuneSimulee],
   ['testProsesSortAuClic', testProsesSortAuClic],
   ['testEffetsActifsInfobulle', testEffetsActifsInfobulle],
   ['testProseStatsCombat', testProseStatsCombat],
@@ -1170,6 +1193,7 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testBureauFenetre', testBureauFenetre],
   ['testBureauMiseAJour', testBureauMiseAJour],
   ['testBureauSwex', testBureauSwex],
+  ['testBureauJournalSwex', testBureauJournalSwex],
   ['testBureauSession', async () => { await testBureauSession(); }],
   ['testBureauCoeurs', async () => { await testBureauCoeurs(); }],
   ['testBureauLancement', testBureauLancement],
@@ -1444,7 +1468,7 @@ async function main() {
       `[33mVérifications ciblées[0m (${liste.length}/${VERIFICATIONS.length}) : ` +
         (process.argv.includes('--silencieux') ? '(liste omise : --silencieux)' : liste.map(([n]) => n).join(', ')) +
         `
-[33m⚠️  La suite complète reste obligatoire avant une fusion sur main.[0m
+[33m⚠️  La suite complète tourne dans la CI de la pull request.[0m
 `
     );
   }

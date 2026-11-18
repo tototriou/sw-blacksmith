@@ -6,7 +6,10 @@ npm test
 
 Affiche une ligne par vérification et sort en code 1 si l'une échoue. Les
 échecs sont répétés à la fin, avec le nom de leur vérification : un journal
-tronqué (celui de la CI) les montre quand même.
+tronqué (celui de la CI) les montre quand même. La suite complète tourne dans
+la CI, sur chaque pull request vers `main` ou `release/**` ; en local, elle ne
+se lance que sur demande, et le travail courant s'en tient aux vérifications
+liées au changement (filtres ou `--depuis`, ci-dessous).
 
 `node tests/run.mjs <filtre>` ne lance que les vérifications dont le nom
 correspond (voir [index.ts](index.ts)), plusieurs filtres possibles. Le
@@ -163,6 +166,8 @@ déplacement rend l'état non atteint.
 |---|---|
 | `liste-remplie` | Liste Arène, Vanessa et Cassie ajoutées par la recherche |
 | `resultats`, `resultats-tableau`, `resultats-filtres` | Import de [optimizer-banc-recette.json](fixtures/optimizer-banc-recette.json), recherche Rapide terminée, deux cartes exigées ; tableau et filtre selon l'état |
+| `resultats-epingles` | Même recherche, deux builds épinglés depuis les cartes : deux lignes compactes au-dessus de la grille, « Libérer tous les builds épinglés » actif |
+| `resultats-tableau-epingles` | Tableau, la ligne n° 1 épinglée depuis sa modale : la ligne épinglée en tête du tableau |
 | `artefacts`, `complements` | Même recherche, puis sélection de l'onglet correspondant |
 | `guidage-set` | Options, puis Rechercher sans set : Critères et message d'erreur visibles |
 | `onglet-resultats` | Quatre onglets : Options, puis l'onglet Résultats, avec l'objectif et Rechercher |
@@ -411,8 +416,8 @@ identités) ou `exception` (justification obligatoire, 37).
 
 ## Mesure du rappel en usage
 
-Avant une fusion, comparer les échecs de la suite complète (`npm test`) à la
-sélection `--depuis` du manifeste : un échec hors sélection est un oubli de
+Quand la suite complète échoue dans la CI d'une pull request, comparer ses
+échecs à la sélection `--depuis` du manifeste : un échec hors sélection est un oubli de
 la sélection, à signaler. Aucune campagne de mutations ne le prouve
 d'avance ; c'est l'usage qui le mesure.
 

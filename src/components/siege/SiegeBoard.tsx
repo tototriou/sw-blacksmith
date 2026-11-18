@@ -3,7 +3,7 @@ import { Plus, Trash2, Gauge, Wand2, Upload, Download } from 'lucide-react';
 import { IconeDefense, IconeOffense, IconeOptimizer } from '../IconesAtelier';
 import { Monster, ElementKey, SiegeTeam as SiegeTeamData } from '../../types';
 import { LoadState } from '../../hooks/useMonsters';
-import { SiegeSide, UseSiegeState } from '../../hooks/useSiegeState';
+import { CoteArene, estDimension, SiegeSide, UseSiegeState } from '../../hooks/useSiegeState';
 import { useStickyState } from '../../hooks/useStickyState';
 import SiegeTeam from './SiegeTeam';
 import SpeedTuneModale from '../outils/SpeedTuneModale';
@@ -30,6 +30,10 @@ interface Props {
   sourcesOptimizer: ExclusionSourceData;
   compteCharge: boolean;
   side: SiegeSide;
+  // Présent : le board montre des équipes d'ARÈNE de ce côté — 4 places, leads
+  // d'arène, ses propres textes. Le speed tuning s'y ouvre avec la source d'arène ;
+  // l'export vers l'Optimizer et les fichiers d'équipes restent ceux du siège.
+  arene?: CoteArene;
   siege: UseSiegeState;
   monsters: Monster[];
   // Les équipes des DEUX camps : l'outil de speed tuning, ouvert en modale
@@ -55,6 +59,7 @@ export default function SiegeBoard({
   sourcesOptimizer,
   compteCharge,
   side,
+  arene,
   siege,
   monsters,
   siegeDefenseTeams,
@@ -84,14 +89,16 @@ export default function SiegeBoard({
   // un geste délibéré qui demande la vérification. Tout ce que l'app calcule
   // ensuite est automatique — statut, message, ordre d'une équipe Swift : le
   // bouton dit QUAND on veut voir, pas ce qu'il faut recalculer soi-même.
-  const [checkTicks, setCheckTicks] = useStickyState(`siege.checkTicks.${side}`, false);
+  const [checkTicks, setCheckTicks] = useStickyState(arene ? `arene.checkTicks.${arene}` : `siege.checkTicks.${side}`, false);
   // Formulaire de création ouvert depuis le menu « ⋯ » (bureau).
   const [creationOuverte, setCreationOuverte] = useState(false);
 
-  const noun = b.cote[side].nom;
+  const cote = arene ? textes.arene.cote[arene] : b.cote[side];
+  const siegeSeul = !arene; // export vers l'Optimizer, fichiers d'équipes
+  const noun = cote.nom;
   // ⚠️ L'élision se choisit AVEC le mot : `d'${noun}` écrivait « équipes
   // d'défense ».
-  const deNoun = b.cote[side].de;
+  const deNoun = cote.de;
 
   // Supprimer une équipe SE DÉFAIT au lieu de se confirmer : immédiat, puis « Équipe
   // retirée · Annuler » la remet à SA place,
@@ -103,7 +110,7 @@ export default function SiegeBoard({
     const equipe = siege.state.teams[index];
     siege.removeTeam(teamId);
     notifier({
-      message: b.retiree(side),
+      message: arene ? textes.arene.retiree(arene) : b.retiree(side),
       action: () => siege.restaurerEquipe(equipe, index),
     });
   }
@@ -291,26 +298,31 @@ export default function SiegeBoard({
           un affichage qu'on allume et éteint en parcourant ses équipes. */}
 
       {/* Export / import d'équipes — mêmes gestes que dans
-          l'en-tête bureau, mêmes fonctions. */}
-      <Bouton
-        onClick={() => {
-          setChoixExport(true);
-          onFermerMenu();
-        }}
-        disabled={affichees.length === 0}
-        title={affichees.length === 0 ? b.rienAExporter : b.exporterAffichees}
-        icone={<Upload size={15} />}
-        libelle={textes.commun.exporter}
-      />
-      <Bouton
-        onClick={() => {
-          fichierEquipes.current?.click();
-          onFermerMenu();
-        }}
-        title={b.importerAide(NOM_APP)}
-        icone={<Download size={15} />}
-        libelle={textes.commun.importer}
-      />
+          l'en-tête bureau, mêmes fonctions. Siège seulement : le format de
+          fichier porte des équipes de 3. */}
+      {siegeSeul && (
+        <>
+          <Bouton
+            onClick={() => {
+              setChoixExport(true);
+              onFermerMenu();
+            }}
+            disabled={affichees.length === 0}
+            title={affichees.length === 0 ? b.rienAExporter : b.exporterAffichees}
+            icone={<Upload size={15} />}
+            libelle={textes.commun.exporter}
+          />
+          <Bouton
+            onClick={() => {
+              fichierEquipes.current?.click();
+              onFermerMenu();
+            }}
+            title={b.importerAide(NOM_APP)}
+            icone={<Download size={15} />}
+            libelle={textes.commun.importer}
+          />
+        </>
+      )}
 
       {/* En dernier des actions : c'est le geste le plus rare. */}
       <CreateMonster
@@ -337,7 +349,7 @@ export default function SiegeBoard({
           « Options ». */}
       <div className="mt-5 hidden flex-wrap items-center gap-x-3 gap-y-1 lg:flex">
         <h1 className="font-display text-xl tracking-wide text-ink">
-          {b.cote[side].titre}
+          {cote.titre}
         </h1>
         <span className="rounded-full border border-border-soft bg-panel2 px-2 py-0.5 font-mono text-micro text-ink-dim">
           {compteur}
@@ -375,7 +387,7 @@ export default function SiegeBoard({
                 setScrollToLast(true);
               },
             },
-            ...(side === 'defense' ? [{
+            ...(siegeSeul && side === 'defense' ? [{
               cle: 'optimizer', libelle: textes.commun.exporterOptimizer, icone: <IconeOptimizer size={15} />,
               disabled: !!disponibiliteExport.defenses,
               title: disponibiliteExport.defenses ?? b.exportDefensesAide,
@@ -384,7 +396,8 @@ export default function SiegeBoard({
           ]}
           autres={[
             // Export / import d'équipes — ajout décidé par le mainteneur.
-            {
+            // Siège seulement (voir les actions du panneau).
+            ...(siegeSeul ? [{
               cle: 'exporter',
               libelle: textes.commun.exporter,
               icone: <Upload size={14} />,
@@ -403,7 +416,7 @@ export default function SiegeBoard({
               icone: <Download size={14} />,
               title: b.importerAide(NOM_APP),
               onClick: () => fichierEquipes.current?.click(),
-            },
+            }] : []),
             {
               cle: 'creer',
               libelle: textes.creerMonstre.bouton,
@@ -527,7 +540,7 @@ export default function SiegeBoard({
 
       <MobileSheet ouvert={menuOuvert} onFermer={onFermerMenu} titre={b.actions(noun)}>
         <div data-rangee-actions>{actions}</div>
-        {side === 'defense' && <Bouton className="mt-3" pleineLargeur
+        {siegeSeul && side === 'defense' && <Bouton className="mt-3" pleineLargeur
           libelle={textes.commun.exporterOptimizer} icone={<IconeOptimizer size={15} />}
           disabled={!!disponibiliteExport.defenses}
           title={disponibiliteExport.defenses ?? b.exportDefensesAide}
@@ -590,7 +603,8 @@ export default function SiegeBoard({
         // ⚠️ Écarts réduits sous `sm` : la page empile jusqu'à huit équipes, et
         // chaque écart se paie autant de fois — un écran entier de vide sur un
         // téléphone.
-        <div className="mt-3 grid grid-cols-[repeat(auto-fill,minmax(min(100%,480px),1fr))] items-start gap-2 sm:mt-4 sm:gap-3">
+        // En arène, quatre monstres par équipe : 640 px, au même ratio.
+        <div className={`mt-3 grid items-start gap-2 sm:mt-4 sm:gap-3 ${arene ? 'grid-cols-[repeat(auto-fill,minmax(min(100%,640px),1fr))]' : 'grid-cols-[repeat(auto-fill,minmax(min(100%,480px),1fr))]'}`}>
           {/* Les équipes AFFICHÉES (filtre de recherche), chacune avec son rang
               dans la liste complète : « Équipe 5 » reste « Équipe 5 ». */}
           {affichees.map(({ team, rang }) => (
@@ -601,8 +615,10 @@ export default function SiegeBoard({
             >
             <SiegeTeam
               team={team}
-              onExporterOptimizer={() => onImporterEquipe((data, t) => produireEquipe(team.id, data, t))}
+              onExporterOptimizer={siegeSeul ? () => onImporterEquipe((data, t) => produireEquipe(team.id, data, t)) : undefined}
               raisonExportOptimizer={disponibiliteExport.equipes.get(team.id)}
+              regleLead={arene ? 'arene' : 'siege'}
+              avecArtefacts={!arene || !estDimension(arene)}
               index={rang}
               monsters={monsters}
               monsterById={monsterById}
@@ -658,7 +674,7 @@ export default function SiegeBoard({
           onImporterEquipe={onImporterEquipe}
           sourcesOptimizer={sourcesOptimizer}
           compteCharge={compteCharge}
-          deck={{ source: side, teamId: speedTune }}
+          deck={{ source: arene ? `arene-${arene}` as const : side, teamId: speedTune }}
           allMonsters={monsters}
           siegeDefenseTeams={siegeDefenseTeams}
           siegeOffenseTeams={siegeOffenseTeams}

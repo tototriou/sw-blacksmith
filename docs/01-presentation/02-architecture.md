@@ -79,6 +79,12 @@ recommandations d'une guilde. Le service ne garde rien ; la session vit dans un 
 Détail : [service-discord.md](../02-app/siege/feat-recommandations/service-discord.md) ; décisions :
 [local-par-defaut.md](../04-decisions/adr/local-par-defaut.md).
 
+**Prototype** : une seconde fonction, `api/interactions.mjs`, répond à la commande Discord
+`/speedtune` — la lecture d'une capture de l'écran de préparation de siège
+(`api/_source/capture/`), puis le moteur de speed tuning de l'app (`api/_source/speedtune/`). Elle ne
+touche pas l'app : c'est le joueur qui envoie sa capture à Discord. Détail :
+[feat-discord-capture.md](../02-app/speed-tuning/feat-discord-capture.md).
+
 ## Le shell — `src/App.tsx`
 
 Fichier central, gros et volontairement : il tient tout ce qui doit être partagé entre pages.
@@ -121,7 +127,8 @@ tous les autres dans n'importe quelle analyse de dépendances.
 | Mécaniques | `#/mecaniques` | `src/pages/MechanicsPage.tsx` | `src/i18n/articles/mecaniques.*.tsx` (l'article, un par langue), `src/components/mecaniques/blocs.tsx` | [mecaniques/](../02-app/mecaniques/README.md) |
 | Nouveautés | `#/releases` | `src/pages/ReleasesPage.tsx` | `src/data/releases.ts`, `src/data/releases.en.ts` (un journal par langue) | [nouveautes/](../02-app/nouveautes/README.md) |
 | Télécharger (site seulement) | `#/telecharger` | `src/pages/TelechargerPage.tsx` | `src/lib/bureau.ts` (`TELECHARGEMENTS`), `src/components/IconesSystemes.tsx` | [telecharger/](../02-app/telecharger/README.md) |
-| Arène | `#/arene` | `src/pages/ComingSoon.tsx` | — | [arene/](../02-app/arene/README.md) |
+| Arène | `#/arene/defense`, `/offense`, `/interserveur` | `src/pages/ArenePage.tsx` | `SiegeBoard` et `SiegeTeam` en mode arène, `useEquipesArene` | [arene/](../02-app/arene/README.md) |
+| Arène dimensionnelle | `#/arene-dimensionnelle/defense`, `/offense`, `/runes` | `src/pages/ArenePage.tsx` | `SiegeBoard` en mode arène, `useEquipesArene('dimension-defense' \| 'dimension-offense')` ; `RunesDimensionPage` (`RunesList`, `useRunesDimension`) | [arene-dimensionnelle/](../02-app/arene-dimensionnelle/README.md) |
 
 ### Détail des écrans denses
 
@@ -239,7 +246,8 @@ Min / Max des filtres d'affichage (`FiltresResultats`, flottant au bureau, panne
 téléphone), la bande des têtes de tri (`TetesDeTri`), le tableau des résultats
 (`TableauResultats`), les blocs de 0 résultat (`DiagnosticsSansResultat` : `DiagnosticFaisabilite`,
 `DiagnosticApprofondi`, `QuasiSucces`), `AvisRechercheTronquee`, la grille des cartes
-(`GrilleResultats`), `PaginationResultats` et les confirmations de libération
+(`GrilleResultats`), les lignes compactes des builds épinglés au-dessus d'elle (`ListeEpingles`),
+`PaginationResultats` et les confirmations de libération
 (`ConfirmationsLiberation`). Ce que reçoit chaque carte (`proprietesCarte`) et la création
 d'une liste depuis sa fenêtre (`creerListeDepuisDialogue`) restent calculés par l'écran.
 
@@ -342,13 +350,13 @@ Fonctions **pures**, testables sans rendu. C'est ici que va toute logique, jamai
 | --- | --- |
 | Vitesse & stats | `speed.ts` (source de vérité), `stats.ts` |
 | Speed tuning | `speedTune.ts` (moteur de ticks), `speedTuneLignes.ts` (modèle de l'écran), `speedTuneAuto.ts` (analyse partagée outil/siège), `speedTuneKit.ts` + `speedTunePassif.ts` (lecture des kits), `speedTuneDeck.ts` (import d'un deck), `siegeStatut.ts` (statut d'une équipe de siège) |
-| Runes | `runeOptim.ts`, `runeBuildOptim.ts` (moteur, référence), `rechercheRunes.ts` (orchestration : `searchBuilds`, `construireMoitie`, `apparier`), `constructionRapide.ts`, `appariementRapide.ts` et `validationRapide.ts` (noyaux sur tableaux typés), `retentionEmboitee.ts` (union des rétentions des préréglages emboîtés) et `constructionEmboitee.ts` (un Worker de construction par moitié et par préréglage), `appariementRapideParallele.ts` (appariement parallèle) et `travailleurAppariement.ts` (ce que fait chacun de ses Workers), `runeSort.ts`, `runeCurveShare.ts` |
-| Résultats Optimizer | `contexteResultat.ts` (photographie pure partagée Node), `candidatsCompacts.ts` (stockage), `classementCompact.ts` (index et corps propriétaire), `cacheResolutionCompact.ts` (cache typé), `cession.ts` (cession entre deux tranches), `colonnesResultats.ts` (les onze colonnes des résultats, et la lecture d'un objectif ou d'un tri enregistré comme colonne), `filtresResultats.ts` (bornes min/max par colonne : validation, valeur comparée, catégorie de chaque ligne), `valeursAffichees.ts` (ce qu'une carte de résultat écrit d'une valeur, en nombre : la moyenne par rune et ses chiffres, l'entier des PV effectifs et des dégâts), `filtresAffichage.ts` (ce que l'écran écrit des onze colonnes : libellés, unités, résumé des bornes, ligne de comptes) ; `classement.worker.ts` et `classementDistant.ts` (transport, versions et instantané de la page) ; `useBuildOptimSearch` garde les Workers vivants pendant la navigation et reçoit l'instantané de la vue |
+| Runes | `runeOptim.ts`, `runesMaxees.ts` (inventaire maxé de « Simuler +15 et max meules/gemmes »), `runeBuildOptim.ts` (moteur, référence), `rechercheRunes.ts` (orchestration : `searchBuilds`, `construireMoitie`, `apparier`), `constructionRapide.ts`, `appariementRapide.ts` et `validationRapide.ts` (noyaux sur tableaux typés), `retentionEmboitee.ts` (union des rétentions des préréglages emboîtés) et `constructionEmboitee.ts` (un Worker de construction par moitié et par préréglage), `appariementRapideParallele.ts` (appariement parallèle) et `travailleurAppariement.ts` (ce que fait chacun de ses Workers), `runeSort.ts`, `runeCurveShare.ts` |
+| Résultats Optimizer | `contexteResultat.ts` (photographie pure partagée Node), `candidatsCompacts.ts` (stockage), `classementCompact.ts` (index et corps propriétaire), `cacheResolutionCompact.ts` (cache typé), `cession.ts` (cession entre deux tranches), `colonnesResultats.ts` (les onze colonnes des résultats, et la lecture d'un objectif ou d'un tri enregistré comme colonne), `filtresResultats.ts` (bornes min/max par colonne : validation, valeur comparée, catégorie de chaque ligne), `valeursAffichees.ts` (ce qu'une carte de résultat écrit d'une valeur, en nombre : la moyenne par rune et ses chiffres, l'entier des PV effectifs et des dégâts), `filtresAffichage.ts` (ce que l'écran écrit des onze colonnes : libellés, unités, résumé des bornes, ligne de comptes), `epinglesOptimizer.ts` (les builds épinglés : dix au plus par membre, ordre et numéros, libération) ; `classement.worker.ts` et `classementDistant.ts` (transport, versions et instantané de la page) ; `useBuildOptimSearch` garde les Workers vivants pendant la navigation et reçoit l'instantané de la vue |
 | Reliques | `relicOptim.ts` (choix de la meilleure relique pour un build, pertinence et dominance structurelle) ; `relicQueue.ts` (résolution EXACTE de l'équipement d'un build — paire d'artéfacts ET relique, ensemble — la partie pure de la file du classeur, et l'état de la relique d'un candidat pour l'écran) ; `resolutionRapide.ts` (la résolution de l'app, appelée par `relicQueue.ts` : elle ne note que les paires faisables) ; `resolutionExhaustive.ts` (la même résolution, toutes les paires notées : référence des tests et diagnostic d'un build rejeté, à la demande) |
 | Tri | `tri.ts` (le SENS d'un tri, partagé par toutes les listes) |
 | Artéfacts | `artifacts.ts` |
 | Dégâts réels | `damage.ts` ([degats-reels/](../02-app/degats-reels/README.md)) |
-| Import de compte | `importAccount.ts` (parse SWEX, decks d'arène compris), `applyAccount.ts` (→ états), `accountStore.ts` (IndexedDB), `accountViews.ts` |
+| Import de compte | `importAccount.ts` (parse SWEX, decks d'arène compris), `journalSwex.ts` (journal complet de SWEX : la box de l'arène dimensionnelle), `applyAccount.ts` (→ états), `accountStore.ts` (IndexedDB), `accountViews.ts` |
 | Mes équipes | `equipesEnregistrees.ts` (modèle, comparaison au compte, opérations), `equipesStore.ts` (IndexedDB `swblacksmith-equipes`), `equipesFichier.ts` (format `swblacksmith/equipes`), `sourcesEquipesEnregistrees.ts` (sources d'équipement et d'import), `importEquipesEnregistrees.ts` (export vers l'Optimizer et mise à jour au retour) |
 | Monstres | `monsterForms.ts`, `monsterSkills.ts`, `monsterSort.ts`, `collabPairs.ts` |
 | Siège / recos | `recoMatch.ts`, `recoSearch.ts`, `recoShare.ts`, `recoFromSiege.ts`, `recoDefenses.ts`, `recoFusion.ts` (import qui fusionne dans la recommandation qu'il complète), `ownedBuilds.ts`, `annulerEdition.ts` (« Annuler les modifications » d'une reco ou d'un deck en édition), `reinsererA.ts` (« Annuler » une suppression : l'élément revient à sa place, équipes et recos) |

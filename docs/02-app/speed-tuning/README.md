@@ -27,6 +27,7 @@ Fichiers : [SpeedTuningSection.tsx](src/components/outils/SpeedTuningSection.tsx
 | `src/components/outils/SpeedTuningSection.tsx`, `src/hooks/useSpeedTune.ts`, `src/lib/speedTuneLignes.ts`, l'état de l'outil | [feat-ecran.md](feat-ecran.md) |
 | l'export de « Ton équipe » vers l'Optimizer, `src/lib/importSpeedTuneOptimizer.ts` | [feat-export-optimizer.md](feat-export-optimizer.md) |
 | `scripts/passifs-vitesse.ts` (l'inventaire généré) | [feat-passifs-vitesse.md](feat-passifs-vitesse.md) |
+| `api/_source/capture/`, `api/_source/speedtune/`, `api/interactions.mjs`, la commande Discord `/speedtune` | [feat-discord-capture.md](feat-discord-capture.md) |
 
 ## Documents du dossier
 
@@ -42,6 +43,7 @@ Fichiers : [SpeedTuningSection.tsx](src/components/outils/SpeedTuningSection.tsx
 | [feat-ecran.md](feat-ecran.md) | L'écran (rendu seul, la logique est ailleurs), son état et sa persistance. |
 | [feat-export-optimizer.md](feat-export-optimizer.md) | L'export de « Ton équipe » vers l'Optimizer, depuis la page et la modale. |
 | [feat-passifs-vitesse.md](feat-passifs-vitesse.md) | L'inventaire des passifs qui pèsent sur un speed tune, par catégorie. Fichier généré, à ne pas éditer. |
+| [feat-discord-capture.md](feat-discord-capture.md) | Prototype : la commande Discord `/speedtune`, qui lit une capture de l'écran de préparation de siège et répond par le speed tune de l'équipe. |
 
 ## Cas de contrôle
 

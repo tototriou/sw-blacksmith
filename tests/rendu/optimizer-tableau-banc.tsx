@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { flushSync } from 'react-dom';
-import TableauResultats, { CARTES_SOUS_LE_SEUIL, TABLEAU_VISIBLE } from '../../src/components/outils/optimizer/TableauResultats';
+import TableauResultats, { CARTES_SOUS_LE_SEUIL, TABLEAU_VISIBLE, type LigneFiche } from '../../src/components/outils/optimizer/TableauResultats';
+import { valeursDeLaFiche } from '../../src/lib/valeursAffichees';
 import type { TriResultats } from '../../src/components/outils/optimizer/TetesDeTri';
 import type { CarteClassement } from '../../src/lib/classementCompact';
 import type { BornesResultats } from '../../src/lib/filtresResultats';
@@ -12,7 +13,8 @@ import type { RuneDetail } from '../../src/types';
 // Banc de navigateur du tableau des résultats de l'Optimizer : le vrai
 // composant, aux valeurs les plus larges que l'écran doit tenir (PV effectifs
 // et dégâts à six chiffres, PV à cinq, efficience à trois chiffres et une
-// décimale, toutes les bornes posées dont « 150000 »), dans un conteneur
+// décimale, toutes les bornes posées dont « 150000 »), la ligne de la fiche
+// aux mêmes valeurs, dans un conteneur
 // `@container/resultats` d'une largeur donnée.
 
 const runes: RuneDetail[] = [1, 2, 3, 4, 5, 6].map((slot) => ({
@@ -58,6 +60,11 @@ export interface OptionsTableau {
 }
 
 const BASE = Object.fromEntries(stats.map((s) => [s.key, s.base]));
+// La ligne de la fiche, aux mêmes valeurs les plus larges que les builds.
+const FICHE: LigneFiche = {
+  libelle: 'Build validé',
+  valeurs: valeursDeLaFiche({ stats, mesureTotale: 6 * 118.6, pvEffectifs: 999999, degatsReels: 888888 }, true),
+};
 
 function Banc({ largeur, force, bornes: genre, sansSort, enBonus = false, bornesPosees }: OptionsTableau) {
   const [tri, setTri] = useState<TriResultats>({ tri: 'spd', sens: 'desc' });
@@ -69,7 +76,7 @@ function Banc({ largeur, force, bornes: genre, sansSort, enBonus = false, bornes
       tri={tri} trier={setTri} bornes={bornes} disponible={disponible} ouvrirDetail={() => {}}
       poserBorne={(c, cote, v) => setBornes((b) => ({ ...b, [c]: { ...(b[c] ?? { min: null, max: null }), [cote]: v } }))}
       vide={genre === 'contradictoire' ? 'Vue vide : le minimum de VIT (220) dépasse son maximum (200).' : null}
-      enBonus={enBonus} base={BASE} />
+      enBonus={enBonus} base={BASE} fiche={FICHE} />
   );
   return (
     // `data-bornes` : les bornes que garde le banc (en total), lues par le test.

@@ -159,6 +159,7 @@ export function testRenduParametres() {
 
 export function testRenduBientot() {
   titre('rendu · Bientôt disponible');
+  egal(texteVisible(rendre(<ComingSoon title="Arène" icon={Trophy} />)), 'Bientôt disponible Cet outil est en cours de construction.', 'le message d\'attente');
   const t = texteVisible(rendre(<ComingSoon title="Arène" icon={Trophy} description="Préparation des équipes d'arène classique (offense et défense)." />));
-  egal(t, 'Bientôt disponible Cet outil est en cours de construction.', 'le message d\'attente');
+  egal(t, "Bientôt disponible Préparation des équipes d'arène classique (offense et défense).", 'une description dit ce qui est à venir, à la place du message générique');
 }

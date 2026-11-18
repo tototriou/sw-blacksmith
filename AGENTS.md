@@ -44,7 +44,7 @@ commit** que le code.
 | Langues | **français et anglais**, par dictionnaires TypeScript typés (`src/i18n/`), sans bibliothèque de traduction |
 | Stockage | `localStorage` (prépa, équipes, réglages) + **IndexedDB** (compte importé), tous deux opt-in |
 | Bureau | **Electron** + `electron-builder` + `electron-updater` (`bureau/`, hors de `src/`) |
-| Service | **Fonction Vercel** sans état (`api/`, hors de `src/`) : la synchronisation Discord des recommandations, empaquetée au build par esbuild |
+| Service | **Fonction Vercel** sans état (`api/`, hors de `src/`) : la synchronisation Discord des recommandations, empaquetée au build par esbuild ; en prototype, la commande Discord `/speedtune` (lecture d'une capture, `pngjs`, `jpeg-js`, `@vercel/functions`) |
 | Tests | lanceur maison `tests/run.mjs` (registre `tests/index.ts`), `fake-indexeddb`, rendu par `react-dom/server`, polices de l'app pour le Chromium des tests (`@fontsource`) |
 | Qualité | `tsc` strict (couvre `src/`, `scripts/`, `tests/`, `bureau/`, `api/`), ESLint (flat config) |
 
@@ -69,7 +69,8 @@ src/
   data/          # contenu statique (journal des versions : releases.ts, releases.en.ts)
 bureau/          # application de bureau Electron (main, protocole, session, SW Exporter, mise à jour)
 api/             # service Discord des recommandations : discord.mjs (la fonction Vercel), _source/ (le
-                 # service en TypeScript, empaqueté au build dans _paquet/, non suivi)
+                 # service en TypeScript, empaqueté au build dans _paquet/, non suivi) ; interactions.mjs
+                 # (prototype : /speedtune, lecture de capture dans _source/capture/ et _source/speedtune/)
 public/          # icônes, portraits, données SWARFARM (public/data, régénérées par npm run fetch-data)
 scripts/         # outillage Node : données, benchmarks, harnais de diagnostic, hooks, bureau
 tests/           # vérifications (run.mjs + index.ts), fixtures, tests de rendu (tests/rendu/)
@@ -93,7 +94,7 @@ node tests/run.mjs --max-entrees 30 <filtre> # refuse avant lancement si la sél
 node tests/run.mjs --silencieux …           # sortie réduite aux échecs et au bilan (ajoutable aux lignes ci-dessus)
 node tests/banc/run.mjs --ecrans <id>       # le banc d'affichage, aux deux formats (il construit l'app)
 node tests/banc/run.mjs --ecrans <id> --etats <id> --tailles <id>   # un état, une taille : environ 30 s
-npm test                       # TOUTES les vérifications — seulement avant une fusion sur main ou dans une release
+npm test                       # TOUTES les vérifications — la CI les passe sur chaque PR ; en local, seulement sur demande
 npm run test:suivi [-- …]      # les mêmes, suivies en direct dans le terminal (--web : aussi dans le navigateur)
 npm run fetch-data             # régénère les données SWARFARM de public/data
 node scripts/inventaire-competences.mjs --aide   # balayer les compétences du corpus, formule retenue par l'app
@@ -125,6 +126,7 @@ npm run bureau:preuve          # la vérification de l'application de bureau
 | `src/pages/HomePage.tsx`, `src/data/releases.ts` | [accueil/](docs/02-app/accueil/README.md), [nouveautes/](docs/02-app/nouveautes/README.md) |
 | `src/pages/RtaPage.tsx`, `src/components/rta/`, `src/lib/rtaShare.ts` | [rta/](docs/02-app/rta/README.md) |
 | `src/pages/SiegePage.tsx`, `src/components/siege/`, les `reco…` et `siege…` de `src/lib/` | [siege/](docs/02-app/siege/README.md) |
+| `src/pages/ArenePage.tsx`, le mode arène de `src/components/siege/SiegeBoard.tsx`, `useEquipesArene` | [arene/](docs/02-app/arene/README.md) |
 | `src/pages/AccountPage.tsx`, `src/components/account/`, `src/lib/runeOptim.ts`, `src/lib/artifacts.ts`, les `equipes…` de `src/lib/` et `src/hooks/useEquipesEnregistrees.ts` | [compte/](docs/02-app/compte/README.md) |
 | `src/pages/OutilsPage.tsx`, la garde d'accès aux outils | [outils/](docs/02-app/outils/README.md) |
 | les `Optimizer…` de `src/components/outils/`, `src/components/outils/optimizer/`, `src/hooks/useOptimizerState.ts`, `src/hooks/useOptimizerLists.ts`, les `optimizer…` de `src/lib/`, `src/lib/equipesOptimizer.ts`, `src/lib/importEquipes.ts` | [optimizer/](docs/02-app/optimizer/README.md) |
@@ -140,6 +142,7 @@ npm run bureau:preuve          # la vérification de l'application de bureau
 | `src/pages/BestiaryPage.tsx`, `src/components/MonsterGrid.tsx`, `src/components/FilterBar.tsx` | [bestiaire/](docs/02-app/bestiaire/README.md) |
 | `src/pages/MechanicsPage.tsx` | [mecaniques/](docs/02-app/mecaniques/README.md) |
 | `api/`, `vercel.json`, `scripts/construire-api.mjs` | [service-discord.md](docs/02-app/siege/feat-recommandations/service-discord.md) |
+| `api/interactions.mjs`, `api/_source/capture/`, `api/_source/speedtune/`, `scripts/construire-banque-portraits.*`, `scripts/construire-gabarits-chiffres.*`, `scripts/enregistrer-commande-speedtune.mjs` | [feat-discord-capture.md](docs/02-app/speed-tuning/feat-discord-capture.md) |
 | `bureau/`, `src/lib/bureau.ts`, `electron-builder.yml`, `src/pages/TelechargerPage.tsx` | [bureau/](docs/02-app/bureau/README.md), [telecharger/](docs/02-app/telecharger/README.md) |
 | `src/ui/`, `src/index.css`, `tailwind.config.js`, tout rendu d'écran | [03-developpeur/interface/](docs/03-developpeur/interface/README.md) |
 | `eslint.config.js`, `.githooks/`, `scripts/installer-hooks.mjs`, `.github/workflows/` | [qualite-code.md](docs/03-developpeur/qualite-code.md) |
@@ -220,9 +223,11 @@ La liste complète, à parcourir avant de proposer la fusion :
 
 ## Vérifier
 
-Les commandes sont dans « Commandes essentielles » ; pendant le travail, lancer celles qui
-portent sur ce que le changement peut casser, sans procédure fixe. La suite complète
-(`npm test`) se lance avant une fusion sur `main` ou dans une branche `release/*`.
+Les commandes sont dans « Commandes essentielles » ; pendant le travail comme avant d'ouvrir
+une pull request, on ne lance que les vérifications liées au changement (par filtre, ou
+`--depuis origin/<base>`), sans procédure fixe. ⚠️ **La suite complète (`npm test`) ne se lance
+pas en local, sauf si l'utilisateur la demande** : la CI la passe sur chaque pull request vers
+`main` ou `release/**` ([qualite-code.md](docs/03-developpeur/qualite-code.md)).
 Le filtre se compare au nom de la vérification, mis à plat (`speed-tune`, `speedtune`, `SpeedTune`) ;
 un filtre qui ne correspond à rien échoue en listant ce qui existe. La sélection par fichiers
 modifiés (`--depuis`, `--plage`), le manifeste et le banc d'affichage :

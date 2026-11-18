@@ -1050,7 +1050,8 @@ const SIEGE_OFFENSE_DECK_TYPE = 22;
 
 // deck_type des équipes d'attaque d'ARÈNE (dans deck_list). Relevé fourni par
 // l'utilisateur, puis vérifié : 15 decks de ce type sur chacun de deux exports
-// réels. Sert au périmètre `arene-attaque` de `parseUsedRuneIdsParPerimetre`.
+// réels. Sert à `parseArenaOffense` et au périmètre `arene-attaque` de
+// `parseUsedRuneIdsParPerimetre`.
 const ARENA_OFFENSE_DECK_TYPE = 1;
 
 // Un slot importé, ou null pour un slot vide (unit_id = 0).
@@ -1062,10 +1063,10 @@ export interface SiegeImportedSlot {
   gear?: GearSet; // détail runes/artéfacts/relique de ce build
 }
 
-// Un deck = 3 slots ordonnés (index 0 = leader).
+// Un deck = ses slots ordonnés (index 0 = leader) : 3 au siège, 4 en arène.
 export interface SiegeImportedDeck {
   deckId: number | string;
-  slots: (SiegeImportedSlot | null)[]; // longueur 3, null = slot vide
+  slots: (SiegeImportedSlot | null)[]; // longueur 3 (siège) ou 4 (arène), null = slot vide
 }
 
 export interface SiegeParseResult {
@@ -1102,22 +1103,28 @@ function equipArtifactMap(equip: any): Map<number, any[]> {
 // Définition brute d'un deck avant résolution en monstres/vitesses.
 interface DeckDef {
   deckId: number | string;
-  unitIds: any[]; // 3 slots ordonnés, leader en tête ; 0 = vide
+  unitIds: any[]; // slots ordonnés, leader en tête ; 0 = vide
   runeIdsByUnit: Map<number, any[]>;
   artifactIdsByUnit: Map<number, any[]>;
 }
 
-// Résout des DeckDef en SiegeImportedDeck (mapping unité → monstre + vitesses).
+// Les places d'une équipe : 3 au siège, 4 en arène.
+const SLOTS_SIEGE = 3;
+export const SLOTS_ARENE = 4;
+
+// Résout des DeckDef en SiegeImportedDeck (mapping unité → monstre + vitesses),
+// sur `nbSlots` places.
 function buildSiegeDecks(
   defs: DeckDef[],
   runeById: ReadonlyMap<number, any>,
   unitById: ReadonlyMap<number, any>,
   artById: ReadonlyMap<number, any>,
-  markers: ReadonlyMap<number, number>
+  markers: ReadonlyMap<number, number>,
+  nbSlots = SLOTS_SIEGE
 ): SiegeImportedDeck[] {
   const decks: SiegeImportedDeck[] = [];
   for (const def of defs) {
-    const slots: (SiegeImportedSlot | null)[] = [0, 1, 2].map((i) => {
+    const slots: (SiegeImportedSlot | null)[] = Array.from({ length: nbSlots }, (_, i) => i).map((i) => {
       const uid = Number(def.unitIds[i]);
       if (!Number.isFinite(uid) || uid === 0) return null;
       const unit = unitById.get(uid);
@@ -1196,23 +1203,7 @@ export function parseSiegeOffense(src: AccountSource, t: Dictionnaire): SiegePar
   const unitById = indexUnits(data);
   const artById = indexArtifacts(data);
 
-  const defs: DeckDef[] = offense.map((dk: any, i: number) => {
-    // Leader en tête (leader_unit_id), puis les autres unités non nulles.
-    const ids = (Array.isArray(dk?.unit_id_list) ? dk.unit_id_list : [])
-      .map(Number)
-      .filter((x: number) => Number.isFinite(x) && x !== 0);
-    const lead = Number(dk?.leader_unit_id);
-    const ordered = Number.isFinite(lead)
-      ? [lead, ...ids.filter((x: number) => x !== lead)]
-      : ids;
-    return {
-      deckId: dk?.deck_seq ?? i,
-      unitIds: [ordered[0] ?? 0, ordered[1] ?? 0, ordered[2] ?? 0],
-      runeIdsByUnit: equipArrayToMap(dk?.equip),
-      artifactIdsByUnit: equipArtifactMap(dk?.equip),
-    };
-  });
-
+  const defs = offense.map((dk: any, i: number) => deckEnregistre(dk, i, SLOTS_SIEGE));
   const decks = buildSiegeDecks(defs, runeById, unitById, artById, indexRuneMarkers(data));
   if (decks.length === 0) {
     return { decks: [], error: e.offenseVide };
@@ -1288,4 +1279,228 @@ export function parseArenaDecks(src: AccountSource): DeckArene[] {
     if (slots.length) decks.push({ cle: 'attaque', rang: decks.filter((d) => d.cle === 'attaque').length, slots });
   });
   return decks;
+}
+
+// Un deck de `deck_list` : le leader (`leader_unit_id`) en tête, puis les
+// autres unités non nulles, sur `nbSlots` places ; runes et artéfacts du
+// preset du deck.
+function deckEnregistre(dk: any, i: number, nbSlots: number): DeckDef {
+  const ids = (Array.isArray(dk?.unit_id_list) ? dk.unit_id_list : [])
+    .map(Number)
+    .filter((x: number) => Number.isFinite(x) && x !== 0);
+  const lead = Number(dk?.leader_unit_id);
+  const ordered = Number.isFinite(lead) && lead !== 0 ? [lead, ...ids.filter((x: number) => x !== lead)] : ids;
+  return {
+    deckId: dk?.deck_seq ?? i,
+    unitIds: Array.from({ length: nbSlots }, (_, k) => ordered[k] ?? 0),
+    runeIdsByUnit: equipArrayToMap(dk?.equip),
+    artifactIdsByUnit: equipArtifactMap(dk?.equip),
+  };
+}
+
+/* --------------------------------------------------------------------------
+ * Import ÉQUIPES D'ARÈNE — défense, défense interserveur & offense
+ *
+ * Des decks de 4 monstres (index 0 = leader), chacun avec le preset de runes
+ * et d'artéfacts du deck, comme au siège.
+ *  - Défense : `defense_deck_info`, un deck unique. `unit_id_list` : des ids
+ *    nus, dans l'ordre des places ; le leader est le 1ᵉʳ (relevé : un lead
+ *    d'arène en tête sur deux exports réels) ; 0 = place vide.
+ *  - Défense interserveur : `server_arena_defense_deck_info`, un deck
+ *    unique. ⚠️ `unit_id_list` porte des objets `{ unit_id, pos_id }` :
+ *    l'ordre est celui de `pos_id`, la position 1 est le leader (relevé : le
+ *    même leader que la défense classique sur un export réel).
+ *  - Offense : `deck_list` filtré sur `deck_type = 1`. Les équipes d'attaque
+ *    servent aux deux arènes : l'interserveur n'a pas les siennes.
+ * ----------------------------------------------------------------------- */
+
+// Un deck unique de défense d'arène (`defense_deck_info` ou
+// `server_arena_defense_deck_info`), ou null s'il est absent du fichier.
+function defenseArene(info: any): DeckDef | null {
+  if (!info || typeof info !== 'object' || !Array.isArray(info.unit_id_list)) return null;
+  const places = info.unit_id_list.map((u: any, i: number) =>
+    u && typeof u === 'object' ? { id: Number(u.unit_id), pos: Number(u.pos_id) } : { id: Number(u), pos: i + 1 }
+  );
+  places.sort((a: { pos: number }, b: { pos: number }) => a.pos - b.pos);
+  return {
+    deckId: 1,
+    unitIds: Array.from({ length: SLOTS_ARENE }, (_, k) => places[k]?.id ?? 0),
+    runeIdsByUnit: equipArrayToMap(info.equip),
+    artifactIdsByUnit: equipArtifactMap(info.equip),
+  };
+}
+
+function lireDefenseArene(
+  src: AccountSource,
+  t: Dictionnaire,
+  cle: 'defense_deck_info' | 'server_arena_defense_deck_info',
+  sans: string,
+  vide: string
+): SiegeParseResult {
+  const e = t.importCompte;
+  const data = parseAccountSource(src);
+  if (!data) return { decks: [], error: e.illisible };
+  if (!Array.isArray(data?.unit_list)) return { decks: [], error: e.pasDeUnitList };
+  const def = defenseArene(data?.[cle]);
+  if (!def) return { decks: [], error: sans };
+  const decks = buildSiegeDecks([def], indexRunes(data), indexUnits(data), indexArtifacts(data), indexRuneMarkers(data), SLOTS_ARENE);
+  return decks.length ? { decks } : { decks: [], error: vide };
+}
+
+// Import de la DÉFENSE d'arène.
+export function parseArenaDefense(src: AccountSource, t: Dictionnaire): SiegeParseResult {
+  const e = t.importCompte;
+  return lireDefenseArene(src, t, 'defense_deck_info', e.sansDefenseArene, e.defenseAreneVide);
+}
+
+// Import de la DÉFENSE d'arène interserveur.
+export function parseArenaInterserveurDefense(src: AccountSource, t: Dictionnaire): SiegeParseResult {
+  const e = t.importCompte;
+  return lireDefenseArene(src, t, 'server_arena_defense_deck_info', e.sansDefenseInterserveur, e.defenseInterserveurVide);
+}
+
+/* --------------------------------------------------------------------------
+ * ARÈNE DIMENSIONNELLE — box, runes et équipes à part
+ *
+ * La box du mode n'est PAS dans l'export de compte : elle vient de la réponse
+ * `dimensionarena_getSeasonInfo` du journal SWEX (src/lib/journalSwex.ts), de
+ * la même forme qu'un export — relevé sur un journal réel (2026-11) :
+ *  - `unit_list` : les monstres obtenus dans le mode, chacun avec les runes
+ *    GAGNÉES qu'il porte (`runes`, de 0 à 6) ;
+ *  - `rune_list` : les runes gagnées en inventaire ;
+ *  - `default_unit_list` : un build de 6 runes par espèce (`is_default`),
+ *    celui avec lequel un monstre est invoqué ;
+ *  - `defense_deck_info.unit_id_list` : la défense, `[[id, id, id, id]]`,
+ *    leader en tête comme la défense d'arène.
+ * Pas d'artéfacts dans ce mode (`artifact_list` vide).
+ *
+ * ⚠️ **Un emplacement sans rune gagnée porte la rune du build par défaut de
+ * l'espèce.** Un monstre sans aucune rune porte tout ce build : relevé de
+ * l'utilisateur en jeu sur sa défense. Le complément emplacement par
+ * emplacement (un monstre qui porte 4 runes gagnées) en est le prolongement,
+ * non relevé.
+ *
+ * L'export, lui, garde la trace des équipes d'ATTAQUE jouées :
+ * `deck_recent_list` de type 28, des identifiants de la box dimensionnelle,
+ * sans runes (`equip` vide) — relevé : les 4 monstres de la dernière attaque,
+ * dont celui qui porte une rune retrouvée dans le journal.
+ * ----------------------------------------------------------------------- */
+
+// Le type des équipes d'attaque d'arène dimensionnelle dans `deck_recent_list`.
+const DIMENSION_OFFENSE_RECENT_TYPE = 28;
+
+// La box dimensionnelle sous la forme d'un export, pour les index communs :
+// les monstres de la box ET les builds par défaut (identifiants courts, 1001…,
+// disjoints de ceux de la box), les runes en inventaire.
+const donneesDimension = memoByData((saison: any) => ({
+  unit_list: [
+    ...(Array.isArray(saison?.unit_list) ? saison.unit_list : []),
+    ...(Array.isArray(saison?.default_unit_list) ? saison.default_unit_list : []),
+  ],
+  runes: Array.isArray(saison?.rune_list) ? saison.rune_list : [],
+}));
+
+// Build par défaut de chaque espèce : unit_master_id → ses runes.
+const buildsParDefaut = memoByData((saison: any): ReadonlyMap<number, any[]> => {
+  const m = new Map<number, any[]>();
+  for (const u of Array.isArray(saison?.default_unit_list) ? saison.default_unit_list : []) {
+    if (Array.isArray(u?.runes)) m.set(Number(u.unit_master_id), u.runes);
+  }
+  return m;
+});
+
+// Les runes que porte un monstre de la box : les siennes, et pour chaque
+// emplacement sans rune gagnée, celle du build par défaut de son espèce.
+function runesDimension(unit: any, saison: any): number[] {
+  const propres = Array.isArray(unit?.runes) ? unit.runes : [];
+  const occupes = new Set(propres.map((r: any) => Number(r?.slot_no)));
+  const defaut = (buildsParDefaut(saison).get(Number(unit?.unit_master_id)) ?? []).filter(
+    (r: any) => !occupes.has(Number(r?.slot_no))
+  );
+  return [...propres, ...defaut].map((r: any) => Number(r?.rune_id)).filter(Number.isFinite);
+}
+
+// Résout des équipes de la box dimensionnelle (identifiants ordonnés, leader
+// en tête) en decks de 4 places, chaque monstre avec ses runes du mode.
+function decksDimension(equipes: { deckId: number | string; ids: number[] }[], saison: any): SiegeImportedDeck[] {
+  const data = donneesDimension(saison);
+  const unitById = indexUnits(data);
+  const defs: DeckDef[] = equipes.map(({ deckId, ids }) => {
+    const unitIds = Array.from({ length: SLOTS_ARENE }, (_, k) => ids[k] ?? 0);
+    const runeIdsByUnit = new Map<number, any[]>();
+    for (const id of unitIds) {
+      const unit = unitById.get(id);
+      if (unit) runeIdsByUnit.set(id, runesDimension(unit, saison));
+    }
+    return { deckId, unitIds, runeIdsByUnit, artifactIdsByUnit: new Map() };
+  });
+  return buildSiegeDecks(defs, indexRunes(data), unitById, new Map(), new Map(), SLOTS_ARENE);
+}
+
+const idsNonNuls = (liste: any[]): number[] =>
+  liste.map(Number).filter((x: number) => Number.isFinite(x) && x !== 0);
+
+// Les runes GAGNÉES dans l'arène dimensionnelle : en inventaire (`rune_list`)
+// et portées par les monstres de la box. Pas celles des builds par défaut,
+// que le joueur ne possède pas : elles comblent les emplacements libres.
+export function parseDimensionRunes(saison: Record<string, any> | null): RuneDetail[] {
+  const monstres = Array.isArray(saison?.unit_list) ? saison.unit_list : [];
+  const toutes = [
+    ...(Array.isArray(saison?.rune_list) ? saison.rune_list : []),
+    ...monstres.flatMap((u: any) => (Array.isArray(u?.runes) ? u.runes : [])),
+  ];
+  const parId = new Map<number, any>();
+  for (const r of toutes) if (Number.isFinite(Number(r?.rune_id))) parId.set(Number(r.rune_id), r);
+  return [...parId.values()].map((r) => runeToDetail(r, new Map())).filter((r) => r.main.code !== 0);
+}
+
+// La DÉFENSE de l'arène dimensionnelle, depuis la saison lue dans le journal
+// SWEX (`lireSaisonDimension`).
+export function parseDimensionDefense(saison: Record<string, any> | null, t: Dictionnaire): SiegeParseResult {
+  const e = t.importCompte;
+  const liste = saison?.defense_deck_info?.unit_id_list;
+  if (!Array.isArray(liste)) return { decks: [], error: e.sansDefenseDimension };
+  // `[[…]]` relevé ; une liste à plat est lue de même.
+  const ids = idsNonNuls(Array.isArray(liste[0]) ? liste[0] : liste);
+  const decks = decksDimension([{ deckId: 1, ids }], saison);
+  return decks.length ? { decks } : { decks: [], error: e.defenseDimensionVide };
+}
+
+// Les équipes d'ATTAQUE de l'arène dimensionnelle : celles de type 28 de
+// `deck_recent_list` dans l'export (`leader_unit_id` en tête), résolues dans
+// la box de la saison. Sans saison, leurs monstres sont inconnus.
+export function parseDimensionOffense(
+  src: AccountSource,
+  saison: Record<string, any> | null,
+  t: Dictionnaire
+): SiegeParseResult {
+  const e = t.importCompte;
+  const data = parseAccountSource(src);
+  if (!data) return { decks: [], error: e.illisible };
+  const recents = Array.isArray(data?.deck_recent_list) ? data.deck_recent_list : [];
+  const equipes = recents
+    .filter((dk: any) => Number(dk?.type) === DIMENSION_OFFENSE_RECENT_TYPE)
+    .map((dk: any, i: number) => {
+      const ids = idsNonNuls(Array.isArray(dk?.unit_id_list) ? dk.unit_id_list : []);
+      const lead = Number(dk?.leader_unit_id);
+      return { deckId: i + 1, ids: ids.includes(lead) ? [lead, ...ids.filter((x) => x !== lead)] : ids };
+    });
+  if (equipes.length === 0) return { decks: [], error: e.sansOffenseDimension };
+  if (!saison) return { decks: [], error: e.offenseDimensionSansJournal };
+  const decks = decksDimension(equipes, saison);
+  return decks.length ? { decks } : { decks: [], error: e.offenseDimensionInconnue };
+}
+
+// Import des ÉQUIPES D'ATTAQUE d'arène.
+export function parseArenaOffense(src: AccountSource, t: Dictionnaire): SiegeParseResult {
+  const e = t.importCompte;
+  const data = parseAccountSource(src);
+  if (!data) return { decks: [], error: e.illisible };
+  if (!Array.isArray(data?.unit_list)) return { decks: [], error: e.pasDeUnitList };
+  const deckList = Array.isArray(data?.deck_list) ? data.deck_list : [];
+  const offense = deckList.filter((dk: any) => Number(dk?.deck_type) === ARENA_OFFENSE_DECK_TYPE);
+  if (offense.length === 0) return { decks: [], error: e.sansOffenseArene };
+  const defs = offense.map((dk: any, i: number) => deckEnregistre(dk, i, SLOTS_ARENE));
+  const decks = buildSiegeDecks(defs, indexRunes(data), indexUnits(data), indexArtifacts(data), indexRuneMarkers(data), SLOTS_ARENE);
+  return decks.length ? { decks } : { decks: [], error: e.offenseAreneVide };
 }

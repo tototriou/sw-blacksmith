@@ -28,7 +28,7 @@ export function testRenduChangementCompte() {
   const texte = texteVisible(html);
   ok(texte.includes('Sauvegarder ta session ?'), 'titre : « Sauvegarder ta session ? »');
   ok(
-    texte.includes('va remplacer ta prépa RTA, tes équipes de siège et ta box') && texte.includes('seront perdus si tu ne sauvegardes pas'),
+    texte.includes('va remplacer ta prépa RTA, tes équipes de siège et d’arène et ta box') && texte.includes('seront perdus si tu ne sauvegardes pas'),
     'le message dit ce qui est remplacé, et ce qui se perd sans sauvegarde'
   );
   const libelles = boutons(html).map((b) => b.texte);

@@ -30,7 +30,9 @@ const SOUS = [{ code: 8, base: 4 }, { code: 4, base: 5 }, { code: 2, base: 6 }];
 const runes: RuneDetail[] = Array.from({ length: 18 }, (_, i) => ({
   id: 101 + i, slot: (i % 6) + 1, set: 'energy', rank: 6, rarity: 5, level: 15,
   main: { code: i % 6 === 1 ? 8 : 1, value: i % 6 === 1 ? 42 : 100 },
-  subs: [{ code: SOUS[Math.floor(i / 6)].code, value: SOUS[Math.floor(i / 6)].base + (i % 6) }],
+  // Une meule de +1 sur chaque ligne : « Simuler +15 et max meules/gemmes »
+  // la porte au maximum légendaire, sans rien changer d'autre au banc.
+  subs: [{ code: SOUS[Math.floor(i / 6)].code, value: SOUS[Math.floor(i / 6)].base + (i % 6) + 1, grind: 1 }],
 }));
 // Une relique portée : sans relique, la recherche « Libre » serait refusée.
 const relique: RelicDetail = { id: 701, upgrade: 9, main: { code: 101, value: 12 }, unique: { type: 1, tranche: 1000, percent: 2 } };
@@ -174,6 +176,9 @@ export function releve() {
     demandes: { ...demandes }, recus: c?.comptes.recus ?? null, cartes: c?.page.cartes.map(x => x.candidat.runeIds.join('-')) ?? [],
     contexte: JSON.stringify(etat.search.contexte), toutVerifierPhoto: etat.search.contexte?.toutVerifier ?? null,
     minStatsPhoto: etat.search.contexte?.recherche.requirement.minStats ?? null,
+    // Les runes simulées du pool photographié (« Simuler +15 et max meules/gemmes »).
+    simuleesPhoto: etat.search.contexte?.recherche.pool.filter(r => r.avantSimulation != null).length ?? null,
+    simulerRunesMaxees: etat.simulerRunesMaxees,
   };
 }
 

@@ -70,6 +70,59 @@ export function journal(langue: Langue): Release[] {
 // Si une ligne dépasse ~15 mots, c'est qu'elle raconte l'implémentation.
 export const RELEASES: Release[] = [
   {
+    version: null,
+    date: '2026-11-17',
+    title: 'L’Arène et l’arène dimensionnelle',
+    highlights: [
+      'Une page Arène : ta défense, ta défense interserveur et tes attaques, importées de ton compte.',
+      'L’arène dimensionnelle dans l’application de bureau : ta défense, tes attaques et tes runes du mode.',
+    ],
+    changes: [
+      { kind: 'feat', scope: 'Arène', text: 'Nouvelle page Arène : défense, défense interserveur et attaques, importées de ton compte.' },
+      { kind: 'feat', scope: 'Arène', text: 'Les vitesses de combat de l’arène tiennent compte des leads d’arène.' },
+      { kind: 'feat', scope: 'Speed tuning', text: 'Tes équipes d’arène se chargent dans le speed tuning.' },
+      { kind: 'feat', scope: 'Arène dimensionnelle', text: 'Dans l’application de bureau, ta défense, tes attaques et tes runes se remplissent quand tu ouvres le mode en jeu.' },
+      { kind: 'feat', scope: 'Arène dimensionnelle', text: 'Sur le site, la version web arrive prochainement.' },
+      { kind: 'feat', scope: 'Application', text: 'Avec le dossier SW Exporter, une arène vide se remplit au prochain export.' },
+    ],
+  },
+  {
+    version: '2.4.4',
+    date: '2026-11-15',
+    title: '/speedtune lit les cartes de toutes les couleurs',
+    changes: [
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune trouve les cartes quelle que soit la couleur de leur cadre, bronze compris.' },
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune trouve la VIT dans chaque carte, même près d’un portrait sombre.' },
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune ne prend plus la liste des monstres pour l’équipe.' },
+    ],
+  },
+  {
+    version: '2.4.3',
+    date: '2026-11-15',
+    title: '/speedtune lit les captures de tous les écrans',
+    changes: [
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune lit les captures de tous les formats d’écran, PC avec ou sans barre de titre compris.' },
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune lit aussi une capture recadrée sur les trois cartes d’attaque.' },
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune lit aussi une équipe composée sur le moment (cadres dorés), plus seulement un deck préréglé.' },
+      { kind: 'fix', scope: 'Speed tuning', text: 'Une capture trop petite est refusée au lieu de donner une VIT fausse.' },
+    ],
+  },
+  {
+    version: '2.4.2',
+    date: '2026-11-14',
+    title: 'Des builds épinglés dans l’Optimizer',
+    highlights: [
+      'Épingle jusqu’à dix builds par monstre pour les garder sous les yeux pendant la recherche',
+      'Simule tes runes à +15, meules et gemmes au max',
+    ],
+    changes: [
+      { kind: 'feat', scope: 'Optimizer', text: 'Épingle jusqu’à dix builds par monstre : ils restent affichés quels que soient les critères, les filtres et le tri.' },
+      { kind: 'feat', scope: 'Optimizer', text: '« Simuler +15 et max meules/gemmes » cherche comme si tes runes étaient montées et meulées au max.' },
+      { kind: 'feat', scope: 'Optimizer', text: 'L’efficience, les PV effectifs et les dégâts de ton runage actuel, sans passer par « Comparer ».' },
+      { kind: 'feat', scope: 'Speed tuning', text: 'Sur Discord, /speedtune lit une capture de ta préparation de siège et donne l’ordre de jeu de ton équipe.' },
+    ],
+  },
+  {
     version: '2.4.1',
     date: '2026-11-11',
     title: 'Les recommandations de centaines de decks s’affichent',

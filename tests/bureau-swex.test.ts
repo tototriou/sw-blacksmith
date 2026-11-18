@@ -5,8 +5,11 @@
 // mal reconnu suivrait le mauvais compte, un réglage mal relu inventerait un
 // chemin, une décision « donner » trop large réannoncerait sans cesse.
 
-import { readFileSync } from 'fs';
-import { aDonner, exportsDuDossier, lireNomExport, lireReglage } from '../bureau/swexPur';
+import { appendFileSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'fs';
+import { tmpdir } from 'os';
+import { join } from 'path';
+import { aDonner, dimensionADonner, exportsDuDossier, lireNomExport, lireReglage } from '../bureau/swexPur';
+import { ajoutContientSaison, saisonDuJournal } from '../bureau/journalSwexDisque';
 import { presentationSwex } from '../src/components/BlocApplication';
 import { messageExportSwex } from '../src/components/SuiviSwex';
 import { egal, ok, titre } from './outils';
@@ -28,13 +31,15 @@ export default function testBureauSwex() {
   );
 
   titre('bureau · SW Exporter — le réglage relu avec méfiance');
-  egal(lireReglage(null), { dossier: null, fichier: null, dernierLu: null }, 'premier lancement : rien');
-  egal(lireReglage('abîmé'), { dossier: null, fichier: null, dernierLu: null }, 'fichier abîmé : rien');
-  const bon = { dossier: 'C:\\SWEX', fichier: 'tototriou-12889591.json', dernierLu: 1759737040000 };
+  const vide = { dossier: null, fichier: null, dernierLu: null, dimensionLue: null };
+  egal(lireReglage(null), vide, 'premier lancement : rien');
+  egal(lireReglage('abîmé'), vide, 'fichier abîmé : rien');
+  const bon = { dossier: 'C:\\SWEX', fichier: 'tototriou-12889591.json', dernierLu: 1759737040000, dimensionLue: 1794858558 };
   egal(lireReglage(bon), bon, 'réglage complet : relu tel quel');
   egal(lireReglage({ ...bon, fichier: '..\\..\\Windows\\win.ini' }).fichier, null, 'un CHEMIN à la place du nom de fichier : refusé');
   egal(lireReglage({ ...bon, fichier: 'sous/tototriou-1.json' }).fichier, null, 'un sous-dossier : refusé');
   egal(lireReglage({ ...bon, dernierLu: 'hier' }).dernierLu, null, 'date illisible : oubliée');
+  egal(lireReglage({ ...bon, dimensionLue: 'hier' }).dimensionLue, null, 'saison dimensionnelle illisible : oubliée');
 
   titre('bureau · SW Exporter — donner l’export à la page, ou pas');
   egal(aDonner(1000, null, false), { donner: true, nouveau: true }, 'jamais lu : donné, annoncé');
@@ -74,7 +79,57 @@ export default function testBureauSwex() {
   // (`npm run bureau:preuve -- --swex`).
   titre('bureau · SW Exporter — l’export qui suit un choix part complet');
   const principal = readFileSync('bureau/swex.ts', 'utf8');
-  ok(/fichier, dernierLu: null \};\s*complet = true;/.test(principal), 'bureau/swex.ts : choisir un invocateur rend l’export suivant complet');
+  ok(/fichier, dernierLu: null, dimensionLue: null \};\s*complet = true;/.test(principal), 'bureau/swex.ts : choisir un invocateur rend l’export suivant complet, et sa saison dimensionnelle à redonner');
   ok(/dernierLu: modifie \};\s*complet = false;/.test(principal), 'bureau/swex.ts : appliqué par la page, l’export suivant redevient « Mon compte »');
   ok(principal.includes("envoyer('bureau:swex-export', { texte, modifie, nouveau, fichier, complet });"), 'bureau/swex.ts : `complet` part avec l’export');
+}
+
+// L'arène dimensionnelle : le journal SWEX du dossier (bureau/journalSwexDisque.ts)
+// et son passage à la page (bureau/swex.ts, SuiviSwex, App.tsx).
+export async function testBureauJournalSwex() {
+  titre('bureau · SW Exporter — la saison dimensionnelle du journal SWEX');
+  const journal = 'tests/fixtures/journal-swex-miniature.txt';
+  egal((await saisonDuJournal(journal, 424242))?.tvalue, 2000, 'la dernière saison lisible de l’invocateur suivi');
+  egal((await saisonDuJournal(journal, 777))?.tvalue, 1000, 'celle d’un autre invocateur du même journal : la sienne, plus ancienne');
+  egal(await saisonDuJournal(journal, 1), null, 'un invocateur absent du journal : rien');
+  // Une fenêtre minuscule : la lecture par la fin s'élargit jusqu'à la trouver.
+  egal((await saisonDuJournal(journal, 777, 64))?.tvalue, 1000, 'lue par la fin, fenêtre élargie jusqu’à la saison');
+
+  titre('bureau · SW Exporter — le journal relu seulement sur ce qui s’y ajoute');
+  const dossier = mkdtempSync(join(tmpdir(), 'swb-journal-'));
+  try {
+    const chemin = join(dossier, 'full_log.txt');
+    egal(await saisonDuJournal(chemin, 424242), null, 'pas de journal (Full Logger éteint) : rien');
+    writeFileSync(chemin,'API Command: HubUserLogin - x\nRequest: \n{}\nResponse: \n{"ret_code":0}\n');
+    const premier = await ajoutContientSaison(chemin, 0);
+    ok(!premier.contient && premier.taille > 0, 'un journal sans saison : rien à relire');
+    appendFileSync(chemin, 'API Command: BattleDungeonResult_V2 - x\nRequest: \n{}\n');
+    egal((await ajoutContientSaison(chemin, premier.taille)).contient, false, 'un ajout sans saison (une partie) : rien à relire');
+    const avant = (await ajoutContientSaison(chemin, premier.taille)).taille;
+    appendFileSync(chemin, readFileSync(journal, 'utf8'));
+    egal((await ajoutContientSaison(chemin, avant)).contient, true, 'un ajout avec une saison (le mode ouvert) : à relire');
+    writeFileSync(chemin, 'API Command: HubUserLogin - x\n');
+    egal((await ajoutContientSaison(chemin, avant)).contient, true, 'un journal recommencé (plus court) : relu comme neuf');
+  } finally {
+    rmSync(dossier, { recursive: true, force: true });
+  }
+
+  titre('bureau · SW Exporter — donner une saison dimensionnelle, ou pas');
+  ok(dimensionADonner(2000, null), 'jamais appliquée : donnée');
+  ok(dimensionADonner(2000, 1000), 'plus récente que la dernière appliquée : donnée');
+  ok(!dimensionADonner(2000, 2000), 'déjà appliquée : rien');
+  ok(!dimensionADonner(undefined, null), 'sans heure serveur lisible : jamais');
+  ok(dimensionADonner(2000, 2000, true), 'déjà appliquée, mais la page n’a rien de ce mode : redonnée');
+
+  // Le passage à la page, sans Electron : un contrôle de source, comme plus haut.
+  titre('bureau · SW Exporter — la saison part à la page, qui la confirme');
+  const principal = readFileSync('bureau/swex.ts', 'utf8');
+  ok(principal.includes("envoyer('bureau:swex-dimension', { saison, recents, cle: saison.tvalue, nouvelle });"), 'bureau/swex.ts : la saison part avec les équipes récentes de l’export, nouvelle ou redonnée');
+  ok(
+    /void donnerDimension\(false\);/.test(principal) && /pagePrete = true;[\s\S]*?void donnerDimension\(true, pageSansDimension === true\);/.test(principal),
+    'bureau/swex.ts : relue à la page prête (redonnée si la page n’a rien de ce mode), puis à chaque changement du dossier'
+  );
+  const preload = readFileSync('bureau/preload.ts', 'utf8');
+  ok(preload.includes("'bureau:swex-dimension'") && preload.includes("'bureau:swex-dimension-lue'"), 'bureau/preload.ts : les deux canaux');
+  egal(fr.application.dimensionMiseAJour(2), 'Arène dimensionnelle mise à jour depuis le journal SWEX : 2 équipes', 'l’annonce');
 }

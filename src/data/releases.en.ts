@@ -9,6 +9,59 @@ import type { Release } from './releases';
 
 export const RELEASES_EN: Release[] = [
   {
+    version: null,
+    date: '2026-11-17',
+    title: 'The Arena and the Dimensional Arena',
+    highlights: [
+      'An Arena page: your defense, cross-server defense and attacks, imported from your account.',
+      'The Dimensional Arena in the desktop app: your defense, attacks and runes for that mode.',
+    ],
+    changes: [
+      { kind: 'feat', scope: 'Arena', text: 'New Arena page: defense, cross-server defense and attacks, imported from your account.' },
+      { kind: 'feat', scope: 'Arena', text: 'Arena combat speeds use arena leader skills.' },
+      { kind: 'feat', scope: 'Speed tuning', text: 'Your arena teams load into speed tuning.' },
+      { kind: 'feat', scope: 'Dimensional Arena', text: 'In the desktop app, your defense, attacks and runes fill in when you open the mode in game.' },
+      { kind: 'feat', scope: 'Dimensional Arena', text: 'On the website, the web version is coming soon.' },
+      { kind: 'feat', scope: 'Application', text: 'With the SW Exporter folder, an empty arena fills in on the next export.' },
+    ],
+  },
+  {
+    version: '2.4.4',
+    date: '2026-11-15',
+    title: '/speedtune reads cards of every colour',
+    changes: [
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune finds the cards whatever the colour of their frame, bronze included.' },
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune finds the SPD in each card, even next to a dark portrait.' },
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune no longer mistakes the monster list for the team.' },
+    ],
+  },
+  {
+    version: '2.4.3',
+    date: '2026-11-15',
+    title: '/speedtune reads screenshots from every screen',
+    changes: [
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune reads screenshots of every screen format, including PC with or without the title bar.' },
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune also reads a screenshot cropped to the three attack cards.' },
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune also reads a team built on the spot (gold frames), not only a preset deck.' },
+      { kind: 'fix', scope: 'Speed tuning', text: 'A screenshot that is too small is refused instead of giving a wrong SPD.' },
+    ],
+  },
+  {
+    version: '2.4.2',
+    date: '2026-11-14',
+    title: 'Pinned builds in the Optimizer',
+    highlights: [
+      'Pin up to ten builds per monster to keep them in view while you search',
+      'Simulate your runes at +15, with grinds and gems maxed',
+    ],
+    changes: [
+      { kind: 'feat', scope: 'Optimizer', text: 'Pin up to ten builds per monster: they stay shown whatever the criteria, filters and sorting.' },
+      { kind: 'feat', scope: 'Optimizer', text: '“Simulate +15 and max grinds/gems” searches as if your runes were powered up and ground to the max.' },
+      { kind: 'feat', scope: 'Optimizer', text: 'Efficiency, effective HP and damage of your current build, without going through “Compare”.' },
+      { kind: 'feat', scope: 'Speed tuning', text: 'On Discord, /speedtune reads a screenshot of your siege preparation and gives your team’s turn order.' },
+    ],
+  },
+  {
     version: '2.4.1',
     date: '2026-11-11',
     title: 'Recommendations with hundreds of decks display again',

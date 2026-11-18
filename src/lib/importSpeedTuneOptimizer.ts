@@ -56,7 +56,9 @@ export function importerSpeedTuneOptimizer(
   const liens: { membre: ImportOptimizer['membres'][number]; lien: MembreLigne; sansPlan: ImportOptimizer['membres'][number]['criteres'] }[] = [];
   let deck: SiegeTeam | undefined;
   let sourceDeck: 'siege-defense' | 'siege-offense' | undefined;
-  if (deckInitial) {
+  // ⚠️ Un deck d'ARÈNE n'est pas cherché parmi les équipes de siège : il n'y
+  // est pas, et l'index d'une offense de siège y désignerait une autre équipe.
+  if (deckInitial && (deckInitial.source === 'defense' || deckInitial.source === 'offense')) {
     const teams = deckInitial.source === 'defense' ? data.siegeDefenseTeams : data.siegeOffenseTeams;
     // Même résolution que l'ouverture du speed tuning depuis un deck.
     deck = teams.find(e => e.id === deckInitial.teamId) ?? teams[Number(deckInitial.teamId)];

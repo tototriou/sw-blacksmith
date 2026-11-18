@@ -39,10 +39,13 @@ export interface OptionsCarte {
   boutons: 1 | 2;
   // La rangée de l'objectif, avec la valeur qui a classé la carte.
   objectif: 'ehp' | 'degats' | null;
+  // Le bouton « Épingler » entre les deux (resultats.md, § Builds épinglés).
+  epingle?: boolean;
 }
 
-function Carte({ bureau, boutons, objectif }: OptionsCarte) {
+function Carte({ bureau, boutons, objectif, epingle = false }: OptionsCarte) {
   const [compare, setCompare] = useState(false);
+  const [numero, setNumero] = useState<number | null>(null);
   const [ouvert, setOuvert] = useState<string | null>(null);
   return <BuildCandidateCard rank={2} candidate={candidat} runeById={runeById} artifacts={[]} metric="eff"
     openDetailKey={ouvert} onToggleDetail={(k) => setOuvert((o) => (o === k ? null : k))} bureau={bureau}
@@ -51,7 +54,8 @@ function Carte({ bureau, boutons, objectif }: OptionsCarte) {
     metricDelta={compare ? -43.2 : undefined}
     onValidate={() => {}} validated="non"
     onCompare={boutons === 2 ? () => setCompare((c) => !c) : undefined}
-    comparaison={compare ? stats.map((s) => ({ key: s.key, label: s.label, suffix: s.suffix, delta: -12 })) : undefined} />;
+    comparaison={compare ? stats.map((s) => ({ key: s.key, label: s.label, suffix: s.suffix, delta: -12 })) : undefined}
+    epingle={epingle ? { numero, zone: false, complet: false, basculer: () => setNumero((n) => (n === null ? 3 : null)) } : undefined} />;
 }
 
 let root: Root | null = null;

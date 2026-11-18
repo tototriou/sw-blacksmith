@@ -6,6 +6,7 @@
 
 import type { OptimMetric } from './runeOptim';
 import { CAPPED_STATS, type StatKey } from './effects';
+import { COLONNES_RESULTATS, type ColonneResultat } from './colonnesResultats';
 
 /**
  * Le total qu'un panneau de stats écrit en mode « total » : borné à 100 %
@@ -35,4 +36,33 @@ export function chiffresMesureRune(valeur: number, metric: OptimMetric): string 
 /** L'entier qu'une carte écrit des PV effectifs et des dégâts réels, avant les séparateurs de milliers. */
 export function entierAffiche(valeur: number): number {
   return Math.round(valeur);
+}
+
+/** Ce que la fiche affichée (« Exemplaire ») apporte aux colonnes des résultats. */
+export interface MesuresDeLaFiche {
+  // Les stats de la fiche (`computeStats`), en total.
+  stats: readonly { key: StatKey; total: number }[];
+  // La mesure de ses runes dans la mesure DES CARTES, ou `null` quand elle n'y est pas.
+  mesureTotale: number | null;
+  // La fiche notée comme un candidat (`scoreDeReference`), ou `null` sans valeur.
+  pvEffectifs: number | null;
+  degatsReels: number | null;
+}
+
+/**
+ * Les onze valeurs de la fiche affichée, en total, prises comme celles d'un
+ * build (même borne à 100 %, même moyenne par rune) : la ligne
+ * de la fiche du tableau des résultats se lit contre les lignes qu'elle
+ * surplombe. Les valeurs viennent des producteurs de « Comparer » : la ligne
+ * et l'écart d'une carte disent le même chiffre.
+ */
+export function valeursDeLaFiche(fiche: MesuresDeLaFiche, showOvercap: boolean): Record<ColonneResultat, number | null> {
+  const valeur = (c: ColonneResultat): number | null => {
+    if (c === 'efficience') return fiche.mesureTotale === null ? null : moyenneParRune(fiche.mesureTotale);
+    if (c === 'ehp') return fiche.pvEffectifs;
+    if (c === 'degats_reels') return fiche.degatsReels;
+    const ligne = fiche.stats.find((s) => s.key === c);
+    return ligne ? displayedTotal(c, ligne.total, showOvercap) : null;
+  };
+  return Object.fromEntries(COLONNES_RESULTATS.map((c) => [c, valeur(c)])) as Record<ColonneResultat, number | null>;
 }

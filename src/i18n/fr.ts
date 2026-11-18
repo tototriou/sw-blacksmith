@@ -68,6 +68,8 @@ export const fr = {
     speedTuning: 'Speed tuning',
     defense: 'Défense',
     offense: 'Offense',
+    interserveur: 'Défense interserveur',
+    areneDimensionnelle: 'Arène dimensionnelle',
     recommandations: 'Recommandations',
     bestiaire: 'Bestiaire',
     mecaniques: 'Mécaniques',
@@ -343,7 +345,8 @@ export const fr = {
       speedTuning: { rubrique: 'Outils', titre: 'Speed tuning' },
       bestiaire: { rubrique: 'Données', titre: 'Bestiaire' },
       mecaniques: { rubrique: 'Doc', titre: 'Mécaniques' },
-      arene: { rubrique: 'Arène', titre: 'Arène classique' },
+      arene: { rubrique: 'Arène', titre: 'Arène' },
+      areneDimensionnelle: { rubrique: 'Arène', titre: 'Arène dimensionnelle' },
     },
     application: {
       titre: 'Application de bureau',
@@ -521,6 +524,7 @@ export const fr = {
     proprieteModifiee: 'Propriété modifiée',
     voirDetailMeule: 'Voir le détail (valeur d’origine + meule)',
     voirTotalMeule: 'Voir les valeurs totales, meule comprise',
+    simulee: (reelle: string) => `Simulé (maxé) — valeur réelle : ${reelle}`,
     ameliorations: (n: number) => `${n} amélioration${n > 1 ? 's' : ''} sur cette ligne`,
     relique: 'Relique',
     reliqueEnAttente: 'Relique : en attente',
@@ -570,6 +574,9 @@ export const fr = {
     swexEnLecture: (date: string) => `Export du ${date} — lecture en cours…`,
     exportCharge: (nom: string | null) => `${nom ? `Compte de ${nom}` : 'Compte'} chargé depuis SW Exporter`,
     exportMisAJour: (nom: string | null) => `${nom ? `Compte de ${nom}` : 'Compte'} mis à jour depuis SW Exporter`,
+    // Une nouvelle saison de l'arène dimensionnelle, lue dans le journal SWEX.
+    dimensionMiseAJour: (n: number) =>
+      `Arène dimensionnelle mise à jour depuis le journal SWEX : ${n} équipe${n > 1 ? 's' : ''}`,
   },
 
   // L'import d'un export de compte SWEX : bouton, messages de src/lib/importAccount.ts
@@ -588,11 +595,26 @@ export const fr = {
     sansOffense:
       "Aucune équipe d'attaque de siège trouvée (deck_list). Sauvegarde tes équipes d'attaque de combat de guilde en jeu avant d'exporter.",
     offenseVide: "Aucune équipe d'attaque de siège configurée dans ce fichier.",
+    sansDefenseArene: "Aucune défense d'arène trouvée (defense_deck_info).",
+    defenseAreneVide: "Aucune défense d'arène configurée dans ce fichier.",
+    sansOffenseArene:
+      "Aucune équipe d'attaque d'arène trouvée (deck_list). Sauvegarde tes équipes d'attaque d'arène en jeu avant d'exporter.",
+    offenseAreneVide: "Aucune équipe d'attaque d'arène configurée dans ce fichier.",
+    sansDefenseInterserveur: "Aucune défense d'arène interserveur trouvée (server_arena_defense_deck_info).",
+    defenseInterserveurVide: "Aucune défense d'arène interserveur configurée dans ce fichier.",
+    sansDefenseDimension: "Aucune défense d'arène dimensionnelle trouvée dans le journal SWEX (defense_deck_info).",
+    defenseDimensionVide: "La défense d'arène dimensionnelle du journal SWEX ne désigne aucun monstre de la box dimensionnelle.",
+    sansOffenseDimension: "Aucune équipe d'attaque d'arène dimensionnelle trouvée (deck_recent_list, type 28).",
+    offenseDimensionSansJournal:
+      "Les équipes d'attaque d'arène dimensionnelle désignent des monstres de la box dimensionnelle : importe aussi le journal SWEX (full_log.txt) pour les reconnaître.",
+    offenseDimensionInconnue:
+      "Les équipes d'attaque d'arène dimensionnelle désignent des monstres absents de la box du journal SWEX.",
     rien: 'Rien à importer depuis ce fichier.',
     monstres6: (n: number) => `${n} monstres 6★`,
     monstresRta: (n: number) => `${n} monstres RTA`,
     defenses: (n: number) => `${n} défenses`,
     attaques: (n: number) => `${n} attaques`,
+    equipesArene: (n: number) => `${n} équipe${n > 1 ? "s" : ""} d’arène`,
     bilan: (parts: string) => `Import : ${parts}`,
     introuvables: (n: number) => ` · ${n} monstre(s) introuvable(s), à créer à la main`,
   },
@@ -1030,11 +1052,10 @@ export const fr = {
       raisonRefus: 'il refuse l’écriture',
       raisonIntrouvable: 'il est introuvable ou inaccessible',
     },
-    areneBientot: "Préparation des équipes d'arène classique (offense et défense).",
     redimensionner: 'Redimensionner les deux pages (double-clic : moitié-moitié)',
     remplacerTitre: 'Remplacer les données présentes ?',
     remplacerMessage:
-      'Cet import va remplacer ta prépa RTA, tes équipes de siège et ta box par le contenu du fichier. Tes recommandations enregistrées ne sont pas touchées.',
+      'Cet import va remplacer ta prépa RTA, tes équipes de siège et d’arène et ta box par le contenu du fichier. Tes recommandations enregistrées ne sont pas touchées.',
     supprimerTitre: 'Supprimer toutes tes données ?',
     supprimerMessage:
       'Prépa RTA, équipes de siège, recommandations, monstres perso et compte importé seront effacés de cet appareil. Cette action est irréversible.',
@@ -1066,7 +1087,7 @@ export const fr = {
   changementCompte: {
     titre: 'Sauvegarder ta session ?',
     texte:
-      'Le compte de SW Exporter va remplacer ta prépa RTA, tes équipes de siège et ta box. Les changements faits depuis ta dernière sauvegarde seront perdus si tu ne sauvegardes pas.',
+      'Le compte de SW Exporter va remplacer ta prépa RTA, tes équipes de siège et d’arène et ta box. Les changements faits depuis ta dernière sauvegarde seront perdus si tu ne sauvegardes pas.',
     sansSauvegarder: 'Changer sans sauvegarder',
     sauvegarderEtChanger: 'Sauvegarder et changer',
   },
@@ -1535,6 +1556,32 @@ export const fr = {
     actif: (montant: number, stat: string, element: string | null) =>
       `Lead du leader : +${montant}% ${stat}${element ? ` — alliés ${element} uniquement` : ''}`,
     inactif: (montant: number, stat: string, portee: string) => `Lead +${montant}% ${stat}${portee} — sans effet en siège`,
+    guilde: ' (guilde)',
+    inactifArene: (montant: number, stat: string, portee: string) => `Lead +${montant}% ${stat}${portee} — sans effet en arène`,
+  },
+
+  // L'Arène (#/arene) : défense, offense et défense interserveur, des équipes
+  // de 4 monstres ; l'arène dimensionnelle (#/arene-dimensionnelle), défense
+  // et offense.
+  arene: {
+    cote: {
+      defense: { titre: 'Défense', nom: 'défense', de: 'de défense' },
+      offense: { titre: 'Offense', nom: 'attaque', de: "d'attaque" },
+      interserveur: { titre: 'Défense interserveur', nom: 'défense interserveur', de: 'de défense interserveur' },
+      'dimension-defense': { titre: 'Défense', nom: 'défense', de: 'de défense' },
+      'dimension-offense': { titre: 'Offense', nom: 'attaque', de: "d'attaque" },
+    },
+    retiree: (cote: 'defense' | 'offense' | 'interserveur' | 'dimension-defense' | 'dimension-offense') =>
+      `Équipe retirée ${cote === 'offense' || cote === 'dimension-offense' ? "de l'offense" : cote === 'interserveur' ? 'de la défense interserveur' : 'de la défense'}`,
+    // La box et les runes de l'arène dimensionnelle sont à part : l'export de
+    // compte ne les décrit pas, le journal complet de SWEX, si — lu par
+    // l'application de bureau dans le dossier SW Exporter.
+    // Sur le site : la box du mode n'arrive que par le journal SWEX, lu par
+    // l'application de bureau.
+    dimensionBureauSeulement:
+      "L'arène dimensionnelle n'est disponible que dans l'application de bureau. La version web arrive prochainement.",
+    noteDimension:
+      "La box dimensionnelle (ses monstres et leurs runes) n'est pas dans l'export de compte. Avec le dossier SW Exporter choisi et le plugin Full Logger de SWEX actif, ces onglets se remplissent tout seuls quand tu ouvres l'arène dimensionnelle en jeu. Sinon, compose tes équipes à la main.",
   },
 
   // Le Siège (#/siege) : équipes de défense et d'offense.
@@ -2496,6 +2543,16 @@ export const fr = {
     avances: {
       profondeur: 'Profondeur de recherche',
       pool: (n: string) => `Pool de runes = ${n}`,
+      runesMaxees: 'Simuler +15 et max meules/gemmes',
+      runesMaxeesAide: {
+        debut: 'Activé, la recherche suppose tes runes maxées : la principale de chaque rune 6★ passe à sa valeur ',
+        niveau: 'à +15',
+        meules: ', chaque ligne meulable (PV, ATQ, DEF, VIT), meulée ou non, reçoit la meule ',
+        legendaire: 'légendaire maximale',
+        fin: ', et chaque gemme déjà posée sa valeur légendaire maximale (antique sur une rune antique). Aucune gemme n’est ajoutée, et les sous-propriétés à venir d’une rune pas encore à +12 ne sont pas devinées.',
+        couleur:
+          'Dans le détail d’une rune des résultats, ce qui a été simulé est en violet. Le réglage vaut pour la prochaine recherche : les résultats affichés ne changent pas.',
+      },
       exhaustif: "Rechercher jusqu'à épuisement complet",
       exhaustifAide:
         "Retire la limite de temps de 10 minutes : la recherche continue tant qu'il reste des combinaisons à examiner. Peut prendre très longtemps sur une recherche avec peu de conditions — le bouton ",
@@ -2746,6 +2803,7 @@ export const fr = {
       autreMonstre: 'un autre monstre',
       buildActuel: 'Build actuel',
       buildValide: 'Build validé',
+      apercuCourt: 'Aperçu',
       aucunBuildValide: 'Aucun build validé pour ce membre',
       apercu: (monstre: string, source: string) => `Aperçu : ${monstre} · ${source}. Ce n'est pas l'exemplaire de la liste.`,
       revenir: 'Revenir',
@@ -2756,6 +2814,13 @@ export const fr = {
       vueVide: 'Aucune combinaison confirmée ne passe ces filtres.',
       tropEtroit: 'Trop étroit pour le tableau : cartes affichées',
       buildNumero: (n: number) => `Build n° ${n}`,
+      buildEpingle: (n: number) => `Build épinglé n° ${n}`,
+      epinglesTitre: (n: number) => `${n} build(s) épinglé(s)`,
+      libererEpingles: 'Libérer tous les builds épinglés',
+      libererEpinglesTitre: 'Libérer tous les builds épinglés ?',
+      libererEpinglesMessage: (n: number) =>
+        `Les ${n} build(s) épinglé(s) de ce monstre ne seront plus affichés. Les runes ne sont pas touchées, et les builds validés restent validés.`,
+      libererEpinglesAction: 'Tout libérer',
       creerEtValider: 'Créer et valider',
     },
     // Les résultats : en-tête, tri, filtres d'affichage, tableau, progression,
@@ -2824,6 +2889,7 @@ export const fr = {
       statsBonus: 'Stats bonus',
       statsBonusAide: 'PV, ATQ, DEF et VIT sans la base du monstre. Affichage seulement.',
       detailBuild: (n: number) => `Détail du build n° ${n}`,
+      detailEpingle: (n: number) => `Détail du build épinglé n° ${n}`,
       verification: 'Vérification…',
       pagination: {
         precedente: 'Page précédente',
@@ -2900,6 +2966,10 @@ export const fr = {
       degats: 'Dégâts',
       tueLaCible: 'tue la cible',
       partPv: (pct: number) => `${pct} % des PV`,
+      epingler: 'Épingler ce build',
+      liberer: 'Libérer ce build épinglé',
+      epinglesComplets: '10 builds épinglés au plus : libères-en un pour épingler celui-ci.',
+      epingleNumero: (n: number) => `Build épinglé n° ${n}`,
     },
     // Le point de sauvegarde de toutes les listes.
     sauvegarde: {
@@ -3202,12 +3272,12 @@ export const fr = {
       equipeVide: "Ajoute d'abord des monstres à ton équipe.",
       analyserAide:
         "Lit les kits et POSE le résultat dans les grilles, comme si tu les remplissais à la main. Ensuite tout est modifiable : l'analyse ne repasse plus, sauf si tu changes un sort.",
-      ajouterPourVerifier: 'Ajoute des monstres à ton équipe pour vérifier que rien ne la coupe.',
-      coupee: 'Ton équipe joue dans l’ordre demandé, mais elle se fait couper.',
+      ajouterPourVerifier: 'Ajoute des monstres à ton équipe pour vérifier qu’elle ne se fait pas cut.',
+      coupee: 'Ton équipe joue dans l’ordre demandé, mais elle se fait cut.',
       ordreImpossible: "Les vitesses de tes monstres ne permettent pas de jouer dans l'ordre demandé.",
       neJouePas: (rang: number) => `ne joue pas une ${rang}ᵉ fois`,
       nAgitPas: "n'agit pas",
-      seFaitCouper: 'se fait couper',
+      seFaitCouper: 'se fait cut',
       tropRapide: 'est trop rapide',
       tropLent: 'est trop lent',
       pasTune: 'Les vitesses de tes monstres ne sont pas suffisantes pour être speed tune.',
@@ -3302,12 +3372,20 @@ export const fr = {
       lancePar: (nom: string) => `Sort lancé par ${nom}`,
     },
     importDeck: {
-      libelle: 'Importer un deck de siège',
-      vide: 'Aucune équipe de siège enregistrée — importe ton compte, ou compose une défense / offense dans Siège.',
-      aideAdverse: 'Reprendre une de tes équipes de siège comme composition adverse — elle REMPLACE ce qui est en face',
-      aideEquipe: 'Reprendre une de tes équipes de siège dans ton équipe — elle REMPLACE ta composition actuelle',
-      liste: 'Decks de siège',
-      sources: { defense: 'Défense', offense: 'Offense' },
+      libelle: 'Importer un deck de siège ou d’arène',
+      vide: 'Aucune équipe de siège ni d’arène enregistrée — importe ton compte, ou compose une défense / offense dans Siège ou Arène.',
+      aideAdverse: 'Reprendre une de tes équipes de siège ou d’arène comme composition adverse — elle REMPLACE ce qui est en face',
+      aideEquipe: 'Reprendre une de tes équipes de siège ou d’arène dans ton équipe — elle REMPLACE ta composition actuelle',
+      liste: 'Decks de siège et d’arène',
+      sources: {
+        defense: 'Défense',
+        offense: 'Offense',
+        'arene-defense': 'Arène · Défense',
+        'arene-offense': 'Arène · Offense',
+        'arene-interserveur': 'Arène · Défense interserveur',
+        'arene-dimension-defense': 'Arène dimensionnelle · Défense',
+        'arene-dimension-offense': 'Arène dimensionnelle · Offense',
+      },
     },
     recherche: {
       resultats: 'Résultats de la recherche',
