@@ -53,8 +53,8 @@ const TITRES: [string, string][] = [
   ['#/', 'Accueil'],
   ['#/rta', 'Ma prépa'],
   ['#/rta/ami', 'Ami'],
-  ['#/siege/defense', 'Défense'],
-  ['#/siege/offense', 'Offense'],
+  ['#/siege/defense', 'Decks de défense'],
+  ['#/siege/offense', 'Decks d’offense'],
   ['#/siege/recommandations', 'Recommandations'],
   ['#/compte/monstres/liste', 'Monstres'],
   ['#/compte/runes/resume', 'Mon compte · Runes Résumé'],
@@ -198,7 +198,7 @@ export function testRenduAppFil() {
   titre('rendu · App — le fil d\'Ariane bureau suit le menu');
   const FILS: [string, string][] = [
     ['#/', 'Accueil'],
-    ['#/siege/defense', 'Jouer Siège Défense'],
+    ['#/siege/defense', 'Jouer Siège Decks de défense'],
     ['#/rta/ami', 'Jouer RTA Ami'],
     ['#/arene', 'Jouer Arène Défense'],
     ['#/arene-dimensionnelle/offense', 'Jouer Arène dimensionnelle Offense'],

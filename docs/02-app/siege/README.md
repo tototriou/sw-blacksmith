@@ -2,7 +2,13 @@
 
 Composer des équipes de **3 monstres** de combat de guilde, avec lead de vitesse
 **automatique** et vérification des **speed tune** (ticks). La page est découpée en
-**trois sous-onglets** : **Défense**, **Offense** et **Recommandations**.
+**trois sous-onglets** : **Decks de défense**, **Decks d'offense** et **Recommandations**.
+
+- ⚠️ **« Decks de défense » et « Decks d'offense » sont au Siège seulement** :
+  l'Arène et l'arène dimensionnelle gardent « Défense » et « Offense ». Le Siège a
+  ses propres clés (`navigation.decksDefense`, `navigation.decksOffense`),
+  pointées par `SIEGE_SUBS` de [App.tsx](src/App.tsx) ; les adresses restent
+  `#/siege/defense` et `#/siege/offense`.
 
 Fichiers :
 - [SiegePage.tsx](src/pages/SiegePage.tsx) — shell : titre + sous-onglets, choisit
@@ -33,7 +39,7 @@ persistance : voir [feat-recommandations/](feat-recommandations/README.md).
 
 ## Vue d'ensemble
 
-1. **En-tête BUREAU** : titre « Défense » / « Offense », compteur
+1. **En-tête BUREAU** : titre « Decks de défense » / « Decks d'offense », compteur
    d'équipes, puis les actions via `BarreActions` : **toutes en boutons quand
    elles tiennent sur la ligne** (place mesurée), sinon **Vérifier mes speed**
    et **Ajouter une équipe** visibles, et **Créer un monstre**, **Tout
@@ -45,7 +51,7 @@ persistance : voir [feat-recommandations/](feat-recommandations/README.md).
    - « Créer un monstre » est **en dernier des actions** : c'est le geste le plus
      rare.
    - Tous les boutons d'en-tête font **36 px** (`HAUTEUR_EN_TETE`).
-2. **Sous-onglets** : Défense / Offense — dans la barre latérale (bureau) et
+2. **Sous-onglets** : Decks de défense / Decks d'offense — dans la barre latérale (bureau) et
    le panneau de navigation (téléphone), pas dans la page.
 3. **Téléphone** : le compteur et l'**interrupteur « Vérifier mes speed »**
    dans la page ; les autres actions dans le panneau « Options » (Ajouter une

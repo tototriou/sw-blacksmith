@@ -422,8 +422,10 @@ const OUTILS_SUBS: { sub: ToolSub; texte: CleNavigation; icon: IconeAtelier; has
 // étaient des onglets posés en haut de la page, et chaque section avait le sien
 // avec son propre rendu. La barre latérale les porte toutes de la même façon.
 const SIEGE_SUBS: { tab: SiegeTab; texte: CleNavigation; icon: IconeAtelier; hash: string; couleur: string }[] = [
-  { tab: 'defense', texte: 'defense', icon: IconeDefense, hash: '#/siege/defense', couleur: COULEUR_SIEGE_SUB.defense },
-  { tab: 'offense', texte: 'offense', icon: IconeOffense, hash: '#/siege/offense', couleur: COULEUR_SIEGE_SUB.offense },
+  // ⚠️ « Decks de défense » et « Decks d'offense » : des clés à elles, l'Arène
+  // garde « Défense » et « Offense » (`defense`, `offense`).
+  { tab: 'defense', texte: 'decksDefense', icon: IconeDefense, hash: '#/siege/defense', couleur: COULEUR_SIEGE_SUB.defense },
+  { tab: 'offense', texte: 'decksOffense', icon: IconeOffense, hash: '#/siege/offense', couleur: COULEUR_SIEGE_SUB.offense },
   { tab: 'recos', texte: 'recommandations', icon: IconeRecos, hash: '#/siege/recommandations', couleur: COULEUR_SIEGE_SUB.recos },
 ];
 

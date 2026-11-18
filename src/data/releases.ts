@@ -89,6 +89,7 @@ export const RELEASES: Release[] = [
       { kind: 'feat', scope: 'Mon compte', text: 'Dans l’application de bureau, « Direct » suit ta partie : meules, gemmes, ventes, runes posées.' },
       { kind: 'feat', scope: 'SW Exporter', text: '« Mettre à jour mon compte » reporte ta session sans te reconnecter au jeu.' },
       { kind: 'feat', scope: 'SW Exporter', text: 'Le plugin garde aussi tes combats de guilde, pour les écrans de guilde à venir.' },
+      { kind: 'feat', scope: 'Siège', text: '« Défense » et « Offense » deviennent « Decks de défense » et « Decks d’offense ».' },
     ],
   },
   {

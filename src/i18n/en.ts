@@ -58,6 +58,8 @@ export const en: Dictionnaire = {
     speedTuning: 'Speed tuning',
     defense: 'Defense',
     offense: 'Offense',
+    decksDefense: 'Defense decks',
+    decksOffense: 'Offense decks',
     interserveur: 'Cross-server defense',
     areneDimensionnelle: 'Dimensional Arena',
     recommandations: 'Recommendations',
@@ -1462,8 +1464,8 @@ export const en: Dictionnaire = {
     },
     board: {
       cote: {
-        defense: { titre: 'Defense', nom: 'defense', de: 'defense' },
-        offense: { titre: 'Offense', nom: 'offense', de: 'offense' },
+        defense: { titre: 'Defense decks', nom: 'defense', de: 'defense' },
+        offense: { titre: 'Offense decks', nom: 'offense', de: 'offense' },
       },
       exportSansCompte: 'Load an account to export to the Optimizer.',
       exportEquipeVide: 'No monster in this team can be imported.',

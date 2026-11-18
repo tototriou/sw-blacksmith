@@ -181,7 +181,7 @@ export function testRenduLangueRtaSiege() {
   ok(ami.includes('No prep opened') && ami.includes('Open a friend’s prep'), 'prépa d’un ami : état vide et bouton');
 
   const defense = enAnglais(() => texteVisible(rendreApp('#/siege/defense')));
-  for (const attendu of ['Defense', '0 team', 'No defense team yet', 'Add a team'])
+  for (const attendu of ['Defense decks', '0 team', 'No defense team yet', 'Add a team'])
     ok(defense.includes(attendu), `Siège · défense : « ${attendu} »`);
   ok(!defense.includes('Ajouter une équipe'), 'Siège · défense : plus de français');
 

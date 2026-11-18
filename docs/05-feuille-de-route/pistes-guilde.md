@@ -9,23 +9,8 @@ qu'elle produit se décrit dans la fiche de l'écran.
 
 | Piste | Bloquée par | Fiche à écrire |
 | --- | --- | --- |
-| Siège : renommer « Défense » et « Offense » | rien | [siege/](../02-app/siege/README.md) |
 | Siège : la sous-section « Statistiques », sur les données relevées | rien | « Statistiques », nouvelle fiche du dossier siege |
 | Statistiques : les monstres de chaque attaque et de la défense attaquée | un journal SWEX d'un siège joué | la même |
-
-## Siège : renommer « Défense » et « Offense »
-
-- Libellés : **« Decks de défense »** et **« Decks d'offense »** (anglais : « Defense decks »,
-  « Offense decks »), pour le **Siège seulement**. L'Arène et l'Arène dimensionnelle gardent
-  « Défense » et « Offense ».
-- ⚠️ Les clés `navigation.defense` et `navigation.offense` de `src/i18n/fr.ts` et `en.ts` sont
-  partagées avec l'Arène (`ARENE_SUBS`, `ARENE_DIMENSION_SUBS` de `src/App.tsx`) : le Siège prend
-  deux clés à lui (`decksDefense`, `decksOffense`), pointées par `SIEGE_SUBS`.
-- Les adresses ne changent pas (`#/siege/defense`, `#/siege/offense`).
-- Se répercute dans le même commit : le titre de l'en-tête de la page Siège, l'accueil, la nav de
-  `src/App.tsx`, [docs/02-app/README.md](../02-app/README.md), la fiche
-  [siege/](../02-app/siege/README.md), les tests de rendu et la preuve de l'app de bureau qui
-  cherchent ces libellés (`grep -rn "Défense\|Offense" tests bureau/preuve.ts`).
 
 ## Siège : la sous-section « Statistiques »
 

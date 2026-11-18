@@ -67,6 +67,9 @@ export const fr = {
     speedTuning: 'Speed tuning',
     defense: 'Défense',
     offense: 'Offense',
+    // Le Siège seulement : l'Arène garde « Défense » et « Offense ».
+    decksDefense: 'Decks de défense',
+    decksOffense: 'Decks d’offense',
     interserveur: 'Défense interserveur',
     areneDimensionnelle: 'Arène dimensionnelle',
     recommandations: 'Recommandations',
@@ -1568,8 +1571,8 @@ export const fr = {
     // Le tableau des équipes d'un côté.
     board: {
       cote: {
-        defense: { titre: 'Défense', nom: 'défense', de: 'de défense' },
-        offense: { titre: 'Offense', nom: 'attaque', de: "d'attaque" },
+        defense: { titre: 'Decks de défense', nom: 'défense', de: 'de défense' },
+        offense: { titre: 'Decks d’offense', nom: 'attaque', de: "d'attaque" },
       },
       exportSansCompte: 'Charge un compte pour exporter vers l’Optimizer.',
       exportEquipeVide: 'Aucun monstre importable dans cette équipe.',
