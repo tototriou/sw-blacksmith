@@ -60,6 +60,23 @@ tout le monde avant le premier adverse — mais on cherche les vitesses au lieu 
 les juger. Pas de formule fermée : la règle « un seul monstre par tick », les
 boosts de barre et les buffs par tick se mêlent, chaque essai se re-simule.
 
+⚠️⚠️ **Une fois l'analyse passée, la recherche se fait AVEC LES SORTS, pas sur
+les grilles** (`plateauAvecSorts`, [speedTuneAuto.ts](src/lib/speedTuneAuto.ts) ;
+à l'écran `plateauDesRequis`, [speedTuneLignes.ts](src/lib/speedTuneLignes.ts)).
+Les grilles figent chaque effet au tick où son lanceur jouait **aux vitesses du
+moment** : quand la recherche fait monter un lanceur, il joue plus tôt, mais son
+boost restait écrit à l'ancien tick, trop tard pour ceux qu'il devait pousser.
+Avec deux boosts d'équipe à la suite (Kabilla puis Eludia, avant Lagmaron et
+Trinity, Eludia coupée), les vitesses annoncées ne comptaient que le boost du
+premier, déjà à sa place, et demandaient des points pour rien. Avec les sorts,
+chaque effet suit son lanceur ; les cases **saisies** restent à leur tick. Ce
+plateau sert aux vitesses et artéfacts requis de la chaîne, de la carte du
+siège, et aux fenêtres de l'« Ordre des sorts » ; le verdict et les tableaux,
+eux, se lisent toujours sur les grilles. Sans analyse, ou quand la provenance
+d'une grille alliée est inconnue (état enregistré avant `casesAuto`), les
+grilles restent la source
+([tests/speed-tune-boosts.test.ts](tests/speed-tune-boosts.test.ts)).
+
 ⚠️ **C'est un RÉGLAGE D'ÉQUIPE, pas une somme de corrections individuelles.**
 Le solveur demande donc parfois des points à un monstre **qui passe déjà** —
 accéléré, il joue plus tôt et **achète un tick** à celui de derrière — et rien du

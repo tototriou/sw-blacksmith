@@ -4,7 +4,7 @@ import { appliquerCriteres, baseCompleteCriteres } from '../src/lib/criteresOpti
 import { paireRespecteLignes } from '../src/lib/artifactOptim';
 import { leadEffectifMembreOptimizer } from '../src/lib/equipesOptimizer';
 import { consommerImportOptimizer } from '../src/lib/importEquipes';
-import { importerSpeedTuneOptimizer, type EtatPlanSpeedTune } from '../src/lib/importSpeedTuneOptimizer';
+import { deckDimensionnel, importerSpeedTuneOptimizer, type EtatPlanSpeedTune } from '../src/lib/importSpeedTuneOptimizer';
 import { planDepuisSpeedTune, planTient } from '../src/lib/planSpeedTune';
 import { exclusionSelectorKey, type ExclusionSourceData } from '../src/lib/optimizerExclusion';
 import { cleMemoireMembre, type StockageOptimizer } from '../src/lib/optimizerMemberStorage';
@@ -154,6 +154,23 @@ export function testImportSpeedTuneAvecDeckOrigine() {
     egal(invalide.membres.map(m => m.selector), [{ source: source === 'defense' ? 'siege-defense' : 'siege-offense', teamId: team.id, slotIndex: 0 }],
       'slot du deck sans équipement gardé, non remplacé par Box');
   }
+}
+export function testImportSpeedTuneDeckArene() {
+  titre('Import speed tuning · deck d’arène : exemplaires de la Box ; arène dimensionnelle : refusée');
+  for (const source of ['arene-defense', 'arene-offense', 'arene-interserveur'] as const) {
+    // Les monstres 1 et 2 sont aussi dans un deck de siège : l'arène ne le
+    // reprend pas, l'Optimizer ne connaît pas ses équipes.
+    const p = importerSpeedTuneOptimizer([ligne(1), ligne(2)], lead, sources(), fr, { source, teamId: 'a1' });
+    egal(p.membres.map(m => exclusionSelectorKey(m.selector)), ['box:box-1', 'box:box-2'], `${source} : chaque monstre avec son exemplaire de la Box`);
+    egal(p.ignores.length, 0, `${source} : aucun monstre écarté faute de deck d’origine`);
+  }
+  for (const source of ['arene-dimension-defense', 'arene-dimension-offense'] as const) {
+    ok(deckDimensionnel({ source, teamId: 'x' }), `${source} : deck de l’arène dimensionnelle`);
+    const p = importerSpeedTuneOptimizer([ligne(1), ligne(2)], lead, sources(), fr, { source, teamId: 'x' });
+    egal([p.membres.length, p.ignores.map(i => i.raison)], [0, [fr.optimizer.importsEquipe.speedTune.deckDimensionnel, fr.optimizer.importsEquipe.speedTune.deckDimensionnel]],
+      `${source} : rien n’est exporté, et la raison est dite`);
+  }
+  ok(!deckDimensionnel({ source: 'arene-defense', teamId: 'x' }) && !deckDimensionnel(undefined), 'l’arène classique et l’outil seul ne sont pas dimensionnels');
 }
 export function testImportSpeedTuneSansDeckOrigine() {
   titre('Import speed tuning · premier exemplaire Box, RTA, défense puis offense');
@@ -321,7 +338,7 @@ export const verificationsImportSpeedTune: [string, () => void][] = [
   testImportSpeedTuneFicheSwift, testImportSpeedTuneFicheSansSwift, testImportSpeedTuneEcartSwift,
   testImportSpeedTuneLigne206, testImportSpeedTuneLeadElement, testImportSpeedTuneLignesIgnorees,
   testImportSpeedTuneZeroMembre, testImportSpeedTuneUnMembre, testImportSpeedTuneSixMembres,
-  testImportSpeedTuneAvecDeckOrigine, testImportSpeedTuneSansDeckOrigine, testImportSpeedTunePureteEtAnalyse,
+  testImportSpeedTuneAvecDeckOrigine, testImportSpeedTuneDeckArene, testImportSpeedTuneSansDeckOrigine, testImportSpeedTunePureteEtAnalyse,
   testImportSpeedTuneCopiesDeckEtReverification,
   testImportSpeedTuneCompositionRetrouvee, testImportSpeedTuneCompositionAmbigue,
   testImportSpeedTuneCompositionModifiee, testImportSpeedTuneCompositionCopies,

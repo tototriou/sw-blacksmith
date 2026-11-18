@@ -65,8 +65,9 @@ même violet que le plan ci-dessous (voir
   (`optim.regemLibre`). Allumé, une rune **déjà gemmée** peut voir sa ligne
   gemmée remplacée par **une autre stat** absente de la rune (mêmes exclusions et
   emplacements qu'une rune vierge) ; éteint, sa stat reste figée. **Grisé en
-  « Meule seule »** : sans gemme, rien à regemmer. Même bouton dans **Courbes**,
-  réglage mémorisé à part (`runesCurve.regemLibre`), comme le mode gemme/meule.
+  « Meule seule »** : sans gemme, rien à regemmer. ⚠️ **Pas aux Courbes**, qui
+  ne changent jamais la stat d'une gemme et n'en simulent aucune sur une rune
+  qui n'en a pas (voir [courbes.md](courbes.md)).
   - ⚠️ **Un réglage du CALCUL, pas un filtre** : il change le potentiel, le
     gain, le plan « Actuel | Optimisé » et la faisabilité sous « Faisable avec
     ma réserve » (la gemme réclamée peut devenir une autre). Le Résumé, lui,

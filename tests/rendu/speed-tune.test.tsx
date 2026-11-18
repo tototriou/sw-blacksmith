@@ -158,6 +158,26 @@ export function testRenduSpeedTuneAnalyse() {
   ok(t.endsWith('Ordre de tour 1 Veromos tick 4 → 2 Galleon tick 5 → 3 Belladeon tick 6 → 4 Lushen tick 7'), 'l\'ordre de tour, rang et tick');
 }
 
+// Ouvert depuis une équipe d'arène : l'export vers l'Optimizer part (les
+// exemplaires de la Box) ; depuis l'arène dimensionnelle, il est désactivé, et
+// le bouton dit pourquoi.
+export function testRenduSpeedTuneExportArene() {
+  titre('rendu · Speed tuning — export vers l’Optimizer depuis une équipe d’arène');
+  const c = fr.speedTuning.camp;
+  const sources = { box: [], rtaEntries: {}, siegeDefenseTeams: [], siegeOffenseTeams: [], monsterById: new Map(MONSTRES.map((m) => [String(m.id), m])) };
+  const exporter = (source: 'arene-defense' | 'arene-dimension-defense') => {
+    faussLocalStorage({});
+    const html = avecEtat(ETAT_EQUIPE(), () => rendre(
+      <SpeedTuningSection allMonsters={MONSTRES} siegeDefenseTeams={[]} siegeOffenseTeams={[]} compteCharge
+        onImporterEquipe={() => { throw new Error('non appelé au rendu'); }} sourcesOptimizer={sources}
+        deckInitial={{ source, teamId: 'x' }} />));
+    return boutons(html).find((x) => x.texte === c.exporter);
+  };
+  const dimension = exporter('arene-dimension-defense');
+  ok(!!dimension && dimension.desactive && dimension.title === fr.speedTuning.export.dimension, 'arène dimensionnelle : export désactivé, la raison est dite');
+  ok(exporter('arene-defense')?.title !== fr.speedTuning.export.dimension, 'arène classique : pas cette raison');
+}
+
 // Ouvert depuis une équipe de l'Optimizer (feat-speed-tune-depuis-optimizer.md) :
 // l'état à part se lit sous `speedTune.optimizer.`, « Appliquer à l'équipe »
 // remplace l'export, et reste désactivé tant que l'état n'est pas posé (en rendu

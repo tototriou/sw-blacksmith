@@ -21,6 +21,7 @@ import { testRenduOptimizerBandesEquipesClair, testRenduOptimizerBandesEquipesSo
   testRenduTelephoneOptimizerBandesEquipesClair, testRenduTelephoneOptimizerBandesEquipesSombre,
   testOptimizerEquipesJetons } from './rendu/optimizer-bandes.test';
 import testImport from './import.test';
+import { testSpeedTuneDeuxBoostsAtb, testSpeedTuneDeuxBoostsAtbEcran } from './speed-tune-boosts.test';
 import { verificationsImportEquipes } from './import-equipes.test';
 import { testOptimizerImportNavigation } from './optimizer-import-navigation.test';
 import { testOptimizerColonnes, testOptimizerColonnesOnglet, testOptimizerColonnesGuidages, testOptimizerColonnesAttenteResultats, testOptimizerColonnesCoffreSets, testOptimizerColonnesTableau } from './optimizer-colonnes.test';
@@ -82,6 +83,7 @@ import { testOptimizerRattachementIdentites, verificationsOptimizerRattachementO
   testOptimizerRattachementCopiesSansExemplaire, testOptimizerRattachementPermutationEtProprietaire,
   testOptimizerRattachementRuneVendue, testOptimizerRattachementDefensesComplet, testOptimizerRattachementBranchement, testOptimizerRattachementSpeedTune } from './optimizer-rattachement.test';
 import testMeules, { testGemmeMemeStat, testRegemmeDifferent, testReserveParGrade, testPalier, testRegistre, testSansDowngrade } from './meules.test';
+import { testCourbesRunesParRang, testCourbesRunesRuneARune, testCourbesRunesSansGemmeSimulee } from './rune-courbes.test';
 import testArtefacts from './artefacts.test';
 import testArtefactsTop from './artefacts-top.test';
 import testArtefactOptim, {
@@ -406,7 +408,7 @@ import { testRenduRecosPage, testRenduRecosEnTete, testRenduRecosLigneDeckReduit
 import testAnnulerEdition from './annuler-edition.test';
 import { testRenduRunesResume, testRenduRunesListe, testRenduRunesCourbes, testRenduRunesComparaison, testRenduRunesOptimisation, testRenduRunesAVenir, testRenduRunesFiltresLigne, testRenduRunesTriOnglets, testRenduRunesResumeSouris, testRenduRunesListeSouris, testRenduRunesVuesSouris } from './rendu/runes.test';
 import { testRenduCompteMonstres, testRenduCompteArtefactsResume, testRenduCompteArtefactsListe, testRenduCompteArtefactsTop, testRenduCompteSouris, testRenduCompteEffacerFiltres } from './rendu/compte.test';
-import { testRenduSpeedTuneVide, testRenduSpeedTuneCamps, testRenduSpeedTuneAnalyse, testRenduSpeedTuneAppliquer } from './rendu/speed-tune.test';
+import { testRenduSpeedTuneVide, testRenduSpeedTuneCamps, testRenduSpeedTuneAnalyse, testRenduSpeedTuneAppliquer, testRenduSpeedTuneExportArene } from './rendu/speed-tune.test';
 import { testRenduOptimizerVide, testRenduOptimizerMonstre, testRenduOptimizerReglages, testRenduTelephoneOptimizer } from './rendu/optimizer.test';
 import { testRenduOptimizerGabaritsComposants, testRenduOptimizerGabaritsVue, testRenduOptimizerGabaritsAdresse } from './rendu/optimizer-gabarits.test';
 import { testRenduOptimizerGabaritsColonnes, testRenduOptimizerGabaritsDroite, testRenduOptimizerPageBureauDroite } from './rendu/optimizer-gabarits-droite.test';
@@ -644,6 +646,7 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testRenduSpeedTuneCamps', testRenduSpeedTuneCamps],
   ['testRenduSpeedTuneAnalyse', testRenduSpeedTuneAnalyse],
   ['testRenduSpeedTuneAppliquer', testRenduSpeedTuneAppliquer],
+  ['testRenduSpeedTuneExportArene', testRenduSpeedTuneExportArene],
   ['testRenduOptimizerVide', testRenduOptimizerVide],
   ['testRenduOptimizerGabaritsComposants', testRenduOptimizerGabaritsComposants],
   ['testRenduOptimizerGabaritsVue', testRenduOptimizerGabaritsVue],
@@ -775,6 +778,8 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testRenduRtaAmi', testRenduRtaAmi],
   ['testSkillAdapters', testSkillAdapters],
   ['testImport', testImport],
+  ['testSpeedTuneDeuxBoostsAtb', testSpeedTuneDeuxBoostsAtb],
+  ['testSpeedTuneDeuxBoostsAtbEcran', testSpeedTuneDeuxBoostsAtbEcran],
   ['testBancSelection', testBancSelection],
   ['testNavigation', testNavigation],
   ['testNavigationAdresses', testNavigationAdresses],
@@ -1175,6 +1180,9 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testSansDowngrade', testSansDowngrade],
   ['testGemmeMemeStat', testGemmeMemeStat],
   ['testRegemmeDifferent', testRegemmeDifferent],
+  ['testCourbesRunesParRang', testCourbesRunesParRang],
+  ['testCourbesRunesRuneARune', testCourbesRunesRuneARune],
+  ['testCourbesRunesSansGemmeSimulee', testCourbesRunesSansGemmeSimulee],
   ['testReserveParGrade', testReserveParGrade],
   ['testPalier', testPalier],
   ['testMigrationStockage', testMigrationStockage],

@@ -61,7 +61,7 @@ import { Colonnes, OrdreDeTour, RepereTicks, TableauBarres, TeteTicks, largeurTa
 import { jugerApplication, perdOrigine } from '../../lib/speedTuneDepuisPlan';
 import type { ActionImportOptimizer } from '../../lib/actionImportOptimizer';
 import type { ExclusionSourceData } from '../../lib/optimizerExclusion';
-import { importerSpeedTuneOptimizer, raisonRefus } from '../../lib/importSpeedTuneOptimizer';
+import { deckDimensionnel, importerSpeedTuneOptimizer, raisonRefus } from '../../lib/importSpeedTuneOptimizer';
 
 import { useAdversaireReference } from '../../hooks/useAdversaireReference';
 import { useStickyState } from '../../hooks/useStickyState';
@@ -312,6 +312,7 @@ export default function SpeedTuningSection({
   } = useSpeedTune({ allMonsters, siegeDefenseTeams, siegeOffenseTeams, deckInitial, ouverture: appliquer?.ouverture });
 
   const raisonExportOptimizer = useMemo(() => {
+    if (deckDimensionnel(deckInitial ?? undefined)) return st.export.dimension;
     if (!compteCharge) return st.export.sansCompte;
     if (!onImporterEquipe || !sourcesOptimizer) return st.export.indisponible;
     return importerSpeedTuneOptimizer(lignes, leadAllie, sourcesOptimizer, textes, deckInitial ?? undefined).membres.length

@@ -71,10 +71,11 @@ function filtresCommuns(html: string, vue: string) {
   ok(b.some((x) => x.texte === 'Aucune antique' && x.title === 'Masquer les runes antiques' && x.presse === false), `${vue} : « Aucune antique »`);
 }
 
-// Le potentiel : avec la gemme optimale, ou meules seulement.
-function modePotentiel(html: string, vue: string) {
+// Le potentiel : avec la gemme optimale, ou meules seulement. Les Courbes ne
+// simulent aucune gemme nouvelle : leur « Gemme + meule » le dit.
+function modePotentiel(html: string, vue: string, aideGemme = 'Potentiel avec la gemme optimale + les meules') {
   const b = boutons(html);
-  ok(b.some((x) => x.texte === 'Gemme + meule' && x.title === 'Potentiel avec la gemme optimale + les meules' && x.presse === true), `${vue} : « Gemme + meule », enclenché`);
+  ok(b.some((x) => x.texte === 'Gemme + meule' && x.title === aideGemme && x.presse === true), `${vue} : « Gemme + meule », enclenché`);
   ok(b.some((x) => x.texte === 'Meule seule' && x.title === 'Potentiel en gardant les stats actuelles (meules seulement)' && x.presse === false), `${vue} : « Meule seule »`);
 }
 
@@ -130,7 +131,10 @@ export function testRenduRunesCourbes() {
   const t = texteVisible(html);
   const b = boutons(html);
   filtresCommuns(html, 'courbes');
-  modePotentiel(html, 'courbes');
+  modePotentiel(html, 'courbes', 'Potentiel avec les meules, et la gemme déjà posée relancée à son max');
+  // Aucun regemme différent aux Courbes ; la lecture « rune à rune », éteinte.
+  ok(!b.some((x) => x.texte === 'Autoriser un regemme différent'), 'courbes : pas de « Autoriser un regemme différent »');
+  ok(b.some((x) => x.texte === 'Rune à rune' && x.presse === false), 'courbes : « Rune à rune », éteint');
 
   // Combien de runes tracer.
   ok(valeurs(html, 'aria-label').includes('Nombre de runes'), 'nombre de runes à tracer');

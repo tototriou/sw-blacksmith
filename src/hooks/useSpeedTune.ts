@@ -27,6 +27,7 @@ import {
   combatDe as combatDeLigne,
   entreeDe as entreeDeLigne,
   plateauDeLignes,
+  plateauDesRequis,
   estimerCumuls,
   gainPassifDe as gainPassifDeLigne,
   leadDe as leadDeCamp,
@@ -758,18 +759,31 @@ export function useSpeedTune({
     }
   }, [lignes, leadChoisi, leadAllie, leadEnnemi]);
 
+  // ⚠️⚠️ **Le plateau où se cherchent les vitesses REQUIS (chaîne et ordre des
+  // sorts) n'est pas celui des tableaux.** Après une analyse, les grilles
+  // portent chaque effet de sort au tick où son lanceur jouait AUX VITESSES DU
+  // MOMENT. Chercher dessus la vitesse qui manque à un lanceur le faisait jouer
+  // plus tôt sans déplacer son boost : avec Kabilla puis Eludia en boosts
+  // d'équipe, Eludia coupée, les vitesses annoncées pour Eludia, Lagmaron et
+  // Trinity ne comptaient que le boost de Kabilla. Ici, chaque effet suit son
+  // lanceur (`plateauDesRequis`) ; sans analyse, ou si la provenance d'une
+  // grille est inconnue, les grilles restent la source.
+  const plateauRequis = useMemo(
+    () => (auto ? (plateauDesRequis(lignes, leads, donneesKit, choixSorts) ?? tune) : tune),
+    [auto, lignes, leadAllie, leadEnnemi, donneesKit, choixSorts, tune]
+  );
   // Chaîne d'ouverture : toute l'équipe joue-t-elle avant le premier adverse ?
   // Et sinon, quelle vitesse de combat faut-il à ceux qui sont coupés.
   const chaine = useMemo(() => diagnostiquerChaine(tune, HORIZON_TICKS), [tune]);
   const requis = useMemo(
-    () => (chaine.ok ? [] : vitessesRequises(tune, HORIZON_TICKS)),
-    [tune, chaine]
+    () => (chaine.ok ? [] : vitessesRequises(plateauRequis, HORIZON_TICKS)),
+    [plateauRequis, chaine]
   );
   // L'AUTRE levier quand un buff de vitesse est en jeu : monter l'artéfact
   // « Effet aug. VIT », qui l'amplifie. Vide s'il n'y a rien à en attendre.
   const arteRequis = useMemo(
-    () => (chaine.ok ? [] : artefactsRequis(tune, HORIZON_TICKS)),
-    [tune, chaine]
+    () => (chaine.ok ? [] : artefactsRequis(plateauRequis, HORIZON_TICKS)),
+    [plateauRequis, chaine]
   );
 
   // Premiers tours (ordre de tour), numéro d'action par (monstre, tick) et
@@ -822,14 +836,15 @@ export function useSpeedTune({
   // (« min 286, max 151 ») — l'écran disait « trop lent » SANS DIRE DE COMBIEN,
   // précisément sur le monstre qu'on cherchait à régler. C'est la question qu'on
   // pose ici : quelles vitesses pour que TOUT passe.
+  // ⚠️ Sur le plateau des requis, comme la chaîne : chaque boost suit son lanceur.
   const fenetres = useMemo(
-    () => fenetresRequises(tune, ordreVoulu, HORIZON_TICKS, 'combat', true),
-    [tune, ordreVoulu]
+    () => fenetresRequises(plateauRequis, ordreVoulu, HORIZON_TICKS, 'combat', true),
+    [plateauRequis, ordreVoulu]
   );
   // Le même calcul sur l'autre levier : l'artéfact qui amplifie le buff reçu.
   const fenetresArte = useMemo(
-    () => fenetresRequises(tune, ordreVoulu, HORIZON_TICKS, 'artefactBuff', true),
-    [tune, ordreVoulu]
+    () => fenetresRequises(plateauRequis, ordreVoulu, HORIZON_TICKS, 'artefactBuff', true),
+    [plateauRequis, ordreVoulu]
   );
   const fenetreParUid = useMemo(() => new Map(fenetres.map((f) => [f.id, f])), [fenetres]);
   const fenetreArteParUid = useMemo(() => new Map(fenetresArte.map((f) => [f.id, f])), [fenetresArte]);

@@ -39,9 +39,20 @@ de composition, faute de deck correspondant, le repli suit Box, RTA, défense,
 offense ; seule une espèce absente de toutes les sources devient non possédée.
 
 La modale reçoit l’action depuis ses deux parents, `App.tsx` et `SiegeBoard`.
-Elle transmet son `DeckInitial` au même producteur : les exemplaires sont
-ceux du deck d’origine. Elle se ferme seulement après un export accepté
-(`listeCreee` présente). Un refus laisse la modale ouverte avec ses saisies.
+Elle transmet son `DeckInitial` au même producteur : pour un deck de **siège**,
+les exemplaires sont ceux du deck d’origine. Elle se ferme seulement après un
+export accepté (`listeCreee` présente). Un refus laisse la modale ouverte avec
+ses saisies.
+
+- **Deck d’arène** (défense, offense, interserveur) : l’Optimizer ne connaît
+  pas les équipes d’arène. Le deck n’est cherché ni parmi les équipes de
+  siège, ni par sa composition : chaque monstre part avec **son exemplaire de
+  la Box** (repli Box, RTA, défense, offense), sans être écarté faute de deck.
+- ⚠️ **Deck de l’arène dimensionnelle** (`deckDimensionnel`) : ses monstres
+  sont ceux de la box du mode, avec ses runes, pas les exemplaires du compte
+  sur lesquels l’Optimizer travaille. Le bouton est désactivé, son `title` le
+  dit (`export.dimension`), et le producteur écarte chaque ligne
+  (`deckDimensionnel`).
 
 ## Critères transmis
 
