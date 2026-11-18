@@ -472,7 +472,7 @@ export const fr = {
       {
         titre: 'Ton compte en direct',
         texte:
-          "Sans plugin, SWEX n'écrit ton compte qu'à la connexion au jeu. Avec lui, chaque meule, gemme, amélioration, vente ou changement d'équipement arrive dans « Mon compte » pendant la partie.",
+          "Sans plugin, SWEX n'écrit ton compte qu'à la connexion au jeu. Avec lui, chaque meule, gemme, amélioration, vente ou changement d'équipement arrive dans « Mon compte » pendant la partie, et ton compte se met à jour sans te reconnecter.",
       },
       {
         titre: 'Tes combats de guilde',
@@ -511,16 +511,55 @@ export const fr = {
       {
         titre: 'Suis le dossier dans l’application',
         texte:
-          "Dans l'application de bureau : Paramètres › Dossier SW Exporter. Connecte-toi au jeu : ton compte se charge, puis suit chacune de tes actions.",
+          "Dans l'application de bureau : Paramètres › Dossier SW Exporter. Connecte-toi au jeu : ton compte se charge.",
       },
     ],
     swexSurGithub: 'SW Exporter sur GitHub',
+    utiliserTitre: 'Utiliser le plugin',
+    utilisation: [
+      {
+        titre: 'Active « Direct » dans « Mon compte »',
+        texte:
+          "Parmi les filtres des monstres, des runes et des artéfacts. Coupé par défaut. Activé, « Mon compte » suit ta partie : chaque meule, gemme, amélioration, vente ou rune posée y apparaît en quelques instants, sans notification.",
+      },
+      {
+        titre: 'Le direct ne change que « Mon compte »',
+        texte:
+          "L'Optimizer, le speed tuning, la RTA et le siège gardent le compte chargé dans l'application. Couper « Direct » ramène « Mon compte » à ce compte-là.",
+      },
+      {
+        titre: 'Mets ton compte à jour sans te reconnecter',
+        texte:
+          "« Mettre à jour mon compte », sur cette page, reporte ta session sur le compte de l'application, comme une déconnexion suivie d'une reconnexion : une rune que tu viens de looter sert tout de suite dans l'Optimizer. Rien n'est écrit dans le dossier de SW Exporter.",
+      },
+    ],
+    etatTitre: 'Le plugin sur cet ordinateur',
+    pluginAJour: (v: string) => `Installé · version ${v} · à jour`,
+    pluginAncien: (v: string, app: string) => `Installé · version ${v} · la version ${app} est disponible`,
+    pluginPlusRecent: (v: string) => `Installé · version ${v}, plus récente que l'application`,
+    pluginAbsent: "Pas trouvé dans le dossier plugins de SW Exporter.",
+    sansDossier: 'Choisis le dossier SW Exporter dans Paramètres pour voir le plugin et ta session.',
+    telechargerDernier: 'Télécharger la dernière version',
+    session: (heure: string) => `Session en direct · dernière action à ${heure}`,
+    sansSession: 'Aucune session en direct : connecte-toi au jeu, SW Exporter ouvert avec le plugin.',
+    mettreAJour: 'Mettre à jour mon compte',
+    misAJour: (heure: string) => `Compte mis à jour à ${heure}.`,
+    echecMiseAJour: 'Rien à mettre à jour : aucune session en direct lisible.',
     limitesTitre: "Ce qui attend la connexion suivante",
     limites:
-      "L'expérience gagnée hors combat (bâtiments) et les préréglages de la RTA et du siège : ils arrivent à la prochaine connexion au jeu, qui remet tout à plat.",
+      "Les favoris et préréglages de la RTA, les decks, la défense de siège, les verrous de runes et l'expérience gagnée hors combat : le plugin ne les suit pas encore, ils arrivent à la prochaine connexion au jeu.",
     miseAJourTitre: 'Mettre à jour le plugin',
     miseAJour:
       "Le plugin porte la version de l'application : quand l'application change de version, retélécharge-le et remplace l'ancien fichier, puis redémarre SWEX.",
+  },
+
+  // L'interrupteur « Direct » de « Mon compte » (application de bureau).
+  direct: {
+    libelle: 'Direct',
+    activer: 'Suivre ta partie en direct (plugin SW Exporter)',
+    actif: (heure: string) => `En direct · dernière action à ${heure} · cliquer pour couper`,
+    actifSansSession: 'Direct activé · aucune session en direct pour l’instant',
+    indisponible: 'Suivre ta partie en direct — aucune session pour l’instant : connecte-toi au jeu, SW Exporter ouvert avec le plugin',
   },
 
   nouveautes: {

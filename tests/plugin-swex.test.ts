@@ -104,7 +104,9 @@ const craft = (id: number, amount: number): Json => ({
   amount,
 });
 
-function connexion(): Json {
+// Exportée, comme `PARTIE` : le compte en direct de l'app
+// (tests/compte-direct.test.ts) rejoue la même partie.
+export function connexion(): Json {
   return {
     command: 'HubUserLogin',
     ret_code: 0,
@@ -269,7 +271,7 @@ export function testPluginSwexEtat() {
 
 // Une partie fabriquée : meules, vente, équipement, combat, monstre mis en
 // stock, et des commandes qui ne changent rien.
-const PARTIE: [string, Json, Json][] = [
+export const PARTIE: [string, Json, Json][] = [
   ['AmplifyRune_v2', req(), ok0({ rune: rune(12, {}, 15, { sec_eff: [[4, 10, 0, 5]] }), rune_craft_item: craft(41, 2), tvalue: 1100 })],
   ['GetBlackMarketList', req(), ok0({ market_list: [{ runes: [rune(90, {}, 0, { occupied_type: 3 })] }] })],
   ['SellRune', req({ rune_id_list: [13] }), ok0({ runes: [rune(13, {})], tvalue: 1200 })],

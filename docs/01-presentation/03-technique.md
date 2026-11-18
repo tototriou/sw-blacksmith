@@ -34,6 +34,8 @@ Code dans **`bureau/`** (hors de `src/` : il tourne dans Node) :
   `preload.ts` ;
 - `miseAJour.ts` (mise à jour automatique, `electron-updater`) ;
 - `swex.ts` + `swexPur.ts` (dossier SW Exporter : « Mon compte » suit les exports) ;
+  `swexLive.ts` (le fichier live du plugin SWEX, lu au fil de l'eau : « Mon compte » en direct,
+  « Mettre à jour mon compte », la version du plugin installé) ;
   `journalSwexDisque.ts` (le journal SWEX du même dossier : l'arène dimensionnelle) ;
 - `session.ts` + `sessionPur.ts` (session en cours : « Sauvegarder » la réécrit, « Sauvegarder
   sous… », `session.json` ; dossier SW Blacksmith et son sous-dossier `sessions`,
@@ -53,7 +55,10 @@ Code nettoyé par `scripts/lib/environnementElectron.mjs`). Côté page : `src/l
 mise à jour, cœurs physiques), `src/components/MiseAJourBureau.tsx` (la mise à jour dite par la notification),
 `src/components/BlocApplication.tsx` (bloc « Application » des Réglages : version, mise à jour à
 portée, dossier SW Exporter), `src/components/SuiviSwex.tsx` (applique l'export : tout après le
-choix d'un invocateur, « Mon compte » ensuite), `src/hooks/useEtatSwex.ts` (l'état du dossier, lu
+choix d'un invocateur, « Mon compte » ensuite), `src/hooks/useCompteDirect.ts` +
+`src/lib/compteDirect.ts` (« Mon compte » en direct, objet par objet, et « Mettre à jour mon compte »),
+`src/components/account/InterrupteurDirect.tsx` (l'interrupteur « Direct » des vues de « Mon compte »),
+`src/hooks/useEtatSwex.ts` (l'état du dossier, lu
 par les Réglages et par `SidebarCompte`, dont la carte devient le menu des invocateurs ; ses choix
 passent par la garde `GardeChangementCompte`), `src/components/ChangementCompteDialog.tsx`
 (« Sauvegarder ta session ? » avant un changement de compte), `src/hooks/useSessionEnCours.ts`
@@ -87,7 +92,8 @@ npm run benchmark:optim
 npm run bureau         # l'application de bureau sur le serveur de dev
 npm run bureau:local   # l'application de bureau sur le build (comme installée)
 npm run bureau:preuve  # l'app se contrôle elle-même, captures + resultats.json (--exe : l'app installée ;
-                       # --conservation : les données survivent à la fermeture ; --swex : le dossier SW Exporter)
+                       # --conservation : les données survivent à la fermeture ; --swex : le dossier SW Exporter
+                       # et le direct du plugin SWEX)
 npm run bureau:paquet  # l'installeur de la plateforme courante dans paquets/ (electron-builder.yml)
 ```
 

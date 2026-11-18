@@ -85,6 +85,8 @@ lecteur côté page (`estBureau()` = l'objet présent, avec `bureau: true`).
 | `swex.etat()`, `choisirDossier()`, `choisirInvocateur(fichier)`, `oublier()` | `bureau:swex-etat`, `bureau:swex-choisir-dossier`, `bureau:swex-choisir-invocateur`, `bureau:swex-oublier` (`invoke`) | rendent l'état du réglage |
 | `swex.surEtat(rappel)`, `swex.surExport(rappel)` | `bureau:swex-etat`, `bureau:swex-export` | bureau → page |
 | `swex.pret(pageSansCompte)`, `swex.lu(modifie)` | `bureau:swex-pret`, `bureau:swex-lu` | page → bureau |
+| `swex.etatDirect()`, `swex.activerDirect(oui)`, `swex.mettreAJour()` | `bureau:swex-direct-etat`, `bureau:swex-direct-activer`, `bureau:swex-mettre-a-jour` (`invoke`) | le direct du plugin SWEX : son état, l'interrupteur, le compte du fichier live sous forme d'export ([feat-swex-direct.md](feat-swex-direct.md)) |
+| `swex.surEtatDirect(rappel)`, `swex.surLignesDirect(rappel)` | `bureau:swex-direct-etat`, `bureau:swex-direct-lignes` | bureau → page |
 | `session.etat()`, `retenir(oui)`, `choisirDossier()`, `oublierDossier()`, `oublier()` | `bureau:session-etat`, `bureau:session-retenir`, `bureau:session-choisir-dossier`, `bureau:session-oublier-dossier`, `bureau:session-oublier` (`invoke`) | rendent l'état : session en cours, dossier SW Blacksmith |
 | `session.sauvegarder(texte, nomPropose)`, `sauvegarderSous(texte, nomPropose)` | `bureau:session-sauvegarder`, `bureau:session-sauvegarder-sous` (`invoke`) | rendent l'issue de l'écriture |
 | `session.surEtat(rappel)` | `bureau:session-etat` | bureau → page |
@@ -289,6 +291,13 @@ Le compte tenu à jour **pendant la partie** par le plugin SWEX du dépôt :
   un instant, dossier synchronisé, dossier absent au lancement) : l'état est
   diffusé entre-temps, et la surveillance revenue relit le dossier et
   l'export suivi.
+- **Le direct** (plugin SWEX) : une seconde surveillance, sur
+  le dossier `SWBlacksmith` (`bureau/swexLive.ts`), donne à la page les lignes du
+  fichier live de l'invocateur suivi pour « Mon compte » (interrupteur
+  « Direct », coupé par défaut, retenu dans `swex.json`), et « Mettre à jour
+  mon compte » (page SW Exporter) applique son compte comme un nouvel export.
+  Détail : [feat-swex-direct.md](feat-swex-direct.md) § « Dans l'application
+  de bureau ».
 
 ### L'arène dimensionnelle : le journal SWEX
 
@@ -449,7 +458,7 @@ boutons restent affichés, désactivés quand il n'y a rien à faire.
 ```
 npm run bureau:preuve                  # l'app se contrôle elle-même (resultats.json)
 npm run bureau:preuve -- --conservation  # les données et la session en cours survivent à la fermeture
-npm run bureau:preuve -- --swex        # le dossier SW Exporter, sur des fixtures : choix, sauvegarde proposée, import complet, exports suivants
+npm run bureau:preuve -- --swex        # le dossier SW Exporter, sur des fixtures : choix, sauvegarde proposée, import complet, exports suivants ; puis le direct du plugin (« Direct », ligne ajoutée, « Mettre à jour mon compte », dossier SWEX intact)
 npm run bureau:preuve -- --session     # « Sauvegarder », « Sauvegarder sous… », conservation refusée
 npm run bureau:preuve -- --discord     # la connexion à Discord, devant le vrai service et un Discord simulé : code collé, conservation refusée puis acceptée, favori, réouverture, déconnexion
 npm run bureau:preuve -- <dossier> --exe "<app installée>"  # la même chose, sur l'app installée

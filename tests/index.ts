@@ -351,6 +351,8 @@ import testBureauProtocole from './bureau-protocole.test';
 import testBureauFenetre from './bureau-fenetre.test';
 import testBureauMiseAJour from './bureau-mise-a-jour.test';
 import testBureauSwex, { testBureauJournalSwex } from './bureau-swex.test';
+import { testBureauSwexDirect } from './bureau-swex-direct.test';
+import { testCompteDirect } from './compte-direct.test';
 import {
   testPluginSwexArchive,
   testPluginSwexEtat,
@@ -403,6 +405,7 @@ import { testRenduAccueil, testRenduAccueilBureau, testRenduAccueilDiscord, test
 import { testDemoAccueil } from './demo-accueil.test';
 import { testRenduTelecharger } from './rendu/telecharger.test';
 import { testRenduSwExporter, testRenduSwExporterBureau } from './rendu/sw-exporter.test';
+import { testRenduCompteDirect } from './rendu/compte-direct.test';
 import { testRenduBureauTextes } from './rendu/bureau-textes.test';
 import { testRenduBureauCoeursRecherche } from './rendu/recherche-coeurs.test';
 import { testRenduBarreSession } from './rendu/barre-session.test';
@@ -767,6 +770,7 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testRenduTelecharger', testRenduTelecharger],
   ['testRenduSwExporter', testRenduSwExporter],
   ['testRenduSwExporterBureau', testRenduSwExporterBureau],
+  ['testRenduCompteDirect', testRenduCompteDirect],
   ['testRenduBureauTextes', testRenduBureauTextes],
   ['testRenduBureauCoeursRecherche', testRenduBureauCoeursRecherche],
   ['testRenduBarreSession', testRenduBarreSession],
@@ -1192,6 +1196,8 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testBureauFenetre', testBureauFenetre],
   ['testBureauMiseAJour', testBureauMiseAJour],
   ['testBureauSwex', testBureauSwex],
+  ['testBureauSwexDirect', testBureauSwexDirect],
+  ['testCompteDirect', testCompteDirect],
   ['testPluginSwexEtat', testPluginSwexEtat],
   ['testPluginSwexLive', testPluginSwexLive],
   ['testPluginSwexArchive', testPluginSwexArchive],

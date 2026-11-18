@@ -67,7 +67,9 @@ dans Node. Côté page, `src/lib/bureau.ts` (`estBureau()`) dit si l'on est au b
 Le plugin SWEX du dépôt, **`plugin-swex/`**, tient le compte à jour pendant la partie
 (`plugin-swex/source/etatDirect.ts` : le moteur, pur et testé), archive l'état du compte à chaque
 connexion (`plugin-swex/source/archive.ts`) et garde le contenu des combats de guilde
-(`plugin-swex/source/guilde.ts`). Détail :
+(`plugin-swex/source/guilde.ts`). L'app de bureau lit son fichier live (`bureau/swexLive.ts`) :
+« Mon compte » en direct (`src/lib/compteDirect.ts`, `src/hooks/useCompteDirect.ts`) et « Mettre à
+jour mon compte » (page SW Exporter). Détail :
 [feat-swex-direct.md](../02-app/bureau/feat-swex-direct.md).
 
 ## Le service Discord
@@ -344,6 +346,7 @@ exemptés.
 | `useBuildsRapides` | réglage global : les combinaisons et le nombre de builds du bloc « Builds les plus rapides » (Résumé des runes) |
 | `useFormeResultats` | réglage : les résultats de l'Optimizer en cartes ou en tableau (bureau) |
 | `useEtatSwex` | l'état du dossier SW Exporter au bureau, lu par les Réglages et par `SidebarCompte` |
+| `useCompteDirect` | le compte en direct du plugin SWEX au bureau, pour « Mon compte » seulement ; l'interrupteur « Direct » et « Mettre à jour mon compte » par `DirectSwexContext` |
 
 ## Calcul — `src/lib/`
 
@@ -359,7 +362,7 @@ Fonctions **pures**, testables sans rendu. C'est ici que va toute logique, jamai
 | Tri | `tri.ts` (le SENS d'un tri, partagé par toutes les listes) |
 | Artéfacts | `artifacts.ts` |
 | Dégâts réels | `damage.ts` ([degats-reels/](../02-app/degats-reels/README.md)) |
-| Import de compte | `importAccount.ts` (parse SWEX), `journalSwex.ts` (journal complet de SWEX : la box de l'arène dimensionnelle), `applyAccount.ts` (→ états), `accountStore.ts` (IndexedDB), `accountViews.ts` |
+| Import de compte | `importAccount.ts` (parse SWEX), `compteDirect.ts` (« Mon compte » en direct : le fichier live du plugin SWEX converti objet par objet par les fonctions de l'import), `journalSwex.ts` (journal complet de SWEX : la box de l'arène dimensionnelle), `applyAccount.ts` (→ états), `accountStore.ts` (IndexedDB), `accountViews.ts` |
 | Monstres | `monsterForms.ts`, `monsterSkills.ts`, `monsterSort.ts`, `collabPairs.ts` |
 | Siège / recos | `recoMatch.ts`, `recoSearch.ts`, `recoShare.ts`, `recoFromSiege.ts`, `recoDefenses.ts`, `recoFusion.ts` (import qui fusionne dans la recommandation qu'il complète), `ownedBuilds.ts`, `annulerEdition.ts` (« Annuler les modifications » d'une reco ou d'un deck en édition), `reinsererA.ts` (« Annuler » une suppression : l'élément revient à sa place, équipes et recos) |
 | Optimizer — listes et équipes | `optimizerMemberStorage.ts` (stockage indépendant des membres, de leurs identités et des équipes ; contenu de liste), `equipesOptimizer.ts` (équipes, lead effectif d'un membre selon le contenu), `criteresOptimizer.ts` (classement des champs en critères personnels du membre ou globaux), `optimizerCriteriaOwner.ts` (à quel membre appartiennent les critères affichés), `optimizerRattachement.ts` (re-rattachement des membres et revérification au réimport du compte), `optimizerBackup.ts` (point de sauvegarde des listes), `optimizerListNames.ts` (premier nom « Liste N » libre), `combatListeOptimizer.ts` + `competencesInvocateur.ts` (le contenu de la liste décide des compétences d'invocateur ; lecture commune de ce réglage) |

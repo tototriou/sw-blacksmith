@@ -442,7 +442,7 @@ export const en: Dictionnaire = {
       {
         titre: 'Your account, live',
         texte:
-          'Without the plugin, SWEX only writes your account when you log in to the game. With it, every grind, gem, upgrade, sale or equipment change reaches “My account” while you play.',
+          'Without the plugin, SWEX only writes your account when you log in to the game. With it, every grind, gem, upgrade, sale or equipment change reaches “My account” while you play, and your account updates without logging in again.',
       },
       {
         titre: 'Your guild battles',
@@ -480,17 +480,54 @@ export const en: Dictionnaire = {
       },
       {
         titre: 'Follow the folder in the app',
-        texte:
-          'In the desktop app: Settings › SW Exporter folder. Log in to the game: your account loads, then follows each of your actions.',
+        texte: 'In the desktop app: Settings › SW Exporter folder. Log in to the game: your account loads.',
       },
     ],
     swexSurGithub: 'SW Exporter on GitHub',
+    utiliserTitre: 'Using the plugin',
+    utilisation: [
+      {
+        titre: 'Turn on “Live” in “My account”',
+        texte:
+          'Among the monster, rune and artifact filters. Off by default. When on, “My account” follows your game: every grind, gem, upgrade, sale or rune you equip shows up within moments, without a notification.',
+      },
+      {
+        titre: 'Live only changes “My account”',
+        texte:
+          'The Optimizer, speed tuning, RTA and siege keep the account loaded in the app. Turning “Live” off brings “My account” back to that account.',
+      },
+      {
+        titre: 'Update your account without logging in again',
+        texte:
+          '“Update my account”, on this page, carries your session over to the app’s account, like logging out and back in: a rune you just looted is ready in the Optimizer. Nothing is written to the SW Exporter folder.',
+      },
+    ],
+    etatTitre: 'The plugin on this computer',
+    pluginAJour: (v: string) => `Installed · version ${v} · up to date`,
+    pluginAncien: (v: string, app: string) => `Installed · version ${v} · version ${app} is available`,
+    pluginPlusRecent: (v: string) => `Installed · version ${v}, newer than the app`,
+    pluginAbsent: 'Not found in the SW Exporter plugins folder.',
+    sansDossier: 'Choose the SW Exporter folder in Settings to see the plugin and your session.',
+    telechargerDernier: 'Download the latest version',
+    session: (heure: string) => `Live session · last action at ${heure}`,
+    sansSession: 'No live session: log in to the game with SW Exporter open and the plugin installed.',
+    mettreAJour: 'Update my account',
+    misAJour: (heure: string) => `Account updated at ${heure}.`,
+    echecMiseAJour: 'Nothing to update: no readable live session.',
     limitesTitre: 'What waits for the next login',
     limites:
-      'Experience gained outside battles (buildings) and RTA and siege presets: they arrive at your next login to the game, which resets everything.',
+      'RTA favorites and presets, decks, siege defense, rune locks and experience gained outside battles: the plugin does not follow them yet, they arrive at your next login to the game.',
     miseAJourTitre: 'Updating the plugin',
     miseAJour:
       'The plugin carries the app version: when the app changes version, download it again and replace the old file, then restart SWEX.',
+  },
+
+  direct: {
+    libelle: 'Live',
+    activer: 'Follow your game live (SW Exporter plugin)',
+    actif: (heure: string) => `Live · last action at ${heure} · click to turn off`,
+    actifSansSession: 'Live on · no live session for now',
+    indisponible: 'Follow your game live — no session yet: log in to the game with SW Exporter open and the plugin installed',
   },
 
   nouveautes: {

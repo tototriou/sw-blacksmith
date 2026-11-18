@@ -25,13 +25,47 @@
 // suivi, elle part à la page (`bureau:swex-dimension`) avec les équipes
 // récentes de l'export (les attaques), et la page confirme l'avoir appliquée
 // (`bureau:swex-dimension-lue`).
+//
+// Le DIRECT : le plugin SWEX « SW Blacksmith Live » écrit le compte pendant
+// la partie (`SWBlacksmith/<nom>-<id>/compte.live.jsonl`). « Direct » activé
+// (page « Mon compte »), ses lignes partent à la page à mesure qu'elles
+// s'écrivent : le fichier entier d'abord, puis les seules lignes ajoutées
+// (`bureau:swex-direct-lignes`, src/lib/compteDirect.ts). Sans notification,
+// et sans rien enregistrer : « Mon compte » change, le compte de l'app non.
+// « Mettre à jour » (page SW Exporter) rend le compte du fichier live sous la
+// forme d'un export, que la page applique comme un nouvel export. ⚠️ Rien
+// n'est jamais écrit dans le dossier de SWEX.
 
 import { app, BrowserWindow, dialog, ipcMain } from 'electron';
 import { FSWatcher, promises, readdirSync, readFileSync, statSync, watch, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { aDonner, dimensionADonner, ExportCompte, exportsDuDossier, lireNomExport, lireReglage, ReglageSwex } from './swexPur';
+import { depuisLignesLive, versExport } from '../plugin-swex/source/etatDirect';
+import {
+  aDonner,
+  dimensionADonner,
+  DOSSIER_PLUGIN,
+  ExportCompte,
+  exportsDuDossier,
+  liveAJour,
+  lireNomExport,
+  lireReglage,
+  ReglageSwex,
+  statutPlugin,
+  StatutPlugin,
+} from './swexPur';
+import { cheminLive, enteteDuLive, heureExport, lireLive, LectureLive, versionInstallee } from './swexLive';
 import { ajoutContientSaison, NOM_JOURNAL, saisonDuJournal } from './journalSwexDisque';
 import { textesBureau } from './textes';
+
+// Le direct, vu de la page : l'interrupteur, s'il y a un fichier live de la
+// dernière connexion (`disponible`), sa dernière écriture, et le plugin
+// installé comparé à l'app.
+export interface EtatDirectSwex {
+  actif: boolean;
+  disponible: boolean;
+  maj: number | null;
+  plugin: { installee: string | null; app: string; statut: StatutPlugin };
+}
 
 export interface EtatSwex {
   dossier: string | null;
@@ -48,6 +82,9 @@ export interface PreuveSwex {
 }
 
 const ATTENTE = 1500;
+// Le fichier live : une ligne de quelques centaines d'octets, écrite d'un
+// coup — un délai court regroupe seulement une rafale.
+const ATTENTE_DIRECT = 300;
 // Délai avant de relancer une surveillance perdue (disque démonté un
 // instant, dossier synchronisé, dossier absent au lancement).
 const RELANCE = 5000;
@@ -79,6 +116,13 @@ export function brancherSwex(fenetre: BrowserWindow, preuve?: PreuveSwex) {
   let complet = false;
   // Octets du journal SWEX déjà examinés : seul ce qui s'y ajoute est relu.
   let journalVu = 0;
+  // Le direct : la dernière lecture du fichier live DONNÉE à la page, la
+  // surveillance du dossier `SWBlacksmith`, et la file de ses lectures (une à la fois :
+  // deux lectures croisées enverraient deux fois les mêmes lignes).
+  let lecture: LectureLive | null = null;
+  let surveillanceDirect: FSWatcher | null = null;
+  let minuterieDirect: ReturnType<typeof setTimeout> | null = null;
+  let fileDirect: Promise<unknown> = Promise.resolve();
 
   const deLaPage = (e: Electron.IpcMainEvent | Electron.IpcMainInvokeEvent) => e.sender === fenetre.webContents;
   const envoyer = (canal: string, valeur: unknown) => {
@@ -158,6 +202,102 @@ export function brancherSwex(fenetre: BrowserWindow, preuve?: PreuveSwex) {
     }
   }
 
+  // Le fichier live de l'invocateur suivi, s'il est celui de la DERNIÈRE
+  // connexion (`liveAJour`), et l'état du direct.
+  async function calculerDirect(): Promise<{ etat: EtatDirectSwex; chemin: string | null }> {
+    const { dossier, fichier } = reglage;
+    const versionApp = app.getVersion();
+    const installee = dossier ? await versionInstallee(dossier) : null;
+    const id = fichier ? lireNomExport(fichier)?.id : undefined;
+    let chemin: string | null = null;
+    let maj: number | null = null;
+    if (dossier && fichier && id) {
+      const trouve = await cheminLive(dossier, id);
+      if (trouve) {
+        const entete = await enteteDuLive(trouve).catch(() => null);
+        const tExport = await heureExport(join(dossier, fichier)).catch(() => null);
+        if (entete && String(entete.wizardId) === id && liveAJour(entete.t, tExport)) {
+          chemin = trouve;
+          maj = await promises.stat(trouve).then((s) => s.mtimeMs, () => null);
+        }
+      }
+    }
+    return {
+      etat: {
+        actif: reglage.direct,
+        disponible: chemin !== null,
+        maj,
+        plugin: { installee, app: versionApp, statut: statutPlugin(installee, versionApp) },
+      },
+      chemin,
+    };
+  }
+
+  // Donne à la page ce qui s'est ajouté au fichier live (`relire` : tout),
+  // puis l'état du direct. Interrupteur coupé ou fichier périmé : la page
+  // oublie le compte en direct (aucune ligne, `debut`).
+  function suivreDirect(relire: boolean): Promise<EtatDirectSwex | null> {
+    const suite = fileDirect.then(async () => {
+      if (!pagePrete) return null;
+      const { etat, chemin } = await calculerDirect();
+      if (reglage.direct && chemin) {
+        try {
+          const r = await lireLive(chemin, relire ? null : lecture);
+          lecture = r.lecture;
+          if (r.debut || r.lignes.length) envoyer('bureau:swex-direct-lignes', { debut: r.debut, lignes: r.lignes });
+        } catch {
+          lecture = null; // réécrit à l'instant : le prochain changement relira tout
+        }
+      } else if (lecture !== null || relire) {
+        lecture = null;
+        envoyer('bureau:swex-direct-lignes', { debut: true, lignes: [] });
+      }
+      envoyer('bureau:swex-direct-etat', etat);
+      return etat;
+    });
+    fileDirect = suite.catch(() => null);
+    return suite.catch(() => null);
+  }
+
+  // Surveille le dossier `SWBlacksmith` et ses dossiers d'invocateurs. Absent (pas de
+  // plugin, pas encore de connexion) : la surveillance de la racine voit sa
+  // création et relance celle-ci (`directAJour`).
+  // ⚠️ **Jamais sur un dossier absent** : sous Linux, la surveillance
+  // récursive de Node ne lève rien sur un chemin qui n'existe pas — elle ne
+  // surveille rien, en silence, et ne se relançait jamais. Le dossier
+  // surveillé est retenu par son inode : supprimé puis recréé, c'en est un
+  // autre, et la surveillance repart.
+  let inodeDirect: number | null = null;
+  const inodeDuDossierPlugin = () => {
+    try {
+      return reglage.dossier ? statSync(join(reglage.dossier, DOSSIER_PLUGIN)).ino : null;
+    } catch {
+      return null;
+    }
+  };
+  function surveillerDirect() {
+    surveillanceDirect?.close();
+    surveillanceDirect = null;
+    inodeDirect = inodeDuDossierPlugin();
+    if (!reglage.dossier || inodeDirect === null) return;
+    try {
+      surveillanceDirect = watch(join(reglage.dossier, DOSSIER_PLUGIN), { recursive: true }, () => {
+        if (minuterieDirect) clearTimeout(minuterieDirect);
+        minuterieDirect = setTimeout(() => void suivreDirect(false), ATTENTE_DIRECT);
+      });
+      surveillanceDirect.on('error', () => {
+        surveillanceDirect?.close();
+        surveillanceDirect = null;
+        inodeDirect = null;
+      });
+    } catch {
+      surveillanceDirect = null;
+      inodeDirect = null;
+    }
+  }
+  // La surveillance porte-t-elle encore sur le dossier `SWBlacksmith` actuel ?
+  const directAJour = () => inodeDuDossierPlugin() === inodeDirect;
+
   // ⚠️ **Une surveillance perdue se relance.** Sur une erreur (disque externe
   // démonté un instant, dossier synchronisé) ou un dossier illisible, elle
   // était fermée pour de bon : les nouveaux exports n'arrivaient plus dans
@@ -173,6 +313,7 @@ export function brancherSwex(fenetre: BrowserWindow, preuve?: PreuveSwex) {
       envoyer('bureau:swex-etat', etat());
       void donner(false);
       void donnerDimension(true);
+      void suivreDirect(true);
     }, RELANCE);
   }
 
@@ -182,17 +323,23 @@ export function brancherSwex(fenetre: BrowserWindow, preuve?: PreuveSwex) {
     surveillance = null;
     if (relance) clearTimeout(relance);
     relance = null;
+    surveillerDirect();
     if (!reglage.dossier) return false;
     try {
       // Non récursif : seuls les exports et le journal de la RACINE comptent
       // (`live` écrit en continu pendant une partie). Tout changement relance
       // la liste, l'export suivi et le journal, une fois le dossier calme.
+      // Le fichier live a sa propre surveillance (`surveillerDirect`) ; un
+      // nouvel export peut toutefois le rendre périmé, ou le dossier `SWBlacksmith`
+      // apparaître : le direct est revu aussi.
       surveillance = watch(reglage.dossier, () => {
         if (minuterie) clearTimeout(minuterie);
         minuterie = setTimeout(() => {
           envoyer('bureau:swex-etat', etat());
           void donner(false);
           void donnerDimension(false);
+          if (!directAJour()) surveillerDirect();
+          void suivreDirect(false);
         }, ATTENTE);
       });
       surveillance.on('error', () => {
@@ -232,7 +379,7 @@ export function brancherSwex(fenetre: BrowserWindow, preuve?: PreuveSwex) {
       if (r.canceled || !r.filePaths[0]) return etat();
       dossier = r.filePaths[0];
     }
-    reglage = { dossier, fichier: null, dernierLu: null, dimensionLue: null };
+    reglage = { dossier, fichier: null, dernierLu: null, dimensionLue: null, direct: reglage.direct };
     // Un seul invocateur dans le dossier : c'est lui.
     const seul = etat().exports;
     if (seul.length === 1) reglage.fichier = seul[0].fichier;
@@ -241,6 +388,7 @@ export function brancherSwex(fenetre: BrowserWindow, preuve?: PreuveSwex) {
     surveiller();
     void donner(false);
     void donnerDimension(true);
+    void suivreDirect(true);
     return repondre();
   });
 
@@ -253,16 +401,50 @@ export function brancherSwex(fenetre: BrowserWindow, preuve?: PreuveSwex) {
     ecrire();
     void donner(false);
     void donnerDimension(true);
+    void suivreDirect(true);
     return repondre();
   });
 
   ipcMain.handle('bureau:swex-oublier', (e) => {
     if (!deLaPage(e)) return null;
-    reglage = { dossier: null, fichier: null, dernierLu: null, dimensionLue: null };
+    reglage = { dossier: null, fichier: null, dernierLu: null, dimensionLue: null, direct: reglage.direct };
     complet = false;
     ecrire();
     surveiller();
+    void suivreDirect(true);
     return repondre();
+  });
+
+  // Le direct : son état (relu à la demande : la page SW Exporter l'affiche
+  // à l'ouverture, plugin installé entre-temps compris), l'interrupteur.
+  ipcMain.handle('bureau:swex-direct-etat', async (e) => (deLaPage(e) ? (await calculerDirect()).etat : null));
+  ipcMain.handle('bureau:swex-direct-activer', async (e, oui: unknown) => {
+    if (!deLaPage(e) || typeof oui !== 'boolean') return null;
+    reglage = { ...reglage, direct: oui };
+    ecrire();
+    return suivreDirect(true);
+  });
+
+  // « Mettre à jour » : le compte du fichier live, sous la forme d'un export,
+  // que la page applique comme un nouvel export de SWEX. ⚠️ Lu seulement :
+  // rien ne s'écrit dans le dossier de SWEX. L'export du disque, plus ancien,
+  // est marqué lu : il ne reviendra pas écraser le compte mis à jour.
+  ipcMain.handle('bureau:swex-mettre-a-jour', async (e) => {
+    if (!deLaPage(e)) return null;
+    const { chemin } = await calculerDirect();
+    if (!chemin || !reglage.dossier || !reglage.fichier) return null;
+    try {
+      const compte = depuisLignesLive((await promises.readFile(chemin, 'utf8')).split('\n'));
+      if (!compte) return null;
+      const exporte = await promises.stat(join(reglage.dossier, reglage.fichier)).then((s) => s.mtimeMs, () => null);
+      if (exporte !== null && (reglage.dernierLu === null || exporte > reglage.dernierLu)) {
+        reglage = { ...reglage, dernierLu: exporte };
+        ecrire();
+      }
+      return { texte: JSON.stringify(versExport(compte)), t: compte.tvalue };
+    } catch {
+      return null;
+    }
   });
 
   // La page est prête (données des monstres chargées, compte conservé relu) :
@@ -272,6 +454,7 @@ export function brancherSwex(fenetre: BrowserWindow, preuve?: PreuveSwex) {
     pagePrete = true;
     void donner(pageSansCompte === true);
     void donnerDimension(true, pageSansDimension === true);
+    void suivreDirect(true);
   });
 
   // La page a APPLIQUÉ la saison de l'arène dimensionnelle de cette heure

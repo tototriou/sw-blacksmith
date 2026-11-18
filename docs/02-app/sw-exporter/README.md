@@ -31,15 +31,39 @@ Fichiers : [SwExporterPage.tsx](src/pages/SwExporterPage.tsx) ·
   bureau — un navigateur ne peut pas lire un dossier de l'ordinateur — et
   « Télécharger l'application » mène à [Télécharger](../telecharger/). Dans
   l'app, ni la phrase ni le lien (la page Télécharger n'y existe pas).
+- **Dans l'app de bureau seulement**, la carte **« Le plugin sur cet
+  ordinateur »** (`EtatPlugin`, `CartePlugin`) :
+  - le plugin installé dans le dossier `plugins` de SWEX, comparé à l'app :
+    « Installé · version X · à jour », « … · la version Y est disponible »,
+    « … plus récente que l'application », ou « Pas trouvé » ; ancien ou
+    absent, **« Télécharger la dernière version »** (le fichier que sert
+    l'app, enregistré sous son nom) ;
+  - la session en direct et l'heure de sa dernière action, ou comment en
+    avoir une ;
+  - **« Mettre à jour mon compte »** : reporte la session sur le compte de
+    l'app, sans se reconnecter — désactivé sans session ; le résultat s'écrit
+    sous le bouton, à une place réservée, sans notification. Détail :
+    [feat-swex-direct.md](../bureau/feat-swex-direct.md) § « Mettre à jour mon
+    compte ».
+  - Sans dossier SWEX suivi : une ligne renvoie aux Paramètres.
+
+  L'état est redemandé à l'ouverture de la page : un plugin installé depuis
+  le lancement compte.
 - **Installer le plugin**, cinq étapes numérotées : installer SW Exporter
   (lien « SW Exporter sur GitHub », nouvel onglet ; garder ProfileExport
   activé) ; télécharger le plugin ; le déposer dans le dossier `plugins` de
   « Summoners War Exporter Files » ; redémarrer SWEX (le plugin apparaît
   activé, les combats de guilde se désactivent au même endroit) ; suivre le
   dossier dans l'app (Paramètres › Dossier SW Exporter).
+- **Utiliser le plugin**, trois étapes, sur le site comme dans l'app :
+  activer « Direct » dans « Mon compte » (coupé par défaut, sans
+  notification) ; le direct ne change que « Mon compte » ; « Mettre à jour mon
+  compte » reporte la session sans reconnexion, et rien n'est écrit dans le
+  dossier de SWEX.
 - Deux cartes : **Mettre à jour le plugin** (il porte la version de l'app :
   le retélécharger à chaque version) et **Ce qui attend la connexion
-  suivante** (l'expérience hors combat, les préréglages RTA et siège).
+  suivante** (ce que le plugin ne suit pas encore : favoris et préréglages
+  RTA, decks, défense de siège, verrous de runes, expérience hors combat).
 
 ## Règles
 

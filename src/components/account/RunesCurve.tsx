@@ -18,6 +18,7 @@ import FiltresRunes from './FiltresRunes';
 import CurveChart, { CurveSeries, OWN_COLOR } from './CurveChart';
 import CurveLegend from './CurveLegend';
 import HelpPopover from '../HelpPopover';
+import InterrupteurDirect from './InterrupteurDirect';
 import { useTraduction } from '../../hooks/useLangue';
 
 interface Props {
@@ -161,6 +162,10 @@ export default function RunesCurve({ runes }: Props) {
           résultats, ce qui n'est pas le cas ici. */}
       {/* Au DOIGT : les rangées d'avant (`lg:hidden`). */}
       <div className="flex flex-col gap-3 mb-4 lg:hidden">
+        {/* Application de bureau : « Mon compte » en direct (à la souris, en
+            tête de `FiltresRunes`). */}
+        <InterrupteurDirect className="self-start" />
+
         {/* Sets : icônes seules (voir SetFilter) */}
         <SetFilter runes={runes} value={sets} onChange={setSets} />
 

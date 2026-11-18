@@ -112,6 +112,7 @@ import {
 import { useSessionEnCours } from './hooks/useSessionEnCours';
 import MiseAJourBureau from './components/MiseAJourBureau';
 import SuiviSwex from './components/SuiviSwex';
+import { DirectSwexContext, useCompteDirect } from './hooks/useCompteDirect';
 import ChangementCompteDialog from './components/ChangementCompteDialog';
 import { GardeChangementCompte } from './hooks/useEtatSwex';
 import { estBureau, messageEchecSession, selonSupport, sessionBureau, type EchecSession } from './lib/bureau';
@@ -758,6 +759,12 @@ function Application() {
     for (const mon of allMonsters) if (mon.com2usId != null) m.set(mon.com2usId, mon);
     return m;
   }, [allMonsters]);
+
+  // Application de bureau : le compte EN DIRECT, lu dans le fichier live du
+  // plugin SWEX. Donné à « Mon compte » seulement, interrupteur activé ; le
+  // compte de l'app ne change qu'à « Mettre à jour » (page SW Exporter), qui
+  // l'applique comme un nouvel export du dossier SWEX.
+  const { direct, enDirect } = useCompteDirect(monsterByCom2us, rafraichirCompte);
 
   // ---- PALETTE Ctrl K --------------------------------
   // Ouverte par Ctrl/⌘ K de n'importe où, par le champ de la barre latérale, et
@@ -2046,12 +2053,12 @@ function Application() {
         // ⚠️ `vueValide` : passer des Runes (sur « Courbes ») aux Artéfacts,
         // qui n'ont pas de courbes, laissait sinon un écran blanc.
         vue={vueValide(n.accountSub, n.accountView)}
-        box={box}
-        runes={runes}
-        artifacts={artifacts}
-        crafts={crafts}
-        usedRuneIds={usedRuneIds}
-        runeMarkerLabels={runeMarkerLabels}
+        box={enDirect?.box ?? box}
+        runes={enDirect?.runes ?? runes}
+        artifacts={enDirect?.artifacts ?? artifacts}
+        crafts={enDirect?.crafts ?? crafts}
+        usedRuneIds={enDirect?.usedRuneIds ?? usedRuneIds}
+        runeMarkerLabels={enDirect?.runeMarkerLabels ?? runeMarkerLabels}
         loadState={data.loadState}
         hydrating={accountHydrating}
         // ⚠️ Le bestiaire COMPLET, pas seulement la box : la fiche d'un
@@ -2191,6 +2198,7 @@ function Application() {
     // Les deux accès au choix de l'invocateur (carte du compte, Réglages)
     // passent par la garde du changement de compte.
     <GardeChangementCompte.Provider value={gardeChangementCompte}>
+    <DirectSwexContext.Provider value={direct}>
     <EquipesAreneContext.Provider value={equipesArene}>
     {/* Application de bureau : « Mise à jour prête · Redémarrer ». Inerte sur le site. */}
     <MiseAJourBureau />
@@ -2601,6 +2609,7 @@ function Application() {
       </div>
     </div>
     </EquipesAreneContext.Provider>
+    </DirectSwexContext.Provider>
     </GardeChangementCompte.Provider>
   );
 }

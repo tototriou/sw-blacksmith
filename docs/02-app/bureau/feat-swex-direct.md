@@ -8,7 +8,9 @@ SW Exporter (SWEX) n'écrit l'export du compte qu'à la **connexion** au jeu
 Le plugin **SW Blacksmith Live** tient le compte à jour **pendant la partie**,
 à partir de ce que le serveur renvoie à chaque commande.
 
-Code : **`plugin-swex/`**, à la racine du dépôt, versionné avec l'app.
+Code : **`plugin-swex/`**, à la racine du dépôt, versionné avec l'app. Ce
+qu'en fait l'application de bureau : « Dans l'application de bureau »,
+plus bas.
 
 ## Le plugin — `plugin-swex/source/plugin.ts`
 
@@ -189,6 +191,97 @@ compressés.
 `Summoners War Exporter Files\plugins`, puis redémarrer SWEX. ProfileExport
 doit rester activé : c'est lui qui écrit l'export de départ.
 
+## Dans l'application de bureau
+
+L'app de bureau lit le fichier live de l'**invocateur suivi** (Paramètres ›
+Dossier SW Exporter). Deux usages, et ⚠️ **jamais une écriture dans le
+dossier de SWEX** : l'app ne fait que lire.
+
+### Trouver le fichier, le juger — [bureau/swexPur.ts](bureau/swexPur.ts), [bureau/swexLive.ts](bureau/swexLive.ts)
+
+- **Le dossier** : parmi ceux du dossier `SWBlacksmith` dont le nom finit par
+  `-<id>` de l'export suivi, celui dont le `compte.live.jsonl` est le plus
+  récent (`dossierDeLInvocateur`). Jamais un autre identifiant.
+- ⚠️ **Le fichier doit être celui de la DERNIÈRE connexion** (`liveAJour`) :
+  l'heure serveur de sa connexion, lue dans ses premiers octets
+  (`enteteLive` — la première ligne pèse plusieurs Mo), n'est pas plus
+  ancienne que celle de l'export (`tvalue`, relue à chaque nouvel export).
+  Plus ancienne, le plugin ne tournait pas à la dernière connexion (retiré,
+  désactivé) : le fichier est **périmé**, l'app l'ignore.
+- **Le plugin installé** : la version écrite en tête des `.js` du dossier
+  `plugins` de SWEX (`versionInstallee`), comparée à celle de l'app
+  (`statutPlugin` : absent, à jour, ancien, plus récent). Deux copies : la plus
+  ancienne est montrée, c'est elle qu'il faut remplacer.
+
+### « Mon compte » en direct
+
+L'interrupteur **« Direct »**, parmi les filtres de chaque vue de « Mon
+compte » ([InterrupteurDirect.tsx](src/components/account/InterrupteurDirect.tsx)) :
+**coupé par défaut**, retenu par l'app (`swex.json`, comme le dossier), le
+même pour toutes les vues. Absent sur le site, et tant que ni plugin, ni
+session, ni interrupteur activé ne le justifient. Activable sans session : il
+suit la prochaine connexion. Son libellé ne change pas ; l'heure de la
+dernière action est dans son infobulle.
+
+Activé, et le fichier à jour :
+
+1. **Le processus principal** ([bureau/swex.ts](bureau/swex.ts)) surveille
+   le dossier `SWBlacksmith` (récursif, 0,3 s après la dernière écriture) et lit le
+   fichier (`lireLive`) : **en entier** la première fois, puis **seulement ce
+   qui s'y ajoute**. Il retient l'identité du fichier et l'octet lu : le
+   fichier réécrit à la connexion (autre fichier) ou raccourci se relit en
+   entier. ⚠️ Une dernière ligne sans fin de ligne **attend** la lecture
+   suivante — gardée en octets : un caractère peut être coupé en deux.
+   ⚠️ **Jamais de surveillance sur un dossier absent** : sous Linux, la
+   surveillance récursive de Node ne lève rien sur un chemin qui n'existe
+   pas, elle ne surveille rien. Elle ne démarre donc qu'une fois
+   `SWBlacksmith` créé (vu par la surveillance de la racine), et repart s'il
+   est supprimé puis recréé (son inode change).
+2. Il donne les lignes à la page (`bureau:swex-direct-lignes` : `debut` et
+   les lignes), puis l'état du direct (`bureau:swex-direct-etat`).
+   Interrupteur coupé ou fichier périmé : `debut` sans ligne, la page oublie
+   le compte en direct.
+3. **La page** ([compteDirect.ts](src/lib/compteDirect.ts),
+   [useCompteDirect.ts](src/hooks/useCompteDirect.ts)) tient l'état avec le
+   moteur du plugin (`depuisLignesLive`, `poserChangement`) et le convertit
+   avec les fonctions de l'import (`runeToDetail`, `artifactToDetail`,
+   `craftLineOf`, `boxMonsterOf`).
+
+- ⚠️ **Seul ce qui est touché change.** Chaque objet converti est retenu par
+  son objet brut : une rune que la ligne ne touche pas garde le même détail,
+  une liste qu'elle ne touche pas le même tableau — React ne recalcule rien
+  pour elle. Les **runes utilisées** (les decks sans préréglage jouent avec
+  les runes portées) ne se recalculent que si une rune change de porteur, ou
+  si un monstre arrive ou part. Sur un compte de 3 253 runes et 726 monstres :
+  80 ms pour le fichier entier, 5 ms pour une meule, 15 ms pour une rune posée.
+- ⚠️ **Le résultat est celui de l'import**, dans le même ordre : à chaque ligne
+  d'une partie, [tests/compte-direct.test.ts](tests/compte-direct.test.ts)
+  compare le compte en direct à l'import de l'export que le plugin écrirait.
+- ⚠️ **« Mon compte » seulement.** L'Optimizer, le speed tuning, la RTA, le
+  siège et l'arène gardent le compte de l'app. **Aucune notification**, rien
+  d'enregistré : le compte en direct vit en mémoire, et le fichier live se
+  relit au lancement. Couper « Direct » ramène « Mon compte » au compte de
+  l'app.
+
+### « Mettre à jour mon compte »
+
+Sur la page [SW Exporter](../sw-exporter/), dans l'app de bureau : reporte la
+session sur le compte de l'app **sans se reconnecter au jeu** — une rune
+qu'on vient de looter sert tout de suite dans l'Optimizer. Fonctionne aussi
+interrupteur coupé.
+
+- Le processus principal relit le fichier live en entier et rend son compte
+  **sous la forme d'un export** (`versExport`) ; la page l'applique comme un
+  nouvel export du dossier SWEX (`rafraichirCompte`, « Mon compte » seulement :
+  la prépa RTA et les équipes ne bougent pas) — l'Optimizer revérifie ses
+  listes comme après un import, et le compte s'enregistre si « Garder mes
+  données » est activé.
+- L'export du disque, plus ancien, est **marqué lu** : il ne revient pas
+  écraser le compte mis à jour au prochain changement du dossier.
+- Pas de notification : le résultat s'écrit sous le bouton.
+- Ce que le plugin ne suit pas encore (voir « Limites connues ») reste celui
+  de la connexion jusqu'à la suivante.
+
 ## Le moteur — `plugin-swex/source/etatDirect.ts`
 
 Calcul pur, sans disque ni Electron, testé par
@@ -339,7 +432,10 @@ l'invocateur demandé comptent), elle tire :
   d'un journal réel »). Rattrapé à la connexion suivante.
 - L'expérience gagnée **hors combat** (bâtiments) n'apparaît qu'à la
   connexion suivante.
-- Les préréglages de la RTA et du siège ne sont pas suivis ; l'app ne les relit
-  qu'à l'import complet.
+- **Pas encore suivis** : les favoris et les préréglages de la RTA, les decks,
+  la défense de siège, les verrous (marqueurs) de runes. Le journal réel
+  relevé ne contient aucune de ces actions : sans leurs commandes, pas de
+  règle. « Mettre à jour mon compte » les laisse tels qu'à la connexion ; une
+  mise à jour du plugin les ajoutera, sur un journal où ils se produisent.
 - Une commande renommée par Com2uS n'est plus suivie jusqu'à la connexion
   suivante, qui remet tout à plat.

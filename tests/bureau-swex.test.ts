@@ -31,15 +31,16 @@ export default function testBureauSwex() {
   );
 
   titre('bureau · SW Exporter — le réglage relu avec méfiance');
-  const vide = { dossier: null, fichier: null, dernierLu: null, dimensionLue: null };
-  egal(lireReglage(null), vide, 'premier lancement : rien');
+  const vide = { dossier: null, fichier: null, dernierLu: null, dimensionLue: null, direct: false };
+  egal(lireReglage(null), vide, 'premier lancement : rien, direct coupé');
   egal(lireReglage('abîmé'), vide, 'fichier abîmé : rien');
-  const bon = { dossier: 'C:\\SWEX', fichier: 'tototriou-12889591.json', dernierLu: 1759737040000, dimensionLue: 1794858558 };
+  const bon = { dossier: 'C:\\SWEX', fichier: 'tototriou-12889591.json', dernierLu: 1759737040000, dimensionLue: 1794858558, direct: true };
   egal(lireReglage(bon), bon, 'réglage complet : relu tel quel');
   egal(lireReglage({ ...bon, fichier: '..\\..\\Windows\\win.ini' }).fichier, null, 'un CHEMIN à la place du nom de fichier : refusé');
   egal(lireReglage({ ...bon, fichier: 'sous/tototriou-1.json' }).fichier, null, 'un sous-dossier : refusé');
   egal(lireReglage({ ...bon, dernierLu: 'hier' }).dernierLu, null, 'date illisible : oubliée');
   egal(lireReglage({ ...bon, dimensionLue: 'hier' }).dimensionLue, null, 'saison dimensionnelle illisible : oubliée');
+  egal(lireReglage({ ...bon, direct: 'oui' }).direct, false, 'direct illisible : coupé');
 
   titre('bureau · SW Exporter — donner l’export à la page, ou pas');
   egal(aDonner(1000, null, false), { donner: true, nouveau: true }, 'jamais lu : donné, annoncé');

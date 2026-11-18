@@ -33,6 +33,11 @@ interface PontBureau {
     lu: (modifie: number) => void;
     surDimension: (rappel: (dim: DimensionSwex) => void) => () => void;
     dimensionLue: (cle: number) => void;
+    etatDirect: () => Promise<EtatDirectSwex | null>;
+    activerDirect: (oui: boolean) => Promise<EtatDirectSwex | null>;
+    surEtatDirect: (rappel: (etat: EtatDirectSwex) => void) => () => void;
+    surLignesDirect: (rappel: (lignes: LignesDirect) => void) => () => void;
+    mettreAJour: () => Promise<{ texte: string; t: number | null } | null>;
   };
   session: {
     etat: () => Promise<EtatSession | null>;
@@ -165,6 +170,23 @@ export interface DimensionSwex {
   recents: unknown[];
   cle: number;
   nouvelle: boolean;
+}
+
+// Le direct (voir bureau/swex.ts) : l'interrupteur, s'il y a un fichier live
+// de la dernière connexion, sa dernière écriture (ms), et le plugin installé
+// comparé à l'app.
+export type StatutPlugin = 'absent' | 'a-jour' | 'ancien' | 'plus-recent';
+export interface EtatDirectSwex {
+  actif: boolean;
+  disponible: boolean;
+  maj: number | null;
+  plugin: { installee: string | null; app: string; statut: StatutPlugin };
+}
+// Des lignes du fichier live : le fichier entier (`debut`), ou celles qui s'y
+// sont ajoutées. `debut` sans ligne : la page oublie le compte en direct.
+export interface LignesDirect {
+  debut: boolean;
+  lignes: string[];
 }
 
 // Le pont du dossier SW Exporter, ou `null` sur le site.

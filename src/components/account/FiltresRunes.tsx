@@ -3,6 +3,7 @@ import { RuneDetail, RUNE_SETS } from '../../types';
 import { Bouton } from '../../ui';
 import SetFilter from './SetFilter';
 import SlotFilter from './SlotFilter';
+import InterrupteurDirect from './InterrupteurDirect';
 import AncientFilter, { AncientFilter as AncientFilterValue } from './AncientFilter';
 import { useTraduction } from '../../hooks/useLangue';
 
@@ -45,6 +46,8 @@ export default function FiltresRunes({
   const textes = useTraduction();
   return (
     <div className="flex flex-wrap items-center gap-x-4 gap-y-2" data-filtres-ligne>
+      {/* Application de bureau : « Mon compte » en direct, en tête des filtres. */}
+      <InterrupteurDirect />
       <SetFilter runes={runes} value={sets} onChange={onSets} />
       <SlotFilter value={slots} onChange={onSlots} />
       {/* Intitulé comme ses voisins (« Sets », « Slot ») : celui que

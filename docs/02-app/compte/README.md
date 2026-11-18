@@ -52,6 +52,28 @@ sous-section.
   l'invite d'import : annoncer « aucune donnée » une fraction de seconde avant
   que tout apparaisse fait croire à une perte.
 
+## En direct (application de bureau)
+
+Avec le plugin SWEX « SW Blacksmith Live », l'interrupteur **« Direct »**
+([InterrupteurDirect.tsx](src/components/account/InterrupteurDirect.tsx)) fait
+suivre la partie à « Mon compte » : chaque meule, gemme, amélioration, vente
+ou rune posée y arrive en quelques instants, sans notification.
+
+- **Parmi les filtres de chaque vue**, en tête : la box (et son panneau au
+  doigt), la liste, les courbes et l'optimisation des runes (`FiltresRunes` à
+  la souris, la rangée ou le panneau au doigt), la liste des artéfacts. Les
+  vues sans filtres (Résumé des runes et des artéfacts, Comparaison) le
+  portent au bout de leur en-tête à la souris, seul sur une ligne au doigt.
+- **Coupé par défaut**, le même pour toutes les vues, retenu par l'app.
+  Absent sur le site, et sans plugin ni session.
+- Activé, App.tsx donne à `AccountPage` le compte en direct
+  (`useCompteDirect`) à la place du compte de l'app ; **les autres pages
+  gardent le compte de l'app**, que seul « Mettre à jour mon compte » (page
+  SW Exporter) change.
+
+Détail : [bureau/feat-swex-direct.md](../bureau/feat-swex-direct.md) § « Dans
+l'application de bureau ».
+
 ## Périmètre
 
 - **Monstres** : uniquement les monstres **montés 6★** (grade actuel `class === 6`).
