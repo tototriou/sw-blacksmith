@@ -105,7 +105,10 @@ export async function preuvesBandesEquipes(b: Banc): Promise<[boolean, string][]
   verifier(!a.querySelector('[aria-label^="Lead inactif"]') && !autre.querySelector('[aria-label^="Lead inactif"]'), 'lead actif : aucune icône ni cible accessible');
   const geometrie = () => JSON.stringify(lignes.map(e => {
     const r = e.getBoundingClientRect();
-    return [r.x, r.y, r.width, r.height, ...[...e.querySelectorAll('button')].filter(b => !b.getAttribute('aria-label')?.startsWith('Lead inactif')).flatMap(b => {
+    // Le bouton de Mes équipes est centré entre le numéro et « Speed tune » (décision de
+    // l'utilisateur) : il suit le numéro, qui suit le lead. Les autres ne bougent pas.
+    return [r.x, r.y, r.width, r.height, ...[...e.querySelectorAll('button')].filter(b => !b.getAttribute('aria-label')?.startsWith('Lead inactif')
+      && !b.getAttribute('aria-label')?.includes('Mes équipes') && !b.getAttribute('aria-label')?.includes('builds des monstres')).flatMap(b => {
       const p = b.getBoundingClientRect(); return [p.x, p.y, p.width, p.height];
     })];
   }));

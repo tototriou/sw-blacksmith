@@ -28,14 +28,18 @@ export async function preuvesMesEquipesBande(b: Banc, enregistree: () => EquipeO
 
   const grise = groupe() && boutons(q.validerDAbord, groupe()!)[0];
   verifier(!!grise && grise.disabled && grise.title === q.validerDAbord, 'sans builds validés : grisé, l’infobulle dit de les valider d’abord');
-  // Juste à côté du numéro, dans sa case, puis le speed tune plus loin sur la ligne.
-  const numero = grise?.previousElementSibling;
+  // Centré entre le numéro et le speed tune, dans une case oblongue de la hauteur de « Speed tune ».
+  const numero = groupe()?.querySelector<HTMLElement>('span[title="Équipe 1"]');
   const st = groupe()?.querySelector<HTMLElement>(`button[aria-label="${fr.optimizer.speedTune.regler}"]`);
   const [rg, rn, rs] = [grise, numero, st].map(e => e?.getBoundingClientRect());
-  verifier(numero?.textContent === 'Équipe 1' && !!rg && !!rn && !!rs && rg.left >= rn.right && rg.left - rn.right <= 6 && rg.right < rs.left
-    && Math.abs((rg.top + rg.bottom) / 2 - (rs.top + rs.bottom) / 2) < 2, 'juste à côté de « Équipe 1 », avant le speed tune, sur sa ligne');
+  const milieu = rn && rs ? (rn.right + rs.left) / 2 : NaN;
+  verifier(!!rg && !!rn && !!rs && rg.left > rn.right && rg.right < rs.left && Math.abs((rg.left + rg.right) / 2 - milieu) <= 1.5
+    && Math.abs((rg.top + rg.bottom) / 2 - (rs.top + rs.bottom) / 2) < 2,
+    `centré entre « Équipe 1 » et le speed tune, sur sa ligne (${rg && Math.round((rg.left + rg.right) / 2)} pour ${Math.round(milieu)})`);
+  verifier(!!numero && numero.scrollWidth <= numero.clientWidth, `avec le bouton, le numéro reste entier (${numero?.scrollWidth}/${numero?.clientWidth})`);
   const style = grise ? getComputedStyle(grise) : null;
-  verifier(!!style && style.borderTopWidth === '1px' && style.backgroundColor !== 'rgba(0, 0, 0, 0)', 'dans une case, comme « Speed tune »');
+  verifier(!!style && !!rg && !!rs && style.borderTopWidth === '1px' && style.backgroundColor !== 'rgba(0, 0, 0, 0)'
+    && rg.width > rg.height && Math.abs(rg.height - rs.height) < 1, `dans une case oblongue de la hauteur de « Speed tune » (${rg?.width}×${rg?.height}, ${rs?.height})`);
 
   // Le premier validé seul ne suffit pas : chaque membre, runes et paire.
   await b.geste(() => b.listes().validateBuild('a', b.premier, [1, 2, 3, 4, 5, 6], [1, 2], undefined, 10101));

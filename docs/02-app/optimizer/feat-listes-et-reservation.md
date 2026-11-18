@@ -177,11 +177,11 @@ jeu, n'ont RIEN à voir l'un avec l'autre.
   et son refus est dit lorsqu'on choisit le membre.
   Les membres sont regroupés par équipe dans des bandes teintées sans contour.
   L'en-tête tient sur une ligne : la pastille `LeadPill`, le numéro seul
-  (« Équipe 1 », sans le leader, qui ne tenait jamais) et juste à côté
-  l'icône de Mes équipes dans sa case (« Enregistrer dans Mes équipes », voir
+  (« Équipe 1 », sans le leader, qui ne tenait jamais), le compte des leads
+  inactifs en court (« ⚠ 2 », la phrase en infobulle et pour les lecteurs
+  d'écran), l'icône de Mes équipes dans sa case oblongue, centrée entre le
+  numéro et « Speed tune » (« Enregistrer dans Mes équipes », voir
   [feat-equipes.md](../compte/feat-equipes.md#mettre-à-jour-depuis-loptimizer)),
-  le compte des leads inactifs en court (« ⚠ 2 », la phrase en infobulle et
-  pour les lecteurs d'écran),
   « Speed tune » avec l'icône de l'outil Speed tuning (liste de siège, place
   réservée sinon, voir
   [feat-speed-tune-depuis-optimizer.md](feat-speed-tune-depuis-optimizer.md))
