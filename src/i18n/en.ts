@@ -1050,7 +1050,7 @@ export const en: Dictionnaire = {
       'siege-attaque': 'Siege — offense',
       'siege-defense': 'Siege — defense',
       rta: 'RTA',
-      pve: 'PVE',
+      pve: 'Cairos',
       'arene-attaque': 'Arena — offense',
       'arene-defense': 'Arena — defense',
       'guerre-guilde-offense': 'Guild War — offense',

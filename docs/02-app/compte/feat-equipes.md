@@ -40,7 +40,7 @@ Une rangée `Onglets` (`src/ui/Onglets.tsx`), dans cet ordre, choisi par l'utili
 | `siege-attaque` | « Siège — offense » | `guilde` |
 | `siege-defense` | « Siège — défense » | `guilde` |
 | `rta` | « RTA » | `arene` |
-| `pve` | « PVE » | `donjon` |
+| `pve` | « Cairos » | `donjon` |
 | `arene-attaque` | « Arène — offense » | `arene` |
 | `arene-defense` | « Arène — défense » | `arene` |
 | `guerre-guilde-offense` | « Guerre de guilde — offense » | `guilde` |
@@ -259,7 +259,7 @@ modifié.
   équipe sans leader.
 - Un deck de siège ou d'arène de moins de deux espèces connues est désactivé, « Moins
   de deux monstres connus. »
-- Guerre de guilde et PVE n'ont pas de source dans l'export de compte : leurs équipes
+- Guerre de guilde et Cairos n'ont pas de source dans l'export de compte : leurs équipes
   se créent à la main ou depuis l'Optimizer.
 
 Un rapport (modale) suit chaque import : l'équipe créée, les monstres ignorés et leur

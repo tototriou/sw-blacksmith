@@ -49,7 +49,7 @@ export function testRenduEquipesBureau() {
   const html = rendre(section());
   const t = texteVisible(html);
   egal(onglets(html).map((o) => [o.texte, o.ouvert]), [
-    ['Siège — offense 2', true], ['Siège — défense 0', false], ['RTA 0', false], ['PVE 1', false],
+    ['Siège — offense 2', true], ['Siège — défense 0', false], ['RTA 0', false], ['Cairos 1', false],
     ['Arène — offense 0', false], ['Arène — défense 0', false], ['Guerre de guilde — offense 0', false], ['Guerre de guilde — défense 0', false],
   ], 'huit onglets dans l’ordre choisi, chacun avec son total, le premier ouvert');
   ok(t.includes('Ma RTA') && t.includes('Autre RTA') && !t.includes('Donjon'), 'les cartes de l’onglet ouvert seulement');

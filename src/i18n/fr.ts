@@ -1112,7 +1112,7 @@ export const fr = {
       'siege-attaque': 'Siège — offense',
       'siege-defense': 'Siège — défense',
       rta: 'RTA',
-      pve: 'PVE',
+      pve: 'Cairos',
       'arene-attaque': 'Arène — offense',
       'arene-defense': 'Arène — défense',
       'guerre-guilde-offense': 'Guerre de guilde — offense',
