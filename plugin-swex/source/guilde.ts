@@ -4,10 +4,12 @@
 // défenses d'une base, journaux de combat) ou en le jouant (début et fin d'un
 // combat).
 //
-// Calcul PUR, comme etatDirect.ts : le plugin écrit `versFichierGuilde` dans
-// `SWBlacksmith/<nom>-<id>/guilde.json`, dans le dossier de SWEX.
+// Calcul PUR, comme etatDirect.ts. Le plugin écrit un ÉVÉNEMENT par échange
+// de guilde (`evenementGuilde`) dans `guilde.live.jsonl` — la session en
+// cours —, et archive chaque session finie dans `guilde.jsonl.gz` : ici,
+// c'est l'HISTORIQUE qui compte, tout est gardé.
 //
-// Deux parts :
+// Relire des lignes (`depuisLignesGuilde`, pour l'app) en tire deux parts :
 //  - **les vues** : la DERNIÈRE réponse de chaque écran, une par jeu de
 //    paramètres — la défense de la base 12 ne remplace pas celle de la base 8 ;
 //  - **les combats** : chacun, à son début (`…Start…`) et à sa fin
@@ -17,8 +19,8 @@
 
 import type { Json } from './etatDirect';
 
-export const FORMAT_GUILDE = 'swblacksmith/guilde-direct';
-export const VERSION_GUILDE = 1;
+export const FORMAT_GUILDE_LIVE = 'swblacksmith/guilde-live';
+export const VERSION_GUILDE_LIVE = 1;
 
 // Les contenus de guilde, reconnus au nom de la commande.
 const CONTENUS: [RegExp, string][] = [
@@ -36,9 +38,6 @@ const estVue = (c: string) => (/^get/i.test(c) && contenuDe(c) !== null) || /^Ge
 const estDebut = (c: string) => /^battle/i.test(c) && /Start/.test(c) && !/Success/.test(c) && contenuDe(c) !== null;
 const estFin = (c: string) => /^battle/i.test(c) && /Result/.test(c) && contenuDe(c) !== null;
 
-// Combien de combats on garde : les plus récents.
-export const COMBATS_MAX = 300;
-
 // Les paramètres techniques d'une requête : ni la clé d'une vue, ni écrits.
 const TECHNIQUES = new Set(['command', 'wizard_id', 'proto_ver', 'ts_val', 'loginextend_refcount', 'app_version']);
 // ⚠️ Jamais écrits, à aucune profondeur : la session du jeu et ce qui
@@ -53,49 +52,6 @@ function sansSecrets<T>(x: T): T {
   return o as T;
 }
 
-export interface Vue {
-  commande: string;
-  contenu: string;
-  params: Json;
-  tvalue: number | null;
-  reponse: Json;
-}
-
-export interface Combat {
-  contenu: string;
-  battle_key: number | null;
-  debut: { commande: string; tvalue: number | null; requete: Json; reponse: Json } | null;
-  fin: { commande: string; tvalue: number | null; requete: Json; reponse: Json } | null;
-}
-
-export interface EtatGuilde {
-  wizardId: number;
-  vues: Map<string, Vue>;
-  combats: Combat[];
-  tvalue: number | null;
-}
-
-export function guildeVide(wizardId: number): EtatGuilde {
-  return { wizardId, vues: new Map(), combats: [], tvalue: null };
-}
-
-// Reprend un fichier écrit plus tôt (le plugin redémarré garde l'historique
-// des combats). Un fichier d'un autre format, d'une autre version ou d'un autre
-// invocateur repart de zéro.
-export function depuisFichierGuilde(fichier: unknown, wizardId: number): EtatGuilde {
-  const f = fichier as Json | null;
-  if (!f || f.format !== FORMAT_GUILDE || f.version !== VERSION_GUILDE || Number(f.wizard_id) !== wizardId)
-    return guildeVide(wizardId);
-  const vues = new Map<string, Vue>();
-  for (const [cle, v] of Object.entries((f.vues ?? {}) as Record<string, Vue>)) vues.set(cle, v);
-  return {
-    wizardId,
-    vues,
-    combats: Array.isArray(f.combats) ? f.combats : [],
-    tvalue: typeof f.tvalue === 'number' ? f.tvalue : null,
-  };
-}
-
 // Les paramètres qui distinguent deux vues d'une même commande (base, deck,
 // joueur visé, case du labyrinthe…).
 function paramsDe(req: Json): Json {
@@ -103,45 +59,122 @@ function paramsDe(req: Json): Json {
   for (const [k, v] of Object.entries(req ?? {})) if (!TECHNIQUES.has(k) && !SECRETS.test(k)) p[k] = v;
   return p;
 }
+
+// ── L'événement : une ligne du fichier live ─────────────────────────────
+
+export interface EvenementGuilde {
+  type: 'vue' | 'debut' | 'fin';
+  t: number | null;
+  commande: string;
+  contenu: string;
+  // La requête sans ses paramètres techniques : pour une vue, ce qui la
+  // distingue d'une autre vue de la même commande.
+  params: Json;
+  battle_key?: number | null;
+  reponse: Json;
+}
+
+// L'en-tête d'une session (première ligne du fichier live).
+export interface SessionGuilde {
+  type: 'session';
+  format: typeof FORMAT_GUILDE_LIVE;
+  version: number;
+  wizard_id: number;
+  t: number | null;
+  plugin: string;
+}
+
+export function ligneSessionGuilde(wizardId: number, t: number | null, plugin: string): SessionGuilde {
+  return { type: 'session', format: FORMAT_GUILDE_LIVE, version: VERSION_GUILDE_LIVE, wizard_id: wizardId, t, plugin };
+}
+
+// L'événement d'un échange réussi de l'invocateur suivi, ou `null` s'il n'est
+// pas un contenu de guilde.
+export function evenementGuilde(wizardId: number, commande: string, req: Json, res: Json): EvenementGuilde | null {
+  if (!res || Number(res.ret_code) !== 0) return null;
+  if (Number(req?.wizard_id ?? res.wizard_info?.wizard_id) !== wizardId) return null;
+  const type = estVue(commande) ? 'vue' : estDebut(commande) ? 'debut' : estFin(commande) ? 'fin' : null;
+  if (!type) return null;
+  const ev: EvenementGuilde = {
+    type,
+    t: typeof res.tvalue === 'number' ? res.tvalue : null,
+    commande,
+    contenu: contenuDe(commande) ?? 'guilde',
+    params: sansSecrets(paramsDe(req)),
+    reponse: sansSecrets(res),
+  };
+  if (type !== 'vue') {
+    // La clé du combat : donnée par la réponse au début, rappelée par la
+    // requête à la fin.
+    const cle = Number(type === 'debut' ? res.battle_key ?? req?.battle_key : req?.battle_key ?? res.battle_key);
+    ev.battle_key = Number.isFinite(cle) ? cle : null;
+  }
+  return ev;
+}
+
+// ── Relire : les vues et les combats ────────────────────────────────────
+
+export interface Vue {
+  commande: string;
+  contenu: string;
+  params: Json;
+  t: number | null;
+  reponse: Json;
+}
+
+export interface Combat {
+  contenu: string;
+  battle_key: number | null;
+  debut: EvenementGuilde | null;
+  fin: EvenementGuilde | null;
+}
+
+export interface EtatGuilde {
+  vues: Map<string, Vue>;
+  combats: Combat[];
+  // Heure serveur du dernier événement.
+  t: number | null;
+}
+
+export const guildeVide = (): EtatGuilde => ({ vues: new Map(), combats: [], t: null });
+
 const cleDe = (commande: string, params: Json) =>
   `${commande}${Object.keys(params).length ? ` ${JSON.stringify(params, Object.keys(params).sort())}` : ''}`;
 
-// Applique une commande réussie de l'invocateur suivi. `true` si le contenu
-// de guilde a changé.
-export function appliquerGuilde(etat: EtatGuilde, commande: string, req: Json, res: Json): boolean {
-  if (!res || Number(res.ret_code) !== 0) return false;
-  if (Number(req?.wizard_id ?? res.wizard_info?.wizard_id) !== etat.wizardId) return false;
-  const contenu = contenuDe(commande);
-  const tvalue = typeof res.tvalue === 'number' ? res.tvalue : null;
-  const trace = () => ({ commande, tvalue, requete: sansSecrets(paramsDe(req)), reponse: sansSecrets(res) });
-
-  if (estVue(commande)) {
-    const params = sansSecrets(paramsDe(req));
-    etat.vues.set(cleDe(commande, params), { commande, contenu: contenu ?? 'guilde', params, tvalue, reponse: sansSecrets(res) });
-  } else if (estDebut(commande)) {
-    const cle = Number(res.battle_key ?? req?.battle_key ?? NaN);
-    etat.combats.push({ contenu: contenu!, battle_key: Number.isFinite(cle) ? cle : null, debut: trace(), fin: null });
-    if (etat.combats.length > COMBATS_MAX) etat.combats.splice(0, etat.combats.length - COMBATS_MAX);
-  } else if (estFin(commande)) {
-    const cle = Number(req?.battle_key ?? res.battle_key ?? NaN);
+export function poserEvenement(etat: EtatGuilde, ev: EvenementGuilde) {
+  if (ev.type === 'vue') {
+    const { commande, contenu, params, t, reponse } = ev;
+    etat.vues.set(cleDe(commande, params), { commande, contenu, params, t, reponse });
+  } else if (ev.type === 'debut') {
+    etat.combats.push({ contenu: ev.contenu, battle_key: ev.battle_key ?? null, debut: ev, fin: null });
+  } else {
     // La fin rejoint son début ; une fin sans début connu (plugin lancé en
     // plein combat) est gardée seule.
-    const combat = [...etat.combats].reverse().find((c) => c.contenu === contenu && c.battle_key === cle && !c.fin);
-    if (combat) combat.fin = trace();
-    else etat.combats.push({ contenu: contenu!, battle_key: Number.isFinite(cle) ? cle : null, debut: null, fin: trace() });
-  } else return false;
-
-  if (tvalue !== null) etat.tvalue = tvalue;
-  return true;
+    const combat = [...etat.combats].reverse().find((c) => c.contenu === ev.contenu && c.battle_key === ev.battle_key && !c.fin);
+    if (combat) combat.fin = ev;
+    else etat.combats.push({ contenu: ev.contenu, battle_key: ev.battle_key ?? null, debut: null, fin: ev });
+  }
+  if (ev.t !== null) etat.t = ev.t;
 }
 
-export function versFichierGuilde(etat: EtatGuilde): Json {
-  return {
-    format: FORMAT_GUILDE,
-    version: VERSION_GUILDE,
-    wizard_id: etat.wizardId,
-    tvalue: etat.tvalue,
-    vues: Object.fromEntries(etat.vues),
-    combats: etat.combats,
-  };
+// Les vues et combats tirés de lignes : un fichier live, ou le texte d'une
+// archive (plusieurs sessions à la suite). Seules les sessions de
+// l'invocateur `wizardId` comptent. Une ligne illisible (la dernière, à moitié
+// écrite) arrête la lecture : ce qui précède vaut.
+export function depuisLignesGuilde(lignes: string[], wizardId: number): EtatGuilde {
+  const etat = guildeVide();
+  let sienne = false;
+  for (const texte of lignes) {
+    if (!texte.trim()) continue;
+    let ligne: Json;
+    try {
+      ligne = JSON.parse(texte);
+    } catch {
+      break;
+    }
+    if (ligne.type === 'session') {
+      sienne = ligne.format === FORMAT_GUILDE_LIVE && ligne.version === VERSION_GUILDE_LIVE && Number(ligne.wizard_id) === wizardId;
+    } else if (sienne && ['vue', 'debut', 'fin'].includes(ligne.type)) poserEvenement(etat, ligne as EvenementGuilde);
+  }
+  return etat;
 }

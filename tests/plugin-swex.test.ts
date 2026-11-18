@@ -23,21 +23,21 @@ import {
   type Bloc,
 } from '../plugin-swex/source/archive';
 import {
-  COMBATS_MAX,
-  FORMAT_GUILDE,
-  appliquerGuilde,
-  depuisFichierGuilde,
-  guildeVide,
-  versFichierGuilde,
+  FORMAT_GUILDE_LIVE,
+  depuisLignesGuilde,
+  evenementGuilde,
+  ligneSessionGuilde,
 } from '../plugin-swex/source/guilde';
 import {
   COMPTE_ARCHIVE,
   COMPTE_LIVE,
   DOSSIER_PLUGIN,
-  FICHIER_GUILDE,
+  GUILDE_ARCHIVE,
+  GUILDE_LIVE,
   dossierInvocateur,
   nomDeBase,
 } from '../plugin-swex/source/fichiers';
+import { blocSessionGuilde } from '../plugin-swex/source/plugin';
 import { CHEMIN_PLUGIN, NOM_PLUGIN, construirePluginSwex } from '../scripts/lib/construirePluginSwex.mjs';
 import { CHEMIN_PLUGIN_SWEX, FICHIER_PLUGIN_SWEX } from '../src/lib/pluginSwex';
 import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
@@ -369,54 +369,66 @@ export async function testPluginSwexArchive() {
 
 export function testPluginSwexGuilde() {
   titre('Plugin SWEX — le contenu des combats de guilde');
-  const g = guildeVide(MOI);
+  // Une session : son en-tête, puis une ligne par événement, comme le plugin
+  // l'écrit dans `guilde.live.jsonl`.
+  const lignes = [JSON.stringify(ligneSessionGuilde(MOI, 1900, '9.9.9'))];
+  const jouer = (commande: string, rq: Json, rs: Json) => {
+    const ev = evenementGuilde(MOI, commande, rq, rs);
+    if (ev) lignes.push(JSON.stringify(ev));
+    return ev;
+  };
+  const relire = () => depuisLignesGuilde(lignes, MOI);
 
   // Une vue par jeu de paramètres : la base 12 ne remplace pas la base 8.
   const base = (n: number, deck: number) =>
-    appliquerGuilde(g, 'GetGuildSiegeBaseDefenseUnitList', req({ base_number: n, session_key: 'secret' }), ok0({ deck: [deck], tvalue: 2000 + n }));
-  ok(base(8, 1) && base(12, 2) && base(8, 3), 'défenses de base : retenues');
-  const vues = versFichierGuilde(g).vues as Record<string, Json>;
-  const bases = Object.values(vues).filter((v) => v.commande === 'GetGuildSiegeBaseDefenseUnitList');
-  egal(bases.length, 2, 'une vue par base');
+    jouer('GetGuildSiegeBaseDefenseUnitList', req({ base_number: n, session_key: 'secret' }), ok0({ deck: [deck], tvalue: 2000 + n }));
+  ok(!!(base(8, 1) && base(12, 2) && base(8, 3)), 'défenses de base : une ligne chacune');
+  const bases = [...relire().vues.values()].filter((v) => v.commande === 'GetGuildSiegeBaseDefenseUnitList');
+  egal(bases.length, 2, 'relu : une vue par base');
   egal(bases.find((v) => v.params.base_number === 8)?.reponse.deck, [3], 'la même base revue : la dernière réponse');
-  egal(bases[0].contenu, 'siege', 'le contenu est reconnu');
+  egal([bases[0].contenu, bases[0].t], ['siege', 2008], 'le contenu est reconnu, l’heure serveur gardée');
 
   // Combats : la fin rejoint son début par `battle_key`.
-  appliquerGuilde(g, 'battleGuildMazeStart', req({ tile_id: 4 }), ok0({ battle_key: 77 }));
-  appliquerGuilde(g, 'battleGuildMazeResult', req({ battle_key: 77, win_lose: 1 }), ok0());
-  appliquerGuilde(g, 'BattleGuildSiegeStart_v2', req({ base_number: 12 }), ok0({ battle_key: 78 }));
-  appliquerGuilde(g, 'battleGuildRivalResult', req({ battle_key: 79, win_lose: 2 }), ok0());
-  let combats = versFichierGuilde(g).combats as Json[];
+  jouer('battleGuildMazeStart', req({ tile_id: 4 }), ok0({ battle_key: 77 }));
+  jouer('battleGuildMazeResult', req({ battle_key: 77, win_lose: 1 }), ok0());
+  jouer('BattleGuildSiegeStart_v2', req({ base_number: 12 }), ok0({ battle_key: 78 }));
+  jouer('battleGuildRivalResult', req({ battle_key: 79, win_lose: 2 }), ok0());
+  const combats = relire().combats;
   egal(combats.map((c) => [c.contenu, c.battle_key, !!c.debut, !!c.fin]), [
     ['labyrinthe', 77, true, true],
     ['siege', 78, true, false],
     ['rivaux', 79, false, true],
   ], 'début et fin reliés ; siège sans fin ; fin sans début gardée');
-  egal(combats[0].fin.requete.win_lose, 1, 'le résultat est dans la fin');
+  egal(combats[0].fin?.params.win_lose, 1, 'le résultat est dans la fin');
 
   // Aucun secret, à aucune profondeur.
-  appliquerGuilde(g, 'GetGuildSiegeMatchupInfo', req(), ok0({ niveau: { session_key: 'secret', infocsv: 'x', base: 1 } }));
-  ok(!JSON.stringify(versFichierGuilde(g)).includes('secret'), 'aucune clé de session écrite');
-  ok(!JSON.stringify(versFichierGuilde(g)).includes('infocsv'), 'aucun identifiant du client écrit');
+  jouer('GetGuildSiegeMatchupInfo', req(), ok0({ niveau: { session_key: 'secret', infocsv: 'x', base: 1 } }));
+  ok(!lignes.join('\n').includes('secret'), 'aucune clé de session écrite');
+  ok(!lignes.join('\n').includes('infocsv'), 'aucun identifiant du client écrit');
 
   // Ce qui n'est pas du contenu de guilde, ou pas le nôtre.
-  ok(!appliquerGuilde(g, 'SellRune', req(), ok0()), 'une vente : ignorée');
-  ok(!appliquerGuilde(g, 'BuyGuildBlackMarketItem', req(), ok0()), 'la boutique de guilde : ignorée');
-  ok(!appliquerGuilde(g, 'GetGuildSiegeMatchupInfo', req(), { ret_code: 9 }), 'commande en échec : ignorée');
-  ok(!appliquerGuilde(g, 'GetGuildSiegeMatchupInfo', { wizard_id: AUTRE }, ok0()), 'autre invocateur : ignoré');
+  egal(evenementGuilde(MOI, 'SellRune', req(), ok0()), null, 'une vente : ignorée');
+  egal(evenementGuilde(MOI, 'BuyGuildBlackMarketItem', req(), ok0()), null, 'la boutique de guilde : ignorée');
+  egal(evenementGuilde(MOI, 'GetGuildSiegeMatchupInfo', req(), { ret_code: 9 }), null, 'commande en échec : ignorée');
+  egal(evenementGuilde(MOI, 'GetGuildSiegeMatchupInfo', { wizard_id: AUTRE }, ok0()), null, 'autre invocateur : ignoré');
 
-  // Les combats les plus récents seulement.
-  for (let i = 0; i < COMBATS_MAX + 5; i++) appliquerGuilde(g, 'battleGuildRivalStart', req(), ok0({ battle_key: 1000 + i }));
-  combats = versFichierGuilde(g).combats as Json[];
-  egal([combats.length, combats[combats.length - 1].battle_key], [COMBATS_MAX, 1000 + COMBATS_MAX + 4], 'combats : les plus récents gardés');
+  // Tout est gardé : plus de plafond de combats.
+  for (let i = 0; i < 400; i++) jouer('battleGuildRivalStart', req(), ok0({ battle_key: 1000 + i }));
+  egal(relire().combats.length, 3 + 400, 'tous les combats de la session');
 
-  // Le plugin redémarré reprend son fichier ; un autre invocateur repart de zéro.
-  const fichier = JSON.parse(JSON.stringify(versFichierGuilde(g)));
-  egal(fichier.format, FORMAT_GUILDE, 'le fichier porte son format');
-  const repris = depuisFichierGuilde(fichier, MOI);
-  egal([repris.vues.size, repris.combats.length], [g.vues.size, g.combats.length], 'fichier repris : vues et combats');
-  egal(depuisFichierGuilde(fichier, AUTRE).vues.size, 0, 'fichier d’un autre invocateur : rien de repris');
-  egal(depuisFichierGuilde({ format: 'autre' }, MOI).combats.length, 0, 'autre format : rien de repris');
+  // Le texte d'une archive : plusieurs sessions à la suite, dont une d'un
+  // autre invocateur, et une dernière ligne à moitié écrite.
+  const autre = [JSON.stringify(ligneSessionGuilde(AUTRE, 3000, '9.9.9')), lignes[1]];
+  const suite = [JSON.stringify(ligneSessionGuilde(MOI, 4000, '9.9.9')), JSON.stringify(evenementGuilde(MOI, 'battleGuildMazeStart', req(), ok0({ battle_key: 5 })))];
+  const archive = [...lignes, ...autre, ...suite, suite[1].slice(0, 30)];
+  egal(depuisLignesGuilde(archive, MOI).combats.length, 3 + 400 + 1, 'archive : les sessions de l’invocateur, pas celles d’un autre');
+  egal(depuisLignesGuilde(archive, AUTRE).vues.size, 1, 'et celles de l’autre pour lui');
+
+  // Ce qui s'archive d'une session finie : ses lignes complètes, ses dates.
+  const texte = `${lignes.join('\n')}\n${lignes[1].slice(0, 10)}`;
+  const bloc = blocSessionGuilde(texte);
+  egal([bloc?.texte, bloc?.debut, bloc?.fin], [`${lignes.join('\n')}\n`, 1900, 2012], 'session archivée : lignes complètes, de la plus ancienne à la plus récente heure');
+  egal(blocSessionGuilde(`${lignes[0]}\n`), null, 'session sans événement : rien à archiver');
 }
 
 // Le plugin CONSTRUIT (le fichier que SWEX charge), nourri par un faux SWEX :
@@ -458,10 +470,10 @@ export async function testPluginSwexPaquet() {
     // est renommé avec ce qu'il contient.
     const dossierAncien = dossierInvocateur(ailleurs, MOI, 'Ancien-100');
     egal(dossierAncien, join(ailleurs, DOSSIER_PLUGIN, 'Ancien-100'), 'SWBlacksmith/<nom>-<id>');
-    writeFileSync(join(dossierAncien, FICHIER_GUILDE), 'historique');
+    writeFileSync(join(dossierAncien, GUILDE_ARCHIVE), 'historique');
     const dossierNouveau = dossierInvocateur(ailleurs, MOI, 'Nouveau-100');
     egal(readdirSync(join(ailleurs, DOSSIER_PLUGIN)), ['Nouveau-100'], 'l’ancien dossier est renommé, pas doublé');
-    egal(readFileSync(join(dossierNouveau, FICHIER_GUILDE), 'utf8'), 'historique', 'son contenu le suit');
+    egal(readFileSync(join(dossierNouveau, GUILDE_ARCHIVE), 'utf8'), 'historique', 'son contenu le suit');
     // Le dossier voulu existe déjà à côté d'un ancien : on s'y tient.
     mkdirSync(join(ailleurs, DOSSIER_PLUGIN, 'Autre-100'));
     egal(dossierInvocateur(ailleurs, MOI, 'Nouveau-100'), dossierNouveau, 'le dossier voulu existant est gardé');
@@ -471,58 +483,88 @@ export async function testPluginSwexPaquet() {
     const journal: string[] = [];
     const proxy = { on: (_: string, f: typeof ecouteur) => (ecouteur = f), log: (e: Json) => journal.push(`${e.type} ${e.message}`) };
     const reglages = { enabled: true, guilde: true };
-    const instance = plugin.creerPlugin(0);
+    const instance = plugin.creerPlugin();
     instance(proxy, { Config: { App: { filesPath: dossier }, Plugins: { SWBlacksmithLive: reglages } } });
-    // La file des écritures du compte, puis le fichier de guilde (temporisé).
-    const attendre = async () => {
-      await instance.ecritures();
-      await new Promise((r) => setTimeout(r, 100));
-    };
+    const attendre = () => instance.ecritures();
     const seConnecter = (res: Json = connexion()) =>
       ecouteur(req({ command: 'HubUserLogin' }), { ...res, wizard_info: { wizard_id: MOI, wizard_name: 'Essai.Pro' } });
     const dossierSuivi = join(dossier, DOSSIER_PLUGIN, 'Essai.Pro-100');
-    const live = () => readFileSync(join(dossierSuivi, COMPTE_LIVE), 'utf8').split('\n').filter(Boolean);
-    const archive = () => gunzipSync(readFileSync(join(dossierSuivi, COMPTE_ARCHIVE))).toString().split('\n').filter(Boolean);
+    const lire = (f: string) => readFileSync(join(dossierSuivi, f), 'utf8').split('\n').filter(Boolean);
+    const lireGz = (f: string) => gunzipSync(readFileSync(join(dossierSuivi, f))).toString().split('\n').filter(Boolean);
+    const live = () => lire(COMPTE_LIVE);
+    const archive = () => lireGz(COMPTE_ARCHIVE);
     const meule = (i: number) => ecouteur(req({ command: 'AmplifyRune_v2' }), ok0({ rune: rune(12, {}, 15, { sec_eff: [[4, 10, 0, i]] }) }));
     const sec12 = (lignes: string[]) => versExport(depuisLignesLive(lignes)!).runes.find((r: Json) => r.rune_id === 12).sec_eff;
+    const vueSiege = () => ecouteur(req({ command: 'GetGuildSiegeMatchupInfo' }), ok0({ carte: 1, session_key: 'secret' }));
 
     // Avant toute connexion : rien.
     meule(99);
     seConnecter();
     // Une série de meules, d'un coup : les lignes s'ajoutent dans l'ordre.
     for (let i = 0; i < 20; i++) meule(i);
-    ecouteur(req({ command: 'GetGuildSiegeMatchupInfo' }), ok0({ carte: 1, session_key: 'secret' }));
+    vueSiege();
     await attendre();
 
     egal(journal.filter((l) => l.startsWith('error')), [], 'aucune erreur d’écriture');
     egal(readdirSync(dossier).sort(), ['Essai.Pro-100.json', DOSSIER_PLUGIN].sort(), 'à la racine : l’export et le dossier du plugin, rien d’autre');
     egal(readdirSync(join(dossier, DOSSIER_PLUGIN)), ['Essai.Pro-100'], 'un dossier, au nom de l’export');
-    egal(readdirSync(dossierSuivi).sort(), [COMPTE_ARCHIVE, COMPTE_LIVE, FICHIER_GUILDE].sort(), 'live, archive et guilde, sans fichier temporaire');
+    egal(readdirSync(dossierSuivi).sort(), [COMPTE_ARCHIVE, COMPTE_LIVE, GUILDE_LIVE].sort(), 'les fichiers live et l’archive du compte, sans fichier temporaire');
     egal(live().length, 21, 'le fichier live : la connexion, puis une ligne par meule');
     egal(sec12(live()), [[4, 10, 0, 19]], 'relu, le fichier live donne le dernier état');
     egal([archive().length, JSON.parse(archive()[0]).format], [1, FORMAT_COMPTE_ARCHIVE], 'l’archive : l’état de la connexion');
-    const tout = [COMPTE_LIVE, FICHIER_GUILDE].map((f) => readFileSync(join(dossierSuivi, f), 'utf8')).join('') + archive().join('');
+    egal(lire(GUILDE_LIVE).map((l) => JSON.parse(l).type), ['session', 'vue'], 'la guilde : l’en-tête de session, puis la vue');
+    egal(JSON.parse(lire(GUILDE_LIVE)[0]).format, FORMAT_GUILDE_LIVE, 'l’en-tête porte son format');
+    const tout = [COMPTE_LIVE, GUILDE_LIVE].map((f) => readFileSync(join(dossierSuivi, f), 'utf8')).join('') + archive().join('');
     ok(!tout.includes('secret'), 'aucune clé de session écrite, nulle part');
 
-    // Reconnexion sans rien de changé : le live repart, l'archive ne double pas.
+    // Reconnexion sans rien de changé : le live repart, l'archive du compte ne
+    // double pas ; la session de guilde finie s'archive.
     seConnecter();
     await attendre();
     egal([live().length, archive().length], [1, 1], 'reconnexion à l’identique : nouvelle session, pas de second état archivé');
-    // Reconnexion après une partie hors du plugin : un second état archivé.
+    egal(lireGz(GUILDE_ARCHIVE).map((l) => JSON.parse(l).type), ['session', 'vue'], 'la session de guilde finie : archivée en entier');
+    egal(lire(GUILDE_LIVE).length, 1, 'une nouvelle session de guilde commence');
+    // Un combat, puis une reconnexion après une partie hors du plugin.
+    ecouteur(req({ command: 'battleGuildMazeStart' }), ok0({ battle_key: 77, tvalue: 5000 }));
+    ecouteur(req({ command: 'battleGuildMazeResult', battle_key: 77, win_lose: 1 }), ok0({ tvalue: 5100 }));
     const changee = connexion();
     changee.runes[0] = rune(12, {}, 15, { sec_eff: [[4, 10, 0, 42]] });
     seConnecter(changee);
     await attendre();
     egal(archive().length, 2, 'connexion sur un compte changé : un état de plus dans l’archive');
     egal(sec12(live()), [[4, 10, 0, 42]], 'le live repart de la nouvelle connexion');
+    const historique = depuisLignesGuilde(lireGz(GUILDE_ARCHIVE), MOI);
+    egal([historique.vues.size, historique.combats.map((c) => [c.battle_key, !!c.debut, !!c.fin])], [1, [[77, true, true]]], 'l’archive de guilde relue : les deux sessions');
+    egal((await parcourirArchive(join(dossierSuivi, GUILDE_ARCHIVE))).blocs.map((b) => b.fin), [1000, 5100], 'un bloc par session, daté');
+    // Une reconnexion sans rien joué en guilde : rien de plus à archiver.
+    seConnecter(changee);
+    await attendre();
+    egal((await parcourirArchive(join(dossierSuivi, GUILDE_ARCHIVE))).blocs.length, 2, 'session de guilde vide : pas archivée');
 
-    // Le dossier supprimé pendant la partie : le live repart de l'état tenu.
+    // Le dossier supprimé pendant la partie : les fichiers live repartent.
     rmSync(join(dossier, DOSSIER_PLUGIN), { recursive: true });
     meule(7);
     meule(8);
+    vueSiege();
     await attendre();
     egal(sec12(live()), [[4, 10, 0, 8]], 'dossier supprimé : recréé, le live relu donne le dernier état');
     egal(JSON.parse(live()[0]).type, 'connexion', 'il commence par une ligne de connexion');
+    egal(lire(GUILDE_LIVE).map((l) => JSON.parse(l).type), ['session', 'vue'], 'la guilde repart de son en-tête');
+
+    // La guilde désactivée dans SWEX : plus rien n'y est écrit, et à la
+    // connexion la session s'archive sans qu'une autre ne commence.
+    reglages.guilde = false;
+    vueSiege();
+    await attendre();
+    egal(lire(GUILDE_LIVE).length, 2, 'guilde désactivée : la vue n’est pas écrite');
+    seConnecter(changee);
+    await attendre();
+    ok(!readdirSync(dossierSuivi).includes(GUILDE_LIVE), 'connexion, guilde désactivée : pas de session de guilde');
+    // Réactivée en cours de session : le fichier repart de son en-tête.
+    reglages.guilde = true;
+    vueSiege();
+    await attendre();
+    egal(lire(GUILDE_LIVE).map((l) => JSON.parse(l).type), ['session', 'vue'], 'guilde réactivée : en-tête, puis la vue');
 
     // Désactivé dans SWEX : plus rien n'est écrit.
     reglages.enabled = false;

@@ -3,21 +3,22 @@
 // seul fichier, `SWBlacksmithLive.js`, dont la version est celle de l'app.
 //
 // SWEX donne au plugin chaque échange avec le jeu (`apiCommand`). Dans
-// `SWBlacksmith/<nom>-<id>/`, que l'application de bureau suit :
-//  - à la connexion, l'état allégé du compte s'ajoute à l'archive
-//    (`compte.jsonl.gz`), et le fichier live (`compte.live.jsonl`) repart de la
-//    réponse du serveur (l'export de ProfileExport) ;
-//  - chaque commande qui change le compte y ajoute aussitôt une ligne ;
-//  - chaque commande qui change un contenu de guilde fait réécrire, après un
-//    temps calme, `guilde.json`.
+// `SWBlacksmith/<nom>-<id>/`, que l'application de bureau suit, deux types de
+// données, chacun en deux fichiers — la session en cours (`….live.jsonl`,
+// une ligne ajoutée aussitôt par changement) et son archive (`….jsonl.gz`) :
+//  - le COMPTE : à la connexion, son état allégé s'archive et le fichier live
+//    repart de la réponse du serveur (l'export de ProfileExport) ; chaque
+//    commande qui le change y ajoute une ligne ;
+//  - la GUILDE : chaque vue ou combat y ajoute une ligne ; à la connexion
+//    suivante, la session finie s'archive en entier — l'historique compte.
 // Voir docs/02-app/bureau/feat-swex-direct.md.
 
-import { existsSync, promises, readFileSync } from 'node:fs';
+import { existsSync, promises } from 'node:fs';
 import { join } from 'node:path';
 import { ajouterAuFichier, empreinteDe, type Bloc } from './archive';
 import { appliquer, depuisConnexion, ligneConnexion, versEtatArchive, type EtatDirect, type Json } from './etatDirect';
-import { appliquerGuilde, depuisFichierGuilde, versFichierGuilde, type EtatGuilde } from './guilde';
-import { COMPTE_ARCHIVE, COMPTE_LIVE, FICHIER_GUILDE, dossierInvocateur, ecrireAtomique, nomDeBase } from './fichiers';
+import { evenementGuilde, ligneSessionGuilde } from './guilde';
+import { COMPTE_ARCHIVE, COMPTE_LIVE, GUILDE_ARCHIVE, GUILDE_LIVE, dossierInvocateur, ecrireAtomique, nomDeBase } from './fichiers';
 
 declare const __VERSION_PLUGIN__: string;
 export const VERSION = typeof __VERSION_PLUGIN__ === 'string' ? __VERSION_PLUGIN__ : 'dev';
@@ -31,10 +32,6 @@ export const defaultConfigDetails = {
   guilde: { label: 'Guild battles (siege, guild war, labyrinth) / Combats de guilde (siège, guerre, labyrinthe)' },
 };
 
-// Le fichier de guilde est réécrit en entier : seulement après ce délai sans
-// nouveau changement. (Le compte, lui, s'écrit ligne à ligne, aussitôt.)
-export const DELAI_ECRITURE = 2000;
-
 interface Proxy {
   on(evenement: 'apiCommand', ecouteur: (req: Json, res: Json) => void): void;
   log(entree: { type: string; source: string; name: string; message: string }): void;
@@ -43,20 +40,11 @@ interface ConfigSwex {
   Config: { App: { filesPath: string }; Plugins: Record<string, { enabled?: boolean; guilde?: boolean } | undefined> };
 }
 
-// Un invocateur suivi : son compte, ses combats de guilde, et l'écriture en
-// attente du fichier de guilde.
+// Un invocateur suivi : son dossier et son compte.
 interface Suivi {
   base: string;
   dossier: string; // SWBlacksmith/<nom>-<id>, dans le dossier de SWEX
   compte: EtatDirect;
-  guilde: EtatGuilde;
-  minuterie?: ReturnType<typeof setTimeout>;
-  // ⚠️ Une écriture du fichier de guilde À LA FOIS : deux écritures qui se
-  // chevauchent partagent le fichier temporaire, et la seconde ne le trouve
-  // plus à renommer. Demandée pendant une écriture, la suivante attend sa fin
-  // et écrit l'état le plus récent.
-  enCours?: boolean;
-  aRefaire?: boolean;
 }
 
 // Ce qui s'archive du compte à une connexion : l'état allégé, et son empreinte
@@ -68,12 +56,34 @@ function blocEtat(compte: EtatDirect): Bloc {
   return { texte: `${JSON.stringify(etat)}\n`, debut: t, fin: t, empreinte: empreinteDe(JSON.stringify({ ...etat, t: null })) };
 }
 
-// Le plugin, avec le délai d'écriture du fichier de guilde : 0 dans les tests.
-// `ecritures()` : la file des écritures du compte, pour que les tests
+// Ce qui s'archive d'une session de guilde finie : ses lignes COMPLÈTES (une
+// dernière ligne à moitié écrite est laissée), si elle a au moins un
+// événement. Ses dates : la plus ancienne et la plus récente heure serveur.
+export function blocSessionGuilde(texte: string): Bloc | null {
+  const complet = texte.slice(0, texte.lastIndexOf('\n') + 1);
+  const heures: number[] = [];
+  let evenements = 0;
+  for (const l of complet.split('\n')) {
+    if (!l.trim()) continue;
+    try {
+      const o = JSON.parse(l);
+      if (o.type !== 'session') evenements++;
+      if (typeof o.t === 'number') heures.push(o.t);
+    } catch {
+      /* ligne abîmée : gardée telle quelle, la lecture s'y arrêtera */
+    }
+  }
+  if (!evenements) return null;
+  const [debut, fin] = heures.length ? [Math.min(...heures), Math.max(...heures)] : [0, 0];
+  return { texte: complet, debut, fin, empreinte: empreinteDe(complet) };
+}
+
+// Le plugin. `ecritures()` : la file des écritures, pour que les tests
 // attendent qu'elle se vide.
-export function creerPlugin(delai = DELAI_ECRITURE) {
-  // ⚠️ UNE file pour les écritures du compte : chaque ligne s'ajoute après
-  // la précédente, et après la première ligne de sa session — jamais avant.
+export function creerPlugin() {
+  // ⚠️ UNE file pour toutes les écritures : chaque ligne s'ajoute après la
+  // précédente, et après l'en-tête de sa session — jamais avant ; une session
+  // s'archive avant que son fichier live ne reparte.
   let file: Promise<void> = Promise.resolve();
 
   function init(proxy: Proxy, config: ConfigSwex) {
@@ -81,6 +91,7 @@ export function creerPlugin(delai = DELAI_ECRITURE) {
     const journal = (type: 'info' | 'error', message: string) =>
       proxy.log({ type, source: 'plugin', name: pluginName, message });
     const reglage = () => config.Config.Plugins[pluginName] ?? {};
+    const guildeActive = () => reglage().guilde !== false;
     const dossier = () => config.Config.App.filesPath;
     const enFile = (nom: string, travail: () => Promise<unknown>) => {
       file = file.then(travail).then(
@@ -88,30 +99,14 @@ export function creerPlugin(delai = DELAI_ECRITURE) {
         (e: Error) => journal('error', `${nom} : ${e.message}`)
       );
     };
-
-    const lancerGuilde = (s: Suivi) => {
-      if (s.enCours) {
-        s.aRefaire = true;
-        return;
-      }
-      s.enCours = true;
-      const nom = `${s.base}/${FICHIER_GUILDE}`;
-      ecrireAtomique(join(s.dossier, FICHIER_GUILDE), JSON.stringify(versFichierGuilde(s.guilde)))
-        .catch((e: Error) => journal('error', `${nom} : ${e.message}`))
-        .finally(() => {
-          s.enCours = false;
-          if (s.aRefaire) {
-            s.aRefaire = false;
-            lancerGuilde(s);
-          }
-        });
-    };
-    const ecrireGuilde = (s: Suivi) => {
-      if (s.minuterie) clearTimeout(s.minuterie);
-      s.minuterie = setTimeout(() => {
-        s.minuterie = undefined;
-        lancerGuilde(s);
-      }, delai);
+    // Une ligne ajoutée AUSSITÔT : quelques centaines d'octets. ⚠️ Le fichier
+    // a disparu (dossier supprimé pendant la partie, guilde activée en cours
+    // de session) : il repart de `depart`, sinon il n'aurait plus son en-tête.
+    const ajouter = (s: Suivi, fichier: string, ligne: string, depart: () => string) => {
+      const chemin = join(s.dossier, fichier);
+      enFile(`${s.base}/${fichier}`, () =>
+        existsSync(chemin) ? promises.appendFile(chemin, ligne, 'utf8') : ecrireAtomique(chemin, depart())
+      );
     };
 
     proxy.on('apiCommand', (req, res) => {
@@ -125,25 +120,28 @@ export function creerPlugin(delai = DELAI_ECRITURE) {
           if (!Number.isFinite(id)) return;
           const base = nomDeBase(dossier(), id, String(res.wizard_info?.wizard_name ?? ''));
           const dossierSuivi = dossierInvocateur(dossier(), id, base);
-          // Les combats de guilde déjà écrits sont repris : l'historique
-          // survit au redémarrage de SWEX.
-          let fichierGuilde: unknown = null;
-          try {
-            fichierGuilde = JSON.parse(readFileSync(join(dossierSuivi, FICHIER_GUILDE), 'utf8'));
-          } catch {
-            /* pas encore de fichier, ou illisible : on repart de zéro */
-          }
-          const ancien = suivis.get(id);
-          if (ancien?.minuterie) clearTimeout(ancien.minuterie);
           const compte = depuisConnexion(res);
-          suivis.set(id, { base, dossier: dossierSuivi, compte, guilde: depuisFichierGuilde(fichierGuilde, id) });
-          // L'état de la connexion s'archive, puis une nouvelle session
-          // commence : le fichier live repart de cette connexion. Les deux
-          // textes sont faits MAINTENANT : le compte bougera avant leur tour.
+          suivis.set(id, { base, dossier: dossierSuivi, compte });
+          // Les textes sont faits MAINTENANT : le compte bougera avant leur
+          // tour dans la file.
+          const t = typeof res.tvalue === 'number' ? res.tvalue : null;
           const bloc = blocEtat(compte);
           const premiere = `${JSON.stringify(ligneConnexion(compte, VERSION))}\n`;
+          const entete = `${JSON.stringify(ligneSessionGuilde(id, t, VERSION))}\n`;
+          const avecGuilde = guildeActive();
+          // Le compte : l'état de la connexion s'archive, le live en repart.
           enFile(`${base}/${COMPTE_ARCHIVE}`, () => ajouterAuFichier(join(dossierSuivi, COMPTE_ARCHIVE), bloc));
           enFile(`${base}/${COMPTE_LIVE}`, () => ecrireAtomique(join(dossierSuivi, COMPTE_LIVE), premiere));
+          // La guilde : la session finie s'archive, puis une nouvelle commence
+          // — ou plus rien, si la guilde est désactivée dans SWEX.
+          enFile(`${base}/${GUILDE_ARCHIVE}`, async () => {
+            const chemin = join(dossierSuivi, GUILDE_LIVE);
+            const finie = await promises.readFile(chemin, 'utf8').catch(() => null);
+            const session = finie === null ? null : blocSessionGuilde(finie);
+            if (session) await ajouterAuFichier(join(dossierSuivi, GUILDE_ARCHIVE), session);
+            if (avecGuilde) await ecrireAtomique(chemin, entete);
+            else await promises.rm(chemin, { force: true });
+          });
           journal('info', `suivi de ${base}`);
           return;
         }
@@ -151,22 +149,15 @@ export function creerPlugin(delai = DELAI_ECRITURE) {
         const s = suivis.get(Number(req?.wizard_id));
         if (!s) return; // pas de connexion vue depuis le lancement de SWEX
         const changement = appliquer(s.compte, commande, req, res);
-        if (changement) {
-          // Une ligne par changement, ajoutée AUSSITÔT : quelques centaines
-          // d'octets, là où réécrire le compte en coûterait 3 Mo.
-          // ⚠️ Le fichier a disparu (dossier supprimé pendant la partie) : il
-          // repart de l'état tenu, sinon il n'aurait plus sa ligne de
-          // connexion. Les lignes encore en file disent l'état FINAL de ce
-          // qu'elles touchent : reposées après, elles ne changent rien.
-          const ligne = `${JSON.stringify(changement)}\n`;
-          const chemin = join(s.dossier, COMPTE_LIVE);
-          enFile(`${s.base}/${COMPTE_LIVE}`, () =>
-            existsSync(chemin)
-              ? promises.appendFile(chemin, ligne, 'utf8')
-              : ecrireAtomique(chemin, `${JSON.stringify(ligneConnexion(s.compte, VERSION))}\n`)
-          );
+        // Les lignes en file disent l'état FINAL de ce qu'elles touchent :
+        // reposées après un départ de l'état tenu, elles ne changent rien.
+        if (changement)
+          ajouter(s, COMPTE_LIVE, `${JSON.stringify(changement)}\n`, () => `${JSON.stringify(ligneConnexion(s.compte, VERSION))}\n`);
+        const evenement = guildeActive() ? evenementGuilde(s.compte.wizardId, commande, req, res) : null;
+        if (evenement) {
+          const ligne = `${JSON.stringify(evenement)}\n`;
+          ajouter(s, GUILDE_LIVE, ligne, () => `${JSON.stringify(ligneSessionGuilde(s.compte.wizardId, evenement.t, VERSION))}\n${ligne}`);
         }
-        if (reglage().guilde !== false && appliquerGuilde(s.guilde, commande, req, res)) ecrireGuilde(s);
       } catch (e) {
         // ⚠️ Jamais d'exception vers SWEX : une commande que le plugin ne
         // comprend pas ne doit pas gêner les autres plugins ni le jeu.

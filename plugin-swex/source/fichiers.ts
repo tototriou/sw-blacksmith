@@ -7,7 +7,9 @@
 //       compte.live.jsonl          ← la session en cours : la connexion, puis
 //                                    une ligne par changement
 //       compte.jsonl.gz            ← l'archive : l'état allégé à chaque connexion
-//       guilde.json                ← les combats de guilde
+//       guilde.live.jsonl          ← la session en cours : une ligne par vue
+//                                    ou combat de guilde
+//       guilde.jsonl.gz            ← l'archive : chaque session, en entier
 
 import { existsSync, mkdirSync, promises, readdirSync, renameSync, statSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -18,7 +20,8 @@ import { dirname, join } from 'node:path';
 export const DOSSIER_PLUGIN = 'SWBlacksmith';
 export const COMPTE_LIVE = 'compte.live.jsonl';
 export const COMPTE_ARCHIVE = 'compte.jsonl.gz';
-export const FICHIER_GUILDE = 'guilde.json';
+export const GUILDE_LIVE = 'guilde.live.jsonl';
+export const GUILDE_ARCHIVE = 'guilde.jsonl.gz';
 
 // Le nom du dossier d'un invocateur : celui de l'export de ProfileExport
 // (`<nom>-<id>.json`) s'il est là — ProfileExport nettoie le pseudo à sa façon,

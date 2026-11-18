@@ -35,13 +35,17 @@ embarque son propre Electron, parfois ancien).
 
 Ce qu'il fait :
 
+Deux types de données, chacun en **deux fichiers** : la **session en cours**
+(`….live.jsonl`, une ligne ajoutée aussitôt par changement) et son
+**archive** (`….jsonl.gz`).
+
 1. **À la connexion** (`HubUserLogin`), pour chaque invocateur (`wizard_id`),
-   il repart de la réponse du serveur : l'état allégé du compte s'ajoute à
-   l'**archive**, et une **nouvelle session** commence — le fichier live
-   repart de cette connexion. Il reprend aussi le fichier de guilde déjà écrit.
+   une **nouvelle session** commence : l'état allégé du compte s'ajoute à son
+   archive et le fichier live du compte repart de la réponse du serveur ; la
+   session de guilde finie s'archive en entier, et une nouvelle commence.
 2. **À chaque commande** de cet invocateur, il applique le moteur ; si le compte
-   a changé, une ligne s'ajoute **aussitôt** au fichier live ; si le contenu de
-   guilde a changé, il réécrit le fichier de guilde.
+   a changé, une ligne s'ajoute **aussitôt** à son fichier live ; si c'est un
+   contenu de guilde, une ligne s'ajoute au fichier live de la guilde.
 3. Avant la première connexion vue depuis le lancement de SWEX, il ne fait
    rien : il n'a pas de compte de départ.
 
@@ -52,10 +56,15 @@ Summoners War Exporter Files/          ← le dossier de SWEX (son réglage)
   tototriou-12889591.json              ← l'export de ProfileExport
   SWBlacksmith/
     tototriou-12889591/                ← un dossier par invocateur
-      compte.live.jsonl                ← la session en cours
-      compte.jsonl.gz                  ← l'archive : un état par connexion
-      guilde.json                      ← les combats de guilde
+      compte.live.jsonl                ← le compte : la session en cours
+      compte.jsonl.gz                  ← son archive : un état par connexion
+      guilde.live.jsonl                ← la guilde : la session en cours
+      guilde.jsonl.gz                  ← son archive : chaque session, en entier
 ```
+
+Pour le compte, c'est le **direct** qui compte (le stock de runes, de meules
+et de gemmes pendant la partie), et l'archive n'en garde qu'un état par
+connexion. Pour la guilde, c'est l'**historique** : tout est gardé.
 
 - ⚠️ **Hors de la racine** : l'app ne lit les exports (`<nom>-<id>.json`) qu'à
   la racine, les fichiers du plugin ne s'ajoutent jamais à la liste des
@@ -153,13 +162,28 @@ moitié du gain).
 - Le plugin construit est vérifié sous Node 18 : SWEX embarque un Electron
   ancien.
 
-### Le fichier de guilde
+- ⚠️ **Une seule file d'écritures**, compte et guilde ensemble : chaque ligne
+  s'ajoute après la précédente et après l'en-tête de sa session ; une session
+  s'archive avant que son fichier live ne reparte.
 
-`guilde.json`, réécrit en entier, **2 s** après le dernier changement, en
-atomique, **une écriture à la fois** : deux écritures qui se chevauchent
-partageraient le fichier temporaire, et la seconde ne le trouverait plus.
-Demandée pendant une écriture, la suivante attend sa fin et écrit l'état le
-plus récent.
+### La guilde : un fichier live, une archive complète
+
+**`guilde.live.jsonl`** — la session en cours : un **en-tête**
+(`type: 'session'`, format `swblacksmith/guilde-live`, version 1 :
+l'invocateur, l'heure serveur de la connexion, la version du plugin), puis
+**une ligne par événement** de guilde, ajoutée aussitôt (voir « Le contenu des
+combats de guilde »).
+
+**`guilde.jsonl.gz`** — l'archive : à la connexion suivante, la session finie
+y est ajoutée **en entier**, en un bloc daté de sa plus ancienne à sa plus
+récente heure serveur (`blocSessionGuilde`). Une dernière ligne à moitié
+écrite est laissée ; une session sans événement n'est pas archivée. Rien
+n'est plafonné : 3 sessions réelles (111 vues, 3 combats) pèsent 488 Ko
+compressés.
+
+- **Guilde désactivée dans SWEX** : aucun événement écrit ; à la connexion,
+  la session finie s'archive et aucune autre ne commence. Réactivée en cours
+  de session, le fichier live repart de son en-tête.
 
 **Installer à la main** : déposer `SWBlacksmithLive.js` dans
 `Summoners War Exporter Files\plugins`, puis redémarrer SWEX. ProfileExport
@@ -275,35 +299,37 @@ stockage, les runes gagnées en combat, le rachat (voir plus haut).
 Siège, guerre de guilde, labyrinthe, rivaux, boss de guilde : rien de cela
 n'est dans l'export. Le jeu ne l'envoie qu'en le **montrant** (carte du
 siège, défenses d'une base, journaux de combat) ou en le **jouant** (début et
-fin d'un combat). Le plugin le garde dans un fichier à part,
-**`guilde.json`**, à côté des fichiers du compte (format `swblacksmith/guilde-direct`, version 1),
-pour ne pas mêler à l'export du compte des données d'une autre nature, plus
-fréquentes et plus lourdes (2,3 Mo pour une journée de siège).
+fin d'un combat). Le plugin le garde dans ses fichiers à part (« La guilde :
+un fichier live, une archive complète »), pour ne pas mêler au compte des
+données d'une autre nature, plus fréquentes et plus lourdes.
 
-Calcul pur, testé par [tests/plugin-swex.test.ts](tests/plugin-swex.test.ts) :
+Calcul pur, testé par [tests/plugin-swex.test.ts](tests/plugin-swex.test.ts).
+**L'écriture** — `evenementGuilde` fait, d'un échange réussi de l'invocateur
+suivi, un **événement** : une ligne du fichier live, avec l'heure serveur, la
+commande, le contenu, les paramètres de la requête et la réponse.
 
-- **Les vues** : la **dernière** réponse de chaque écran (`Get…` d'un contenu
-  de guilde, plus les informations de la guilde), **une par jeu de
-  paramètres** — la défense de la base 12 ne remplace pas celle de la base 8.
-  Le contenu est reconnu au nom de la commande (`GuildWar`, `Siege`, `Maze`,
-  `Rival`, `GuildBoss`).
-- **Les combats** : chacun à son début (`battle…Start…`) et à sa fin
-  (`battle…Result…`), reliés par `battle_key` ; une fin sans début connu
-  (plugin lancé en plein combat) est gardée seule. Les **300** plus récents.
-  ⚠️ **Le siège n'envoie pas de fin** dans le journal relevé : son résultat se
-  lit dans les vues qui suivent (carte, journaux de combat par deck ou par
-  joueur).
+- **Trois sortes d'événements** : une **vue**, un écran que le jeu demande
+  (`Get…` d'un contenu de guilde, plus les informations de la guilde) ; le
+  **début** d'un combat (`battle…Start…`) et sa **fin** (`battle…Result…`),
+  avec leur `battle_key`. Le contenu est reconnu au nom de la commande
+  (`GuildWar`, `Siege`, `Maze`, `Rival`, `GuildBoss`).
 - ⚠️ **Aucun secret, à aucune profondeur** : `session_key`,
   `session_key_node`, `infocsv`, `css`, `reqid`, `channel_uid` sont retirés
   des requêtes et des réponses gardées.
-- **`depuisFichierGuilde`** reprend le fichier écrit plus tôt : le plugin
-  redémarré garde l'historique des combats. Un autre format, une autre
-  version ou un autre invocateur repart de zéro.
 
-Sur une journée réelle de jeu : 96 vues (carte du siège, défenses de 19 bases,
-journaux de combat, défenses alliées, guerre, labyrinthe, rivaux) et 18
-combats. **L'app ne l'affiche pas encore** : ce sont les écrans d'un chantier
-à venir.
+**La lecture** — `depuisLignesGuilde`, pour l'app : d'un fichier live ou du
+texte de l'archive (plusieurs sessions à la suite ; seules celles de
+l'invocateur demandé comptent), elle tire :
+
+- **les vues** : la **dernière** réponse de chaque écran, **une par jeu de
+  paramètres** — la défense de la base 12 ne remplace pas celle de la base 8 ;
+- **les combats** : chacun à son début et à sa fin, reliés par `battle_key` ;
+  une fin sans début connu (plugin lancé en plein combat) est gardée seule.
+  ⚠️ **Le siège n'envoie pas de fin** dans le journal relevé : son résultat se
+  lit dans les vues qui suivent (carte, journaux de combat par deck ou par
+  joueur).
+
+**L'app ne l'affiche pas encore** : ce sont les écrans d'un chantier à venir.
 
 ### Limites connues
 
