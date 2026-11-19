@@ -1468,7 +1468,10 @@ export type ContenuDeck =
   | 'labyrinthe-sauvetage'
   | 'labyrinthe-temps-limite'
   | 'labyrinthe-boss'
+  | 'labyrinthe-temps-pause'
+  | 'labyrinthe-explosion'
   | 'tribunal-ascension'
+  | 'tour-eau'
   | 'tour-feu'
   | 'tour-vent'
   | 'siege-offense'
@@ -1481,7 +1484,7 @@ export type ContenuDeck =
 
 // `deck_type` → contenu. Seuls les types relevés figurent ici : 1 et 22 sur
 // des exports réels, les autres nommés par l'utilisateur d'après ses decks en
-// jeu (2026-11-18). Restent à nommer : 7, 9, 10, 12.
+// jeu (2026-11-18). Reste à nommer : 7.
 export const CONTENUS_DECK: Readonly<Record<number, ContenuDeck>> = {
   [ARENA_OFFENSE_DECK_TYPE]: 'arene-offense',
   2: 'guerre-guilde-offense',
@@ -1490,7 +1493,10 @@ export const CONTENUS_DECK: Readonly<Record<number, ContenuDeck>> = {
   5: 'labyrinthe-sauvetage',
   6: 'tribunal-ascension',
   8: 'labyrinthe-temps-limite',
+  9: 'labyrinthe-temps-pause',
+  10: 'labyrinthe-explosion',
   11: 'labyrinthe-boss',
+  12: 'tour-eau',
   13: 'tour-feu',
   14: 'tour-vent',
   [SIEGE_OFFENSE_DECK_TYPE]: 'siege-offense',

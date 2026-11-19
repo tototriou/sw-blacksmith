@@ -42,7 +42,10 @@ par l'utilisateur d'après ses decks en jeu (2026-11-18).
 | 5 | Labyrinthe, sauvetage (`labyrinthe-sauvetage`) | 4 |
 | 6 | Tribunal d'ascension (`tribunal-ascension`) | 4-5 |
 | 8 | Labyrinthe, temps limité (`labyrinthe-temps-limite`) | 4-5 |
+| 9 | Labyrinthe, temps de pause (`labyrinthe-temps-pause`) | 5 |
+| 10 | Labyrinthe, explosion (`labyrinthe-explosion`) | 5 |
 | 11 | Labyrinthe, boss (`labyrinthe-boss`) | 5 |
+| 12 | Tour de l'eau (`tour-eau`) | 5 |
 | 13 | Tour du feu (`tour-feu`) | 5 |
 | 14 | Tour du vent (`tour-vent`) | 5 |
 | 22 | Siège — offense (`siege-offense`) | 3 |
@@ -51,7 +54,7 @@ par l'utilisateur d'après ses decks en jeu (2026-11-18).
 | 25 | Faille des mondes, bêtes (`faille-mondes`) | 6 |
 | 26 | Passage des dimensions (`passage-dimensions`) | 4 |
 | 27 | Subjugation de monstre (`subjugation`) | 5 |
-| 7, 9, 10, 12 | `autre`, à nommer | 5 |
+| 7 | `autre`, à nommer | 5 |
 
 ### Sous-contenus (`SOUS_CONTENUS_DECK`)
 
