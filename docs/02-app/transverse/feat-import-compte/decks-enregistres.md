@@ -54,7 +54,7 @@ par l'utilisateur d'après ses decks en jeu (2026-11-18).
 | 25 | Faille des mondes, bêtes (`faille-mondes`) | 6 |
 | 26 | Passage des dimensions (`passage-dimensions`) | 4 |
 | 27 | Subjugation de monstre (`subjugation`) | 5 |
-| 7 | `autre`, à nommer | 5 |
+| 7 | `autre`, à nommer ([dette](../../../05-feuille-de-route/dette.md)) | 5 |
 
 ### Sous-contenus (`SOUS_CONTENUS_DECK`)
 
@@ -63,7 +63,7 @@ Sur les contenus à sous-catégories, la catégorie de `deck_seq` désigne le do
 
 | Contenu | Catégorie → sous-contenu |
 | --- | --- |
-| `cairos` | 1 Castel du Géant (`castel-geant`), 2 Tanière du dragon (`taniere-dragon`), 6 Crypte du Jugement (`crypte-jugement`) ; 3, 4, 5 relevées, non nommées |
+| `cairos` | 1 Castel du Géant (`castel-geant`), 2 Tanière du dragon (`taniere-dragon`), 6 Crypte du Jugement (`crypte-jugement`) ; 3, 4, 5 relevées, non nommées ([dette](../../../05-feuille-de-route/dette.md)) |
 | `faille-mondes` | 1 Bête de glace (`bete-glace`), 2 Bête enflammée (`bete-enflammee`), 3 Bête de l'orage (`bete-orage`), 4 Bête de radiance (`bete-radiance`), 5 Bête de marécage (`bete-marecage`) |
 | `passage-dimensions` | 2 Sanctuaire des fées rêveuses (`sanctuaire-fees-reveuses`), 4 Ruines de la mort silencieuse (`ruines-mort-silencieuse`), 6 Terre infernale embrasée (`terre-infernale-embrasee`) |
 | `subjugation` | 1 Eau, 2 Feu, 3 Vent, 10 Boss (`subjugation-eau` … `subjugation-boss`) |
