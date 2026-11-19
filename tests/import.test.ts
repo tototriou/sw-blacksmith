@@ -14,6 +14,10 @@ import {
   parseArenaDefense,
   parseArenaInterserveurDefense,
   parseArenaOffense,
+  parseDecksEnregistres,
+  decomposerDeckSeq,
+  contenuDuDeckType,
+  sousContenuDuDeck,
   parseDimensionDefense,
   parseDimensionOffense,
   parseDimensionRunes,
@@ -214,6 +218,36 @@ export default function testImport() {
     'arène : sans ses données, chaque lecture dit ce qui manque'
   );
 
+  /* --- Tous les decks enregistrés (`deck_list`) ---------------------------- */
+
+  // Le fichier d'exemple : siège (22, seq 7), arène (1, seq 8), un type 3
+  // (seq 9), un type 24 sur 8 cases (seq 201 : 101 et 102 placés en cases 1
+  // et 3, 102 leader) et un type 6 vide.
+  const decks = parseDecksEnregistres(objet);
+  egal(
+    decks.map((d) => [d.deckType, d.contenu, d.sousContenu, d.categorie, d.emplacement, com2us(d)]),
+    [
+      [22, 'siege-offense', null, null, 7, [14314, 15105]],
+      [1, 'arene-offense', null, null, 8, [15105]],
+      [3, 'raid-mondes', null, null, 9, [14314]],
+      [24, 'cairos', 'taniere-dragon', 2, 1, [14314, 15105]],
+    ],
+    'decks enregistrés : tous les types, une place par monstre, leader en tête ; le deck vide est écarté'
+  );
+  egal(
+    decks[3].slots[1]!.gear?.runes.map((r) => r.id),
+    [1004],
+    'decks enregistrés : le preset du deck, malgré les cases vides'
+  );
+  egal([decomposerDeckSeq(1001), decomposerDeckSeq(15)], [{ categorie: 10, emplacement: 1 }, { categorie: null, emplacement: 15 }], 'deck_seq : catégorie × 100 + emplacement à partir de 100');
+  egal(
+    [sousContenuDuDeck('subjugation', 10), sousContenuDuDeck('faille-mondes', 4), sousContenuDuDeck('cairos', 4), sousContenuDuDeck('temple-chaos', null)],
+    ['subjugation-boss', 'bete-radiance', null, null],
+    'decks enregistrés : la catégorie nomme le donjon quand elle est relevée, null sinon'
+  );
+  egal(contenuDuDeckType(99), 'autre', 'decks enregistrés : un deck_type non relevé sort en « autre »');
+  egal(parseDecksEnregistres('{oops'), [], 'decks enregistrés : fichier illisible → aucun deck');
+
   /* --- Arène dimensionnelle : la box du journal SWEX -------------------- */
 
   // Le journal miniature : une saison périmée, puis la saison à lire, puis une
@@ -329,7 +363,9 @@ export default function testImport() {
   // sinon ce que l'unité porte ». Le fichier d'exemple ajoute :
   //  - défense d'arène (`defense_deck_info`, unité 102 sans preset) ;
   //  - défense d'arène de serveur (unité 101, preset 1004, ids en objets) ;
-  //  - un deck de type 3 (ni siège ni arène) → « autres ».
+  //  - un deck de type 3 (ni siège ni arène) → « autres » ;
+  //  - un deck de type 24 sur 8 cases (unité 101 preset 1004, unité 102 sans
+  //    preset) → « autres » aussi.
   const parPerimetre = parseUsedRuneIdsParPerimetre(objet);
   egal(parPerimetre.rta, [1001, 1002, 1003, 2001, 2002, 9002], 'périmètre RTA : les presets RTA');
   egal(parPerimetre['siege-defense'], [1001, 1002, 1003, 2001, 2002], 'périmètre siège — défense');
@@ -344,7 +380,7 @@ export default function testImport() {
     [1004, 2001, 2002],
     'périmètre arène — défense : les deux défenses, ids nus et en objets'
   );
-  egal(parPerimetre.autres, [2001, 2002], 'périmètre autres : tout autre deck_type');
+  egal(parPerimetre.autres, [1004, 2001, 2002], 'périmètre autres : tout autre deck_type');
   egal(unionRunesUtilisees(parPerimetre), utilisees, 'l’union des périmètres = les runes utilisées');
   egal(
     unionRunesUtilisees(parPerimetre, ['siege-attaque', 'arene-defense']),
