@@ -65,6 +65,11 @@ et la progression.
     chemin) ; absent d'une recette antérieure = désactivé, à l'écran
     (`importRecipe`) comme au CLI (`resolvePool`), qui l'ajoute à sa ligne
     de résumé.
+    Les sorts de la précision par sort voyagent dans le champ optionnel
+    `sortsPrecision` (liste parmi 1, 2 et 3, toute autre valeur refusée avec
+    son chemin), omis sans sort coché ; absent d'une recette antérieure =
+    aucun sort, à l'écran comme au CLI (`exigenceDeLaRecette`) :
+    [../feat-precision-par-sort.md](../feat-precision-par-sort.md).
     Le champ retiré `adaptiveTrancheWeighting` est ignoré à la lecture par
     `parseOptimizerRecipe`, qu'il soit vrai ou faux, sans erreur ni
     avertissement ; les recettes exportées ne le portent plus.

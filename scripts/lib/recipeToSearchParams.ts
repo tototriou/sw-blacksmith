@@ -8,6 +8,7 @@
 
 import { BuildCandidate, SearchParams, SlotFilterPresetKey, SLOT_FILTER_PRESETS, ARTIFACT_MAIN_VALUE, avecAurasConditions, type BuildRequirement } from '../../src/lib/runeBuildOptim';
 import { exigenceSousSpeedTune } from '../../src/lib/contrainteSpeedTune';
+import { exigencePrecisionParSort, sortsPrecisionActifs } from '../../src/lib/precisionParSort';
 import { ExclusionSourceData, autoExcludedRuneIds, resolveExcludedRuneIds } from '../../src/lib/optimizerExclusion';
 import { OptimizerRecipe } from '../../src/lib/optimizerRecipe';
 import { poolDeRecherche } from '../../src/lib/runesMaxees';
@@ -35,7 +36,7 @@ import {
   resolveDamageSkill,
 } from '../../src/lib/damage';
 import { computeStats } from '../../src/lib/stats';
-import { bornesArtefacts, paireRepresentative, type ArtifactSearchParams, type BornesArtefacts } from '../../src/lib/artifactOptim';
+import { bornesArtefacts, candidatsParSorte, paireRepresentative, type ArtifactSearchParams, type BornesArtefacts } from '../../src/lib/artifactOptim';
 import { regimeArtefacts, regimeEquipementDe, type DegatsContext } from '../../src/lib/artifactEvaluation';
 import { AUCUN_ARTEFACT_RESERVE, evaluateursArtefactsFiche, parametresArtefactsFiche, statsLignesArtefactsEquipables } from '../../src/lib/artifactFiche';
 import { type EntreeResolution, entreeResolutionDuBuild, nouveauxCachesResolution, resoudreEquipementDuBuild } from '../../src/lib/relicQueue';
@@ -347,6 +348,8 @@ function paramsArtefacts(
       // La contrainte de la recette, comme l'écran la pose : le 206
       // incomparable, son verrou retiré, la zone jugée à la résolution.
       speedTune: recipe.speedTune ?? null,
+      // Les sorts de la précision par sort, comme l'écran (`sortsPrecisionActifs`).
+      sortsPrecision: sortsPrecisionActifs(recipe.sortsPrecision ?? [], recipe.requirement.minStats),
     }),
     evaluer,
   };
@@ -506,14 +509,23 @@ const HARD_TIMEOUT_MS = 10 * 60 * 1000; // ⚠️ IDENTIQUE à HARD_TIMEOUT_MS (
 
 // L'exigence envoyée au moteur, comme l'écran (`requirementAvecAuras`) : les
 // auras, puis, sous une contrainte de speed tune, l'enveloppe de la zone
-// (`exigenceSousSpeedTune`). Une zone vide refuse la recherche, comme à
-// l'écran.
-export function exigenceDeLaRecette(recipe: OptimizerRecipe): BuildRequirement {
+// (`exigenceSousSpeedTune`), puis la précision par sort
+// (`exigencePrecisionParSort`, sur `piecesType` : `piecesTypeDuCli`). Une zone
+// vide refuse la recherche, comme à l'écran.
+export function exigenceDeLaRecette(recipe: OptimizerRecipe, piecesType: readonly (ArtifactDetail | null)[]): BuildRequirement {
   const avecAuras = avecAurasConditions(recipe.requirement, recipe.damageSetup ?? DEFAULT_DAMAGE_SETUP, recipe.compterAurasResPre ?? true);
-  if (!recipe.speedTune) return avecAuras;
-  const sous = exigenceSousSpeedTune(avecAuras, recipe.speedTune);
+  const sous = recipe.speedTune ? exigenceSousSpeedTune(avecAuras, recipe.speedTune) : avecAuras;
   if (!sous) throw new Error('Recette : la contrainte de speed tune ne laisse aucune vitesse (zone vide ou sets impossibles).');
-  return sous;
+  return exigencePrecisionParSort(sous, recipe.sortsPrecision ?? [], piecesType);
+}
+
+// Les pièces que l'emplacement Type peut recevoir, comme l'écran les lit
+// (`candidatsParSorte` sur les paramètres de la fiche) : sans optimisation,
+// la pièce portée seule ; espèce introuvable, la pièce portée aussi.
+export function piecesTypeDuCli(recipe: OptimizerRecipe, loaded: LoadedMonster): (ArtifactDetail | null)[] {
+  const a = artefactsDuCli(recipe, loaded);
+  if (a) return candidatsParSorte(a.params, 'archetype');
+  return [loaded.gear.artifacts.find((x) => x.kind === 'archetype') ?? null];
 }
 
 export function recipeToSearchParams(
@@ -540,7 +552,7 @@ export function recipeToSearchParams(
     // compte — exactement ce que `relicOracleCli` fait pour l'oracle.
     relicContext: resoudreContexteRelique(recipeToRelicIntent(recipe, loaded), loaded.gear.relic, loaded.allRelics),
     pool: resolvePool(recipe, loaded, exclusionData),
-    requirement: exigenceDeLaRecette(recipe),
+    requirement: exigenceDeLaRecette(recipe, piecesTypeDuCli(recipe, loaded)),
     metric: recipe.metric,
     objective: recipe.objective,
     objectiveStats: resolveObjectiveStats(recipe, loaded),

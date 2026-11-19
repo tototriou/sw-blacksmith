@@ -35,6 +35,13 @@
       "justification": "Garde de neutralité du producteur de données partagé entre navigateur et Node ; son comportement est également testé par import."
     },
     {
+      "fichier": "tests/precision-par-sort.test.ts",
+      "cible": "src/components/outils/OptimizerSection.tsx",
+      "occurrences": 1,
+      "statut": "exception",
+      "justification": "Garde du branchement de la précision par sort dans l’écran (producteur, paramètres de la paire, recette) ; le calcul, la recette, le CLI et les pastilles aux deux formats sont testés par import et par rendu."
+    },
+    {
       "fichier": "tests/banc/ecrans.ts",
       "cible": "src/lib/optimizerColonnes",
       "occurrences": 1,
