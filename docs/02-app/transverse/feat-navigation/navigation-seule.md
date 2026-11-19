@@ -97,7 +97,7 @@ Une entrée peut porter un **badge** à droite (`badge`), par exemple
 Offense), parchemin (Recommandations), coffre (Mon compte), pierre runique
 (Runes), grimoire griffé (Bestiaire), engrenage (Mécaniques), étincelle
 (Nouveautés), curseurs (Paramètres), coupe (Arène), compagnons (Ami), œuf
-fêlé (Monstres), médaillon (Artéfacts), tenailles (Outils), enclume
+fêlé (Monstres), médaillon (Artéfacts), clé à molette (Outils), enclume
 (Optimizer), dossier à l'étoile (Mes équipes), chronomètre (Speed tuning). Grille 24, trait 2, `currentColor`,
 au contrat de lucide (`size`, `color`). Les ACTIONS gardent lucide (importer,
 rechercher…).

@@ -10,7 +10,7 @@ import { CSSProperties } from 'react';
 //
 // Origine des tracés : ceux de la toile (planche « Icônes »), tels quels ; huit
 // dessinées pour l'app, choisies par le mainteneur sur planche — la
-// coupe (Arène), les tenailles (Outils), l'enclume (Optimizer), les deux
+// coupe (Arène), la clé à molette (Outils), l'enclume (Optimizer), les deux
 // compagnons (Ami), le chronomètre (Speed tuning), l'œuf (Monstres), et le
 // médaillon (Artéfacts) repris d'`InventaireIcon` ; le dossier à l'étoile (Mes équipes).
 // ⚠️ **Une exception, voulue par le mainteneur (2026-11-10)** : l'action
@@ -87,7 +87,10 @@ export const IconeParametres = fabrique(
 export const IconeArene = fabrique(
   'M7 3h10v5a5 5 0 0 1-10 0zM7 5H4v1.5A3.5 3.5 0 0 0 7.5 10M17 5h3v1.5A3.5 3.5 0 0 1 16.5 10M12 13v3M8 21h8M9 16h6l1 5H8z'
 );
-export const IconeOutils = fabrique(cercle(12, 12, 1.4) + 'M10.8 11 8 3.5h2.5l2 6M13.2 11 16 3.5h-2.5l-2 6M11 13.2 7 21M13 13.2l4 7.8');
+// La clé à molette, mâchoire ouverte, la molette marquée sur le manche.
+export const IconeOutils = fabrique(
+  'M19.47 7.08L17.04 9.51L14.49 6.96L16.92 4.53A4.6 4.6 0 0 0 11.06 10.81L3.54 18.34A1.5 1.5 0 0 0 5.66 20.46L13.19 12.94A4.6 4.6 0 0 0 19.47 7.08ZM9.76 12.12L11.88 14.24'
+);
 // L'enclume et ses étincelles : on y forge le meilleur équipement (le nom de l'app).
 export const IconeOptimizer = fabrique(
   'M3 9h12.5c2.5 0 4.5-1 5.5-3v3.5c0 2.5-2 4-5 4H15v2.5l2.5 3.5h-11L9 16v-2.5H5.5A2.5 2.5 0 0 1 3 11zM8 2.5v2.5M11.5 3.5 10.5 5M4.5 3.5 5.5 5'
