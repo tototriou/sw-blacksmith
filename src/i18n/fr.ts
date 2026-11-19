@@ -2369,6 +2369,13 @@ export const fr = {
       reinitialiser: 'Réinitialiser les conditions',
       vitesseSpeedTune: 'La VIT minimum est tenue par le speed tune du membre ; la détacher la rend saisissable.',
       vitesseSpeedTuneCourt: 'Speed tune',
+      parSort: 'Par sort',
+      parSortAide:
+        'Sorts cochés, le minimum de Précision porte sur chacun d’eux plutôt que sur la stat : la Précision de la fiche (auras comprises si elles comptent) plus la ligne « [Comp.N] Aug. Précision » de l’artéfact de type. Le maximum reste sur la stat. Le jeu ne donne cette ligne qu’aux sorts 1 à 3.',
+      sortCourt: (n: number) => `S${n}`,
+      sortAria: (n: number) => `Précision minimum sur le sort ${n}`,
+      sortIndisponible: 'Ce monstre n’a pas ce sort, ou c’est un passif.',
+      minimumParSort: (sorts: string) => `Minimum sur ${sorts}, artéfact de type compris`,
     },
     // Les réglages avancés de la recherche.
     avances: {
@@ -3006,6 +3013,7 @@ export const fr = {
         choixArtefact: "contient un choix d'artéfact invalide",
         ligneVerrou: 'doit contenir un code entier et un minimum numérique',
         contrainteSpeedTune: 'doit être une contrainte de speed tune (version 1, zone et sets admis)',
+        sortsPrecision: 'doit être une liste de sorts parmi 1, 2 et 3',
         choixRelique: 'contient un choix de relique invalide',
         typeUnique: 'contient un type de propriété unique inconnu',
         setRepete: 'set inconnu ou répété',

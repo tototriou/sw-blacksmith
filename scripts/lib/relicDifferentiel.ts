@@ -151,7 +151,7 @@ export function entreeResolution(p: SearchParams, c: BuildCandidate, ctx: RelicC
       // réels »), aucune note de dégâts n'est posée et la dominance reste.
       sortDegats: r.degats?.profile.skillCom2usId ?? null,
       // Le différentiel des reliques n'a pas de plan de speed tune.
-      speedTune: null,
+      speedTune: null, sortsPrecision: [],
     }),
     regime: regimeDe(r),
     degats: r.degats ?? null,

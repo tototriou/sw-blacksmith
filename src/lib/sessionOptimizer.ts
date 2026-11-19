@@ -31,6 +31,7 @@ export const CHAMPS_OPTIMIZER_SESSION = [
   'relicUniqueChoice',
   'relicMinUpgrade',
   'lignesVerrouillees',
+  'sortsPrecision',
   'objective',
   'damageSetup',
   'compterAurasResPre',

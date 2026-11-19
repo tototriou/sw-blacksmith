@@ -187,7 +187,7 @@ function artifactParamsApres(e: EntreesMemoArtifactParams) {
       damageSetup,
       maxStats,
       sortDegats: resolvedSkill?.skillCom2usId ?? null,
-      speedTune: null,
+      speedTune: null, sortsPrecision: [],
     }),
     evaluer,
   };

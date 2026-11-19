@@ -434,6 +434,16 @@ export const ECRANS: Ecran[] = [
         ],
       },
       {
+        // La rangée « Par sort » sous « Précision » : S1 et S3 cochés, le
+        // minimum de Précision porte sur eux (feat-precision-par-sort.md).
+        id: 'precision-par-sort', libelle: 'conditions, précision par sort sur S1 et S3',
+        preparation: [
+          { cliquer: { role: 'button', nom: 'Précision minimum sur le sort 1' } },
+          { cliquer: { role: 'button', nom: 'Précision minimum sur le sort 3' } },
+        ],
+        atteint: [{ role: 'button', nom: 'Précision minimum sur le sort 3' }],
+      },
+      {
         id: 'liste-remplie', libelle: 'liste de travail : Vanessa et Cassie', tailles: OPT_BUREAU,
         preparation: OPT_LISTE, atteint: OPT_MEMBRES,
       },

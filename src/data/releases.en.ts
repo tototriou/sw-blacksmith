@@ -23,6 +23,7 @@ export const RELEASES_EN: Release[] = [
       { kind: 'feat', scope: 'Dimensional Arena', text: 'In the desktop app, your defense, attacks and runes fill in when you open the mode in game.' },
       { kind: 'feat', scope: 'Dimensional Arena', text: 'On the website, the web version is coming soon.' },
       { kind: 'feat', scope: 'Application', text: 'With the SW Exporter folder, an empty arena fills in on the next export.' },
+      { kind: 'feat', scope: 'Optimizer', text: 'A minimum Accuracy per skill: S1, S2 or S3, type artifact included.' },
     ],
   },
   {
