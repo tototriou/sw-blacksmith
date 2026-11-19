@@ -5,7 +5,7 @@ Ce document décrit les conditions, l'inventaire et les réglages avancés.
 7. **Conditions** — les 8 stats (PV, ATQ, DEF, VIT, Tx critiq., Dgts critiq., RES,
    Précision), nommées comme dans le jeu. Chaque stat porte **deux champs, minimum et maximum**, tous
    deux facultatifs — champ vide = pas de contrainte. Sous « Précision », une
-   rangée « Par sort » de trois pastilles (S1, S2, S3) porte le minimum de
+   rangée « Précision par sort » de trois pastilles (S1, S2, S3) porte le minimum de
    Précision sur les sorts cochés, ligne de précision de l'artéfact de type
    comprise : [../feat-precision-par-sort.md](../feat-precision-par-sort.md).
    Au téléphone, en bas

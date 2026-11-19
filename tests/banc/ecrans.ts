@@ -434,7 +434,7 @@ export const ECRANS: Ecran[] = [
         ],
       },
       {
-        // La rangée « Par sort » sous « Précision » : S1 et S3 cochés, le
+        // La rangée « Précision par sort » sous « Précision » : S1 et S3 cochés, le
         // minimum de Précision porte sur eux (feat-precision-par-sort.md).
         id: 'precision-par-sort', libelle: 'conditions, précision par sort sur S1 et S3',
         preparation: [

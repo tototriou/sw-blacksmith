@@ -23,7 +23,7 @@ pastilles), [relicQueue.ts](src/lib/relicQueue.ts)
 ## À l'écran
 
 - Sous la ligne « Précision » de la grille des conditions, une rangée
-  « Par sort » de trois pastilles, S1, S2 et S3, aux deux formats. La rangée
+  « Précision par sort » de trois pastilles, S1, S2 et S3, aux deux formats. La rangée
   est toujours là : cocher un sort ne déplace rien.
 - Sorts cochés, le champ Min de Précision porte sur chacun d'eux, et son
   titre le dit (« Minimum sur S1, S3, artéfact de type compris »). Une seule

@@ -269,6 +269,6 @@ export function testRenduOptimizerPrecisionParSort() {
     const b = boutons(html);
     egal([1, 2, 3].map((n) => b.find((x) => x.ariaLabel === `Précision minimum sur le sort ${n}`)?.presse), [true, false, true], 'S1 et S3 cochés');
     ok(valeurs(html, 'title').includes('Minimum sur S1, S3, artéfact de type compris'), 'le minimum de Précision dit qu’il porte sur ces sorts');
-    ok(texteVisible(html).includes('Par sort'), 'la rangée « Par sort »');
+    ok(texteVisible(html).includes('Précision par sort'), 'la rangée « Précision par sort »');
   }
 }

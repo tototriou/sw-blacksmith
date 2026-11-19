@@ -2213,7 +2213,7 @@ export const en: Dictionnaire = {
       reinitialiser: 'Reset the conditions',
       vitesseSpeedTune: 'The member’s speed tune holds the minimum SPD; detach it to enter one.',
       vitesseSpeedTuneCourt: 'Speed tune',
-      parSort: 'Per skill',
+      parSort: 'Accuracy per skill',
       parSortAide:
         'With skills checked, the Accuracy minimum applies to each of them instead of the stat: the sheet Accuracy (auras included if they count) plus the “[Skill N] Accuracy” line of the type artifact. The maximum stays on the stat. The game only offers this line for skills 1 to 3.',
       sortCourt: (n: number) => `S${n}`,
