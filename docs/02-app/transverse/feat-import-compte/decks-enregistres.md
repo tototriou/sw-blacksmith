@@ -43,13 +43,15 @@ par l'utilisateur d'après ses decks en jeu (2026-11-18).
 | 6 | Tribunal d'ascension (`tribunal-ascension`) | 4-5 |
 | 8 | Labyrinthe, temps limité (`labyrinthe-temps-limite`) | 4-5 |
 | 11 | Labyrinthe, boss (`labyrinthe-boss`) | 5 |
+| 13 | Tour du feu (`tour-feu`) | 5 |
+| 14 | Tour du vent (`tour-vent`) | 5 |
 | 22 | Siège — offense (`siege-offense`) | 3 |
 | 23 | Temple du chaos (`temple-chaos`) | 5 |
 | 24 | Donjons de Cairos (`cairos`) | 4-5 |
 | 25 | Faille des mondes, bêtes (`faille-mondes`) | 6 |
 | 26 | Passage des dimensions (`passage-dimensions`) | 4 |
 | 27 | Subjugation de monstre (`subjugation`) | 5 |
-| 7, 9, 10, 12, 13, 14 | `autre`, à nommer (sans doute d'autres modes du labyrinthe) | 5 |
+| 7, 9, 10, 12 | `autre`, à nommer | 5 |
 
 ### Sous-contenus (`SOUS_CONTENUS_DECK`)
 
@@ -59,8 +61,8 @@ Sur les contenus à sous-catégories, la catégorie de `deck_seq` désigne le do
 | Contenu | Catégorie → sous-contenu |
 | --- | --- |
 | `cairos` | 1 Castel du Géant (`castel-geant`), 2 Tanière du dragon (`taniere-dragon`), 6 Crypte du Jugement (`crypte-jugement`) ; 3, 4, 5 relevées, non nommées |
-| `faille-mondes` | 2 Bête enflammée (`bete-enflammee`) ; 1, 3, 5 relevées, non nommées |
-| `passage-dimensions` | 2 Sanctuaire des fées rêveuses (`sanctuaire-fees-reveuses`) ; 4, 6 relevées, non nommées |
+| `faille-mondes` | 1 Bête de glace (`bete-glace`), 2 Bête enflammée (`bete-enflammee`), 3 Bête de l'orage (`bete-orage`), 4 Bête de radiance (`bete-radiance`), 5 Bête de marécage (`bete-marecage`) |
+| `passage-dimensions` | 2 Sanctuaire des fées rêveuses (`sanctuaire-fees-reveuses`), 4 Ruines de la mort silencieuse (`ruines-mort-silencieuse`), 6 Terre infernale embrasée (`terre-infernale-embrasee`) |
 | `subjugation` | 1 Eau, 2 Feu, 3 Vent, 10 Boss (`subjugation-eau` … `subjugation-boss`) |
 
 Les libellés affichés viendront du dictionnaire (`src/i18n/`), avec les noms du jeu dans chaque

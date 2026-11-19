@@ -241,8 +241,8 @@ export default function testImport() {
   );
   egal([decomposerDeckSeq(1001), decomposerDeckSeq(15)], [{ categorie: 10, emplacement: 1 }, { categorie: null, emplacement: 15 }], 'deck_seq : catégorie × 100 + emplacement à partir de 100');
   egal(
-    [sousContenuDuDeck('subjugation', 10), sousContenuDuDeck('cairos', 4), sousContenuDuDeck('temple-chaos', null)],
-    ['subjugation-boss', null, null],
+    [sousContenuDuDeck('subjugation', 10), sousContenuDuDeck('faille-mondes', 4), sousContenuDuDeck('cairos', 4), sousContenuDuDeck('temple-chaos', null)],
+    ['subjugation-boss', 'bete-radiance', null, null],
     'decks enregistrés : la catégorie nomme le donjon quand elle est relevée, null sinon'
   );
   egal(contenuDuDeckType(99), 'autre', 'decks enregistrés : un deck_type non relevé sort en « autre »');

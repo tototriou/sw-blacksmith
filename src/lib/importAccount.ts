@@ -1469,6 +1469,8 @@ export type ContenuDeck =
   | 'labyrinthe-temps-limite'
   | 'labyrinthe-boss'
   | 'tribunal-ascension'
+  | 'tour-feu'
+  | 'tour-vent'
   | 'siege-offense'
   | 'temple-chaos'
   | 'cairos'
@@ -1479,7 +1481,7 @@ export type ContenuDeck =
 
 // `deck_type` → contenu. Seuls les types relevés figurent ici : 1 et 22 sur
 // des exports réels, les autres nommés par l'utilisateur d'après ses decks en
-// jeu (2026-11-18). Restent à nommer : 7, 9, 10, 12, 13, 14.
+// jeu (2026-11-18). Restent à nommer : 7, 9, 10, 12.
 export const CONTENUS_DECK: Readonly<Record<number, ContenuDeck>> = {
   [ARENA_OFFENSE_DECK_TYPE]: 'arene-offense',
   2: 'guerre-guilde-offense',
@@ -1489,6 +1491,8 @@ export const CONTENUS_DECK: Readonly<Record<number, ContenuDeck>> = {
   6: 'tribunal-ascension',
   8: 'labyrinthe-temps-limite',
   11: 'labyrinthe-boss',
+  13: 'tour-feu',
+  14: 'tour-vent',
   [SIEGE_OFFENSE_DECK_TYPE]: 'siege-offense',
   23: 'temple-chaos',
   24: 'cairos',
@@ -1508,8 +1512,14 @@ export type SousContenuDeck =
   | 'castel-geant'
   | 'taniere-dragon'
   | 'crypte-jugement'
+  | 'bete-glace'
   | 'bete-enflammee'
+  | 'bete-orage'
+  | 'bete-radiance'
+  | 'bete-marecage'
   | 'sanctuaire-fees-reveuses'
+  | 'ruines-mort-silencieuse'
+  | 'terre-infernale-embrasee'
   | 'subjugation-eau'
   | 'subjugation-feu'
   | 'subjugation-vent'
@@ -1517,8 +1527,8 @@ export type SousContenuDeck =
 
 export const SOUS_CONTENUS_DECK: Readonly<Partial<Record<ContenuDeck, Readonly<Record<number, SousContenuDeck>>>>> = {
   cairos: { 1: 'castel-geant', 2: 'taniere-dragon', 6: 'crypte-jugement' },
-  'faille-mondes': { 2: 'bete-enflammee' },
-  'passage-dimensions': { 2: 'sanctuaire-fees-reveuses' },
+  'faille-mondes': { 1: 'bete-glace', 2: 'bete-enflammee', 3: 'bete-orage', 4: 'bete-radiance', 5: 'bete-marecage' },
+  'passage-dimensions': { 2: 'sanctuaire-fees-reveuses', 4: 'ruines-mort-silencieuse', 6: 'terre-infernale-embrasee' },
   subjugation: { 1: 'subjugation-eau', 2: 'subjugation-feu', 3: 'subjugation-vent', 10: 'subjugation-boss' },
 };
 
