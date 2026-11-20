@@ -2513,6 +2513,13 @@ export const en: Dictionnaire = {
       reinitialiser: 'Reset the conditions',
       vitesseSpeedTune: 'The member’s speed tune holds the minimum SPD; detach it to enter one.',
       vitesseSpeedTuneCourt: 'Speed tune',
+      parSort: 'Accuracy per skill',
+      parSortAide:
+        'With skills checked, the Accuracy minimum applies to each of them instead of the stat: the sheet Accuracy (auras included if they count) plus the “[Skill N] Accuracy” line of the type artifact. The maximum stays on the stat. The game only offers this line for skills 1 to 3.',
+      sortCourt: (n: number) => `S${n}`,
+      sortAria: (n: number) => `Accuracy minimum on skill ${n}`,
+      sortIndisponible: 'This monster has no such skill, or it is a passive.',
+      minimumParSort: (sorts: string) => `Minimum on ${sorts}, type artifact included`,
     },
     avances: {
       profondeur: 'Search depth',
@@ -3106,6 +3113,7 @@ export const en: Dictionnaire = {
         choixArtefact: 'contains an invalid artifact choice',
         ligneVerrou: 'must contain an integer code and a numeric minimum',
         contrainteSpeedTune: 'must be a speed tune constraint (version 1, zone and allowed sets)',
+        sortsPrecision: 'must be a list of skills among 1, 2 and 3',
         choixRelique: 'contains an invalid relic choice',
         typeUnique: 'contains an unknown unique property type',
         setRepete: 'unknown or repeated set',

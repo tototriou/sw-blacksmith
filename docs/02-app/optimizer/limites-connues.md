@@ -160,6 +160,11 @@ ici.
   Sans effet à l'écran, dont le seul appel ne lit que
   `meilleurSansVerrous` :
   [03-developpeur/optimizer/moteur/optimiseur-artefacts.md § Lignes verrouillées](../../03-developpeur/optimizer/moteur/optimiseur-artefacts.md#lignes-verrouillées).
+- **Sous une précision par sort, les diagnostics jugent le minimum relâché
+  des runes.** Le quasi-succès et les conditions bloquantes nomment
+  « Précision » avec le minimum moins le meilleur bonus de l'artéfact de
+  type, jamais la condition sur chaque sort, qui ne se juge qu'à la
+  résolution : [feat-precision-par-sort.md](feat-precision-par-sort.md).
 
 ## Exclusion et listes de travail
 

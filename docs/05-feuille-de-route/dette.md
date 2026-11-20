@@ -11,6 +11,7 @@ une mesure se redonne avec sa date quand on la refait.
 | **Types `any`** | 80 avertissements `@typescript-eslint/no-explicit-any`, dont 72 dans `src/lib/importAccount.ts` (la lecture de l'export SWEX) | `npm run lint` | 2026-10-13 |
 | **Dépendances de hooks React incomplètes** | 17 avertissements `react-hooks/exhaustive-deps` | `npm run lint` | 2026-10-13 |
 | **Affectations inutiles** | 7 avertissements `no-useless-assignment` | `npm run lint` | 2026-10-13 |
+| **Alerte `npm audit` sans correctif : minimatch dans electron-builder** (GHSA-g3hv-75wg-m249, déni de service par un motif piégé). Les motifs ne viennent que de notre `electron-builder.yml`, lu à l'empaquetage : aucune entrée extérieure. Même la dernière version d'electron-builder tire minimatch 9 et 10, et `npm audit fix --force` le **rétrograderait** en 25.1 : ne pas le lancer. Se paie quand electron-builder passe à minimatch ≥ 11.0.1 | 6 alertes moyennes, toutes de cette seule cause (2026-11-18) | `npm audit` | 2026-11-18 |
 | **Points de la revue de `release/v2.0.0`** | à relever : ils ne sont pas dans le dépôt | — | 2026-10-08 |
 
 Au total, ESLint rend 0 erreur et 257 avertissements (2026-10-13). Deux fichiers en portent près

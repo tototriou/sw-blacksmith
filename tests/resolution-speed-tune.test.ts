@@ -223,7 +223,7 @@ export default function testResolutionSpeedTune() {
       porteur: PORTEUR, inventaire: inv, reserves: new Set(), equipes: [element], optimiserArtefacts: true,
       principaleParSorte: sc.artefacts === 'fige' ? { element: 'equipped' } : {},
       lignesVerrouillees: [...lignes, { code: CODE_206, min: 3 }],
-      damageSetup: DEFAULT_DAMAGE_SETUP, maxStats: requirement.maxStats ?? {}, sortDegats: null, speedTune: contrainte,
+      damageSetup: DEFAULT_DAMAGE_SETUP, maxStats: requirement.maxStats ?? {}, sortDegats: null, speedTune: contrainte, sortsPrecision: [],
     });
     const ctx: RelicContext | undefined = sc.intention
       ? resoudreContexteRelique({ mode: sc.intention, principale: 'libre', type: 'libre', seuil: 0 }, portee, reliquesInv)
@@ -297,7 +297,7 @@ export default function testResolutionSpeedTune() {
     };
     const base = {
       porteur: PORTEUR, inventaire: [], reserves: new Set<number>(), equipes: [], optimiserArtefacts: true, principaleParSorte: {},
-      lignesVerrouillees: [{ code: CODE_206, min: 4 }, { code: 210, min: 2 }], damageSetup: DEFAULT_DAMAGE_SETUP, maxStats: {}, sortDegats: null,
+      lignesVerrouillees: [{ code: CODE_206, min: 4 }, { code: 210, min: 2 }], damageSetup: DEFAULT_DAMAGE_SETUP, maxStats: {}, sortDegats: null, sortsPrecision: [],
     };
     const avec = parametresArtefactsFiche({ ...base, speedTune: c });
     egal([avec.codesIncomparables, avec.lignesVerrouillees, avec.speedTune === c], [[CODE_206], [{ code: 210, min: 2 }], true],

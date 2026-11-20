@@ -347,6 +347,17 @@ Côté moteur :
 - La recherche de runes ne voit que l'enveloppe de VIT de fiche
   (`exigenceSousSpeedTune`) : un build dans l'enveloppe mais hors zone est
   trouvé, puis rejeté à la résolution comme un build sans paire conforme.
+- **La précision par sort passe par le même mécanisme**
+  ([02-app/optimizer/feat-precision-par-sort.md](../../../02-app/optimizer/feat-precision-par-sort.md)) :
+  `entreeResolutionDuBuild` ajoute, pour chaque sort coché, une ligne bornée
+  sur son code (407 à 409) de l'écart à combler à l'infini
+  (`lignesPrecisionDuBuild`, sur la Précision jugée du build, auras
+  comprises), mémorisée par écart (`CachesResolution.bornesPrecision`) ;
+  `parametresArtefactsFiche` rend ces codes incomparables
+  (`sortsPrecision`). Les runes n'en voient que le minimum relâché du
+  meilleur bonus d'une pièce de type (`exigencePrecisionParSort`). Sous les
+  deux contraintes à la fois, les lignes réunies forment un tableau neuf par
+  build. Tests : `tests/precision-par-sort.test.ts`, même balayage brut.
 - Ce que les tests verrouillent (`tests/resolution-speed-tune.test.ts`) :
   contre un balayage brut de la vue complète, même verdict et, hors régime
   `aucun`, même meilleure note ; chemin de l'app, calcul exhaustif et

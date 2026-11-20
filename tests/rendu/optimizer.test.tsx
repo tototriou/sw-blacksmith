@@ -250,3 +250,25 @@ export function testRenduTelephoneOptimizer() {
     'les meilleurs artéfacts offensifs, repliés par défaut au téléphone',
   );
 }
+
+// La précision par sort (precisionParSort.ts) : trois pastilles sous la ligne
+// « Précision » des conditions, aux deux formats ; cochées, le minimum de
+// Précision le dit dans son titre.
+export function testRenduOptimizerPrecisionParSort() {
+  for (const [format, rendu] of [
+    ['bureau', (etat: EtatBanc) => rendreOptimizer(etat)],
+    ['téléphone', (etat: EtatBanc) => auTelephone(() => rendreOptimizer(etat))],
+  ] as const) {
+    titre(`rendu · Optimizer (${format}) — la précision minimale par sort`);
+    const vide = boutons(rendu(AVEC_MONSTRE));
+    for (const n of [1, 2, 3]) {
+      const p = vide.find((x) => x.ariaLabel === `Précision minimum sur le sort ${n}`);
+      ok(p?.texte === `S${n}` && p.presse === false, `pastille S${n}, décochée par défaut`);
+    }
+    const html = rendu({ ...AVEC_MONSTRE, minStats: { acc: 85 }, sortsPrecision: [1, 3] });
+    const b = boutons(html);
+    egal([1, 2, 3].map((n) => b.find((x) => x.ariaLabel === `Précision minimum sur le sort ${n}`)?.presse), [true, false, true], 'S1 et S3 cochés');
+    ok(valeurs(html, 'title').includes('Minimum sur S1, S3, artéfact de type compris'), 'le minimum de Précision dit qu’il porte sur ces sorts');
+    ok(texteVisible(html).includes('Précision par sort'), 'la rangée « Précision par sort »');
+  }
+}

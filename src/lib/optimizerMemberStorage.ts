@@ -67,7 +67,7 @@ export function selecteurValide(v: unknown): v is ExclusionSelector {
 const REGLAGES_RETIRES = ['adapterArtefactsAuTri'] as const;
 // Champs personnels arrivés après les premières mémoires écrites : leur
 // absence se relit par leur défaut, au lieu de rejeter toute la mémoire.
-const CHAMPS_AJOUTES: Partial<CriteresOptimizer> = { sensTri: 'desc', bornesResultats: {} };
+const CHAMPS_AJOUTES: Partial<CriteresOptimizer> = { sensTri: 'desc', bornesResultats: {}, sortsPrecision: [] };
 function sansReglagesRetires(c: CriteresOptimizer): CriteresOptimizer {
   const copie: Record<string, unknown> = { ...c };
   for (const k of REGLAGES_RETIRES) delete copie[k];
@@ -98,7 +98,7 @@ function criteresValides(v: unknown, t: Dictionnaire): v is CriteresOptimizer {
     version: OPTIMIZER_RECIPE_VERSION, monsterCom2usId: 1, metric: 'eff', slotFilterPreset: 'moyen',
     objective: v.objective, damageSetup: v.damageSetup, compterAurasResPre: v.compterAurasResPre,
     artifactMainByKind: v.artifactMainByKind, relicMainChoice: v.relicMainChoice, relicUniqueChoice: v.relicUniqueChoice,
-    lignesVerrouillees: v.lignesVerrouillees,
+    lignesVerrouillees: v.lignesVerrouillees, sortsPrecision: v.sortsPrecision,
     requirement: { sets: v.comboSets, minStats: v.minStats, maxStats: v.maxStats, mainStats: v.mainStatsBySlot, lockedRunes: v.lockedRunes },
   }), t);
   return lu.recipe !== null && !lu.avertissements?.length;
