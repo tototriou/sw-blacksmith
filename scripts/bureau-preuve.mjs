@@ -14,7 +14,9 @@
 // s'est perdu.
 // `--swex` : le dossier SW Exporter sur des fixtures — choix (sauvegarde
 // proposée, puis import complet), export réécrit, rechargement,
-// sous-dossier `live` ; après le choix, prépa RTA et siège jamais touchés.
+// sous-dossier `live` ; après le choix, prépa RTA et siège jamais touchés ;
+// relance avec la conservation refusée : tout importé ; un import manuel
+// lâche l'invocateur suivi.
 // `--session` (docs/02-app/transverse/) : conservation refusée,
 // « Sauvegarder » depuis les Paramètres, Ctrl K, Ctrl+S et la barre du haut,
 // puis « Sauvegarder sous… » ; chaque fichier relu par `lireSession`.
@@ -232,6 +234,21 @@ if (discord) {
       res.apresSauvegarde?.compte === 'Testeur' &&
       /^Import : /.test(res.apresSauvegarde?.recapitulatif ?? ''),
     'réglage retenu (dossier, invocateur, dernier lu)': res.reglageRetenu?.fichier === 'Testeur-1.json' && typeof res.reglageRetenu?.dernierLu === 'number',
+    'conservation refusée, relance : l’invocateur suivi importé en entier, prépa RTA comprise':
+      res.refus === 'cliqué' &&
+      res.apresRelanceSansConservation?.conservation === '0' &&
+      res.apresRelanceSansConservation?.compte === 'Testeur' &&
+      /^[1-9]/.test(res.prepaAvantRefus ?? '') &&
+      res.apresRelanceSansConservation?.prepa === res.prepaAvantRefus,
+    'import manuel : l’invocateur lâché, le dossier gardé, aucun coché':
+      res.remplacerManuel === 'cliqué' &&
+      res.apresImportManuel?.compte === 'Manuel' &&
+      JSON.stringify(res.apresImportManuel?.menu) === JSON.stringify(['Autre', 'Testeur', 'Importer un fichier…']) &&
+      res.apresImportManuel?.selecteur === '' &&
+      res.apresImportManuel?.reglage?.fichier === null &&
+      typeof res.apresImportManuel?.reglage?.dossier === 'string',
+    'après l’import manuel, l’export de l’ancien invocateur ne s’applique plus':
+      res.apresAncienExport?.compte === 'Manuel' && res.apresAncienExport?.notification === 'aucune',
     'aucune erreur': !res.erreur,
   };
   for (const [quoi, bon] of Object.entries(verdicts)) console.log(`${bon ? 'ok' : 'KO'}  ${quoi}`);

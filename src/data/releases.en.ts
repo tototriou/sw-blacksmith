@@ -24,6 +24,8 @@ export const RELEASES_EN: Release[] = [
       { kind: 'feat', scope: 'Dimensional Arena', text: 'On the website, the web version is coming soon.' },
       { kind: 'feat', scope: 'Application', text: 'With the SW Exporter folder, an empty arena fills in on the next export.' },
       { kind: 'feat', scope: 'Optimizer', text: 'A minimum Accuracy per skill: S1, S2 or S3, type artifact included.' },
+      { kind: 'fix', scope: 'Application', text: 'An account imported from a file is no longer replaced by the summoner followed in the SW Exporter folder.' },
+      { kind: 'fix', scope: 'Application', text: 'Without kept data, the followed summoner reloads in full at launch, RTA prep and siege included.' },
       { kind: 'docs', scope: 'Discord', text: 'A Discord bot page: installation, recommendations and commands, with screenshots.' },
       { kind: 'fix', scope: 'Discord', text: 'The invited bot arrives with its commands, /speedtune included.' },
     ],
