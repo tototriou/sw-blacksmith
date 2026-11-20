@@ -278,9 +278,13 @@ côté du service : [service-discord.md § Application de bureau](../siege/feat-
   ne sont plus appliqués. Sinon, son prochain export remplaçait « Mon
   compte » sous la prépa RTA et le siège du fichier : deux comptes mêlés,
   selon la page. Le rechoisir est un changement de compte : import complet.
+- ⚠️ **Une page vide importe tout** : ni compte, ni équipes (prépa RTA,
+  siège, arènes) — le lancement avec la conservation refusée. L'export de
+  l'invocateur suivi s'y importe en entier, comme après un choix : elle n'a
+  rien à perdre, et « Mon compte » seul laissait la prépa et le siège vides.
 - **Quand** : au chargement de la page, si l'export est plus récent que le
   dernier appliqué (annoncé), ou si la page n'a pas de compte (conservation
-  refusée : relu en silence) ; puis à chaque changement du dossier, **1,5 s
+  refusée : relu en silence, en entier si la page est vide) ; puis à chaque changement du dossier, **1,5 s
   après la dernière écriture** (SW Exporter écrit plusieurs Mo).
 - ⚠️ **La page confirme ce qu'elle a appliqué** : un export illisible (à
   moitié écrit) ne passe pas « lu » et sera redonné au prochain changement.
@@ -453,7 +457,7 @@ boutons restent affichés, désactivés quand il n'y a rien à faire.
 ```
 npm run bureau:preuve                  # l'app se contrôle elle-même (resultats.json)
 npm run bureau:preuve -- --conservation  # les données et la session en cours survivent à la fermeture
-npm run bureau:preuve -- --swex        # le dossier SW Exporter, sur des fixtures : choix, sauvegarde proposée, import complet, exports suivants, import manuel qui lâche l'invocateur
+npm run bureau:preuve -- --swex        # le dossier SW Exporter, sur des fixtures : choix, sauvegarde proposée, import complet, exports suivants, relance sans conservation, import manuel qui lâche l'invocateur
 npm run bureau:preuve -- --session     # « Sauvegarder », « Sauvegarder sous… », conservation refusée
 npm run bureau:preuve -- --discord     # la connexion à Discord, devant le vrai service et un Discord simulé : code collé, conservation refusée puis acceptée, favori, réouverture, déconnexion
 npm run bureau:preuve -- <dossier> --exe "<app installée>"  # la même chose, sur l'app installée

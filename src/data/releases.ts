@@ -86,6 +86,7 @@ export const RELEASES: Release[] = [
       { kind: 'feat', scope: 'Application', text: 'Avec le dossier SW Exporter, une arène vide se remplit au prochain export.' },
       { kind: 'feat', scope: 'Optimizer', text: 'Une précision minimale par sort : S1, S2 ou S3, artéfact de type compris.' },
       { kind: 'fix', scope: 'Application', text: 'Un compte importé par fichier n’est plus remplacé par l’invocateur suivi dans le dossier SW Exporter.' },
+      { kind: 'fix', scope: 'Application', text: 'Sans données gardées, l’invocateur suivi se recharge en entier au lancement, prépa RTA et siège compris.' },
     ],
   },
   {

@@ -76,6 +76,9 @@ latérale, qui devient alors un menu.
   SW Exporter », avec le récapitulatif de l'import. Choisir un **dossier**
   qui ne contient qu'un export le désigne d'office : même import complet.
   Rechoisir l'invocateur déjà suivi ne fait rien.
+- ⚠️ **Une page vide importe tout** : sans compte ni équipes (lancement
+  avec la conservation refusée), l'export de l'invocateur suivi s'importe en
+  entier — prépa RTA et siège compris —, comme après un choix.
 - ⚠️ **Un import manuel (un fichier JSON) lâche l'invocateur suivi** : le
   compte affiché vient du fichier, aucun invocateur n'est plus coché (carte
   du compte, Réglages) et les exports du dossier ne s'appliquent plus ; le

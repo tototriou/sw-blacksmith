@@ -867,8 +867,9 @@ function Application() {
   // fusion : c'était le cas, et fusionner des équipes de siège les DÉDOUBLAIT
   // (un compte à 50 attaques repartait à 100). Un import de compte est un
   // rafraîchissement de l'état du jeu, jamais un ajout.
-  function importAccount(text: string) {
-    const aDejaDesDonnees =
+  // Le travail qu'un import complet REMPLACERAIT : prépa RTA, siège, arènes.
+  function aDesEquipes() {
+    return (
       Object.keys(rta.state.entries).length > 0 ||
       siegeDef.state.teams.length > 0 ||
       siegeOff.state.teams.length > 0 ||
@@ -876,8 +877,12 @@ function Application() {
       areneOff.state.teams.length > 0 ||
       areneInter.state.teams.length > 0 ||
       areneDimDef.state.teams.length > 0 ||
-      areneDimOff.state.teams.length > 0;
-    if (aDejaDesDonnees) {
+      areneDimOff.state.teams.length > 0
+    );
+  }
+
+  function importAccount(text: string) {
+    if (aDesEquipes()) {
       setImportEnAttente(text);
       return;
     }
@@ -1071,6 +1076,10 @@ function Application() {
   // le choix d'un invocateur, déjà gardé par `avantChangementCompte`) : tout
   // s'importe, comme l'import manuel. Sinon, « Mon compte » seulement. Pas
   // de question de conservation (c'est un réglage, posé une fois).
+  // ⚠️ **Une page VIDE — ni compte, ni équipes — importe tout** : elle n'a
+  // rien à perdre. C'est le lancement avec la conservation refusée : rien
+  // n'est resté, et « Mon compte » seul laissait la prépa RTA et le siège
+  // vides sous un invocateur pourtant suivi.
   // `ok: false` — fichier illisible (à moitié écrit ?) ou sans box : rien
   // n'est touché, et l'export n'est pas marqué lu (bureau/swex.ts le
   // redonnera au prochain changement).
@@ -1079,7 +1088,7 @@ function Application() {
     if (!data) return { ok: false, nom: null };
     const compte = preparerCompte(data);
     if (compte.boxItems.length === 0) return { ok: false, nom: null };
-    if (complet) appliquerTout(data, compte, false);
+    if (complet || (box.length === 0 && !aDesEquipes())) appliquerTout(data, compte, false);
     else {
       appliquerCompte(data, compte);
       // Rattrapage : l'arène classique, vide, se remplit de cet export — un

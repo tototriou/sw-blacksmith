@@ -332,6 +332,39 @@ export async function lancerPreuveSwex(fenetre: BrowserWindow, dossier: string, 
     const reglageDisque = () => JSON.parse(readFileSync(join(dossier, 'donnees', 'swex.json'), 'utf8'));
     resultats.reglageRetenu = reglageDisque();
 
+    // 9 bis. La conservation refusée (Paramètres), puis une relance : rien
+    // n'est resté sur le disque, et l'export de l'invocateur suivi
+    // s'importe EN ENTIER — la prépa RTA revient, pas seulement « Mon compte ».
+    // Le compteur de « Ma prépa » en témoigne (bureau : à côté du titre).
+    const compteurPrepa = async () => {
+      await js(`location.hash = '#/rta'`);
+      await attendre(1200);
+      return js(`[...document.querySelectorAll('h1')].find((h) => h.textContent.trim() === 'Ma prépa')?.nextElementSibling?.textContent.trim() ?? 'aucun'`);
+    };
+    await fermerNotification();
+    resultats.prepaAvantRefus = await compteurPrepa();
+    await js(`location.hash = '#/parametres'`);
+    await attendre(1000);
+    resultats.refus = await js(`(() => {
+      const s = document.querySelector('[role="switch"][aria-label="Garder mes données sur cet appareil"]');
+      if (!s) return 'pas d’interrupteur';
+      if (s.getAttribute('aria-checked') !== 'true') return 'déjà refusée';
+      s.click();
+      return 'cliqué';
+    })()`);
+    await attendre(1500);
+    fenetre.webContents.reload();
+    await new Promise<void>((r) => fenetre.webContents.once('did-finish-load', () => r()));
+    await attendre(4000);
+    resultats.apresRelanceSansConservation = {
+      conservation: await js(`localStorage.getItem('swblacksmith-persist-v1')`),
+      compte: await compteAffiche(),
+      prepa: await compteurPrepa(),
+      notification: await notification(),
+    };
+    await js(`location.hash = '#/parametres'`);
+    await attendre(1000);
+
     // 10. Un import MANUEL, « Testeur » suivi : l'invocateur est lâché, le
     // dossier reste — aucun coché, ni au menu ni dans les Réglages. Puis
     // l'export de l'ancien invocateur, réécrit : il ne s'applique plus.
