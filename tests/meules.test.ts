@@ -15,6 +15,9 @@ import {
   ownsCraft,
   pickCraft,
   GRADE_SCENARIO,
+  GRADES_RESERVE,
+  reserveDesGrades,
+  scenarioDeLaReserve,
 } from '../src/lib/crafts';
 import { planNeeds, runePlan, runePotential } from '../src/lib/runeOptim';
 import { CraftLine, RuneDetail } from '../src/types';
@@ -561,4 +564,58 @@ export function testReserveParGrade() {
   const legendaire = stock([{ kind: 'grind' as const, stat: 8, grade: 5 }]);
   const pot5 = runePotential(rune, false, 'eff', true, parGrade(legendaire));
   ok(pot5.heroGain > 0 && pot5.legendGain > pot5.heroGain, 'une meule légendaire compte en héroïque ET en légendaire');
+}
+
+// Les cases « Héroïque » / « Légendaire » de « Faisable avec ma réserve » :
+// un grade décoché sort de la réserve — meules ET gemmes —, et un seul grade
+// coché impose son scénario au filtre et au plan.
+export function testReserveDesGrades() {
+  titre('« Faisable » : les grades de consommables cochés');
+  const ligne = (l: Partial<CraftLine>): CraftLine =>
+    ({ kind: 'grind', setKey: 'violent', stat: 8, grade: 5, ancient: false, amount: 1, ...l }) as CraftLine;
+  const lignes = [
+    ligne({ grade: 4 }),
+    ligne({ grade: 5 }),
+    ligne({ kind: 'gem', stat: 4, grade: 5 }),
+    ligne({ kind: 'gem', stat: 4, grade: 4, setKey: null }),
+  ];
+  const tous = new Set<number>(GRADES_RESERVE);
+  ok(reserveDesGrades(lignes, tous) === lignes, 'les deux cochés : la réserve entière, rien de retiré');
+  egal(reserveDesGrades(lignes, new Set([4])).map((l) => `${l.kind}${l.grade}`), ['grind4', 'gem4'], '« Héroïque » seul : meules ET gemmes héroïques, immémoriaux compris');
+  egal(reserveDesGrades(lignes, new Set([5])).map((l) => `${l.kind}${l.grade}`), ['grind5', 'gem5'], '« Légendaire » seul : meules ET gemmes légendaires');
+  egal(reserveDesGrades(lignes, new Set()), [], 'aucun coché : réserve vide');
+
+  egal(scenarioDeLaReserve(tous, 'hero'), 'hero', 'les deux cochés : le scénario du tri (héroïque)');
+  egal(scenarioDeLaReserve(tous, 'legend'), 'legend', 'les deux cochés : le scénario du tri (légendaire)');
+  egal(scenarioDeLaReserve(new Set([4]), 'legend'), 'hero', '« Héroïque » seul : scénario héroïque, même trié en légendaire');
+  egal(scenarioDeLaReserve(new Set([5]), 'hero'), 'legend', '« Légendaire » seul : scénario légendaire, même trié en héroïque');
+  egal(scenarioDeLaReserve(new Set(), 'legend'), 'legend', 'aucun coché : le tri');
+
+  // Une rune VIT meulable ; dans le sac, UNE meule VIT légendaire. Sans case
+  // décochée, le scénario héroïque y puise (grade ≥ scénario). « Héroïque »
+  // seul : héroïques STRICTEMENT — la légendaire sort du sac, rien à pousser.
+  const rune: RuneDetail = {
+    id: 32,
+    slot: 2,
+    set: 'violent',
+    rank: 6,
+    rarity: 5,
+    level: 15,
+    main: { code: 8, value: 42 },
+    subs: [
+      { code: 8, value: 5, grind: 0 },
+      { code: 9, value: 6 },
+      { code: 11, value: 7 },
+      { code: 12, value: 8 },
+    ],
+  };
+  const sac = [ligne({ grade: 5 })];
+  const plan = (grades: Set<number>) => {
+    const s = buildCraftStock(reserveDesGrades(sac, grades));
+    const scenario = scenarioDeLaReserve(grades, 'hero');
+    return runePlan(rune, scenario, false, 'eff', true, dispoReserve(s, rune, scenario));
+  };
+  egal(plan(tous).subs[0].grind, 4, 'les deux cochés, trié en héroïque : la meule légendaire sert au plan héroïque (+4)');
+  egal(planNeeds(plan(new Set([4]))).length, 0, '« Héroïque » seul : la meule légendaire n’est pas utilisée, rune non faisable');
+  egal(plan(new Set([5])).subs[0].grind, 5, '« Légendaire » seul, trié en héroïque : plan légendaire (+5)');
 }

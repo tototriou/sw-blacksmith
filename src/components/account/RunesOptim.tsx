@@ -10,7 +10,16 @@ import {
   RunesUtilisees,
   unionRunesUtilisees,
 } from '../../lib/importAccount';
-import { CraftStock, EMPTY_STOCK, buildCraftStock, dispoReserve } from '../../lib/crafts';
+import {
+  CraftStock,
+  EMPTY_STOCK,
+  GRADES_RESERVE,
+  buildCraftStock,
+  dispoReserve,
+  reserveDesGrades,
+  scenarioDeLaReserve,
+} from '../../lib/crafts';
+import { nomGrade } from '../../i18n/jeu';
 import { useRuneMetric, formatRuneMetric, convertirPalier, runeMetricValue } from '../../hooks/useRuneMetric';
 import { useStickyState } from '../../hooks/useStickyState';
 import { useMediaQuery, SOUS_LG } from '../../hooks/useMediaQuery';
@@ -84,7 +93,7 @@ export const signed = (g: number, metric: 'eff' | 'score') =>
 // Valeur de filtre d'une rune SANS marqueur. Les marqueurs du jeu vont de 1 à 8.
 const SANS_MARQUEUR = 0;
 
-// Une case d'un filtre à cases : son libellé (nombre de runes compris), son
+// Une case d'un filtre à cases : son libellé (son nombre compris), son
 // état, et l'action qui la bascule.
 interface ChoixCase {
   cle: string | number;
@@ -94,8 +103,9 @@ interface ChoixCase {
 }
 
 // FILTRE À CASES — un bouton qui allume le filtre, et des cases qui choisissent
-// ce qu'il garde. « Runes utilisées » (périmètres) et « Marqueurs » partagent ce
-// gabarit : même geste, même rendu, un seul endroit où il peut diverger.
+// ce qu'il garde. « Faisable avec ma réserve » (grades), « Runes utilisées »
+// (périmètres) et « Marqueurs » partagent ce gabarit : même geste, même rendu,
+// un seul endroit où il peut diverger.
 //
 // ⚠️ **Deux supports, un par format**, et aucun ne déplace ce qu'on clique :
 //  - au BUREAU (`large` faux), un bouton d'icône voisin ouvre les cases dans
@@ -314,16 +324,18 @@ export default function RunesOptim({
   // de ce qu'on décompte »).
   const [sansImmemoriaux, setSansImmemoriaux] = useStickyState('optim.sansImmemoriaux', false);
   // `setKey === null` = immémorial (voir CraftLine) : utilisable sur tous les sets.
-  const lignesReserve = useMemo(
+  const lignesSansImmemoriaux = useMemo(
     () => (sansImmemoriaux ? crafts.filter((l) => l.setKey !== null) : crafts),
     [crafts, sansImmemoriaux]
   );
-  const stock = useMemo(
-    () => (lignesReserve.length ? buildCraftStock(lignesReserve) : EMPTY_STOCK),
-    [lignesReserve]
+  // Consommables de la réserve AVANT le choix des grades : c'est elle qui
+  // décide si « Faisable » peut s'allumer — décocher les deux grades ne doit
+  // pas griser le bouton qui porte les cases pour les recocher.
+  const totalReserve = useMemo(
+    () => lignesSansImmemoriaux.reduce((n, l) => n + l.amount, 0),
+    [lignesSansImmemoriaux]
   );
-  const stockDispo = stock.total > 0;
-  // ⚠️ Distinct de `stockDispo` : une réserve a bien été lue, mais le filtre
+  // ⚠️ Distinct de `totalReserve` : une réserve a bien été lue, mais le filtre
   // ci-dessus a pu la vider entièrement. Sans cette nuance, le bouton
   // « Faisable » se grisait en accusant l'import — « réimporte ton compte » —
   // alors que c'est un filtre de l'écran qui venait de tout retirer.
@@ -333,7 +345,32 @@ export default function RunesOptim({
   // potentiel légendaire et les deux gains restent affichés et triables. En
   // faire une vue séparée obligeait à y réimplémenter tout ça.
   const [checkStock, setCheckStock] = useStickyState('optim.checkStock', false);
-  const verifie = checkStock && stockDispo;
+  const verifie = checkStock && totalReserve > 0;
+  // Les grades de consommables dont se servir — cases de « Faisable avec ma
+  // réserve », les deux cochés par défaut (le comportement d'avant les cases).
+  // ⚠️ **Filtre allumé seulement**, comme toute case d'un filtre à cases :
+  // éteint, elles sont grisées et la réserve reste entière (marquage du plan
+  // compris). Allumé, un grade décoché sort de la réserve (`reserveDesGrades`).
+  const [gradesReserve, setGradesReserve] = useStickyState<Set<number>>(
+    'optim.gradesReserve',
+    new Set(GRADES_RESERVE)
+  );
+  const lignesReserve = useMemo(
+    () => (verifie ? reserveDesGrades(lignesSansImmemoriaux, gradesReserve) : lignesSansImmemoriaux),
+    [verifie, lignesSansImmemoriaux, gradesReserve]
+  );
+  const stock = useMemo(
+    () => (lignesReserve.length ? buildCraftStock(lignesReserve) : EMPTY_STOCK),
+    [lignesReserve]
+  );
+  const stockDispo = stock.total > 0;
+  const basculerGrade = (g: number) => {
+    const next = new Set(gradesReserve);
+    next.has(g) ? next.delete(g) : next.add(g);
+    setGradesReserve(next);
+    setPage(0);
+  };
+  const gradesCoches = GRADES_RESERVE.filter((g) => gradesReserve.has(g));
 
   // « Runes utilisées » — MÊME principe que « Faisable avec ma réserve » : un
   // filtre de plus, pas un onglet de plus. Un compte de 3 000 runes en fait
@@ -373,7 +410,10 @@ export default function RunesOptim({
     setMarqueursExclus(next);
     setPage(0);
   };
-  const scenario = scenarioOf(sort);
+  // Le grade du FILTRE et du PLAN : celui du tri, sauf si un seul grade de
+  // consommables est coché sous « Faisable » — c'est lui alors
+  // (`scenarioDeLaReserve`).
+  const scenario = verifie ? scenarioDeLaReserve(gradesReserve, scenarioOf(sort)) : scenarioOf(sort);
 
   // Potentiel calculé une fois par import (linéaire, mémoïsé).
   //
@@ -500,6 +540,14 @@ export default function RunesOptim({
     coche: !marqueursExclus.has(c.k),
     basculer: () => basculerMarqueur(c.k),
   }));
+  // Les grades de « Faisable », chacun avec son nombre de consommables (meules
+  // et gemmes) dans la réserve — immémoriaux mis de côté s'il y a lieu.
+  const choixGrades: ChoixCase[] = GRADES_RESERVE.map((g) => ({
+    cle: g,
+    libelle: `${nomGrade(textes.jeu, g)} (${lignesSansImmemoriaux.reduce((n, l) => n + (l.grade === g ? l.amount : 0), 0)})`,
+    coche: gradesReserve.has(g),
+    basculer: () => basculerGrade(g),
+  }));
   // « Tous » en tête des marqueurs — jusqu'à neuf cases : n'en garder qu'une
   // se fait en décochant tout puis en cochant celle-là.
   const tousMarqueurs = choixMarqueurs.every((c) => !marqueursExclus.has(c.k));
@@ -594,20 +642,23 @@ export default function RunesOptim({
           la largeur de son texte pendait, seul et à gauche, sous des contrôles
           pleins. Il reprend donc la largeur de la colonne, comme eux. Au BUREAU
           (`large` faux), il reste serré dans la rangée en ligne. */}
-      <Bouton
-        onClick={() => {
+      {/* Un filtre À CASES (`FiltreACases`) : les grades de consommables dont
+          se servir, héroïques et/ou légendaires — meules ET gemmes. */}
+      <FiltreACases
+        large={large}
+        actif={verifie}
+        disabled={totalReserve === 0}
+        onBascule={() => {
           setCheckStock((v) => !v);
           setPage(0);
         }}
-        disabled={!stockDispo}
-        actif={verifie}
-        taille="sm"
-        pleineLargeur={large}
         title={
-          stockDispo ? o.faisableAide(stock.total) : reserveLue ? o.reserveImmemoriaux : o.sansReserve
+          totalReserve > 0 ? o.faisableAide(totalReserve) : reserveLue ? o.reserveImmemoriaux : o.sansReserve
         }
         icone={<PackageCheck size={14} />}
         libelle={o.faisable}
+        libelleChoix={o.choisirGrades}
+        choix={choixGrades}
       />
 
       {/* ⚠️ Utile MÊME quand « Faisable » est éteint : le marquage vert/grisé
@@ -816,7 +867,7 @@ export default function RunesOptim({
               </p>
               <p className="mt-2">
                 <span className="text-ink font-semibold">{o.faisable}</span> {o.aideFaisable}{' '}
-                <b className="text-ink">{o.aideFaisableGras}</b>{o.aideFaisableSuite}{' '}
+                <b className="text-ink">{o.aideFaisableGras}</b>{o.aideFaisableSuite} {o.aideGrades}{' '}
                 <span className="text-ink font-semibold">{o.sansImmemoriaux}</span> {o.aideSansImmemoriaux}
               </p>
               <p className="mt-2">
@@ -844,6 +895,9 @@ export default function RunesOptim({
           {ancient === 'without' && o.resume.horsAntiques}
           {ancient === 'only' && o.resume.antiquesSeules}
           {verifie && o.resume.faisables}
+          {verifie &&
+            gradesCoches.length < GRADES_RESERVE.length &&
+            ` (${gradesCoches.map((g) => nomGrade(textes.jeu, g)).join(', ') || o.resume.aucunGrade})`}
           {verifie && sansImmemoriaux && o.resume.sansImmemoriaux}
           {filtreUtilisees && o.resume.utilisees}
           {filtreUtilisees &&
@@ -892,6 +946,7 @@ export default function RunesOptim({
           {metric === 'eff' ? '%' : ''}
           {ancient !== 'all' && (ancient === 'without' ? o.vide.horsAntiques : o.vide.parmiAntiques)}
           {filtreUtilisees && (perimetres.size === 0 ? o.vide.aucunPerimetre : o.vide.parmiUtilisees)}
+          {verifie && gradesCoches.length === 0 && o.vide.aucunGrade}
           {o.vide.baisser}
           {ancient !== 'all' ? o.vide.repasser : ''}
           {filtreUtilisees ? o.vide.desactiverUtilisees : ''}

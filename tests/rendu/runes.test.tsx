@@ -181,6 +181,7 @@ export function testRenduRunesOptimisation() {
   ok(valeurs(html, 'aria-label').includes('Palier'), 'palier');
   ok(b.some((x) => x.ariaLabel === 'Diminuer') && b.some((x) => x.ariaLabel === 'Augmenter'), 'palier : « Diminuer » / « Augmenter »');
   ok(b.some((x) => x.texte === 'Faisable avec ma réserve' && x.title === 'Ne garder que les runes applicables avec tes 2 meules et gemmes en réserve' && x.presse === false), '« Faisable avec ma réserve », et combien de consommables');
+  ok(b.some((x) => x.ariaLabel === 'Choisir les grades de meules et gemmes' && x.desactive), '« Faisable » : le chevron des grades, inactif filtre éteint');
   ok(b.some((x) => x.texte === 'Sans les immémoriaux' && x.presse === false && !!x.title?.startsWith('Garder tes gemmes et meules immémoriales de côté')), '« Sans les immémoriaux », et pourquoi');
   ok(b.some((x) => x.texte === 'Runes utilisées' && x.presse === false && !!x.title?.startsWith('Ne garder que les 2 runes qui jouent')), '« Runes utilisées », et combien');
   ok(b.some((x) => x.ariaLabel === 'Comment est-ce calculé ?' && x.presse === false), 'aide « Comment est-ce calculé ? »');
