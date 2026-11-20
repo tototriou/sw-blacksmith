@@ -58,6 +58,14 @@ export async function lireLive(
 
 // Le fichier live de l'invocateur `id` dans le dossier de SWEX, ou `null`.
 export async function cheminLive(dossierSwex: string, id: string): Promise<string | null> {
+  const dossier = await dossierDuPlugin(dossierSwex, id);
+  return dossier ? join(dossier, COMPTE_LIVE) : null;
+}
+
+// Le dossier du plugin pour l'invocateur `id` (`SWBlacksmith/<nom>-<id>`), ou
+// `null` : celui dont le compte live est le plus récent (`dossierDeLInvocateur`).
+// Ses fichiers de guilde sont à côté.
+export async function dossierDuPlugin(dossierSwex: string, id: string): Promise<string | null> {
   const racine = join(dossierSwex, DOSSIER_PLUGIN);
   let entrees: string[];
   try {
@@ -74,7 +82,7 @@ export async function cheminLive(dossierSwex: string, id: string): Promise<strin
       }))
   );
   const nom = dossierDeLInvocateur(dossiers, id);
-  return nom ? join(racine, nom, COMPTE_LIVE) : null;
+  return nom ? join(racine, nom) : null;
 }
 
 // Les premiers octets d'un fichier (en-tête du live, bannière du plugin).

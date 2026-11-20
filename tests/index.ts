@@ -354,8 +354,10 @@ import testBureauFenetre from './bureau-fenetre.test';
 import testBureauMiseAJour from './bureau-mise-a-jour.test';
 import testBureauSwex, { testBureauJournalSwex } from './bureau-swex.test';
 import { testBureauSwexDirect } from './bureau-swex-direct.test';
+import { testBureauSwexGuilde } from './bureau-swex-guilde.test';
 import { testCourbeChoix } from './courbe-choix.test';
 import { testUiTableauTri } from './ui-tableau.test';
+import { testSiegeStatistiquesCarte, testSiegeStatistiquesCodes, testSiegeStatistiquesDebuts, testSiegeStatistiquesParticipation, testSiegeStatistiquesFiltres, testSiegeStatistiquesEnsemble, testSiegeStatistiquesCumul, testSiegeStatistiquesDefensesCombats, testSiegeStatistiquesTableaux, testSiegeStatistiquesJournaux, testSiegeStatistiquesPlusieurs, testSiegeStatistiquesTroisGuildes, testSiegeStatistiquesMembre, testSiegeStatistiquesAnciensMembres, testSiegeStatistiquesWrGlissant } from './siege-statistiques.test';
 import { testCompteDirect } from './compte-direct.test';
 import {
   testPluginSwexArchive,
@@ -1207,6 +1209,22 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testBureauMiseAJour', testBureauMiseAJour],
   ['testBureauSwex', testBureauSwex],
   ['testBureauSwexDirect', testBureauSwexDirect],
+  ['testBureauSwexGuilde', testBureauSwexGuilde],
+  ['testSiegeStatistiquesCodes', testSiegeStatistiquesCodes],
+  ['testSiegeStatistiquesJournaux', testSiegeStatistiquesJournaux],
+  ['testSiegeStatistiquesDebuts', testSiegeStatistiquesDebuts],
+  ['testSiegeStatistiquesParticipation', testSiegeStatistiquesParticipation],
+  ['testSiegeStatistiquesFiltres', testSiegeStatistiquesFiltres],
+  ['testSiegeStatistiquesEnsemble', testSiegeStatistiquesEnsemble],
+  ['testSiegeStatistiquesTableaux', testSiegeStatistiquesTableaux],
+  ['testSiegeStatistiquesCumul', testSiegeStatistiquesCumul],
+  ['testSiegeStatistiquesDefensesCombats', testSiegeStatistiquesDefensesCombats],
+  ['testSiegeStatistiquesCarte', testSiegeStatistiquesCarte],
+  ['testSiegeStatistiquesPlusieurs', testSiegeStatistiquesPlusieurs],
+  ['testSiegeStatistiquesTroisGuildes', testSiegeStatistiquesTroisGuildes],
+  ['testSiegeStatistiquesMembre', testSiegeStatistiquesMembre],
+  ['testSiegeStatistiquesAnciensMembres', testSiegeStatistiquesAnciensMembres],
+  ['testSiegeStatistiquesWrGlissant', testSiegeStatistiquesWrGlissant],
   ['testCompteDirect', testCompteDirect],
   ['testCourbeChoix', testCourbeChoix],
   ['testUiTableauTri', testUiTableauTri],

@@ -6,6 +6,7 @@
 // rien n'est posé ni écouté. Le site ne change pas.
 
 import type { Dictionnaire } from '../i18n/fr';
+import type { RelevesSiege } from './siegeStatistiques';
 
 // L'objet exposé par le préchargement (bureau/preload.ts), seul pont vers le
 // processus principal.
@@ -38,6 +39,9 @@ interface PontBureau {
     surEtatDirect: (rappel: (etat: EtatDirectSwex) => void) => () => void;
     surLignesDirect: (rappel: (lignes: LignesDirect) => void) => () => void;
     mettreAJour: () => Promise<{ texte: string; t: number | null } | null>;
+    // `null` : pas de dossier, d'invocateur suivi ni de dossier du plugin.
+    sieges: () => Promise<RelevesSiege | null>;
+    surSiegesChanges: (rappel: () => void) => () => void;
   };
   session: {
     etat: () => Promise<EtatSession | null>;

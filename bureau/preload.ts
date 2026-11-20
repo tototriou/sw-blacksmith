@@ -93,6 +93,16 @@ contextBridge.exposeInMainWorld(
         };
       },
       mettreAJour: () => ipcRenderer.invoke('bureau:swex-mettre-a-jour'),
+      // Les sièges, tirés des fichiers de guilde du plugin, et leur
+      // changement (une ligne ajoutée, une session archivée).
+      sieges: () => ipcRenderer.invoke('bureau:swex-sieges'),
+      surSiegesChanges: (rappel: () => void) => {
+        const ecouteur = () => rappel();
+        ipcRenderer.on('bureau:swex-sieges-changes', ecouteur);
+        return () => {
+          ipcRenderer.removeListener('bureau:swex-sieges-changes', ecouteur);
+        };
+      },
     }),
     // La session en cours (voir bureau/session.ts) : son état et ses
     // changements, « Garder mes données » redit à chaque changement,
