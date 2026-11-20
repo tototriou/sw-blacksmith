@@ -105,7 +105,9 @@ npm run bureau:preuve          # la vérification de l'application de bureau
 ## Données et persistance
 
 - ⚠️ **Le dépôt est public** : jamais d'export de compte, de données personnelles ni de capture
-  d'écran dans un commit.
+  d'écran qui montre un compte, un pseudo, un avatar, un serveur ou un identifiant réel. Les seules
+  captures suivies sont celles des guides de l'app (`public/bot-discord/`) : service simulé, ou
+  noms floutés ([bot-discord/](docs/02-app/bot-discord/README.md)).
 - **Rien ne quitte l'appareil sans un geste de l'utilisateur** : l'export de compte (SWEX) se lit
   en local, aucune requête ne l'envoie. Les données de jeu viennent de SWARFARM, figées dans
   `public/data`.
@@ -143,6 +145,7 @@ npm run bureau:preuve          # la vérification de l'application de bureau
 | `src/pages/MechanicsPage.tsx` | [mecaniques/](docs/02-app/mecaniques/README.md) |
 | `api/`, `vercel.json`, `scripts/construire-api.mjs` | [service-discord.md](docs/02-app/siege/feat-recommandations/service-discord.md) |
 | `api/interactions.mjs`, `api/_source/capture/`, `api/_source/speedtune/`, `scripts/construire-banque-portraits.*`, `scripts/construire-gabarits-chiffres.*`, `scripts/enregistrer-commande-speedtune.mjs` | [feat-discord-capture.md](docs/02-app/speed-tuning/feat-discord-capture.md) |
+| `src/pages/BotDiscordPage.tsx`, `src/lib/botDiscord.ts`, `public/bot-discord/` | [bot-discord/](docs/02-app/bot-discord/README.md) |
 | `bureau/`, `src/lib/bureau.ts`, `electron-builder.yml`, `src/pages/TelechargerPage.tsx` | [bureau/](docs/02-app/bureau/README.md), [telecharger/](docs/02-app/telecharger/README.md) |
 | `src/ui/`, `src/index.css`, `tailwind.config.js`, tout rendu d'écran | [03-developpeur/interface/](docs/03-developpeur/interface/README.md) |
 | `eslint.config.js`, `.githooks/`, `scripts/installer-hooks.mjs`, `.github/workflows/` | [qualite-code.md](docs/03-developpeur/qualite-code.md) |

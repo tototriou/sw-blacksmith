@@ -72,6 +72,7 @@ const TITRES: [string, string][] = [
   ['#/mecaniques', 'Mécaniques'],
   ['#/releases', 'Nouveautés'],
   ['#/telecharger', 'Télécharger'],
+  ['#/bot-discord', 'Bot Discord'],
   ['#/parametres', 'Paramètres'],
   ['#/arene/defense', 'Défense'],
   ['#/arene/offense', 'Offense'],
@@ -238,7 +239,15 @@ export function testRenduAppLiensMorts() {
   // table qu'aucun lien ne propose est soit hors menu par décision, soit morte.
   // Meules et Gemmes : hors menu ([retrait #6]). Paramètres : le ⚙ y mène,
   // mais c'est un BOUTON — il ouvre et referme (§ « Le ⚙ ouvre ET referme »).
-  const horsLien = new Set(['#/compte/runes/meules', '#/compte/runes/gemmes', '#/parametres']);
+  // Onglets du bot : des boutons (`Onglets` de la librairie) qui posent l'adresse.
+  const horsLien = new Set([
+    '#/compte/runes/meules',
+    '#/compte/runes/gemmes',
+    '#/parametres',
+    '#/bot-discord/installation',
+    '#/bot-discord/recommandations',
+    '#/bot-discord/commandes',
+  ]);
   for (const hash of Object.keys(ADRESSES)) {
     if (horsLien.has(hash)) continue;
     ok(vus.has(hash), `${hash} est proposé par au moins un lien`);

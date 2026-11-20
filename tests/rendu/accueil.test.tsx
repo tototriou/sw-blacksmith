@@ -90,6 +90,7 @@ export function testRenduAccueil() {
     '#/compte/runes',
     '#/compte/artefacts',
     '#/bestiary',
+    '#/bot-discord',
     '#/mecaniques',
     '#/telecharger',
   ];

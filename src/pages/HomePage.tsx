@@ -15,6 +15,7 @@ import {
   IconeNouveautes,
   IconeOffense,
   IconeTelecharger,
+  IconeBotDiscord,
   IconeOptimizer,
   IconeRecos,
   IconeRta,
@@ -211,6 +212,7 @@ export default function HomePage({ stats, onImport, monstres = [] }: Props) {
           <PastilleOutil href="#/compte/runes" icon={IconeRunes} accent={COULEUR_COMPTE_SUB.runes} titre={a.cartes.runes.titre} />
           <PastilleOutil href="#/compte/artefacts" icon={IconeArtefacts} accent={COULEUR_COMPTE_SUB.artefacts} titre={a.cartes.artefacts.titre} />
           <PastilleOutil href="#/bestiary" icon={IconeBestiaire} accent={COULEUR_SECTION.bestiary} titre={a.cartes.bestiaire.titre} />
+          <PastilleOutil href="#/bot-discord" icon={IconeBotDiscord} accent={COULEUR_SECTION['bot-discord']} titre={a.cartes.botDiscord.titre} />
           <PastilleOutil href="#/mecaniques" icon={IconeMecaniques} accent={COULEUR_SECTION.mecaniques} titre={a.cartes.mecaniques.titre} />
           {!estBureau() && <PastilleOutil href="#/telecharger" icon={IconeTelecharger} accent={COULEUR_SECTION.telecharger} titre={a.application.titre} />}
         </nav>

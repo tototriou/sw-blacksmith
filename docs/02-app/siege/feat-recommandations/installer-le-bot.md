@@ -2,8 +2,10 @@
 
 Le guide d'un administrateur de serveur : le bot permet à une guilde de partager ses
 recommandations de siège dans des salons, sans fichier à s'échanger. Le même guide est dans l'app,
-page Recommandations : « Installer le bot sur ton serveur », dans l'encart Discord ou à côté du
-compte connecté ([rendu-de-la-page.md](rendu-de-la-page.md#provenances-et-discord)).
+en entier et avec captures, page **Bot Discord** (onglets Installation et Recommandations,
+[bot-discord/](../../bot-discord/README.md)) ; en bref, page Recommandations : « Installer le bot
+sur ton serveur », dans l'encart Discord ou à côté du compte connecté
+([rendu-de-la-page.md](rendu-de-la-page.md#provenances-et-discord)), qui mène à la page.
 
 ## 1. Inviter le bot
 

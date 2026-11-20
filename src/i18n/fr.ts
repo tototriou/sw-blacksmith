@@ -74,6 +74,7 @@ export const fr = {
     mecaniques: 'Mécaniques',
     nouveautes: 'Nouveautés',
     telecharger: 'Télécharger',
+    botDiscord: 'Bot Discord',
     parametres: 'Paramètres',
     jouer: 'Jouer',
     monCompte: 'Mon compte',
@@ -345,6 +346,7 @@ export const fr = {
       mecaniques: { rubrique: 'Doc', titre: 'Mécaniques' },
       arene: { rubrique: 'Arène', titre: 'Arène' },
       areneDimensionnelle: { rubrique: 'Arène', titre: 'Arène dimensionnelle' },
+      botDiscord: { rubrique: 'Doc', titre: 'Bot Discord' },
     },
     application: {
       titre: 'Application de bureau',
@@ -456,6 +458,170 @@ export const fr = {
     auTelephone: 'À installer depuis un ordinateur Windows ou Linux.',
     versionProposee: (version: string) => `Version proposée : ${version}`,
     toutesLesVersions: 'Toutes les versions sur GitHub',
+  },
+
+  // La page « Bot Discord » (`#/bot-discord`). Les noms des droits et des
+  // menus sont ceux de Discord en français.
+  botDiscord: {
+    titre: 'Bot Discord',
+    intro: (app: string) =>
+      `Le bot ${app} fait le lien entre l'app et ton ou tes serveurs Discord : il partage les recommandations de siège de ta guilde dans des salons, et répond à ses commandes dans tout le serveur. Une synchronisation sans serveur : tout passe par Discord.`,
+    ongletsAria: 'Parties du guide',
+    onglets: { installation: 'Installation', recommandations: 'Recommandations', commandes: 'Commandes' },
+    atoutsTitre: "Ce qu'il faut savoir",
+    installation: {
+      intro: 'Pour un administrateur du serveur : il faut le droit « Gérer le serveur ».',
+      atouts: [
+        {
+          titre: 'Avec ses commandes',
+          texte: 'Le bot arrive avec toutes ses commandes, utilisables dans tout le serveur. Celles qui viendront ensuite y apparaîtront sans rien refaire.',
+        },
+        {
+          titre: 'Sans aucun droit',
+          texte: "Il arrive sans aucun droit et ne lit que les salons où tu l'ajoutes : ceux des recommandations.",
+        },
+        {
+          titre: 'Jamais administrateur',
+          texte: 'Ne lui donne aucun rôle administrateur : il verrait tous les salons du serveur.',
+        },
+      ],
+      inviter: 'Inviter le bot',
+      etapes: {
+        inviter: {
+          titre: 'Invite le bot',
+          texte: "« Inviter le bot » ouvre l'invitation de Discord : choisis ton serveur sous « Ajouter au serveur », puis valide.",
+        },
+        commandes: {
+          titre: 'Ses commandes sont là',
+          texte: "Dans n'importe quel salon, tape « / » : les commandes du bot s'affichent, comme /speedtune. L'onglet Commandes les décrit.",
+        },
+        salons: {
+          titre: 'Pour les recommandations, ses salons',
+          texte: "Le partage des recommandations demande un salon par recommandation, où le bot a quatre droits : l'onglet Recommandations le met en place.",
+        },
+      },
+      depannage: [
+        {
+          probleme: 'Les commandes du bot ne s’affichent pas',
+          remede: "Le bot a été invité sans ses commandes. Réinvite-le par « Inviter le bot » : l'invitation les ajoute, sans le retirer du serveur.",
+        },
+        {
+          probleme: 'Un triangle à côté du nom du serveur',
+          remede: 'Dans l’app, ce triangle dit que le bot a un rôle administrateur : il voit tous les salons du serveur. Retire-lui ce rôle ; seuls les droits des salons blacksmith-reco… servent.',
+        },
+      ],
+    },
+    recos: {
+      intro: "Les recommandations de siège de ta guilde, partagées dans des salons Discord : chaque membre les retrouve dans son app et publie les siennes, sans fichier à s'échanger.",
+      atouts: [
+        {
+          titre: 'Un salon, une recommandation',
+          texte: 'Chaque salon blacksmith-reco… porte une seule recommandation : sa dernière version publiée. Pour plusieurs recommandations, plusieurs salons.',
+        },
+        {
+          titre: 'Les droits de Discord décident',
+          texte: "Qui lit et qui publie suit les permissions du salon. L'app n'a aucun réglage de droits : la modération se fait dans Discord.",
+        },
+      ],
+      adminTitre: 'Mettre en place les salons',
+      adminIntro: "Pour un administrateur du serveur, une fois le bot invité (onglet Installation).",
+    },
+    etapesAdmin: {
+      salon: {
+        titre: 'Crée un salon par recommandation',
+        texte: 'Son nom commence par blacksmith-reco : blacksmith-reco-defenses, blacksmith-reco-offs-g3… Un salon porte une seule recommandation.',
+      },
+      ajouter: {
+        titre: 'Ajoute le bot au salon',
+        texte: 'Modifier le salon › Permissions › Permissions avancées, puis le « + » à côté de « Rôles/Membres » : choisis le bot.',
+      },
+      droits: {
+        titre: 'Donne-lui quatre droits',
+        texte: "Coche ces quatre droits pour le bot, et rien d'autre :",
+      },
+      reserver: {
+        titre: 'Réserve le salon aux recommandations',
+        texte: "Chaque publication est un nouveau message du bot, qui porte le fichier de la recommandation. L'app ne relit que les 100 derniers messages : une discussion dans le salon finirait par repousser la recommandation hors de portée.",
+      },
+    },
+    droits: {
+      voir: 'Voir le salon',
+      anciens: 'Voir les anciens messages',
+      envoyer: 'Envoyer des messages',
+      joindre: 'Joindre des fichiers',
+    },
+    membresTitre: 'Côté membres',
+    membresIntro: 'Chaque membre de la guilde, sur le site ou dans l’application de bureau.',
+    etapesMembres: {
+      connecter: {
+        titre: 'Connecte-toi à Discord',
+        texte: "Siège › Recommandations, encart Discord : « Se connecter à Discord ». Dans l'application de bureau, la connexion s'ouvre dans ton navigateur, qui affiche un code à coller dans l'app.",
+      },
+      salons: {
+        titre: 'Retrouve les salons',
+        texte: "Les salons blacksmith-reco… que tu peux lire s'affichent sous le nom du serveur, chacun avec l'état de sa recommandation : À jour, Modifiée, Conflit ou Lecture seule.",
+      },
+      publier: {
+        titre: 'Publie',
+        texte: "Une recommandation de ton appareil part par « Publier dans… » ; celle d'un salon, une fois modifiée, par « Publier » dans son bandeau. Il faut avoir le droit d'écrire dans le salon.",
+      },
+      message: {
+        titre: 'Dans Discord',
+        texte: "Chaque publication est un message du bot, qui dit qui a publié, sans notifier personne. Un membre peut aussi déposer dans le salon le fichier exporté par l'app : le plus récent fichier valide fait foi. Effacer un message fait revenir la version précédente.",
+      },
+    },
+    depannageRecos: [
+      {
+        probleme: "Le salon n'apparaît pas dans l'app",
+        remede: 'Son nom doit commencer par blacksmith-reco, le bot doit y avoir « Voir le salon » et « Voir les anciens messages », et toi le droit de le lire. Puis « Actualiser ».',
+      },
+      {
+        probleme: 'La publication échoue',
+        remede: "Le bot doit avoir « Envoyer des messages » et « Joindre des fichiers » dans le salon, et toi le droit d'y écrire. Sans ce droit, le salon est en Lecture seule.",
+      },
+      {
+        probleme: 'Une recommandation a disparu',
+        remede: "Son message a été effacé, ou repoussé au-delà des 100 derniers messages du salon. Si tu as perdu l'accès au salon, tes modifications non publiées restent sur ton appareil.",
+      },
+    ],
+    commandes: {
+      intro: "Dans n'importe quel salon d'un serveur où est le bot, tape « / » puis le nom de la commande. Elle ne demande aucun droit au bot dans le salon.",
+      enEssai: 'En essai',
+      // Une entrée par commande, dans l'ordre de la page (COMMANDES_BOT).
+      liste: {
+        speedtune: {
+          nom: '/speedtune',
+          resume:
+            "Joins une capture de l'écran de préparation d'un combat de siège : le bot lit tes trois monstres et leur VIT, et répond par l'ordre de jeu.",
+          etapes: [
+            {
+              titre: 'Envoie la capture',
+              texte: "L'écran entier, ou recadré sur tes trois monstres. Garde-la à sa taille d'origine : réduite, la VIT ne se lit plus.",
+            },
+            {
+              titre: 'Réponds à ses questions',
+              texte: "Quand un passif de vitesse qui se cumule ou l'Effet aug. VIT d'un artéfact compte, le bot le demande d'abord par un menu. Seul l'auteur de la commande peut répondre.",
+            },
+            {
+              titre: 'Lis le résultat',
+              texte: "L'ordre de jeu, la VIT lue de chaque monstre, ✅ ou ❌ cut, la VIT de fiche ou celle à viser, et le sort de vitesse retenu. « Ouvrir l'outil de speed tuning » mène à l'outil, pour régler l'équipe à la main.",
+            },
+          ],
+          note: 'Le message est en français si ton Discord l’est, sinon en anglais. Un monstre mal reconnu ou une VIT mal lue fausse le résultat : le message dit ce qui reste incertain.',
+        },
+      },
+    },
+    depannageTitre: 'Ça ne marche pas ?',
+    question: "Une autre question ? Le Discord de l'app",
+    captures: {
+      'app-connexion': "L'encart Discord de la page Recommandations, avec « Se connecter à Discord » et « Installer le bot sur ton serveur ».",
+      'app-salons': 'Après la connexion : le serveur « Guilde de test » et ses deux salons blacksmith-reco…, l’un À jour, l’autre en Lecture seule.',
+      'app-salon-choisi': 'Un salon choisi : son bandeau (serveur, salon, état, version) avec « Publier », au-dessus de sa recommandation.',
+      'message-bot': 'Dans Discord : le message du bot qui dit qui a modifié la recommandation, avec son fichier.',
+      'speedtune-capture': "La capture envoyée : les trois monstres de l'écran de préparation, avec leur VIT.",
+      'speedtune-reponse': 'La réponse du bot : l’équipe, la VIT de la défense à battre, puis l’ordre de jeu avec la VIT de chaque monstre.',
+    },
+    capturesEnAnglais: 'Captures de Discord en anglais.',
   },
 
   nouveautes: {
@@ -1689,6 +1855,7 @@ export const fr = {
         "Chaque membre se connecte à Discord depuis cette page : il voit les salons qu'il peut lire, et publie dans ceux où il peut écrire. La modération se fait directement dans Discord, par les permissions du salon.",
       ],
       inviter: 'Inviter le bot',
+      guide: 'Le guide pas à pas, avec captures',
       question: "Une question ? Le Discord de l'app",
     },
     compte: {

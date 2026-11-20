@@ -65,6 +65,7 @@ export const en: Dictionnaire = {
     mecaniques: 'Mechanics',
     nouveautes: "What's new",
     telecharger: 'Download',
+    botDiscord: 'Discord bot',
     parametres: 'Settings',
     jouer: 'Play',
     monCompte: 'My account',
@@ -325,6 +326,7 @@ export const en: Dictionnaire = {
       mecaniques: { rubrique: 'Docs', titre: 'Mechanics' },
       arene: { rubrique: 'Arena', titre: 'Arena' },
       areneDimensionnelle: { rubrique: 'Arena', titre: 'Dimensional Arena' },
+      botDiscord: { rubrique: 'Docs', titre: 'Discord bot' },
     },
     application: {
       titre: 'Desktop app',
@@ -429,6 +431,167 @@ export const en: Dictionnaire = {
     auTelephone: 'Install it from a Windows or Linux computer.',
     versionProposee: (version: string) => `Version offered: ${version}`,
     toutesLesVersions: 'All versions on GitHub',
+  },
+
+  botDiscord: {
+    titre: 'Discord bot',
+    intro: (app: string) =>
+      `The ${app} bot links the app to your Discord server or servers: it shares your guild’s siege recommendations in channels, and answers its commands across the server. A serverless sync: everything goes through Discord.`,
+    ongletsAria: 'Parts of the guide',
+    onglets: { installation: 'Installation', recommandations: 'Recommendations', commandes: 'Commands' },
+    atoutsTitre: 'Good to know',
+    installation: {
+      intro: 'For a server administrator: you need the Manage Server permission.',
+      atouts: [
+        {
+          titre: 'With its commands',
+          texte: 'The bot arrives with all its commands, usable across the server. The ones to come will show up there without redoing anything.',
+        },
+        {
+          titre: 'With no permission',
+          texte: 'It arrives with no permission at all and only reads the channels you add it to: the recommendation ones.',
+        },
+        {
+          titre: 'Never an administrator',
+          texte: 'Never give it an administrator role: it would see every channel of the server.',
+        },
+      ],
+      inviter: 'Invite the bot',
+      etapes: {
+        inviter: {
+          titre: 'Invite the bot',
+          texte: '“Invite the bot” opens Discord’s invitation: pick your server under “Add to Server”, then confirm.',
+        },
+        commandes: {
+          titre: 'Its commands are there',
+          texte: 'In any channel, type “/”: the bot’s commands show up, like /speedtune. The Commands tab describes them.',
+        },
+        salons: {
+          titre: 'For recommendations, its channels',
+          texte: 'Sharing recommendations takes one channel per recommendation, where the bot has four permissions: the Recommendations tab sets it up.',
+        },
+      },
+      depannage: [
+        {
+          probleme: 'The bot’s commands don’t show up',
+          remede: 'The bot was invited without its commands. Invite it again with “Invite the bot”: the invitation adds them, without removing it from the server.',
+        },
+        {
+          probleme: 'A triangle next to the server’s name',
+          remede: 'In the app, this triangle means the bot has an administrator role: it sees every channel of the server. Remove that role; only the permissions of the blacksmith-reco… channels are needed.',
+        },
+      ],
+    },
+    recos: {
+      intro: 'Your guild’s siege recommendations, shared in Discord channels: every member finds them in their app and publishes their own, with no file to pass around.',
+      atouts: [
+        {
+          titre: 'One channel, one recommendation',
+          texte: 'Each blacksmith-reco… channel holds a single recommendation: its latest published version. For several recommendations, several channels.',
+        },
+        {
+          titre: 'Discord’s permissions decide',
+          texte: 'Who reads and who publishes follows the channel’s permissions. The app has no permission settings: moderation happens in Discord.',
+        },
+      ],
+      adminTitre: 'Set up the channels',
+      adminIntro: 'For a server administrator, once the bot is invited (Installation tab).',
+    },
+    etapesAdmin: {
+      salon: {
+        titre: 'Create one channel per recommendation',
+        texte: 'Its name starts with blacksmith-reco: blacksmith-reco-defenses, blacksmith-reco-offs-g3… A channel holds a single recommendation.',
+      },
+      ajouter: {
+        titre: 'Add the bot to the channel',
+        texte: 'Edit Channel › Permissions › Advanced permissions, then the “+” next to “Roles/Members”: pick the bot.',
+      },
+      droits: {
+        titre: 'Give it four permissions',
+        texte: 'Tick these four permissions for the bot, and nothing else:',
+      },
+      reserver: {
+        titre: 'Keep the channel for recommendations',
+        texte: 'Each publication is a new message from the bot, carrying the recommendation’s file. The app only reads the last 100 messages: a discussion in the channel would end up pushing the recommendation out of reach.',
+      },
+    },
+    droits: {
+      voir: 'View Channel',
+      anciens: 'Read Message History',
+      envoyer: 'Send Messages',
+      joindre: 'Attach Files',
+    },
+    membresTitre: 'For members',
+    membresIntro: 'Every guild member, on the website or in the desktop app.',
+    etapesMembres: {
+      connecter: {
+        titre: 'Sign in with Discord',
+        texte: 'Siege › Recommendations, Discord box: “Sign in with Discord”. In the desktop app, the sign-in opens in your browser, which shows a code to paste into the app.',
+      },
+      salons: {
+        titre: 'Find the channels',
+        texte: 'The blacksmith-reco… channels you can read show under the server’s name, each with the state of its recommendation: Up to date, Modified, Conflict or Read only.',
+      },
+      publier: {
+        titre: 'Publish',
+        texte: 'A recommendation from your device goes out with “Publish to…”; a channel’s, once modified, with “Publish” in its banner. You need the right to write in the channel.',
+      },
+      message: {
+        titre: 'In Discord',
+        texte: 'Each publication is a message from the bot that says who published, without notifying anyone. A member can also drop the file exported by the app in the channel: the most recent valid file wins. Deleting a message brings the previous version back.',
+      },
+    },
+    depannageRecos: [
+      {
+        probleme: 'The channel doesn’t show in the app',
+        remede: 'Its name must start with blacksmith-reco, the bot needs “View Channel” and “Read Message History” in it, and you the right to read it. Then “Refresh”.',
+      },
+      {
+        probleme: 'Publishing fails',
+        remede: 'The bot needs “Send Messages” and “Attach Files” in the channel, and you the right to write in it. Without that right, the channel is Read only.',
+      },
+      {
+        probleme: 'A recommendation disappeared',
+        remede: 'Its message was deleted, or pushed beyond the channel’s last 100 messages. If you lost access to the channel, your unpublished changes stay on your device.',
+      },
+    ],
+    commandes: {
+      intro: 'In any channel of a server the bot is on, type “/” then the command’s name. It needs no permission for the bot in the channel.',
+      enEssai: 'In testing',
+      liste: {
+        speedtune: {
+          nom: '/speedtune',
+          resume:
+            'Attach a screenshot of a siege battle’s preparation screen: the bot reads your three monsters and their SPD, and answers with the turn order.',
+          etapes: [
+            {
+              titre: 'Send the screenshot',
+              texte: 'The whole screen, or cropped to your three monsters. Keep it at its original size: shrunk, the SPD can no longer be read.',
+            },
+            {
+              titre: 'Answer its questions',
+              texte: 'When a stacking speed passive or an artifact’s SPD Increasing Effect matters, the bot asks for it first with a menu. Only the command’s author can answer.',
+            },
+            {
+              titre: 'Read the result',
+              texte: 'The turn order, each monster’s read SPD, ✅ or ❌ cut, the stat SPD or the one to aim for, and the speed skill used. “Open the speed tuning tool” leads to the tool, to tune the team by hand.',
+            },
+          ],
+          note: 'The message is in French if your Discord is, otherwise in English. A misrecognized monster or a misread SPD skews the result: the message says what remains uncertain.',
+        },
+      },
+    },
+    depannageTitre: 'Not working?',
+    question: 'Another question? The app’s Discord',
+    captures: {
+      'app-connexion': 'The Discord box of the Recommendations page, with “Sign in with Discord” and “Install the bot on your server”.',
+      'app-salons': 'After signing in: the “Test guild” server and its two blacksmith-reco… channels, one Up to date, the other Read only.',
+      'app-salon-choisi': 'A chosen channel: its banner (server, channel, state, version) with “Publish”, above its recommendation.',
+      'message-bot': 'In Discord: the bot’s message saying who updated the recommendation, with its file.',
+      'speedtune-capture': 'The screenshot sent: the three monsters of the preparation screen, with their SPD.',
+      'speedtune-reponse': 'The bot’s answer: the team, the SPD of the defense to beat, then the turn order with each monster’s SPD.',
+    },
+    capturesEnAnglais: 'Discord screenshots in English.',
   },
 
   nouveautes: {
@@ -1575,6 +1738,7 @@ export const en: Dictionnaire = {
         'Each member connects to Discord from this page: they see the channels they can read, and publish in those they can write to. Moderation is done directly in Discord, through the channel’s permissions.',
       ],
       inviter: 'Invite the bot',
+      guide: 'The step-by-step guide, with screenshots',
       question: 'A question? The app’s Discord',
     },
     compte: {

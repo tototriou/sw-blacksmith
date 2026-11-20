@@ -28,6 +28,8 @@ export function destination(hash: string): string {
     case 'arene':
     case 'arene-dimensionnelle':
       return `${n.route}/${n.areneTab}`;
+    case 'bot-discord':
+      return `bot-discord/${n.ongletBot}`;
     default:
       return n.route;
   }
@@ -68,6 +70,11 @@ export const ADRESSES: Record<string, string> = {
   // Application de bureau : sur le SITE (ici) ; dans l'app,
   // l'adresse retombe sur l'accueil (testNavigationAdressesBureau).
   '#/telecharger': 'telecharger',
+  // Adresse tronquée, celle de la navigation, de l'accueil et de la modale des recommandations.
+  '#/bot-discord': 'bot-discord/installation',
+  '#/bot-discord/installation': 'bot-discord/installation',
+  '#/bot-discord/recommandations': 'bot-discord/recommandations',
+  '#/bot-discord/commandes': 'bot-discord/commandes',
   '#/parametres': 'parametres',
 };
 
@@ -77,7 +84,7 @@ export function testNavigationAdresses() {
 
   // Deux adresses distinctes de la table ne mènent jamais à la même page, sauf
   // les formes tronquées, qui mènent par construction au défaut de leur section.
-  const tronquees = new Set(['#/compte/runes', '#/compte/artefacts']);
+  const tronquees = new Set(['#/compte/runes', '#/compte/artefacts', '#/bot-discord']);
   const pages = Object.entries(ADRESSES).filter(([h]) => !tronquees.has(h)).map(([, p]) => p);
   egal(pages.length, new Set(pages).size, 'chaque adresse complète mène à une page différente');
 
@@ -86,6 +93,8 @@ export function testNavigationAdresses() {
   pont.swblacksmithBureau = { bureau: true, plateforme: 'win32' };
   try {
     egal(destination('#/telecharger'), 'home', 'dans l\'app de bureau, #/telecharger → accueil');
+    // Le guide du bot, lui, y existe : l'app de bureau se connecte à Discord.
+    egal(destination('#/bot-discord/commandes'), 'bot-discord/commandes', 'dans l\'app de bureau, #/bot-discord → sa page');
   } finally {
     delete pont.swblacksmithBureau;
   }
@@ -104,6 +113,8 @@ export function testNavigationAdressesDefauts() {
   egal(destination('#/outils'), 'outils/optimizer', '#/outils → Optimizer');
   egal(destination('#/arene'), 'arene/defense', '#/arene → Défense');
   egal(destination('#/arene-dimensionnelle'), 'arene-dimensionnelle/dimension-defense', '#/arene-dimensionnelle → Défense');
+  egal(destination('#/bot-discord'), 'bot-discord/installation', '#/bot-discord → Installation');
+  egal(destination('#/bot-discord/inconnu'), 'bot-discord/installation', 'onglet du bot inconnu → Installation');
 
   // Sous-page inconnue : le défaut de SA section, pas l'accueil.
   egal(destination('#/rta/inconnu'), 'rta/prepa', 'RTA inconnue → Ma prépa');

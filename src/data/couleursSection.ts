@@ -31,6 +31,8 @@ export const COULEUR_SECTION = {
   bestiary: '#2FA0E0',
   mecaniques: '#8890B8',
   releases: '#C79BFF',
+  // Le bleu-violet de Discord, éclairci pour le fond sombre.
+  'bot-discord': '#7984F5',
   // Application de bureau — site seulement.
   telecharger: '#7FD15B',
 } as const;
@@ -100,4 +102,5 @@ export const TEINTE_CLAIRE: Record<string, string> = {
   '#2FA0E0': '#2682B5', // bestiary
   '#8890B8': '#72799B', // mecaniques
   '#C79BFF': '#8B6DB3', // releases
+  '#7984F5': '#6C75DA', // bot-discord
 };

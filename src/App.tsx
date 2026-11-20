@@ -14,6 +14,7 @@ import {
   IconeMecaniques,
   IconeNouveautes,
   IconeTelecharger,
+  IconeBotDiscord,
   IconeOffense,
   IconeOptimizer,
   IconeOutils,
@@ -41,6 +42,8 @@ import SiegePage, { SiegeTab } from './pages/SiegePage';
 import MechanicsPage from './pages/MechanicsPage';
 import ReleasesPage from './pages/ReleasesPage';
 import TelechargerPage from './pages/TelechargerPage';
+import BotDiscordPage from './pages/BotDiscordPage';
+import { ongletBotValide, type OngletBot } from './lib/botDiscord';
 import AccountPage from './pages/AccountPage';
 import OutilsPage from './pages/OutilsPage';
 import OptimizerImportRapport from './components/outils/OptimizerImportRapport';
@@ -220,6 +223,7 @@ type Route =
   | 'outils'
   | 'releases'
   | 'telecharger'
+  | 'bot-discord'
   | 'parametres';
 export type AccountSub = 'monstres' | 'runes' | 'artefacts';
 
@@ -265,6 +269,7 @@ export function parseHash(hash: string = window.location.hash): {
   accountSub: AccountSub;
   accountView: AccountView;
   toolSub: ToolSub;
+  ongletBot: OngletBot;
 } {
   const h = hash.replace(/^#\/?/, '');
   const base = {
@@ -274,6 +279,7 @@ export function parseHash(hash: string = window.location.hash): {
     accountSub: 'monstres' as AccountSub,
     accountView: 'resume' as AccountView,
     toolSub: 'optimizer' as ToolSub,
+    ongletBot: 'installation' as OngletBot,
   };
   if (h === 'rta' || h.startsWith('rta/')) {
     const [, sub] = h.split('/');
@@ -310,6 +316,7 @@ export function parseHash(hash: string = window.location.hash): {
       // tuiles. C'était déjà le défaut des onglets internes.
       accountView: (vue as AccountView) || 'resume',
       toolSub: 'optimizer',
+      ongletBot: 'installation',
     };
   }
   if (h === 'outils' || h.startsWith('outils/')) {
@@ -322,6 +329,11 @@ export function parseHash(hash: string = window.location.hash): {
   // Site seulement (application de bureau) : dans l'app, on a
   // déjà l'app — l'adresse retombe sur l'accueil.
   if (h === 'telecharger' && !estBureau()) return { route: 'telecharger', ...base };
+  // `#/bot-discord` mène à l'installation ; un onglet inconnu aussi.
+  if (h === 'bot-discord' || h.startsWith('bot-discord/')) {
+    const [, onglet] = h.split('/');
+    return { route: 'bot-discord', ...base, ongletBot: ongletBotValide(onglet) };
+  }
   if (h === 'parametres') return { route: 'parametres', ...base };
   if (h === 'siege' || h.startsWith('siege/')) {
     const siegeTab: SiegeTab =
@@ -423,13 +435,15 @@ const SIEGE_SUBS: { tab: SiegeTab; texte: CleNavigation; icon: IconeAtelier; has
 ];
 
 // Regroupées sous « Ressources ».
-// ⚠️ « Télécharger » (application de bureau) : sous
-// « Nouveautés », sur le SITE seulement — `estBureau()` se lit au chargement
+// ⚠️ « Télécharger » (application de bureau) : en dernier,
+// sur le SITE seulement — `estBureau()` se lit au chargement
 // du module, le préchargement de l'app ayant posé son objet avant la page.
 // Barre latérale, panneau mobile, palette et titre dérivent tous de cette
 // liste : l'entrée y apparaît (ou non) partout d'un coup.
 const RESOURCES: NavItem[] = [
   { key: 'bestiary', texte: 'bestiaire', icon: IconeBestiaire, hash: '#/bestiary', couleur: COULEUR_SECTION.bestiary },
+  // Le guide du bot : sur le site ET dans l'app de bureau (les deux s'y connectent).
+  { key: 'bot-discord', texte: 'botDiscord', icon: IconeBotDiscord, hash: '#/bot-discord', couleur: COULEUR_SECTION['bot-discord'] },
   { key: 'mecaniques', texte: 'mecaniques', icon: IconeMecaniques, hash: '#/mecaniques', couleur: COULEUR_SECTION.mecaniques },
   { key: 'releases', texte: 'nouveautes', icon: IconeNouveautes, hash: '#/releases', couleur: COULEUR_SECTION.releases },
   ...(estBureau()
@@ -614,7 +628,7 @@ function Application() {
   // on compare les runes — et rien ne disait lequel était affiché.
   const [accountName, setAccountName] = useState<string | null>(null);
 
-  const [{ route, rtaSub, siegeTab, areneTab, accountSub, accountView, toolSub }, setNav] = useState(parseHash);
+  const [{ route, rtaSub, siegeTab, areneTab, accountSub, accountView, toolSub, ongletBot }, setNav] = useState(parseHash);
 
   // Écran d'où l'on vient, pour que le bouton ⚙ RAMÈNE là où on était.
   //
@@ -681,7 +695,7 @@ function Application() {
   // milliers de tuiles à montrer — chaque rangée de filtre leur prend un écran de
   // résultats. **Avoir des filtres ne suffit donc pas : il faut aussi que la page
   // ait de quoi remplir la place qu'ils libèrent.**
-  const pageAPanneau = aPanneau({ route, rtaSub, siegeTab, areneTab, accountSub, accountView, toolSub });
+  const pageAPanneau = aPanneau({ route, rtaSub, siegeTab, areneTab, accountSub, accountView, toolSub, ongletBot });
 
   // Écran partagé : le panneau d'actions d'un volet ÉTROIT, qui a pris la mise
   // en page de téléphone de sa page (voir VoletEcran). Un par volet : celui du
@@ -1906,7 +1920,7 @@ function Application() {
     { key: 'rta', label: nomNav('rta'), ouvre: sectionRta.titre, icon: <IconeRta size={17} color={COULEUR_SECTION.rta} />, actif: route === 'rta' },
     { key: 'siege', label: nomNav('siege'), ouvre: sectionSiege.titre, icon: <IconeSiege size={17} color={COULEUR_SECTION.siege} />, actif: route === 'siege' },
     { key: 'compte', label: nomNav('compte'), ouvre: sectionCompte.titre, icon: <IconeCompte size={17} color={COULEUR_SECTION.compte} />, actif: route === 'compte' },
-    { key: 'outils', label: nomNav('outils'), ouvre: sectionOutils.titre, icon: <IconeOutils size={17} color={COULEUR_SECTION.outils} />, actif: route === 'outils' || route === 'bestiary' || route === 'mecaniques' || route === 'releases' || route === 'telecharger' || route === 'arene' || route === 'arene-dimensionnelle' },
+    { key: 'outils', label: nomNav('outils'), ouvre: sectionOutils.titre, icon: <IconeOutils size={17} color={COULEUR_SECTION.outils} />, actif: route === 'outils' || route === 'bestiary' || route === 'mecaniques' || route === 'releases' || route === 'telecharger' || route === 'bot-discord' || route === 'arene' || route === 'arene-dimensionnelle' },
   ];
 
   // La section dont on choisit la sous-section, sur téléphone.
@@ -2086,6 +2100,8 @@ function Application() {
       <ReleasesPage />
     ) : n.route === 'telecharger' ? (
       <TelechargerPage />
+    ) : n.route === 'bot-discord' ? (
+      <BotDiscordPage onglet={n.ongletBot} />
     ) : n.route === 'mecaniques' ? (
       <MechanicsPage />
     ) : n.route === 'parametres' ? (
@@ -2119,7 +2135,7 @@ function Application() {
   // fil : il montre le sélecteur de page.
   const vide = coteVide(volets);
   const navDuCote = (cote: Cote) =>
-    cote === volets.actif ? { route, rtaSub, siegeTab, areneTab, accountSub, accountView, toolSub } : navAutre;  // Le sélecteur d'un volet vide : les pages de la palette Ctrl K, sans celle
+    cote === volets.actif ? { route, rtaSub, siegeTab, areneTab, accountSub, accountView, toolSub, ongletBot } : navAutre;  // Le sélecteur d'un volet vide : les pages de la palette Ctrl K, sans celle
   // déjà affichée à côté. Choisir une page navigue, et la navigation remplit
   // le volet vide (src/lib/volets.ts).
   const groupesPagesVolet = (saisie: string) =>
@@ -2384,7 +2400,7 @@ function Application() {
             libelleSeparateur={textes.donnees.redimensionner}
           />
         ) : (
-          pageDe({ route, rtaSub, siegeTab, areneTab, accountSub, accountView, toolSub })
+          pageDe({ route, rtaSub, siegeTab, areneTab, accountSub, accountView, toolSub, ongletBot })
         )}
 
         {/* ⚠️ **Le pied de page de la toile : UNE rangée** (rebranding R4 —
