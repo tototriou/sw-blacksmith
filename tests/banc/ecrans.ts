@@ -542,8 +542,8 @@ export const ECRANS: Ecran[] = [
   ]),
   ouverture('rta', 'RTA — Ma prépa', '#/rta', MOTIFS_RTA),
   ouverture('rta-ami', 'RTA — Ami', '#/rta/ami', MOTIFS_RTA),
-  ouverture('siege-defense', 'Siège — Défense', '#/siege/defense', MOTIFS_SIEGE, ['#/siege']),
-  ouverture('siege-offense', 'Siège — Offense', '#/siege/offense', MOTIFS_SIEGE),
+  ouverture('siege-defense', 'Siège — Decks de défense', '#/siege/defense', MOTIFS_SIEGE, ['#/siege']),
+  ouverture('siege-offense', 'Siège — Decks d’offense', '#/siege/offense', MOTIFS_SIEGE),
   {
     id: 'siege-recommandations',
     libelle: 'Siège — Recommandations',

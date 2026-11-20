@@ -15,18 +15,19 @@ l'application de bureau. Les fichiers de code à ouvrir pour changer une page :
 | --- | --- | --- | --- |
 | [accueil/](accueil/README.md) | `#/` | Live | La page d'entrée : premier import du compte, reprise là où l'habitué s'était arrêté, cartes et ordre des pages |
 | [rta/](rta/README.md) | `#/rta`, `#/rta/ami` | Live | La prépa RTA (Ma prépa / Ami) : recherche et import, classement par sets, ordre de tour, catégories, sauvegarde et partage |
-| [siege/](siege/README.md) | `#/siege/defense`, `#/siege/offense`, `#/siege/recommandations` | Live | Le siège : composition des équipes de défense et d'offense, vitesse et ticks, lots de decks recommandés |
+| [siege/](siege/README.md) | `#/siege/defense`, `#/siege/offense`, `#/siege/recommandations`, `#/siege/statistiques` | Live | Le siège : composition des équipes de défense et d'offense, vitesse et ticks, lots de decks recommandés, statistiques des sièges joués (application de bureau) |
 | [compte/](compte/README.md) | `#/compte`, `#/compte/runes`, `#/compte/artefacts` | Live | Mon compte : box 6★, inventaire des runes et des artéfacts, références de calcul (efficience, score) |
 | [outils/](outils/README.md) | `#/outils` | Live | La page Outils : navigation entre les outils, garde d'accès aux données de compte, briques de calcul partagées |
 | [optimizer/](optimizer/README.md) | `#/outils/optimizer` | Live | L'Optimizer : écran carte par carte, listes de travail et équipes, import d'équipes, exclusion, interruption, limites connues |
 | [speed-tuning/](speed-tuning/README.md) | `#/outils/speed-tuning` | Live | Le speed tuning : formule ATB, chaîne d'ouverture, écran, export vers l'Optimizer, inventaire des passifs de vitesse |
 | [degats-reels/](degats-reels/README.md) | objectif « Dégâts réels » de l'Optimizer | Live | Le modèle de calcul des dégâts réels : formules, artéfacts, bombes, séquences de coups, passifs, effets d'équipe, conditions |
 | [arene/](arene/README.md) | `#/arene/defense`, `#/arene/offense`, `#/arene/interserveur` | Live | L'arène : défense, offense et défense interserveur, des équipes de 4 monstres, leads d'arène |
-| [arene-dimensionnelle/](arene-dimensionnelle/README.md) | `#/arene-dimensionnelle/defense`, `/offense`, `/runes` | Live (bureau) | L'arène dimensionnelle, sur sa propre box : défense, offense et runes, lues dans le journal SWEX par l'application de bureau ; sur le site, « version web à venir » |
+| [arene-dimensionnelle/](arene-dimensionnelle/README.md) | `#/arene-dimensionnelle/defense`, `/offense`, `/runes` | Live (bureau) | L'arène dimensionnelle, sur sa propre box : défense, offense et runes, tenues par le plugin SWEX et lues par l'application de bureau ; sur le site, « version web à venir » |
 | [bestiaire/](bestiaire/README.md) | `#/bestiary` | Live | Le catalogue de tous les monstres |
 | [bot-discord/](bot-discord/README.md) | `#/bot-discord/installation`, `/recommandations`, `/commandes` | Live | Le guide du bot Discord, avec captures : l'installer, la synchronisation des recommandations, ses commandes (`/speedtune`) |
 | [mecaniques/](mecaniques/README.md) | `#/mecaniques` | Live | La page de documentation des mécaniques de jeu : contenu statique et sommaire |
 | [nouveautes/](nouveautes/README.md) | `#/releases` | Live | Le journal des versions destiné aux joueurs |
+| [sw-exporter/](sw-exporter/README.md) | `#/sw-exporter` | Live | Le plugin SWEX « SW Blacksmith Live » : ce qu'il fait, son téléchargement, l'installation pas à pas |
 | [telecharger/](telecharger/README.md) | `#/telecharger` | Live, site seulement | La page du site qui propose l'application de bureau |
 
 ## Hors pages
@@ -46,9 +47,9 @@ Points d'entrée de l'Optimizer, avant un chantier qui le touche :
 ## Ordre des pages
 
 Ordre d'importance (nav & cartes d'accueil) : **Accueil → RTA → Siège → Mon
-compte → Outils → Arène**. Bestiaire, Bot Discord, Mécaniques, Nouveautés et
-Télécharger sont regroupés sous « Ressources » (les moins centraux de l'outil) ;
-Télécharger n'existe que sur le site. Le regroupement de la barre latérale :
+compte → Outils → Arène**. Bestiaire, Bot Discord, Mécaniques, Nouveautés, SW
+Exporter et Télécharger sont regroupés sous « Ressources » (les moins centraux
+de l'outil) ; Télécharger n'existe que sur le site. Le regroupement de la barre latérale :
 [barre-laterale-et-adresses.md](transverse/feat-navigation/barre-laterale-et-adresses.md).
 
 > ⚠️ **Règle permanente** : toute page ou section **ajoutée, renommée ou

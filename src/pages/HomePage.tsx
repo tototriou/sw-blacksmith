@@ -16,8 +16,10 @@ import {
   IconeOffense,
   IconeTelecharger,
   IconeBotDiscord,
+  IconeSwex,
   IconeOptimizer,
   IconeRecos,
+  IconeStatistiques,
   IconeRta,
   IconeRunes,
   IconeSiege,
@@ -207,6 +209,7 @@ export default function HomePage({ stats, onImport, monstres = [] }: Props) {
         <nav aria-label={a.fonctionnalites} className="mt-14 flex flex-wrap justify-center gap-2.5 max-lg:mt-8">
           <PastilleOutil href="#/rta/ami" icon={IconeAmi} accent={COULEUR_RTA_SUB.ami} titre={a.cartes.ami.titre} />
           <PastilleOutil href="#/siege/defense" icon={IconeSiege} accent={COULEUR_SECTION.siege} titre={a.cartes.siege.titre} />
+          <PastilleOutil href="#/siege/statistiques" icon={IconeStatistiques} accent={COULEUR_SIEGE_SUB.stats} titre={a.cartes.statistiquesSiege.titre} />
           <PastilleOutil href="#/arene/defense" icon={IconeArene} accent={COULEUR_SECTION.arene} titre={a.cartes.arene.titre} />
           <PastilleOutil href="#/arene-dimensionnelle/defense" icon={IconeArene} accent={COULEUR_SECTION['arene-dimensionnelle']} titre={a.cartes.areneDimensionnelle.titre} />
           <PastilleOutil href="#/compte/runes" icon={IconeRunes} accent={COULEUR_COMPTE_SUB.runes} titre={a.cartes.runes.titre} />
@@ -214,6 +217,7 @@ export default function HomePage({ stats, onImport, monstres = [] }: Props) {
           <PastilleOutil href="#/bestiary" icon={IconeBestiaire} accent={COULEUR_SECTION.bestiary} titre={a.cartes.bestiaire.titre} />
           <PastilleOutil href="#/bot-discord" icon={IconeBotDiscord} accent={COULEUR_SECTION['bot-discord']} titre={a.cartes.botDiscord.titre} />
           <PastilleOutil href="#/mecaniques" icon={IconeMecaniques} accent={COULEUR_SECTION.mecaniques} titre={a.cartes.mecaniques.titre} />
+          <PastilleOutil href="#/sw-exporter" icon={IconeSwex} accent={COULEUR_SECTION['sw-exporter']} titre={a.cartes.swExporter.titre} />
           {!estBureau() && <PastilleOutil href="#/telecharger" icon={IconeTelecharger} accent={COULEUR_SECTION.telecharger} titre={a.application.titre} />}
         </nav>
       </motion.section>

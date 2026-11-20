@@ -17,10 +17,11 @@ import { useNotifier } from '../ui/Notification';
 // (sans l'index des monstres), ou serait écrasé par la relecture d'un compte
 // plus ancien.
 //
-// L'arène dimensionnelle arrive à part (`surDimension`), à chaque nouvelle
-// saison du journal SWEX : ses équipes sont appliquées (`appliquerDimension`,
-// leur nombre), annoncées, et la saison marquée lue. Aucune équipe reconnue :
-// rien n'est marqué, la prochaine saison sera redonnée.
+// L'arène dimensionnelle arrive à part (`surDimension`), à chaque écriture de
+// sa saison par le plugin SWEX : ses équipes sont appliquées
+// (`appliquerDimension`, leur nombre), annoncées après une ouverture du mode
+// (`nouvelle`), et la saison marquée lue. Aucune équipe reconnue : rien n'est
+// marqué, la saison sera redonnée.
 export default function SuiviSwex({
   appliquer,
   appliquerDimension,

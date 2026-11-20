@@ -44,7 +44,7 @@ function DimensionBureauSeulement() {
 
 // L'onglet « Runes » de l'arène dimensionnelle (#/arene-dimensionnelle/runes) :
 // les runes gagnées dans le mode, dans la liste de « Mon compte » (filtres et
-// tri à part). Sans runes lues — l'app sans journal SWEX —, la note seule dit
+// tri à part). Sans runes lues — l'app sans le plugin SWEX —, la note seule dit
 // comment les obtenir.
 export function RunesDimensionPage({
   runes,
@@ -74,7 +74,7 @@ export default function ArenePage({ tab, equipes, ...boardProps }: Props) {
   if (estDimension(tab) && !estBureau()) return <DimensionBureauSeulement />;
   return (
     <>
-      {/* La box dimensionnelle vient du journal SWEX, pas de l'export : on dit
+      {/* La box dimensionnelle vient du plugin SWEX, pas de l'export : on dit
           comment l'obtenir, sans quoi un import de l'export seul, qui laisse
           ces onglets vides, passerait pour une panne. */}
       {estDimension(tab) && <p className="mt-4 text-sm text-ink-dim">{textes.arene.noteDimension}</p>}

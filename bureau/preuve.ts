@@ -10,8 +10,9 @@
 // (voir main.ts) : une preuve ne touche jamais celles de l'utilisateur.
 
 import { app, BrowserWindow } from 'electron';
-import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { appendFileSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { depuisConnexion, ligneConnexion } from '../plugin-swex/source/etatDirect';
 import type { PreuveMiseAJour } from './miseAJour';
 import type { PreuveSession } from './session';
 import type { PreuveSwex } from './swex';
@@ -165,8 +166,10 @@ export async function lancerPreuveConservation(fenetre: BrowserWindow, dossier: 
 // propose d'abord de sauvegarder ; le choix de l'invocateur importe TOUT.
 // Puis l'export réécrit pendant que l'app tourne, l'invocateur déjà suivi
 // rechoisi, un rechargement, une écriture dans `live` : « Mon compte »
-// seulement, la prépa RTA et le siège INCHANGÉS. Enfin un import manuel :
-// l'invocateur suivi est lâché, ses exports ne s'appliquent plus.
+// seulement, la prépa RTA et le siège INCHANGÉS. Puis le direct du plugin
+// SWEX ; une relance avec la conservation refusée (tout importé) ; enfin un
+// import manuel : l'invocateur suivi est lâché, ses exports ne s'appliquent
+// plus.
 export async function lancerPreuveSwex(fenetre: BrowserWindow, dossier: string, fixtures: string, compte: string) {
   mkdirSync(dossier, { recursive: true });
   const resultats: Record<string, unknown> = {};
@@ -329,10 +332,60 @@ export async function lancerPreuveSwex(fenetre: BrowserWindow, dossier: string, 
     await attendre(3000);
     resultats.apresSauvegarde = { sessionsEcrites: sessions().length - sessionsAvant, compte: await compteAffiche(), recapitulatif: await recapitulatif() };
 
+    // 10. Le direct (plugin SWEX) : un plugin ANCIEN installé, et le fichier
+    // live de « Testeur », à la même connexion que son export.
+    await fermerNotification();
+    const racineAvant = readdirSync(fixtures).sort();
+    const exportAvant = readFileSync(join(fixtures, 'Testeur-1.json'), 'utf8');
+    mkdirSync(join(fixtures, 'plugins'), { recursive: true });
+    writeFileSync(join(fixtures, 'plugins', 'SWBlacksmithLive.js'), '// SW Blacksmith Live 1.0.0 — plugin SW Exporter.\n');
+    const live = join(fixtures, 'SWBlacksmith', 'Testeur-1', 'compte.live.jsonl');
+    mkdirSync(join(fixtures, 'SWBlacksmith', 'Testeur-1'), { recursive: true });
+    const etatLive = depuisConnexion(JSON.parse(compte));
+    writeFileSync(live, `${JSON.stringify(ligneConnexion(etatLive, '1.0.0'))}\n`);
+    // Le nombre de runes de l'inventaire, en tête de la liste (« 8 runes »).
+    const nombreRunes = () =>
+      js(`[...document.querySelectorAll('span, p')].map((e) => e.textContent.trim()).find((t) => /^\\d+ runes?$/.test(t)) ?? 'aucun'`);
+    const interrupteur = () =>
+      js(`(() => { const b = document.querySelector('[data-interrupteur-direct]'); return b ? { presse: b.getAttribute('aria-pressed'), titre: b.title } : 'absent'; })()`);
+    const cliquer = (selecteur: string) =>
+      js(`(() => { const b = document.querySelector(${JSON.stringify(selecteur)}); if (!b) return 'absent'; b.click(); return 'cliqué'; })()`);
+    const basculer = () => cliquer('[data-interrupteur-direct]');
+    await js(`location.hash = '#/compte/runes/liste'`);
+    await attendre(2500);
+    resultats.directAvant = { runes: await nombreRunes(), interrupteur: await interrupteur() };
+    await basculer();
+    await attendre(1500);
+    resultats.directActive = { runes: await nombreRunes(), interrupteur: await interrupteur() };
+    // Une rune vendue pendant la partie : une ligne ajoutée au fichier.
+    const vendue = Number(JSON.parse(compte).runes[0].rune_id);
+    appendFileSync(live, `${JSON.stringify({ type: 'changement', t: (etatLive.tvalue ?? 0) + 10, commande: 'SellRune', maj: {}, retires: { runes: [vendue] } })}\n`);
+    await attendre(2500);
+    resultats.directVente = { runes: await nombreRunes(), notification: await notification() };
+    // La page SW Exporter : le plugin, la session, « Mettre à jour mon compte ».
+    const carte = () => js(`document.querySelector('[data-etat-plugin]')?.innerText.replace(/\\s+/g, ' ').trim() ?? 'aucune carte'`);
+    await js(`location.hash = '#/sw-exporter'`);
+    await attendre(1500);
+    resultats.cartePlugin = await carte();
+    resultats.mettreAJour = await cliquer('[data-mettre-a-jour]');
+    await attendre(2500);
+    resultats.apresMiseAJour = { carte: await carte(), notification: await notification() };
+    // Direct coupé : « Mon compte » revient au compte de l'app, mis à jour.
+    await js(`location.hash = '#/compte/runes/liste'`);
+    await attendre(1500);
+    await basculer();
+    await attendre(1500);
+    resultats.directCoupe = { runes: await nombreRunes(), interrupteur: await interrupteur() };
+    resultats.dossierSwexIntact = {
+      export: readFileSync(join(fixtures, 'Testeur-1.json'), 'utf8') === exportAvant,
+      racine: JSON.stringify(readdirSync(fixtures).sort().filter((f) => f !== 'plugins' && f !== 'SWBlacksmith')) === JSON.stringify(racineAvant.filter((f) => f !== 'SWBlacksmith')),
+      dossierPlugin: readdirSync(join(fixtures, 'SWBlacksmith', 'Testeur-1')),
+    };
+
     const reglageDisque = () => JSON.parse(readFileSync(join(dossier, 'donnees', 'swex.json'), 'utf8'));
     resultats.reglageRetenu = reglageDisque();
 
-    // 9 bis. La conservation refusée (Paramètres), puis une relance : rien
+    // 11. La conservation refusée (Paramètres), puis une relance : rien
     // n'est resté sur le disque, et l'export de l'invocateur suivi
     // s'importe EN ENTIER — la prépa RTA revient, pas seulement « Mon compte ».
     // Le compteur de « Ma prépa » en témoigne (bureau : à côté du titre).
@@ -365,7 +418,7 @@ export async function lancerPreuveSwex(fenetre: BrowserWindow, dossier: string, 
     await js(`location.hash = '#/parametres'`);
     await attendre(1000);
 
-    // 10. Un import MANUEL, « Testeur » suivi : l'invocateur est lâché, le
+    // 12. Un import MANUEL, « Testeur » suivi : l'invocateur est lâché, le
     // dossier reste — aucun coché, ni au menu ni dans les Réglages. Puis
     // l'export de l'ancien invocateur, réécrit : il ne s'applique plus.
     await fermerNotification();

@@ -130,7 +130,10 @@ selon le contexte, ou à ce qu'il est :
   ressemblerait au lien sans en être un. **`nouvelOnglet`** l'ouvre dans un
   nouvel onglet (`target="_blank"`, `rel="noreferrer"`) : un site EXTERNE
   (le Discord de l'app), qu'on ne suit pas dans l'onglet de l'app sans
-  perdre ce qui n'est pas conservé.
+  perdre ce qui n'est pas conservé. **`telechargement`** (un nom de fichier)
+  l'**enregistre** sous ce nom (`download`) au lieu de l'ouvrir : ⚠️
+  indispensable pour un fichier que le navigateur sait afficher (le plugin
+  SWEX, un `.js`), qui sinon remplaçait l'app par son code.
 
 > ⚠️ **Le libellé se masque, il ne DISPARAÎT pas.** C'est pourquoi l'API est
 > `icone` + `libelle` et non un `children` libre : le panneau d'actions mobile

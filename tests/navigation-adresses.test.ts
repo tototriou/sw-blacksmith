@@ -43,6 +43,7 @@ export const ADRESSES: Record<string, string> = {
   '#/siege/defense': 'siege/defense',
   '#/siege/offense': 'siege/offense',
   '#/siege/recommandations': 'siege/recos',
+  '#/siege/statistiques': 'siege/stats',
   '#/compte/monstres/liste': 'compte/monstres/liste',
   '#/compte/runes/resume': 'compte/runes/resume',
   '#/compte/runes/liste': 'compte/runes/liste',
@@ -75,6 +76,8 @@ export const ADRESSES: Record<string, string> = {
   '#/bot-discord/installation': 'bot-discord/installation',
   '#/bot-discord/recommandations': 'bot-discord/recommandations',
   '#/bot-discord/commandes': 'bot-discord/commandes',
+  // Le plugin SWEX : sur le site ET dans l'app (testNavigationAdresses).
+  '#/sw-exporter': 'sw-exporter',
   '#/parametres': 'parametres',
 };
 
@@ -95,6 +98,7 @@ export function testNavigationAdresses() {
     egal(destination('#/telecharger'), 'home', 'dans l\'app de bureau, #/telecharger → accueil');
     // Le guide du bot, lui, y existe : l'app de bureau se connecte à Discord.
     egal(destination('#/bot-discord/commandes'), 'bot-discord/commandes', 'dans l\'app de bureau, #/bot-discord → sa page');
+    egal(destination('#/sw-exporter'), 'sw-exporter', 'dans l\'app de bureau, la page SW Exporter reste (c\'est elle qui sert le plugin)');
   } finally {
     delete pont.swblacksmithBureau;
   }

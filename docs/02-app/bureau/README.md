@@ -85,6 +85,8 @@ lecteur côté page (`estBureau()` = l'objet présent, avec `bureau: true`).
 | `swex.etat()`, `choisirDossier()`, `choisirInvocateur(fichier)`, `aucunInvocateur()`, `oublier()` | `bureau:swex-etat`, `bureau:swex-choisir-dossier`, `bureau:swex-choisir-invocateur`, `bureau:swex-aucun-invocateur`, `bureau:swex-oublier` (`invoke`) | rendent l'état du réglage |
 | `swex.surEtat(rappel)`, `swex.surExport(rappel)` | `bureau:swex-etat`, `bureau:swex-export` | bureau → page |
 | `swex.pret(pageSansCompte)`, `swex.lu(modifie)` | `bureau:swex-pret`, `bureau:swex-lu` | page → bureau |
+| `swex.etatDirect()`, `swex.activerDirect(oui)`, `swex.mettreAJour()` | `bureau:swex-direct-etat`, `bureau:swex-direct-activer`, `bureau:swex-mettre-a-jour` (`invoke`) | le direct du plugin SWEX : son état, l'interrupteur, le compte du fichier live sous forme d'export ([feat-swex-direct.md](feat-swex-direct.md)) |
+| `swex.surEtatDirect(rappel)`, `swex.surLignesDirect(rappel)` | `bureau:swex-direct-etat`, `bureau:swex-direct-lignes` | bureau → page |
 | `session.etat()`, `retenir(oui)`, `choisirDossier()`, `oublierDossier()`, `oublier()` | `bureau:session-etat`, `bureau:session-retenir`, `bureau:session-choisir-dossier`, `bureau:session-oublier-dossier`, `bureau:session-oublier` (`invoke`) | rendent l'état : session en cours, dossier SW Blacksmith |
 | `session.sauvegarder(texte, nomPropose)`, `sauvegarderSous(texte, nomPropose)` | `bureau:session-sauvegarder`, `bureau:session-sauvegarder-sous` (`invoke`) | rendent l'issue de l'écriture |
 | `session.surEtat(rappel)` | `bureau:session-etat` | bureau → page |
@@ -251,6 +253,8 @@ côté du service : [service-discord.md § Application de bureau](../siege/feat-
 
 `bureau/swex.ts` (disque, surveillance), `bureau/swexPur.ts` (pur, testé),
 `src/components/SuiviSwex.tsx` (page), bloc « Application » des Réglages.
+Le compte tenu à jour **pendant la partie** par le plugin SWEX du dépôt :
+[feat-swex-direct.md](feat-swex-direct.md).
 
 - **L'invocateur se choisit aussi depuis la carte du compte**, en tête de
   la barre latérale : avec un dossier choisi, la carte ouvre un menu — les
@@ -297,40 +301,53 @@ côté du service : [service-discord.md § Application de bureau](../siege/feat-
   un instant, dossier synchronisé, dossier absent au lancement) : l'état est
   diffusé entre-temps, et la surveillance revenue relit le dossier et
   l'export suivi.
+- **Le direct** (plugin SWEX) : une seconde surveillance, sur
+  le dossier `SWBlacksmith` (`bureau/swexLive.ts`), donne à la page les lignes du
+  fichier live de l'invocateur suivi pour « Mon compte » (interrupteur
+  « Direct », coupé par défaut, retenu dans `swex.json`), et « Mettre à jour
+  mon compte » (page SW Exporter) applique son compte comme un nouvel export.
+  Détail : [feat-swex-direct.md](feat-swex-direct.md) § « Dans l'application
+  de bureau ».
 
-### L'arène dimensionnelle : le journal SWEX
+### L'arène dimensionnelle : la saison du plugin SWEX
 
-`bureau/journalSwexDisque.ts` (disque, testé), `src/lib/journalSwex.ts`
-(lecture du texte). Sa box n'est pas dans l'export : elle est dans le
-**journal complet de SWEX** (`full_log.txt`, plugin Full Logger), à la racine
-du même dossier — voir [arene-dimensionnelle/](../arene-dimensionnelle/README.md).
+[bureau/swexDimension.ts](bureau/swexDimension.ts) (disque, testé). Sa box
+n'est pas dans l'export : le plugin « SW Blacksmith Live » la tient dans
+`SWBlacksmith/<nom>-<id>/dimension.json` — la saison que le jeu envoie à
+l'**ouverture du mode** (`dimensionarena_getSeasonInfo`), réécrite à chaque
+changement fait dans le mode (runes posées, défense, invocation, runes
+gagnées, attaques jouées). Détail : [feat-swex-direct.md](feat-swex-direct.md)
+§ « L'arène dimensionnelle » ; l'écran :
+[arene-dimensionnelle/](../arene-dimensionnelle/README.md). Aucun autre plugin
+de SWEX n'est nécessaire.
 
-- **Quand** : le jeu envoie la box à l'**ouverture du mode**, donc APRÈS
-  l'export, écrit à la connexion. Le journal est suivi pour lui-même : relu en
-  entier à la page prête, après un choix et au retour de la surveillance ;
-  puis, à chaque changement du dossier, **seulement ce qui s'y est ajouté**
-  (`ajoutContientSaison`) — il change à chaque commande pendant une partie.
-- **Ce qui est lu** : la dernière saison (`dimensionarena_getSeasonInfo`) de
-  l'**invocateur suivi** (`wizard_id` de la réponse = identifiant de l'export ;
-  un journal peut en suivre plusieurs), en lisant le fichier **par la fin**,
-  par fenêtres de 16 Mo qui grandissent (`saisonDuJournal`), jamais en entier
-  d'emblée : il grossit sans limite. Seule la réponse part à la page
-  (`bureau:swex-dimension`), avec les équipes récentes de l'export
-  (`deck_recent_list` : les attaques).
+- **Quand** : lue à la page prête, après un choix, au retour de la
+  surveillance, puis **à chaque écriture du fichier** par le plugin (la
+  surveillance du dossier `SWBlacksmith`, une rafale ne faisant qu'une
+  lecture).
+- **Ce qui est lu** : la saison de l'**invocateur suivi** (le dossier du
+  plugin de son identifiant ; la saison doit porter la marque du plugin et son
+  `wizard_id`), ses deux heures serveur — `ouverture` (la dernière ouverture du
+  mode) et `t` (le dernier changement) — et les **attaques jouées** que le
+  plugin a vues (`deck_recent_list`, type 28) ; aucune encore, celle de
+  l'export. La saison part à la page (`bureau:swex-dimension`).
 - **Ce qui est importé** : la défense, les attaques et les runes de l'arène
-  dimensionnelle, **remplacées** à chaque nouvelle saison (un miroir du jeu ;
-  `appliquerDimension`, App.tsx), annoncées par une notification. Rien
-  d'autre ne bouge.
+  dimensionnelle, **remplacées** à chaque écriture (un miroir du jeu ;
+  `appliquerDimension`, App.tsx). ⚠️ **Annoncée seulement après une
+  ouverture du mode** que la page n'a pas appliquée (`nouvelle`) : un
+  changement fait dans le mode s'applique en silence, comme le direct de
+  « Mon compte ». Rien d'autre ne bouge.
 - ⚠️ **La page confirme ce qu'elle a appliqué** (`bureau:swex-dimension-lue`,
-  l'heure serveur `tvalue` de la saison) : retenue dans `swex.json`
+  l'heure `t` du dernier changement) : retenue dans `swex.json`
   (`dimensionLue`), une saison n'est redonnée que plus récente. Choisir un
   dossier ou un invocateur l'oublie. ⚠️ **Sauf à une page qui n'a rien de ce
   mode** (aucune rune dimensionnelle : données non gardées, ou saison lue
   avant l'onglet Runes) : au lancement, la dernière saison lui est redonnée
   **en silence** (`pageSansDimension`, `nouvelle: false`), comme l'export
   d'une page sans compte.
-- **Sans journal** (plugin éteint) ou sans saison de l'invocateur : rien, en
-  silence ; les onglets disent comment l'obtenir.
+- **Sans plugin**, mode jamais ouvert, ou fichier à moitié écrit (le prochain
+  changement redonne) : rien, en silence ; les onglets disent comment
+  l'obtenir.
 
 ## L'installeur
 
@@ -457,7 +474,7 @@ boutons restent affichés, désactivés quand il n'y a rien à faire.
 ```
 npm run bureau:preuve                  # l'app se contrôle elle-même (resultats.json)
 npm run bureau:preuve -- --conservation  # les données et la session en cours survivent à la fermeture
-npm run bureau:preuve -- --swex        # le dossier SW Exporter, sur des fixtures : choix, sauvegarde proposée, import complet, exports suivants, relance sans conservation, import manuel qui lâche l'invocateur
+npm run bureau:preuve -- --swex        # le dossier SW Exporter, sur des fixtures : choix, sauvegarde proposée, import complet, exports suivants, relance sans conservation, import manuel qui lâche l'invocateur ; puis le direct du plugin (« Direct », ligne ajoutée, « Mettre à jour mon compte », dossier SWEX intact)
 npm run bureau:preuve -- --session     # « Sauvegarder », « Sauvegarder sous… », conservation refusée
 npm run bureau:preuve -- --discord     # la connexion à Discord, devant le vrai service et un Discord simulé : code collé, conservation refusée puis acceptée, favori, réouverture, déconnexion
 npm run bureau:preuve -- <dossier> --exe "<app installée>"  # la même chose, sur l'app installée

@@ -353,7 +353,22 @@ import testMigrationStockage from './migration-stockage.test';
 import testBureauProtocole from './bureau-protocole.test';
 import testBureauFenetre from './bureau-fenetre.test';
 import testBureauMiseAJour from './bureau-mise-a-jour.test';
-import testBureauSwex, { testBureauJournalSwex } from './bureau-swex.test';
+import testBureauSwex, { testBureauSwexDimension } from './bureau-swex.test';
+import { testPluginSwexDimension, testPluginSwexDimensionReel } from './plugin-swex-dimension.test';
+import { testBureauSwexDirect } from './bureau-swex-direct.test';
+import { testBureauSwexGuilde } from './bureau-swex-guilde.test';
+import { testCourbeChoix } from './courbe-choix.test';
+import { testUiTableauTri } from './ui-tableau.test';
+import { testRenduSiegeStatistiques, testRenduSiegeStatistiquesSite, testRenduTelephoneSiegeStatistiques } from './rendu/siege-statistiques.test';
+import { testSiegeStatistiquesCarte, testSiegeStatistiquesCodes, testSiegeStatistiquesDebuts, testSiegeStatistiquesParticipation, testSiegeStatistiquesFiltres, testSiegeStatistiquesEnsemble, testSiegeStatistiquesCumul, testSiegeStatistiquesDefensesCombats, testSiegeStatistiquesTableaux, testSiegeStatistiquesJournaux, testSiegeStatistiquesPlusieurs, testSiegeStatistiquesTroisGuildes, testSiegeStatistiquesMembre, testSiegeStatistiquesAnciensMembres, testSiegeStatistiquesWrGlissant } from './siege-statistiques.test';
+import { testCompteDirect } from './compte-direct.test';
+import {
+  testPluginSwexArchive,
+  testPluginSwexEtat,
+  testPluginSwexGuilde,
+  testPluginSwexLive,
+  testPluginSwexPaquet,
+} from './plugin-swex.test';
 import testBureauSession from './bureau-session.test';
 import testBureauCoeurs from './bureau-coeurs.test';
 import testBureauLancement from './bureau-lancement.test';
@@ -402,6 +417,8 @@ import {
   testBotDiscordCaptures, testRenduBotDiscordAnglais, testRenduBotDiscordCommandes, testRenduBotDiscordDepuisRecos,
   testRenduBotDiscordInstallation, testRenduBotDiscordOnglets, testRenduBotDiscordRecommandations,
 } from './rendu/bot-discord.test';
+import { testRenduSwExporter, testRenduSwExporterBureau } from './rendu/sw-exporter.test';
+import { testRenduCompteDirect } from './rendu/compte-direct.test';
 import { testRenduBureauTextes } from './rendu/bureau-textes.test';
 import { testRenduBureauCoeursRecherche } from './rendu/recherche-coeurs.test';
 import { testRenduBarreSession } from './rendu/barre-session.test';
@@ -773,6 +790,9 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testRenduBotDiscordCommandes', testRenduBotDiscordCommandes],
   ['testRenduBotDiscordAnglais', testRenduBotDiscordAnglais],
   ['testRenduBotDiscordDepuisRecos', testRenduBotDiscordDepuisRecos],
+  ['testRenduSwExporter', testRenduSwExporter],
+  ['testRenduSwExporterBureau', testRenduSwExporterBureau],
+  ['testRenduCompteDirect', testRenduCompteDirect],
   ['testRenduBureauTextes', testRenduBureauTextes],
   ['testRenduBureauCoeursRecherche', testRenduBureauCoeursRecherche],
   ['testRenduBarreSession', testRenduBarreSession],
@@ -1204,7 +1224,37 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testBureauFenetre', testBureauFenetre],
   ['testBureauMiseAJour', testBureauMiseAJour],
   ['testBureauSwex', testBureauSwex],
-  ['testBureauJournalSwex', testBureauJournalSwex],
+  ['testBureauSwexDirect', testBureauSwexDirect],
+  ['testBureauSwexGuilde', testBureauSwexGuilde],
+  ['testSiegeStatistiquesCodes', testSiegeStatistiquesCodes],
+  ['testSiegeStatistiquesJournaux', testSiegeStatistiquesJournaux],
+  ['testSiegeStatistiquesDebuts', testSiegeStatistiquesDebuts],
+  ['testSiegeStatistiquesParticipation', testSiegeStatistiquesParticipation],
+  ['testSiegeStatistiquesFiltres', testSiegeStatistiquesFiltres],
+  ['testSiegeStatistiquesEnsemble', testSiegeStatistiquesEnsemble],
+  ['testSiegeStatistiquesTableaux', testSiegeStatistiquesTableaux],
+  ['testSiegeStatistiquesCumul', testSiegeStatistiquesCumul],
+  ['testSiegeStatistiquesDefensesCombats', testSiegeStatistiquesDefensesCombats],
+  ['testSiegeStatistiquesCarte', testSiegeStatistiquesCarte],
+  ['testSiegeStatistiquesPlusieurs', testSiegeStatistiquesPlusieurs],
+  ['testSiegeStatistiquesTroisGuildes', testSiegeStatistiquesTroisGuildes],
+  ['testSiegeStatistiquesMembre', testSiegeStatistiquesMembre],
+  ['testSiegeStatistiquesAnciensMembres', testSiegeStatistiquesAnciensMembres],
+  ['testSiegeStatistiquesWrGlissant', testSiegeStatistiquesWrGlissant],
+  ['testCompteDirect', testCompteDirect],
+  ['testCourbeChoix', testCourbeChoix],
+  ['testUiTableauTri', testUiTableauTri],
+  ['testRenduSiegeStatistiquesSite', testRenduSiegeStatistiquesSite],
+  ['testRenduSiegeStatistiques', testRenduSiegeStatistiques],
+  ['testRenduTelephoneSiegeStatistiques', testRenduTelephoneSiegeStatistiques],
+  ['testPluginSwexEtat', testPluginSwexEtat],
+  ['testPluginSwexLive', testPluginSwexLive],
+  ['testPluginSwexArchive', testPluginSwexArchive],
+  ['testPluginSwexGuilde', testPluginSwexGuilde],
+  ['testPluginSwexDimension', testPluginSwexDimension],
+  ['testPluginSwexDimensionReel', testPluginSwexDimensionReel],
+  ['testPluginSwexPaquet', testPluginSwexPaquet],
+  ['testBureauSwexDimension', testBureauSwexDimension],
   ['testBureauSession', async () => { await testBureauSession(); }],
   ['testBureauCoeurs', async () => { await testBureauCoeurs(); }],
   ['testBureauLancement', testBureauLancement],

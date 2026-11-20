@@ -66,7 +66,7 @@ contextBridge.exposeInMainWorld(
       pret: (pageSansCompte: boolean, pageSansDimension: boolean) =>
         ipcRenderer.send('bureau:swex-pret', pageSansCompte, pageSansDimension),
       lu: (modifie: number) => ipcRenderer.send('bureau:swex-lu', modifie),
-      // L'arène dimensionnelle, lue dans le journal SWEX du dossier.
+      // L'arène dimensionnelle, tenue par le plugin SWEX (dimension.json).
       surDimension: (rappel: (dim: unknown) => void) => {
         const ecouteur = (_e: unknown, dim: unknown) => rappel(dim);
         ipcRenderer.on('bureau:swex-dimension', ecouteur);
@@ -75,6 +75,35 @@ contextBridge.exposeInMainWorld(
         };
       },
       dimensionLue: (cle: number) => ipcRenderer.send('bureau:swex-dimension-lue', cle),
+      // Le direct : le fichier live du plugin, ligne à ligne, l'interrupteur,
+      // et « Mettre à jour ».
+      etatDirect: () => ipcRenderer.invoke('bureau:swex-direct-etat'),
+      activerDirect: (oui: boolean) => ipcRenderer.invoke('bureau:swex-direct-activer', oui),
+      surEtatDirect: (rappel: (etat: unknown) => void) => {
+        const ecouteur = (_e: unknown, etat: unknown) => rappel(etat);
+        ipcRenderer.on('bureau:swex-direct-etat', ecouteur);
+        return () => {
+          ipcRenderer.removeListener('bureau:swex-direct-etat', ecouteur);
+        };
+      },
+      surLignesDirect: (rappel: (lignes: unknown) => void) => {
+        const ecouteur = (_e: unknown, lignes: unknown) => rappel(lignes);
+        ipcRenderer.on('bureau:swex-direct-lignes', ecouteur);
+        return () => {
+          ipcRenderer.removeListener('bureau:swex-direct-lignes', ecouteur);
+        };
+      },
+      mettreAJour: () => ipcRenderer.invoke('bureau:swex-mettre-a-jour'),
+      // Les sièges, tirés des fichiers de guilde du plugin, et leur
+      // changement (une ligne ajoutée, une session archivée).
+      sieges: () => ipcRenderer.invoke('bureau:swex-sieges'),
+      surSiegesChanges: (rappel: () => void) => {
+        const ecouteur = () => rappel();
+        ipcRenderer.on('bureau:swex-sieges-changes', ecouteur);
+        return () => {
+          ipcRenderer.removeListener('bureau:swex-sieges-changes', ecouteur);
+        };
+      },
     }),
     // La session en cours (voir bureau/session.ts) : son état et ses
     // changements, « Garder mes données » redit à chaque changement,

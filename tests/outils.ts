@@ -98,10 +98,11 @@ export function exportExemplairesMultiples(): string {
   return readFileSync(resolve(racine, 'tests/fixtures/compte-exemplaires-multiples.json'), 'utf8');
 }
 
-// Journal SWEX miniature écrit à la main (`full_log.txt`), commité : la box de
-// l'arène dimensionnelle, sans donnée réelle — voir son `_lisezmoi`.
-export function journalSwexMiniature(): string {
-  return readFileSync(resolve(racine, 'tests/fixtures/journal-swex-miniature.txt'), 'utf8');
+// Saison de l'arène dimensionnelle écrite à la main (la réponse à
+// `dimensionarena_getSeasonInfo`), commitée, sans donnée réelle — voir son
+// `_lisezmoi`.
+export function saisonDimensionMiniature(): Record<string, any> {
+  return JSON.parse(readFileSync(resolve(racine, 'tests/fixtures/dimension-saison-miniature.json'), 'utf8'));
 }
 
 // ⚠️ Export RÉEL du développeur — **gitignoré**, donc absent partout ailleurs.
@@ -115,8 +116,10 @@ export function exportReel(): string | null {
   return null;
 }
 
-// ⚠️ Journal SWEX RÉEL du développeur (`full_log.txt`) — **gitignoré**, comme
-// l'export réel : les tests qui s'en servent s'ignorent quand il manque.
+// ⚠️ Journal SWEX RÉEL du développeur (`full_log.txt`, du plugin Full Logger
+// de SWEX) — **gitignoré**, comme l'export réel. L'app ne le lit pas : il
+// sert à rejouer de vrais échanges dans le plugin. Les tests qui s'en servent
+// s'ignorent quand il manque.
 export function journalSwexReel(): string | null {
   const chemin = resolve(racine, 'full_log.txt');
   return existsSync(chemin) ? readFileSync(chemin, 'utf8') : null;
