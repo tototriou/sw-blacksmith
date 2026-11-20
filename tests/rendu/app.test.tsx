@@ -56,6 +56,7 @@ const TITRES: [string, string][] = [
   ['#/siege/defense', 'Decks de défense'],
   ['#/siege/offense', 'Decks d’offense'],
   ['#/siege/recommandations', 'Recommandations'],
+  ['#/siege/statistiques', 'Statistiques'],
   ['#/compte/monstres/liste', 'Monstres'],
   ['#/compte/runes/resume', 'Mon compte · Runes Résumé'],
   ['#/compte/runes/liste', 'Mon compte · Runes Liste'],
@@ -146,14 +147,14 @@ export function testRenduAppNavigation() {
   // sections sont à l'écran en même temps.
   const siege = barreLaterale(rendreApp('#/siege/defense'));
   const hrefs = valeurs(siege, 'href');
-  for (const h of ['#/siege/defense', '#/siege/offense', '#/siege/recommandations', '#/', '#/bestiary'])
+  for (const h of ['#/siege/defense', '#/siege/offense', '#/siege/recommandations', '#/siege/statistiques', '#/', '#/bestiary'])
     ok(hrefs.includes(h), `dans le Siège, la barre montre aussi ${h}`);
   const tSiege = texteVisible(siege);
   for (const nom of ['RTA', 'Mon compte', 'Runes', 'Outils', 'Ressources']) ok(tSiege.includes(nom), `dans le Siège : « ${nom} » reste visible`);
   ok(/aria-expanded="true"[^>]*>(?:(?!<\/button>)[\s\S])*Siège/.test(siege), 'l\'entrée « Siège » se dit déroulée');
   ok(!hrefs.includes('#/rta/ami'), 'les autres sections restent refermées');
   // Chaque sous-section déroulée garde son icône (demandé par le mainteneur).
-  for (const h of ['#/siege/defense', '#/siege/offense', '#/siege/recommandations']) {
+  for (const h of ['#/siege/defense', '#/siege/offense', '#/siege/recommandations', '#/siege/statistiques']) {
     const lienSous = siege.match(new RegExp(`<a[^>]*href="${h}"[^>]*>[\\s\\S]*?</a>`))?.[0] ?? '';
     ok(lienSous.includes('<svg'), `la sous-section ${h} porte son icône`);
   }

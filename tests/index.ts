@@ -357,6 +357,7 @@ import { testBureauSwexDirect } from './bureau-swex-direct.test';
 import { testBureauSwexGuilde } from './bureau-swex-guilde.test';
 import { testCourbeChoix } from './courbe-choix.test';
 import { testUiTableauTri } from './ui-tableau.test';
+import { testRenduSiegeStatistiques, testRenduSiegeStatistiquesSite, testRenduTelephoneSiegeStatistiques } from './rendu/siege-statistiques.test';
 import { testSiegeStatistiquesCarte, testSiegeStatistiquesCodes, testSiegeStatistiquesDebuts, testSiegeStatistiquesParticipation, testSiegeStatistiquesFiltres, testSiegeStatistiquesEnsemble, testSiegeStatistiquesCumul, testSiegeStatistiquesDefensesCombats, testSiegeStatistiquesTableaux, testSiegeStatistiquesJournaux, testSiegeStatistiquesPlusieurs, testSiegeStatistiquesTroisGuildes, testSiegeStatistiquesMembre, testSiegeStatistiquesAnciensMembres, testSiegeStatistiquesWrGlissant } from './siege-statistiques.test';
 import { testCompteDirect } from './compte-direct.test';
 import {
@@ -1228,6 +1229,9 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testCompteDirect', testCompteDirect],
   ['testCourbeChoix', testCourbeChoix],
   ['testUiTableauTri', testUiTableauTri],
+  ['testRenduSiegeStatistiquesSite', testRenduSiegeStatistiquesSite],
+  ['testRenduSiegeStatistiques', testRenduSiegeStatistiques],
+  ['testRenduTelephoneSiegeStatistiques', testRenduTelephoneSiegeStatistiques],
   ['testPluginSwexEtat', testPluginSwexEtat],
   ['testPluginSwexLive', testPluginSwexLive],
   ['testPluginSwexArchive', testPluginSwexArchive],

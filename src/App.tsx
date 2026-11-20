@@ -20,6 +20,7 @@ import {
   IconeOutils,
   IconeParametres,
   IconeRecos,
+  IconeStatistiques,
   IconeRta,
   IconeSiege,
   IconeSpeedTuning,
@@ -207,7 +208,9 @@ function aPanneau(n: ReturnType<typeof parseHash>): boolean {
     // reste écrite : un futur outil sans réglages avancés n'hériterait pas
     // du bouton par accident (même raison que la garde ci-dessus sur
     // « Mon compte »).
-    (n.route !== 'outils' || n.toolSub === 'optimizer')
+    (n.route !== 'outils' || n.toolSub === 'optimizer') &&
+    // Les statistiques du siège n'ont aucune action de page.
+    (n.route !== 'siege' || n.siegeTab !== 'stats')
   );
 }
 
@@ -330,7 +333,13 @@ export function parseHash(hash: string = window.location.hash): {
   if (h === 'parametres') return { route: 'parametres', ...base };
   if (h === 'siege' || h.startsWith('siege/')) {
     const siegeTab: SiegeTab =
-      h === 'siege/offense' ? 'offense' : h === 'siege/recommandations' ? 'recos' : 'defense';
+      h === 'siege/offense'
+        ? 'offense'
+        : h === 'siege/recommandations'
+          ? 'recos'
+          : h === 'siege/statistiques'
+            ? 'stats'
+            : 'defense';
     return { route: 'siege', ...base, siegeTab };
   }
   return { route: 'home', ...base };
@@ -427,6 +436,9 @@ const SIEGE_SUBS: { tab: SiegeTab; texte: CleNavigation; icon: IconeAtelier; has
   { tab: 'defense', texte: 'decksDefense', icon: IconeDefense, hash: '#/siege/defense', couleur: COULEUR_SIEGE_SUB.defense },
   { tab: 'offense', texte: 'decksOffense', icon: IconeOffense, hash: '#/siege/offense', couleur: COULEUR_SIEGE_SUB.offense },
   { tab: 'recos', texte: 'recommandations', icon: IconeRecos, hash: '#/siege/recommandations', couleur: COULEUR_SIEGE_SUB.recos },
+  // Les sièges joués, lus dans les fichiers du plugin SWEX (application de
+  // bureau ; sur le site, la sous-section dit comment les obtenir).
+  { tab: 'stats', texte: 'statistiquesSiege', icon: IconeStatistiques, hash: '#/siege/statistiques', couleur: COULEUR_SIEGE_SUB.stats },
 ];
 
 // Regroupées sous « Ressources ».

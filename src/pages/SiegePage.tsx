@@ -5,12 +5,14 @@ import { UseRecoState } from '../hooks/useSiegeRecos';
 import { OwnedBuild, OwnedTeam } from '../lib/ownedBuilds';
 import SiegeBoard from '../components/siege/SiegeBoard';
 import RecoBoard from '../components/siege/RecoBoard';
+import SiegeStatistiques from '../components/siege/SiegeStatistiques';
 import { CustomLead } from '../hooks/useCustomMonsters';
 import type { ActionImportOptimizer } from '../lib/actionImportOptimizer';
 import type { ExclusionSourceData } from '../lib/optimizerExclusion';
 
-// Onglet de siège : les deux côtés jouables + les recommandations partagées.
-export type SiegeTab = 'defense' | 'offense' | 'recos';
+// Onglet de siège : les deux côtés jouables, les recommandations partagées et
+// les statistiques des sièges joués.
+export type SiegeTab = 'defense' | 'offense' | 'recos' | 'stats';
 
 interface Props {
   onImporterEquipe: ActionImportOptimizer;
@@ -61,7 +63,9 @@ export default function SiegePage({
           sous le pouce, et alimentées par les mêmes sections que la barre
           latérale. Le titre de la barre du haut dit la vue courante. */}
 
-      {tab === 'recos' ? (
+      {tab === 'stats' ? (
+        <SiegeStatistiques monsters={boardProps.monsters} />
+      ) : tab === 'recos' ? (
         <RecoBoard
           onImporterEquipe={boardProps.onImporterEquipe}
           sourcesOptimizer={boardProps.sourcesOptimizer}

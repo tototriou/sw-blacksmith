@@ -69,8 +69,10 @@ Le plugin SWEX du dépôt, **`plugin-swex/`**, tient le compte à jour pendant l
 connexion (`plugin-swex/source/archive.ts`) et garde le contenu des combats de guilde
 (`plugin-swex/source/guilde.ts`). L'app de bureau lit son fichier live (`bureau/swexLive.ts`) :
 « Mon compte » en direct (`src/lib/compteDirect.ts`, `src/hooks/useCompteDirect.ts`) et « Mettre à
-jour mon compte » (page SW Exporter). Détail :
-[feat-swex-direct.md](../02-app/bureau/feat-swex-direct.md).
+jour mon compte » (page SW Exporter). Elle lit aussi ses fichiers de guilde (`bureau/swexGuilde.ts`) :
+les sièges, relevés par `src/lib/siegeStatistiques.ts`. Détail :
+[feat-swex-direct.md](../02-app/bureau/feat-swex-direct.md),
+[statistiques.md](../02-app/siege/statistiques.md).
 
 ## Le service Discord
 
@@ -127,7 +129,7 @@ tous les autres dans n'importe quelle analyse de dépendances.
 | --- | --- | --- | --- | --- |
 | Accueil | `#/` | `src/pages/HomePage.tsx` | `src/components/accueil/ExemplesAccueil.tsx` (les vrais composants des outils en exemple), `src/lib/demoAccueil.ts` (leurs équipes de démo), `ElementIcon`, `src/data/releases.ts` | [accueil/](../02-app/accueil/README.md) |
 | **RTA** | `#/rta`, `#/rta/ami` | `src/pages/RtaPage.tsx` | tout `src/components/rta/` | [rta/](../02-app/rta/README.md) |
-| **Siège** | `#/siege/defense`, `/offense`, `/recommandations` | `src/pages/SiegePage.tsx` | tout `src/components/siege/` | [siege/](../02-app/siege/README.md) |
+| **Siège** | `#/siege/defense`, `/offense`, `/recommandations`, `/statistiques` | `src/pages/SiegePage.tsx` | tout `src/components/siege/` | [siege/](../02-app/siege/README.md) |
 | **Mon compte** | `#/compte`, `/runes`, `/artefacts` | `src/pages/AccountPage.tsx` | tout `src/components/account/` | [compte/](../02-app/compte/README.md) |
 | **Outils** | `#/outils/optimizer`, `/speed-tuning` | `src/pages/OutilsPage.tsx` | tout `src/components/outils/` | [outils/](../02-app/outils/README.md), [optimizer/](../02-app/optimizer/README.md), [speed-tuning/](../02-app/speed-tuning/README.md), [degats-reels/](../02-app/degats-reels/README.md) |
 | Bestiaire | `#/bestiary` | `src/pages/BestiaryPage.tsx` | `MonsterGrid`, `FilterBar`, `SearchBar`, `MonsterDetailDialog`, `Pager` | [bestiaire/](../02-app/bestiaire/README.md) |
@@ -160,7 +162,10 @@ tous les autres dans n'importe quelle analyse de dépendances.
 Hooks : `useRtaState`, `useRtaCategories`, `useRtaBackup`, `useRuneMetric`, `useOvercapDisplay`,
 `useStickyState`. Lib : `rtaShare`, `speed`, `stats`, `gearSync`, `artifacts`, `monsterForms`.
 
-**Siège** — dans `src/components/siege/` : `SiegeBoard.tsx` (défense et offense), `SiegeTeam.tsx`,
+**Siège** — dans `src/components/siege/` : `SiegeBoard.tsx` (défense et offense), `SiegeStatistiques.tsx`
+(les sièges joués, hook `useSiegesSwex` ; ses vues d'ensemble `SiegeVueEnsemble.tsx` pour la guilde
+et `SiegeVueMembre.tsx` pour un membre, leurs pièces de graphe `SiegeGraphes.tsx`, le comparatif des
+guildes d'un siège `SiegeComparatif.tsx`), `SiegeTeam.tsx`,
 `RecoBoard.tsx` + `RecoCard.tsx` (recommandations), `ChoixFusionRecos.tsx` (fusionner ou ajouter
 à part un import qui complète une recommandation), `LeadPill.tsx`. Hooks `useSiegeState`,
 `useSiegeRecos`. Lib `recoMatch`, `recoSearch`, `recoShare`, `recoFromSiege`, `recoDefenses` (la

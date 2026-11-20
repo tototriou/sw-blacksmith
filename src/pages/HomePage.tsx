@@ -18,6 +18,7 @@ import {
   IconeSwex,
   IconeOptimizer,
   IconeRecos,
+  IconeStatistiques,
   IconeRta,
   IconeRunes,
   IconeSiege,
@@ -207,6 +208,7 @@ export default function HomePage({ stats, onImport, monstres = [] }: Props) {
         <nav aria-label={a.fonctionnalites} className="mt-14 flex flex-wrap justify-center gap-2.5 max-lg:mt-8">
           <PastilleOutil href="#/rta/ami" icon={IconeAmi} accent={COULEUR_RTA_SUB.ami} titre={a.cartes.ami.titre} />
           <PastilleOutil href="#/siege/defense" icon={IconeSiege} accent={COULEUR_SECTION.siege} titre={a.cartes.siege.titre} />
+          <PastilleOutil href="#/siege/statistiques" icon={IconeStatistiques} accent={COULEUR_SIEGE_SUB.stats} titre={a.cartes.statistiquesSiege.titre} />
           <PastilleOutil href="#/arene/defense" icon={IconeArene} accent={COULEUR_SECTION.arene} titre={a.cartes.arene.titre} />
           <PastilleOutil href="#/arene-dimensionnelle/defense" icon={IconeArene} accent={COULEUR_SECTION['arene-dimensionnelle']} titre={a.cartes.areneDimensionnelle.titre} />
           <PastilleOutil href="#/compte/runes" icon={IconeRunes} accent={COULEUR_COMPTE_SUB.runes} titre={a.cartes.runes.titre} />

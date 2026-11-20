@@ -1,8 +1,9 @@
-# Siège (`#/siege/defense`, `#/siege/offense`, `#/siege/recommandations`)
+# Siège (`#/siege/defense`, `#/siege/offense`, `#/siege/recommandations`, `#/siege/statistiques`)
 
 Composer des équipes de **3 monstres** de combat de guilde, avec lead de vitesse
 **automatique** et vérification des **speed tune** (ticks). La page est découpée en
-**trois sous-onglets** : **Decks de défense**, **Decks d'offense** et **Recommandations**.
+**quatre sous-onglets** : **Decks de défense**, **Decks d'offense**, **Recommandations** et
+**Statistiques** (les sièges joués, dans l'application de bureau : [statistiques.md](statistiques.md)).
 
 - ⚠️ **« Decks de défense » et « Decks d'offense » sont au Siège seulement** :
   l'Arène et l'arène dimensionnelle gardent « Défense » et « Offense ». Le Siège a
@@ -13,7 +14,7 @@ Composer des équipes de **3 monstres** de combat de guilde, avec lead de vitess
 Fichiers :
 - [SiegePage.tsx](src/pages/SiegePage.tsx) — shell : titre + sous-onglets, choisit
   l'onglet selon la route (`#/siege/defense` par défaut, `#/siege/offense`,
-  `#/siege/recommandations`). Type `SiegeTab = 'defense' | 'offense' | 'recos'`
+  `#/siege/recommandations`, `#/siege/statistiques`). Type `SiegeTab = 'defense' | 'offense' | 'recos' | 'stats'`
   (distinct de `SiegeSide`, qui ne pilote que le stockage des deux côtés jouables).
 - [SiegeBoard.tsx](src/components/siege/SiegeBoard.tsx) — le board réutilisable,
   paramétré par `side` ('defense' | 'offense'). Monté avec `key={side}` pour
@@ -27,6 +28,10 @@ mécanique** (composition, lead auto, ticks) — voir [feat-equipes.md](feat-equ
 [feat-speed-tick.md](feat-speed-tick.md). Seules diffèrent les données d'import (voir
 ci-dessous). L'onglet **Recommandations** a son propre modèle et sa propre
 persistance : voir [feat-recommandations/](feat-recommandations/README.md).
+
+L'onglet **Statistiques** montre les sièges joués (combats, défenses, résultat, saison), lus
+dans les fichiers de guilde du plugin SWEX par l'application de bureau :
+[statistiques.md](statistiques.md).
 
 ## Le changement touche…
 

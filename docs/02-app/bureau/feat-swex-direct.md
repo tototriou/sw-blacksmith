@@ -429,8 +429,9 @@ l'invocateur demandé comptent), elle tire :
   lit dans les vues qui suivent (carte, journaux de combat par deck ou par
   joueur).
 
-**L'app ne l'affiche pas encore** : voir
-[pistes-guilde.md](../../05-feuille-de-route/pistes-guilde.md).
+**L'app de bureau en tire les sièges** (archive et session en cours, lues sans rien écrire) :
+[statistiques.md](../siege/statistiques.md) ; Siège › Statistiques les affiche. Les autres
+contenus ne sont pas lus : voir [pistes-guilde.md](../../05-feuille-de-route/pistes-guilde.md).
 
 ### Limites connues
 

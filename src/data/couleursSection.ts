@@ -52,6 +52,8 @@ export const COULEUR_SIEGE_SUB = {
   defense: '#E4463A',
   offense: '#F2884C',
   recos: '#5EDB8F',
+  // L'or de l'arène, déjà dans `TEINTE_CLAIRE` : celui des classements.
+  stats: '#F2C24C',
 } as const;
 
 // Sous-sections de l'Arène, indexées par `CoteArene`. Défense et offense
