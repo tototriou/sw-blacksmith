@@ -169,7 +169,7 @@ export function testRenduAppNavigation() {
 
 // L'arène dimensionnelle : sur le site, le seul message « application de
 // bureau » ; dans l'app, la note seule sans runes lues, la liste de runes
-// (filtres, tri) avec celles que le journal SWEX a données.
+// (filtres, tri) avec celles que le plugin SWEX a données.
 export function testRenduAppRunesDimension() {
   titre('rendu · App — l’arène dimensionnelle, sur le site et dans l’app de bureau');
   for (const h of ['#/arene-dimensionnelle/defense', '#/arene-dimensionnelle/offense', '#/arene-dimensionnelle/runes']) {

@@ -164,11 +164,13 @@ export interface ExportSwex {
   fichier: string;
   complet: boolean;
 }
-// L'arène dimensionnelle donnée à la page : la dernière saison de l'invocateur
-// suivi, lue dans le journal SWEX du dossier (`dimensionarena_getSeasonInfo`),
-// les équipes récentes de son export (les attaques), la clé à renvoyer une
-// fois appliquée (l'heure serveur de la saison), et si elle est NOUVELLE (à
-// annoncer) ou seulement redonnée à une page qui n'a rien de ce mode.
+// L'arène dimensionnelle donnée à la page : la saison de l'invocateur suivi,
+// tenue par le plugin SWEX (`dimension.json`, la forme de
+// `dimensionarena_getSeasonInfo`), les attaques jouées (vues par le plugin,
+// sinon celle de l'export), la clé à renvoyer une fois appliquée (l'heure
+// serveur du dernier changement), et si elle est NOUVELLE (une ouverture du
+// mode, à annoncer) ou seulement un changement fait dans le mode, ou redonnée
+// à une page qui n'a rien de ce mode.
 export interface DimensionSwex {
   saison: Record<string, any>;
   recents: unknown[];

@@ -451,7 +451,12 @@ export const en: Dictionnaire = {
       {
         titre: 'Your guild battles',
         texte:
-          'Siege, guild war, labyrinth: the defenses you see, the attacks you make and the battle logs are kept as you play, for the guild screens to come.',
+          'Siege, guild war, labyrinth: the defenses you see, the attacks you make and the battle logs are kept as you play. The siege statistics come from them.',
+      },
+      {
+        titre: 'Your Dimensional Arena',
+        texte:
+          'Its box is not in the export. The plugin keeps it when you open the mode, then follows the runes you equip, your defense, your summons and your attacks: the Dimensional Arena tabs fill in by themselves.',
       },
       {
         titre: 'Nothing leaves your computer',
@@ -840,7 +845,7 @@ export const en: Dictionnaire = {
     swexEnLecture: (date: string) => `Export of ${date} — reading…`,
     exportCharge: (nom: string | null) => `${nom ? `${nom}’s account` : 'Account'} loaded from SW Exporter`,
     exportMisAJour: (nom: string | null) => `${nom ? `${nom}’s account` : 'Account'} updated from SW Exporter`,
-    dimensionMiseAJour: (n: number) => `Dimensional Arena updated from the SWEX log: ${n} team${n > 1 ? 's' : ''}`,
+    dimensionMiseAJour: (n: number) => `Dimensional Arena updated from SW Exporter: ${n} team${n > 1 ? 's' : ''}`,
   },
 
   importCompte: {
@@ -863,12 +868,12 @@ export const en: Dictionnaire = {
     offenseAreneVide: 'No arena attack team set up in this file.',
     sansDefenseInterserveur: 'No cross-server arena defense found (server_arena_defense_deck_info).',
     defenseInterserveurVide: 'No cross-server arena defense set up in this file.',
-    sansDefenseDimension: 'No Dimensional Arena defense found in the SWEX log (defense_deck_info).',
-    defenseDimensionVide: 'The Dimensional Arena defense in the SWEX log points to no monster of the dimensional box.',
+    sansDefenseDimension: 'No Dimensional Arena defense found in the season (defense_deck_info).',
+    defenseDimensionVide: 'The Dimensional Arena defense points to no monster of the dimensional box.',
     sansOffenseDimension: 'No Dimensional Arena attack team found (deck_recent_list, type 28).',
-    offenseDimensionSansJournal:
-      'The Dimensional Arena attack teams point to monsters of the dimensional box: import the SWEX log (full_log.txt) too to recognize them.',
-    offenseDimensionInconnue: 'The Dimensional Arena attack teams point to monsters missing from the box in the SWEX log.',
+    offenseDimensionSansSaison:
+      'The Dimensional Arena attack teams point to monsters of the dimensional box: open the Dimensional Arena in game, with the SW Blacksmith Live plugin, to recognize them.',
+    offenseDimensionInconnue: 'The Dimensional Arena attack teams point to monsters missing from the dimensional box.',
     rien: 'Nothing to import from this file.',
     monstres6: (n: number) => `${n} 6★ monsters`,
     monstresRta: (n: number) => `${n} RTA monsters`,
@@ -1623,7 +1628,7 @@ export const en: Dictionnaire = {
       `Team removed from the ${cote === 'offense' || cote === 'dimension-offense' ? 'offense' : cote === 'interserveur' ? 'cross-server defense' : 'defense'}`,
     dimensionBureauSeulement: 'The Dimensional Arena is only available in the desktop app. The web version is coming soon.',
     noteDimension:
-      'The dimensional box (its monsters and their runes) is not in the account export. With the SW Exporter folder chosen and the SWEX Full Logger plugin on, these tabs fill in by themselves when you open the Dimensional Arena in game. Otherwise, build your teams by hand.',
+      'The dimensional box (its monsters and their runes) is not in the account export. With the SW Exporter folder chosen and the SW Blacksmith Live plugin installed, these tabs fill in by themselves when you open the Dimensional Arena in game, and follow what you change there. Otherwise, build your teams by hand.',
   },
 
   siege: {

@@ -16,12 +16,14 @@ Fichiers : [SwExporterPage.tsx](src/pages/SwExporterPage.tsx) ·
 - Titre « SW Exporter », une phrase : SWEX lit le compte depuis le jeu et
   l'enregistre dans un fichier, que l'app importe ; son plugin le tient à jour
   pendant la partie.
-- **Ce que fait le plugin**, trois cartes : le compte en direct (meules,
+- **Ce que fait le plugin**, quatre cartes, deux par ligne à partir de
+  640 px, l'une sous l'autre au téléphone : le compte en direct (meules,
   gemmes, améliorations, ventes, équipement, pendant la partie) ; les
-  combats de guilde (siège, guerre, labyrinthe), gardés pour les écrans de
-  guilde à venir ; « Rien ne quitte ta machine » (ses fichiers dans un
-  dossier `SWBlacksmith` du dossier de SWEX, rien d'envoyé, jamais la clé de
-  session).
+  combats de guilde (siège, guerre, labyrinthe), d'où viennent les
+  statistiques de siège ; l'arène dimensionnelle (sa box, gardée à
+  l'ouverture du mode puis suivie) ; « Rien ne quitte ta machine » (ses
+  fichiers dans un dossier `SWBlacksmith` du dossier de SWEX, rien d'envoyé,
+  jamais la clé de session).
 - **À l'ordinateur** : « Télécharger le plugin » (`Bouton href` +
   `telechargement`), et à côté le fichier et sa version
   (`SWBlacksmithLive.js · version X.Y.Z`, celle de l'app).

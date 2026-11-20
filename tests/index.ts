@@ -353,7 +353,8 @@ import testMigrationStockage from './migration-stockage.test';
 import testBureauProtocole from './bureau-protocole.test';
 import testBureauFenetre from './bureau-fenetre.test';
 import testBureauMiseAJour from './bureau-mise-a-jour.test';
-import testBureauSwex, { testBureauJournalSwex } from './bureau-swex.test';
+import testBureauSwex, { testBureauSwexDimension } from './bureau-swex.test';
+import { testPluginSwexDimension, testPluginSwexDimensionReel } from './plugin-swex-dimension.test';
 import { testBureauSwexDirect } from './bureau-swex-direct.test';
 import { testBureauSwexGuilde } from './bureau-swex-guilde.test';
 import { testCourbeChoix } from './courbe-choix.test';
@@ -1239,8 +1240,10 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testPluginSwexLive', testPluginSwexLive],
   ['testPluginSwexArchive', testPluginSwexArchive],
   ['testPluginSwexGuilde', testPluginSwexGuilde],
+  ['testPluginSwexDimension', testPluginSwexDimension],
+  ['testPluginSwexDimensionReel', testPluginSwexDimensionReel],
   ['testPluginSwexPaquet', testPluginSwexPaquet],
-  ['testBureauJournalSwex', testBureauJournalSwex],
+  ['testBureauSwexDimension', testBureauSwexDimension],
   ['testBureauSession', async () => { await testBureauSession(); }],
   ['testBureauCoeurs', async () => { await testBureauCoeurs(); }],
   ['testBureauLancement', testBureauLancement],

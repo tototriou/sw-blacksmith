@@ -928,8 +928,8 @@ function Application() {
   // compte ». Partagé par l'import manuel et par le dossier SW Exporter
   // après le choix d'un invocateur — qui, lui, ne pose pas la question de
   // conservation (`demanderConservation`) : le dossier est un réglage.
-  // L'arène dimensionnelle n'en vient pas : sa box est dans le journal SWEX,
-  // lu par l'application de bureau (`appliquerDimension`).
+  // L'arène dimensionnelle n'en vient pas : sa box est tenue par le plugin
+  // SWEX, lue par l'application de bureau (`appliquerDimension`).
   function appliquerTout(
     data: Record<string, any>,
     compte: ReturnType<typeof preparerCompte>,
@@ -1118,11 +1118,11 @@ function Application() {
     if (arene.interserveur.teams.length) areneInter.importTeams(arene.interserveur.teams);
   }
 
-  // Le dossier SW Exporter : une nouvelle saison de l'arène dimensionnelle,
-  // lue dans le journal SWEX (bureau/swex.ts). Elle REMPLACE la défense, les
-  // attaques et les runes de ce mode — un miroir du jeu, mis à jour à chaque
-  // ouverture du mode. Un côté sans équipe reconnue n'est pas touché. Rend le
-  // nombre d'équipes appliquées.
+  // Le dossier SW Exporter : la saison de l'arène dimensionnelle tenue par le
+  // plugin SWEX (bureau/swex.ts). Elle REMPLACE la défense, les attaques et
+  // les runes de ce mode — un miroir du jeu, mis à jour à l'ouverture du mode
+  // et à chaque changement fait dedans. Un côté sans équipe reconnue n'est pas
+  // touché. Rend le nombre d'équipes appliquées.
   function appliquerDimension(saison: Record<string, any>, recents: unknown[]): number {
     const { defense, offense } = equipesDimension(saison, recents, monsterByCom2us, textes);
     if (defense.teams.length) areneDimDef.importTeams(defense.teams);

@@ -11,22 +11,26 @@
 //    commande qui le change y ajoute une ligne ;
 //  - la GUILDE : chaque vue ou combat y ajoute une ligne ; à la connexion
 //    suivante, la session finie s'archive en entier — l'historique compte.
+// Et l'ARÈNE DIMENSIONNELLE (`dimension.json`) : la saison que le jeu envoie à
+// l'ouverture du mode, réécrite à chaque changement fait dans le mode
+// (plugin-swex/source/dimension.ts).
 // Voir docs/02-app/bureau/feat-swex-direct.md.
 
-import { existsSync, promises } from 'node:fs';
+import { existsSync, promises, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { ajouterAuFichier, empreinteDe, type Bloc } from './archive';
 import { appliquer, depuisConnexion, ligneConnexion, versEtatArchive, type EtatDirect, type Json } from './etatDirect';
+import { appliquerDimension, estCommandeDimension } from './dimension';
 import { contenuDeVue, evenementGuilde, ligneSessionGuilde } from './guilde';
-import { COMPTE_ARCHIVE, COMPTE_LIVE, GUILDE_ARCHIVE, GUILDE_LIVE, dossierInvocateur, ecrireAtomique, nomDeBase } from './fichiers';
+import { COMPTE_ARCHIVE, COMPTE_LIVE, DIMENSION, GUILDE_ARCHIVE, GUILDE_LIVE, dossierInvocateur, ecrireAtomique, nomDeBase } from './fichiers';
 
 declare const __VERSION_PLUGIN__: string;
 export const VERSION = typeof __VERSION_PLUGIN__ === 'string' ? __VERSION_PLUGIN__ : 'dev';
 
 export const pluginName = 'SWBlacksmithLive';
 export const pluginDescription =
-  `SW Blacksmith ${VERSION} — keeps your account (runes, grindstones, gems, monsters) and guild battles up to date ` +
-  'for the SW Blacksmith app while you play. / Tient ton compte et tes combats de guilde à jour pour SW Blacksmith pendant la partie.';
+  `SW Blacksmith ${VERSION} — keeps your account (runes, grindstones, gems, monsters), guild battles and Dimensional Arena ` +
+  'up to date for the SW Blacksmith app while you play. / Tient ton compte, tes combats de guilde et ton arène dimensionnelle à jour pour SW Blacksmith pendant la partie.';
 export const defaultConfig = { enabled: true, guilde: true };
 export const defaultConfigDetails = {
   guilde: { label: 'Guild battles (siege, guild war, labyrinth) / Combats de guilde (siège, guerre, labyrinthe)' },
@@ -48,6 +52,20 @@ interface Suivi {
   // L'empreinte du dernier contenu écrit de chaque vue de guilde, de la
   // session : une vue inchangée ne se réécrit pas (`contenuDeVue`, guilde.ts).
   vues: Map<string, string>;
+  // La saison de l'arène dimensionnelle tenue (dimension.ts), `null` avant la
+  // première ouverture du mode.
+  dimension: Json | null;
+}
+
+// La saison dimensionnelle déjà écrite pour cet invocateur, s'il y en a une :
+// SWEX relancé en plein mode, ses changements s'appliquent encore.
+function dimensionEcrite(dossier: string, id: number): Json | null {
+  try {
+    const s = JSON.parse(readFileSync(join(dossier, DIMENSION), 'utf8'));
+    return Number(s?.wizard_id) === id ? s : null;
+  } catch {
+    return null;
+  }
 }
 
 // Ce qui s'archive du compte à une connexion : l'état allégé, et son empreinte
@@ -124,7 +142,7 @@ export function creerPlugin() {
           const base = nomDeBase(dossier(), id, String(res.wizard_info?.wizard_name ?? ''));
           const dossierSuivi = dossierInvocateur(dossier(), id, base);
           const compte = depuisConnexion(res);
-          suivis.set(id, { base, dossier: dossierSuivi, compte, vues: new Map() });
+          suivis.set(id, { base, dossier: dossierSuivi, compte, vues: new Map(), dimension: dimensionEcrite(dossierSuivi, id) });
           // Les textes sont faits MAINTENANT : le compte bougera avant leur
           // tour dans la file.
           const t = typeof res.tvalue === 'number' ? res.tvalue : null;
@@ -156,6 +174,16 @@ export function creerPlugin() {
         // reposées après un départ de l'état tenu, elles ne changent rien.
         if (changement)
           ajouter(s, COMPTE_LIVE, `${JSON.stringify(changement)}\n`, () => `${JSON.stringify(ligneConnexion(s.compte, VERSION))}\n`);
+        // L'arène dimensionnelle : la saison entière réécrite, à son tour dans
+        // la file (le texte est fait MAINTENANT).
+        if (estCommandeDimension(commande)) {
+          const saison = appliquerDimension(s.dimension, commande, req, res, VERSION);
+          if (saison) {
+            s.dimension = saison;
+            const texte = JSON.stringify(saison);
+            enFile(`${s.base}/${DIMENSION}`, () => ecrireAtomique(join(s.dossier, DIMENSION), texte));
+          }
+        }
         // Guilde désactivée : réactivée, le fichier repart de son en-tête, et
         // chaque vue doit s'y réécrire.
         if (!guildeActive()) s.vues.clear();

@@ -232,8 +232,9 @@ export function areneClassiqueVide(equipes: { defense: unknown[]; offense: unkno
 }
 
 // Les équipes de l'arène dimensionnelle, prêtes pour les états : la défense de
-// la saison (journal SWEX), les attaques des équipes récentes de l'export
-// (`deck_recent_list`), reconnues dans la box de la saison. Leads d'arène.
+// la saison (tenue par le plugin SWEX), les attaques des équipes récentes
+// (`deck_recent_list` : vues jouer par le plugin, sinon celle de l'export),
+// reconnues dans la box de la saison. Leads d'arène.
 export function equipesDimension(
   saison: Record<string, any>,
   recents: unknown[],

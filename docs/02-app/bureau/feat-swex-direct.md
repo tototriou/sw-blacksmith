@@ -6,7 +6,9 @@ SW Exporter (SWEX) n'écrit l'export du compte qu'à la **connexion** au jeu
 (plugin ProfileExport). Une session de meulage, des runes vendues ou
 équipées n'apparaissent donc dans « Mon compte » qu'à la connexion suivante.
 Le plugin **SW Blacksmith Live** tient le compte à jour **pendant la partie**,
-à partir de ce que le serveur renvoie à chaque commande.
+à partir de ce que le serveur renvoie à chaque commande. Il garde aussi les
+combats de guilde et l'**arène dimensionnelle**, que l'export ne décrit pas :
+aucun autre plugin de SWEX n'est nécessaire.
 
 Code : **`plugin-swex/`**, à la racine du dépôt, versionné avec l'app. Ce
 qu'en fait l'application de bureau : « Dans l'application de bureau »,
@@ -62,7 +64,11 @@ Summoners War Exporter Files/          ← le dossier de SWEX (son réglage)
       compte.jsonl.gz                  ← son archive : un état par connexion
       guilde.live.jsonl                ← la guilde : la session en cours
       guilde.jsonl.gz                  ← son archive : chaque session, en entier
+      dimension.json                   ← l'arène dimensionnelle : la saison tenue
 ```
+
+Et l'**arène dimensionnelle**, en un seul fichier réécrit à chaque changement
+(voir « L'arène dimensionnelle » plus bas).
 
 Pour le compte, c'est le **direct** qui compte (le stock de runes, de meules
 et de gemmes pendant la partie), et l'archive n'en garde qu'un état par
@@ -393,6 +399,44 @@ et 994 lignes de changement) :
 
 Trois écarts relevés ainsi ont été corrigés : les monstres rangés dans le
 stockage, les runes gagnées en combat, le rachat (voir plus haut).
+
+## L'arène dimensionnelle — `plugin-swex/source/dimension.ts`
+
+La box du mode n'est pas dans l'export (les commandes `dimensionarena_*` sont
+hors du moteur du compte, `HORS_LECTURE` : elles montrent une autre box). Le
+plugin la tient à part, dans **`dimension.json`** : la réponse que le jeu
+envoie à l'**ouverture du mode** (`dimensionarena_getSeasonInfo` : monstres,
+runes en inventaire, builds par défaut, défense), à laquelle il applique
+chaque changement fait dans le mode, puis la **réécrit entière**, de façon
+atomique. Le fichier garde la forme de la réponse du jeu : l'app la lit comme
+telle ([bureau/README.md](README.md), « L'arène dimensionnelle »).
+
+| Commande | Ce qui change |
+| --- | --- |
+| `dimensionarena_getSeasonInfo` | La saison entière, remplacée (sans clé de session). Les attaques gardées restent si c'est la même saison du jeu. |
+| `dimensionarena_setRuneList` | Le monstre équipé, renvoyé entier ; dans `rune_list`, les **seules runes qui ont bougé** : posées sur lui (`occupied_type` 1) ou rendues à l'inventaire (`occupied_type` 2). ⚠️ Une rune prise à un **autre** monstre ne lui est pas renvoyée : toute rune vue est d'abord ôtée de partout, puis rangée. |
+| `dimensionarena_setDefenseDeck` | La défense. |
+| `dimensionarena_summonUnit` | Les monstres invoqués, ajoutés à la box. |
+| `dimensionarena_receiveBattleCountReward` | La rune gagnée, dans l'inventaire. |
+| `dimensionarena_battleStart` | L'équipe d'attaque, ajoutée devant les précédentes sous la forme de l'export (`deck_recent_list`, type 28) : leader en tête — l'ordre envoyé, celui de `leader_unit_id` dans l'export (relevé) —, sans doublon, les **5** dernières. L'export n'en garde qu'une. |
+| `dimensionarena_battleResult`, `…updateFavoriteUnitList` | La participation, les favoris. |
+
+- Le plugin ajoute une marque (`swblacksmith` : format, version, plugin) et
+  deux heures serveur : `ouverture`, la dernière ouverture du mode, et `t`,
+  le dernier changement. L'app n'annonce que ce qui suit une ouverture.
+- Un changement **sans saison tenue**, ou d'une **autre saison** du jeu, est
+  ignoré : la prochaine ouverture rattrape. À la connexion, la saison déjà
+  écrite est reprise : SWEX relancé en plein mode, les changements
+  s'appliquent encore.
+- Rien d'autre n'est lu (classements, état de la saison, tickets de choix de
+  rune) ; ce que le plugin ne suit pas, la prochaine ouverture du mode le
+  remet à plat.
+
+**Vérifié par rejeu d'un journal réel** (`testPluginSwexDimensionReel`, s'il
+est là, gitignoré) : sur 217 échanges du mode et 21 ouvertures précédées de
+changements (runes posées, défense, invocation, runes gagnées, attaques,
+favoris), **chaque saison reconstruite égale celle que le jeu renvoie ensuite**
+— la place de chaque rune, la box, la défense.
 
 ## Le contenu des combats de guilde — `plugin-swex/source/guilde.ts`
 

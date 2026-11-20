@@ -3,7 +3,7 @@ import type { RuneDetail } from '../types';
 import { saveLocal, usePersistence } from './usePersistence';
 
 // Les runes gagnées dans l'arène dimensionnelle (onglet « Runes » de la
-// section), lues dans le journal SWEX par l'application de bureau
+// section), tenues par le plugin SWEX et lues par l'application de bureau
 // (`parseDimensionRunes`). Conservées comme les équipes : par `saveLocal`,
 // seulement si l'utilisateur a accepté de garder ses données.
 export const CLE_RUNES_DIMENSION = 'swblacksmith-arene-dimension-runes-v1';

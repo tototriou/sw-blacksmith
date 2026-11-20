@@ -10,6 +10,8 @@
 //       guilde.live.jsonl          ← la session en cours : une ligne par vue
 //                                    ou combat de guilde
 //       guilde.jsonl.gz            ← l'archive : chaque session, en entier
+//       dimension.json             ← l'arène dimensionnelle : la saison du jeu,
+//                                    tenue à jour à chaque changement du mode
 
 import { existsSync, mkdirSync, promises, readdirSync, renameSync, statSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -22,6 +24,7 @@ export const COMPTE_LIVE = 'compte.live.jsonl';
 export const COMPTE_ARCHIVE = 'compte.jsonl.gz';
 export const GUILDE_LIVE = 'guilde.live.jsonl';
 export const GUILDE_ARCHIVE = 'guilde.jsonl.gz';
+export const DIMENSION = 'dimension.json';
 
 // Le nom du dossier d'un invocateur : celui de l'export de ProfileExport
 // (`<nom>-<id>.json`) s'il est là — ProfileExport nettoie le pseudo à sa façon,

@@ -34,8 +34,9 @@ export interface ReglageSwex {
   fichier: string | null;
   // Date de modification (ms) du dernier export APPLIQUÉ par la page.
   dernierLu: number | null;
-  // Heure serveur (`tvalue`) de la dernière saison de l'arène dimensionnelle
-  // APPLIQUÉE par la page, lue dans le journal SWEX (journalSwexDisque.ts).
+  // Heure serveur du dernier changement de la saison de l'arène
+  // dimensionnelle APPLIQUÉ par la page (`dimension.json` du plugin,
+  // bureau/swexDimension.ts).
   dimensionLue: number | null;
   // « Direct » : « Mon compte » suit le fichier live du plugin. Coupé par
   // défaut, retenu comme le dossier.

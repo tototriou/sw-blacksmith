@@ -65,7 +65,7 @@ contextBridge.exposeInMainWorld(
       pret: (pageSansCompte: boolean, pageSansDimension: boolean) =>
         ipcRenderer.send('bureau:swex-pret', pageSansCompte, pageSansDimension),
       lu: (modifie: number) => ipcRenderer.send('bureau:swex-lu', modifie),
-      // L'arène dimensionnelle, lue dans le journal SWEX du dossier.
+      // L'arène dimensionnelle, tenue par le plugin SWEX (dimension.json).
       surDimension: (rappel: (dim: unknown) => void) => {
         const ecouteur = (_e: unknown, dim: unknown) => rappel(dim);
         ipcRenderer.on('bureau:swex-dimension', ecouteur);

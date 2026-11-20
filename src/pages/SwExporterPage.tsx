@@ -34,7 +34,7 @@ export default function SwExporterPage() {
       <p className="text-ink-dim text-sm leading-relaxed mb-6">{s.intro(NOM_APP)}</p>
 
       <h2 className="label mb-2">{s.atoutsTitre}</h2>
-      <ul className="mb-8 grid gap-3 sm:grid-cols-3">
+      <ul className="mb-8 grid gap-3 sm:grid-cols-2">
         {s.atouts.map((a) => (
           <li key={a.titre} className="rounded-xl border border-border-soft bg-panel px-4 py-3">
             <p className="text-sm font-semibold text-ink">{a.titre}</p>

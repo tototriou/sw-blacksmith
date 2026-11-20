@@ -18,12 +18,11 @@
 // ⚠️ **On attend 1,5 s après la dernière écriture** : SW Exporter écrit un
 // fichier de plusieurs Mo, et le système signale chaque morceau.
 //
-// L'arène dimensionnelle : sa box n'est pas dans l'export mais dans le journal
-// complet de SWEX (`full_log.txt`, à la racine du même dossier), écrit quand
-// le joueur ouvre le mode — APRÈS l'export, écrit à la connexion. Le journal
-// est donc suivi pour lui-même : à chaque nouvelle saison de l'invocateur
-// suivi, elle part à la page (`bureau:swex-dimension`) avec les équipes
-// récentes de l'export (les attaques), et la page confirme l'avoir appliquée
+// L'arène dimensionnelle : sa box n'est pas dans l'export. Le plugin la tient
+// (`SWBlacksmith/<nom>-<id>/dimension.json`) : la saison que le jeu envoie à
+// l'ouverture du mode, réécrite à chaque changement fait dans le mode. À
+// chaque écriture, elle part à la page (`bureau:swex-dimension`) avec les
+// attaques jouées, et la page confirme l'avoir appliquée
 // (`bureau:swex-dimension-lue`).
 //
 // Le DIRECT : le plugin SWEX « SW Blacksmith Live » écrit le compte pendant
@@ -59,7 +58,7 @@ import {
 } from './swexPur';
 import { cheminLive, enteteDuLive, heureExport, lireLive, LectureLive, versionInstallee } from './swexLive';
 import { CacheGuilde, lireSieges } from './swexGuilde';
-import { ajoutContientSaison, NOM_JOURNAL, saisonDuJournal } from './journalSwexDisque';
+import { lireDimension } from './swexDimension';
 import { textesBureau } from './textes';
 
 // Le direct, vu de la page : l'interrupteur, s'il y a un fichier live de la
@@ -119,8 +118,6 @@ export function brancherSwex(fenetre: BrowserWindow, preuve?: PreuveSwex) {
   // Le prochain export donné suit un choix : complet, jusqu'à ce que la page
   // l'ait appliqué (`bureau:swex-lu`) — un export illisible le garde complet.
   let complet = false;
-  // Octets du journal SWEX déjà examinés : seul ce qui s'y ajoute est relu.
-  let journalVu = 0;
   // Le direct : la dernière lecture du fichier live DONNÉE à la page, la
   // surveillance du dossier `SWBlacksmith`, et la file de ses lectures (une à la fois :
   // deux lectures croisées enverraient deux fois les mêmes lignes).
@@ -176,40 +173,42 @@ export function brancherSwex(fenetre: BrowserWindow, preuve?: PreuveSwex) {
     }
   }
 
-  // Donne à la page la dernière saison de l'arène dimensionnelle de
-  // l'invocateur suivi, si elle est plus récente que la dernière appliquée,
-  // ou si la page n'a rien de ce mode (`pageSansDimension`, au lancement).
-  // `relire` : tout le journal (page prête, choix, surveillance revenue) ;
-  // sinon, seulement si ce qui s'y est ajouté contient une saison.
-  async function donnerDimension(relire: boolean, pageSansDimension = false) {
+  // Donne à la page la saison de l'arène dimensionnelle de l'invocateur suivi,
+  // tenue par le plugin (`dimension.json`, bureau/swexDimension.ts), si elle a
+  // changé depuis la dernière appliquée, ou si la page n'a rien de ce mode
+  // (`pageSansDimension`, au lancement).
+  async function donnerDimension(pageSansDimension = false) {
     const { dossier, fichier } = reglage;
-    const id = Number(fichier ? lireNomExport(fichier)?.id : NaN);
-    if (!pagePrete || !dossier || !fichier || !Number.isFinite(id)) return;
-    const chemin = join(dossier, NOM_JOURNAL);
+    const id = fichier ? lireNomExport(fichier)?.id : undefined;
+    if (!pagePrete || !dossier || !fichier || !id) return;
     try {
-      if (relire) journalVu = (await promises.stat(chemin)).size;
-      else {
-        const ajout = await ajoutContientSaison(chemin, journalVu);
-        journalVu = ajout.taille;
-        if (!ajout.contient) return;
+      const lue = await lireDimension(dossier, id);
+      if (!lue || !dimensionADonner(lue.t, reglage.dimensionLue, pageSansDimension)) return;
+      // Les attaques : celles que le plugin a vues jouer ; aucune encore,
+      // celle de l'export (`deck_recent_list`).
+      let recents = lue.attaques;
+      if (!recents.length) {
+        try {
+          const compte = JSON.parse(await promises.readFile(join(dossier, fichier), 'utf8'));
+          if (Array.isArray(compte?.deck_recent_list)) recents = compte.deck_recent_list;
+        } catch {
+          /* export illisible : la défense part seule */
+        }
       }
-      const saison = await saisonDuJournal(chemin, id);
-      if (!saison || !dimensionADonner(saison.tvalue, reglage.dimensionLue, pageSansDimension)) return;
-      // Les attaques jouées sont dans l'export (`deck_recent_list`).
-      let recents: unknown[] = [];
-      try {
-        const compte = JSON.parse(await promises.readFile(join(dossier, fichier), 'utf8'));
-        if (Array.isArray(compte?.deck_recent_list)) recents = compte.deck_recent_list;
-      } catch {
-        /* export illisible : la défense part seule */
-      }
-      // `nouvelle` : plus récente que la dernière appliquée (annoncée) ; sinon
-      // redonnée en silence à une page qui n'a rien de ce mode.
-      const nouvelle = dimensionADonner(saison.tvalue, reglage.dimensionLue);
-      envoyer('bureau:swex-dimension', { saison, recents, cle: saison.tvalue, nouvelle });
+      // `nouvelle` (annoncée) : une OUVERTURE du mode que la page n'a pas
+      // appliquée. Un changement fait dans le mode s'applique en silence, et
+      // une page qui n'a rien de ce mode reçoit la saison sans annonce.
+      const nouvelle = dimensionADonner(lue.ouverture, reglage.dimensionLue);
+      envoyer('bureau:swex-dimension', { saison: lue.saison, recents, cle: lue.t, nouvelle });
     } catch {
-      /* pas de journal (plugin Full Logger éteint), ou verrouillé : rien */
+      /* pas de saison (plugin absent, mode jamais ouvert), ou verrouillée : rien */
     }
+  }
+  // Une rafale d'écritures du plugin ne fait qu'une lecture.
+  let minuterieDimension: ReturnType<typeof setTimeout> | null = null;
+  function dimensionChangee() {
+    if (minuterieDimension) clearTimeout(minuterieDimension);
+    minuterieDimension = setTimeout(() => void donnerDimension(), ATTENTE_DIRECT);
   }
 
   // Le fichier live de l'invocateur suivi, s'il est celui de la DERNIÈRE
@@ -316,8 +315,10 @@ export function brancherSwex(fenetre: BrowserWindow, preuve?: PreuveSwex) {
       surveillanceDirect = watch(join(reglage.dossier, DOSSIER_PLUGIN), { recursive: true }, (_type, nom) => {
         if (minuterieDirect) clearTimeout(minuterieDirect);
         minuterieDirect = setTimeout(() => void suivreDirect(false), ATTENTE_DIRECT);
-        // Un fichier de guilde (ou un nom inconnu) : les sièges ont pu changer.
+        // Un fichier de guilde (ou un nom inconnu) : les sièges ont pu changer ;
+        // celui de l'arène dimensionnelle : sa saison.
         if (!nom || /guilde/.test(String(nom))) siegesChanges();
+        if (!nom || /dimension/.test(String(nom))) dimensionChangee();
       });
       surveillanceDirect.on('error', () => {
         surveillanceDirect?.close();
@@ -346,7 +347,7 @@ export function brancherSwex(fenetre: BrowserWindow, preuve?: PreuveSwex) {
       if (!surveiller()) return;
       envoyer('bureau:swex-etat', etat());
       void donner(false);
-      void donnerDimension(true);
+      void donnerDimension();
       void suivreDirect(true);
     }, RELANCE);
   }
@@ -360,19 +361,22 @@ export function brancherSwex(fenetre: BrowserWindow, preuve?: PreuveSwex) {
     surveillerDirect();
     if (!reglage.dossier) return false;
     try {
-      // Non récursif : seuls les exports et le journal de la RACINE comptent
-      // (`live` écrit en continu pendant une partie). Tout changement relance
-      // la liste, l'export suivi et le journal, une fois le dossier calme.
-      // Le fichier live a sa propre surveillance (`surveillerDirect`) ; un
-      // nouvel export peut toutefois le rendre périmé, ou le dossier `SWBlacksmith`
-      // apparaître : le direct est revu aussi.
+      // Non récursif : seuls les exports de la RACINE comptent (`live` écrit
+      // en continu pendant une partie). Tout changement relance la liste et
+      // l'export suivi, une fois le dossier calme. Les fichiers du plugin ont
+      // leur propre surveillance (`surveillerDirect`) ; un nouvel export peut
+      // toutefois rendre le live périmé, ou le dossier `SWBlacksmith`
+      // apparaître : le direct est revu, et la saison dimensionnelle relue
+      // quand la surveillance du plugin repart.
       surveillance = watch(reglage.dossier, () => {
         if (minuterie) clearTimeout(minuterie);
         minuterie = setTimeout(() => {
           envoyer('bureau:swex-etat', etat());
           void donner(false);
-          void donnerDimension(false);
-          if (!directAJour()) surveillerDirect();
+          if (!directAJour()) {
+            surveillerDirect();
+            void donnerDimension();
+          }
           void suivreDirect(false);
         }, ATTENTE);
       });
@@ -421,7 +425,7 @@ export function brancherSwex(fenetre: BrowserWindow, preuve?: PreuveSwex) {
     ecrire();
     surveiller();
     void donner(false);
-    void donnerDimension(true);
+    void donnerDimension();
     void suivreDirect(true);
     siegesChanges();
     return repondre();
@@ -435,7 +439,7 @@ export function brancherSwex(fenetre: BrowserWindow, preuve?: PreuveSwex) {
     complet = true;
     ecrire();
     void donner(false);
-    void donnerDimension(true);
+    void donnerDimension();
     void suivreDirect(true);
     siegesChanges();
     return repondre();
@@ -493,7 +497,7 @@ export function brancherSwex(fenetre: BrowserWindow, preuve?: PreuveSwex) {
     if (!deLaPage(e)) return;
     pagePrete = true;
     void donner(pageSansCompte === true);
-    void donnerDimension(true, pageSansDimension === true);
+    void donnerDimension(pageSansDimension === true);
     void suivreDirect(true);
   });
 

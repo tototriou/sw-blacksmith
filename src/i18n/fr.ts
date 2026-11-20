@@ -482,7 +482,12 @@ export const fr = {
       {
         titre: 'Tes combats de guilde',
         texte:
-          'Siège, guerre de guilde, labyrinthe : les défenses vues, les attaques faites et les journaux de combat sont gardés au fil de la partie, pour les écrans de guilde à venir.',
+          'Siège, guerre de guilde, labyrinthe : les défenses vues, les attaques faites et les journaux de combat sont gardés au fil de la partie. Les statistiques de siège en viennent.',
+      },
+      {
+        titre: 'Ton arène dimensionnelle',
+        texte:
+          "Sa box n'est pas dans l'export. Le plugin la garde quand tu ouvres le mode, puis suit tes runes posées, ta défense, tes invocations et tes attaques : les onglets de l'arène dimensionnelle se remplissent tout seuls.",
       },
       {
         titre: 'Rien ne quitte ta machine',
@@ -888,9 +893,9 @@ export const fr = {
     swexEnLecture: (date: string) => `Export du ${date} — lecture en cours…`,
     exportCharge: (nom: string | null) => `${nom ? `Compte de ${nom}` : 'Compte'} chargé depuis SW Exporter`,
     exportMisAJour: (nom: string | null) => `${nom ? `Compte de ${nom}` : 'Compte'} mis à jour depuis SW Exporter`,
-    // Une nouvelle saison de l'arène dimensionnelle, lue dans le journal SWEX.
+    // L'arène dimensionnelle ouverte en jeu, lue par le plugin SWEX.
     dimensionMiseAJour: (n: number) =>
-      `Arène dimensionnelle mise à jour depuis le journal SWEX : ${n} équipe${n > 1 ? 's' : ''}`,
+      `Arène dimensionnelle mise à jour depuis SW Exporter : ${n} équipe${n > 1 ? 's' : ''}`,
   },
 
   // L'import d'un export de compte SWEX : bouton, messages de src/lib/importAccount.ts
@@ -916,13 +921,13 @@ export const fr = {
     offenseAreneVide: "Aucune équipe d'attaque d'arène configurée dans ce fichier.",
     sansDefenseInterserveur: "Aucune défense d'arène interserveur trouvée (server_arena_defense_deck_info).",
     defenseInterserveurVide: "Aucune défense d'arène interserveur configurée dans ce fichier.",
-    sansDefenseDimension: "Aucune défense d'arène dimensionnelle trouvée dans le journal SWEX (defense_deck_info).",
-    defenseDimensionVide: "La défense d'arène dimensionnelle du journal SWEX ne désigne aucun monstre de la box dimensionnelle.",
+    sansDefenseDimension: "Aucune défense d'arène dimensionnelle trouvée dans la saison (defense_deck_info).",
+    defenseDimensionVide: "La défense d'arène dimensionnelle ne désigne aucun monstre de la box dimensionnelle.",
     sansOffenseDimension: "Aucune équipe d'attaque d'arène dimensionnelle trouvée (deck_recent_list, type 28).",
-    offenseDimensionSansJournal:
-      "Les équipes d'attaque d'arène dimensionnelle désignent des monstres de la box dimensionnelle : importe aussi le journal SWEX (full_log.txt) pour les reconnaître.",
+    offenseDimensionSansSaison:
+      "Les équipes d'attaque d'arène dimensionnelle désignent des monstres de la box dimensionnelle : ouvre l'arène dimensionnelle en jeu, avec le plugin SW Blacksmith Live, pour les reconnaître.",
     offenseDimensionInconnue:
-      "Les équipes d'attaque d'arène dimensionnelle désignent des monstres absents de la box du journal SWEX.",
+      "Les équipes d'attaque d'arène dimensionnelle désignent des monstres absents de la box dimensionnelle.",
     rien: 'Rien à importer depuis ce fichier.',
     monstres6: (n: number) => `${n} monstres 6★`,
     monstresRta: (n: number) => `${n} monstres RTA`,
@@ -1722,14 +1727,14 @@ export const fr = {
     retiree: (cote: 'defense' | 'offense' | 'interserveur' | 'dimension-defense' | 'dimension-offense') =>
       `Équipe retirée ${cote === 'offense' || cote === 'dimension-offense' ? "de l'offense" : cote === 'interserveur' ? 'de la défense interserveur' : 'de la défense'}`,
     // La box et les runes de l'arène dimensionnelle sont à part : l'export de
-    // compte ne les décrit pas, le journal complet de SWEX, si — lu par
-    // l'application de bureau dans le dossier SW Exporter.
-    // Sur le site : la box du mode n'arrive que par le journal SWEX, lu par
+    // compte ne les décrit pas, le plugin SWEX « SW Blacksmith Live », si — lu
+    // par l'application de bureau dans le dossier SW Exporter.
+    // Sur le site : la box du mode n'arrive que par le plugin, lu par
     // l'application de bureau.
     dimensionBureauSeulement:
       "L'arène dimensionnelle n'est disponible que dans l'application de bureau. La version web arrive prochainement.",
     noteDimension:
-      "La box dimensionnelle (ses monstres et leurs runes) n'est pas dans l'export de compte. Avec le dossier SW Exporter choisi et le plugin Full Logger de SWEX actif, ces onglets se remplissent tout seuls quand tu ouvres l'arène dimensionnelle en jeu. Sinon, compose tes équipes à la main.",
+      "La box dimensionnelle (ses monstres et leurs runes) n'est pas dans l'export de compte. Avec le dossier SW Exporter choisi et le plugin SW Blacksmith Live installé, ces onglets se remplissent tout seuls quand tu ouvres l'arène dimensionnelle en jeu, et suivent ce que tu y changes. Sinon, compose tes équipes à la main.",
   },
 
   // Le Siège (#/siege) : équipes de défense et d'offense.

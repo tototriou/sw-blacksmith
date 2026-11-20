@@ -66,11 +66,13 @@ dans Node. Côté page, `src/lib/bureau.ts` (`estBureau()`) dit si l'on est au b
 
 Le plugin SWEX du dépôt, **`plugin-swex/`**, tient le compte à jour pendant la partie
 (`plugin-swex/source/etatDirect.ts` : le moteur, pur et testé), archive l'état du compte à chaque
-connexion (`plugin-swex/source/archive.ts`) et garde le contenu des combats de guilde
-(`plugin-swex/source/guilde.ts`). L'app de bureau lit son fichier live (`bureau/swexLive.ts`) :
+connexion (`plugin-swex/source/archive.ts`), garde le contenu des combats de guilde
+(`plugin-swex/source/guilde.ts`) et tient la saison de l'arène dimensionnelle
+(`plugin-swex/source/dimension.ts`). L'app de bureau lit son fichier live (`bureau/swexLive.ts`) :
 « Mon compte » en direct (`src/lib/compteDirect.ts`, `src/hooks/useCompteDirect.ts`) et « Mettre à
 jour mon compte » (page SW Exporter). Elle lit aussi ses fichiers de guilde (`bureau/swexGuilde.ts`) :
-les sièges, relevés par `src/lib/siegeStatistiques.ts`. Détail :
+les sièges, relevés par `src/lib/siegeStatistiques.ts` ; et sa saison dimensionnelle
+(`bureau/swexDimension.ts`) : la box, la défense et les attaques de l'arène dimensionnelle. Détail :
 [feat-swex-direct.md](../02-app/bureau/feat-swex-direct.md),
 [statistiques.md](../02-app/siege/statistiques.md).
 
@@ -367,7 +369,7 @@ Fonctions **pures**, testables sans rendu. C'est ici que va toute logique, jamai
 | Tri | `tri.ts` (le SENS d'un tri, partagé par toutes les listes) |
 | Artéfacts | `artifacts.ts` |
 | Dégâts réels | `damage.ts` ([degats-reels/](../02-app/degats-reels/README.md)) |
-| Import de compte | `importAccount.ts` (parse SWEX), `compteDirect.ts` (« Mon compte » en direct : le fichier live du plugin SWEX converti objet par objet par les fonctions de l'import), `journalSwex.ts` (journal complet de SWEX : la box de l'arène dimensionnelle), `applyAccount.ts` (→ états), `accountStore.ts` (IndexedDB), `accountViews.ts` |
+| Import de compte | `importAccount.ts` (parse SWEX), `compteDirect.ts` (« Mon compte » en direct : le fichier live du plugin SWEX converti objet par objet par les fonctions de l'import), `applyAccount.ts` (→ états), `accountStore.ts` (IndexedDB), `accountViews.ts` |
 | Monstres | `monsterForms.ts`, `monsterSkills.ts`, `monsterSort.ts`, `collabPairs.ts` |
 | Siège / statistiques | `siegeStatistiques.ts` (les sièges tirés des fichiers de guilde du plugin SWEX : combats, défenses, résultat, saison, bilan par joueur) |
 | Siège / recos | `recoMatch.ts`, `recoSearch.ts`, `recoShare.ts`, `recoFromSiege.ts`, `recoDefenses.ts`, `recoFusion.ts` (import qui fusionne dans la recommandation qu'il complète), `ownedBuilds.ts`, `annulerEdition.ts` (« Annuler les modifications » d'une reco ou d'un deck en édition), `reinsererA.ts` (« Annuler » une suppression : l'élément revient à sa place, équipes et recos) |

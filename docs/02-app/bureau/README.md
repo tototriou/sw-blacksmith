@@ -299,39 +299,45 @@ Le compte tenu à jour **pendant la partie** par le plugin SWEX du dépôt :
   Détail : [feat-swex-direct.md](feat-swex-direct.md) § « Dans l'application
   de bureau ».
 
-### L'arène dimensionnelle : le journal SWEX
+### L'arène dimensionnelle : la saison du plugin SWEX
 
-`bureau/journalSwexDisque.ts` (disque, testé), `src/lib/journalSwex.ts`
-(lecture du texte). Sa box n'est pas dans l'export : elle est dans le
-**journal complet de SWEX** (`full_log.txt`, plugin Full Logger), à la racine
-du même dossier — voir [arene-dimensionnelle/](../arene-dimensionnelle/README.md).
+[bureau/swexDimension.ts](bureau/swexDimension.ts) (disque, testé). Sa box
+n'est pas dans l'export : le plugin « SW Blacksmith Live » la tient dans
+`SWBlacksmith/<nom>-<id>/dimension.json` — la saison que le jeu envoie à
+l'**ouverture du mode** (`dimensionarena_getSeasonInfo`), réécrite à chaque
+changement fait dans le mode (runes posées, défense, invocation, runes
+gagnées, attaques jouées). Détail : [feat-swex-direct.md](feat-swex-direct.md)
+§ « L'arène dimensionnelle » ; l'écran :
+[arene-dimensionnelle/](../arene-dimensionnelle/README.md). Aucun autre plugin
+de SWEX n'est nécessaire.
 
-- **Quand** : le jeu envoie la box à l'**ouverture du mode**, donc APRÈS
-  l'export, écrit à la connexion. Le journal est suivi pour lui-même : relu en
-  entier à la page prête, après un choix et au retour de la surveillance ;
-  puis, à chaque changement du dossier, **seulement ce qui s'y est ajouté**
-  (`ajoutContientSaison`) — il change à chaque commande pendant une partie.
-- **Ce qui est lu** : la dernière saison (`dimensionarena_getSeasonInfo`) de
-  l'**invocateur suivi** (`wizard_id` de la réponse = identifiant de l'export ;
-  un journal peut en suivre plusieurs), en lisant le fichier **par la fin**,
-  par fenêtres de 16 Mo qui grandissent (`saisonDuJournal`), jamais en entier
-  d'emblée : il grossit sans limite. Seule la réponse part à la page
-  (`bureau:swex-dimension`), avec les équipes récentes de l'export
-  (`deck_recent_list` : les attaques).
+- **Quand** : lue à la page prête, après un choix, au retour de la
+  surveillance, puis **à chaque écriture du fichier** par le plugin (la
+  surveillance du dossier `SWBlacksmith`, une rafale ne faisant qu'une
+  lecture).
+- **Ce qui est lu** : la saison de l'**invocateur suivi** (le dossier du
+  plugin de son identifiant ; la saison doit porter la marque du plugin et son
+  `wizard_id`), ses deux heures serveur — `ouverture` (la dernière ouverture du
+  mode) et `t` (le dernier changement) — et les **attaques jouées** que le
+  plugin a vues (`deck_recent_list`, type 28) ; aucune encore, celle de
+  l'export. La saison part à la page (`bureau:swex-dimension`).
 - **Ce qui est importé** : la défense, les attaques et les runes de l'arène
-  dimensionnelle, **remplacées** à chaque nouvelle saison (un miroir du jeu ;
-  `appliquerDimension`, App.tsx), annoncées par une notification. Rien
-  d'autre ne bouge.
+  dimensionnelle, **remplacées** à chaque écriture (un miroir du jeu ;
+  `appliquerDimension`, App.tsx). ⚠️ **Annoncée seulement après une
+  ouverture du mode** que la page n'a pas appliquée (`nouvelle`) : un
+  changement fait dans le mode s'applique en silence, comme le direct de
+  « Mon compte ». Rien d'autre ne bouge.
 - ⚠️ **La page confirme ce qu'elle a appliqué** (`bureau:swex-dimension-lue`,
-  l'heure serveur `tvalue` de la saison) : retenue dans `swex.json`
+  l'heure `t` du dernier changement) : retenue dans `swex.json`
   (`dimensionLue`), une saison n'est redonnée que plus récente. Choisir un
   dossier ou un invocateur l'oublie. ⚠️ **Sauf à une page qui n'a rien de ce
   mode** (aucune rune dimensionnelle : données non gardées, ou saison lue
   avant l'onglet Runes) : au lancement, la dernière saison lui est redonnée
   **en silence** (`pageSansDimension`, `nouvelle: false`), comme l'export
   d'une page sans compte.
-- **Sans journal** (plugin éteint) ou sans saison de l'invocateur : rien, en
-  silence ; les onglets disent comment l'obtenir.
+- **Sans plugin**, mode jamais ouvert, ou fichier à moitié écrit (le prochain
+  changement redonne) : rien, en silence ; les onglets disent comment
+  l'obtenir.
 
 ## L'installeur
 

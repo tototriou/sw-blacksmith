@@ -1312,8 +1312,9 @@ export function parseArenaInterserveurDefense(src: AccountSource, t: Dictionnair
  * ARÈNE DIMENSIONNELLE — box, runes et équipes à part
  *
  * La box du mode n'est PAS dans l'export de compte : elle vient de la réponse
- * `dimensionarena_getSeasonInfo` du journal SWEX (src/lib/journalSwex.ts), de
- * la même forme qu'un export — relevé sur un journal réel (2026-11) :
+ * `dimensionarena_getSeasonInfo`, tenue à jour par le plugin SWEX
+ * (plugin-swex/source/dimension.ts), de la même forme qu'un export — relevé
+ * sur un journal réel (2026-11) :
  *  - `unit_list` : les monstres obtenus dans le mode, chacun avec les runes
  *    GAGNÉES qu'il porte (`runes`, de 0 à 6) ;
  *  - `rune_list` : les runes gagnées en inventaire ;
@@ -1435,7 +1436,7 @@ export function parseDimensionOffense(
       return { deckId: i + 1, ids: ids.includes(lead) ? [lead, ...ids.filter((x) => x !== lead)] : ids };
     });
   if (equipes.length === 0) return { decks: [], error: e.sansOffenseDimension };
-  if (!saison) return { decks: [], error: e.offenseDimensionSansJournal };
+  if (!saison) return { decks: [], error: e.offenseDimensionSansSaison };
   const decks = decksDimension(equipes, saison);
   return decks.length ? { decks } : { decks: [], error: e.offenseDimensionInconnue };
 }

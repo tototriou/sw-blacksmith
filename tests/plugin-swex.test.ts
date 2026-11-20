@@ -31,6 +31,7 @@ import {
 import {
   COMPTE_ARCHIVE,
   COMPTE_LIVE,
+  DIMENSION,
   DOSSIER_PLUGIN,
   GUILDE_ARCHIVE,
   GUILDE_LIVE,
@@ -528,7 +529,22 @@ export async function testPluginSwexPaquet() {
       [null, 1, 2, 2],
       'une vue au même contenu que la précédente du même écran n’est pas réécrite, même à une autre heure'
     );
-    const tout = [COMPTE_LIVE, GUILDE_LIVE].map((f) => readFileSync(join(dossierSuivi, f), 'utf8')).join('') + archive().join('');
+    // L'arène dimensionnelle : la saison à l'ouverture du mode, puis un
+    // changement fait dans le mode — la saison entière réécrite.
+    const saisonDim = JSON.parse(readFileSync('tests/fixtures/dimension-saison-miniature.json', 'utf8'));
+    const defenseDim = (premier: number, tvalue: number) =>
+      ecouteur(req({ command: 'dimensionarena_setDefenseDeck' }), ok0({ season_id: 1, defense_deck_info: { unit_id_list: [[premier, 0, 0, 0]], season_id: 1 }, tvalue }));
+    ecouteur(req({ command: 'dimensionarena_getSeasonInfo', session_key: 'secret' }), { ...saisonDim, wizard_id: MOI, tvalue: 6000, reqid: 'secret' });
+    defenseDim(900001, 6100);
+    await attendre();
+    const dimension = () => JSON.parse(readFileSync(join(dossierSuivi, DIMENSION), 'utf8'));
+    egal(
+      [dimension().defense_deck_info.unit_id_list, dimension().unit_list.length, dimension().swblacksmith.ouverture, dimension().swblacksmith.t, dimension().swblacksmith.plugin],
+      [[[900001, 0, 0, 0]], 3, 6000, 6100, version],
+      'l’arène dimensionnelle : la saison de l’ouverture, avec la défense changée ensuite, et ses heures'
+    );
+
+    const tout = [COMPTE_LIVE, GUILDE_LIVE, DIMENSION].map((f) => readFileSync(join(dossierSuivi, f), 'utf8')).join('') + archive().join('');
     ok(!tout.includes('secret'), 'aucune clé de session écrite, nulle part');
 
     // Reconnexion sans rien de changé : le live repart, l'archive du compte ne
@@ -536,6 +552,11 @@ export async function testPluginSwexPaquet() {
     seConnecter();
     await attendre();
     egal([live().length, archive().length], [1, 1], 'reconnexion à l’identique : nouvelle session, pas de second état archivé');
+    // SWEX relancé en plein mode : la saison écrite est reprise, un changement
+    // s'y applique encore.
+    defenseDim(900002, 6200);
+    await attendre();
+    egal([dimension().defense_deck_info.unit_id_list, dimension().unit_list.length], [[[900002, 0, 0, 0]], 3], 'après une reconnexion : la saison écrite reprise, le changement appliqué');
     egal(lireGz(GUILDE_ARCHIVE).map((l) => JSON.parse(l).type), ['session', 'vue', 'vue', 'vue'], 'la session de guilde finie : archivée en entier');
     egal(lire(GUILDE_LIVE).length, 1, 'une nouvelle session de guilde commence');
     // Un combat, puis une reconnexion après une partie hors du plugin.
