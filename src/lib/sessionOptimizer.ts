@@ -1,7 +1,8 @@
 // L'Optimizer dans une sauvegarde de session : une photo de ses champs de
 // DONNÉES (`useOptimizerState`) : sélection, exemplaire, critères, tri et
 // filtres d'affichage des résultats.
-// La photo est sérialisée ; App ne la réapplique pas actuellement.
+// La photo est sérialisée, puis rejouée au chargement d'une session
+// (`restaurerOptimizer`, appelé par App.tsx une fois l'écran monté).
 //
 // ⚠️ **Chaque champ de données de `OptimizerState` est classé** : dans la
 // session, ou hors session (interface, état passager, résultats qui se
@@ -89,4 +90,38 @@ export function photoOptimizer(etat: OptimizerState): Record<string, unknown> {
   for (const champ of CHAMPS_OPTIMIZER_SESSION) photo[champ] = etat[champ];
   photo.damageSetup = normaliserCompetencesInvocateur(etat.damageSetup);
   return photo;
+}
+
+// La FORME d'une valeur, assez fine pour refuser un tableau là où l'écran
+// attend un `Set`, un texte là où il attend un nombre.
+function forme(v: unknown): string {
+  if (v === null || v === undefined) return 'vide';
+  if (v instanceof Set) return 'set';
+  if (v instanceof Map) return 'map';
+  if (Array.isArray(v)) return 'tableau';
+  return typeof v;
+}
+
+// Une photo rejouée sur l'écran de l'Optimizer, par les `set…` de ses champs
+// (garantis par les gardes ci-dessus), dans l'ordre de
+// `CHAMPS_OPTIMIZER_SESSION` : la sélection du monstre d'abord.
+// ⚠️ **La forme se vérifie contre l'état de l'écran** : une valeur d'une autre
+// forme (photo d'une ancienne version, fichier retouché) casserait l'écran
+// qui la lit — elle est laissée, et son champ rendu. Un champ encore vide à
+// l'écran (rien de choisi) accepte toute valeur.
+// Rend les champs laissés.
+export function restaurerOptimizer(etat: OptimizerState, photo: Record<string, unknown>): string[] {
+  const laisses: string[] = [];
+  for (const champ of CHAMPS_OPTIMIZER_SESSION) {
+    if (!(champ in photo)) continue;
+    const valeur = photo[champ];
+    const courant = etat[champ];
+    if (forme(valeur) !== forme(courant) && forme(courant) !== 'vide') {
+      laisses.push(champ);
+      continue;
+    }
+    const setter = etat[`set${champ[0].toUpperCase()}${champ.slice(1)}` as keyof OptimizerState] as (v: unknown) => void;
+    setter(valeur);
+  }
+  return laisses;
 }

@@ -14,7 +14,7 @@
 // et le fichier retenu n'est repris qu'à sa PREMIÈRE réponse, si elle est oui.
 
 import { app, BrowserWindow, dialog, ipcMain } from 'electron';
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { basename, join } from 'node:path';
 import {
   avecExtension,
@@ -28,6 +28,8 @@ import {
   lireSessionRetenue,
   codeErreur,
   nomProposeValide,
+  sessionLaPlusRecente,
+  TAILLE_MAX_SESSION,
   texteSessionValide,
 } from './sessionPur';
 import { textesBureau } from './textes';
@@ -37,8 +39,16 @@ export type IssueSession =
   | { issue: 'annulee' }
   | { issue: 'echec'; motif: 'pas-une-session' | 'ecriture' | 'dossier'; code: string | null };
 
+// « Charger… » : le fichier choisi, lu ; la page le valide (`lireSession`)
+// avant de confirmer.
+export type IssueChargement =
+  | { issue: 'lue'; texte: string; nom: string }
+  | { issue: 'annulee' }
+  | { issue: 'echec'; motif: 'pas-une-session' | 'lecture'; code: string | null };
+
 // Mode preuve : aucune boîte ne s'ouvre. Le dossier SW Blacksmith « choisi »
-// est `dossier` ; « Sauvegarder sous… » rend `<dossier>/sessions/<n>-<nom>`.
+// est `dossier` ; « Sauvegarder sous… » rend `<dossier>/sessions/<n>-<nom>` ;
+// « Charger… », la session la plus récente de `<dossier>/sessions`.
 export interface PreuveSession {
   dossier: string;
   choix: number;
@@ -63,6 +73,11 @@ export function brancherSession(fenetre: BrowserWindow, preuve?: PreuveSession, 
   // Une sauvegarde à la fois : un second Ctrl+S pendant une boîte de dialogue
   // ou l'écriture ne la relance pas.
   let occupe = false;
+  // « Charger… » : le fichier lu, en attente de la confirmation de la page
+  // (`lue`), puis gardé jusqu'à ce que la page redémarrée le demande
+  // (`aCharger`). En mémoire seulement : une fermeture entre-temps l'oublie.
+  let lue: { chemin: string; texte: string } | null = null;
+  let aCharger: { texte: string; nom: string } | null = null;
 
   const deLaPage = (e: Electron.IpcMainEvent | Electron.IpcMainInvokeEvent) => e.sender === fenetre.webContents;
   const envoyer = (canal: string, valeur: unknown) => {
@@ -256,6 +271,69 @@ export function brancherSession(fenetre: BrowserWindow, preuve?: PreuveSession, 
     dossier = null;
     ecrireDossier();
     return repondre();
+  });
+
+  // La boîte « Charger une session », ouverte dans `sessions` (ou le dossier
+  // SW Blacksmith, ou les Documents) ; `null` si elle est annulée.
+  async function demanderSessionACharger(): Promise<string | null> {
+    if (preuve) return sessionLaPlusRecente(dossierSessions(preuve.dossier), readdirSync, (c) => statSync(c).mtimeMs);
+    const depart = dossier ? dossierSessions(dossier) : app.getPath('documents');
+    const t = textesBureau();
+    const r = await dialog.showOpenDialog(fenetre, {
+      title: t.chargerSession,
+      defaultPath: existsSync(depart) ? depart : (dossier ?? app.getPath('documents')),
+      filters: [{ name: t.filtreSession, extensions: ['json'] }],
+      properties: ['openFile'],
+    });
+    return r.canceled || !r.filePaths[0] ? null : r.filePaths[0];
+  }
+
+  // « Charger… » : le fichier choisi est lu et rendu à la page, qui le
+  // valide puis confirme. Rien ne change encore.
+  ipcMain.handle('bureau:session-charger', async (e): Promise<IssueChargement | null> => {
+    if (!deLaPage(e)) return null;
+    if (occupe) return { issue: 'annulee' };
+    occupe = true;
+    try {
+      const chemin = await demanderSessionACharger();
+      if (!chemin) return { issue: 'annulee' };
+      let texte: string;
+      try {
+        // ⚠️ La taille d'abord : un fichier énorme choisi par erreur ne se
+        // charge pas en mémoire pour rien.
+        if (statSync(chemin).size > TAILLE_MAX_SESSION) return { issue: 'echec', motif: 'pas-une-session', code: null };
+        texte = readFileSync(chemin, 'utf8');
+      } catch (err) {
+        return { issue: 'echec', motif: 'lecture', code: codeErreur(err) };
+      }
+      if (!texteSessionValide(texte)) return { issue: 'echec', motif: 'pas-une-session', code: null };
+      lue = { chemin, texte };
+      return { issue: 'lue', texte, nom: basename(chemin) };
+    } finally {
+      occupe = false;
+    }
+  });
+
+  // La page a validé le fichier lu, et l'utilisateur a confirmé : il devient
+  // la session en cours (Ctrl+S le réécrira), et il attend la page, qui
+  // redémarre pour l'appliquer.
+  ipcMain.handle('bureau:session-charger-confirmer', (e) => {
+    if (!deLaPage(e) || !lue) return null;
+    aCharger = { texte: lue.texte, nom: basename(lue.chemin) };
+    courante = lue.chemin;
+    absente = null;
+    lue = null;
+    memoriser();
+    return repondre();
+  });
+
+  // La page redémarrée : la session à appliquer avant son premier rendu, une
+  // seule fois.
+  ipcMain.handle('bureau:session-a-charger', (e) => {
+    if (!deLaPage(e)) return null;
+    const r = aCharger;
+    aCharger = null;
+    return r;
   });
 
   // « Tout supprimer » : l'app repart vide, elle n'a plus de session en cours,

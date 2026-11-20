@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ElementKey, Monster } from '../types';
-import { saveLocal, usePersistence } from './usePersistence';
+import { lireTravail, saveLocal, usePersistence } from './usePersistence';
 
 const STORAGE_KEY = 'swblacksmith-custom-monsters-v1';
 
@@ -55,7 +55,7 @@ function makeMonster(
 
 function load(): Monster[] {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = lireTravail(STORAGE_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];

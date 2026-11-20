@@ -107,7 +107,8 @@ contextBridge.exposeInMainWorld(
     }),
     // La session en cours (voir bureau/session.ts) : son état et ses
     // changements, « Garder mes données » redit à chaque changement,
-    // « Sauvegarder », « Sauvegarder sous… », le dossier SW Blacksmith
+    // « Sauvegarder », « Sauvegarder sous… », « Charger… » (choisir, confirmer,
+    // puis la reprise au redémarrage), le dossier SW Blacksmith
     // (« Choisir… », « Retirer ») et l'oubli de « Tout supprimer ».
     session: Object.freeze({
       etat: () => ipcRenderer.invoke('bureau:session-etat'),
@@ -121,6 +122,9 @@ contextBridge.exposeInMainWorld(
       retenir: (oui: boolean) => ipcRenderer.invoke('bureau:session-retenir', oui),
       sauvegarder: (texte: string, nomPropose: string) => ipcRenderer.invoke('bureau:session-sauvegarder', texte, nomPropose),
       sauvegarderSous: (texte: string, nomPropose: string) => ipcRenderer.invoke('bureau:session-sauvegarder-sous', texte, nomPropose),
+      charger: () => ipcRenderer.invoke('bureau:session-charger'),
+      confirmerChargement: () => ipcRenderer.invoke('bureau:session-charger-confirmer'),
+      aCharger: () => ipcRenderer.invoke('bureau:session-a-charger'),
       choisirDossier: () => ipcRenderer.invoke('bureau:session-choisir-dossier'),
       oublierDossier: () => ipcRenderer.invoke('bureau:session-oublier-dossier'),
       oublier: () => ipcRenderer.invoke('bureau:session-oublier'),

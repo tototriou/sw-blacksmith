@@ -3,7 +3,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { flushSync } from 'react-dom';
 import { useOptimizerState, type OptimizerState } from '../../src/hooks/useOptimizerState';
 import { useOptimizerLists, type UseOptimizerLists } from '../../src/hooks/useOptimizerLists';
-import { setPersistence } from '../../src/hooks/usePersistence';
+import { setPersistence, viderMiroir } from '../../src/hooks/usePersistence';
 import OptimizerSection from '../../src/components/outils/OptimizerSection';
 import { baseCompleteCriteres, photoCriteres } from '../../src/lib/criteresOptimizer';
 import { cleMemoireMembre, ecrireMembresOptimizer, OPTIMIZER_MEMBERS_STORAGE_KEY, type MemoireMembreOptimizer } from '../../src/lib/optimizerMemberStorage';
@@ -112,7 +112,7 @@ export async function geste(action: () => void) {
 }
 
 export async function monter(avecRapport = false) {
-  localStorage.clear();
+  localStorage.clear(); viderMiroir();
   rechercheForcee = null;
   const criteres = baseCompleteCriteres(undefined);
   criteres.minStats = { spd: 230 }; criteres.comboSets = ['swift']; criteres.critereArtefacts = 'reel';

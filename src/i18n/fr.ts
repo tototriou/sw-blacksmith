@@ -136,6 +136,9 @@ export const fr = {
     sauvegarderSousAide:
       'Enregistrer la session dans un autre fichier, qui devient la session en cours (l’ancien n’est plus modifié)',
     sauvegarderSession: 'Sauvegarder la session (Ctrl+S)',
+    charger: 'Charger…',
+    chargerAide: 'Charger une session enregistrée, qui remplace l’état de l’app (Ctrl+O)',
+    chargerSession: 'Charger une session (Ctrl+O)',
     deconnexion: 'Se déconnecter',
     deconnexionAide: 'Effacer mes données de cet appareil',
     rechercher: 'Rechercher',
@@ -195,6 +198,8 @@ export const fr = {
     sauvegarderSessionAide: 'Tout l’état de l’app dans un fichier',
     sauvegarderSous: 'Sauvegarder sous…',
     sauvegarderSousAide: 'Un autre fichier, qui devient la session en cours',
+    chargerSession: 'Charger une session',
+    chargerSessionAide: 'Reprendre une session enregistrée',
     theme: (theme: string) => `Thème ${theme.toLowerCase()}`,
     langue: (langue: string) => `Langue : ${langue}`,
     creerRecommandation: 'Créer une recommandation',
@@ -244,6 +249,8 @@ export const fr = {
       'Tout l’état de l’app dans un fichier, enregistré où tu veux : le compte, ton travail, les réglages et l’état des outils.',
     sauvegarder: 'Sauvegarder',
     sauvegarderAide: 'Sauvegarder la session dans un fichier',
+    charger: 'Charger…',
+    chargerAide: 'Charger une session enregistrée, qui remplace l’état de l’app',
     dossier: 'Dossier SW Blacksmith',
     dossierVide: 'Choisis le dossier de SW Blacksmith : les sessions s’enregistrent dans son sous-dossier « sessions ».',
     retirer: 'Retirer',
@@ -1526,6 +1533,27 @@ export const fr = {
     sessionEnregistree: (nom: string | null) => `Session enregistrée${nom ? ` · ${nom}` : ''}`,
     compteEnChargement: 'Ton compte se charge encore : la sauvegarde attend qu’il soit relu.',
     sessionEchec: 'La session n’a pas été enregistrée',
+    sessionChargee: (nom: string) => `Session chargée · ${nom}`,
+    // « Charger… » : pourquoi le fichier n'a pas été chargé
+    // (`messageEchecChargement`, src/lib/bureau.ts), et ce qui n'a pas pu en
+    // être repris.
+    chargement: {
+      echecTitre: 'La session n’a pas été chargée',
+      pasUneSession: 'Ce fichier n’est pas une sauvegarde de session.',
+      autreFormat: 'Ce fichier est un autre export de l’app, pas une sauvegarde de session.',
+      abimee: 'Cette sauvegarde de session est abîmée.',
+      tropRecente: 'Cette sauvegarde vient d’une version plus récente de l’app : mets-la à jour pour la charger.',
+      valeurIllisible: (cle: string) => `Cette sauvegarde de session est abîmée : « ${cle} » est illisible.`,
+      introuvable: 'Le fichier n’existe plus.',
+      refus: 'Le fichier refuse la lecture.',
+      occupe: 'Le fichier est ouvert par un autre programme.',
+      autre: (code: string | null) => `La lecture a échoué${code ? ` (${code})` : ''}.`,
+      avertissementsTitre: 'Session chargée, en partie',
+      avertissementsTexte: 'Le reste de la session est chargé. Ceci n’a pas pu être repris :',
+      comptePerime: 'Le compte de cette sauvegarde n’est plus lisible : réimporte ton export SWEX.',
+      optimizerIllisible: 'Les critères de l’Optimizer étaient illisibles.',
+      optimizerLaisses: (champs: string) => `Des critères de l’Optimizer d’une autre forme : ${champs}.`,
+    },
     // Pourquoi l'écriture a échoué, selon le motif et le code d'erreur du
     // système que rend l'app de bureau (`messageEchecSession`, src/lib/bureau.ts).
     echecSession: {
@@ -1581,6 +1609,13 @@ export const fr = {
       'Le compte de SW Exporter va remplacer ta prépa RTA, tes équipes de siège et d’arène et ta box. Les changements faits depuis ta dernière sauvegarde seront perdus si tu ne sauvegardes pas.',
     sansSauvegarder: 'Changer sans sauvegarder',
     sauvegarderEtChanger: 'Sauvegarder et changer',
+    // Avant de charger une session (« Charger… »).
+    session: {
+      texte:
+        'La session choisie va remplacer ta prépa RTA, tes équipes, ta box et l’état des outils. Les changements faits depuis ta dernière sauvegarde seront perdus si tu ne sauvegardes pas.',
+      sansSauvegarder: 'Charger sans sauvegarder',
+      sauvegarderEtChanger: 'Sauvegarder et charger',
+    },
   },
 
   // Le pied de page.

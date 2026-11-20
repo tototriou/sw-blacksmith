@@ -1,5 +1,5 @@
 import { Fragment, ReactNode } from 'react';
-import { ChevronRight, Columns2, FilePlus, LogOut, Save, Search } from 'lucide-react';
+import { ChevronRight, Columns2, FilePlus, FolderOpen, LogOut, Save, Search } from 'lucide-react';
 import { IconeParametres } from './IconesAtelier';
 import { Bouton, BoutonIcone } from '../ui';
 import { useTraduction } from '../hooks/useLangue';
@@ -40,6 +40,7 @@ export default function TopBar({
   onRecherche,
   onSauvegarder,
   onSauvegarderSous,
+  onCharger,
   sessionEnCours = null,
   sauvegardeIndisponible = null,
   ecranPartage,
@@ -76,6 +77,9 @@ export default function TopBar({
   onSauvegarder?: () => void;
   // « Sauvegarder sous… » : dans l'app seulement.
   onSauvegarderSous?: () => void;
+  // « Charger… » une session (Ctrl+O) : dans l'app seulement, aux deux
+  // formats, AVANT « Sauvegarder » — ouvrir, puis enregistrer, comme partout.
+  onCharger?: () => void;
   // Le nom du fichier de la session en cours (app), pour l'infobulle.
   sessionEnCours?: string | null;
   // Pourquoi la sauvegarde est désactivée (le compte se relit encore), ou
@@ -209,6 +213,17 @@ export default function TopBar({
             className="relative z-10 hidden lg:inline-flex"
           />
         )}
+        {onCharger && (
+          <Bouton
+            onClick={onCharger}
+            title={t.chargerAide}
+            fond="vide"
+            trait="aucun"
+            icone={<FolderOpen size={16} className="flex-none" />}
+            libelle={t.charger}
+            className="relative z-10 hidden lg:inline-flex"
+          />
+        )}
         {onSauvegarder && (
           <Bouton
             onClick={onSauvegarder}
@@ -248,8 +263,16 @@ export default function TopBar({
           />
         )}
 
-        {/* TÉLÉPHONE — « Sauvegarder », en tête du groupe de droite : la
-            loupe et le ⚙ gardent leur place au bord. */}
+        {/* TÉLÉPHONE — « Charger… » puis « Sauvegarder », en tête du groupe
+            de droite : la loupe et le ⚙ gardent leur place au bord. */}
+        {onCharger && (
+          <BoutonIcone
+            onClick={onCharger}
+            libelle={t.chargerSession}
+            icone={<FolderOpen size={16} />}
+            className="relative z-10 h-8 w-8 lg:hidden"
+          />
+        )}
         {onSauvegarder && (
           <BoutonIcone
             onClick={onSauvegarder}

@@ -463,9 +463,10 @@ export async function lancerPreuveSwex(fenetre: BrowserWindow, dossier: string, 
 // demandé — sans boîte en mode preuve — puis la session s'écrit dans son
 // sous-dossier `sessions`), « Sauvegarder la session » de la palette, Ctrl+S,
 // « Sauvegarder sous… » puis « Sauvegarder » de la barre du haut, enfin
-// « Retirer » le dossier dans les Paramètres et Ctrl+S. Après chaque geste,
-// `releverSession`. Le script relit chaque fichier de session par
-// `lireSession`.
+// « Retirer » le dossier dans les Paramètres et Ctrl+S ; puis un rechargement
+// (la page repart vide) et Ctrl+O, « Charger… », qui reprend la session la
+// plus récente. Après chaque geste, `releverSession`. Le script relit chaque
+// fichier de session par `lireSession`.
 // Le script pose avant le lancement un `session.json` d'une ouverture
 // précédente : conservation refusée, il doit être oublié, jamais réécrit.
 export async function lancerPreuveSession(fenetre: BrowserWindow, dossier: string, compte: string, telechargements: string) {
@@ -552,6 +553,127 @@ export async function lancerPreuveSession(fenetre: BrowserWindow, dossier: strin
     resultats.apresRetrait = await releve();
     await js(`document.dispatchEvent(new KeyboardEvent('keydown', { key: 's', ctrlKey: true, bubbles: true }))`);
     resultats.apresRetraitCtrlS = await releve();
+
+    // 7. « Charger… » : un rechargement d'abord — conservation refusée, la
+    // page repart vide —, puis Ctrl+O, qui reprend la session la plus récente
+    // (mode preuve, sans boîte). La prépa RTA revient, le compte aussi, et
+    // rien n'est écrit sur le disque.
+    const compteurPrepa = async () => {
+      await js(`location.hash = '#/rta'`);
+      await attendre(1200);
+      return js(`[...document.querySelectorAll('h1')].find((h) => h.textContent.trim() === 'Ma prépa')?.nextElementSibling?.textContent.trim() ?? 'aucun'`);
+    };
+    const compteAffiche = () =>
+      js(`document.querySelector('aside button[aria-label="Importer un compte"], aside button[aria-label="Changer de compte"]')?.querySelector('.font-semibold')?.textContent.trim() ?? 'aucun'`);
+    // Un état RICHE pour l'aller-retour, par de vrais gestes : un thème (un
+    // réglage), « Autoriser un regemme différent » à l'onglet Optimisation
+    // (la mémoire d'un écran), un monstre choisi dans l'Optimizer (sa photo).
+    await js(`document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true, bubbles: true }))`);
+    await attendre(800);
+    resultats.etatRiche = {
+      theme: await js(`(() => {
+        const o = [...document.querySelectorAll('[role="option"]')].find((x) => x.textContent.includes('Thème sombre'));
+        if (!o) return 'pas d’action';
+        o.click();
+        return 'cliqué';
+      })()`),
+    } as Record<string, unknown>;
+    await attendre(600);
+    await js(`location.hash = '#/compte/runes/optimisation'`);
+    await attendre(1500);
+    (resultats.etatRiche as Record<string, unknown>).regemme = await js(`(() => {
+      const b = [...document.querySelectorAll('button')].find((x) => x.textContent.trim() === 'Autoriser un regemme différent' && x.offsetParent !== null);
+      if (!b) return 'pas de bouton';
+      if (b.disabled) return 'désactivé';
+      b.click();
+      return 'cliqué';
+    })()`);
+    await js(`location.hash = '#/outils/optimizer'`);
+    await attendre(1500);
+    // ⚠️ Attentes RELANCÉES, pas fixes : l'écran de l'Optimizer se charge à
+    // part, son champ et ses suggestions peuvent tarder.
+    (resultats.etatRiche as Record<string, unknown>).monstre = await js(`(async () => {
+      const attendreQue = async (f) => {
+        for (let i = 0; i < 40; i++) {
+          const v = f();
+          if (v) return v;
+          await new Promise((r) => setTimeout(r, 150));
+        }
+        return null;
+      };
+      // La première suggestion choisissable : la box du compte de test n'a
+      // que trois monstres, leur nom importe peu. ⚠️ La saisie est RETENTÉE :
+      // l'écran finit de se monter juste après l'apparition du champ, et peut
+      // remplacer celui où l'on vient de taper.
+      let champ = null;
+      let o = null;
+      for (let essai = 0; essai < 3 && !o; essai++) {
+        champ = await attendreQue(() => [...document.querySelectorAll('input[placeholder="Rechercher un monstre…"]')].find((x) => x.offsetParent !== null));
+        if (!champ) return 'pas de champ';
+        // ⚠️ La liste ne s'ouvre qu'au focus (useComboboxNav). Fenêtre sans le
+        // focus du système, \`focus()\` n'émet pas l'événement que React écoute :
+        // il est émis ici.
+        champ.focus();
+        champ.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(champ, 'e');
+        champ.dispatchEvent(new Event('input', { bubbles: true }));
+        for (let i = 0; i < 10 && !o; i++) {
+          await new Promise((r) => setTimeout(r, 150));
+          o = [...document.querySelectorAll('[role="option"]')].find((x) => x.getAttribute('aria-disabled') !== 'true') ?? null;
+        }
+      }
+      if (!o) return 'pas de suggestion : ' + JSON.stringify({
+        champs: document.querySelectorAll('input[placeholder="Rechercher un monstre…"]').length,
+        valeur: champ.value,
+        options: document.querySelectorAll('[role="option"]').length,
+        listes: document.querySelectorAll('[role="listbox"]').length,
+        actif: document.activeElement === champ,
+        hash: location.hash,
+      });
+      o.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
+      return 'choisi : ' + o.textContent.trim();
+    })()`);
+    await attendre(1200);
+
+    resultats.prepaAvantChargement = await compteurPrepa();
+    // La RÉFÉRENCE de l'aller-retour : la session telle qu'elle est maintenant,
+    // écrite par Ctrl+S et copiée à part (elle sera réécrite après le
+    // chargement, puis comparée champ par champ par le script).
+    await js(`document.dispatchEvent(new KeyboardEvent('keydown', { key: 's', ctrlKey: true, bubbles: true }))`);
+    const reference = await releve();
+    resultats.reference = reference;
+    const nomCourante = /Sauvegarder dans (.+) \(Ctrl\+S\)/.exec(reference.infobulle ?? '')?.[1] ?? null;
+    resultats.nomCourante = nomCourante;
+    const cheminCourante = nomCourante ? join(dossier, 'swblacksmith', 'sessions', nomCourante) : null;
+    if (cheminCourante && existsSync(cheminCourante)) writeFileSync(join(dossier, 'reference-session.json'), readFileSync(cheminCourante));
+    fenetre.webContents.reload();
+    await new Promise<void>((r) => fenetre.webContents.once('did-finish-load', () => r()));
+    await attendre(3000);
+    resultats.apresRechargementVide = { prepa: await compteurPrepa(), compte: await compteAffiche() };
+    const charge = new Promise<void>((r) => fenetre.webContents.once('did-finish-load', () => r()));
+    await js(`document.dispatchEvent(new KeyboardEvent('keydown', { key: 'o', ctrlKey: true, bubbles: true }))`);
+    await charge;
+    await attendre(3500);
+    const notificationCharge = await js(`[...document.querySelectorAll('[role="status"]')].map((e) => e.innerText.trim()).join(' | ')`);
+    resultats.apresChargement = {
+      notification: notificationCharge,
+      prepa: await compteurPrepa(),
+      compte: await compteAffiche(),
+      disque: await js(`({
+        conservation: localStorage.getItem('swblacksmith-persist-v1'),
+        prepaRta: localStorage.getItem('swblacksmith-rta-v1'),
+      })`),
+      session: await releve(),
+    };
+    // 8. L'aller-retour : les écrans de la référence revisités, puis Ctrl+S
+    // réécrit la session chargée — le script la compare à la référence.
+    for (const ecran of ['#/siege/defense', '#/outils/optimizer', '#/rta']) {
+      await js(`location.hash = '${ecran}'`);
+      await attendre(1500);
+    }
+    await js(`document.dispatchEvent(new KeyboardEvent('keydown', { key: 's', ctrlKey: true, bubbles: true }))`);
+    resultats.apresResauvegarde = await releve();
+    if (cheminCourante && existsSync(cheminCourante)) writeFileSync(join(dossier, 'resauvegarde-session.json'), readFileSync(cheminCourante));
   } catch (e) {
     resultats.erreur = String(e);
   } finally {

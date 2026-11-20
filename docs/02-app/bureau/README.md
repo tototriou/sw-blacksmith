@@ -89,6 +89,7 @@ lecteur côté page (`estBureau()` = l'objet présent, avec `bureau: true`).
 | `swex.surEtatDirect(rappel)`, `swex.surLignesDirect(rappel)` | `bureau:swex-direct-etat`, `bureau:swex-direct-lignes` | bureau → page |
 | `session.etat()`, `retenir(oui)`, `choisirDossier()`, `oublierDossier()`, `oublier()` | `bureau:session-etat`, `bureau:session-retenir`, `bureau:session-choisir-dossier`, `bureau:session-oublier-dossier`, `bureau:session-oublier` (`invoke`) | rendent l'état : session en cours, dossier SW Blacksmith |
 | `session.sauvegarder(texte, nomPropose)`, `sauvegarderSous(texte, nomPropose)` | `bureau:session-sauvegarder`, `bureau:session-sauvegarder-sous` (`invoke`) | rendent l'issue de l'écriture |
+| `session.charger()`, `confirmerChargement()`, `aCharger()` | `bureau:session-charger`, `bureau:session-charger-confirmer`, `bureau:session-a-charger` (`invoke`) | « Charger… » : le fichier choisi et lu ; confirmé, il devient la session en cours ; la page redémarrée le reprend, une fois ([feat-sauvegarde-session.md](../transverse/feat-sauvegarde-session.md#charger-application-de-bureau)) |
 | `session.surEtat(rappel)` | `bureau:session-etat` | bureau → page |
 | `discord.etat()`, `connecter()`, `annuler()`, `code(code)` | `bureau:discord-etat`, `bureau:discord-connecter`, `bureau:discord-annuler`, `bureau:discord-code` (`invoke`) | la connexion à Discord (voir « Discord ») |
 | `discord.inviter()` | `bureau:discord-inviter` (`invoke`) | ouvre l'invitation du bot dans le navigateur du système (la page ne connaît pas l'adresse du service) |
