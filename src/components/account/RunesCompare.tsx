@@ -10,6 +10,7 @@ import { useStickyState } from '../../hooks/useStickyState';
 import { useRuneMetric } from '../../hooks/useRuneMetric';
 import CurveChart, { CurveSeries, OWN_COLOR } from './CurveChart';
 import CurveLegend from './CurveLegend';
+import InterrupteurDirect from './InterrupteurDirect';
 import { couleurLibre } from './curveColors';
 import SetFilter from './SetFilter';
 import SlotFilter from './SlotFilter';
@@ -104,12 +105,19 @@ export default function RunesCompare({ runes }: Props) {
 
   return (
     <div>
+      {/* Au doigt, l'interrupteur « Direct » seul sur sa ligne ; rien (pas
+          même la marge) sans lui. */}
+      <div className="mb-3 empty:hidden lg:hidden">
+        <InterrupteurDirect />
+      </div>
       {/* Au doigt, sans rien d'importé, la rangée n'a rien à porter (le titre
           est réservé à la souris) : elle ne laisse pas de marge vide. */}
       <div className={`mb-3 items-center gap-2 flex-wrap lg:flex lg:gap-3 ${importes > 0 ? 'flex' : 'hidden'}`}>
         {/* ⚠️ **À la SOURIS, le titre de la vue en tête de la rangée** (la maquette).
             Au doigt, la barre du haut dit déjà la vue. */}
         <h1 className="hidden font-display text-xl tracking-wide text-ink lg:block">{c.titre}</h1>
+        {/* Application de bureau : « Mon compte » en direct (ta courbe). */}
+        <InterrupteurDirect className="hidden lg:inline-flex" />
 
         {importes > 0 && (
           <Bouton

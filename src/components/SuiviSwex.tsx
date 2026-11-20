@@ -17,10 +17,11 @@ import { useNotifier } from '../ui/Notification';
 // (sans l'index des monstres), ou serait écrasé par la relecture d'un compte
 // plus ancien.
 //
-// L'arène dimensionnelle arrive à part (`surDimension`), à chaque nouvelle
-// saison du journal SWEX : ses équipes sont appliquées (`appliquerDimension`,
-// leur nombre), annoncées, et la saison marquée lue. Aucune équipe reconnue :
-// rien n'est marqué, la prochaine saison sera redonnée.
+// L'arène dimensionnelle arrive à part (`surDimension`), à chaque écriture de
+// sa saison par le plugin SWEX : ses équipes sont appliquées
+// (`appliquerDimension`, leur nombre), annoncées après une ouverture du mode
+// (`nouvelle`), et la saison marquée lue. Aucune équipe reconnue : rien n'est
+// marqué, la saison sera redonnée.
 export default function SuiviSwex({
   appliquer,
   appliquerDimension,
@@ -32,7 +33,8 @@ export default function SuiviSwex({
   appliquerDimension: (saison: Record<string, any>, recents: unknown[]) => number;
   pret: boolean;
   // La page n'a aucun compte (conservation refusée) : l'export se relit en
-  // silence, même s'il a déjà été lu.
+  // silence, même s'il a déjà été lu — en entier si elle n'a pas non plus
+  // d'équipes (App.tsx, `rafraichirCompte`).
   sansCompte: boolean;
   // La page n'a rien de l'arène dimensionnelle (conservation refusée, ou
   // saison lue avant l'onglet qui la montre) : la dernière saison se redonne,

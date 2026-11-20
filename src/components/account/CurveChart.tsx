@@ -2,13 +2,14 @@
 // Ordonnée = efficience (%), abscisse = nombre de runes (rang cumulé).
 // Réutilisé par « Courbes » (une série) et « Comparaison » (plusieurs séries).
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { ChevronLeft, ChevronRight, Maximize2, Minimize2, X } from 'lucide-react';
 import { RuneDetail } from '../../types';
 import { RuneDetailBox } from '../PieceDetail';
 import RuneSlotIcon from '../RuneSlotIcon';
 import { useScrollBloque } from '../../hooks/useScrollBloque';
+import { choixAuRang, suivreChoix, type ChoixCourbe } from '../../lib/courbeChoix';
 import { BoutonIcone } from '../../ui';
 import { useTraduction } from '../../hooks/useLangue';
 import { nomSet } from '../../i18n/jeu';
@@ -121,13 +122,16 @@ export default function CurveChart({
   const axeY = yLabel ?? k.axeEfficience;
   const svgRef = useRef<SVGSVGElement>(null);
   const [hover, setHover] = useState<number | null>(null);
-  // Rang cliqué. `null` = fermé.
-  //
-  // ⚠️ On mémorise le RANG seul, jamais les runes : les séries se recalculent à
-  // chaque changement de filtre ou de mesure, et des runes figées désigneraient
-  // un point qui n'existe plus. Le rang désigne une POSITION du classement, et
-  // c'est cette position qu'on lit sur toutes les courbes à la fois.
-  const [choisi, setChoisi] = useState<{ rang: number } | null>(null);
+  // Rang cliqué, avec la rune qui l'occupe (`null` = fermé). Le rang se lit
+  // sur toutes les courbes à la fois ; ⚠️ quand les courbes se recalculent (une
+  // rune montée change de rang), le choix SUIT SA RUNE (src/lib/courbeChoix.ts).
+  const [choisi, setChoisi] = useState<ChoixCourbe | null>(null);
+  const seriesCourantes = useRef(series);
+  seriesCourantes.current = series;
+  const choisir = (rang: number) => choixAuRang(seriesCourantes.current, rang);
+  // Avant le dessin : la courbe recalculée ne montre jamais, même une image,
+  // l'autre rune venue au rang.
+  useLayoutEffect(() => setChoisi((c) => suivreChoix(c, series)), [series]);
 
   // ── Plein écran ────────────────────────────────────────────────────────────
   //
@@ -213,9 +217,9 @@ export default function CurveChart({
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setChoisi(null);
       else if (e.key === 'ArrowLeft')
-        setChoisi((c) => (c && c.rang > 0 ? { rang: c.rang - 1 } : c));
+        setChoisi((c) => (c && c.rang > 0 ? choisir(c.rang - 1) : c));
       else if (e.key === 'ArrowRight')
-        setChoisi((c) => (c && c.rang < nbRangs - 1 ? { rang: c.rang + 1 } : c));
+        setChoisi((c) => (c && c.rang < nbRangs - 1 ? choisir(c.rang + 1) : c));
       else return;
       // Seulement pour les touches qu'on traite : ne pas confisquer le reste.
       e.preventDefault();
@@ -400,7 +404,7 @@ export default function CurveChart({
     // détail reste à sa place, dans la page.
     if (pleinEcran || !cliquable || hover == null) return;
     // Re-cliquer le même rang referme : le geste est son propre inverse.
-    setChoisi((cur) => (cur && cur.rang === hover ? null : { rang: hover }));
+    setChoisi((cur) => (cur && cur.rang === hover ? null : choisir(hover)));
   }
 
   // ⚠️ **L'infobulle de survol est du HTML, posé AU-DESSUS du SVG** (le mainteneur :
@@ -691,7 +695,7 @@ export default function CurveChart({
               de position. Aux extrémités, la flèche est désactivée. */}
           <div className="mb-2 flex items-center justify-center gap-1">
             <button
-              onClick={() => setChoisi((c) => (c && c.rang > 0 ? { rang: c.rang - 1 } : c))}
+              onClick={() => setChoisi((c) => (c && c.rang > 0 ? choisir(c.rang - 1) : c))}
               disabled={choisi.rang === 0}
               className="flex-none rounded-lg border border-border bg-panel p-1.5 text-ink-dim
                          transition hoverable:border-accent hoverable:text-ink
@@ -709,7 +713,7 @@ export default function CurveChart({
             </span>
             <button
               onClick={() =>
-                setChoisi((c) => (c && c.rang < rangMax - 1 ? { rang: c.rang + 1 } : c))
+                setChoisi((c) => (c && c.rang < rangMax - 1 ? choisir(c.rang + 1) : c))
               }
               disabled={choisi.rang >= rangMax - 1}
               className="flex-none rounded-lg border border-border bg-panel p-1.5 text-ink-dim

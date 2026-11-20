@@ -64,6 +64,18 @@ La même app sert les deux. Le code propre au bureau vit dans `bureau/`, hors de
 dans Node. Côté page, `src/lib/bureau.ts` (`estBureau()`) dit si l'on est au bureau. Détail :
 [bureau/](../02-app/bureau/README.md).
 
+Le plugin SWEX du dépôt, **`plugin-swex/`**, tient le compte à jour pendant la partie
+(`plugin-swex/source/etatDirect.ts` : le moteur, pur et testé), archive l'état du compte à chaque
+connexion (`plugin-swex/source/archive.ts`), garde le contenu des combats de guilde
+(`plugin-swex/source/guilde.ts`) et tient la saison de l'arène dimensionnelle
+(`plugin-swex/source/dimension.ts`). L'app de bureau lit son fichier live (`bureau/swexLive.ts`) :
+« Mon compte » en direct (`src/lib/compteDirect.ts`, `src/hooks/useCompteDirect.ts`) et « Mettre à
+jour mon compte » (page SW Exporter). Elle lit aussi ses fichiers de guilde (`bureau/swexGuilde.ts`) :
+les sièges, relevés par `src/lib/siegeStatistiques.ts` ; et sa saison dimensionnelle
+(`bureau/swexDimension.ts`) : la box, la défense et les attaques de l'arène dimensionnelle. Détail :
+[feat-swex-direct.md](../02-app/bureau/feat-swex-direct.md),
+[statistiques.md](../02-app/siege/statistiques.md).
+
 ## Le service Discord
 
 ```mermaid
@@ -119,13 +131,15 @@ tous les autres dans n'importe quelle analyse de dépendances.
 | --- | --- | --- | --- | --- |
 | Accueil | `#/` | `src/pages/HomePage.tsx` | `src/components/accueil/ExemplesAccueil.tsx` (les vrais composants des outils en exemple), `src/lib/demoAccueil.ts` (leurs équipes de démo), `ElementIcon`, `src/data/releases.ts` | [accueil/](../02-app/accueil/README.md) |
 | **RTA** | `#/rta`, `#/rta/ami` | `src/pages/RtaPage.tsx` | tout `src/components/rta/` | [rta/](../02-app/rta/README.md) |
-| **Siège** | `#/siege/defense`, `/offense`, `/recommandations` | `src/pages/SiegePage.tsx` | tout `src/components/siege/` | [siege/](../02-app/siege/README.md) |
+| **Siège** | `#/siege/defense`, `/offense`, `/recommandations`, `/statistiques` | `src/pages/SiegePage.tsx` | tout `src/components/siege/` | [siege/](../02-app/siege/README.md) |
 | **Mon compte** | `#/compte`, `/runes`, `/artefacts` | `src/pages/AccountPage.tsx` | tout `src/components/account/` | [compte/](../02-app/compte/README.md) |
 | **Outils** | `#/outils/optimizer`, `/speed-tuning` | `src/pages/OutilsPage.tsx` | tout `src/components/outils/` | [outils/](../02-app/outils/README.md), [optimizer/](../02-app/optimizer/README.md), [speed-tuning/](../02-app/speed-tuning/README.md), [degats-reels/](../02-app/degats-reels/README.md) |
 | Bestiaire | `#/bestiary` | `src/pages/BestiaryPage.tsx` | `MonsterGrid`, `FilterBar`, `SearchBar`, `MonsterDetailDialog`, `Pager` | [bestiaire/](../02-app/bestiaire/README.md) |
 | Paramètres | `#/parametres` | `src/pages/SettingsPage.tsx` | `SettingsMenu`, `AccountImportControl` | [feat-navigation/compte-et-parametres.md](../02-app/transverse/feat-navigation/compte-et-parametres.md) |
 | Mécaniques | `#/mecaniques` | `src/pages/MechanicsPage.tsx` | `src/i18n/articles/mecaniques.*.tsx` (l'article, un par langue), `src/components/mecaniques/blocs.tsx` | [mecaniques/](../02-app/mecaniques/README.md) |
 | Nouveautés | `#/releases` | `src/pages/ReleasesPage.tsx` | `src/data/releases.ts`, `src/data/releases.en.ts` (un journal par langue) | [nouveautes/](../02-app/nouveautes/README.md) |
+| Bot Discord | `#/bot-discord` | `src/pages/BotDiscordPage.tsx` | `src/lib/botDiscord.ts` (captures, étapes), `public/bot-discord/` (les captures), `inviterLeBot` de `DialoguesDiscord.tsx` | [bot-discord/](../02-app/bot-discord/README.md) |
+| SW Exporter | `#/sw-exporter` | `src/pages/SwExporterPage.tsx` | `src/lib/pluginSwex.ts` (adresse du plugin), `plugin-swex/` | [sw-exporter/](../02-app/sw-exporter/README.md) |
 | Télécharger (site seulement) | `#/telecharger` | `src/pages/TelechargerPage.tsx` | `src/lib/bureau.ts` (`TELECHARGEMENTS`), `src/components/IconesSystemes.tsx` | [telecharger/](../02-app/telecharger/README.md) |
 | Arène | `#/arene/defense`, `/offense`, `/interserveur` | `src/pages/ArenePage.tsx` | `SiegeBoard` et `SiegeTeam` en mode arène, `useEquipesArene` | [arene/](../02-app/arene/README.md) |
 | Arène dimensionnelle | `#/arene-dimensionnelle/defense`, `/offense`, `/runes` | `src/pages/ArenePage.tsx` | `SiegeBoard` en mode arène, `useEquipesArene('dimension-defense' \| 'dimension-offense')` ; `RunesDimensionPage` (`RunesList`, `useRunesDimension`) | [arene-dimensionnelle/](../02-app/arene-dimensionnelle/README.md) |
@@ -151,7 +165,10 @@ tous les autres dans n'importe quelle analyse de dépendances.
 Hooks : `useRtaState`, `useRtaCategories`, `useRtaBackup`, `useRuneMetric`, `useOvercapDisplay`,
 `useStickyState`. Lib : `rtaShare`, `speed`, `stats`, `gearSync`, `artifacts`, `monsterForms`.
 
-**Siège** — dans `src/components/siege/` : `SiegeBoard.tsx` (défense et offense), `SiegeTeam.tsx`,
+**Siège** — dans `src/components/siege/` : `SiegeBoard.tsx` (défense et offense), `SiegeStatistiques.tsx`
+(les sièges joués, hook `useSiegesSwex` ; ses vues d'ensemble `SiegeVueEnsemble.tsx` pour la guilde
+et `SiegeVueMembre.tsx` pour un membre, leurs pièces de graphe `SiegeGraphes.tsx`, le comparatif des
+guildes d'un siège `SiegeComparatif.tsx`), `SiegeTeam.tsx`,
 `RecoBoard.tsx` + `RecoCard.tsx` (recommandations), `ChoixFusionRecos.tsx` (fusionner ou ajouter
 à part un import qui complète une recommandation), `LeadPill.tsx`. Hooks `useSiegeState`,
 `useSiegeRecos`. Lib `recoMatch`, `recoSearch`, `recoShare`, `recoFromSiege`, `recoDefenses` (la
@@ -337,6 +354,7 @@ exemptés.
 | `useBuildsRapides` | réglage global : les combinaisons et le nombre de builds du bloc « Builds les plus rapides » (Résumé des runes) |
 | `useFormeResultats` | réglage : les résultats de l'Optimizer en cartes ou en tableau (bureau) |
 | `useEtatSwex` | l'état du dossier SW Exporter au bureau, lu par les Réglages et par `SidebarCompte` |
+| `useCompteDirect` | le compte en direct du plugin SWEX au bureau, pour « Mon compte » seulement ; l'interrupteur « Direct » et « Mettre à jour mon compte » par `DirectSwexContext` |
 
 ## Calcul — `src/lib/`
 
@@ -352,8 +370,9 @@ Fonctions **pures**, testables sans rendu. C'est ici que va toute logique, jamai
 | Tri | `tri.ts` (le SENS d'un tri, partagé par toutes les listes) |
 | Artéfacts | `artifacts.ts` |
 | Dégâts réels | `damage.ts` ([degats-reels/](../02-app/degats-reels/README.md)) |
-| Import de compte | `importAccount.ts` (parse SWEX), `journalSwex.ts` (journal complet de SWEX : la box de l'arène dimensionnelle), `applyAccount.ts` (→ états), `accountStore.ts` (IndexedDB), `accountViews.ts` |
+| Import de compte | `importAccount.ts` (parse SWEX), `compteDirect.ts` (« Mon compte » en direct : le fichier live du plugin SWEX converti objet par objet par les fonctions de l'import), `applyAccount.ts` (→ états), `accountStore.ts` (IndexedDB), `accountViews.ts` |
 | Monstres | `monsterForms.ts`, `monsterSkills.ts`, `monsterSort.ts`, `collabPairs.ts` |
+| Siège / statistiques | `siegeStatistiques.ts` (les sièges tirés des fichiers de guilde du plugin SWEX : combats, défenses, résultat, saison, bilan par joueur) |
 | Siège / recos | `recoMatch.ts`, `recoSearch.ts`, `recoShare.ts`, `recoFromSiege.ts`, `recoDefenses.ts`, `recoFusion.ts` (import qui fusionne dans la recommandation qu'il complète), `ownedBuilds.ts`, `annulerEdition.ts` (« Annuler les modifications » d'une reco ou d'un deck en édition), `reinsererA.ts` (« Annuler » une suppression : l'élément revient à sa place, équipes et recos) |
 | Optimizer — listes et équipes | `optimizerMemberStorage.ts` (stockage indépendant des membres, de leurs identités et des équipes ; contenu de liste), `equipesOptimizer.ts` (équipes, lead effectif d'un membre selon le contenu), `criteresOptimizer.ts` (classement des champs en critères personnels du membre ou globaux), `optimizerCriteriaOwner.ts` (à quel membre appartiennent les critères affichés), `optimizerRattachement.ts` (re-rattachement des membres et revérification au réimport du compte), `optimizerBackup.ts` (point de sauvegarde des listes), `optimizerListNames.ts` (premier nom « Liste N » libre), `combatListeOptimizer.ts` + `competencesInvocateur.ts` (le contenu de la liste décide des compétences d'invocateur ; lecture commune de ce réglage) |
 | Optimizer — import d'équipes | `importEquipes.ts` (import commun : rapport, création de liste et d'équipes), `actionImportOptimizer.ts` (action d'import et navigation après acceptation), `importRecoOptimizer.ts` (deck recommandé → membres), `importSpeedTuneOptimizer.ts` (lignes du speed tuning → membres), `deckCompositionOptimizer.ts` (retrouve le deck de siège d'une recommandation ou d'un speed tuning) |

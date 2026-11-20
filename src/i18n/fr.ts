@@ -67,13 +67,19 @@ export const fr = {
     speedTuning: 'Speed tuning',
     defense: 'Défense',
     offense: 'Offense',
+    // Le Siège seulement : l'Arène garde « Défense » et « Offense ».
+    decksDefense: 'Decks de défense',
+    decksOffense: 'Decks d’offense',
     interserveur: 'Défense interserveur',
     areneDimensionnelle: 'Arène dimensionnelle',
     recommandations: 'Recommandations',
+    statistiquesSiege: 'Statistiques',
     bestiaire: 'Bestiaire',
     mecaniques: 'Mécaniques',
     nouveautes: 'Nouveautés',
     telecharger: 'Télécharger',
+    botDiscord: 'Bot Discord',
+    swExporter: 'SW Exporter',
     parametres: 'Paramètres',
     jouer: 'Jouer',
     monCompte: 'Mon compte',
@@ -336,6 +342,7 @@ export const fr = {
       rta: { rubrique: 'RTA', titre: 'Préparation RTA' },
       ami: { rubrique: 'RTA', titre: "Prépa d'un ami" },
       siege: { rubrique: 'Siège', titre: 'Défenses et offenses' },
+      statistiquesSiege: { rubrique: 'Siège', titre: 'Statistiques de siège' },
       recos: { rubrique: 'Partage', titre: 'Recommandations' },
       runes: { rubrique: 'Compte', titre: 'Analyse de runes' },
       artefacts: { rubrique: 'Compte', titre: "Analyse d'artéfacts" },
@@ -345,6 +352,8 @@ export const fr = {
       mecaniques: { rubrique: 'Doc', titre: 'Mécaniques' },
       arene: { rubrique: 'Arène', titre: 'Arène' },
       areneDimensionnelle: { rubrique: 'Arène', titre: 'Arène dimensionnelle' },
+      botDiscord: { rubrique: 'Doc', titre: 'Bot Discord' },
+      swExporter: { rubrique: 'Compte', titre: 'SW Exporter en direct' },
     },
     application: {
       titre: 'Application de bureau',
@@ -456,6 +465,484 @@ export const fr = {
     auTelephone: 'À installer depuis un ordinateur Windows ou Linux.',
     versionProposee: (version: string) => `Version proposée : ${version}`,
     toutesLesVersions: 'Toutes les versions sur GitHub',
+  },
+
+  // La page « Bot Discord » (`#/bot-discord`). Les noms des droits et des
+  // menus sont ceux de Discord en français.
+  botDiscord: {
+    titre: 'Bot Discord',
+    intro: (app: string) =>
+      `Le bot ${app} fait le lien entre l'app et ton ou tes serveurs Discord : il partage les recommandations de siège de ta guilde dans des salons, et répond à ses commandes dans tout le serveur. Une synchronisation sans serveur : tout passe par Discord.`,
+    ongletsAria: 'Parties du guide',
+    onglets: { installation: 'Installation', recommandations: 'Recommandations', commandes: 'Commandes' },
+    atoutsTitre: "Ce qu'il faut savoir",
+    installation: {
+      intro: 'Pour un administrateur du serveur : il faut le droit « Gérer le serveur ».',
+      atouts: [
+        {
+          titre: 'Avec ses commandes',
+          texte: 'Le bot arrive avec toutes ses commandes, utilisables dans tout le serveur. Celles qui viendront ensuite y apparaîtront sans rien refaire.',
+        },
+        {
+          titre: 'Sans aucun droit',
+          texte: "Il arrive sans aucun droit et ne lit que les salons où tu l'ajoutes : ceux des recommandations.",
+        },
+        {
+          titre: 'Jamais administrateur',
+          texte: 'Ne lui donne aucun rôle administrateur : il verrait tous les salons du serveur.',
+        },
+      ],
+      inviter: 'Inviter le bot',
+      etapes: {
+        inviter: {
+          titre: 'Invite le bot',
+          texte: "« Inviter le bot » ouvre l'invitation de Discord : choisis ton serveur sous « Ajouter au serveur », puis valide.",
+        },
+        commandes: {
+          titre: 'Ses commandes sont là',
+          texte: "Dans n'importe quel salon, tape « / » : les commandes du bot s'affichent, comme /speedtune. L'onglet Commandes les décrit.",
+        },
+        salons: {
+          titre: 'Pour les recommandations, ses salons',
+          texte: "Le partage des recommandations demande un salon par recommandation, où le bot a quatre droits : l'onglet Recommandations le met en place.",
+        },
+      },
+      depannage: [
+        {
+          probleme: 'Les commandes du bot ne s’affichent pas',
+          remede: "Le bot a été invité sans ses commandes. Réinvite-le par « Inviter le bot » : l'invitation les ajoute, sans le retirer du serveur.",
+        },
+        {
+          probleme: 'Un triangle à côté du nom du serveur',
+          remede: 'Dans l’app, ce triangle dit que le bot a un rôle administrateur : il voit tous les salons du serveur. Retire-lui ce rôle ; seuls les droits des salons blacksmith-reco… servent.',
+        },
+      ],
+    },
+    recos: {
+      intro: "Les recommandations de siège de ta guilde, partagées dans des salons Discord : chaque membre les retrouve dans son app et publie les siennes, sans fichier à s'échanger.",
+      atouts: [
+        {
+          titre: 'Un salon, une recommandation',
+          texte: 'Chaque salon blacksmith-reco… porte une seule recommandation : sa dernière version publiée. Pour plusieurs recommandations, plusieurs salons.',
+        },
+        {
+          titre: 'Les droits de Discord décident',
+          texte: "Qui lit et qui publie suit les permissions du salon. L'app n'a aucun réglage de droits : la modération se fait dans Discord.",
+        },
+      ],
+      adminTitre: 'Mettre en place les salons',
+      adminIntro: "Pour un administrateur du serveur, une fois le bot invité (onglet Installation).",
+    },
+    etapesAdmin: {
+      salon: {
+        titre: 'Crée un salon par recommandation',
+        texte: 'Son nom commence par blacksmith-reco : blacksmith-reco-defenses, blacksmith-reco-offs-g3… Un salon porte une seule recommandation.',
+      },
+      ajouter: {
+        titre: 'Ajoute le bot au salon',
+        texte: 'Modifier le salon › Permissions › Permissions avancées, puis le « + » à côté de « Rôles/Membres » : choisis le bot.',
+      },
+      droits: {
+        titre: 'Donne-lui quatre droits',
+        texte: "Coche ces quatre droits pour le bot, et rien d'autre :",
+      },
+      reserver: {
+        titre: 'Réserve le salon aux recommandations',
+        texte: "Chaque publication est un nouveau message du bot, qui porte le fichier de la recommandation. L'app ne relit que les 100 derniers messages : une discussion dans le salon finirait par repousser la recommandation hors de portée.",
+      },
+    },
+    droits: {
+      voir: 'Voir le salon',
+      anciens: 'Voir les anciens messages',
+      envoyer: 'Envoyer des messages',
+      joindre: 'Joindre des fichiers',
+    },
+    membresTitre: 'Côté membres',
+    membresIntro: 'Chaque membre de la guilde, sur le site ou dans l’application de bureau.',
+    etapesMembres: {
+      connecter: {
+        titre: 'Connecte-toi à Discord',
+        texte: "Siège › Recommandations, encart Discord : « Se connecter à Discord ». Dans l'application de bureau, la connexion s'ouvre dans ton navigateur, qui affiche un code à coller dans l'app.",
+      },
+      salons: {
+        titre: 'Retrouve les salons',
+        texte: "Les salons blacksmith-reco… que tu peux lire s'affichent sous le nom du serveur, chacun avec l'état de sa recommandation : À jour, Modifiée, Conflit ou Lecture seule.",
+      },
+      publier: {
+        titre: 'Publie',
+        texte: "Une recommandation de ton appareil part par « Publier dans… » ; celle d'un salon, une fois modifiée, par « Publier » dans son bandeau. Il faut avoir le droit d'écrire dans le salon.",
+      },
+      message: {
+        titre: 'Dans Discord',
+        texte: "Chaque publication est un message du bot, qui dit qui a publié, sans notifier personne. Un membre peut aussi déposer dans le salon le fichier exporté par l'app : le plus récent fichier valide fait foi. Effacer un message fait revenir la version précédente.",
+      },
+    },
+    depannageRecos: [
+      {
+        probleme: "Le salon n'apparaît pas dans l'app",
+        remede: 'Son nom doit commencer par blacksmith-reco, le bot doit y avoir « Voir le salon » et « Voir les anciens messages », et toi le droit de le lire. Puis « Actualiser ».',
+      },
+      {
+        probleme: 'La publication échoue',
+        remede: "Le bot doit avoir « Envoyer des messages » et « Joindre des fichiers » dans le salon, et toi le droit d'y écrire. Sans ce droit, le salon est en Lecture seule.",
+      },
+      {
+        probleme: 'Une recommandation a disparu',
+        remede: "Son message a été effacé, ou repoussé au-delà des 100 derniers messages du salon. Si tu as perdu l'accès au salon, tes modifications non publiées restent sur ton appareil.",
+      },
+    ],
+    commandes: {
+      intro: "Dans n'importe quel salon d'un serveur où est le bot, tape « / » puis le nom de la commande. Elle ne demande aucun droit au bot dans le salon.",
+      enEssai: 'En essai',
+      // Une entrée par commande, dans l'ordre de la page (COMMANDES_BOT).
+      liste: {
+        speedtune: {
+          nom: '/speedtune',
+          resume:
+            "Joins une capture de l'écran de préparation d'un combat de siège : le bot lit tes trois monstres et leur VIT, et répond par l'ordre de jeu.",
+          etapes: [
+            {
+              titre: 'Envoie la capture',
+              texte: "L'écran entier, ou recadré sur tes trois monstres. Garde-la à sa taille d'origine : réduite, la VIT ne se lit plus.",
+            },
+            {
+              titre: 'Réponds à ses questions',
+              texte: "Quand un passif de vitesse qui se cumule ou l'Effet aug. VIT d'un artéfact compte, le bot le demande d'abord par un menu. Seul l'auteur de la commande peut répondre.",
+            },
+            {
+              titre: 'Lis le résultat',
+              texte: "L'ordre de jeu, la VIT lue de chaque monstre, ✅ ou ❌ cut, la VIT de fiche ou celle à viser, et le sort de vitesse retenu. « Ouvrir l'outil de speed tuning » mène à l'outil, pour régler l'équipe à la main.",
+            },
+          ],
+          note: 'Le message est en français si ton Discord l’est, sinon en anglais. Un monstre mal reconnu ou une VIT mal lue fausse le résultat : le message dit ce qui reste incertain.',
+        },
+      },
+    },
+    depannageTitre: 'Ça ne marche pas ?',
+    question: "Une autre question ? Le Discord de l'app",
+    captures: {
+      'app-connexion': "L'encart Discord de la page Recommandations, avec « Se connecter à Discord » et « Installer le bot sur ton serveur ».",
+      'app-salons': 'Après la connexion : le serveur « Guilde de test » et ses deux salons blacksmith-reco…, l’un À jour, l’autre en Lecture seule.',
+      'app-salon-choisi': 'Un salon choisi : son bandeau (serveur, salon, état, version) avec « Publier », au-dessus de sa recommandation.',
+      'message-bot': 'Dans Discord : le message du bot qui dit qui a modifié la recommandation, avec son fichier.',
+      'speedtune-capture': "La capture envoyée : les trois monstres de l'écran de préparation, avec leur VIT.",
+      'speedtune-reponse': 'La réponse du bot : l’équipe, la VIT de la défense à battre, puis l’ordre de jeu avec la VIT de chaque monstre.',
+    },
+    capturesEnAnglais: 'Captures de Discord en anglais.',
+  },
+
+  // La page SW Exporter (`#/sw-exporter`) : le plugin « SW Blacksmith Live ».
+  // ⚠️ « SW Exporter », « ProfileExport », « plugins » sont des noms de SWEX,
+  // jamais traduits.
+  swExporter: {
+    titre: 'SW Exporter',
+    intro: (app: string) =>
+      `SW Exporter (SWEX) lit ton compte depuis le jeu et l'enregistre dans un fichier : c'est ce fichier que ${app} importe. Son plugin le tient à jour pendant que tu joues.`,
+    atoutsTitre: 'Ce que fait le plugin',
+    atouts: [
+      {
+        titre: 'Ton compte en direct',
+        texte:
+          "Sans plugin, SWEX n'écrit ton compte qu'à la connexion au jeu. Avec lui, chaque meule, gemme, amélioration, vente ou changement d'équipement arrive dans « Mon compte » pendant la partie, et ton compte se met à jour sans te reconnecter.",
+      },
+      {
+        titre: 'Tes combats de guilde',
+        texte:
+          'Siège, guerre de guilde, labyrinthe : les défenses vues, les attaques faites et les journaux de combat sont gardés au fil de la partie. Les statistiques de siège en viennent.',
+      },
+      {
+        titre: 'Ton arène dimensionnelle',
+        texte:
+          "Sa box n'est pas dans l'export. Le plugin la garde quand tu ouvres le mode, puis suit tes runes posées, ta défense, tes invocations et tes attaques : les onglets de l'arène dimensionnelle se remplissent tout seuls.",
+      },
+      {
+        titre: 'Rien ne quitte ta machine',
+        texte:
+          "Le plugin écrit ses fichiers dans un dossier SWBlacksmith, à côté de ton export. Il n'envoie rien, et n'écrit jamais ta clé de session.",
+      },
+    ],
+    telecharger: 'Télécharger le plugin',
+    fichier: (version: string) => `SWBlacksmithLive.js · version ${version}`,
+    avecBureau:
+      "Il sert avec l'application de bureau, qui suit le dossier de SWEX : un navigateur ne peut pas lire un dossier de ton ordinateur. Sur le site, l'import du compte reste manuel.",
+    telechargerApp: "Télécharger l'application",
+    auTelephone: "À installer depuis un ordinateur, à côté de SW Exporter.",
+    tutoTitre: 'Installer le plugin',
+    etapes: [
+      {
+        titre: 'Installe SW Exporter',
+        texte:
+          "Si ce n'est pas déjà fait : télécharge-le, lance-le et connecte-toi une fois au jeu. Laisse son plugin ProfileExport activé : c'est lui qui écrit l'export de départ.",
+      },
+      { titre: 'Télécharge le plugin', texte: 'Le bouton ci-dessus donne le fichier SWBlacksmithLive.js.' },
+      {
+        titre: 'Dépose-le dans le dossier plugins',
+        texte:
+          'Le dossier « Summoners War Exporter Files », où SWEX enregistre tes exports, contient un dossier « plugins » : place le fichier dedans.',
+      },
+      {
+        titre: 'Redémarre SW Exporter',
+        texte: '« SWBlacksmithLive » apparaît dans la liste de ses plugins, activé. Les combats de guilde se désactivent au même endroit.',
+      },
+      {
+        titre: 'Suis le dossier dans l’application',
+        texte:
+          "Dans l'application de bureau : Paramètres › Dossier SW Exporter. Connecte-toi au jeu : ton compte se charge.",
+      },
+    ],
+    swexSurGithub: 'SW Exporter sur GitHub',
+    utiliserTitre: 'Utiliser le plugin',
+    utilisation: [
+      {
+        titre: 'Active « Direct » dans « Mon compte »',
+        texte:
+          "Parmi les filtres des monstres, des runes et des artéfacts. Coupé par défaut. Activé, « Mon compte » suit ta partie : chaque meule, gemme, amélioration, vente ou rune posée y apparaît en quelques instants, sans notification.",
+      },
+      {
+        titre: 'Le direct ne change que « Mon compte »',
+        texte:
+          "L'Optimizer, le speed tuning, la RTA et le siège gardent le compte chargé dans l'application. Couper « Direct » ramène « Mon compte » à ce compte-là.",
+      },
+      {
+        titre: 'Mets ton compte à jour sans te reconnecter',
+        texte:
+          "« Mettre à jour mon compte », sur cette page, reporte ta session sur le compte de l'application, comme une déconnexion suivie d'une reconnexion : une rune que tu viens de looter sert tout de suite dans l'Optimizer. Rien n'est écrit dans le dossier de SW Exporter.",
+      },
+    ],
+    etatTitre: 'Le plugin sur cet ordinateur',
+    pluginAJour: (v: string) => `Installé · version ${v} · à jour`,
+    pluginAncien: (v: string, app: string) => `Installé · version ${v} · la version ${app} est disponible`,
+    pluginPlusRecent: (v: string) => `Installé · version ${v}, plus récente que l'application`,
+    pluginAbsent: "Pas trouvé dans le dossier plugins de SW Exporter.",
+    sansDossier: 'Choisis le dossier SW Exporter dans Paramètres pour voir le plugin et ta session.',
+    telechargerDernier: 'Télécharger la dernière version',
+    session: (heure: string) => `Session en direct · dernière action à ${heure}`,
+    sansSession: 'Aucune session en direct : connecte-toi au jeu, SW Exporter ouvert avec le plugin.',
+    mettreAJour: 'Mettre à jour mon compte',
+    misAJour: (heure: string) => `Compte mis à jour à ${heure}.`,
+    echecMiseAJour: 'Rien à mettre à jour : aucune session en direct lisible.',
+    limitesTitre: "Ce qui attend la connexion suivante",
+    limites:
+      "Les favoris et préréglages de la RTA, les decks, la défense de siège, les verrous de runes et l'expérience gagnée hors combat : le plugin ne les suit pas encore, ils arrivent à la prochaine connexion au jeu.",
+    miseAJourTitre: 'Mettre à jour le plugin',
+    miseAJour:
+      "Le plugin porte la version de l'application : quand l'application change de version, retélécharge-le et remplace l'ancien fichier, puis redémarre SWEX.",
+  },
+
+  // Siège › Statistiques (#/siege/statistiques) : les sièges relevés par le
+  // plugin SWEX, dans l'application de bureau.
+  siegeStats: {
+    site: "Les statistiques des sièges se lisent dans l'application de bureau, avec le plugin SW Exporter : il garde ce que le jeu montre des sièges pendant que tu joues.",
+    telechargerApp: "Télécharger l'application",
+    pagePlugin: 'Le plugin SW Exporter',
+    chargement: 'Lecture des sièges…',
+    sansPlugin: 'Aucun siège à lire : choisis le dossier SW Exporter dans Paramètres, et installe le plugin SW Blacksmith Live.',
+    aucunSiege: "Aucun siège relevé pour l'instant : ouvre la carte du siège en jeu, SW Exporter lancé avec le plugin.",
+    saison: (n: number | null) => (n === null ? 'Saison' : `Saison ${n}`),
+    classement: 'Classement',
+    surGuildes: (n: string) => `sur ${n} guildes`,
+    score: 'Score',
+    tauxVictoire: 'Taux de victoire',
+    meilleur: (n: number | null, rang: string) => (n === null ? `Meilleur classement : ${rang}` : `Meilleur classement : ${rang}, saison ${n}`),
+    choixSiege: 'Siège',
+    tousLesSieges: (n: number) => `Tous les sièges (${n})`,
+    contreGuildes: (noms: string[]) => `contre ${noms.join(' et ')}`,
+    cumulIncomplet: 'Le journal des combats n’a pas été ouvert en jeu pour chaque siège : des combats manquent au cumul.',
+    enCours: 'en cours',
+    // ⚠️ « 1re », « 2e » en lettres ordinaires : les lettres en exposant
+    // (ʳᵉ, ᵉ) manquent à la police des titres, qui les dessinait de travers.
+    place: (n: number) => (n === 1 ? '1re' : `${n}e`),
+    placeSur: (place: string, n: number) => `${place} sur ${n}`,
+    manques: {
+      carte: 'Carte du siège jamais ouverte en jeu : guildes et défenses inconnues.',
+      resume: 'Journal des combats du match jamais ouvert en jeu : seuls les combats ouverts en détail sont comptés.',
+      resultat: 'Résultat final jamais vu en jeu.',
+    },
+    guildesTitre: 'Guildes',
+    // Le comparatif des guildes d'un siège : une colonne par guilde.
+    comparatif: {
+      titre: 'Les guildes du siège',
+      classement: 'Classement',
+      classementProvisoire: 'Classement provisoire, au score',
+      joueurs: (n: number) => (n > 1 ? `${n} joueurs` : `${n} joueur`),
+      attaques: (n: string, max: string | null) => `${n}${max ? ` / ${max}` : ''} attaques`,
+      monstres: (n: string, max: string | null) => `${n}${max ? ` / ${max}` : ''} monstres`,
+      faceAFace: 'Face-à-face',
+      aide: 'Nos attaques sur chaque guilde, et les siennes sur nous : le journal ne montre que les combats qui nous concernent.',
+      contre: (nom: string) => `Contre ${nom}`,
+      nosAttaques: 'Nos attaques',
+      sesAttaques: 'Ses attaques',
+      resumeDuel: (n: string, v: string, taux: string | null) => `${n} · ${v} gagnées${taux ? ` (${taux} %)` : ''}`,
+      detailDuel: (v: number, d: number, n: number) => `${v} gagnées, ${d} perdues sur ${n}`,
+    },
+    maGuilde: 'Ma guilde',
+    attaques: (n: number) => (n > 1 ? `${n} attaques` : `${n} attaque`),
+    monstres: (n: number) => (n > 1 ? `${n} monstres` : `${n} monstre`),
+    // Deux angles, chacun en vue d'ensemble (graphes) ou en détail (combats).
+    angles: { guilde: 'Guilde', membre: 'Membre' },
+    vues: { ensemble: 'Vue d’ensemble', detail: 'Détail' },
+    // La vue d'ensemble d'un membre.
+    membre: {
+      evolutionTitre: 'WR au fil des sièges',
+      evolutionAide: 'Un point par siège relevé où il était de la guilde : son WR en attaque et en défense.',
+      unSeulSiege: 'Un seul siège relevé pour l’instant : la courbe s’allonge d’un point à chaque siège.',
+      legendeAttaque: 'WR en attaque',
+      legendeDefense: 'WR en défense',
+      pointAttaque: (wr: string, n: number) => `Attaque : WR ${wr} sur ${n > 1 ? `${n} combats` : `${n} combat`}`,
+      pointDefense: (wr: string, n: number) => `Défense : WR ${wr} sur ${n > 1 ? `${n} combats` : `${n} combat`}`,
+      offenses5Titre: 'Offenses les plus jouées sur les tours 5★',
+      offenses4Titre: 'Offenses les plus jouées sur les tours 4★',
+      offenses4Aide: 'Monstres 4★ naturels et moins.',
+      aucuneOffense: 'Aucune attaque aux monstres connus sur ces tours.',
+      battentTitre: 'Défenses les plus dures à battre pour lui',
+      battentAide: 'Les défenses adverses contre lesquelles il a perdu le plus d’attaques.',
+      aucuneDefaite: 'Aucune défaite contre une défense aux monstres connus.',
+      legendeAttaquesPerdues: 'Ses attaques perdues contre elle',
+    },
+    // La vue d'ensemble : chiffres de la guilde et graphes.
+    ensemble: {
+      sieges: 'Sièges',
+      rang: 'Rang',
+      score: 'Score',
+      attaques: 'Attaques',
+      tauxAttaque: 'Victoires en attaque',
+      tenue: 'Victoires en défense',
+      sansResultat: 'résultat inconnu',
+      surAttaques: (v: number, d: number) => `${v} gagnées · ${d} perdues`,
+      // La tendance d'un WR : ses derniers jours relevés contre ceux d'avant.
+      glissantEcart: (jours: number) => `sur ${jours} jours`,
+      glissantDetail: (n: number, jours: number) =>
+        `Le WR des ${jours} derniers jours (${n > 1 ? `${n} combats` : `${n} combat`}, jusqu’au dernier combat relevé), comparé aux ${jours} jours d’avant, en points`,
+      evolutionTitre: 'WR de la guilde au fil des sièges',
+      evolutionAide: 'Un point par siège relevé : le WR de la guilde en attaque et en défense. Un clic sur un siège l’ouvre.',
+      evolutionOuvrir: 'Cliquer pour ouvrir ce siège',
+      courbeTitre: 'Attaques au fil du siège',
+      courbeAide: 'Les attaques de chaque guilde, cumulées : en pointillé celles faites, en trait plein celles gagnées. En dessous, leur WR au fil du siège.',
+      courbePoint: (nom: string, attaques: number, victoires: number, wr: string) =>
+        `${nom} : ${attaques > 1 ? `${attaques} attaques` : `${attaques} attaque`}, ${victoires > 1 ? `${victoires} gagnées` : `${victoires} gagnée`} · WR ${wr}`,
+      courbeWr: 'WR',
+      infobulles: 'Infobulles',
+      // Une entrée de légende cliquable (graphes).
+      legendeMasquer: (nom: string) => `Masquer : ${nom}`,
+      legendeAfficher: (nom: string) => `Afficher : ${nom}`,
+      legendeDerniere: 'Au moins une série reste affichée',
+      legendeFaites: 'Attaques faites',
+      legendeGagnees: 'Attaques gagnées (et WR, en dessous)',
+      legendeCombats: 'Combats joués',
+      legendeAttaquesPerdues: 'Nos attaques perdues contre elle',
+      legendeScore: 'Score de la guilde',
+      tableauAttaquesTitre: 'Attaques par membre',
+      tableauAttaquesAide:
+        'WR (win rate) : victoires sur les attaques jouées. Clique un nom pour voir ses statistiques.',
+      tableauDefensesTitre: 'Défenses par membre',
+      tableauDefensesAide: 'Les combats où ses défenses ont été attaquées pendant le siège.',
+      colonnes: {
+        joueur: 'Joueur',
+        victoires: 'V',
+        defaites: 'D',
+        manquees: 'Manq.',
+        taux: 'WR',
+        tour5: '5★',
+        tour4: '4★',
+        decks: 'Decks',
+        subis: 'Subis',
+        tenus: 'Gagnés',
+        perdus: 'Perdus',
+        tenue: 'WR',
+      },
+      titresColonnes: {
+        joueur: 'Joueur',
+        victoires: 'Attaques gagnées',
+        defaites: 'Attaques perdues',
+        manquees: 'Attaques attendues non faites',
+        taux: 'Win rate : victoires sur les attaques jouées',
+        tour5: 'Attaques sur les tours 5★ : gagnées / toutes',
+        tour4: 'Attaques sur les tours 4★ (monstres 4★ naturels et moins) : gagnées / toutes',
+        decks: 'Decks en défense',
+        subis: 'Combats où ses défenses ont été attaquées',
+        tenus: 'Combats gagnés en défense',
+        perdus: 'Combats perdus en défense',
+        tenue: 'Win rate en défense : combats gagnés sur les combats subis',
+      },
+      trier: (colonne: string) => `Trier par : ${colonne}`,
+      jouesTitre: 'Équipes les plus jouées en attaque',
+      jouesAide: 'Par ma guilde, sur les combats dont le jeu a montré les monstres.',
+      battentTitre: 'Défenses les plus dures à battre',
+      battentAide: 'Les défenses adverses contre lesquelles ma guilde a perdu le plus d’attaques.',
+      combatsEquipe: (n: number, taux: string) => `${n > 1 ? `${n} combats` : `${n} combat`} · ${taux} % de victoires`,
+      defaitesEquipe: (d: number, n: number) => `${d > 1 ? `${d} défaites` : `${d} défaite`} sur ${n > 1 ? `${n} combats` : `${n} combat`}`,
+      aucuneEquipe: 'Aucun combat aux monstres connus : ouvre en jeu les journaux de combat.',
+      historiqueTitre: 'Score de la guilde par siège',    },
+    choixJoueur: 'Membre',
+    ancienMembre: 'Ancien membre : n’est plus dans la guilde',
+    anciensMembres: 'Anciens membres',
+    membresTitre: 'Membres',
+    victoires: (n: number) => (n > 1 ? `${n} victoires` : `${n} victoire`),
+    nuls: (n: number) => (n > 1 ? `${n} nuls` : `${n} nul`),
+    defaites: (n: number) => (n > 1 ? `${n} défaites` : `${n} défaite`),
+    decksEnDefense: (n: number) => (n > 1 ? `${n} decks en défense` : `${n} deck en défense`),
+    monstresInconnus: 'monstres utilisés inconnus',
+    voirJoueur: (nom: string) => `Voir les statistiques de ${nom}`,
+    defensesTitre: 'Défenses',
+    attaquesTitre: 'Attaques',
+    base: (n: number) => `Base ${n}`,
+    // La base d'un combat, comme la carte du jeu la numérote : le QG, les tours 1 à 12.
+    tour: (n: number) => `Tour ${n}`,
+    qg: 'QG',
+    couleursGuilde: { bleue: 'bleu', rouge: 'rouge', jaune: 'jaune' },
+    tourDetail: (tour: string, couleur: string, base: number) => `${tour} du territoire ${couleur} (base ${base} de la carte)`,
+    victoire: 'Victoire',
+    defaite: 'Défaite',
+    resultatInconnu: 'Résultat inconnu',
+    joueurInconnu: 'joueur inconnu',
+    aucuneAttaque: 'Aucune attaque relevée.',
+    aucuneDefense: 'Aucune défense relevée.',
+    combatsTitre: 'Combats de la guilde',
+    combatsAide: 'Les combats dont le jeu a montré les monstres : tes attaques, et les journaux ouverts en jeu.',
+    aucunCombat: 'Aucun combat aux monstres connus : ouvre en jeu les journaux de combat d’un joueur ou d’une défense.',
+    defensesAdversesTitre: 'Défenses adverses',
+    versus: 'vs',
+    monstresNonVus: 'monstres non vus en jeu',
+    // Qui contre qui, chaque nom suivi de sa guilde : la flèche, et « contre ».
+    fleche: '→',
+    contreLibelle: 'contre',
+    resultat: 'Résultat',
+    defensesInconnues: 'défenses inconnues',
+    filtres: {
+      resultat: { tous: 'Tous', victoires: 'Victoires', defaites: 'Défaites' },
+      cote: { tous: 'Attaque ou défense', attaque: 'En attaque', defense: 'En défense' },
+      coteAide: 'Choisis d’abord un monstre',
+      monstre: 'Filtrer par monstre',
+      retirer: (nom: string) => `Retirer ${nom}`,
+      effacer: 'Effacer les filtres',
+      aucunCombat: 'Aucun combat ne correspond aux filtres.',
+      aucuneDefense: 'Aucune défense ne correspond aux filtres.',
+    },
+    // Un siège dont les combats continuent depuis la page précédente.
+    suite: 'suite',
+    bilanCombats: (n: number, victoires: number, defaites: number, taux: string | null) =>
+      `${n > 1 ? `${n} combats` : `${n} combat`} · ${victoires} V · ${defaites} D${taux ? ` · ${taux} % de victoires` : ''}`,
+    // Les chiffres des cartes, en abrégé ; le texte entier est dans l'infobulle.
+    abr: {
+      attaques: (n: number) => `${n} att.`,
+      victoires: (n: number) => `${n} V`,
+      nuls: (n: number) => `${n} N`,
+      defaites: (n: number) => `${n} D`,
+      decks: (n: number) => `${n} déf.`,
+      tenues: (tenus: number, n: number) => `déf. ${tenus}/${n}`,
+    },
+    defensesTenues: (tenus: number, n: number) => `En défense : ${tenus} ${tenus > 1 ? 'gagnés' : 'gagné'} sur ${n > 1 ? `${n} combats` : `${n} combat`}`,
+    wrValeur: (pourcent: string) => `WR ${pourcent} %`,
+    defensesDepuisCombats: 'D’après les combats du siège : chaque équipe en défense, ses combats gagnés sur les combats subis. Monstres connus si le journal du combat a été ouvert en jeu.',
+  },
+
+  // L'interrupteur « Direct » de « Mon compte » (application de bureau).
+  direct: {
+    libelle: 'Direct',
+    activer: 'Suivre ta partie en direct (plugin SW Exporter)',
+    actif: (heure: string) => `En direct · dernière action à ${heure} · cliquer pour couper`,
+    actifSansSession: 'Direct activé · aucune session en direct pour l’instant',
+    indisponible: 'Suivre ta partie en direct — aucune session pour l’instant : connecte-toi au jeu, SW Exporter ouvert avec le plugin',
   },
 
   nouveautes: {
@@ -572,9 +1059,9 @@ export const fr = {
     swexEnLecture: (date: string) => `Export du ${date} — lecture en cours…`,
     exportCharge: (nom: string | null) => `${nom ? `Compte de ${nom}` : 'Compte'} chargé depuis SW Exporter`,
     exportMisAJour: (nom: string | null) => `${nom ? `Compte de ${nom}` : 'Compte'} mis à jour depuis SW Exporter`,
-    // Une nouvelle saison de l'arène dimensionnelle, lue dans le journal SWEX.
+    // L'arène dimensionnelle ouverte en jeu, lue par le plugin SWEX.
     dimensionMiseAJour: (n: number) =>
-      `Arène dimensionnelle mise à jour depuis le journal SWEX : ${n} équipe${n > 1 ? 's' : ''}`,
+      `Arène dimensionnelle mise à jour depuis SW Exporter : ${n} équipe${n > 1 ? 's' : ''}`,
   },
 
   // L'import d'un export de compte SWEX : bouton, messages de src/lib/importAccount.ts
@@ -600,13 +1087,13 @@ export const fr = {
     offenseAreneVide: "Aucune équipe d'attaque d'arène configurée dans ce fichier.",
     sansDefenseInterserveur: "Aucune défense d'arène interserveur trouvée (server_arena_defense_deck_info).",
     defenseInterserveurVide: "Aucune défense d'arène interserveur configurée dans ce fichier.",
-    sansDefenseDimension: "Aucune défense d'arène dimensionnelle trouvée dans le journal SWEX (defense_deck_info).",
-    defenseDimensionVide: "La défense d'arène dimensionnelle du journal SWEX ne désigne aucun monstre de la box dimensionnelle.",
+    sansDefenseDimension: "Aucune défense d'arène dimensionnelle trouvée dans la saison (defense_deck_info).",
+    defenseDimensionVide: "La défense d'arène dimensionnelle ne désigne aucun monstre de la box dimensionnelle.",
     sansOffenseDimension: "Aucune équipe d'attaque d'arène dimensionnelle trouvée (deck_recent_list, type 28).",
-    offenseDimensionSansJournal:
-      "Les équipes d'attaque d'arène dimensionnelle désignent des monstres de la box dimensionnelle : importe aussi le journal SWEX (full_log.txt) pour les reconnaître.",
+    offenseDimensionSansSaison:
+      "Les équipes d'attaque d'arène dimensionnelle désignent des monstres de la box dimensionnelle : ouvre l'arène dimensionnelle en jeu, avec le plugin SW Blacksmith Live, pour les reconnaître.",
     offenseDimensionInconnue:
-      "Les équipes d'attaque d'arène dimensionnelle désignent des monstres absents de la box du journal SWEX.",
+      "Les équipes d'attaque d'arène dimensionnelle désignent des monstres absents de la box dimensionnelle.",
     rien: 'Rien à importer depuis ce fichier.',
     monstres6: (n: number) => `${n} monstres 6★`,
     monstresRta: (n: number) => `${n} monstres RTA`,
@@ -1411,14 +1898,14 @@ export const fr = {
     retiree: (cote: 'defense' | 'offense' | 'interserveur' | 'dimension-defense' | 'dimension-offense') =>
       `Équipe retirée ${cote === 'offense' || cote === 'dimension-offense' ? "de l'offense" : cote === 'interserveur' ? 'de la défense interserveur' : 'de la défense'}`,
     // La box et les runes de l'arène dimensionnelle sont à part : l'export de
-    // compte ne les décrit pas, le journal complet de SWEX, si — lu par
-    // l'application de bureau dans le dossier SW Exporter.
-    // Sur le site : la box du mode n'arrive que par le journal SWEX, lu par
+    // compte ne les décrit pas, le plugin SWEX « SW Blacksmith Live », si — lu
+    // par l'application de bureau dans le dossier SW Exporter.
+    // Sur le site : la box du mode n'arrive que par le plugin, lu par
     // l'application de bureau.
     dimensionBureauSeulement:
       "L'arène dimensionnelle n'est disponible que dans l'application de bureau. La version web arrive prochainement.",
     noteDimension:
-      "La box dimensionnelle (ses monstres et leurs runes) n'est pas dans l'export de compte. Avec le dossier SW Exporter choisi et le plugin Full Logger de SWEX actif, ces onglets se remplissent tout seuls quand tu ouvres l'arène dimensionnelle en jeu. Sinon, compose tes équipes à la main.",
+      "La box dimensionnelle (ses monstres et leurs runes) n'est pas dans l'export de compte. Avec le dossier SW Exporter choisi et le plugin SW Blacksmith Live installé, ces onglets se remplissent tout seuls quand tu ouvres l'arène dimensionnelle en jeu, et suivent ce que tu y changes. Sinon, compose tes équipes à la main.",
   },
 
   // Le Siège (#/siege) : équipes de défense et d'offense.
@@ -1469,8 +1956,8 @@ export const fr = {
     // Le tableau des équipes d'un côté.
     board: {
       cote: {
-        defense: { titre: 'Défense', nom: 'défense', de: 'de défense' },
-        offense: { titre: 'Offense', nom: 'attaque', de: "d'attaque" },
+        defense: { titre: 'Decks de défense', nom: 'défense', de: 'de défense' },
+        offense: { titre: 'Decks d’offense', nom: 'attaque', de: "d'attaque" },
       },
       exportSansCompte: 'Charge un compte pour exporter vers l’Optimizer.',
       exportEquipeVide: 'Aucun monstre importable dans cette équipe.',
@@ -1694,6 +2181,7 @@ export const fr = {
         "Chaque membre se connecte à Discord depuis cette page : il voit les salons qu'il peut lire, et publie dans ceux où il peut écrire. La modération se fait directement dans Discord, par les permissions du salon.",
       ],
       inviter: 'Inviter le bot',
+      guide: 'Le guide pas à pas, avec captures',
       question: "Une question ? Le Discord de l'app",
     },
     compte: {

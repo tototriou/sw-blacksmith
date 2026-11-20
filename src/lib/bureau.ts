@@ -6,6 +6,7 @@
 // rien n'est posé ni écouté. Le site ne change pas.
 
 import type { Dictionnaire } from '../i18n/fr';
+import type { RelevesSiege } from './siegeStatistiques';
 
 // L'objet exposé par le préchargement (bureau/preload.ts), seul pont vers le
 // processus principal.
@@ -26,6 +27,8 @@ interface PontBureau {
     etat: () => Promise<EtatSwex | null>;
     choisirDossier: () => Promise<EtatSwex | null>;
     choisirInvocateur: (fichier: string) => Promise<EtatSwex | null>;
+    // Plus aucun invocateur suivi, le dossier gardé (après un import manuel).
+    aucunInvocateur: () => Promise<EtatSwex | null>;
     oublier: () => Promise<EtatSwex | null>;
     surEtat: (rappel: (etat: EtatSwex) => void) => () => void;
     surExport: (rappel: (exp: ExportSwex) => void) => () => void;
@@ -33,6 +36,14 @@ interface PontBureau {
     lu: (modifie: number) => void;
     surDimension: (rappel: (dim: DimensionSwex) => void) => () => void;
     dimensionLue: (cle: number) => void;
+    etatDirect: () => Promise<EtatDirectSwex | null>;
+    activerDirect: (oui: boolean) => Promise<EtatDirectSwex | null>;
+    surEtatDirect: (rappel: (etat: EtatDirectSwex) => void) => () => void;
+    surLignesDirect: (rappel: (lignes: LignesDirect) => void) => () => void;
+    mettreAJour: () => Promise<{ texte: string; t: number | null } | null>;
+    // `null` : pas de dossier, d'invocateur suivi ni de dossier du plugin.
+    sieges: () => Promise<RelevesSiege | null>;
+    surSiegesChanges: (rappel: () => void) => () => void;
   };
   session: {
     etat: () => Promise<EtatSession | null>;
@@ -155,16 +166,35 @@ export interface ExportSwex {
   fichier: string;
   complet: boolean;
 }
-// L'arène dimensionnelle donnée à la page : la dernière saison de l'invocateur
-// suivi, lue dans le journal SWEX du dossier (`dimensionarena_getSeasonInfo`),
-// les équipes récentes de son export (les attaques), la clé à renvoyer une
-// fois appliquée (l'heure serveur de la saison), et si elle est NOUVELLE (à
-// annoncer) ou seulement redonnée à une page qui n'a rien de ce mode.
+// L'arène dimensionnelle donnée à la page : la saison de l'invocateur suivi,
+// tenue par le plugin SWEX (`dimension.json`, la forme de
+// `dimensionarena_getSeasonInfo`), les attaques jouées (vues par le plugin,
+// sinon celle de l'export), la clé à renvoyer une fois appliquée (l'heure
+// serveur du dernier changement), et si elle est NOUVELLE (une ouverture du
+// mode, à annoncer) ou seulement un changement fait dans le mode, ou redonnée
+// à une page qui n'a rien de ce mode.
 export interface DimensionSwex {
   saison: Record<string, any>;
   recents: unknown[];
   cle: number;
   nouvelle: boolean;
+}
+
+// Le direct (voir bureau/swex.ts) : l'interrupteur, s'il y a un fichier live
+// de la dernière connexion, sa dernière écriture (ms), et le plugin installé
+// comparé à l'app.
+export type StatutPlugin = 'absent' | 'a-jour' | 'ancien' | 'plus-recent';
+export interface EtatDirectSwex {
+  actif: boolean;
+  disponible: boolean;
+  maj: number | null;
+  plugin: { installee: string | null; app: string; statut: StatutPlugin };
+}
+// Des lignes du fichier live : le fichier entier (`debut`), ou celles qui s'y
+// sont ajoutées. `debut` sans ligne : la page oublie le compte en direct.
+export interface LignesDirect {
+  debut: boolean;
+  lignes: string[];
 }
 
 // Le pont du dossier SW Exporter, ou `null` sur le site.

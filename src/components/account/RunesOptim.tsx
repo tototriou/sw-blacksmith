@@ -37,6 +37,7 @@ import BoutonSensTri from '../BoutonSensTri';
 import { SENS_PAR_DEFAUT, SensTri, signeTri } from '../../lib/tri';
 import { BoutonIcone, Case, FlottantAuto } from '../../ui';
 import MobileSheet from '../../ui/MobileSheet';
+import InterrupteurDirect from './InterrupteurDirect';
 import HelpPopover from '../HelpPopover';
 import AncientFilter, {
   AncientFilter as AncientFilterValue,
@@ -768,6 +769,9 @@ export default function RunesOptim({
         {/* Au DOIGT : les rangées d'avant (`contents` : leurs enfants restent
             des éléments de la rangée), cachées à la souris. */}
         <div className="contents lg:hidden">
+          {/* Application de bureau : « Mon compte » en direct (à la
+              souris, en tête de `FiltresRunes`). */}
+          <InterrupteurDirect />
           <SetFilter runes={runes} value={sets} onChange={choisirSets} />
           <SlotFilter value={slots} onChange={choisirSlots} />
         </div>

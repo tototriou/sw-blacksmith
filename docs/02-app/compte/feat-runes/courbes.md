@@ -196,6 +196,14 @@ un écran de résultats, et la place libérée profite immédiatement.
       posés nus, les tokens (des triplets) rendent l'attribut invalide et le
       trait n'est **pas peint du tout**, sans la moindre erreur. Voir
       [../../03-developpeur/interface/](../../../03-developpeur/interface/).
+  - ⚠️ **Le choix suit SA rune** ([courbeChoix.ts](src/lib/courbeChoix.ts)) :
+    il retient le rang **et** la rune qui l'occupe sur la courbe de ses runes
+    (« Actuelle », sinon la première qui porte des runes). Une rune montée,
+    meulée ou gemmée — « Mon compte » en direct — change de score, donc de
+    rang : le choix resté au rang montrait une autre rune. Quand les courbes se
+    recalculent, il passe au nouveau rang de sa rune ; une rune qui n'y est
+    plus (filtrée, vendue) laisse le rang tel quel. La vue Optimisation, qui
+    ne dessine pas de courbe, n'est pas concernée.
   - ⚠️ **Une carte par courbe OUVRABLE, à ce rang** :
 
     | Onglet | Ouvrables | Pourquoi |

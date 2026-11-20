@@ -58,13 +58,18 @@ export const en: Dictionnaire = {
     speedTuning: 'Speed tuning',
     defense: 'Defense',
     offense: 'Offense',
+    decksDefense: 'Defense decks',
+    decksOffense: 'Offense decks',
     interserveur: 'Cross-server defense',
     areneDimensionnelle: 'Dimensional Arena',
     recommandations: 'Recommendations',
+    statistiquesSiege: 'Statistics',
     bestiaire: 'Bestiary',
     mecaniques: 'Mechanics',
     nouveautes: "What's new",
     telecharger: 'Download',
+    botDiscord: 'Discord bot',
+    swExporter: 'SW Exporter',
     parametres: 'Settings',
     jouer: 'Play',
     monCompte: 'My account',
@@ -316,6 +321,7 @@ export const en: Dictionnaire = {
       rta: { rubrique: 'RTA', titre: 'RTA prep' },
       ami: { rubrique: 'RTA', titre: 'A friend’s prep' },
       siege: { rubrique: 'Siege', titre: 'Defenses and offenses' },
+      statistiquesSiege: { rubrique: 'Siege', titre: 'Siege statistics' },
       recos: { rubrique: 'Sharing', titre: 'Recommendations' },
       runes: { rubrique: 'Account', titre: 'Rune analysis' },
       artefacts: { rubrique: 'Account', titre: 'Artifact analysis' },
@@ -325,6 +331,8 @@ export const en: Dictionnaire = {
       mecaniques: { rubrique: 'Docs', titre: 'Mechanics' },
       arene: { rubrique: 'Arena', titre: 'Arena' },
       areneDimensionnelle: { rubrique: 'Arena', titre: 'Dimensional Arena' },
+      botDiscord: { rubrique: 'Docs', titre: 'Discord bot' },
+      swExporter: { rubrique: 'Account', titre: 'SW Exporter, live' },
     },
     application: {
       titre: 'Desktop app',
@@ -429,6 +437,466 @@ export const en: Dictionnaire = {
     auTelephone: 'Install it from a Windows or Linux computer.',
     versionProposee: (version: string) => `Version offered: ${version}`,
     toutesLesVersions: 'All versions on GitHub',
+  },
+
+  botDiscord: {
+    titre: 'Discord bot',
+    intro: (app: string) =>
+      `The ${app} bot links the app to your Discord server or servers: it shares your guild’s siege recommendations in channels, and answers its commands across the server. A serverless sync: everything goes through Discord.`,
+    ongletsAria: 'Parts of the guide',
+    onglets: { installation: 'Installation', recommandations: 'Recommendations', commandes: 'Commands' },
+    atoutsTitre: 'Good to know',
+    installation: {
+      intro: 'For a server administrator: you need the Manage Server permission.',
+      atouts: [
+        {
+          titre: 'With its commands',
+          texte: 'The bot arrives with all its commands, usable across the server. The ones to come will show up there without redoing anything.',
+        },
+        {
+          titre: 'With no permission',
+          texte: 'It arrives with no permission at all and only reads the channels you add it to: the recommendation ones.',
+        },
+        {
+          titre: 'Never an administrator',
+          texte: 'Never give it an administrator role: it would see every channel of the server.',
+        },
+      ],
+      inviter: 'Invite the bot',
+      etapes: {
+        inviter: {
+          titre: 'Invite the bot',
+          texte: '“Invite the bot” opens Discord’s invitation: pick your server under “Add to Server”, then confirm.',
+        },
+        commandes: {
+          titre: 'Its commands are there',
+          texte: 'In any channel, type “/”: the bot’s commands show up, like /speedtune. The Commands tab describes them.',
+        },
+        salons: {
+          titre: 'For recommendations, its channels',
+          texte: 'Sharing recommendations takes one channel per recommendation, where the bot has four permissions: the Recommendations tab sets it up.',
+        },
+      },
+      depannage: [
+        {
+          probleme: 'The bot’s commands don’t show up',
+          remede: 'The bot was invited without its commands. Invite it again with “Invite the bot”: the invitation adds them, without removing it from the server.',
+        },
+        {
+          probleme: 'A triangle next to the server’s name',
+          remede: 'In the app, this triangle means the bot has an administrator role: it sees every channel of the server. Remove that role; only the permissions of the blacksmith-reco… channels are needed.',
+        },
+      ],
+    },
+    recos: {
+      intro: 'Your guild’s siege recommendations, shared in Discord channels: every member finds them in their app and publishes their own, with no file to pass around.',
+      atouts: [
+        {
+          titre: 'One channel, one recommendation',
+          texte: 'Each blacksmith-reco… channel holds a single recommendation: its latest published version. For several recommendations, several channels.',
+        },
+        {
+          titre: 'Discord’s permissions decide',
+          texte: 'Who reads and who publishes follows the channel’s permissions. The app has no permission settings: moderation happens in Discord.',
+        },
+      ],
+      adminTitre: 'Set up the channels',
+      adminIntro: 'For a server administrator, once the bot is invited (Installation tab).',
+    },
+    etapesAdmin: {
+      salon: {
+        titre: 'Create one channel per recommendation',
+        texte: 'Its name starts with blacksmith-reco: blacksmith-reco-defenses, blacksmith-reco-offs-g3… A channel holds a single recommendation.',
+      },
+      ajouter: {
+        titre: 'Add the bot to the channel',
+        texte: 'Edit Channel › Permissions › Advanced permissions, then the “+” next to “Roles/Members”: pick the bot.',
+      },
+      droits: {
+        titre: 'Give it four permissions',
+        texte: 'Tick these four permissions for the bot, and nothing else:',
+      },
+      reserver: {
+        titre: 'Keep the channel for recommendations',
+        texte: 'Each publication is a new message from the bot, carrying the recommendation’s file. The app only reads the last 100 messages: a discussion in the channel would end up pushing the recommendation out of reach.',
+      },
+    },
+    droits: {
+      voir: 'View Channel',
+      anciens: 'Read Message History',
+      envoyer: 'Send Messages',
+      joindre: 'Attach Files',
+    },
+    membresTitre: 'For members',
+    membresIntro: 'Every guild member, on the website or in the desktop app.',
+    etapesMembres: {
+      connecter: {
+        titre: 'Sign in with Discord',
+        texte: 'Siege › Recommendations, Discord box: “Sign in with Discord”. In the desktop app, the sign-in opens in your browser, which shows a code to paste into the app.',
+      },
+      salons: {
+        titre: 'Find the channels',
+        texte: 'The blacksmith-reco… channels you can read show under the server’s name, each with the state of its recommendation: Up to date, Modified, Conflict or Read only.',
+      },
+      publier: {
+        titre: 'Publish',
+        texte: 'A recommendation from your device goes out with “Publish to…”; a channel’s, once modified, with “Publish” in its banner. You need the right to write in the channel.',
+      },
+      message: {
+        titre: 'In Discord',
+        texte: 'Each publication is a message from the bot that says who published, without notifying anyone. A member can also drop the file exported by the app in the channel: the most recent valid file wins. Deleting a message brings the previous version back.',
+      },
+    },
+    depannageRecos: [
+      {
+        probleme: 'The channel doesn’t show in the app',
+        remede: 'Its name must start with blacksmith-reco, the bot needs “View Channel” and “Read Message History” in it, and you the right to read it. Then “Refresh”.',
+      },
+      {
+        probleme: 'Publishing fails',
+        remede: 'The bot needs “Send Messages” and “Attach Files” in the channel, and you the right to write in it. Without that right, the channel is Read only.',
+      },
+      {
+        probleme: 'A recommendation disappeared',
+        remede: 'Its message was deleted, or pushed beyond the channel’s last 100 messages. If you lost access to the channel, your unpublished changes stay on your device.',
+      },
+    ],
+    commandes: {
+      intro: 'In any channel of a server the bot is on, type “/” then the command’s name. It needs no permission for the bot in the channel.',
+      enEssai: 'In testing',
+      liste: {
+        speedtune: {
+          nom: '/speedtune',
+          resume:
+            'Attach a screenshot of a siege battle’s preparation screen: the bot reads your three monsters and their SPD, and answers with the turn order.',
+          etapes: [
+            {
+              titre: 'Send the screenshot',
+              texte: 'The whole screen, or cropped to your three monsters. Keep it at its original size: shrunk, the SPD can no longer be read.',
+            },
+            {
+              titre: 'Answer its questions',
+              texte: 'When a stacking speed passive or an artifact’s SPD Increasing Effect matters, the bot asks for it first with a menu. Only the command’s author can answer.',
+            },
+            {
+              titre: 'Read the result',
+              texte: 'The turn order, each monster’s read SPD, ✅ or ❌ cut, the stat SPD or the one to aim for, and the speed skill used. “Open the speed tuning tool” leads to the tool, to tune the team by hand.',
+            },
+          ],
+          note: 'The message is in French if your Discord is, otherwise in English. A misrecognized monster or a misread SPD skews the result: the message says what remains uncertain.',
+        },
+      },
+    },
+    depannageTitre: 'Not working?',
+    question: 'Another question? The app’s Discord',
+    captures: {
+      'app-connexion': 'The Discord box of the Recommendations page, with “Sign in with Discord” and “Install the bot on your server”.',
+      'app-salons': 'After signing in: the “Test guild” server and its two blacksmith-reco… channels, one Up to date, the other Read only.',
+      'app-salon-choisi': 'A chosen channel: its banner (server, channel, state, version) with “Publish”, above its recommendation.',
+      'message-bot': 'In Discord: the bot’s message saying who updated the recommendation, with its file.',
+      'speedtune-capture': 'The screenshot sent: the three monsters of the preparation screen, with their SPD.',
+      'speedtune-reponse': 'The bot’s answer: the team, the SPD of the defense to beat, then the turn order with each monster’s SPD.',
+    },
+    capturesEnAnglais: 'Discord screenshots in English.',
+  },
+
+  swExporter: {
+    titre: 'SW Exporter',
+    intro: (app: string) =>
+      `SW Exporter (SWEX) reads your account from the game and saves it to a file: that file is what ${app} imports. Its plugin keeps it up to date while you play.`,
+    atoutsTitre: 'What the plugin does',
+    atouts: [
+      {
+        titre: 'Your account, live',
+        texte:
+          'Without the plugin, SWEX only writes your account when you log in to the game. With it, every grind, gem, upgrade, sale or equipment change reaches “My account” while you play, and your account updates without logging in again.',
+      },
+      {
+        titre: 'Your guild battles',
+        texte:
+          'Siege, guild war, labyrinth: the defenses you see, the attacks you make and the battle logs are kept as you play. The siege statistics come from them.',
+      },
+      {
+        titre: 'Your Dimensional Arena',
+        texte:
+          'Its box is not in the export. The plugin keeps it when you open the mode, then follows the runes you equip, your defense, your summons and your attacks: the Dimensional Arena tabs fill in by themselves.',
+      },
+      {
+        titre: 'Nothing leaves your computer',
+        texte:
+          'The plugin writes its files in a SWBlacksmith folder, next to your export. It sends nothing, and never writes your session key.',
+      },
+    ],
+    telecharger: 'Download the plugin',
+    fichier: (version: string) => `SWBlacksmithLive.js · version ${version}`,
+    avecBureau:
+      'It works with the desktop app, which follows the SWEX folder: a browser cannot read a folder on your computer. On the website, importing your account stays manual.',
+    telechargerApp: 'Download the app',
+    auTelephone: 'Install it from a computer, next to SW Exporter.',
+    tutoTitre: 'Install the plugin',
+    etapes: [
+      {
+        titre: 'Install SW Exporter',
+        texte:
+          'If you have not already: download it, run it and log in to the game once. Keep its ProfileExport plugin enabled: it writes the starting export.',
+      },
+      { titre: 'Download the plugin', texte: 'The button above gives you the SWBlacksmithLive.js file.' },
+      {
+        titre: 'Drop it in the plugins folder',
+        texte:
+          'The “Summoners War Exporter Files” folder, where SWEX saves your exports, contains a “plugins” folder: put the file in it.',
+      },
+      {
+        titre: 'Restart SW Exporter',
+        texte: '“SWBlacksmithLive” appears in its plugin list, enabled. Guild battles can be turned off in the same place.',
+      },
+      {
+        titre: 'Follow the folder in the app',
+        texte: 'In the desktop app: Settings › SW Exporter folder. Log in to the game: your account loads.',
+      },
+    ],
+    swexSurGithub: 'SW Exporter on GitHub',
+    utiliserTitre: 'Using the plugin',
+    utilisation: [
+      {
+        titre: 'Turn on “Live” in “My account”',
+        texte:
+          'Among the monster, rune and artifact filters. Off by default. When on, “My account” follows your game: every grind, gem, upgrade, sale or rune you equip shows up within moments, without a notification.',
+      },
+      {
+        titre: 'Live only changes “My account”',
+        texte:
+          'The Optimizer, speed tuning, RTA and siege keep the account loaded in the app. Turning “Live” off brings “My account” back to that account.',
+      },
+      {
+        titre: 'Update your account without logging in again',
+        texte:
+          '“Update my account”, on this page, carries your session over to the app’s account, like logging out and back in: a rune you just looted is ready in the Optimizer. Nothing is written to the SW Exporter folder.',
+      },
+    ],
+    etatTitre: 'The plugin on this computer',
+    pluginAJour: (v: string) => `Installed · version ${v} · up to date`,
+    pluginAncien: (v: string, app: string) => `Installed · version ${v} · version ${app} is available`,
+    pluginPlusRecent: (v: string) => `Installed · version ${v}, newer than the app`,
+    pluginAbsent: 'Not found in the SW Exporter plugins folder.',
+    sansDossier: 'Choose the SW Exporter folder in Settings to see the plugin and your session.',
+    telechargerDernier: 'Download the latest version',
+    session: (heure: string) => `Live session · last action at ${heure}`,
+    sansSession: 'No live session: log in to the game with SW Exporter open and the plugin installed.',
+    mettreAJour: 'Update my account',
+    misAJour: (heure: string) => `Account updated at ${heure}.`,
+    echecMiseAJour: 'Nothing to update: no readable live session.',
+    limitesTitre: 'What waits for the next login',
+    limites:
+      'RTA favorites and presets, decks, siege defense, rune locks and experience gained outside battles: the plugin does not follow them yet, they arrive at your next login to the game.',
+    miseAJourTitre: 'Updating the plugin',
+    miseAJour:
+      'The plugin carries the app version: when the app changes version, download it again and replace the old file, then restart SWEX.',
+  },
+
+  siegeStats: {
+    site: 'Siege statistics are read in the desktop app, with the SW Exporter plugin: it keeps what the game shows of sieges while you play.',
+    telechargerApp: 'Download the app',
+    pagePlugin: 'The SW Exporter plugin',
+    chargement: 'Reading sieges…',
+    sansPlugin: 'No siege to read: choose the SW Exporter folder in Settings, and install the SW Blacksmith Live plugin.',
+    aucunSiege: 'No siege recorded yet: open the siege map in game, with SW Exporter running the plugin.',
+    saison: (n: number | null) => (n === null ? 'Season' : `Season ${n}`),
+    classement: 'Ranking',
+    surGuildes: (n: string) => `out of ${n} guilds`,
+    score: 'Score',
+    tauxVictoire: 'Win rate',
+    meilleur: (n: number | null, rang: string) => (n === null ? `Best ranking: ${rang}` : `Best ranking: ${rang}, season ${n}`),
+    choixSiege: 'Siege',
+    tousLesSieges: (n: number) => `All sieges (${n})`,
+    contreGuildes: (noms: string[]) => `vs ${noms.join(' and ')}`,
+    cumulIncomplet: 'The match battle log was not opened in game for every siege: some battles are missing from the total.',
+    enCours: 'in progress',
+    place: (n: number) => {
+      const dix = n % 100;
+      const suffixe = dix >= 11 && dix <= 13 ? 'th' : n % 10 === 1 ? 'st' : n % 10 === 2 ? 'nd' : n % 10 === 3 ? 'rd' : 'th';
+      return `${n}${suffixe}`;
+    },
+    placeSur: (place: string, n: number) => `${place} of ${n}`,
+    manques: {
+      carte: 'Siege map never opened in game: guilds and defenses unknown.',
+      resume: 'Match battle log never opened in game: only battles opened in detail are counted.',
+      resultat: 'Final result never seen in game.',
+    },
+    guildesTitre: 'Guilds',
+    comparatif: {
+      titre: 'The guilds of the siege',
+      classement: 'Ranking',
+      classementProvisoire: 'Provisional ranking, by score',
+      joueurs: (n: number) => (n === 1 ? `${n} player` : `${n} players`),
+      attaques: (n: string, max: string | null) => `${n}${max ? ` / ${max}` : ''} attacks`,
+      monstres: (n: string, max: string | null) => `${n}${max ? ` / ${max}` : ''} monsters`,
+      faceAFace: 'Head-to-head',
+      aide: 'Our attacks on each guild, and theirs on us: the log only shows the battles that involve us.',
+      contre: (nom: string) => `Against ${nom}`,
+      nosAttaques: 'Our attacks',
+      sesAttaques: 'Their attacks',
+      resumeDuel: (n: string, v: string, taux: string | null) => `${n} · ${v} won${taux ? ` (${taux} %)` : ''}`,
+      detailDuel: (v: number, d: number, n: number) => `${v} won, ${d} lost out of ${n}`,
+    },
+    maGuilde: 'My guild',
+    attaques: (n: number) => (n === 1 ? `${n} attack` : `${n} attacks`),
+    monstres: (n: number) => (n === 1 ? `${n} monster` : `${n} monsters`),
+    angles: { guilde: 'Guild', membre: 'Member' },
+    vues: { ensemble: 'Overview', detail: 'Details' },
+    membre: {
+      evolutionTitre: 'WR across sieges',
+      evolutionAide: 'One point per recorded siege where they were in the guild: their WR on attack and on defense.',
+      unSeulSiege: 'Only one siege recorded so far: the curve gains a point with each siege.',
+      legendeAttaque: 'Attack WR',
+      legendeDefense: 'Defense WR',
+      pointAttaque: (wr: string, n: number) => `Attack: WR ${wr} over ${n === 1 ? `${n} battle` : `${n} battles`}`,
+      pointDefense: (wr: string, n: number) => `Defense: WR ${wr} over ${n === 1 ? `${n} battle` : `${n} battles`}`,
+      offenses5Titre: 'Most played offenses on 5★ towers',
+      offenses4Titre: 'Most played offenses on 4★ towers',
+      offenses4Aide: 'Natural 4★ monsters and below.',
+      aucuneOffense: 'No attack with known monsters on these towers.',
+      battentTitre: 'Hardest defenses for them to beat',
+      battentAide: 'Enemy defenses they lost the most attacks against.',
+      aucuneDefaite: 'No loss against a defense with known monsters.',
+      legendeAttaquesPerdues: 'Their attacks lost against it',
+    },
+    ensemble: {
+      sieges: 'Sieges',
+      rang: 'Rank',
+      score: 'Score',
+      attaques: 'Attacks',
+      tauxAttaque: 'Attack wins',
+      tenue: 'Defense wins',
+      sansResultat: 'unknown result',
+      surAttaques: (v: number, d: number) => `${v} won · ${d} lost`,
+      glissantEcart: (jours: number) => `over ${jours} days`,
+      glissantDetail: (n: number, jours: number) =>
+        `The WR of the last ${jours} days (${n === 1 ? `${n} battle` : `${n} battles`}, up to the last recorded battle), compared with the ${jours} days before, in points`,
+      evolutionTitre: 'Guild WR across sieges',
+      evolutionAide: 'One point per recorded siege: the guild’s WR on attack and on defense. Click a siege to open it.',
+      evolutionOuvrir: 'Click to open this siege',
+      courbeTitre: 'Attacks over the siege',
+      courbeAide: 'Each guild’s attacks, added up: dashed, the ones done; solid, the ones won. Below, their WR over the siege.',
+      courbePoint: (nom: string, attaques: number, victoires: number, wr: string) =>
+        `${nom}: ${attaques === 1 ? `${attaques} attack` : `${attaques} attacks`}, ${victoires} won · WR ${wr}`,
+      courbeWr: 'WR',
+      infobulles: 'Tooltips',
+      legendeMasquer: (nom: string) => `Hide: ${nom}`,
+      legendeAfficher: (nom: string) => `Show: ${nom}`,
+      legendeDerniere: 'At least one series stays shown',
+      legendeFaites: 'Attacks done',
+      legendeGagnees: 'Attacks won (and WR, below)',
+      legendeCombats: 'Battles played',
+      legendeAttaquesPerdues: 'Our attacks lost against it',
+      legendeScore: 'Guild score',
+      tableauAttaquesTitre: 'Attacks per member',
+      tableauAttaquesAide:
+        'WR (win rate): wins out of attacks played. Click a name to see their stats.',
+      tableauDefensesTitre: 'Defenses per member',
+      tableauDefensesAide: 'The battles where their defenses were attacked during the siege.',
+      colonnes: {
+        joueur: 'Player',
+        victoires: 'W',
+        defaites: 'L',
+        manquees: 'Missed',
+        taux: 'WR',
+        tour5: '5★',
+        tour4: '4★',
+        decks: 'Decks',
+        subis: 'Taken',
+        tenus: 'Won',
+        perdus: 'Lost',
+        tenue: 'WR',
+      },
+      titresColonnes: {
+        joueur: 'Player',
+        victoires: 'Attacks won',
+        defaites: 'Attacks lost',
+        manquees: 'Expected attacks not done',
+        taux: 'Win rate: wins out of attacks played',
+        tour5: 'Attacks on 5★ towers: won / all',
+        tour4: 'Attacks on 4★ towers (natural 4★ monsters and below): won / all',
+        decks: 'Defense decks',
+        subis: 'Battles where their defenses were attacked',
+        tenus: 'Battles won on defense',
+        perdus: 'Battles lost on defense',
+        tenue: 'Defense win rate: battles won out of battles taken',
+      },
+      trier: (colonne: string) => `Sort by: ${colonne}`,
+      jouesTitre: 'Most played attack teams',
+      jouesAide: 'By my guild, on battles whose monsters the game showed.',
+      battentTitre: 'Hardest defenses to beat',
+      battentAide: 'Enemy defenses my guild lost the most attacks against.',
+      combatsEquipe: (n: number, taux: string) => `${n === 1 ? `${n} battle` : `${n} battles`} · ${taux}% wins`,
+      defaitesEquipe: (d: number, n: number) => `${d === 1 ? `${d} loss` : `${d} losses`} out of ${n === 1 ? `${n} battle` : `${n} battles`}`,
+      aucuneEquipe: 'No battle with known monsters: open the battle logs in game.',
+      historiqueTitre: 'Guild score per siege',    },
+    choixJoueur: 'Member',
+    ancienMembre: 'Former member: no longer in the guild',
+    anciensMembres: 'Former members',
+    membresTitre: 'Members',
+    victoires: (n: number) => (n === 1 ? `${n} win` : `${n} wins`),
+    nuls: (n: number) => (n === 1 ? `${n} draw` : `${n} draws`),
+    defaites: (n: number) => (n === 1 ? `${n} loss` : `${n} losses`),
+    decksEnDefense: (n: number) => (n === 1 ? `${n} defense deck` : `${n} defense decks`),
+    monstresInconnus: 'monsters used unknown',
+    voirJoueur: (nom: string) => `See ${nom}'s stats`,
+    defensesTitre: 'Defenses',
+    attaquesTitre: 'Attacks',
+    base: (n: number) => `Base ${n}`,
+    tour: (n: number) => `Tower ${n}`,
+    qg: 'HQ',
+    couleursGuilde: { bleue: 'blue', rouge: 'red', jaune: 'yellow' },
+    tourDetail: (tour: string, couleur: string, base: number) => `${tour} of the ${couleur} territory (map base ${base})`,
+    victoire: 'Win',
+    defaite: 'Loss',
+    resultatInconnu: 'Unknown result',
+    joueurInconnu: 'unknown player',
+    aucuneAttaque: 'No attack recorded.',
+    aucuneDefense: 'No defense recorded.',
+    combatsTitre: 'Guild battles',
+    combatsAide: 'Battles whose monsters the game showed: your attacks, and the logs opened in game.',
+    aucunCombat: 'No battle with known monsters: open a player’s or a defense’s battle logs in game.',
+    defensesAdversesTitre: 'Enemy defenses',
+    versus: 'vs',
+    monstresNonVus: 'monsters not seen in game',
+    fleche: '→',
+    contreLibelle: 'vs',
+    resultat: 'Result',
+    defensesInconnues: 'defenses unknown',
+    filtres: {
+      resultat: { tous: 'All', victoires: 'Wins', defaites: 'Losses' },
+      cote: { tous: 'Attack or defense', attaque: 'On attack', defense: 'On defense' },
+      coteAide: 'Pick a monster first',
+      monstre: 'Filter by monster',
+      retirer: (nom: string) => `Remove ${nom}`,
+      effacer: 'Clear filters',
+      aucunCombat: 'No battle matches the filters.',
+      aucuneDefense: 'No defense matches the filters.',
+    },
+    suite: 'continued',
+    bilanCombats: (n: number, victoires: number, defaites: number, taux: string | null) =>
+      `${n === 1 ? `${n} battle` : `${n} battles`} · ${victoires} W · ${defaites} L${taux ? ` · ${taux}% wins` : ''}`,
+    abr: {
+      attaques: (n: number) => `${n} att.`,
+      victoires: (n: number) => `${n} W`,
+      nuls: (n: number) => `${n} D`,
+      defaites: (n: number) => `${n} L`,
+      decks: (n: number) => `${n} def.`,
+      tenues: (tenus: number, n: number) => `def. ${tenus}/${n}`,
+    },
+    defensesTenues: (tenus: number, n: number) => `On defense: ${tenus} won out of ${n === 1 ? `${n} battle` : `${n} battles`}`,
+    wrValeur: (pourcent: string) => `WR ${pourcent}%`,
+    defensesDepuisCombats: 'From the siege battles: each defense team, its battles won out of battles taken. Monsters known when the battle log was opened in game.',
+  },
+
+  direct: {
+    libelle: 'Live',
+    activer: 'Follow your game live (SW Exporter plugin)',
+    actif: (heure: string) => `Live · last action at ${heure} · click to turn off`,
+    actifSansSession: 'Live on · no live session for now',
+    indisponible: 'Follow your game live — no session yet: log in to the game with SW Exporter open and the plugin installed',
   },
 
   nouveautes: {
@@ -540,7 +1008,7 @@ export const en: Dictionnaire = {
     swexEnLecture: (date: string) => `Export of ${date} — reading…`,
     exportCharge: (nom: string | null) => `${nom ? `${nom}’s account` : 'Account'} loaded from SW Exporter`,
     exportMisAJour: (nom: string | null) => `${nom ? `${nom}’s account` : 'Account'} updated from SW Exporter`,
-    dimensionMiseAJour: (n: number) => `Dimensional Arena updated from the SWEX log: ${n} team${n > 1 ? 's' : ''}`,
+    dimensionMiseAJour: (n: number) => `Dimensional Arena updated from SW Exporter: ${n} team${n > 1 ? 's' : ''}`,
   },
 
   importCompte: {
@@ -563,12 +1031,12 @@ export const en: Dictionnaire = {
     offenseAreneVide: 'No arena attack team set up in this file.',
     sansDefenseInterserveur: 'No cross-server arena defense found (server_arena_defense_deck_info).',
     defenseInterserveurVide: 'No cross-server arena defense set up in this file.',
-    sansDefenseDimension: 'No Dimensional Arena defense found in the SWEX log (defense_deck_info).',
-    defenseDimensionVide: 'The Dimensional Arena defense in the SWEX log points to no monster of the dimensional box.',
+    sansDefenseDimension: 'No Dimensional Arena defense found in the season (defense_deck_info).',
+    defenseDimensionVide: 'The Dimensional Arena defense points to no monster of the dimensional box.',
     sansOffenseDimension: 'No Dimensional Arena attack team found (deck_recent_list, type 28).',
-    offenseDimensionSansJournal:
-      'The Dimensional Arena attack teams point to monsters of the dimensional box: import the SWEX log (full_log.txt) too to recognize them.',
-    offenseDimensionInconnue: 'The Dimensional Arena attack teams point to monsters missing from the box in the SWEX log.',
+    offenseDimensionSansSaison:
+      'The Dimensional Arena attack teams point to monsters of the dimensional box: open the Dimensional Arena in game, with the SW Blacksmith Live plugin, to recognize them.',
+    offenseDimensionInconnue: 'The Dimensional Arena attack teams point to monsters missing from the dimensional box.',
     rien: 'Nothing to import from this file.',
     monstres6: (n: number) => `${n} 6★ monsters`,
     monstresRta: (n: number) => `${n} RTA monsters`,
@@ -1328,7 +1796,7 @@ export const en: Dictionnaire = {
       `Team removed from the ${cote === 'offense' || cote === 'dimension-offense' ? 'offense' : cote === 'interserveur' ? 'cross-server defense' : 'defense'}`,
     dimensionBureauSeulement: 'The Dimensional Arena is only available in the desktop app. The web version is coming soon.',
     noteDimension:
-      'The dimensional box (its monsters and their runes) is not in the account export. With the SW Exporter folder chosen and the SWEX Full Logger plugin on, these tabs fill in by themselves when you open the Dimensional Arena in game. Otherwise, build your teams by hand.',
+      'The dimensional box (its monsters and their runes) is not in the account export. With the SW Exporter folder chosen and the SW Blacksmith Live plugin installed, these tabs fill in by themselves when you open the Dimensional Arena in game, and follow what you change there. Otherwise, build your teams by hand.',
   },
 
   siege: {
@@ -1368,8 +1836,8 @@ export const en: Dictionnaire = {
     },
     board: {
       cote: {
-        defense: { titre: 'Defense', nom: 'defense', de: 'defense' },
-        offense: { titre: 'Offense', nom: 'offense', de: 'offense' },
+        defense: { titre: 'Defense decks', nom: 'defense', de: 'defense' },
+        offense: { titre: 'Offense decks', nom: 'offense', de: 'offense' },
       },
       exportSansCompte: 'Load an account to export to the Optimizer.',
       exportEquipeVide: 'No monster in this team can be imported.',
@@ -1580,6 +2048,7 @@ export const en: Dictionnaire = {
         'Each member connects to Discord from this page: they see the channels they can read, and publish in those they can write to. Moderation is done directly in Discord, through the channel’s permissions.',
       ],
       inviter: 'Invite the bot',
+      guide: 'The step-by-step guide, with screenshots',
       question: 'A question? The app’s Discord',
     },
     compte: {
