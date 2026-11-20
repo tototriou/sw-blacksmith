@@ -4,7 +4,7 @@ import { flushSync } from 'react-dom';
 import OptimizerSection from '../../src/components/outils/OptimizerSection';
 import { useOptimizerState, type OptimizerState } from '../../src/hooks/useOptimizerState';
 import { useOptimizerLists, type UseOptimizerLists } from '../../src/hooks/useOptimizerLists';
-import { setPersistence } from '../../src/hooks/usePersistence';
+import { setPersistence, viderMiroir } from '../../src/hooks/usePersistence';
 import { contexteResultat, type ContexteResultat } from '../../src/lib/contexteResultat';
 import { resoudreContexteRelique } from '../../src/lib/relicOptim';
 import { classerPourLaPage, fixtureClassementCombat } from '../classement-fixture';
@@ -70,7 +70,7 @@ async function geste(action: () => void) {
 
 export async function monter(variante: VarianteRelique = 'fixe') {
   banc = preparer(variante);
-  localStorage.clear();
+  localStorage.clear(); viderMiroir();
   setPersistence(false);
   globalThis.fetch = async () => new Response('{}', { status: 404 });
   const root = createRoot(document.getElementById('racine')!);

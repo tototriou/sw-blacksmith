@@ -5,7 +5,7 @@ import { cleMemoireMembre, ecrireMembresOptimizer, lireMembresOptimizer, reverif
 import { otherValidatedArtifactIds, otherValidatedRuneIds, resolveExclusionEntry, type ExclusionSourceData } from '../src/lib/optimizerExclusion';
 import type { Monster } from '../src/types';
 import { monterListesOptimizer } from './optimizer-lists-harness';
-import { setPersistence, lireTravail } from '../src/hooks/usePersistence';
+import { setPersistence, lireTravail, viderMiroir } from '../src/hooks/usePersistence';
 import { baseCompleteCriteres } from '../src/lib/criteresOptimizer';
 import { composerSession, ecrireSession, lireSession, CLES_SESSION } from '../src/lib/session';
 import { lireSession as lireAncienneSession } from './fixtures/lecteur-session-v1';
@@ -206,7 +206,10 @@ export function testOptimizerPointSuppressionConservation() {
   egal(mem.get(OPTIMIZER_BACKUP_STORAGE_KEY), brut, 'activation : point écrit depuis le miroir');
   const relu = monterListesOptimizer().render();
   egal(relu.point, listes.point, 'point relu au rechargement du hook');
+  // Un point abîmé sur le disque, au lancement SUIVANT : le miroir de la
+  // session précédente n'existe plus.
   mem.set(OPTIMIZER_BACKUP_STORAGE_KEY, '{"version":99}');
+  viderMiroir();
   const abime = monterListesOptimizer().render();
   ok(abime.pointExiste && !abime.point && abime.rapportPoint.length > 0, 'point illisible existe et reste signalé');
   egal(mem.get(OPTIMIZER_BACKUP_STORAGE_KEY), '{"version":99}', 'point illisible jamais supprimé à la lecture');

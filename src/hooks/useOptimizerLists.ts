@@ -6,7 +6,7 @@ import {
   ValidatedBuild,
   exclusionSelectorKey,
 } from '../lib/optimizerExclusion';
-import { loadLocal, saveLocal, usePersistence } from './usePersistence';
+import { lireTravail, saveLocal, usePersistence } from './usePersistence';
 import type { CriteresOptimizer } from '../lib/criteresOptimizer';
 import { synchroniserLeadsMembresOptimizer } from '../lib/equipesOptimizer';
 import { nomNouvelleListeOptimizer } from '../lib/optimizerListNames';
@@ -64,7 +64,7 @@ function isSelector(v: unknown): v is ExclusionSelector {
 
 export function loadOptimizerLists(): StoredState {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = lireTravail(STORAGE_KEY);
     if (!raw) return defaultState();
     const parsed = JSON.parse(raw) as Partial<StoredState>;
     const listIds = new Set<string>();
@@ -181,7 +181,7 @@ export interface UseOptimizerLists {
 interface MemberStorage extends DonneesMembresOptimizer { rapport: string[]; raw: string | null }
 interface State extends StoredState { memberStorage: MemberStorage }
 function loadState(t: Dictionnaire): State {
-  const raw = loadLocal(OPTIMIZER_MEMBERS_STORAGE_KEY);
+  const raw = lireTravail(OPTIMIZER_MEMBERS_STORAGE_KEY);
   const lu = lireMembresOptimizer(raw, t);
   return { ...loadOptimizerLists(), memberStorage: { ...lu, raw } };
 }
@@ -215,7 +215,7 @@ export function useOptimizerLists(): UseOptimizerLists {
   }, []);
   const lireStockageCourant = useCallback(() => ({ ...courant.current, ...courant.current.memberStorage }), []);
   const [pointStocke, setPointStocke] = useState(() => {
-    const brut = loadLocal(OPTIMIZER_BACKUP_STORAGE_KEY);
+    const brut = lireTravail(OPTIMIZER_BACKUP_STORAGE_KEY);
     return { brut, ...lirePointOptimizer(brut, textes) };
   });
 

@@ -4,6 +4,7 @@
 
 import { existsSync, readFileSync } from 'fs';
 import { resolve } from 'path';
+import { viderMiroir } from '../src/hooks/usePersistence';
 
 /* --------------------------------------------------------------------------
  * Assertions
@@ -61,7 +62,11 @@ export function titre(t: string) {
 
 // `localStorage` minimal, énumérable — le module de persistance parcourt ses
 // clés (`Object.keys`) pour purger les données.
+// ⚠️ Un faux stockage neuf simule un LANCEMENT : le miroir du travail
+// (`usePersistence`) repart vide, sinon les hooks, qui y relisent leur état
+// au démarrage, y trouveraient celui d'un test précédent.
 export function faussLocalStorage(initial: Record<string, string> = {}) {
+  viderMiroir();
   const mem = new Map(Object.entries(initial));
   const api = {
     getItem: (k: string) => mem.get(k) ?? null,

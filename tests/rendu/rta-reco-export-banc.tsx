@@ -11,7 +11,7 @@ import { useSiegeState } from '../../src/hooks/useSiegeState';
 import { useSiegeRecos } from '../../src/hooks/useSiegeRecos';
 import { useOptimizerState, type OptimizerState } from '../../src/hooks/useOptimizerState';
 import { useOptimizerLists, type UseOptimizerLists } from '../../src/hooks/useOptimizerLists';
-import { setPersistence } from '../../src/hooks/usePersistence';
+import { setPersistence, viderMiroir } from '../../src/hooks/usePersistence';
 import { avecNavigationImportOptimizer } from '../../src/lib/actionImportOptimizer';
 import { baseCompleteCriteres, photoCriteres } from '../../src/lib/criteresOptimizer';
 import { exclusionSelectorKey, type ExclusionSourceData } from '../../src/lib/optimizerExclusion';
@@ -94,7 +94,7 @@ const affichage = () => JSON.stringify({ criteres: photoCriteres(etat, { type: '
 export async function scenario(s: Source, mobile: boolean, motif = 'accepte', conserverRapport = false): Promise<[boolean, string][]> {
   const preuves: [boolean, string][] = [], verifier = (v: boolean, m: string) => preuves.push([v, `${s}/${motif} : ${m}`]);
   if (racine) await geste(() => racine!.unmount());
-  localStorage.clear(); setPersistence(true); source = s; telephone = mobile; attente = false; refus = '';
+  localStorage.clear(); viderMiroir(); setPersistence(true); source = s; telephone = mobile; attente = false; refus = '';
   const data = initiales();
   localStorage.setItem('swblacksmith-rta-v1', JSON.stringify({ sections: ['swift'], entries: data.rtaEntries }));
   localStorage.setItem('swblacksmith-siege-recos-v1', JSON.stringify({ recos: [reco] }));

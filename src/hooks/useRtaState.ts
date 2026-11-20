@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { RtaState, RtaEntry, GearSet, RTA_UNASSIGNED, RTA_OTHER, RTA_DEFAULT_SECTIONS, RUNE_SETS } from '../types';
-import { saveLocal, usePersistence } from './usePersistence';
+import { lireTravail, saveLocal, usePersistence } from './usePersistence';
 
 const RUNE_SET_KEYS = new Set(RUNE_SETS.map((s) => s.key));
 
@@ -12,7 +12,8 @@ function defaultState(): RtaState {
 
 function load(): RtaState {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    // `lireTravail` : une session chargée sans conservation n'est qu'en mémoire.
+    const raw = lireTravail(STORAGE_KEY);
     if (!raw) return defaultState();
     const parsed = JSON.parse(raw) as Partial<RtaState>;
     const sections = Array.isArray(parsed.sections) ? parsed.sections : [...RTA_DEFAULT_SECTIONS];

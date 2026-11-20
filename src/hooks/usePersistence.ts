@@ -147,9 +147,17 @@ export function oublierLocal(key: string) {
 
 // Une valeur du travail ou des réglages, telle que l'app l'a écrite : le
 // miroir d'abord, sinon le disque (réglages, clé qu'aucun hook monté n'a
-// encore écrite).
+// encore écrite). ⚠️ Les hooks y relisent leur état AU DÉMARRAGE : une
+// session chargée sans conservation n'est que dans le miroir.
 export function lireTravail(key: string): string | null {
   return miroir.get(key) ?? loadLocal(key);
+}
+
+// Un lancement neuf : le miroir repart vide, comme à l'ouverture de l'app.
+// Pour les tests, qui simulent un lancement par un faux stockage neuf
+// (`faussLocalStorage`, tests/outils.ts).
+export function viderMiroir() {
+  miroir.clear();
 }
 
 // Efface tout ce qui a été conservé, réglages exclus (voir `CLES_DE_REGLAGE`).
