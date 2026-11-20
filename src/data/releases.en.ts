@@ -40,6 +40,8 @@ export const RELEASES_EN: Release[] = [
       { kind: 'feat', scope: 'Siege', text: 'Battle and defense filters: result, monsters, attack or defense.' },
       { kind: 'feat', scope: 'SW Exporter', text: 'The plugin no longer keeps rewriting a guild screen that has not changed.' },
       { kind: 'feat', scope: 'Optimizer', text: 'A minimum Accuracy per skill: S1, S2 or S3, type artifact included.' },
+      { kind: 'fix', scope: 'Application', text: 'An account imported from a file is no longer replaced by the summoner followed in the SW Exporter folder.' },
+      { kind: 'fix', scope: 'Application', text: 'Without kept data, the followed summoner reloads in full at launch, RTA prep and siege included.' },
       { kind: 'fix', scope: 'My account', text: 'On the rune curve, the chosen rune stays chosen when you upgrade it.' },
     ],
   },

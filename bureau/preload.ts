@@ -47,6 +47,7 @@ contextBridge.exposeInMainWorld(
       etat: () => ipcRenderer.invoke('bureau:swex-etat'),
       choisirDossier: () => ipcRenderer.invoke('bureau:swex-choisir-dossier'),
       choisirInvocateur: (fichier: string) => ipcRenderer.invoke('bureau:swex-choisir-invocateur', fichier),
+      aucunInvocateur: () => ipcRenderer.invoke('bureau:swex-aucun-invocateur'),
       oublier: () => ipcRenderer.invoke('bureau:swex-oublier'),
       surEtat: (rappel: (etat: unknown) => void) => {
         const ecouteur = (_e: unknown, etat: unknown) => rappel(etat);

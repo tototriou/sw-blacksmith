@@ -445,6 +445,20 @@ export function brancherSwex(fenetre: BrowserWindow, preuve?: PreuveSwex) {
     return repondre();
   });
 
+  // ⚠️ **Un import manuel lâche l'invocateur suivi** (le dossier reste) : le
+  // compte affiché n'est plus le sien. Le garder, c'était laisser son
+  // prochain export remplacer « Mon compte » sous une prépa RTA et un siège
+  // venus du fichier — deux comptes mêlés, selon la page. Le rechoisir est
+  // un changement de compte comme un autre : import complet.
+  ipcMain.handle('bureau:swex-aucun-invocateur', (e) => {
+    if (!deLaPage(e)) return null;
+    if (reglage.fichier === null) return etat();
+    reglage = { ...reglage, fichier: null, dernierLu: null, dimensionLue: null };
+    complet = false;
+    ecrire();
+    return repondre();
+  });
+
   ipcMain.handle('bureau:swex-oublier', (e) => {
     if (!deLaPage(e)) return null;
     reglage = { dossier: null, fichier: null, dernierLu: null, dimensionLue: null, direct: reglage.direct };

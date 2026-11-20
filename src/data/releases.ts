@@ -101,6 +101,8 @@ export const RELEASES: Release[] = [
       { kind: 'feat', scope: 'Siège', text: 'Filtres des combats et des défenses : résultat, monstres, attaque ou défense.' },
       { kind: 'feat', scope: 'SW Exporter', text: 'Le plugin n’écrit plus en boucle un écran de guilde qui n’a pas changé.' },
       { kind: 'feat', scope: 'Optimizer', text: 'Une précision minimale par sort : S1, S2 ou S3, artéfact de type compris.' },
+      { kind: 'fix', scope: 'Application', text: 'Un compte importé par fichier n’est plus remplacé par l’invocateur suivi dans le dossier SW Exporter.' },
+      { kind: 'fix', scope: 'Application', text: 'Sans données gardées, l’invocateur suivi se recharge en entier au lancement, prépa RTA et siège compris.' },
       { kind: 'fix', scope: 'Mon compte', text: 'Sur la courbe des runes, la rune choisie reste choisie quand tu la montes.' },
     ],
   },

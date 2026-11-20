@@ -17,7 +17,9 @@
 // sous-dossier `live` ; après le choix, prépa RTA et siège jamais touchés ;
 // puis le direct du plugin SWEX — « Direct » dans « Mon compte », une ligne
 // ajoutée au fichier live, la carte du plugin et « Mettre à jour mon compte »
-// de la page SW Exporter, rien d'écrit dans le dossier de SWEX.
+// de la page SW Exporter, rien d'écrit dans le dossier de SWEX ; enfin une
+// relance avec la conservation refusée (tout importé) et un import manuel qui
+// lâche l'invocateur suivi.
 // `--session` (docs/02-app/transverse/) : conservation refusée,
 // « Sauvegarder » depuis les Paramètres, Ctrl K, Ctrl+S et la barre du haut,
 // puis « Sauvegarder sous… » ; chaque fichier relu par `lireSession`.
@@ -250,6 +252,21 @@ if (discord) {
     'rien d’écrit dans le dossier de SWEX':
       res.dossierSwexIntact?.export === true && res.dossierSwexIntact?.racine === true && JSON.stringify(res.dossierSwexIntact?.dossierPlugin) === JSON.stringify(['compte.live.jsonl']),
     'interrupteur retenu (coupé à la fin)': res.reglageRetenu?.direct === false,
+    'conservation refusée, relance : l’invocateur suivi importé en entier, prépa RTA comprise':
+      res.refus === 'cliqué' &&
+      res.apresRelanceSansConservation?.conservation === '0' &&
+      res.apresRelanceSansConservation?.compte === 'Testeur' &&
+      /^[1-9]/.test(res.prepaAvantRefus ?? '') &&
+      res.apresRelanceSansConservation?.prepa === res.prepaAvantRefus,
+    'import manuel : l’invocateur lâché, le dossier gardé, aucun coché':
+      res.remplacerManuel === 'cliqué' &&
+      res.apresImportManuel?.compte === 'Manuel' &&
+      JSON.stringify(res.apresImportManuel?.menu) === JSON.stringify(['Autre', 'Testeur', 'Importer un fichier…']) &&
+      res.apresImportManuel?.selecteur === '' &&
+      res.apresImportManuel?.reglage?.fichier === null &&
+      typeof res.apresImportManuel?.reglage?.dossier === 'string',
+    'après l’import manuel, l’export de l’ancien invocateur ne s’applique plus':
+      res.apresAncienExport?.compte === 'Manuel' && res.apresAncienExport?.notification === 'aucune',
     'aucune erreur': !res.erreur,
   };
   for (const [quoi, bon] of Object.entries(verdicts)) console.log(`${bon ? 'ok' : 'KO'}  ${quoi}`);

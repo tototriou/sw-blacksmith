@@ -33,7 +33,8 @@ export default function SuiviSwex({
   appliquerDimension: (saison: Record<string, any>, recents: unknown[]) => number;
   pret: boolean;
   // La page n'a aucun compte (conservation refusée) : l'export se relit en
-  // silence, même s'il a déjà été lu.
+  // silence, même s'il a déjà été lu — en entier si elle n'a pas non plus
+  // d'équipes (App.tsx, `rafraichirCompte`).
   sansCompte: boolean;
   // La page n'a rien de l'arène dimensionnelle (conservation refusée, ou
   // saison lue avant l'onglet qui la montre) : la dernière saison se redonne,
