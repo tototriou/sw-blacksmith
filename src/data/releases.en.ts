@@ -29,6 +29,7 @@ export const RELEASES_EN: Release[] = [
       { kind: 'feat', scope: 'SW Exporter', text: '“Update my account” applies your session without logging in to the game again.' },
       { kind: 'feat', scope: 'SW Exporter', text: 'The plugin also keeps your guild battles, for the guild screens to come.' },
       { kind: 'feat', scope: 'Siege', text: '“Defense” and “Offense” become “Defense decks” and “Offense decks”.' },
+      { kind: 'fix', scope: 'My account', text: 'On the rune curve, the chosen rune stays chosen when you upgrade it.' },
     ],
   },
   {
