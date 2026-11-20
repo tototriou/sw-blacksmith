@@ -98,7 +98,8 @@ réalisables avec l'appli »), sur des équipes de démonstration passées par l
 Puis **les autres outils, en pastilles** (tuile ronde à la teinte, titre), dans
 l'ordre de la navigation : Prépa d'un ami, Défenses et offenses, Arène, Arène
 dimensionnelle, Analyse de runes, Analyse d'artéfacts, Bestiaire, Mécaniques,
-Application de bureau (**site seulement**).
+SW Exporter en direct ([sw-exporter/](../sw-exporter/), le plugin SWEX — site
+et app de bureau), Application de bureau (**site seulement**).
 
 ### 5. « Rejoins la communauté » — compacte
 

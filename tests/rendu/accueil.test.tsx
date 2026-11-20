@@ -91,6 +91,7 @@ export function testRenduAccueil() {
     '#/compte/artefacts',
     '#/bestiary',
     '#/mecaniques',
+    '#/sw-exporter',
     '#/telecharger',
   ];
   const autres = tous.filter((l) => PASTILLES.includes(l.href) && l.texte !== v.application).map((l) => l.href);
@@ -143,6 +144,8 @@ export function testRenduAccueilBureau() {
   ok(liens(rendreAccueil(VIDE)).filter((l) => l.href === '#/telecharger').length === 2, 'sur le site : le bouton du héros et la pastille');
   const app = dansLeBureau(() => rendreAccueil(VIDE));
   ok(!liens(app).some((l) => l.href === '#/telecharger'), 'dans l’app de bureau : ni bouton ni pastille');
+  // La page SW Exporter, elle, sert surtout au bureau : sa pastille y reste.
+  ok(liens(app).some((l) => l.href === '#/sw-exporter'), 'dans l’app de bureau : la pastille SW Exporter');
 }
 
 // Le serveur Discord de l'app : un bouton dans le héros et la carte de la

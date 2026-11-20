@@ -23,11 +23,11 @@ import {
   parseWizardId,
   unionRunesUtilisees,
 } from '../src/lib/importAccount';
-import { estJournalSwex, lireSaisonDimension, saisonDeLInvocateur } from '../src/lib/journalSwex';
+import { rejouerDimension } from './plugin-swex-dimension.test';
 import { areneClassiqueVide, equipesAreneClassique, equipesDimension } from '../src/lib/applyAccount';
 import type { Monster } from '../src/types';
 import { formatRelicUnique } from '../src/lib/effects';
-import { egal, exportReel, exportExemplairesMultiples, exportSynthetique, ignore, journalSwexMiniature, journalSwexReel, ok, titre } from './outils';
+import { egal, exportReel, exportExemplairesMultiples, exportSynthetique, ignore, journalSwexReel, ok, saisonDimensionMiniature, titre } from './outils';
 import { fr } from '../src/i18n/fr';
 
 export default function testImport() {
@@ -214,20 +214,10 @@ export default function testImport() {
     'arène : sans ses données, chaque lecture dit ce qui manque'
   );
 
-  /* --- Arène dimensionnelle : la box du journal SWEX -------------------- */
+  /* --- Arène dimensionnelle : la saison tenue par le plugin SWEX -------- */
 
-  // Le journal miniature : une saison périmée, puis la saison à lire, puis une
-  // dernière occurrence tronquée (journal coupé en cours d'écriture).
-  const journal = journalSwexMiniature();
-  ok(estJournalSwex(journal) && !estJournalSwex(texte), 'journal SWEX : reconnu, et un export ne l’est pas');
-  const saison = lireSaisonDimension(journal);
-  egal(
-    saison?.defense_deck_info?.unit_id_list,
-    [[900002, 900001, 0, 0]],
-    'journal SWEX : la dernière saison lisible, pas la tronquée ni la périmée'
-  );
-  egal(lireSaisonDimension(JSON.stringify(saison))?.unit_list?.length, 3, 'journal SWEX : la réponse seule se lit aussi');
-  egal(lireSaisonDimension(texte), null, 'journal SWEX : un export de compte n’est pas une saison');
+  // La saison miniature (la réponse du jeu, telle que le plugin l'écrit).
+  const saison = saisonDimensionMiniature();
   const defDim = parseDimensionDefense(saison, fr).decks[0];
   egal(com2us(defDim), [15105, 14314, null, null], 'dimension défense : defense_deck_info, leader en tête, 4 places');
   // 900001 sans rune : tout le build par défaut de 14314 (VIT 42 + 15,
@@ -274,8 +264,8 @@ export default function testImport() {
   );
   egal(
     [parseDimensionOffense(avecAttaqueDim, null, fr).error, parseDimensionOffense(objet, saison, fr).error],
-    [fr.importCompte.offenseDimensionSansJournal, fr.importCompte.sansOffenseDimension],
-    'dimension attaque : sans journal, ou sans équipe de type 28, la lecture le dit'
+    [fr.importCompte.offenseDimensionSansSaison, fr.importCompte.sansOffenseDimension],
+    'dimension attaque : sans saison, ou sans équipe de type 28, la lecture le dit'
   );
 
   // Ce que l'app applique à chaque saison du dossier SW Exporter : la défense
@@ -501,19 +491,17 @@ export default function testImport() {
     'export réel : défense d’arène et défense interserveur pleines'
   );
 
-  // Arène dimensionnelle : la défense du journal réel, pleine, chaque monstre
-  // avec 6 runes (les siennes ou celles du build par défaut) ; l'attaque de
-  // type 28 de l'export, résolue dans sa box.
+  // Arène dimensionnelle : la saison réelle telle que le plugin la tient (le
+  // journal SWEX réel rejoué dans son moteur) — la défense pleine, chaque
+  // monstre avec 6 runes (les siennes ou celles du build par défaut) ;
+  // l'attaque de type 28 de l'export, résolue dans sa box.
   const journalReel = journalSwexReel();
   if (!journalReel) {
     ignore('journal réel : box dimensionnelle', 'journal SWEX réel (full_log.txt) absent');
     return;
   }
-  const saisonReelle = lireSaisonDimension(journalReel);
-  ok(
-    saisonDeLInvocateur(journalReel, Number(parseWizardId(reelObjet))) !== null,
-    'journal réel : la saison de l’invocateur de l’export (celle que lit l’application de bureau)'
-  );
+  const saisonReelle = rejouerDimension(journalReel).tenues.get(Number(parseWizardId(reelObjet))) ?? null;
+  ok(saisonReelle !== null, 'journal réel : la saison de l’invocateur de l’export, tenue par le plugin');
   const defDimReel = parseDimensionDefense(saisonReelle, fr).decks[0];
   ok(
     !!defDimReel && defDimReel.slots.every((s) => s !== null && s.gear!.runes.length === 6),
@@ -523,5 +511,14 @@ export default function testImport() {
   ok(
     offDimReel.decks.length > 0 && offDimReel.decks.every((dk) => dk.slots.every((s) => s !== null)),
     `journal réel : ${offDimReel.decks.length} attaque(s) dimensionnelle(s) de l'export, résolue(s) dans la box ${offDimReel.error ?? ''}`
+  );
+  if (!saisonReelle?.deck_recent_list) {
+    ignore('journal réel : attaques vues par le plugin', 'aucun combat d’arène dimensionnelle dans ce journal');
+    return;
+  }
+  const offDimPlugin = parseDimensionOffense({ deck_recent_list: saisonReelle.deck_recent_list }, saisonReelle, fr);
+  ok(
+    offDimPlugin.decks.length > 0 && offDimPlugin.decks.every((dk) => dk.slots.every((s) => s !== null)),
+    `journal réel : ${offDimPlugin.decks.length} attaque(s) vue(s) jouer par le plugin, résolue(s) dans la box ${offDimPlugin.error ?? ''}`
   );
 }

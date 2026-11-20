@@ -12,6 +12,7 @@ import Pager from './Pager';
 import { Critere } from './SubSearchDialog';
 import SubSearchBar from './SubSearchBar';
 import MobileSheet from '../../ui/MobileSheet';
+import InterrupteurDirect from './InterrupteurDirect';
 import Selecteur from '../../ui/Selecteur';
 import BoutonSensTri from '../BoutonSensTri';
 import { SENS_PAR_DEFAUT, SensTri } from '../../lib/tri';
@@ -178,6 +179,9 @@ export default function RunesList({ runes, menuOuvert, onFermerMenu, prefixeEtat
   // contrôles dedans.
   const filtresEnsemble = (
     <>
+        {/* Application de bureau : « Mon compte » en direct. */}
+        <InterrupteurDirect className="self-start" />
+
         {/* Sets : multi-sélection, icônes seules (voir SetFilter) */}
         <SetFilter runes={runes} value={sets} onChange={choisirSets} />
 

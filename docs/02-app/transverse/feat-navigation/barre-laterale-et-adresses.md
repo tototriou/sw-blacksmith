@@ -20,8 +20,11 @@ Accueil
 JOUER        RTA ›  Siège ›  Arène ›  Arène dimensionnelle ›
 MON COMPTE   Monstres  Runes ›  Artéfacts ›
 OUTILS       Optimizer  Speed tuning
-RESSOURCES   Bestiaire  Mécaniques  Nouveautés  Télécharger
+RESSOURCES   Bestiaire  Mécaniques  Nouveautés  SW Exporter  Télécharger
 ```
+
+« SW Exporter » (le plugin SWEX) est sur le site **et** dans l'app de
+bureau, qui s'en sert. Voir [sw-exporter/](../../sw-exporter/).
 
 « Télécharger » n'existe que sur le
 **site** : `RESOURCES` d'App.tsx l'omet dans l'app de bureau (`estBureau()`),
@@ -51,7 +54,7 @@ l'adresse et en déduit la page et ses sous-niveaux.
 | `#/outils/optimizer`, `/speed-tuning` | Outils |
 | `#/arene/defense`, `/offense`, `/interserveur` | Arène |
 | `#/arene-dimensionnelle/defense`, `/offense`, `/runes` | Arène dimensionnelle |
-| `#/bestiary`, `#/mecaniques`, `#/releases`, `#/parametres` | une page chacune |
+| `#/bestiary`, `#/mecaniques`, `#/releases`, `#/sw-exporter`, `#/parametres` | une page chacune |
 | `#/telecharger` | Télécharger — **site seulement** ; dans l'app de bureau, l'accueil |
 
 - ⚠️ **Une adresse tronquée mène au défaut de sa section**, jamais à un écran

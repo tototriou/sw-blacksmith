@@ -198,7 +198,7 @@ export function testRenduSiegeArtefactsDimension() {
 // L'en-tête bureau.
 export function testRenduSiegeEnTete() {
   titre('rendu · Siège — l\'en-tête bureau et son menu « ⋯ »');
-  for (const [side, nom] of [['defense', 'Défense'], ['offense', 'Offense']] as const) {
+  for (const [side, nom] of [['defense', 'Decks de défense'], ['offense', 'Decks d’offense']] as const) {
     const html = rendreCamp(side);
     ok(texteVisible(html).includes(`${nom} 2 équipes`), `${nom} : le titre, puis le compteur`);
     ok(!!bouton(html, "Plus d'actions"), `${nom} : bouton « Plus d'actions »`);

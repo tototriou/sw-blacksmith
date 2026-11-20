@@ -15,7 +15,10 @@
 // `--swex` : le dossier SW Exporter sur des fixtures — choix (sauvegarde
 // proposée, puis import complet), export réécrit, rechargement,
 // sous-dossier `live` ; après le choix, prépa RTA et siège jamais touchés ;
-// relance avec la conservation refusée : tout importé ; un import manuel
+// puis le direct du plugin SWEX — « Direct » dans « Mon compte », une ligne
+// ajoutée au fichier live, la carte du plugin et « Mettre à jour mon compte »
+// de la page SW Exporter, rien d'écrit dans le dossier de SWEX ; enfin une
+// relance avec la conservation refusée (tout importé) et un import manuel qui
 // lâche l'invocateur suivi.
 // `--session` (docs/02-app/transverse/) : conservation refusée,
 // « Sauvegarder » depuis les Paramètres, Ctrl K, Ctrl+S et la barre du haut,
@@ -207,6 +210,8 @@ if (discord) {
   if (r.error) throw r.error;
   const res = JSON.parse(readFileSync(resolve(dossier, 'resultats-swex.json'), 'utf8'));
   console.log(JSON.stringify(res, null, 2));
+  // « 8 runes » → 8 ; illisible → NaN (jamais égal).
+  const nombre = (texte) => Number(/^(\d+)/.exec(texte ?? '')?.[1] ?? NaN);
   const verdicts = {
     'import manuel : prépa RTA et siège remplis': res.travailRempli === true,
     'deux invocateurs proposés, live/ ignoré': JSON.stringify(res.options) === JSON.stringify(['Choisir…', 'Autre', 'Testeur']),
@@ -234,6 +239,19 @@ if (discord) {
       res.apresSauvegarde?.compte === 'Testeur' &&
       /^Import : /.test(res.apresSauvegarde?.recapitulatif ?? ''),
     'réglage retenu (dossier, invocateur, dernier lu)': res.reglageRetenu?.fichier === 'Testeur-1.json' && typeof res.reglageRetenu?.dernierLu === 'number',
+    'direct : l’interrupteur dans « Mon compte », coupé par défaut': res.directAvant?.interrupteur?.presse === 'false',
+    'direct activé : même compte (fichier live de la même connexion)': res.directActive?.interrupteur?.presse === 'true' && res.directActive?.runes === res.directAvant?.runes,
+    'direct : une rune vendue pendant la partie disparaît, sans notification':
+      nombre(res.directVente?.runes) === nombre(res.directAvant?.runes) - 1 && res.directVente?.notification === 'aucune',
+    'page SW Exporter : plugin ancien signalé, session en direct':
+      /version 1\.0\.0 · la version .+ est disponible/.test(res.cartePlugin ?? '') && /Télécharger la dernière version/.test(res.cartePlugin ?? '') && /Session en direct/.test(res.cartePlugin ?? ''),
+    '« Mettre à jour mon compte » : fait, sans notification':
+      res.mettreAJour !== 'absent' && /Compte mis à jour à/.test(res.apresMiseAJour?.carte ?? '') && res.apresMiseAJour?.notification === 'aucune',
+    'direct coupé : le compte de l’app garde la mise à jour':
+      res.directCoupe?.interrupteur?.presse === 'false' && nombre(res.directCoupe?.runes) === nombre(res.directAvant?.runes) - 1,
+    'rien d’écrit dans le dossier de SWEX':
+      res.dossierSwexIntact?.export === true && res.dossierSwexIntact?.racine === true && JSON.stringify(res.dossierSwexIntact?.dossierPlugin) === JSON.stringify(['compte.live.jsonl']),
+    'interrupteur retenu (coupé à la fin)': res.reglageRetenu?.direct === false,
     'conservation refusée, relance : l’invocateur suivi importé en entier, prépa RTA comprise':
       res.refus === 'cliqué' &&
       res.apresRelanceSansConservation?.conservation === '0' &&

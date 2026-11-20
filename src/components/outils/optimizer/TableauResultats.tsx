@@ -28,10 +28,11 @@ import { useTraduction } from '../../../hooks/useLangue';
 // (`CHIFFRES_MAX_COLONNE`, en `ch` de la police du champ). La largeur minimale
 // ainsi obtenue fixe le seuil sous lequel les cartes la remplacent
 // (`TABLEAU_VISIBLE`, requête de conteneur, plus bas).
-// Pas de composant de librairie : un `<table>` est une mise en page, et
-// celui-ci est le premier tableau triable de l'app ; ses contrôles viennent
-// de `src/ui/` (`Bouton` pour les en-têtes, `ZoneCliquable` pour le rang,
-// `NumberField`).
+// Sa grammaire a donné le `Tableau` de la librairie (src/ui/Tableau.tsx) ;
+// lui garde sa propre mise en page — lignes de bornes, épinglés, fiche
+// d'« Exemplaire » en font plus qu'un tableau de données. Ses contrôles
+// viennent de `src/ui/` (`Bouton` pour les en-têtes, `ZoneCliquable` pour le
+// rang, `NumberField`).
 
 /**
  * Le seuil du tableau : la largeur minimale mesurée du conteneur des résultats

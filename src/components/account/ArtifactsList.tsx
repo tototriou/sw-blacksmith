@@ -20,6 +20,7 @@ import ElementIcon from '../ElementIcon';
 import Segmented from '../../ui/Segmented';
 import Bouton from '../../ui/Bouton';
 import MobileSheet from '../../ui/MobileSheet';
+import InterrupteurDirect from './InterrupteurDirect';
 import { ELEMENT_FILTER_STYLES } from '../elementStyles';
 import Pager from './Pager';
 import BoutonSensTri from '../BoutonSensTri';
@@ -222,6 +223,9 @@ export default function ArtifactsList({ artifacts, menuOuvert, onFermerMenu }: P
   // largeur. Deux copies auraient divergé au premier filtre ajouté.
   const filtres = (
     <>
+        {/* Application de bureau : « Mon compte » en direct, en tête. */}
+        <InterrupteurDirect className="self-start lg:self-auto" />
+
         {/* Catégorie + sous-filtre.
             ⚠️ L'intitulé de la rangée est « Catégorie » et non « Type » : les
             deux sortes d'artéfacts s'appellent **Attribut** et **Type** dans le

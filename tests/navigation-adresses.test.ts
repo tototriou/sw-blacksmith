@@ -41,6 +41,7 @@ export const ADRESSES: Record<string, string> = {
   '#/siege/defense': 'siege/defense',
   '#/siege/offense': 'siege/offense',
   '#/siege/recommandations': 'siege/recos',
+  '#/siege/statistiques': 'siege/stats',
   '#/compte/monstres/liste': 'compte/monstres/liste',
   '#/compte/runes/resume': 'compte/runes/resume',
   '#/compte/runes/liste': 'compte/runes/liste',
@@ -68,6 +69,8 @@ export const ADRESSES: Record<string, string> = {
   // Application de bureau : sur le SITE (ici) ; dans l'app,
   // l'adresse retombe sur l'accueil (testNavigationAdressesBureau).
   '#/telecharger': 'telecharger',
+  // Le plugin SWEX : sur le site ET dans l'app (testNavigationAdresses).
+  '#/sw-exporter': 'sw-exporter',
   '#/parametres': 'parametres',
 };
 
@@ -86,6 +89,7 @@ export function testNavigationAdresses() {
   pont.swblacksmithBureau = { bureau: true, plateforme: 'win32' };
   try {
     egal(destination('#/telecharger'), 'home', 'dans l\'app de bureau, #/telecharger → accueil');
+    egal(destination('#/sw-exporter'), 'sw-exporter', 'dans l\'app de bureau, la page SW Exporter reste (c\'est elle qui sert le plugin)');
   } finally {
     delete pont.swblacksmithBureau;
   }

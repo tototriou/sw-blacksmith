@@ -31,6 +31,9 @@ export const COULEUR_SECTION = {
   bestiary: '#2FA0E0',
   mecaniques: '#8890B8',
   releases: '#C79BFF',
+  // Le plugin SWEX : la teinte du compte (c'est lui qu'il tient à jour), un
+  // ton plus vert pour s'en distinguer.
+  'sw-exporter': '#4AD8A8',
   // Application de bureau — site seulement.
   telecharger: '#7FD15B',
 } as const;
@@ -49,6 +52,8 @@ export const COULEUR_SIEGE_SUB = {
   defense: '#E4463A',
   offense: '#F2884C',
   recos: '#5EDB8F',
+  // L'or de l'arène, déjà dans `TEINTE_CLAIRE` : celui des classements.
+  stats: '#F2C24C',
 } as const;
 
 // Sous-sections de l'Arène, indexées par `CoteArene`. Défense et offense
