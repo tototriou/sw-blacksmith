@@ -355,6 +355,7 @@ import testBureauMiseAJour from './bureau-mise-a-jour.test';
 import testBureauSwex, { testBureauJournalSwex } from './bureau-swex.test';
 import { testBureauSwexDirect } from './bureau-swex-direct.test';
 import { testCourbeChoix } from './courbe-choix.test';
+import { testUiTableauTri } from './ui-tableau.test';
 import { testCompteDirect } from './compte-direct.test';
 import {
   testPluginSwexArchive,
@@ -1208,6 +1209,7 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testBureauSwexDirect', testBureauSwexDirect],
   ['testCompteDirect', testCompteDirect],
   ['testCourbeChoix', testCourbeChoix],
+  ['testUiTableauTri', testUiTableauTri],
   ['testPluginSwexEtat', testPluginSwexEtat],
   ['testPluginSwexLive', testPluginSwexLive],
   ['testPluginSwexArchive', testPluginSwexArchive],
