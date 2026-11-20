@@ -116,7 +116,8 @@ if (discord) {
 } else if (session) {
   // La sauvegarde de session : compte importé, conservation REFUSÉE, puis
   // chaque accès à « Sauvegarder » et « Sauvegarder sous… ». Chaque fichier
-  // est relu par le vrai `lireSession`.
+  // est relu par le vrai `lireSession`. Enfin « Charger… » (Ctrl+O) après un
+  // rechargement qui a tout vidé.
   const dossier = resolve(args[0] ?? 'dist-bureau/preuve-session');
   rmSync(dossier, { recursive: true, force: true }); // données neuves
   // Une session en cours retenue par une ouverture précédente : conservation
@@ -133,6 +134,7 @@ if (discord) {
   if (r.error) throw r.error;
   const res = JSON.parse(readFileSync(resolve(dossier, 'resultats-session.json'), 'utf8'));
   const { lireSession } = await chargerModule('src/lib/session.ts');
+  const { CHAMPS_OPTIMIZER_SESSION } = await chargerModule('src/lib/sessionOptimizer.ts');
   const relire = (nom) => {
     const chemin = resolve(dossier, 'swblacksmith', 'sessions', nom);
     if (!existsSync(chemin)) return { ok: false, erreur: 'absent' };
@@ -158,7 +160,34 @@ if (discord) {
   const dossierSwb = resolve(dossier, 'swblacksmith');
   const reglages = relire(premier ?? 'absent');
   const nouvelle = relire(second ?? 'absent');
-  console.log(JSON.stringify({ res, reglages, nouvelle }, null, 2));
+  // L'aller-retour : la session de référence, et la même réécrite après son
+  // chargement. Comparées sur le JSON BRUT (les Set y restent encodés, donc
+  // comparables), partie par partie ; chaque clé qui diffère est nommée.
+  const brut = (f) => {
+    const p = resolve(dossier, f);
+    return existsSync(p) ? JSON.parse(readFileSync(p, 'utf8')) : null;
+  };
+  const avant = brut('reference-session.json');
+  const apres = brut('resauvegarde-session.json');
+  const differences = (x = {}, y = {}) =>
+    [...new Set([...Object.keys(x ?? {}), ...Object.keys(y ?? {})])].filter((k) => JSON.stringify(x?.[k]) !== JSON.stringify(y?.[k]));
+  const sansDate = (c) => (c ? { ...c, savedAt: 0 } : c);
+  const allerRetour = avant && apres
+    ? {
+        stockage: differences(avant.stockage, apres.stockage),
+        compte: JSON.stringify(sansDate(avant.compte)) === JSON.stringify(sansDate(apres.compte)),
+        memoire: differences(avant.outils?.memoire, apres.outils?.memoire),
+        optimizer: differences(avant.outils?.optimizer, apres.outils?.optimizer),
+        clesStockage: Object.keys(avant.stockage ?? {}).length,
+        clesMemoire: Object.keys(avant.outils?.memoire ?? {}).length,
+        // Ce que les gestes de la preuve ont posé : sans eux, l'aller-retour
+        // ne comparerait que des valeurs par défaut.
+        theme: avant.stockage?.['swblacksmith-theme-v1'] ?? null,
+        regemme: avant.outils?.memoire?.['optim.regemLibre'] ?? null,
+        monstre: avant.outils?.optimizer?.selectedId ?? null,
+      }
+    : null;
+  console.log(JSON.stringify({ res, reglages, nouvelle, allerRetour }, null, 2));
   const date = (etape, f) => res[etape]?.dates?.[f];
   const notifie = (etape, f) => res[etape]?.notification?.includes(`Session enregistrée · ${f}`);
   const infobulle = (etape, f) => res[etape]?.infobulle === `Sauvegarder dans ${f} (Ctrl+S)`;
@@ -185,7 +214,25 @@ if (discord) {
     'le travail y est, bien qu’absent du disque': reglages.ok && reglages.cles.includes('swblacksmith-rta-v1') && reglages.cles.includes('swblacksmith-siege-defense-v1'),
     'le compte en mémoire y est': reglages.ok && reglages.compte?.invocateur === 'Testeur' && reglages.compte.monstres > 0,
     'la mémoire des écrans, sans les préférences d’interface': reglages.ok && reglages.memoire.includes('siege.checkTicks.defense') && !reglages.memoire.includes('sidebar.retractee'),
-    'la photo de l’Optimizer (27 champs, exemplaire compris)': reglages.ok && reglages.optimizer === 27,
+    // Le compte suit la liste du code : un champ ajouté à la session ne rend
+    // pas ce contrôle périmé.
+    [`la photo de l’Optimizer (${CHAMPS_OPTIMIZER_SESSION.length} champs, exemplaire compris)`]: reglages.ok && reglages.optimizer === CHAMPS_OPTIMIZER_SESSION.length,
+    'Charger… : après un rechargement vide, Ctrl+O reprend la session la plus récente':
+      /^[1-9]/.test(res.prepaAvantChargement ?? '') &&
+      /^0 /.test(res.apresRechargementVide?.prepa ?? '') &&
+      res.apresChargement?.prepa === res.prepaAvantChargement &&
+      res.apresChargement?.compte === 'Testeur' &&
+      (res.apresChargement?.notification ?? '').includes(`Session chargée · ${second}`),
+    'Charger… : le fichier chargé devient la session en cours': res.apresChargement?.session?.infobulle === `Sauvegarder dans ${second} (Ctrl+S)`,
+    'Charger… : conservation refusée, rien sur le disque': res.apresChargement?.disque?.conservation === '0' && res.apresChargement?.disque?.prepaRta === null,
+    'aller-retour : les deux fichiers relus (référence, puis réécrite après chargement)': allerRetour !== null && allerRetour.clesStockage > 0 && allerRetour.clesMemoire > 0,
+    'aller-retour : la référence porte les gestes (thème sombre, regemme différent, un monstre dans l’Optimizer)':
+      res.etatRiche?.theme === 'cliqué' && res.etatRiche?.regemme === 'cliqué' && /^choisi/.test(res.etatRiche?.monstre ?? '') &&
+      allerRetour?.theme === 'dark' && allerRetour?.regemme === true && allerRetour?.monstre !== null,
+    'aller-retour : le travail et les réglages, identiques': allerRetour?.stockage.length === 0,
+    'aller-retour : le compte, identique': allerRetour?.compte === true,
+    'aller-retour : la mémoire des écrans, identique': allerRetour?.memoire.length === 0,
+    'aller-retour : les critères de l’Optimizer, identiques': allerRetour?.optimizer.length === 0,
     'aucune erreur': !res.erreur,
   };
   for (const [quoi, bon] of Object.entries(verdicts)) console.log(`${bon ? 'ok' : 'KO'}  ${quoi}`);

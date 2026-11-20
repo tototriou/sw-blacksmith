@@ -6,6 +6,7 @@
 // rien n'est posé ni écouté. Le site ne change pas.
 
 import type { Dictionnaire } from '../i18n/fr';
+import type { ErreurSession } from './session';
 import type { RelevesSiege } from './siegeStatistiques';
 
 // L'objet exposé par le préchargement (bureau/preload.ts), seul pont vers le
@@ -51,6 +52,11 @@ interface PontBureau {
     retenir: (oui: boolean) => Promise<EtatSession | null>;
     sauvegarder: (texte: string, nomPropose: string) => Promise<IssueSession | null>;
     sauvegarderSous: (texte: string, nomPropose: string) => Promise<IssueSession | null>;
+    // « Charger… » : le fichier choisi, lu ; puis, la page l'ayant validé,
+    // il devient la session en cours et attend le redémarrage (`aCharger`).
+    charger: () => Promise<IssueChargement | null>;
+    confirmerChargement: () => Promise<EtatSession | null>;
+    aCharger: () => Promise<{ texte: string; nom: string } | null>;
     choisirDossier: () => Promise<EtatSession | null>;
     oublierDossier: () => Promise<EtatSession | null>;
     oublier: () => Promise<EtatSession | null>;
@@ -105,6 +111,45 @@ export type IssueSession =
 // Un échec rendu par le bureau : son motif et le code d'erreur du système.
 // Le message se rédige ici, dans la langue de l'app (`messageEchecSession`).
 export type EchecSession = { issue: 'echec'; motif: 'pas-une-session' | 'ecriture' | 'dossier'; code: string | null };
+// « Charger… » : le fichier lu (la page le valide), ou pourquoi il ne l'a pas été.
+export type IssueChargement =
+  | { issue: 'lue'; texte: string; nom: string }
+  | { issue: 'annulee' }
+  | EchecChargement;
+export type EchecChargement = { issue: 'echec'; motif: 'pas-une-session' | 'lecture'; code: string | null };
+
+// Pourquoi une session n'a pas été chargée : le bureau n'a pas pu lire le
+// fichier, ou la page l'a refusé (`lireSession`). Dans la langue de l'app.
+export function messageEchecChargement(echec: EchecChargement | ErreurSession, t: Dictionnaire): string {
+  const c = t.donnees.chargement;
+  if ('issue' in echec) {
+    if (echec.motif === 'pas-une-session') return c.pasUneSession;
+    switch (echec.code) {
+      case 'ENOENT':
+        return c.introuvable;
+      case 'EACCES':
+      case 'EPERM':
+        return c.refus;
+      case 'EBUSY':
+        return c.occupe;
+      default:
+        return c.autre(echec.code);
+    }
+  }
+  switch (echec.code) {
+    case 'illisible':
+      return c.pasUneSession;
+    case 'autreFormat':
+      return c.autreFormat;
+    case 'versionIllisible':
+    case 'travailIllisible':
+      return c.abimee;
+    case 'tropRecente':
+      return c.tropRecente;
+    case 'valeurIllisible':
+      return c.valeurIllisible(echec.cle);
+  }
+}
 
 // Le message d'un échec de sauvegarde. Le dossier SW Blacksmith inaccessible
 // (`dossier`) renvoie vers les Paramètres : « Sauvegarder sous… » échouerait

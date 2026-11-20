@@ -219,6 +219,13 @@ Rien n'est envoyé à un serveur. Aucune authentification.
   ([synchronisation-discord.md](../../siege/feat-recommandations/synchronisation-discord.md)). Ce
   ne sont pas les données de l'utilisateur, et le refus lui-même doit être
   mémorisé pour ne pas reposer la question.
+- ⚠️ **Un hook de données relit son état par `lireTravail`**, au démarrage
+  comme ailleurs : le **miroir** (la dernière valeur écrite par `saveLocal`,
+  en mémoire, conservation acceptée OU refusée) d'abord, le disque ensuite.
+  Une session chargée sans conservation n'existe que dans le miroir
+  ([feat-sauvegarde-session.md](../feat-sauvegarde-session.md), « Charger »).
+  Le miroir repart vide à chaque lancement ; les tests qui simulent un
+  lancement le vident aussi (`viderMiroir`).
 - ⚠️ **Toute clé de réglage est déclarée dans `CLES_DE_REGLAGE`.** Une clé qui
   n'y figure pas est une donnée : à elle seule elle vaudrait consentement, et
   un refus ou « Tout supprimer » l'effacerait.

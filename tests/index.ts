@@ -374,6 +374,7 @@ import testBureauCoeurs from './bureau-coeurs.test';
 import testBureauLancement from './bureau-lancement.test';
 import testBureauDiscord from './bureau-discord.test';
 import testSession from './session.test';
+import { testAllerRetourSession, testChargementSession, testMessageEchecChargement, testRestaurerOptimizer } from './chargement-session.test';
 import { testOptimizerPointAllerRetourComplet, testOptimizerPointMemoireMemeGeste, testOptimizerPointLectureDefensive, testOptimizerPointSessionRelue,
   testOptimizerPointRepriseRattachement, testOptimizerPointRepriseCompteVide, testOptimizerPointSuppressionConservation,
   testOptimizerPointSessionIllisibleConserve } from './optimizer-backup.test';
@@ -1263,6 +1264,12 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testSession', testSession],
   ['testStockage', async () => { await testStockage(); }],
   ['testPersistance', async () => { await testPersistance(); }],
+  // ⚠️ APRÈS testPersistance : ils actionnent l'interrupteur de conservation,
+  // que testPersistance veut trouver « jamais choisi » (module partagé).
+  ['testChargementSession', testChargementSession],
+  ['testAllerRetourSession', testAllerRetourSession],
+  ['testRestaurerOptimizer', testRestaurerOptimizer],
+  ['testMessageEchecChargement', testMessageEchecChargement],
   ['testOptimizerImportActionDemontee', testOptimizerImportActionDemontee],
   ['testOptimizerImportNavigation', testOptimizerImportNavigation],
   ['testOptimizerImportRtaRecoBranchement', testOptimizerImportRtaRecoBranchement],

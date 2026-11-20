@@ -1,5 +1,5 @@
 import { ReactNode, useEffect, useRef, useState } from 'react';
-import { Save, Trash2 } from 'lucide-react';
+import { FolderOpen, Save, Trash2 } from 'lucide-react';
 import { IconeParametres } from './IconesAtelier';
 import { choixMesure, setRuneMetric, useRuneMetric } from '../hooks/useRuneMetric';
 import { setFormeResultats, useFormeResultats, type FormeResultats } from '../hooks/useFormeResultats';
@@ -89,6 +89,7 @@ function ReglageDossierSwblacksmith() {
 export function SettingsList({
   onClearData,
   onSauvegarderSession,
+  onChargerSession,
   sauvegardeIndisponible = null,
   onKeepAccount,
   accountExportedAt,
@@ -96,6 +97,8 @@ export function SettingsList({
 }: {
   onClearData?: () => void;
   onSauvegarderSession?: () => void;
+  // « Charger… » une session, à côté de « Sauvegarder » (application de bureau).
+  onChargerSession?: () => void;
   // Pourquoi « Sauvegarder » est désactivé (le compte se relit encore), ou
   // `null`. Le bouton reste affiché, désactivé avec cette raison en infobulle.
   sauvegardeIndisponible?: string | null;
@@ -241,15 +244,25 @@ export function SettingsList({
           title={t.session}
           hint={t.sessionAide}
         >
-          <Bouton
-            taille="sm"
-            icone={<Save size={12} />}
-            libelle={t.sauvegarder}
-            onClick={onSauvegarderSession}
-            disabled={!!sauvegardeIndisponible}
-            title={sauvegardeIndisponible ?? t.sauvegarderAide}
-            className="flex-none"
-          />
+          <div className="flex flex-none gap-2">
+            {onChargerSession && (
+              <Bouton
+                taille="sm"
+                icone={<FolderOpen size={12} />}
+                libelle={t.charger}
+                onClick={onChargerSession}
+                title={t.chargerAide}
+              />
+            )}
+            <Bouton
+              taille="sm"
+              icone={<Save size={12} />}
+              libelle={t.sauvegarder}
+              onClick={onSauvegarderSession}
+              disabled={!!sauvegardeIndisponible}
+              title={sauvegardeIndisponible ?? t.sauvegarderAide}
+            />
+          </div>
         </Setting>
       )}
       {onSauvegarderSession && estBureau() && <ReglageDossierSwblacksmith />}

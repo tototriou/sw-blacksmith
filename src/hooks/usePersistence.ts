@@ -160,6 +160,28 @@ export function viderMiroir() {
   miroir.clear();
 }
 
+// Une valeur d'une session chargée (application de bureau), posée AVANT le
+// premier rendu (src/lib/chargementSession.ts). `null` : la session n'en avait
+// pas, la valeur d'avant est effacée — sinon un ancien travail survivrait au
+// chargement.
+// ⚠️ **Un réglage s'écrit tel quel** (`CLES_DE_REGLAGE`), comme ses hooks le
+// font, conservation refusée comprise ; **le travail suit la conservation**
+// (`saveLocal`) : refusée, il ne vit qu'en mémoire, dans le miroir que les
+// hooks relisent au démarrage (`lireTravail`).
+export function ecrireDepuisSession(key: string, value: string | null) {
+  if (!CLES_DE_REGLAGE.has(key)) {
+    if (value === null) oublierLocal(key);
+    else saveLocal(key, value);
+    return;
+  }
+  try {
+    if (value === null) localStorage.removeItem(key);
+    else localStorage.setItem(key, value);
+  } catch {
+    /* stockage indisponible : le réglage d'avant reste */
+  }
+}
+
 // Efface tout ce qui a été conservé, réglages exclus (voir `CLES_DE_REGLAGE`).
 export async function purgeDonneesConservees(oublierTravail = true) {
   // Refuser le disque garde le travail de la session ; « Tout supprimer »

@@ -1,5 +1,5 @@
 import { CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Github, Download, Plus, Gauge, Save, SunMoon, FilePlus, AlertTriangle } from 'lucide-react';
+import { Github, Download, Plus, Gauge, Save, SunMoon, FilePlus, FolderOpen, AlertTriangle } from 'lucide-react';
 import {
   IconeAtelier,
   IconeAccueil,
@@ -75,11 +75,13 @@ import {
   composerSession,
   ecrireSession,
   empreinteTravail,
+  lireSession,
   nomFichierSession,
   Session,
   travailNonSauvegarde,
 } from './lib/session';
-import { photoOptimizer } from './lib/sessionOptimizer';
+import { photoOptimizer, restaurerOptimizer } from './lib/sessionOptimizer';
+import { sessionChargee } from './lib/chargementSession';
 import {
   dialogueMasque,
   lireTravail,
@@ -119,7 +121,7 @@ import SuiviSwex from './components/SuiviSwex';
 import { DirectSwexContext, useCompteDirect } from './hooks/useCompteDirect';
 import ChangementCompteDialog from './components/ChangementCompteDialog';
 import { GardeChangementCompte } from './hooks/useEtatSwex';
-import { estBureau, messageEchecSession, selonSupport, sessionBureau, swex, type EchecSession } from './lib/bureau';
+import { estBureau, messageEchecChargement, messageEchecSession, selonSupport, sessionBureau, swex, type EchecSession } from './lib/bureau';
 import {
   COULEUR_SECTION,
   COULEUR_RTA_SUB,
@@ -632,8 +634,10 @@ function Application() {
   // afficherait « ton compte n'est pas chargé » pendant les quelques dizaines de
   // millisecondes de lecture, puis tout apparaîtrait : on croit à une perte de
   // données, puis à un miracle.
+  // Une session chargée à ce démarrage porte son compte : il se relit aussi
+  // conservation refusée (src/lib/chargementSession.ts).
   const [accountHydrating, setAccountHydrating] = useState(
-    () => persistenceEnabled() && storageAvailable()
+    () => sessionChargee() !== null || (persistenceEnabled() && storageAvailable())
   );
   // Un import manuel pendant l'hydratation doit gagner : la lecture en cours ne
   // doit pas écraser le fichier que l'utilisateur vient de déposer.
@@ -823,6 +827,11 @@ function Application() {
         e.preventDefault();
         if (!e.repeat) sauvegarderSessionRef.current();
       }
+      // Ctrl/⌘ O : « Charger… » une session, dans l'app de bureau seulement.
+      if (estBureau() && (e.metaKey || e.ctrlKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'o') {
+        e.preventDefault();
+        if (!e.repeat) chargerSessionRef.current();
+      }
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -843,7 +852,11 @@ function Application() {
     }
     if (allMonsters.length === 0) return;
     let annule = false;
-    loadAccount().then((rec) => {
+    // Une session chargée à ce démarrage (« Charger… », src/lib/chargementSession.ts)
+    // porte son compte : il prime sur IndexedDB, que la conservation soit
+    // acceptée ou non — refusée, il n'est que là.
+    const chargee = sessionChargee();
+    (chargee ? Promise.resolve(chargee.compte) : loadAccount()).then((rec) => {
       if (annule) return;
       // L'utilisateur a déposé un fichier pendant la lecture : son geste prime.
       if (rec && !importedManuallyRef.current) {
@@ -1290,16 +1303,18 @@ function Application() {
   // Si le travail a changé depuis la dernière sauvegarde, on propose d'abord
   // de sauvegarder (`ChangementCompteDialog`) ; `changementCompte` garde le
   // changement le temps de la réponse.
+  // ⚠️ La même garde avant de CHARGER une session (`motif` 'session') : elle
+  // remplace tout le travail, comme un changement de compte.
   const empreinteSauvegardeRef = useRef<string | null>(null);
-  const [changementCompte, setChangementCompte] = useState<(() => void) | null>(null);
-  function avantChangementCompte(changer: () => void) {
+  const [changementCompte, setChangementCompte] = useState<{ changer: () => void; motif: 'compte' | 'session' } | null>(null);
+  function avantChangementCompte(changer: () => void, motif: 'compte' | 'session' = 'compte') {
     // Ce que le changement remplacerait — ce qui serait perdu.
     const aDuTravail =
       Object.keys(rta.state.entries).length > 0 || siegeDef.state.teams.length > 0 || siegeOff.state.teams.length > 0 ||
       areneDef.state.teams.length > 0 || areneOff.state.teams.length > 0 || areneInter.state.teams.length > 0 ||
       areneDimDef.state.teams.length > 0 || areneDimOff.state.teams.length > 0;
     const empreinte = empreinteTravail(sessionCourante(new Date()));
-    if (travailNonSauvegarde(empreinte, empreinteSauvegardeRef.current, aDuTravail)) setChangementCompte(() => changer);
+    if (travailNonSauvegarde(empreinte, empreinteSauvegardeRef.current, aDuTravail)) setChangementCompte({ changer, motif });
     else changer();
   }
   // La garde lit la DERNIÈRE version ; le fournisseur, lui, ne change pas.
@@ -1307,11 +1322,76 @@ function Application() {
   avantChangementCompteRef.current = avantChangementCompte;
   const gardeChangementCompte = useCallback((changer: () => void) => avantChangementCompteRef.current(changer), []);
   async function sauvegarderPuisChanger() {
-    const changer = changementCompte;
+    const changer = changementCompte?.changer;
     setChangementCompte(null);
     // Sauvegarde annulée ou en échec : on ne change pas de compte.
     if (changer && (await enregistrerSession(false))) changer();
   }
+
+  // « Charger… » (docs/02-app/transverse/feat-sauvegarde-session.md) : le
+  // bureau ouvre la boîte et lit le fichier, la page le VALIDE entier
+  // (`lireSession`) avant que rien ne change. Puis la garde (sauvegarder
+  // d'abord ?), et la confirmation : le fichier devient la session en cours,
+  // et la page redémarre pour l'appliquer (main.tsx).
+  // ⚠️ **Une session qui porte un compte lâche l'invocateur suivi** du dossier
+  // SW Exporter, comme un import par fichier : sinon son prochain export
+  // remplacerait le compte de la session.
+  const [echecChargement, setEchecChargement] = useState<string | null>(null);
+  async function chargerSession() {
+    const pont = sessionBureau();
+    if (!pont) return;
+    const r = await pont.charger();
+    if (!r || r.issue === 'annulee') return;
+    if (r.issue === 'echec') {
+      setEchecChargement(messageEchecChargement(r, textes));
+      return;
+    }
+    const lecture = lireSession(r.texte);
+    if (!lecture.ok) {
+      setEchecChargement(messageEchecChargement(lecture.erreur, textes));
+      return;
+    }
+    avantChangementCompte(() => {
+      void (async () => {
+        if (lecture.session.compte) await swex()?.aucunInvocateur();
+        if (await pont.confirmerChargement()) location.reload();
+      })();
+    }, 'session');
+  }
+  // Ctrl+O lit la DERNIÈRE version, comme Ctrl+S.
+  const chargerSessionRef = useRef(chargerSession);
+  chargerSessionRef.current = chargerSession;
+
+  // Après le redémarrage d'un chargement : l'annonce, ce qui n'a pas pu être
+  // repris, l'Optimizer rejoué (`restaurerOptimizer`) une fois le compte relu
+  // — son exemplaire se revérifie contre la box —, puis l'empreinte de la
+  // session, qui vient d'être chargée telle quelle : rien n'est encore à
+  // sauvegarder.
+  const [avertissementsChargement, setAvertissementsChargement] = useState<string[]>([]);
+  const chargementRepris = useRef(false);
+  const [empreinteAPoser, setEmpreinteAPoser] = useState(false);
+  useEffect(() => {
+    const chargee = sessionChargee();
+    if (!chargee || accountHydrating || chargementRepris.current) return;
+    chargementRepris.current = true;
+    const c = textes.donnees.chargement;
+    const avertissements = chargee.avertissements.map((a) => (a === 'comptePerime' ? c.comptePerime : c.optimizerIllisible));
+    if (chargee.optimizer) {
+      const laisses = restaurerOptimizer(optimizer, chargee.optimizer);
+      if (laisses.length) avertissements.push(c.optimizerLaisses(laisses.join(', ')));
+    }
+    setAvertissementsChargement(avertissements);
+    notifier({ message: textes.donnees.sessionChargee(chargee.nom) });
+    setEmpreinteAPoser(true);
+  }, [accountHydrating, optimizer, notifier, textes]);
+  // Le rendu APRÈS la reprise : l'Optimizer rejoué y est à l'écran.
+  const sessionCouranteRef = useRef(sessionCourante);
+  sessionCouranteRef.current = sessionCourante;
+  useEffect(() => {
+    if (!empreinteAPoser) return;
+    setEmpreinteAPoser(false);
+    empreinteSauvegardeRef.current = empreinteTravail(sessionCouranteRef.current(new Date()));
+  }, [empreinteAPoser]);
 
   // ⚠️ **Le ⚙ BASCULE, il ne navigue pas** : il ouvre les paramètres, puis
   // ramène à l'écran d'où l'on vient. Écrit UNE fois et branché aux DEUX
@@ -1899,6 +1979,7 @@ function Application() {
           ? [
               { cle: 'a-session-sauver', libelle: textes.palette.sauvegarderSession, contexte: textes.palette.sauvegarderSessionAide, icone: <Save size={16} />, faire: sauvegarderSession },
               { cle: 'a-session-sous', libelle: textes.palette.sauvegarderSous, contexte: textes.palette.sauvegarderSousAide, icone: <FilePlus size={16} />, faire: sauvegarderSessionSous },
+              { cle: 'a-session-charger', libelle: textes.palette.chargerSession, contexte: textes.palette.chargerSessionAide, icone: <FolderOpen size={16} />, faire: () => void chargerSession() },
             ]
           : []),
         ...choixTheme(textes).map((t) => ({
@@ -2152,6 +2233,7 @@ function Application() {
       <SettingsPage
         onClearData={() => setPurgeGlobale(true)}
         onSauvegarderSession={estBureau() ? sauvegarderSession : undefined}
+        onChargerSession={estBureau() ? () => void chargerSession() : undefined}
         sauvegardeIndisponible={sauvegardeIndisponible}
         onKeepAccount={persistCurrentAccount}
         onImport={importAccount}
@@ -2338,6 +2420,7 @@ function Application() {
         onSauvegarder={estBureau() ? sauvegarderSession : undefined}
         sauvegardeIndisponible={sauvegardeIndisponible}
         onSauvegarderSous={estBureau() ? sauvegarderSessionSous : undefined}
+        onCharger={estBureau() ? () => void chargerSession() : undefined}
         sessionEnCours={sessionEnCours?.nom ?? null}
         decalage={sidebarRetractee ? LARGEUR_SIDEBAR_RETRACTEE : LARGEUR_SIDEBAR}
         // ⚠️ Le burger n'apparaît que sur les pages qui ONT des actions : un
@@ -2555,10 +2638,11 @@ function Application() {
 
         {changementCompte !== null && (
           <ChangementCompteDialog
+            motif={changementCompte.motif}
             sauvegardeIndisponible={sauvegardeIndisponible}
             onSauvegarder={() => void sauvegarderPuisChanger()}
             onChanger={() => {
-              const changer = changementCompte;
+              const { changer } = changementCompte;
               setChangementCompte(null);
               changer();
             }}
@@ -2603,6 +2687,45 @@ function Application() {
             }
             actions={<Bouton onClick={() => setEchecSession(null)} autoFocus ton="accent" fond="doux" libelle={textes.commun.fermer} />}
           />
+        )}
+
+        {/* « Charger… » : un fichier refusé, rien n'a changé. */}
+        {echecChargement !== null && (
+          <Modale
+            onClose={() => setEchecChargement(null)}
+            labelledBy="echec-chargement-titre"
+            titre={textes.donnees.chargement.echecTitre}
+            sousTitre={echecChargement}
+            icone={
+              <span className="mt-0.5 flex-none rounded-lg bg-bad/15 p-2 text-bad">
+                <AlertTriangle size={18} />
+              </span>
+            }
+            actions={<Bouton onClick={() => setEchecChargement(null)} autoFocus ton="accent" fond="doux" libelle={textes.commun.fermer} />}
+          />
+        )}
+
+        {/* Une session chargée, sauf une partie : la dire, plutôt que de
+            laisser croire que tout est revenu. */}
+        {avertissementsChargement.length > 0 && (
+          <Modale
+            onClose={() => setAvertissementsChargement([])}
+            labelledBy="avertissements-chargement-titre"
+            titre={textes.donnees.chargement.avertissementsTitre}
+            sousTitre={textes.donnees.chargement.avertissementsTexte}
+            icone={
+              <span className="mt-0.5 flex-none rounded-lg bg-warn/15 p-2 text-warn">
+                <AlertTriangle size={18} />
+              </span>
+            }
+            actions={<Bouton onClick={() => setAvertissementsChargement([])} autoFocus ton="accent" fond="doux" libelle={textes.commun.fermer} />}
+          >
+            <ul className="list-disc pl-5 text-sm text-ink-dim" data-avertissements-chargement>
+              {avertissementsChargement.map((a) => (
+                <li key={a}>{a}</li>
+              ))}
+            </ul>
+          </Modale>
         )}
 
         {/* La question de la conservation, modale : la réponse conditionne ce
