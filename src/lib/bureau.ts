@@ -26,6 +26,8 @@ interface PontBureau {
     etat: () => Promise<EtatSwex | null>;
     choisirDossier: () => Promise<EtatSwex | null>;
     choisirInvocateur: (fichier: string) => Promise<EtatSwex | null>;
+    // Plus aucun invocateur suivi, le dossier gardé (après un import manuel).
+    aucunInvocateur: () => Promise<EtatSwex | null>;
     oublier: () => Promise<EtatSwex | null>;
     surEtat: (rappel: (etat: EtatSwex) => void) => () => void;
     surExport: (rappel: (exp: ExportSwex) => void) => () => void;
