@@ -76,6 +76,11 @@ latérale, qui devient alors un menu.
   SW Exporter », avec le récapitulatif de l'import. Choisir un **dossier**
   qui ne contient qu'un export le désigne d'office : même import complet.
   Rechoisir l'invocateur déjà suivi ne fait rien.
+- ⚠️ **Un import manuel (un fichier JSON) lâche l'invocateur suivi** : le
+  compte affiché vient du fichier, aucun invocateur n'est plus coché (carte
+  du compte, Réglages) et les exports du dossier ne s'appliquent plus ; le
+  dossier, lui, reste choisi. Rechoisir un invocateur repart d'un import
+  complet.
 - **Puis chaque nouvel export de cet invocateur** — au lancement s'il est
   plus récent que le dernier lu, puis à chaque écriture tant que l'app est
   ouverte — met à jour **« Mon compte » seulement** (box 6★, inventaire,

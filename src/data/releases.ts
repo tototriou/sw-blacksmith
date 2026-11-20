@@ -85,6 +85,7 @@ export const RELEASES: Release[] = [
       { kind: 'feat', scope: 'Arène dimensionnelle', text: 'Sur le site, la version web arrive prochainement.' },
       { kind: 'feat', scope: 'Application', text: 'Avec le dossier SW Exporter, une arène vide se remplit au prochain export.' },
       { kind: 'feat', scope: 'Optimizer', text: 'Une précision minimale par sort : S1, S2 ou S3, artéfact de type compris.' },
+      { kind: 'fix', scope: 'Application', text: 'Un compte importé par fichier n’est plus remplacé par l’invocateur suivi dans le dossier SW Exporter.' },
     ],
   },
   {

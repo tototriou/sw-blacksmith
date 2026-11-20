@@ -82,7 +82,7 @@ lecteur côté page (`estBureau()` = l'objet présent, avec `bureau: true`).
 | `miseAJour.etat()` | `bureau:mise-a-jour` (`invoke`) | état courant |
 | `miseAJour.surChangement(rappel)` | `bureau:mise-a-jour` | bureau → page ; rend de quoi se désabonner |
 | `miseAJour.rechercher()`, `telecharger()`, `redemarrer()` | `bureau:rechercher`, `bureau:telecharger`, `bureau:redemarrer` | page → bureau |
-| `swex.etat()`, `choisirDossier()`, `choisirInvocateur(fichier)`, `oublier()` | `bureau:swex-etat`, `bureau:swex-choisir-dossier`, `bureau:swex-choisir-invocateur`, `bureau:swex-oublier` (`invoke`) | rendent l'état du réglage |
+| `swex.etat()`, `choisirDossier()`, `choisirInvocateur(fichier)`, `aucunInvocateur()`, `oublier()` | `bureau:swex-etat`, `bureau:swex-choisir-dossier`, `bureau:swex-choisir-invocateur`, `bureau:swex-aucun-invocateur`, `bureau:swex-oublier` (`invoke`) | rendent l'état du réglage |
 | `swex.surEtat(rappel)`, `swex.surExport(rappel)` | `bureau:swex-etat`, `bureau:swex-export` | bureau → page |
 | `swex.pret(pageSansCompte)`, `swex.lu(modifie)` | `bureau:swex-pret`, `bureau:swex-lu` | page → bureau |
 | `session.etat()`, `retenir(oui)`, `choisirDossier()`, `oublierDossier()`, `oublier()` | `bureau:session-etat`, `bureau:session-retenir`, `bureau:session-choisir-dossier`, `bureau:session-oublier-dossier`, `bureau:session-oublier` (`invoke`) | rendent l'état : session en cours, dossier SW Blacksmith |
@@ -272,6 +272,12 @@ côté du service : [service-discord.md § Application de bureau](../siege/feat-
   prépa RTA ni le siège (voir [transverse/feat-import-compte/bouton-import.md](../transverse/feat-import-compte/bouton-import.md), § « Le dossier SW
   Exporter »). Le processus principal marque `complet` l'export qui suit un
   choix (`bureau:swex-export`), jusqu'au `bureau:swex-lu` de la page.
+- ⚠️ **Un import manuel lâche l'invocateur suivi** (`aucunInvocateur`,
+  après un import réussi ; le dossier reste) : plus aucun n'est coché, ni
+  dans le menu de la carte du compte, ni dans les Réglages, et ses exports
+  ne sont plus appliqués. Sinon, son prochain export remplaçait « Mon
+  compte » sous la prépa RTA et le siège du fichier : deux comptes mêlés,
+  selon la page. Le rechoisir est un changement de compte : import complet.
 - **Quand** : au chargement de la page, si l'export est plus récent que le
   dernier appliqué (annoncé), ou si la page n'a pas de compte (conservation
   refusée : relu en silence) ; puis à chaque changement du dossier, **1,5 s
@@ -447,7 +453,7 @@ boutons restent affichés, désactivés quand il n'y a rien à faire.
 ```
 npm run bureau:preuve                  # l'app se contrôle elle-même (resultats.json)
 npm run bureau:preuve -- --conservation  # les données et la session en cours survivent à la fermeture
-npm run bureau:preuve -- --swex        # le dossier SW Exporter, sur des fixtures : choix, sauvegarde proposée, import complet, exports suivants
+npm run bureau:preuve -- --swex        # le dossier SW Exporter, sur des fixtures : choix, sauvegarde proposée, import complet, exports suivants, import manuel qui lâche l'invocateur
 npm run bureau:preuve -- --session     # « Sauvegarder », « Sauvegarder sous… », conservation refusée
 npm run bureau:preuve -- --discord     # la connexion à Discord, devant le vrai service et un Discord simulé : code collé, conservation refusée puis acceptée, favori, réouverture, déconnexion
 npm run bureau:preuve -- <dossier> --exe "<app installée>"  # la même chose, sur l'app installée

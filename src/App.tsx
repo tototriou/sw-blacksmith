@@ -112,7 +112,7 @@ import MiseAJourBureau from './components/MiseAJourBureau';
 import SuiviSwex from './components/SuiviSwex';
 import ChangementCompteDialog from './components/ChangementCompteDialog';
 import { GardeChangementCompte } from './hooks/useEtatSwex';
-import { estBureau, messageEchecSession, selonSupport, sessionBureau, type EchecSession } from './lib/bureau';
+import { estBureau, messageEchecSession, selonSupport, sessionBureau, swex, type EchecSession } from './lib/bureau';
 import {
   COULEUR_SECTION,
   COULEUR_RTA_SUB,
@@ -894,7 +894,11 @@ function Application() {
       setImportMsg({ ok: false, text: textes.importCompte.illisible });
       return;
     }
-    appliquerTout(data, preparerCompte(data), true);
+    // ⚠️ Application de bureau : le compte affiché vient du FICHIER, plus de
+    // l'invocateur suivi dans le dossier SW Exporter — qui est lâché, sinon
+    // son prochain export remplacerait « Mon compte » sous la prépa et le
+    // siège du fichier (bureau/swex.ts).
+    if (appliquerTout(data, preparerCompte(data), true)) void swex()?.aucunInvocateur();
   }
 
   // L'import COMPLET d'un export déjà parsé : prépa RTA, siège et « Mon
@@ -902,12 +906,13 @@ function Application() {
   // après le choix d'un invocateur — qui, lui, ne pose pas la question de
   // conservation (`demanderConservation`) : le dossier est un réglage.
   // L'arène dimensionnelle n'en vient pas : sa box est dans le journal SWEX,
-  // lu par l'application de bureau (`appliquerDimension`).
+  // lu par l'application de bureau (`appliquerDimension`). Rend `false` si
+  // l'export n'avait rien à importer (rien n'est touché).
   function appliquerTout(
     data: Record<string, any>,
     compte: ReturnType<typeof preparerCompte>,
     demanderConservation: boolean
-  ) {
+  ): boolean {
     const rtaRes = parseAccountJson(data, textes);
     const defRes = parseSiegeDefense(data, textes);
     const offRes = parseSiegeOffense(data, textes);
@@ -932,7 +937,7 @@ function Application() {
         text:
           rtaRes.error || defRes.error || offRes.error || compte.boxRes.error || textes.importCompte.rien,
       });
-      return;
+      return false;
     }
 
     if (rtaItems.length) {
@@ -968,6 +973,7 @@ function Application() {
     // ⚠️ **Après le succès seulement.** Proposer de conserver des données
     // qu'on vient d'échouer à lire n'aurait aucun sens.
     if (demanderConservation && !dialogueMasque() && storageAvailable()) setAskKeep(true);
+    return true;
   }
 
   // « Mon compte » d'un export déjà parsé — box 6★, inventaire, identité —, lu

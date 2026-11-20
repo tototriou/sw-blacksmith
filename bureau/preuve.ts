@@ -165,7 +165,8 @@ export async function lancerPreuveConservation(fenetre: BrowserWindow, dossier: 
 // propose d'abord de sauvegarder ; le choix de l'invocateur importe TOUT.
 // Puis l'export réécrit pendant que l'app tourne, l'invocateur déjà suivi
 // rechoisi, un rechargement, une écriture dans `live` : « Mon compte »
-// seulement, la prépa RTA et le siège INCHANGÉS.
+// seulement, la prépa RTA et le siège INCHANGÉS. Enfin un import manuel :
+// l'invocateur suivi est lâché, ses exports ne s'appliquent plus.
 export async function lancerPreuveSwex(fenetre: BrowserWindow, dossier: string, fixtures: string, compte: string) {
   mkdirSync(dossier, { recursive: true });
   const resultats: Record<string, unknown> = {};
@@ -328,7 +329,38 @@ export async function lancerPreuveSwex(fenetre: BrowserWindow, dossier: string, 
     await attendre(3000);
     resultats.apresSauvegarde = { sessionsEcrites: sessions().length - sessionsAvant, compte: await compteAffiche(), recapitulatif: await recapitulatif() };
 
-    resultats.reglageRetenu = JSON.parse(readFileSync(join(dossier, 'donnees', 'swex.json'), 'utf8'));
+    const reglageDisque = () => JSON.parse(readFileSync(join(dossier, 'donnees', 'swex.json'), 'utf8'));
+    resultats.reglageRetenu = reglageDisque();
+
+    // 10. Un import MANUEL, « Testeur » suivi : l'invocateur est lâché, le
+    // dossier reste — aucun coché, ni au menu ni dans les Réglages. Puis
+    // l'export de l'ancien invocateur, réécrit : il ne s'applique plus.
+    await fermerNotification();
+    const manuel = JSON.parse(compte);
+    manuel.wizard_info = { ...manuel.wizard_info, wizard_id: 3, wizard_name: 'Manuel' };
+    await js(`(() => {
+      const champ = document.querySelector('aside input[type="file"]');
+      const dt = new DataTransfer();
+      dt.items.add(new File([${JSON.stringify(JSON.stringify(manuel))}], 'manuel.json', { type: 'application/json' }));
+      champ.files = dt.files;
+      champ.dispatchEvent(new Event('change', { bubbles: true }));
+    })()`);
+    await attendre(800);
+    resultats.remplacerManuel = await cliquerDansModale('Remplacer');
+    await attendre(1500);
+    await cliquerQuandPret(fenetre, 'Garder mes données (recommandé)', 2000);
+    await attendre(800);
+    resultats.apresImportManuel = {
+      compte: await compteAffiche(),
+      menu: await menuCarte(),
+      selecteur: await js(`document.querySelector('[data-reglage-swex] select')?.value`),
+      reglage: reglageDisque(),
+    };
+    await js(`document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))`);
+    await fermerNotification();
+    writeFileSync(join(fixtures, 'Testeur-1.json'), JSON.stringify({ ...manuel, wizard_info: { ...manuel.wizard_info, wizard_id: 1, wizard_name: 'Testeur-bis' } }));
+    await attendre(4500);
+    resultats.apresAncienExport = { compte: await compteAffiche(), notification: await notification() };
   } catch (e) {
     resultats.erreur = String(e);
   } finally {
