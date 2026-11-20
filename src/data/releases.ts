@@ -90,6 +90,7 @@ export const RELEASES: Release[] = [
       { kind: 'feat', scope: 'SW Exporter', text: '« Mettre à jour mon compte » reporte ta session sans te reconnecter au jeu.' },
       { kind: 'feat', scope: 'SW Exporter', text: 'Le plugin garde aussi tes combats de guilde, pour les écrans de guilde à venir.' },
       { kind: 'feat', scope: 'Siège', text: '« Défense » et « Offense » deviennent « Decks de défense » et « Decks d’offense ».' },
+      { kind: 'feat', scope: 'SW Exporter', text: 'Le plugin n’écrit plus en boucle un écran de guilde qui n’a pas changé.' },
       { kind: 'fix', scope: 'Mon compte', text: 'Sur la courbe des runes, la rune choisie reste choisie quand tu la montes.' },
     ],
   },

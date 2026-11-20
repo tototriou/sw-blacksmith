@@ -17,7 +17,7 @@ import { existsSync, promises } from 'node:fs';
 import { join } from 'node:path';
 import { ajouterAuFichier, empreinteDe, type Bloc } from './archive';
 import { appliquer, depuisConnexion, ligneConnexion, versEtatArchive, type EtatDirect, type Json } from './etatDirect';
-import { evenementGuilde, ligneSessionGuilde } from './guilde';
+import { contenuDeVue, evenementGuilde, ligneSessionGuilde } from './guilde';
 import { COMPTE_ARCHIVE, COMPTE_LIVE, GUILDE_ARCHIVE, GUILDE_LIVE, dossierInvocateur, ecrireAtomique, nomDeBase } from './fichiers';
 
 declare const __VERSION_PLUGIN__: string;
@@ -45,6 +45,9 @@ interface Suivi {
   base: string;
   dossier: string; // SWBlacksmith/<nom>-<id>, dans le dossier de SWEX
   compte: EtatDirect;
+  // L'empreinte du dernier contenu écrit de chaque vue de guilde, de la
+  // session : une vue inchangée ne se réécrit pas (`contenuDeVue`, guilde.ts).
+  vues: Map<string, string>;
 }
 
 // Ce qui s'archive du compte à une connexion : l'état allégé, et son empreinte
@@ -121,7 +124,7 @@ export function creerPlugin() {
           const base = nomDeBase(dossier(), id, String(res.wizard_info?.wizard_name ?? ''));
           const dossierSuivi = dossierInvocateur(dossier(), id, base);
           const compte = depuisConnexion(res);
-          suivis.set(id, { base, dossier: dossierSuivi, compte });
+          suivis.set(id, { base, dossier: dossierSuivi, compte, vues: new Map() });
           // Les textes sont faits MAINTENANT : le compte bougera avant leur
           // tour dans la file.
           const t = typeof res.tvalue === 'number' ? res.tvalue : null;
@@ -153,8 +156,15 @@ export function creerPlugin() {
         // reposées après un départ de l'état tenu, elles ne changent rien.
         if (changement)
           ajouter(s, COMPTE_LIVE, `${JSON.stringify(changement)}\n`, () => `${JSON.stringify(ligneConnexion(s.compte, VERSION))}\n`);
+        // Guilde désactivée : réactivée, le fichier repart de son en-tête, et
+        // chaque vue doit s'y réécrire.
+        if (!guildeActive()) s.vues.clear();
         const evenement = guildeActive() ? evenementGuilde(s.compte.wizardId, commande, req, res) : null;
-        if (evenement) {
+        const vue = evenement ? contenuDeVue(evenement) : null;
+        const empreinte = vue ? empreinteDe(vue.contenu) : null;
+        // Une vue au même contenu que la précédente de même écran : rien.
+        if (evenement && (!vue || s.vues.get(vue.cle) !== empreinte)) {
+          if (vue && empreinte) s.vues.set(vue.cle, empreinte);
           const ligne = `${JSON.stringify(evenement)}\n`;
           ajouter(s, GUILDE_LIVE, ligne, () => `${JSON.stringify(ligneSessionGuilde(s.compte.wizardId, evenement.t, VERSION))}\n${ligne}`);
         }

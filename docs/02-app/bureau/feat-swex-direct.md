@@ -176,6 +176,13 @@ l'invocateur, l'heure serveur de la connexion, la version du plugin), puis
 **une ligne par événement** de guilde, ajoutée aussitôt (voir « Le contenu des
 combats de guilde »).
 
+- ⚠️ **Une vue inchangée ne se réécrit pas** (`contenuDeVue` de `guilde.ts`) : le jeu redemande
+  certains écrans en boucle — sur une session relevée, 953 fois les défenses de la guilde pour 9
+  contenus distincts, 37 Mo. Le plugin garde l'empreinte du dernier contenu écrit de chaque écran
+  (commande et paramètres), heure exclue, pour la session ; une vue identique est sautée. L'heure
+  de la dernière vue écrite est donc celle de son dernier **changement**. Guilde désactivée, les
+  empreintes s'oublient : réactivée, le fichier repart de son en-tête et chaque vue s'y réécrit.
+
 **`guilde.jsonl.gz`** — l'archive : à la connexion suivante, la session finie
 y est ajoutée **en entier**, en un bloc daté de sa plus ancienne à sa plus
 récente heure serveur (`blocSessionGuilde`). Une dernière ligne à moitié

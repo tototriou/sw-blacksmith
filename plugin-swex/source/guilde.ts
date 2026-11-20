@@ -112,6 +112,25 @@ export function evenementGuilde(wizardId: number, commande: string, req: Json, r
   return ev;
 }
 
+// ── Ne pas réécrire une vue inchangée ───────────────────────────────────
+
+// Les champs d'heure d'une réponse : ils changent à chaque échange, même
+// quand l'écran n'a pas bougé.
+const HEURES = new Set(['tvalue', 'tvaluelocal', 'ts_val', 'tzone', 'tzoffset']);
+
+// La clé d'une vue (la commande et ses paramètres) et son contenu, heure
+// exclue. ⚠️ Le jeu redemande certains écrans en boucle : sur une session
+// relevée, 953 fois les défenses de la guilde pour 9 contenus distincts —
+// 37 Mo. Le plugin n'écrit une vue que si son contenu a changé depuis la
+// précédente de même clé (plugin.ts) ; l'heure de la dernière vue écrite reste
+// donc celle du dernier CHANGEMENT.
+export function contenuDeVue(ev: EvenementGuilde): { cle: string; contenu: string } | null {
+  if (ev.type !== 'vue') return null;
+  const sansHeure: Json = {};
+  for (const [k, v] of Object.entries(ev.reponse ?? {})) if (!HEURES.has(k)) sansHeure[k] = v;
+  return { cle: cleDe(ev.commande, ev.params), contenu: JSON.stringify(sansHeure) };
+}
+
 // ── Relire : les vues et les combats ────────────────────────────────────
 
 export interface Vue {
@@ -157,24 +176,38 @@ export function poserEvenement(etat: EtatGuilde, ev: EvenementGuilde) {
   if (ev.t !== null) etat.t = ev.t;
 }
 
-// Les vues et combats tirés de lignes : un fichier live, ou le texte d'une
-// archive (plusieurs sessions à la suite). Seules les sessions de
+// Chaque événement de lignes, dans l'ordre : un fichier live, ou le texte
+// d'une archive (plusieurs sessions à la suite). Seules les sessions de
 // l'invocateur `wizardId` comptent. Une ligne illisible (la dernière, à moitié
-// écrite) arrête la lecture : ce qui précède vaut.
-export function depuisLignesGuilde(lignes: string[], wizardId: number): EtatGuilde {
-  const etat = guildeVide();
-  let sienne = false;
+// écrite) arrête la lecture : ce qui précède vaut. `false` si elle s'est
+// arrêtée ainsi.
+// `suite` : pour lire un fichier par morceaux (seules les lignes ajoutées),
+// l'état de la lecture précédente — la session en cours est-elle celle de
+// l'invocateur ? Son en-tête n'est que dans le premier morceau.
+export function parcourirLignesGuilde(
+  lignes: Iterable<string>,
+  wizardId: number,
+  poser: (ev: EvenementGuilde) => void,
+  suite: { sienne: boolean } = { sienne: false }
+): boolean {
   for (const texte of lignes) {
     if (!texte.trim()) continue;
     let ligne: Json;
     try {
       ligne = JSON.parse(texte);
     } catch {
-      break;
+      return false;
     }
     if (ligne.type === 'session') {
-      sienne = ligne.format === FORMAT_GUILDE_LIVE && ligne.version === VERSION_GUILDE_LIVE && Number(ligne.wizard_id) === wizardId;
-    } else if (sienne && ['vue', 'debut', 'fin'].includes(ligne.type)) poserEvenement(etat, ligne as EvenementGuilde);
+      suite.sienne = ligne.format === FORMAT_GUILDE_LIVE && ligne.version === VERSION_GUILDE_LIVE && Number(ligne.wizard_id) === wizardId;
+    } else if (suite.sienne && ['vue', 'debut', 'fin'].includes(ligne.type)) poser(ligne as EvenementGuilde);
   }
+  return true;
+}
+
+// Les vues et combats tirés de lignes (`parcourirLignesGuilde`).
+export function depuisLignesGuilde(lignes: string[], wizardId: number): EtatGuilde {
+  const etat = guildeVide();
+  parcourirLignesGuilde(lignes, wizardId, (ev) => poserEvenement(etat, ev));
   return etat;
 }

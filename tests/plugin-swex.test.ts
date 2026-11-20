@@ -516,6 +516,18 @@ export async function testPluginSwexPaquet() {
     egal([archive().length, JSON.parse(archive()[0]).format], [1, FORMAT_COMPTE_ARCHIVE], 'l’archive : l’état de la connexion');
     egal(lire(GUILDE_LIVE).map((l) => JSON.parse(l).type), ['session', 'vue'], 'la guilde : l’en-tête de session, puis la vue');
     egal(JSON.parse(lire(GUILDE_LIVE)[0]).format, FORMAT_GUILDE_LIVE, 'l’en-tête porte son format');
+    // Le jeu redemande un écran en boucle : une vue inchangée (heure exclue)
+    // ne se réécrit pas ; changée, ou d'autres paramètres, si.
+    ecouteur(req({ command: 'GetGuildSiegeMatchupInfo' }), ok0({ carte: 1, session_key: 'secret', tvalue: 4242 }));
+    ecouteur(req({ command: 'GetGuildSiegeMatchupInfo' }), ok0({ carte: 2 }));
+    ecouteur(req({ command: 'GetGuildSiegeMatchupInfo', siege_id: 9 }), ok0({ carte: 2 }));
+    ecouteur(req({ command: 'GetGuildSiegeMatchupInfo' }), ok0({ carte: 2, tvalue: 4343 }));
+    await attendre();
+    egal(
+      lire(GUILDE_LIVE).map((l) => JSON.parse(l).reponse?.carte ?? null),
+      [null, 1, 2, 2],
+      'une vue au même contenu que la précédente du même écran n’est pas réécrite, même à une autre heure'
+    );
     const tout = [COMPTE_LIVE, GUILDE_LIVE].map((f) => readFileSync(join(dossierSuivi, f), 'utf8')).join('') + archive().join('');
     ok(!tout.includes('secret'), 'aucune clé de session écrite, nulle part');
 
@@ -524,7 +536,7 @@ export async function testPluginSwexPaquet() {
     seConnecter();
     await attendre();
     egal([live().length, archive().length], [1, 1], 'reconnexion à l’identique : nouvelle session, pas de second état archivé');
-    egal(lireGz(GUILDE_ARCHIVE).map((l) => JSON.parse(l).type), ['session', 'vue'], 'la session de guilde finie : archivée en entier');
+    egal(lireGz(GUILDE_ARCHIVE).map((l) => JSON.parse(l).type), ['session', 'vue', 'vue', 'vue'], 'la session de guilde finie : archivée en entier');
     egal(lire(GUILDE_LIVE).length, 1, 'une nouvelle session de guilde commence');
     // Un combat, puis une reconnexion après une partie hors du plugin.
     ecouteur(req({ command: 'battleGuildMazeStart' }), ok0({ battle_key: 77, tvalue: 5000 }));
@@ -536,7 +548,7 @@ export async function testPluginSwexPaquet() {
     egal(archive().length, 2, 'connexion sur un compte changé : un état de plus dans l’archive');
     egal(sec12(live()), [[4, 10, 0, 42]], 'le live repart de la nouvelle connexion');
     const historique = depuisLignesGuilde(lireGz(GUILDE_ARCHIVE), MOI);
-    egal([historique.vues.size, historique.combats.map((c) => [c.battle_key, !!c.debut, !!c.fin])], [1, [[77, true, true]]], 'l’archive de guilde relue : les deux sessions');
+    egal([historique.vues.size, historique.combats.map((c) => [c.battle_key, !!c.debut, !!c.fin])], [2, [[77, true, true]]], 'l’archive de guilde relue : les deux sessions');
     egal((await parcourirArchive(join(dossierSuivi, GUILDE_ARCHIVE))).blocs.map((b) => b.fin), [1000, 5100], 'un bloc par session, daté');
     // Une reconnexion sans rien joué en guilde : rien de plus à archiver.
     seConnecter(changee);
