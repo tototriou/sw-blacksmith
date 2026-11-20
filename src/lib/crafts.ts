@@ -124,6 +124,35 @@ export function missingCrafts(
 // Grade de consommable exigé par un scénario : héroïque → 4, légendaire → 5.
 export const GRADE_SCENARIO: Record<RunePlan['scenario'], number> = { hero: 4, legend: 5 };
 
+// Les grades qu'on coche sous « Faisable avec ma réserve » : de quoi se servir
+// dans le sac — meules ET gemmes, héroïques et/ou légendaires.
+export const GRADES_RESERVE = [4, 5] as const;
+
+// La réserve restreinte aux grades cochés. ⚠️ **Un filtre de la RÉSERVE, pas
+// du calcul**, comme « Sans les immémoriaux » : une réserve sans ses
+// légendaires EST une réserve, la même règle de choix s'y applique
+// (`pickCraft`). Ainsi « Héroïque » seul n'utilise QUE des héroïques — un
+// scénario héroïque ne puise plus dans les légendaires, retirés du sac.
+// Tous cochés : rien n'est retiré.
+export function reserveDesGrades(lignes: CraftLine[], grades: ReadonlySet<number>): CraftLine[] {
+  if (GRADES_RESERVE.every((g) => grades.has(g))) return lignes;
+  return lignes.filter((l) => grades.has(l.grade));
+}
+
+// Le scénario du filtre et du plan. Un SEUL grade coché l'impose : sinon,
+// « Héroïque » seul trié par potentiel légendaire chercherait des légendaires
+// absents, et la liste serait toujours vide. Les deux (ou aucun) : le tri.
+export function scenarioDeLaReserve(
+  grades: ReadonlySet<number>,
+  scenarioTri: RunePlan['scenario']
+): RunePlan['scenario'] {
+  const hero = grades.has(GRADE_SCENARIO.hero);
+  const legend = grades.has(GRADE_SCENARIO.legend);
+  if (hero && !legend) return 'hero';
+  if (legend && !hero) return 'legend';
+  return scenarioTri;
+}
+
 // « Ai-je ce consommable pour CE scénario ? » — la `CraftDispo` que le calcul
 // de potentiel attend (voir runeOptim.ts), liée à une rune et à un grade.
 //

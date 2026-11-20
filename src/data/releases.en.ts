@@ -40,6 +40,7 @@ export const RELEASES_EN: Release[] = [
       { kind: 'feat', scope: 'Siege', text: 'Battle and defense filters: result, monsters, attack or defense.' },
       { kind: 'feat', scope: 'SW Exporter', text: 'The plugin no longer keeps rewriting a guild screen that has not changed.' },
       { kind: 'feat', scope: 'Optimizer', text: 'A minimum Accuracy per skill: S1, S2 or S3, type artifact included.' },
+      { kind: 'feat', scope: 'Runes', text: '“Doable with my stock”: choose Hero grindstones and gems, Legend ones, or both.' },
       { kind: 'fix', scope: 'Application', text: 'An account imported from a file is no longer replaced by the summoner followed in the SW Exporter folder.' },
       { kind: 'fix', scope: 'Application', text: 'Without kept data, the followed summoner reloads in full at launch, RTA prep and siege included.' },
       { kind: 'docs', scope: 'Discord', text: 'A Discord bot page: installation, recommendations and commands, with screenshots.' },

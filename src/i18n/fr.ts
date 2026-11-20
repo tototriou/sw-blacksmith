@@ -1377,6 +1377,7 @@ export const fr = {
     faisable: 'Faisable avec ma réserve',
     faisableAide: (n: number) => `Ne garder que les runes applicables avec tes ${n} meules et gemmes en réserve`,
     reserveImmemoriaux: 'Ta réserve ne contient que des immémoriaux, que le filtre voisin met de côté',
+    choisirGrades: 'Choisir les grades de meules et gemmes',
     sansReserve: 'Aucune meule ni gemme dans les données chargées — réimporte ton compte',
     sansImmemoriaux: 'Sans les immémoriaux',
     sansImmemoriauxAide:
@@ -1411,6 +1412,8 @@ export const fr = {
     aideFaisable: ': seulement les runes améliorables',
     aideFaisableGras: 'tout de suite',
     aideFaisableSuite: ", avec le gain réellement atteignable aujourd'hui.",
+    aideGrades:
+      'Ses cases choisissent les meules et gemmes à utiliser, héroïques et/ou légendaires ; une seule cochée décide aussi du potentiel retenu.',
     aideSansImmemoriaux: ': la même chose, sans toucher à tes gemmes et meules immémoriales.',
     aideUtilisees:
       ": seulement les runes posées sur un monstre d'un deck enregistré ou d'un preset RTA, selon les périmètres cochés.",
@@ -1421,6 +1424,7 @@ export const fr = {
       horsAntiques: ' · hors antiques',
       antiquesSeules: ' · antiques seules',
       faisables: ' · faisables avec ma réserve',
+      aucunGrade: 'aucun grade',
       sansImmemoriaux: ' · sans immémoriaux',
       utilisees: ' · utilisées',
       aucunPerimetre: 'aucun périmètre',
@@ -1432,6 +1436,7 @@ export const fr = {
       parmiAntiques: ' parmi les antiques',
       aucunPerimetre: ' — aucun périmètre coché pour « Runes utilisées »',
       parmiUtilisees: ' parmi tes runes utilisées',
+      aucunGrade: ' — aucun grade coché pour « Faisable avec ma réserve »',
       baisser: '. Baisse le palier',
       repasser: ' ou repasse sur « Toutes »',
       desactiverUtilisees: ' ou désactive « Runes utilisées »',

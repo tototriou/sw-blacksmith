@@ -82,7 +82,7 @@ import { testOptimizerRattachementReferenceConservee } from './optimizer-rattach
 import { testOptimizerRattachementIdentites, verificationsOptimizerRattachementOrdres, testOptimizerRattachementDepartageEtPrises,
   testOptimizerRattachementCopiesSansExemplaire, testOptimizerRattachementPermutationEtProprietaire,
   testOptimizerRattachementRuneVendue, testOptimizerRattachementDefensesComplet, testOptimizerRattachementBranchement, testOptimizerRattachementSpeedTune } from './optimizer-rattachement.test';
-import testMeules, { testGemmeMemeStat, testRegemmeDifferent, testReserveParGrade, testPalier, testRegistre, testSansDowngrade } from './meules.test';
+import testMeules, { testGemmeMemeStat, testRegemmeDifferent, testReserveParGrade, testReserveDesGrades, testPalier, testRegistre, testSansDowngrade } from './meules.test';
 import { testCourbesRunesParRang, testCourbesRunesRuneARune, testCourbesRunesSansGemmeSimulee } from './rune-courbes.test';
 import testArtefacts from './artefacts.test';
 import testArtefactsTop from './artefacts-top.test';
@@ -1218,6 +1218,7 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testCourbesRunesRuneARune', testCourbesRunesRuneARune],
   ['testCourbesRunesSansGemmeSimulee', testCourbesRunesSansGemmeSimulee],
   ['testReserveParGrade', testReserveParGrade],
+  ['testReserveDesGrades', testReserveDesGrades],
   ['testPalier', testPalier],
   ['testMigrationStockage', testMigrationStockage],
   ['testBureauProtocole', testBureauProtocole],
