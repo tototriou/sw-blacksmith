@@ -261,10 +261,13 @@ export function creerRouteur(d: Dependances) {
 
     // L'invitation du bot sur un serveur, SANS AUCUN DROIT : l'admin l'ajoute
     // ensuite aux salons de recommandations, avec les quatre droits qu'il y
-    // faut. L'identifiant vient de l'environnement : un aperçu invite le bot
-    // de test, la production le sien.
+    // faut. ⚠️ Avec ses commandes (`applications.commands`) : sans ce scope,
+    // /speedtune et les suivantes n'apparaissent pas sur le serveur. Réinviter
+    // le bot sur un serveur où il est déjà ajoute le scope sans le retirer.
+    // L'identifiant vient de l'environnement : un aperçu invite le bot de
+    // test, la production le sien.
     if (route === 'GET invitation') {
-      const params = new URLSearchParams({ client_id: d.env.clientId, scope: 'bot', permissions: '0' });
+      const params = new URLSearchParams({ client_id: d.env.clientId, scope: 'bot applications.commands', permissions: '0' });
       return redirection(`https://discord.com/oauth2/authorize?${params}`);
     }
 

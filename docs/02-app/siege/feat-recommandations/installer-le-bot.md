@@ -9,8 +9,9 @@ compte connecté ([rendu-de-la-page.md](rendu-de-la-page.md#provenances-et-disco
 
 « Inviter le bot » (dans le guide de l'app) ouvre l'invitation Discord ; sans ouvrir l'app, la même
 invitation est à l'adresse <https://sw-blacksmith.vercel.app/api/discord/invitation>. Il faut le
-droit **Gérer le serveur**. Le bot arrive **sans aucun droit** : il ne voit que les salons où on
-l'ajoute.
+droit **Gérer le serveur**. Le bot arrive **avec ses commandes** (`/speedtune` et les suivantes,
+dans tout le serveur) et **sans aucun droit** : il ne voit que les salons où on l'ajoute. Un bot
+invité sans ses commandes les obtient en étant réinvité, sans quitter le serveur.
 
 ⚠️ Ne lui donner **aucun rôle administrateur** : il verrait tous les salons. L'app le signale (un
 triangle à côté du nom du serveur), sans rien bloquer.
