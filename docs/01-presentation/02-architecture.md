@@ -138,6 +138,7 @@ tous les autres dans n'importe quelle analyse de dépendances.
 | Paramètres | `#/parametres` | `src/pages/SettingsPage.tsx` | `SettingsMenu`, `AccountImportControl` | [feat-navigation/compte-et-parametres.md](../02-app/transverse/feat-navigation/compte-et-parametres.md) |
 | Mécaniques | `#/mecaniques` | `src/pages/MechanicsPage.tsx` | `src/i18n/articles/mecaniques.*.tsx` (l'article, un par langue), `src/components/mecaniques/blocs.tsx` | [mecaniques/](../02-app/mecaniques/README.md) |
 | Nouveautés | `#/releases` | `src/pages/ReleasesPage.tsx` | `src/data/releases.ts`, `src/data/releases.en.ts` (un journal par langue) | [nouveautes/](../02-app/nouveautes/README.md) |
+| Bot Discord | `#/bot-discord` | `src/pages/BotDiscordPage.tsx` | `src/lib/botDiscord.ts` (captures, étapes), `public/bot-discord/` (les captures), `inviterLeBot` de `DialoguesDiscord.tsx` | [bot-discord/](../02-app/bot-discord/README.md) |
 | SW Exporter | `#/sw-exporter` | `src/pages/SwExporterPage.tsx` | `src/lib/pluginSwex.ts` (adresse du plugin), `plugin-swex/` | [sw-exporter/](../02-app/sw-exporter/README.md) |
 | Télécharger (site seulement) | `#/telecharger` | `src/pages/TelechargerPage.tsx` | `src/lib/bureau.ts` (`TELECHARGEMENTS`), `src/components/IconesSystemes.tsx` | [telecharger/](../02-app/telecharger/README.md) |
 | Arène | `#/arene/defense`, `/offense`, `/interserveur` | `src/pages/ArenePage.tsx` | `SiegeBoard` et `SiegeTeam` en mode arène, `useEquipesArene` | [arene/](../02-app/arene/README.md) |

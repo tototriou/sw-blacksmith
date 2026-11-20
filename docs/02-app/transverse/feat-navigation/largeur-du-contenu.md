@@ -15,6 +15,7 @@ runes et l'optimiseur y gagnent une à deux colonnes.
 | Mécaniques | 1100 px | Texte suivi — une ligne de 2 000 px se lit mal, l'œil perd le début de la suivante |
 | Nouveautés | 900 px | Liste de textes courts lus de haut en bas |
 | Télécharger | 760 px | Trois cartes et deux boutons : étalés, les boutons s'isoleraient loin de leur explication |
+| Bot Discord | 760 px | Un guide en étapes, chacune avec sa capture : plus large, les captures grandiraient au-delà de leur taille et le texte s'étalerait |
 | SW Exporter | 760 px | Le même gabarit que Télécharger : trois cartes, un bouton, puis un tuto en étapes, lu de haut en bas |
 | Paramètres | 620 px | Lignes « intitulé / contrôle » |
 | Roue de runes | ×0,72 sous `sm` | ⚠️ C'est un DESSIN calculé en pixels (cadres, icônes de set, décalages) : il ne se réduit pas seul comme une image. À 208 px il occuperait plus de la moitié des 348 px utiles. En dessous de 0,72 les icônes de set passent sous 14 px et le set ne se reconnaît plus |

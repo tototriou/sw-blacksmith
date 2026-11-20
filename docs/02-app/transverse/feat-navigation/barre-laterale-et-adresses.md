@@ -20,7 +20,7 @@ Accueil
 JOUER        RTA ›  Siège ›  Arène ›  Arène dimensionnelle ›
 MON COMPTE   Monstres  Runes ›  Artéfacts ›
 OUTILS       Optimizer  Speed tuning
-RESSOURCES   Bestiaire  Mécaniques  Nouveautés  SW Exporter  Télécharger
+RESSOURCES   Bestiaire  Bot Discord  Mécaniques  Nouveautés  SW Exporter  Télécharger
 ```
 
 « SW Exporter » (le plugin SWEX) est sur le site **et** dans l'app de
@@ -55,6 +55,7 @@ l'adresse et en déduit la page et ses sous-niveaux.
 | `#/arene/defense`, `/offense`, `/interserveur` | Arène |
 | `#/arene-dimensionnelle/defense`, `/offense`, `/runes` | Arène dimensionnelle |
 | `#/bestiary`, `#/mecaniques`, `#/releases`, `#/sw-exporter`, `#/parametres` | une page chacune |
+| `#/bot-discord/installation`, `/recommandations`, `/commandes` | Bot Discord, un onglet chacune ; `#/bot-discord` mène à l'installation |
 | `#/telecharger` | Télécharger — **site seulement** ; dans l'app de bureau, l'accueil |
 
 - ⚠️ **Une adresse tronquée mène au défaut de sa section**, jamais à un écran

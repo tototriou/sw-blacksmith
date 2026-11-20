@@ -413,6 +413,10 @@ import { testEcranPartageMediaQueryVolet, testEcranPartageMemePage, testRenduEcr
 import { testRenduAccueil, testRenduAccueilBureau, testRenduAccueilDiscord, testRenduAccueilEspace, testRenduAccueilExemples } from './rendu/accueil.test';
 import { testDemoAccueil } from './demo-accueil.test';
 import { testRenduTelecharger } from './rendu/telecharger.test';
+import {
+  testBotDiscordCaptures, testRenduBotDiscordAnglais, testRenduBotDiscordCommandes, testRenduBotDiscordDepuisRecos,
+  testRenduBotDiscordInstallation, testRenduBotDiscordOnglets, testRenduBotDiscordRecommandations,
+} from './rendu/bot-discord.test';
 import { testRenduSwExporter, testRenduSwExporterBureau } from './rendu/sw-exporter.test';
 import { testRenduCompteDirect } from './rendu/compte-direct.test';
 import { testRenduBureauTextes } from './rendu/bureau-textes.test';
@@ -779,6 +783,13 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testRenduAccueilExemples', testRenduAccueilExemples],
   ['testDemoAccueil', testDemoAccueil],
   ['testRenduTelecharger', testRenduTelecharger],
+  ['testBotDiscordCaptures', testBotDiscordCaptures],
+  ['testRenduBotDiscordOnglets', testRenduBotDiscordOnglets],
+  ['testRenduBotDiscordInstallation', testRenduBotDiscordInstallation],
+  ['testRenduBotDiscordRecommandations', testRenduBotDiscordRecommandations],
+  ['testRenduBotDiscordCommandes', testRenduBotDiscordCommandes],
+  ['testRenduBotDiscordAnglais', testRenduBotDiscordAnglais],
+  ['testRenduBotDiscordDepuisRecos', testRenduBotDiscordDepuisRecos],
   ['testRenduSwExporter', testRenduSwExporter],
   ['testRenduSwExporterBureau', testRenduSwExporterBureau],
   ['testRenduCompteDirect', testRenduCompteDirect],

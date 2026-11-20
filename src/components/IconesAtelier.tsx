@@ -74,6 +74,10 @@ export const IconeNouveautes = fabrique('M11 3l1.8 5.2L18 10l-5.2 1.8L11 17l-1.8
 // flèche qui descend dans le bac. Dessinée pour l'app, pas choisie sur
 // planche comme les autres : remplaçable par un objet d'atelier.
 export const IconeTelecharger = fabrique('M12 3v11M7.5 9.5 12 14l4.5-4.5M4 15v3a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-3');
+// Bot Discord : la tête de robot de lucide (`bot`), telle quelle.
+export const IconeBotDiscord = fabrique(
+  'M12 8V4H8M6 8h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2zM2 14h2M20 14h2M15 13v2M9 13v2'
+);
 // La page « SW Exporter » : le compte qui suit le jeu — deux flèches en
 // boucle autour d'un point (le fichier tenu à jour).
 export const IconeSwex = fabrique('M20 12a8 8 0 0 1-14 5.3M4 12a8 8 0 0 1 14-5.3M18 3v3.7h-3.7M6 21v-3.7h3.7' + cercle(12, 12, 2));

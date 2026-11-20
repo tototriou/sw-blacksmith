@@ -24,6 +24,7 @@ l'application de bureau. Les fichiers de code à ouvrir pour changer une page :
 | [arene/](arene/README.md) | `#/arene/defense`, `#/arene/offense`, `#/arene/interserveur` | Live | L'arène : défense, offense et défense interserveur, des équipes de 4 monstres, leads d'arène |
 | [arene-dimensionnelle/](arene-dimensionnelle/README.md) | `#/arene-dimensionnelle/defense`, `/offense`, `/runes` | Live (bureau) | L'arène dimensionnelle, sur sa propre box : défense, offense et runes, tenues par le plugin SWEX et lues par l'application de bureau ; sur le site, « version web à venir » |
 | [bestiaire/](bestiaire/README.md) | `#/bestiary` | Live | Le catalogue de tous les monstres |
+| [bot-discord/](bot-discord/README.md) | `#/bot-discord/installation`, `/recommandations`, `/commandes` | Live | Le guide du bot Discord, avec captures : l'installer, la synchronisation des recommandations, ses commandes (`/speedtune`) |
 | [mecaniques/](mecaniques/README.md) | `#/mecaniques` | Live | La page de documentation des mécaniques de jeu : contenu statique et sommaire |
 | [nouveautes/](nouveautes/README.md) | `#/releases` | Live | Le journal des versions destiné aux joueurs |
 | [sw-exporter/](sw-exporter/README.md) | `#/sw-exporter` | Live | Le plugin SWEX « SW Blacksmith Live » : ce qu'il fait, son téléchargement, l'installation pas à pas |
@@ -46,9 +47,9 @@ Points d'entrée de l'Optimizer, avant un chantier qui le touche :
 ## Ordre des pages
 
 Ordre d'importance (nav & cartes d'accueil) : **Accueil → RTA → Siège → Mon
-compte → Outils → Arène**. Bestiaire, Mécaniques, Nouveautés, SW Exporter et
-Télécharger sont regroupés sous « Ressources » (les moins centraux de
-l'outil) ; Télécharger n'existe que sur le site. Le regroupement de la barre latérale :
+compte → Outils → Arène**. Bestiaire, Bot Discord, Mécaniques, Nouveautés, SW
+Exporter et Télécharger sont regroupés sous « Ressources » (les moins centraux
+de l'outil) ; Télécharger n'existe que sur le site. Le regroupement de la barre latérale :
 [barre-laterale-et-adresses.md](transverse/feat-navigation/barre-laterale-et-adresses.md).
 
 > ⚠️ **Règle permanente** : toute page ou section **ajoutée, renommée ou

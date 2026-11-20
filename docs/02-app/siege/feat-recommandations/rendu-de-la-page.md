@@ -77,7 +77,9 @@ recommandation liée sur l'appareil :
   code à personne », le code en lecture seule et « Copier le code » ; l'installation du bot (les cinq étapes du
   [guide](installer-le-bot.md), « Inviter le bot », qui ouvre l'invitation
   dans un nouvel onglet — dans le navigateur du système pour l'application de
-  bureau —, le lien vers le Discord de l'app, « Fermer ») ; la fusion (ce qui a passé seul, puis chaque
+  bureau —, « Le guide pas à pas, avec captures », qui mène à la page
+  [Bot Discord](../../bot-discord/README.md), le lien vers le Discord de
+  l'app, « Fermer ») ; la fusion (ce qui a passé seul, puis chaque
   élément à choisir, les deux versions côte à côte à l'ordinateur, l'une sous
   l'autre au téléphone ; « Appliquer » désactivé tant qu'un choix manque).
   Une publication refusée parce que le salon a changé ouvre la fusion.
