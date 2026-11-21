@@ -295,6 +295,24 @@ guilde » ; Arène, Donjon, absence de liste ou de contenu → « Contenu normal
 par l’écran et au mode exporté dans la recette. Les valeurs enregistrées dans
 les critères et mémoires ne sont pas réécrites par cette dérivation.
 
+## Lead par contenu du jeu
+
+Quel lead agit dans quel contenu du jeu, désigné par le contenu de liste qui
+l'applique (`CONTENU_LEADS_JEU`, `src/lib/equipesOptimizer.ts`). **Relevé en jeu par
+l'utilisateur le 2026-11-22** ; c'est une règle du jeu, pas une déduction :
+
+| Lead | Contenus du jeu où il agit | Contenu de liste |
+| --- | --- | --- |
+| Arène | arène, arène de serveur, arène dimensionnelle, RTA | `arene` |
+| Guilde | combat d'occupation (siège), guerre de guilde, tous les modes du labyrinthe, subjugation de monstre | `guilde` |
+| Donjon | donjons de Cairos (géant, dragon, nécropolis, royaume spirituel, forteresse d'acier, crypte du jugement), faille des mondes (bêtes de glace, de l'orage, de marécage, enflammée, de radiance) et raid des mondes, passage des dimensions (Karzhan, Ellunia, Lumel, Khalderun, Sacreon, Inferas) et raid dimensionnel, phases 1 à 3 | `donjon` |
+
+⚠️ **Non relevés** : tribunal d'ascension et tours, temple du chaos. Leur entrée vaut
+`null` et ne se complète pas par ressemblance avec un autre contenu : il faut un
+relevé en jeu. « Mes équipes » s'en sert pour le contenu de la liste créée par son
+export ([feat-equipes.md](../compte/feat-equipes.md) § Onglets), et refuse l'export
+d'un contenu non relevé.
+
 ## Modèle pur des équipes
 
 `equipesOptimizer.ts` crée une équipe, ajoute ou retire un membre, délie un

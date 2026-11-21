@@ -22,7 +22,7 @@
 // quels, sans `JSON.stringify` à l'écriture ni re-parse à la lecture.
 
 import { ArtifactDetail, CraftLine, RelicDetail, RuneDetail } from '../types';
-import { BoxMonster, DeckArene, PERIMETRES_UTILISES, RunesUtilisees } from './importAccount';
+import { BoxMonster, DeckArene, PERIMETRES_UTILISES, RunesUtilisees, type DeckEnregistreImporte } from './importAccount';
 
 /* --------------------------------------------------------------------------
  * Ce qu'on stocke
@@ -80,6 +80,10 @@ export interface StoredAccount {
   // « Mes équipes » dit de réimporter pour lire les decks d'arène, plutôt que
   // de montrer une liste vide comme si le compte n'en avait pas.
   arenaDecks?: DeckArene[];
+  // Tous les decks enregistrés du jeu (labyrinthe, Cairos, ToA…), sources de
+  // « Mes équipes » — voir `parseDecksEnregistres`. Facultatif pour la même
+  // raison que `arenaDecks` : absent, « Mes équipes » dit de réimporter.
+  decksEnregistres?: DeckEnregistreImporte[];
 }
 
 // À incrémenter dès qu'un extracteur produit un champ de plus — ou en produit
@@ -330,6 +334,7 @@ export function compteValide(brut: unknown): StoredAccount | null {
   if (!rec.runeMarkerLabels || typeof rec.runeMarkerLabels !== 'object') return null;
   // Un champ facultatif mal formé est oublié, pas le compte avec lui.
   if (rec.arenaDecks !== undefined && !Array.isArray(rec.arenaDecks)) return { ...rec, arenaDecks: undefined };
+  if (rec.decksEnregistres !== undefined && !Array.isArray(rec.decksEnregistres)) return { ...rec, decksEnregistres: undefined };
   return rec;
 }
 
@@ -355,6 +360,7 @@ export function saveAccount(
     | 'exportedAt'
     | 'wizardName'
     | 'arenaDecks'
+    | 'decksEnregistres'
   >
 ): Promise<boolean> {
   return enqueue(async () => {
@@ -372,6 +378,7 @@ export function saveAccount(
       relicUsageById: data.relicUsageById,
       runeMarkerLabels: data.runeMarkerLabels,
       ...(data.arenaDecks ? { arenaDecks: data.arenaDecks } : {}),
+      ...(data.decksEnregistres ? { decksEnregistres: data.decksEnregistres } : {}),
     };
     // `put` sur une clé fixe : un nouvel import remplace, il ne s'ajoute pas.
     const res = await tx<IDBValidKey>('readwrite', (s) => s.put(rec, KEY));

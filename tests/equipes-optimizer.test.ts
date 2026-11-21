@@ -11,8 +11,10 @@ import type { BoxItem } from '../src/lib/applyAccount';
 import type { ExclusionSourceData } from '../src/lib/optimizerExclusion';
 import type { StockageOptimizer } from '../src/lib/optimizerMemberStorage';
 import { consommerImportOptimizer } from '../src/lib/importEquipes';
-import { creerEquipe, indexerInventaire, type EquipeEnregistree } from '../src/lib/equipesEnregistrees';
-import { creerDepuisEquipeOptimizer, disponibiliteRetourOptimizer, equipeLieeA, lienApresExportOptimizer, preparerExportEquipeOptimizer, preparerRetourOptimizer } from '../src/lib/importEquipesEnregistrees';
+import type { ContenuDeck } from '../src/lib/importAccount';
+import { CONTENU_LEADS_JEU } from '../src/lib/equipesOptimizer';
+import { ONGLETS_EQUIPES, contenuOptimizerEquipe, creerEquipe, indexerInventaire, type EquipeEnregistree, type OngletEquipes } from '../src/lib/equipesEnregistrees';
+import { creerDepuisEquipeOptimizer, disponibiliteRetourOptimizer, equipeLieeA, exportSansContenu, lienApresExportOptimizer, preparerExportEquipeOptimizer, preparerRetourOptimizer } from '../src/lib/importEquipesEnregistrees';
 import { sourcesImportEquipes } from '../src/lib/sourcesEquipesEnregistrees';
 import { fr } from '../src/i18n/fr';
 import { equipementEx, monstreEx, runeEx } from './equipes-enregistrees.test';
@@ -38,7 +40,7 @@ const inventaire = () => {
   return indexerInventaire(eq.runes.map((r) => (r.id === 3 ? runeEx(3, 3, 99) : r)), eq.artifacts, [eq.relic!]);
 };
 function equipe(): EquipeEnregistree {
-  return { ...creerEquipe('e1', 'siege-defense', 'Défense GW', T0),
+  return { ...creerEquipe('e1', 'guilde-defense', 'Défense GW', T0),
     monstres: [monstreEx('a', 1001, 11), monstreEx('b', 1002, null, equipementEx(20)), monstreEx('c', 1001, 11)], leader: 'a' };
 }
 
@@ -46,6 +48,20 @@ function testEquipesOptimizerExport() {
   titre('Mes équipes — export vers l’Optimizer');
   const { proposition: p, correspondance } = preparerExportEquipeOptimizer(equipe(), sources(), inventaire(), fr);
   egal([p.nomListe, p.contenu], ['Défense GW', 'guilde'], 'la liste prend le nom de l’équipe et le contenu de son onglet');
+  const rangee = (o: OngletEquipes) => ({ ...equipe(), onglet: o });
+  egal(ONGLETS_EQUIPES.filter((o) => exportSansContenu(rangee(o))), ['toa'], 'ToA : pas d’export, la règle des leads n’y est pas relevée');
+  egal((['rta', 'cairos', 'arene-defense', 'labyrinthe', 'passage-dimensions'] as const).map((o) => preparerExportEquipeOptimizer(rangee(o), sources(), inventaire(), fr).proposition.contenu),
+    ['arene', 'donjon', 'arene', 'guilde', 'donjon'], 'le lead de chaque catégorie : RTA en arène, Cairos et passage en donjon, labyrinthe en guilde');
+  const deDeck = (o: OngletEquipes, c: ContenuDeck) => ({ ...rangee(o), contenuJeu: c });
+  egal([contenuOptimizerEquipe(deDeck('cairos', 'subjugation')), contenuOptimizerEquipe(deDeck('cairos', 'raid-mondes')), contenuOptimizerEquipe(deDeck('cairos', 'temple-chaos'))],
+    ['guilde', 'donjon', null], 'le contenu du jeu l’emporte sur la catégorie : subjugation en guilde, temple du chaos non relevé');
+  ok(exportSansContenu(deDeck('cairos', 'temple-chaos')), 'une équipe du temple du chaos ne s’exporte pas');
+  egal(Object.entries(CONTENU_LEADS_JEU).filter(([, v]) => v === null).map(([k]) => k).sort(),
+    ['autre', 'temple-chaos', 'tour-celeste', 'tour-eau', 'tour-feu', 'tour-lumiere', 'tour-tenebres', 'tour-vent', 'tribunal-ascension'],
+    'non relevés : ToA, tours, temple du chaos, type inconnu — rien d’autre');
+  let leve = false;
+  try { preparerExportEquipeOptimizer(rangee('toa'), sources(), inventaire(), fr); } catch { leve = true; }
+  ok(leve, 'sans contenu, l’export refuse plutôt que de deviner les leads');
   egal(p.membres.map((m) => m.selector), [{ source: 'box', unitKey: '11' }, { source: 'unowned', monsterId: '2' }],
     'l’exemplaire de la Box, et un monstre non possédé pour celui qui n’y est pas');
   egal(p.ignores.map((i) => i.raison), [fr.equipes.export.memeExemplaire], 'le même exemplaire deux fois : le second est écarté');
@@ -133,26 +149,26 @@ function testEquipesOptimizerImport() {
   titre('Mes équipes — importer une équipe de l’Optimizer');
   const { r } = exporter(equipe());
   const data = sources();
-  const ctx = { box: data.box, siegeDefenseTeams: [], siegeOffenseTeams: [], arenaDecks: [], compte: true,
+  const ctx = { box: data.box, siegeDefenseTeams: [], siegeOffenseTeams: [], arenaDecks: [], decksEnregistres: [], compte: true,
     monsterById: data.monsterById, monsterByCom2us: new Map([...data.monsterById.values()].map((m) => [m.com2usId as number, m])) };
-  const src = sourcesImportEquipes(ctx, { stockage: r.stockage, data }, inventaire(), 'pve', fr).filter((x) => x.groupe === fr.equipes.imports.optimizer);
+  const src = sourcesImportEquipes(ctx, { stockage: r.stockage, data }, inventaire(), 'cairos', fr).filter((x) => x.groupe === fr.equipes.imports.optimizer);
   egal(src.map((x) => [x.libelle, x.raison]), [['Défense GW — équipe 1', null]], 'une source par équipe de liste');
   let n = 0;
   const cree = src[0].creer('neuve', () => `u${++n}`, T1);
   ok(cree !== null, 'l’équipe se crée');
   if (!cree) return;
   egal([cree.equipe.onglet, cree.equipe.monstres.map((m) => [m.com2usId, m.unitId, m.provenance])],
-    ['pve', [[1001, 11, 'optimizer'], [1002, null, 'optimizer']]], 'dans l’onglet ouvert, chaque membre et son build validé');
+    ['cairos', [[1001, 11, 'optimizer'], [1002, null, 'optimizer']]], 'dans l’onglet ouvert, chaque membre et son build validé');
   egal(cree.equipe.monstres[0].equipement?.runes.map((x) => x.id), [1, 2, 3, 4, 5, 6], 'les runes du build validé');
   egal(cree.equipe.leader, 'u1', 'le leader de l’équipe de l’Optimizer');
   ok(cree.equipe.lienOptimizer === undefined, 'une équipe importée n’est pas liée');
   egal(cree.ignores, 0, 'tous les membres repris');
   // Un membre que les sources ne résolvent plus rend la source indisponible.
   const sansDeux = { ...data, monsterById: new Map([...data.monsterById].filter(([k]) => k !== '2')) };
-  const src2 = sourcesImportEquipes(ctx, { stockage: r.stockage, data: sansDeux }, inventaire(), 'pve', fr).find((x) => x.groupe === fr.equipes.imports.optimizer)!;
+  const src2 = sourcesImportEquipes(ctx, { stockage: r.stockage, data: sansDeux }, inventaire(), 'cairos', fr).find((x) => x.groupe === fr.equipes.imports.optimizer)!;
   egal(src2.raison, fr.equipes.retour.refus.membresIntrouvables, 'un membre introuvable désactive la source, avec sa raison');
   // Jamais une liste entière : une liste sans équipe n'est pas une source.
-  const sansEquipe = sourcesImportEquipes(ctx, { stockage: { ...r.stockage, teams: [] }, data }, inventaire(), 'pve', fr).filter((x) => x.groupe === fr.equipes.imports.optimizer);
+  const sansEquipe = sourcesImportEquipes(ctx, { stockage: { ...r.stockage, teams: [] }, data }, inventaire(), 'cairos', fr).filter((x) => x.groupe === fr.equipes.imports.optimizer);
   egal(sansEquipe.map((x) => [x.libelle, x.raison]), [['Optimizer', fr.equipes.imports.aucuneEquipe]], 'une liste sans équipe : aucune source, la raison le dit');
 }
 
@@ -164,15 +180,15 @@ function testEquipesOptimizerEnregistrer() {
   egal(equipeLieeA([equipe(), lie], 'liste', equipeId)?.id, 'e1', 'l’équipe liée est retrouvée : la mettre à jour');
   egal(equipeLieeA([equipe()], 'liste', equipeId), undefined, 'aucune ne suit l’équipe : en créer une');
   let n = 0;
-  const cree = creerDepuisEquipeOptimizer({ listId: 'liste', equipeId, nom: 'Défense GW — équipe 1', onglet: 'guerre-guilde-offense' },
+  const cree = creerDepuisEquipeOptimizer({ listId: 'liste', equipeId, nom: 'Défense GW — équipe 1', onglet: 'guilde-offense' },
     r.stockage, sources(), inventaire(), 'neuve', () => `u${++n}`, T1);
   if (typeof cree === 'string') return ok(false, `création refusée : ${cree}`);
   egal([cree.equipe.id, cree.equipe.onglet, cree.equipe.nom, cree.equipe.monstres.map((m) => m.com2usId)],
-    ['neuve', 'guerre-guilde-offense', 'Défense GW — équipe 1', [1001, 1002]], 'une nouvelle équipe, dans l’onglet choisi, avec les membres de l’équipe');
+    ['neuve', 'guilde-offense', 'Défense GW — équipe 1', [1001, 1002]], 'une nouvelle équipe, dans l’onglet choisi, avec les membres de l’équipe');
   egal([cree.equipe.lienOptimizer?.listId, cree.equipe.lienOptimizer?.equipeId, cree.equipe.lienOptimizer?.correspondance.map((c) => c.uid)],
     ['liste', equipeId, ['u1', 'u2']], 'déjà liée : l’enregistrer à nouveau la mettra à jour');
   egal(equipeLieeA([cree.equipe], 'liste', equipeId)?.id, 'neuve', 'et elle est retrouvée comme telle');
-  egal(creerDepuisEquipeOptimizer({ listId: 'liste', equipeId: 'disparue', nom: 'x', onglet: 'pve' }, r.stockage, sources(), inventaire(), 'y', () => 'z', T1),
+  egal(creerDepuisEquipeOptimizer({ listId: 'liste', equipeId: 'disparue', nom: 'x', onglet: 'cairos' }, r.stockage, sources(), inventaire(), 'y', () => 'z', T1),
     'equipeAbsente', 'une équipe disparue : refus, rien créé');
 }
 

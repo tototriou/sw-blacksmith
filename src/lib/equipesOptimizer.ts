@@ -1,4 +1,5 @@
 import type { ElementKey, LeaderSkill } from '../types';
+import type { ContenuDeck } from './importAccount';
 import type { Dictionnaire } from '../i18n/fr';
 import { appliquerCriteres, baseCompleteCriteres, type LeadEffectifOptimizer } from './criteresOptimizer';
 import { LEADER_SKILL_STATS, type DamageSetup, type LeaderSkillStat } from './damage';
@@ -36,6 +37,33 @@ export const ACTIVITE_LEADS_OPTIMIZER = {
     Dungeon: 'actif',
   },
 } as const satisfies Record<ContenuListeOptimizer, Record<PorteeLead, ActiviteLead>>;
+
+// Le lead qui agit dans chaque contenu du jeu, désigné par le contenu de liste
+// de l'Optimizer qui l'applique : relevé de l'utilisateur, en jeu, le
+// 2026-11-22 (docs/02-app/optimizer/feat-listes-equipes-et-sauvegarde.md
+// § Lead par contenu du jeu). Lead d'arène : arène (et arène de serveur,
+// arène dimensionnelle), RTA. Lead de guilde : siège, guerre de guilde, tout le
+// labyrinthe, subjugation. Lead de donjon : donjons de Cairos, faille et raid
+// des mondes, passage des dimensions et ses raids.
+// ⚠️ `null` : NON RELEVÉ, jamais déduit d'un contenu qui ressemble. Tribunal
+// d'ascension, tours et temple du chaos restent à relever en jeu.
+export const CONTENU_LEADS_JEU = {
+  'arene-offense': 'arene',
+  'guerre-guilde-offense': 'guilde',
+  'siege-offense': 'guilde',
+  'labyrinthe-normal': 'guilde', 'labyrinthe-sauvetage': 'guilde', 'labyrinthe-temps-limite': 'guilde',
+  'labyrinthe-boss': 'guilde', 'labyrinthe-temps-pause': 'guilde', 'labyrinthe-vitesse-limitee': 'guilde',
+  'labyrinthe-explosion': 'guilde',
+  subjugation: 'guilde',
+  cairos: 'donjon',
+  'faille-mondes': 'donjon',
+  'raid-mondes': 'donjon',
+  'passage-dimensions': 'donjon', 'raid-dimensionnel-1': 'donjon', 'raid-dimensionnel-2': 'donjon', 'raid-dimensionnel-3': 'donjon',
+  'tribunal-ascension': null, 'tour-eau': null, 'tour-feu': null, 'tour-vent': null, 'tour-lumiere': null,
+  'tour-tenebres': null, 'tour-celeste': null,
+  'temple-chaos': null,
+  autre: null,
+} as const satisfies Record<ContenuDeck, ContenuListeOptimizer | null>;
 
 // La raison d'un lead d'équipe sans effet ; sa phrase, dans chaque langue, est
 // sous `optimizer.motifsLead` du dictionnaire.

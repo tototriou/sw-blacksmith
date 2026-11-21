@@ -9,13 +9,13 @@
 import type { GearSet, Monster, SiegeTeam } from '../types';
 import type { BoxItem } from './applyAccount';
 import type { Dictionnaire } from '../i18n/fr';
-import type { DeckArene } from './importAccount';
+import type { ContenuDeck, DeckArene, DeckEnregistreImporte } from './importAccount';
 import { resolveExclusionEntry, type ExclusionSelector, type ExclusionSourceData } from './optimizerExclusion';
 import type { StockageOptimizer } from './optimizerMemberStorage';
 import { creerDepuisEquipeOptimizer, disponibiliteRetourOptimizer } from './importEquipesEnregistrees';
 import {
-  MONSTRES_MAX_EQUIPE, MONSTRES_MIN_EQUIPE, creerEquipe,
-  type EquipeEnregistree, type InventaireCompte, type MonstreEnregistre, type OngletEquipes,
+  CATEGORIES_EQUIPES, MONSTRES_MAX_EQUIPE, MONSTRES_MIN_EQUIPE, categorieDe, coteDe, creerEquipe,
+  type CategorieEquipes, type CoteEquipe, type EquipeEnregistree, type InventaireCompte, type MonstreEnregistre, type OngletEquipes,
   type ProvenanceEquipement, type TirerId,
 } from './equipesEnregistrees';
 
@@ -25,6 +25,8 @@ export interface ContexteSourcesEquipes {
   siegeOffenseTeams: readonly SiegeTeam[];
   // `null` : compte conservé avant la lecture des decks d'arène.
   arenaDecks: readonly DeckArene[] | null;
+  // Tous les decks enregistrés du jeu ; `null` : compte conservé avant leur lecture.
+  decksEnregistres: readonly DeckEnregistreImporte[] | null;
   // Un compte est-il chargé (Box ou inventaire non vides) ?
   compte: boolean;
   monsterById: ReadonlyMap<string, Monster>;
@@ -127,32 +129,52 @@ const monstresConnus = (ids: (number | null)[], ctx: ContexteSourcesEquipes) =>
 const raisonDeck = (membres: MembreBrut[], connus: Monster[], im: Dictionnaire['equipes']['imports']) =>
   !membres.length ? im.aucunDeck : connus.slice(0, MONSTRES_MAX_EQUIPE).length < MONSTRES_MIN_EQUIPE ? im.moinsDeDeux : null;
 
-// L'ordre des sources pour l'onglet ouvert (décision de l'utilisateur) : d'abord
-// le même mode du même côté, puis le même mode de l'autre côté, puis le reste
-// dans l'ordre de base. Siège et guerre de guilde sont un même mode : dans
-// « Siège — défense », les défenses de siège, puis celles de guerre de guilde
-// (l'export n'en a pas), puis les offenses. RTA et Cairos gardent l'ordre de base.
-type ModeSource = 'guilde' | 'arene';
-const MODE_ONGLET: Partial<Record<OngletEquipes, { mode: ModeSource; cote: 'defense' | 'offense' }>> = {
-  'siege-defense': { mode: 'guilde', cote: 'defense' }, 'guerre-guilde-defense': { mode: 'guilde', cote: 'defense' },
-  'siege-attaque': { mode: 'guilde', cote: 'offense' }, 'guerre-guilde-offense': { mode: 'guilde', cote: 'offense' },
-  'arene-defense': { mode: 'arene', cote: 'defense' }, 'arene-attaque': { mode: 'arene', cote: 'offense' },
+// Le rangement d'un deck de l'export dans les sept catégories (décision de
+// l'utilisateur, 2026-11-22). Un contenu non relevé (`autre`) va dans
+// l'onglet ouvert. Les types 1 (arène — offense) et 22 (siège — offense) ne
+// sont pas repris ici : les decks d'arène et les équipes de siège les portent
+// déjà.
+export const RANGEMENT_CONTENU_DECK: Readonly<Record<ContenuDeck, OngletEquipes | null>> = {
+  'arene-offense': 'arene-offense',
+  'guerre-guilde-offense': 'guilde-offense',
+  'siege-offense': 'guilde-offense',
+  'labyrinthe-normal': 'labyrinthe', 'labyrinthe-sauvetage': 'labyrinthe', 'labyrinthe-temps-limite': 'labyrinthe',
+  'labyrinthe-boss': 'labyrinthe', 'labyrinthe-temps-pause': 'labyrinthe', 'labyrinthe-vitesse-limitee': 'labyrinthe',
+  'labyrinthe-explosion': 'labyrinthe',
+  'tribunal-ascension': 'toa', 'tour-eau': 'toa', 'tour-feu': 'toa', 'tour-vent': 'toa', 'tour-lumiere': 'toa',
+  'tour-tenebres': 'toa', 'tour-celeste': 'toa',
+  'passage-dimensions': 'passage-dimensions', 'raid-dimensionnel-1': 'passage-dimensions',
+  'raid-dimensionnel-2': 'passage-dimensions', 'raid-dimensionnel-3': 'passage-dimensions',
+  cairos: 'cairos', 'faille-mondes': 'cairos', 'raid-mondes': 'cairos', subjugation: 'cairos', 'temple-chaos': 'cairos',
+  autre: null,
 };
-function genreSource(cle: string): { mode: ModeSource; cote: 'defense' | 'offense' | null } | null {
-  if (cle.startsWith('siege-defense:')) return { mode: 'guilde', cote: 'defense' };
-  if (cle.startsWith('siege-attaque:')) return { mode: 'guilde', cote: 'offense' };
-  if (cle.startsWith('arene:attaque:')) return { mode: 'arene', cote: 'offense' };
-  if (cle.startsWith('arene:')) return { mode: 'arene', cote: 'defense' };
-  if (cle === 'arene') return { mode: 'arene', cote: null };
-  return null;
+const CONTENUS_DEJA_SOURCES: readonly ContenuDeck[] = ['arene-offense', 'siege-offense'];
+
+// L'ordre des sources pour l'onglet ouvert (décision de l'utilisateur) :
+// d'abord la même catégorie du même côté, puis la même catégorie de l'autre
+// côté, puis le reste dans l'ordre de base. Dans le combat de guilde, le
+// siège et la guerre de guilde comptent pour une même catégorie : en
+// défense, les défenses de siège, puis les offenses de siège et de guerre de
+// guilde (l'export n'a pas de défense de guerre de guilde). La RTA garde
+// l'ordre de base.
+function genreSource(cle: string): { categorie: CategorieEquipes; cote: CoteEquipe | null } | null {
+  if (cle.startsWith('siege-defense:')) return { categorie: 'guilde', cote: 'defense' };
+  if (cle.startsWith('siege-attaque:')) return { categorie: 'guilde', cote: 'offense' };
+  if (cle.startsWith('arene:attaque:')) return { categorie: 'arene', cote: 'offense' };
+  if (cle.startsWith('arene:')) return { categorie: 'arene', cote: 'defense' };
+  if (cle === 'arene') return { categorie: 'arene', cote: null };
+  const deck = /^deck:([^:]+):/.exec(cle);
+  const r = deck ? RANGEMENT_CONTENU_DECK[deck[1] as ContenuDeck] : null;
+  return r ? { categorie: categorieDe(r), cote: coteDe(r) } : null;
 }
 export function ordonnerSourcesPourOnglet<T extends { cle: string }>(sources: T[], onglet: OngletEquipes): T[] {
-  const cible = MODE_ONGLET[onglet];
-  if (!cible) return sources;
+  const categorie = categorieDe(onglet);
+  if (categorie === 'rta') return sources;
+  const cote = coteDe(onglet);
   const rang = (s: T) => {
     const g = genreSource(s.cle);
-    if (!g || g.mode !== cible.mode) return 2;
-    return g.cote === null || g.cote === cible.cote ? 0 : 1;
+    if (!g || g.categorie !== categorie) return 2;
+    return g.cote === null || cote === null || g.cote === cote ? 0 : 1;
   };
   // `sort` est stable : à rang égal, l'ordre de base.
   return [...sources].sort((a, b) => rang(a) - rang(b));
@@ -180,8 +202,8 @@ function sourcesDansLOrdreDeBase(
       res.push({ cle: `${provenance}:${team.id}`, groupe, libelle: libelle(i + 1), monstres: connus, raison: raisonDeck(membres, connus, im),
         creer: (id, tirerUid, maintenant) => equipeDepuisMembres(membres, onglet, libelle(i + 1), provenance, ctx, id, tirerUid, maintenant) });
     });
-  siege(ctx.siegeDefenseTeams, im.siegeDefenses, 'siege-defense', 'siege-defense', im.defense);
-  siege(ctx.siegeOffenseTeams, im.siegeAttaques, 'siege-attaque', 'siege-attaque', im.attaque);
+  siege(ctx.siegeDefenseTeams, im.siegeDefenses, 'guilde-defense', 'siege-defense', im.defense);
+  siege(ctx.siegeOffenseTeams, im.siegeAttaques, 'guilde-offense', 'siege-attaque', im.attaque);
 
   // Arène : lue dans l'export de compte.
   if (!ctx.compte || ctx.arenaDecks === null || ctx.arenaDecks.length === 0) {
@@ -189,12 +211,35 @@ function sourcesDansLOrdreDeBase(
     res.push({ cle: 'arene', groupe: im.arene, libelle: im.arene, monstres: [], raison, creer: () => null });
   } else for (const deck of ctx.arenaDecks) {
     const libelle = deck.cle === 'defense' ? im.areneDefense : deck.cle === 'defense-serveur' ? im.areneDefenseServeur : im.areneAttaque(deck.rang + 1);
-    const onglet: OngletEquipes = deck.cle === 'attaque' ? 'arene-attaque' : 'arene-defense';
-    const provenance: ProvenanceEquipement = onglet;
+    const onglet: OngletEquipes = deck.cle === 'attaque' ? 'arene-offense' : 'arene-defense';
+    const provenance: ProvenanceEquipement = deck.cle === 'attaque' ? 'arene-attaque' : 'arene-defense';
     const membres: MembreBrut[] = deck.slots.map((s, i) => ({ com2usId: s.com2usId, unitId: s.unitId, equipement: s.gear, leader: i === 0 }));
     const connus = monstresConnus(membres.map((m) => m.com2usId), ctx);
     res.push({ cle: `arene:${deck.cle}:${deck.rang}`, groupe: im.arene, libelle, monstres: connus, raison: raisonDeck(membres, connus, im),
       creer: (id, tirerUid, maintenant) => equipeDepuisMembres(membres, onglet, libelle, provenance, ctx, id, tirerUid, maintenant) });
+  }
+
+  // Les autres decks enregistrés du jeu (labyrinthe, Cairos, ToA…), rangés
+  // dans leur catégorie, groupés par catégorie dans l'ordre des onglets.
+  if (!ctx.compte || ctx.decksEnregistres === null) {
+    res.push({ cle: 'decks', groupe: im.decks, libelle: im.decks, monstres: [], raison: !ctx.compte ? im.sansCompte : im.reimporter, creer: () => null });
+  } else {
+    const decks = ctx.decksEnregistres
+      .filter((d) => !CONTENUS_DEJA_SOURCES.includes(d.contenu))
+      .map((d) => ({ d, onglet: RANGEMENT_CONTENU_DECK[d.contenu] ?? ongletOuvert }));
+    const ordre = (o: OngletEquipes) => CATEGORIES_EQUIPES.indexOf(categorieDe(o));
+    decks.sort((a, b) => ordre(a.onglet) - ordre(b.onglet));
+    for (const { d, onglet } of decks) {
+      const nom = libelleDeckEnregistre(d, t);
+      const membres: MembreBrut[] = d.slots.flatMap((s, i) => (s ? [{ com2usId: s.com2usId, unitId: null, equipement: s.gear ?? null, leader: i === 0 }] : []));
+      const connus = monstresConnus(membres.map((m) => m.com2usId), ctx);
+      res.push({ cle: `deck:${d.contenu}:${d.deckType}:${d.deckId}`, groupe: t.equipes.categories[categorieDe(onglet)], libelle: nom, monstres: connus,
+        raison: raisonDeck(membres, connus, im),
+        creer: (id, tirerUid, maintenant) => {
+          const cree = equipeDepuisMembres(membres, onglet, nom, 'deck', ctx, id, tirerUid, maintenant);
+          return { ...cree, equipe: { ...cree.equipe, contenuJeu: d.contenu } };
+        } });
+    }
   }
 
   // Optimizer : une équipe d'une liste.
@@ -233,4 +278,13 @@ function sourcesDansLOrdreDeBase(
   if (!res.some((x) => x.groupe === im.optimizer))
     res.push({ cle: 'optimizer', groupe: im.optimizer, libelle: im.optimizer, monstres: [], raison: im.aucuneEquipe, creer: () => null });
   return res;
+}
+
+// Le nom d'un deck de l'export : son contenu, son donjon s'il en a un, son
+// numéro ; un contenu non relevé se dit par son numéro de type.
+export function libelleDeckEnregistre(d: DeckEnregistreImporte, t: Dictionnaire): string {
+  const dk = t.equipes.decks;
+  const contenu = d.contenu === 'autre' ? dk.autre(d.deckType) : dk.contenus[d.contenu];
+  const sous = d.sousContenu ? dk.sousContenus[d.sousContenu] : d.categorie !== null ? dk.categorie(d.categorie) : null;
+  return dk.libelle(sous ? `${contenu} — ${sous}` : contenu, d.emplacement);
 }

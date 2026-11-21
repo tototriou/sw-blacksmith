@@ -2,9 +2,9 @@ import { egal, ok, titre } from './outils';
 import type { ArtifactDetail, GearSet, Monster, RelicDetail, RuneDetail } from '../src/types';
 import type { BoxItem } from '../src/lib/applyAccount';
 import {
-  ajouterMonstre, comparerPiece, compteParOnglet, creerEquipe, deplacerMonstre, designerLeader, dupliquerEquipe,
+  CATEGORIES_EQUIPES, CONTENU_OPTIMIZER_ONGLET, ONGLETS_EQUIPES, ajouterMonstre, categorieDe, comparerPiece, compteParCategorie, compteParOnglet, coteDe, creerEquipe, deplacerVersOnglet, deplacerMonstre, designerLeader, dupliquerEquipe,
   equipesFiltrees, gesteSurBrouillon, etatExemplaire, etatPiece, indexerInventaire, lireEquipeEnregistree, modifierTextes,
-  nomEquipeLibre, resumeEcarts, retirerMonstre, type EquipeEnregistree, type MonstreEnregistre,
+  nomEquipeLibre, rangement, resumeEcarts, retirerMonstre, type EquipeEnregistree, type MonstreEnregistre, type OngletEquipes,
 } from '../src/lib/equipesEnregistrees';
 
 const T0 = new Date('2026-11-05T10:00:00Z');
@@ -35,14 +35,20 @@ function monstreJeu(com2usId: number, jumeauCollab?: number): Monster {
 
 function testEquipesEnregistreesRelecture() {
   titre('Mes équipes — relecture d’une équipe enregistrée');
-  const base = creerEquipe('e1', 'siege-defense', 'Équipe 1', T0);
+  const base = creerEquipe('e1', 'guilde-defense', 'Équipe 1', T0);
   const e: EquipeEnregistree = { ...base, monstres: [monstreEx('a', 1, 11), monstreEx('b', 2, null, null)], leader: 'a' };
   const lu = lireEquipeEnregistree(JSON.parse(JSON.stringify(e)));
   egal(lu?.equipe, e, 'une équipe valide se relit à l’identique');
   egal(lu?.signalements, [], 'sans signalement');
   for (const n of [0, 1]) ok(lireEquipeEnregistree({ ...e, monstres: e.monstres.slice(0, n) }) === null, `${n} monstre : illisible, une équipe en a au moins deux`);
   ok(lireEquipeEnregistree({ ...e, onglet: 'inconnu' }) === null, 'un onglet inconnu rend l’équipe illisible');
-  egal(lireEquipeEnregistree({ ...e, onglet: 'guerre-guilde' })?.equipe.onglet, 'guerre-guilde-offense', 'l’ancien onglet de guerre de guilde se relit en offense');
+  const anciens: [string, string][] = [
+    ['guerre-guilde', 'guilde-offense'], ['guerre-guilde-offense', 'guilde-offense'], ['guerre-guilde-defense', 'guilde-defense'],
+    ['siege-attaque', 'guilde-offense'], ['siege-defense', 'guilde-defense'], ['arene-attaque', 'arene-offense'],
+    ['arene-defense', 'arene-defense'], ['pve', 'cairos'], ['rta', 'rta'],
+  ];
+  for (const [avant, apres] of anciens) egal(lireEquipeEnregistree({ ...e, onglet: avant })?.equipe.onglet, apres, `l’ancien rangement ${avant} se relit en ${apres}`);
+  ok(lireEquipeEnregistree({ ...e, onglet: 'toString' }) === null, 'un nom hérité d’Object n’est pas un ancien rangement');
   ok(lireEquipeEnregistree({ ...e, monstres: [1, 2, 3, 4, 5, 6, 7].map((i) => monstreEx(`u${i}`, i, null)) }) === null, 'plus de 6 monstres : illisible');
   ok(lireEquipeEnregistree({ ...e, monstres: [monstreEx('a', 1, 11), monstreEx('a', 2, 12)] }) === null, 'deux uid identiques : illisible');
   const mauvaisLeader = lireEquipeEnregistree({ ...e, leader: 'zz' });
@@ -90,12 +96,12 @@ function testEquipesEnregistreesComparaison() {
 function testEquipesEnregistreesOperations() {
   titre('Mes équipes — composition, leader, speed tune, duplication');
   // « Nouvelle équipe » : brouillon jusqu'au deuxième monstre, puis équipe à enregistrer.
-  const b0 = creerEquipe('n', 'pve', 'N', T0);
+  const b0 = creerEquipe('n', 'cairos', 'N', T0);
   const b1 = gesteSurBrouillon(b0, (x, n) => ajouterMonstre(x, monstreEx('a', 1, null), n)!, T1);
   egal([b1.brouillon?.monstres.length, b1.aEnregistrer], [1, null], 'un monstre : encore un brouillon, rien à enregistrer');
   const b2 = gesteSurBrouillon(b1.brouillon!, (x, n) => ajouterMonstre(x, monstreEx('b', 2, null), n)!, T1);
   egal([b2.brouillon, b2.aEnregistrer?.monstres.length], [null, 2], 'deux monstres : l’équipe s’enregistre');
-  let e = creerEquipe('e', 'pve', 'E', T0);
+  let e = creerEquipe('e', 'cairos', 'E', T0);
   for (const [uid, id] of [['a', 1], ['b', 2], ['c', 3]] as const) e = ajouterMonstre(e, monstreEx(uid, id, null), T1)!;
   e = designerLeader(e, 'b', T1);
   e = { ...e, speedTune: { plan: null, liens: [
@@ -126,15 +132,36 @@ function testEquipesEnregistreesRecherche() {
   const gojo = monstreJeu(2001, 1001);
   const werner = monstreJeu(1001, 2001);
   const index = new Map([[1, monstreJeu(1)], [2, monstreJeu(2)], [1001, werner], [2001, gojo]]);
-  const eq = (id: string, onglet: 'rta' | 'pve', ids: number[], quand: string): EquipeEnregistree =>
+  const eq = (id: string, onglet: OngletEquipes, ids: number[], quand: string): EquipeEnregistree =>
     ({ ...creerEquipe(id, onglet, id, new Date(quand)), monstres: ids.map((c, i) => monstreEx(`${id}${i}`, c, null)) });
-  const toutes = [eq('a', 'rta', [1, 2], '2026-01-01'), eq('b', 'rta', [1, 1001], '2026-02-01'), eq('c', 'pve', [1, 2], '2026-03-01')];
-  egal(equipesFiltrees(toutes, 'rta', [], index).map((e) => e.id), ['b', 'a'], 'sans recherche : l’onglet, dernière modifiée en premier');
-  egal(equipesFiltrees(toutes, 'rta', [monstreJeu(1), monstreJeu(2)], index).map((e) => e.id), ['a'], 'tous les monstres recherchés sont exigés');
-  egal(equipesFiltrees(toutes, 'rta', [gojo], index).map((e) => e.id), ['b'], 'une collaboration et sa version SW comptent pour la même espèce');
-  egal(compteParOnglet(toutes).rta, 2, 'compte par onglet');
+  const toutes = [eq('a', 'rta', [1, 2], '2026-01-01'), eq('b', 'rta', [1, 1001], '2026-02-01'), eq('c', 'cairos', [1, 2], '2026-03-01'),
+    eq('d', 'guilde-offense', [1, 2], '2026-04-01'), eq('f', 'guilde-defense', [1, 2], '2026-05-01')];
+  egal(equipesFiltrees(toutes, 'rta', null, [], index).map((e) => e.id), ['b', 'a'], 'sans recherche : l’onglet, dernière modifiée en premier');
+  egal(equipesFiltrees(toutes, 'rta', null, [monstreJeu(1), monstreJeu(2)], index).map((e) => e.id), ['a'], 'tous les monstres recherchés sont exigés');
+  egal(equipesFiltrees(toutes, 'rta', null, [gojo], index).map((e) => e.id), ['b'], 'une collaboration et sa version SW comptent pour la même espèce');
+  egal(equipesFiltrees(toutes, 'guilde', null, [], index).map((e) => e.id), ['f', 'd'], 'sans côté : l’offense et la défense de l’onglet');
+  egal(equipesFiltrees(toutes, 'guilde', 'defense', [], index).map((e) => e.id), ['f'], 'le filtre de côté ne garde que le sien');
+  egal(compteParOnglet(toutes).rta, 2, 'compte par rangement');
+  egal([compteParCategorie(toutes).guilde, compteParOnglet(toutes)['guilde-offense']], [2, 1], 'un onglet compte ses deux côtés');
+}
+
+function testEquipesEnregistreesCategories() {
+  titre('Mes équipes — catégories, côtés et rangements');
+  egal(CATEGORIES_EQUIPES.map((c) => [c, rangement(c, null)]).filter(([c, r]) => c !== r).map(([c]) => c), ['arene', 'guilde'], 'seules l’arène et le combat de guilde ont un côté');
+  egal([rangement('arene', 'defense'), rangement('guilde', null), rangement('toa', 'defense')], ['arene-defense', 'guilde-offense', 'toa'], 'rangement : le côté, l’offense par défaut, ignoré sans côté');
+  for (const o of ONGLETS_EQUIPES) egal(rangement(categorieDe(o), coteDe(o)), o, `${o} : catégorie et côté refont le rangement`);
+  egal(CATEGORIES_EQUIPES.filter((c) => !CONTENU_OPTIMIZER_ONGLET[c]), ['toa'], 'sans règle des leads relevée : aucun contenu de l’Optimizer');
+  const T = new Date('2026-11-06T10:00:00Z');
+  const deDeck: EquipeEnregistree = { ...creerEquipe('s', 'cairos', 'S', T0), monstres: [monstreEx('a', 1, null), monstreEx('b', 2, null)], contenuJeu: 'subjugation' };
+  egal(lireEquipeEnregistree(JSON.parse(JSON.stringify(deDeck)))?.equipe.contenuJeu, 'subjugation', 'le contenu du jeu se relit');
+  ok(!('contenuJeu' in lireEquipeEnregistree({ ...deDeck, contenuJeu: 'inconnu' })!.equipe), 'un contenu du jeu inconnu est oublié, pas l’équipe');
+  ok(!('contenuJeu' in deplacerVersOnglet(deDeck, 'rta', T)), 'changer de catégorie retire le contenu du jeu');
+  const garde = { ...deDeck, onglet: 'guilde-offense' as const, contenuJeu: 'siege-offense' as const };
+  egal(deplacerVersOnglet(garde, 'guilde-defense', T).contenuJeu, 'siege-offense', 'changer de côté le garde');
+  egal(dupliquerEquipe(deDeck, 'c', 'C', () => 'n', T).contenuJeu, 'subjugation', 'la copie le garde');
 }
 
 export const verificationsEquipesEnregistrees: [string, () => void][] = [
   testEquipesEnregistreesRelecture, testEquipesEnregistreesComparaison, testEquipesEnregistreesOperations, testEquipesEnregistreesRecherche,
+  testEquipesEnregistreesCategories,
 ].map((f) => [f.name, f]);

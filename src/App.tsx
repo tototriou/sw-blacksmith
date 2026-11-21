@@ -160,7 +160,9 @@ import {
   parseSiegeDefense,
   parseSiegeOffense,
   parseArenaDecks,
+  parseDecksEnregistres,
   type DeckArene,
+  type DeckEnregistreImporte,
   parseDimensionRunes,
   parseAccountBox,
   parseAccountInventory,
@@ -557,6 +559,7 @@ function Application() {
   // Les decks d'arène, sources de « Mes équipes ». `null` : pas lus (compte
   // conservé avant ce champ) — distinct d'un compte qui n'en a aucun.
   const [arenaDecks, setArenaDecks] = useState<DeckArene[] | null>(null);
+  const [decksEnregistres, setDecksEnregistres] = useState<DeckEnregistreImporte[] | null>(null);
   // « Mes équipes » : ici, comme les listes de l'Optimizer, pour que la page
   // et l'Optimizer partagent les mêmes équipes et que la session les emporte.
   const equipesEnregistrees = useEquipesEnregistrees();
@@ -819,9 +822,9 @@ function Application() {
   // de l'Optimizer pour l'aller-retour (docs/02-app/compte/feat-equipes.md).
   const compteCharge = box.length > 0 || runes.length > 0;
   const contexteEquipes = useMemo<ContexteSourcesEquipes>(() => ({ box,
-    siegeDefenseTeams: siegeDef.state.teams, siegeOffenseTeams: siegeOff.state.teams, arenaDecks, compte: compteCharge,
+    siegeDefenseTeams: siegeDef.state.teams, siegeOffenseTeams: siegeOff.state.teams, arenaDecks, decksEnregistres, compte: compteCharge,
     monsterById: optimizerData.monsterById, monsterByCom2us }),
-  [box, siegeDef.state.teams, siegeOff.state.teams, arenaDecks, compteCharge, optimizerData.monsterById, monsterByCom2us]);
+  [box, siegeDef.state.teams, siegeOff.state.teams, arenaDecks, decksEnregistres, compteCharge, optimizerData.monsterById, monsterByCom2us]);
   const inventaireEquipes = useMemo(() => (compteCharge ? indexerInventaire(runes, artifacts, relics) : null),
     [compteCharge, runes, artifacts, relics]);
   const optimizerPourEquipes = useMemo(() => ({ data: optimizerData, stockage: {
@@ -919,6 +922,7 @@ function Application() {
         setRelicUsageById(rec.relicUsageById);
         setRuneMarkerLabels(rec.runeMarkerLabels);
         setArenaDecks(rec.arenaDecks ?? null);
+        setDecksEnregistres(rec.decksEnregistres ?? null);
         setAccountExportedAt(rec.exportedAt);
         setAccountName(rec.wizardName ?? null);
       }
@@ -1098,6 +1102,7 @@ function Application() {
       usedRunes: parseUsedRuneIdsParPerimetre(data),
       markerLabels: parseRuneMarkerLabels(data),
       decksArene: parseArenaDecks(data),
+      decksEnregistres: parseDecksEnregistres(data),
     };
   }
 
@@ -1114,7 +1119,7 @@ function Application() {
     // Regroupé avec la relecture du compte conservé, ce vrai import doit
     // être revérifié : sinon la photo resterait posée et bloquerait l'import d'équipe.
     hydrationJustAppliedRef.current = false;
-    const { exporte, nomJoueur, boxRes, invRes, boxItems, usedRunes, markerLabels, decksArene } = compte;
+    const { exporte, nomJoueur, boxRes, invRes, boxItems, usedRunes, markerLabels, decksArene, decksEnregistres: decksDuCompte } = compte;
     // Exclusion manuelle de runes de l'Optimizer (excludedSelectors) : à
     // effacer sur un compte VRAIMENT DIFFÉRENT (autre wizard_id — voir
     // parseWizardId), pas sur une simple nouvelle version RÉEXPORTÉE du même
@@ -1154,6 +1159,7 @@ function Application() {
     setRelicUsageById(invRes.relicUsageById ?? {});
     setRuneMarkerLabels(markerLabels);
     setArenaDecks(decksArene);
+    setDecksEnregistres(decksDuCompte);
 
     // Enregistrement **après** la mise à jour de l'affichage et sans attendre :
     // une écriture de 2 Mo ne doit pas retarder l'apparition du compte. Un échec
@@ -1172,6 +1178,7 @@ function Application() {
         exportedAt: exporte,
         wizardName: nomJoueur,
         arenaDecks: decksArene,
+        decksEnregistres: decksDuCompte,
       });
     }
   }
@@ -1282,6 +1289,7 @@ function Application() {
       exportedAt: accountExportedAt,
       wizardName: accountName,
       ...(arenaDecks ? { arenaDecks } : {}),
+      ...(decksEnregistres ? { decksEnregistres } : {}),
     });
   }
 
@@ -1345,6 +1353,7 @@ function Application() {
           relicUsageById,
           runeMarkerLabels,
           ...(arenaDecks ? { arenaDecks } : {}),
+          ...(decksEnregistres ? { decksEnregistres } : {}),
         },
         maintenant
       ),

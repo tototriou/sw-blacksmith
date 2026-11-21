@@ -1,7 +1,7 @@
 import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
 import { ChevronLeft, Download, FolderInput, Plus, Upload } from 'lucide-react';
 import type { Monster } from '../../../types';
-import { Bouton, Champ, ConfirmDialog, Jeton, Menu, MobileSheet, Modale, Onglets, PiedDeDialogue, Selecteur, type ElementMenu } from '../../../ui';
+import { Bouton, Champ, ConfirmDialog, Jeton, Menu, MobileSheet, Modale, Onglets, PiedDeDialogue, Segmented, Selecteur, type ElementMenu } from '../../../ui';
 import MonsterPicker from '../../MonsterPicker';
 import MonsterAvatar from '../../MonsterAvatar';
 import Pager from '../Pager';
@@ -20,14 +20,14 @@ import type { StockageOptimizer } from '../../../lib/optimizerMemberStorage';
 import { telechargerTexte } from '../../../lib/telechargement';
 import { ecrireFichierEquipes, lireFichierEquipes, nomFichierEquipes } from '../../../lib/equipesFichier';
 import {
-  creerDepuisEquipeOptimizer, disponibiliteRetourOptimizer, equipeLieeA, lienApresExportOptimizer, preparerExportEquipeOptimizer, preparerRetourOptimizer,
+  creerDepuisEquipeOptimizer, disponibiliteRetourOptimizer, equipeLieeA, exportSansContenu, lienApresExportOptimizer, preparerExportEquipeOptimizer, preparerRetourOptimizer,
   type DemandeEquipeOptimizer, type ExportEquipeOptimizer, type RetourOptimizer,
 } from '../../../lib/importEquipesEnregistrees';
 import { sourcesImportEquipes, type ContexteSourcesEquipes, type SourceEquipement, type SourceImportEquipe } from '../../../lib/sourcesEquipesEnregistrees';
 import {
-  ONGLETS_EQUIPES, ajouterMonstre, compteParOnglet, creerEquipe, deplacerVersOnglet, dupliquerEquipe, equipesFiltrees,
-  gesteSurBrouillon, nomEquipeLibre, resumeEcarts, tireurIdentifiants,
-  type EquipeEnregistree, type InventaireCompte, type OngletEquipes,
+  CATEGORIES_A_COTE, CATEGORIES_EQUIPES, ONGLETS_EQUIPES, ajouterMonstre, categorieDe, compteParCategorie, compteParOnglet, coteDe,
+  creerEquipe, deplacerVersOnglet, dupliquerEquipe, equipesFiltrees, gesteSurBrouillon, nomEquipeLibre, rangement, resumeEcarts, tireurIdentifiants,
+  type CategorieEquipes, type EquipeEnregistree, type InventaireCompte, type OngletEquipes,
 } from '../../../lib/equipesEnregistrees';
 
 // Au-delà, la grille se pagine.
@@ -65,10 +65,22 @@ export default function EquipesSection({ api, ctx, inventaire, allMonsters, opti
   const e = t.equipes;
   const telephone = useMediaQuery(SOUS_LG);
   const idRapport = useId();
-  // Onglet ouvert et recherche : gardés pour la session, jamais sur le disque.
-  const [ongletGarde, setOnglet] = useStickyState<OngletEquipes>('equipes.onglet', ONGLETS_EQUIPES[0]);
-  // Un onglet gardé qui n'existe plus (guerre de guilde scindée) retombe sur le premier.
-  const onglet = ONGLETS_EQUIPES.includes(ongletGarde) ? ongletGarde : ONGLETS_EQUIPES[0];
+  // Onglet ouvert, côté filtré et recherche : gardés pour la session, jamais
+  // sur le disque.
+  const [categorieGardee, setCategorie] = useStickyState<CategorieEquipes>('equipes.categorie', CATEGORIES_EQUIPES[0]);
+  const categorie = CATEGORIES_EQUIPES.includes(categorieGardee) ? categorieGardee : CATEGORIES_EQUIPES[0];
+  const [coteGarde, setCote] = useStickyState<'tout' | 'offense' | 'defense'>('equipes.cote', 'tout');
+  const aCote = CATEGORIES_A_COTE.includes(categorie);
+  const cote = aCote && coteGarde !== 'tout' ? coteGarde : null;
+  // Le rangement d'une équipe créée ou importée ici : l'onglet ouvert, du côté
+  // filtré (l'offense sous « Tout »).
+  const onglet = rangement(categorie, cote);
+  // Montrer une équipe : son onglet, et son côté si un côté est filtré.
+  const setOnglet = (o: OngletEquipes) => {
+    setCategorie(categorieDe(o));
+    const c = coteDe(o);
+    if (c && coteGarde !== 'tout') setCote(c);
+  };
   const [rechercheIds, setRechercheIds] = useStickyState<number[]>('equipes.recherche', []);
   const [page, setPage] = useState(0);
   const [ouverte, setOuverte] = useState<string | null>(null);
@@ -88,10 +100,11 @@ export default function EquipesSection({ api, ctx, inventaire, allMonsters, opti
 
   const monstreDe = (com2usId: number) => ctx.monsterByCom2us.get(com2usId);
   const recherche = rechercheIds.map(monstreDe).filter((m): m is Monster => !!m);
-  const comptes = useMemo(() => compteParOnglet(api.equipes), [api.equipes]);
-  const visibles = useMemo(() => equipesFiltrees(api.equipes, onglet, recherche, ctx.monsterByCom2us),
+  const comptes = useMemo(() => compteParCategorie(api.equipes), [api.equipes]);
+  const comptesCotes = useMemo(() => compteParOnglet(api.equipes), [api.equipes]);
+  const visibles = useMemo(() => equipesFiltrees(api.equipes, categorie, cote, recherche, ctx.monsterByCom2us),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [api.equipes, onglet, rechercheIds.join(','), ctx.monsterByCom2us]);
+    [api.equipes, categorie, cote, rechercheIds.join(','), ctx.monsterByCom2us]);
   const pages = Math.max(1, Math.ceil(visibles.length / EQUIPES_PAR_PAGE));
   const pageSure = Math.min(page, pages - 1);
   const affichees = visibles.slice(pageSure * EQUIPES_PAR_PAGE, (pageSure + 1) * EQUIPES_PAR_PAGE);
@@ -213,7 +226,7 @@ export default function EquipesSection({ api, ctx, inventaire, allMonsters, opti
 
   const actions = (x: EquipeEnregistree): ElementMenu[] => {
     const c = e.carte;
-    const exportImpossible = !inventaire || !onImporterOptimizer ? e.export.sansCompte : null;
+    const exportImpossible = !inventaire || !onImporterOptimizer ? e.export.sansCompte : exportSansContenu(x) ? e.export.sansContenu : null;
     const retourImpossible = refusRetour(x);
     return [
       { cle: 'ouvrir', libelle: c.ouvrir, onClick: () => setOuverte(x.id) },
@@ -275,8 +288,9 @@ export default function EquipesSection({ api, ctx, inventaire, allMonsters, opti
 
       <div className="overflow-x-auto">
         {/* Une équipe ouverte montre son onglet ; en changer referme l'équipe. */}
-        <Onglets aria-label={e.ongletsAria} valeur={equipeOuverte?.onglet ?? onglet} onChange={(o) => { fermerDetail(); setOnglet(o); setPage(0); }}
-          options={ONGLETS_EQUIPES.map((o) => ({ cle: o, libelle: <>{e.onglets[o]} <span className="font-mono text-ink-dimmer">{comptes[o]}</span></> }))} />
+        <Onglets aria-label={e.ongletsAria} valeur={equipeOuverte ? categorieDe(equipeOuverte.onglet) : categorie}
+          onChange={(o) => { fermerDetail(); setCategorie(o); setPage(0); }}
+          options={CATEGORIES_EQUIPES.map((o) => ({ cle: o, libelle: <>{e.categories[o]} <span className="font-mono text-ink-dimmer">{comptes[o]}</span></> }))} />
       </div>
 
       {equipeOuverte ? (
@@ -301,6 +315,16 @@ export default function EquipesSection({ api, ctx, inventaire, allMonsters, opti
         </div>
       )}
 
+      {/* Arène et combat de guilde : offense et défense dans un même onglet,
+          séparées par ce filtre ; chaque carte dit son côté. */}
+      {aCote && (
+        <div role="group" aria-label={e.cotes.aria} className="self-start">
+          <Segmented<'tout' | 'offense' | 'defense'> value={coteGarde} onChange={(v) => { setCote(v); setPage(0); }}
+            options={(['tout', 'offense', 'defense'] as const).map((k) => ({ key: k, label: e.cotes[k],
+              suffix: <span className="font-mono text-ink-dimmer">{k === 'tout' ? comptes[categorie] : comptesCotes[rangement(categorie, k)]}</span> }))} />
+        </div>
+      )}
+
       {api.illisibles > 0 && <p className="text-xs text-warn">{e.illisibles(api.illisibles)}</p>}
 
       {enRelecture && api.equipes.length === 0 ? (
@@ -315,6 +339,7 @@ export default function EquipesSection({ api, ctx, inventaire, allMonsters, opti
             {affichees.map((x) => (
               <CarteEquipe key={x.id} equipe={x} monstreDe={monstreDe} ecarts={inventaire ? resumeEcarts(x, inventaire) : null}
                 speedTuneIncomplet={api.signalements.some((sg) => sg.id === x.id && sg.signalements.includes('speedTuneIncomplet'))}
+                cote={aCote && cote === null && coteDe(x.onglet) ? e.cotes[coteDe(x.onglet)!] : null}
                 actions={actions(x)} onOuvrir={() => setOuverte(x.id)} />
             ))}
           </div>

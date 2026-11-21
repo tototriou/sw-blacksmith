@@ -13,7 +13,7 @@ import { creerEquipe, indexerInventaire, type EquipeEnregistree } from '../../sr
 import { sourcesEquipementEspece, sourcesImportEquipes, type ContexteSourcesEquipes } from '../../src/lib/sourcesEquipesEnregistrees';
 import { fr } from '../../src/i18n/fr';
 import { egal, ok, titre } from '../outils';
-import { auTelephone, bouton, onglets, rendre, texteVisible, valeurs } from './outils-rendu';
+import { auTelephone, bouton, boutons, onglets, rendre, texteVisible, valeurs } from './outils-rendu';
 import { equipementEx, monstreEx, runeEx } from '../equipes-enregistrees.test';
 
 const T0 = new Date('2026-11-05T10:00:00Z');
@@ -24,7 +24,7 @@ function monstre(id: number): Monster {
 const MONSTRES = [1, 2, 3].map(monstre);
 const ctx = (compte = true): ContexteSourcesEquipes => ({
   box: compte ? [{ key: '11', monster: MONSTRES[0], stars: 6, level: 40, gear: equipementEx(1) }] : [],
-  siegeDefenseTeams: [], siegeOffenseTeams: [], arenaDecks: compte ? [] : null, compte,
+  siegeDefenseTeams: [], siegeOffenseTeams: [], arenaDecks: compte ? [] : null, decksEnregistres: compte ? [] : null, compte,
   monsterById: new Map(MONSTRES.map((m) => [String(m.id), m])),
   monsterByCom2us: new Map(MONSTRES.map((m) => [m.com2usId as number, m])),
 });
@@ -32,9 +32,9 @@ const ctx = (compte = true): ContexteSourcesEquipes => ({
 const eq1 = equipementEx(1);
 const INVENTAIRE = indexerInventaire(eq1.runes.map((r) => (r.id === 3 ? runeEx(3, 3, 99) : r)), eq1.artifacts, [eq1.relic!]);
 const EQUIPES: EquipeEnregistree[] = [
-  { ...creerEquipe('e1', 'siege-attaque', 'Ma RTA', T0), note: 'contre Lushen', monstres: [monstreEx('a', 1001, 11), monstreEx('b', 1002, null, null)], leader: 'a' },
-  { ...creerEquipe('e2', 'siege-attaque', 'Autre RTA', T0), monstres: [monstreEx('d', 1002, null, null), monstreEx('e', 1003, null, null)] },
-  { ...creerEquipe('e3', 'pve', 'Donjon', T0), monstres: [monstreEx('c', 1003, null, null), monstreEx('f', 1001, null, null)] },
+  { ...creerEquipe('e1', 'arene-offense', 'Ma RTA', T0), note: 'contre Lushen', monstres: [monstreEx('a', 1001, 11), monstreEx('b', 1002, null, null)], leader: 'a' },
+  { ...creerEquipe('e2', 'arene-defense', 'Autre RTA', T0), monstres: [monstreEx('d', 1002, null, null), monstreEx('e', 1003, null, null)] },
+  { ...creerEquipe('e3', 'cairos', 'Donjon', T0), monstres: [monstreEx('c', 1003, null, null), monstreEx('f', 1001, null, null)] },
 ];
 const api = (equipes = EQUIPES, relecture: 'en-cours' | 'finie' = 'finie'): EquipesEnregistreesApi => ({
   equipes, relecture, illisibles: 0, signalements: [], clesReservees: new Set(), signaler: () => {}, appliquer: () => {}, remplacerTout: () => {},
@@ -51,10 +51,14 @@ export function testRenduEquipesBureau() {
   const html = rendre(section());
   const t = texteVisible(html);
   egal(onglets(html).map((o) => [o.texte, o.ouvert]), [
-    ['Siège — offense 2', true], ['Siège — défense 0', false], ['RTA 0', false], ['Cairos 1', false],
-    ['Arène — offense 0', false], ['Arène — défense 0', false], ['Guerre de guilde — offense 0', false], ['Guerre de guilde — défense 0', false],
-  ], 'huit onglets dans l’ordre choisi, chacun avec son total, le premier ouvert');
-  ok(t.includes('Ma RTA') && t.includes('Autre RTA') && !t.includes('Donjon'), 'les cartes de l’onglet ouvert seulement');
+    ['Arène 2', true], ['Combat de guilde 0', false], ['Labyrinthe 0', false], ['RTA 0', false], ['Cairos 1', false],
+    ['ToA 0', false], ['Passage des dimensions 0', false],
+  ], 'sept onglets de catégorie dans l’ordre choisi, chacun avec son total, le premier ouvert');
+  ok(t.includes('Ma RTA') && t.includes('Autre RTA') && !t.includes('Donjon'), 'les cartes de l’onglet ouvert seulement, ses deux côtés');
+  const filtre = html.slice(html.indexOf(`aria-label="${e.cotes.aria}"`));
+  ok(filtre !== html, 'l’arène a son filtre offense / défense');
+  egal(boutons(filtre).slice(0, 3).map((b) => b.texte), ['Tout 2', 'Offense 1', 'Défense 1'], 'le filtre compte chaque côté');
+  ok(/Ma RTA\s*Offense/.test(t) && /Autre RTA\s*Défense/.test(t), 'sous « Tout », chaque carte dit son côté');
   ok(t.includes('contre Lushen'), 'la note sur la carte');
   ok(t.includes(e.carte.modifiees(1)), 'l’écart au compte : une pièce modifiée');
   for (const b of [e.nouvelle, e.importer, e.exporterFichier, e.importerFichier]) ok(bouton(html, b)?.desactive === false, `« ${b} » utilisable`);

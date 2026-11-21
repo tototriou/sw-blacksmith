@@ -26,7 +26,7 @@ IndexedDB n'a aucun de ces défauts, et son **structured clone** évite le
 ### Ce qu'on stocke
 
 Une base `swblacksmith`, un store `account`, **une clé fixe** `current` :
-`{ schema, savedAt, box, runes, artifacts, relics, crafts, usedRuneIds, relicUsageById, runeMarkerLabels, arenaDecks? }`.
+`{ schema, savedAt, box, runes, artifacts, relics, crafts, usedRuneIds, relicUsageById, runeMarkerLabels, arenaDecks?, decksEnregistres? }`.
 
 - ⚠️ **Une base nommée `sw-forge` est reprise.**
   À la première ouverture, `reprendreAncienneBase` recopie son compte dans la
@@ -57,6 +57,9 @@ Une base `swblacksmith`, un store `account`, **une clé fixe** `current` :
   d'arène (`parseArenaDecks`), sources de « Mes équipes ». Un compte conservé
   avant ce champ se relit sans eux, et la page dit de réimporter pour les lire ;
   l'incrément aurait rejeté tous les comptes conservés pour une source d'import.
+- ⚠️ **`decksEnregistres` aussi**, pour la même raison : les decks enregistrés du
+  jeu (`parseDecksEnregistres`, [decks-enregistres.md](decks-enregistres.md)),
+  sources de « Mes équipes ». Mal formé, il est oublié, pas le compte.
 - `schema` (`ACCOUNT_SCHEMA`, **7**) est à **incrémenter dès qu'un extracteur
   produit un champ de plus** : un enregistrement d'un autre schéma est ignoré à
   la lecture, et l'app invite à réimporter — sinon elle afficherait des

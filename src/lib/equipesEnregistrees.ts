@@ -13,27 +13,71 @@ import type { PlanSpeedTune } from './planSpeedTune';
 import type { RepliSpeedTune } from './speedTuneEquipe';
 import { planSpeedTuneValide } from './speedTuneEquipe';
 import { idCanoniqueCollab } from './monsterForms';
+import type { ContenuDeck } from './importAccount';
+import { CONTENU_LEADS_JEU } from './equipesOptimizer';
 
-// Dans l'ordre affiché, choisi par l'utilisateur ; le premier est ouvert par défaut.
+// Les CATÉGORIES, une par onglet, dans l'ordre affiché choisi par
+// l'utilisateur ; la première est ouverte par défaut. Sept onglets, jamais un
+// par contenu de jeu : les decks de l'export se rangent dans ces catégories.
+export const CATEGORIES_EQUIPES = ['arene', 'guilde', 'labyrinthe', 'rta', 'cairos', 'toa', 'passage-dimensions'] as const;
+export type CategorieEquipes = (typeof CATEGORIES_EQUIPES)[number];
+
+// Arène et combat de guilde distinguent l'offense de la défense : un filtre
+// dans l'onglet, le côté porté par chaque équipe.
+export type CoteEquipe = 'offense' | 'defense';
+export const CATEGORIES_A_COTE: readonly CategorieEquipes[] = ['arene', 'guilde'];
+
+// Le RANGEMENT d'une équipe, son champ `onglet` : la catégorie, avec son côté
+// pour l'arène et le combat de guilde.
 export const ONGLETS_EQUIPES = [
-  'siege-attaque', 'siege-defense', 'rta', 'pve', 'arene-attaque', 'arene-defense', 'guerre-guilde-offense', 'guerre-guilde-defense',
+  'arene-offense', 'arene-defense', 'guilde-offense', 'guilde-defense', 'labyrinthe', 'rta', 'cairos', 'toa', 'passage-dimensions',
 ] as const;
 export type OngletEquipes = (typeof ONGLETS_EQUIPES)[number];
 
-// Le contenu de la liste créée par l'export vers l'Optimizer.
-export const CONTENU_OPTIMIZER_ONGLET: Record<OngletEquipes, ContenuListeOptimizer> = {
-  'siege-attaque': 'guilde',
-  'siege-defense': 'guilde',
-  rta: 'arene',
-  pve: 'donjon',
-  'arene-attaque': 'arene',
-  'arene-defense': 'arene',
-  'guerre-guilde-offense': 'guilde',
-  'guerre-guilde-defense': 'guilde',
+export function categorieDe(onglet: OngletEquipes): CategorieEquipes {
+  return onglet.startsWith('arene-') ? 'arene' : onglet.startsWith('guilde-') ? 'guilde' : onglet as CategorieEquipes;
+}
+export function coteDe(onglet: OngletEquipes): CoteEquipe | null {
+  return onglet.endsWith('-offense') ? 'offense' : onglet.endsWith('-defense') ? 'defense' : null;
+}
+// Le rangement d'une catégorie ; sans côté choisi, l'offense.
+export function rangement(categorie: CategorieEquipes, cote: CoteEquipe | null): OngletEquipes {
+  return CATEGORIES_A_COTE.includes(categorie) ? `${categorie as 'arene' | 'guilde'}-${cote ?? 'offense'}` : categorie as OngletEquipes;
+}
+
+// Les rangements d'avant les sept catégories, relus dans les nouveaux : le
+// siège et la guerre de guilde rejoignent le combat de guilde, le « PVE »
+// Cairos ; l'ancien onglet unique de guerre de guilde se relit en offense.
+const ONGLETS_ANCIENS: Readonly<Record<string, OngletEquipes>> = {
+  'siege-attaque': 'guilde-offense', 'siege-defense': 'guilde-defense',
+  'guerre-guilde': 'guilde-offense', 'guerre-guilde-offense': 'guilde-offense', 'guerre-guilde-defense': 'guilde-defense',
+  'arene-attaque': 'arene-offense', pve: 'cairos',
 };
 
+// Le contenu de la liste créée par l'export vers l'Optimizer, pour une équipe
+// sans contenu du jeu (`contenuJeu`) : le lead qui agit dans la catégorie,
+// d'après `CONTENU_LEADS_JEU` (labyrinthe : guilde ; passage des dimensions :
+// donjon ; RTA : arène). La ToA n'en a pas : sa règle n'est pas relevée, son
+// export est refusé plutôt que deviné.
+export const CONTENU_OPTIMIZER_ONGLET: Readonly<Partial<Record<CategorieEquipes, ContenuListeOptimizer>>> = {
+  arene: 'arene',
+  guilde: 'guilde',
+  labyrinthe: 'guilde',
+  rta: 'arene',
+  cairos: 'donjon',
+  'passage-dimensions': 'donjon',
+};
+
+// Le contenu de l'Optimizer d'une équipe : celui de son contenu du jeu s'il
+// est connu (une subjugation, rangée en Cairos, applique le lead de guilde),
+// sinon celui de sa catégorie ; `null` : pas de règle relevée.
+export function contenuOptimizerEquipe(e: Pick<EquipeEnregistree, 'onglet' | 'contenuJeu'>): ContenuListeOptimizer | null {
+  if (e.contenuJeu) return CONTENU_LEADS_JEU[e.contenuJeu];
+  return CONTENU_OPTIMIZER_ONGLET[categorieDe(e.onglet)] ?? null;
+}
+
 export const PROVENANCES_EQUIPEMENT = [
-  'porte', 'siege-defense', 'siege-attaque', 'arene-defense', 'arene-attaque', 'optimizer', 'aucun',
+  'porte', 'siege-defense', 'siege-attaque', 'arene-defense', 'arene-attaque', 'deck', 'optimizer', 'aucun',
 ] as const;
 export type ProvenanceEquipement = (typeof PROVENANCES_EQUIPEMENT)[number];
 
@@ -84,6 +128,11 @@ export interface EquipeEnregistree {
   leader: string | null;
   speedTune?: SpeedTuneEnregistre;
   lienOptimizer?: LienOptimizerEquipe;
+  // Le contenu du jeu du deck importé (une catégorie en mêle plusieurs) :
+  // il choisit le lead appliqué à l'export (`contenuOptimizerEquipe`).
+  // Absent pour une équipe faite à la main ; retiré quand elle change de
+  // catégorie.
+  contenuJeu?: ContenuDeck;
   creeLe: string;
   modifieLe: string;
 }
@@ -156,12 +205,12 @@ export interface LectureEquipe {
 
 // `null` : l'équipe est illisible (elle va aux rejets, brute). Un speed tune,
 // un leader ou un lien mal formés dégradent l'équipe, ils ne la rejettent pas.
-// L'ancien onglet unique de guerre de guilde, scindé en offense et défense :
-// ses équipes se relisent en offense.
-const ONGLET_GUERRE_GUILDE_ANCIEN = 'guerre-guilde';
-
+// Un rangement d'avant les sept catégories se relit dans le sien
+// (`ONGLETS_ANCIENS`).
 export function lireEquipeEnregistree(brut: unknown): LectureEquipe | null {
-  const v = objet(brut) && brut.onglet === ONGLET_GUERRE_GUILDE_ANCIEN ? { ...brut, onglet: 'guerre-guilde-offense' } : brut;
+  const ancien = objet(brut) && typeof brut.onglet === 'string' && Object.prototype.hasOwnProperty.call(ONGLETS_ANCIENS, brut.onglet)
+    ? ONGLETS_ANCIENS[brut.onglet] : null;
+  const v = ancien ? { ...(brut as Record<string, unknown>), onglet: ancien } : brut;
   if (!objet(v) || !texteNonVide(v.id) || !ONGLETS_EQUIPES.includes(v.onglet as OngletEquipes)
     || !texteNonVide(v.nom) || !texte(v.note) || !date(v.creeLe) || !date(v.modifieLe)
     || !Array.isArray(v.monstres) || v.monstres.length < MONSTRES_MIN_EQUIPE || v.monstres.length > MONSTRES_MAX_EQUIPE || !v.monstres.every(monstre)) return null;
@@ -188,6 +237,9 @@ export function lireEquipeEnregistree(brut: unknown): LectureEquipe | null {
     if (lien) equipe.lienOptimizer = lien;
     else signalements.push('lienOptimizerRetire');
   }
+  // Un contenu inconnu (fichier d'une version plus récente) est oublié : la
+  // catégorie choisit alors le lead.
+  if (typeof v.contenuJeu === 'string' && Object.prototype.hasOwnProperty.call(CONTENU_LEADS_JEU, v.contenuJeu)) equipe.contenuJeu = v.contenuJeu as ContenuDeck;
   return { equipe, signalements };
 }
 
@@ -343,23 +395,31 @@ export function resumeEcarts(e: EquipeEnregistree, inv: InventaireCompte): Resum
  * Recherche et ordre
  * ----------------------------------------------------------------------- */
 
+// Les équipes d'un onglet (catégorie), filtrées par côté (`null` : tous) et
+// par monstres recherchés, les plus récemment modifiées d'abord.
 // Une équipe est retenue si elle contient TOUS les monstres recherchés ; une
 // collaboration et sa version SW comptent pour la même espèce.
 export function equipesFiltrees(
-  equipes: readonly EquipeEnregistree[], onglet: OngletEquipes, recherche: readonly Monster[],
+  equipes: readonly EquipeEnregistree[], categorie: CategorieEquipes, cote: CoteEquipe | null, recherche: readonly Monster[],
   monstreParCom2us: ReadonlyMap<number, Monster>
 ): EquipeEnregistree[] {
   const canon = (com2usId: number) => idCanoniqueCollab(com2usId, monstreParCom2us.get(com2usId)?.jumeauCollab);
   const voulus = recherche.filter((m) => m.com2usId != null).map((m) => idCanoniqueCollab(m.com2usId as number, m.jumeauCollab));
   return equipes
-    .filter((e) => e.onglet === onglet)
+    .filter((e) => categorieDe(e.onglet) === categorie && (cote === null || coteDe(e.onglet) === cote))
     .filter((e) => { const ids = new Set(e.monstres.map((m) => canon(m.com2usId))); return voulus.every((v) => ids.has(v)); })
     .sort((a, b) => Date.parse(b.modifieLe) - Date.parse(a.modifieLe) || a.id.localeCompare(b.id));
 }
 
+// Le total de chaque rangement ; celui d'un onglet est la somme de ses côtés.
 export function compteParOnglet(equipes: readonly EquipeEnregistree[]): Record<OngletEquipes, number> {
   const c = Object.fromEntries(ONGLETS_EQUIPES.map((o) => [o, 0])) as Record<OngletEquipes, number>;
   for (const e of equipes) c[e.onglet]++;
+  return c;
+}
+export function compteParCategorie(equipes: readonly EquipeEnregistree[]): Record<CategorieEquipes, number> {
+  const c = Object.fromEntries(CATEGORIES_EQUIPES.map((o) => [o, 0])) as Record<CategorieEquipes, number>;
+  for (const e of equipes) c[categorieDe(e.onglet)]++;
   return c;
 }
 
@@ -434,7 +494,10 @@ export function modifierTextes(e: EquipeEnregistree, champs: { nom?: string; not
 }
 
 export function deplacerVersOnglet(e: EquipeEnregistree, onglet: OngletEquipes, maintenant: Date): EquipeEnregistree {
-  return e.onglet === onglet ? e : touchee({ ...e, onglet }, maintenant);
+  if (e.onglet === onglet) return e;
+  const { contenuJeu, ...reste } = e;
+  // Changer de côté garde le contenu du jeu ; changer de catégorie le retire.
+  return touchee(contenuJeu && categorieDe(onglet) === categorieDe(e.onglet) ? { ...reste, contenuJeu, onglet } : { ...reste, onglet }, maintenant);
 }
 
 // Nouveaux `id` et `uid` ; le leader et les liens suivent la correspondance
@@ -447,6 +510,7 @@ export function dupliquerEquipe(e: EquipeEnregistree, id: string, nom: string, t
     id, onglet: e.onglet, nom, note: e.note,
     monstres: e.monstres.map((m) => ({ ...copierMonstre(m), uid: nouveaux.get(m.uid)! })),
     leader: e.leader === null ? null : nouveaux.get(e.leader) ?? null,
+    ...(e.contenuJeu ? { contenuJeu: e.contenuJeu } : {}),
     creeLe: d, modifieLe: d,
   };
   if (e.speedTune) {

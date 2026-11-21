@@ -68,7 +68,7 @@ const TITRES: [string, string][] = [
   ['#/compte/artefacts/resume', 'Mon compte · Artéfacts Résumé'],
   ['#/compte/artefacts/liste', 'Mon compte · Artéfacts Liste'],
   // Sans compte importé, la page se lit : ses onglets en témoignent.
-  ['#/compte/equipes/liste', 'Guerre de guilde — défense'],
+  ['#/compte/equipes/liste', 'Passage des dimensions'],
   ['#/outils/optimizer', 'Outils'],
   ['#/outils/speed-tuning', 'Outils'],
   ['#/bestiary', 'Bestiaire'],
