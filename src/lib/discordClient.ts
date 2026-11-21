@@ -77,6 +77,7 @@ export type ResultatPublication =
   | { type: 'conflit'; version: VersionSalon | null }
   | { type: 'refuse' }
   | { type: 'invalide' }
+  | { type: 'trop-gros' }
   | { type: 'non-connecte' }
   | { type: 'indisponible' };
 
@@ -90,7 +91,10 @@ export async function publier(recuperer: Recuperer, salonId: string, base: strin
   });
   if (r.ok) return { type: 'publie', version: r.valeur.version };
   if (r.statut === 409) return { type: 'conflit', version: (r.corps as { version?: VersionSalon | null } | null)?.version ?? null };
-  if (r.statut === 400 || r.statut === 413) return { type: 'invalide' };
+  // 413 : refusée pour sa taille, par le service ou par Vercel lui-même — à dire
+  // comme telle, pas comme une recommandation sans deck.
+  if (r.statut === 413) return { type: 'trop-gros' };
+  if (r.statut === 400) return { type: 'invalide' };
   if (r.echec === 'non-connecte') return { type: 'non-connecte' };
   if (r.echec === 'refuse') return { type: 'refuse' };
   return { type: 'indisponible' };

@@ -63,10 +63,12 @@ export function testDiscordRecoSalon() {
   titre('Service Discord — version courante et fichier publié');
   const m = (id: string, auteur: string, fichiers: string[], taille = 1, url = `${CDN}${id}`): MessageDiscord =>
     ({ id, timestamp: `t${id}`, author: { id: auteur }, attachments: fichiers.map((f) => ({ url, filename: f, size: taille })) });
-  const messages = [m('6', 'U', ['Export.JSON']), m('5', 'U', ['gros.json'], 300 * 1024), m('4', 'B', []), m('3', 'B', ['photo.png']),
+  const messages = [m('6', 'U', ['Export.JSON']), m('5', 'U', ['gros.json'], 3.5 * 1024 * 1024 + 1), m('4', 'B', []), m('3', 'B', ['photo.png']),
     m('2', 'U', ['piege.json'], 1, 'https://ailleurs.example/x.json'), m('1', 'B', ['recommandation.json'])];
   egal(candidats(messages).map((c) => c.message.id), ['6', '1'],
-    'candidats : un JSON du bot OU d\'un membre ; ni un fichier de plus de 256 Ko, ni une autre extension, ni un lien hors du CDN de Discord');
+    'candidats : un JSON du bot OU d\'un membre ; ni un fichier de plus de 3,5 Mo, ni une autre extension, ni un lien hors du CDN de Discord');
+  egal(candidats([m('7', 'U', ['youtube.json'], 1300 * 1024)]).map((c) => c.message.id), ['7'],
+    'un fichier de 1,3 Mo (toutes les chaînes YouTube réunies) est un candidat');
   egal(candidats(Array.from({ length: 9 }, (_, i) => m(String(9 - i), 'U', ['a.json']))).length, ESSAIS_MAX, 'au plus 5 fichiers essayés par lecture');
 
   egal(nomDuMembre({ nick: 'Chef de guerre', user: { username: 'toto', global_name: 'Toto' } }), 'Chef de guerre', 'surnom du serveur d\'abord');
@@ -86,8 +88,12 @@ export function testDiscordRecoSalon() {
   egal(encore?.ok ? encore.reco.contributeurs : null, ['Toto', 'Lulu'], 'un contributeur ne revient pas deux fois');
   ok(!preparerPublication('pas du json', 'Toto', null, 's', fr).ok, 'un fichier illisible est refusé');
   ok(!preparerPublication(encodeRecosJson([reco('a'), reco('b')]), 'Toto', null, 's', fr).ok, 'deux recommandations : refusé, un salon en porte une');
-  ok(preparerPublication(fichier('x') + ' ', 'Toto', null, 's', fr).ok
-    && !preparerPublication(fichier('x') + ' '.repeat(300 * 1024), 'Toto', null, 's', fr).ok, 'un fichier de plus de 256 Ko est refusé, même valide');
+  ok(preparerPublication(fichier('x') + ' '.repeat(300 * 1024), 'Toto', null, 's', fr).ok,
+    'un fichier de 300 Ko est accepté (256 Ko au plus avant : un fichier de chaîne YouTube ne passait pas)');
+  ok(preparerPublication(fichier('x') + ' '.repeat(3.4 * 1024 * 1024), 'Toto', null, 's', fr).ok, 'un fichier de 3,4 Mo est accepté');
+  const gros = preparerPublication(fichier('x') + ' '.repeat(3.5 * 1024 * 1024), 'Toto', null, 's', fr);
+  egal(gros.ok ? null : gros.erreurs, ['trop-gros'], 'un fichier de plus de 3,5 Mo est refusé, même valide, pour sa taille');
+  ok(!premiere.texte.includes('\n'), 'le fichier posté est compact, sans indentation');
 }
 
 export function testDiscordContributeursFormat() {
@@ -329,6 +335,8 @@ export async function testDiscordRouteurSalonEtPublication() {
   egal((await publier({ salon: '1001', base: 'faux', contenu: 'pas du json' })).status, 409, 'le conflit se vérifie avant le contenu');
   const courante = (await (await lire('1001')).json() as { version: { messageId: string } }).version.messageId;
   egal((await publier({ salon: '1001', base: courante, contenu: 'pas du json' })).status, 400, 'contenu illisible : refusé');
+  egal((await publier({ salon: '1001', base: courante, contenu: fichier('x') + ' '.repeat(3.5 * 1024 * 1024) })).status, 413,
+    'contenu de plus de 3,5 Mo : 413, refusé pour sa taille');
   egal((await publier({ salon: '1001', contenu: 'x' })).status, 400, 'corps incomplet : refusé');
 
   // Un identifiant de salon entre dans un chemin de l'API de Discord, appelé

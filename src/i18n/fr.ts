@@ -2282,6 +2282,7 @@ export const fr = {
       conflit: 'Le salon a changé pendant que tu modifiais : fusionne, puis publie.',
       refusee: 'Publication refusée : tu ne peux plus écrire dans ce salon.',
       invalide: 'Publication refusée : la recommandation doit avoir au moins un deck avec un monstre.',
+      tropGros: 'Publication refusée : la recommandation est trop lourde pour Discord (3,5 Mo au plus).',
       indisponible: 'Discord ne répond pas : réessaie dans un instant.',
       limite: 'Discord limite les lectures pour le moment : réessaie dans une minute.',
       expiree: 'Ta session Discord a expiré : reconnecte-toi.',

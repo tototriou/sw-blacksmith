@@ -419,7 +419,8 @@ export function creerRouteur(d: Dependances) {
         const precedente = courante ? lireVersion(courante.texte, d.t) : null;
         const publieur = nomDuMembre(a.membre) || session.utilisateur.nom;
         const p = preparerPublication(corps.contenu, publieur, precedente, sourceDuSalon(a.serveurId, corps.salon), d.t);
-        if (!p.ok) return repondre(400, { erreur: 'contenu', details: p.erreurs });
+        // Trop gros : 413, comme le corps entier trop gros, pour que la page le dise.
+        if (!p.ok) return repondre(p.erreurs.includes('trop-gros') ? 413 : 400, { erreur: 'contenu', details: p.erreurs });
         // Dans Discord, le message est celui du BOT : le membre qui a publié
         // se lit dans son texte (une mention, sans notification), dans le nom
         // du fichier (son identifiant, que le JSON ne peut pas forger) et dans

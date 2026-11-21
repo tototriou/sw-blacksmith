@@ -397,8 +397,10 @@ export function empreinteDeck(d: RecoDeck): string {
   return JSON.stringify(recoToJson({ id: '', origin: 'mine', author: '', name: '', note: '', decks: [d] }).decks);
 }
 
-// Sérialise en JSON indenté (fichier destiné à être lu par un humain).
-export function encodeRecosJson(recos: Reco[]): string {
+// Sérialise en JSON indenté (fichier destiné à être lu par un humain). `compact` :
+// sans indentation, deux fois et demie plus léger — pour une publication Discord,
+// bornée en taille (api/_source/service/recoSalon.ts, `TAILLE_MAX`).
+export function encodeRecosJson(recos: Reco[], { compact = false }: { compact?: boolean } = {}): string {
   const utiles = recos.filter((r) => r.decks.some((d) => d.slots.some((s) => s.com2usId != null)));
   return JSON.stringify(
     {
@@ -408,7 +410,7 @@ export function encodeRecosJson(recos: Reco[]): string {
       recommandations: utiles.map(recoToJson),
     },
     null,
-    2
+    compact ? undefined : 2
   );
 }
 
