@@ -75,14 +75,15 @@ puis les exceptions du salon (`@everyone`, rôles, membre).
    nouvelle base. Entre cette lecture et l'envoi reste une fenêtre de quelques
    centaines de millisecondes où la dernière publication gagne.
 4. Le fichier doit contenir **une seule** recommandation valide
-   ([recoShare.ts](src/lib/recoShare.ts)), de 4 Mo au plus : 413 sinon, que la page
-   dit « trop lourde pour Discord » (et non « sans deck », comme un 400). La page
-   l'envoie en JSON **compact**, et le fichier posté l'est aussi : indenté, il pèse
-   deux fois et demie plus lourd. ⚠️ La requête, qui porte le fichier échappé dans
-   un JSON, doit rester sous les 4,5 Mo qu'une fonction Vercel accepte ; au-delà,
-   Vercel répond lui-même 413, lu de la même façon. Une recommandation tirée de
-   vidéos YouTube (toutes les chaînes réunies : plus de 700 decks) fait 1,2 Mo.
-   Les plafonds qui restent plus bas (lecture de tous les salons, cache, stockage) :
+   ([recoShare.ts](src/lib/recoShare.ts)), de 3,5 Mo au plus : 413 sinon, que la
+   page dit « trop lourde pour Discord » (et non « sans deck », comme un 400). La
+   page l'envoie en JSON **compact**, et le fichier posté l'est aussi : indenté, il
+   pèse deux fois et demie plus lourd. ⚠️ La requête de publication et la réponse du
+   cache (`brut`) portent le fichier échappé dans un JSON, 12 % plus lourd : 3,5 Mo
+   y font 3,9 Mo, sous les 4,5 Mo qu'une fonction Vercel accepte (au-delà, Vercel
+   répond lui-même 413, lu de la même façon). Une recommandation tirée de vidéos
+   YouTube (toutes les chaînes réunies : plus de 700 decks) fait 1,2 Mo. Les
+   plafonds qui restent (lecture de tous les salons, stockage) :
    [dette.md](../../../05-feuille-de-route/dette.md), « Recommandations volumineuses ».
 5. Le service écrit l'**auteur** (celui de la version précédente, sinon le
    publieur), les **contributeurs** (ceux de la version précédente, plus le
@@ -108,7 +109,7 @@ les 100 derniers messages, qu'il vienne du bot ou d'un membre
 ([recoSalon.ts](../../../../api/_source/service/recoSalon.ts), `candidats`) :
 
 - ⚠️ **Rien n'est cru avant validation.** Un candidat est une pièce jointe
-  `.json` de 4 Mo au plus (taille annoncée par Discord), hébergée sur le
+  `.json` de 3,5 Mo au plus (taille annoncée par Discord), hébergée sur le
   CDN de Discord ; il est téléchargé, puis passé au validateur complet de
   l'import, et doit contenir exactement une recommandation. Sinon il est
   ignoré et le suivant est essayé, cinq au plus par lecture : un salon rempli

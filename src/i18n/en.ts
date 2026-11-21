@@ -2145,7 +2145,7 @@ export const en: Dictionnaire = {
       conflit: 'The channel changed while you were editing: merge, then publish.',
       refusee: 'Publication refused: you can no longer write in this channel.',
       invalide: 'Publication refused: the recommendation needs at least one deck with a monster.',
-      tropGros: 'Publication refused: the recommendation is too large for Discord (4 MB at most).',
+      tropGros: 'Publication refused: the recommendation is too large for Discord (3.5 MB at most).',
       indisponible: 'Discord is not responding: try again in a moment.',
       limite: 'Discord is limiting reads for now: try again in a minute.',
       expiree: 'Your Discord session expired: sign in again.',

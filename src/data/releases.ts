@@ -107,7 +107,7 @@ export const RELEASES: Release[] = [
       { kind: 'fix', scope: 'Application', text: 'Sans données gardées, l’invocateur suivi se recharge en entier au lancement, prépa RTA et siège compris.' },
       { kind: 'docs', scope: 'Discord', text: 'Une page Bot Discord : installation, recommandations et commandes, avec captures.' },
       { kind: 'fix', scope: 'Discord', text: 'Le bot invité arrive avec ses commandes, dont /speedtune.' },
-      { kind: 'fix', scope: 'Recommandations', text: 'Une recommandation de centaines de decks se publie dans Discord, jusqu’à 4 Mo ; trop lourde, la page le dit.' },
+      { kind: 'fix', scope: 'Recommandations', text: 'Une recommandation de centaines de decks se publie dans Discord, jusqu’à 3,5 Mo ; trop lourde, la page le dit.' },
       { kind: 'fix', scope: 'Mon compte', text: 'Sur la courbe des runes, la rune choisie reste choisie quand tu la montes.' },
     ],
   },
