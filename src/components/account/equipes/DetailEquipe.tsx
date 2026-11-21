@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Crown, Plus, RefreshCw, X } from 'lucide-react';
 import type { Monster } from '../../../types';
 import type { BoxItem } from '../../../lib/applyAccount';
@@ -24,6 +24,10 @@ interface Props {
   // `null` sans compte : l'équipement s'affiche tel qu'enregistré.
   inventaire: InventaireCompte | null;
   onAjouter: () => void;
+  // L'en-tête de la page : le retour à la grille et le menu de l'équipe
+  // (`null` pour un brouillon), sur la ligne du nom et de la note au bureau.
+  retour: ReactNode;
+  menu: ReactNode;
 }
 
 // Un champ texte de l'équipe : saisi librement, enregistré (trimé) à la sortie.
@@ -41,28 +45,37 @@ function ChampTexte({ libelle, valeur, onValider }: { libelle: string; valeur: s
 
 // Le détail d'une équipe, dans la page à la place de la grille : son nom, sa
 // note et une ligne par monstre. Le même contenu aux deux formats.
-export default function DetailEquipe({ equipe, brouillon = false, onChanger, monstreDe, box, inventaire, onAjouter }: Props) {
+export default function DetailEquipe({ equipe, brouillon = false, onChanger, monstreDe, box, inventaire, onAjouter, retour, menu }: Props) {
   const t = useTraduction();
   const d = t.equipes.detail;
   const plein = equipe.monstres.length >= MONSTRES_MAX_EQUIPE;
   // Enregistrée, une équipe garde deux monstres : le retrait du deuxième est refusé.
   const retirable = brouillon || equipe.monstres.length > MONSTRES_MIN_EQUIPE;
-  // Lu une fois pour toutes les cartes de runes, comme la liste du compte.
-  const etroit = useMediaQuery(SOUS_LG);
+  // Téléphone : la roue de runes, plus compacte en hauteur que six cartes ;
+  // ordinateur : les cartes, à droite de la relique. Lu une fois pour toutes
+  // les fiches.
+  const telephone = useMediaQuery(SOUS_LG);
   // Une grille, pas une colonne flex : dans le panneau du téléphone, une
   // colonne flex aligne ses enfants à gauche (index.css, `[data-tiroir]`) et
   // les fiches se rétrécissaient sur leur contenu.
   return (
     <div className="grid grid-cols-1 gap-4">
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <ChampTexte libelle={d.nom} valeur={equipe.nom} onValider={(nom) => onChanger((e, n) => modifierTextes(e, { nom }, n))} />
-        <ChampTexte libelle={d.note} valeur={equipe.note} onValider={(note) => onChanger((e, n) => modifierTextes(e, { note }, n))} />
+      {/* Le nom de l'équipe n'est écrit que dans son champ. Bureau : retour,
+          nom, note et menu sur une ligne. Téléphone : retour et menu, puis
+          les deux champs dessous. */}
+      <div className="flex flex-wrap items-end gap-3">
+        {retour}
+        <div className="ml-auto lg:order-last lg:ml-0">{menu}</div>
+        <div className="grid basis-full grid-cols-1 gap-3 sm:grid-cols-2 lg:min-w-0 lg:flex-1 lg:basis-0">
+          <ChampTexte libelle={d.nom} valeur={equipe.nom} onValider={(nom) => onChanger((e, n) => modifierTextes(e, { nom }, n))} />
+          <ChampTexte libelle={d.note} valeur={equipe.note} onValider={(note) => onChanger((e, n) => modifierTextes(e, { note }, n))} />
+        </div>
       </div>
       {brouillon && <p role="status" className="text-xs text-ink-dim">{d.brouillon}</p>}
       {!inventaire && equipe.monstres.length > 0 && <p className="text-xs text-ink-dim">{d.sansCompte}</p>}
       {equipe.monstres.map((m, i) => (
         <FicheMonstre key={m.uid} m={m} position={i} total={equipe.monstres.length} leader={equipe.leader === m.uid} retirable={retirable}
-          monstre={monstreDe(m.com2usId)} box={box} inventaire={inventaire} onChanger={onChanger} etroit={etroit} />
+          monstre={monstreDe(m.com2usId)} box={box} inventaire={inventaire} onChanger={onChanger} telephone={telephone} />
       ))}
       <div>
         <Bouton trait="pointille" icone={<Plus size={14} />} libelle={d.ajouter} disabled={plein}
@@ -72,10 +85,10 @@ export default function DetailEquipe({ equipe, brouillon = false, onChanger, mon
   );
 }
 
-function FicheMonstre({ m, position, total, leader, retirable, monstre, box, inventaire, onChanger, etroit }: {
+function FicheMonstre({ m, position, total, leader, retirable, monstre, box, inventaire, onChanger, telephone }: {
   m: MonstreEnregistre; position: number; total: number; leader: boolean; retirable: boolean; monstre: Monster | undefined;
   box: readonly BoxItem[]; inventaire: InventaireCompte | null;
-  onChanger: Props['onChanger']; etroit: boolean;
+  onChanger: Props['onChanger']; telephone: boolean;
 }) {
   const t = useTraduction();
   const d = t.equipes.detail;
@@ -137,20 +150,20 @@ function FicheMonstre({ m, position, total, leader, retirable, monstre, box, inv
           {ecarts.length > 0 && <p className="mt-2 w-0 min-w-full text-xs text-warn">{ecarts.join(' · ')}</p>}
         </div>
         {m.equipement && (
-          // L'équipement (sans la roue : ses runes sont là en cartes), puis
-          // les cartes de runes, à droite de la relique.
+          // Ordinateur : l'équipement sans la roue, puis ses runes en cartes,
+          // à droite de la relique. Téléphone : la roue, sans les cartes.
           // Les runes passent dessous seulement quand la place de deux
           // cartes (2 × 215 + 8) manque ; sinon leur bande défile de côté,
           // sans jamais pousser la ligne au-delà de la fiche.
           <div className="flex min-w-0 flex-1 flex-wrap items-center gap-3">
             <div className="min-w-0 max-w-full flex-none overflow-x-auto">
-              <MonsterGear gear={m.equipement} sansRoue />
+              <MonsterGear gear={m.equipement} sansRoue={!telephone} />
             </div>
-            {m.equipement.runes.length > 0 && (
+            {!telephone && m.equipement.runes.length > 0 && (
               <div className="flex min-w-0 flex-1 basis-[438px] items-start gap-2 overflow-x-auto" role="list" aria-label={d.runes}>
                 {[...m.equipement.runes].sort((a, b) => a.slot - b.slot).map((r) => (
-                  <div key={r.id} role="listitem" className={`grid flex-none ${etroit ? 'w-[175px]' : 'w-[215px]'}`}>
-                    <CarteRune rune={r} etroit={etroit} />
+                  <div key={r.id} role="listitem" className="grid w-[215px] flex-none">
+                    <CarteRune rune={r} etroit={false} />
                   </div>
                 ))}
               </div>

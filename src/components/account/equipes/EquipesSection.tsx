@@ -262,7 +262,10 @@ export default function EquipesSection({ api, ctx, inventaire, allMonsters, opti
 
   const detail = equipeOuverte && (
     <DetailEquipe equipe={equipeOuverte} brouillon={brouillon?.id === equipeOuverte.id} onChanger={(f) => changerEquipe(equipeOuverte.id, f)} monstreDe={monstreDe}
-      box={ctx.box} inventaire={inventaire} onAjouter={() => setAjout(true)} />
+      box={ctx.box} inventaire={inventaire} onAjouter={() => setAjout(true)}
+      retour={<Bouton icone={<ChevronLeft size={14} />} libelle={e.detail.retour} onClick={fermerDetail} />}
+      // Le brouillon n'est pas encore une équipe : rien à exporter, déplacer ni supprimer.
+      menu={brouillon?.id !== equipeOuverte.id && <Menu libelle={e.carte.actions} elements={actions(equipeOuverte).filter((a) => a.cle !== 'ouvrir')} />} />
   );
 
   return (
@@ -277,13 +280,7 @@ export default function EquipesSection({ api, ctx, inventaire, allMonsters, opti
       </div>
 
       {equipeOuverte ? (
-        <div ref={vueEquipe} className="flex scroll-mt-4 flex-col gap-3">
-          <div className="flex items-center gap-2">
-            <Bouton icone={<ChevronLeft size={14} />} libelle={e.detail.retour} onClick={fermerDetail} />
-            <h2 className="min-w-0 flex-1 truncate text-sm font-semibold text-ink">{equipeOuverte.nom}</h2>
-            {/* Le brouillon n'est pas encore une équipe : rien à exporter, déplacer ni supprimer. */}
-            {brouillon?.id !== equipeOuverte.id && <Menu libelle={e.carte.actions} elements={actions(equipeOuverte).filter((a) => a.cle !== 'ouvrir')} />}
-          </div>
+        <div ref={vueEquipe} className="scroll-mt-4">
           {detail}
         </div>
       ) : (<>

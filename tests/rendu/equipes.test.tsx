@@ -80,7 +80,7 @@ export function testRenduEquipesTelephone() {
 export function testRenduEquipesDetail() {
   titre('rendu · Mes équipes — détail d’une équipe');
   const html = rendre(<DetailEquipe equipe={EQUIPES[0]} onChanger={() => {}} monstreDe={(c) => MONSTRES.find((m) => m.com2usId === c)}
-    box={ctx().box} inventaire={INVENTAIRE} onAjouter={() => {}} />);
+    box={ctx().box} inventaire={INVENTAIRE} onAjouter={() => {}} retour={null} menu={null} />);
   const t = texteVisible(html);
   ok(valeurs(html, 'value').includes('Ma RTA') && valeurs(html, 'value').includes('contre Lushen'), 'nom et note éditables');
   ok(t.includes(`${e.detail.provenance.porte} · ${e.detail.exemplaire['equipe-ainsi']}`), 'la provenance et ce que porte l’exemplaire');
@@ -91,7 +91,7 @@ export function testRenduEquipesDetail() {
   ok(!t.includes('Retirer la relique') && !t.includes('Remove the relic'), 'aucun retrait de relique sur la fiche');
   const autrement = [{ ...ctx().box[0], gear: equipementEx(2) }];
   const hAutrement = rendre(<DetailEquipe equipe={EQUIPES[0]} onChanger={() => {}} monstreDe={(c) => MONSTRES.find((m) => m.com2usId === c)}
-    box={autrement} inventaire={INVENTAIRE} onAjouter={() => {}} />);
+    box={autrement} inventaire={INVENTAIRE} onAjouter={() => {}} retour={null} menu={null} />);
   ok(texteVisible(hAutrement).includes(e.detail.exemplaire['equipe-autrement']), 'l’exemplaire est équipé autrement');
   egal(bouton(hAutrement, e.detail.reprendre)?.title, e.detail.reprendreAide, 'reprendre l’équipement porté, son infobulle dit ce qu’il fait');
   egal(bouton(html, e.detail.ajouter)?.desactive, false, 'ajouter un monstre');
@@ -103,20 +103,30 @@ export function testRenduEquipesDetail() {
   egal(bandesRunes(html), 1, 'une bande de runes pour le seul monstre équipé');
   egal((html.match(/role="listitem"/g) ?? []).length, 6, 'ses six runes en cartes');
   ok(!html.includes('rune-wheel.png'), 'sans roue de runes : les cartes la remplacent');
+  const auDoigt = auTelephone(() => rendre(<DetailEquipe equipe={EQUIPES[0]} onChanger={() => {}} monstreDe={(c) => MONSTRES.find((m) => m.com2usId === c)}
+    box={ctx().box} inventaire={INVENTAIRE} onAjouter={() => {}} retour={null} menu={null} />));
+  ok(auDoigt.includes('rune-wheel.png') && !auDoigt.includes('role="listitem"'), 'au téléphone, la roue de runes et pas de cartes');
+  // L'en-tête : le retour et le menu sur la ligne des champs, le nom écrit
+  // seulement dans le sien.
+  const avecEntete = rendre(<DetailEquipe equipe={EQUIPES[0]} onChanger={() => {}} monstreDe={(c) => MONSTRES.find((m) => m.com2usId === c)}
+    box={ctx().box} inventaire={INVENTAIRE} onAjouter={() => {}} retour={<button type="button">retour</button>} menu={<button type="button">menu</button>} />);
+  const [iRetour, iNom, iNote, iMenu] = ['>retour<', `value="Ma RTA"`, `value="contre Lushen"`, '>menu<'].map((x) => avecEntete.indexOf(x));
+  ok(iRetour >= 0 && iRetour < iNom && iNom < iNote && iMenu > iRetour, 'retour, nom, note et menu dans l’en-tête');
+  ok(!texteVisible(avecEntete).includes('Ma RTA'), 'le nom de l’équipe n’est pas répété en dur');
   const melange = { ...EQUIPES[0], monstres: [{ ...EQUIPES[0].monstres[0], equipement: { ...eq1, runes: [...eq1.runes].reverse() } }, EQUIPES[0].monstres[1]] };
   const hMelange = rendre(<DetailEquipe equipe={melange} onChanger={() => {}} monstreDe={(c) => MONSTRES.find((m) => m.com2usId === c)}
-    box={ctx().box} inventaire={INVENTAIRE} onAjouter={() => {}} />);
+    box={ctx().box} inventaire={INVENTAIRE} onAjouter={() => {}} retour={null} menu={null} />);
   const listeRunes = (h: string) => h.slice(h.indexOf('role="list"'));
   egal(listeRunes(hMelange) === listeRunes(rendre(<DetailEquipe equipe={{ ...melange, monstres: [{ ...melange.monstres[0], equipement: eq1 }, melange.monstres[1]] }}
-    onChanger={() => {}} monstreDe={(c) => MONSTRES.find((m) => m.com2usId === c)} box={ctx().box} inventaire={INVENTAIRE} onAjouter={() => {}} />)), true,
+    onChanger={() => {}} monstreDe={(c) => MONSTRES.find((m) => m.com2usId === c)} box={ctx().box} inventaire={INVENTAIRE} onAjouter={() => {}} retour={null} menu={null} />)), true,
   'les cartes suivent l’ordre des slots, quel que soit celui de la copie');
   const plein = { ...EQUIPES[0], monstres: [1, 2, 3, 4, 5, 6].map((k) => monstreEx(`m${k}`, 1002, null, null)) };
-  const h2 = rendre(<DetailEquipe equipe={plein} onChanger={() => {}} monstreDe={() => undefined} box={[]} inventaire={null} onAjouter={() => {}} />);
+  const h2 = rendre(<DetailEquipe equipe={plein} onChanger={() => {}} monstreDe={() => undefined} box={[]} inventaire={null} onAjouter={() => {}} retour={null} menu={null} />);
   egal([bouton(h2, e.detail.ajouter)?.desactive, bouton(h2, e.detail.ajouter)?.title], [true, e.detail.complet], 'à 6 monstres, l’ajout est désactivé avec sa raison');
   ok(texteVisible(h2).includes(e.detail.sansCompte), 'sans compte, la comparaison est annoncée absente');
   egal(bouton(h2, e.detail.retirer('1002'))?.desactive, false, 'au-delà de deux monstres, le retrait est permis');
   const seul = { ...EQUIPES[0], monstres: [monstreEx('s', 1002, null, null)] };
-  const h3 = rendre(<DetailEquipe equipe={seul} brouillon onChanger={() => {}} monstreDe={() => undefined} box={[]} inventaire={null} onAjouter={() => {}} />);
+  const h3 = rendre(<DetailEquipe equipe={seul} brouillon onChanger={() => {}} monstreDe={() => undefined} box={[]} inventaire={null} onAjouter={() => {}} retour={null} menu={null} />);
   ok(texteVisible(h3).includes(e.detail.brouillon), 'le brouillon de « Nouvelle équipe » dit quand il s’enregistre');
   egal(bouton(h3, e.detail.retirer('1002'))?.desactive, false, 'un brouillon se vide librement');
 }

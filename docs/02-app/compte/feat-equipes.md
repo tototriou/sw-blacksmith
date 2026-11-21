@@ -162,20 +162,21 @@ sinon « N pièces modifiées », « N pièces disparues ». Le détail marque c
   (`Pager`), posé **au-dessus** de la grille : la hauteur d'une page varie avec ses
   cartes, et un pager placé dessous bougerait sous le clic.
 - « Ouvrir » (la carte ou son menu) affiche l'équipe **dans la page**, à la place de
-  la barre de recherche et de la grille, sans modale : en tête, « Toutes les
-  équipes » (retour à la grille), le nom et le menu d'actions de la carte (sans
-  « Ouvrir ») ; puis le nom et la note éditables, et **une ligne par monstre** :
+  la barre de recherche et de la grille, sans modale : une ligne d'en-tête,
+  « Toutes les équipes » (retour à la grille), le nom et la note éditables, puis le
+  menu d'actions de la carte (sans « Ouvrir ») ; le nom n'est écrit que dans son
+  champ. Ensuite, **une ligne par monstre** :
   à gauche son identité (avatar, nom suivi de la croix de retrait, provenance,
   leader et, dessous, la position, reprise de l'équipement, état de chaque pièce
   qui n'est pas identique), dans une colonne à la largeur de son contenu (au plus
-  224 px), à droite son
-  équipement enregistré par `MonsterGear` (fiche de stats, artéfacts, relique ;
-  sans la roue de runes, `sansRoue`, que les cartes remplacent), puis, à droite de la relique, ses runes en cartes : la carte de
+  224 px), à droite son équipement enregistré par `MonsterGear` (fiche de stats,
+  artéfacts, relique ; sans la roue de runes, `sansRoue`, que les cartes
+  remplacent), puis, à droite de la relique, ses runes en cartes : la carte de
   la liste du compte (`CarteRune`, même bascule détail ↔ total au clic), dans
   l'ordre des slots, telle que la copie l'a enregistrée (l'écart au compte reste dit
-  sous le nom). Quand la place de deux cartes manque à droite (vers 1 400 px de
-  fenêtre), elles passent sous l'équipement ; leur bande défile de côté plutôt que
-  d'élargir la ligne. Les onglets restent : celui de l'équipe est marqué, en choisir
+  sous le nom). Quand la place de deux cartes manque à droite, elles passent sous
+  l'équipement ; leur bande défile de côté plutôt que d'élargir la ligne. Les
+  onglets restent : celui de l'équipe est marqué, en choisir
   un autre referme l'équipe. Refermée, la grille revient sur l'onglet de l'équipe
   (elle a pu y être déplacée). L'écran partagé (`DeuxVolets`) reste celui de l'app,
   pas un second volet propre à la page.
@@ -189,9 +190,10 @@ sinon « N pièces modifiées », « N pièces disparues ». Le détail marque c
 - Les équipes en une colonne de cartes, mêmes informations, même menu.
 - « Ouvrir » affiche l'équipe dans la page comme au bureau, les monstres à la
   suite : l'identité passe au-dessus de l'équipement (requête de conteneur), et le
-  leader et la position sous le nom, pour ne pas tronquer le nom. Les cartes de
-  runes, étroites comme dans la liste à deux colonnes, passent sous l'équipement
-  en une bande qui défile de côté.
+  leader et la position sous le nom, pour ne pas tronquer le nom. L'en-tête met
+  « Toutes les équipes » et le menu sur une ligne, le nom et la note dessous.
+  L'équipement garde sa roue de runes, sans les cartes : six cartes y prendraient
+  plus de hauteur que la roue.
 
 Aucune des deux mises en page n'est dérivée de l'autre : chacune a son agencement
 et ses tests de rendu. Le banc d'affichage mesure la page (`compte-equipes` :

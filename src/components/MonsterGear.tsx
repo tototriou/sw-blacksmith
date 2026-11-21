@@ -65,8 +65,8 @@ interface Props {
   // colonne « Monstre » n'a que 358 px, et la fiche s'y lit dépliée
   // (décision de l'utilisateur) plutôt qu'en deux rangées.
   carte?: boolean;
-  // Sans la roue de runes : SEUL le détail d'une équipe de « Mes équipes » la
-  // retire, ses runes y étant déjà montrées en cartes à côté de la fiche.
+  // Sans la roue de runes : SEUL le détail d'une équipe de « Mes équipes », au
+  // bureau, la retire, ses runes y étant déjà montrées en cartes à côté.
   sansRoue?: boolean;
 }
 
