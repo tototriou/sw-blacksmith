@@ -224,6 +224,10 @@ finie : elle ne se propose pas à la relecture et ne fusionne pas dans une relea
   [03-technique.md](docs/01-presentation/03-technique.md), ce guide, le README).
 - **Tests** : le calcul pur, le rendu des composants, ET le branchement dans l'app dans les
   conditions où elle s'active ; l'outillage touché, sur ses vraies entrées.
+- ⚠️ **Tests existants** : toucher une fonctionnalité ou un écran, c'est mettre à jour les tests
+  qui le décrivent déjà. On les retrouve par un `grep` de `tests/` sur les textes, composants et
+  routes changés, puis on les lance par filtre avant la pull request. La CI ne sert pas à les
+  découvrir.
 
 La liste complète, à parcourir avant de proposer la fusion :
 [definition-de-fini.md](docs/03-developpeur/definition-de-fini.md).
