@@ -6,7 +6,7 @@ import { nomNouvelleListeOptimizer } from '../../lib/optimizerListNames';
 import { useTraduction } from '../../hooks/useLangue';
 
 // L'ordre des contenus proposés ; leurs noms sont sous `optimizer.contenus`.
-export const CONTENUS_LISTE_OPTIMIZER: readonly ContenuListeOptimizer[] = ['guilde', 'donjon', 'arene'];
+export const CONTENUS_LISTE_OPTIMIZER: readonly ContenuListeOptimizer[] = ['guilde', 'donjon', 'arene', 'autre'];
 
 export function ContenuListePicker({ contenu, onChange, creation = false }: {
   creation?: boolean;

@@ -15,7 +15,9 @@ import {
 
 // Le lecteur des listes historiques ignore cette clé et ne peut pas la réécrire.
 export const OPTIMIZER_MEMBERS_STORAGE_KEY = 'swblacksmith-optimizer-members-v1';
-export type ContenuListeOptimizer = 'guilde' | 'donjon' | 'arene';
+// `autre` : un contenu où n'agissent que les leads globaux et élémentaires
+// (ToA, temple du chaos).
+export type ContenuListeOptimizer = 'guilde' | 'donjon' | 'arene' | 'autre';
 // Une équipe de l'Optimizer compte 2 à 6 membres (6 : décision de l'utilisateur,
 // pour les équipes de raid et les équipes complètes de Mes équipes).
 export const MEMBRES_MIN_EQUIPE_OPTIMIZER = 2;
@@ -225,7 +227,7 @@ export function lireMembresOptimizer(brut: string | null, t: Dictionnaire): Donn
 }
 
 export function contenuListeValide(v: unknown): v is ContenuListeOptimizer {
-  return typeof v === 'string' && ['guilde', 'donjon', 'arene'].includes(v);
+  return typeof v === 'string' && ['guilde', 'donjon', 'arene', 'autre'].includes(v);
 }
 
 /** Retirer seulement les valeurs dont la cible est lisible, sans interpréter une clé abîmée. */

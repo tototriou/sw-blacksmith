@@ -40,6 +40,11 @@ const casesActivite: [string, ContenuListeOptimizer, string, 'oui' | 'non'][] = 
   ['DonjonArena', 'donjon', 'Arena', 'non'],
   ['DonjonGuild', 'donjon', 'Guild', 'non'],
   ['DonjonDungeon', 'donjon', 'Dungeon', 'oui'],
+  ['AutreGeneral', 'autre', 'General', 'oui'],
+  ['AutreElement', 'autre', 'Element', 'oui'],
+  ['AutreArena', 'autre', 'Arena', 'non'],
+  ['AutreGuild', 'autre', 'Guild', 'non'],
+  ['AutreDungeon', 'autre', 'Dungeon', 'non'],
 ];
 export const verificationsOptimizerEquipesActivite: [string, () => void][] = casesActivite.map(([nom, contenu, area, attendu]) =>
   [`testOptimizerEquipesActivite${nom}`, () => {

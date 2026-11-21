@@ -1681,7 +1681,7 @@ export const en: Dictionnaire = {
         'raid-dimensionnel-2': 'Dimensional raid — phase 2',
         'raid-dimensionnel-3': 'Dimensional raid — phase 3',
         'siege-offense': 'Siege — offense',
-        'temple-chaos': 'Chaos Temple',
+        'temple-chaos': 'Temple of Chaos',
         cairos: 'Cairos',
         'faille-mondes': 'Rift of Worlds',
         'passage-dimensions': 'Dimensional Hole',
@@ -2706,7 +2706,7 @@ export const en: Dictionnaire = {
       retirer: 'Remove this exclusion',
       introuvable: (source: string) => `exclusion not found (${source})`,
     },
-    contenus: { guilde: 'Guild', donjon: 'Dungeon', arene: 'Arena' },
+    contenus: { guilde: 'Guild', donjon: 'Dungeon', arene: 'Arena', autre: 'Other' },
     listes: {
       contenuListe: 'List content',
       choisirContenu: 'Choose the list content',

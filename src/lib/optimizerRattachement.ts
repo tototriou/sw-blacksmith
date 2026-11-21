@@ -45,6 +45,7 @@ const ORDRES: Record<ContenuListeOptimizer | 'absent', readonly ExclusionSource[
   guilde: ['siege-defense', 'siege-offense', 'box', 'rta'],
   arene: ['rta', 'box', 'siege-defense', 'siege-offense'],
   donjon: ['box', 'rta', 'siege-defense', 'siege-offense'],
+  autre: ['box', 'rta', 'siege-defense', 'siege-offense'],
   absent: ['box', 'rta', 'siege-defense', 'siege-offense'],
 };
 

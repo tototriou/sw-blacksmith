@@ -36,6 +36,15 @@ export const ACTIVITE_LEADS_OPTIMIZER = {
     Guild: 'inactif',
     Dungeon: 'actif',
   },
+  // ToA et temple du chaos : aucun lead de zone, seulement les leads globaux
+  // et élémentaires (relevé de l'utilisateur, 2026-11-22).
+  autre: {
+    General: 'actif',
+    Element: 'element',
+    Arena: 'inactif',
+    Guild: 'inactif',
+    Dungeon: 'inactif',
+  },
 } as const satisfies Record<ContenuListeOptimizer, Record<PorteeLead, ActiviteLead>>;
 
 // Le lead qui agit dans chaque contenu du jeu, désigné par le contenu de liste
@@ -44,9 +53,11 @@ export const ACTIVITE_LEADS_OPTIMIZER = {
 // § Lead par contenu du jeu). Lead d'arène : arène (et arène de serveur,
 // arène dimensionnelle), RTA. Lead de guilde : siège, guerre de guilde, tout le
 // labyrinthe, subjugation. Lead de donjon : donjons de Cairos, faille et raid
-// des mondes, passage des dimensions et ses raids.
-// ⚠️ `null` : NON RELEVÉ, jamais déduit d'un contenu qui ressemble. Tribunal
-// d'ascension, tours et temple du chaos restent à relever en jeu.
+// des mondes, passage des dimensions et ses raids. Aucun lead de zone
+// (`autre`, leads globaux et élémentaires seuls) : tribunal d'ascension et
+// tours, temple du chaos.
+// ⚠️ `null` : NON RELEVÉ, jamais déduit d'un contenu qui ressemble ; seul un
+// type de deck inconnu (`autre`) l'est.
 export const CONTENU_LEADS_JEU = {
   'arene-offense': 'arene',
   'guerre-guilde-offense': 'guilde',
@@ -59,9 +70,9 @@ export const CONTENU_LEADS_JEU = {
   'faille-mondes': 'donjon',
   'raid-mondes': 'donjon',
   'passage-dimensions': 'donjon', 'raid-dimensionnel-1': 'donjon', 'raid-dimensionnel-2': 'donjon', 'raid-dimensionnel-3': 'donjon',
-  'tribunal-ascension': null, 'tour-eau': null, 'tour-feu': null, 'tour-vent': null, 'tour-lumiere': null,
-  'tour-tenebres': null, 'tour-celeste': null,
-  'temple-chaos': null,
+  'tribunal-ascension': 'autre', 'tour-eau': 'autre', 'tour-feu': 'autre', 'tour-vent': 'autre', 'tour-lumiere': 'autre',
+  'tour-tenebres': 'autre', 'tour-celeste': 'autre',
+  'temple-chaos': 'autre',
   autre: null,
 } as const satisfies Record<ContenuDeck, ContenuListeOptimizer | null>;
 

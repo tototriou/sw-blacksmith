@@ -32,7 +32,7 @@ jeu, n'ont RIEN à voir l'un avec l'autre.
   compte. Navigable à tout moment ; changer de liste active change
   instantanément les runes réservées vues par la recherche.
   À chaque création manuelle, le dialogue demande le nom et le contenu
-  (Guilde, Donjon, Arène), sans présélection, y compris « Créer et ajouter » et
+  (Guilde, Donjon, Arène, Autre), sans présélection, y compris « Créer et ajouter » et
   « Créer et valider ». Le menu vide dit « Choisis le contenu de la liste » et son
   contour unique de 1 px prend l’accent jusqu’au choix. Sous le champ :
   « Obligatoire : le contenu décide des leads actifs et des compétences d'invocateur. »

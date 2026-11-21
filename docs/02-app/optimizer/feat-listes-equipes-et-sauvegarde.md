@@ -268,7 +268,9 @@ Le stockage ne calcule aucun lead effectif et n’ajoute aucun contrôle d’éc
 
 ## Contenu de combat des listes
 
-`ContenuListeOptimizer` admet `guilde`, `donjon` et `arene`. Le contenu vit dans
+`ContenuListeOptimizer` admet `guilde`, `donjon`, `arene` et `autre` (« Autre » : un
+contenu sans lead de zone, où n'agissent que les leads globaux et élémentaires —
+tribunal d'ascension, tours, temple du chaos). Le contenu vit dans
 `listContents`, une `Map` indexée par identifiant de liste, dans le stockage des
 membres. Le JSON contient un tableau d’objets `{ listId, contenu }` ; chaque
 identifiant est une chaîne non vide et chaque contenu une chaîne admise.
@@ -290,7 +292,7 @@ en une seule écriture ; membres, mémoires, équipes et rejets sont conservés.
 
 Le combat effectif dérive aussi les compétences d’invocateur du contenu de
 la liste active, même sans propriétaire des critères : Guilde → « Contenu de
-guilde » ; Arène, Donjon, absence de liste ou de contenu → « Contenu normal ».
+guilde » ; Arène, Donjon, Autre, absence de liste ou de contenu → « Contenu normal ».
 `combatSelonContenuListeOptimizer` est le producteur pur commun au combat lu
 par l’écran et au mode exporté dans la recette. Les valeurs enregistrées dans
 les critères et mémoires ne sont pas réécrites par cette dérivation.
@@ -305,13 +307,14 @@ l'utilisateur le 2026-11-22** ; c'est une règle du jeu, pas une déduction :
 | --- | --- | --- |
 | Arène | arène, arène de serveur, arène dimensionnelle, RTA | `arene` |
 | Guilde | combat d'occupation (siège), guerre de guilde, tous les modes du labyrinthe, subjugation de monstre | `guilde` |
+| — (leads globaux et élémentaires seuls) | tribunal d'ascension et tours, temple du chaos | `autre` |
 | Donjon | donjons de Cairos (géant, dragon, nécropolis, royaume spirituel, forteresse d'acier, crypte du jugement), faille des mondes (bêtes de glace, de l'orage, de marécage, enflammée, de radiance) et raid des mondes, passage des dimensions (Karzhan, Ellunia, Lumel, Khalderun, Sacreon, Inferas) et raid dimensionnel, phases 1 à 3 | `donjon` |
 
-⚠️ **Non relevés** : tribunal d'ascension et tours, temple du chaos. Leur entrée vaut
-`null` et ne se complète pas par ressemblance avec un autre contenu : il faut un
-relevé en jeu. « Mes équipes » s'en sert pour le contenu de la liste créée par son
-export ([feat-equipes.md](../compte/feat-equipes.md) § Onglets), et refuse l'export
-d'un contenu non relevé.
+Un lead général agit partout, un lead d'élément sur son élément (`ACTIVITE_LEADS_OPTIMIZER`).
+⚠️ Seul un type de deck inconnu (`autre` de `ContenuDeck`) vaut `null` : non relevé, il ne se
+complète pas par ressemblance avec un autre contenu. « Mes équipes » se sert de cette table pour le
+contenu de la liste créée par son export ([feat-equipes.md](../compte/feat-equipes.md) § Onglets),
+et refuse l'export d'un contenu non relevé.
 
 ## Modèle pur des équipes
 

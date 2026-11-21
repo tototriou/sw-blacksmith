@@ -57,8 +57,7 @@ const ONGLETS_ANCIENS: Readonly<Record<string, OngletEquipes>> = {
 // Le contenu de la liste créée par l'export vers l'Optimizer, pour une équipe
 // sans contenu du jeu (`contenuJeu`) : le lead qui agit dans la catégorie,
 // d'après `CONTENU_LEADS_JEU` (labyrinthe : guilde ; passage des dimensions :
-// donjon ; RTA : arène). La ToA n'en a pas : sa règle n'est pas relevée, son
-// export est refusé plutôt que deviné.
+// donjon ; RTA : arène ; ToA : autre, leads globaux et élémentaires seuls).
 export const CONTENU_OPTIMIZER_ONGLET: Readonly<Partial<Record<CategorieEquipes, ContenuListeOptimizer>>> = {
   arene: 'arene',
   guilde: 'guilde',
@@ -66,11 +65,13 @@ export const CONTENU_OPTIMIZER_ONGLET: Readonly<Partial<Record<CategorieEquipes,
   rta: 'arene',
   cairos: 'donjon',
   'passage-dimensions': 'donjon',
+  toa: 'autre',
 };
 
 // Le contenu de l'Optimizer d'une équipe : celui de son contenu du jeu s'il
 // est connu (une subjugation, rangée en Cairos, applique le lead de guilde),
-// sinon celui de sa catégorie ; `null` : pas de règle relevée.
+// sinon celui de sa catégorie ; `null` : pas de règle relevée (un type de
+// deck inconnu).
 export function contenuOptimizerEquipe(e: Pick<EquipeEnregistree, 'onglet' | 'contenuJeu'>): ContenuListeOptimizer | null {
   if (e.contenuJeu) return CONTENU_LEADS_JEU[e.contenuJeu];
   return CONTENU_OPTIMIZER_ONGLET[categorieDe(e.onglet)] ?? null;

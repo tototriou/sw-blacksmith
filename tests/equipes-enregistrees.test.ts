@@ -150,7 +150,7 @@ function testEquipesEnregistreesCategories() {
   egal(CATEGORIES_EQUIPES.map((c) => [c, rangement(c, null)]).filter(([c, r]) => c !== r).map(([c]) => c), ['arene', 'guilde'], 'seules l’arène et le combat de guilde ont un côté');
   egal([rangement('arene', 'defense'), rangement('guilde', null), rangement('toa', 'defense')], ['arene-defense', 'guilde-offense', 'toa'], 'rangement : le côté, l’offense par défaut, ignoré sans côté');
   for (const o of ONGLETS_EQUIPES) egal(rangement(categorieDe(o), coteDe(o)), o, `${o} : catégorie et côté refont le rangement`);
-  egal(CATEGORIES_EQUIPES.filter((c) => !CONTENU_OPTIMIZER_ONGLET[c]), ['toa'], 'sans règle des leads relevée : aucun contenu de l’Optimizer');
+  egal(CATEGORIES_EQUIPES.filter((c) => !CONTENU_OPTIMIZER_ONGLET[c]), [], 'chaque catégorie a son contenu de l’Optimizer');
   const T = new Date('2026-11-06T10:00:00Z');
   const deDeck: EquipeEnregistree = { ...creerEquipe('s', 'cairos', 'S', T0), monstres: [monstreEx('a', 1, null), monstreEx('b', 2, null)], contenuJeu: 'subjugation' };
   egal(lireEquipeEnregistree(JSON.parse(JSON.stringify(deDeck)))?.equipe.contenuJeu, 'subjugation', 'le contenu du jeu se relit');

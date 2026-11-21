@@ -44,7 +44,7 @@ du jeu, jamais une par type de deck de l'export (décision de l'utilisateur,
 | `labyrinthe` | « Labyrinthe » | — | `guilde` |
 | `rta` | « RTA » | — | `arene` |
 | `cairos` | « Cairos » (donjons, faille, raid des mondes, subjugation, temple du chaos) | — | `donjon` |
-| `toa` | « ToA » (tribunal d'ascension et tours) | — | aucun |
+| `toa` | « ToA » (tribunal d'ascension et tours) | — | `autre` |
 | `passage-dimensions` | « Passage des dimensions » (et ses raids) | — | `donjon` |
 
 L'arène et le combat de guilde séparent l'offense de la défense par un **filtre dans
@@ -59,9 +59,10 @@ Le contenu de liste suit le lead qui agit dans la catégorie, relevé en jeu par
 l'utilisateur ([§ Lead par contenu du jeu](../optimizer/feat-listes-equipes-et-sauvegarde.md#lead-par-contenu-du-jeu)).
 Une équipe importée d'un deck du jeu garde son contenu (`contenuJeu`), qui l'emporte
 sur la catégorie (`contenuOptimizerEquipe`) : une subjugation, rangée en Cairos,
-part avec le lead de guilde. « Aucun » (la ToA, et une équipe du temple du chaos) :
-la règle n'est pas relevée, l'export vers l'Optimizer est désactivé avec sa raison
-plutôt que d'appliquer celle d'un autre contenu par ressemblance.
+part avec le lead de guilde, une équipe du temple du chaos en `autre` (leads globaux
+et élémentaires seuls). Seule une équipe d'un type de deck inconnu n'a pas de règle :
+son export vers l'Optimizer est désactivé avec sa raison plutôt que d'appliquer
+celle d'un autre contenu par ressemblance.
 
 Les rangements d'avant les catégories se relisent dans les nouveaux (stockage,
 fichier, session ; `ONGLETS_ANCIENS`) : `siege-attaque` et `guerre-guilde-offense`
@@ -523,6 +524,4 @@ par la nouvelle liste.
 
 - Partager une équipe avec un autre joueur (lien ou fichier d'une seule équipe).
 - Une défense de guerre de guilde : l'export n'en a pas.
-- Les règles d'application des leaders en ToA (tribunal et tours) et au temple du
-  chaos : à relever en jeu avant d'ouvrir leur export vers l'Optimizer.
 - Corriger automatiquement une équipe dont les pièces ont changé.

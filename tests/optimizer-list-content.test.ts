@@ -56,7 +56,7 @@ export function testOptimizerContenuListeSansContenu() {
   egal(leadEffectifMembreOptimizer(lu, 'l2', a, 'fire'), { type: 'personnel' }, 'hors équipe : personnel même sans contenu');
 }
 
-export const verificationsOptimizerContenuListeElements: [string, () => void][] = (['guilde', 'donjon', 'arene'] as const).map(contenu =>
+export const verificationsOptimizerContenuListeElements: [string, () => void][] = (['guilde', 'donjon', 'arene', 'autre'] as const).map(contenu =>
   [`testOptimizerContenuListeElements${contenu}`, () => {
     titre(`Contenu de liste · éléments identique et différent en ${contenu}`);
     const teams = [equipe, { ...equipe, id: 'e2', listId: 'l2' }].map(e => ({ ...e, lead: { ...e.lead!, area: 'Element', element: 'fire' as const } }));
@@ -165,7 +165,7 @@ export function testOptimizerContenuListeCreationEtModification() {
   try {
     const h = monterListesOptimizer(); let lu = h.render();
     const initial = JSON.stringify({ teams: lu.teams, memories: [...lu.memories], rejets: lu.rejets });
-    for (const contenu of ['guilde', 'donjon', 'arene'] as const) {
+    for (const contenu of ['guilde', 'donjon', 'arene', 'autre'] as const) {
       const id = lu.createList(contenu, contenu); lu = h.render();
       egal(lu.activeListId, id, 'nouvelle liste active');
       egal(lu.listContents.get(id), contenu, 'contenu choisi stocké dès la création');

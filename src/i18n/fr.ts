@@ -2868,7 +2868,7 @@ export const fr = {
       introuvable: (source: string) => `exclusion introuvable (${source})`,
     },
     // Le contenu de combat d'une liste, par clé de `ContenuListeOptimizer`.
-    contenus: { guilde: 'Guilde', donjon: 'Donjon', arene: 'Arène' },
+    contenus: { guilde: 'Guilde', donjon: 'Donjon', arene: 'Arène', autre: 'Autre' },
     listes: {
       contenuListe: 'Contenu de la liste',
       choisirContenu: 'Choisis le contenu de la liste',

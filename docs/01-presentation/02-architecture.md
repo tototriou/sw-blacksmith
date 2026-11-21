@@ -270,7 +270,7 @@ d'une liste depuis sa fenêtre (`creerListeDepuisDialogue`) restent calculés pa
 
 Autour de la liste, dans le même dossier : `OptimizerBackupBar` (point de sauvegarde des listes :
 sauvegarder, reprendre), `OptimizerCreateListDialog` (création d'une liste et choix de son contenu
-Guilde / Donjon / Arène), `OptimizerEquipeDialog` (édition des membres et du leader d'une équipe
+Guilde / Donjon / Arène / Autre), `OptimizerEquipeDialog` (édition des membres et du leader d'une équipe
 de la liste), `OptimizerImportButton` (« Importer une équipe » depuis le siège, la prépa RTA, les
 recommandations ou le speed tuning), `OptimizerImportRapport` (modale du rapport d'un import,
 montée par `App`), `OptimizerLeadInactif` (l'icône ⚠ qui dit pourquoi le lead d'un membre ne

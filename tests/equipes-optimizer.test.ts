@@ -49,18 +49,18 @@ function testEquipesOptimizerExport() {
   const { proposition: p, correspondance } = preparerExportEquipeOptimizer(equipe(), sources(), inventaire(), fr);
   egal([p.nomListe, p.contenu], ['Défense GW', 'guilde'], 'la liste prend le nom de l’équipe et le contenu de son onglet');
   const rangee = (o: OngletEquipes) => ({ ...equipe(), onglet: o });
-  egal(ONGLETS_EQUIPES.filter((o) => exportSansContenu(rangee(o))), ['toa'], 'ToA : pas d’export, la règle des leads n’y est pas relevée');
-  egal((['rta', 'cairos', 'arene-defense', 'labyrinthe', 'passage-dimensions'] as const).map((o) => preparerExportEquipeOptimizer(rangee(o), sources(), inventaire(), fr).proposition.contenu),
-    ['arene', 'donjon', 'arene', 'guilde', 'donjon'], 'le lead de chaque catégorie : RTA en arène, Cairos et passage en donjon, labyrinthe en guilde');
+  egal(ONGLETS_EQUIPES.filter((o) => exportSansContenu(rangee(o))), [], 'chaque catégorie s’exporte');
+  egal((['rta', 'cairos', 'arene-defense', 'labyrinthe', 'passage-dimensions', 'toa'] as const).map((o) => preparerExportEquipeOptimizer(rangee(o), sources(), inventaire(), fr).proposition.contenu),
+    ['arene', 'donjon', 'arene', 'guilde', 'donjon', 'autre'], 'le lead de chaque catégorie : RTA en arène, Cairos et passage en donjon, labyrinthe en guilde, ToA sans lead de zone');
   const deDeck = (o: OngletEquipes, c: ContenuDeck) => ({ ...rangee(o), contenuJeu: c });
   egal([contenuOptimizerEquipe(deDeck('cairos', 'subjugation')), contenuOptimizerEquipe(deDeck('cairos', 'raid-mondes')), contenuOptimizerEquipe(deDeck('cairos', 'temple-chaos'))],
-    ['guilde', 'donjon', null], 'le contenu du jeu l’emporte sur la catégorie : subjugation en guilde, temple du chaos non relevé');
-  ok(exportSansContenu(deDeck('cairos', 'temple-chaos')), 'une équipe du temple du chaos ne s’exporte pas');
-  egal(Object.entries(CONTENU_LEADS_JEU).filter(([, v]) => v === null).map(([k]) => k).sort(),
-    ['autre', 'temple-chaos', 'tour-celeste', 'tour-eau', 'tour-feu', 'tour-lumiere', 'tour-tenebres', 'tour-vent', 'tribunal-ascension'],
-    'non relevés : ToA, tours, temple du chaos, type inconnu — rien d’autre');
+    ['guilde', 'donjon', 'autre'], 'le contenu du jeu l’emporte sur la catégorie : subjugation en guilde, temple du chaos sans lead de zone');
+  ok(exportSansContenu(deDeck('cairos', 'autre')), 'un type de deck inconnu ne s’exporte pas');
+  egal(Object.entries(CONTENU_LEADS_JEU).filter(([, v]) => v === null).map(([k]) => k), ['autre'], 'non relevé : le seul type de deck inconnu');
+  egal(Object.entries(CONTENU_LEADS_JEU).filter(([, v]) => v === 'autre').map(([k]) => k).sort(),
+    ['temple-chaos', 'tour-celeste', 'tour-eau', 'tour-feu', 'tour-lumiere', 'tour-tenebres', 'tour-vent', 'tribunal-ascension'], 'leads globaux et élémentaires seuls : ToA, tours, temple du chaos');
   let leve = false;
-  try { preparerExportEquipeOptimizer(rangee('toa'), sources(), inventaire(), fr); } catch { leve = true; }
+  try { preparerExportEquipeOptimizer(deDeck('cairos', 'autre'), sources(), inventaire(), fr); } catch { leve = true; }
   ok(leve, 'sans contenu, l’export refuse plutôt que de deviner les leads');
   egal(p.membres.map((m) => m.selector), [{ source: 'box', unitKey: '11' }, { source: 'unowned', monsterId: '2' }],
     'l’exemplaire de la Box, et un monstre non possédé pour celui qui n’y est pas');
