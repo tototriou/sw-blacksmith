@@ -4,16 +4,17 @@
 // choisi ne remplace prépa RTA, siège et box.
 
 import ChangementCompteDialog from '../../src/components/ChangementCompteDialog';
-import { ok, titre } from '../outils';
+import { egal, ok, titre } from '../outils';
 import { auTelephone, boutons, rendre, texteVisible } from './outils-rendu';
 
 const rien = () => {};
 
 // La `Modale` passe par un portail : `auTelephone` le pose en place.
-const modale = (sauvegardeIndisponible: string | null) =>
+const modale = (sauvegardeIndisponible: string | null, motif: 'compte' | 'session' = 'compte') =>
   auTelephone(() =>
     rendre(
       <ChangementCompteDialog
+        motif={motif}
         sauvegardeIndisponible={sauvegardeIndisponible}
         onSauvegarder={rien}
         onChanger={rien}
@@ -45,4 +46,10 @@ export function testRenduChangementCompte() {
   const sauver = enAttente.find((b) => b.texte === 'Sauvegarder et changer');
   ok(sauver?.desactive === true && sauver.title === attente, '« Sauvegarder et changer » reste affiché, désactivé, avec la raison');
   ok(enAttente.filter((b) => b.texte !== 'Sauvegarder et changer').every((b) => !b.desactive), 'les deux autres restent disponibles');
+
+  titre('rendu · charger une session — la même garde, ses propres mots');
+  const session = modale(null, 'session');
+  const texteSession = texteVisible(session);
+  ok(texteSession.includes('Sauvegarder ta session ?') && texteSession.includes('La session choisie va remplacer'), 'le message dit que la session choisie remplace le travail');
+  egal(boutons(session).map((b) => b.texte), ['Charger sans sauvegarder', 'Annuler', 'Sauvegarder et charger'], 'trois actions, celle qui ne perd rien en dernier');
 }

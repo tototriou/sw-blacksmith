@@ -13,12 +13,16 @@ import { useTraduction } from '../hooks/useLangue';
 // et reçoit le focus ; « Changer sans sauvegarder », la seule action qui perd,
 // porte le ton `danger`. Échap et le clic à côté annulent.
 // ⚠️ Pas de croix : « Annuler » est la sortie (voir ConfirmDialog).
+// `motif` 'session' : avant de CHARGER une session (« Charger… »), qui
+// remplace elle aussi tout le travail — même geste, ses propres mots.
 export default function ChangementCompteDialog({
+  motif = 'compte',
   sauvegardeIndisponible,
   onSauvegarder,
   onChanger,
   onAnnuler,
 }: {
+  motif?: 'compte' | 'session';
   // Pourquoi « Sauvegarder et changer » est désactivé, ou `null`.
   sauvegardeIndisponible: string | null;
   onSauvegarder: () => void;
@@ -26,7 +30,7 @@ export default function ChangementCompteDialog({
   onAnnuler: () => void;
 }) {
   const textes = useTraduction();
-  const c = textes.changementCompte;
+  const c = motif === 'session' ? { ...textes.changementCompte, ...textes.changementCompte.session } : textes.changementCompte;
   return (
     <Modale
       onClose={onAnnuler}

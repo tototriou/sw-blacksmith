@@ -258,3 +258,10 @@ tout le reste tient.
   liste de chiffres qu'on vient consulter ne se liraient pas, à relire à
   chaque passage sans jamais rien y changer. La règle reste
   vraie et vit ici ; l'écran, lui, montre les fenêtres.
+- ⚠️ **Après une analyse, les fenêtres se cherchent AVEC LES SORTS**
+  (`plateauDesRequis`), pas sur les grilles : un boost de barre suit son
+  lanceur quand la recherche le fait jouer plus tôt. Sur les grilles, figé à
+  l'ancien tick, le second boost d'équipe d'une chaîne (Kabilla puis Eludia)
+  ne comptait pas pour ceux qu'il pousse. Voir
+  [feat-chaine-ouverture.md](feat-chaine-ouverture.md), « Comment le réglage
+  est cherché ».

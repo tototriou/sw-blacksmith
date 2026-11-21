@@ -205,6 +205,11 @@ export interface OptimizerRecipe {
   // celle d'avant. Le CLI la rejoue telle quelle ; l'écran ne la reprend pas,
   // sa contrainte vient du plan de l'équipe du membre.
   speedTune?: ContrainteSpeedTune;
+  // Les sorts de la précision par sort (S1 à S3, `precisionParSort.ts`) : le
+  // minimum de Précision de `requirement.minStats.acc` porte alors sur ces
+  // sorts, ligne de l'artéfact de type comprise. OPTIONNEL : absent ou vide,
+  // le minimum porte sur la stat, comme avant. Tout lecteur applique `?? []`.
+  sortsPrecision?: number[];
   /**
    * Intention de recherche de relique : principale ET
    * propriété unique demandées, seuil de niveau. **Trois champs OPTIONNELS,
@@ -598,6 +603,12 @@ export function parseOptimizerRecipe(text: string, t: Dictionnaire): RecipeValid
     }
   }
   if (d.speedTune !== undefined && !contrainteValide(d.speedTune)) return echec(erreur('speedTune', (a) => a.contrainteSpeedTune));
+  if (
+    d.sortsPrecision !== undefined &&
+    (!Array.isArray(d.sortsPrecision) || d.sortsPrecision.some((v) => v !== 1 && v !== 2 && v !== 3))
+  ) {
+    return echec(erreur('sortsPrecision', (a) => a.sortsPrecision));
+  }
   const damageSetupErreur = validerDamageSetup(d.damageSetup);
   if (damageSetupErreur) return echec(damageSetupErreur);
   if (d.relicMainChoice !== undefined && !CHOIX_RELIC_MAIN_ACCEPTES.has(d.relicMainChoice)) {

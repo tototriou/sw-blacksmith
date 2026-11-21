@@ -487,6 +487,16 @@ export const ECRANS: Ecran[] = [
         ],
       },
       {
+        // La rangée « Précision par sort » sous « Précision » : S1 et S3 cochés, le
+        // minimum de Précision porte sur eux (feat-precision-par-sort.md).
+        id: 'precision-par-sort', libelle: 'conditions, précision par sort sur S1 et S3',
+        preparation: [
+          { cliquer: { role: 'button', nom: 'Précision minimum sur le sort 1' } },
+          { cliquer: { role: 'button', nom: 'Précision minimum sur le sort 3' } },
+        ],
+        atteint: [{ role: 'button', nom: 'Précision minimum sur le sort 3' }],
+      },
+      {
         id: 'liste-remplie', libelle: 'liste de travail : Vanessa et Cassie', tailles: OPT_BUREAU,
         preparation: OPT_LISTE, atteint: OPT_MEMBRES,
       },
@@ -585,8 +595,8 @@ export const ECRANS: Ecran[] = [
   ]),
   ouverture('rta', 'RTA — Ma prépa', '#/rta', MOTIFS_RTA),
   ouverture('rta-ami', 'RTA — Ami', '#/rta/ami', MOTIFS_RTA),
-  ouverture('siege-defense', 'Siège — Défense', '#/siege/defense', MOTIFS_SIEGE, ['#/siege']),
-  ouverture('siege-offense', 'Siège — Offense', '#/siege/offense', MOTIFS_SIEGE),
+  ouverture('siege-defense', 'Siège — Decks de défense', '#/siege/defense', MOTIFS_SIEGE, ['#/siege']),
+  ouverture('siege-offense', 'Siège — Decks d’offense', '#/siege/offense', MOTIFS_SIEGE),
   {
     id: 'siege-recommandations',
     libelle: 'Siège — Recommandations',

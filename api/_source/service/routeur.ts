@@ -261,10 +261,13 @@ export function creerRouteur(d: Dependances) {
 
     // L'invitation du bot sur un serveur, SANS AUCUN DROIT : l'admin l'ajoute
     // ensuite aux salons de recommandations, avec les quatre droits qu'il y
-    // faut. L'identifiant vient de l'environnement : un aperçu invite le bot
-    // de test, la production le sien.
+    // faut. ⚠️ Avec ses commandes (`applications.commands`) : sans ce scope,
+    // /speedtune et les suivantes n'apparaissent pas sur le serveur. Réinviter
+    // le bot sur un serveur où il est déjà ajoute le scope sans le retirer.
+    // L'identifiant vient de l'environnement : un aperçu invite le bot de
+    // test, la production le sien.
     if (route === 'GET invitation') {
-      const params = new URLSearchParams({ client_id: d.env.clientId, scope: 'bot', permissions: '0' });
+      const params = new URLSearchParams({ client_id: d.env.clientId, scope: 'bot applications.commands', permissions: '0' });
       return redirection(`https://discord.com/oauth2/authorize?${params}`);
     }
 
@@ -416,7 +419,8 @@ export function creerRouteur(d: Dependances) {
         const precedente = courante ? lireVersion(courante.texte, d.t) : null;
         const publieur = nomDuMembre(a.membre) || session.utilisateur.nom;
         const p = preparerPublication(corps.contenu, publieur, precedente, sourceDuSalon(a.serveurId, corps.salon), d.t);
-        if (!p.ok) return repondre(400, { erreur: 'contenu', details: p.erreurs });
+        // Trop gros : 413, comme le corps entier trop gros, pour que la page le dise.
+        if (!p.ok) return repondre(p.erreurs.includes('trop-gros') ? 413 : 400, { erreur: 'contenu', details: p.erreurs });
         // Dans Discord, le message est celui du BOT : le membre qui a publié
         // se lit dans son texte (une mention, sans notification), dans le nom
         // du fichier (son identifiant, que le JSON ne peut pas forger) et dans

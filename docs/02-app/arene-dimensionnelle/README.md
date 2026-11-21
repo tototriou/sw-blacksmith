@@ -36,15 +36,20 @@ Relevé de l'utilisateur (2026-11) :
 ## D'où viennent les données
 
 - ⚠️ **L'export de compte ne décrit pas la box dimensionnelle.** Elle vient du
-  **journal complet de SWEX** (`full_log.txt`, plugin Full Logger), à la
-  réponse `dimensionarena_getSeasonInfo` que le jeu envoie quand on ouvre le
-  mode : les monstres de la box, leurs runes gagnées, les runes en inventaire,
-  le build par défaut de chaque espèce et la **défense**.
+  **plugin SWEX « SW Blacksmith Live »**, qui garde la réponse
+  `dimensionarena_getSeasonInfo` que le jeu envoie quand on ouvre le mode —
+  les monstres de la box, leurs runes gagnées, les runes en inventaire, le
+  build par défaut de chaque espèce et la **défense** — et la tient à jour à
+  chaque changement fait dans le mode : runes posées, défense changée,
+  monstre invoqué, rune gagnée (détail :
+  [feat-swex-direct.md](../bureau/feat-swex-direct.md), « L'arène
+  dimensionnelle »). Aucun autre plugin de SWEX n'est nécessaire.
 - Un monstre porte ses runes gagnées et, sur chaque emplacement libre, la rune
   du build par défaut de son espèce.
-- L'export garde les **équipes d'attaque** jouées (`deck_recent_list`, type 28),
-  dont les monstres se reconnaissent dans la box du journal : elles remplissent
-  l'**Offense**.
+- Les **équipes d'attaque** jouées remplissent l'**Offense** : celles que le
+  plugin a vues jouer (les 5 dernières, distinctes), sinon la dernière que
+  garde l'export (`deck_recent_list`, type 28) ; leurs monstres se
+  reconnaissent dans la box.
 - L'export porte aussi la saison et l'état du joueur
   (`dimension_arena_status_info`, `dimension_arena_user_info` : énergie,
   parchemins, combats, palier), non lus.
@@ -53,12 +58,15 @@ Détail : [equipes-arene.md](../transverse/feat-import-compte/equipes-arene.md).
 
 ## Import
 
-**Application de bureau seulement, avec le dossier SW Exporter choisi** : le
-journal se lit tout seul dans ce dossier, à chaque ouverture du mode en jeu
-(détail : [bureau/](../bureau/README.md#larène-dimensionnelle--le-journal-swex)).
+**Application de bureau seulement, avec le dossier SW Exporter choisi et le
+plugin SW Blacksmith Live installé** : la saison se lit toute seule dans le
+dossier du plugin, à chaque ouverture du mode en jeu et à chaque changement
+fait dedans (détail :
+[bureau/](../bureau/README.md#larène-dimensionnelle--la-saison-du-plugin-swex)).
 La défense, les attaques et les runes de l'invocateur suivi sont alors
-**remplacées** (un miroir du jeu ; `appliquerDimension`, App.tsx), avec une
-notification.
+**remplacées** (un miroir du jeu ; `appliquerDimension`, App.tsx) ; une
+notification l'annonce à l'ouverture du mode, un changement fait dedans
+s'applique en silence.
 
 Dans l'app sans dossier, l'import de compte (un `.json`) ne touche pas
 l'arène dimensionnelle : ses équipes s'y composent à la main, et l'onglet

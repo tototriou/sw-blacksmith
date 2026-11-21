@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { RtaState } from '../types';
 import { RtaCategory } from './useRtaCategories';
-import { loadLocal, oublierLocal, saveLocal, usePersistence } from './usePersistence';
+import { lireTravail, oublierLocal, saveLocal, usePersistence } from './usePersistence';
 
 // **Point de restauration de la prépa RTA** — l'instantané que pose
 // « Sauvegarder » et que rappelle « Reprendre ».
@@ -48,7 +48,7 @@ export interface RtaBackup {
 // travers — d'où `null` plutôt qu'une réparation approximative.
 function load(cle = KEY): RtaBackup | null {
   try {
-    const raw = loadLocal(cle);
+    const raw = lireTravail(cle);
     if (!raw) return null;
     const o = JSON.parse(raw) as Partial<RtaBackup>;
     if (!o || typeof o !== 'object') return null;

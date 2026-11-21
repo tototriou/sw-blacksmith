@@ -28,8 +28,24 @@ nombre de runes) :
 
 - **Actuelle** (bleu, avec aire) — l'efficience des runes aujourd'hui.
 - **Potentiel Héro** (violet) / **Potentiel Légend** (orange) — l'efficience si
-  chaque rune recevait son optimisation maximale (voir onglet Optimisation) ;
-  identiques aux tris « Potentiel héroïque / légendaire » de l'Optimisation.
+  chaque rune recevait ses meules au max du grade, et sa gemme **déjà posée**
+  relancée à son max (`distributionsCourbes`,
+  [runeCourbes.ts](src/lib/runeCourbes.ts)).
+  - ⚠️ **Aucune gemme n'est simulée sur une rune qui n'en porte pas**, et une
+    gemme posée **garde sa stat** (`gemmeExistanteSeule` de `runePotential`,
+    pas de « Autoriser un regemme différent » ici). Créditée de la meilleure
+    gemme au jet maximal, chaque rune vierge passait devant des runes finies et
+    la courbe héroïque devenait inatteignable.
+  - Les courbes **diffèrent donc des tris « Potentiel héroïque / légendaire »
+    de l'Optimisation**, qui garde la gemme optimale : l'Optimisation répond à
+    « que poser sur cette rune ? », les Courbes à « que vaut ma box en
+    poussant ce qu'elle porte ? ».
+  - En **Meule seule**, même la gemme posée reste telle quelle.
+  - ⚠️ **Une meule au-delà du grade est RAMENÉE au max de ce grade** (pas de
+    `noDowngrade`) : le potentiel héroïque d'une rune meulée en légendaire est
+    inférieur à sa valeur d'aujourd'hui. C'est voulu — il dit ce que vaudrait
+    la rune au grade héroïque —, et la courbe violette passe donc sous la bleue
+    sur ces runes.
 
 Détails :
 - Rendu SVG **sobre** et **maison** (aucune dépendance) via
@@ -180,18 +196,65 @@ un écran de résultats, et la place libérée profite immédiatement.
       posés nus, les tokens (des triplets) rendent l'attribut invalide et le
       trait n'est **pas peint du tout**, sans la moindre erreur. Voir
       [../../03-developpeur/interface/](../../../03-developpeur/interface/).
-  - ⚠️ **Une carte par courbe OUVRABLE, à ce rang** — et ce que « ouvrable »
-    veut dire diffère selon l'onglet, parce que les courbes n'y disent pas la
-    même chose :
+  - ⚠️ **Le choix suit SA rune** ([courbeChoix.ts](src/lib/courbeChoix.ts)) :
+    il retient le rang **et** la rune qui l'occupe sur la courbe de ses runes
+    (« Actuelle », sinon la première qui porte des runes). Une rune montée,
+    meulée ou gemmée — « Mon compte » en direct — change de score, donc de
+    rang : le choix resté au rang montrait une autre rune. Quand les courbes se
+    recalculent, il passe au nouveau rang de sa rune ; une rune qui n'y est
+    plus (filtrée, vendue) laisse le rang tel quel. La vue Optimisation, qui
+    ne dessine pas de courbe, n'est pas concernée.
+  - ⚠️ **Une carte par courbe OUVRABLE, à ce rang** :
 
     | Onglet | Ouvrables | Pourquoi |
     |--------|-----------|----------|
-    | **Courbes** | « Actuelle » seule | Les potentiels ne sont pas d'autres runes : c'est la **même box** projetée dans une autre hypothèse. Trois cartes quasi identiques pour une seule question — « quelle est cette rune ? ». |
+    | **Courbes** | **les trois** | Chaque courbe est **triée de son côté** (`distributionsCourbes`, [runeCourbes.ts](src/lib/runeCourbes.ts)) : au 32ᵉ rang, « Potentiel Héro » montre la 32ᵉ meilleure rune **en potentiel héroïque**, pas la rune d'« Actuelle » améliorée. Lue rune à rune, la courbe violette faisait croire qu'un potentiel n'était jamais atteint, alors que bien des runes meulées en légendaire le dépassent : le haut de cette courbe est tenu par des runes **vierges**, créditées du jet maximal de chaque gemme et meule. Ouvrir la rune de chaque courbe montre ce qu'elle classe. |
     | **Comparaison** | **toutes** celles qui portent leurs runes | Chaque courbe est un **compte différent** : « à ma 12ᵉ meilleure rune, qu'ont-ils, eux ? ». N'en montrer qu'une obligerait à recliquer chaque courbe pour la même question. |
 
-    Les cartes sont ordonnées **par valeur décroissante**, comme les courbes au
-    point X et comme l'infobulle de survol : même lecture partout. Une courbe
-    **masquée** dans la légende n'apparaît pas (elle n'atteint pas le graphe).
+    ⚠️ **Une carte par RUNE, pas par courbe** : deux courbes qui désignent la
+    même rune à ce rang la partagent. Trois fiches identiques côte à côte ne
+    diraient rien de plus. « Même rune » = même objet, jamais le même `id` :
+    deux fichiers de compte en Comparaison ne partagent pas leurs objets.
+
+    **Aux Courbes, chaque carte lit les TROIS valeurs de sa rune** — actuelle,
+    potentiel héroïque, potentiel légendaire (`valeursRune` de `CurveChart`,
+    tirées de `potentiels` de `distributionsCourbes`) —, quelle que soit la
+    courbe qui l'a désignée. La carte du 32ᵉ rang héroïque dit ainsi d'où part
+    cette rune et ce qu'elle vaudrait en légendaire. Les trois tiennent sur
+    **une rangée** — pastille de la couleur de la légende, puis le nombre ; le
+    nom de la courbe est en infobulle. Les valeurs des courbes qui désignent
+    la rune sont **en gras**, et ⚠️ dès qu'il y a plusieurs
+    cartes, chacune porte **en tête le nom et la pastille de sa courbe** : le
+    gras seul ne disait pas à quelle courbe la carte répond, puisque toutes
+    listent les trois mêmes noms. Une carte seule (« Rune à rune ») n'en a pas
+    besoin. La fiche de la rune, dessous,
+    garde ses stats d'aujourd'hui. En Comparaison, une ligne par courbe : sa
+    pastille, son nom, sa valeur.
+
+    **Ordre des cartes** (`ordreCartes`) :
+    - **Courbes** : celui des séries — **Actuelle, Héro, Légend** —, toujours à
+      la même place d'un rang à l'autre ;
+    - **Comparaison** : **par valeur décroissante**, comme les courbes au point
+      X et comme l'infobulle de survol.
+
+    Une courbe **masquée** dans la légende n'ouvre pas de carte (elle n'atteint
+    pas le graphe).
+
+    #### Le bouton « Rune à rune »
+
+    Éteint par défaut, mémorisé (`runesCurve.runeARune`), à côté du choix
+    Gemme + meule / Meule seule. Allumé, les potentiels **suivent le classement
+    d'« Actuelle »** (`distributionsCourbes(…, runeARune)`) : au rang N, les
+    trois courbes parlent de la même rune, et l'écart entre elles est ce qu'il
+    reste à gagner sur cette rune. Les potentiels n'y sont plus triés : ils
+    sont tracés **en segments droits** (`CurveSeries.lisse = false`) — le
+    lissage de Catmull-Rom, fait pour une courbe monotone, dépasserait chaque
+    pic et inventerait des valeurs qu'aucune rune n'a. Une seule carte s'ouvre
+    alors par rang.
+
+    L'aide « Comment lire ce graphe ? » dit que les rangs ne désignent pas la
+    même rune, que le potentiel compte le jet maximal, et ce que fait le
+    bouton.
   - Le détail est précédé de l'**image de la rune** (cadre du slot + symbole du
     set, `RuneSlotIcon`) puis de son **set** et de son **slot**. ⚠️ L'image
     d'abord : c'est à elle qu'on reconnaît une rune d'un coup d'œil, le texte ne
@@ -218,7 +281,8 @@ un écran de résultats, et la place libérée profite immédiatement.
     compte**, lui, porte ses runes — ses points sont donc ouvrables, dans les
     deux sous-onglets de Comparaison.
   - Le **nom de la courbe** est rappelé sur chaque carte dès qu'il y a plusieurs
-    ouvrables ; masqué sinon, où il n'apprendrait rien.
+    ouvrables ; masqué sinon (une seule courbe affichée), où il n'apprendrait
+    rien.
   - On mémorise le **rang seul** : c'est une **position du classement**, et
     c'est cette position qu'on lit sur toutes les courbes à la fois. La
     navigation porte sur le rang le plus élevé des courbes ouvrables (le
@@ -234,9 +298,9 @@ un écran de résultats, et la place libérée profite immédiatement.
 - **Filtres** : sets (`SetFilter`), slot (`SlotFilter`), antiques (`AncientFilter`,
   le **3 états** commun — voir l'onglet Optimisation).
 - **Nombre de runes** : champ libre (défaut **400**) + **Tout**.
-- **Mode** : **Gemme + meule** / **Meule seule** (voir Optimisation), suivi du
-  bouton **« Autoriser un regemme différent »** (éteint par défaut, grisé en
-  « Meule seule » — voir Optimisation § Modes). La rangée passe à la ligne
+- **Mode** : **Gemme + meule** (la gemme déjà posée relancée à son max) /
+  **Meule seule**, suivi du bouton **« Rune à rune »** (voir plus haut). La
+  rangée passe à la ligne
   (`flex-wrap`) au lieu de déborder sur téléphone.
 - **Aide « ? »** superposée en coin du graphe (popup fermable au clic extérieur)
   expliquant la lecture et renvoyant vers l'Optimisation.

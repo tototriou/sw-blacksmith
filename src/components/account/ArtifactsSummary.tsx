@@ -12,6 +12,7 @@ import { formatNombre } from '../../i18n/format';
 import { nomGrade } from '../../i18n/jeu';
 import { Kpi, Panel, pct, fmt, CARTE_CHIFFRES_DOIGT } from './SummaryBits';
 import ArtifactsTop from './ArtifactsTop';
+import InterrupteurDirect from './InterrupteurDirect';
 
 interface Props {
   artifacts: ArtifactDetail[];
@@ -162,6 +163,13 @@ export default function ArtifactsSummary({ artifacts }: Props) {
         <span className="rounded-full border border-border-soft bg-panel2 px-2 py-0.5 font-mono text-micro text-ink-dim">
           {ac.compte(n(s.total), s.total)}
         </span>
+        {/* Application de bureau : « Mon compte » en direct — la vue n'a
+            pas de filtres, il se range au bout de l'en-tête. */}
+        <InterrupteurDirect className="ml-auto" />
+      </div>
+      {/* Au doigt, seul sur sa ligne ; rien (pas même la marge) sans lui. */}
+      <div className="empty:hidden lg:hidden">
+        <InterrupteurDirect />
       </div>
 
       {/* ---- Chiffres clés — le compte entier, puis chaque sorte ---------- */}

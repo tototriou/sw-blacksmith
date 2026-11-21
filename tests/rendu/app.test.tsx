@@ -53,9 +53,10 @@ const TITRES: [string, string][] = [
   ['#/', 'Accueil'],
   ['#/rta', 'Ma prépa'],
   ['#/rta/ami', 'Ami'],
-  ['#/siege/defense', 'Défense'],
-  ['#/siege/offense', 'Offense'],
+  ['#/siege/defense', 'Decks de défense'],
+  ['#/siege/offense', 'Decks d’offense'],
   ['#/siege/recommandations', 'Recommandations'],
+  ['#/siege/statistiques', 'Statistiques'],
   ['#/compte/monstres/liste', 'Monstres'],
   ['#/compte/runes/resume', 'Mon compte · Runes Résumé'],
   ['#/compte/runes/liste', 'Mon compte · Runes Liste'],
@@ -74,6 +75,8 @@ const TITRES: [string, string][] = [
   ['#/mecaniques', 'Mécaniques'],
   ['#/releases', 'Nouveautés'],
   ['#/telecharger', 'Télécharger'],
+  ['#/bot-discord', 'Bot Discord'],
+  ['#/sw-exporter', 'SW Exporter'],
   ['#/parametres', 'Paramètres'],
   ['#/arene/defense', 'Défense'],
   ['#/arene/offense', 'Offense'],
@@ -147,14 +150,14 @@ export function testRenduAppNavigation() {
   // sections sont à l'écran en même temps.
   const siege = barreLaterale(rendreApp('#/siege/defense'));
   const hrefs = valeurs(siege, 'href');
-  for (const h of ['#/siege/defense', '#/siege/offense', '#/siege/recommandations', '#/', '#/bestiary'])
+  for (const h of ['#/siege/defense', '#/siege/offense', '#/siege/recommandations', '#/siege/statistiques', '#/', '#/bestiary'])
     ok(hrefs.includes(h), `dans le Siège, la barre montre aussi ${h}`);
   const tSiege = texteVisible(siege);
   for (const nom of ['RTA', 'Mon compte', 'Runes', 'Outils', 'Ressources']) ok(tSiege.includes(nom), `dans le Siège : « ${nom} » reste visible`);
   ok(/aria-expanded="true"[^>]*>(?:(?!<\/button>)[\s\S])*Siège/.test(siege), 'l\'entrée « Siège » se dit déroulée');
   ok(!hrefs.includes('#/rta/ami'), 'les autres sections restent refermées');
   // Chaque sous-section déroulée garde son icône (demandé par le mainteneur).
-  for (const h of ['#/siege/defense', '#/siege/offense', '#/siege/recommandations']) {
+  for (const h of ['#/siege/defense', '#/siege/offense', '#/siege/recommandations', '#/siege/statistiques']) {
     const lienSous = siege.match(new RegExp(`<a[^>]*href="${h}"[^>]*>[\\s\\S]*?</a>`))?.[0] ?? '';
     ok(lienSous.includes('<svg'), `la sous-section ${h} porte son icône`);
   }
@@ -169,7 +172,7 @@ export function testRenduAppNavigation() {
 
 // L'arène dimensionnelle : sur le site, le seul message « application de
 // bureau » ; dans l'app, la note seule sans runes lues, la liste de runes
-// (filtres, tri) avec celles que le journal SWEX a données.
+// (filtres, tri) avec celles que le plugin SWEX a données.
 export function testRenduAppRunesDimension() {
   titre('rendu · App — l’arène dimensionnelle, sur le site et dans l’app de bureau');
   for (const h of ['#/arene-dimensionnelle/defense', '#/arene-dimensionnelle/offense', '#/arene-dimensionnelle/runes']) {
@@ -199,7 +202,7 @@ export function testRenduAppFil() {
   titre('rendu · App — le fil d\'Ariane bureau suit le menu');
   const FILS: [string, string][] = [
     ['#/', 'Accueil'],
-    ['#/siege/defense', 'Jouer Siège Défense'],
+    ['#/siege/defense', 'Jouer Siège Decks de défense'],
     ['#/rta/ami', 'Jouer RTA Ami'],
     ['#/arene', 'Jouer Arène Défense'],
     ['#/arene-dimensionnelle/offense', 'Jouer Arène dimensionnelle Offense'],
@@ -240,7 +243,15 @@ export function testRenduAppLiensMorts() {
   // table qu'aucun lien ne propose est soit hors menu par décision, soit morte.
   // Meules et Gemmes : hors menu ([retrait #6]). Paramètres : le ⚙ y mène,
   // mais c'est un BOUTON — il ouvre et referme (§ « Le ⚙ ouvre ET referme »).
-  const horsLien = new Set(['#/compte/runes/meules', '#/compte/runes/gemmes', '#/parametres']);
+  // Onglets du bot : des boutons (`Onglets` de la librairie) qui posent l'adresse.
+  const horsLien = new Set([
+    '#/compte/runes/meules',
+    '#/compte/runes/gemmes',
+    '#/parametres',
+    '#/bot-discord/installation',
+    '#/bot-discord/recommandations',
+    '#/bot-discord/commandes',
+  ]);
   for (const hash of Object.keys(ADRESSES)) {
     if (horsLien.has(hash)) continue;
     ok(vus.has(hash), `${hash} est proposé par au moins un lien`);

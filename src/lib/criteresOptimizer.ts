@@ -15,7 +15,7 @@ export const CLASSEMENT_CHAMPS_OPTIMIZER = {
   comboSets: 'personnel', minStats: 'personnel', maxStats: 'personnel',
   excludeBase: 'personnel', optimiserArtefacts: 'personnel',
   artifactMainByKind: 'personnel', relicMainChoice: 'personnel', relicUniqueChoice: 'personnel',
-  lignesVerrouillees: 'personnel', mainStatsBySlot: 'personnel', lockedRunes: 'personnel',
+  lignesVerrouillees: 'personnel', sortsPrecision: 'personnel', mainStatsBySlot: 'personnel', lockedRunes: 'personnel',
   objective: 'personnel', damageSetup: 'personnel', sortBy: 'personnel',
   sensTri: 'personnel', bornesResultats: 'personnel',
   compterAurasResPre: 'personnel', critereArtefacts: 'personnel',
@@ -139,7 +139,7 @@ export function baseCompleteCriteres(exemplaire: Pick<GearSet, 'relic'> | undefi
     comboSets: [], minStats: {}, maxStats: {}, excludeBase: true,
     optimiserArtefacts: true, artifactMainByKind: {},
     relicMainChoice: defaultRelicMainChoice(exemplaire?.relic), relicUniqueChoice: 'libre',
-    lignesVerrouillees: [], mainStatsBySlot: {}, lockedRunes: {}, objective: 'efficience',
+    lignesVerrouillees: [], sortsPrecision: [], mainStatsBySlot: {}, lockedRunes: {}, objective: 'efficience',
     damageSetup: copie(DEFAULT_DAMAGE_SETUP), sortBy: 'efficience',
     // Filtres d'affichage des résultats : décroissant, aucune borne.
     sensTri: 'desc', bornesResultats: {},

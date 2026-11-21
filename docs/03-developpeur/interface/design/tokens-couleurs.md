@@ -48,6 +48,40 @@ c'est son filet qui la détache du fond.
 | `bad-ink` | `#1b1a19` | `#ffffff` | Encre SUR un aplat de `bad` (bouton danger plein) — le pendant d'`accent-ink` |
 | `star` | `#c9a227` | `#8c6d0e` | Le laiton : étoiles, maxima d'efficience |
 
+### Séries des graphes
+
+| Token | Forge (sombre) | Atelier (clair) | Rôle |
+|---|---|---|---|
+| `serie-1` | `#3987e5` | `#2a78d6` | Bleu — première série d'un graphe (ma guilde, une série seule) |
+| `serie-2` | `#d95926` | `#eb6834` | Orange — deuxième série |
+| `serie-3` | `#199e70` | `#1baf7a` | Aqua — troisième série |
+
+Les **identités** des graphes (Siège › Statistiques), dans cet ordre, jamais réordonnées : une
+couleur suit son entité, pas son rang. Validées toutes paires confondues contre la carte
+(`panel`) des deux thèmes par le validateur du skill `dataviz` : séparation daltonienne ≥ 9
+(OKLab ×100), vision normale ≥ 20. ⚠️ **Jamais `good` et `bad` pour deux séries** : ce vert et ce
+rouge se confondent pour un deutéranope (ΔE 2,5 en Atelier). L'aqua est sous 3:1 en Atelier :
+tout graphe qui l'emploie porte une légende et des libellés directs. Le texte d'un graphe reste
+aux encres (`ink`, `ink-dim`), jamais à la couleur d'une série.
+
+### Guildes d'un siège
+
+| Token | Forge (sombre) | Atelier (clair) | Rôle |
+|---|---|---|---|
+| `guilde-bleue` | `#3987e5` | `#2a78d6` | Ma guilde, toujours en bas à gauche sur la carte du jeu |
+| `guilde-rouge` | `#c8303b` | `#b8222f` | La place suivante (en haut) |
+| `guilde-jaune` | `#ad8e12` | `#b38f10` | L'autre place (à droite) |
+
+Une **guilde** d'un siège prend la couleur de sa place sur la carte du jeu, vue depuis la mienne
+(`couleurDeGuilde`) :
+courbes, légendes, cartes des guildes, territoire d'une tour. Ce qui n'est pas une guilde (WR en
+attaque, en défense) garde les séries. Validées toutes paires confondues contre la carte
+(`panel`) des deux thèmes par le validateur du skill `dataviz` : séparation daltonienne ≥ 9,
+vision normale ≥ 21, contraste ≥ 3:1. ⚠️ Pour un deutéranope, le rouge et le jaune ne se
+séparent que par leur **clarté** : un jaune plus sombre ou un rouge plus clair les confond (essai
+`#b98c12` / `#e5484d` : ΔE 5,4). L'écusson d'une tour, rendu du jeu, prend les valeurs Forge
+(`forge-guilde-*`) dans les deux thèmes, sur fond sombre.
+
 ⚠️ **« Orange » dans le code = `warn`.** Le statut d'avertissement s'appelle
 `orange` dans le code (`statutEquipe`, les verdicts) et dans certaines fiches ;
 il se DESSINE en jaune / ocre. Lire `warn`, pas une teinte. (Ne concerne pas

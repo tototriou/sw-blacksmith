@@ -8,6 +8,7 @@ import { runePotential } from '../../lib/runeOptim';
 import RuneIcon from '../RuneIcon';
 import { Kpi, Panel, BarRow, pct, fmt, CARTE_CHIFFRES_DOIGT } from './SummaryBits';
 import BuildsRapides from './BuildsRapides';
+import InterrupteurDirect from './InterrupteurDirect';
 import { nomSet } from '../../i18n/jeu';
 
 interface Props {
@@ -179,6 +180,13 @@ export default function RunesSummary({ runes }: Props) {
         <span className="rounded-full border border-border-soft bg-panel2 px-2 py-0.5 font-mono text-micro text-ink-dim">
           {r.compte(n(s.total), s.total)}
         </span>
+        {/* Application de bureau : « Mon compte » en direct — la vue n'a
+            pas de filtres, il se range au bout de l'en-tête. */}
+        <InterrupteurDirect className="ml-auto" />
+      </div>
+      {/* Au doigt, seul sur sa ligne ; rien (pas même la marge) sans lui. */}
+      <div className="empty:hidden lg:hidden">
+        <InterrupteurDirect />
       </div>
 
       {/* ---- Chiffres clés ---------------------------------------------- */}

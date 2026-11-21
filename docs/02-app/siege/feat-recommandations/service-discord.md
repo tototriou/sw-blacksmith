@@ -29,7 +29,7 @@ code (`erreur`), que la page traduit.
 | --- | --- |
 | `GET login` | Renvoie vers l'autorisation Discord (scopes `identify` et `guilds`), avec un état anti-falsification gardé 10 minutes dans un cookie. Sur le site, `prompt=none` : un membre qui a déjà autorisé l'app passe sans écran. `?bureau=<défi>` : la connexion est demandée par l'application de bureau (voir « Application de bureau ») ; le défi est gardé avec l'état, un défi mal formé est refusé (400), et ⚠️ l'écran de Discord s'affiche toujours. |
 | `GET callback` | Retour de Discord : vérifie l'état, échange le code contre les jetons, pose la session, renvoie vers `/#/siege/recommandations`. Refus du membre : `/?discord=refus#…` ; état faux ou échange raté : `/?discord=erreur#…`, sans session. Pour l'application de bureau : aucune session sur le site, renvoi vers `/?discord-bureau=<code>#…` (le code à copier), ou `refus-bureau` / `erreur-bureau`. |
-| `GET invitation` | Renvoie vers l'invitation du bot sur un serveur (scope `bot`, **aucun droit** : `permissions=0`) ; l'admin l'ajoute ensuite aux salons de recommandations ([guide](installer-le-bot.md)). L'identifiant vient de l'environnement : un aperçu invite le bot de test. Sans session. |
+| `GET invitation` | Renvoie vers l'invitation du bot sur un serveur (scopes `bot` et `applications.commands` : le bot **et ses commandes**, dont `/speedtune` ; **aucun droit** : `permissions=0`). Sur un serveur où le bot est déjà, la réinvitation ajoute ses commandes sans le retirer ; l'admin l'ajoute ensuite aux salons de recommandations ([guide](installer-le-bot.md)). L'identifiant vient de l'environnement : un aperçu invite le bot de test. Sans session. |
 | `POST bureau-echange` | Corps `{ code, secret }` : le code collé dans l'application de bureau, et le secret dont le défi est l'empreinte. Rend `{ session, utilisateur }` — la session scellée, que l'app garde ; 400 si le code est illisible, a plus de 10 minutes, ou si le secret ne correspond pas. |
 | `GET session` | `{ connecte, utilisateur }` ; 401 sans session valide. |
 | `POST deconnexion` | Révoque chez Discord les **deux** jetons (accès et renouvellement) et efface le cookie (204) : la session est sans état, une copie volée du cookie ne vaut plus rien une fois ses jetons révoqués. |
@@ -75,7 +75,16 @@ puis les exceptions du salon (`@everyone`, rôles, membre).
    nouvelle base. Entre cette lecture et l'envoi reste une fenêtre de quelques
    centaines de millisecondes où la dernière publication gagne.
 4. Le fichier doit contenir **une seule** recommandation valide
-   ([recoShare.ts](src/lib/recoShare.ts)), de 256 Ko au plus (400 sinon).
+   ([recoShare.ts](src/lib/recoShare.ts)), de 3,5 Mo au plus : 413 sinon, que la
+   page dit « trop lourde pour Discord » (et non « sans deck », comme un 400). La
+   page l'envoie en JSON **compact**, et le fichier posté l'est aussi : indenté, il
+   pèse deux fois et demie plus lourd. ⚠️ La requête de publication et la réponse du
+   cache (`brut`) portent le fichier échappé dans un JSON, 12 % plus lourd : 3,5 Mo
+   y font 3,9 Mo, sous les 4,5 Mo qu'une fonction Vercel accepte (au-delà, Vercel
+   répond lui-même 413, lu de la même façon). Une recommandation tirée de vidéos
+   YouTube (toutes les chaînes réunies : plus de 700 decks) fait 1,2 Mo. Les
+   plafonds qui restent (lecture de tous les salons, stockage) :
+   [dette.md](../../../05-feuille-de-route/dette.md), « Recommandations volumineuses ».
 5. Le service écrit l'**auteur** (celui de la version précédente, sinon le
    publieur), les **contributeurs** (ceux de la version précédente, plus le
    publieur s'il n'y est pas) et la **source** `discord:<serveur>:<salon>`.
@@ -100,7 +109,7 @@ les 100 derniers messages, qu'il vienne du bot ou d'un membre
 ([recoSalon.ts](../../../../api/_source/service/recoSalon.ts), `candidats`) :
 
 - ⚠️ **Rien n'est cru avant validation.** Un candidat est une pièce jointe
-  `.json` de 256 Ko au plus (taille annoncée par Discord), hébergée sur le
+  `.json` de 3,5 Mo au plus (taille annoncée par Discord), hébergée sur le
   CDN de Discord ; il est téléchargé, puis passé au validateur complet de
   l'import, et doit contenir exactement une recommandation. Sinon il est
   ignoré et le suivant est essayé, cinq au plus par lecture : un salon rempli

@@ -38,7 +38,7 @@ commit** que le code.
 | --- | --- |
 | Runtime | **Node 24** (`.nvmrc`, `engines` à `24.x`), npm, ESM (`"type": "module"`) |
 | App | **React 18** + **TypeScript 5**, **sans router** : routage par `window.location.hash` (`src/App.tsx`) |
-| Build & style | **Vite 5**, **Tailwind 3** (PostCSS + autoprefixer, déclarés dans `vite.config.ts` avec le plugin de l'écran partagé `scripts/lib/postcssVolets.ts` ; requêtes de conteneur `@container` par `@tailwindcss/container-queries`), tokens CSS dans `src/index.css` |
+| Build & style | **Vite 6**, **Tailwind 3** (PostCSS + autoprefixer, déclarés dans `vite.config.ts` avec le plugin de l'écran partagé `scripts/lib/postcssVolets.ts` ; requêtes de conteneur `@container` par `@tailwindcss/container-queries`), tokens CSS dans `src/index.css` |
 | Dépendances runtime | `lucide-react` (icônes), `framer-motion` (animation), `react-resizable-panels` (séparateur de l'écran partagé, derrière `src/ui/DeuxVolets.tsx`) — aucune mesure d'audience |
 | Calcul lourd | **Web Workers** (`src/workers/`) : recherche de l'Optimizer, classement, résolution de l'équipement |
 | Langues | **français et anglais**, par dictionnaires TypeScript typés (`src/i18n/`), sans bibliothèque de traduction |
@@ -46,7 +46,7 @@ commit** que le code.
 | Bureau | **Electron** + `electron-builder` + `electron-updater` (`bureau/`, hors de `src/`) |
 | Service | **Fonction Vercel** sans état (`api/`, hors de `src/`) : la synchronisation Discord des recommandations, empaquetée au build par esbuild ; en prototype, la commande Discord `/speedtune` (lecture d'une capture, `pngjs`, `jpeg-js`, `@vercel/functions`) |
 | Tests | lanceur maison `tests/run.mjs` (registre `tests/index.ts`), `fake-indexeddb`, rendu par `react-dom/server`, polices de l'app pour le Chromium des tests (`@fontsource`) |
-| Qualité | `tsc` strict (couvre `src/`, `scripts/`, `tests/`, `bureau/`, `api/`), ESLint (flat config) |
+| Qualité | `tsc` strict (couvre `src/`, `scripts/`, `tests/`, `bureau/`, `api/`, `plugin-swex/`), ESLint (flat config) |
 
 ## Structure
 
@@ -68,6 +68,7 @@ src/
   workers/       # Web Workers de l'Optimizer (recherche, appariement parallèle, classement, résolution)
   data/          # contenu statique (journal des versions : releases.ts, releases.en.ts)
 bureau/          # application de bureau Electron (main, protocole, session, SW Exporter, mise à jour)
+plugin-swex/     # plugin SWEX « SW Blacksmith Live » : le compte et les combats de guilde suivis pendant la partie
 api/             # service Discord des recommandations : discord.mjs (la fonction Vercel), _source/ (le
                  # service en TypeScript, empaqueté au build dans _paquet/, non suivi) ; interactions.mjs
                  # (prototype : /speedtune, lecture de capture dans _source/capture/ et _source/speedtune/)
@@ -83,10 +84,10 @@ docs/            # documentation en sections (01-presentation … 05-feuille-de-
 ```bash
 npm install                    # dépendances + installation des hooks Git (script prepare)
 npm run dev                    # serveur de dev Vite
-npm run build                  # build de production (Tailwind n'émet que ce qu'il trouve dans le SOURCE), puis le service api/
+npm run build                  # build de production (Tailwind n'émet que ce qu'il trouve dans le SOURCE ; Vite y émet le plugin SWEX), puis le service api/
 npm run dev:api                # le site ET le service Discord en local (vercel dev, http://localhost:3000)
 npm run lint                   # ESLint sur tout le dépôt
-npx tsc --noEmit               # types : src/, scripts/, tests/, bureau/ et api/
+npx tsc --noEmit               # types : src/, scripts/, tests/, bureau/, api/ et plugin-swex/
 node tests/run.mjs <filtre>    # les vérifications d'une zone (ex. speed-tune) ; plusieurs filtres possibles
 node tests/run.mjs --depuis origin/<base>   # celles que touchent les fichiers modifiés depuis la base
 node tests/run.mjs --lister <filtre>        # prévisualise la sélection finale sans lancer de vérification
@@ -97,6 +98,7 @@ node tests/banc/run.mjs --ecrans <id> --etats <id> --tailles <id>   # un état, 
 npm test                       # TOUTES les vérifications — la CI les passe sur chaque PR ; en local, seulement sur demande
 npm run test:suivi [-- …]      # les mêmes, suivies en direct dans le terminal (--web : aussi dans le navigateur)
 npm run fetch-data             # régénère les données SWARFARM de public/data
+npm run plugin-swex            # construit le plugin SWEX « SW Blacksmith Live » (dist/plugin-swex/SWBlacksmithLive.js)
 node scripts/inventaire-competences.mjs --aide   # balayer les compétences du corpus, formule retenue par l'app
 npm run bureau                 # l'application de bureau en développement
 npm run bureau:preuve          # la vérification de l'application de bureau
@@ -105,7 +107,9 @@ npm run bureau:preuve          # la vérification de l'application de bureau
 ## Données et persistance
 
 - ⚠️ **Le dépôt est public** : jamais d'export de compte, de données personnelles ni de capture
-  d'écran dans un commit.
+  d'écran qui montre un compte, un pseudo, un avatar, un serveur ou un identifiant réel. Les seules
+  captures suivies sont celles des guides de l'app (`public/bot-discord/`) : service simulé, ou
+  noms floutés ([bot-discord/](docs/02-app/bot-discord/README.md)).
 - **Rien ne quitte l'appareil sans un geste de l'utilisateur** : l'export de compte (SWEX) se lit
   en local, aucune requête ne l'envoie. Les données de jeu viennent de SWARFARM, figées dans
   `public/data`.
@@ -143,7 +147,10 @@ npm run bureau:preuve          # la vérification de l'application de bureau
 | `src/pages/MechanicsPage.tsx` | [mecaniques/](docs/02-app/mecaniques/README.md) |
 | `api/`, `vercel.json`, `scripts/construire-api.mjs` | [service-discord.md](docs/02-app/siege/feat-recommandations/service-discord.md) |
 | `api/interactions.mjs`, `api/_source/capture/`, `api/_source/speedtune/`, `scripts/construire-banque-portraits.*`, `scripts/construire-gabarits-chiffres.*`, `scripts/enregistrer-commande-speedtune.mjs` | [feat-discord-capture.md](docs/02-app/speed-tuning/feat-discord-capture.md) |
+| `src/pages/BotDiscordPage.tsx`, `src/lib/botDiscord.ts`, `public/bot-discord/` | [bot-discord/](docs/02-app/bot-discord/README.md) |
 | `bureau/`, `src/lib/bureau.ts`, `electron-builder.yml`, `src/pages/TelechargerPage.tsx` | [bureau/](docs/02-app/bureau/README.md), [telecharger/](docs/02-app/telecharger/README.md) |
+| `plugin-swex/` (le plugin SWEX « SW Blacksmith Live ») | [feat-swex-direct.md](docs/02-app/bureau/feat-swex-direct.md) |
+| `src/pages/SwExporterPage.tsx`, `src/lib/pluginSwex.ts` | [sw-exporter/](docs/02-app/sw-exporter/README.md), [feat-swex-direct.md](docs/02-app/bureau/feat-swex-direct.md) |
 | `src/ui/`, `src/index.css`, `tailwind.config.js`, tout rendu d'écran | [03-developpeur/interface/](docs/03-developpeur/interface/README.md) |
 | `eslint.config.js`, `.githooks/`, `scripts/installer-hooks.mjs`, `.github/workflows/` | [qualite-code.md](docs/03-developpeur/qualite-code.md) |
 | `tests/renvois.test.ts`, un fichier déplacé ou renommé | [renvois.md](docs/03-developpeur/renvois.md) |

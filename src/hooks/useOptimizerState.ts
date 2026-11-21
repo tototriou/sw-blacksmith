@@ -1,4 +1,5 @@
 import { Dispatch, MutableRefObject, SetStateAction, useCallback, useEffect, useRef, useState } from 'react';
+import type { SortPrecision } from '../lib/precisionParSort';
 import { useTraduction } from './useLangue';
 import { StatKey } from '../lib/effects';
 import { Objective, SlotFilterPresetKey } from '../lib/runeBuildOptim';
@@ -227,6 +228,12 @@ export interface OptimizerState {
   // des deux déborde.
   lignesVerrouillees: LigneVerrouillee[];
   setLignesVerrouillees: Dispatch<SetStateAction<LigneVerrouillee[]>>;
+  // Précision minimale PAR SORT (precisionParSort.ts) : les sorts cochés sous
+  // la ligne « Précision » des conditions. Vide = le minimum de Précision
+  // porte sur la stat. Un CRITÈRE, remis à zéro au changement de monstre :
+  // les sorts sont ceux de ce monstre.
+  sortsPrecision: SortPrecision[];
+  setSortsPrecision: Dispatch<SetStateAction<SortPrecision[]>>;
   mainStatsBySlot: Partial<Record<2 | 4 | 6, number[]>>;
   setMainStatsBySlot: Dispatch<SetStateAction<Partial<Record<2 | 4 | 6, number[]>>>>;
   // Runes IMPOSÉES par emplacement (1..6) — `lockedRunes[slot] = runeId`.
@@ -445,6 +452,7 @@ export function useOptimizerState(contexte?: ContexteMembresOptimizer): Optimize
   const [relicUniqueChoice, setRelicUniqueChoice] = useState<RelicUniqueChoice>(base.relicUniqueChoice);
   const [relicMinUpgrade, setRelicMinUpgrade] = useState(DEFAULT_RELIC_MIN_UPGRADE);
   const [lignesVerrouillees, setLignesVerrouillees] = useState<LigneVerrouillee[]>(base.lignesVerrouillees);
+  const [sortsPrecision, setSortsPrecision] = useState<SortPrecision[]>(base.sortsPrecision);
   const [mainStatsBySlot, setMainStatsBySlot] = useState<Partial<Record<2 | 4 | 6, number[]>>>(base.mainStatsBySlot);
   const [lockedRunes, setLockedRunes] = useState<Partial<Record<number, number>>>(base.lockedRunes);
   const [objective, setObjective] = useState<Objective>(base.objective);
@@ -510,7 +518,7 @@ export function useOptimizerState(contexte?: ContexteMembresOptimizer): Optimize
   // Les callbacks retardés lisent le dernier affichage, jamais la fermeture
   // du membre qui était sélectionné au début d'une lecture de fichier.
   const criteresAffiches: CriteresOptimizer = { comboSets, minStats, maxStats, excludeBase, optimiserArtefacts,
-      artifactMainByKind, relicMainChoice, relicUniqueChoice, lignesVerrouillees, mainStatsBySlot,
+      artifactMainByKind, relicMainChoice, relicUniqueChoice, lignesVerrouillees, sortsPrecision, mainStatsBySlot,
       lockedRunes, objective, damageSetup, sortBy, sensTri, bornesResultats, compterAurasResPre, critereArtefacts };
   const vivant = useRef({ contexte, selectedId, sourceSelector, proprietaire: proprietaireCriteres, criteres: criteresAffiches, importDuCompte });
   vivant.current = { contexte, selectedId, sourceSelector, proprietaire: proprietaireCriteres, criteres: criteresAffiches, importDuCompte };
@@ -536,7 +544,8 @@ export function useOptimizerState(contexte?: ContexteMembresOptimizer): Optimize
     setExcludeBase(suivante.excludeBase); setOptimiserArtefacts(suivante.optimiserArtefacts);
     setArtifactMainByKind(suivante.artifactMainByKind);
     setRelicMainChoice(suivante.relicMainChoice); setRelicUniqueChoice(suivante.relicUniqueChoice);
-    setLignesVerrouillees(suivante.lignesVerrouillees); setMainStatsBySlot(suivante.mainStatsBySlot);
+    setLignesVerrouillees(suivante.lignesVerrouillees); setSortsPrecision(suivante.sortsPrecision);
+    setMainStatsBySlot(suivante.mainStatsBySlot);
     setLockedRunes(suivante.lockedRunes); setObjective(suivante.objective); setDamageSetup(suivante.damageSetup);
     setSortBy(suivante.sortBy); setSensTri(suivante.sensTri); setBornesResultats(suivante.bornesResultats);
     setCompterAurasResPre(suivante.compterAurasResPre); setCritereArtefacts(suivante.critereArtefacts);
@@ -820,6 +829,8 @@ export function useOptimizerState(contexte?: ContexteMembresOptimizer): Optimize
     // exigence oubliée d'un monstre précédent rendrait « 0 build » sans que
     // rien ne rappelle d'où elle vient.
     setLignesVerrouillees(suivant.lignesVerrouillees);
+    // Les sorts cochés sont ceux de l'ancien monstre : remis à zéro aussi.
+    setSortsPrecision(suivant.sortsPrecision);
     setMainStatsBySlot(suivant.mainStatsBySlot);
     // ⚠️ Une rune imposée référence un `runeId` PRÉCIS, choisi pour l'ancien
     // monstre — le garder verrouillerait la recherche du nouveau sur une
@@ -903,6 +914,8 @@ export function useOptimizerState(contexte?: ContexteMembresOptimizer): Optimize
     setRelicMinUpgrade,
     lignesVerrouillees,
     setLignesVerrouillees: saisie('lignesVerrouillees', setLignesVerrouillees),
+    sortsPrecision,
+    setSortsPrecision: saisie('sortsPrecision', setSortsPrecision),
     mainStatsBySlot,
     setMainStatsBySlot: saisie('mainStatsBySlot', setMainStatsBySlot),
     lockedRunes,

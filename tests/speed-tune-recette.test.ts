@@ -48,12 +48,12 @@ export function testSpeedTuneRecetteLecture() {
 
 export function testSpeedTuneRecetteCli() {
   titre('Speed tune · le CLI rejoue la contrainte de la recette comme l’écran');
-  const sans = exigenceDeLaRecette(recette({}));
+  const sans = exigenceDeLaRecette(recette({}), []);
   egal([sans.minStats.spd, sans.maxStats?.spd], [undefined, 185], 'sans contrainte : l’exigence d’avant');
-  const avec = exigenceDeLaRecette(recette({ speedTune: contrainte() }));
+  const avec = exigenceDeLaRecette(recette({ speedTune: contrainte() }), []);
   egal([avec.minStats.spd, avec.maxStats?.spd], [170, 185], 'sous contrainte : minimum de la zone, maximum le plus serré');
   let leve = false;
-  try { exigenceDeLaRecette(recette({ speedTune: { ...contrainte(), setsAdmis: [] } })); } catch { leve = true; }
+  try { exigenceDeLaRecette(recette({ speedTune: { ...contrainte(), setsAdmis: [] } }), []); } catch { leve = true; }
   ok(leve, 'aucun set admis : la recherche est refusée');
 
   const rune = (id: number, slot: number, spd: number): RuneDetail =>

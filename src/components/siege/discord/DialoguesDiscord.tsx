@@ -10,6 +10,7 @@ import { RECO_STATS, type Monster, type Reco, type RecoDeck } from '../../../typ
 import type { SalonDePublication } from '../../../lib/provenancesRecos';
 import { aChoisir, type ChoixDeck, type ChoixFusion, type ElementDeck, type Fusion } from '../../../lib/recoDiscord';
 import { deckLabel } from '../RecoCard';
+import { LIEN_DISCORD } from '../../../marque';
 
 // Les dialogues de la synchronisation Discord : se connecter, installer le bot,
 // « Publier dans… », et la fusion d'une version arrivée sur une copie modifiée
@@ -17,7 +18,6 @@ import { deckLabel } from '../RecoCard';
 // Grammaire des modales de l'app : titre en haut à gauche, croix en haut à
 // droite, actions en bas à droite, la secondaire d'abord.
 
-const LIEN_DISCORD_APP = 'https://discord.gg/R2Fe4GJZET';
 
 export function DialogueConnexion({ onContinuer, onFermer }: { onContinuer: () => void; onFermer: () => void }) {
   const t = useTraduction().recosDiscord.connexion;
@@ -128,7 +128,7 @@ export function CorpsCodeSite({ code }: { code: string }) {
 // L'invitation passe par le service, qui connaît l'identifiant du bot de son
 // environnement. Dans l'application de bureau, la page ne connaît pas
 // l'adresse du service : le processus principal ouvre le navigateur.
-function inviterLeBot() {
+export function inviterLeBot() {
   const pont = discordBureau();
   if (pont) void pont.inviter();
   else window.open(URL_INVITATION, '_blank', 'noopener');
@@ -154,7 +154,12 @@ export function CorpsInstallation({ onInviter }: { onInviter: () => void }) {
         {t.etapes.map((e, i) => <li key={i}>{e}</li>)}
       </ol>
       <Bouton onClick={onInviter} fond="plein" ton="accent" icone={<ExternalLink size={14} />} libelle={t.inviter} className="self-start" data-inviter-bot />
-      <a href={LIEN_DISCORD_APP} target="_blank" rel="noreferrer" className="text-sm text-accent-lisible underline">
+      {/* Le guide complet : sa page change la route, qui démonte la page des
+          recommandations et sa modale avec elle. */}
+      <a href="#/bot-discord" className="text-sm text-accent-lisible underline" data-guide-bot>
+        {t.guide}
+      </a>
+      <a href={LIEN_DISCORD} target="_blank" rel="noreferrer" className="text-sm text-accent-lisible underline">
         {t.question}
       </a>
     </div>

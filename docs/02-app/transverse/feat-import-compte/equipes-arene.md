@@ -50,12 +50,14 @@ données présentes mais aucune place remplie : `defenseAreneVide`,
 ### Arène dimensionnelle
 
 ⚠️ **L'export de compte ne décrit pas la box dimensionnelle** : ses monstres et
-ses runes viennent du **journal complet de SWEX** (`full_log.txt`), réponse
-`dimensionarena_getSeasonInfo`, que le jeu envoie à l'ouverture du mode. Lecture
-du journal : [journalSwex.ts](src/lib/journalSwex.ts) — `lireSaisonDimension`
-prend la **dernière** réponse réussie de cette commande (une réponse tronquée,
-journal coupé en cours d'écriture, fait remonter à la précédente) ; la réponse
-seule, en JSON, se lit aussi.
+ses runes viennent de la réponse `dimensionarena_getSeasonInfo`, que le jeu
+envoie à l'ouverture du mode. Le plugin SWEX la garde et la tient à jour à
+chaque changement fait dans le mode
+([dimension.ts](plugin-swex/source/dimension.ts)) ; l'application de bureau la
+lit dans son dossier ([swexDimension.ts](bureau/swexDimension.ts)). Les
+**attaques** jouées que le plugin a vues y sont ajoutées sous la forme de
+l'export (`deck_recent_list`, type 28, leader en tête) ; aucune encore, celle
+de l'export.
 
 La réponse a la forme d'un export (relevé sur un journal réel, 2026-11) :
 

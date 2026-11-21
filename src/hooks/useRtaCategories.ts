@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Monster } from '../types';
 import { speedLeadOf } from '../lib/speed';
-import { saveLocal, usePersistence } from './usePersistence';
+import { lireTravail, saveLocal, usePersistence } from './usePersistence';
 import { useTraduction } from './useLangue';
 
 // Catégories libres de la prépa RTA : l'utilisateur crée ses propres étiquettes
@@ -121,7 +121,7 @@ function load(): Stored {
     masquees: [],
   };
   try {
-    const raw = localStorage.getItem(KEY);
+    const raw = lireTravail(KEY);
     if (!raw) return vide;
     const parsed = JSON.parse(raw);
     // Ancienne forme : un simple tableau de catégories.

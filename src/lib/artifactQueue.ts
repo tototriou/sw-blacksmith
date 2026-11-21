@@ -436,7 +436,7 @@ export function signatureReglages(parts: {
    * même contexte et un autre maximum gardait un couple devenu infaisable en
    * cache.
    */
-  requirement: Pick<BuildRequirement, 'minStats' | 'maxStats'>;
+  requirement: Pick<BuildRequirement, 'minStats' | 'maxStats' | 'precisionParSort'>;
   /**
    * Les artéfacts RÉSERVÉS par les autres builds validés de la liste active
    * (`otherValidatedArtifactIds`, optimizerExclusion.ts) : ils sortent de
@@ -521,6 +521,9 @@ export function signatureReglages(parts: {
     parts.empreinteRelique ?? '',
     JSON.stringify(parts.requirement.minStats),
     JSON.stringify(parts.requirement.maxStats ?? {}),
+    // La précision par sort se juge à la résolution : sans elle, composant
+    // omis, signature d'avant.
+    ...(parts.requirement.precisionParSort ? [`precision:${JSON.stringify(parts.requirement.precisionParSort)}`] : []),
     ...(reserves ? [`reserves:${reserves}`] : []),
     // Même règle : sans emplacement figé, composant omis, signature d'avant.
     ...(parts.piecesFigees.length > 0 ? [`figees:${JSON.stringify(parts.piecesFigees)}`] : []),
@@ -555,7 +558,7 @@ export function signatureArtefacts(parts: {
   relique: unknown;
   nbArtefacts: number;
   empreinteRelique: string | null;
-  requirement: Pick<BuildRequirement, 'minStats' | 'maxStats'>;
+  requirement: Pick<BuildRequirement, 'minStats' | 'maxStats' | 'precisionParSort'>;
   // Les artéfacts réservés par les autres builds validés de la liste active
   // (`artefactsReserves` de l'écran) — voir `signatureReglages`.
   artefactsReserves: Iterable<number>;

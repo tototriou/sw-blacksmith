@@ -227,7 +227,12 @@ Swift plats puis arrondit une seule fois 40 % de la base (41 points).
 Sans Swift, 126 points plats donnent la même fiche 227 mais un combat à 243
 (totem arrondi à 16). L’écart est **un point**, malgré un même minimum de fiche.
 
-Avec un deck d’origine, chaque espèce retrouve le premier slot disponible
+Un deck d’origine d’**arène** n’est pas un deck de siège : il n’est pas
+cherché, et chaque ligne suit la règle sans deck (exemplaire de la Box) ; un
+deck de l’**arène dimensionnelle** fait ignorer toutes les lignes
+(`deckDimensionnel`) — voir ../speed-tuning/feat-export-optimizer.md.
+
+Avec un deck d’origine de siège, chaque espèce retrouve le premier slot disponible
 de ce deck ; les slots sont consommés dans leur ordre pour les copies d’une
 même espèce. Le slot 0 désigne le leader s’il est retenu. Le lead importé est
 toutefois celui du camp actuel, avec portée et élément, même s’il a été changé.

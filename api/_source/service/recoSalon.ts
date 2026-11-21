@@ -34,8 +34,12 @@ export function messagePublication(membreId: string, miseAJour: boolean, langueS
 }
 export const descriptionPublication =(publieur: string, membreId: string) => `SW Blacksmith · ${publieur} (${membreId})`.slice(0, 1024);
 const collecteur = (): Issues => ({ errors: [], warnings: [] });
-// Une recommandation pèse quelques dizaines de Ko ; au-delà, ce n'en est pas une.
-export const TAILLE_MAX = 256 * 1024;
+// Une recommandation tirée de vidéos réunit des centaines de decks (plus d'un Mo
+// en JSON compact) ; au-delà de 3,5 Mo, ce n'en est pas une. ⚠️ La requête de
+// publication et la réponse du cache (`brut`) la portent échappée dans un JSON,
+// 12 % plus lourde : 3,5 Mo y font 3,9 Mo, sous les 4,5 Mo que Vercel accepte
+// pour une fonction. Au-dessus, Vercel répondrait lui-même 413.
+export const TAILLE_MAX = 3.5 * 1024 * 1024;
 
 // Au plus tant de fichiers téléchargés par lecture : un salon rempli de faux
 // fichiers ne fait pas télécharger tout l'historique.
@@ -44,7 +48,7 @@ const CDN_DISCORD = /^https:\/\/(cdn\.discordapp\.com|media\.discordapp\.net)\//
 
 // Les messages arrivent du plus récent au plus ancien. Les CANDIDATS à la
 // version courante : chaque message, du bot ou d'un membre, qui porte une
-// pièce jointe `.json` de 256 Ko au plus hébergée par Discord — dans l'ordre,
+// pièce jointe `.json` de 3,5 Mo au plus hébergée par Discord — dans l'ordre,
 // au plus `ESSAIS_MAX`. La version courante est le premier candidat dont le
 // contenu est une recommandation valide (`lireVersion`) : un fichier posté à
 // la main compte comme une publication de l'app
@@ -105,7 +109,8 @@ export function preparerPublication(texte: string, publieur: string, precedente:
     contributeurs,
     source,
   };
-  return { ok: true, texte: encodeRecosJson([{ ...reco, id: '', origin: 'imported' }]), reco };
+  // Compact : indenté, le fichier pèserait deux fois et demie plus lourd.
+  return { ok: true, texte: encodeRecosJson([{ ...reco, id: '', origin: 'imported' }], { compact: true }), reco };
 }
 
 export function sourceDuSalon(serveurId: string, salonId: string): string {
