@@ -31,7 +31,7 @@ Un deck sans aucun monstre connu de la box (jamais configuré, ou monstres vendu
 
 Le fichier ne nomme pas les contenus : chaque ligne de `CONTENUS_DECK` vient d'un relevé, jamais d'une
 supposition sur la taille des équipes. 1 et 22 viennent d'exports réels ; les autres ont été nommés
-par l'utilisateur d'après ses decks en jeu (2026-11-18).
+par l'utilisateur d'après ses decks en jeu (2026-11-18 et 2026-11-21).
 
 | `deck_type` | Contenu (`contenu`) | Monstres |
 | --- | --- | --- |
@@ -41,6 +41,7 @@ par l'utilisateur d'après ses decks en jeu (2026-11-18).
 | 4 | Labyrinthe, normal (`labyrinthe-normal`) | 5 |
 | 5 | Labyrinthe, sauvetage (`labyrinthe-sauvetage`) | 4 |
 | 6 | Tribunal d'ascension (`tribunal-ascension`) | 4-5 |
+| 7 | Labyrinthe, vitesse limitée (`labyrinthe-vitesse-limitee`) | 5 |
 | 8 | Labyrinthe, temps limité (`labyrinthe-temps-limite`) | 4-5 |
 | 9 | Labyrinthe, temps de pause (`labyrinthe-temps-pause`) | 5 |
 | 10 | Labyrinthe, explosion (`labyrinthe-explosion`) | 5 |
@@ -48,13 +49,18 @@ par l'utilisateur d'après ses decks en jeu (2026-11-18).
 | 12 | Tour de l'eau (`tour-eau`) | 5 |
 | 13 | Tour du feu (`tour-feu`) | 5 |
 | 14 | Tour du vent (`tour-vent`) | 5 |
+| 15 | Tour de la Lumière (`tour-lumiere`) | 1 |
+| 16 | Tour des Ténèbres (`tour-tenebres`) | 1 |
+| 17 | `autre`, à nommer ([dette](../../../05-feuille-de-route/dette.md)) | 5 |
+| 19 | Passage des dimensions, raid dimensionnel phase 1 (`raid-dimensionnel-1`) | 1 |
+| 20 | Passage des dimensions, raid dimensionnel phase 2 (`raid-dimensionnel-2`) | 1 |
+| 21 | Passage des dimensions, raid dimensionnel phase 3 (`raid-dimensionnel-3`) | 1 |
 | 22 | Siège — offense (`siege-offense`) | 3 |
 | 23 | Temple du chaos (`temple-chaos`) | 5 |
 | 24 | Donjons de Cairos (`cairos`) | 4-5 |
 | 25 | Faille des mondes, bêtes (`faille-mondes`) | 6 |
 | 26 | Passage des dimensions (`passage-dimensions`) | 4 |
 | 27 | Subjugation de monstre (`subjugation`) | 5 |
-| 7 | `autre`, à nommer ([dette](../../../05-feuille-de-route/dette.md)) | 5 |
 
 ### Sous-contenus (`SOUS_CONTENUS_DECK`)
 
@@ -63,9 +69,9 @@ Sur les contenus à sous-catégories, la catégorie de `deck_seq` désigne le do
 
 | Contenu | Catégorie → sous-contenu |
 | --- | --- |
-| `cairos` | 1 Castel du Géant (`castel-geant`), 2 Tanière du dragon (`taniere-dragon`), 6 Crypte du Jugement (`crypte-jugement`) ; 3, 4, 5 relevées, non nommées ([dette](../../../05-feuille-de-route/dette.md)) |
+| `cairos` | 1 Castel du Géant (`castel-geant`), 2 Tanière du dragon (`taniere-dragon`), 3 Nécropolis (`necropolis`), 4 Royaume spirituel (`royaume-spirituel`), 5 Forteresse d'Acier (`forteresse-acier`), 6 Crypte du Jugement (`crypte-jugement`) |
 | `faille-mondes` | 1 Bête de glace (`bete-glace`), 2 Bête enflammée (`bete-enflammee`), 3 Bête de l'orage (`bete-orage`), 4 Bête de radiance (`bete-radiance`), 5 Bête de marécage (`bete-marecage`) |
-| `passage-dimensions` | 2 Sanctuaire des fées rêveuses (`sanctuaire-fees-reveuses`), 4 Ruines de la mort silencieuse (`ruines-mort-silencieuse`), 6 Terre infernale embrasée (`terre-infernale-embrasee`) |
+| `passage-dimensions` | 1 Karzhan, Forêt des fauves rugissants (`foret-fauves-rugissants`), 2 Elunia, Sanctuaire des fées rêveuses (`sanctuaire-fees-reveuses`), 3 Lumel, Falaise des puissants hommes-bêtes (`falaise-hommes-betes`), 4 Khalderun, Ruines de la mort silencieuse (`ruines-mort-silencieuse`), 5 Sacreon, Château des héros oubliés (`chateau-heros-oublies`), 6 Inferas, Terre infernale embrasée (`terre-infernale-embrasee`) |
 | `subjugation` | 1 Eau, 2 Feu, 3 Vent, 10 Boss (`subjugation-eau` … `subjugation-boss`) |
 
 Les libellés affichés viendront du dictionnaire (`src/i18n/`), avec les noms du jeu dans chaque

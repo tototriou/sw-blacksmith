@@ -1489,11 +1489,17 @@ export type ContenuDeck =
   | 'labyrinthe-temps-limite'
   | 'labyrinthe-boss'
   | 'labyrinthe-temps-pause'
+  | 'labyrinthe-vitesse-limitee'
   | 'labyrinthe-explosion'
   | 'tribunal-ascension'
   | 'tour-eau'
   | 'tour-feu'
   | 'tour-vent'
+  | 'tour-lumiere'
+  | 'tour-tenebres'
+  | 'raid-dimensionnel-1'
+  | 'raid-dimensionnel-2'
+  | 'raid-dimensionnel-3'
   | 'siege-offense'
   | 'temple-chaos'
   | 'cairos'
@@ -1504,7 +1510,7 @@ export type ContenuDeck =
 
 // `deck_type` → contenu. Seuls les types relevés figurent ici : 1 et 22 sur
 // des exports réels, les autres nommés par l'utilisateur d'après ses decks en
-// jeu (2026-11-18). Reste à nommer : 7.
+// jeu (2026-11-18 et 2026-11-21). Reste à nommer : 17.
 export const CONTENUS_DECK: Readonly<Record<number, ContenuDeck>> = {
   [ARENA_OFFENSE_DECK_TYPE]: 'arene-offense',
   2: 'guerre-guilde-offense',
@@ -1512,6 +1518,7 @@ export const CONTENUS_DECK: Readonly<Record<number, ContenuDeck>> = {
   4: 'labyrinthe-normal',
   5: 'labyrinthe-sauvetage',
   6: 'tribunal-ascension',
+  7: 'labyrinthe-vitesse-limitee',
   8: 'labyrinthe-temps-limite',
   9: 'labyrinthe-temps-pause',
   10: 'labyrinthe-explosion',
@@ -1519,6 +1526,11 @@ export const CONTENUS_DECK: Readonly<Record<number, ContenuDeck>> = {
   12: 'tour-eau',
   13: 'tour-feu',
   14: 'tour-vent',
+  15: 'tour-lumiere',
+  16: 'tour-tenebres',
+  19: 'raid-dimensionnel-1',
+  20: 'raid-dimensionnel-2',
+  21: 'raid-dimensionnel-3',
   [SIEGE_OFFENSE_DECK_TYPE]: 'siege-offense',
   23: 'temple-chaos',
   24: 'cairos',
@@ -1537,14 +1549,20 @@ export function contenuDuDeckType(deckType: number): ContenuDeck {
 export type SousContenuDeck =
   | 'castel-geant'
   | 'taniere-dragon'
+  | 'necropolis'
+  | 'royaume-spirituel'
+  | 'forteresse-acier'
   | 'crypte-jugement'
   | 'bete-glace'
   | 'bete-enflammee'
   | 'bete-orage'
   | 'bete-radiance'
   | 'bete-marecage'
+  | 'foret-fauves-rugissants'
   | 'sanctuaire-fees-reveuses'
+  | 'falaise-hommes-betes'
   | 'ruines-mort-silencieuse'
+  | 'chateau-heros-oublies'
   | 'terre-infernale-embrasee'
   | 'subjugation-eau'
   | 'subjugation-feu'
@@ -1552,9 +1570,23 @@ export type SousContenuDeck =
   | 'subjugation-boss';
 
 export const SOUS_CONTENUS_DECK: Readonly<Partial<Record<ContenuDeck, Readonly<Record<number, SousContenuDeck>>>>> = {
-  cairos: { 1: 'castel-geant', 2: 'taniere-dragon', 6: 'crypte-jugement' },
+  cairos: {
+    1: 'castel-geant',
+    2: 'taniere-dragon',
+    3: 'necropolis',
+    4: 'royaume-spirituel',
+    5: 'forteresse-acier',
+    6: 'crypte-jugement',
+  },
   'faille-mondes': { 1: 'bete-glace', 2: 'bete-enflammee', 3: 'bete-orage', 4: 'bete-radiance', 5: 'bete-marecage' },
-  'passage-dimensions': { 2: 'sanctuaire-fees-reveuses', 4: 'ruines-mort-silencieuse', 6: 'terre-infernale-embrasee' },
+  'passage-dimensions': {
+    1: 'foret-fauves-rugissants',
+    2: 'sanctuaire-fees-reveuses',
+    3: 'falaise-hommes-betes',
+    4: 'ruines-mort-silencieuse',
+    5: 'chateau-heros-oublies',
+    6: 'terre-infernale-embrasee',
+  },
   subjugation: { 1: 'subjugation-eau', 2: 'subjugation-feu', 3: 'subjugation-vent', 10: 'subjugation-boss' },
 };
 
