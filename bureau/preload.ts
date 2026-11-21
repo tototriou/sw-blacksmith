@@ -104,6 +104,17 @@ contextBridge.exposeInMainWorld(
           ipcRenderer.removeListener('bureau:swex-sieges-changes', ecouteur);
         };
       },
+      // L'historique du compte, tiré de l'archive du plugin : la liste des
+      // états, un état, et leur changement (une connexion archivée).
+      historique: () => ipcRenderer.invoke('bureau:swex-historique'),
+      etatHistorique: (cle: string) => ipcRenderer.invoke('bureau:swex-historique-etat', cle),
+      surHistoriqueChange: (rappel: () => void) => {
+        const ecouteur = () => rappel();
+        ipcRenderer.on('bureau:swex-historique-change', ecouteur);
+        return () => {
+          ipcRenderer.removeListener('bureau:swex-historique-change', ecouteur);
+        };
+      },
     }),
     // La session en cours (voir bureau/session.ts) : son état et ses
     // changements, « Garder mes données » redit à chaque changement,

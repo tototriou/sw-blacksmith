@@ -1224,6 +1224,18 @@ export const en: Dictionnaire = {
     comptesAide2: 'A shared curve cannot appear here.',
     nomCompte: 'Name of this account',
     nomCompteAide: 'It is a label on the chart, nothing more.',
+    historique: 'History',
+    historiqueSite: 'The history is read in the desktop app, with the SW Blacksmith Live plugin.',
+    historiqueDates: 'Account states',
+    historiqueAucuneDate: 'No date',
+    historiqueChargement: 'Reading the history…',
+    historiqueIndisponible:
+      'No history: choose the summoner to follow in Settings › Application, under “SW Exporter folder”, with the SW Blacksmith Live plugin installed.',
+    historiqueVide: 'The history starts at your next login to the game with the SW Blacksmith Live plugin.',
+    historiqueAide1: 'One state per login to the game, taken from the SW Blacksmith Live plugin’s archive.',
+    historiqueAideGras: 'Efficiency and score are recomputed with today’s formula',
+    historiqueAide2: ', and the filters apply to every date the same way.',
+    historiqueIllisible: (date: string) => `The state of ${date} could not be read.`,
   },
 
   resumeRunes: {

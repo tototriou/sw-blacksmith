@@ -357,6 +357,8 @@ import testBureauSwex, { testBureauSwexDimension } from './bureau-swex.test';
 import { testPluginSwexDimension, testPluginSwexDimensionReel } from './plugin-swex-dimension.test';
 import { testBureauSwexDirect } from './bureau-swex-direct.test';
 import { testBureauSwexGuilde } from './bureau-swex-guilde.test';
+import { testBureauSwexHistorique } from './bureau-swex-historique.test';
+import { testHistoriqueRunes } from './historique-runes.test';
 import { testCourbeChoix } from './courbe-choix.test';
 import { testUiTableauTri } from './ui-tableau.test';
 import { testRenduSiegeStatistiques, testRenduSiegeStatistiquesSite, testRenduTelephoneSiegeStatistiques } from './rendu/siege-statistiques.test';
@@ -424,6 +426,7 @@ import { testRenduBureauTextes } from './rendu/bureau-textes.test';
 import { testRenduBureauCoeursRecherche } from './rendu/recherche-coeurs.test';
 import { testRenduBarreSession } from './rendu/barre-session.test';
 import { testRenduChangementCompte } from './rendu/changement-compte.test';
+import { testRenduComparaisonHistorique } from './rendu/comparaison-historique.test';
 import { testRenduIcones } from './rendu/icones.test';
 import { testRenduAttaqueConjointeEcran } from './rendu/attaque-conjointe-ecran.test';
 import { testRenduEffetsEntreCoupsEcran, testRenduEffetsEntreCoupsAnglais } from './rendu/effets-entre-coups-ecran.test';
@@ -798,6 +801,7 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testRenduBureauCoeursRecherche', testRenduBureauCoeursRecherche],
   ['testRenduBarreSession', testRenduBarreSession],
   ['testRenduChangementCompte', testRenduChangementCompte],
+  ['testRenduComparaisonHistorique', testRenduComparaisonHistorique],
   ['testRenduIcones', testRenduIcones],
   ['testRenduAttaqueConjointeEcran', testRenduAttaqueConjointeEcran],
   ['testRenduEffetsEntreCoupsEcran', testRenduEffetsEntreCoupsEcran],
@@ -1228,6 +1232,8 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testBureauSwex', testBureauSwex],
   ['testBureauSwexDirect', testBureauSwexDirect],
   ['testBureauSwexGuilde', testBureauSwexGuilde],
+  ['testBureauSwexHistorique', testBureauSwexHistorique],
+  ['testHistoriqueRunes', testHistoriqueRunes],
   ['testSiegeStatistiquesCodes', testSiegeStatistiquesCodes],
   ['testSiegeStatistiquesJournaux', testSiegeStatistiquesJournaux],
   ['testSiegeStatistiquesDebuts', testSiegeStatistiquesDebuts],
