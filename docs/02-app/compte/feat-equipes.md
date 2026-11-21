@@ -177,7 +177,10 @@ sinon « N pièces modifiées », « N pièces disparues ». Le détail marque c
   sous le nom). Les six cartes tiennent sur une rangée quand la place à droite de
   la relique le permet (1 330 px), sinon en grille de trois sur deux rangées
   (661 px, le cas d'un écran de 1 920 px) ; sans même cette place, la grille passe
-  sous l'équipement. Les
+  sous l'équipement. Toutes les fiches partagent ces colonnes (une grille commune,
+  chaque fiche en `grid-cols-subgrid`) : fiches de stats et cartes de runes
+  s'alignent d'un monstre à l'autre, l'identité prenant la largeur de la plus
+  large. Les
   onglets restent : celui de l'équipe est marqué, en choisir
   un autre referme l'équipe. Refermée, la grille revient sur l'onglet de l'équipe
   (elle a pu y être déplacée). L'écran partagé (`DeuxVolets`) reste celui de l'app,

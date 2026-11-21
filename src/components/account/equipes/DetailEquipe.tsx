@@ -73,10 +73,20 @@ export default function DetailEquipe({ equipe, brouillon = false, onChanger, mon
       </div>
       {brouillon && <p role="status" className="text-xs text-ink-dim">{d.brouillon}</p>}
       {!inventaire && equipe.monstres.length > 0 && <p className="text-xs text-ink-dim">{d.sansCompte}</p>}
-      {equipe.monstres.map((m, i) => (
-        <FicheMonstre key={m.uid} m={m} position={i} total={equipe.monstres.length} leader={equipe.leader === m.uid} retirable={retirable}
-          monstre={monstreDe(m.com2usId)} box={box} inventaire={inventaire} onChanger={onChanger} telephone={telephone} />
-      ))}
+      {/* Une grille commune à toutes les fiches, chacune en sous-grille
+          (`grid-cols-subgrid`) : identité, équipement et runes y partagent
+          leurs colonnes, si bien que les fiches de stats et les cartes de
+          runes s'alignent d'un monstre à l'autre. Le conteneur est ici, pas
+          sur la fiche : un conteneur de requête ne peut pas être une
+          sous-grille (il isole sa mise en page). */}
+      <div className="@container">
+        <div className="grid grid-cols-1 gap-x-3 gap-y-4 @4xl:grid-cols-[max-content_max-content_minmax(0,1fr)]">
+          {equipe.monstres.map((m, i) => (
+            <FicheMonstre key={m.uid} m={m} position={i} total={equipe.monstres.length} leader={equipe.leader === m.uid} retirable={retirable}
+              monstre={monstreDe(m.com2usId)} box={box} inventaire={inventaire} onChanger={onChanger} telephone={telephone} />
+          ))}
+        </div>
+      </div>
       <div>
         <Bouton trait="pointille" icone={<Plus size={14} />} libelle={d.ajouter} disabled={plein}
           title={plein ? d.complet : undefined} onClick={onAjouter} />
@@ -103,19 +113,21 @@ function FicheMonstre({ m, position, total, leader, retirable, monstre, box, inv
     m.equipement.artifacts.forEach((_a, k) => dire(d.artefact(k + 1), etats.artefacts[k]));
     if (etats.relique) dire(d.relique, etats.relique);
   }
+  // Les cartes de runes, au bureau seulement : le téléphone garde la roue.
+  const cartes = !telephone && !!m.equipement && m.equipement.runes.length > 0;
   return (
     // Une ligne par monstre : l'identité et ses réglages à gauche, puis la
-    // fiche de stats, les artéfacts, les runes et la relique. Trop étroite
-    // (téléphone, volet), l'identité passe au-dessus de l'équipement.
-    <section className="@container rounded-lg border border-border-soft bg-panel2/40 p-3" aria-label={nom}>
-      <div className="flex flex-col gap-3 @4xl:flex-row @4xl:items-center">
+    // fiche de stats, les artéfacts, la relique et les runes, chacun dans
+    // la colonne commune à toutes les fiches. Trop étroite (téléphone,
+    // volet), l'identité passe au-dessus de l'équipement.
+    <section className="grid grid-cols-1 gap-3 rounded-lg border border-border-soft bg-panel2/40 p-3 @4xl:col-span-full @4xl:grid-cols-subgrid @4xl:items-center" aria-label={nom}>
         {/* Identité au-dessus de l'équipement (fiche étroite) : les réglages
             passent sous le nom tant qu'ils le tronqueraient, sinon ils se
             glissent entre le nom et la croix. Fiche sur une ligne : une
             colonne à la largeur de son contenu (au plus 224 px), le nom
             suivi de la croix, puis « Leader » et la position l'un sous
             l'autre ; la place va à l'équipement et aux runes. */}
-        <div className="min-w-0 @4xl:w-max @4xl:max-w-56 @4xl:flex-none">
+        <div className={`min-w-0 @4xl:col-start-1 @4xl:w-max @4xl:max-w-56 ${cartes ? '@4xl:row-span-2 @[1300px]:row-span-1' : ''}`}>
           <div className="flex flex-wrap items-center gap-2 @4xl:grid @4xl:grid-cols-[auto_minmax(0,max-content)_auto]">
             <MonsterAvatar monster={monstre ?? null} fallback={nom} size={40} couronne={leader} />
             <div className="min-w-0 flex-1">
@@ -154,16 +166,17 @@ function FicheMonstre({ m, position, total, leader, retirable, monstre, box, inv
           // à droite de la relique. Téléphone : la roue, sans les cartes.
           // Les six cartes sur une rangée (6 × 215 + 5 × 8 = 1 330 px) quand
           // la place à droite de la relique le permet, sinon en grille de
-          // trois sur deux rangées (661 px) ; plus étroite encore, la grille
-          // passe sous l'équipement. La place se lit sur la bande elle-même
-          // (requête de conteneur), jamais sur une largeur supposée de la
-          // fiche de stats.
-          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-3">
-            <div className="min-w-0 max-w-full flex-none overflow-x-auto">
+          // trois sur deux rangées (661 px). Fiche sur une ligne : les runes
+          // prennent la troisième colonne dès 1 300 px (au pire 224 px
+          // d'identité et 360 d'équipement leur laissent 661 px), sinon une
+          // deuxième rangée sous l'équipement, alignée sur lui. La forme de
+          // la grille se lit sur la bande elle-même (requête de conteneur).
+          <div className="flex min-w-0 flex-wrap items-center gap-3 @4xl:contents">
+            <div className="min-w-0 max-w-full flex-none overflow-x-auto @4xl:col-start-2">
               <MonsterGear gear={m.equipement} sansRoue={!telephone} />
             </div>
-            {!telephone && m.equipement.runes.length > 0 && (
-              <div className="@container/runes min-w-0 flex-1 basis-[661px] overflow-x-auto">
+            {cartes && (
+              <div className="@container/runes min-w-0 flex-1 basis-[661px] overflow-x-auto @4xl:col-span-2 @4xl:col-start-2 @[1300px]:col-span-1 @[1300px]:col-start-3">
                 <div className="grid w-max grid-cols-[repeat(3,215px)] items-start gap-2 @[1330px]/runes:grid-cols-[repeat(6,215px)]" role="list" aria-label={d.runes}>
                   {[...m.equipement.runes].sort((a, b) => a.slot - b.slot).map((r) => (
                     <div key={r.id} role="listitem" className="grid">
@@ -175,7 +188,6 @@ function FicheMonstre({ m, position, total, leader, retirable, monstre, box, inv
             )}
           </div>
         )}
-      </div>
     </section>
   );
 }

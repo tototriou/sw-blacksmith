@@ -96,7 +96,7 @@ export function testRenduEquipesDetail() {
   egal(bouton(hAutrement, e.detail.reprendre)?.title, e.detail.reprendreAide, 'reprendre l’équipement porté, son infobulle dit ce qu’il fait');
   egal(bouton(html, e.detail.ajouter)?.desactive, false, 'ajouter un monstre');
   // Une ligne par monstre au large : l'identité, puis stats, artéfacts, runes et relique.
-  egal((html.match(/@4xl:flex-row/g) ?? []).length, EQUIPES[0].monstres.length, 'une ligne par monstre');
+  egal((html.match(/@4xl:grid-cols-subgrid/g) ?? []).length, EQUIPES[0].monstres.length, 'une ligne par monstre, sur les colonnes communes');
   // Les runes en cartes de la liste du compte, à droite de la relique : une
   // bande par monstre équipé, six cartes dans l'ordre des slots.
   const bandesRunes = (h: string) => (h.match(new RegExp(`aria-label="${e.detail.runes.replace(/'/g, '&#x27;')}"`, 'g')) ?? []).length;
