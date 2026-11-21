@@ -51,7 +51,7 @@ par l'utilisateur d'après ses decks en jeu (2026-11-18 et 2026-11-21).
 | 14 | Tour du vent (`tour-vent`) | 5 |
 | 15 | Tour de la Lumière (`tour-lumiere`) | 1 |
 | 16 | Tour des Ténèbres (`tour-tenebres`) | 1 |
-| 17 | `autre`, à nommer ([dette](../../../05-feuille-de-route/dette.md)) | 5 |
+| 17 | Tour céleste (`tour-celeste`) | 5 |
 | 19 | Passage des dimensions, raid dimensionnel phase 1 (`raid-dimensionnel-1`) | 1 |
 | 20 | Passage des dimensions, raid dimensionnel phase 2 (`raid-dimensionnel-2`) | 1 |
 | 21 | Passage des dimensions, raid dimensionnel phase 3 (`raid-dimensionnel-3`) | 1 |

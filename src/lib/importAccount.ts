@@ -1497,6 +1497,7 @@ export type ContenuDeck =
   | 'tour-vent'
   | 'tour-lumiere'
   | 'tour-tenebres'
+  | 'tour-celeste'
   | 'raid-dimensionnel-1'
   | 'raid-dimensionnel-2'
   | 'raid-dimensionnel-3'
@@ -1510,7 +1511,7 @@ export type ContenuDeck =
 
 // `deck_type` → contenu. Seuls les types relevés figurent ici : 1 et 22 sur
 // des exports réels, les autres nommés par l'utilisateur d'après ses decks en
-// jeu (2026-11-18 et 2026-11-21). Reste à nommer : 17.
+// jeu (2026-11-18 et 2026-11-21).
 export const CONTENUS_DECK: Readonly<Record<number, ContenuDeck>> = {
   [ARENA_OFFENSE_DECK_TYPE]: 'arene-offense',
   2: 'guerre-guilde-offense',
@@ -1528,6 +1529,7 @@ export const CONTENUS_DECK: Readonly<Record<number, ContenuDeck>> = {
   14: 'tour-vent',
   15: 'tour-lumiere',
   16: 'tour-tenebres',
+  17: 'tour-celeste',
   19: 'raid-dimensionnel-1',
   20: 'raid-dimensionnel-2',
   21: 'raid-dimensionnel-3',
