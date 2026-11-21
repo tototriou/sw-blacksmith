@@ -15,7 +15,7 @@
 - **La version courante est le plus récent fichier valide du salon**, parmi les 100 derniers
   messages, qu'il ait été posté par le bot ou déposé à la main par un membre (un export de
   l'app) ; l'app ne montre que celle-là. Un fichier compte s'il est une pièce jointe `.json` de
-  256 Ko au plus hébergée par Discord, au format SW Blacksmith, qui passe le validateur de
+  4 Mo au plus hébergée par Discord, au format SW Blacksmith, qui passe le validateur de
   l'import et contient exactement une recommandation ; sinon il est ignoré, et au plus cinq
   fichiers sont essayés par lecture. Un fichier déposé à la main garde l'auteur et les
   contributeurs qu'il indique. Au-delà de 100 messages écrits depuis le dernier fichier valide,
@@ -55,6 +55,10 @@
 - **Le deck entier est le grain du choix** : deux versions d'un même deck se comparent côte à côte,
   au téléphone comme à l'ordinateur.
 - **Les droits de Discord suffisent** : une guilde règle déjà qui écrit dans quel salon.
+- **4 Mo, et non plus 256 Ko** (21/11/2026) : une recommandation tirée de vidéos YouTube réunit
+  des centaines de decks ; toutes les chaînes ensemble font 1,2 Mo en JSON compact (3 Mo
+  indenté), et la plupart des chaînes seules dépassaient 256 Ko. Le fichier publié est compact.
+  La borne reste sous les 4,5 Mo qu'une fonction Vercel accepte pour la requête de publication.
 
 ## Options écartées
 

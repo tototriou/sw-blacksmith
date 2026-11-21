@@ -167,13 +167,14 @@ export function useDiscord(recos: UseRecoState, recupererInjecte?: Recuperer): U
     if (type === 'non-connecte') finDeSession(t.notif.expiree);
     else if (type === 'refuse') notifier({ message: t.notif.refusee });
     else if (type === 'invalide') notifier({ message: t.notif.invalide });
+    else if (type === 'trop-gros') notifier({ message: t.notif.tropGros });
     else if (type === 'indisponible') notifier({ message: t.notif.indisponible });
   }, [finDeSession, notifier, t]);
 
   const publier = useCallback(async (reco: Reco) => {
     const lien = reco.lien;
     if (!lien) return 'refuse' as const;
-    const r = await publierService(recuperer, lien.salonId, lien.base.messageId, encodeRecosJson([reco]));
+    const r = await publierService(recuperer, lien.salonId, lien.base.messageId, encodeRecosJson([reco], { compact: true }));
     if (r.type === 'publie') {
       recos.apresPublicationDiscord(reco.id, r.version);
       notifier({ message: t.notif.publiee(lien.nomSalon) });
@@ -185,7 +186,7 @@ export function useDiscord(recos: UseRecoState, recupererInjecte?: Recuperer): U
   }, [recuperer, recos, notifier, issue, t]);
 
   const publierDans = useCallback(async (reco: Reco, salon: SalonDePublication, base: string | null) => {
-    const r = await publierService(recuperer, salon.salonId, base, encodeRecosJson([reco]));
+    const r = await publierService(recuperer, salon.salonId, base, encodeRecosJson([reco], { compact: true }));
     if (r.type === 'publie') {
       // La version publiée devient tout de suite la recommandation liée du
       // salon, sans attendre une relecture (que le cache de 15 s du service

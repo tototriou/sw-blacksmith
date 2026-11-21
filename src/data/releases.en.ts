@@ -46,6 +46,7 @@ export const RELEASES_EN: Release[] = [
       { kind: 'fix', scope: 'Application', text: 'Without kept data, the followed summoner reloads in full at launch, RTA prep and siege included.' },
       { kind: 'docs', scope: 'Discord', text: 'A Discord bot page: installation, recommendations and commands, with screenshots.' },
       { kind: 'fix', scope: 'Discord', text: 'The invited bot arrives with its commands, /speedtune included.' },
+      { kind: 'fix', scope: 'Recommendations', text: 'A recommendation with hundreds of decks publishes to Discord, up to 4 MB; when too large, the page says so.' },
       { kind: 'fix', scope: 'My account', text: 'On the rune curve, the chosen rune stays chosen when you upgrade it.' },
     ],
   },
