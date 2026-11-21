@@ -24,6 +24,43 @@ Les commentaires ne portent plus aucun « lot N » ni numéro de décision (2026
 une décision qui a son ADR y est citée par son chemin. Le récit sans numéro (« le mainteneur a
 demandé… », « depuis le rebranding ») ne se compte pas : il se relève à la relecture.
 
+## Recommandations volumineuses
+
+Une recommandation tirée de vidéos YouTube réunit des centaines de decks : celle de toutes les
+chaînes suivies fait 1,24 Mo en JSON compact (721 decks), les neuf chaînes seules 1,39 Mo à elles
+toutes (2026-11-21). La publication Discord l'accepte jusqu'à 4 Mo
+([service-discord.md](../02-app/siege/feat-recommandations/service-discord.md), « Publier »),
+mais plusieurs chemins plafonnent plus bas, ou d'un autre côté. Aucun n'est atteint aujourd'hui.
+
+| Dette | Mesure | Comment la retrouver | Depuis |
+| --- | --- | --- | --- |
+| **La lecture de tous les salons tient en une réponse.** La route `tout` rend la recommandation de chaque salon que le membre lit, tous serveurs confondus, et Vercel refuse une réponse de plus de 4,5 Mo. Au-delà, la synchronisation échoue en entier pour ce membre, à chaque ouverture (« Discord ne répond pas »), tant qu'aucune recommandation ne maigrit | toutes les sorties YouTube dans des salons qu'un même membre lit : 2,6 Mo compact (2026-11-21) | `api/_source/service/routeur.ts`, route `GET tout` | 2026-11-21 |
+| **Le cache des salons emballe le fichier dans du JSON.** La route interne `brut` (cache de 15 s du CDN) rend le texte du fichier échappé dans une réponse JSON, soumise aux mêmes 4,5 Mo : l'échappement ajoute 12 %. Une recommandation de plus de 3,9 Mo environ ne passe plus par le cache, chaque lecture va chez Discord (environ 5 lectures par seconde et par salon), et un soir de siège la guilde tombe sur « Discord limite les lectures » | +11 à +13 % d'échappement sur les dix sorties YouTube (2026-11-21) | `routeur.ts`, `lireEnCache` et route `GET brut` | 2026-11-21 |
+| **La borne annoncée n'est pas tout à fait atteignable.** La requête de publication porte le fichier échappé dans un JSON (+12 %) : vers 3,9 Mo, c'est Vercel qui répond 413, avant le service. La page le dit bien « trop lourde », mais « 4 Mo au plus » promet un peu trop | 4 Mo × 1,12 ≈ 4,7 Mo > 4,5 Mo | `src/lib/discordClient.ts`, `publier` ; `recoSalon.ts`, `TAILLE_MAX` | 2026-11-21 |
+| **Les recommandations se gardent dans `localStorage`**, d'environ 5 Mo par site selon le navigateur, avec le reste de l'app (prépa RTA, Optimizer…). Un dépassement est avalé sans rien dire par `saveLocal` : les recommandations valent pour la session et disparaissent au prochain lancement, sans avertissement | toutes les sorties YouTube importées : environ 2,6 Mo à elles seules (2026-11-21) | `src/hooks/useSiegeRecos.ts`, `saveLocal` de `src/hooks/usePersistence.ts` | 2026-11-21 |
+
+Pistes envisagées, de la plus simple à la plus lourde :
+
+- **Abaisser la borne à 3,5 Mo** : « au plus » redevient vrai, cache compris. Une constante, ses
+  tests et la phrase affichée ; ne règle ni `tout` ni le stockage.
+- **Envoyer et servir le fichier tel quel** : la publication passe le salon et la base dans
+  l'adresse et le fichier en corps brut, `brut` rend le fichier sans l'emballer. Les 12 %
+  d'échappement disparaissent, la borne de 4 Mo devient atteignable.
+- **Ne rendre que les versions dans `tout`** : l'identifiant et la date de chaque salon, puis les
+  seuls contenus qui ont changé, par une route qui en lit plusieurs avec une seule vérification
+  des droits et un volume borné par appel (un appel par salon relirait serveur et membre chez
+  Discord, dont les quotas sont serrés). Pour le joueur : rien ne change quand rien n'a changé ;
+  à la première connexion ou après des publications, un temps de chargement de plus, et un salon
+  dont le contenu échoue garde son ancienne version au lieu de faire échouer tout. Environ une
+  demi-journée : service, synchronisation en deux temps, échecs partiels, tests.
+- **Compresser le transport** (gzip, puis base64 : +33 %, mais un JSON de recommandations se
+  compresse d'environ dix fois) pour la publication et `tout`. Le fichier posté dans Discord
+  reste un JSON lisible, pour qu'un membre puisse en déposer un à la main.
+- **Garder les recommandations en IndexedDB**, comme le compte importé, ou au moins dire quand
+  `localStorage` refuse d'écrire.
+- **Côté usage** : découper une très grosse recommandation en plusieurs salons (un par chaîne, ou
+  par période), chacun sous les plafonds.
+
 ## Vocabulaire
 
 Le [glossaire](../01-presentation/04-glossaire.md) fixe les mots ; le dépôt et l'app ne le suivent

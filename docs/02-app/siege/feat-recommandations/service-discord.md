@@ -82,6 +82,8 @@ puis les exceptions du salon (`@everyone`, rôles, membre).
    un JSON, doit rester sous les 4,5 Mo qu'une fonction Vercel accepte ; au-delà,
    Vercel répond lui-même 413, lu de la même façon. Une recommandation tirée de
    vidéos YouTube (toutes les chaînes réunies : plus de 700 decks) fait 1,2 Mo.
+   Les plafonds qui restent plus bas (lecture de tous les salons, cache, stockage) :
+   [dette.md](../../../05-feuille-de-route/dette.md), « Recommandations volumineuses ».
 5. Le service écrit l'**auteur** (celui de la version précédente, sinon le
    publieur), les **contributeurs** (ceux de la version précédente, plus le
    publieur s'il n'y est pas) et la **source** `discord:<serveur>:<salon>`.
