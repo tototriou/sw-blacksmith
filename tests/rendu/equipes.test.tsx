@@ -102,6 +102,7 @@ export function testRenduEquipesDetail() {
   const bandesRunes = (h: string) => (h.match(new RegExp(`aria-label="${e.detail.runes.replace(/'/g, '&#x27;')}"`, 'g')) ?? []).length;
   egal(bandesRunes(html), 1, 'une bande de runes pour le seul monstre équipé');
   egal((html.match(/role="listitem"/g) ?? []).length, 6, 'ses six runes en cartes');
+  ok(!html.includes('rune-wheel.png'), 'sans roue de runes : les cartes la remplacent');
   const melange = { ...EQUIPES[0], monstres: [{ ...EQUIPES[0].monstres[0], equipement: { ...eq1, runes: [...eq1.runes].reverse() } }, EQUIPES[0].monstres[1]] };
   const hMelange = rendre(<DetailEquipe equipe={melange} onChanger={() => {}} monstreDe={(c) => MONSTRES.find((m) => m.com2usId === c)}
     box={ctx().box} inventaire={INVENTAIRE} onAjouter={() => {}} />);

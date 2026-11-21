@@ -94,15 +94,16 @@ function FicheMonstre({ m, position, total, leader, retirable, monstre, box, inv
     // Une ligne par monstre : l'identité et ses réglages à gauche, puis la
     // fiche de stats, les artéfacts, les runes et la relique. Trop étroite
     // (téléphone, volet), l'identité passe au-dessus de l'équipement.
-    <section className="@container/fiche rounded-lg border border-border-soft bg-panel2/40 p-3" aria-label={nom}>
+    <section className="@container rounded-lg border border-border-soft bg-panel2/40 p-3" aria-label={nom}>
       <div className="flex flex-col gap-3 @4xl:flex-row @4xl:items-center">
-        {/* ⚠️ Son propre conteneur : dans la colonne de gauche, les réglages
-            passent sous le nom ; sur une ligne, ils tronquaient le nom et
-            rejetaient la croix seule à la ligne. Quand la fiche tient sur une
-            ligne, la position passe sous « Leader » : la colonne s'en trouve
-            plus étroite, et la place va à l'équipement et aux runes. */}
-        <div className="@container min-w-0 @4xl:w-56 @4xl:flex-none">
-          <div className="flex flex-wrap items-center gap-2">
+        {/* Identité au-dessus de l'équipement (fiche étroite) : les réglages
+            passent sous le nom tant qu'ils le tronqueraient, sinon ils se
+            glissent entre le nom et la croix. Fiche sur une ligne : une
+            colonne à la largeur de son contenu (au plus 224 px), le nom
+            suivi de la croix, puis « Leader » et la position l'un sous
+            l'autre ; la place va à l'équipement et aux runes. */}
+        <div className="min-w-0 @4xl:w-max @4xl:max-w-56 @4xl:flex-none">
+          <div className="flex flex-wrap items-center gap-2 @4xl:grid @4xl:grid-cols-[auto_minmax(0,max-content)_auto]">
             <MonsterAvatar monster={monstre ?? null} fallback={nom} size={40} couronne={leader} />
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-semibold text-ink">{nom}</p>
@@ -110,7 +111,7 @@ function FicheMonstre({ m, position, total, leader, retirable, monstre, box, inv
                 {d.provenance[m.provenance]}{exemplaire ? ` · ${d.exemplaire[exemplaire]}` : ''}
               </p>
             </div>
-            <div className="order-1 flex basis-full items-center gap-2 @lg:order-none @lg:basis-auto @4xl/fiche:flex-col @4xl/fiche:items-start">
+            <div className="order-1 flex basis-full items-center gap-2 @lg:order-none @lg:basis-auto @4xl:order-1 @4xl:col-span-3 @4xl:flex-col @4xl:items-start">
               <Bouton taille="sm" actif={leader} icone={<Crown size={14} />} libelle={leader ? d.leader : d.designerLeader}
                 title={leader ? d.retirerLeader : d.designerLeader}
                 onClick={() => onChanger((e, n) => designerLeader(e, leader ? null : m.uid, n))} />
@@ -131,16 +132,19 @@ function FicheMonstre({ m, position, total, leader, retirable, monstre, box, inv
                 onClick={() => onChanger((e, n) => remplacerEquipement(e, m.uid, actuel.gear!, 'porte', n))} />
             </div>
           )}
-          {ecarts.length > 0 && <p className="mt-2 text-xs text-warn">{ecarts.join(' · ')}</p>}
+          {/* `w-0 min-w-full` : le texte suit la largeur de la colonne sans la
+              dicter. */}
+          {ecarts.length > 0 && <p className="mt-2 w-0 min-w-full text-xs text-warn">{ecarts.join(' · ')}</p>}
         </div>
         {m.equipement && (
-          // L'équipement, puis ses runes en cartes, à droite de la relique.
+          // L'équipement (sans la roue : ses runes sont là en cartes), puis
+          // les cartes de runes, à droite de la relique.
           // Les runes passent dessous seulement quand la place de deux
           // cartes (2 × 215 + 8) manque ; sinon leur bande défile de côté,
           // sans jamais pousser la ligne au-delà de la fiche.
           <div className="flex min-w-0 flex-1 flex-wrap items-center gap-3">
             <div className="min-w-0 max-w-full flex-none overflow-x-auto">
-              <MonsterGear gear={m.equipement} />
+              <MonsterGear gear={m.equipement} sansRoue />
             </div>
             {m.equipement.runes.length > 0 && (
               <div className="flex min-w-0 flex-1 basis-[438px] items-start gap-2 overflow-x-auto" role="list" aria-label={d.runes}>
