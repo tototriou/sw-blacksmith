@@ -136,6 +136,11 @@ gemmes) :
 - ⚠️ **une reconnexion sans rien de changé n'ajoute rien** : l'empreinte de
   l'état, heure exclue, est celle du dernier bloc.
 
+**L'app de bureau en tire l'historique des runes** (lu sans rien écrire,
+`bureau/swexHistorique.ts`) : la liste des états vient des seuls en-têtes,
+un état ne se décompresse que demandé. Mon compte › Runes › Comparaison ›
+Historique les trace : [comparaison.md](../compte/feat-runes/comparaison.md).
+
 ### L'archive — `plugin-swex/source/archive.ts`
 
 Un fichier, fait de **blocs gzip ajoutés à la suite**, un par session. Le
