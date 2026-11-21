@@ -94,12 +94,14 @@ function FicheMonstre({ m, position, total, leader, retirable, monstre, box, inv
     // Une ligne par monstre : l'identité et ses réglages à gauche, puis la
     // fiche de stats, les artéfacts, les runes et la relique. Trop étroite
     // (téléphone, volet), l'identité passe au-dessus de l'équipement.
-    <section className="@container rounded-lg border border-border-soft bg-panel2/40 p-3" aria-label={nom}>
+    <section className="@container/fiche rounded-lg border border-border-soft bg-panel2/40 p-3" aria-label={nom}>
       <div className="flex flex-col gap-3 @4xl:flex-row @4xl:items-center">
         {/* ⚠️ Son propre conteneur : dans la colonne de gauche, les réglages
             passent sous le nom ; sur une ligne, ils tronquaient le nom et
-            rejetaient la croix seule à la ligne. */}
-        <div className="@container min-w-0 @4xl:w-72 @4xl:flex-none">
+            rejetaient la croix seule à la ligne. Quand la fiche tient sur une
+            ligne, la position passe sous « Leader » : la colonne s'en trouve
+            plus étroite, et la place va à l'équipement et aux runes. */}
+        <div className="@container min-w-0 @4xl:w-56 @4xl:flex-none">
           <div className="flex flex-wrap items-center gap-2">
             <MonsterAvatar monster={monstre ?? null} fallback={nom} size={40} couronne={leader} />
             <div className="min-w-0 flex-1">
@@ -108,7 +110,7 @@ function FicheMonstre({ m, position, total, leader, retirable, monstre, box, inv
                 {d.provenance[m.provenance]}{exemplaire ? ` · ${d.exemplaire[exemplaire]}` : ''}
               </p>
             </div>
-            <div className="order-1 flex basis-full items-center gap-2 @lg:order-none @lg:basis-auto">
+            <div className="order-1 flex basis-full items-center gap-2 @lg:order-none @lg:basis-auto @4xl/fiche:flex-col @4xl/fiche:items-start">
               <Bouton taille="sm" actif={leader} icone={<Crown size={14} />} libelle={leader ? d.leader : d.designerLeader}
                 title={leader ? d.retirerLeader : d.designerLeader}
                 onClick={() => onChanger((e, n) => designerLeader(e, leader ? null : m.uid, n))} />

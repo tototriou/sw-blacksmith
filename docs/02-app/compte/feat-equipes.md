@@ -165,8 +165,9 @@ sinon « N pièces modifiées », « N pièces disparues ». Le détail marque c
   la barre de recherche et de la grille, sans modale : en tête, « Toutes les
   équipes » (retour à la grille), le nom et le menu d'actions de la carte (sans
   « Ouvrir ») ; puis le nom et la note éditables, et **une ligne par monstre** :
-  à gauche son identité (avatar, provenance, leader, position, retrait, reprise de
-  l'équipement, état de chaque pièce qui n'est pas identique), à droite son
+  à gauche son identité (avatar, provenance, leader et, dessous, la position,
+  retrait, reprise de l'équipement, état de chaque pièce qui n'est pas identique),
+  dans une colonne étroite, à droite son
   équipement enregistré par `MonsterGear` (fiche de stats, artéfacts, roue de
   runes, relique), puis, à droite de la relique, ses runes en cartes : la carte de
   la liste du compte (`CarteRune`, même bascule détail ↔ total au clic), dans
