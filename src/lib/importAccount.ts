@@ -1454,3 +1454,194 @@ export function parseArenaOffense(src: AccountSource, t: Dictionnaire): SiegePar
   const decks = buildSiegeDecks(defs, indexRunes(data), indexUnits(data), indexArtifacts(data), indexRuneMarkers(data), SLOTS_ARENE);
   return decks.length ? { decks } : { decks: [], error: e.offenseAreneVide };
 }
+
+/* --------------------------------------------------------------------------
+ * Import de TOUS LES DECKS ENREGISTRÉS (`deck_list`), contenu par contenu
+ *
+ * Le jeu enregistre dans `deck_list` les équipes de chaque contenu : arène,
+ * siège, guerre de guilde, donjons, ToA, labyrinthe… Un deck porte son
+ * contenu (`deck_type`), son numéro (`deck_seq`), son leader et le preset de
+ * runes et d'artéfacts de chaque monstre (`equip`, parfois absent : le
+ * monstre combat alors avec ce qu'il porte).
+ *
+ * ⚠️ Le fichier ne NOMME pas les contenus : la table `CONTENUS_DECK` vient de
+ * relevés. Un `deck_type` absent de la table n'est jamais écarté : il sort en
+ * `autre`, avec son numéro, pour que l'écran le montre tel quel.
+ *
+ * ⚠️ `unit_id_list` a TOUJOURS 8 cases, 0 pour une case vide (relevé sur deux
+ * exports réels, 131 et 133 decks). Les monstres d'un raid y sont placés sur
+ * la grille du combat (cases 1, 2, 4, 5, 6, 7) : on ne garde que l'ordre,
+ * leader en tête, comme pour les autres decks.
+ *
+ * ⚠️ Sur certains contenus, `deck_seq` vaut `catégorie × 100 + emplacement`
+ * (101, 201, 202…, 1001) : relevé sur les `deck_type` 24 à 27 de deux
+ * exports. `categorie` le décompose ; elle est null sous 100.
+ * ----------------------------------------------------------------------- */
+
+// Les contenus identifiés. La clé d'un contenu est stable (elle part dans les
+// imports de l'écran) ; son libellé vit dans le dictionnaire.
+export type ContenuDeck =
+  | 'arene-offense'
+  | 'guerre-guilde-offense'
+  | 'raid-mondes'
+  | 'labyrinthe-normal'
+  | 'labyrinthe-sauvetage'
+  | 'labyrinthe-temps-limite'
+  | 'labyrinthe-boss'
+  | 'labyrinthe-temps-pause'
+  | 'labyrinthe-vitesse-limitee'
+  | 'labyrinthe-explosion'
+  | 'tribunal-ascension'
+  | 'tour-eau'
+  | 'tour-feu'
+  | 'tour-vent'
+  | 'tour-lumiere'
+  | 'tour-tenebres'
+  | 'tour-celeste'
+  | 'raid-dimensionnel-1'
+  | 'raid-dimensionnel-2'
+  | 'raid-dimensionnel-3'
+  | 'siege-offense'
+  | 'temple-chaos'
+  | 'cairos'
+  | 'faille-mondes'
+  | 'passage-dimensions'
+  | 'subjugation'
+  | 'autre';
+
+// `deck_type` → contenu. Seuls les types relevés figurent ici : 1 et 22 sur
+// des exports réels, les autres nommés par l'utilisateur d'après ses decks en
+// jeu (2026-11-18 et 2026-11-21).
+export const CONTENUS_DECK: Readonly<Record<number, ContenuDeck>> = {
+  [ARENA_OFFENSE_DECK_TYPE]: 'arene-offense',
+  2: 'guerre-guilde-offense',
+  3: 'raid-mondes',
+  4: 'labyrinthe-normal',
+  5: 'labyrinthe-sauvetage',
+  6: 'tribunal-ascension',
+  7: 'labyrinthe-vitesse-limitee',
+  8: 'labyrinthe-temps-limite',
+  9: 'labyrinthe-temps-pause',
+  10: 'labyrinthe-explosion',
+  11: 'labyrinthe-boss',
+  12: 'tour-eau',
+  13: 'tour-feu',
+  14: 'tour-vent',
+  15: 'tour-lumiere',
+  16: 'tour-tenebres',
+  17: 'tour-celeste',
+  19: 'raid-dimensionnel-1',
+  20: 'raid-dimensionnel-2',
+  21: 'raid-dimensionnel-3',
+  [SIEGE_OFFENSE_DECK_TYPE]: 'siege-offense',
+  23: 'temple-chaos',
+  24: 'cairos',
+  25: 'faille-mondes',
+  26: 'passage-dimensions',
+  27: 'subjugation',
+};
+
+export function contenuDuDeckType(deckType: number): ContenuDeck {
+  return CONTENUS_DECK[deckType] ?? 'autre';
+}
+
+// Les contenus à sous-catégories : la catégorie de `deck_seq` (centaines)
+// désigne un donjon ou une variante. Nommées par l'utilisateur ; une catégorie
+// absente de la table sort en null, avec son numéro dans `categorie`.
+export type SousContenuDeck =
+  | 'castel-geant'
+  | 'taniere-dragon'
+  | 'necropolis'
+  | 'royaume-spirituel'
+  | 'forteresse-acier'
+  | 'crypte-jugement'
+  | 'bete-glace'
+  | 'bete-enflammee'
+  | 'bete-orage'
+  | 'bete-radiance'
+  | 'bete-marecage'
+  | 'foret-fauves-rugissants'
+  | 'sanctuaire-fees-reveuses'
+  | 'falaise-hommes-betes'
+  | 'ruines-mort-silencieuse'
+  | 'chateau-heros-oublies'
+  | 'terre-infernale-embrasee'
+  | 'subjugation-eau'
+  | 'subjugation-feu'
+  | 'subjugation-vent'
+  | 'subjugation-boss';
+
+export const SOUS_CONTENUS_DECK: Readonly<Partial<Record<ContenuDeck, Readonly<Record<number, SousContenuDeck>>>>> = {
+  cairos: {
+    1: 'castel-geant',
+    2: 'taniere-dragon',
+    3: 'necropolis',
+    4: 'royaume-spirituel',
+    5: 'forteresse-acier',
+    6: 'crypte-jugement',
+  },
+  'faille-mondes': { 1: 'bete-glace', 2: 'bete-enflammee', 3: 'bete-orage', 4: 'bete-radiance', 5: 'bete-marecage' },
+  'passage-dimensions': {
+    1: 'foret-fauves-rugissants',
+    2: 'sanctuaire-fees-reveuses',
+    3: 'falaise-hommes-betes',
+    4: 'ruines-mort-silencieuse',
+    5: 'chateau-heros-oublies',
+    6: 'terre-infernale-embrasee',
+  },
+  subjugation: { 1: 'subjugation-eau', 2: 'subjugation-feu', 3: 'subjugation-vent', 10: 'subjugation-boss' },
+};
+
+export function sousContenuDuDeck(contenu: ContenuDeck, categorie: number | null): SousContenuDeck | null {
+  return categorie === null ? null : (SOUS_CONTENUS_DECK[contenu]?.[categorie] ?? null);
+}
+
+// `deck_seq` → catégorie et emplacement, quand le numéro est en centaines.
+export function decomposerDeckSeq(seq: number): { categorie: number | null; emplacement: number } {
+  if (!Number.isInteger(seq) || seq < 100) return { categorie: null, emplacement: seq };
+  return { categorie: Math.floor(seq / 100), emplacement: seq % 100 };
+}
+
+export interface DeckEnregistreImporte extends SiegeImportedDeck {
+  deckType: number;
+  contenu: ContenuDeck;
+  sousContenu: SousContenuDeck | null;
+  categorie: number | null;
+  emplacement: number;
+}
+
+// Le plus grand deck enregistré : 6 monstres (raid, faille).
+const SLOTS_DECK_MAX = 6;
+
+// Tous les decks enregistrés, dans l'ordre du fichier. Un deck sans aucun
+// monstre connu de la box est écarté (jamais configuré, ou monstres vendus).
+// Chaque deck a autant de places que de monstres, leader en tête.
+export function parseDecksEnregistres(src: AccountSource): DeckEnregistreImporte[] {
+  const data = parseAccountSource(src);
+  if (!data || !Array.isArray(data?.unit_list) || !Array.isArray(data?.deck_list)) return [];
+  const runeById = indexRunes(data);
+  const unitById = indexUnits(data);
+  const artById = indexArtifacts(data);
+  const markers = indexRuneMarkers(data);
+  const out: DeckEnregistreImporte[] = [];
+  data.deck_list.forEach((dk: any, i: number) => {
+    const deckType = Number(dk?.deck_type);
+    if (!Number.isFinite(deckType)) return;
+    const brut = deckEnregistre(dk, i, SLOTS_DECK_MAX);
+    const places = brut.unitIds.filter((id) => Number(id) !== 0).length;
+    const [deck] = buildSiegeDecks(
+      [{ ...brut, unitIds: brut.unitIds.slice(0, places) }],
+      runeById,
+      unitById,
+      artById,
+      markers,
+      places
+    );
+    if (!deck) return;
+    const seq = Number(dk?.deck_seq);
+    const contenu = contenuDuDeckType(deckType);
+    const numero = decomposerDeckSeq(Number.isFinite(seq) ? seq : i);
+    out.push({ ...deck, deckType, contenu, sousContenu: sousContenuDuDeck(contenu, numero.categorie), ...numero });
+  });
+  return out;
+}

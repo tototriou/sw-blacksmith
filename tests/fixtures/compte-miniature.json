@@ -237,7 +237,15 @@
       ]
     },
     { "deck_seq": 8, "deck_type": 1, "leader_unit_id": 101, "unit_id_list": [101] },
-    { "deck_seq": 9, "deck_type": 3, "leader_unit_id": 102, "unit_id_list": [102] }
+    { "deck_seq": 9, "deck_type": 3, "leader_unit_id": 102, "unit_id_list": [102] },
+    {
+      "deck_seq": 201,
+      "deck_type": 24,
+      "leader_unit_id": 102,
+      "unit_id_list": [0, 101, 0, 102, 0, 0, 0, 0],
+      "equip": [{ "unit_id": 101, "rune_id_list": [1004], "artifact_id_list": [] }]
+    },
+    { "deck_seq": 3, "deck_type": 6, "leader_unit_id": 0, "unit_id_list": [0, 0, 0, 0, 0, 0, 0, 0] }
   ],
 
   "defense_deck_info": { "unit_id_list": [102], "equip": [] },
