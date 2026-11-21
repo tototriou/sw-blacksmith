@@ -5,6 +5,8 @@ import type { BoxItem } from '../../../lib/applyAccount';
 import { Bouton, BoutonIcone, Champ, Selecteur } from '../../../ui';
 import MonsterAvatar from '../../MonsterAvatar';
 import MonsterGear from '../../MonsterGear';
+import { CarteRune } from '../RunesList';
+import { useMediaQuery, SOUS_LG } from '../../../hooks/useMediaQuery';
 import { useTraduction } from '../../../hooks/useLangue';
 import {
   MONSTRES_MAX_EQUIPE, MONSTRES_MIN_EQUIPE, deplacerMonstre, designerLeader, etatExemplaire, etatsEquipement, modifierTextes,
@@ -45,6 +47,8 @@ export default function DetailEquipe({ equipe, brouillon = false, onChanger, mon
   const plein = equipe.monstres.length >= MONSTRES_MAX_EQUIPE;
   // Enregistrée, une équipe garde deux monstres : le retrait du deuxième est refusé.
   const retirable = brouillon || equipe.monstres.length > MONSTRES_MIN_EQUIPE;
+  // Lu une fois pour toutes les cartes de runes, comme la liste du compte.
+  const etroit = useMediaQuery(SOUS_LG);
   // Une grille, pas une colonne flex : dans le panneau du téléphone, une
   // colonne flex aligne ses enfants à gauche (index.css, `[data-tiroir]`) et
   // les fiches se rétrécissaient sur leur contenu.
@@ -58,7 +62,7 @@ export default function DetailEquipe({ equipe, brouillon = false, onChanger, mon
       {!inventaire && equipe.monstres.length > 0 && <p className="text-xs text-ink-dim">{d.sansCompte}</p>}
       {equipe.monstres.map((m, i) => (
         <FicheMonstre key={m.uid} m={m} position={i} total={equipe.monstres.length} leader={equipe.leader === m.uid} retirable={retirable}
-          monstre={monstreDe(m.com2usId)} box={box} inventaire={inventaire} onChanger={onChanger} />
+          monstre={monstreDe(m.com2usId)} box={box} inventaire={inventaire} onChanger={onChanger} etroit={etroit} />
       ))}
       <div>
         <Bouton trait="pointille" icone={<Plus size={14} />} libelle={d.ajouter} disabled={plein}
@@ -68,10 +72,10 @@ export default function DetailEquipe({ equipe, brouillon = false, onChanger, mon
   );
 }
 
-function FicheMonstre({ m, position, total, leader, retirable, monstre, box, inventaire, onChanger }: {
+function FicheMonstre({ m, position, total, leader, retirable, monstre, box, inventaire, onChanger, etroit }: {
   m: MonstreEnregistre; position: number; total: number; leader: boolean; retirable: boolean; monstre: Monster | undefined;
   box: readonly BoxItem[]; inventaire: InventaireCompte | null;
-  onChanger: Props['onChanger'];
+  onChanger: Props['onChanger']; etroit: boolean;
 }) {
   const t = useTraduction();
   const d = t.equipes.detail;
@@ -128,8 +132,23 @@ function FicheMonstre({ m, position, total, leader, retirable, monstre, box, inv
           {ecarts.length > 0 && <p className="mt-2 text-xs text-warn">{ecarts.join(' · ')}</p>}
         </div>
         {m.equipement && (
-          <div className="min-w-0 flex-1 overflow-x-auto">
-            <MonsterGear gear={m.equipement} />
+          // L'équipement, puis ses runes en cartes, à droite de la relique.
+          // Les runes passent dessous seulement quand la place de deux
+          // cartes (2 × 215 + 8) manque ; sinon leur bande défile de côté,
+          // sans jamais pousser la ligne au-delà de la fiche.
+          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-3">
+            <div className="min-w-0 max-w-full flex-none overflow-x-auto">
+              <MonsterGear gear={m.equipement} />
+            </div>
+            {m.equipement.runes.length > 0 && (
+              <div className="flex min-w-0 flex-1 basis-[438px] items-start gap-2 overflow-x-auto" role="list" aria-label={d.runes}>
+                {[...m.equipement.runes].sort((a, b) => a.slot - b.slot).map((r) => (
+                  <div key={r.id} role="listitem" className={`grid flex-none ${etroit ? 'w-[175px]' : 'w-[215px]'}`}>
+                    <CarteRune rune={r} etroit={etroit} />
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>

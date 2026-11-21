@@ -1123,6 +1123,7 @@ export const en: Dictionnaire = {
       rune: (slot: number) => `Rune ${slot}`,
       artefact: (n: number) => `Artifact ${n}`,
       relique: 'Relic',
+      runes: 'Equipment runes',
       sansCompte: 'Import your account to compare this equipment with yours.',
     },
     ajout: {

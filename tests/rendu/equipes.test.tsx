@@ -97,6 +97,18 @@ export function testRenduEquipesDetail() {
   egal(bouton(html, e.detail.ajouter)?.desactive, false, 'ajouter un monstre');
   // Une ligne par monstre au large : l'identité, puis stats, artéfacts, runes et relique.
   egal((html.match(/@4xl:flex-row/g) ?? []).length, EQUIPES[0].monstres.length, 'une ligne par monstre');
+  // Les runes en cartes de la liste du compte, à droite de la relique : une
+  // bande par monstre équipé, six cartes dans l'ordre des slots.
+  const bandesRunes = (h: string) => (h.match(new RegExp(`aria-label="${e.detail.runes.replace(/'/g, '&#x27;')}"`, 'g')) ?? []).length;
+  egal(bandesRunes(html), 1, 'une bande de runes pour le seul monstre équipé');
+  egal((html.match(/role="listitem"/g) ?? []).length, 6, 'ses six runes en cartes');
+  const melange = { ...EQUIPES[0], monstres: [{ ...EQUIPES[0].monstres[0], equipement: { ...eq1, runes: [...eq1.runes].reverse() } }, EQUIPES[0].monstres[1]] };
+  const hMelange = rendre(<DetailEquipe equipe={melange} onChanger={() => {}} monstreDe={(c) => MONSTRES.find((m) => m.com2usId === c)}
+    box={ctx().box} inventaire={INVENTAIRE} onAjouter={() => {}} />);
+  const listeRunes = (h: string) => h.slice(h.indexOf('role="list"'));
+  egal(listeRunes(hMelange) === listeRunes(rendre(<DetailEquipe equipe={{ ...melange, monstres: [{ ...melange.monstres[0], equipement: eq1 }, melange.monstres[1]] }}
+    onChanger={() => {}} monstreDe={(c) => MONSTRES.find((m) => m.com2usId === c)} box={ctx().box} inventaire={INVENTAIRE} onAjouter={() => {}} />)), true,
+  'les cartes suivent l’ordre des slots, quel que soit celui de la copie');
   const plein = { ...EQUIPES[0], monstres: [1, 2, 3, 4, 5, 6].map((k) => monstreEx(`m${k}`, 1002, null, null)) };
   const h2 = rendre(<DetailEquipe equipe={plein} onChanger={() => {}} monstreDe={() => undefined} box={[]} inventaire={null} onAjouter={() => {}} />);
   egal([bouton(h2, e.detail.ajouter)?.desactive, bouton(h2, e.detail.ajouter)?.title], [true, e.detail.complet], 'à 6 monstres, l’ajout est désactivé avec sa raison');

@@ -669,6 +669,9 @@ export const ECRANS: Ecran[] = [
     libelle: 'Mon compte — Mes équipes',
     hash: '#/compte/equipes/liste',
     alias: ['#/compte/equipes'],
+    // 1920 : la place des cartes de runes à droite de la relique, dans le
+    // détail d'une équipe (à 1 400, elles passent sous l'équipement).
+    tailles: [...TAILLES_PAR_DEFAUT, { id: 'bureau-1920', libelle: '1920×940', format: 'ordinateur', largeur: 1920, hauteur: 940, tactile: false }],
     motifs: [...MOTIFS_COMPTE, 'src/lib/equipes*', 'src/lib/sourcesEquipesEnregistrees', 'src/hooks/useEquipesEnregistrees'],
     etats: [
       DEFAUT,

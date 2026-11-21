@@ -1185,6 +1185,7 @@ export const fr = {
       rune: (slot: number) => `Rune ${slot}`,
       artefact: (n: number) => `Artéfact ${n}`,
       relique: 'Relique',
+      runes: "Runes de l'équipement",
       sansCompte: 'Importe ton compte pour comparer cet équipement au tien.',
     },
     ajout: {

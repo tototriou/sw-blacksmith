@@ -168,7 +168,12 @@ sinon « N pièces modifiées », « N pièces disparues ». Le détail marque c
   à gauche son identité (avatar, provenance, leader, position, retrait, reprise de
   l'équipement, état de chaque pièce qui n'est pas identique), à droite son
   équipement enregistré par `MonsterGear` (fiche de stats, artéfacts, roue de
-  runes, relique). Les onglets restent : celui de l'équipe est marqué, en choisir
+  runes, relique), puis, à droite de la relique, ses runes en cartes : la carte de
+  la liste du compte (`CarteRune`, même bascule détail ↔ total au clic), dans
+  l'ordre des slots, telle que la copie l'a enregistrée (l'écart au compte reste dit
+  sous le nom). Quand la place de deux cartes manque à droite (vers 1 400 px de
+  fenêtre), elles passent sous l'équipement ; leur bande défile de côté plutôt que
+  d'élargir la ligne. Les onglets restent : celui de l'équipe est marqué, en choisir
   un autre referme l'équipe. Refermée, la grille revient sur l'onglet de l'équipe
   (elle a pu y être déplacée). L'écran partagé (`DeuxVolets`) reste celui de l'app,
   pas un second volet propre à la page.
@@ -182,11 +187,14 @@ sinon « N pièces modifiées », « N pièces disparues ». Le détail marque c
 - Les équipes en une colonne de cartes, mêmes informations, même menu.
 - « Ouvrir » affiche l'équipe dans la page comme au bureau, les monstres à la
   suite : l'identité passe au-dessus de l'équipement (requête de conteneur), et le
-  leader et la position sous le nom, pour ne pas tronquer le nom.
+  leader et la position sous le nom, pour ne pas tronquer le nom. Les cartes de
+  runes, étroites comme dans la liste à deux colonnes, passent sous l'équipement
+  en une bande qui défile de côté.
 
 Aucune des deux mises en page n'est dérivée de l'autre : chacune a son agencement
 et ses tests de rendu. Le banc d'affichage mesure la page (`compte-equipes` :
-ouverture, sources d'import, équipe importée, détail) et l'Optimizer sur une liste
+ouverture, sources d'import, équipe importée, détail ; en plus des deux formats,
+à 1 920 px, où les runes tiennent à droite de la relique) et l'Optimizer sur une liste
 liée (`optimizer`, état `equipe-liee`).
 
 ## Recherche
