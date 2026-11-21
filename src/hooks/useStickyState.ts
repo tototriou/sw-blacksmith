@@ -39,6 +39,13 @@ export function photographierMemoire(): Record<string, unknown> {
   return Object.fromEntries(store);
 }
 
+// La mémoire d'une session chargée (application de bureau), posée AVANT le
+// premier rendu (src/lib/chargementSession.ts) : chaque hook la trouve au
+// montage, comme s'il revenait sur sa page.
+export function amorcerMemoire(memoire: Record<string, unknown>) {
+  for (const [cle, valeur] of Object.entries(memoire)) store.set(cle, valeur);
+}
+
 // ⚠️ **Repartir de zéro sur tout un domaine**, clés démontées comprises.
 //
 // Le cas : on importe le JSON d'un AUTRE compte. Les états collants qui

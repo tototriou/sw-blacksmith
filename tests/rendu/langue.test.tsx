@@ -150,6 +150,10 @@ export function testRenduLanguePagesPubliques() {
   ok(telecharger.includes('Download for Windows') && telecharger.includes('Version offered: v'), 'Télécharger : boutons et version proposée');
   ok(telecharger.includes('Download for Linux (.deb)') && telecharger.includes('For another distribution: the AppImage'), 'Télécharger : le .deb, et l’AppImage pour les autres distributions');
 
+  const swex = enAnglais(() => texteVisible(rendreApp('#/sw-exporter')));
+  ok(swex.includes('Download the plugin') && swex.includes('Your account, live') && swex.includes('Install SW Exporter'), 'SW Exporter : le plugin, ce qu’il fait, le tuto');
+  ok(!swex.includes('Télécharger le plugin'), 'SW Exporter : pas de français');
+
   const mecaniques = enAnglais(() => rendre(<MechanicsPage />));
   ok(texteVisible(mecaniques).startsWith('Game mechanics The formulas behind Summoners War'), 'Mécaniques : l’article anglais');
   egal(boutons(mecaniques).map((b) => b.texte), mecaniquesEn.sections.map((s) => s.titre), 'Mécaniques : le sommaire anglais');
@@ -177,7 +181,7 @@ export function testRenduLangueRtaSiege() {
   ok(ami.includes('No prep opened') && ami.includes('Open a friend’s prep'), 'prépa d’un ami : état vide et bouton');
 
   const defense = enAnglais(() => texteVisible(rendreApp('#/siege/defense')));
-  for (const attendu of ['Defense', '0 team', 'No defense team yet', 'Add a team'])
+  for (const attendu of ['Defense decks', '0 team', 'No defense team yet', 'Add a team'])
     ok(defense.includes(attendu), `Siège · défense : « ${attendu} »`);
   ok(!defense.includes('Ajouter une équipe'), 'Siège · défense : plus de français');
 

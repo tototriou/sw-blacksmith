@@ -26,7 +26,7 @@ import {
 } from '../lib/recoDiscord';
 import type { VersionSalon } from '../types';
 import { reinsererA } from '../lib/reinsererA';
-import { saveLocal, usePersistence } from './usePersistence';
+import { lireTravail, saveLocal, usePersistence } from './usePersistence';
 
 // Un deck VIDE : celui que `removeDeck` pose quand on retire le dernier — trois
 // slots sans monstre, sans consigne ni défense visée.
@@ -143,7 +143,7 @@ function loadContenu(raw: unknown): RecoPayload {
 
 function load(): RecoState {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = lireTravail(STORAGE_KEY);
     if (!raw) return { recos: [] };
     const parsed = JSON.parse(raw) as Partial<RecoState>;
     if (!Array.isArray(parsed.recos)) return { recos: [] };

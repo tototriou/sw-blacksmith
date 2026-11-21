@@ -175,7 +175,7 @@ const indexRunes = memoByData((data: any): ReadonlyMap<number, any> => {
 // ⚠️ **Aucune valeur ne dit « aucun marqueur »** : une rune sans marqueur est
 // simplement ABSENTE de la liste. Chaque rune_id y figure au plus une fois
 // (vérifié sur deux exports réels).
-const indexRuneMarkers = memoByData((data: any): ReadonlyMap<number, number> => {
+export const indexRuneMarkers = memoByData((data: any): ReadonlyMap<number, number> => {
   const m = new Map<number, number>();
   if (Array.isArray(data?.rune_lock_list)) {
     for (const e of data.rune_lock_list) {
@@ -291,7 +291,7 @@ function subEffLine(eff: any): EffectLine {
 
 // `markers` : voir `indexRuneMarkers`. Une rune absente de l'index n'a pas de
 // marqueur — le champ reste alors absent, jamais à 0.
-function runeToDetail(rune: any, markers: ReadonlyMap<number, number>): RuneDetail {
+export function runeToDetail(rune: any, markers: ReadonlyMap<number, number>): RuneDetail {
   const subs = Array.isArray(rune?.sec_eff)
     ? rune.sec_eff.filter((e: any) => Number(e?.[0])).map(subEffLine)
     : [];
@@ -311,7 +311,7 @@ function runeToDetail(rune: any, markers: ReadonlyMap<number, number>): RuneDeta
   };
 }
 
-function artifactToDetail(a: any): ArtifactDetail {
+export function artifactToDetail(a: any): ArtifactDetail {
   const main = effLine(a?.pri_effect) ?? { code: 0, value: 0 };
   // ⚠️ `rid` était LU pour indexer les artéfacts (voir `artById`) mais jamais
   // conservé sur le détail. Sans lui, un artéfact ne peut être ni mémorisé
@@ -649,6 +649,24 @@ export interface BoxParseResult {
   error?: string;
 }
 
+// Un monstre de la box, ou `null` s'il n'en est pas (pas 6★, espèce
+// illisible). Partagé par l'import et le compte en direct (compteDirect.ts) :
+// les deux doivent donner le même monstre.
+export function boxMonsterOf(
+  u: any,
+  runeById: ReadonlyMap<number, any>,
+  markers: ReadonlyMap<number, number>
+): BoxMonster | null {
+  if (Number(u?.class) !== 6) return null; // seuls les monstres montés 6★
+  const com2usId = Number(u?.unit_master_id);
+  const unitId = Number(u?.unit_id);
+  if (!Number.isFinite(com2usId)) return null;
+  const runeIds = Array.isArray(u?.runes) ? u.runes.map((r: any) => r?.rune_id) : [];
+  const artifactObjs = Array.isArray(u?.artifacts) ? u.artifacts : [];
+  const gear = buildGear(u, runeIds, artifactObjs, runeById, markers);
+  return { unitId, com2usId, stars: 6, level: Number(u?.unit_level) || 0, gear };
+}
+
 // Extrait toute la box 6★. L'équipement vient de l'unité elle-même (runes et
 // artéfacts embarqués) : c'est le build actuellement équipé en jeu.
 export function parseAccountBox(src: AccountSource, t: Dictionnaire): BoxParseResult {
@@ -664,14 +682,8 @@ export function parseAccountBox(src: AccountSource, t: Dictionnaire): BoxParseRe
   const markers = indexRuneMarkers(data);
   const monsters: BoxMonster[] = [];
   for (const u of unitList) {
-    if (Number(u?.class) !== 6) continue; // seuls les monstres montés 6★
-    const com2usId = Number(u?.unit_master_id);
-    const unitId = Number(u?.unit_id);
-    if (!Number.isFinite(com2usId)) continue;
-    const runeIds = Array.isArray(u?.runes) ? u.runes.map((r: any) => r?.rune_id) : [];
-    const artifactObjs = Array.isArray(u?.artifacts) ? u.artifacts : [];
-    const gear = buildGear(u, runeIds, artifactObjs, runeById, markers);
-    monsters.push({ unitId, com2usId, stars: 6, level: Number(u?.unit_level) || 0, gear });
+    const m = boxMonsterOf(u, runeById, markers);
+    if (m) monsters.push(m);
   }
 
   if (monsters.length === 0) {
@@ -1013,24 +1025,31 @@ export function parseCrafts(src: AccountSource): CraftLine[] {
   if (!Array.isArray(list)) return [];
   const out: CraftLine[] = [];
   for (const c of list) {
-    const famille = CRAFT_FAMILY[Number(c?.craft_type)];
-    if (!famille) continue;
-    const dec = decodeCraftTypeId(Number(c?.craft_type_id));
-    if (!dec) continue;
-    const amount = Number(c?.amount) || 0;
-    if (amount <= 0) continue;
-    const setKey = famille.immemorial ? null : SET_ID_KEY[dec.set];
-    if (setKey === undefined) continue; // set inconnu (nouveau set non encore mappé)
-    out.push({
-      kind: famille.kind,
-      setKey,
-      stat: dec.stat,
-      grade: dec.grade,
-      ancient: famille.ancient,
-      amount,
-    });
+    const ligne = craftLineOf(c);
+    if (ligne) out.push(ligne);
   }
   return out;
+}
+
+// Un lot de pierres, ou `null` s'il ne se lit pas ou est vide. Partagé par
+// l'import et le compte en direct (compteDirect.ts).
+export function craftLineOf(c: any): CraftLine | null {
+  const famille = CRAFT_FAMILY[Number(c?.craft_type)];
+  if (!famille) return null;
+  const dec = decodeCraftTypeId(Number(c?.craft_type_id));
+  if (!dec) return null;
+  const amount = Number(c?.amount) || 0;
+  if (amount <= 0) return null;
+  const setKey = famille.immemorial ? null : SET_ID_KEY[dec.set];
+  if (setKey === undefined) return null; // set inconnu (nouveau set non encore mappé)
+  return {
+    kind: famille.kind,
+    setKey,
+    stat: dec.stat,
+    grade: dec.grade,
+    ancient: famille.ancient,
+    amount,
+  };
 }
 
 /* --------------------------------------------------------------------------
@@ -1293,8 +1312,9 @@ export function parseArenaInterserveurDefense(src: AccountSource, t: Dictionnair
  * ARÈNE DIMENSIONNELLE — box, runes et équipes à part
  *
  * La box du mode n'est PAS dans l'export de compte : elle vient de la réponse
- * `dimensionarena_getSeasonInfo` du journal SWEX (src/lib/journalSwex.ts), de
- * la même forme qu'un export — relevé sur un journal réel (2026-11) :
+ * `dimensionarena_getSeasonInfo`, tenue à jour par le plugin SWEX
+ * (plugin-swex/source/dimension.ts), de la même forme qu'un export — relevé
+ * sur un journal réel (2026-11) :
  *  - `unit_list` : les monstres obtenus dans le mode, chacun avec les runes
  *    GAGNÉES qu'il porte (`runes`, de 0 à 6) ;
  *  - `rune_list` : les runes gagnées en inventaire ;
@@ -1416,7 +1436,7 @@ export function parseDimensionOffense(
       return { deckId: i + 1, ids: ids.includes(lead) ? [lead, ...ids.filter((x) => x !== lead)] : ids };
     });
   if (equipes.length === 0) return { decks: [], error: e.sansOffenseDimension };
-  if (!saison) return { decks: [], error: e.offenseDimensionSansJournal };
+  if (!saison) return { decks: [], error: e.offenseDimensionSansSaison };
   const decks = decksDimension(equipes, saison);
   return decks.length ? { decks } : { decks: [], error: e.offenseDimensionInconnue };
 }

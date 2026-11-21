@@ -1,6 +1,6 @@
 import { createContext, useCallback, useEffect, useState } from 'react';
 import { SiegeState, SiegeTeam, SiegeSlot, GearSet } from '../types';
-import { saveLocal, usePersistence } from './usePersistence';
+import { lireTravail, loadLocal, saveLocal, usePersistence } from './usePersistence';
 import { reinsererA } from '../lib/reinsererA';
 
 // Défense et offense de siège = deux listes d'équipes indépendantes.
@@ -63,8 +63,8 @@ function newTeam(n: number): SiegeTeam {
 // `ancienne` : une clé dont l'état est repris si `cle` est vide (migration).
 function load(cle: string, n: number, ancienne?: string): SiegeState {
   try {
-    let raw = localStorage.getItem(cle);
-    if (raw === null && ancienne) raw = localStorage.getItem(ancienne);
+    let raw = lireTravail(cle);
+    if (raw === null && ancienne) raw = loadLocal(ancienne);
     if (!raw) return { teams: [] };
     const parsed = JSON.parse(raw) as Partial<SiegeState>;
     if (!Array.isArray(parsed.teams)) return { teams: [] };

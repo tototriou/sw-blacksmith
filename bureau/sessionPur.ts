@@ -11,7 +11,8 @@ import { basename, dirname, isAbsolute, join } from 'node:path';
 export const FORMAT_FICHIER_SESSION = 'swblacksmith/session';
 
 // Au-delà, ce n'est plus une session : un vrai compte en fait moins de 3 Mo.
-const TAILLE_MAX = 64 * 1024 * 1024;
+export const TAILLE_MAX_SESSION = 64 * 1024 * 1024;
+const TAILLE_MAX = TAILLE_MAX_SESSION;
 
 // Ce que la page voit : la session en cours, et le dossier SW Blacksmith
 // (réglage) dont le sous-dossier `sessions` reçoit les sessions.
@@ -74,6 +75,24 @@ export function texteSessionValide(v: unknown): v is string {
     return !!o && typeof o === 'object' && (o as { format?: unknown }).format === FORMAT_FICHIER_SESSION;
   } catch {
     return false;
+  }
+}
+
+// Mode preuve, « Charger… » sans boîte : la session (`.json`) la plus récente
+// d'un dossier, ou `null` (dossier vide ou illisible).
+export function sessionLaPlusRecente(
+  dossier: string,
+  lister: (d: string) => string[],
+  modifie: (chemin: string) => number
+): string | null {
+  try {
+    const sessions = lister(dossier)
+      .filter((f) => /\.json$/i.test(f) && !f.startsWith('.'))
+      .map((f) => join(dossier, f));
+    if (sessions.length === 0) return null;
+    return sessions.reduce((a, b) => (modifie(b) > modifie(a) ? b : a));
+  } catch {
+    return null;
   }
 }
 

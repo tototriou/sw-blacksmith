@@ -34,6 +34,7 @@ import {
   nomFichierSession,
   SourcesSession,
   travailNonSauvegarde,
+  type ErreurSession,
 } from '../src/lib/session';
 import { egal, exportReel, exportSynthetique, ignore, ok, titre } from './outils';
 import { fr } from '../src/i18n/fr';
@@ -144,25 +145,25 @@ export default function testSession(avecCompteReel = true) {
 
   titre('session · refusée, sans rien de lu');
   const base = JSON.parse(texte);
-  const refus = (brut: unknown, attendu: string, libelle: string) => {
+  const refus = (brut: unknown, attendu: ErreurSession, libelle: string) => {
     const r = lireSession(typeof brut === 'string' ? brut : JSON.stringify(brut));
-    ok(!r.ok && r.erreur.includes(attendu), `${libelle} → « ${r.ok ? 'acceptée' : r.erreur} »`);
+    egal(r.ok ? 'acceptée' : r.erreur, attendu, libelle);
   };
-  refus('pas du json', 'illisible', 'texte illisible');
-  refus([1, 2], 'illisible', 'un tableau');
-  refus({ ...base, format: 'swblacksmith/prepa-rta' }, 'pas une sauvegarde de session', 'un autre export de l’app');
-  refus({ ...base, version: 3 }, 'version plus récente', 'une version plus récente');
-  refus({ ...base, version: '1' }, 'version illisible', 'une version qui n’est pas un nombre');
-  refus({ ...base, stockage: [] }, 'travail est illisible', 'le stockage n’est pas un objet');
-  refus({ ...base, stockage: { ...base.stockage, 'swblacksmith-theme-v1': 'violet' } }, 'swblacksmith-theme-v1', 'un thème inconnu');
-  refus({ ...base, stockage: { ...base.stockage, 'swblacksmith-rta-v1': '{abîmé' } }, 'swblacksmith-rta-v1', 'une prépa RTA qui n’est pas du JSON');
-  refus({ ...base, stockage: { ...base.stockage, 'swblacksmith-siege-recos-v1': 42 } }, 'swblacksmith-siege-recos-v1', 'une valeur qui n’est pas un texte');
+  refus('pas du json', { code: 'illisible' }, 'texte illisible');
+  refus([1, 2], { code: 'illisible' }, 'un tableau');
+  refus({ ...base, format: 'swblacksmith/prepa-rta' }, { code: 'autreFormat' }, 'un autre export de l’app');
+  refus({ ...base, version: 3 }, { code: 'tropRecente' }, 'une version plus récente');
+  refus({ ...base, version: '1' }, { code: 'versionIllisible' }, 'une version qui n’est pas un nombre');
+  refus({ ...base, stockage: [] }, { code: 'travailIllisible' }, 'le stockage n’est pas un objet');
+  refus({ ...base, stockage: { ...base.stockage, 'swblacksmith-theme-v1': 'violet' } }, { code: 'valeurIllisible', cle: 'swblacksmith-theme-v1' }, 'un thème inconnu');
+  refus({ ...base, stockage: { ...base.stockage, 'swblacksmith-rta-v1': '{abîmé' } }, { code: 'valeurIllisible', cle: 'swblacksmith-rta-v1' }, 'une prépa RTA qui n’est pas du JSON');
+  refus({ ...base, stockage: { ...base.stockage, 'swblacksmith-siege-recos-v1': 42 } }, { code: 'valeurIllisible', cle: 'swblacksmith-siege-recos-v1' }, 'une valeur qui n’est pas un texte');
 
   titre('session · lue malgré une partie périmée, et dit');
   const perime = lireSession(JSON.stringify({ ...base, compte: { ...base.compte, schema: 6 } }));
-  ok(perime.ok && perime.session.compte === null && perime.avertissements.some((a) => a.includes('réimporte')), 'compte d’un schéma périmé : laissé, et dit');
+  ok(perime.ok && perime.session.compte === null && perime.avertissements.includes('comptePerime'), 'compte d’un schéma périmé : laissé, et dit');
   const optimizerAbime = lireSession(JSON.stringify({ ...base, outils: { ...base.outils, optimizer: [1, 2] } }));
-  ok(optimizerAbime.ok && optimizerAbime.session.outils.optimizer === null && optimizerAbime.avertissements.some((a) => a.includes('Optimizer')), 'Optimizer illisible : ignoré, et dit');
+  ok(optimizerAbime.ok && optimizerAbime.session.outils.optimizer === null && optimizerAbime.avertissements.includes('optimizerIllisible'), 'Optimizer illisible : ignoré, et dit');
   const horsChamps = lireSession(JSON.stringify({ ...base, outils: { ...base.outils, optimizer: { sortBy: 'vitesse', search: { resultats: [] } } } }));
   egal(horsChamps.ok ? horsChamps.session.outils.optimizer : 'refusée', { sortBy: 'spd' }, 'Optimizer : un champ hors session (les résultats) écarté à la relecture, le tri « vitesse » relu VIT');
   const inconnu = lireSession(JSON.stringify({ ...base, futurChamp: { x: 1 }, stockage: { ...base.stockage, 'swblacksmith-futur-v1': '1' } }));

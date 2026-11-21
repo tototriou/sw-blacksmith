@@ -114,6 +114,23 @@
      les éléments avaient leur `-soft`, la sémantique non. Il porte le camp
      ADVERSE du speed tuning, en face de `--good-soft`. */
   --bad-soft: 248 228 227;
+  /* Les SÉRIES des graphes (Siège › Statistiques) : trois teintes d'identité,
+     dans cet ordre, jamais réordonnées — bleu, orange, aqua. Validées toutes
+     paires confondues contre la carte (`panel`) des deux thèmes : séparation
+     daltonienne ≥ 9 (OKLab ×100), vision normale ≥ 20. ⚠️ Pas `good` et `bad` :
+     ce vert et ce rouge se confondent pour un deutéranope (ΔE 2,5 en clair).
+     L'aqua est sous 3:1 sur le clair : légende et libellés directs requis. */
+  --serie-1: 42 120 214;
+  --serie-2: 235 104 52;
+  --serie-3: 27 175 122;
+  /* Les GUILDES d'un siège, aux couleurs de la carte du jeu : bleu (ma
+     guilde, en bas à gauche), rouge (en haut), jaune (à droite). Validées toutes paires confondues contre la
+     carte (`panel`) des deux thèmes : séparation daltonienne ≥ 9 (OKLab ×100),
+     vision normale ≥ 21, contraste ≥ 3:1. ⚠️ Le rouge et le jaune ne se
+     séparent, pour un deutéranope, que par leur clarté : ne pas les rapprocher. */
+  --guilde-bleue: 42 120 214;
+  --guilde-rouge: 184 34 47;
+  --guilde-jaune: 179 143 16;
   /* Encre SUR un aplat de `bad` (bouton danger plein), le pendant
      d'`accent-ink` : blanc ici (6.9 sur `bad`), sombre en Forge, où le rouge
      est clair. */
@@ -308,6 +325,14 @@
   --forge-warn-soft: 57 49 27;
   --forge-bad: 242 122 132;
   --forge-bad-soft: 55 35 36;
+  /* Les séries des graphes en Forge : les mêmes teintes, pas de la même
+     clarté — validées contre la carte sombre. */
+  --forge-serie-1: 57 135 229;
+  --forge-serie-2: 217 89 38;
+  --forge-serie-3: 25 158 112;
+  --forge-guilde-bleue: 57 135 229;
+  --forge-guilde-rouge: 200 48 59;
+  --forge-guilde-jaune: 173 142 18;
   /* Encre SUR un aplat de `bad` (bouton danger plein) : sombre, comme sur la
      braise. Le blanc y faisait 2.66, sous le 3:1 d'une icône. */
   --forge-bad-ink: 27 26 25;
@@ -390,6 +415,12 @@
     --bad: var(--forge-bad);
     --bad-soft: var(--forge-bad-soft);
     --bad-ink: var(--forge-bad-ink);
+    --serie-1: var(--forge-serie-1);
+    --serie-2: var(--forge-serie-2);
+    --serie-3: var(--forge-serie-3);
+    --guilde-bleue: var(--forge-guilde-bleue);
+    --guilde-rouge: var(--forge-guilde-rouge);
+    --guilde-jaune: var(--forge-guilde-jaune);
     --el-fire: var(--forge-el-fire);
     --el-water: var(--forge-el-water);
     --el-wind: var(--forge-el-wind);
@@ -452,6 +483,12 @@
   --bad: var(--forge-bad);
   --bad-soft: var(--forge-bad-soft);
   --bad-ink: var(--forge-bad-ink);
+  --serie-1: var(--forge-serie-1);
+  --serie-2: var(--forge-serie-2);
+  --serie-3: var(--forge-serie-3);
+  --guilde-bleue: var(--forge-guilde-bleue);
+  --guilde-rouge: var(--forge-guilde-rouge);
+  --guilde-jaune: var(--forge-guilde-jaune);
   --el-fire: var(--forge-el-fire);
   --el-water: var(--forge-el-water);
   --el-wind: var(--forge-el-wind);

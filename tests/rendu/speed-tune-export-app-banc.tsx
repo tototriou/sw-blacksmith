@@ -4,7 +4,7 @@ import App from '../../src/App';
 import { saveAccount } from '../../src/lib/accountStore';
 import { runesUtiliseesVides } from '../../src/lib/importAccount';
 import { photographierMemoire, reinitialiserSticky } from '../../src/hooks/useStickyState';
-import { setPersistence } from '../../src/hooks/usePersistence';
+import { setPersistence, viderMiroir } from '../../src/hooks/usePersistence';
 import type { GearSet, Monster, SiegeTeam } from '../../src/types';
 import type { DetailMonstre } from '../../src/lib/monsterSkills';
 
@@ -56,7 +56,7 @@ export async function scenario(reset?: { monstres: Monster[]; details: DetailMon
     monstres.splice(0, monstres.length, ...reset.monstres);
     equipe.slots = monstres.map((m, i) => ({ monsterId: String(m.id), runeSpeed: [250, 220, 150][i], tick: 0, sets: ['swift'], gear }));
   }
-  localStorage.clear(); reinitialiserSticky(''); setPersistence(true);
+  localStorage.clear(); viderMiroir(); reinitialiserSticky(''); setPersistence(true);
   localStorage.setItem('swblacksmith-siege-offense-v1', JSON.stringify({ teams: [equipe] }));
   const enregistre = await saveAccount({ box: monstres.map(m => ({ unitId: Number(m.id), com2usId: m.com2usId!, stars: 6, level: 40, gear })),
     runes: [], artifacts: [], relics: [], crafts: [], usedRuneIds: runesUtiliseesVides(), relicUsageById: {}, runeMarkerLabels: {}, exportedAt: null, wizardName: 'Synthétique' });

@@ -71,6 +71,14 @@ export default {
         // Atelier, sombre en Forge, où le rouge est clair — le pendant
         // d'`accent-ink`.
         'bad-ink': 'rgb(var(--bad-ink) / <alpha-value>)',
+        // Séries des graphes : identité, dans cet ordre (index.css).
+        'serie-1': 'rgb(var(--serie-1) / <alpha-value>)',
+        'serie-2': 'rgb(var(--serie-2) / <alpha-value>)',
+        'serie-3': 'rgb(var(--serie-3) / <alpha-value>)',
+        // Les guildes d'un siège, aux couleurs de la carte du jeu (index.css).
+        'guilde-bleue': 'rgb(var(--guilde-bleue) / <alpha-value>)',
+        'guilde-rouge': 'rgb(var(--guilde-rouge) / <alpha-value>)',
+        'guilde-jaune': 'rgb(var(--guilde-jaune) / <alpha-value>)',
 
         // Éléments — vocabulaire Summoners War. Deux valeurs par élément
         // (voir docs/03-developpeur/interface/design/tokens-couleurs.md) : le Vent et la Lumière sont illisibles sur clair.

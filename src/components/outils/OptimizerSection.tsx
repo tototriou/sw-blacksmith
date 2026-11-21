@@ -21,9 +21,11 @@ import {
 import { TAILLE_PAGE_CLASSEMENT, type CarteClassement } from '../../lib/classementCompact';
 import { bornesMisesDeCote, bornesSousMesure, triDesResultats } from '../../lib/colonnesResultats';
 import { avecBorne, colonneDisponible, objectifsMontres } from '../../lib/filtresResultats';
+import { exigencePrecisionParSort, normaliserSortsPrecision, sortsPrecisionActifs, sortsPrecisionDisponibles } from '../../lib/precisionParSort';
 import type { ColonneResultat } from '../../lib/colonnesResultats';
 import {
   bornesArtefacts,
+  candidatsParSorte,
   chercherPaires,
   meilleurCumulParLigne,
   type ArtifactSearchParams,
@@ -442,6 +444,8 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
     setRelicMinUpgrade,
     lignesVerrouillees,
     setLignesVerrouillees,
+    sortsPrecision,
+    setSortsPrecision,
     mainStatsBySlot,
     setMainStatsBySlot,
     lockedRunes,
@@ -553,6 +557,11 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
   }, [selectedCom2usId]);
 
   const damageSkills = useMemo(() => monsterDamageSkills(skillDetail), [skillDetail]);
+  // Les sorts que la précision par sort propose (pastilles grisées sinon).
+  const sortsDisponiblesPrecision = useMemo(
+    () => sortsPrecisionDisponibles(skillDetail?.com2usId === selectedCom2usId ? skillDetail.competences : null),
+    [skillDetail, selectedCom2usId]
+  );
   // Rappel « tel passif pose tel buff » d'« État de mon monstre » :
   // affichage seul, aucun calcul ne le lit. ⚠️ Garde
   // sur l'identité de la fiche : au changement de monstre, l'ancienne reste
@@ -1491,6 +1500,10 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
     [selected, objective, aurasPropresFiche, contexteDegatsArtefacts, contexteExclusive, combatStats]
   );
 
+  // Les sorts de la précision par sort en jeu : cochés sous un minimum de
+  // Précision posé (`sortsPrecisionActifs`), même liste pour les paramètres
+  // de la paire et l'exigence.
+  const sortsPrecisionEnJeu = useMemo(() => sortsPrecisionActifs(sortsPrecision, minStats), [sortsPrecision, minStats]);
   const artifactParams = useMemo(() => {
     // ⚠️ **Optimisation désactivée ≠ sans artéfact.** Les paramètres restent
     // construits, avec « Comme équipé » IMPOSÉ des deux côtés : le
@@ -1545,10 +1558,11 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
         maxStats,
         sortDegats: resolvedSkill?.skillCom2usId ?? null,
         speedTune: contrainteSpeedTune,
+        sortsPrecision: sortsPrecisionEnJeu,
       }),
       evaluer,
     };
-  }, [selected, evaluateursFiche, optimiserArtefacts, artifactMainByKind, sortesFigees, artifacts, artefactsReserves, lignesVerrouillees, damageSetup, maxStats, resolvedSkill, contrainteSpeedTune]);
+  }, [selected, evaluateursFiche, optimiserArtefacts, artifactMainByKind, sortesFigees, artifacts, artefactsReserves, lignesVerrouillees, damageSetup, maxStats, resolvedSkill, contrainteSpeedTune, sortsPrecisionEnJeu]);
 
   const searchArtifacts = useMemo<ArtifactDetail[]>(
     () => (artifactParams ? paireRepresentative(artifactParams) : []),
@@ -1784,7 +1798,18 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
     () => (contrainteSpeedTune ? exigenceSousSpeedTune(requirementSansSpeedTune, contrainteSpeedTune) : null),
     [requirementSansSpeedTune, contrainteSpeedTune]
   );
-  const requirementAvecAuras = exigenceSpeedTune ?? requirementSansSpeedTune;
+  // ⚠️ **Précision par sort** (`exigencePrecisionParSort`) : les runes ne
+  // voient que le minimum relâché du meilleur bonus qu'une pièce de type
+  // éligible apporte aux sorts cochés ; la vraie paire se juge à la
+  // résolution. Sans `artifactParams` (aucun monstre), aucun relâchement.
+  const piecesTypePrecision = useMemo(
+    () => (artifactParams ? candidatsParSorte(artifactParams, 'archetype') : []),
+    [artifactParams]
+  );
+  const requirementAvecAuras = useMemo(
+    () => exigencePrecisionParSort(exigenceSpeedTune ?? requirementSansSpeedTune, sortsPrecision, piecesTypePrecision),
+    [exigenceSpeedTune, requirementSansSpeedTune, sortsPrecision, piecesTypePrecision]
+  );
   // Attaché, la recherche attend une zone prête et non vide (spec, « Calcul et cache »).
   const speedTuneBloque = speedTuneAttache && (!contrainteSpeedTune || !exigenceSpeedTune);
 
@@ -1972,6 +1997,8 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
       ignoreArtifacts: !optimiserArtefacts,
       artifactMainByKind,
       lignesVerrouillees,
+      // Vide : omis, la recette d'avant champ pour champ.
+      ...(sortsPrecision.length > 0 ? { sortsPrecision } : {}),
       relicMainChoice,
       relicUniqueChoice,
       relicMinUpgrade,
@@ -2211,6 +2238,8 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
       // ⚠️ `?? []` : une recette exportée AVANT ce champ ne le porte pas (voir
       // `OptimizerRecipe.lignesVerrouillees`, optionnel exprès).
       optimizer.poserCriteresAutomatiques({ lignesVerrouillees: recipe.lignesVerrouillees ?? [] });
+      // ⚠️ `?? []`, même repli : avant ce champ, le minimum de Précision portait sur la stat.
+      optimizer.poserCriteresAutomatiques({ sortsPrecision: normaliserSortsPrecision(recipe.sortsPrecision ?? []) });
       // ⚠️ **Même canal que la bascule artéfact** (« mêmes trois
       // règles ») : `relicMainPourCeCompte` (optimizerRecipe.ts) applique la
       // bascule « equipped » → « libre » sur compte différent ; le défaut
@@ -2899,6 +2928,9 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
       setMaxStats={setMaxStats}
       speedTune={encartDuMembre(true)}
       vitessePossedee={speedTuneAttache}
+      sortsPrecision={sortsPrecision}
+      setSortsPrecision={setSortsPrecision}
+      sortsDisponibles={sortsDisponiblesPrecision}
     />
   );
 
@@ -3605,6 +3637,9 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
             setMaxStats={setMaxStats}
             speedTune={encartDuMembre(false)}
             vitessePossedee={speedTuneAttache}
+            sortsPrecision={sortsPrecision}
+            setSortsPrecision={setSortsPrecision}
+            sortsDisponibles={sortsDisponiblesPrecision}
           />
         }
         principales={<PrincipalesImposeesBureau mainStatsBySlot={mainStatsBySlot} toggleMainStat={toggleMainStat} />}

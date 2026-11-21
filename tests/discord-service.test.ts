@@ -167,8 +167,8 @@ export async function testDiscordRouteurConnexion() {
   const invitation = await r.traiter(requete('invitation'));
   const inv = new URL(invitation.headers.get('location') ?? '');
   egal([invitation.status, inv.origin + inv.pathname], [302, 'https://discord.com/oauth2/authorize'], 'invitation : renvoi vers Discord, sans session');
-  egal([inv.searchParams.get('client_id'), inv.searchParams.get('scope'), inv.searchParams.get('permissions')], ['client', 'bot', '0'],
-    'invitation : le bot de cet environnement, aucun droit sur le serveur');
+  egal([inv.searchParams.get('client_id'), inv.searchParams.get('scope'), inv.searchParams.get('permissions')], ['client', 'bot applications.commands', '0'],
+    'invitation : le bot de cet environnement et ses commandes, aucun droit sur le serveur');
   ok(invitation.headers.getSetCookie().length === 0, 'invitation : aucun cookie posé');
 
   // Les en-têtes du site (vercel.json) : une page qui publie au nom du membre
