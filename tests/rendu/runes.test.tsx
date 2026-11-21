@@ -156,7 +156,8 @@ export function testRenduRunesComparaison() {
   const t = texteVisible(html);
   const b = boutons(html);
   const sousOnglets = onglets(html);
-  egal(sousOnglets.map((o) => o.texte), ['Courbes partagées', 'Fichiers de compte'], 'deux vrais onglets (`Onglets`) : les deux sources');
+  egal(sousOnglets.map((o) => o.texte), ['Courbes partagées', 'Fichiers de compte', 'Historique'], 'trois vrais onglets (`Onglets`) : les trois sources');
+  egal(sousOnglets.filter((o) => o.desactive).map((o) => o.texte), ['Historique'], 'sur le site, « Historique » affiché mais désactivé');
   egal(sousOnglets.filter((o) => o.ouvert).map((o) => o.texte), ['Courbes partagées'], '« Courbes partagées » ouvert par défaut');
   ok(b.some((x) => x.texte === 'Exporter ma courbe'), '« Exporter ma courbe »');
   ok(b.some((x) => x.texte === 'Importer une courbe'), '« Importer une courbe »');
