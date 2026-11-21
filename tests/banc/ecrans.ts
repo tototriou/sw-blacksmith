@@ -669,9 +669,11 @@ export const ECRANS: Ecran[] = [
     libelle: 'Mon compte — Mes équipes',
     hash: '#/compte/equipes/liste',
     alias: ['#/compte/equipes'],
-    // 1920 : la bande des cartes de runes à droite de la relique, dans le
-    // détail d'une équipe, quand elle n'a plus à défiler.
-    tailles: [...TAILLES_PAR_DEFAUT, { id: 'bureau-1920', libelle: '1920×940', format: 'ordinateur', largeur: 1920, hauteur: 940, tactile: false }],
+    // Le détail d'une équipe : à 1 920, les cartes de runes en grille de
+    // 3 × 2 à droite de la relique ; à 2 560, sur une seule rangée.
+    tailles: [...TAILLES_PAR_DEFAUT,
+      { id: 'bureau-1920', libelle: '1920×940', format: 'ordinateur', largeur: 1920, hauteur: 940, tactile: false },
+      { id: 'bureau-2560', libelle: '2560×1300', format: 'ordinateur', largeur: 2560, hauteur: 1300, tactile: false }],
     motifs: [...MOTIFS_COMPTE, 'src/lib/equipes*', 'src/lib/sourcesEquipesEnregistrees', 'src/hooks/useEquipesEnregistrees'],
     etats: [
       DEFAUT,

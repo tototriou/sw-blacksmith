@@ -14,8 +14,9 @@ export function verifierContratsBanc() {
   egal(tailles.length, 15, 'Optimizer : téléphone, six repères de bureau et huit frontières');
   egal(new Set(tailles.map(t => t.id)).size, tailles.length, 'captures sans collision');
   // Une taille de plus seulement pour une mise en page qui change au-delà de
-  // l'ordinateur : Mes équipes, les runes à droite de la relique à 1 920 px.
-  const enPlus: Record<string, string[]> = { 'compte-equipes': ['bureau-1920'] };
+  // l'ordinateur : Mes équipes, les cartes de runes en 3 × 2 puis sur une
+  // rangée à droite de la relique.
+  const enPlus: Record<string, string[]> = { 'compte-equipes': ['bureau-1920', 'bureau-2560'] };
   for (const ecran of ECRANS.filter(e => e !== optimizer)) {
     egal(taillesPour(ecran).map(t => t.id), ['telephone', 'ordinateur', ...(enPlus[ecran.id] ?? [])], `${ecran.id} garde ses deux tailles`);
   }

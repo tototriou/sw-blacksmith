@@ -152,20 +152,25 @@ function FicheMonstre({ m, position, total, leader, retirable, monstre, box, inv
         {m.equipement && (
           // Ordinateur : l'équipement sans la roue, puis ses runes en cartes,
           // à droite de la relique. Téléphone : la roue, sans les cartes.
-          // Les runes passent dessous seulement quand la place de deux
-          // cartes (2 × 215 + 8) manque ; sinon leur bande défile de côté,
-          // sans jamais pousser la ligne au-delà de la fiche.
+          // Les six cartes sur une rangée (6 × 215 + 5 × 8 = 1 330 px) quand
+          // la place à droite de la relique le permet, sinon en grille de
+          // trois sur deux rangées (661 px) ; plus étroite encore, la grille
+          // passe sous l'équipement. La place se lit sur la bande elle-même
+          // (requête de conteneur), jamais sur une largeur supposée de la
+          // fiche de stats.
           <div className="flex min-w-0 flex-1 flex-wrap items-center gap-3">
             <div className="min-w-0 max-w-full flex-none overflow-x-auto">
               <MonsterGear gear={m.equipement} sansRoue={!telephone} />
             </div>
             {!telephone && m.equipement.runes.length > 0 && (
-              <div className="flex min-w-0 flex-1 basis-[438px] items-start gap-2 overflow-x-auto" role="list" aria-label={d.runes}>
-                {[...m.equipement.runes].sort((a, b) => a.slot - b.slot).map((r) => (
-                  <div key={r.id} role="listitem" className="grid w-[215px] flex-none">
-                    <CarteRune rune={r} etroit={false} />
-                  </div>
-                ))}
+              <div className="@container/runes min-w-0 flex-1 basis-[661px] overflow-x-auto">
+                <div className="grid w-max grid-cols-[repeat(3,215px)] items-start gap-2 @[1330px]/runes:grid-cols-[repeat(6,215px)]" role="list" aria-label={d.runes}>
+                  {[...m.equipement.runes].sort((a, b) => a.slot - b.slot).map((r) => (
+                    <div key={r.id} role="listitem" className="grid">
+                      <CarteRune rune={r} etroit={false} />
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>
