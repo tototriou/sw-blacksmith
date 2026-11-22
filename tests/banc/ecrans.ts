@@ -398,6 +398,10 @@ const EQ_METTRE_A_JOUR: Etape[] = [
   { cliquer: repere('[role="menuitem"]:has-text("Mettre à jour depuis l’Optimizer")') },
 ];
 const EQ_NOMMER: Etape[] = [{ cliquer: bouton('Nouvelle équipe') }];
+const EQ_RENOMMER: Etape[] = [
+  { cliquer: { role: 'button', nom: 'Actions de l’équipe', pres: EQ_CARTE } },
+  { cliquer: repere('[role="menuitem"]:has-text("Renommer")') },
+];
 // L'équipe importée mise dans un nouveau groupe depuis son détail, puis la
 // grille : l'en-tête du groupe au-dessus de sa carte.
 const EQ_GROUPER: Etape[] = [
@@ -743,6 +747,15 @@ export const ECRANS: Ecran[] = [
           ordinateur: [...EQ_IMPORT.ordinateur, { cliquer: bouton('Nouveau groupe') }],
         },
         atteint: [{ role: 'dialog', nom: 'Nouveau groupe' }, { role: 'textbox', nom: 'Nom du groupe' }],
+      },
+      {
+        id: 'renommer',
+        libelle: '« Renommer » depuis le menu d’une carte : le nom actuel, prérempli',
+        preparation: {
+          telephone: [...EQ_IMPORT.telephone, ...EQ_RENOMMER],
+          ordinateur: [...EQ_IMPORT.ordinateur, ...EQ_RENOMMER],
+        },
+        atteint: [{ role: 'dialog', nom: 'Renommer l’équipe' }, { role: 'textbox', nom: 'Nom de l’équipe' }],
       },
       {
         id: 'nouvelle',

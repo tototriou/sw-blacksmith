@@ -30,7 +30,7 @@ import { sourcesImportEquipes, type ContexteSourcesEquipes, type SourceEquipemen
 import {
   CATEGORIES_EQUIPES, SOUS_CATEGORIES_EQUIPES, ajouterMonstre, categorieDe, compteParCategorie, compteParOnglet, libelleRangement, libelleSousCategorie, sousCategorieDe,
   appliquerGroupe, conflitsGroupe, creerEquipe, deplacerVersOnglet, dupliquerEquipe, equipesDuGroupe, equipesFiltrees, gesteSurBrouillon, groupesDeLOnglet, nomEquipeLibre, rangement,
-  estPrepa, monstresMax, nomGroupeLibre, regrouper, resumeEcarts, tireurIdentifiants, tropDeMonstres,
+  estPrepa, modifierTextes, monstresMax, nomGroupeLibre, regrouper, resumeEcarts, tireurIdentifiants, tropDeMonstres,
   type CategorieEquipes, type EquipeEnregistree, type InventaireCompte, type OngletEquipes, type SousCategorieEquipes,
 } from '../../../lib/equipesEnregistrees';
 
@@ -98,6 +98,7 @@ export default function EquipesSection({ api, ctx, inventaire, allMonsters, opti
   const [ajout, setAjout] = useState(false);
   // « Nouvelle équipe » demande d'abord le nom.
   const [nommage, setNommage] = useState(false);
+  const [aRenommer, setARenommer] = useState<EquipeEnregistree | null>(null);
   const [imports, setImports] = useState(false);
   const [aSupprimer, setASupprimer] = useState<EquipeEnregistree | null>(null);
   // Le groupe formé (`null`) ou modifié depuis la grille.
@@ -266,6 +267,7 @@ export default function EquipesSection({ api, ctx, inventaire, allMonsters, opti
       { cle: 'ouvrir', libelle: c.ouvrir, onClick: () => setOuverte(x.id) },
       { cle: 'exporter', libelle: c.exporterOptimizer, disabled: exportImpossible !== null, title: exportImpossible ?? undefined, onClick: () => exporterOptimizer(x) },
       ...(prepa ? [] : [{ cle: 'retour', libelle: c.mettreAJour, disabled: retourImpossible !== null, title: retourImpossible ?? undefined, onClick: () => demanderRetour(x) }]),
+      { cle: 'renommer', libelle: c.renommer, onClick: () => setARenommer(x) },
       { cle: 'dupliquer', libelle: c.dupliquer, onClick: () => ajouterEquipes([dupliquerEquipe(x, tirerIdEquipe(), e.copie(x.nom), tirerUid, new Date())]) },
       // Vers un autre onglet, sans catégorie ; la catégorie se choisit dans le détail.
       ...(prepa ? [] : CATEGORIES_EQUIPES.filter((o) => o !== categorieDe(x.onglet) && o !== 'rta')).map((o) => ({
@@ -331,7 +333,7 @@ export default function EquipesSection({ api, ctx, inventaire, allMonsters, opti
       box={ctx.box} inventaire={inventaire} groupes={groupesDeLOnglet(api.equipes, categorieDe(equipeOuverte.onglet))} onAjouter={() => setAjout(true)}
       retour={<Bouton icone={<ChevronLeft size={14} />} libelle={e.detail.retour} onClick={fermerDetail} />}
       // Le brouillon n'est pas encore une équipe : rien à exporter, déplacer ni supprimer.
-      menu={brouillon?.id !== equipeOuverte.id && <Menu libelle={e.carte.actions} elements={actions(equipeOuverte).filter((a) => a.cle !== 'ouvrir')} />} />
+      menu={brouillon?.id !== equipeOuverte.id && <Menu libelle={e.carte.actions} elements={actions(equipeOuverte).filter((a) => a.cle !== 'ouvrir' && a.cle !== 'renommer')} />} />
   );
 
   return (
@@ -443,6 +445,12 @@ export default function EquipesSection({ api, ctx, inventaire, allMonsters, opti
       {nommage && (
         <NouvelleEquipeModale nomParDefaut={nomEquipeLibre(api.equipes, textesNouvelle.nomParDefaut)} textes={textesNouvelle.fenetre}
           onCreer={creerBrouillon} onFermer={() => setNommage(false)} />
+      )}
+      {/* Vidé, le champ garde l'ancien nom. */}
+      {aRenommer && (
+        <NouvelleEquipeModale nomParDefaut={aRenommer.nom}
+          textes={{ titre: estPrepa(aRenommer.onglet) ? e.renommage.titrePrepa : e.renommage.titre, nom: estPrepa(aRenommer.onglet) ? e.prepa.fenetre.nom : e.nouvelleFenetre.nom, action: e.renommage.action }}
+          onCreer={(nom) => { changerEquipe(aRenommer.id, (x, n) => modifierTextes(x, { nom }, n)); setARenommer(null); }} onFermer={() => setARenommer(null)} />
       )}
       {ajout && equipeOuverte && (
         <AjoutMonstreModale monstres={allMonsters} ctx={ctx} onChoisir={ajouterMonstreChoisi} onFermer={() => setAjout(false)} />

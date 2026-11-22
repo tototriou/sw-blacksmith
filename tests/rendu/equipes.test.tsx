@@ -69,6 +69,9 @@ export function testRenduEquipesBureau() {
   for (const b of [e.nouvelle, e.importer, e.exporterFichier, e.importerFichier]) ok(bouton(html, b)?.desactive === false, `« ${b} » utilisable`);
   egal(boutons(html).map((b) => b.texte).filter((x) => [e.nouvelle, e.importer, e.groupes.creer, e.exporterFichier].includes(x)),
     [e.nouvelle, e.importer, e.groupes.creer, e.exporterFichier], '« Importer une équipe » entre « Nouvelle équipe » et « Nouveau groupe »');
+  const menu = boutons(html).map((b) => b.texte);
+  egal(menu.slice(menu.indexOf(e.carte.renommer), menu.indexOf(e.carte.renommer) + 2), [e.carte.renommer, e.carte.dupliquer],
+    'le menu d’une carte : « Renommer » juste au-dessus de « Dupliquer »');
   ok(valeurs(html, 'placeholder').includes(e.recherche), 'la recherche par monstre');
   ok(!texteVisible(rendre(section({ compte: false }))).includes(e.carte.modifiees(1)), 'sans compte, aucun écart affiché');
   const vide = rendre(section({ api: api([], 'en-cours') }));

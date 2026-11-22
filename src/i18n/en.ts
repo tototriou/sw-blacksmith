@@ -1599,6 +1599,7 @@ export const en: Dictionnaire = {
     options: 'Options',
     nomParDefaut: (n: number) => `Team ${n}`,
     nouvelleFenetre: { titre: 'New team', nom: 'Team name', action: 'Create' },
+    renommage: { titre: 'Rename team', titrePrepa: 'Rename prep', action: 'Rename' },
     groupes: {
       aucun: 'No group',
       nouveau: 'New group…',
@@ -1637,6 +1638,7 @@ export const en: Dictionnaire = {
       ouvrir: 'Open',
       exporterOptimizer: 'Export to the Optimizer',
       mettreAJour: 'Update from the Optimizer',
+      renommer: 'Rename',
       dupliquer: 'Duplicate',
       deplacer: (onglet: string) => `Move to ${onglet}`,
       supprimer: 'Delete',

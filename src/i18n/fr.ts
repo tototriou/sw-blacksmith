@@ -1688,6 +1688,7 @@ export const fr = {
     options: 'Options',
     nomParDefaut: (n: number) => `Équipe ${n}`,
     nouvelleFenetre: { titre: 'Nouvelle équipe', nom: 'Nom de l’équipe', action: 'Créer' },
+    renommage: { titre: 'Renommer l’équipe', titrePrepa: 'Renommer la prépa', action: 'Renommer' },
     // Des équipes d'un onglet jouées ensemble (raid, siège…), qui se partagent les runes.
     groupes: {
       aucun: 'Aucun groupe',
@@ -1727,6 +1728,7 @@ export const fr = {
       ouvrir: 'Ouvrir',
       exporterOptimizer: 'Exporter vers l’Optimizer',
       mettreAJour: 'Mettre à jour depuis l’Optimizer',
+      renommer: 'Renommer',
       dupliquer: 'Dupliquer',
       deplacer: (onglet: string) => `Déplacer vers ${onglet}`,
       supprimer: 'Supprimer',

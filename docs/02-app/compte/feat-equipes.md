@@ -295,7 +295,7 @@ sinon « N pièces modifiées », « N pièces disparues ». Le détail marque c
   requête de conteneur). Une carte : le nom, les avatars des monstres dans l'ordre
   (le leader marqué), la note sur une ligne tronquée, le résumé d'écart, et un menu
   d'actions (`Menu`) : « Ouvrir », « Exporter vers l'Optimizer », « Mettre à jour
-  depuis l'Optimizer », « Dupliquer », « Déplacer vers… », « Supprimer ».
+  depuis l'Optimizer », « Renommer », « Dupliquer », « Déplacer vers… », « Supprimer ».
 - Au-delà de 24 équipes dans l'onglet (après recherche), la grille se pagine
   (`Pager`), posé **au-dessus** de la grille : la hauteur d'une page varie avec ses
   cartes, et un pager placé dessous bougerait sous le clic.
@@ -383,6 +383,9 @@ liée (`optimizer`, état `equipe-liee`).
   ainsi »), le geste ne changerait rien et n'est pas proposé.
 - La fiche n'a pas de geste pour retirer la seule relique : l'équipement se
   remplace en entier (« Reprendre l'équipement porté », ou l'Optimizer).
+- « Renommer » ouvre la fenêtre de nommage (celle de « Nouvelle équipe »), préremplie
+  du nom actuel ; vidé, le champ garde l'ancien nom. Le menu du détail ne le propose
+  pas : le champ « Nom » y est déjà.
 - « Dupliquer » copie l'équipe dans le même onglet, nom suffixé, nouveaux `id` et
   `uid` ; le leader et les liens du speed tune suivent la correspondance ancien →
   nouveau `uid`, et les `uid` des lignes du plan restent. La copie n'a **pas** de
