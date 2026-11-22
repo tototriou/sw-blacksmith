@@ -28,6 +28,7 @@ import { verificationsEquipesStockage } from './equipes-stockage.test';
 import { verificationsEquipesOptimizer } from './equipes-optimizer.test';
 import { verificationsEquipesSources } from './equipes-sources.test';
 import { verificationsFenetreImport } from './fenetre-import.test';
+import { testRenduFenetreImportSources, testRenduTelephoneFenetreImportSources } from './rendu/fenetre-import-navigateur.test';
 import { verificationsRenduEquipes } from './rendu/equipes.test';
 import { testOptimizerImportNavigation } from './optimizer-import-navigation.test';
 import { testOptimizerColonnes, testOptimizerColonnesOnglet, testOptimizerColonnesGuidages, testOptimizerColonnesAttenteResultats, testOptimizerColonnesCoffreSets, testOptimizerColonnesTableau } from './optimizer-colonnes.test';
@@ -1306,6 +1307,8 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testOptimizerImportEcrituresGroupees', testOptimizerImportEcrituresGroupees],
   ['testOptimizerImportReverificationEnAttente', testOptimizerImportReverificationEnAttente],
   ['testOptimizerImportCollision', testOptimizerImportCollision],
+  ['testRenduFenetreImportSources', testRenduFenetreImportSources],
+  ['testRenduTelephoneFenetreImportSources', testRenduTelephoneFenetreImportSources],
   ['testRenduOptimizerImportDefenses', testRenduOptimizerImportDefenses],
   ['testRenduTelephoneOptimizerImportDefenses', testRenduTelephoneOptimizerImportDefenses],
   ['testRenduOptimizerImportOffense', testRenduOptimizerImportOffense],

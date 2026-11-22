@@ -39,9 +39,10 @@ quelque chose à importer, dans l'ordre du point d'entrée (`sourceInitiale`).
 
 ## Liste et sélection
 
-Les équipes se rangent sous l'en-tête de leur groupe (un onglet, une recommandation…). Des
-équipes consécutives d'un même bloc (un groupe de Mes équipes, les défenses de siège, une
-recommandation) s'encadrent, avec une case « Tout « nom » » qui coche le bloc entier.
+Les équipes se rangent sous l'en-tête de leur groupe (un onglet, une recommandation…), chaque
+en-tête une seule fois, à la place de sa première équipe, même quand ses équipes ne se suivent pas
+dans la source (`sectionsFenetre`). Les équipes d'un même bloc (un groupe de Mes équipes, les
+défenses de siège, une recommandation) sont réunies de même et s'encadrent, avec une case « Tout « nom » » qui coche le bloc entier.
 
 Une ligne : les portraits des monstres, puis la case de l'équipe et, dessous, la raison d'une
 équipe non importable (« Moins de deux monstres connus. », « Réimporte ton compte… »).

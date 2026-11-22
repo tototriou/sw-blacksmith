@@ -74,20 +74,33 @@ export function comptesParContenu(sources: readonly SourceImportEquipe[], source
 }
 
 // Les sources sous leur en-tête de section, et dans une section les équipes
-// d'un même bloc (une liste, un groupe, les défenses de siège) à la suite.
+// d'un même bloc (une liste, un groupe, les défenses de siège) ensemble. Le
+// regroupement suit la première apparition de chaque section et de chaque bloc,
+// même quand leurs sources ne se suivent pas (Mes équipes, rangé par onglet,
+// revient plusieurs fois au même contenu) : une section ou un bloc n'apparaît
+// qu'une fois, et son nom sert de clé de rendu sans doublon.
 export interface BlocFenetre { bloc: { cle: string; nom: string } | null; sources: SourceImportEquipe[] }
 export interface SectionFenetre { groupe: string; blocs: BlocFenetre[] }
 export function sectionsFenetre(visibles: readonly SourceImportEquipe[]): SectionFenetre[] {
-  const sections: SectionFenetre[] = [];
+  const sections = new Map<string, SectionFenetre>();
+  const blocs = new Map<string, BlocFenetre>();
   for (const s of visibles) {
-    let section = sections[sections.length - 1];
-    if (!section || section.groupe !== s.groupe) sections.push(section = { groupe: s.groupe, blocs: [] });
+    let section = sections.get(s.groupe);
+    if (!section) sections.set(s.groupe, section = { groupe: s.groupe, blocs: [] });
+    const cle = s.bloc?.cle;
     const dernier = section.blocs[section.blocs.length - 1];
-    const cle = s.bloc?.cle ?? null;
-    if (dernier && (dernier.bloc?.cle ?? null) === cle && cle !== null) dernier.sources.push(s);
-    else section.blocs.push({ bloc: s.bloc ?? null, sources: [s] });
+    if (cle === undefined) {
+      // Les équipes hors bloc qui se suivent partagent une enveloppe.
+      if (dernier && dernier.bloc === null) dernier.sources.push(s);
+      else section.blocs.push({ bloc: null, sources: [s] });
+      continue;
+    }
+    const cleBloc = `${s.groupe}\u0000${cle}`;
+    const bloc = blocs.get(cleBloc);
+    if (bloc) bloc.sources.push(s);
+    else { const nouveau = { bloc: s.bloc!, sources: [s] }; blocs.set(cleBloc, nouveau); section.blocs.push(nouveau); }
   }
-  return sections;
+  return [...sections.values()];
 }
 
 // Le contenu ouvert au départ : l'onglet de Mes équipes, avec sa catégorie ;

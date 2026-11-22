@@ -79,6 +79,13 @@ function testFenetreImportFiltres() {
   egal(sections.map((x) => [x.groupe, x.blocs.map((b) => [b.bloc?.nom ?? null, b.sources.length])]),
     [[fr.equipes.imports.siegeDefenses, [[fr.equipes.imports.siegeDefenses, 2]]], [fr.equipes.imports.siegeAttaques, [[null, 1]]]],
     'les défenses de siège en un bloc, sous leur section');
+  // Mes équipes revient au même contenu après un autre, et coupe un groupe :
+  // une section et un bloc n'apparaissent qu'une fois (clés de rendu uniques).
+  const x = (cle: string, groupe: string, bloc?: string) => ({ ...s[0], cle, groupe, ...(bloc ? { bloc: { cle: bloc, nom: bloc } } : { bloc: undefined }) });
+  const melees = sectionsFenetre([x('1', 'Guilde', 'G'), x('2', 'Arène'), x('3', 'Guilde', 'G'), x('4', 'Guilde'), x('5', 'Arène')]);
+  egal(melees.map((m) => [m.groupe, m.blocs.map((b) => [b.bloc?.nom ?? null, b.sources.map((y) => y.cle)])]),
+    [['Guilde', [['G', ['1', '3']], [null, ['4']]]], ['Arène', [[null, ['2', '5']]]]],
+    'sections et blocs réunis à leur première apparition');
 }
 
 function testFenetreImportSelection() {
