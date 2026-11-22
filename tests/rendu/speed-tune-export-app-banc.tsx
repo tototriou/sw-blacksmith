@@ -27,6 +27,9 @@ async function patienter(lire: () => boolean): Promise<boolean> {
 const rapport = () => document.querySelector<HTMLElement>('[aria-labelledby="rapport-export-optimizer"]');
 const modale = () => document.querySelector<HTMLElement>('[aria-labelledby="speed-tune-modale"]');
 const visible = (e: Element) => e.getBoundingClientRect().width > 0 && getComputedStyle(e).visibility !== 'hidden';
+// La case d'un deck dans la fenêtre d'import, par son nom.
+const caseEquipe = (nom: string) => [...document.querySelectorAll<HTMLInputElement>('[role="dialog"] input[type="checkbox"]')]
+  .find(i => i.getAttribute('aria-label') === nom && visible(i.closest('label')!)) ?? null;
 const bouton = (racine: Element, texte: string) => [...racine.querySelectorAll<HTMLButtonElement>('button')].find(b => visible(b) && (b.textContent?.trim() === texte || b.getAttribute('aria-label') === texte));
 
 async function ouvrirParPalette(recherche = 'Allié', attendreOrdre = true) {
@@ -146,14 +149,15 @@ export async function scenario(reset?: { monstres: Monster[]; details: DetailMon
     }
     await geste(() => modale()?.querySelector<HTMLButtonElement>('[aria-label="Fermer"]')?.click());
     await geste(() => bouton(document.body, 'Importer une équipe')!.click());
-    const source = [...document.querySelectorAll<HTMLButtonElement>('[aria-label="Sources d’import"] button')].find(b => b.textContent?.includes('Offense'));
-    if (!source) throw new Error('Source du flottant Optimizer absente.');
-    await geste(() => source.click());
-    verifier(!rapport(), 'import par le flottant : aucune modale globale');
-    // Réussi, l'import replie les sources ; le rapport se relit en les rouvrant.
+    const offense = caseEquipe('Offense 1');
+    if (!offense) throw new Error('Offense de siège absente de la fenêtre d’import de l’Optimizer.');
+    await geste(() => offense.click());
+    await geste(() => bouton(document.body, 'Nouvelle liste')!.click());
+    verifier(!rapport(), 'import par la fenêtre d’import : aucune modale globale');
+    // Réussi, l'import referme la fenêtre ; le rapport se relit en la rouvrant.
     await geste(() => bouton(document.body, 'Importer une équipe')!.click());
     verifier(document.querySelector<HTMLElement>('[aria-label="Rapport d’import"]')?.innerText.includes('3 monstre(s), 1 équipe(s)') ?? false,
-      'import par le flottant : rapport interne lu à l’écran');
+      'import par la fenêtre d’import : rapport interne lu à l’écran');
   } finally {
     await geste(() => racine.unmount());
     globalThis.fetch = fetchAvant;
