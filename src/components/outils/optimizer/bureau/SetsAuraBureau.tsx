@@ -4,7 +4,7 @@ import { useTraduction } from '../../../../hooks/useLangue';
 
 // La place de la colonne « Aura, exclusion, avancés », celle d'« Artéfacts et
 // relique » (décision de l'utilisateur) : son panneau en prend 320
-// (`RETRAIT_PANNEAU`), ses sections 294 (la barre de défilement est dans le
+// (`RETRAIT_PANNEAU`), ses sections 302 (la barre de défilement est dans le
 // panneau).
 export const LARGEUR_COMPLEMENTS = 328;
 

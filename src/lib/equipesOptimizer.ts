@@ -1,10 +1,11 @@
 import type { ElementKey, LeaderSkill } from '../types';
+import type { ContenuDeck } from './importAccount';
 import type { Dictionnaire } from '../i18n/fr';
 import { appliquerCriteres, baseCompleteCriteres, type LeadEffectifOptimizer } from './criteresOptimizer';
 import { LEADER_SKILL_STATS, type DamageSetup, type LeaderSkillStat } from './damage';
-import { exclusionSelectorKey, resolveExclusionEntry, type ExclusionSelector, type ExclusionSourceData } from './optimizerExclusion';
+import { exclusionSelectorKey, findValidatedBuild, resolveExclusionEntry, type ExclusionSelector, type ExclusionSourceData, type ValidatedBuild } from './optimizerExclusion';
 import {
-  cleMemoireMembre, enregistrerMemoireMembre, validerEquipesOptimizer,
+  MEMBRES_MAX_EQUIPE_OPTIMIZER, MEMBRES_MIN_EQUIPE_OPTIMIZER, cleMemoireMembre, enregistrerMemoireMembre, validerEquipesOptimizer,
   type ContenuListeOptimizer, type EquipeOptimizer, type StockageOptimizer,
 } from './optimizerMemberStorage';
 
@@ -35,7 +36,45 @@ export const ACTIVITE_LEADS_OPTIMIZER = {
     Guild: 'inactif',
     Dungeon: 'actif',
   },
+  // ToA et temple du chaos : aucun lead de zone, seulement les leads globaux
+  // et élémentaires (relevé de l'utilisateur, 2026-11-22).
+  autre: {
+    General: 'actif',
+    Element: 'element',
+    Arena: 'inactif',
+    Guild: 'inactif',
+    Dungeon: 'inactif',
+  },
 } as const satisfies Record<ContenuListeOptimizer, Record<PorteeLead, ActiviteLead>>;
+
+// Le lead qui agit dans chaque contenu du jeu, désigné par le contenu de liste
+// de l'Optimizer qui l'applique : relevé de l'utilisateur, en jeu, le
+// 2026-11-22 (docs/02-app/optimizer/feat-listes-equipes-et-sauvegarde.md
+// § Lead par contenu du jeu). Lead d'arène : arène (et arène de serveur,
+// arène dimensionnelle), RTA. Lead de guilde : siège, guerre de guilde, tout le
+// labyrinthe, subjugation. Lead de donjon : donjons de Cairos, faille et raid
+// des mondes, passage des dimensions et ses raids. Aucun lead de zone
+// (`autre`, leads globaux et élémentaires seuls) : tribunal d'ascension et
+// tours, temple du chaos.
+// ⚠️ `null` : NON RELEVÉ, jamais déduit d'un contenu qui ressemble ; seul un
+// type de deck inconnu (`autre`) l'est.
+export const CONTENU_LEADS_JEU = {
+  'arene-offense': 'arene',
+  'guerre-guilde-offense': 'guilde',
+  'siege-offense': 'guilde',
+  'labyrinthe-normal': 'guilde', 'labyrinthe-sauvetage': 'guilde', 'labyrinthe-temps-limite': 'guilde',
+  'labyrinthe-boss': 'guilde', 'labyrinthe-temps-pause': 'guilde', 'labyrinthe-vitesse-limitee': 'guilde',
+  'labyrinthe-explosion': 'guilde',
+  subjugation: 'guilde',
+  cairos: 'donjon',
+  'faille-mondes': 'donjon',
+  'raid-mondes': 'donjon',
+  'passage-dimensions': 'donjon', 'raid-dimensionnel-1': 'donjon', 'raid-dimensionnel-2': 'donjon', 'raid-dimensionnel-3': 'donjon',
+  'tribunal-ascension': 'autre', 'tour-eau': 'autre', 'tour-feu': 'autre', 'tour-vent': 'autre', 'tour-lumiere': 'autre',
+  'tour-tenebres': 'autre', 'tour-celeste': 'autre',
+  'temple-chaos': 'autre',
+  autre: null,
+} as const satisfies Record<ContenuDeck, ContenuListeOptimizer | null>;
 
 // La raison d'un lead d'équipe sans effet ; sa phrase, dans chaque langue, est
 // sous `optimizer.motifsLead` du dictionnaire.
@@ -200,11 +239,21 @@ export function equipeApresFiltrageOptimizer(
 ): { equipe: EquipeOptimizer | null; rapport: string[] } {
   const r = t.optimizer.rapportsEquipe;
   const nombre = creation.members.length;
-  if (nombre < 2 || nombre > 5) {
-    const raison = nombre === 0 ? r.aucunMembre : nombre === 1 ? r.unSeulMembre : r.plusDeCinq;
+  if (nombre < MEMBRES_MIN_EQUIPE_OPTIMIZER || nombre > MEMBRES_MAX_EQUIPE_OPTIMIZER) {
+    const raison = nombre === 0 ? r.aucunMembre : nombre === 1 ? r.unSeulMembre : r.plusDeSix;
     return { equipe: null, rapport: [`${raison} ${r.aucuneEquipeCreee}`] };
   }
   const resultat = creerEquipeOptimizer(contexte, creation, t);
   if (resultat.rapport.length) return { equipe: null, rapport: [...resultat.rapport, r.aucuneEquipeCreee] };
   return { equipe: resultat.teams.find(e => e.id === creation.id)!, rapport: [] };
+}
+
+// « Enregistrer dans Mes équipes » depuis la bande d'une équipe : chaque membre
+// a un build validé dans la liste, ses runes ET sa paire d'artéfacts — sans
+// quoi Mes équipes recevrait un équipement que la recherche n'a pas retenu.
+export function buildsEquipeValides(equipe: Pick<EquipeOptimizer, 'listId' | 'members'>, validated: ValidatedBuild[]): boolean {
+  return equipe.members.length > 0 && equipe.members.every((s) => {
+    const build = findValidatedBuild(validated, equipe.listId, exclusionSelectorKey(s));
+    return !!build && build.runeIds.length > 0 && (build.artifactIds ?? []).length > 0;
+  });
 }

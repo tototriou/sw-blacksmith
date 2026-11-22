@@ -250,6 +250,7 @@ interface SiegeSlot {
   monsterId: string | null; runeSpeed: number | null; tick: number; sets?: string[];
   gear?: GearSet;        // mon équipement, venu de l'import du compte
   gearPartage?: GearSet; // celui de l'auteur d'un fichier d'équipes — affichage seulement
+  unitId?: number;       // l'exemplaire du jeu du deck importé, retiré quand le monstre change
 }
 interface SiegeTeam { id: string; slots: SiegeSlot[]; lead: number; tickAlertDismissed: boolean }
 interface SiegeState { teams: SiegeTeam[] }

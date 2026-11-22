@@ -1,12 +1,13 @@
-import { useCallback, useLayoutEffect, useMemo, useRef, useState, useEffect } from 'react';
+import { useCallback, useLayoutEffect, useMemo, useRef, useState, useEffect, type ReactNode } from 'react';
 import { Bouton, ConfirmDialog, Segmented } from '../../ui';
 import { PinOff } from 'lucide-react';
 import type { ContenuListeOptimizer, EquipeOptimizer } from '../../lib/optimizerMemberStorage';
 import OptimizerEquipeDialog from './OptimizerEquipeDialog';
 import OptimizerCreateListDialog from './OptimizerCreateListDialog';
-import OptimizerImportButton, { type SourceImportOptimizer } from './OptimizerImportButton';
-import { importerRecoOptimizer } from '../../lib/importRecoOptimizer';
-import { importerDefensesSiegeOptimizer, importerOffenseSiegeOptimizer, importerPrepaRtaOptimizer, type RapportImportOptimizer } from '../../lib/importEquipes';
+import OptimizerImportButton, { type ImportFenetreOptimizer } from './OptimizerImportButton';
+import type { ProducteurImportOptimizer, RapportImportOptimizer } from '../../lib/importEquipes';
+import { sourcesImportEquipes, sourcesMesEquipes, sourcesRecommandations, type ContexteSourcesEquipes } from '../../lib/sourcesEquipesEnregistrees';
+import { indexerInventaire, type EquipeEnregistree } from '../../lib/equipesEnregistrees';
 import { ArtifactDetail, ArtifactKind, ARTIFACT_KINDS, ELEMENTS, RelicDetail, RuneDetail, Monster, RtaEntry, SiegeTeam, Reco, type GearSet } from '../../types';
 import { computeStats } from '../../lib/stats';
 import { compteAffichable, compteConfirmeDesComptes, pagesDesResultats, signatureArtefacts as calculerSignatureArtefacts } from '../../lib/artifactQueue';
@@ -192,7 +193,6 @@ import ResultatsBureau from './optimizer/bureau/ResultatsBureau';
 import { attenteResultats, type ColonneReglage, type OngletBureau } from '../../lib/optimizerColonnes';
 import { PREFIXE_FICHIER } from '../../marque';
 import { useLangue, useTraduction } from '../../hooks/useLangue';
-import type { Dictionnaire } from '../../i18n/fr';
 import { formatNombre } from '../../i18n/format';
 import { useSpeedTuneMembre } from '../../hooks/useSpeedTuneMembre';
 import { useSpeedTuneDepuisOptimizer } from '../../hooks/useSpeedTuneDepuisOptimizer';
@@ -225,6 +225,14 @@ interface Props {
   // perdue au moindre aller-retour vers un autre onglet.
   optimizer: OptimizerState;
   onImporterEquipe: OptimizerState['importerEquipe'];
+  // Les sources de la fenêtre d'import que l'écran ne lit pas lui-même : les
+  // decks de l'export, la prépa RTA entière, et les équipes de Mes équipes
+  // (docs/02-app/transverse/feat-fenetre-import.md). Absent : la prépa, le
+  // siège et la Box de l'écran, sans decks ni équipes enregistrées.
+  importCommun?: { ctx: ContexteSourcesEquipes; equipes: readonly EquipeEnregistree[] };
+  // « Enregistrer dans Mes équipes » (docs/02-app/compte/feat-equipes.md),
+  // dans l'en-tête de chaque équipe de la liste.
+  onEnregistrerEquipe?: (equipe: EquipeOptimizer) => void;
   // Pour l'exclusion manuelle de runes (RuneExclusionPicker) — RTA/Siège
   // n'étaient jusqu'ici jamais lus par cet écran, voir optimizerExclusion.ts.
   allMonsters: Monster[];
@@ -378,7 +386,7 @@ function memesIds(a: number[], b: number[]): boolean {
 const AUCUNE_RECOMMANDATION: Reco[] = [];
 const AUCUNE_CARTE: CarteClassement[] = [];
 
-export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATION, box, runes, artifacts, relics, relicUsageById, optimizer, onImporterEquipe, allMonsters, rtaEntries, siegeDefenseTeams, siegeOffenseTeams, lists, accountName, menuOuvert, onFermerMenu, onOuvrirMenu, onMonstreHorsVue }: Props) {
+export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATION, box, runes, artifacts, relics, relicUsageById, optimizer, onImporterEquipe, importCommun, allMonsters, rtaEntries, siegeDefenseTeams, siegeOffenseTeams, lists, accountName, menuOuvert, onFermerMenu, onOuvrirMenu, onMonstreHorsVue, onEnregistrerEquipe }: Props) {
   const textes = useTraduction();
   const langue = useLangue();
   const jeu = textes.jeu;
@@ -395,10 +403,10 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
     const id = setTimeout(() => setEclatImport(false), 1400);
     return () => clearTimeout(id);
   }, [eclatImport]);
-  const importerDepuisEcran = useCallback((produire: Parameters<OptimizerState['importerEquipe']>[0]) => {
-    const rapport = onImporterEquipe(produire);
+  const importerDepuisEcran = useCallback((produire: ProducteurImportOptimizer, cible?: string) => {
+    const rapport = onImporterEquipe(produire, cible);
     setRapportImport(rapport);
-    if (rapport.listeCreee) {
+    if (rapport.listeCreee || rapport.listeCompletee) {
       // La liste créée s'affiche aussitôt au téléphone, dépliée et illuminée ;
       // le bouton d'import confirme lui-même (OptimizerImportButton).
       setZoneCOpen(true);
@@ -924,27 +932,28 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
     () => ({ box, rtaEntries, siegeDefenseTeams, siegeOffenseTeams, monsterById }),
     [box, rtaEntries, siegeDefenseTeams, siegeOffenseTeams, monsterById]
   );
-  // Les deux formats partagent les propositions calculées sur les seules sources.
-  // Le nom complet reste le nom accessible ; l'écran montre les monstres
-  // importés puis un libellé court, sous l'en-tête de leur section.
-  const sourcesImport = useMemo<SourceImportOptimizer[]>(() => [
-    { groupe: os.import.prepaRta, libelle: os.import.tousLesMonstres, nom: os.import.prepaRta, produire: importerPrepaRtaOptimizer },
-    { groupe: os.import.defenses, libelle: os.import.toutesLesDefenses, nom: os.import.defenses, produire: importerDefensesSiegeOptimizer },
-    ...exclusionData.siegeOffenseTeams.map((team, i) => ({
-      groupe: os.import.offenses, libelle: os.import.offense(i + 1),
-      nom: `${os.import.offenseDeSiege(i + 1)} · ${team.slots.map(s => s.monsterId && exclusionData.monsterById.get(s.monsterId)?.name).filter(Boolean).join(', ') || os.import.deckVide}`,
-      produire: (courantes: ExclusionSourceData, t: Dictionnaire) => importerOffenseSiegeOptimizer(team.id, courantes, t),
-    })),
-    ...recommandations.flatMap((reco, ri) => reco.decks.map((deck, di) => ({
-      groupe: os.import.recommandations, libelle: `${reco.name || os.import.recommandation(ri + 1)} · ${os.import.deck(di + 1)}`,
-      nom: `${os.import.recommandation(ri + 1)} · ${reco.name || os.import.sansNom} · ${os.import.deck(di + 1)} · ${deck.slots.map(s => s.com2usId != null && [...exclusionData.monsterById.values()].find(m => m.com2usId === s.com2usId)?.name || s.name).filter(Boolean).join(', ') || os.import.deckVide}`,
-      produire: (courantes: ExclusionSourceData, t: Dictionnaire) => importerRecoOptimizer(deck, courantes, t),
-    }))),
-  ].map(source => {
-    const { membres } = source.produire(exclusionData, textes);
-    return { ...source, utilisable: membres.length > 0,
-      monstres: membres.flatMap(m => resolveExclusionEntry(m.selector, exclusionData)?.monster ?? []) };
-  }), [exclusionData, recommandations, os, textes]);
+  // La fenêtre d'import (docs/02-app/transverse/feat-fenetre-import.md) :
+  // Mes équipes, les decks du jeu (export, page Siège, prépa RTA) et les
+  // recommandations. Sans `importCommun` (un rendu isolé de l'écran), la
+  // prépa, le siège et la Box de l'écran suffisent.
+  const fenetreImport = useMemo<ImportFenetreOptimizer>(() => {
+    const monstreParCom2us = new Map<number, Monster>();
+    for (const m of allMonsters) if (m.com2usId != null) monstreParCom2us.set(m.com2usId, m);
+    const ctx: ContexteSourcesEquipes = importCommun?.ctx ?? { box, siegeDefenseTeams, siegeOffenseTeams,
+      rta: { sections: [], entries: rtaEntries }, arenaDecks: [], decksEnregistres: [], compte: box.length > 0 || runes.length > 0,
+      monsterById: exclusionData.monsterById, monsterByCom2us: monstreParCom2us };
+    const inventaire = indexerInventaire(runes, artifacts, relics);
+    const active = lists.lists.find(l => l.id === lists.activeListId) ?? null;
+    return {
+      sources: [
+        ...sourcesMesEquipes(importCommun?.equipes ?? [], ctx, textes),
+        ...sourcesImportEquipes(ctx, null, inventaire, 'arene', textes).filter(s => s.source === 'jeu'),
+        ...sourcesRecommandations(recommandations, ctx, textes),
+      ],
+      monstreParCom2us: ctx.monsterByCom2us, inventaire, listeActive: active && { id: active.id, name: active.name },
+    };
+  }, [importCommun, box, siegeDefenseTeams, siegeOffenseTeams, rtaEntries, runes, artifacts, relics, allMonsters, exclusionData.monsterById,
+    lists.lists, lists.activeListId, recommandations, textes]);
 
   // Candidats de compte pour l'ESPÈCE COURANTE, un tableau par source —
   // pilote À LA FOIS l'état actif/grisé/désactivé de chaque puce et le contenu de la désambiguïsation d'exemplaire (zone
@@ -2857,9 +2866,11 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
   );
 
   // Assemblage des cartes de réglage (composants d'`optimizer/`).
+  // ⚠️ La colonne d'action de la liste prend la largeur de son contenu : un
+  // seul bouton y tient (deux écrasaient la liste et la recherche).
   const listesBureau = (
     <SelecteurListes
-      action={<OptimizerImportButton enLigne sources={sourcesImport} onImporter={importerDepuisEcran} rapport={rapportImport} />}
+      action={<OptimizerImportButton enLigne fenetre={fenetreImport} onImporter={importerDepuisEcran} rapport={rapportImport} />}
       lists={lists}
       memberCounts={memberCountsByList}
       titreSection
@@ -2979,6 +2990,7 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
     listHasValidated,
     setReleaseAllConfirm,
     onSpeedTune: activeList && lists.listContents.get(activeList.id) === 'guilde' ? speedTuneOutil.ouvrir : undefined,
+    onEnregistrerEquipe,
   };
   const zoneCContent = <MonstresDeLaListe {...proprietesListe} />;
 
@@ -3794,7 +3806,7 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
             disponibiliteEspece={disponibiliteEspece}
             ligneMonstreTelephoneRef={ligneMonstreTelephoneRef}
             selected={selected}
-            sourcesImport={sourcesImport}
+            fenetreImport={fenetreImport}
             importerDepuisEcran={importerDepuisEcran}
             rapportImport={rapportImport}
             setZoneCOpen={setZoneCOpen}

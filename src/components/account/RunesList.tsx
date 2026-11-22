@@ -409,7 +409,13 @@ const RuneTile = memo(function RuneTile({
   // `matchMedia` pour une seule et même réponse. La liste le lit une fois.
   etroit: boolean;
 }) {
-  const { rune } = row;
+  return <CarteRune rune={row.rune} cherches={cherches} etroit={etroit} />;
+});
+
+// La carte d'une rune telle que la liste la montre, cadre de slot compris.
+// Reprise par « Mes équipes », sous l'équipement d'un monstre (même carte,
+// même bascule détail ↔ total au clic).
+export function CarteRune({ rune, cherches, etroit }: { rune: RuneDetail; cherches?: Set<number>; etroit: boolean }) {
   return (
     <RuneDetailBox
       rune={rune}
@@ -438,4 +444,4 @@ const RuneTile = memo(function RuneTile({
       }
     />
   );
-});
+}

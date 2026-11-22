@@ -69,6 +69,9 @@ Popup partagée RTA/Siège. Détail complet dans
 ## Attendus
 
 - Un monstre déjà en prépa ne peut pas être réajouté (idempotent).
+- Chaque monstre importé garde l'exemplaire du jeu dont vient son build
+  (`RtaEntry.unitId`, jamais pour la prépa d'un ami) : une prépa enregistrée dans
+  [Mes équipes](../compte/feat-equipes.md#prépas-rta) le désigne dans la Box.
 - L'import ne duplique pas : dédup par monstre, meilleur build conservé, choix
   confirmation unique (modale de la page) si une prépa existe déjà ; l'import remplace.
 - Réimporter le même fichier est possible (l'input est reset après lecture).

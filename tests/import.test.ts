@@ -28,7 +28,7 @@ import {
   unionRunesUtilisees,
 } from '../src/lib/importAccount';
 import { rejouerDimension } from './plugin-swex-dimension.test';
-import { areneClassiqueVide, equipesAreneClassique, equipesDimension } from '../src/lib/applyAccount';
+import { areneClassiqueVide, equipesAreneClassique, equipesDimension, mapSiegeTeams } from '../src/lib/applyAccount';
 import type { Monster } from '../src/types';
 import { formatRelicUnique } from '../src/lib/effects';
 import { egal, exportReel, exportExemplairesMultiples, exportSynthetique, ignore, journalSwexReel, ok, saisonDimensionMiniature, titre } from './outils';
@@ -234,6 +234,8 @@ export default function testImport() {
     ],
     'decks enregistrés : tous les types, une place par monstre, leader en tête ; le deck vide est écarté'
   );
+  ok(decks.flatMap((d) => d.slots).every((s) => s === null || (Number.isInteger(s.unitId) && s.unitId! > 0)),
+    'decks enregistrés : chaque case garde son exemplaire (unit_id)');
   egal(
     decks[3].slots[1]!.gear?.runes.map((r) => r.id),
     [1004],
@@ -321,6 +323,10 @@ export default function testImport() {
     [1, 1, 1],
     'arène classique : défense, offense et interserveur de l’export'
   );
+  const siegeMappe = mapSiegeTeams(parseSiegeOffense(objet, fr).decks!, parCom2us);
+  egal(siegeMappe.teams[0].slots[0].unitId, parseSiegeOffense(objet, fr).decks![0].slots[0]!.unitId,
+    'siège : l’exemplaire de chaque monstre suit le deck jusqu’à la page Siège');
+  ok(Number.isInteger(siegeMappe.teams[0].slots[0].unitId), 'siège : un exemplaire connu');
   ok(
     areneClassiqueVide({ defense: [], offense: [], interserveur: [] }) &&
       !areneClassiqueVide({ defense: [], offense: [{}], interserveur: [] }),

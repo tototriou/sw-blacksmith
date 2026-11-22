@@ -86,6 +86,10 @@ async function geste(action: () => void) { flushSync(action); await new Promise(
 const visible = (e: Element) => e.getBoundingClientRect().width > 0 && getComputedStyle(e).visibility !== 'hidden';
 const boutons = () => [...document.querySelectorAll<HTMLButtonElement>('button')].filter(visible);
 const trouver = (nom: string) => boutons().find(b => b.getAttribute('aria-label') === nom || b.textContent?.trim() === nom || b.title === nom);
+// La case d'un deck dans la fenêtre d'import, par son nom.
+// La case d'un deck, à gauche de sa ligne, porte le nom du deck.
+const caseDeck = (nom: string) => [...document.querySelectorAll<HTMLInputElement>('[role="dialog"] input[type="checkbox"]')]
+  .find(i => i.getAttribute('aria-label') === nom && visible(i.closest('label')!)) ?? null;
 const boutonsExport = () => boutons().filter(b => b.getAttribute('aria-label') === "Exporter vers l'Optimizer" || b.textContent?.trim() === "Exporter vers l'Optimizer");
 const position = (e: Element) => { const { x, y, width, height } = e.getBoundingClientRect(); return { x, y, width, height }; };
 const affichage = () => JSON.stringify({ criteres: photoCriteres(etat, { type: 'personnel' }), proprietaire: etat.proprietaireCriteres,
@@ -122,8 +126,10 @@ export async function scenario(s: Source, mobile: boolean, motif = 'accepte', co
     const ancre = trouver('Importer une équipe')!; ancre.scrollIntoView({ block: 'center' });
     const avant = JSON.stringify(position(ancre));
     await geste(() => ancre.click());
-    verifier(JSON.stringify(position(ancre)) === avant, 'flottant sans déplacement de l’ancre');
-    verifier(boutons().filter(b => b.getAttribute('aria-label')?.startsWith('Recommandation 1 · Contres · Deck')).length === 2, 'un choix nommé par deck recommandé');
+    verifier(JSON.stringify(position(ancre)) === avant, 'fenêtre d’import sans déplacement de l’ancre');
+    await geste(() => trouver('Recommandations')!.click());
+    verifier(!!caseDeck('À runer') && !!caseDeck('Autre deck') && document.querySelector('[role="dialog"]')!.textContent!.includes('Contres'),
+      'un choix nommé par deck recommandé, sous sa recommandation');
   }
   if (motif === 'apercu') return preuves;
   let ancienne = '';
@@ -133,14 +139,14 @@ export async function scenario(s: Source, mobile: boolean, motif = 'accepte', co
   const point = localStorage.getItem(OPTIMIZER_BACKUP_STORAGE_KEY), stockage = JSON.stringify(listes.lireStockageCourant()), avantAffichage = affichage();
   // « second » vise le deuxième deck : chaque action doit exporter son propre deck.
   const second = motif === 'second';
-  const ancre = s === 'flottant' ? boutons().find(b => b.getAttribute('aria-label')?.startsWith(`Recommandation 1 · Contres · Deck ${second ? 2 : 1}`))!
-    : boutonsExport()[second ? 1 : 0];
+  const ancre = s === 'flottant' ? caseDeck(second ? 'Autre deck' : 'À runer')! : boutonsExport()[second ? 1 : 0];
   if (!ancre) throw new Error(`Action absente : ${s}`);
   ancre.scrollIntoView({ block: 'center' });
   // La mesure commence après l’animation d’entrée de la liste des decks.
   await new Promise(r => setTimeout(r, 250));
   // Une entrée de Menu se referme au choix ; son déclencheur reste le repère de page.
-  const repere = ancre.closest('[role="menu"]') ? trouver("Plus d'actions")! : ancre;
+  // Depuis l'Optimizer, la fenêtre se referme à l'import : le bouton qui l'ouvre est le repère.
+  const repere = s === 'flottant' ? trouver('Importer une équipe')! : ancre.closest('[role="menu"]') ? trouver("Plus d'actions")! : ancre;
   const geometrie = JSON.stringify(position(repere)), route = location.hash;
   if (motif === 'indisponible') {
     if (s !== 'flottant') {
@@ -149,21 +155,24 @@ export async function scenario(s: Source, mobile: boolean, motif = 'accepte', co
       await geste(() => { changerCompte(true); changerSources({ ...data, monsterById: new Map() }); });
       verifier(boutonsExport().length > 0 && boutonsExport().every(b => b.disabled && b.title.includes('Aucun monstre importable')), 'source inutilisable : actions désactivées avec raison');
     } else {
+      // Des espèces que l'app ne connaît plus : chaque deck désactivé, avec sa raison.
       await geste(() => changerSources({ ...data, monsterById: new Map() }));
-      const choix = boutons().filter(b => b.getAttribute('aria-label')?.startsWith('Recommandation 1'));
-      verifier(choix.length === 2 && choix.every(b => b.disabled && b.title.includes('Aucun membre résolvable')), 'recommandations inutilisables affichées avec raison');
+      const decks = [caseDeck('À runer'), caseDeck('Autre deck')];
+      verifier(decks.every(c => c?.disabled === true) && document.querySelector('[role="dialog"]')!.textContent!.includes('Moins de deux monstres connus.'),
+        'recommandations inutilisables affichées avec raison');
     }
     verifier(location.hash === route && JSON.stringify(listes.lireStockageCourant()) === stockage, 'indisponibilité sans écriture ni navigation');
   } else {
     attente = motif === 'attente'; refus = ['collision', 'vide'].includes(motif) ? motif : '';
     await geste(() => ancre.click());
-    // Réussi depuis le flottant, l'import replie les sources et le bouton
-    // confirme « Liste créée » ; le rapport se relit en rouvrant les sources.
+    if (s === 'flottant') await geste(() => trouver('Nouvelle liste')!.click());
+    // Réussi depuis la fenêtre, l'import la referme et le bouton confirme
+    // « Liste créée » ; le rapport se relit en la rouvrant.
     const bandeau = [...document.querySelectorAll<HTMLElement>('[role="status"]')].map(e => e.innerText).join(' ');
     if (s === 'flottant' && motif === 'accepte' && !second) {
       const importer = trouver('Importer une équipe')!;
       verifier(importer.getAttribute('aria-expanded') === 'false' && bandeau.includes('Liste créée'),
-        `flottant/accepte : sources repliées, « Liste créée » sur le bouton — ${bandeau.slice(0, 120)}`);
+        `flottant/accepte : fenêtre refermée, « Liste créée » sur le bouton — ${bandeau.slice(0, 120)}`);
       await geste(() => importer.click());
     }
     const rapport = document.querySelector<HTMLElement>('[aria-label="Rapport d’import"]')?.innerText ?? '';
@@ -203,7 +212,7 @@ export async function scenario(s: Source, mobile: boolean, motif = 'accepte', co
         verifier(rapport.includes('une présence sur la paire suffit') && rapport.includes('premier runage'), 'écarts du producteur lus au rapport');
       }
       verifier(rapport.includes(`3 monstre(s), ${s === 'rta' ? 0 : 1} équipe(s)`), 'rapport lisible après l’action');
-      verifier(document.querySelectorAll('[role="dialog"]').length === (s === 'flottant' ? 0 : 1), 'une modale hors Optimizer, rapport flottant interne');
+      verifier(document.querySelectorAll('[role="dialog"]').length === 1, 'une modale : le rapport hors Optimizer, ou la fenêtre d’import rouverte');
       if (!conserverRapport) await geste(() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })));
       const minimum = [...document.querySelectorAll<HTMLInputElement>('[aria-label="VIT minimum"]')].find(visible);
       verifier(minimum?.value === (s === 'rta' ? '141' : '101'), 'vitesse importée lue dans le contrôle de l’Optimizer');

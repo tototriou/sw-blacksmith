@@ -160,6 +160,12 @@ export async function scenario(nom: string): Promise<[boolean, string][]> {
     const fin = mesurer();
     verifier(fixes.every(i => JSON.stringify(avant[i]) === JSON.stringify(fin[i])), 'les positions fixes restent identiques jusqu’au bas de la liste');
     verifier(document.documentElement.scrollWidth <= window.innerWidth, 'aucun débordement horizontal');
+  } else if (nom === 'mes-equipes') {
+    await preparer(false);
+    verifier(!bouton('Enregistrer dans Mes équipes'), 'création : pas d’enregistrement dans Mes équipes dans la fenêtre');
+    await preparer(true);
+    // L'enregistrement vit dans la bande de l'équipe (MonstresDeLaListe), plus dans sa fenêtre.
+    verifier(!bouton('Enregistrer dans Mes équipes'), 'modification : pas d’enregistrement dans Mes équipes dans la fenêtre');
   } else throw new Error(`Scénario de dialogue inconnu : ${nom}`);
   return preuves;
 }

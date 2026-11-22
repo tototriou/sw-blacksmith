@@ -91,7 +91,7 @@ Ce document décrit les réglages d'artéfacts de la carte « Artéfacts et reli
    ([03-developpeur/interface/design/README.md](../../../03-developpeur/interface/design/README.md)).
    Isolée, la carte ne déplace que ce qui la suit.
    - **Au bureau**, première section du panneau de la colonne
-     « Artéfacts et relique » (ou de l'onglet « Artéfacts »), 294 px (`ArtefactsEtReliqueBureau`, autour du
+     « Artéfacts et relique » (ou de l'onglet « Artéfacts »), 302 px (`ArtefactsEtReliqueBureau`, autour du
      composant partagé dans sa forme `bureau`, sans cadre), suivie de la
      section « Meilleurs artéfacts offensifs pour ce build » (voir
      meilleurs-artefacts-offensifs.md § Affichage et emplacement de la proposition).
@@ -100,7 +100,7 @@ Ce document décrit les réglages d'artéfacts de la carte « Artéfacts et reli
      ⚠️ **Attribut et Type sur une ligne**, chaque liste à la largeur de son
      contenu : libellés, listes de
      107 px (« Comme équipé » entier), 4 px entre libellé et liste, 8 px
-     entre les deux, 293 px pour 294 utiles. Le rembourrage droit de ces
+     entre les deux, 293 px pour 302 utiles. Le rembourrage droit de ces
      deux listes passe de 24 à 20 px (le chevron garde 2 px de marge) ; la
      rangée peut encore passer à la ligne si une police plus large
      l'exigeait, plutôt que de déborder du panneau.

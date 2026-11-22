@@ -25,7 +25,7 @@ function primarySection(sets: string[]): string {
   return RTA_OTHER;
 }
 
-type MappedSlot = { monsterId: string | null; runeSpeed: number | null; sets?: string[]; tick?: number; gear?: GearSet };
+type MappedSlot = { monsterId: string | null; runeSpeed: number | null; sets?: string[]; tick?: number; gear?: GearSet; unitId?: number };
 
 // Vitesse de runes finale = SPD plate + bonus Swift (25 % de la base) si set
 // complet. Arrondi au SUPÉRIEUR, comme tous les bonus en % de l'app.
@@ -57,8 +57,8 @@ function nearestTick(combat: number | null): number {
 export function mapRtaItems(
   units: ImportedUnit[],
   byCom2us: Map<number, Monster>
-): { monsterId: string; runeSpeed: number; section: string; sets: string[]; gear?: GearSet }[] {
-  const best = new Map<string, { runeSpeed: number; sets: string[]; runeCount: number; gear?: GearSet }>();
+): { monsterId: string; runeSpeed: number; section: string; sets: string[]; gear?: GearSet; unitId?: number }[] {
+  const best = new Map<string, { runeSpeed: number; sets: string[]; runeCount: number; gear?: GearSet; unitId?: number }>();
   for (const u of units) {
     const mon = byCom2us.get(u.com2usId);
     if (!mon) continue;
@@ -66,7 +66,7 @@ export function mapRtaItems(
     const id = String(mon.id);
     const prev = best.get(id);
     if (!prev || rs > prev.runeSpeed) {
-      best.set(id, { runeSpeed: rs, sets: u.sets ?? [], runeCount: u.runeCount ?? 0, gear: u.gear });
+      best.set(id, { runeSpeed: rs, sets: u.sets ?? [], runeCount: u.runeCount ?? 0, gear: u.gear, unitId: u.unitId });
     }
   }
   return Array.from(best, ([monsterId, v]) => ({
@@ -74,6 +74,7 @@ export function mapRtaItems(
     runeSpeed: v.runeSpeed,
     sets: v.sets,
     gear: v.gear,
+    ...(v.unitId !== undefined ? { unitId: v.unitId } : {}),
     // Build incomplet (< 6 runes) → on laisse en « Non classé ».
     section: v.runeCount >= 6 ? primarySection(v.sets) : RTA_UNASSIGNED,
   }));
@@ -202,6 +203,7 @@ export function mapSiegeTeams(
           sets: slot.sets,
           tick: noTick ? 0 : nearestTick(combat),
           gear: slot.gear,
+          ...(slot.unitId !== undefined ? { unitId: slot.unitId } : {}),
         };
       }),
     };

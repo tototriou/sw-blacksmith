@@ -89,6 +89,7 @@ export function testRenduAccueil() {
     '#/arene-dimensionnelle/defense',
     '#/compte/runes',
     '#/compte/artefacts',
+    '#/compte/equipes',
     '#/bestiary',
     '#/bot-discord',
     '#/mecaniques',

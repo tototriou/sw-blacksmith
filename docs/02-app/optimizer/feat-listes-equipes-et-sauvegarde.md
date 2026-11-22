@@ -254,7 +254,7 @@ Une équipe porte `id`, `listId`, `members` (sélecteurs), un `leader` facultati
 ou `null`). Elle ne porte aucun contenu de combat ; l’ancien champ d’équipe
 est ignoré à la lecture, sans rejeter l’équipe ni inventer un contenu de liste.
 
-La validation au chargement impose 2 à 5 membres distincts, tous rattachés à la
+La validation au chargement impose 2 à 6 membres distincts, tous rattachés à la
 liste indiquée par l’équipe ; un membre ne figure que dans une équipe par liste.
 Un leader désigné appartient à ses membres. Les identifiants d’équipes sont
 uniques ; portée et élément sont validés. Chaque champ texte doit être
@@ -268,7 +268,9 @@ Le stockage ne calcule aucun lead effectif et n’ajoute aucun contrôle d’éc
 
 ## Contenu de combat des listes
 
-`ContenuListeOptimizer` admet `guilde`, `donjon` et `arene`. Le contenu vit dans
+`ContenuListeOptimizer` admet `guilde`, `donjon`, `arene` et `autre` (« Autre » : un
+contenu sans lead de zone, où n'agissent que les leads globaux et élémentaires —
+tribunal d'ascension, tours, temple du chaos). Le contenu vit dans
 `listContents`, une `Map` indexée par identifiant de liste, dans le stockage des
 membres. Le JSON contient un tableau d’objets `{ listId, contenu }` ; chaque
 identifiant est une chaîne non vide et chaque contenu une chaîne admise.
@@ -290,10 +292,29 @@ en une seule écriture ; membres, mémoires, équipes et rejets sont conservés.
 
 Le combat effectif dérive aussi les compétences d’invocateur du contenu de
 la liste active, même sans propriétaire des critères : Guilde → « Contenu de
-guilde » ; Arène, Donjon, absence de liste ou de contenu → « Contenu normal ».
+guilde » ; Arène, Donjon, Autre, absence de liste ou de contenu → « Contenu normal ».
 `combatSelonContenuListeOptimizer` est le producteur pur commun au combat lu
 par l’écran et au mode exporté dans la recette. Les valeurs enregistrées dans
 les critères et mémoires ne sont pas réécrites par cette dérivation.
+
+## Lead par contenu du jeu
+
+Quel lead agit dans quel contenu du jeu, désigné par le contenu de liste qui
+l'applique (`CONTENU_LEADS_JEU`, `src/lib/equipesOptimizer.ts`). **Relevé en jeu par
+l'utilisateur le 2026-11-22** ; c'est une règle du jeu, pas une déduction :
+
+| Lead | Contenus du jeu où il agit | Contenu de liste |
+| --- | --- | --- |
+| Arène | arène, arène de serveur, arène dimensionnelle, RTA | `arene` |
+| Guilde | combat d'occupation (siège), guerre de guilde, tous les modes du labyrinthe, subjugation de monstre | `guilde` |
+| — (leads globaux et élémentaires seuls) | tribunal d'ascension et tours, temple du chaos | `autre` |
+| Donjon | donjons de Cairos (géant, dragon, nécropolis, royaume spirituel, forteresse d'acier, crypte du jugement), faille des mondes (bêtes de glace, de l'orage, de marécage, enflammée, de radiance) et raid des mondes, passage des dimensions (Karzhan, Ellunia, Lumel, Khalderun, Sacreon, Inferas) et raid dimensionnel, phases 1 à 3 | `donjon` |
+
+Un lead général agit partout, un lead d'élément sur son élément (`ACTIVITE_LEADS_OPTIMIZER`).
+⚠️ Seul un type de deck inconnu (`autre` de `ContenuDeck`) vaut `null` : non relevé, il ne se
+complète pas par ressemblance avec un autre contenu. Chaque onglet de « Mes équipes » applique le
+lead de ses contenus à la liste créée par son export ([feat-equipes.md](../compte/feat-equipes.md)
+§ Onglets) ; un test vérifie que les deux tables s'accordent.
 
 ## Modèle pur des équipes
 
@@ -322,10 +343,10 @@ leurs critères personnels intacts. Une opération visant une équipe ou un
 membre absent est sans changement et le rapporte.
 
 `equipeApresFiltrageOptimizer` reçoit les membres déjà filtrés d’une source :
-0, 1 ou plus de 5 membres ne produisent aucune équipe, avec un motif explicite
+0, 1 ou plus de 6 membres ne produisent aucune équipe, avec un motif explicite
 et l’annonce que le lead de la source n’est appliqué à personne. Les membres
 gardent leur base complète de critères ; le producteur ne copie jamais ce
-lead dans leurs critères personnels. De 2 à 5 membres, la création suit les
+lead dans leurs critères personnels. De 2 à 6 membres, la création suit les
 mêmes validations que la création manuelle.
 
 ## Lead effectif d’un membre
@@ -404,7 +425,7 @@ affichée telle quelle, jamais remplacée en silence.
 
 « Lier une équipe » reste actif dès qu'une liste est active, quel que soit son nombre de membres, et ouvre `OptimizerEquipeDialog` hors du flux aux deux formats.
 Avec moins de deux membres libres, le corps affiche « Pas assez de monstres pour faire une équipe : rajoute des monstres dans la liste. » à la place des propositions vides, ou au-dessus du membre restant visible. « Lier » est désactivé ; Annuler et la croix ferment. La modification d'une équipe existante n'affiche pas ce message.
-La fenêtre propose deux à cinq membres, un leader facultatif (« Leader ») et le lead (type, valeur, portée et élément).
+La fenêtre propose deux à six membres, un leader facultatif (« Leader ») et le lead (type, valeur, portée et élément). L'enregistrement dans Mes équipes n'est pas dans la fenêtre : il est sur l'en-tête de la bande de l'équipe ([feat-equipes.md](../compte/feat-equipes.md)).
 Hors portée « Élément », le menu Élément reste affiché, désactivé et sans texte.
 Les membres déjà liés à une autre équipe de cette liste sont absents des propositions, à la création comme à la modification ; ceux de l’équipe modifiée restent proposés.
 Le leader se choisit par **espèce** : une seule option par espèce cochée,

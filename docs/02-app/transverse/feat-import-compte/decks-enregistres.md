@@ -74,8 +74,15 @@ Sur les contenus à sous-catégories, la catégorie de `deck_seq` désigne le do
 | `passage-dimensions` | 1 Karzhan, Forêt des fauves rugissants (`foret-fauves-rugissants`), 2 Elunia, Sanctuaire des fées rêveuses (`sanctuaire-fees-reveuses`), 3 Lumel, Falaise des puissants hommes-bêtes (`falaise-hommes-betes`), 4 Khalderun, Ruines de la mort silencieuse (`ruines-mort-silencieuse`), 5 Sacreon, Château des héros oubliés (`chateau-heros-oublies`), 6 Inferas, Terre infernale embrasée (`terre-infernale-embrasee`) |
 | `subjugation` | 1 Eau, 2 Feu, 3 Vent, 10 Boss (`subjugation-eau` … `subjugation-boss`) |
 
-Les libellés affichés viendront du dictionnaire (`src/i18n/`), avec les noms du jeu dans chaque
-langue, quand un écran montrera ces decks.
+Les libellés affichés viennent du dictionnaire (`src/i18n/`, `equipes.decks`), avec les noms du jeu
+dans chaque langue.
+
+## Où ces decks servent
+
+« Mes équipes » les propose à l'import, rangés dans ses onglets et leurs catégories
+([feat-equipes.md](../../compte/feat-equipes.md) § Imports). Ils sont conservés avec le compte dans
+le champ facultatif `decksEnregistres` ([persistance.md](persistance.md)). Le lead qui agit dans
+chaque contenu : [§ Lead par contenu du jeu](../../optimizer/feat-listes-equipes-et-sauvegarde.md#lead-par-contenu-du-jeu).
 
 ## Ce que l'export ne contient pas
 

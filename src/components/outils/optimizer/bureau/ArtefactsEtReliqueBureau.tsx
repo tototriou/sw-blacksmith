@@ -1,7 +1,7 @@
 import ArtefactsEtReliques, { type ArtefactsEtReliquesProps } from '../ArtefactsEtReliques';
 
 // La place de l'onglet « Artéfacts » dans le groupe de 328 px : son panneau
-// en prend 320 (`RETRAIT_PANNEAU`), ses sections 294 (la barre de défilement
+// en prend 320 (`RETRAIT_PANNEAU`), ses sections 302 (la barre de défilement
 // est dans le panneau).
 export const LARGEUR_ARTEFACTS = 328;
 

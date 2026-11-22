@@ -69,7 +69,7 @@ colonnes, ni bandeau ni phrase d'introduction.
    ([equipement-actuel.md](equipement-actuel.md)). ⚠️ **La fiche y est
    dépliée, à la façon des cartes de résultat** (décision de l'utilisateur) :
    panneau de statistiques resserré, artéfacts et roue à sa droite, relique
-   sous la roue, le groupe réduit pour tenir dans les 358 px de contenu du
+   sous la roue, le groupe réduit pour tenir dans les 366 px de contenu du
    panneau.
 2. **Les réglages**, place de 328 px (panneau de 320), ou 392 au cran large, un groupe de trois
    onglets, chacun avec son contenu :
@@ -97,7 +97,8 @@ colonnes, ni bandeau ni phrase d'introduction.
 ombre**, séparées par un trait fin (`border-soft`) : la colonne rassemble
 les réglages d'un même parcours, sans cadres concurrents à l'intérieur.
 Écarts **serrés dans un panneau** (8 px de rembourrage, 8 px de part et
-d'autre d'un trait), **plus larges entre deux** : 18 px (décision de
+d'autre d'un trait ; à droite, la barre de défilement réservée fait seule les
+8 px, pour une marge égale des deux côtés — décision de l'utilisateur), **plus larges entre deux** : 18 px (décision de
 l'utilisateur, 24 px auparavant). Classes communes :
 `src/components/outils/optimizer/bureau/panneau.ts` (`CADRE`,
 `DEFILEMENT`, `SECTIONS`).
@@ -140,11 +141,12 @@ contenu défile **à l'intérieur**, arrondi comme l'intérieur du cadre pour
 ne pas déborder sur ses coins (`DEFILEMENT`, `data-defilement`). La barre
 est dans le panneau, contre son bord droit : 8 px, sur fond transparent,
 toujours réservée (`scrollbar-gutter: stable`), pour que rien ne bouge
-quand elle paraît. ⚠️ Le rembourrage reste de 8 px de chaque côté, la
-barre en plus à droite : une ligne surlignée (le set refusé, une option
-avancée) déborde de 8 px de sa section, et la barre l'aurait rognée. Les
-places comptent la barre : 328 px gardent 294 px de contenu
-(328 − retrait 8 − contour 2 − 2 × 8 − barre 8), 392 en gardent 358.
+quand elle paraît. ⚠️ Pas de rembourrage à droite : la barre réservée y
+fait la marge, égale aux 8 px de gauche (décision de l'utilisateur : la
+marge de droite était double). Rien ne déborde donc d'une section vers la
+droite, la barre le rognerait : le cadre du set refusé reste dans la largeur
+du contenu. Les places comptent la barre : 328 px gardent 302 px de contenu
+(328 − retrait 8 − contour 2 − 8 − barre 8), 392 en gardent 366.
 
 ⚠️ **Marges de la page : 12 px à gauche et à droite**, au lieu des 24 de
 l'app, en pleine page comme dans un volet de l'écran partagé : la page de
@@ -162,7 +164,7 @@ Les largeurs ci-dessus sont des **places** (`LARGEURS_BUREAU`,
 src/lib/optimizerColonnes.ts), d'où se calculent les seuils : un panneau
 prend sa place moins 8 px (`RETRAIT_PANNEAU`) quand une autre colonne le
 suit, et l'écart visible vaut la gouttière de 10 px plus ce retrait. Aucun
-seuil ne dépend du retrait ; une section garde 294 px de contenu dans
+seuil ne dépend du retrait ; une section garde 302 px de contenu dans
 le groupe de 328 px, et prend la largeur du panneau dans les autres. La
 dernière colonne (les résultats, ou le groupe des quatre onglets) n'a pas
 de retrait : son panneau va jusqu'au bord de la page. À sa largeur
@@ -310,7 +312,7 @@ exclusion, avancés » : voir
 [Mise en page d'ensemble](#mise-en-page-densemble)) ; au téléphone, dans
 le panneau « Options ». Un même contenu sert les deux formats
 (`ExclusionRunesContenu`, `ReglagesAvancesContenu`), jamais écrit deux
-fois. Au bureau, chacun est une section du panneau (294 px de contenu dans
+fois. Au bureau, chacun est une section du panneau (302 px de contenu dans
 le groupe de 328, la largeur du panneau ailleurs), sans en-tête (ni titre,
 ni icône, ni phrase d'accroche : le téléphone garde les siens dans le
 panneau « Options »), empilés à la suite de « Sets d'aura des autres
@@ -319,7 +321,7 @@ monstres ».
 « Exclusion de runes » garde au bureau l'ordre empilé du panneau : « Exclure
 les runes d'un monstre », puis « Exclure les runes déjà utilisées », puis,
 après un trait, « Conserver ces slots dans l'optimisation ». Deux réglages
-côte à côte ne tiendraient pas dans 294 px de contenu. ⚠️ **Au bureau, les
+côte à côte ne tiendraient pas dans 302 px de contenu. ⚠️ **Au bureau, les
 sources « Défenses siège » et « Offenses siège » d'« Exclure les runes d'un
 monstre » passent sur deux lignes** (« Défenses / siège »), au texte normal
 des puces (décision de l'utilisateur : c'est ce qui fait tenir la colonne à
@@ -345,7 +347,7 @@ téléphone garde ses rangées.
 ⚠️ **« Réglages avancés » se pose sur DEUX colonnes dès que la place le
 permet** : le **pré-filtrage** avec ses puces et son
 avertissement d'un côté, les **interrupteurs** de l'autre. Dans une
-colonne du bureau (294 px de contenu), la place ne le permet jamais : une colonne, le
+colonne du bureau (302 px de contenu), la place ne le permet jamais : une colonne, le
 pré-filtrage au-dessus.
 
 - ⚠️ **Au téléphone**, `grid-cols-[repeat(auto-fit,minmax(260px,1fr))]` et **non** un point de

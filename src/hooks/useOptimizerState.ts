@@ -13,7 +13,7 @@ import { cleMemoireMembre, type StockageOptimizer, type RapportReverificationOpt
 import type { UseOptimizerLists } from './useOptimizerLists';
 import { consommerImportOptimizer, type ProducteurImportOptimizer, type RapportImportOptimizer } from '../lib/importEquipes';
 import { preparerRepriseOptimizer } from '../lib/optimizerBackup';
-import { AutoExclusionScope, ExclusionSelector, ExclusionSource, resolveExclusionEntry, type ExclusionSourceData } from '../lib/optimizerExclusion';
+import { AutoExclusionScope, ExclusionSelector, ExclusionSource, exclusionSelectorKey, resolveExclusionEntry, type ExclusionSourceData } from '../lib/optimizerExclusion';
 import { ArtifactKind, type LeaderSkill } from '../types';
 import { leadEffectifMembreOptimizer, memeLeadOptimizer, modifierEquipeOptimizer, type MotifLeadOptimizer } from '../lib/equipesOptimizer';
 import type { EquipeOptimizer } from '../lib/optimizerMemberStorage';
@@ -128,7 +128,8 @@ export interface OptimizerState {
   effacerProprietaireCriteres: () => void;
   choisirMembre: (listId: string, selector: ExclusionSelector) => CriteresOptimizer | null;
   reprendrePoint: (artifactIds: Set<number>) => void;
-  importerEquipe: (produire: ProducteurImportOptimizer) => RapportImportOptimizer;
+  // `cible` : l'id de la liste où ajouter l'import ; absent : une nouvelle liste.
+  importerEquipe: (produire: ProducteurImportOptimizer, cible?: string) => RapportImportOptimizer;
   capturerMembre: (listId: string, selector: ExclusionSelector) => void;
   poserTriRecherche: (tri: OptimizerSortKey) => void;
   poserCriteresAutomatiques: (patch: Partial<CriteresOptimizer> | ((courants: CriteresOptimizer) => Partial<CriteresOptimizer>)) => void;
@@ -618,7 +619,7 @@ export function useOptimizerState(contexte?: ContexteMembresOptimizer): Optimize
     return restaurerMembre(listId, selector, true);
   }
 
-  function importerEquipe(produire: ProducteurImportOptimizer): RapportImportOptimizer {
+  function importerEquipe(produire: ProducteurImportOptimizer, cible?: string): RapportImportOptimizer {
     const v = vivant.current, c = v.contexte;
     if (!c) throw new Error('Import impossible sans le contexte des listes.');
     // Le réimport publie une photo préparée avant le remplacement du compte :
@@ -627,6 +628,21 @@ export function useOptimizerState(contexte?: ContexteMembresOptimizer): Optimize
       ignores: [], equipesNonCreees: [], messages: [messages().importEnAttente] };
     const courant = c.lists.lireStockageCourant();
     const t = textesVivants.current;
+    if (cible !== undefined) {
+      // « Ajouter à la liste active » : la liste existe déjà, seuls ses ajouts se publient.
+      const ajout = consommerImportOptimizer(courant, courant.activeListId, produire(c.data, t), c.data, 'import', t, cible);
+      if (!ajout.rapport.listeCompletee) return ajout.rapport;
+      if (!c.lists.completerParImport(courant, ajout.stockage, cible)) return { ...ajout.rapport,
+        listeCompletee: null, membresImportes: 0, equipesCreees: 0,
+        messages: [...ajout.rapport.messages, messages().importCollision] };
+      effacerProprietaireCriteres();
+      v.contexte = { ...c, lists: { ...c.lists, ...ajout.stockage, activeListId: cible } };
+      const avant = new Set(courant.members.filter(x => x.listId === cible).map(x => exclusionSelectorKey(x.selector)));
+      const premierAjoute = ajout.stockage.members.find(x => x.listId === cible && !avant.has(exclusionSelectorKey(x.selector)));
+      if (premierAjoute) choisirMembre(cible, premierAjoute.selector);
+      listePrecedente.current = cible;
+      return ajout.rapport;
+    }
     const resultat = consommerImportOptimizer(courant, courant.activeListId, produire(c.data, t), c.data, 'import', t);
     if (!resultat.rapport.listeCreee) return resultat.rapport;
     const listId = resultat.rapport.listeCreee.id;

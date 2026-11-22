@@ -155,7 +155,7 @@ vide.
 `BuildCandidateCard`) : le panneau de statistiques resserré à gauche ; à sa
 droite, les artéfacts et la roue, la relique sous la roue ; ce groupe est
 réduit, d'une échelle continue, pour tenir à côté du panneau dans les
-358 px de contenu de la colonne « Monstre ». Le bandeau d'aperçu ou du build
+366 px de contenu de la colonne « Monstre ». Le bandeau d'aperçu ou du build
 validé, au-dessus, et « Valider ce build », dessous, prennent la largeur de
 la section.
 

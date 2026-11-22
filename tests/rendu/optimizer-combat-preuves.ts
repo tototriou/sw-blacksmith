@@ -124,7 +124,7 @@ export async function preuvesContenuSansDeplacement(b: Banc): Promise<[boolean, 
   const cibles = [liste, ...controles], avant = cibles.map(position);
   verifier(!b.listes().listContents.has('a') && visible(message) && controles.length >= 7,
     'liste historique : message visible et liste ainsi que contrôles de la zone C mesurés');
-  for (const valeur of ['guilde', 'donjon', 'arene']) {
+  for (const valeur of ['guilde', 'donjon', 'arene', 'autre']) {
     await editerContenuListe(b, valeur);
     const apres = cibles.map(position);
     verifier(b.listes().listContents.get('a') === valeur, `contenu ${valeur} choisi par l’édition`);

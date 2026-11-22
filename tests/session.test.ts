@@ -178,6 +178,10 @@ export default function testSession(avecCompteReel = true) {
   const compte = compteDeSession(enMemoire, new Date(1_790_000_000_000));
   ok(compte?.schema === ACCOUNT_SCHEMA && compte.savedAt === 1_790_000_000_000, 'au schéma courant, daté du clic');
   egal(compteValide(compte), compte, 'relu par la même validation qu’IndexedDB');
+  if (compte) {
+    egal(compteValide({ ...compte, decksEnregistres: 'abîmé' })?.decksEnregistres, undefined, 'des decks enregistrés malformés sont oubliés, pas le compte');
+    egal(compteValide({ ...compte, decksEnregistres: [] })?.decksEnregistres, [], 'une liste de decks enregistrés se relit');
+  }
 
   titre('session · la photo de l’Optimizer');
   const dedans = new Set<string>(CHAMPS_OPTIMIZER_SESSION);

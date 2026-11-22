@@ -23,6 +23,13 @@ import { testRenduOptimizerBandesEquipesClair, testRenduOptimizerBandesEquipesSo
 import testImport from './import.test';
 import { testSpeedTuneDeuxBoostsAtb, testSpeedTuneDeuxBoostsAtbEcran } from './speed-tune-boosts.test';
 import { verificationsImportEquipes } from './import-equipes.test';
+import { verificationsEquipesEnregistrees } from './equipes-enregistrees.test';
+import { verificationsEquipesStockage } from './equipes-stockage.test';
+import { verificationsEquipesOptimizer } from './equipes-optimizer.test';
+import { verificationsEquipesSources } from './equipes-sources.test';
+import { verificationsFenetreImport } from './fenetre-import.test';
+import { testRenduFenetreImportSources, testRenduTelephoneFenetreImportSources } from './rendu/fenetre-import-navigateur.test';
+import { verificationsRenduEquipes } from './rendu/equipes.test';
 import { testOptimizerImportNavigation } from './optimizer-import-navigation.test';
 import { testOptimizerColonnes, testOptimizerColonnesOnglet, testOptimizerColonnesGuidages, testOptimizerColonnesAttenteResultats, testOptimizerColonnesCoffreSets, testOptimizerColonnesTableau } from './optimizer-colonnes.test';
 import { testRenduRtaExportOptimizer, testRenduTelephoneRtaExportOptimizer, testRenduRecoExportOptimizer,
@@ -35,7 +42,7 @@ import { testOptimizerImportActionDemontee, testOptimizerImportEcrituresGroupees
   testRenduTelephoneOptimizerImportRta, testRenduOptimizerImportIndisponible, testRenduTelephoneOptimizerImportIndisponible, testRenduOptimizerImportRapportPartage, testRenduOptimizerImportDisponibiliteMemoisee } from './rendu/optimizer-import.test';
 import { testRenduOptimizerLeadEquipePersonnel, testRenduTelephoneOptimizerLeadEquipePersonnel,
   testRenduOptimizerDialogueEquipe, testRenduTelephoneOptimizerDialogueEquipe,
-  testRenduOptimizerSpeedTuneOutil, testRenduTelephoneOptimizerSpeedTuneOutil,
+  testRenduOptimizerSpeedTuneOutil, testRenduTelephoneOptimizerSpeedTuneOutil, testRenduOptimizerMesEquipesBande, testRenduTelephoneOptimizerMesEquipesBande,
   testRenduOptimizerCreationContenu, testRenduTelephoneOptimizerCreationContenu,
   testRenduOptimizerRefusIdentitePerime, testRenduTelephoneOptimizerRefusIdentitePerime,
   testRenduOptimizerRecetteLeadEquipe, testRenduTelephoneOptimizerRecetteLeadEquipe,
@@ -67,6 +74,7 @@ import { testRenduOptimizerDialogueLeaderSkill, testRenduTelephoneOptimizerDialo
   testRenduOptimizerDialogueDefilement, testRenduTelephoneOptimizerDialogueDefilement,
   testRenduOptimizerDialogueHauteur400, testRenduOptimizerDialogueHauteur600,
   testRenduOptimizerDialogueReferencesLeader, testRenduTelephoneOptimizerDialogueReferencesLeader,
+  testRenduOptimizerDialogueMesEquipes, testRenduTelephoneOptimizerDialogueMesEquipes,
   testRenduOptimizerDialogueChangementFormat } from './rendu/optimizer-dialogue.test';
 import {
   testMemoireOptimizerJson, testMemoireOptimizerCopie, testMemoireOptimizerLecteurListes,
@@ -291,7 +299,7 @@ import testOptimizerDamageTransitions from './optimizer-damage-transitions.test'
 import testOptimizerCriteresCaracterisation from './optimizer-criteres-caracterisation.test';
 import { testLeaderSkillPaliersCorpus } from './leader-skill-paliers.test';
 import { testOptimizerContenuListeCreationEtModification, testOptimizerEquipesHookModificationAvecOrpheline, testOptimizerContenuListeJsonEtAncienStockage, testOptimizerContenuListeSansContenu, verificationsOptimizerContenuListeElements, testOptimizerContenuListeRejetsConserves, testOptimizerContenuListeSuppressionEtSession, testOptimizerContenuListeImportPreserveEtCollisions } from './optimizer-list-content.test';
-import { testOptimizerEquipesAjoutEquipeOrphelineNeBloquePasEquipeSaine, verificationsOptimizerEquipesActivite, verificationsOptimizerEquipesCardinalites, testOptimizerEquipesElementsEtLeadPersonnel, testOptimizerEquipesSynchronisationLeadPersonnel, testOptimizerEquipesLeadsNonCalculablesEtHorsListe, testOptimizerEquipesOperationsEtExclusivite, testOptimizerEquipesRetraitEquipeDeDeux, testOptimizerEquipesCreationAvecOrphelines } from './optimizer-equipes.test';
+import { testOptimizerEquipesAjoutEquipeOrphelineNeBloquePasEquipeSaine, verificationsOptimizerEquipesActivite, verificationsOptimizerEquipesCardinalites, testOptimizerEquipesElementsEtLeadPersonnel, testOptimizerEquipesSynchronisationLeadPersonnel, testOptimizerEquipesLeadsNonCalculablesEtHorsListe, testOptimizerEquipesOperationsEtExclusivite, testOptimizerEquipesRetraitEquipeDeDeux, testOptimizerEquipesCreationAvecOrphelines, testOptimizerEquipesBuildsValidesPourMesEquipes } from './optimizer-equipes.test';
 import { testOptimizerCriteresPhotos, testOptimizerCriteresBase, testOptimizerCriteresGarde, testOptimizerCritereArtefactsNavigation } from './optimizer-criteres.test';
 import { testAurasRecette, testAurasCombatEtExclusive, testAurasArrondiCommunLeadInvocateur, testAurasChoixEffectifReliqueEhp, testAurasPassifEtAdditionnel, testAurasEhpEtConditions, testAurasReliqueFinaleEtDiagnostics, testAurasPariteEcranCliEtCache, testAurasRechercheDifferentielle, testAurasPropresResolution, testAurasPropresCombatEtScore, testAurasPvEffectifsCeilUnique, testAurasPropresNoteDesCouples, testAurasConditionsPropresFonctions, testAurasConditionsPropresResolution, testAurasConditionsPropresPairBuckets, testAurasCarteEgaleTri, testAurasPariteRegimes } from './auras-modele.test';
 import { testAurasEcranBornes, testAurasEcranEcriture, testAurasEcranValidationPartagee, testAurasEcranEcho, testAurasEcranInterrupteur, testAurasEcranRappel, testAurasEcranGuidage } from './auras-ecran.test';
@@ -985,6 +993,12 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testOptimizerContenuListeImportPreserveEtCollisions', testOptimizerContenuListeImportPreserveEtCollisions],
   ...verificationsOptimizerEquipesActivite,
   ...verificationsImportEquipes,
+  ...verificationsEquipesEnregistrees,
+  ...verificationsEquipesStockage,
+  ...verificationsEquipesOptimizer,
+  ...verificationsEquipesSources,
+  ...verificationsFenetreImport,
+  ...verificationsRenduEquipes,
   ...verificationsImportSpeedTune,
   ...verificationsPlanSpeedTune,
   ...verificationsSpeedTuneDepuisPlan,
@@ -994,6 +1008,7 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ...verificationsOptimizerEquipesCardinalites,
   ['testOptimizerEquipesElementsEtLeadPersonnel', testOptimizerEquipesElementsEtLeadPersonnel],
   ['testOptimizerEquipesSynchronisationLeadPersonnel', testOptimizerEquipesSynchronisationLeadPersonnel],
+  ['testOptimizerEquipesBuildsValidesPourMesEquipes', testOptimizerEquipesBuildsValidesPourMesEquipes],
   ['testOptimizerEquipesLeadsNonCalculablesEtHorsListe', testOptimizerEquipesLeadsNonCalculablesEtHorsListe],
   ['testOptimizerEquipesOperationsEtExclusivite', testOptimizerEquipesOperationsEtExclusivite],
   ['testOptimizerEquipesRetraitEquipeDeDeux', testOptimizerEquipesRetraitEquipeDeDeux],
@@ -1298,6 +1313,8 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testOptimizerImportEcrituresGroupees', testOptimizerImportEcrituresGroupees],
   ['testOptimizerImportReverificationEnAttente', testOptimizerImportReverificationEnAttente],
   ['testOptimizerImportCollision', testOptimizerImportCollision],
+  ['testRenduFenetreImportSources', testRenduFenetreImportSources],
+  ['testRenduTelephoneFenetreImportSources', testRenduTelephoneFenetreImportSources],
   ['testRenduOptimizerImportDefenses', testRenduOptimizerImportDefenses],
   ['testRenduTelephoneOptimizerImportDefenses', testRenduTelephoneOptimizerImportDefenses],
   ['testRenduOptimizerImportOffense', testRenduOptimizerImportOffense],
@@ -1360,6 +1377,8 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testRenduTelephoneOptimizerDialogueEquipe', testRenduTelephoneOptimizerDialogueEquipe],
   ['testRenduOptimizerSpeedTuneOutil', testRenduOptimizerSpeedTuneOutil],
   ['testRenduTelephoneOptimizerSpeedTuneOutil', testRenduTelephoneOptimizerSpeedTuneOutil],
+  ['testRenduOptimizerMesEquipesBande', testRenduOptimizerMesEquipesBande],
+  ['testRenduTelephoneOptimizerMesEquipesBande', testRenduTelephoneOptimizerMesEquipesBande],
   ['testRenduOptimizerDialogueLeaderSkill', testRenduOptimizerDialogueLeaderSkill],
   ['testRenduTelephoneOptimizerDialogueLeaderSkill', testRenduTelephoneOptimizerDialogueLeaderSkill],
   ['testRenduOptimizerDialogueLeaderEspece', testRenduOptimizerDialogueLeaderEspece],
@@ -1372,6 +1391,8 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testRenduOptimizerDialogueHauteur600', testRenduOptimizerDialogueHauteur600],
   ['testRenduOptimizerDialogueReferencesLeader', testRenduOptimizerDialogueReferencesLeader],
   ['testRenduTelephoneOptimizerDialogueReferencesLeader', testRenduTelephoneOptimizerDialogueReferencesLeader],
+  ['testRenduOptimizerDialogueMesEquipes', testRenduOptimizerDialogueMesEquipes],
+  ['testRenduTelephoneOptimizerDialogueMesEquipes', testRenduTelephoneOptimizerDialogueMesEquipes],
   ['testRenduOptimizerDialogueChangementFormat', testRenduOptimizerDialogueChangementFormat],
   ['testRenduOptimizerCreationContenu', testRenduOptimizerCreationContenu],
   ['testRenduTelephoneOptimizerCreationContenu', testRenduTelephoneOptimizerCreationContenu],

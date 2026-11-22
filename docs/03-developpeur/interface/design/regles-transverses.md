@@ -317,7 +317,7 @@ celui qui **entre** descend. Ne pas raisonner « on télécharge un fichier,
 donc `Download` » : c'est l'inversion à éviter. (La zone de dépôt de
 l'accueil porte la roue des runes du jeu, pas une flèche.)
 
-Une exception : **« Exporter vers l'Optimizer » porte le compas de l'Optimizer**
+Une exception : **« Exporter vers l'Optimizer » porte l'enclume de l'Optimizer**
 (`IconeOptimizer`), pas `Upload` — l'équipe ne sort pas de l'app, elle part
 vers une section, et une icône qui nomme une section prend la sienne
 ([navigation-seule.md](../../../02-app/transverse/feat-navigation/navigation-seule.md)).

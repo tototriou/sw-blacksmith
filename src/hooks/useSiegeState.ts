@@ -79,6 +79,7 @@ function load(cle: string, n: number, ancienne?: string): SiegeState {
           tick: s && typeof s.tick === 'number' ? s.tick : legacyTick,
           sets: s && Array.isArray(s.sets) ? s.sets.filter((x): x is string => typeof x === 'string') : [],
           gear: s && (s as { gear?: unknown }).gear && typeof (s as { gear?: unknown }).gear === 'object' ? ((s as { gear?: GearSet }).gear) : undefined,
+          ...(s && Number.isInteger(s.unitId) && s.unitId! > 0 ? { unitId: s.unitId } : {}),
           ...(s && s.gearPartage && typeof s.gearPartage === 'object' ? { gearPartage: s.gearPartage } : {}),
         };
       });
@@ -180,11 +181,12 @@ function useEquipes(cle: string, n: number, ancienne?: string): UseSiegeState {
   );
 
   // ⚠️ L'équipement REÇU part avec le monstre qu'il décrivait : laissé là, les
-  // runes de l'auteur s'afficheraient sous un autre monstre.
+  // runes de l'auteur s'afficheraient sous un autre monstre. L'exemplaire du
+  // jeu part de même : il désignait l'ancien monstre.
   const setSlotMonster = useCallback(
     (teamId: string, idx: number, monsterId: string) =>
       updateSlot(teamId, idx, (sl) => {
-        const { gearPartage: _recu, ...reste } = sl;
+        const { gearPartage: _recu, unitId: _exemplaire, ...reste } = sl;
         return { ...reste, monsterId };
       }),
     [updateSlot]
@@ -239,7 +241,7 @@ function useEquipes(cle: string, n: number, ancienne?: string): UseSiegeState {
   // cumule pas avec le précédent.
   const importTeams = useCallback(
     (
-      teams: { slots: { monsterId: string | null; runeSpeed: number | null; sets?: string[]; tick?: number; gear?: GearSet }[] }[]
+      teams: { slots: { monsterId: string | null; runeSpeed: number | null; sets?: string[]; tick?: number; gear?: GearSet; unitId?: number }[] }[]
     ) => {
       setState((s) => {
         const built: SiegeTeam[] = teams.map((t, i) => {
@@ -251,6 +253,7 @@ function useEquipes(cle: string, n: number, ancienne?: string): UseSiegeState {
               tick: sl && typeof sl.tick === 'number' ? sl.tick : 0,
               sets: sl && Array.isArray(sl.sets) ? sl.sets : [],
               gear: sl && sl.gear && typeof sl.gear === 'object' ? sl.gear : undefined,
+              ...(sl && typeof sl.unitId === 'number' ? { unitId: sl.unitId } : {}),
             };
           });
           // ⚠️⚠️ **L'IDENTITÉ D'UNE ÉQUIPE SURVIT AU RÉIMPORT.** Elle était

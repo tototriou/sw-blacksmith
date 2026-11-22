@@ -10,12 +10,12 @@ Ce document décrit les conditions, l'inventaire et les réglages avancés.
    comprise : [../feat-precision-par-sort.md](../feat-precision-par-sort.md).
    Au téléphone, en bas
    de « Critères de recherche », sous le set et les principales ; au bureau,
-   une section « Conditions » de 294 px de « Critères », sous le set, au-dessus
+   une section « Conditions » de 302 px de « Critères », sous le set, au-dessus
    des principales et d'« État de mon monstre » (`ConditionsBureau`). La
    colonne des libellés y prend la largeur du plus long d'entre eux et les
    colonnes s'écartent de 12 px. ⚠️ **« Min » et « Max » y sont des
    en-têtes de colonne posés une fois**, comme au téléphone : collés à
-   chaque champ, ils faisaient déborder la grille des 294 px de la section.
+   chaque champ, ils faisaient déborder la grille des 302 px de la section.
    Les champs gardent leur largeur, et la grille est centrée dans la
    section (décision de l'utilisateur). « Artéfacts et relique » est une carte à
    part (voir artefacts.md § Place de la carte à l'écran).
@@ -146,7 +146,7 @@ Ce document décrit les conditions, l'inventaire et les réglages avancés.
 ## Réglages avancés
 
 9. **« Réglages avancés »**. ⚠️ **Au bureau, en ligne** dans la colonne
-   repliable « Aura, exclusion, avancés », section de 294 px de son panneau,
+   repliable « Aura, exclusion, avancés », section de 302 px de son panneau,
    **sans titre** (ni icône ni en-tête : le téléphone garde le sien dans le
    panneau « Options »), après « Exclusion de runes », sur une seule colonne : pré-filtrage, puis
    les interrupteurs (voir

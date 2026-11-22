@@ -6,6 +6,7 @@ import {
   IconeAmi,
   IconeArene,
   IconeArtefacts,
+  IconeEquipes,
   IconeMonstres,
   IconeRunes,
   IconeBestiaire,
@@ -88,10 +89,16 @@ import {
   persistenceEnabled,
   purgeDonneesConservees,
   setDialogueMasque,
+  persistenceChoisie,
   setPersistence,
   storageAvailable,
 } from './hooks/usePersistence';
 import { ConfirmDialog, KeepAccountDialog, Modale } from './ui/Dialogs';
+import { useEquipesEnregistrees } from './hooks/useEquipesEnregistrees';
+import EquipesSection from './components/account/equipes/EquipesSection';
+import type { DemandeEquipeOptimizer } from './lib/importEquipesEnregistrees';
+import type { ContexteSourcesEquipes } from './lib/sourcesEquipesEnregistrees';
+import { indexerInventaire } from './lib/equipesEnregistrees';
 import { FournisseurNotification, useNotifier } from './ui/Notification';
 import { Bouton, DeuxVolets } from './ui';
 import VoletEcran from './components/VoletEcran';
@@ -141,7 +148,7 @@ import { avecNavigationImportOptimizer } from './lib/actionImportOptimizer';
 import type { RapportImportOptimizer } from './lib/importEquipes';
 import { useOptimizerLists } from './hooks/useOptimizerLists';
 import { ExclusionSourceData } from './lib/optimizerExclusion';
-import { reverifierStockageOptimizer, type StockageOptimizer } from './lib/optimizerMemberStorage';
+import { reverifierStockageOptimizer, type EquipeOptimizer, type StockageOptimizer } from './lib/optimizerMemberStorage';
 import { acquerirIdentitesMembres } from './lib/optimizerRattachement';
 import { collectOwnedBuilds, collectOwnedTeams, countCopiesByCom2us } from './lib/ownedBuilds';
 import {
@@ -152,6 +159,10 @@ import {
   parseAccountSource,
   parseSiegeDefense,
   parseSiegeOffense,
+  parseArenaDecks,
+  parseDecksEnregistres,
+  type DeckArene,
+  type DeckEnregistreImporte,
   parseDimensionRunes,
   parseAccountBox,
   parseAccountInventory,
@@ -205,10 +216,11 @@ function aPanneau(n: ReturnType<typeof parseHash>): boolean {
     // catégories, tout effacer) : aucune n'a de sens en consultant celle d'un
     // ami, où l'on ne modifie rien.
     (n.route !== 'rta' || n.rtaSub === 'prepa') &&
+    // ⚠️ La vue LUE, pas celle de l'adresse : `#/compte/equipes` n'en porte
+    // aucune et s'ouvre pourtant sur la liste.
     (n.route !== 'compte' ||
       n.accountSub === 'monstres' ||
-      n.accountView === 'liste' ||
-      n.accountView === 'optimisation') &&
+      ['liste', 'optimisation'].includes(vueValide(n.accountSub, n.accountView))) &&
     // ⚠️ Un seul outil aujourd'hui (Optimizer), mais la vérification
     // reste écrite : un futur outil sans réglages avancés n'hériterait pas
     // du bouton par accident (même raison que la garde ci-dessus sur
@@ -234,7 +246,7 @@ type Route =
   | 'bot-discord'
   | 'sw-exporter'
   | 'parametres';
-export type AccountSub = 'monstres' | 'runes' | 'artefacts';
+export type AccountSub = 'monstres' | 'runes' | 'artefacts' | 'equipes';
 
 // Sous-sections de RTA. `prepa` = la sienne (tout l'écran historique), `ami` =
 // celle de quelqu'un d'autre, en lecture.
@@ -314,7 +326,7 @@ export function parseHash(hash: string = window.location.hash): {
     // `compte/runes/courbes` → sous-section « runes », vue « courbes ».
     const [, sub, vue] = h.split('/');
     const accountSub: AccountSub =
-      sub === 'runes' ? 'runes' : sub === 'artefacts' ? 'artefacts' : 'monstres';
+      sub === 'runes' ? 'runes' : sub === 'artefacts' ? 'artefacts' : sub === 'equipes' ? 'equipes' : 'monstres';
     return {
       route: 'compte',
       rtaSub: 'prepa',
@@ -432,6 +444,7 @@ const ACCOUNT_SUBS: { sub: AccountSub; texte: CleNavigation; icon: IconeAtelier;
   { sub: 'monstres', texte: 'monstres', icon: IconeMonstres, couleur: COULEUR_COMPTE_SUB.monstres },
   { sub: 'runes', texte: 'runes', icon: IconeRunes, couleur: COULEUR_COMPTE_SUB.runes },
   { sub: 'artefacts', texte: 'artefacts', icon: IconeArtefacts, couleur: COULEUR_COMPTE_SUB.artefacts },
+  { sub: 'equipes', texte: 'mesEquipes', icon: IconeEquipes, couleur: COULEUR_COMPTE_SUB.equipes },
 ];
 
 // Sous-sections d'« Outils » (dropdown de nav) — un seul outil pour l'instant,
@@ -543,6 +556,13 @@ function Application() {
   // Libellés des marqueurs de runes (`parseRuneMarkerLabels`) — même raison :
   // `markers` ne vit que dans l'export brut.
   const [runeMarkerLabels, setRuneMarkerLabels] = useState<Record<number, string>>({});
+  // Les decks d'arène, sources de « Mes équipes ». `null` : pas lus (compte
+  // conservé avant ce champ) — distinct d'un compte qui n'en a aucun.
+  const [arenaDecks, setArenaDecks] = useState<DeckArene[] | null>(null);
+  const [decksEnregistres, setDecksEnregistres] = useState<DeckEnregistreImporte[] | null>(null);
+  // « Mes équipes » : ici, comme les listes de l'Optimizer, pour que la page
+  // et l'Optimizer partagent les mêmes équipes et que la session les emporte.
+  const equipesEnregistrees = useEquipesEnregistrees();
 
   // Un nouveau compte importé (`appliquerImport`, `setBox` avec une NOUVELLE
   // référence) rend obsolètes les « Critères de recherche »/« Combinaisons
@@ -798,6 +818,38 @@ function Application() {
   // l'applique comme un nouvel export du dossier SWEX.
   const { direct, enDirect } = useCompteDirect(monsterByCom2us, rafraichirCompte);
 
+  // « Mes équipes » : ses sources, l'inventaire de comparaison et les listes
+  // de l'Optimizer pour l'aller-retour (docs/02-app/compte/feat-equipes.md).
+  const compteCharge = box.length > 0 || runes.length > 0;
+  const contexteEquipes = useMemo<ContexteSourcesEquipes>(() => ({ box,
+    siegeDefenseTeams: siegeDef.state.teams, siegeOffenseTeams: siegeOff.state.teams, rta: rta.state, arenaDecks, decksEnregistres, compte: compteCharge,
+    monsterById: optimizerData.monsterById, monsterByCom2us }),
+  [box, siegeDef.state.teams, siegeOff.state.teams, rta.state, arenaDecks, decksEnregistres, compteCharge, optimizerData.monsterById, monsterByCom2us]);
+  const inventaireEquipes = useMemo(() => (compteCharge ? indexerInventaire(runes, artifacts, relics) : null),
+    [compteCharge, runes, artifacts, relics]);
+  const optimizerPourEquipes = useMemo(() => ({ data: optimizerData, stockage: {
+    identities: optimizerLists.identities, lists: optimizerLists.lists, members: optimizerLists.members,
+    validated: optimizerLists.validated, memories: optimizerLists.memories, teams: optimizerLists.teams,
+    listContents: optimizerLists.listContents, rejets: optimizerLists.rejets } }),
+  [optimizerData, optimizerLists.identities, optimizerLists.lists, optimizerLists.members, optimizerLists.validated,
+    optimizerLists.memories, optimizerLists.teams, optimizerLists.listContents, optimizerLists.rejets]);
+  // La fenêtre d'import de l'Optimizer lit aussi les decks de l'export et Mes équipes.
+  const importCommunOptimizer = useMemo(() => ({ ctx: contexteEquipes, equipes: equipesEnregistrees.equipes }),
+    [contexteEquipes, equipesEnregistrees.equipes]);
+  // La première équipe créée ou importée pose la question de conservation,
+  // tant qu'elle n'a jamais été tranchée.
+  const demanderConservationEquipes = () => {
+    if (!persistenceChoisie() && storageAvailable()) setAskKeep(true);
+  };
+  // « Enregistrer dans Mes équipes » depuis une équipe de l'Optimizer : Mes
+  // équipes s'ouvre et décide, après sa relecture, de la mise à jour de
+  // l'équipe liée ou de la création d'une nouvelle.
+  const [demandeOptimizer, setDemandeOptimizer] = useState<DemandeEquipeOptimizer | null>(null);
+  const enregistrerEquipeOptimizer = useCallback((equipe: EquipeOptimizer) => {
+    setDemandeOptimizer({ listId: equipe.listId, equipeId: equipe.id });
+    window.location.hash = hashVue('equipes', vueParDefaut('equipes'));
+  }, []);
+
   // ---- PALETTE Ctrl K --------------------------------
   // Ouverte par Ctrl/⌘ K de n'importe où, par le champ de la barre latérale, et
   // au téléphone par la loupe de la barre du haut. Ce qu'elle ouvre (fiche d'un
@@ -872,6 +924,8 @@ function Application() {
         setUsedRuneIds(rec.usedRuneIds);
         setRelicUsageById(rec.relicUsageById);
         setRuneMarkerLabels(rec.runeMarkerLabels);
+        setArenaDecks(rec.arenaDecks ?? null);
+        setDecksEnregistres(rec.decksEnregistres ?? null);
         setAccountExportedAt(rec.exportedAt);
         setAccountName(rec.wizardName ?? null);
       }
@@ -1050,6 +1104,8 @@ function Application() {
       // siège), réduits aux runes qui y jouent — rangés par périmètre.
       usedRunes: parseUsedRuneIdsParPerimetre(data),
       markerLabels: parseRuneMarkerLabels(data),
+      decksArene: parseArenaDecks(data),
+      decksEnregistres: parseDecksEnregistres(data),
     };
   }
 
@@ -1066,7 +1122,7 @@ function Application() {
     // Regroupé avec la relecture du compte conservé, ce vrai import doit
     // être revérifié : sinon la photo resterait posée et bloquerait l'import d'équipe.
     hydrationJustAppliedRef.current = false;
-    const { exporte, nomJoueur, boxRes, invRes, boxItems, usedRunes, markerLabels } = compte;
+    const { exporte, nomJoueur, boxRes, invRes, boxItems, usedRunes, markerLabels, decksArene, decksEnregistres: decksDuCompte } = compte;
     // Exclusion manuelle de runes de l'Optimizer (excludedSelectors) : à
     // effacer sur un compte VRAIMENT DIFFÉRENT (autre wizard_id — voir
     // parseWizardId), pas sur une simple nouvelle version RÉEXPORTÉE du même
@@ -1105,6 +1161,8 @@ function Application() {
     setUsedRuneIds(usedRunes);
     setRelicUsageById(invRes.relicUsageById ?? {});
     setRuneMarkerLabels(markerLabels);
+    setArenaDecks(decksArene);
+    setDecksEnregistres(decksDuCompte);
 
     // Enregistrement **après** la mise à jour de l'affichage et sans attendre :
     // une écriture de 2 Mo ne doit pas retarder l'apparition du compte. Un échec
@@ -1122,6 +1180,8 @@ function Application() {
         runeMarkerLabels: markerLabels,
         exportedAt: exporte,
         wizardName: nomJoueur,
+        arenaDecks: decksArene,
+        decksEnregistres: decksDuCompte,
       });
     }
   }
@@ -1231,6 +1291,8 @@ function Application() {
       runeMarkerLabels,
       exportedAt: accountExportedAt,
       wizardName: accountName,
+      ...(arenaDecks ? { arenaDecks } : {}),
+      ...(decksEnregistres ? { decksEnregistres } : {}),
     });
   }
 
@@ -1266,7 +1328,9 @@ function Application() {
   // Pourquoi « Sauvegarder » est désactivé, ou `null` s'il ne l'est pas.
   const sauvegardeIndisponible = accountHydrating
     ? textes.donnees.compteEnChargement
-    : null;
+    : equipesEnregistrees.relecture === 'en-cours'
+      ? textes.donnees.equipesEnChargement
+      : null;
   const sauvegarderSession = () => void enregistrerSession(false);
   const sauvegarderSessionSous = () => void enregistrerSession(true);
   // Ctrl+S lit la DERNIÈRE version : l'écouteur, lui, ne se pose qu'une fois.
@@ -1278,6 +1342,7 @@ function Application() {
       maintenant,
       versionApp: __APP_VERSION__,
       stockage: Object.fromEntries(CLES_SESSION.map((cle) => [cle, lireTravail(cle)])),
+      equipes: equipesEnregistrees.equipes,
       compte: compteDeSession(
         {
           exportedAt: accountExportedAt,
@@ -1290,6 +1355,8 @@ function Application() {
           usedRuneIds,
           relicUsageById,
           runeMarkerLabels,
+          ...(arenaDecks ? { arenaDecks } : {}),
+          ...(decksEnregistres ? { decksEnregistres } : {}),
         },
         maintenant
       ),
@@ -1375,7 +1442,8 @@ function Application() {
     if (!chargee || accountHydrating || chargementRepris.current) return;
     chargementRepris.current = true;
     const c = textes.donnees.chargement;
-    const avertissements = chargee.avertissements.map((a) => (a === 'comptePerime' ? c.comptePerime : c.optimizerIllisible));
+    const avertissements = chargee.avertissements.map((a) =>
+      (a === 'comptePerime' ? c.comptePerime : a === 'optimizerIllisible' ? c.optimizerIllisible : c.equipesIllisibles(a.nombre)));
     if (chargee.optimizer) {
       const laisses = restaurerOptimizer(optimizer, chargee.optimizer);
       if (laisses.length) avertissements.push(c.optimizerLaisses(laisses.join(', ')));
@@ -1716,6 +1784,13 @@ function Application() {
         },
         { key: 'runes', label: nomNav('runes'), icon: <IconeRunes size={18} />, ouvre: sectionRunesBureau, actif: route === 'compte' && accountSub === 'runes' },
         { key: 'artefacts', label: nomNav('artefacts'), icon: <IconeArtefacts size={18} />, ouvre: sectionArtefactsBureau, actif: route === 'compte' && accountSub === 'artefacts' },
+        {
+          key: 'equipes',
+          label: nomNav('mesEquipes'),
+          hash: hashVue('equipes', vueParDefaut('equipes')),
+          icon: <IconeEquipes size={18} />,
+          actif: route === 'compte' && accountSub === 'equipes',
+        },
       ],
     },
     {
@@ -2171,6 +2246,22 @@ function Application() {
         menuOuvert={menu.ouvert}
         onFermerMenu={menu.fermer}
       />
+    ) : n.route === 'compte' && n.accountSub === 'equipes' ? (
+      // ⚠️ Avant les écrans du compte : « Mes équipes » se lit sans compte importé.
+      <EquipesSection
+        api={equipesEnregistrees}
+        ctx={contexteEquipes}
+        inventaire={inventaireEquipes}
+        allMonsters={allMonsters}
+        optimizer={optimizerPourEquipes}
+        recos={recos.state.recos}
+        onImporterOptimizer={importerEquipe}
+        onEquipeCreee={demanderConservationEquipes}
+        demandeOptimizer={demandeOptimizer}
+        onDemandeTraitee={() => setDemandeOptimizer(null)}
+        menuOuvert={menu.ouvert}
+        onFermerMenu={menu.fermer}
+      />
     ) : n.route === 'compte' ? (
       <AccountPage
         sub={n.accountSub}
@@ -2206,6 +2297,7 @@ function Application() {
         optimizer={optimizer}
         onImporterEquipe={importerEquipeFlottant}
         onExporterEquipe={importerEquipe}
+        importCommun={importCommunOptimizer}
         allMonsters={allMonsters}
         rtaEntries={rta.state.entries}
         siegeDefenseTeams={siegeDef.state.teams}
@@ -2218,6 +2310,7 @@ function Application() {
         // au doigt — seule page qui le demande.
         onOuvrirMenu={menu.ouvrir}
         onMonstreHorsVue={setMonstreOptions}
+        onEnregistrerEquipe={enregistrerEquipeOptimizer}
       />
     ) : n.route === 'releases' ? (
       <ReleasesPage />

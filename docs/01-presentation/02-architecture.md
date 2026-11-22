@@ -134,7 +134,7 @@ tous les autres dans n'importe quelle analyse de dépendances.
 | Accueil | `#/` | `src/pages/HomePage.tsx` | `src/components/accueil/ExemplesAccueil.tsx` (les vrais composants des outils en exemple), `src/lib/demoAccueil.ts` (leurs équipes de démo), `ElementIcon`, `src/data/releases.ts` | [accueil/](../02-app/accueil/README.md) |
 | **RTA** | `#/rta`, `#/rta/ami` | `src/pages/RtaPage.tsx` | tout `src/components/rta/` | [rta/](../02-app/rta/README.md) |
 | **Siège** | `#/siege/defense`, `/offense`, `/recommandations`, `/statistiques` | `src/pages/SiegePage.tsx` | tout `src/components/siege/` | [siege/](../02-app/siege/README.md) |
-| **Mon compte** | `#/compte`, `/runes`, `/artefacts` | `src/pages/AccountPage.tsx` | tout `src/components/account/` | [compte/](../02-app/compte/README.md) |
+| **Mon compte** | `#/compte`, `/runes`, `/artefacts`, `/equipes` | `src/pages/AccountPage.tsx` ; « Mes équipes » : `EquipesSection`, rendue par `App.tsx` avant elle | tout `src/components/account/` | [compte/](../02-app/compte/README.md) |
 | **Outils** | `#/outils/optimizer`, `/speed-tuning` | `src/pages/OutilsPage.tsx` | tout `src/components/outils/` | [outils/](../02-app/outils/README.md), [optimizer/](../02-app/optimizer/README.md), [speed-tuning/](../02-app/speed-tuning/README.md), [degats-reels/](../02-app/degats-reels/README.md) |
 | Bestiaire | `#/bestiary` | `src/pages/BestiaryPage.tsx` | `MonsterGrid`, `FilterBar`, `SearchBar`, `MonsterDetailDialog`, `Pager` | [bestiaire/](../02-app/bestiaire/README.md) |
 | Paramètres | `#/parametres` | `src/pages/SettingsPage.tsx` | `SettingsMenu`, `AccountImportControl` | [feat-navigation/compte-et-parametres.md](../02-app/transverse/feat-navigation/compte-et-parametres.md) |
@@ -182,10 +182,15 @@ dans la carte).
 sont les deux racines ; dessous : `RunesList`, `RunesSummary` + `BuildsRapides`, `RunesCurve` +
 `CurveChart` + `curveColors`, `RunesCompare`, `RunesOptim`, `SetFilter`, `SlotFilter`,
 `SubSearchBar` + `SubSearchDialog`, `Pager`, `SummaryBits`, `ArtifactsList`, `ArtifactsSummary`,
-`ArtifactsTop`.
+`ArtifactsTop` ; « Mes équipes » dans `src/components/account/equipes/` : `EquipesSection` (racine), `CarteEquipe`,
+`DetailEquipe`, `AjoutMonstreModale` ; la fenêtre « Importer » est `src/components/FenetreImport.tsx`,
+partagée avec l'Optimizer (modèle pur `src/lib/fenetreImport.ts`).
 Lib `accountStore` (IndexedDB), `accountViews`, `runeSort`, `runeOptim`, `runeCourbes`, `buildsRapides`,
 `artifactsTop`, `monsterSort`, `crafts`, `historiqueRunes` (un état de l'archive du plugin, pour
-Comparaison › Historique ; hook `useHistoriqueSwex`).
+Comparaison › Historique ; hook `useHistoriqueSwex`) ; « Mes équipes » : `equipesEnregistrees`
+(modèle pur), `equipesStore` (sa base IndexedDB), `equipesFichier`, `sourcesEquipesEnregistrees`
+(équipement d'un monstre ajouté, imports), `importEquipesEnregistrees` (aller-retour avec
+l'Optimizer) ; hook `useEquipesEnregistrees`.
 
 **Optimizer** — dans `src/components/outils/` : `OptimizerSection.tsx` (racine),
 `MonsterSourcePicker` (recherche — deux modes, bestiaire ou compte réel), `OptimizerListPicker`
@@ -269,9 +274,9 @@ d'une liste depuis sa fenêtre (`creerListeDepuisDialogue`) restent calculés pa
 
 Autour de la liste, dans le même dossier : `OptimizerBackupBar` (point de sauvegarde des listes :
 sauvegarder, reprendre), `OptimizerCreateListDialog` (création d'une liste et choix de son contenu
-Guilde / Donjon / Arène), `OptimizerEquipeDialog` (édition des membres et du leader d'une équipe
-de la liste), `OptimizerImportButton` (« Importer une équipe » depuis le siège, la prépa RTA, les
-recommandations ou le speed tuning), `OptimizerImportRapport` (modale du rapport d'un import,
+Guilde / Donjon / Arène / Autre), `OptimizerEquipeDialog` (édition des membres et du leader d'une équipe
+de la liste), `OptimizerImportButton` (« Importer une équipe » : la fenêtre d'import commune, sur Mes équipes,
+les decks du jeu et les recommandations, vers la liste active ou une nouvelle liste), `OptimizerImportRapport` (modale du rapport d'un import,
 montée par `App`), `OptimizerLeadInactif` (l'icône ⚠ qui dit pourquoi le lead d'un membre ne
 s'applique pas).
 
@@ -373,7 +378,8 @@ Fonctions **pures**, testables sans rendu. C'est ici que va toute logique, jamai
 | Tri | `tri.ts` (le SENS d'un tri, partagé par toutes les listes) |
 | Artéfacts | `artifacts.ts` |
 | Dégâts réels | `damage.ts` ([degats-reels/](../02-app/degats-reels/README.md)) |
-| Import de compte | `importAccount.ts` (parse SWEX), `compteDirect.ts` (« Mon compte » en direct : le fichier live du plugin SWEX converti objet par objet par les fonctions de l'import), `applyAccount.ts` (→ états), `accountStore.ts` (IndexedDB), `accountViews.ts` |
+| Import de compte | `importAccount.ts` (parse SWEX, decks enregistrés compris), `journalSwex.ts` (journal complet de SWEX : la box de l'arène dimensionnelle), `compteDirect.ts` (« Mon compte » en direct : le fichier live du plugin SWEX converti objet par objet par les fonctions de l'import), `applyAccount.ts` (→ états), `accountStore.ts` (IndexedDB), `accountViews.ts` |
+| Mes équipes | `equipesEnregistrees.ts` (modèle, comparaison au compte, opérations), `equipesStore.ts` (IndexedDB `swblacksmith-equipes`), `equipesFichier.ts` (format `swblacksmith/equipes`), `sourcesEquipesEnregistrees.ts` (sources d'équipement et d'import), `importEquipesEnregistrees.ts` (export vers l'Optimizer et mise à jour au retour), `fenetreImport.ts` (filtres, sélection et produits de la fenêtre d'import commune) |
 | Monstres | `monsterForms.ts`, `monsterSkills.ts`, `monsterSort.ts`, `collabPairs.ts` |
 | Siège / statistiques | `siegeStatistiques.ts` (les sièges tirés des fichiers de guilde du plugin SWEX : combats, défenses, résultat, saison, bilan par joueur) |
 | Siège / recos | `recoMatch.ts`, `recoSearch.ts`, `recoShare.ts`, `recoFromSiege.ts`, `recoDefenses.ts`, `recoFusion.ts` (import qui fusionne dans la recommandation qu'il complète), `ownedBuilds.ts`, `annulerEdition.ts` (« Annuler les modifications » d'une reco ou d'un deck en édition), `reinsererA.ts` (« Annuler » une suppression : l'élément revient à sa place, équipes et recos) |

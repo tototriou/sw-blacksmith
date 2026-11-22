@@ -364,6 +364,84 @@ const RECO_CONTRES: Cible[] = [
   { role: 'texte', nom: '— défense lente' },
 ];
 
+// « Mes équipes » remplie par ses propres imports : la défense de siège 1 du
+// compte du banc (deux monstres).
+const EQ_SOURCES: Cible = { role: 'dialog', nom: 'Importer' };
+// La fenêtre d'import s'ouvre sur l'onglet ouvert (Arène) : « Tous les
+// contenus », puis la case de la défense et « Importer ». L'import ouvre
+// l'onglet de l'équipe et dit ce qu'il a créé, dans une modale qu'on ferme.
+const EQ_TOUS_CONTENUS: Etape[] = [
+  { cliquer: { role: 'combobox', nom: 'Contenu' } },
+  { cliquer: repere('[role="listbox"][aria-label="Contenu"] [role="option"]:has-text("Tous les contenus")') },
+];
+const EQ_IMPORTER: Etape = { cliquer: bouton('Importer') };
+const EQ_SOURCE_DEFENSE: Etape[] = [...EQ_TOUS_CONTENUS, { cliquer: repere('[role="dialog"] label:has-text("Défense 1")') }, EQ_IMPORTER];
+const EQ_FERMER_RAPPORT: Etape = { cliquer: repere('[role="dialog"]:has-text("créée dans") button:has-text("Fermer")') };
+const EQ_IMPORT: Record<Format, Etape[]> = {
+  telephone: [{ cliquer: bouton('Importer une équipe') }, ...EQ_SOURCE_DEFENSE, EQ_FERMER_RAPPORT],
+  ordinateur: [{ cliquer: bouton('Importer une équipe') }, ...EQ_SOURCE_DEFENSE, EQ_FERMER_RAPPORT],
+};
+const EQ_CARTE: Cible = { role: 'button', nom: 'Ouvrir Défense 1' };
+// L'onglet RTA, puis la prépa de la page RTA importée en une prépa enregistrée.
+// Ouverte sur l'onglet RTA, la fenêtre montre la prépa parmi les decks du jeu.
+const EQ_PREPA_SOURCE: Etape[] = [{ cliquer: repere('[role="dialog"] label:has-text("Prépa de la page RTA")') }, EQ_IMPORTER];
+const EQ_PREPA: Record<Format, Etape[]> = {
+  telephone: [{ cliquer: repere('[role="tab"]:has-text("RTA")') }, { cliquer: bouton('Importer une équipe') }, ...EQ_PREPA_SOURCE, EQ_FERMER_RAPPORT],
+  ordinateur: [{ cliquer: repere('[role="tab"]:has-text("RTA")') }, { cliquer: bouton('Importer une équipe') }, ...EQ_PREPA_SOURCE, EQ_FERMER_RAPPORT],
+};
+// L'équipe envoyée à l'Optimizer : la bande de son équipe de liste porte le
+// bouton de Mes équipes, entre son numéro et le speed tune, grisé tant que
+// les builds de ses membres ne sont pas validés (ils ne le sont pas à l'export).
+// Au téléphone, les équipes de la liste vivent dans « Gérer mes listes », replié.
+const EQ_LISTES_TELEPHONE: Etape = { cliquer: { role: 'button', nom: 'Gérer mes listes', etendu: false } };
+const EQ_A_VALIDER: Cible = { role: 'button', nom: 'Valide d’abord les builds des monstres de l’équipe' };
+// Le retour vers Mes équipes, par le menu de sa carte (le bouton de la bande
+// attend des builds validés, qu'aucune étape du banc ne produit).
+const EQ_METTRE_A_JOUR: Etape[] = [
+  { cliquer: { role: 'button', nom: 'Actions de l’équipe', pres: EQ_CARTE } },
+  { cliquer: repere('[role="menuitem"]:has-text("Mettre à jour depuis l’Optimizer")') },
+];
+const EQ_NOMMER: Etape[] = [{ cliquer: bouton('Nouvelle équipe') }];
+const EQ_RENOMMER: Etape[] = [
+  { cliquer: { role: 'button', nom: 'Actions de l’équipe', pres: EQ_CARTE } },
+  { cliquer: repere('[role="menuitem"]:has-text("Renommer")') },
+];
+// L'équipe importée mise dans un nouveau groupe depuis son détail, puis la
+// grille : l'en-tête du groupe au-dessus de sa carte.
+const EQ_GROUPER: Etape[] = [
+  { cliquer: EQ_CARTE },
+  { cliquer: { role: 'combobox', nom: 'Groupe' } },
+  { cliquer: { role: 'option', nom: 'Nouveau groupe…', dans: '[role="listbox"][aria-label="Groupe"]' } },
+  { cliquer: repere('[role="dialog"] button:has-text("Créer")') },
+  { cliquer: bouton('Toutes les équipes') },
+];
+// L'équipe importée et sa copie, réunies dans un groupe : elles portent les
+// mêmes monstres et les mêmes pièces, que l'en-tête détaille.
+const EQ_CONFLITS: Etape[] = [
+  { cliquer: { role: 'button', nom: 'Actions de l’équipe', pres: EQ_CARTE } },
+  { cliquer: repere('[role="menuitem"]:has-text("Dupliquer")') },
+  { cliquer: bouton('Nouveau groupe') },
+  { cliquer: repere('[role="dialog"] span:text-is("Défense 1")') },
+  { cliquer: repere('[role="dialog"] span:text-is("Défense 1 (copie)")') },
+  { cliquer: repere('[role="dialog"] button:has-text("Créer")') },
+];
+const EQ_EXPORTER: Etape[] = [
+  { cliquer: { role: 'button', nom: 'Actions de l’équipe', pres: EQ_CARTE } },
+  { cliquer: repere('[role="menuitem"]:has-text("Exporter vers l’Optimizer")') },
+  // Le compte rendu de l'export, sur l'Optimizer, se ferme : on mesure la page, pas lui.
+  { attendre: repere('[role="dialog"]:has-text("Export vers l")') },
+  { cliquer: repere('[role="dialog"]:has-text("Export vers l") button[aria-label="Fermer"]') },
+];
+// Depuis l'Optimizer : la barre latérale au bureau, l'onglet « Compte » au téléphone.
+const EQ_ALLER: Record<Format, Etape[]> = {
+  telephone: [{ cliquer: { role: 'button', nom: 'Compte' } }, { cliquer: { role: 'link', nom: 'Mes équipes' } }],
+  ordinateur: [{ cliquer: { role: 'link', nom: 'Mes équipes' } }],
+};
+const EQ_LIEE: Record<Format, Etape[]> = {
+  telephone: [...EQ_ALLER.telephone, ...EQ_IMPORT.telephone, ...EQ_EXPORTER, EQ_LISTES_TELEPHONE],
+  ordinateur: [...EQ_ALLER.ordinateur, ...EQ_IMPORT.ordinateur, ...EQ_EXPORTER],
+};
+
 export const ECRANS: Ecran[] = [
   {
     id: 'accueil',
@@ -389,6 +467,21 @@ export const ECRANS: Ecran[] = [
     ],
     etats: [
       DEFAUT,
+      {
+        id: 'equipe-liee',
+        libelle: 'équipe exportée depuis Mes équipes : le bouton de Mes équipes grisé dans sa bande, builds à valider',
+        // Pas en écran partagé : la barre latérale y mène le volet principal.
+        tailles: ['telephone', 'ordinateur', 'bureau-portable', 'bureau-2560', 'conteneur-752', 'conteneur-1100'],
+        preparation: { telephone: EQ_LIEE.telephone, ordinateur: EQ_LIEE.ordinateur },
+        atteint: [EQ_A_VALIDER],
+      },
+      {
+        id: 'import',
+        libelle: 'fenêtre d’import ouverte : Mes équipes, decks du jeu, recommandations ; liste active ou nouvelle liste',
+        tailles: ['telephone', 'ordinateur'],
+        preparation: { telephone: [{ cliquer: bouton('Importer une équipe') }], ordinateur: [{ cliquer: bouton('Importer une équipe') }] },
+        atteint: [{ role: 'dialog', nom: 'Importer' }, bouton('Nouvelle liste')],
+      },
       {
         id: 'reglages-avances',
         libelle: 'réglages avancés ouverts',
@@ -621,6 +714,120 @@ export const ECRANS: Ecran[] = [
     '#/compte/artefacts',
   ]),
   ouverture('compte-artefacts-liste', 'Mon compte — Artéfacts, Liste', '#/compte/artefacts/liste', MOTIFS_COMPTE),
+  {
+    id: 'compte-equipes',
+    libelle: 'Mon compte — Mes équipes',
+    hash: '#/compte/equipes/liste',
+    alias: ['#/compte/equipes'],
+    // Le détail d'une équipe : à 1 920, les cartes de runes en grille de
+    // 3 × 2 à droite de la relique ; à 2 560, sur une seule rangée.
+    tailles: [...TAILLES_PAR_DEFAUT,
+      { id: 'bureau-1920', libelle: '1920×940', format: 'ordinateur', largeur: 1920, hauteur: 940, tactile: false },
+      { id: 'bureau-2560', libelle: '2560×1300', format: 'ordinateur', largeur: 2560, hauteur: 1300, tactile: false }],
+    motifs: [...MOTIFS_COMPTE, 'src/lib/equipes*', 'src/lib/sourcesEquipesEnregistrees', 'src/hooks/useEquipesEnregistrees'],
+    etats: [
+      DEFAUT,
+      {
+        id: 'imports',
+        libelle: 'fenêtre d’import ouverte, sur l’onglet ouvert',
+        preparation: {
+          telephone: [{ cliquer: bouton('Importer une équipe') }],
+          ordinateur: [{ cliquer: bouton('Importer une équipe') }],
+        },
+        atteint: [EQ_SOURCES],
+      },
+      {
+        id: 'equipe-importee',
+        libelle: 'une défense de siège importée, dans son onglet',
+        preparation: EQ_IMPORT,
+        atteint: [EQ_CARTE],
+      },
+      {
+        id: 'detail',
+        libelle: 'détail d’une équipe ouvert',
+        preparation: { telephone: [...EQ_IMPORT.telephone, { cliquer: EQ_CARTE }], ordinateur: [...EQ_IMPORT.ordinateur, { cliquer: EQ_CARTE }] },
+        atteint: [{ role: 'textbox', nom: 'Note' }, bouton('Toutes les équipes')],
+      },
+      {
+        id: 'groupe',
+        libelle: 'une équipe dans un groupe : l’en-tête du groupe dans la grille',
+        preparation: { telephone: [...EQ_IMPORT.telephone, ...EQ_GROUPER], ordinateur: [...EQ_IMPORT.ordinateur, ...EQ_GROUPER] },
+        atteint: [repere('[role="group"][aria-label="Groupe 1"]'), bouton('Exporter le groupe vers l’Optimizer')],
+      },
+      {
+        id: 'groupe-conflits',
+        libelle: 'un groupe dont deux équipes portent les mêmes monstres et pièces : le détail sous l’en-tête',
+        preparation: { telephone: [...EQ_IMPORT.telephone, ...EQ_CONFLITS], ordinateur: [...EQ_IMPORT.ordinateur, ...EQ_CONFLITS] },
+        atteint: [repere('[aria-label="Détail des conflits du groupe"]')],
+      },
+      {
+        id: 'prepa-rta',
+        libelle: 'onglet RTA : la prépa de la page RTA enregistrée',
+        preparation: EQ_PREPA,
+        atteint: [repere('article[aria-label="Prépa de la page RTA"]'), bouton('Nouvelle prépa')],
+      },
+      {
+        id: 'import-groupe',
+        libelle: 'fenêtre d’import : une défense et une offense de siège cochées, « Importer en groupe » et ce qu’elles portent à la fois',
+        preparation: {
+          telephone: [{ cliquer: bouton('Importer une équipe') }, ...EQ_TOUS_CONTENUS, { cliquer: repere('[role="dialog"] label:has-text("Défense 1")') }, { cliquer: repere('[role="dialog"] label:has-text("Offense 1")') }],
+          ordinateur: [{ cliquer: bouton('Importer une équipe') }, ...EQ_TOUS_CONTENUS, { cliquer: repere('[role="dialog"] label:has-text("Défense 1")') }, { cliquer: repere('[role="dialog"] label:has-text("Offense 1")') }],
+        },
+        atteint: [bouton('Importer en groupe'), bouton('Importer séparément')],
+      },
+      {
+        id: 'import-monstres',
+        libelle: '« Importer des monstres » depuis une équipe ouverte : les portraits se choisissent',
+        preparation: {
+          telephone: [...EQ_IMPORT.telephone, { cliquer: EQ_CARTE }, { cliquer: bouton('Importer des monstres') }],
+          ordinateur: [...EQ_IMPORT.ordinateur, { cliquer: EQ_CARTE }, { cliquer: bouton('Importer des monstres') }],
+        },
+        atteint: [{ role: 'dialog', nom: 'Importer des monstres' }],
+      },
+      {
+        id: 'nouveau-groupe',
+        libelle: '« Nouveau groupe » depuis la grille : le nom et les équipes de l’onglet à cocher',
+        preparation: {
+          telephone: [...EQ_IMPORT.telephone, { cliquer: bouton('Nouveau groupe') }],
+          ordinateur: [...EQ_IMPORT.ordinateur, { cliquer: bouton('Nouveau groupe') }],
+        },
+        atteint: [{ role: 'dialog', nom: 'Nouveau groupe' }, { role: 'textbox', nom: 'Nom du groupe' }],
+      },
+      {
+        id: 'renommer',
+        libelle: '« Renommer » depuis le menu d’une carte : le nom actuel, prérempli',
+        preparation: {
+          telephone: [...EQ_IMPORT.telephone, ...EQ_RENOMMER],
+          ordinateur: [...EQ_IMPORT.ordinateur, ...EQ_RENOMMER],
+        },
+        atteint: [{ role: 'dialog', nom: 'Renommer l’équipe' }, { role: 'textbox', nom: 'Nom de l’équipe' }],
+      },
+      {
+        id: 'nouvelle',
+        libelle: '« Nouvelle équipe » : le nom demandé, prérempli',
+        preparation: { telephone: EQ_NOMMER, ordinateur: EQ_NOMMER },
+        atteint: [{ role: 'dialog', nom: 'Nouvelle équipe' }, { role: 'textbox', nom: 'Nom de l’équipe' }],
+      },
+      {
+        id: 'brouillon',
+        libelle: '« Nouvelle équipe » : le brouillon, avant son deuxième monstre',
+        preparation: {
+          telephone: [...EQ_NOMMER, { cliquer: repere('[role="dialog"] button:has-text("Créer")') }],
+          ordinateur: [...EQ_NOMMER, { cliquer: repere('[role="dialog"] button:has-text("Créer")') }],
+        },
+        atteint: [repere('[role="status"]:has-text("deux monstres")'), bouton('Ajouter un monstre')],
+      },
+      {
+        id: 'retour-optimizer',
+        libelle: 'exportée, puis « Mettre à jour depuis l’Optimizer » de retour dans Mes équipes',
+        preparation: {
+          telephone: [...EQ_IMPORT.telephone, ...EQ_EXPORTER, ...EQ_ALLER.telephone, ...EQ_METTRE_A_JOUR],
+          ordinateur: [...EQ_IMPORT.ordinateur, ...EQ_EXPORTER, ...EQ_ALLER.ordinateur, ...EQ_METTRE_A_JOUR],
+        },
+        atteint: [{ role: 'dialog', nom: 'Mettre à jour depuis l’Optimizer ?' }],
+      },
+    ],
+  },
   ouverture('bestiaire', 'Bestiaire', '#/bestiary', [
     'src/pages/BestiaryPage',
     'src/components/MonsterGrid',

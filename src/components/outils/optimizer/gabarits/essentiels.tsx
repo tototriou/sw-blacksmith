@@ -8,7 +8,7 @@ import EtatMonstreEssentiels from '../bureau/EtatMonstreEssentiels';
 import { Onglets } from '../../../../ui';
 import SelecteurListes from '../SelecteurListes';
 import MonsterSourcePicker from '../../MonsterSourcePicker';
-import OptimizerImportButton from '../../OptimizerImportButton';
+import OptimizerImportButton, { AUCUN_IMPORT_OPTIMIZER } from '../../OptimizerImportButton';
 import { listesInertes, optimizerInerte } from './inertes';
 import type { ContexteGabarits, Gabarit } from './types';
 import { exclusionSelectorKey, type OptimizerListMember } from '../../../../lib/optimizerExclusion';
@@ -73,7 +73,7 @@ function ListeGabarit({ ctx, mode }: { ctx: ContexteGabarits; mode: 'vide' | 're
   return (
     <ListeDeTravailBureau
       listes={<SelecteurListes lists={lists} memberCounts={compte} titreSection
-        action={<OptimizerImportButton enLigne sources={[]} onImporter={optimizer.importerEquipe} rapport={null} />} />}
+        action={<OptimizerImportButton enLigne fenetre={AUCUN_IMPORT_OPTIMIZER} onImporter={optimizer.importerEquipe} rapport={null} />} />}
       recherche={<MonsterSourcePicker mode="bestiary" candidates={ctx.allMonsters} onPick={rien} />}
       liste={{
         activeList, activeMembers, groupesMembres, lists, optimizer, exclusionData: ctx.exclusionData, artifacts: ctx.artifacts,
@@ -143,7 +143,7 @@ function OngletsGabarit({ largeur, initial }: { largeur: number; initial: Onglet
 
 export const GABARITS_ESSENTIELS: Gabarit[] = [
   {
-    id: 'liste', nom: 'Liste de travail (et choix du monstre)', largeur: 358, hauteurEstimee: 412,
+    id: 'liste', nom: 'Liste de travail (et choix du monstre)', largeur: 366, hauteurEstimee: 412,
     composant: 'ListeDeTravailBureau (bureau/ListeDeTravailBureau.tsx), composant à part',
     telephone: 'Partage MonstresDeLaListe avec le téléphone, par une variante qu\'il ne prend pas (prop enTete) ; SelecteurListes, MonsterSourcePicker et OptimizerImportButton tels quels.',
     changements: [
@@ -208,7 +208,7 @@ export const GABARITS_ESSENTIELS: Gabarit[] = [
     ],
   },
   {
-    id: 'etat', nom: 'État de mon monstre : buffs et lead', largeur: 294, hauteurEstimee: 150,
+    id: 'etat', nom: 'État de mon monstre : buffs et lead', largeur: 302, hauteurEstimee: 150,
     composant: 'EtatMonstreEssentiels (bureau/EtatMonstreEssentiels.tsx), composant à part',
     telephone: 'EtatMonstre (partagé) exporte son titre, son choix du lead et ses rappels, rendu inchangé ; le téléphone garde EtatMonstre entier.',
     changements: [
