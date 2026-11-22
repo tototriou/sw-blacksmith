@@ -95,8 +95,8 @@ function testFenetreImportSelection() {
   egal(sel.equipes, ['a', 'b'], 'un bloc complète le choix');
   egal(basculerBloc(sel, ['a', 'b']).equipes, [], 'un bloc entier se décoche d’un geste');
   const m = basculerMonstre(sel, { cle: 'x', index: 0 });
-  egal([m.equipes, m.monstres.length], [[], 1], 'choisir un monstre vide le choix d’équipes');
-  egal(basculerEquipe(m, 'a').monstres, [], 'et l’inverse');
+  egal([m.equipes, m.monstres.length], [['a', 'b'], 1], 'choisir un monstre garde les équipes cochées');
+  egal(basculerEquipe(m, 'a').monstres.length, 1, 'et décocher une équipe garde les monstres');
   egal(basculerMonstre(m, { cle: 'x', index: 1 }, 1).monstres.length, 1, 'au-delà de la place libre, rien n’est ajouté');
   egal(basculerMonstre(m, { cle: 'x', index: 0 }).monstres, [], 'un monstre choisi se retire');
 }
@@ -132,6 +132,10 @@ function testFenetreImportOptimizer() {
     'des équipes de sources différentes : une liste, chacune son équipe');
   const monstres = producteurChoix(s, { equipes: [], monstres: [{ cle: offense.cle, index: 1 }] }, INV, 'guilde')!(data(), fr);
   egal([monstres.nomListe, monstres.membres.length, monstres.equipes.length], ['Monstre 3', 1, 0], 'des monstres seuls : des membres, sans équipe');
+  const seule = producteurChoix(s, { equipes: ['equipe:e1'], monstres: [] }, INV, 'arene')!(data(), fr);
+  const ensemble = producteurChoix(s, { equipes: ['equipe:e1'], monstres: [{ cle: offense.cle, index: 1 }] }, INV, 'arene')!(data(), fr);
+  egal([ensemble.nomListe, ensemble.equipes.length, ensemble.membres.length], [fr.fenetreImport.nomSelection('Raid 1', 1), 1, seule.membres.length + 1],
+    'une équipe et un monstre ensemble : une liste, l’équipe, et le monstre en membre seul');
   egal(producteurChoix(s, SELECTION_VIDE, INV, 'arene'), null, 'rien de choisi, rien à importer');
   const double = fusionnerImports([importerOffenseSiegeOptimizer('o1', data(), fr), importerOffenseSiegeOptimizer('o1', data(), fr)], 'X');
   egal([double.membres.length, double.equipes.length], [3, 2], 'un même membre proposé deux fois n’entre qu’une fois');

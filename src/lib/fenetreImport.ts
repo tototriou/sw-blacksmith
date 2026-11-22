@@ -122,7 +122,9 @@ export function sourceInitiale(sources: readonly SourceImportEquipe[], ordre: re
 // Un monstre d'une source : la source, et sa place parmi les monstres connus
 // qu'elle montre.
 export interface ChoixMonstre { cle: string; index: number }
-// Des équipes OU des monstres, jamais les deux : choisir l'un vide l'autre.
+// Des équipes et des monstres : la case d'une équipe la prend entière, un
+// portrait prend ce monstre seul, et l'un ne retire jamais l'autre (un portrait
+// touché par mégarde ne défait pas les équipes cochées).
 export interface SelectionImport { equipes: string[]; monstres: ChoixMonstre[] }
 export const SELECTION_VIDE: SelectionImport = { equipes: [], monstres: [] };
 
@@ -130,21 +132,21 @@ export const selectionVide = (s: SelectionImport): boolean => s.equipes.length =
 export const monstreChoisi = (s: SelectionImport, c: ChoixMonstre): boolean => s.monstres.some((x) => x.cle === c.cle && x.index === c.index);
 
 export function basculerEquipe(s: SelectionImport, cle: string): SelectionImport {
-  return { equipes: s.equipes.includes(cle) ? s.equipes.filter((x) => x !== cle) : [...s.equipes, cle], monstres: [] };
+  return { ...s, equipes: s.equipes.includes(cle) ? s.equipes.filter((x) => x !== cle) : [...s.equipes, cle] };
 }
 
 // Tout le bloc : coché s'il ne l'était pas entièrement, décoché sinon.
 export function basculerBloc(s: SelectionImport, cles: readonly string[]): SelectionImport {
   const tous = cles.length > 0 && cles.every((c) => s.equipes.includes(c));
-  return { equipes: tous ? s.equipes.filter((c) => !cles.includes(c)) : [...s.equipes, ...cles.filter((c) => !s.equipes.includes(c))], monstres: [] };
+  return { ...s, equipes: tous ? s.equipes.filter((c) => !cles.includes(c)) : [...s.equipes, ...cles.filter((c) => !s.equipes.includes(c))] };
 }
 
 // `max` : la place qui reste (l'équipe ouverte de Mes équipes) ; au-delà, le
 // geste n'ajoute rien.
 export function basculerMonstre(s: SelectionImport, c: ChoixMonstre, max = Infinity): SelectionImport {
-  if (monstreChoisi(s, c)) return { equipes: [], monstres: s.monstres.filter((x) => x.cle !== c.cle || x.index !== c.index) };
-  if (s.monstres.length >= max) return { equipes: [], monstres: s.monstres };
-  return { equipes: [], monstres: [...s.monstres, c] };
+  if (monstreChoisi(s, c)) return { ...s, monstres: s.monstres.filter((x) => x.cle !== c.cle || x.index !== c.index) };
+  if (s.monstres.length >= max) return s;
+  return { ...s, monstres: [...s.monstres, c] };
 }
 
 /* --------------------------------------------------------------------------
@@ -257,30 +259,16 @@ function blocEntier(sources: readonly SourceImportEquipe[], cles: readonly strin
 // L'import de l'Optimizer pour le choix. Une équipe seule garde l'import de sa
 // source (siège, prépa RTA, recommandation) ; plusieurs se réunissent en une
 // liste, celles sans import propre passant comme un groupe de Mes équipes.
-// Des monstres partent en membres seuls, sans équipe. `ongletDefaut` : le
-// contenu de la liste quand le choix n'en désigne pas.
+// Les monstres choisis s'y ajoutent en membres seuls, sans équipe. `ongletDefaut` :
+// le contenu de la liste quand le choix n'en désigne pas.
 export function producteurChoix(
   sources: readonly SourceImportEquipe[], selection: SelectionImport, inv: InventaireCompte, ongletDefaut: OngletEquipes
 ): ProducteurImportOptimizer | null {
-  if (selection.monstres.length) {
-    const choix = selection.monstres;
-    return (data, t) => {
-      const monstres = monstresChoisis(sources, choix, tirerLocal('m'), new Date());
-      const premiere = sources.find((s) => s.cle === choix[0].cle);
-      const onglet = premiere?.rangement ?? ongletDefaut;
-      const premier = premiere?.monstres[choix[0].index]?.name ?? '';
-      const nom = nomDuChoix(premier, monstres.length - 1, null, t);
-      const equipe: EquipeEnregistree = { ...creerEquipe('choix', onglet, nom, new Date()), monstres };
-      // Des monstres seuls : des membres, sans équipe ni lead.
-      return { ...preparerExportEquipeOptimizer(equipe, data, inv, t).proposition, equipes: [] };
-    };
-  }
-  const cles = selection.equipes;
-  if (!cles.length) return null;
-  const choisies = cles.map((c) => sources.find((s) => s.cle === c)).filter((s): s is SourceImportEquipe => !!s && s.raison === null);
-  if (!choisies.length) return null;
-  if (choisies.length === 1 && choisies[0].produireOptimizer) return choisies[0].produireOptimizer;
-  const bloc = blocEntier(sources, cles);
+  const choix = selection.monstres;
+  const choisies = selection.equipes.map((c) => sources.find((s) => s.cle === c)).filter((s): s is SourceImportEquipe => !!s && s.raison === null);
+  if (!choix.length && !choisies.length) return null;
+  if (!choix.length && choisies.length === 1 && choisies[0].produireOptimizer) return choisies[0].produireOptimizer;
+  const bloc = choix.length ? null : blocEntier(sources, selection.equipes);
   return (data: ExclusionSourceData, t: Dictionnaire) => {
     const propositions: ImportOptimizer[] = [];
     const sansImport: EquipeEnregistree[] = [];
@@ -291,9 +279,16 @@ export function producteurChoix(
       const cree = s.creer(`choix:${s.cle}`, tirerLocal(`u${sansImport.length}-`), new Date());
       if (cree) sansImport.push(cree.equipe);
     }
-    if (sansImport.length) {
-      propositions.push(preparerExportGroupeOptimizer('', sansImport, data, inv, t).proposition);
+    if (sansImport.length) propositions.push(preparerExportGroupeOptimizer('', sansImport, data, inv, t).proposition);
+    let premier = choisies[0]?.libelle ?? '';
+    if (choix.length) {
+      const monstres = monstresChoisis(sources, choix, tirerLocal('m'), new Date());
+      const premiere = sources.find((s) => s.cle === choix[0].cle);
+      if (!choisies.length) premier = premiere?.monstres[choix[0].index]?.name ?? '';
+      const equipe: EquipeEnregistree = { ...creerEquipe('choix', premiere?.rangement ?? ongletDefaut, premier, new Date()), monstres };
+      // Des monstres seuls : des membres, sans équipe ni lead.
+      propositions.push({ ...preparerExportEquipeOptimizer(equipe, data, inv, t).proposition, equipes: [] });
     }
-    return fusionnerImports(propositions, nomDuChoix(choisies[0].libelle, choisies.length - 1, bloc, t));
+    return fusionnerImports(propositions, nomDuChoix(premier, choisies.length + choix.length - 1, bloc, t));
   };
 }

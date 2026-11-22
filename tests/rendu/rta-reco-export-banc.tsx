@@ -87,8 +87,9 @@ const visible = (e: Element) => e.getBoundingClientRect().width > 0 && getComput
 const boutons = () => [...document.querySelectorAll<HTMLButtonElement>('button')].filter(visible);
 const trouver = (nom: string) => boutons().find(b => b.getAttribute('aria-label') === nom || b.textContent?.trim() === nom || b.title === nom);
 // La case d'un deck dans la fenêtre d'import, par son nom.
-const caseDeck = (nom: string) => [...document.querySelectorAll<HTMLLabelElement>('[role="dialog"] label')]
-  .find(l => visible(l) && l.textContent?.trim() === nom)?.querySelector('input') ?? null;
+// La case d'un deck, à gauche de sa ligne, porte le nom du deck.
+const caseDeck = (nom: string) => [...document.querySelectorAll<HTMLInputElement>('[role="dialog"] input[type="checkbox"]')]
+  .find(i => i.getAttribute('aria-label') === nom && visible(i.closest('label')!)) ?? null;
 const boutonsExport = () => boutons().filter(b => b.getAttribute('aria-label') === "Exporter vers l'Optimizer" || b.textContent?.trim() === "Exporter vers l'Optimizer");
 const position = (e: Element) => { const { x, y, width, height } = e.getBoundingClientRect(); return { x, y, width, height }; };
 const affichage = () => JSON.stringify({ criteres: photoCriteres(etat, { type: 'personnel' }), proprietaire: etat.proprietaireCriteres,

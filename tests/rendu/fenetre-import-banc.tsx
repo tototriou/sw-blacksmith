@@ -29,9 +29,11 @@ const sources: SourceImportEquipe[] = [
 
 async function geste(action: () => void) { flushSync(action); await new Promise(r => setTimeout(r, 0)); flushSync(() => {}); }
 const dialogue = () => document.querySelector('[role="dialog"]')!;
-// Les cases des équipes : celles du « Contenu » et des blocs (« Tout … ») écartées.
-const lignes = () => [...dialogue().querySelectorAll('label')].filter(l => l.querySelector('input[type="checkbox"]:not([aria-label])'))
-  .map(l => l.textContent?.trim() ?? '');
+// Les cases des équipes, par leur nom accessible : celles des blocs (« Tout … ») écartées.
+const casesEquipes = () => [...dialogue().querySelectorAll<HTMLInputElement>('input[type="checkbox"][aria-label]')]
+  .filter(c => !c.getAttribute('aria-label')!.startsWith('Tout '));
+const lignes = () => casesEquipes().map(c => c.getAttribute('aria-label') ?? '');
+const caseEquipe = (nom: string) => casesEquipes().find(c => c.getAttribute('aria-label') === nom)!;
 const entetes = () => [...dialogue().querySelectorAll('.uppercase')].map(e => e.textContent?.trim() ?? '');
 const segment = (nom: string) => [...dialogue().querySelectorAll<HTMLButtonElement>('[role="group"] button')].find(b => b.textContent?.trim() === nom)!;
 
@@ -55,10 +57,23 @@ export async function scenario(): Promise<[boolean, string][]> {
     `Recommandations : la liste remplacée ${JSON.stringify(lignes())}`);
   await geste(() => segment('Mes équipes').click());
   verifier(lignes().length === 5, 'retour à Mes équipes : ses cinq équipes, sans reste');
-  const portrait = dialogue().querySelector<HTMLButtonElement>('button[aria-pressed][title]')!;
+  // La case à gauche prend l'équipe entière ; son nom affiché la coche aussi.
+  const attaque = caseEquipe('Attaque 3');
+  const ligne = attaque.closest('label')!.parentElement!;
+  verifier(ligne.firstElementChild === attaque.closest('label'), 'la case de l’équipe est à gauche de la ligne');
+  await geste(() => attaque.click());
+  verifier(attaque.checked, 'la case coche l’équipe');
+  const nomDefense = dialogue().querySelector<HTMLLabelElement>(`label[for="${caseEquipe('Défense 1').id}"]`)!;
+  await geste(() => nomDefense.click());
+  verifier(caseEquipe('Défense 1').checked, 'un clic sur le nom de l’équipe la coche');
+  // Un portrait prend ce monstre seul, sans décocher les équipes : les deux s'importent ensemble.
+  const portrait = ligne.querySelector<HTMLButtonElement>('button[aria-pressed][title]')!;
+  verifier(!!portrait, 'les portraits d’une équipe cochable sont des boutons');
   await geste(() => portrait.click());
   verifier(portrait.getAttribute('aria-pressed') === 'true' && !!portrait.querySelector('span[aria-hidden] svg'),
     'un monstre choisi porte sa coche en coin');
+  verifier(caseEquipe('Attaque 3').checked && caseEquipe('Défense 1').checked, 'choisir un monstre garde les équipes cochées');
+  verifier(!segment('Des monstres'), 'plus de bascule entre équipes et monstres');
   verifier(!erreurs.some(e => e.includes('same key')), `aucune clé de rendu en double ${erreurs.filter(e => e.includes('key')).join(' | ')}`);
   console.error = consoleErreur;
   return preuves;

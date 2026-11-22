@@ -44,15 +44,22 @@ en-tête une seule fois, à la place de sa première équipe, même quand ses é
 dans la source (`sectionsFenetre`). Les équipes d'un même bloc (un groupe de Mes équipes, les
 défenses de siège, une recommandation) sont réunies de même et s'encadrent, avec une case « Tout « nom » » qui coche le bloc entier.
 
-Une ligne : les portraits des monstres, puis la case de l'équipe et, dessous, la raison d'une
-équipe non importable (« Moins de deux monstres connus. », « Réimporte ton compte… »).
+Une ligne : la case de l'équipe à gauche, les portraits des monstres, puis le libellé et,
+dessous, la raison d'une équipe non importable (« Moins de deux monstres connus. », « Réimporte
+ton compte… »). Le libellé est le `label` de la case : un clic dessus coche l'équipe aussi.
 
-La sélection porte **soit** sur des équipes, **soit** sur des monstres, jamais les deux :
+Deux gestes, chacun sur sa cible, sans bascule entre eux :
 
-- **Équipes** (mode `equipes`, `mixte`) : plusieurs cases cochées.
+- **Équipes** (mode `equipes`, `mixte`) : la case prend l'équipe entière ; plusieurs se cochent.
 - **Monstres** (mode `monstres`, `mixte`) : chaque portrait est un bouton à bascule
-  (`aria-pressed`). Choisi, il prend un contour et un fond d'accent, et une coche d'accent en coin. En mode `monstres`, un plafond (`maxMonstres`, les places libres) borne la
-  sélection. Un deck non importable comme équipe garde ses monstres choisissables un à un.
+  (`aria-pressed`) qui prend ce monstre seul. Choisi, il prend un contour et un fond d'accent, et
+  une coche d'accent en coin. En mode `monstres`, un plafond (`maxMonstres`, les places libres)
+  borne la sélection. Un deck non importable comme équipe garde ses monstres choisissables un à un.
+
+En mode `mixte` (l'Optimizer), équipes cochées et monstres choisis s'additionnent dans un même
+import : choisir un monstre ne décoche rien, décocher une équipe ne retire pas ses monstres
+choisis. Mes équipes n'ouvre que les modes `equipes` (« Importer une équipe ») et `monstres`
+(« Importer des monstres »).
 
 Le pied de la fenêtre résume la sélection, liste les conflits (ci-dessous) et lit le rapport du
 dernier import ; ses actions viennent du point d'entrée.
@@ -74,9 +81,10 @@ décide.
   s'ajoutent à l'équipe ouverte, dans la limite de ses places.
 - **Optimizer** : un producteur unique (`producteurChoix`). Une seule équipe qui a son propre
   producteur le garde tel quel ; plusieurs équipes fusionnent leurs propositions (membres et
-  builds dédoublonnés par sélecteur) ; des monstres forment une proposition sans équipe. La liste
-  prend le nom du bloc quand la sélection est exactement un bloc entier, sinon celui de la
-  première équipe ou du premier monstre, suivi de « +N ».
+  builds dédoublonnés par sélecteur) ; des monstres forment une proposition sans équipe, fusionnée de même avec les équipes
+  cochées. La liste prend le nom du bloc quand la sélection est exactement un bloc entier (sans
+  monstre choisi), sinon celui de la première équipe ou, sans équipe, du premier monstre, suivi de
+  « +N » (équipes et monstres comptés ensemble).
 
 Les producteurs ne tournent qu'au geste d'import, jamais à l'ouverture.
 

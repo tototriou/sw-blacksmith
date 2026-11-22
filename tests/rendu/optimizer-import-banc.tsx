@@ -50,8 +50,9 @@ const bouton = (nom: string) => [...document.querySelectorAll<HTMLButtonElement>
 const position = (e: Element) => { const { x, y, width, height } = e.getBoundingClientRect(); return { x, y, width, height }; };
 const texte = () => document.getElementById('racine')!.innerText;
 // La fenêtre d'import : la case d'une équipe (par son nom), celle d'un bloc.
-const caseEquipe = (nom: string) => [...document.querySelectorAll<HTMLLabelElement>('[role="dialog"] label')]
-  .find(l => visible(l) && l.textContent?.trim() === nom)?.querySelector('input') ?? null;
+// La case d'une équipe, à gauche de sa ligne, porte le nom de l'équipe.
+const caseEquipe = (nom: string) => [...document.querySelectorAll<HTMLInputElement>('[role="dialog"] input[type="checkbox"]')]
+  .find(i => i.getAttribute('aria-label') === nom && visible(i.closest('label')!)) ?? null;
 const caseBloc = (nom: string) => document.querySelector<HTMLInputElement>(`[role="dialog"] input[aria-label="Tout « ${nom} »"]`);
 const texteFenetre = () => document.querySelector('[role="dialog"]')?.textContent ?? '';
 const photographierExistant = (stockage: StockageOptimizer, ids: Set<string>) => JSON.stringify({
@@ -302,9 +303,9 @@ globalThis.Worker = ClassementVideTest as unknown as typeof Worker;
       verifier(['Défense 1', 'Défense 2', 'Offense 1', 'Offense 2', 'Prépa de la page RTA'].every(t => !!caseEquipe(t)),
         'fenêtre : chaque défense, chaque offense et la prépa RTA, chacune sa case');
       verifier(['Défenses de siège', 'Offenses de siège', 'Decks du jeu'].every(t => texteFenetre().includes(t)), 'fenêtre : en-têtes de section lus');
-      const ligneOffense = caseEquipe('Offense 2')!.closest('label')!.parentElement!.parentElement!;
-      verifier(ligneOffense.firstElementChild?.querySelectorAll('[data-portrait]').length === 3,
-        'chaque deck montre ses trois monstres avant son libellé');
+      const ligneOffense = caseEquipe('Offense 2')!.closest('label')!.parentElement!;
+      verifier(ligneOffense.children[1]?.querySelectorAll('[data-portrait]').length === 3 && ligneOffense.lastElementChild?.textContent?.trim() === 'Offense 2',
+        'chaque deck : sa case, ses trois monstres, puis son libellé');
       if (nom === 'defenses') verifier(caseEquipe('Défense 3')?.disabled === true && texteFenetre().includes('Moins de deux monstres connus.'),
         'une défense d’un seul monstre connu : sa case désactivée, avec sa raison');
       await geste(() => (nom === 'defenses' ? caseBloc('Défenses de siège')! : caseEquipe(nom === 'rta' ? 'Prépa de la page RTA' : 'Offense 2')!).click());
