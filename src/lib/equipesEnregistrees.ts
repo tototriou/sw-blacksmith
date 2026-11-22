@@ -87,6 +87,30 @@ export const PROVENANCES_EQUIPEMENT = [
 export type ProvenanceEquipement = (typeof PROVENANCES_EQUIPEMENT)[number];
 
 export const MONSTRES_MAX_EQUIPE = 6;
+
+// Le nombre de monstres d'une équipe dans le jeu, par contenu, relevé par
+// l'utilisateur le 2026-11-22. Un rangement absent des deux tables n'a pas de
+// règle relevée (guerre de guilde, Subjugation, ToA) : la limite de l'app.
+// ⚠️ Règle de jeu : ne pas compléter par ressemblance, demander le relevé.
+const MONSTRES_MAX_CATEGORIE: Readonly<Partial<Record<CategorieEquipes, number>>> = {
+  arene: 4, cairos: 5, labyrinthe: 5, 'temple-chaos': 5, faille: 6, 'passage-dimensions': 4,
+};
+const MONSTRES_MAX_RANGEMENT: Readonly<Partial<Record<OngletEquipes, number>>> = {
+  'guilde/offense-siege': 3, 'guilde/defense-siege': 3, 'labyrinthe/sauvetage': 4, 'passage-dimensions/raid': 5,
+};
+// Sans catégorie choisie, la plus grande des limites de l'onglet : l'alerte ne
+// vise qu'une équipe trop grande pour toutes ses catégories.
+export function monstresMax(onglet: OngletEquipes): number {
+  const c = categorieDe(onglet);
+  const de = (o: OngletEquipes) => MONSTRES_MAX_RANGEMENT[o] ?? MONSTRES_MAX_CATEGORIE[c] ?? MONSTRES_MAX_EQUIPE;
+  if (sousCategorieDe(onglet) !== null || SOUS_CATEGORIES_EQUIPES[c].length === 0) return de(onglet);
+  return Math.max(...SOUS_CATEGORIES_EQUIPES[c].map((x) => de(rangement(c, x))));
+}
+// Trop de monstres pour le rangement : la carte et le détail le disent, un
+// déplacement le demande avant.
+export function tropDeMonstres(e: EquipeEnregistree, onglet: OngletEquipes = e.onglet): boolean {
+  return e.monstres.length > monstresMax(onglet);
+}
 // Une équipe enregistrée en a au moins deux : « Nouvelle équipe » reste un
 // brouillon, non enregistré, tant qu'elle n'en a pas deux.
 export const MONSTRES_MIN_EQUIPE = 2;
@@ -454,7 +478,8 @@ export function gesteSurBrouillon(
 const touchee = (e: EquipeEnregistree, maintenant: Date): EquipeEnregistree => ({ ...e, modifieLe: maintenant.toISOString() });
 
 export function ajouterMonstre(e: EquipeEnregistree, m: MonstreEnregistre, maintenant: Date): EquipeEnregistree | null {
-  if (e.monstres.length >= MONSTRES_MAX_EQUIPE || e.monstres.some((x) => x.uid === m.uid)) return null;
+  // La limite du contenu, à la création comme ensuite.
+  if (e.monstres.length >= monstresMax(e.onglet) || e.monstres.some((x) => x.uid === m.uid)) return null;
   return touchee({ ...e, monstres: [...e.monstres, m] }, maintenant);
 }
 
@@ -593,34 +618,50 @@ export function equipesDuGroupe(equipes: readonly EquipeEnregistree[], categorie
   return equipes.filter((e) => categorieDe(e.onglet) === categorie && e.groupe === groupe);
 }
 
-// Les équipes d'un groupe se suivent, à la place de la plus récente d'entre
-// elles ; l'ordre reste celui reçu dans le groupe et hors groupe.
+// Les groupes d'abord, chacun d'un bloc, dans l'ordre de leur équipe la plus
+// récente ; puis les équipes hors groupe. L'ordre reçu reste celui de chaque bloc.
 export function regrouper(equipes: readonly EquipeEnregistree[]): EquipeEnregistree[] {
-  const res: EquipeEnregistree[] = [];
-  const places = new Set<string>();
-  for (const e of equipes) {
-    if (!e.groupe) { res.push(e); continue; }
-    if (places.has(e.groupe)) continue;
-    places.add(e.groupe);
-    res.push(...equipes.filter((x) => x.groupe === e.groupe));
-  }
-  return res;
+  const groupes = [...new Set(equipes.filter((e) => e.groupe).map((e) => e.groupe!))];
+  return [...groupes.flatMap((g) => equipes.filter((e) => e.groupe === g)), ...equipes.filter((e) => !e.groupe)];
+}
+
+// « Groupe N », le premier nom libre parmi les groupes de l'onglet.
+export function nomGroupeLibre(groupes: readonly string[], modele: (n: number) => string): string {
+  for (let n = 1; ; n++) if (!groupes.includes(modele(n))) return modele(n);
+}
+
+// Forme ou modifie un groupe de l'onglet depuis la page : `nom` pour les
+// équipes `ids` ; une équipe de l'`ancien` groupe hors de `ids` le quitte.
+// Une équipe d'un autre groupe cochée change de groupe.
+export function appliquerGroupe(
+  equipes: readonly EquipeEnregistree[], categorie: CategorieEquipes, ancien: string | null, nom: string,
+  ids: ReadonlySet<string>, maintenant: Date
+): EquipeEnregistree[] {
+  return equipes.map((e) => {
+    if (categorieDe(e.onglet) !== categorie) return e;
+    if (ids.has(e.id)) return modifierGroupe(e, nom, maintenant);
+    return ancien !== null && e.groupe === ancien ? modifierGroupe(e, '', maintenant) : e;
+  });
 }
 
 // Ce que deux équipes d'un groupe portent à la fois : une pièce (par son
-// identifiant du jeu ; une pièce sans identifiant n'est jamais comptée) ou un
-// exemplaire de la Box. En jeu, une rune ne sert qu'à une équipe du groupe.
-export interface ConflitsGroupe { pieces: number; exemplaires: number }
+// identifiant du jeu ; une pièce sans identifiant n'est jamais comptée), ou
+// une espèce, quel que soit l'exemplaire. Règle de jeu relevée par
+// l'utilisateur le 2026-11-22 : dans un contenu où les équipes se jouent
+// ensemble, une rune ne sert qu'à l'une d'elles, et une espèce ne s'y joue
+// qu'une fois, même si le compte en a plusieurs exemplaires.
+// `especes` : les `com2usId`, dans l'ordre de leur première équipe.
+export interface ConflitsGroupe { pieces: number; especes: number[] }
 export function conflitsGroupe(equipes: readonly EquipeEnregistree[]): ConflitsGroupe {
   const compter = (ids: (e: EquipeEnregistree) => string[]) => {
     const vus = new Map<string, number>();
     for (const e of equipes) for (const id of new Set(ids(e))) vus.set(id, (vus.get(id) ?? 0) + 1);
-    return [...vus.values()].filter((n) => n > 1).length;
+    return [...vus].filter(([, n]) => n > 1).map(([id]) => id);
   };
   const pieces = (e: EquipeEnregistree) => e.monstres.flatMap((m) => m.equipement ? [
     ...m.equipement.runes.filter((r) => r.id > 0).map((r) => `r${r.id}`),
     ...m.equipement.artifacts.filter((a) => a.id > 0).map((a) => `a${a.id}`),
     ...(m.equipement.relic && m.equipement.relic.id > 0 ? [`q${m.equipement.relic.id}`] : []),
   ] : []);
-  return { pieces: compter(pieces), exemplaires: compter((e) => e.monstres.flatMap((m) => (m.unitId === null ? [] : [String(m.unitId)]))) };
+  return { pieces: compter(pieces).length, especes: compter((e) => e.monstres.map((m) => String(m.com2usId))).map(Number) };
 }

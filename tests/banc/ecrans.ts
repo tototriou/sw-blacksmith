@@ -724,6 +724,15 @@ export const ECRANS: Ecran[] = [
         atteint: [repere('[role="group"][aria-label="Groupe 1"]'), bouton('Exporter le groupe vers l’Optimizer')],
       },
       {
+        id: 'nouveau-groupe',
+        libelle: '« Nouveau groupe » depuis la grille : le nom et les équipes de l’onglet à cocher',
+        preparation: {
+          telephone: [...EQ_IMPORT.telephone, { cliquer: bouton('Nouveau groupe') }],
+          ordinateur: [...EQ_IMPORT.ordinateur, { cliquer: bouton('Nouveau groupe') }],
+        },
+        atteint: [{ role: 'dialog', nom: 'Nouveau groupe' }, { role: 'textbox', nom: 'Nom du groupe' }],
+      },
+      {
         id: 'nouvelle',
         libelle: '« Nouvelle équipe » : le nom demandé, prérempli',
         preparation: { telephone: EQ_NOMMER, ordinateur: EQ_NOMMER },

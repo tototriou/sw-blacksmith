@@ -2,7 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { Crown, Plus, RefreshCw, X } from 'lucide-react';
 import type { Monster } from '../../../types';
 import type { BoxItem } from '../../../lib/applyAccount';
-import { Bouton, BoutonIcone, Champ, Selecteur } from '../../../ui';
+import { Bouton, BoutonIcone, Champ, ConfirmDialog, Selecteur } from '../../../ui';
 import MonsterAvatar from '../../MonsterAvatar';
 import MonsterGear from '../../MonsterGear';
 import SelecteurRangement from './SelecteurRangement';
@@ -12,8 +12,8 @@ import { useMediaQuery, SOUS_LG } from '../../../hooks/useMediaQuery';
 import { useTraduction } from '../../../hooks/useLangue';
 import {
   MONSTRES_MAX_EQUIPE, MONSTRES_MIN_EQUIPE, deplacerMonstre, deplacerVersOnglet, designerLeader, etatExemplaire, etatsEquipement, modifierGroupe, modifierTextes,
-  memeEquipement, remplacerEquipement, retirerMonstre,
-  type EquipeEnregistree, type EtatPiece, type InventaireCompte, type MonstreEnregistre,
+  libelleRangement, memeEquipement, monstresMax, nomGroupeLibre, tropDeMonstres, remplacerEquipement, retirerMonstre,
+  type EquipeEnregistree, type EtatPiece, type InventaireCompte, type MonstreEnregistre, type OngletEquipes,
 } from '../../../lib/equipesEnregistrees';
 
 interface Props {
@@ -58,7 +58,7 @@ function SelecteurGroupe({ valeur, groupes, onChange }: { valeur: string | undef
   const g = t.equipes.groupes;
   const [nommage, setNommage] = useState(false);
   const tous = valeur && !groupes.includes(valeur) ? [...groupes, valeur] : groupes;
-  const libre = (() => { for (let n = 1; ; n++) if (!tous.includes(g.nomParDefaut(n))) return g.nomParDefaut(n); })();
+  const libre = nomGroupeLibre(tous, g.nomParDefaut);
   return (
     <>
       <Selecteur value={valeur ?? ''} aria-label={t.equipes.detail.groupe}
@@ -80,7 +80,14 @@ function SelecteurGroupe({ valeur, groupes, onChange }: { valeur: string | undef
 export default function DetailEquipe({ equipe, brouillon = false, onChanger, monstreDe, box, inventaire, groupes = [], onAjouter, retour, menu }: Props) {
   const t = useTraduction();
   const d = t.equipes.detail;
-  const plein = equipe.monstres.length >= MONSTRES_MAX_EQUIPE;
+  const tt = t.equipes.taille;
+  // La limite du contenu de l'équipe (`monstresMax`), au plus celle de l'app.
+  const max = monstresMax(equipe.onglet);
+  const lieu = libelleRangement(equipe.onglet, t);
+  const plein = equipe.monstres.length >= max;
+  const raisonPlein = max < MONSTRES_MAX_EQUIPE ? tt.max(lieu, max) : d.complet;
+  // Un rangement choisi où l'équipe aurait trop de monstres : à confirmer.
+  const [aDeplacer, setADeplacer] = useState<OngletEquipes | null>(null);
   // Enregistrée, une équipe garde deux monstres : le retrait du deuxième est refusé.
   const retirable = brouillon || equipe.monstres.length > MONSTRES_MIN_EQUIPE;
   // Téléphone : la roue de runes, plus compacte en hauteur que six cartes ;
@@ -102,7 +109,8 @@ export default function DetailEquipe({ equipe, brouillon = false, onChanger, mon
           <ChampTexte libelle={d.nom} valeur={equipe.nom} onValider={(nom) => onChanger((e, n) => modifierTextes(e, { nom }, n))} />
           <label className="flex min-w-0 flex-col gap-1 text-xs text-ink-dim">
             {d.rangement}
-            <SelecteurRangement valeur={equipe.onglet} onChange={(o) => onChanger((e, n) => deplacerVersOnglet(e, o, n))} />
+            <SelecteurRangement valeur={equipe.onglet}
+              onChange={(o) => (tropDeMonstres(equipe, o) ? setADeplacer(o) : onChanger((e, n) => deplacerVersOnglet(e, o, n)))} />
           </label>
           <label className="flex min-w-0 flex-col gap-1 text-xs text-ink-dim">
             {d.groupe}
@@ -112,6 +120,13 @@ export default function DetailEquipe({ equipe, brouillon = false, onChanger, mon
         </div>
       </div>
       {brouillon && <p role="status" className="text-xs text-ink-dim">{d.brouillon}</p>}
+      {tropDeMonstres(equipe) && <p role="status" className="text-xs text-warn">{tt.trop(equipe.monstres.length, lieu, max)}</p>}
+      {aDeplacer && (
+        <ConfirmDialog titre={tt.deplacer.titre} libelleAction={tt.deplacer.action}
+          message={tt.deplacer.message(equipe.nom, equipe.monstres.length, libelleRangement(aDeplacer, t), monstresMax(aDeplacer))}
+          onCancel={() => setADeplacer(null)}
+          onConfirm={() => { const o = aDeplacer; setADeplacer(null); onChanger((e, n) => deplacerVersOnglet(e, o, n)); }} />
+      )}
       {!inventaire && equipe.monstres.length > 0 && <p className="text-xs text-ink-dim">{d.sansCompte}</p>}
       {/* Une grille commune à toutes les fiches, chacune en sous-grille
           (`grid-cols-subgrid`) : identité, équipement et runes y partagent
@@ -129,7 +144,7 @@ export default function DetailEquipe({ equipe, brouillon = false, onChanger, mon
       </div>
       <div>
         <Bouton trait="pointille" icone={<Plus size={14} />} libelle={d.ajouter} disabled={plein}
-          title={plein ? d.complet : undefined} onClick={onAjouter} />
+          title={plein ? raisonPlein : undefined} onClick={onAjouter} />
       </div>
     </div>
   );

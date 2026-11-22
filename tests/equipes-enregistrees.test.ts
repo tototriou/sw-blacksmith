@@ -4,7 +4,7 @@ import type { BoxItem } from '../src/lib/applyAccount';
 import { fr } from '../src/i18n/fr';
 import { en } from '../src/i18n/en';
 import {
-  CATEGORIES_EQUIPES, CONTENU_OPTIMIZER_ONGLET, ONGLETS_EQUIPES, SOUS_CATEGORIES_EQUIPES, ajouterMonstre, categorieDe, conflitsGroupe, equipesDuGroupe, groupesDeLOnglet, modifierGroupe, regrouper, comparerPiece, compteParCategorie, compteParOnglet, creerEquipe, deplacerMonstre, designerLeader, dupliquerEquipe,
+  CATEGORIES_EQUIPES, CONTENU_OPTIMIZER_ONGLET, ONGLETS_EQUIPES, SOUS_CATEGORIES_EQUIPES, ajouterMonstre, appliquerGroupe, categorieDe, conflitsGroupe, monstresMax, nomGroupeLibre, tropDeMonstres, equipesDuGroupe, groupesDeLOnglet, modifierGroupe, regrouper, comparerPiece, compteParCategorie, compteParOnglet, creerEquipe, deplacerMonstre, designerLeader, dupliquerEquipe,
   deplacerVersOnglet, equipesFiltrees, gesteSurBrouillon, etatExemplaire, etatPiece, indexerInventaire, lireEquipeEnregistree, modifierTextes,
   libelleRangement, libelleSousCategorie, nomEquipeLibre, rangement, resumeEcarts, sousCategorieDe, retirerMonstre, type EquipeEnregistree, type MonstreEnregistre, type OngletEquipes,
 } from '../src/lib/equipesEnregistrees';
@@ -189,12 +189,37 @@ function testEquipesEnregistreesGroupes() {
   const toutes = [autre, a, seule, b];
   egal(groupesDeLOnglet(toutes, 'faille'), ['Raid A'], 'les groupes d’un onglet');
   egal(equipesDuGroupe(toutes, 'faille', 'Raid A').map((e) => e.id), ['a', 'b'], 'un groupe ne sort pas de son onglet, même nom ailleurs compris');
-  egal(regrouper([a, seule, b]).map((e) => e.id), ['a', 'b', 's'], 'les équipes d’un groupe se suivent, à la place de la plus récente');
-  egal(conflitsGroupe([a, b]), { pieces: 9, exemplaires: 1 }, 'les pièces et l’exemplaire portés par deux équipes du groupe');
-  egal(conflitsGroupe([a, seule]), { pieces: 0, exemplaires: 0 }, 'sans pièce commune : aucun conflit');
+  egal(regrouper([seule, a, b]).map((e) => e.id), ['a', 'b', 's'], 'les groupes d’abord, chacun d’un bloc, puis les équipes non groupées');
+  egal(conflitsGroupe([a, b]), { pieces: 9, especes: [] }, 'les pièces portées par deux équipes du groupe');
+  egal(conflitsGroupe([a, seule]), { pieces: 0, especes: [1, 2] }, 'une même espèce dans deux équipes, même d’exemplaires différents');
+  egal(conflitsGroupe([b, eq('x', 'faille/raid', 'Raid A', [monstreEx('x1', 9, null, null), monstreEx('x2', 9, null, null)])]).especes, [],
+    'deux fois l’espèce dans une même équipe : pas un conflit de groupe');
+  // Former un groupe depuis la page.
+  const formes = appliquerGroupe(toutes, 'faille', null, 'Raid B', new Set(['s', 'a', 'o']), T);
+  egal(formes.map((e) => e.groupe ?? null), ['Raid A', 'Raid B', 'Raid B', 'Raid A'], 'les équipes cochées de l’onglet, même d’un autre groupe ; jamais hors de l’onglet');
+  const modifie = appliquerGroupe(toutes, 'faille', 'Raid A', 'Raid C', new Set(['b']), T);
+  egal(modifie.map((e) => e.groupe ?? null), ['Raid A', null, null, 'Raid C'], 'renommer : une équipe décochée quitte le groupe');
+  egal(nomGroupeLibre(['Groupe 1', 'Groupe 3'], (n) => `Groupe ${n}`), 'Groupe 2', 'le premier nom libre');
+}
+
+// Le nombre de monstres d'une équipe par contenu (règle de jeu relevée par
+// l'utilisateur, 2026-11-22).
+function testEquipesEnregistreesTaille() {
+  titre('Mes équipes — monstres par équipe selon le contenu');
+  const cas: [OngletEquipes, number][] = [
+    ['arene/offense', 4], ['arene', 4], ['guilde/defense-siege', 3], ['guilde/offense-siege', 3], ['guilde/offense-gdg', 6], ['guilde', 6],
+    ['cairos/geant', 5], ['labyrinthe/boss', 5], ['labyrinthe/sauvetage', 4], ['labyrinthe', 5], ['temple-chaos/feu', 5], ['faille/raid', 6],
+    ['passage-dimensions/karzhan', 4], ['passage-dimensions/raid', 5], ['passage-dimensions', 5], ['subjugation/eau', 6], ['toa', 6],
+  ];
+  egal(cas.map(([o]) => monstresMax(o)), cas.map(([, n]) => n), 'la limite de chaque rangement ; sans catégorie, la plus grande de l’onglet');
+  const T = new Date('2026-11-06T10:00:00Z');
+  const quatre = { ...creerEquipe('q', 'arene/offense', 'Q', T), monstres: [1, 2, 3, 4].map((k) => monstreEx(`m${k}`, k, null, null)) };
+  ok(ajouterMonstre(quatre, monstreEx('m5', 5, null, null), T) === null, 'à la limite du contenu, l’ajout est refusé');
+  ok(ajouterMonstre({ ...quatre, onglet: 'cairos' }, monstreEx('m5', 5, null, null), T) !== null, 'sous elle, accepté');
+  ok(!tropDeMonstres(quatre) && tropDeMonstres(quatre, 'guilde/defense-siege'), 'trop de monstres pour la défense de siège');
 }
 
 export const verificationsEquipesEnregistrees: [string, () => void][] = [
   testEquipesEnregistreesRelecture, testEquipesEnregistreesComparaison, testEquipesEnregistreesOperations, testEquipesEnregistreesRecherche,
-  testEquipesEnregistreesCategories, testEquipesEnregistreesGroupes,
+  testEquipesEnregistreesCategories, testEquipesEnregistreesGroupes, testEquipesEnregistreesTaille,
 ].map((f) => [f.name, f]);

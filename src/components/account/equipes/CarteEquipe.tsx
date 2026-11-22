@@ -12,6 +12,8 @@ interface Props {
   speedTuneIncomplet: boolean;
   // Sa catégorie dans l'onglet, quand le filtre est sur « Tout » ; `null` sinon.
   categorie?: string | null;
+  // Une alerte sur l'équipe elle-même (trop de monstres pour son contenu).
+  alerte?: string | null;
   actions: ElementMenu[];
   onOuvrir: () => void;
 }
@@ -19,9 +21,10 @@ interface Props {
 // Une carte de « Mes équipes » : le nom, les monstres dans l'ordre (le leader
 // couronné), la note sur une ligne, l'écart au compte et le menu d'actions.
 // Même contenu aux deux formats ; seule la taille des avatars change.
-export default function CarteEquipe({ equipe, monstreDe, ecarts, speedTuneIncomplet, categorie = null, actions, onOuvrir }: Props) {
+export default function CarteEquipe({ equipe, monstreDe, ecarts, speedTuneIncomplet, categorie = null, alerte = null, actions, onOuvrir }: Props) {
   const c = useTraduction().equipes.carte;
   const signaux = [
+    alerte,
     ecarts && ecarts.modifiees > 0 ? c.modifiees(ecarts.modifiees) : null,
     ecarts && ecarts.disparues > 0 ? c.disparues(ecarts.disparues) : null,
     speedTuneIncomplet ? c.speedTuneIncomplet : null,

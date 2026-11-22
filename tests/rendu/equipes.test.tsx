@@ -6,6 +6,7 @@ import type { Monster } from '../../src/types';
 import EquipesSection, { ConfirmationCreation } from '../../src/components/account/equipes/EquipesSection';
 import NouvelleEquipeModale from '../../src/components/account/equipes/NouvelleEquipeModale';
 import DetailEquipe from '../../src/components/account/equipes/DetailEquipe';
+import ModaleGroupe from '../../src/components/account/equipes/ModaleGroupe';
 import ImportEquipeModale from '../../src/components/account/equipes/ImportEquipeModale';
 import { ChoixEquipement } from '../../src/components/account/equipes/AjoutMonstreModale';
 import type { EquipesEnregistreesApi } from '../../src/hooks/useEquipesEnregistrees';
@@ -128,7 +129,7 @@ export function testRenduEquipesDetail() {
   egal(listeRunes(hMelange) === listeRunes(rendre(<DetailEquipe equipe={{ ...melange, monstres: [{ ...melange.monstres[0], equipement: eq1 }, melange.monstres[1]] }}
     onChanger={() => {}} monstreDe={(c) => MONSTRES.find((m) => m.com2usId === c)} box={ctx().box} inventaire={INVENTAIRE} onAjouter={() => {}} retour={null} menu={null} />)), true,
   'les cartes suivent l’ordre des slots, quel que soit celui de la copie');
-  const plein = { ...EQUIPES[0], monstres: [1, 2, 3, 4, 5, 6].map((k) => monstreEx(`m${k}`, 1002, null, null)) };
+  const plein = { ...EQUIPES[0], onglet: 'faille/raid' as const, monstres: [1, 2, 3, 4, 5, 6].map((k) => monstreEx(`m${k}`, 1002, null, null)) };
   const h2 = rendre(<DetailEquipe equipe={plein} onChanger={() => {}} monstreDe={() => undefined} box={[]} inventaire={null} onAjouter={() => {}} retour={null} menu={null} />);
   egal([bouton(h2, e.detail.ajouter)?.desactive, bouton(h2, e.detail.ajouter)?.title], [true, e.detail.complet], 'à 6 monstres, l’ajout est désactivé avec sa raison');
   ok(texteVisible(h2).includes(e.detail.sansCompte), 'sans compte, la comparaison est annoncée absente');
@@ -203,16 +204,19 @@ export function testRenduEquipesGroupes() {
   titre('rendu · Mes équipes — groupes d’équipes liées');
   const g = e.groupes;
   const groupe: EquipeEnregistree[] = [
-    { ...creerEquipe('g1', 'arene/defense', 'Équipe G1', T0), groupe: 'Raid A', monstres: [monstreEx('a', 1001, 11), monstreEx('b', 1002, null, null)] },
     { ...creerEquipe('s', 'arene/offense', 'Équipe seule', T0), monstres: [monstreEx('c', 1002, null, null), monstreEx('d', 1003, null, null)] },
+    { ...creerEquipe('g1', 'arene/defense', 'Équipe G1', T0), groupe: 'Raid A', monstres: [monstreEx('a', 1001, 11), monstreEx('b', 1002, null, null)] },
     { ...creerEquipe('g2', 'arene/rta', 'Équipe G2', T0), groupe: 'Raid A', monstres: [monstreEx('e', 1001, 11), monstreEx('f', 1003, null, null)] },
   ];
   const html = rendre(section({ api: api(groupe) }));
   const t = texteVisible(html);
   ok(html.includes('aria-label="Raid A"') && t.includes(g.equipes(2)), 'l’en-tête du groupe, son nom et ses équipes');
-  ok(t.includes(g.conflitsExemplaires(1)) && t.includes(g.conflitsPieces(9)), 'ce que deux équipes du groupe portent à la fois');
-  const [iEnTete, i1, i2, iSeule] = ['aria-label="Raid A"', 'Équipe G1', 'Équipe G2', 'Équipe seule'].map((x) => html.indexOf(x));
-  ok(iEnTete < i1 && i1 < i2 && i2 < iSeule, 'les équipes du groupe se suivent sous leur en-tête');
+  ok(t.includes(g.conflitsEspeces('Monstre 1')) && t.includes(g.conflitsPieces(9)), 'la même espèce et les pièces portées par deux équipes du groupe');
+  const [iEnTete, i1, i2, iSans, iSeule] = ['aria-label="Raid A"', 'Équipe G1', 'Équipe G2', `aria-label="${g.sansGroupe}"`, 'Équipe seule'].map((x) => html.indexOf(x));
+  ok(iEnTete < i1 && i1 < i2 && i2 < iSans && iSans < iSeule, 'le groupe d’abord, puis « Non groupées » au-dessus des autres équipes');
+  ok(!rendre(section()).includes(`aria-label="${g.sansGroupe}"`), 'sans groupe dans l’onglet, pas d’en-tête « Non groupées »');
+  egal([bouton(html, g.creer)?.desactive, bouton(html, g.modifier)?.desactive], [false, false], 'former un groupe et le modifier depuis la grille');
+  egal(bouton(rendre(section({ api: api([EQUIPES[2]]) })), g.creer)?.desactive, true, 'rien à grouper dans un onglet vide');
   egal(bouton(html, g.exporter)?.desactive, false, 'le groupe s’exporte vers l’Optimizer');
   const sansCompte = rendre(section({ api: api(groupe), compte: false }));
   egal([bouton(sansCompte, g.exporter)?.desactive, bouton(sansCompte, g.exporter)?.title], [true, e.export.sansCompte], 'sans compte, l’export dit pourquoi il attend');
@@ -221,6 +225,27 @@ export function testRenduEquipesGroupes() {
     box={ctx().box} inventaire={INVENTAIRE} onAjouter={() => {}} retour={null} menu={null} />);
   const td = texteVisible(detail);
   ok([e.detail.groupe, g.aucun, 'Raid B', g.nouveau].every((x) => td.includes(x)), 'le détail choisit le groupe parmi ceux de l’onglet, ou en crée un');
+  // Au téléphone : le portail de la `Modale` s'y rend en place (outils-rendu.tsx).
+  const modale = (gr: string | null) => auTelephone(() => rendre(<ModaleGroupe equipes={groupe} groupe={gr} nomParDefaut="Groupe 1" autresGroupes={[]} onValider={() => {}} onFermer={() => {}} />));
+  const edition = modale('Raid A');
+  egal([(edition.match(/checked=""/g) ?? []).length, valeurs(edition, 'value').includes('Raid A')], [2, true], 'modifier : le nom et les équipes du groupe cochées');
+  const creation = modale(null);
+  ok(valeurs(creation, 'value').includes('Groupe 1') && texteVisible(creation).includes(g.edition.dansGroupe('Raid A')), 'former : « Groupe 1 », et l’équipe d’un autre groupe le dit');
+  egal(bouton(creation, g.fenetre.action)?.title, g.edition.auMoinsUne, 'rien de coché : « Créer » attend une équipe');
+}
+
+// Le nombre de monstres par contenu : la carte et le détail le disent.
+export function testRenduEquipesTaille() {
+  titre('rendu · Mes équipes — monstres par équipe selon le contenu');
+  const cinq: EquipeEnregistree = { ...creerEquipe('c', 'arene/offense', 'Cinq', T0), monstres: [1, 2, 3, 1, 2].map((k, i) => monstreEx(`m${i}`, 1000 + k, null, null)) };
+  ok(texteVisible(rendre(section({ api: api([cinq]) }))).includes(e.carte.tropDeMonstres(5, 4)), 'la carte d’une équipe trop grande pour son contenu');
+  const detail = (x: EquipeEnregistree) => rendre(<DetailEquipe equipe={x} onChanger={() => {}} monstreDe={(c) => MONSTRES.find((m) => m.com2usId === c)}
+    box={[]} inventaire={null} onAjouter={() => {}} retour={null} menu={null} />);
+  ok(texteVisible(detail(cinq)).includes(e.taille.trop(5, 'Arène — Offense arène', 4)), 'le détail dit la limite dépassée');
+  const quatre = { ...cinq, monstres: cinq.monstres.slice(0, 4) };
+  egal([bouton(detail(quatre), e.detail.ajouter)?.desactive, bouton(detail(quatre), e.detail.ajouter)?.title], [true, e.taille.max('Arène — Offense arène', 4)],
+    'à la limite du contenu, l’ajout est refusé avec sa raison');
+  ok(!texteVisible(detail(quatre)).includes(e.taille.trop(4, 'Arène — Offense arène', 4)), 'à la limite, pas d’alerte');
 }
 
 export const verificationsRenduEquipes: [string, () => void][] = [
@@ -232,4 +257,5 @@ export const verificationsRenduEquipes: [string, () => void][] = [
   ['testRenduEquipesDetail', testRenduEquipesDetail],
   ['testRenduEquipesImports', testRenduEquipesImports],
   ['testRenduEquipesGroupes', testRenduEquipesGroupes],
+  ['testRenduEquipesTaille', testRenduEquipesTaille],
 ];

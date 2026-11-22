@@ -79,14 +79,55 @@ Les rangements des versions de travail précédentes se relisent dans les nouvea
 mêlés) dans Combat de guilde, sans catégorie. Un onglet gardé pour la session qui
 n'existe plus retombe sur le premier. Chaque onglet porte le nombre de ses équipes.
 
+## Monstres par équipe
+
+Le jeu limite le nombre de monstres d'une équipe selon le contenu ; règle relevée en
+jeu par l'utilisateur le 2026-11-22, portée par `monstresMax`
+(`src/lib/equipesEnregistrees.ts`) :
+
+| Rangement | Monstres au plus |
+| --- | --- |
+| Arène (toutes ses catégories) | 4 |
+| Combat de guilde — Offense siège, Défense siège | 3 |
+| Cairos | 5 |
+| Labyrinthe | 5, sauf Sauvetage : 4 |
+| Temple du chaos | 5 |
+| Rift | 6 |
+| Passage des dimensions | 4, sauf Raid dimensionnel : 5 |
+
+⚠️ Guerre de guilde, Subjugation et ToA n'ont pas de règle relevée : la limite de
+l'app (6) s'applique. On ne la complète pas par ressemblance, on demande le relevé.
+Sans catégorie choisie, la limite est la plus grande des catégories de l'onglet :
+l'alerte ne vise qu'une équipe trop grande pour chacune.
+
+- **À la création** : « Ajouter un monstre » est désactivé à la limite, et son
+  infobulle la dit (« En Arène — Offense arène, une équipe compte 4 monstres au
+  plus. ») ; `ajouterMonstre` la refuse aussi.
+- **Au déplacement** : vers un rangement où l'équipe a trop de monstres (« Onglet et
+  catégorie » du détail, « Déplacer vers… » de la carte), une confirmation le dit
+  (« Déplacer quand même ? ») ; son défaut est « Annuler ». À l'enregistrement d'une
+  équipe de l'Optimizer, la fenêtre le dit sous le choix du rangement.
+- **Ensuite** : une équipe trop grande pour son rangement (déplacée quand même,
+  importée d'un fichier, mise à jour depuis l'Optimizer) le dit sur sa carte
+  (« 5 monstres : 4 au plus ici ») et dans son détail.
+
 ## Groupes
 
 Certaines équipes se jouent **ensemble** et se partagent les runes du compte : les
 trois équipes du raid des mondes, celles du temple du chaos, les défenses de siège,
-les offenses de guerre de guilde. Une rune ne sert qu'à l'une d'elles. Un **groupe**
-les réunit, par un nom libre, dans un onglet (choix de l'utilisateur, plutôt qu'une
-liaison propre à chaque contenu).
+les offenses de guerre de guilde. Règle de jeu relevée par l'utilisateur
+(2026-11-22) : dans ces contenus, une rune ne sert qu'à l'une des équipes, et une
+**espèce** ne s'y joue qu'une fois, même si le compte en a plusieurs exemplaires. Un
+**groupe** les réunit, par un nom libre, dans un onglet (choix de l'utilisateur,
+plutôt qu'une liaison propre à chaque contenu).
 
+- « Nouveau groupe », à côté de « Nouvelle équipe » (au téléphone, sur la même
+  ligne), forme un groupe depuis la grille (`ModaleGroupe.tsx`) : son nom (prérempli
+  du premier « Groupe N » libre) et les équipes de l'onglet à cocher. Une équipe d'un
+  autre groupe le dit (« dans Raid A ») et, cochée, en change. « Modifier le
+  groupe », dans l'en-tête du groupe, rouvre la même fenêtre : renommer, ajouter,
+  décocher pour faire quitter le groupe (`appliquerGroupe`). Il faut au moins une
+  équipe cochée, et un nom qu'aucun autre groupe de l'onglet ne porte.
 - Le détail d'une équipe choisit son groupe (« Groupe », `SelecteurGroupe` de
   `DetailEquipe.tsx`) : « Aucun groupe », les groupes déjà formés dans l'onglet
   (`groupesDeLOnglet`), ou « Nouveau groupe… », nommé dans la fenêtre de
@@ -96,24 +137,29 @@ liaison propre à chaque contenu).
   sont deux groupes (`equipesDuGroupe`). Changer de catégorie dans l'onglet garde le
   groupe, changer d'onglet le quitte (`deplacerVersOnglet`) ; une copie
   (« Dupliquer ») n'est dans aucun groupe.
-- Dans la grille, les équipes d'un groupe se suivent, à la place de la plus récente
-  d'entre elles (`regrouper`), sous un **en-tête** sur toute la largeur
-  (`EnTeteGroupe.tsx`) : le nom, le nombre d'équipes du groupe entier (filtre de
-  catégorie compris), ce que plusieurs d'entre elles portent à la fois, et
-  « Exporter le groupe vers l'Optimizer ». Un groupe coupé par la pagination reprend
-  son en-tête en haut de la page suivante. Même en-tête aux deux formats ; au
-  téléphone, il passe sur deux lignes.
+- Dans la grille, **les groupes d'abord**, chacun d'un bloc, dans l'ordre de leur
+  équipe la plus récente, puis les équipes hors groupe sous un en-tête « Non
+  groupées » (absent quand l'onglet n'a aucun groupe) : une carte hors groupe ne
+  paraît jamais sous l'en-tête d'un groupe (`regrouper`). L'**en-tête** d'un groupe,
+  sur toute la largeur (`EnTeteGroupe.tsx`), donne le nom, le nombre d'équipes du
+  groupe entier (filtre de catégorie compris), ce que plusieurs d'entre elles
+  portent à la fois, « Modifier le groupe » et « Exporter le groupe vers
+  l'Optimizer ». Un bloc coupé par la pagination reprend son en-tête en haut de la
+  page suivante. Même en-tête aux deux formats ; au téléphone, il passe sur
+  plusieurs lignes.
 - Ce que l'en-tête signale (`conflitsGroupe`) : les **pièces** (runes, artéfacts,
   relique, par leur identifiant du jeu ; une pièce sans identifiant n'est pas
-  comptée) et les **exemplaires** de la Box portés par plus d'une équipe du groupe,
-  d'après les copies enregistrées. Un doublon dans une même équipe n'est pas compté.
+  comptée) et les **espèces** (par `com2usId`, quel que soit l'exemplaire), nommées,
+  présentes dans plus d'une équipe du groupe, d'après les copies enregistrées. Un
+  doublon dans une même équipe n'est pas compté. Une collaboration et sa version SW
+  comptent pour deux espèces : la règle ne dit rien d'elles.
 L'onglet ouvert, le filtre de chaque onglet et la recherche se gardent pour la
 session, comme l'état des autres outils (`useStickyState`).
 
 Une équipe a un seul rangement. Elle
-compte **de 2 à 6 monstres** (décision de l'utilisateur), quel que soit l'onglet : le
-jeu impose des tailles différentes selon le contenu (3 au siège, 4 en arène, 5 en
-donjon, 6 en raid), et la page n'en refuse aucune dans cet intervalle. Une équipe de
+compte **de 2 à 6 monstres** (décision de l'utilisateur) à la relecture, quel que
+soit l'onglet ; la limite du contenu (§ Monstres par équipe) borne l'ajout et
+alerte au-delà, sans rendre l'équipe illisible. Une équipe de
 0 ou 1 monstre n'est jamais enregistrée : illisible à la relecture (stockage,
 fichier, session), elle va aux rejets ; « Nouvelle équipe » reste un brouillon tant
 qu'elle n'a pas deux monstres ; le retrait du deuxième est refusé. Toute équipe
@@ -263,7 +309,7 @@ sinon « N pièces modifiées », « N pièces disparues ». Le détail marque c
 
 Aucune des deux mises en page n'est dérivée de l'autre : chacune a son agencement
 et ses tests de rendu. Le banc d'affichage mesure la page (`compte-equipes` :
-ouverture, sources d'import, équipe importée, détail, groupe ; en plus des deux formats,
+ouverture, sources d'import, équipe importée, détail, groupe, « Nouveau groupe » ; en plus des deux formats,
 à 1 920 px, runes en 3 × 2, et à 2 560 px, runes sur une rangée) et l'Optimizer sur une liste
 liée (`optimizer`, état `equipe-liee`).
 

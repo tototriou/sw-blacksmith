@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
-import { ChevronLeft, Download, FolderInput, Plus, Upload } from 'lucide-react';
+import { ChevronLeft, Download, FolderInput, Layers, Pencil, Plus, Send, Upload } from 'lucide-react';
 import type { Monster } from '../../../types';
 import { Bouton, Champ, ConfirmDialog, Jeton, Menu, MobileSheet, Modale, Onglets, PiedDeDialogue, Segmented, Selecteur, type ElementMenu } from '../../../ui';
 import MonsterPicker from '../../MonsterPicker';
@@ -8,6 +8,7 @@ import Pager from '../Pager';
 import SelecteurRangement from './SelecteurRangement';
 import CarteEquipe from './CarteEquipe';
 import EnTeteGroupe from './EnTeteGroupe';
+import ModaleGroupe from './ModaleGroupe';
 import DetailEquipe from './DetailEquipe';
 import AjoutMonstreModale from './AjoutMonstreModale';
 import ImportEquipeModale from './ImportEquipeModale';
@@ -28,8 +29,8 @@ import {
 import { sourcesImportEquipes, type ContexteSourcesEquipes, type SourceEquipement, type SourceImportEquipe } from '../../../lib/sourcesEquipesEnregistrees';
 import {
   CATEGORIES_EQUIPES, SOUS_CATEGORIES_EQUIPES, ajouterMonstre, categorieDe, compteParCategorie, compteParOnglet, libelleRangement, libelleSousCategorie, sousCategorieDe,
-  conflitsGroupe, creerEquipe, deplacerVersOnglet, dupliquerEquipe, equipesDuGroupe, equipesFiltrees, gesteSurBrouillon, groupesDeLOnglet, nomEquipeLibre, rangement,
-  regrouper, resumeEcarts, tireurIdentifiants,
+  appliquerGroupe, conflitsGroupe, creerEquipe, deplacerVersOnglet, dupliquerEquipe, equipesDuGroupe, equipesFiltrees, gesteSurBrouillon, groupesDeLOnglet, nomEquipeLibre, rangement,
+  monstresMax, nomGroupeLibre, regrouper, resumeEcarts, tireurIdentifiants, tropDeMonstres,
   type CategorieEquipes, type EquipeEnregistree, type InventaireCompte, type OngletEquipes, type SousCategorieEquipes,
 } from '../../../lib/equipesEnregistrees';
 
@@ -66,6 +67,7 @@ interface Rapport { titre: string; lignes: string[] }
 export default function EquipesSection({ api, ctx, inventaire, allMonsters, optimizer, onImporterOptimizer, onEquipeCreee, demandeOptimizer = null, onDemandeTraitee, menuOuvert, onFermerMenu }: Props) {
   const t = useTraduction();
   const e = t.equipes;
+  const g = e.groupes;
   const telephone = useMediaQuery(SOUS_LG);
   const idRapport = useId();
   // Onglet ouvert, catégorie filtrée dans chaque onglet et recherche : gardés
@@ -98,6 +100,10 @@ export default function EquipesSection({ api, ctx, inventaire, allMonsters, opti
   const [nommage, setNommage] = useState(false);
   const [imports, setImports] = useState(false);
   const [aSupprimer, setASupprimer] = useState<EquipeEnregistree | null>(null);
+  // Le groupe formé (`null`) ou modifié depuis la grille.
+  const [groupeEdite, setGroupeEdite] = useState<{ groupe: string | null } | null>(null);
+  // Un déplacement vers un rangement où l'équipe a trop de monstres : à confirmer.
+  const [deplacement, setDeplacement] = useState<{ equipe: EquipeEnregistree; onglet: OngletEquipes } | null>(null);
   const [retour, setRetour] = useState<RetourOptimizer | null>(null);
   const [creation, setCreation] = useState<RetourOptimizer | null>(null);
   const [rapport, setRapport] = useState<Rapport | null>(null);
@@ -257,7 +263,8 @@ export default function EquipesSection({ api, ctx, inventaire, allMonsters, opti
       { cle: 'dupliquer', libelle: c.dupliquer, onClick: () => ajouterEquipes([dupliquerEquipe(x, tirerIdEquipe(), e.copie(x.nom), tirerUid, new Date())]) },
       // Vers un autre onglet, sans catégorie ; la catégorie se choisit dans le détail.
       ...CATEGORIES_EQUIPES.filter((o) => o !== categorieDe(x.onglet)).map((o) => ({
-        cle: `deplacer-${o}`, libelle: c.deplacer(e.categories[o]), onClick: () => changerEquipe(x.id, (eq, n) => deplacerVersOnglet(eq, o, n)),
+        cle: `deplacer-${o}`, libelle: c.deplacer(e.categories[o]),
+        onClick: () => (tropDeMonstres(x, o) ? setDeplacement({ equipe: x, onglet: o }) : changerEquipe(x.id, (eq, n) => deplacerVersOnglet(eq, o, n))),
       })),
       { cle: 'supprimer', libelle: c.supprimer, danger: true, onClick: () => setASupprimer(x) },
     ];
@@ -296,6 +303,15 @@ export default function EquipesSection({ api, ctx, inventaire, allMonsters, opti
     </>
   );
 
+  const equipesOnglet = api.equipes.filter((x) => categorieDe(x.onglet) === categorie);
+  const groupesOnglet = groupesDeLOnglet(api.equipes, categorie);
+  const boutonNouveauGroupe = (
+    <Bouton icone={<Layers size={14} />} libelle={g.creer} pleineLargeur={telephone} disabled={equipesOnglet.length === 0}
+      title={equipesOnglet.length === 0 ? e.aucune : undefined} onClick={() => setGroupeEdite({ groupe: null })} />
+  );
+  const nomDe = (com2usId: number) => monstreDe(com2usId)?.name ?? String(com2usId);
+  const exportImpossible = !inventaire || !onImporterOptimizer ? e.export.sansCompte : null;
+
   const detail = equipeOuverte && (
     <DetailEquipe equipe={equipeOuverte} brouillon={brouillon?.id === equipeOuverte.id} onChanger={(f) => changerEquipe(equipeOuverte.id, f)} monstreDe={monstreDe}
       box={ctx.box} inventaire={inventaire} groupes={groupesDeLOnglet(api.equipes, categorieDe(equipeOuverte.onglet))} onAjouter={() => setAjout(true)}
@@ -325,13 +341,17 @@ export default function EquipesSection({ api, ctx, inventaire, allMonsters, opti
         <div className="flex flex-col gap-2">
           {recherchePicker}
           {jetons}
-          <Bouton icone={<Plus size={14} />} libelle={e.nouvelle} pleineLargeur onClick={nouvelle} />
+          <div className="grid grid-cols-2 gap-2">
+            <Bouton icone={<Plus size={14} />} libelle={e.nouvelle} pleineLargeur onClick={nouvelle} />
+            {boutonNouveauGroupe}
+          </div>
         </div>
       ) : (
         <div className="flex flex-col gap-2">
           <div className="flex flex-wrap items-center gap-2">
             <div className="w-72">{recherchePicker}</div>
             <Bouton icone={<Plus size={14} />} libelle={e.nouvelle} onClick={nouvelle} />
+            {boutonNouveauGroupe}
             <div className="ml-auto flex flex-wrap gap-2">{boutonsImports}</div>
           </div>
           {jetons}
@@ -368,18 +388,28 @@ export default function EquipesSection({ api, ctx, inventaire, allMonsters, opti
           {pages > 1 && <div className="mb-3"><Pager page={pageSure} pageCount={pages} onChange={setPage} /></div>}
           <div className="grid grid-cols-1 gap-3 @[640px]:grid-cols-2 @[960px]:grid-cols-3 @[1280px]:grid-cols-4">
             {affichees.map((x, i) => {
-              // Un groupe s'ouvre sur son en-tête, repris en haut d'une page.
-              const groupe = x.groupe && (i === 0 || affichees[i - 1].groupe !== x.groupe) ? x.groupe : null;
+              // Chaque bloc s'ouvre sur son en-tête, repris en haut d'une page :
+              // les groupes, puis les équipes non groupées (s'il y a un groupe).
+              const debut = i === 0 || affichees[i - 1].groupe !== x.groupe;
+              const groupe = x.groupe && debut ? x.groupe : null;
               const tout = groupe ? equipesDuGroupe(api.equipes, categorie, groupe) : [];
+              const conflits = groupe ? conflitsGroupe(tout) : null;
               return (
                 <Fragment key={x.id}>
-                  {groupe && (
-                    <EnTeteGroupe nom={groupe} nombre={tout.length} conflits={conflitsGroupe(tout)}
-                      exportImpossible={!inventaire || !onImporterOptimizer ? e.export.sansCompte : null} onExporter={() => exporterGroupe(groupe)} />
+                  {groupe && conflits && (
+                    <EnTeteGroupe nom={groupe} detail={g.equipes(tout.length)} signaux={[
+                      ...(conflits.especes.length ? [g.conflitsEspeces(conflits.especes.map(nomDe).join(', '))] : []),
+                      ...(conflits.pieces ? [g.conflitsPieces(conflits.pieces)] : [])]}>
+                      <Bouton taille="sm" icone={<Pencil size={14} />} libelle={g.modifier} onClick={() => setGroupeEdite({ groupe })} />
+                      <Bouton taille="sm" icone={<Send size={14} />} libelle={g.exporter} disabled={exportImpossible !== null}
+                        title={exportImpossible ?? undefined} onClick={() => exporterGroupe(groupe)} />
+                    </EnTeteGroupe>
                   )}
+                  {!x.groupe && debut && visibles.some((v) => v.groupe) && <EnTeteGroupe nom={g.sansGroupe} />}
                   <CarteEquipe equipe={x} monstreDe={monstreDe} ecarts={inventaire ? resumeEcarts(x, inventaire) : null}
                     speedTuneIncomplet={api.signalements.some((sg) => sg.id === x.id && sg.signalements.includes('speedTuneIncomplet'))}
                     categorie={sous === null && sousCategorieDe(x.onglet) ? libelleSousCategorie(categorie, sousCategorieDe(x.onglet)!, t) : null}
+                    alerte={tropDeMonstres(x) ? e.carte.tropDeMonstres(x.monstres.length, monstresMax(x.onglet)) : null}
                     actions={actions(x)} onOuvrir={() => setOuverte(x.id)} />
                 </Fragment>
               );
@@ -404,6 +434,21 @@ export default function EquipesSection({ api, ctx, inventaire, allMonsters, opti
       {imports && (
         <ImportEquipeModale sources={sourcesImportEquipes(ctx, optimizer, inventaire ?? { runes: new Map(), artefacts: new Map(), reliques: new Map() }, onglet, t)}
           onChoisir={importer} onFermer={() => setImports(false)} />
+      )}
+      {groupeEdite && (
+        <ModaleGroupe equipes={regrouper(equipesOnglet)} groupe={groupeEdite.groupe}
+          nomParDefaut={nomGroupeLibre(groupesOnglet, g.nomParDefaut)} autresGroupes={groupesOnglet.filter((x) => x !== groupeEdite.groupe)}
+          onFermer={() => setGroupeEdite(null)}
+          onValider={(nom, ids) => {
+            setGroupeEdite(null);
+            api.appliquer((l) => appliquerGroupe(l, categorie, groupeEdite.groupe, nom, ids, new Date()));
+          }} />
+      )}
+      {deplacement && (
+        <ConfirmDialog titre={e.taille.deplacer.titre} libelleAction={e.taille.deplacer.action}
+          message={e.taille.deplacer.message(deplacement.equipe.nom, deplacement.equipe.monstres.length, libelleRangement(deplacement.onglet, t), monstresMax(deplacement.onglet))}
+          onCancel={() => setDeplacement(null)}
+          onConfirm={() => { const { equipe: x, onglet: o } = deplacement; setDeplacement(null); changerEquipe(x.id, (eq, n) => deplacerVersOnglet(eq, o, n)); }} />
       )}
       {aSupprimer && (
         <ConfirmDialog titre={e.suppression.titre} message={e.suppression.message(aSupprimer.nom)} libelleAction={e.suppression.action} destructif
@@ -442,7 +487,9 @@ export default function EquipesSection({ api, ctx, inventaire, allMonsters, opti
 export function ConfirmationCreation({ creation, onChanger, onAnnuler, onConfirmer }: {
   creation: RetourOptimizer; onChanger: (r: RetourOptimizer) => void; onAnnuler: () => void; onConfirmer: (e: EquipeEnregistree) => void;
 }) {
-  const e = useTraduction().equipes;
+  const t = useTraduction();
+  const e = t.equipes;
+  const o = creation.equipe.onglet;
   // Le nom proposé (« Équipe N ») : repris si le champ est laissé vide.
   const [nomParDefaut] = useState(creation.equipe.nom);
   const [nom, setNom] = useState(creation.equipe.nom);
@@ -456,8 +503,11 @@ export function ConfirmationCreation({ creation, onChanger, onAnnuler, onConfirm
         </label>
         <label className="flex flex-col gap-1 text-xs text-ink-dim">
           {e.creation.onglet}
-          <SelecteurRangement valeur={creation.equipe.onglet} onChange={(onglet) => onChanger({ ...creation, equipe: { ...creation.equipe, onglet } })} />
+          <SelecteurRangement valeur={o} onChange={(onglet) => onChanger({ ...creation, equipe: { ...creation.equipe, onglet } })} />
         </label>
+        {tropDeMonstres(creation.equipe) && (
+          <p role="status" className="text-xs text-warn">{e.taille.trop(creation.equipe.monstres.length, libelleRangement(o, t), monstresMax(o))}</p>
+        )}
         <LignesRetour retour={creation} resume={false} />
       </div>}
       onCancel={onAnnuler} onConfirm={() => onConfirmer({ ...creation.equipe, nom: nom.trim() || nomParDefaut })} />
