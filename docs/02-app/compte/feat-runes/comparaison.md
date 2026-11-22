@@ -4,27 +4,29 @@ Partie de [Mon compte — Runes](README.md).
 
 ## Onglet Comparaison — `RunesCompare`
 
-Se comparer entre amis en superposant plusieurs courbes.
+Se comparer entre amis, ou à soi-même dans le temps, en superposant plusieurs
+courbes.
 
-Les deux sources sont de **vrais onglets** (`Onglets`, la librairie UI),
-« Courbes partagées » · « Fichiers de compte » : chacune affiche un écran à
-part, et l'onglet ouvert le coiffe. « Tout retirer » reste au-dessus, sur la
+Les trois sources sont de **vrais onglets** (`Onglets`, la librairie UI),
+« Courbes partagées » · « Fichiers de compte » · « Historique » : chacune
+affiche un écran à part, et l'onglet ouvert le coiffe. « Tout retirer » reste au-dessus, sur la
 rangée du titre ; au doigt, cette rangée n'apparaît que s'il y a quelque chose
 à retirer.
 
 ⚠️ **À la SOURIS** :
 - le titre « Comparaison » en tête de page, au-dessus des sous-onglets ;
-- dans les deux sous-onglets, le graphe et sa légende côte à côte, la
+- dans chaque sous-onglet, le graphe et sa légende côte à côte, la
   légende dans une carte « Séries », comme l'onglet Courbes.
 
 Au doigt, la légende est sous le graphe.
 
-### ⚠️ DEUX sous-onglets, parce que les deux formats ne portent pas la même chose
+### ⚠️ Des sous-onglets séparés, parce que les sources ne portent pas la même chose
 
 | Sous-onglet | Ce qu'il AFFICHE | Filtres disponibles |
 |---|---|---|
 | **Courbes partagées** | **tout l'importé** : courbes partagées **et** fichiers de compte | **nombre de runes** seulement |
 | **Fichiers de compte** | **les fichiers de compte seulement** | **sets · slot · antiques · nombre de runes** |
+| **Historique** | **mes états passés**, tirés de l'archive du plugin (application de bureau) | **sets · slot · antiques · nombre de runes** |
 
 ⚠️ **L'inclusion ne va que dans un sens.** Un fichier de compte se réduit
 toujours à des points, donc il a sa place dans l'onglet Courbes. L'inverse est
@@ -75,6 +77,45 @@ sinon on la prend pour un oubli.
   actuel** des runes, pas sur un potentiel — et un potentiel comparé entre deux
   comptes n'aurait pas de sens tant que chacun n'a pas posé ses meules.
 
+### Historique — application de bureau
+
+Ma courbe d'aujourd'hui (« Moi ») face à celle des jours passés. Les dates
+viennent de l'**archive du compte** que tient le plugin SW Blacksmith Live
+(`compte.jsonl.gz`, un état par connexion au jeu :
+[feat-swex-direct.md](../../bureau/feat-swex-direct.md)), lue par
+l'application de bureau (`bureau/swexHistorique.ts`), sans rien y écrire.
+
+- **L'invocateur suivi** (Paramètres › Application, « Dossier SW Exporter »)
+  désigne l'archive. Sans dossier, sans invocateur suivi ou sans dossier du
+  plugin pour lui, l'onglet le dit ; sans connexion archivée encore, il dit que
+  l'historique commencera à la prochaine.
+- **Une liste à choix multiples** (`SelecteurMultiple`) des états, du plus
+  récent au plus ancien, à la date et à l'heure de la connexion. Chaque état
+  coché devient une courbe de sa couleur (`couleurLibre`), nommée par sa date
+  dans la langue de l'interface.
+- ⚠️ **Lister ne décompresse rien** : la liste vient des en-têtes des blocs de
+  l'archive. Un état (~190 Ko compressé pour un gros compte) n'est lu qu'une
+  fois coché ; pendant sa lecture, sa case est désactivée.
+- ⚠️ **Les runes sont archivées BRUTES** : efficience et score se calculent
+  avec la formule du jour (`runesDeLEtat`,
+  [historiqueRunes.ts](src/lib/historiqueRunes.ts)), pour toute la
+  chronologie. Une correction de formule vaut donc pour les dates passées.
+- **Mêmes filtres que « Fichiers de compte »** (sets, emplacement, antiques,
+  nombre de runes), sous leurs propres réglages, appliqués à toutes les dates
+  à la fois. Les sets d'un état lu rejoignent la sélection, comme ceux d'un
+  ami : un set vendu depuis reste filtrable.
+- Les points s'ouvrent : la carte montre la rune **telle qu'elle était** ce
+  jour-là.
+- **Une connexion archivée** pendant que l'onglet est ouvert, ou un **autre
+  invocateur suivi**, relit la liste (`bureau:swex-historique-change`) ; un
+  état tracé qui n'y est plus quitte le graphe.
+- **Sur le site**, l'onglet reste affiché, **désactivé**, et son infobulle dit
+  qu'il faut l'application de bureau et le plugin.
+- Rien n'est conservé : les états tracés vivent en mémoire, comme le reste de
+  la Comparaison, et se relisent dans l'archive. « Tout retirer » ne les
+  touche pas — ce ne sont pas des imports ; un état se décoche dans la liste,
+  ou se retire par sa croix dans la légende.
+
 ### ⚠️ RIEN de ce qui est importé ici n'est conservé
 
 Courbes partagées **et** fichiers de compte vivent **en mémoire seulement**
@@ -106,7 +147,7 @@ propre import.
 Les listes importées vivent donc dans `RunesCompare`, pas dans chaque
 sous-onglet : c'est ce qui permet un bouton unique qui les vide toutes les deux.
 
-### Communs aux deux sous-onglets
+### Communs aux sous-onglets
 
 - **Superposition** : ma courbe (« Moi ») en bleu, les amis en couleurs vives.
   Bornes recalculées sur les courbes **visibles**.

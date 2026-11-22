@@ -38,6 +38,12 @@
 // Les SIÈGES : les fichiers de guilde du plugin, lus à la demande de la page
 // (`bureau:swex-sieges`, bureau/swexGuilde.ts) ; un fichier de guilde qui
 // change le lui signale (`bureau:swex-sieges-changes`).
+//
+// L'HISTORIQUE du compte : l'archive du compte du plugin, un état par
+// connexion (bureau/swexHistorique.ts). La page en demande la liste
+// (`bureau:swex-historique`), puis un état à la fois
+// (`bureau:swex-historique-etat`) ; une connexion archivée, ou un autre
+// invocateur suivi, le lui signale (`bureau:swex-historique-change`).
 
 import { app, BrowserWindow, dialog, ipcMain } from 'electron';
 import { FSWatcher, promises, readdirSync, readFileSync, statSync, watch, writeFileSync } from 'node:fs';
@@ -58,6 +64,7 @@ import {
 } from './swexPur';
 import { cheminLive, enteteDuLive, heureExport, lireLive, LectureLive, versionInstallee } from './swexLive';
 import { CacheGuilde, lireSieges } from './swexGuilde';
+import { lireEtatCompte, listerEtatsCompte } from './swexHistorique';
 import { lireDimension } from './swexDimension';
 import { textesBureau } from './textes';
 
@@ -130,6 +137,7 @@ export function brancherSwex(fenetre: BrowserWindow, preuve?: PreuveSwex) {
   let cacheGuilde: CacheGuilde | null = null;
   let fileSieges: Promise<unknown> = Promise.resolve();
   let minuterieSieges: ReturnType<typeof setTimeout> | null = null;
+  let minuterieHistorique: ReturnType<typeof setTimeout> | null = null;
 
   const deLaPage = (e: Electron.IpcMainEvent | Electron.IpcMainInvokeEvent) => e.sender === fenetre.webContents;
   const envoyer = (canal: string, valeur: unknown) => {
@@ -290,6 +298,18 @@ export function brancherSwex(fenetre: BrowserWindow, preuve?: PreuveSwex) {
     minuterieSieges = setTimeout(() => envoyer('bureau:swex-sieges-changes', null), ATTENTE_DIRECT);
   }
 
+  // L'historique de l'invocateur suivi : l'identifiant de son export, ou
+  // `null` sans dossier ni invocateur suivi.
+  const suiviPourHistorique = () => {
+    const { dossier, fichier } = reglage;
+    const id = fichier ? lireNomExport(fichier)?.id : undefined;
+    return dossier && id ? { dossier, id } : null;
+  };
+  function historiqueChange() {
+    if (minuterieHistorique) clearTimeout(minuterieHistorique);
+    minuterieHistorique = setTimeout(() => envoyer('bureau:swex-historique-change', null), ATTENTE_DIRECT);
+  }
+
   // Surveille le dossier `SWBlacksmith` et ses dossiers d'invocateurs. Absent (pas de
   // plugin, pas encore de connexion) : la surveillance de la racine voit sa
   // création et relance celle-ci (`directAJour`).
@@ -316,8 +336,10 @@ export function brancherSwex(fenetre: BrowserWindow, preuve?: PreuveSwex) {
         if (minuterieDirect) clearTimeout(minuterieDirect);
         minuterieDirect = setTimeout(() => void suivreDirect(false), ATTENTE_DIRECT);
         // Un fichier de guilde (ou un nom inconnu) : les sièges ont pu changer ;
-        // celui de l'arène dimensionnelle : sa saison.
+        // celui de l'arène dimensionnelle : sa saison ; l'archive du compte :
+        // l'historique.
         if (!nom || /guilde/.test(String(nom))) siegesChanges();
+        if (!nom || /compte\.jsonl\.gz/.test(String(nom))) historiqueChange();
         if (!nom || /dimension/.test(String(nom))) dimensionChangee();
       });
       surveillanceDirect.on('error', () => {
@@ -428,6 +450,7 @@ export function brancherSwex(fenetre: BrowserWindow, preuve?: PreuveSwex) {
     void donnerDimension();
     void suivreDirect(true);
     siegesChanges();
+    historiqueChange();
     return repondre();
   });
 
@@ -442,6 +465,7 @@ export function brancherSwex(fenetre: BrowserWindow, preuve?: PreuveSwex) {
     void donnerDimension();
     void suivreDirect(true);
     siegesChanges();
+    historiqueChange();
     return repondre();
   });
 
@@ -456,6 +480,7 @@ export function brancherSwex(fenetre: BrowserWindow, preuve?: PreuveSwex) {
     reglage = { ...reglage, fichier: null, dernierLu: null, dimensionLue: null };
     complet = false;
     ecrire();
+    historiqueChange();
     return repondre();
   });
 
@@ -467,6 +492,7 @@ export function brancherSwex(fenetre: BrowserWindow, preuve?: PreuveSwex) {
     surveiller();
     void suivreDirect(true);
     siegesChanges();
+    historiqueChange();
     return repondre();
   });
 
@@ -504,6 +530,19 @@ export function brancherSwex(fenetre: BrowserWindow, preuve?: PreuveSwex) {
 
   // Les sièges (Siège › Statistiques). ⚠️ Lus seulement, comme le direct.
   ipcMain.handle('bureau:swex-sieges', (e) => (deLaPage(e) ? lireLesSieges() : null));
+
+  // L'historique du compte (Comparaison › Historique), de l'invocateur suivi.
+  // ⚠️ Lu seulement ; la page ne donne qu'une clé de la liste, jamais un
+  // chemin.
+  ipcMain.handle('bureau:swex-historique', async (e) => {
+    const suivi = deLaPage(e) ? suiviPourHistorique() : null;
+    return suivi ? listerEtatsCompte(suivi.dossier, suivi.id).catch(() => null) : null;
+  });
+  ipcMain.handle('bureau:swex-historique-etat', async (e, cle: unknown) => {
+    const suivi = deLaPage(e) ? suiviPourHistorique() : null;
+    if (!suivi || typeof cle !== 'string') return null;
+    return lireEtatCompte(suivi.dossier, suivi.id, cle).catch(() => null);
+  });
 
   // La page est prête (données des monstres chargées, compte conservé relu) :
   // l'export suivi peut lui être donné.
