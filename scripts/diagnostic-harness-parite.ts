@@ -157,7 +157,6 @@ async function comparerCas(index: number): Promise<boolean> {
     compterAurasResPre: true,
     metric: 'eff',
     slotFilterPreset: 'bas',
-    exhaustiveSearch: false,
     excludeUsedRunes: false,
     excludeUsedScope: 'box',
     excludedSelectors: [],

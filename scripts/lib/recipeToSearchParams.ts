@@ -11,7 +11,7 @@ import { exigenceSousSpeedTune } from '../../src/lib/contrainteSpeedTune';
 import { exigencePrecisionParSort, sortsPrecisionActifs } from '../../src/lib/precisionParSort';
 import { ExclusionSourceData, autoExcludedRuneIds, resolveExcludedRuneIds } from '../../src/lib/optimizerExclusion';
 import { OptimizerRecipe } from '../../src/lib/optimizerRecipe';
-import { poolDeRecherche } from '../../src/lib/runesMaxees';
+import { SIMULATION_RUNES_AUCUNE, poolDeRecherche } from '../../src/lib/runesMaxees';
 import { DEFAULT_RELIC_MIN_UPGRADE, RelicIntent, DEFAULT_RELIC_MAIN_CHOICE } from '../../src/hooks/useOptimizerState';
 import { resoudreContexteRelique } from '../../src/lib/relicOptim';
 import {
@@ -456,8 +456,8 @@ export function resolvePool(
     return resolveExcludedRuneIds(recipe.excludedSelectors, exclusionData, String(loaded.unitId), loaded.com2usId);
   })();
   const filtre = auto.size === 0 && manual.size === 0 ? loaded.allRunes : loaded.allRunes.filter((r) => !auto.has(r.id) && !manual.has(r.id));
-  // Même producteur que l'écran (`handleSearch`), même repli `?? false`.
-  return poolDeRecherche(filtre, recipe.simulerRunesMaxees ?? false);
+  // Même producteur que l'écran (`handleSearch`), même repli : rien de simulé.
+  return poolDeRecherche(filtre, recipe.simulationRunes ?? SIMULATION_RUNES_AUCUNE);
 }
 
 // Stats à privilégier au pré-filtrage quand l'objectif est « Dégâts réels » —
@@ -555,9 +555,9 @@ export function recipeToSearchParams(
     metric: recipe.metric,
     objective: recipe.objective,
     objectiveStats: resolveObjectiveStats(recipe, loaded),
-    // ⚠️ `?? false` : une recette exportée avant l'ajout de ce réglage n'a pas
-    // ce champ — même repli que `importRecipe` (OptimizerSection.tsx).
-    maxMs: (recipe.exhaustiveSearch ?? false) ? Number.POSITIVE_INFINITY : HARD_TIMEOUT_MS,
+    // Le filet de 10 minutes de l'écran, toujours (l'ancien `exhaustiveSearch`
+    // est retiré par `parseOptimizerRecipe`).
+    maxMs: HARD_TIMEOUT_MS,
     slotFilterCap: resolveSlotFilterCap(recipe.slotFilterPreset),
   };
 }

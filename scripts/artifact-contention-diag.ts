@@ -110,7 +110,6 @@ function chargeArtefacts() {
     compterAurasResPre: true,
     metric: 'eff',
     slotFilterPreset: 'moyen',
-    exhaustiveSearch: false,
     excludeUsedRunes: false,
     excludeUsedScope: 'box',
     excludedSelectors: [],

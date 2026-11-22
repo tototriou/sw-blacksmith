@@ -3291,22 +3291,26 @@ export const fr = {
     avances: {
       profondeur: 'Profondeur de recherche',
       pool: (n: string) => `Pool de runes = ${n}`,
-      runesMaxees: 'Simuler +15 et max meules/gemmes',
-      runesMaxeesAide: {
-        debut: 'Activé, la recherche suppose tes runes maxées : la principale de chaque rune 6★ passe à sa valeur ',
+      plus15: 'Simuler +15',
+      plus15Aide: {
+        debut: 'Activé, la recherche suppose tes runes 6★ montées : la principale de chacune, antiques comprises, passe à sa valeur ',
         niveau: 'à +15',
-        meules: ', chaque ligne meulable (PV, ATQ, DEF, VIT), meulée ou non, reçoit la meule ',
-        legendaire: 'légendaire maximale',
-        fin: ', et chaque gemme déjà posée sa valeur légendaire maximale (antique sur une rune antique). Aucune gemme n’est ajoutée, et les sous-propriétés à venir d’une rune pas encore à +12 ne sont pas devinées.',
-        couleur:
-          'Dans le détail d’une rune des résultats, ce qui a été simulé est en violet. Le réglage vaut pour la prochaine recherche : les résultats affichés ne changent pas.',
+        fin: '. Les sous-propriétés à venir d’une rune pas encore à +12 ne sont pas devinées.',
       },
-      exhaustif: "Rechercher jusqu'à épuisement complet",
-      exhaustifAide:
-        "Retire la limite de temps de 10 minutes : la recherche continue tant qu'il reste des combinaisons à examiner. Peut prendre très longtemps sur une recherche avec peu de conditions — le bouton ",
-      exhaustifArreter: '« Arrêter »',
-      exhaustifAideFin:
-        " reste disponible et garde le meilleur trouvé jusque-là. Le plafond d'un million de résultats collectés, lui, reste actif.",
+      meules: 'Simuler max meules/gemmes',
+      meulesAntiques: 'Simuler max meules/gemmes antiques',
+      // Les grades des meules et des gemmes, ceux du jeu.
+      grades: { hero: 'Héro', legend: 'Légend' },
+      // L'aide des deux lignes de meules : seule la portée change.
+      meulesAide: {
+        debut: (antiques: boolean) =>
+          `Activé, sur tes runes ${antiques ? 'antiques' : 'normales (pas les antiques)'}, chaque ligne meulable (PV, ATQ, DEF, VIT), meulée ou non, reçoit la meule `,
+        maximale: 'maximale du grade choisi',
+        gemme: ', et chaque gemme déjà posée sa valeur maximale à ce grade. Aucune gemme n’est ajoutée ni changée.',
+        jamaisBaisse: 'Rien ne descend : en Héro, une meule ou une gemme légendaire déjà posée reste telle quelle.',
+      },
+      simulationCouleur:
+        'Dans le détail d’une rune des résultats, ce qui a été simulé est en violet. Le réglage vaut pour la prochaine recherche : les résultats affichés ne changent pas.',
       diagnostic: 'Diagnostic approfondi sur 0 résultat',
       diagnosticAide:
         'Après une recherche à 0 résultat, identifie quelle condition posée libère le plus de candidats si on la retire — ',

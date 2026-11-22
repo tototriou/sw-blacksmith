@@ -25,6 +25,7 @@ import { RuneMetric } from '../hooks/useRuneMetric';
 import { RELIC_UNIQUE, setsCost } from './effects';
 import { lireCompetencesInvocateur, normaliserCompetencesInvocateur } from './competencesInvocateur';
 import type { Dictionnaire } from '../i18n/fr';
+import { simulationDepuisAncienReglage, type SimulationRunes } from './runesMaxees';
 
 // Une recette refusée : le chemin du champ fautif et ce qu'il devait être,
 // rédigé dans la langue reçue par `parseOptimizerRecipe` (jamais ici).
@@ -39,7 +40,7 @@ export const OPTIMIZER_RECIPE_VERSION = 1;
 // ⚠️ **Un champ ajouté ici traverse plusieurs endroits indépendants, pas un
 // seul** : l'oublier dans l'un fait diverger un script de l'écran en silence
 // (aucune erreur `tsc`, le champ manquant reste un type optionnel valide).
-// Exemple : un champ comme `exhaustiveSearch`, branché dans
+// Exemple : un champ comme `simulationRunes`, branché dans
 // OptimizerSection.tsx (l'écran) mais oublié dans recipeToSearchParams.ts,
 // ne signale rien — voir AGENTS.md, « Conventions de code »,
 // pour la règle générale, et le skill
@@ -153,7 +154,10 @@ export interface OptimizerRecipe {
   compterAurasResPre?: boolean;
   metric: RuneMetric;
   slotFilterPreset: SlotFilterPresetKey;
-  exhaustiveSearch: boolean;
+  // ⚠️ L'ancien `exhaustiveSearch` (« Rechercher jusqu'à épuisement
+  // complet », retiré) n'est plus un champ : une recette qui le porte est
+  // acceptée, et `parseOptimizerRecipe` le retire. Le filet de 10 minutes
+  // s'applique toujours.
   /**
    * « Vérifier toutes les combinaisons trouvées » :
    * la file de résolution vérifie tous les builds trouvés au lieu de s'arrêter
@@ -167,15 +171,17 @@ export interface OptimizerRecipe {
    */
   verifierToutesLesCombinaisons?: boolean;
   /**
-   * « Simuler +15 et max meules/gemmes » : la recherche porte sur l'inventaire
-   * maxé (`poolDeRecherche`, runesMaxees.ts) — principale à +15, meules et
-   * gemmes posées à leur maximum légendaire.
+   * « Simuler +15 », « Simuler max meules/gemmes » et « … antiques » : la
+   * recherche porte sur l'inventaire maxé (`poolDeRecherche`, runesMaxees.ts).
    *
    * ⚠️ **OPTIONNEL, et il doit le rester** : une recette exportée avant ce
-   * champ ne le porte pas, et tout lecteur applique `?? false` — l'écran
-   * (`importRecipe`), le CLI (`resolvePool`, recipeToSearchParams.ts).
+   * champ ne le porte pas, et tout lecteur applique `?? SIMULATION_RUNES_AUCUNE`
+   * — l'écran (`importRecipe`), le CLI (`resolvePool`, recipeToSearchParams.ts).
+   * L'ancien interrupteur unique `simulerRunesMaxees` est traduit par
+   * `parseOptimizerRecipe` (`simulationDepuisAncienReglage`), jamais relu
+   * ailleurs.
    */
-  simulerRunesMaxees?: boolean;
+  simulationRunes?: SimulationRunes;
   // ⚠️ Remplace l'ancien `exploreAll` (COCHÉ par défaut, portait uniquement
   // sur la box, signification inverse) — voir OptimizerSection.tsx pour le
   // repli de lecture appliqué aux recettes exportées AVANT ce renommage.
@@ -573,8 +579,21 @@ export function parseOptimizerRecipe(text: string, t: Dictionnaire): RecipeValid
     }
   }
 
+  // `exhaustiveSearch` et `simulerRunesMaxees` : anciens champs, encore
+  // vérifiés pour qu'une valeur d'un autre type reste refusée.
   for (const champ of ['exhaustiveSearch', 'excludeUsedRunes', 'ignoreArtifacts', 'compterAurasResPre', 'verifierToutesLesCombinaisons', 'simulerRunesMaxees']) {
     if (d[champ] !== undefined && typeof d[champ] !== 'boolean') return echec(erreur(champ, (a) => a.booleen));
+  }
+  if (d.simulationRunes !== undefined) {
+    const s = d.simulationRunes;
+    if (!estObjet(s)) return echec(erreur('simulationRunes', (a) => a.objet));
+    if (typeof s.plus15 !== 'boolean') return echec(erreur('simulationRunes.plus15', (a) => a.booleen));
+    for (const ligne of ['meules', 'meulesAntiques']) {
+      const l = s[ligne];
+      if (!estObjet(l)) return echec(erreur(`simulationRunes.${ligne}`, (a) => a.objet));
+      if (typeof l.actif !== 'boolean') return echec(erreur(`simulationRunes.${ligne}.actif`, (a) => a.booleen));
+      if (l.grade !== 'hero' && l.grade !== 'legend') return echec(erreur(`simulationRunes.${ligne}.grade`, (a) => a.valeurInconnue));
+    }
   }
   if (d.excludeUsedScope !== undefined && !['rta', 'siege-defense', 'box'].includes(String(d.excludeUsedScope))) {
     return echec(erreur('excludeUsedScope', (a) => a.perimetre));
@@ -638,7 +657,15 @@ export function parseOptimizerRecipe(text: string, t: Dictionnaire): RecipeValid
   const avertissements: string[] = [];
   // Le réglage de rétention retiré ne doit survivre ni à l'import ni à un
   // nouvel export ; ce point commun protège l'écran et tous les scripts.
-  const { adaptiveTrancheWeighting: _prioriteRetiree, ...sansPriorite } = d;
+  // L'ancien interrupteur unique « Simuler +15 et max meules/gemmes » devient
+  // les trois lignes, à l'identique (+15 et légendaire partout) ; il ne survit
+  // pas à l'import. Le nouveau champ, s'il est là, l'emporte.
+  // L'ancien `exhaustiveSearch`, retiré, est ignoré de même.
+  const { adaptiveTrancheWeighting: _prioriteRetiree, exhaustiveSearch: _epuisementRetire, simulerRunesMaxees: ancienneSimulation, ...sansAncien } = d;
+  const sansPriorite =
+    sansAncien.simulationRunes === undefined && ancienneSimulation === true
+      ? { ...sansAncien, simulationRunes: simulationDepuisAncienReglage(true) }
+      : sansAncien;
   let normalisee = sansPriorite;
   if (estObjet(d.damageSetup)) {
     const { setsAura: _ancienTotal, ...setupLu } = d.damageSetup;

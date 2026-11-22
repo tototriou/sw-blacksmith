@@ -435,7 +435,6 @@ export function testRelicClassementParMode() {
       monsterCom2usId: 13413, monsterName: 'Lushen',
       requirement: { sets: [], minStats: {} }, objective: 'degats_reels', damageSetup: DEFAULT_DAMAGE_SETUP,
       compterAurasResPre: true, metric: 'eff', slotFilterPreset: 'bas',
-      exhaustiveSearch: false,
       excludeUsedRunes: false, excludeUsedScope: 'box', excludedSelectors: [],
       ignoreArtifacts: true, artifactMainByKind: {},
     });
@@ -459,7 +458,7 @@ export function testRelicClassementParMode() {
     const reglages = {
       monstreCom2usId: 1, damageSetup: SETUP, regimeEquipement: 'degats_reels', ignoreArtifacts: false, principaleParSorte: {},
       lignesVerrouillees: [] as { code: number; min: number }[], nbArtefacts: 0, empreinteRelique: null, requirement: { minStats: {}, maxStats: {} },
-      artefactsReserves: [] as number[], piecesFigees: [] as unknown[], importDuCompte: 0, empreinteSpeedTune: null, runesMaxees: false,
+      artefactsReserves: [] as number[], piecesFigees: [] as unknown[], importDuCompte: 0, empreinteSpeedTune: null, runesMaxees: null,
     };
     ok(signatureArtefacts({ ...reglages, relique: CONQUETE }) !== signatureArtefacts({ ...reglages, relique: conqueteBis }),
       'signature de la file : l’effet unique la change à identifiant constant (paires renotées)');

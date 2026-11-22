@@ -25,7 +25,7 @@ function recette(preset: SlotFilterPresetKey): OptimizerRecipe {
   return buildOptimizerRecipe({
     monsterCom2usId: 13413, monsterName: 'Monstre (test)', requirement: EXIGENCE, objective: 'efficience',
     damageSetup: DEFAULT_DAMAGE_SETUP, metric: 'eff', slotFilterPreset: preset,
-    exhaustiveSearch: false, excludeUsedRunes: false, excludeUsedScope: 'box', excludedSelectors: [],
+    excludeUsedRunes: false, excludeUsedScope: 'box', excludedSelectors: [],
     ignoreArtifacts: true, artifactMainByKind: { element: 'libre', archetype: 'libre' },
   });
 }
@@ -52,7 +52,7 @@ function sessionAncienne() {
   const actuelle = composerSession({
     maintenant: new Date('2026-10-01T00:00:00Z'), versionApp: 'test', stockage: {}, compte: null, memoire: {},
     optimizer: { selectedId: '13413', comboSets: ['violent'], minStats: EXIGENCE.minStats,
-      damageSetup: DEFAULT_DAMAGE_SETUP, exhaustiveSearch: true, slotFilterPreset: 'haut', sortBy: 'efficience' },
+      damageSetup: DEFAULT_DAMAGE_SETUP, slotFilterPreset: 'haut', sortBy: 'efficience' },
   });
   const reference = lireSession(ecrireSession(actuelle));
   ok(reference.ok, 'session de référence lisible');

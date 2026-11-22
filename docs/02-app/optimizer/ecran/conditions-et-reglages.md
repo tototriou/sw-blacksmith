@@ -179,59 +179,64 @@ Ce document décrit les conditions, l'inventaire et les réglages avancés.
    voir l'effet du preset qu'on vient de toucher sans d'abord fermer le
    panneau. **Passe sous les presets si la largeur manque** (le message
    est assez long pour ne pas toujours tenir à côté sur un téléphone
-   étroit) — adaptatif, jamais coupé ni superposé. ⚠️ **Choisir Haut ou
-   Extrême active automatiquement** « Rechercher jusqu'à épuisement
-   complet » ci-dessous — un pré-filtrage large n'a de sens que combiné à
-   ce réglage, qu'un utilisateur novice n'a aucune raison de connaître. Un
-   COUP DE POUCE, pas un verrouillage : l'interrupteur reste cliquable
-   normalement ensuite pour revenir à décoché. Choisir Bas ou Moyen ne le
-   décoche PAS automatiquement dans l'autre sens. Pour le moteur, un
+   étroit) — adaptatif, jamais coupé ni superposé. Pour le moteur, un
    préréglage ne change que `slotFilterCap` (et ce qui en dérive :
    `bucketCap` et les préréglages plus étroits emboîtés). Sous ce réglage :
-   - **« Simuler +15 et max meules/gemmes »**, désactivé par défaut, en
-     tête des interrupteurs (rendu sans condition : rien au-dessus ne le
-     décale). Activé, la recherche porte sur une copie MAXÉE du pool
-     (`poolDeRecherche`, [runesMaxees.ts](src/lib/runesMaxees.ts), même
-     producteur pour l'écran et le CLI) : la principale d'une rune 6★,
-     antique comprise, prend sa valeur à +15 (`MAINSTAT_MAX`) et son
-     niveau passe à 15 ; TOUTE ligne meulable (PV, ATQ, DEF en plat ou
-     en %, VIT), meulée ou non, gemmée comprise, prend la meule légendaire
-     maximale de sa stat, et une ligne déjà gemmée la base de gemme
-     légendaire maximale — tables antiques pour une rune antique, celles
-     du potentiel de Mon compte → Runes → Optimisation
-     (`meuleMaxLegendaire`, `gemmeMaxLegendaire`, runeOptim.ts). Exemple de
-     la demande : VIT gemmée 7 meulée +3 → 10 +5 ; une PV % jamais meulée
-     prend +10. Rien ne descend (`Math.max`). ⚠️ Toujours meuler au max
-     (décision de l'utilisateur), mais **ne PAS** gemmer une ligne qui ne
-     l'est pas ni changer la stat d'une gemme : choisir la gemme serait le
-     travail du plan d'optimisation, pas de ce réglage. ⚠️ Les sous-propriétés d'une rune pas encore à +12 ne
-     sont pas devinées (les améliorations tombent au hasard), et une rune
-     de moins de 6★ garde sa principale et son niveau : l'app n'a pas de
-     table de principale par étoile. La copie garde l'identifiant de la
-     rune (réservation, verrous, exclusion la désignent comme la vraie) et
-     porte `avantSimulation`, les valeurs réelles, que le détail de rune
-     des résultats colore (resultats.md § Résultats). Le pool
-     simulé alimente aussi l'estimation, les diagnostics avant recherche
-     et les bornes du speed tune. **Photographié au clic « Rechercher »**
-     dans le pool du contexte : le basculer ne change pas un résultat
-     affiché. Il entre dans la signature du cache de résolution
-     (`signatureArtefacts`, `runesMaxees`) : les runes simulées gardent les
-     identifiants qui en sont les clés. Fait partie de la recette (champ
-     optionnel `simulerRunesMaxees`) et de la session.
-   - **« Rechercher jusqu'à épuisement complet »**, décoché par défaut :
-     retire le filet de temps de 10 minutes (voir
-     ../feat-interruption.md § Interruption — filet de temps, pré-filtrage et arrêt manuel) — la
-     recherche continue tant qu'il reste des combinaisons à examiner, plutôt
-     que de s'arrêter au bout d'un temps fixe. ⚠️ Peut prendre très longtemps
-     sur une recherche avec peu de conditions (beaucoup de combinaisons
-     restent à examiner) : le bouton « Arrêter » reste le seul filet et garde
-     le meilleur trouvé jusque-là. ⚠️ Ne retire que la limite de TEMPS — le
-     plafond interne de candidats collectés (non réglable) reste actif ; une
-     recherche assez large pour l'atteindre s'arrête quand même avant d'avoir
-     tout exploré, et un meilleur build peut alors manquer (voir
-     ../limites-connues.md § Limites connues). Fait partie
-     des réglages exportés/importés dans une recette (voir
-     lancer-la-recherche.md § Lancer la recherche).
+   - **Trois lignes de simulation**, désactivées par défaut, en tête des
+     interrupteurs (rendues sans condition : rien au-dessus ne les
+     décale), portées par un seul objet (`SimulationRunes`,
+     [runesMaxees.ts](src/lib/runesMaxees.ts)). Activées, la recherche
+     porte sur une copie MAXÉE du pool (`poolDeRecherche`, même
+     producteur pour l'écran et le CLI) :
+     - **« Simuler +15 »** : la principale d'une rune 6★, antique
+       comprise, prend sa valeur à +15 (`MAINSTAT_MAX`) et son niveau
+       passe à 15. Une rune de moins de 6★ garde sa principale et son
+       niveau : l'app n'a pas de table de principale par étoile ;
+     - **« Simuler max meules/gemmes »** (runes normales seulement) et
+       **« Simuler max meules/gemmes antiques »** (runes antiques
+       seulement), chacune avec son **grade**, « Héro » ou « Légend »
+       (`Segmented` à deux crans, Légend par défaut, entre le libellé et
+       le « ? », aux deux formats). TOUTE ligne meulable (PV, ATQ, DEF en
+       plat ou en %, VIT), meulée ou non, gemmée comprise, prend la meule
+       maximale de sa stat à ce grade, et une ligne déjà gemmée la base de
+       gemme maximale à ce grade — tables antiques pour une rune antique,
+       celles du potentiel de Mon compte → Runes → Optimisation
+       (`meuleMax`, `gemmeMax`, runeOptim.ts). Exemple de la demande, en
+       Légend : VIT gemmée 7 meulée +3 → 10 +5 ; une PV % jamais meulée
+       prend +10. ⚠️ **Rien ne descend** (`Math.max`) : en Héro, une meule
+       ou une gemme légendaire déjà posée reste telle quelle. ⚠️ Toujours
+       meuler au max (décision de l'utilisateur), mais **ne PAS** gemmer
+       une ligne qui ne l'est pas ni changer la stat d'une gemme : choisir
+       la gemme serait le travail du plan d'optimisation, pas de ce
+       réglage. ⚠️ **Le grade reste visible et modifiable interrupteur
+       éteint** : le masquer ferait bouger la ligne sous le clic, le
+       griser empêcherait de préparer son choix. Le libellé, seul à céder
+       de la place, passe à la ligne.
+
+     ⚠️ Les sous-propriétés d'une rune pas encore à +12 ne sont pas
+     devinées (les améliorations tombent au hasard). La copie garde
+     l'identifiant de la rune (réservation, verrous, exclusion la
+     désignent comme la vraie) et porte `avantSimulation`, les valeurs
+     réelles, que le détail de rune des résultats colore (resultats.md §
+     Résultats). Le pool simulé alimente aussi l'estimation, les
+     diagnostics avant recherche et les bornes du speed tune.
+     **Photographié au clic « Rechercher »** dans le pool du contexte :
+     basculer une ligne ou changer un grade ne change pas un résultat
+     affiché. L'empreinte de ce qui est simulé (`empreinteSimulation`)
+     entre dans la signature du cache de résolution (`signatureArtefacts`,
+     `runesMaxees`) : les runes simulées gardent les identifiants qui en
+     sont les clés ; un grade choisi sur une ligne éteinte n'y entre pas.
+     Fait partie de la recette (champ optionnel `simulationRunes`) et de
+     la session ; l'ancien interrupteur unique « Simuler +15 et max
+     meules/gemmes » (`simulerRunesMaxees`) s'y relit comme les trois
+     lignes activées, en Légend.
+   - ⚠️ **Pas de « Rechercher jusqu'à épuisement complet »** : le réglage,
+     qui retirait le filet de temps de 10 minutes, est retiré (décision de
+     l'utilisateur, 2026-11-23). Mesuré sur un compte réel au préréglage
+     Extrême, en séquentiel, le cas le plus lourd trouvé (49 milliards de
+     paires) s'achève en 30 s. Haut et Extrême n'activent plus rien
+     d'autre que leur préréglage. Une recette ou une session qui porte
+     encore `exhaustiveSearch` se lit sans erreur, le champ ignoré.
    - **« Diagnostic approfondi sur 0 résultat »**, décoché par défaut (plus
      coûteux qu'un diagnostic simple, voir resultats.md § Diagnostic sur 0 résultat).
    - ⚠️ **Aucun contrôle de pondération adaptative des stats** aux deux

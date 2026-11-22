@@ -11,8 +11,9 @@ même nombre de places, `bucketCap`**, quelle que soit la stat.
 Le moteur ne donne pas plus de places à une stat jugée « difficile » : il
 n'a pas de réglage « Prioriser les stats les plus difficiles ». Pour le
 moteur, un préréglage de pré-filtrage ne change que `slotFilterCap` (et
-`bucketCap`, qui en dérive) ; à l'écran, Haut et Extrême activent en plus
-« Rechercher jusqu'à épuisement complet », qui retire le filet de temps.
+`bucketCap`, qui en dérive). Haut et Extrême activaient aussi « Rechercher
+jusqu'à épuisement complet », retiré depuis (le filet de 10 minutes s'applique
+toujours).
 
 ## Raisons
 

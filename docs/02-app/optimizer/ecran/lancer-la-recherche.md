@@ -60,11 +60,17 @@ et la progression.
     propriétaire des critères et sans écraser les mémoires ou équipes
     existantes. Voir ../feat-listes-equipes-et-sauvegarde.md
     § Lead effectif d’un membre.
-    « Simuler +15 et max meules/gemmes » voyage dans le champ optionnel
-    `simulerRunesMaxees` (booléen, toute autre valeur refusée avec son
-    chemin) ; absent d'une recette antérieure = désactivé, à l'écran
-    (`importRecipe`) comme au CLI (`resolvePool`), qui l'ajoute à sa ligne
-    de résumé.
+    Les trois lignes de simulation (« Simuler +15 », « Simuler max
+    meules/gemmes » et « … antiques ») voyagent dans le champ optionnel
+    `simulationRunes` (`{ plus15, meules: { actif, grade }, meulesAntiques:
+    { actif, grade } }`, grade `hero` ou `legend`, toute autre forme refusée
+    avec son chemin) ; absent d'une recette antérieure = rien de simulé, à
+    l'écran (`importRecipe`) comme au CLI (`resolvePool`), qui l'ajoute à sa
+    ligne de résumé. L'ancien booléen `simulerRunesMaxees` est traduit par
+    `parseOptimizerRecipe` : vrai = les trois lignes activées, en Légend ;
+    il ne repart pas à l'export suivant. L'ancien `exhaustiveSearch` est
+    accepté et retiré de même ; le CLI applique toujours le filet de 10
+    minutes.
     Les sorts de la précision par sort voyagent dans le champ optionnel
     `sortsPrecision` (liste parmi 1, 2 et 3, toute autre valeur refusée avec
     son chemin), omis sans sort coché ; absent d'une recette antérieure =

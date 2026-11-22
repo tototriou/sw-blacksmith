@@ -11,6 +11,7 @@ import { DEFAULT_DAMAGE_SETUP } from '../../src/lib/damage';
 import { attendreDemandeTest, observerRechercheTest } from './optimizer-classement-banc';
 import type { DemandeDeRecherche } from '../../src/workers/runeBuildOptim.worker';
 import { fr } from '../../src/i18n/fr';
+import type { SimulationRunes } from '../../src/lib/runesMaxees';
 
 export interface BancEcran {
   etat: () => OptimizerState;
@@ -41,6 +42,10 @@ export const COMPTER = "Compter les effets d'auras Tolerance et Précision dans 
 export const VERIFIER = 'Vérifier toutes les combinaisons trouvées';
 // Réglage retiré de l'écran : ni interrupteur, ni effet des paliers Haut et Extrême.
 const PRIORISER = 'Prioriser les stats les plus difficiles';
+const EPUISEMENT = "Rechercher jusqu'à épuisement complet";
+const PLUS15 = fr.optimizer.avances.plus15;
+const MEULES = fr.optimizer.avances.meules;
+const MEULES_ANTIQUES = fr.optimizer.avances.meulesAntiques;
 const RAPPEL = 'Pense à vérifier les sets d\'aura externes.';
 
 // Le cadre d'attention de l'interrupteur des auras : le bloc qui contient
@@ -113,20 +118,45 @@ export async function preuvesReglagesAvances(b: BancEcran, ouvrirMenu: () => voi
   } else preuves.push([false, 'aide de « Vérifier toutes… » présente']);
   preuves.push([!!bouton(COMPTER), 'l’interrupteur des auras a son aide']);
 
-  // « Prioriser les stats les plus difficiles » est retiré : ni interrupteur
-  // ni aide, et Haut / Extrême n'activent plus que l'épuisement complet.
-  preuves.push([!interrupteur(PRIORISER) && !bouton(PRIORISER) && !texteVisible(PRIORISER),
-    `plus d’interrupteur « ${PRIORISER} », ni son aide`]);
-  const presetAvant = b.etat().slotFilterPreset, epuisementAvant = b.etat().exhaustiveSearch;
+  // « Prioriser les stats les plus difficiles » et « Rechercher jusqu'à
+  // épuisement complet » sont retirés : ni interrupteur ni aide, et Haut /
+  // Extrême ne changent plus que le préréglage.
+  for (const retire of [PRIORISER, EPUISEMENT]) {
+    preuves.push([!interrupteur(retire) && !bouton(retire) && !texteVisible(retire),
+      `plus d’interrupteur « ${retire} », ni son aide`]);
+  }
+  const presetAvant = b.etat().slotFilterPreset;
   for (const [palier, cle] of [['Haut', 'haut'], ['Extrême', 'extreme']] as const) {
-    await b.geste(() => b.etat().setExhaustiveSearch(false));
     const p = bouton(palier);
     if (!p) { preuves.push([false, `palier « ${palier} » visible`]); continue; }
     await b.geste(() => p.click());
-    preuves.push([b.etat().slotFilterPreset === cle && b.etat().exhaustiveSearch,
-      `« ${palier} » : préréglage choisi et épuisement complet activé`]);
+    preuves.push([b.etat().slotFilterPreset === cle, `« ${palier} » : préréglage choisi`]);
   }
-  await b.geste(() => { b.etat().setSlotFilterPreset(presetAvant); b.etat().setExhaustiveSearch(epuisementAvant); });
+  await b.geste(() => b.etat().setSlotFilterPreset(presetAvant));
+
+  // Les trois lignes de simulation : chaque interrupteur agit sur sa ligne
+  // seule, et le grade se choisit interrupteur éteint, sans l'allumer.
+  const simAvant = b.etat().simulationRunes;
+  const actifs = (s: SimulationRunes) => [s.plus15, s.meules.actif, s.meulesAntiques.actif];
+  for (const [n, libelle] of [PLUS15, MEULES, MEULES_ANTIQUES].entries()) {
+    const i = interrupteur(libelle);
+    if (!i) { preuves.push([false, `interrupteur « ${libelle} » visible`]); continue; }
+    const avantClic = actifs(b.etat().simulationRunes);
+    await b.geste(() => i.click());
+    const apres = actifs(b.etat().simulationRunes);
+    preuves.push([apres.every((v, k) => (k === n ? v === !avantClic[k] : v === avantClic[k])),
+      `clic sur « ${libelle} » : sa ligne seule basculée`]);
+    await b.geste(() => interrupteur(libelle)!.click());
+  }
+  for (const [libelle, cle] of [[MEULES, 'meules'], [MEULES_ANTIQUES, 'meulesAntiques']] as const) {
+    const rangee = interrupteur(libelle)?.closest('.py-3');
+    const hero = rangee ? [...rangee.querySelectorAll<HTMLButtonElement>('button')].find((e) => e.textContent?.trim() === 'Héro') : undefined;
+    if (!hero) { preuves.push([false, `« Héro » visible sur la ligne « ${libelle} »`]); continue; }
+    await b.geste(() => hero.click());
+    const s = b.etat().simulationRunes[cle];
+    preuves.push([s.grade === 'hero' && !s.actif, `« ${libelle} » : « Héro » choisi, interrupteur toujours éteint`]);
+  }
+  await b.geste(() => b.etat().setSimulationRunes(simAvant));
 
   const ordre = () => [...document.querySelectorAll<HTMLButtonElement>('button[role="switch"]')].filter(visible).map((e) => e.getAttribute('aria-label'));
   const avecFile = ordre();
@@ -402,7 +432,7 @@ export async function preuvesMessageImport(b: BancEcran): Promise<Preuves> {
   const recette = (critMode: string) => {
     const r = buildOptimizerRecipe({ monsterCom2usId: 10101, monsterName: 'Premier', damageSetup: DEFAULT_DAMAGE_SETUP,
       requirement: { sets: [], minStats: {} }, objective: 'efficience', metric: 'eff', slotFilterPreset: 'moyen',
-      exhaustiveSearch: false, excludeUsedRunes: false, excludeUsedScope: 'box',
+      excludeUsedRunes: false, excludeUsedScope: 'box',
       excludedSelectors: [], ignoreArtifacts: false, artifactMainByKind: {} });
     return JSON.stringify({ ...r, damageSetup: { ...r.damageSetup, critMode } });
   };

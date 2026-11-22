@@ -15,7 +15,7 @@ import { etatReliqueDuBuild } from '../../lib/relicQueue';
 import { resoudreContexteRelique } from '../../lib/relicOptim';
 import { artifactConditionFloor, relicConditionFloor } from '../../lib/artifactConditionFloor';
 import { contexteResultat, runesDuContexte, type ContexteResultat } from '../../lib/contexteResultat';
-import { poolDeRecherche } from '../../lib/runesMaxees';
+import { SIMULATION_RUNES_AUCUNE, empreinteSimulation, poolDeRecherche } from '../../lib/runesMaxees';
 import {
   basculerEpingle, cleEpingle, cleMembreEpingles, epinglesDe, liberer, libererTout, numeroEpingle, placeLibre, type BuildEpingle,
 } from '../../lib/epinglesOptimizer';
@@ -472,12 +472,10 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
     setExcludeUsedScope,
     excludedSelectors,
     setExcludedSelectors,
-    exhaustiveSearch,
-    setExhaustiveSearch,
     verifierToutesLesCombinaisons,
     setVerifierToutesLesCombinaisons,
-    simulerRunesMaxees,
-    setSimulerRunesMaxees,
+    simulationRunes,
+    setSimulationRunes,
     sortBy,
     setSortBy,
     sensTri,
@@ -847,17 +845,8 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
     });
   }
 
-  // Basculer sur Haut/Extrême active « Rechercher jusqu'à épuisement
-  // complet » — un novice qui choisit un pré-filtrage large n'a aucune raison
-  // de savoir que ce réglage est ce qui le rend réellement utile. Reste un
-  // COUP DE POUCE, pas un verrouillage : l'interrupteur garde son `onChange`
-  // propre, remettre à false ensuite reste un clic normal dessus. Bas/Moyen
-  // ne le touchent pas dans l'autre sens — décoché une fois, il le reste.
   function handleSlotFilterPresetChange(preset: typeof slotFilterPreset) {
     setSlotFilterPreset(preset);
-    if (preset === 'haut' || preset === 'extreme') {
-      setExhaustiveSearch(true);
-    }
   }
 
   const slotFilterCap = SLOT_FILTER_PRESETS.find((p) => p.key === slotFilterPreset)!.cap;
@@ -1326,7 +1315,7 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
   // `handleSearch` le lisent ; un résultat affiché garde le pool photographié
   // à son lancement (`runesDuContexte`), si bien que basculer le réglage ne
   // le change pas.
-  const pool = useMemo(() => poolDeRecherche(poolInventaire, simulerRunesMaxees), [poolInventaire, simulerRunesMaxees]);
+  const pool = useMemo(() => poolDeRecherche(poolInventaire, simulationRunes), [poolInventaire, simulationRunes]);
 
   // Le speed tune du membre, s'il est lié à une ligne d'un plan de son équipe
   // (feat-contrainte-speed-tune.md). Attaché, il possède la VIT minimum et le
@@ -1892,16 +1881,11 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
     return rankBlockingConditions({ base: selected.gear.base, artifacts: searchArtifacts, artifactBounds: searchArtifactBounds, relic: selected.gear.relic, pool, requirement: requirementAvecAuras, metric });
   }, [search.contexte, selected, diagnoseBlockingEnabled, result, searchArtifacts, searchArtifactBounds, pool, requirementAvecAuras, metric]);
 
-  // `exhaustiveSearch` (toggle « Rechercher jusqu'à épuisement complet ») :
-  // remplace le filet de temps de 10 min (`HARD_TIMEOUT_MS`) par `Infinity` —
-  // déjà un budget-temps VALIDE pour le moteur, pas un cas spécial ajouté ici
-  // (le Worker sait déjà ignorer un `maxMs` non fini, voir `estimatePct` dans
-  // runeBuildOptim.worker.ts). ⚠️ Ne retire QUE la limite de temps : le
-  // plafond de `maxCollected` (1 000 000 candidats, non exposé dans l'UI) reste
-  // actif — une recherche assez lâche pour en trouver plus s'arrêtera quand
-  // même avant d'avoir visité tout l'espace. Désactivé par défaut : sans lui,
-  // une recherche mal contrainte peut tourner très longtemps (le bouton
-  // « Arrêter » reste le seul filet, coopératif comme toujours).
+  // Le filet de temps de 10 min (`HARD_TIMEOUT_MS`) s'applique toujours :
+  // l'ancien « Rechercher jusqu'à épuisement complet », qui le levait, est
+  // retiré — mesuré sur un compte réel au préréglage Extrême, le cas le plus
+  // lourd trouvé s'achève en 30 s, en séquentiel. Le plafond de
+  // `maxCollected` (1 000 000 candidats) reste une limite indépendante.
   function handleSearch() {
     if (!selected) return;
     if (comboSets.length === 0) {
@@ -1942,7 +1926,7 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
       pool,
       requirement: requirementAvecAuras,
       metric,
-      maxMs: exhaustiveSearch ? Number.POSITIVE_INFINITY : HARD_TIMEOUT_MS,
+      maxMs: HARD_TIMEOUT_MS,
       slotFilterCap,
       objective,
       // ⚠️ `undefined` hors de « Dégâts réels » — le moteur retombe alors sur
@@ -1993,10 +1977,8 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
       compterAurasResPre,
       metric,
       slotFilterPreset,
-      // Toujours `false`, comme la recherche (`handleSearch`).
-      exhaustiveSearch,
       verifierToutesLesCombinaisons,
-      simulerRunesMaxees,
+      simulationRunes,
       excludeUsedRunes,
       excludeUsedScope,
       excludedSelectors,
@@ -2212,15 +2194,13 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
       optimizer.poserCriteresAutomatiques({ damageSetup: recipe.damageSetup ?? DEFAULT_DAMAGE_SETUP,
         compterAurasResPre: recipe.compterAurasResPre ?? true });
       setSlotFilterPreset(recipe.slotFilterPreset);
-      // ⚠️ `?? false` : une recette exportée AVANT ce réglage ne porte pas ce
-      // champ (`undefined`) — repli sur le défaut plutôt que de propager une
-      // valeur non booléenne à l'état.
-      setExhaustiveSearch(recipe.exhaustiveSearch ?? false);
-      // ⚠️ `?? false`, même repli : une recette exportée avant ce
-      // champ ne le porte pas — désactivé, le défaut.
+      // ⚠️ `?? false` : une recette exportée avant ce champ ne le porte pas
+      // (`undefined`) — désactivé, le défaut, plutôt qu'une valeur non
+      // booléenne propagée à l'état.
       setVerifierToutesLesCombinaisons(recipe.verifierToutesLesCombinaisons ?? false);
-      // ⚠️ `?? false`, même repli : désactivé, le défaut.
-      setSimulerRunesMaxees(recipe.simulerRunesMaxees ?? false);
+      // ⚠️ Même repli : rien de simulé. L'ancien `simulerRunesMaxees` est
+      // déjà traduit par `parseOptimizerRecipe`.
+      setSimulationRunes(recipe.simulationRunes ?? SIMULATION_RUNES_AUCUNE);
       // ⚠️ Repli sur l'ANCIEN champ `exploreAll` (recette exportée avant ce
       // renommage/inversion) : `exploreAll` coché = pas d'exclusion
       // (`excludeUsedRunes = false`, comportement identique) ; décoché =
@@ -2230,7 +2210,7 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
       const legacy = recipe as unknown as { exploreAll?: boolean };
       setExcludeUsedRunes(recipe.excludeUsedRunes ?? legacy.exploreAll === false);
       setExcludeUsedScope(recipe.excludeUsedScope ?? 'box');
-      // ⚠️ `?? []` : même repli qu'`exhaustiveSearch` ci-dessus, pour les
+      // ⚠️ `?? []` : même repli que `verifierToutesLesCombinaisons` ci-dessus, pour les
       // recettes exportées avant ce champ. Les sélecteurs sont re-résolus
       // contre CE compte au moment de la recherche (voir optimizerExclusion.
       // ts) — un monstre absent ici est silencieusement ignoré, pas une erreur.
@@ -2398,9 +2378,9 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
         importDuCompte,
         empreinteSpeedTune: empreinteSpeedTune(contrainteSpeedTune),
         // Les runes simulées gardent leurs identifiants, clés du cache.
-        runesMaxees: simulerRunesMaxees,
+        runesMaxees: empreinteSimulation(simulationRunes),
       }),
-    [selected?.monster.com2usId, selected?.gear.relic, selected?.gear.artifacts, damageSetup, compterAurasResPre, regimeEquipement, optimiserArtefacts, artifactMainByKind, lignesVerrouillees, artifacts.length, relicContextRecherche?.empreinte, requirementAvecAuras, artefactsReserves, importDuCompte, contrainteSpeedTune, simulerRunesMaxees]
+    [selected?.monster.com2usId, selected?.gear.relic, selected?.gear.artifacts, damageSetup, compterAurasResPre, regimeEquipement, optimiserArtefacts, artifactMainByKind, lignesVerrouillees, artifacts.length, relicContextRecherche?.empreinte, requirementAvecAuras, artefactsReserves, importDuCompte, contrainteSpeedTune, simulationRunes]
   );
 
   // Les chiffres des cartes lisent la photographie et l'instantané du classeur.
@@ -3726,15 +3706,13 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
               handleSlotFilterPresetChange={handleSlotFilterPresetChange}
               dansPanneau={false}
               estimate={estimate}
-              exhaustiveSearch={exhaustiveSearch}
-              setExhaustiveSearch={setExhaustiveSearch}
               diagnoseBlockingEnabled={diagnoseBlockingEnabled}
               setDiagnoseBlockingEnabled={setDiagnoseBlockingEnabled}
               optimiserArtefacts={optimiserArtefacts}
               verifierToutesLesCombinaisons={verifierToutesLesCombinaisons}
               setVerifierToutesLesCombinaisons={setVerifierToutesLesCombinaisons}
-              simulerRunesMaxees={simulerRunesMaxees}
-              setSimulerRunesMaxees={setSimulerRunesMaxees}
+              simulationRunes={simulationRunes}
+              setSimulationRunes={setSimulationRunes}
               interrupteurResPrePanneauRef={interrupteurResPrePanneauRef}
               interrupteurResPreBureauRef={interrupteurResPreBureauRef}
               attentionResPre={attentionResPre}
@@ -3912,15 +3890,13 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
             handleSlotFilterPresetChange={handleSlotFilterPresetChange}
             dansPanneau
             estimate={estimate}
-            exhaustiveSearch={exhaustiveSearch}
-            setExhaustiveSearch={setExhaustiveSearch}
             diagnoseBlockingEnabled={diagnoseBlockingEnabled}
             setDiagnoseBlockingEnabled={setDiagnoseBlockingEnabled}
             optimiserArtefacts={optimiserArtefacts}
             verifierToutesLesCombinaisons={verifierToutesLesCombinaisons}
             setVerifierToutesLesCombinaisons={setVerifierToutesLesCombinaisons}
-            simulerRunesMaxees={simulerRunesMaxees}
-            setSimulerRunesMaxees={setSimulerRunesMaxees}
+            simulationRunes={simulationRunes}
+            setSimulationRunes={setSimulationRunes}
             interrupteurResPrePanneauRef={interrupteurResPrePanneauRef}
             interrupteurResPreBureauRef={interrupteurResPreBureauRef}
             attentionResPre={attentionResPre}

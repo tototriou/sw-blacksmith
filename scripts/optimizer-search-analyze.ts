@@ -151,8 +151,8 @@ console.log(
     `total ${(result.totalMs / 1000).toFixed(1)}s`
 );
 
-// Le pool de la recherche, pas l'inventaire : sous « Simuler +15 et max
-// meules/gemmes », les candidats se lisent sur les runes simulées, comme à l'écran.
+// Le pool de la recherche, pas l'inventaire : sous la simulation des runes
+// maxées, les candidats se lisent sur les runes simulées, comme à l'écran.
 const runeById = new Map<number, RuneDetail>(params.pool.map((r) => [r.id, r]));
 // Auras propres des six runes de chaque candidat, comme l'écran.
 const aurasPropresDe = aurasPropresParRunes(runeById);

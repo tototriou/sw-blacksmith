@@ -9,6 +9,16 @@ import type { Release } from './releases';
 
 export const RELEASES_EN: Release[] = [
   {
+    version: null,
+    date: '2026-11-23',
+    title: 'Lighter Optimizer options',
+    changes: [
+      { kind: 'feat', scope: 'Optimizer', text: '“Simulate +15” and “Simulate max grinds/gems” become two separate options.' },
+      { kind: 'feat', scope: 'Optimizer', text: 'Grinds and gems are simulated at Hero or Legend, separately for ancient runes.' },
+      { kind: 'feat', scope: 'Optimizer', text: '“Search until fully exhausted” is gone: searches fit well within the time limit.' },
+    ],
+  },
+  {
     version: '2.5.0',
     date: '2026-11-22',
     title: 'The Arena, My teams and your account live',

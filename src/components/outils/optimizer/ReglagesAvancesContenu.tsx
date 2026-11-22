@@ -6,21 +6,20 @@ import { Interrupteur } from '../../../ui';
 import { type Dispatch, type SetStateAction, type RefObject, type ReactNode } from 'react';
 import { SECTIONS } from './bureau/panneau';
 import { useTraduction } from '../../../hooks/useLangue';
+import type { GradeMeules, SimulationMeules, SimulationRunes } from '../../../lib/runesMaxees';
 
 export interface ReglagesAvancesContenuProps {
   slotFilterPreset: SlotFilterPresetKey;
   handleSlotFilterPresetChange: (preset: SlotFilterPresetKey) => void;
   dansPanneau: boolean;
   estimate: { perSlot: number[]; product: number; } | null;
-  exhaustiveSearch: boolean;
-  setExhaustiveSearch: Dispatch<SetStateAction<boolean>>;
   diagnoseBlockingEnabled: boolean;
   setDiagnoseBlockingEnabled: Dispatch<SetStateAction<boolean>>;
   optimiserArtefacts: boolean;
   verifierToutesLesCombinaisons: boolean;
   setVerifierToutesLesCombinaisons: Dispatch<SetStateAction<boolean>>;
-  simulerRunesMaxees: boolean;
-  setSimulerRunesMaxees: Dispatch<SetStateAction<boolean>>;
+  simulationRunes: SimulationRunes;
+  setSimulationRunes: Dispatch<SetStateAction<SimulationRunes>>;
   interrupteurResPrePanneauRef: RefObject<HTMLDivElement>;
   interrupteurResPreBureauRef: RefObject<HTMLDivElement>;
   attentionResPre: number | null;
@@ -38,14 +37,26 @@ export interface ReglagesAvancesContenuProps {
 // rangées, pour que les « ? » s'alignent d'une rangée à l'autre, quelle que
 // soit la longueur du libellé. Au téléphone, le « ? » suit le libellé, comme
 // avant (`etire` : le libellé prend la place et passe à la ligne).
-function LibelleEtAide({ bureau, etire = false, libelle, aide, interrupteur }: {
-  bureau: boolean; etire?: boolean; libelle: string; aide: ReactNode; interrupteur: ReactNode;
+// `choix` (le grade des meules) se place entre le libellé et le « ? », aux
+// deux formats (décision de l'utilisateur) ; le libellé, seul à céder de la
+// place, passe alors à la ligne.
+function LibelleEtAide({ bureau, etire = false, libelle, aide, interrupteur, choix }: {
+  bureau: boolean; etire?: boolean; libelle: string; aide: ReactNode; interrupteur: ReactNode; choix?: ReactNode;
 }) {
   if (bureau) {
     return (
       <>
         <span className="min-w-0 flex-1 text-[11.5px] text-ink-dim">{libelle}</span>
-        <span className="flex flex-none items-center gap-3">{aide}{interrupteur}</span>
+        <span className="flex flex-none items-center gap-3">{choix}{aide}{interrupteur}</span>
+      </>
+    );
+  }
+  if (choix) {
+    return (
+      <>
+        <span className="min-w-0 flex-1 text-[11.5px] text-ink-dim">{libelle}</span>
+        <div className="flex flex-none items-center gap-1.5">{choix}{aide}</div>
+        <span className="flex-none">{interrupteur}</span>
       </>
     );
   }
@@ -62,7 +73,52 @@ function LibelleEtAide({ bureau, etire = false, libelle, aide, interrupteur }: {
   );
 }
 
-export default function ReglagesAvancesContenu({ slotFilterPreset, handleSlotFilterPresetChange, dansPanneau, estimate, exhaustiveSearch, setExhaustiveSearch, diagnoseBlockingEnabled, setDiagnoseBlockingEnabled, optimiserArtefacts, verifierToutesLesCombinaisons, setVerifierToutesLesCombinaisons, simulerRunesMaxees, setSimulerRunesMaxees, interrupteurResPrePanneauRef, interrupteurResPreBureauRef, attentionResPre, compterAurasResPre, setCompterAurasResPre, bureau = false }: ReglagesAvancesContenuProps) {
+// Une ligne « Simuler max meules/gemmes » (normales ou antiques) : son
+// interrupteur et son grade. ⚠️ Le grade reste visible et modifiable
+// interrupteur éteint : le masquer ferait bouger la ligne sous le clic, le
+// griser empêcherait de préparer son choix.
+function LigneMeules({ bureau, antiques, valeur, onChange }: {
+  bureau: boolean; antiques: boolean; valeur: SimulationMeules; onChange: (v: SimulationMeules) => void;
+}) {
+  const r = useTraduction().optimizer.avances;
+  const libelle = antiques ? r.meulesAntiques : r.meules;
+  const grades: GradeMeules[] = ['hero', 'legend'];
+  return (
+    <div className="flex items-center justify-between gap-2 py-3">
+      <LibelleEtAide
+        bureau={bureau}
+        libelle={libelle}
+        choix={
+          <Segmented
+            options={grades.map((g) => ({ key: g, label: r.grades[g] }))}
+            value={valeur.grade}
+            onChange={(grade) => onChange({ ...valeur, grade })}
+          />
+        }
+        interrupteur={
+          <Interrupteur
+            actif={valeur.actif}
+            onChange={(actif) => onChange({ ...valeur, actif })}
+            aria-label={libelle}
+          />
+        }
+        aide={
+          <HelpPopover title={libelle}>
+            {r.meulesAide.debut(antiques)}<b className="text-ink">{r.meulesAide.maximale}</b>{r.meulesAide.gemme}
+            <br />
+            <br />
+            {r.meulesAide.jamaisBaisse}
+            <br />
+            <br />
+            {r.simulationCouleur}
+          </HelpPopover>
+        }
+      />
+    </div>
+  );
+}
+
+export default function ReglagesAvancesContenu({ slotFilterPreset, handleSlotFilterPresetChange, dansPanneau, estimate, diagnoseBlockingEnabled, setDiagnoseBlockingEnabled, optimiserArtefacts, verifierToutesLesCombinaisons, setVerifierToutesLesCombinaisons, simulationRunes, setSimulationRunes, interrupteurResPrePanneauRef, interrupteurResPreBureauRef, attentionResPre, compterAurasResPre, setCompterAurasResPre, bureau = false }: ReglagesAvancesContenuProps) {
   // ⚠️ **Au bureau, deux sections sans boîte**, empilées sous un trait fin
   // (`SECTIONS`, bureau/panneau.ts) : la colonne « Aura, exclusion, avancés »
   // est un panneau, et une boîte de plus y ferait la mosaïque que le trait
@@ -112,53 +168,44 @@ export default function ReglagesAvancesContenu({ slotFilterPreset, handleSlotFil
     {/* Au bureau, le trait entre deux interrupteurs est celui des sections
         (`border-soft`) : plus appuyé, il dominerait le trait de section. */}
     <div className={`divide-y ${bureau ? 'divide-border-soft' : 'divide-border'} ${boite}`}>
-      {/* « Simuler +15 et max meules/gemmes » : désactivé par défaut. Il
-          change le pool de la recherche (`poolDeRecherche`, runesMaxees.ts),
-          lu au clic sur « Rechercher » : un résultat affiché garde le pool
-          de son lancement. En tête : rendu sans condition, rien au-dessus
-          ne le décale. */}
+      {/* Les trois lignes de simulation (`SimulationRunes`, runesMaxees.ts),
+          désactivées par défaut. Elles changent le pool de la recherche
+          (`poolDeRecherche`), lu au clic sur « Rechercher » : un résultat
+          affiché garde le pool de son lancement. En tête : rendues sans
+          condition, rien au-dessus ne les décale. */}
       <div className="flex items-center justify-between gap-2 py-3 first:pt-0">
         <LibelleEtAide
           bureau={bureau}
-          libelle={r.runesMaxees}
+          libelle={r.plus15}
           interrupteur={
             <Interrupteur
-              actif={simulerRunesMaxees}
-              onChange={setSimulerRunesMaxees}
-              aria-label={r.runesMaxees}
+              actif={simulationRunes.plus15}
+              onChange={(plus15) => setSimulationRunes((s) => ({ ...s, plus15 }))}
+              aria-label={r.plus15}
             />
           }
           aide={
-          <HelpPopover title={r.runesMaxees}>
-            {r.runesMaxeesAide.debut}<b className="text-ink">{r.runesMaxeesAide.niveau}</b>{r.runesMaxeesAide.meules}<b className="text-ink">{r.runesMaxeesAide.legendaire}</b>{r.runesMaxeesAide.fin}
+          <HelpPopover title={r.plus15}>
+            {r.plus15Aide.debut}<b className="text-ink">{r.plus15Aide.niveau}</b>{r.plus15Aide.fin}
             <br />
             <br />
-            {r.runesMaxeesAide.couleur}
+            {r.simulationCouleur}
           </HelpPopover>
           }
         />
       </div>
-
-      {/* Désactivé par défaut, lu par `handleSearch` au clic sur
-          « Rechercher », jamais un bouton qui lance sa propre recherche. */}
-      <div className="flex items-center justify-between gap-2 py-3">
-        <LibelleEtAide
-          bureau={bureau}
-          libelle={r.exhaustif}
-          interrupteur={
-            <Interrupteur
-              actif={exhaustiveSearch}
-              onChange={setExhaustiveSearch}
-              aria-label={r.exhaustif}
-            />
-          }
-          aide={
-          <HelpPopover title={r.exhaustif}>
-            {r.exhaustifAide}<b className="text-ink">{r.exhaustifArreter}</b>{r.exhaustifAideFin}
-          </HelpPopover>
-          }
-        />
-      </div>
+      <LigneMeules
+        bureau={bureau}
+        antiques={false}
+        valeur={simulationRunes.meules}
+        onChange={(meules) => setSimulationRunes((s) => ({ ...s, meules }))}
+      />
+      <LigneMeules
+        bureau={bureau}
+        antiques
+        valeur={simulationRunes.meulesAntiques}
+        onChange={(meulesAntiques) => setSimulationRunes((s) => ({ ...s, meulesAntiques }))}
+      />
 
       <div className="flex items-center justify-between gap-2 py-3">
         <LibelleEtAide
