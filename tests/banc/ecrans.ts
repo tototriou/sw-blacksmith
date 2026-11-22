@@ -379,6 +379,12 @@ const EQ_IMPORT: Record<Format, Etape[]> = {
   ordinateur: [{ cliquer: bouton('Importer une équipe') }, EQ_SOURCE_DEFENSE, EQ_FERMER_RAPPORT],
 };
 const EQ_CARTE: Cible = { role: 'button', nom: 'Ouvrir Défense 1' };
+// L'onglet RTA, puis la prépa de la page RTA importée en une prépa enregistrée.
+const EQ_PREPA_SOURCE: Etape = { cliquer: repere('[role="dialog"]:has-text("Decks du jeu") [aria-label="Prépa de la page RTA"]') };
+const EQ_PREPA: Record<Format, Etape[]> = {
+  telephone: [{ cliquer: repere('[role="tab"]:has-text("RTA")') }, { cliquer: EQ_OPTIONS }, { cliquer: bouton('Importer une équipe') }, EQ_PREPA_SOURCE, EQ_FERMER_RAPPORT],
+  ordinateur: [{ cliquer: repere('[role="tab"]:has-text("RTA")') }, { cliquer: bouton('Importer une équipe') }, EQ_PREPA_SOURCE, EQ_FERMER_RAPPORT],
+};
 // L'équipe envoyée à l'Optimizer : la bande de son équipe de liste porte le
 // bouton de Mes équipes, entre son numéro et le speed tune, grisé tant que
 // les builds de ses membres ne sont pas validés (ils ne le sont pas à l'export).
@@ -722,6 +728,12 @@ export const ECRANS: Ecran[] = [
         libelle: 'une équipe dans un groupe : l’en-tête du groupe dans la grille',
         preparation: { telephone: [...EQ_IMPORT.telephone, ...EQ_GROUPER], ordinateur: [...EQ_IMPORT.ordinateur, ...EQ_GROUPER] },
         atteint: [repere('[role="group"][aria-label="Groupe 1"]'), bouton('Exporter le groupe vers l’Optimizer')],
+      },
+      {
+        id: 'prepa-rta',
+        libelle: 'onglet RTA : la prépa de la page RTA enregistrée',
+        preparation: EQ_PREPA,
+        atteint: [repere('article[aria-label="Prépa de la page RTA"]'), bouton('Nouvelle prépa')],
       },
       {
         id: 'nouveau-groupe',

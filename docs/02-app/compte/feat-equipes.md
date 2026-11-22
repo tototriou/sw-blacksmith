@@ -32,15 +32,17 @@ conservation).
 
 ## Onglets
 
-Une rangée `Onglets` (`src/ui/Onglets.tsx`) de **neuf onglets**, un par contenu du jeu,
+Une rangée `Onglets` (`src/ui/Onglets.tsx`) de **dix onglets**, un par contenu du jeu,
 dans cet ordre, choisi par l'utilisateur (le premier est ouvert par défaut ;
 `CATEGORIES_EQUIPES`). Chacun a ses **catégories**, nommées par l'utilisateur, que
 l'on filtre dans l'onglet et que l'on choisit pour chaque équipe
-(`SOUS_CATEGORIES_EQUIPES`) ; la ToA n'en a pas.
+(`SOUS_CATEGORIES_EQUIPES`) ; la RTA et la ToA n'en ont pas. L'onglet RTA garde des
+**prépas**, pas des équipes (§ Prépas RTA).
 
 | Onglet | Catégories | Contenu de liste de l'Optimizer |
 | --- | --- | --- |
-| `arene` « Arène » | Offense arène, Défense arène, Défense inter serveur, Arène dimensionnelle, RTA | `arene` |
+| `arene` « Arène » | Offense arène, Défense arène, Défense inter serveur, Arène dimensionnelle | `arene` |
+| `rta` « RTA » (des prépas) | — | `arene` |
 | `guilde` « Combat de guilde » | Offense siège, Défense siège, Offense guerre de guilde, Défense guerre de guilde | `guilde` |
 | `cairos` « Cairos » | Géant, Dragon, Nécropolis, Royaume Spirituel, Forteresse d'Acier, Crypte du jugement | `donjon` |
 | `labyrinthe` « Labyrinthe » | Boss, Normal, Sauvetage, Explosion, Vitesse limitée, Temps limité, Temps de pause | `guilde` |
@@ -78,6 +80,31 @@ Les rangements des versions de travail précédentes se relisent dans les nouvea
 `pve` en Cairos ; `guilde-offense` et `guilde-defense` (siège et guerre de guilde
 mêlés) dans Combat de guilde, sans catégorie. Un onglet gardé pour la session qui
 n'existe plus retombe sur le premier. Chaque onglet porte le nombre de ses équipes.
+
+## Prépas RTA
+
+En RTA, on ne prépare pas une équipe mais un **ensemble de monstres** : la prépa
+(décision de l'utilisateur, 2026-11-22). L'onglet RTA garde donc des prépas
+enregistrées, plusieurs à la fois (par saison, par draft), ce que la page RTA ne fait
+pas. Une prépa est une `EquipeEnregistree` rangée `rta` (`estPrepa`) :
+
+- **de 1 à 300 monstres** (`bornesMonstres` ; 300 n'est qu'un garde-fou de
+  relecture) : « Nouvelle prépa » s'enregistre dès son premier monstre, et la
+  limite par contenu ne la borne pas ;
+- **ni leader, ni speed tune, ni groupe**, ni lien vers l'Optimizer : relue, une
+  prépa les oublie ; créée dans l'onglet depuis une équipe de l'Optimizer, elle les
+  perd (`normaliserPrepa`). Le détail ne propose ni leader, ni « Onglet et
+  catégorie », ni « Groupe » ; l'onglet n'a pas de « Nouveau groupe » ;
+- **une prépa et une équipe ne s'échangent pas** : « Déplacer vers… » n'existe pas
+  sur une prépa, la RTA n'est pas proposée à une équipe, et `deplacerVersOnglet`
+  refuse le passage dans un sens comme dans l'autre ;
+- la carte montre ses douze premiers monstres, puis le nombre des autres (« +3 ») ;
+- « Exporter vers l'Optimizer » crée une liste au nom de la prépa, au lead d'arène,
+  avec tous ses membres et **sans équipe** (une équipe de l'Optimizer en a six au
+  plus) ; rien n'est lié, « Mettre à jour depuis l'Optimizer » n'est pas proposé.
+
+Les équipes rangées « Arène — RTA » des versions précédentes (`arene/rta`, et
+l'ancien `rta`) se relisent en prépas, sans leur leader ni leur speed tune.
 
 ## Monstres par équipe
 
@@ -209,8 +236,8 @@ enregistrée s'exporte donc vers une équipe de l'Optimizer, qui en accepte 2 à
   exemplaire de la Box, un membre Box de l'Optimizer, un deck d'arène. Les presets de
   siège ne la portent pas dans l'app : `unitId` vaut alors `null`, et aucune copie de la
   Box n'est choisie à sa place. Même règle pour un monstre ajouté sans exemplaire ;
-- `provenance` : d'où vient l'équipement (`porte`, `siege-defense`,
-  `siege-attaque`, `arene-defense`, `arene-attaque`, `optimizer`, `aucun`) ;
+- `provenance` : d'où vient l'équipement (`porte`, `rta`, `siege-defense`,
+  `siege-attaque`, `arene-defense`, `arene-attaque`, `deck`, `optimizer`, `aucun`) ;
 - `equipement` : un `GearSet` **copié** au moment de l'enregistrement — stats de base
   de l'unité, runes (`RuneDetail` complet, identifiant compris), artéfacts
   (`ArtifactDetail`), relique (`RelicDetail`). `null` pour un monstre sans équipement.
@@ -338,8 +365,8 @@ liée (`optimizer`, état `equipe-liee`).
   deuxième monstre (`gesteSurBrouillon`), et fermer le détail avant l'abandonne.
 - « Ajouter un monstre » : une recherche d'espèce, puis le choix de l'équipement
   parmi ce que le compte connaît de cette espèce, chaque choix nommé par sa
-  provenance : « Équipement porté » (chaque exemplaire de la Box),
-  « Défense de siège N », « Offense de siège N », « Défense d'arène », « Offense
+  provenance : « Équipement porté » (chaque exemplaire de la Box), « Prépa RTA »
+  (son build de la prépa de la page RTA), « Défense de siège N », « Offense de siège N », « Défense d'arène », « Offense
   d'arène N », ou « Sans équipement ». Chaque choix équipé montre la rangée du choix
   d'exemplaire de l'Optimizer (`LigneExemplaire`, d'`ExclusionCandidateRow.tsx`) :
   le monstre, ses sets actifs, son nombre de runes et, pour un deck de siège ou
@@ -373,7 +400,8 @@ modifié.
 Les sources suivent l'**onglet ouvert** (décision de l'utilisateur,
 `ordonnerSourcesPourOnglet`, par le rangement de chaque source) : d'abord celles de
 la catégorie filtrée, puis celles de l'onglet, puis le reste dans l'ordre de base
-(défenses de siège, offenses de siège, arène, decks du jeu, Optimizer). Dans Combat
+(défenses de siège, offenses de siège, arène, prépa de la page RTA, decks du jeu,
+Optimizer). Dans Combat
 de guilde filtré sur « Défense siège », les défenses de siège, puis les offenses de
 siège et de guerre de guilde, puis le reste ; sous « Tout », toutes les sources de
 l'onglet d'abord.
@@ -385,10 +413,17 @@ l'onglet d'abord.
 | La défense d'arène | Arène — Défense arène | le preset de la défense, même vide ; sans preset pour l'unité, ce qu'elle porte |
 | La défense d'arène de serveur | Arène — Défense inter serveur | idem |
 | Une offense d'arène | Arène — Offense arène | ce que portent les monstres à l'export |
+| La prépa de la page RTA (avec les decks du jeu) | RTA, une prépa | le build de chaque monstre dans la prépa |
 | Un deck enregistré du jeu | son onglet et sa catégorie (`rangementDeck`) ; un type non relevé, l'onglet ouvert | le preset du deck |
 | Une équipe de l'Optimizer | l'onglet ouvert | le build validé du membre, sinon son équipement affiché |
 
 - Siège : depuis les équipes de siège de l'app (`SiegeTeam`, slot 0 = leader).
+- Prépa de la page RTA : la prépa telle qu'elle est (`RtaState`), entière, dans
+  l'ordre de ses sections, « Non classé » en dernier. Comme les decks, c'est une
+  donnée lue dans l'export (un inventaire alternatif), d'où sa place sous « Decks du
+  jeu » (décision de l'utilisateur). L'import du compte garde, pour chaque monstre de
+  la prépa, l'exemplaire dont vient son build (`RtaEntry.unitId`) : la prépa
+  enregistrée le désigne dans la Box. Une prépa vide n'est pas importable.
 - Arène : les decks d'arène sont lus à l'import du compte (`parseArenaDecks` :
   `defense_deck_info`, `server_arena_defense_deck_info`, `deck_list` au `deck_type`
   1) et conservés avec le compte dans un champ facultatif, `arenaDecks`, sans

@@ -15,7 +15,7 @@ import { creerEquipe, ecrituresEntre, fusionnerRelecture, type EquipeEnregistree
 import { monstreEx } from './equipes-enregistrees.test';
 
 const T0 = new Date('2026-11-05T10:00:00Z');
-const equipe = (id: string): EquipeEnregistree => ({ ...creerEquipe(id, 'arene/rta', `Équipe ${id}`, T0), monstres: [monstreEx('a', 1, 11), monstreEx('b', 2, 12)], leader: 'a' });
+const equipe = (id: string): EquipeEnregistree => ({ ...creerEquipe(id, 'arene/offense', `Équipe ${id}`, T0), monstres: [monstreEx('a', 1, 11), monstreEx('b', 2, 12)], leader: 'a' });
 
 async function brutDansLaBase(id: string, valeur: unknown) {
   await new Promise<void>((resolve) => {

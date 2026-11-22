@@ -4,7 +4,7 @@ import type { BoxItem } from '../src/lib/applyAccount';
 import { fr } from '../src/i18n/fr';
 import { en } from '../src/i18n/en';
 import {
-  CATEGORIES_EQUIPES, CONTENU_OPTIMIZER_ONGLET, ONGLETS_EQUIPES, SOUS_CATEGORIES_EQUIPES, ajouterMonstre, appliquerGroupe, categorieDe, conflitsGroupe, monstresMax, nomGroupeLibre, tropDeMonstres, equipesDuGroupe, groupesDeLOnglet, modifierGroupe, regrouper, comparerPiece, compteParCategorie, compteParOnglet, creerEquipe, deplacerMonstre, designerLeader, dupliquerEquipe,
+  CATEGORIES_EQUIPES, CONTENU_OPTIMIZER_ONGLET, ONGLETS_EQUIPES, SOUS_CATEGORIES_EQUIPES, MONSTRES_MAX_PREPA, ajouterMonstre, appliquerGroupe, normaliserPrepa, categorieDe, conflitsGroupe, monstresMax, nomGroupeLibre, tropDeMonstres, equipesDuGroupe, groupesDeLOnglet, modifierGroupe, regrouper, comparerPiece, compteParCategorie, compteParOnglet, creerEquipe, deplacerMonstre, designerLeader, dupliquerEquipe,
   deplacerVersOnglet, equipesFiltrees, gesteSurBrouillon, etatExemplaire, etatPiece, indexerInventaire, lireEquipeEnregistree, modifierTextes,
   libelleRangement, libelleSousCategorie, nomEquipeLibre, rangement, resumeEcarts, sousCategorieDe, retirerMonstre, type EquipeEnregistree, type MonstreEnregistre, type OngletEquipes,
 } from '../src/lib/equipesEnregistrees';
@@ -47,7 +47,7 @@ function testEquipesEnregistreesRelecture() {
   const anciens: [string, string][] = [
     ['guerre-guilde', 'guilde/offense-gdg'], ['guerre-guilde-offense', 'guilde/offense-gdg'], ['guerre-guilde-defense', 'guilde/defense-gdg'],
     ['siege-attaque', 'guilde/offense-siege'], ['siege-defense', 'guilde/defense-siege'], ['arene-attaque', 'arene/offense'],
-    ['arene-offense', 'arene/offense'], ['arene-defense', 'arene/defense'], ['rta', 'arene/rta'], ['pve', 'cairos'],
+    ['arene-offense', 'arene/offense'], ['arene-defense', 'arene/defense'], ['rta', 'rta'], ['arene/rta', 'rta'], ['pve', 'cairos'],
     ['guilde-offense', 'guilde'], ['guilde-defense', 'guilde'], ['labyrinthe', 'labyrinthe'], ['passage-dimensions', 'passage-dimensions'],
   ];
   for (const [avant, apres] of anciens) egal(lireEquipeEnregistree({ ...e, onglet: avant })?.equipe.onglet, apres, `l’ancien rangement ${avant} se relit en ${apres}`);
@@ -87,7 +87,7 @@ function testEquipesEnregistreesComparaison() {
   egal(etatPiece('rune', runeEx(2, 2), inv), 'modifiee', 'pièce modifiée');
   egal(etatPiece('rune', runeEx(3, 3), inv), 'disparue', 'pièce disparue');
   egal(etatPiece('artefact', artefactEx(0, 'element'), inv), 'hors-compte', 'une pièce synthétique n’est jamais comparée');
-  const e = { ...creerEquipe('e', 'arene/rta', 'E', T0), monstres: [monstreEx('a', 1, 11)] };
+  const e = { ...creerEquipe('e', 'arene/offense', 'E', T0), monstres: [monstreEx('a', 1, 11)] };
   egal(resumeEcarts(e, inv), { modifiees: 1, disparues: 4 + 1 }, 'résumé : 1 modifiée, 4 runes et 1 artéfact disparus');
   const box: BoxItem[] = [{ key: '11', monster: monstreJeu(1), stars: 6, level: 40, gear: equipementEx() }];
   egal(etatExemplaire(monstreEx('a', 1, 11), box), 'equipe-ainsi', 'l’exemplaire porte exactement l’enregistré');
@@ -151,13 +151,13 @@ function testEquipesEnregistreesRecherche() {
 
 function testEquipesEnregistreesCategories() {
   titre('Mes équipes — catégories, côtés et rangements');
-  egal([...CATEGORIES_EQUIPES], ['arene', 'guilde', 'cairos', 'labyrinthe', 'subjugation', 'passage-dimensions', 'faille', 'temple-chaos', 'toa'],
+  egal([...CATEGORIES_EQUIPES], ['arene', 'rta', 'guilde', 'cairos', 'labyrinthe', 'subjugation', 'passage-dimensions', 'faille', 'temple-chaos', 'toa'],
     'les onglets dans l’ordre choisi');
-  egal(CATEGORIES_EQUIPES.filter((c) => SOUS_CATEGORIES_EQUIPES[c].length === 0), ['toa'], 'seule la ToA n’a pas de catégorie');
-  egal([rangement('arene', 'rta'), rangement('cairos', null), rangement('toa', 'eau'), rangement('cairos', 'eau')],
-    ['arene/rta', 'cairos', 'toa', 'cairos'], 'rangement : l’onglet et sa catégorie ; une catégorie d’un autre onglet est ignorée');
+  egal(CATEGORIES_EQUIPES.filter((c) => SOUS_CATEGORIES_EQUIPES[c].length === 0), ['rta', 'toa'], 'seules la RTA et la ToA n’ont pas de catégorie');
+  egal([rangement('arene', 'offense'), rangement('arene', 'rta'), rangement('cairos', null), rangement('toa', 'eau'), rangement('cairos', 'eau')],
+    ['arene/offense', 'arene', 'cairos', 'toa', 'cairos'], 'rangement : l’onglet et sa catégorie ; une catégorie d’un autre onglet est ignorée');
   for (const o of ONGLETS_EQUIPES) egal(rangement(categorieDe(o), sousCategorieDe(o)), o, `${o} : onglet et catégorie refont le rangement`);
-  egal(Object.entries(CONTENU_OPTIMIZER_ONGLET), [['arene', 'arene'], ['guilde', 'guilde'], ['cairos', 'donjon'], ['labyrinthe', 'guilde'],
+  egal(Object.entries(CONTENU_OPTIMIZER_ONGLET), [['arene', 'arene'], ['rta', 'arene'], ['guilde', 'guilde'], ['cairos', 'donjon'], ['labyrinthe', 'guilde'],
     ['subjugation', 'guilde'], ['passage-dimensions', 'donjon'], ['faille', 'donjon'], ['temple-chaos', 'autre'], ['toa', 'autre']],
     'le lead de chaque onglet, d’après la règle relevée en jeu');
   for (const [dico, langue] of [[fr, 'fr'], [en, 'en']] as const) {
@@ -204,6 +204,33 @@ function testEquipesEnregistreesGroupes() {
   egal(nomGroupeLibre(['Groupe 1', 'Groupe 3'], (n) => `Groupe ${n}`), 'Groupe 2', 'le premier nom libre');
 }
 
+// Les prépas RTA (décision de l'utilisateur, 2026-11-22) : un ensemble de
+// monstres, sans leader, ni speed tune, ni groupe.
+function testEquipesEnregistreesPrepas() {
+  titre('Mes équipes — prépas RTA');
+  const T = new Date('2026-11-06T10:00:00Z');
+  const monstres = (n: number) => Array.from({ length: n }, (_, k) => monstreEx(`p${k}`, k + 1, null, null));
+  const prepa = { ...creerEquipe('p', 'rta', 'Prépa', T0), monstres: monstres(12) };
+  ok(lireEquipeEnregistree(JSON.parse(JSON.stringify(prepa))) !== null, 'une prépa de douze monstres se relit');
+  ok(lireEquipeEnregistree({ ...prepa, monstres: monstres(1) }) !== null, 'un monstre suffit à une prépa');
+  ok(lireEquipeEnregistree({ ...prepa, onglet: 'cairos', monstres: monstres(1) }) === null, 'pas à une équipe');
+  ok(lireEquipeEnregistree({ ...prepa, monstres: monstres(MONSTRES_MAX_PREPA + 1) }) === null, 'au-delà du garde-fou, illisible');
+  const ancienne = { ...creerEquipe('a', 'arene/offense', 'RTA', T0), onglet: 'arene/rta', monstres: monstres(3), leader: 'p0' };
+  const lue = lireEquipeEnregistree(ancienne);
+  egal([lue?.equipe.onglet, lue?.equipe.leader, lue?.signalements], ['rta', null, []], 'une ancienne équipe RTA se relit en prépa, sans leader ni signalement');
+  egal(gesteSurBrouillon({ ...prepa, monstres: [] }, (e, n) => ajouterMonstre(e, monstreEx('x', 9, null, null), n)!, T).aEnregistrer?.monstres.length, 1,
+    'le brouillon d’une prépa s’enregistre dès son premier monstre');
+  ok(designerLeader(prepa, 'p0', T) === prepa, 'une prépa n’a pas de leader');
+  ok(deplacerVersOnglet(prepa, 'arene/offense', T) === prepa, 'une prépa ne devient pas une équipe');
+  const equipe = { ...creerEquipe('e', 'arene/offense', 'E', T0), monstres: monstres(2) };
+  ok(deplacerVersOnglet(equipe, 'rta', T) === equipe, 'ni une équipe une prépa');
+  egal(monstresMax('rta'), MONSTRES_MAX_PREPA, 'une prépa n’a pas la limite d’une équipe');
+  const lie = { ...prepa, leader: 'p0', groupe: 'G', lienOptimizer: { listId: 'l', equipeId: 'q', correspondance: [] } };
+  const n = normaliserPrepa(lie);
+  egal([n.leader, 'groupe' in n, 'lienOptimizer' in n], [null, false, false], 'une équipe créée dans la RTA y perd ce qu’une prépa ne porte pas');
+  ok(normaliserPrepa(equipe) === equipe, 'ailleurs, rien ne change');
+}
+
 // Le nombre de monstres d'une équipe par contenu (règle de jeu relevée par
 // l'utilisateur, 2026-11-22).
 function testEquipesEnregistreesTaille() {
@@ -223,5 +250,5 @@ function testEquipesEnregistreesTaille() {
 
 export const verificationsEquipesEnregistrees: [string, () => void][] = [
   testEquipesEnregistreesRelecture, testEquipesEnregistreesComparaison, testEquipesEnregistreesOperations, testEquipesEnregistreesRecherche,
-  testEquipesEnregistreesCategories, testEquipesEnregistreesGroupes, testEquipesEnregistreesTaille,
+  testEquipesEnregistreesCategories, testEquipesEnregistreesGroupes, testEquipesEnregistreesTaille, testEquipesEnregistreesPrepas,
 ].map((f) => [f.name, f]);

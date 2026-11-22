@@ -14,6 +14,7 @@ import { creerEquipe, indexerInventaire, type EquipeEnregistree } from '../../sr
 import { sourcesEquipementEspece, sourcesImportEquipes, type ContexteSourcesEquipes } from '../../src/lib/sourcesEquipesEnregistrees';
 import { fr } from '../../src/i18n/fr';
 import { egal, ok, titre } from '../outils';
+import { amorcerMemoire, reinitialiserSticky } from '../../src/hooks/useStickyState';
 import { auTelephone, bouton, boutons, onglets, rendre, texteVisible, valeurs } from './outils-rendu';
 import { equipementEx, monstreEx, runeEx } from '../equipes-enregistrees.test';
 
@@ -25,7 +26,7 @@ function monstre(id: number): Monster {
 const MONSTRES = [1, 2, 3].map(monstre);
 const ctx = (compte = true): ContexteSourcesEquipes => ({
   box: compte ? [{ key: '11', monster: MONSTRES[0], stars: 6, level: 40, gear: equipementEx(1) }] : [],
-  siegeDefenseTeams: [], siegeOffenseTeams: [], arenaDecks: compte ? [] : null, decksEnregistres: compte ? [] : null, compte,
+  siegeDefenseTeams: [], siegeOffenseTeams: [], rta: { sections: [], entries: {} }, arenaDecks: compte ? [] : null, decksEnregistres: compte ? [] : null, compte,
   monsterById: new Map(MONSTRES.map((m) => [String(m.id), m])),
   monsterByCom2us: new Map(MONSTRES.map((m) => [m.com2usId as number, m])),
 });
@@ -34,7 +35,7 @@ const eq1 = equipementEx(1);
 const INVENTAIRE = indexerInventaire(eq1.runes.map((r) => (r.id === 3 ? runeEx(3, 3, 99) : r)), eq1.artifacts, [eq1.relic!]);
 const EQUIPES: EquipeEnregistree[] = [
   { ...creerEquipe('e1', 'arene/offense', 'Ma RTA', T0), note: 'contre Lushen', monstres: [monstreEx('a', 1001, 11), monstreEx('b', 1002, null, null)], leader: 'a' },
-  { ...creerEquipe('e2', 'arene/rta', 'Autre RTA', T0), monstres: [monstreEx('d', 1002, null, null), monstreEx('e', 1003, null, null)] },
+  { ...creerEquipe('e2', 'rta', 'Prépa saison', T0), monstres: [monstreEx('d', 1002, null, null), monstreEx('e', 1003, null, null)] },
   { ...creerEquipe('e3', 'cairos', 'Donjon', T0), monstres: [monstreEx('c', 1003, null, null), monstreEx('f', 1001, null, null)] },
 ];
 const api = (equipes = EQUIPES, relecture: 'en-cours' | 'finie' = 'finie'): EquipesEnregistreesApi => ({
@@ -52,15 +53,15 @@ export function testRenduEquipesBureau() {
   const html = rendre(section());
   const t = texteVisible(html);
   egal(onglets(html).map((o) => [o.texte, o.ouvert]), [
-    ['Arène 2', true], ['Combat de guilde 0', false], ['Cairos 1', false], ['Labyrinthe 0', false], ['Subjugation 0', false],
+    ['Arène 1', true], ['RTA 1', false], ['Combat de guilde 0', false], ['Cairos 1', false], ['Labyrinthe 0', false], ['Subjugation 0', false],
     ['Passage des dimensions 0', false], ['Rift 0', false], ['Temple du chaos 0', false], ['ToA 0', false],
-  ], 'neuf onglets dans l’ordre choisi, chacun avec son total, le premier ouvert');
-  ok(t.includes('Ma RTA') && t.includes('Autre RTA') && !t.includes('Donjon'), 'les cartes de l’onglet ouvert seulement, toutes catégories');
+  ], 'dix onglets dans l’ordre choisi, chacun avec son total, le premier ouvert');
+  ok(t.includes('Ma RTA') && !t.includes('Prépa saison') && !t.includes('Donjon'), 'les cartes de l’onglet ouvert seulement');
   const filtre = html.slice(html.indexOf(`aria-label="${e.filtre.aria}"`));
   ok(filtre !== html, 'l’arène a son filtre de catégories');
-  egal(boutons(filtre).slice(0, 6).map((b) => b.texte), ['Tout 2', 'Offense arène 1', 'Défense arène 0', 'Défense inter serveur 0', 'Arène dimensionnelle 0', 'RTA 1'],
+  egal(boutons(filtre).slice(0, 5).map((b) => b.texte), ['Tout 1', 'Offense arène 1', 'Défense arène 0', 'Défense inter serveur 0', 'Arène dimensionnelle 0'],
     'le filtre : chaque catégorie de l’onglet avec son compte');
-  ok(/Ma RTA\s*Offense arène/.test(t) && /Autre RTA\s*RTA/.test(t), 'sous « Tout », chaque carte dit sa catégorie');
+  ok(/Ma RTA\s*Offense arène/.test(t), 'sous « Tout », chaque carte dit sa catégorie');
   const telephone = auTelephone(() => rendre(section()));
   ok(telephone.includes(`aria-label="${e.filtre.aria}"`) && texteVisible(telephone).includes('Arène dimensionnelle (0)'), 'au téléphone, le filtre est un menu');
   ok(t.includes('contre Lushen'), 'la note sur la carte');
@@ -142,7 +143,7 @@ export function testRenduEquipesDetail() {
 
 export function testRenduEquipesImports() {
   titre('rendu · Mes équipes — sources d’import');
-  const sources = sourcesImportEquipes({ ...ctx(), arenaDecks: null }, null, INVENTAIRE, 'arene/rta', fr);
+  const sources = sourcesImportEquipes({ ...ctx(), arenaDecks: null }, null, INVENTAIRE, 'arene/offense', fr);
   const html = auTelephone(() => rendre(<ImportEquipeModale sources={sources} onChoisir={() => {}} onFermer={() => {}} />));
   const t = texteVisible(html);
   ok(t.includes(e.imports.titre), 'le titre de la modale');
@@ -170,7 +171,7 @@ export function testRenduEquipesCreationOptimizer() {
     const t = texteVisible(html);
     ok(t.includes(e.creation.message), 'ce que crée l’enregistrement, et qu’il restera lié');
     ok(t.includes(e.creation.nom) && valeurs(html, 'value').includes('Liste — équipe 1'), 'le nom se donne avant d’enregistrer, le nom proposé prérempli');
-    ok(t.includes(e.creation.onglet) && t.includes('Arène — RTA'), 'l’onglet et la catégorie se choisissent, l’onglet ouvert par défaut');
+    ok(t.includes(e.creation.onglet) && t.includes('Arène — Offense arène') && !t.includes('Arène — RTA'), 'l’onglet et la catégorie se choisissent, l’onglet ouvert par défaut ; pas la RTA, qui garde des prépas');
     ok(t.includes(e.retour.manquante('Monstre 1', e.retour.pieces.rune, 999)), 'une pièce introuvable est nommée');
     ok(!t.includes(e.retour.resume(2, 9)), 'pas de résumé de changements : tout est nouveau');
     ok(bouton(html, e.creation.action)?.desactive === false, '« Enregistrer » utilisable');
@@ -206,7 +207,7 @@ export function testRenduEquipesGroupes() {
   const groupe: EquipeEnregistree[] = [
     { ...creerEquipe('s', 'arene/offense', 'Équipe seule', T0), monstres: [monstreEx('c', 1002, null, null), monstreEx('d', 1003, null, null)] },
     { ...creerEquipe('g1', 'arene/defense', 'Équipe G1', T0), groupe: 'Raid A', monstres: [monstreEx('a', 1001, 11), monstreEx('b', 1002, null, null)] },
-    { ...creerEquipe('g2', 'arene/rta', 'Équipe G2', T0), groupe: 'Raid A', monstres: [monstreEx('e', 1001, 11), monstreEx('f', 1003, null, null)] },
+    { ...creerEquipe('g2', 'arene/dimensionnelle', 'Équipe G2', T0), groupe: 'Raid A', monstres: [monstreEx('e', 1001, 11), monstreEx('f', 1003, null, null)] },
   ];
   const html = rendre(section({ api: api(groupe) }));
   const t = texteVisible(html);
@@ -238,6 +239,28 @@ export function testRenduEquipesGroupes() {
   egal(bouton(creation, g.fenetre.action)?.title, g.edition.auMoinsUne, 'rien de coché : « Créer » attend une équipe');
 }
 
+// L'onglet RTA garde des prépas : « Nouvelle prépa », pas de groupe, une carte
+// qui résume ses nombreux monstres, un détail sans leader ni rangement.
+export function testRenduEquipesPrepa() {
+  titre('rendu · Mes équipes — prépas RTA');
+  const p = e.prepa;
+  const prepa: EquipeEnregistree = { ...creerEquipe('p', 'rta', 'Prépa saison', T0),
+    monstres: Array.from({ length: 15 }, (_, k) => monstreEx(`m${k}`, 1001 + (k % 3), null, null)) };
+  // L'onglet ouvert se garde pour la session : on le pose avant de rendre.
+  const avecOnglet = (f: () => string) => { amorcerMemoire({ 'equipes.categorie': 'rta' }); try { return f(); } finally { reinitialiserSticky('equipes.'); } };
+  const html = avecOnglet(() => rendre(section({ api: api([prepa]) })));
+  const t = texteVisible(html);
+  ok(bouton(html, p.nouvelle) !== undefined && bouton(html, e.nouvelle) === undefined, '« Nouvelle prépa » à la place de « Nouvelle équipe »');
+  ok(bouton(html, e.groupes.creer) === undefined, 'pas de groupe dans l’onglet RTA');
+  ok(t.includes('Prépa saison') && t.includes(p.plus(3)), 'la carte montre douze monstres et le nombre des autres');
+  ok(texteVisible(avecOnglet(() => rendre(section({ api: api([]) })))).includes(p.aucune), 'un onglet RTA vide dit d’où vient une prépa');
+  const detail = rendre(<DetailEquipe equipe={prepa} onChanger={() => {}} monstreDe={(c) => MONSTRES.find((m) => m.com2usId === c)}
+    box={[]} inventaire={null} onAjouter={() => {}} retour={null} menu={null} />);
+  const td = texteVisible(detail);
+  ok(!td.includes(e.detail.designerLeader) && !td.includes(e.detail.rangement) && !td.includes(e.detail.groupe), 'le détail : ni leader, ni rangement, ni groupe');
+  egal(bouton(detail, e.detail.ajouter)?.desactive, false, 'une prépa grandit au-delà de six monstres');
+}
+
 // Le nombre de monstres par contenu : la carte et le détail le disent.
 export function testRenduEquipesTaille() {
   titre('rendu · Mes équipes — monstres par équipe selon le contenu');
@@ -262,4 +285,5 @@ export const verificationsRenduEquipes: [string, () => void][] = [
   ['testRenduEquipesImports', testRenduEquipesImports],
   ['testRenduEquipesGroupes', testRenduEquipesGroupes],
   ['testRenduEquipesTaille', testRenduEquipesTaille],
+  ['testRenduEquipesPrepa', testRenduEquipesPrepa],
 ];

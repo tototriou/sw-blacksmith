@@ -11,7 +11,7 @@ import { CarteRune } from '../RunesList';
 import { useMediaQuery, SOUS_LG } from '../../../hooks/useMediaQuery';
 import { useTraduction } from '../../../hooks/useLangue';
 import {
-  MONSTRES_MAX_EQUIPE, MONSTRES_MIN_EQUIPE, deplacerMonstre, deplacerVersOnglet, designerLeader, etatExemplaire, etatsEquipement, modifierGroupe, modifierTextes,
+  MONSTRES_MAX_EQUIPE, bornesMonstres, deplacerMonstre, estPrepa, deplacerVersOnglet, designerLeader, etatExemplaire, etatsEquipement, modifierGroupe, modifierTextes,
   libelleRangement, memeEquipement, monstresMax, nomGroupeLibre, tropDeMonstres, remplacerEquipement, retirerMonstre,
   type EquipeEnregistree, type EtatPiece, type InventaireCompte, type MonstreEnregistre, type OngletEquipes,
 } from '../../../lib/equipesEnregistrees';
@@ -88,8 +88,12 @@ export default function DetailEquipe({ equipe, brouillon = false, onChanger, mon
   const raisonPlein = max < MONSTRES_MAX_EQUIPE ? tt.max(lieu, max) : d.complet;
   // Un rangement choisi où l'équipe aurait trop de monstres : à confirmer.
   const [aDeplacer, setADeplacer] = useState<OngletEquipes | null>(null);
-  // Enregistrée, une équipe garde deux monstres : le retrait du deuxième est refusé.
-  const retirable = brouillon || equipe.monstres.length > MONSTRES_MIN_EQUIPE;
+  // Une prépa RTA : ni rangement à changer, ni groupe, ni leader.
+  const prepa = estPrepa(equipe.onglet);
+  // Enregistrée, une équipe garde deux monstres (une prépa, un) : le retrait
+  // du dernier est refusé.
+  const retirable = brouillon || equipe.monstres.length > bornesMonstres(equipe.onglet).min;
+  const minimum = prepa ? t.equipes.prepa.minimum : d.minimum;
   // Téléphone : la roue de runes, plus compacte en hauteur que six cartes ;
   // ordinateur : les cartes, à droite de la relique. Lu une fois pour toutes
   // les fiches.
@@ -105,8 +109,9 @@ export default function DetailEquipe({ equipe, brouillon = false, onChanger, mon
       <div className="flex flex-wrap items-end gap-3">
         {retour}
         <div className="ml-auto lg:order-last lg:ml-0">{menu}</div>
-        <div className="grid basis-full grid-cols-1 gap-3 sm:grid-cols-2 lg:min-w-0 lg:flex-1 lg:basis-0 lg:grid-cols-[minmax(0,1fr)_minmax(0,14rem)_minmax(0,11rem)_minmax(0,1fr)]">
+        <div className={`grid basis-full grid-cols-1 gap-3 sm:grid-cols-2 lg:min-w-0 lg:flex-1 lg:basis-0 ${prepa ? '' : 'lg:grid-cols-[minmax(0,1fr)_minmax(0,14rem)_minmax(0,11rem)_minmax(0,1fr)]'}`}>
           <ChampTexte libelle={d.nom} valeur={equipe.nom} onValider={(nom) => onChanger((e, n) => modifierTextes(e, { nom }, n))} />
+          {!prepa && <>
           <label className="flex min-w-0 flex-col gap-1 text-xs text-ink-dim">
             {d.rangement}
             <SelecteurRangement valeur={equipe.onglet}
@@ -116,10 +121,11 @@ export default function DetailEquipe({ equipe, brouillon = false, onChanger, mon
             {d.groupe}
             <SelecteurGroupe valeur={equipe.groupe} groupes={groupes} onChange={(g) => onChanger((e, n) => modifierGroupe(e, g, n))} />
           </label>
+          </>}
           <ChampTexte libelle={d.note} valeur={equipe.note} onValider={(note) => onChanger((e, n) => modifierTextes(e, { note }, n))} />
         </div>
       </div>
-      {brouillon && <p role="status" className="text-xs text-ink-dim">{d.brouillon}</p>}
+      {brouillon && <p role="status" className="text-xs text-ink-dim">{prepa ? t.equipes.prepa.brouillon : d.brouillon}</p>}
       {tropDeMonstres(equipe) && <p role="status" className="text-xs text-warn">{tt.trop(equipe.monstres.length, lieu, max)}</p>}
       {aDeplacer && (
         <ConfirmDialog titre={tt.deplacer.titre} libelleAction={tt.deplacer.action}
@@ -137,7 +143,7 @@ export default function DetailEquipe({ equipe, brouillon = false, onChanger, mon
       <div className="@container">
         <div className="grid grid-cols-1 gap-x-3 gap-y-4 @4xl:grid-cols-[max-content_max-content_minmax(0,1fr)]">
           {equipe.monstres.map((m, i) => (
-            <FicheMonstre key={m.uid} m={m} position={i} total={equipe.monstres.length} leader={equipe.leader === m.uid} retirable={retirable}
+            <FicheMonstre key={m.uid} m={m} position={i} total={equipe.monstres.length} leader={equipe.leader === m.uid} retirable={retirable} minimum={minimum} prepa={prepa}
               monstre={monstreDe(m.com2usId)} box={box} inventaire={inventaire} onChanger={onChanger} telephone={telephone} />
           ))}
         </div>
@@ -150,8 +156,8 @@ export default function DetailEquipe({ equipe, brouillon = false, onChanger, mon
   );
 }
 
-function FicheMonstre({ m, position, total, leader, retirable, monstre, box, inventaire, onChanger, telephone }: {
-  m: MonstreEnregistre; position: number; total: number; leader: boolean; retirable: boolean; monstre: Monster | undefined;
+function FicheMonstre({ m, position, total, leader, retirable, minimum, prepa, monstre, box, inventaire, onChanger, telephone }: {
+  m: MonstreEnregistre; position: number; total: number; leader: boolean; retirable: boolean; minimum: string; prepa: boolean; monstre: Monster | undefined;
   box: readonly BoxItem[]; inventaire: InventaireCompte | null;
   onChanger: Props['onChanger']; telephone: boolean;
 }) {
@@ -192,16 +198,18 @@ function FicheMonstre({ m, position, total, leader, retirable, monstre, box, inv
               </p>
             </div>
             <div className="order-1 flex basis-full items-center gap-2 @lg:order-none @lg:basis-auto @4xl:order-1 @4xl:col-span-3 @4xl:flex-col @4xl:items-start">
-              <Bouton taille="sm" actif={leader} icone={<Crown size={14} />} libelle={leader ? d.leader : d.designerLeader}
-                title={leader ? d.retirerLeader : d.designerLeader}
-                onClick={() => onChanger((e, n) => designerLeader(e, leader ? null : m.uid, n))} />
+              {!prepa && (
+                <Bouton taille="sm" actif={leader} icone={<Crown size={14} />} libelle={leader ? d.leader : d.designerLeader}
+                  title={leader ? d.retirerLeader : d.designerLeader}
+                  onClick={() => onChanger((e, n) => designerLeader(e, leader ? null : m.uid, n))} />
+              )}
               <Selecteur taille="sm" pleineLargeur={false} surface="panel" aria-label={d.position} value={String(position)}
                 onChange={(ev) => onChanger((e, n) => deplacerMonstre(e, m.uid, Number(ev.target.value), n))}>
                 {Array.from({ length: total }, (_, k) => <option key={k} value={k}>{d.positionN(k + 1)}</option>)}
               </Selecteur>
             </div>
             {/* Désactivé, son infobulle dit pourquoi. */}
-            <BoutonIcone libelle={retirable ? d.retirer(nom) : d.minimum} icone={<X size={14} />} disabled={!retirable}
+            <BoutonIcone libelle={retirable ? d.retirer(nom) : minimum} icone={<X size={14} />} disabled={!retirable}
               onClick={() => onChanger((e, n) => retirerMonstre(e, m.uid, n))} />
           </div>
           {/* Seulement quand l'exemplaire, connu et dans la Box, porte autre

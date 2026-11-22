@@ -50,7 +50,7 @@ function testEquipesOptimizerExport() {
   const { proposition: p, correspondance } = preparerExportEquipeOptimizer(equipe(), sources(), inventaire(), fr);
   egal([p.nomListe, p.contenu], ['Défense GW', 'guilde'], 'la liste prend le nom de l’équipe et le contenu de son onglet');
   const rangee = (o: OngletEquipes) => ({ ...equipe(), onglet: o });
-  egal((['arene/rta', 'cairos/geant', 'arene/defense', 'labyrinthe/boss', 'subjugation/eau', 'passage-dimensions/raid', 'faille/raid', 'temple-chaos/feu', 'toa'] as const)
+  egal((['rta', 'cairos/geant', 'arene/defense', 'labyrinthe/boss', 'subjugation/eau', 'passage-dimensions/raid', 'faille/raid', 'temple-chaos/feu', 'toa'] as const)
     .map((o) => preparerExportEquipeOptimizer(rangee(o), sources(), inventaire(), fr).proposition.contenu),
     ['arene', 'donjon', 'arene', 'guilde', 'guilde', 'donjon', 'donjon', 'autre', 'autre'], 'le lead de l’onglet, quelle que soit sa catégorie');
   // La règle du jeu et le rangement des decks s'accordent : un deck importé
@@ -150,7 +150,7 @@ function testEquipesOptimizerImport() {
   titre('Mes équipes — importer une équipe de l’Optimizer');
   const { r } = exporter(equipe());
   const data = sources();
-  const ctx = { box: data.box, siegeDefenseTeams: [], siegeOffenseTeams: [], arenaDecks: [], decksEnregistres: [], compte: true,
+  const ctx = { box: data.box, siegeDefenseTeams: [], siegeOffenseTeams: [], rta: { sections: [], entries: {} }, arenaDecks: [], decksEnregistres: [], compte: true,
     monsterById: data.monsterById, monsterByCom2us: new Map([...data.monsterById.values()].map((m) => [m.com2usId as number, m])) };
   const src = sourcesImportEquipes(ctx, { stockage: r.stockage, data }, inventaire(), 'cairos', fr).filter((x) => x.groupe === fr.equipes.imports.optimizer);
   egal(src.map((x) => [x.libelle, x.raison]), [['Défense GW — équipe 1', null]], 'une source par équipe de liste');
@@ -195,6 +195,19 @@ function testEquipesOptimizerEnregistrer() {
 
 // Un groupe part en une seule liste : ses équipes y partagent la réserve de
 // runes, et un exemplaire de la Box n'y entre qu'une fois.
+// Une prépa RTA part en membres seuls : ni équipe, ni lien.
+function testEquipesOptimizerExportPrepa() {
+  titre('Mes équipes — export d’une prépa RTA vers l’Optimizer');
+  const prepa: EquipeEnregistree = { ...creerEquipe('p', 'rta', 'Prépa saison', T0),
+    monstres: [monstreEx('a', 1001, 11), monstreEx('b', 1002, null, null), monstreEx('c', 1003, null, null)] };
+  const prep = preparerExportEquipeOptimizer(prepa, sources(), inventaire(), fr);
+  egal([prep.proposition.nomListe, prep.proposition.contenu, prep.proposition.equipes.length, prep.proposition.membres.length],
+    ['Prépa saison', 'arene', 0, 3], 'une liste au nom de la prépa, au lead d’arène, ses membres sans équipe');
+  const r = consommerImportOptimizer(vide(), null, prep.proposition, sources(), 'liste', fr);
+  egal([r.rapport.listeCreee?.name, r.rapport.membresImportes, lienApresExportOptimizer(prep, r.rapport)], ['Prépa saison', 3, null],
+    'la liste est créée, la prépa n’y est liée à rien');
+}
+
 function testEquipesOptimizerExportGroupe() {
   titre('Mes équipes — export d’un groupe vers l’Optimizer');
   const membres = (id: string, ...m: ReturnType<typeof monstreEx>[]): EquipeEnregistree =>
@@ -226,6 +239,7 @@ export const verificationsEquipesOptimizer: [string, () => void][] = [
   ['testEquipesOptimizerEnregistrer', testEquipesOptimizerEnregistrer],
   ['testEquipesOptimizerExport', testEquipesOptimizerExport],
   ['testEquipesOptimizerExportGroupe', testEquipesOptimizerExportGroupe],
+  ['testEquipesOptimizerExportPrepa', testEquipesOptimizerExportPrepa],
   ['testEquipesOptimizerBuilds', testEquipesOptimizerBuilds],
   ['testEquipesOptimizerRetour', testEquipesOptimizerRetour],
   ['testEquipesOptimizerImport', testEquipesOptimizerImport],

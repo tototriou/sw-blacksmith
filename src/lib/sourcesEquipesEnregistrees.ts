@@ -6,7 +6,7 @@
 // de siège, decks d'arène, listes de l'Optimizer) ; rien n'est écrit ici, le
 // geste rend une équipe neuve que l'écran ajoute.
 
-import type { GearSet, Monster, SiegeTeam } from '../types';
+import { RTA_UNASSIGNED, type GearSet, type Monster, type RtaState, type SiegeTeam } from '../types';
 import type { BoxItem } from './applyAccount';
 import type { Dictionnaire } from '../i18n/fr';
 import type { ContenuDeck, DeckArene, DeckEnregistreImporte, SousContenuDeck } from './importAccount';
@@ -14,7 +14,7 @@ import { resolveExclusionEntry, type ExclusionSelector, type ExclusionSourceData
 import type { StockageOptimizer } from './optimizerMemberStorage';
 import { creerDepuisEquipeOptimizer, disponibiliteRetourOptimizer } from './importEquipesEnregistrees';
 import {
-  CATEGORIES_EQUIPES, MONSTRES_MAX_EQUIPE, MONSTRES_MIN_EQUIPE, categorieDe, creerEquipe, sousCategorieDe,
+  CATEGORIES_EQUIPES, MONSTRES_MAX_EQUIPE, MONSTRES_MAX_PREPA, MONSTRES_MIN_EQUIPE, categorieDe, creerEquipe, normaliserPrepa, sousCategorieDe,
   type EquipeEnregistree, type InventaireCompte, type MonstreEnregistre, type OngletEquipes,
   type ProvenanceEquipement, type TirerId,
 } from './equipesEnregistrees';
@@ -23,6 +23,8 @@ export interface ContexteSourcesEquipes {
   box: readonly BoxItem[];
   siegeDefenseTeams: readonly SiegeTeam[];
   siegeOffenseTeams: readonly SiegeTeam[];
+  // La prépa de la page RTA, telle qu'elle est.
+  rta: RtaState;
   // `null` : compte conservé avant la lecture des decks d'arène.
   arenaDecks: readonly DeckArene[] | null;
   // Tous les decks enregistrés du jeu ; `null` : compte conservé avant leur lecture.
@@ -50,8 +52,8 @@ export interface SourceEquipement {
 }
 
 // Les choix d'équipement d'une espèce, dans l'ordre de la spec : chaque
-// exemplaire de la Box, les decks de siège, les decks d'arène,
-// puis « Sans équipement », toujours présent.
+// exemplaire de la Box, le build de la prépa RTA, les decks de siège, les
+// decks d'arène, puis « Sans équipement », toujours présent.
 export function sourcesEquipementEspece(com2usId: number, ctx: ContexteSourcesEquipes, t: Dictionnaire): SourceEquipement[] {
   const a = t.equipes.ajout;
   const res: SourceEquipement[] = [];
@@ -59,6 +61,10 @@ export function sourcesEquipementEspece(com2usId: number, ctx: ContexteSourcesEq
     if (b.monster.com2usId !== com2usId) continue;
     const unitId = /^\d+$/.test(b.key) ? Number(b.key) : null;
     res.push({ cle: `box:${b.key}`, libelle: a.porte(b.level), provenance: b.gear ? 'porte' : 'aucun', unitId, equipement: b.gear ?? null });
+  }
+  for (const e of Object.values(ctx.rta.entries)) {
+    if (e.gear && ctx.monsterById.get(e.monsterId)?.com2usId === com2usId)
+      res.push({ cle: `rta:${e.monsterId}`, libelle: a.prepaRta, provenance: 'rta', unitId: e.unitId ?? null, equipement: e.gear });
   }
   const siege = (teams: readonly SiegeTeam[], provenance: ProvenanceEquipement, libelle: (n: number) => string) =>
     teams.forEach((team, i) => team.slots.forEach((slot, s) => {
@@ -110,12 +116,12 @@ interface MembreBrut { com2usId: number | null; unitId: number | null; equipemen
 
 function equipeDepuisMembres(
   membres: MembreBrut[], onglet: OngletEquipes, nom: string, provenance: ProvenanceEquipement,
-  ctx: ContexteSourcesEquipes, id: string, tirerUid: TirerId, maintenant: Date
+  ctx: ContexteSourcesEquipes, id: string, tirerUid: TirerId, maintenant: Date, max = MONSTRES_MAX_EQUIPE
 ): ImportEquipeCree {
   let ignores = 0;
   const monstres: MonstreEnregistre[] = [];
   let leader: string | null = null;
-  for (const m of membres.slice(0, MONSTRES_MAX_EQUIPE)) {
+  for (const m of membres.slice(0, max)) {
     if (m.com2usId === null || !ctx.monsterByCom2us.has(m.com2usId)) { ignores++; continue; }
     const uid = tirerUid();
     if (m.leader) leader = uid;
@@ -197,6 +203,7 @@ function sourcesDansLOrdreDeBase(
 ): SourceImportEquipe[] {
   const im = t.equipes.imports;
   const res: SourceImportEquipe[] = [];
+
   const siege = (teams: readonly SiegeTeam[], groupe: string, onglet: OngletEquipes, provenance: ProvenanceEquipement, libelle: (n: number) => string) =>
     teams.forEach((team, i) => {
       // Le leader est le slot 0, et lui seul : un slot 0 vide laisse l'équipe sans leader.
@@ -221,6 +228,21 @@ function sourcesDansLOrdreDeBase(
     const connus = monstresConnus(membres.map((m) => m.com2usId), ctx);
     res.push({ cle: `arene:${deck.cle}:${deck.rang}`, groupe: im.arene, libelle, monstres: connus, raison: raisonDeck(membres, connus, im), rangement: onglet,
       creer: (id, tirerUid, maintenant) => equipeDepuisMembres(membres, onglet, libelle, provenance, ctx, id, tirerUid, maintenant) });
+  }
+
+  // La prépa de la page RTA, entière, en une prépa enregistrée : ses sections
+  // dans leur ordre, « Non classé » en dernier. Rangée avec les decks du jeu
+  // (décision de l'utilisateur) : un inventaire alternatif lu dans l'export,
+  // comme eux.
+  {
+    const ordre = [...ctx.rta.sections, RTA_UNASSIGNED];
+    const rang = (section: string) => { const i = ordre.indexOf(section); return i < 0 ? ordre.length : i; };
+    const entrees = Object.values(ctx.rta.entries).sort((a, b) => rang(a.section) - rang(b.section));
+    const membres: MembreBrut[] = entrees.map((e) => ({ com2usId: ctx.monsterById.get(e.monsterId)?.com2usId ?? null,
+      unitId: e.unitId ?? null, equipement: e.gear ?? null, leader: false }));
+    const connus = monstresConnus(membres.map((m) => m.com2usId), ctx);
+    res.push({ cle: 'rta', groupe: im.decks, libelle: im.prepaRta, monstres: connus, raison: connus.length ? null : im.prepaVide, rangement: 'rta',
+      creer: (id, tirerUid, maintenant) => equipeDepuisMembres(membres, 'rta', im.prepaRta, 'rta', ctx, id, tirerUid, maintenant, MONSTRES_MAX_PREPA) });
   }
 
   // Les autres decks enregistrés du jeu (labyrinthe, Cairos, ToA…), rangés
@@ -267,7 +289,7 @@ function sourcesDansLOrdreDeBase(
       // de l'Optimizer en posent, pour qu'une équipe de l'Optimizer n'ait
       // qu'une équipe enregistrée qui la suive.
       const { lienOptimizer: _lien, ...equipe } = r.equipe;
-      return { equipe: { ...equipe, modifieLe: maintenant.toISOString() }, ignores: 0 };
+      return { equipe: normaliserPrepa({ ...equipe, modifieLe: maintenant.toISOString() }), ignores: 0 };
     };
     // Une équipe à la fois, jamais une liste entière (décision de l'utilisateur) :
     // une liste sans équipe n'est pas une source.

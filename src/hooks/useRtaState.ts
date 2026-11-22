@@ -29,6 +29,7 @@ function load(): RtaState {
           runeSpeed: typeof e.runeSpeed === 'number' ? e.runeSpeed : null,
           sets: Array.isArray(e.sets) ? e.sets.filter((x): x is string => typeof x === 'string') : [],
           gear: e.gear && typeof e.gear === 'object' ? (e.gear as GearSet) : undefined,
+          ...(Number.isInteger(e.unitId) ? { unitId: e.unitId } : {}),
         };
       }
     }
@@ -152,7 +153,7 @@ export function useRtaState(): UseRtaState {
   // de runes et leurs sets. Les monstres déjà présents gardent leur section
   // (on met juste à jour vitesse + sets) pour respecter un classement manuel.
   const importEntries = useCallback(
-    (items: { monsterId: string; runeSpeed: number | null; section?: string; sets?: string[]; gear?: GearSet }[]) => {
+    (items: { monsterId: string; runeSpeed: number | null; section?: string; sets?: string[]; gear?: GearSet; unitId?: number }[]) => {
       setState((s) => {
         const sections = [...s.sections];
         const entries = { ...s.entries };
@@ -173,6 +174,7 @@ export function useRtaState(): UseRtaState {
               runeSpeed: it.runeSpeed,
               sets: it.sets ?? existing.sets,
               gear: it.gear ?? existing.gear,
+              ...(it.unitId !== undefined ? { unitId: it.unitId } : {}),
             };
           } else {
             ensureSection(section);
@@ -182,6 +184,7 @@ export function useRtaState(): UseRtaState {
               runeSpeed: it.runeSpeed,
               sets: it.sets ?? [],
               gear: it.gear,
+              ...(it.unitId !== undefined ? { unitId: it.unitId } : {}),
             };
           }
         }

@@ -17,14 +17,16 @@ import type { Dictionnaire } from '../i18n/fr';
 
 // Les ONGLETS, un par contenu du jeu, dans l'ordre choisi par l'utilisateur ;
 // le premier est ouvert par défaut. Chacun a ses CATÉGORIES (un donjon, un
-// mode, un côté), filtrables dans l'onglet ; la ToA n'en a pas.
+// mode, un côté), filtrables dans l'onglet ; la RTA et la ToA n'en ont pas.
+// La RTA garde des PRÉPAS, pas des équipes (`estPrepa`).
 export const CATEGORIES_EQUIPES = [
-  'arene', 'guilde', 'cairos', 'labyrinthe', 'subjugation', 'passage-dimensions', 'faille', 'temple-chaos', 'toa',
+  'arene', 'rta', 'guilde', 'cairos', 'labyrinthe', 'subjugation', 'passage-dimensions', 'faille', 'temple-chaos', 'toa',
 ] as const;
 export type CategorieEquipes = (typeof CATEGORIES_EQUIPES)[number];
 
 export const SOUS_CATEGORIES_EQUIPES = {
-  arene: ['offense', 'defense', 'defense-serveur', 'dimensionnelle', 'rta'],
+  arene: ['offense', 'defense', 'defense-serveur', 'dimensionnelle'],
+  rta: [],
   guilde: ['offense-siege', 'defense-siege', 'offense-gdg', 'defense-gdg'],
   cairos: ['geant', 'dragon', 'necropolis', 'royaume-spirituel', 'forteresse-acier', 'crypte-jugement'],
   labyrinthe: ['boss', 'normal', 'sauvetage', 'explosion', 'vitesse-limitee', 'temps-limite', 'temps-pause'],
@@ -38,7 +40,7 @@ export type SousCategorieDe<C extends CategorieEquipes> = (typeof SOUS_CATEGORIE
 export type SousCategorieEquipes = SousCategorieDe<CategorieEquipes>;
 
 // Le RANGEMENT d'une équipe, son champ `onglet` : l'onglet seul (catégorie non
-// choisie), ou l'onglet et sa catégorie, `arene/rta`.
+// choisie), ou l'onglet et sa catégorie, `cairos/geant`.
 export type OngletEquipes = { [C in CategorieEquipes]: C | `${C}/${SousCategorieDe<C>}` }[CategorieEquipes];
 export const ONGLETS_EQUIPES: readonly OngletEquipes[] = CATEGORIES_EQUIPES.flatMap((c) =>
   [c, ...SOUS_CATEGORIES_EQUIPES[c].map((x) => `${c}/${x}` as OngletEquipes)]);
@@ -62,7 +64,7 @@ const ONGLETS_ANCIENS: Readonly<Record<string, OngletEquipes>> = {
   'siege-attaque': 'guilde/offense-siege', 'siege-defense': 'guilde/defense-siege',
   'guerre-guilde': 'guilde/offense-gdg', 'guerre-guilde-offense': 'guilde/offense-gdg', 'guerre-guilde-defense': 'guilde/defense-gdg',
   'guilde-offense': 'guilde', 'guilde-defense': 'guilde',
-  'arene-attaque': 'arene/offense', 'arene-offense': 'arene/offense', 'arene-defense': 'arene/defense', rta: 'arene/rta',
+  'arene-attaque': 'arene/offense', 'arene-offense': 'arene/offense', 'arene-defense': 'arene/defense', 'arene/rta': 'rta',
   pve: 'cairos',
 };
 
@@ -71,6 +73,7 @@ const ONGLETS_ANCIENS: Readonly<Record<string, OngletEquipes>> = {
 // le même pour toutes ses catégories.
 export const CONTENU_OPTIMIZER_ONGLET: Readonly<Record<CategorieEquipes, ContenuListeOptimizer>> = {
   arene: 'arene',
+  rta: 'arene',
   guilde: 'guilde',
   cairos: 'donjon',
   labyrinthe: 'guilde',
@@ -82,18 +85,37 @@ export const CONTENU_OPTIMIZER_ONGLET: Readonly<Record<CategorieEquipes, Contenu
 };
 
 export const PROVENANCES_EQUIPEMENT = [
-  'porte', 'siege-defense', 'siege-attaque', 'arene-defense', 'arene-attaque', 'deck', 'optimizer', 'aucun',
+  'porte', 'rta', 'siege-defense', 'siege-attaque', 'arene-defense', 'arene-attaque', 'deck', 'optimizer', 'aucun',
 ] as const;
 export type ProvenanceEquipement = (typeof PROVENANCES_EQUIPEMENT)[number];
 
 export const MONSTRES_MAX_EQUIPE = 6;
+
+// Une PRÉPA RTA (l'onglet RTA, décision de l'utilisateur du 2026-11-22) : un
+// ensemble de monstres, pas une équipe. Ni leader, ni speed tune, ni groupe ;
+// un monstre suffit, et la borne haute n'est qu'un garde-fou de relecture.
+export const MONSTRES_MAX_PREPA = 300;
+export function estPrepa(onglet: OngletEquipes): boolean {
+  return categorieDe(onglet) === 'rta';
+}
+// Ce qu'une prépa ne porte pas, retiré d'une équipe créée dans l'onglet RTA
+// (depuis une équipe de l'Optimizer) ; une équipe d'un autre onglet est rendue telle quelle.
+export function normaliserPrepa(e: EquipeEnregistree): EquipeEnregistree {
+  if (!estPrepa(e.onglet)) return e;
+  const { speedTune: _st, groupe: _g, lienOptimizer: _l, ...reste } = e;
+  return { ...reste, leader: null };
+}
+// Le nombre de monstres qu'une équipe enregistrée doit avoir pour se relire.
+export function bornesMonstres(onglet: OngletEquipes): { min: number; max: number } {
+  return estPrepa(onglet) ? { min: 1, max: MONSTRES_MAX_PREPA } : { min: MONSTRES_MIN_EQUIPE, max: MONSTRES_MAX_EQUIPE };
+}
 
 // Le nombre de monstres d'une équipe dans le jeu, par contenu, relevé par
 // l'utilisateur le 2026-11-22. Un onglet absent de la table n'a pas de règle
 // relevée : la limite de l'app.
 // ⚠️ Règle de jeu : ne pas compléter par ressemblance, demander le relevé.
 const MONSTRES_MAX_CATEGORIE: Readonly<Partial<Record<CategorieEquipes, number>>> = {
-  arene: 4, guilde: 3, cairos: 5, labyrinthe: 5, subjugation: 5, 'passage-dimensions': 4, faille: 6, 'temple-chaos': 5, toa: 5,
+  arene: 4, rta: MONSTRES_MAX_PREPA, guilde: 3, cairos: 5, labyrinthe: 5, subjugation: 5, 'passage-dimensions': 4, faille: 6, 'temple-chaos': 5, toa: 5,
 };
 const MONSTRES_MAX_RANGEMENT: Readonly<Partial<Record<OngletEquipes, number>>> = {
   'labyrinthe/sauvetage': 4, 'passage-dimensions/raid': 5,
@@ -241,13 +263,17 @@ export function lireEquipeEnregistree(brut: unknown): LectureEquipe | null {
   const v = ancien ? { ...(brut as Record<string, unknown>), onglet: ancien } : brut;
   if (!objet(v) || !texteNonVide(v.id) || !ONGLETS_EQUIPES.includes(v.onglet as OngletEquipes)
     || !texteNonVide(v.nom) || !texte(v.note) || !date(v.creeLe) || !date(v.modifieLe)
-    || !Array.isArray(v.monstres) || v.monstres.length < MONSTRES_MIN_EQUIPE || v.monstres.length > MONSTRES_MAX_EQUIPE || !v.monstres.every(monstre)) return null;
+    || !Array.isArray(v.monstres) || !v.monstres.every(monstre)) return null;
+  const bornes = bornesMonstres(v.onglet as OngletEquipes);
+  if (v.monstres.length < bornes.min || v.monstres.length > bornes.max) return null;
+  const prepa = estPrepa(v.onglet as OngletEquipes);
   const monstres = v.monstres as MonstreEnregistre[];
   const uids = new Set(monstres.map((m) => m.uid));
   if (uids.size !== monstres.length) return null;
   const signalements: SignalementEquipe[] = [];
   let leader: string | null = null;
-  if (v.leader !== null && v.leader !== undefined) {
+  // Une prépa n'a pas de leader : celui d'une ancienne équipe RTA est oublié.
+  if (!prepa && v.leader !== null && v.leader !== undefined) {
     if (texteNonVide(v.leader) && uids.has(v.leader)) leader = v.leader;
     else signalements.push('leaderRetire');
   }
@@ -255,7 +281,7 @@ export function lireEquipeEnregistree(brut: unknown): LectureEquipe | null {
     id: v.id, onglet: v.onglet as OngletEquipes, nom: v.nom, note: v.note,
     monstres: monstres.map(copierMonstre), leader, creeLe: v.creeLe, modifieLe: v.modifieLe,
   };
-  if (v.speedTune !== undefined) {
+  if (!prepa && v.speedTune !== undefined) {
     const st = lireSpeedTune(v.speedTune, uids);
     if (st.incomplet) signalements.push('speedTuneIncomplet');
     if (st.valeur) equipe.speedTune = st.valeur;
@@ -472,7 +498,7 @@ export function gesteSurBrouillon(
   b: EquipeEnregistree, f: (e: EquipeEnregistree, maintenant: Date) => EquipeEnregistree, maintenant: Date
 ): { brouillon: EquipeEnregistree | null; aEnregistrer: EquipeEnregistree | null } {
   const suite = f(b, maintenant);
-  return suite.monstres.length < MONSTRES_MIN_EQUIPE ? { brouillon: suite, aEnregistrer: null } : { brouillon: null, aEnregistrer: suite };
+  return suite.monstres.length < bornesMonstres(suite.onglet).min ? { brouillon: suite, aEnregistrer: null } : { brouillon: null, aEnregistrer: suite };
 }
 
 const touchee = (e: EquipeEnregistree, maintenant: Date): EquipeEnregistree => ({ ...e, modifieLe: maintenant.toISOString() });
@@ -503,6 +529,7 @@ export function deplacerMonstre(e: EquipeEnregistree, uid: string, position: num
 }
 
 export function designerLeader(e: EquipeEnregistree, uid: string | null, maintenant: Date): EquipeEnregistree {
+  if (estPrepa(e.onglet)) return e;
   if (uid !== null && !e.monstres.some((m) => m.uid === uid)) return e;
   return touchee({ ...e, leader: uid }, maintenant);
 }
@@ -522,8 +549,11 @@ export function modifierTextes(e: EquipeEnregistree, champs: { nom?: string; not
 }
 
 // Un groupe ne sort pas de son onglet : changer d'onglet quitte le groupe.
+// Une prépa et une équipe ne s'échangent pas : entre la RTA et un autre
+// onglet, rien ne change (leader, speed tune et lien n'ont pas de sens dans
+// une prépa ; une prépa peut dépasser six monstres).
 export function deplacerVersOnglet(e: EquipeEnregistree, onglet: OngletEquipes, maintenant: Date): EquipeEnregistree {
-  if (e.onglet === onglet) return e;
+  if (e.onglet === onglet || estPrepa(e.onglet) !== estPrepa(onglet)) return e;
   const { groupe, ...reste } = e;
   return touchee(groupe && categorieDe(onglet) === categorieDe(e.onglet) ? { ...reste, groupe, onglet } : { ...reste, onglet }, maintenant);
 }

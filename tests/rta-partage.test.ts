@@ -21,7 +21,7 @@ import {
   validateRtaImport,
   versVueAmi,
 } from '../src/lib/rtaShare';
-import { mapRtaVueAmi } from '../src/lib/applyAccount';
+import { mapRtaItems, mapRtaVueAmi } from '../src/lib/applyAccount';
 import { parseAccountJson, parseAccountSource } from '../src/lib/importAccount';
 import { Monster, RtaState, RTA_OTHER, RTA_UNASSIGNED } from '../src/types';
 import { RtaCategory } from '../src/hooks/useRtaCategories';
@@ -520,6 +520,10 @@ export default function testRtaPartage() {
     vueCompte.entries.every((e) => e.entry.monsterId === String(e.monster.id)),
     'chaque entrée pointe vers le monstre du bestiaire LOCAL, jamais un com2usId'
   );
+  // Son propre import garde l'exemplaire de chaque build (une prépa
+  // enregistrée de Mes équipes le désigne dans la Box) ; la vue d'un ami jamais.
+  ok(mapRtaItems(unitsAmi, parCom2us(bestiaireAmi)).every((i) => Number.isInteger(i.unitId)), 'son import : l’exemplaire de chaque build');
+  ok(vueCompte.entries.every((e) => !('unitId' in e.entry)), 'la vue d’un ami ne retient aucun exemplaire');
   // Presets RTA incomplets dans la fixture (4 et 2 runes) : « Non classé », et
   // donc aucune section de set à afficher — même règle que son propre import.
   ok(

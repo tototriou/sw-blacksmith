@@ -520,6 +520,7 @@ function flattenIds(value: any, out: Set<number>) {
 
 export interface ImportedUnit {
   com2usId: number;
+  unitId: number; // l'exemplaire du jeu (`unit_id`)
   flatRuneSpeed: number; // SPD plate cumulée des runes RTA
   swift: boolean; // set Swift complet (4 runes) équipé en RTA
   sets: string[]; // sets de runes actifs RTA (clés RUNE_SETS)
@@ -624,7 +625,7 @@ export function parseAccountJson(src: AccountSource, t: Dictionnaire): ParseResu
     // Artéfacts RTA si disponibles, sinon les artéfacts actuellement équipés.
     const artifactObjs = rtaArts.get(uid) ?? (Array.isArray(unit?.artifacts) ? unit.artifacts : []);
     const gear = buildGear(unit, runeIds, artifactObjs, runeById, indexRuneMarkers(data));
-    units.push({ com2usId, flatRuneSpeed, swift, sets, runeCount: runeIds.length, gear });
+    units.push({ com2usId, unitId: uid, flatRuneSpeed, swift, sets, runeCount: runeIds.length, gear });
   }
 
   return { units };

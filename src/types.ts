@@ -343,6 +343,9 @@ export interface RtaEntry {
   runeSpeed: number | null;
   sets?: string[]; // sets de runes actifs (clés RUNE_SETS), renseignés à l'import
   gear?: GearSet; // détail runes/artéfacts/relique (preset RTA), renseigné à l'import
+  // L'exemplaire du jeu (`unit_id`) dont vient ce build, renseigné à l'import :
+  // une prépa enregistrée dans Mes équipes le désigne dans la Box.
+  unitId?: number;
 }
 
 export interface RtaState {

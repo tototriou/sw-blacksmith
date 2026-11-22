@@ -822,9 +822,9 @@ function Application() {
   // de l'Optimizer pour l'aller-retour (docs/02-app/compte/feat-equipes.md).
   const compteCharge = box.length > 0 || runes.length > 0;
   const contexteEquipes = useMemo<ContexteSourcesEquipes>(() => ({ box,
-    siegeDefenseTeams: siegeDef.state.teams, siegeOffenseTeams: siegeOff.state.teams, arenaDecks, decksEnregistres, compte: compteCharge,
+    siegeDefenseTeams: siegeDef.state.teams, siegeOffenseTeams: siegeOff.state.teams, rta: rta.state, arenaDecks, decksEnregistres, compte: compteCharge,
     monsterById: optimizerData.monsterById, monsterByCom2us }),
-  [box, siegeDef.state.teams, siegeOff.state.teams, arenaDecks, decksEnregistres, compteCharge, optimizerData.monsterById, monsterByCom2us]);
+  [box, siegeDef.state.teams, siegeOff.state.teams, rta.state, arenaDecks, decksEnregistres, compteCharge, optimizerData.monsterById, monsterByCom2us]);
   const inventaireEquipes = useMemo(() => (compteCharge ? indexerInventaire(runes, artifacts, relics) : null),
     [compteCharge, runes, artifacts, relics]);
   const optimizerPourEquipes = useMemo(() => ({ data: optimizerData, stockage: {

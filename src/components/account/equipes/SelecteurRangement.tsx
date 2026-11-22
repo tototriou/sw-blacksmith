@@ -12,7 +12,8 @@ export default function SelecteurRangement({ valeur, onChange, 'aria-label': ari
   const t = useTraduction();
   return (
     <Selecteur value={valeur} aria-label={ariaLabel} onChange={(ev) => onChange(ev.target.value as OngletEquipes)}>
-      {CATEGORIES_EQUIPES.map((c) => (
+      {/* Sans la RTA : elle garde des prépas, une équipe n'y va pas (et inversement). */}
+      {CATEGORIES_EQUIPES.filter((c) => c !== 'rta').map((c) => (
         <optgroup key={c} label={t.equipes.categories[c]}>
           {[c, ...SOUS_CATEGORIES_EQUIPES[c].map((x) => rangement(c, x))].map((o) => (
             <option key={o} value={o}>{libelleRangement(o, t)}</option>

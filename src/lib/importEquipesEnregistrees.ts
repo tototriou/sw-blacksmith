@@ -13,7 +13,7 @@ import { exclusionSelectorKey, resolveExclusionEntry, type ExclusionSelector, ty
 import type { StockageOptimizer } from './optimizerMemberStorage';
 import type { SpeedTuneEquipe } from './speedTuneEquipe';
 import {
-  CONTENU_OPTIMIZER_ONGLET, categorieDe, comparerPiece, creerEquipe,
+  CONTENU_OPTIMIZER_ONGLET, categorieDe, comparerPiece, creerEquipe, estPrepa,
   type CorrespondanceOptimizer, type EquipeEnregistree, type LienOptimizerEquipe, type InventaireCompte, type LienLigneEnregistre,
   type MonstreEnregistre, type OngletEquipes, type SpeedTuneEnregistre, type TirerId,
 } from './equipesEnregistrees';
@@ -102,6 +102,9 @@ function ajouterEquipeALaProposition(
     const build = buildAValider(m, selector, libelle, inv, t, proposition.messages);
     if (build) proposition.buildsAValider!.push(build);
   }
+  // Une prépa RTA part en membres seuls : elle n'est pas une équipe (ni
+  // leader, ni speed tune, plus de six monstres possibles).
+  if (estPrepa(equipe.onglet)) return correspondance;
   const selecteurDe = new Map(correspondance.map((c) => [c.uid, c.selecteur]));
   const members = correspondance.map((c) => c.selecteur);
   const leaderSel = equipe.leader ? selecteurDe.get(equipe.leader) : undefined;

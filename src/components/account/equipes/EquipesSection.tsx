@@ -30,7 +30,7 @@ import { sourcesImportEquipes, type ContexteSourcesEquipes, type SourceEquipemen
 import {
   CATEGORIES_EQUIPES, SOUS_CATEGORIES_EQUIPES, ajouterMonstre, categorieDe, compteParCategorie, compteParOnglet, libelleRangement, libelleSousCategorie, sousCategorieDe,
   appliquerGroupe, conflitsGroupe, creerEquipe, deplacerVersOnglet, dupliquerEquipe, equipesDuGroupe, equipesFiltrees, gesteSurBrouillon, groupesDeLOnglet, nomEquipeLibre, rangement,
-  monstresMax, nomGroupeLibre, regrouper, resumeEcarts, tireurIdentifiants, tropDeMonstres,
+  estPrepa, monstresMax, nomGroupeLibre, regrouper, resumeEcarts, tireurIdentifiants, tropDeMonstres,
   type CategorieEquipes, type EquipeEnregistree, type InventaireCompte, type OngletEquipes, type SousCategorieEquipes,
 } from '../../../lib/equipesEnregistrees';
 
@@ -246,7 +246,9 @@ export default function EquipesSection({ api, ctx, inventaire, allMonsters, opti
     const liste = optimizer.stockage.lists.find((l) => l.id === demandeOptimizer.listId);
     const rang = optimizer.stockage.teams.filter((x) => x.listId === demandeOptimizer.listId).findIndex((x) => x.id === demandeOptimizer.equipeId);
     if (!liste || rang < 0) return setRapport({ titre: e.creation.titre, lignes: [e.retour.refus.equipeAbsente] });
-    const r = creerDepuisEquipeOptimizer({ ...demandeOptimizer, nom: nomEquipeLibre(api.equipes, e.nomParDefaut), onglet },
+    // L'onglet RTA garde des prépas : une équipe de l'Optimizer y serait une prépa
+    // liée, sans sens. Elle se propose dans l'Arène.
+    const r = creerDepuisEquipeOptimizer({ ...demandeOptimizer, nom: nomEquipeLibre(api.equipes, e.nomParDefaut), onglet: estPrepa(onglet) ? 'arene' : onglet },
       optimizer.stockage, optimizer.data, inventaire, tirerIdEquipe(), tirerUid, new Date());
     if (typeof r === 'string') return setRapport({ titre: e.creation.titre, lignes: [e.retour.refus[r]] });
     setCreation(r);
@@ -257,13 +259,16 @@ export default function EquipesSection({ api, ctx, inventaire, allMonsters, opti
     const c = e.carte;
     const exportImpossible = !inventaire || !onImporterOptimizer ? e.export.sansCompte  : null;
     const retourImpossible = refusRetour(x);
+    // Une prépa : jamais liée (elle part en membres seuls), et elle ne change
+    // pas d'onglet.
+    const prepa = estPrepa(x.onglet);
     return [
       { cle: 'ouvrir', libelle: c.ouvrir, onClick: () => setOuverte(x.id) },
       { cle: 'exporter', libelle: c.exporterOptimizer, disabled: exportImpossible !== null, title: exportImpossible ?? undefined, onClick: () => exporterOptimizer(x) },
-      { cle: 'retour', libelle: c.mettreAJour, disabled: retourImpossible !== null, title: retourImpossible ?? undefined, onClick: () => demanderRetour(x) },
+      ...(prepa ? [] : [{ cle: 'retour', libelle: c.mettreAJour, disabled: retourImpossible !== null, title: retourImpossible ?? undefined, onClick: () => demanderRetour(x) }]),
       { cle: 'dupliquer', libelle: c.dupliquer, onClick: () => ajouterEquipes([dupliquerEquipe(x, tirerIdEquipe(), e.copie(x.nom), tirerUid, new Date())]) },
       // Vers un autre onglet, sans catégorie ; la catégorie se choisit dans le détail.
-      ...CATEGORIES_EQUIPES.filter((o) => o !== categorieDe(x.onglet)).map((o) => ({
+      ...(prepa ? [] : CATEGORIES_EQUIPES.filter((o) => o !== categorieDe(x.onglet) && o !== 'rta')).map((o) => ({
         cle: `deplacer-${o}`, libelle: c.deplacer(e.categories[o]),
         onClick: () => (tropDeMonstres(x, o) ? setDeplacement({ equipe: x, onglet: o }) : changerEquipe(x.id, (eq, n) => deplacerVersOnglet(eq, o, n))),
       })),
@@ -306,7 +311,10 @@ export default function EquipesSection({ api, ctx, inventaire, allMonsters, opti
 
   const equipesOnglet = api.equipes.filter((x) => categorieDe(x.onglet) === categorie);
   const groupesOnglet = groupesDeLOnglet(api.equipes, categorie);
-  const boutonNouveauGroupe = (
+  // L'onglet RTA garde des prépas : « Nouvelle prépa », et pas de groupe.
+  const ongletPrepa = estPrepa(categorie);
+  const textesNouvelle = ongletPrepa ? e.prepa : { nouvelle: e.nouvelle, nomParDefaut: e.nomParDefaut, fenetre: e.nouvelleFenetre, aucune: e.aucune };
+  const boutonNouveauGroupe = ongletPrepa ? null : (
     <Bouton icone={<Layers size={14} />} libelle={g.creer} pleineLargeur={telephone} disabled={equipesOnglet.length === 0}
       title={equipesOnglet.length === 0 ? e.aucune : undefined} onClick={() => setGroupeEdite({ groupe: null })} />
   );
@@ -342,8 +350,8 @@ export default function EquipesSection({ api, ctx, inventaire, allMonsters, opti
         <div className="flex flex-col gap-2">
           {recherchePicker}
           {jetons}
-          <div className="grid grid-cols-2 gap-2">
-            <Bouton icone={<Plus size={14} />} libelle={e.nouvelle} pleineLargeur onClick={nouvelle} />
+          <div className={`grid gap-2 ${ongletPrepa ? 'grid-cols-1' : 'grid-cols-2'}`}>
+            <Bouton icone={<Plus size={14} />} libelle={textesNouvelle.nouvelle} pleineLargeur onClick={nouvelle} />
             {boutonNouveauGroupe}
           </div>
         </div>
@@ -351,7 +359,7 @@ export default function EquipesSection({ api, ctx, inventaire, allMonsters, opti
         <div className="flex flex-col gap-2">
           <div className="flex flex-wrap items-center gap-2">
             <div className="w-72">{recherchePicker}</div>
-            <Bouton icone={<Plus size={14} />} libelle={e.nouvelle} onClick={nouvelle} />
+            <Bouton icone={<Plus size={14} />} libelle={textesNouvelle.nouvelle} onClick={nouvelle} />
             {boutonNouveauGroupe}
             <div className="ml-auto flex flex-wrap gap-2">{boutonsImports}</div>
           </div>
@@ -382,7 +390,7 @@ export default function EquipesSection({ api, ctx, inventaire, allMonsters, opti
       {enRelecture && api.equipes.length === 0 ? (
         <p className="py-8 text-center text-sm text-ink-dim">{e.chargement}</p>
       ) : visibles.length === 0 ? (
-        <p className="py-8 text-center text-sm text-ink-dim">{recherche.length ? e.aucuneRecherche : e.aucune}</p>
+        <p className="py-8 text-center text-sm text-ink-dim">{recherche.length ? e.aucuneRecherche : textesNouvelle.aucune}</p>
       ) : (
         <div className="@container">
           {/* Au-dessus de la grille : dessous, il bougerait avec la hauteur de la page. */}
@@ -427,7 +435,8 @@ export default function EquipesSection({ api, ctx, inventaire, allMonsters, opti
       )}
 
       {nommage && (
-        <NouvelleEquipeModale nomParDefaut={nomEquipeLibre(api.equipes, e.nomParDefaut)} onCreer={creerBrouillon} onFermer={() => setNommage(false)} />
+        <NouvelleEquipeModale nomParDefaut={nomEquipeLibre(api.equipes, textesNouvelle.nomParDefaut)} textes={textesNouvelle.fenetre}
+          onCreer={creerBrouillon} onFermer={() => setNommage(false)} />
       )}
       {ajout && equipeOuverte && (
         <AjoutMonstreModale monstres={allMonsters} ctx={ctx} onChoisir={ajouterMonstreChoisi} onFermer={() => setAjout(false)} />

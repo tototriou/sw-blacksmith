@@ -31,7 +31,7 @@ function contexte(): ContexteSourcesEquipes {
   const ms = [1, 2, 3].map(monstre);
   return {
     box: [{ key: '11', monster: ms[0], stars: 6, level: 40, gear: equipementEx(1) }, { key: '12', monster: ms[0], stars: 6, level: 35, gear: equipementEx(2) }],
-    siegeDefenseTeams: [deck('d1', ['1', '2', '99'])], siegeOffenseTeams: [deck('o1', [null, null, null])],
+    siegeDefenseTeams: [deck('d1', ['1', '2', '99'])], siegeOffenseTeams: [deck('o1', [null, null, null])], rta: { sections: [], entries: {} },
     arenaDecks: [{ cle: 'defense', rang: 0, slots: [{ unitId: 11, com2usId: 1001, gear: equipementEx(4) }, { unitId: 21, com2usId: 1002, gear: equipementEx(5) }] }],
     decksEnregistres: [],
     compte: true,
@@ -64,7 +64,8 @@ function testEquipesSourcesImports() {
   const sources = sourcesImportEquipes(ctx, null, inv, 'toa', fr);
   egal(sources.map((x) => [x.groupe, x.libelle, x.raison]), [
     ['Défenses de siège', 'Défense 1', null], ['Offenses de siège', 'Offense 1', 'Aucun deck dans ton compte.'],
-    ['Arène', 'Défense d’arène', null], ['Optimizer', 'Optimizer', 'Aucune liste dans l’Optimizer.'],
+    ['Arène', 'Défense d’arène', null], ['Decks du jeu', 'Prépa de la page RTA', 'La prépa de la page RTA est vide.'],
+    ['Optimizer', 'Optimizer', 'Aucune liste dans l’Optimizer.'],
   ], 'une source par deck, une source vide dite avec sa raison');
   const cree = sources[0].creer('e1', uid, T0);
   ok(cree !== null, 'la défense crée une équipe');
@@ -107,7 +108,7 @@ function testEquipesSourcesOrdreSelonOnglet() {
   egal(ordre('toa'), reste('tour'), 'ToA : les tours en font partie');
   egal(ordre('subjugation'), base.map((x) => x.cle), 'un onglet sans source : l’ordre de base');
   const reel = sourcesImportEquipes(contexte(), null, inv, 'arene/defense', fr);
-  egal(reel.map((x) => x.groupe), ['Arène', 'Défenses de siège', 'Offenses de siège', 'Optimizer'], 'appliqué aux sources réelles, chaque groupe d’un seul tenant');
+  egal(reel.map((x) => x.groupe), ['Arène', 'Défenses de siège', 'Offenses de siège', 'Decks du jeu', 'Optimizer'], 'appliqué aux sources réelles, chaque groupe d’un seul tenant');
 }
 
 // Les decks enregistrés de l'export, rangés dans les onglets et leurs catégories.
@@ -128,9 +129,9 @@ function testEquipesSourcesDecksEnregistres() {
     deckJeu(99, 'autre', [1001, 1002]),
     deckJeu(2, 'guerre-guilde-offense', [1001, 99999]),
   ] };
-  const decks = sourcesImportEquipes(ctx, null, inv, 'arene/rta', fr).filter((x) => x.cle.startsWith('deck:'));
+  const decks = sourcesImportEquipes(ctx, null, inv, 'arene/offense', fr).filter((x) => x.cle.startsWith('deck:'));
   egal(decks.map((x) => [x.groupe, x.libelle, x.rangement]), [
-    ['Arène', 'Deck de type 99 · 1', 'arene/rta'], ['Combat de guilde', 'Guerre de guilde — offense · 1', 'guilde/offense-gdg'],
+    ['Arène', 'Deck de type 99 · 1', 'arene/offense'], ['Combat de guilde', 'Guerre de guilde — offense · 1', 'guilde/offense-gdg'],
     ['Cairos', 'Cairos — Tanière du dragon · 2', 'cairos/dragon'], ['Labyrinthe', 'Labyrinthe — normal — catégorie 3 · 1', 'labyrinthe/normal'],
     ['ToA', 'Tour du feu · 1', 'toa'],
   ], 'dans l’ordre des onglets ; siège et arène déjà sources ailleurs ; un type non relevé va dans l’onglet ouvert');
@@ -152,9 +153,34 @@ function testEquipesSourcesDecksEnregistres() {
     'le donjon l’emporte sur le numéro de catégorie');
 }
 
+// La prépa de la page RTA : une source « Decks du jeu » qui crée une prépa
+// entière, et un équipement proposé à l'ajout d'un monstre.
+function testEquipesSourcesPrepaRta() {
+  titre('Mes équipes — la prépa de la page RTA');
+  const ctx: ContexteSourcesEquipes = { ...contexte(), rta: { sections: ['violent', 'other'], entries: {
+    '2': { monsterId: '2', section: 'other', runeSpeed: 20, gear: equipementEx(7) },
+    '1': { monsterId: '1', section: 'violent', runeSpeed: 30, gear: equipementEx(6), unitId: 12 },
+    '3': { monsterId: '3', section: 'unassigned', runeSpeed: null },
+    '99': { monsterId: '99', section: 'violent', runeSpeed: null },
+  } } };
+  const src = sourcesImportEquipes(ctx, null, inv, 'rta', fr);
+  egal([src[0].groupe, src[0].libelle, src[0].raison, src[0].rangement], ['Decks du jeu', 'Prépa de la page RTA', null, 'rta'],
+    'dans l’onglet RTA, la prépa de la page RTA d’abord, avec les decks du jeu');
+  const cree = src[0].creer('p1', uid, T0)!;
+  egal([cree.equipe.onglet, cree.equipe.leader, cree.equipe.monstres.map((m) => [m.com2usId, m.unitId, m.provenance])],
+    ['rta', null, [[1001, 12, 'rta'], [1002, null, 'rta'], [1003, null, 'aucun']]],
+    'une prépa : les sections dans leur ordre, « Non classé » en dernier, l’exemplaire de chaque build');
+  egal(cree.ignores, 1, 'une espèce inconnue est comptée');
+  const vide = sourcesImportEquipes({ ...ctx, rta: { sections: [], entries: {} } }, null, inv, 'rta', fr)[0];
+  egal(vide.raison, fr.equipes.imports.prepaVide, 'une prépa vide le dit');
+  egal(sourcesEquipementEspece(1001, ctx, fr).map((x) => [x.libelle, x.provenance, x.unitId]).slice(2, 3), [['Prépa RTA', 'rta', 12]],
+    'à l’ajout d’un monstre, son build de la prépa RTA, après la Box');
+}
+
 export const verificationsEquipesSources: [string, () => void][] = [
   ['testEquipesSourcesOrdreSelonOnglet', testEquipesSourcesOrdreSelonOnglet],
   ['testEquipesSourcesEquipement', testEquipesSourcesEquipement],
   ['testEquipesSourcesImports', testEquipesSourcesImports],
   ['testEquipesSourcesDecksEnregistres', testEquipesSourcesDecksEnregistres],
+  ['testEquipesSourcesPrepaRta', testEquipesSourcesPrepaRta],
 ];

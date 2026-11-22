@@ -1641,6 +1641,7 @@ export const fr = {
     // Les onglets, un par catégorie.
     categories: {
       arene: 'Arène',
+      rta: 'RTA',
       guilde: 'Combat de guilde',
       cairos: 'Cairos',
       labyrinthe: 'Labyrinthe',
@@ -1652,7 +1653,8 @@ export const fr = {
     },
     // Les catégories filtrables de chaque onglet, nommées par l'utilisateur.
     sousCategories: {
-      arene: { offense: 'Offense arène', defense: 'Défense arène', 'defense-serveur': 'Défense inter serveur', dimensionnelle: 'Arène dimensionnelle', rta: 'RTA' },
+      arene: { offense: 'Offense arène', defense: 'Défense arène', 'defense-serveur': 'Défense inter serveur', dimensionnelle: 'Arène dimensionnelle' },
+      rta: {},
       guilde: { 'offense-siege': 'Offense siège', 'defense-siege': 'Défense siège', 'offense-gdg': 'Offense guerre de guilde', 'defense-gdg': 'Défense guerre de guilde' },
       cairos: { geant: 'Géant', dragon: 'Dragon', necropolis: 'Nécropolis', 'royaume-spirituel': 'Royaume Spirituel', 'forteresse-acier': 'Forteresse d’Acier', 'crypte-jugement': 'Crypte du jugement' },
       labyrinthe: { boss: 'Boss', normal: 'Normal', sauvetage: 'Sauvetage', explosion: 'Explosion', 'vitesse-limitee': 'Vitesse limitée', 'temps-limite': 'Temps limité', 'temps-pause': 'Temps de pause' },
@@ -1669,6 +1671,17 @@ export const fr = {
     recherche: 'Chercher un monstre',
     retirerRecherche: (nom: string) => `Retirer ${nom} de la recherche`,
     nouvelle: 'Nouvelle équipe',
+    // L'onglet RTA garde des prépas : un ensemble de monstres, pas une équipe.
+    prepa: {
+      nouvelle: 'Nouvelle prépa',
+      nomParDefaut: (n: number) => `Prépa ${n}`,
+      fenetre: { titre: 'Nouvelle prépa', nom: 'Nom de la prépa', action: 'Créer' },
+      aucune: 'Aucune prépa enregistrée. Importe celle de la page RTA, ou crée-en une.',
+      brouillon: 'La prépa s’enregistre dès son premier monstre.',
+      minimum: 'Une prépa garde au moins un monstre.',
+      plus: (n: number) => `+${n}`,
+      monstres: (n: number) => (n > 1 ? `${n} monstres` : '1 monstre'),
+    },
     importer: 'Importer une équipe',
     exporterFichier: 'Exporter le fichier',
     importerFichier: 'Importer un fichier',
@@ -1757,6 +1770,7 @@ export const fr = {
         'siege-attaque': 'Offense de siège',
         'arene-defense': 'Défense d’arène',
         'arene-attaque': 'Offense d’arène',
+        rta: 'Prépa RTA',
         deck: 'Deck enregistré',
         optimizer: 'Optimizer',
         aucun: 'Sans équipement',
@@ -1789,6 +1803,7 @@ export const fr = {
       areneDefenseServeur: 'Défense d’arène de serveur',
       areneAttaque: (n: number) => `Offense d’arène ${n}`,
       sansEquipement: 'Sans équipement',
+      prepaRta: 'Prépa RTA',
       changer: 'Changer d’espèce',
     },
     // Les decks enregistrés du jeu, lus dans l'export : contenu, donjon, numéro.
@@ -1865,6 +1880,8 @@ export const fr = {
       reimporter: 'Réimporte ton compte pour lire tes decks d’arène.',
       aucunDeck: 'Aucun deck dans ton compte.',
       moinsDeDeux: 'Moins de deux monstres connus.',
+      prepaRta: 'Prépa de la page RTA',
+      prepaVide: 'La prépa de la page RTA est vide.',
       aucuneListe: 'Aucune liste dans l’Optimizer.',
       aucuneEquipe: 'Aucune équipe dans l’Optimizer.',
       cree: (nom: string, onglet: string) => `« ${nom} » créée dans ${onglet}.`,

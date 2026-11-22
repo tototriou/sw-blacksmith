@@ -18,11 +18,16 @@ interface Props {
   onOuvrir: () => void;
 }
 
+// Une prépa RTA peut compter des dizaines de monstres : la carte en montre
+// douze, et le nombre des autres.
+const AVATARS_MAX = 12;
+
 // Une carte de « Mes équipes » : le nom, les monstres dans l'ordre (le leader
 // couronné), la note sur une ligne, l'écart au compte et le menu d'actions.
 // Même contenu aux deux formats ; seule la taille des avatars change.
 export default function CarteEquipe({ equipe, monstreDe, ecarts, speedTuneIncomplet, categorie = null, alerte = null, actions, onOuvrir }: Props) {
-  const c = useTraduction().equipes.carte;
+  const t = useTraduction().equipes;
+  const c = t.carte;
   const signaux = [
     alerte,
     ecarts && ecarts.modifiees > 0 ? c.modifiees(ecarts.modifiees) : null,
@@ -38,13 +43,16 @@ export default function CarteEquipe({ equipe, monstreDe, ecarts, speedTuneIncomp
           {categorie && <span className="flex-none text-micro font-semibold uppercase tracking-wide text-ink-dim">{categorie}</span>}
         </span>
         <span className="flex min-h-[40px] flex-wrap items-center gap-1.5">
-          {equipe.monstres.map((m) => {
+          {equipe.monstres.slice(0, AVATARS_MAX).map((m) => {
             const monstre = monstreDe(m.com2usId) ?? null;
             return (
               <MonsterAvatar key={m.uid} monster={monstre} fallback={String(m.com2usId)} size={40}
                 couronne={equipe.leader === m.uid} titre={equipe.leader === m.uid ? `${monstre?.name ?? m.com2usId} · ${c.leader}` : monstre?.name ?? null} />
             );
           })}
+          {equipe.monstres.length > AVATARS_MAX && (
+            <span className="text-xs font-semibold text-ink-dim">{t.prepa.plus(equipe.monstres.length - AVATARS_MAX)}</span>
+          )}
         </span>
         {equipe.note && <span className="truncate text-xs text-ink-dim">{equipe.note}</span>}
         {signaux.length > 0 && <span className="text-xs text-warn">{signaux.join(' · ')}</span>}
