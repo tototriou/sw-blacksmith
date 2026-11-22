@@ -9,6 +9,15 @@ import type { Release } from './releases';
 
 export const RELEASES_EN: Release[] = [
   {
+    version: null,
+    date: '2026-11-22',
+    title: 'The SW Blacksmith Live plugin follows every account',
+    changes: [
+      { kind: 'fix', scope: 'SW Exporter', text: 'The plugin no longer stops at login on “object is not iterable”: it follows your whole session.' },
+      { kind: 'fix', scope: 'SW Exporter', text: 'A plugin error in SW Exporter now says which game action it happened on.' },
+    ],
+  },
+  {
     version: '2.5.0',
     date: '2026-11-22',
     title: 'The Arena, My teams and your account live',
