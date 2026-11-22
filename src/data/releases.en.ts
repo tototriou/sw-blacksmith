@@ -9,8 +9,8 @@ import type { Release } from './releases';
 
 export const RELEASES_EN: Release[] = [
   {
-    version: null,
-    date: '2026-11-17',
+    version: '2.5.0',
+    date: '2026-11-22',
     title: 'The Arena, My teams and your account live',
     highlights: [
       'An Arena page, and the Dimensional Arena in the desktop app: defenses, attacks and runes for that mode.',

@@ -70,8 +70,8 @@ export function journal(langue: Langue): Release[] {
 // Si une ligne dépasse ~15 mots, c'est qu'elle raconte l'implémentation.
 export const RELEASES: Release[] = [
   {
-    version: null,
-    date: '2026-11-17',
+    version: '2.5.0',
+    date: '2026-11-22',
     title: 'L’Arène, Mes équipes et ton compte en direct',
     highlights: [
       'Une page Arène, et l’arène dimensionnelle dans l’application de bureau : défenses, attaques et runes du mode.',
