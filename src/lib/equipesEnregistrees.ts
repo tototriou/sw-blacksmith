@@ -692,16 +692,18 @@ export interface PorteurPiece { equipe: string; uid: string; com2usId: number } 
 // Les pièces de mêmes porteurs, réunies : un monstre recopié dans deux équipes
 // partage ses runes et ses artéfacts, et une ligne le dit au lieu de huit.
 export interface ConflitPieces { porteurs: PorteurPiece[]; pieces: PieceEnConflit[] }
-export interface ConflitEspece { com2usId: number; equipes: string[] } // les ids, dans l'ordre du groupe
+// `formes` : les `com2usId` rencontrés, une collaboration et sa version SW
+// comptant pour la même espèce (décision de l'utilisateur, 2026-11-22).
+export interface ConflitEspece { com2usId: number; formes: number[]; equipes: string[] } // `equipes` : les ids, dans l'ordre du groupe
 // Dans l'ordre de leur première équipe.
 export interface ConflitsGroupe { pieces: ConflitPieces[]; especes: ConflitEspece[] }
-export function conflitsGroupe(equipes: readonly EquipeEnregistree[]): ConflitsGroupe {
+export function conflitsGroupe(equipes: readonly EquipeEnregistree[], monstreParCom2us: ReadonlyMap<number, Monster> = new Map()): ConflitsGroupe {
   const piecesPortees = new Map<string, { piece: PieceEnConflit; porteurs: PorteurPiece[] }>();
   const porter = (cle: string, piece: PieceEnConflit, porteur: PorteurPiece) => {
     const vu = piecesPortees.get(cle);
     if (vu) vu.porteurs.push(porteur); else piecesPortees.set(cle, { piece, porteurs: [porteur] });
   };
-  const especes = new Map<number, string[]>();
+  const especes = new Map<number, { formes: number[]; equipes: string[] }>();
   for (const e of equipes) {
     for (const m of e.monstres) {
       const p: PorteurPiece = { equipe: e.id, uid: m.uid, com2usId: m.com2usId };
@@ -710,8 +712,11 @@ export function conflitsGroupe(equipes: readonly EquipeEnregistree[]): ConflitsG
         for (const r of eq.runes) if (r.id > 0) porter(`r${r.id}`, { type: 'rune', piece: r }, p);
         for (const a of eq.artifacts) if (a.id > 0) porter(`a${a.id}`, { type: 'artefact', piece: a }, p);
       }
-      const vues = especes.get(m.com2usId) ?? [];
-      if (!vues.includes(e.id)) especes.set(m.com2usId, [...vues, e.id]);
+      const canon = idCanoniqueCollab(m.com2usId, monstreParCom2us.get(m.com2usId)?.jumeauCollab);
+      const vue = especes.get(canon) ?? { formes: [], equipes: [] };
+      if (!vue.formes.includes(m.com2usId)) vue.formes.push(m.com2usId);
+      if (!vue.equipes.includes(e.id)) vue.equipes.push(e.id);
+      especes.set(canon, vue);
     }
   }
   // Une pièce compte quand deux équipes la portent ; deux monstres d'une même
@@ -725,7 +730,7 @@ export function conflitsGroupe(equipes: readonly EquipeEnregistree[]): ConflitsG
   }
   return {
     pieces: [...parPorteurs.values()],
-    especes: [...especes].filter(([, ids]) => ids.length > 1).map(([com2usId, ids]) => ({ com2usId, equipes: ids })),
+    especes: [...especes].filter(([, v]) => v.equipes.length > 1).map(([com2usId, v]) => ({ com2usId, formes: v.formes, equipes: v.equipes })),
   };
 }
 

@@ -186,7 +186,8 @@ plutôt qu'une liaison propre à chaque contenu).
   relique jamais, elle ne fait pas conflit dans le jeu) et les **espèces** (par `com2usId`, quel que soit l'exemplaire),
   présentes dans plus d'une équipe du groupe, d'après les copies enregistrées. Un
   doublon dans une même équipe n'est pas compté. Une collaboration et sa version SW
-  comptent pour deux espèces : la règle ne dit rien d'elles. Le résumé (leur
+  comptent pour la même espèce (`jumeauCollab`, comme la recherche), et la ligne
+  nomme ses deux formes (« Werner / Satoru Gojo dans Raid A et Raid B »). Le résumé (leur
   nombre) suit le nom ; dessous, une ligne par conflit nomme ses éléments : une
   espèce et ses équipes (« Lushen dans Raid A et Raid B »), des pièces et leurs
   porteurs (« Lushen (Raid A) et Lushen (Raid B) portent : Rune Violente slot 1,

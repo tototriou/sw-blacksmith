@@ -196,8 +196,13 @@ function testEquipesEnregistreesGroupes() {
   egal(ab.pieces.map((p) => libellePieceEnConflit(p, fr)), [1, 2, 3, 4, 5, 6].map((s) => `Rune Rapide slot ${s}`).concat(['Artéfact (Attribut : Feu)', 'Artéfact (Type : Attaque)']),
     'et chaque pièce nommée : set et slot de la rune, sorte et valeur de l’artéfact ; jamais la relique');
   egal(nombrePiecesEnConflit(conflitsGroupe([a, b])), 8, 'les mêmes porteurs : une ligne pour leurs huit pièces');
-  egal(conflitsGroupe([a, seule]), { pieces: [], especes: [{ com2usId: 1, equipes: ['a', 's'] }, { com2usId: 2, equipes: ['a', 's'] }] },
+  egal(conflitsGroupe([a, seule]), { pieces: [], especes: [{ com2usId: 1, formes: [1], equipes: ['a', 's'] }, { com2usId: 2, formes: [2], equipes: ['a', 's'] }] },
     'une même espèce dans deux équipes, même d’exemplaires différents, avec ses équipes');
+  const collab = eq('k', 'faille/raid', 'Raid A', [monstreEx('k1', 1001, null, null), monstreEx('k2', 5, null, null)]);
+  const parCom2us = new Map([monstreJeu(1), monstreJeu(1001, 1)].map((m) => [m.com2usId!, m]));
+  egal(conflitsGroupe([a, collab], parCom2us).especes, [{ com2usId: 1, formes: [1, 1001], equipes: ['a', 'k'] }],
+    'une collaboration et sa version SW : la même espèce, ses deux formes nommées');
+  egal(conflitsGroupe([a, collab]).especes, [], 'sans les données des monstres, deux espèces');
   const deux = conflitsGroupe([
     eq('p', 'faille/raid', 'Raid A', [monstreEx('p1', 1, null, equipementEx(1)), monstreEx('p2', 2, null, equipementEx(20))]),
     eq('q', 'faille/raid', 'Raid A', [monstreEx('q1', 3, null, { ...equipementEx(30), runes: [runeEx(1, 1)] }), monstreEx('q2', 4, null, { ...equipementEx(40), artifacts: [artefactEx(200, 'element')] })]),

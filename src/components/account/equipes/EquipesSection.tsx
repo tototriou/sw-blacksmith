@@ -338,7 +338,7 @@ export default function EquipesSection({ api, ctx, inventaire, allMonsters, opti
   const detailsConflits = (c: ConflitsGroupe, equipes: readonly EquipeEnregistree[]) => {
     const nomEquipe = (id: string) => equipes.find((x) => x.id === id)?.nom ?? id;
     return [
-      ...c.especes.map((x) => g.detailEspece(nomDe(x.com2usId), x.equipes.map(nomEquipe))),
+      ...c.especes.map((x) => g.detailEspece(x.formes.map(nomDe).join(' / '), x.equipes.map(nomEquipe))),
       ...c.pieces.map((x) => g.detailPieces(x.porteurs.map((p) => g.porteur(nomDe(p.com2usId), nomEquipe(p.equipe))),
         x.pieces.map((p) => libellePieceEnConflit(p, t)))),
     ];
@@ -449,7 +449,7 @@ export default function EquipesSection({ api, ctx, inventaire, allMonsters, opti
                 ) : <div key="">{grille}</div>;
               }
               const tout = equipesDuGroupe(api.equipes, categorie, groupe);
-              const conflits = conflitsGroupe(tout);
+              const conflits = conflitsGroupe(tout, ctx.monsterByCom2us);
               return (
                 <div key={groupe} role="group" aria-label={groupe} className="flex flex-col gap-3 rounded-lg border border-border-soft bg-panel2/40 p-3">
                   <EnTeteGroupe nom={groupe} detail={g.equipes(tout.length)} signaux={[
