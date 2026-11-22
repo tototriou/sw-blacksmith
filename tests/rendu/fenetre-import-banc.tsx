@@ -43,7 +43,7 @@ export async function scenario(): Promise<[boolean, string][]> {
   console.error = (...args: unknown[]) => { erreurs.push(args.map(String).join(' ')); consoleErreur(...args); };
   const root = createRoot(document.getElementById('racine')!);
   await geste(() => root.render(<FenetreImport titre="Importer" sources={sources} ordre={['equipes', 'jeu', 'recos']} ongletInitial={null}
-    mode="mixte" monstreParCom2us={new Map(monstres.map(m => [10100 + m.id, m]))} actions={() => []} onFermer={() => {}} />));
+    mode="mixte" monstreParCom2us={new Map(monstres.map((m, i) => [10101 + i, m]))} actions={() => []} onFermer={() => {}} />));
   verifier(JSON.stringify(entetes()) === JSON.stringify(['Combat de guilde', 'Arène']), `Mes équipes : une section par contenu ${JSON.stringify(entetes())}`);
   verifier(JSON.stringify(lignes()) === JSON.stringify(['Attaque 3', 'Défense 1', 'Équipe 2', 'Arène 1', 'Arène 2']),
     `Mes équipes : chaque équipe une fois, le groupe réuni ${JSON.stringify(lignes())}`);
