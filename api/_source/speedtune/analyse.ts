@@ -8,6 +8,12 @@
 // de la VIT de runes : on la retrouve par `runeSpeedForTarget`, sans le set
 // Rapidité, qu'on ne voit pas. Sans effet sur l'ordre de jeu : la vitesse de
 // combat reconstituée est celle lue, au point près.
+//
+// ⚠️ Les FICHES affichées (base + runes, l'actuelle et celle à viser) sont
+// celles du cas le plus DÉFAVORABLE : le set Rapide change d'un point
+// d'arrondi la VIT de runes qui donne une VIT de combat, et on ne le voit pas.
+// La plus haute des deux déductions, avec et sans lui, donne cette VIT de
+// combat dans les deux cas.
 
 import type { Monster } from '../../../src/types';
 import { runeSpeedForTarget, siegeLeadFor, speedLeadOf, isSiegeLeadActive, type LeadInfo } from '../../../src/lib/speed';
@@ -30,9 +36,11 @@ export interface LigneResultat {
   monster: Monster;
   combat: number;
   // VIT de fiche : base + runes (ce que montre le monstre hors combat), la VIT
-  // de runes déduite de celle lue (lead, totem et set Rapide retirés).
+  // de runes déduite de celle lue (lead, totem et set Rapide retirés), au cas
+  // le plus défavorable du set Rapide ; `runesRequis` : de même, pour `requis`.
   base: number | null;
   runes: number | null;
+  runesRequis: number | null;
   tick: number | null; // tick de son premier tour, `null` s'il ne joue pas dans l'horizon
   // Le sort de vitesse retenu par l'analyse : son numéro (S1, S2…) se lit
   // mieux que son nom, que peu de joueurs connaissent.
@@ -52,6 +60,13 @@ export interface ResultatSpeedTune {
   // VIT de combat de l'adversaire de référence : celle du plus rapide, passif
   // compris (Chilling à 367 lu, +20 par cumul, peut devenir le plus rapide).
   reference: number | null;
+}
+
+// La VIT de runes qui donne la VIT de combat `cible`, avec ou sans le set
+// Rapide : la plus haute des deux.
+export function runesAuPire(base: number | null, pourcent: number, cible: number): number | null {
+  const sans = runeSpeedForTarget(base, pourcent, cible, false), avec = runeSpeedForTarget(base, pourcent, cible, true);
+  return sans === null || avec === null ? null : Math.max(sans, avec);
 }
 
 export function analyserEquipe(attaquants: AttaquantAnalyse[], donnees: DonneesKit): ResultatSpeedTune {
@@ -77,7 +92,7 @@ export function analyserEquipe(attaquants: AttaquantAnalyse[], donnees: DonneesK
   const tickDe = new Map(r.ordre.map((o) => [o.id, o.tick]));
   const requisDe = new Map(r.requis.map((q) => [q.id, q]));
   const coupes = new Set(r.verdict.coupes.map((c) => c.id));
-  const resultat: LigneResultat[] = [...parId].map(([uid, { l, a, entree }]) => {
+  const resultat: LigneResultat[] = [...parId].map(([uid, { a, entree }]) => {
     const q = requisDe.get(uid);
     const coupe = coupes.has(uid);
     // ⚠️ Le moteur raisonne en VIT de combat PASSIF COMPRIS (`combatActuel`,
@@ -86,17 +101,21 @@ export function analyserEquipe(attaquants: AttaquantAnalyse[], donnees: DonneesK
     // VIT lue comptait le gain du passif deux fois (Miles à 2 cumuls : « viser
     // 300 » au lieu de 300 moins son gain).
     const ecart = q?.combatRequis != null ? q.combatRequis - q.combatActuel : 0;
+    const requis = coupe && ecart > 0 ? a.combat + ecart : null;
+    const base = a.monster.stats.speed ?? null;
+    const pourcent = siegeLeadFor(leadActif, a.monster.element);
     return {
       monster: a.monster,
       combat: a.combat,
-      base: a.monster.stats.speed ?? null,
-      runes: l.runeSpeed,
+      base,
+      runes: runesAuPire(base, pourcent, a.combat),
+      runesRequis: requis != null ? runesAuPire(base, pourcent, requis) : null,
       tick: tickDe.get(uid) ?? null,
       sort: (() => {
         const s = sortRetenu(entree, donnees);
         return s ? { nom: s.nom, slot: s.slot } : null;
       })(),
-      requis: coupe && ecart > 0 ? a.combat + ecart : null,
+      requis,
       horsDePortee: coupe && q?.combatRequis == null,
     };
   });

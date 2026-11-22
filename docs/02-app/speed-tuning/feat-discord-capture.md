@@ -18,7 +18,13 @@ Voir aussi : README.md, feat-competences.md, feat-deux-camps.md,
    3 s. ⚠️ Le calcul n'est lancé qu'après 50 ms : sinon, en occupant le
    processeur 1 à 3 s, il passait avant l'envoi de la réponse.
 3. En tâche de fond (`waitUntil` de Vercel) : la pièce jointe est téléchargée
-   — seulement sur le CDN de Discord, en PNG ou JPEG, 10 Mo au plus —, lue,
+   — seulement sur le CDN de Discord, 25 Mo au plus ; toute pièce jointe
+   s'accepte, quel que soit son type annoncé (absent, ou quelconque pour une
+   capture collée par Ctrl+V) : ses octets décident. Ni PNG ni JPEG (WebP
+   d'une image copiée depuis Discord, GIF, AVIF…), elle est redemandée au
+   proxy d'images de Discord, rendue en PNG
+   (`format=png`) ; un refus est journalisé avec le type reçu et les premiers
+   octets —, lue,
    analysée, puis la réponse différée est remplacée (si Discord refuse le
    message, le refus est journalisé et remplacé par le message de panne) par
    **un seul encart**
@@ -40,8 +46,9 @@ Voir aussi : README.md, feat-competences.md, feat-deux-camps.md,
    - les autres valeurs **précisées** par le joueur (voir ci-dessous) ;
    - la **défense lue**, icônes et noms (l'écran ne montre pas sa VIT) ;
    - en description, ce qui reste **incertain** dans la lecture (deux
-     portraits proches, une VIT lue avec une confiance faible) ;
-   - en pied, que la fiche est calculée sans le set Rapide (voir plus bas) ;
+     portraits proches) ;
+   - sans pied : le set Rapide ne change rien à une VIT de combat (voir plus
+     bas) ;
    - sous l'encart, un bouton **« Ouvrir l'outil de speed tuning »** : l'outil
      du site de production (`#/outils/speed-tuning`), pour régler l'équipe à
      la main. Il s'ouvre vide : l'équipe lue n'y est pas reportée.
@@ -56,17 +63,39 @@ Voir aussi : README.md, feat-competences.md, feat-deux-camps.md,
    (celui du service des recos) ; sans lui, ou si Discord refuse, le monstre
    s'écrit sans icône — la réponse ne dépend jamais des émojis.
 
+### Une VIT mal lue : demandée — jamais un refus
+
+⚠️ **Les monstres d'abord** : sans eux, l'écran n'est pas reconnu. Une VIT,
+elle, n'est jamais une raison de refuser, et la commande ne demande **jamais
+une capture plus grande** : la capture est celle que le joueur a.
+
+- **VIT sûre** (règle de prudence, voir « La lecture de la capture ») :
+  prise telle quelle.
+- **VIT mal lue** (pas sûre, ou d'une confiance sous 0,75) : elle s'affiche
+  « ? » et le message la **demande avant tout calcul**.
+
+⚠️ **Toutes les VIT mal lues se saisissent ensemble** : un bouton,
+**« Saisir les VIT (… , …) »** (« Saisir la VIT de … » s'il n'y en a qu'une),
+en tête des menus, ouvre une fenêtre de saisie (modale Discord) avec **un
+champ par monstre**, « VIT de combat de … », prérempli de la plus probable
+des **hypothèses** du lecteur, vide s'il n'en a aucune. Une hypothèse sous
+la VIT de base du monstre est écartée (lead, tour et runes s'y ajoutent
+toujours). Les VIT saisies (1 à 999) sont prises et le bouton disparaît ;
+une seule qui n'est pas une VIT, et rien n'est pris — un message que seul
+l'auteur voit le dit. Les boutons d'un message de la 2.4.6, un par monstre,
+ouvrent la même fenêtre.
+
 ### Ce que la capture ne montre pas : la question
 
 Deux choses font la VIT en combat sans se voir sur l'écran de préparation.
-Quand l'une compte, le message pose d'abord la question, avec un menu
-déroulant par valeur manquante (cinq au plus, la limite de Discord ; ceux qui
-attendent une réponse passent d'abord) :
+Quand l'une compte, le message pose d'abord la question :
 
 - un **passif de vitesse qui se cumule** (`gain.parCumul` de
   [speedTunePassif.ts](../../../src/lib/speedTunePassif.ts)) : buffs portés
   (Chilling), buffs posés (Miles, Elsharion), tours adverses (Monkey King)…
-  48 monstres. Le menu propose le **nombre de cumuls au premier tour**, de 0
+  48 monstres. Un menu déroulant par passif (ceux qui attendent une réponse
+  passent d'abord, dans la limite de cinq rangées de Discord) propose le
+  **nombre de cumuls au premier tour**, de 0
   au plafond du passif (10 sans plafond, 24 au plus), chacun avec la VIT qu'il
   ajoute. C'est la case « cumuls » de l'outil
   ([feat-passifs-vitesse.md](feat-passifs-vitesse.md)). Les passifs qui dépendent des PV
@@ -74,26 +103,38 @@ attendent une réponse passent d'abord) :
   pleins ;
 - l'**Effet aug. VIT** des artéfacts, pour chaque attaquant qui **reçoit un
   buff de VIT** d'un sort retenu par l'analyse (de toute l'équipe, sur soi, ou
-  sur un allié — n'importe lequel, le lanceur compris). Le menu propose des
-  **tranches** : le buff de 30 % ne prend que 19 valeurs de 0 à 60 %
-  d'artéfact (`⌊30 × (100 + a) / 100⌋`, la troncature de la simulation),
-  chaque tranche vaut sa borne basse et donne exactement le même calcul.
+  sur un allié — n'importe lequel, le lanceur compris). ⚠️ Il se **saisit**,
+  comme les VIT mal lues : un second bouton, **« Saisir l'Effet aug. VIT
+  (… , …) »**, ouvre sa propre fenêtre, un champ par monstre buffé (« Effet
+  aug. VIT de … (%) », de 0 à 60), prérempli s'il est déjà donné. Le bouton
+  porte les places des monstres buffés (`e<masque>`) : la fenêtre se répond
+  sans relire les kits sur le site, dans les 3 s de Discord. Les menus d'un
+  message de la 2.4.6 se comprennent encore.
 
 Le **set Rapide** ne se demande pas : il ne change rien à l'ordre, ni à qui
-se fait cut, ni à la VIT de combat à viser (la VIT lue le contient). Il ne
+se fait cut, ni à la VIT de combat à viser (la VIT lue ou saisie est celle du
+combat, qui le contient). Il ne
 jouerait que sur la **VIT de fiche** (`base + runes`, le « +X » que le
 monstre montre hors combat, Rapide compris comme dans l'app, voir
 `swiftFlat` de [speed.ts](../../../src/lib/speed.ts)), d'un point au plus :
-le jeu arrondit la somme des pourcentages (totem, lead, Rapide). La fiche
-est donc calculée sans lui, et le pied du message le dit. Une première
-version le demandait par des boutons sous le résultat ; retirés, ils
-coûtaient un clic pour un point d'arrondi.
+le jeu arrondit la somme des pourcentages (totem, lead, Rapide). ⚠️ Les
+fiches affichées, l'actuelle comme celle à viser, sont donc celles du **cas
+le plus défavorable** : la plus haute des deux VIT de runes déduites, avec et
+sans le set (`runesAuPire` d'[analyse.ts](../../../api/_source/speedtune/analyse.ts)) —
+l'atteindre donne la VIT de combat dans les deux cas. La fiche à viser se
+déduit de la VIT à viser elle-même, pas de l'écart ajouté à la fiche
+actuelle. Le message n'en dit rien. Une première version demandait le set
+par des boutons sous le résultat ; retirés, ils coûtaient un clic pour un
+point d'arrondi.
 
 Le service reste **sans état** : la lecture entière (monstres, VIT, valeurs
-déjà choisies, doutes, défense) voyage dans le `custom_id` de chaque menu
-([etat.ts](../../../api/_source/speedtune/etat.ts), relu strictement). Chaque choix revient en interaction de composant
-(type 3) : seul l'auteur de la commande peut répondre (les autres reçoivent un
-message que seuls eux voient). ⚠️ Son identifiant voyage **dans l'état**,
+déjà choisies, doutes, défense) voyage dans le `custom_id` de chaque menu,
+bouton et modale ([etat.ts](../../../api/_source/speedtune/etat.ts), relu
+strictement ; une VIT à saisir sans hypothèse s'y écrit 0). Chaque choix revient en
+interaction de composant (type 3) — un bouton de saisie (VIT, Effet aug. VIT) y reçoit la
+modale (type 9), dont la soumission revient en type 5 — : seul l'auteur de la commande
+peut répondre (les autres reçoivent un message que seuls eux voient). Le
+doute sur une VIT ne tombe jamais de l'état : il la fait demander. ⚠️ Son identifiant voyage **dans l'état**,
 écrit à la commande : les métadonnées du message que Discord renvoie avec un
 clic peuvent manquer, et la première version, qui s'y fiait, laissait alors
 répondre n'importe qui. Les nombres de l'état s'écrivent en base 36 pour
@@ -103,7 +144,7 @@ puis remplacé par le résultat une fois tout précisé — les menus disparaiss
 Le message est en français si Discord l'est (`locale`), sinon en anglais ;
 aucune mention n'y est possible (`allowed_mentions` vide). Un refus dit
 pourquoi : pièce jointe qui n'est pas une image, trop lourde, écran non
-reconnu, VIT illisible (avec les monstres concernés).
+reconnu. Une VIT n'en est jamais la cause.
 
 ## La lecture de la capture
 
@@ -111,45 +152,92 @@ reconnu, VIT illisible (avec les monstres concernés).
 
 - [image.ts](../../../api/_source/capture/image.ts) — décodage PNG
   (`pngjs`) et JPEG (`jpeg-js`), découpe, réduction par moyenne de surface.
-  Plus de 16 millions de pixels : refusée avant décodage — pour un PNG, la
+  Plus de 40 millions de pixels : refusée avant décodage — pour un PNG, la
   taille se lit dans son en-tête IHDR (un PNG uni de 10 Mo peut annoncer des
-  milliards de pixels).
+  milliards de pixels). En deçà, toute capture passe, même de tout un bureau
+  (`Win + Impr. écran` prend tous les écrans : deux écrans 4K font 16,6
+  millions de pixels) ; un écran 8K se lit en 2,3 s avec 0,5 Go de mémoire.
 - [cartes.ts](../../../api/_source/capture/cartes.ts) — les cartes
-  **trouvées** dans l'image, quel que soit le format : téléphone, tablette,
-  fenêtre PC avec ou sans barre de titre, capture décentrée ou recadrée sur
-  les trois attaquants seuls. Une carte est un carré à cadre fin, net sur le
-  fond uni de l'écran. ⚠️ La couleur du cadre ne compte pas : elle varie
-  (bleu d'un deck préréglé, doré d'un deck composé sur le moment, bronze
-  sombre, emplacements vides éteints) ; seul son contour sert. Un bord est un
-  écart de couleur de plus de 60 (somme R, V, B) entre deux pixels à deux pas
-  l'un de l'autre. On cherche trois bords hauts horizontaux de même longueur,
-  à la même rangée (à un pixel près) et à pas régulier, chacun avec un bord
-  gauche et un bord droit à mi-hauteur (la recherche ne dépasse pas la
-  moitié de l'écart avec la carte voisine). Le bord bas est le trait le plus
-  bas sous la carte, de presque sa largeur (médiane des trois) : une carte
-  n'est pas forcément carrée. Les attaquants sont exactement **trois**
-  carrés : un trio que prolonge un quatrième au même pas est la liste des
-  monstres. Parmi les grands trios restants, la rangée la plus haute (la
-  liste est en dessous, avec des vignettes presque de la taille des cartes),
-  le trio le plus à gauche de cette rangée. La défense est le premier trio de
-  même taille à droite sur la même ligne, sinon le symétrique des attaquants
-  par rapport au centre ; une capture recadrée sur les attaquants n'en a pas.
-- [ecranPreparation.ts](../../../api/_source/capture/ecranPreparation.ts) —
-  la lecture des cartes trouvées. ⚠️ Aucune position n'est supposée : sans
-  trois carrés trouvés, l'écran n'est pas reconnu. La VIT est écrite en blanc
+  **trouvées** dans l'image, quels que soient sa taille et son format :
+  téléphone, tablette, fenêtre PC avec ou sans barre de titre, capture
+  décentrée, recadrée sur les trois attaquants seuls, ou capture de tout
+  l'écran où la fenêtre du jeu n'occupe qu'un coin. Aucune taille, aucune
+  position n'est supposée.
+  1. **Tous les cadres** de l'image, de toute taille (un bord de 12 pixels au
+     moins : un seuil en pixels, pas en part de l'image). ⚠️ La couleur du
+     cadre ne compte pas : elle varie (bleu d'un deck préréglé, doré d'un deck
+     composé sur le moment, bronze sombre, emplacements vides éteints) ; seul
+     son contour sert. Un bord est un écart de couleur de plus de 60 (somme R,
+     V, B) entre deux pixels à deux pas l'un de l'autre. Un cadre : un bord
+     haut horizontal, qui le couvre d'un côté à l'autre à ses coins arrondis
+     près, des bords gauche et droit à mi-hauteur près de ses bouts (3 % de sa
+     longueur : plus loin, on prend le bord de ce qui est posé à côté), et un
+     bas là où ces bords s'arrêtent ; à peu près carré. Seconde source, pour
+     un liseré peu contrasté que l'agrandissement rend flou : trois bords
+     hauts de même longueur, à la même rangée et à pas régulier, dont les
+     côtés se cherchent jusqu'à la moitié de l'espace entre deux cartes.
+  2. **Les attaquants sont les cadres qui portent une VIT** (pastille.ts) :
+     sur cet écran, seuls eux l'affichent ; la défense et la liste des
+     monstres, aux vignettes presque de même taille, n'en ont pas. Il en faut
+     trois de même taille, sur une même ligne, côte à côte à pas régulier,
+     dont au moins deux où la pastille porte un nombre net. Plusieurs trios :
+     les nombres nets disent **quelles** cartes (celui aux trois nombres
+     nets, puis les plus grandes) ; pour ces mêmes cartes (le contour et le
+     bord intérieur), ⚠️ le plus grand cadre est retenu — le portrait se
+     reconnaît sur la carte entière, et le bord intérieur, plus petit d'un
+     huitième et décalé, sortait des découpes essayées (un monstre à 0,41 sur
+     une capture de téléphone réduite de moitié).
+  3. **La défense** : les cadres de même taille, à droite, sur la même ligne ;
+     sinon le symétrique des attaquants par rapport au centre ; une capture
+     recadrée sur les attaquants n'en a pas.
+  4. ⚠️ **Une grande image sans équipe trouvée est relue réduite**
+     (`trouverCartesAToutesEchelles`) : de moitié, puis de moitié encore,
+     tant que son plus grand côté fait 1 200 pixels ; les cartes trouvées sont
+     ramenées à sa taille, et la pastille et les chiffres se lisent sur
+     l'image entière. Les seuils de la détection sont au pixel près : agrandie
+     ×3, une capture étale ses bords et arrondit ses coins au-delà de ce qu'ils
+     couvrent. Une image dont les cartes se trouvent n'est jamais réduite — ni
+     la fenêtre du jeu dans un coin d'un écran 4K, dont les petites cartes ne
+     survivraient pas à la réduction. Coût : 5 à 9 s pour une image de 3 700
+     à 7 900 pixels de large.
+- [pastille.ts](../../../api/_source/capture/pastille.ts) — la pastille de
+  VIT d'une carte, ce qui en fait un attaquant. La VIT est écrite en blanc
   dans une pastille sombre, en bas à droite de la carte ; la pastille est
   **trouvée** dans la carte, pas placée par des proportions. Son bas : la
   plus basse rangée sombre (plus sombre que 60) qui va jusqu'au bord droit de
-  la carte, sur au moins 0,25 fois sa largeur. Au-dessus, les rangées qui
+  la carte, sur au moins 0,25 fois sa largeur. ⚠️ Cette rangée tolère des
+  trous de 2,5 % de la largeur de la carte : en JPEG, les pixels près du cadre
+  clair « sonnent » au-dessus du seuil (la fenêtre PC entière en qualité 50
+  perdait la pastille d'une carte, et l'écran avec elle). Sans pastille
+  trouvée sous 60, une seconde passe prend le sombre sous 90 : floutée, une
+  pastille de 8 pixels de haut n'a plus une rangée sous 60 (cartes de
+  49 pixels) ; une fausse pastille reste écartée par le nombre net et le
+  trio. Au-dessus, les rangées qui
   portent du blanc (plus faible composante d'au moins 150) posé sur du
   sombre, des deux côtés à moins d'un dixième de la carte ; la première qui
   n'en porte plus est le haut. Un portrait n'a pas ce blanc encadré de
   sombre, même quand il est sombre lui-même ou blanc au coin de la pastille.
   À gauche, la zone part du premier blanc (l'icône de vitesse), avec une
-  marge. ⚠️ Une VIT fausse est pire qu'un refus : hors de 50 à 450, sous une
-  confiance de 0,65, ou sous 0,75 quand un de ses chiffres est presque à
-  égalité avec un autre (écart sous 0,05), la VIT n'est pas lue. Entre 0,65
-  et 0,75, le message la dit incertaine.
+  marge ; ⚠️ à droite, la même marge au-delà de la rangée sombre du bas : elle
+  s'arrête au coin arrondi de la pastille, et le dernier chiffre la dépasse
+  parfois (1 à 2 pixels sur une capture de téléphone en 2640 × 1080, qui
+  coupaient le 8 de 328) ; en haut, un quart de la hauteur de la zone (une
+  rangée au moins) : le haut d'un chiffre mêle blanc et fond, sous le seuil du
+  clair — deux ou trois rangées sur une capture agrandie, qui perdait sinon le
+  haut de ses chiffres. Une carte porte un **nombre net** quand sa zone se découpe en deux à
+  quatre glyphes : un coin de portrait sombre au reflet clair ressemble à une
+  pastille, surtout en JPEG, pas à un nombre.
+- [ecranPreparation.ts](../../../api/_source/capture/ecranPreparation.ts) —
+  la lecture des cartes trouvées. ⚠️ Aucune position n'est supposée : sans
+  trois attaquants trouvés, l'écran n'est pas reconnu. ⚠️ Une VIT fausse donnée
+  pour sûre est pire qu'une VIT demandée : hors de 100 à 450 (en
+  siège, aucune vitesse réglée n'est sous 100 ; un chiffre perdu, « 66 »
+  pour 314, y tombe), sous une confiance de 0,7, ou quand un de ses chiffres
+  est presque à égalité avec un autre (écart sous 0,05) sans que la lecture
+  agrandie donne le même nombre, la VIT n'est pas sûre. Sous 7 pixels, seul
+  l'accord des deux lectures vaut ; sous 6 pixels, la VIT n'est jamais sûre —
+  à 5 pixels, les deux lectures se sont accordées sur un « 340 » pour 349.
+  Sous 0,75, la commande la demande aussi.
 - [portraits.ts](../../../api/_source/capture/portraits.ts) — le monstre
   reconnu à son portrait, porté du projet « Youtube-to-offenses-decks »
   (portraits.py) : zone centrale ramenée à 24 × 24 en Lab, centrée-réduite,
@@ -166,16 +254,38 @@ reconnu, VIT illisible (avec les monstres concernés).
   continue — un bout de portrait au-dessus ne relie ni ne grandit les
   chiffres. Un morceau collé au bord gauche est l'icône ; un glyphe plus
   large que 0,9 fois sa hauteur est coupé à sa colonne la moins encrée (deux
-  chiffres soudés par l'anticrénelage, courant à la taille PC). Chaque glyphe
-  est ramené à 12 × 18 et comparé aux gabarits, sous sa découpe et ses huit
-  voisines d'un pixel (à 8 pixels de haut, un pixel d'anticrénelage gardé ou
-  perdu change la forme). Le nombre est le groupe de glyphes le plus à
-  droite ; l'icône de vitesse en est séparée par plus de 0,8 fois la hauteur
-  des chiffres, ou — dès qu'un écart entre deux chiffres est connu — par
-  plus de 0,3 fois et le double de cet écart (sur un grand écran, l'icône
-  n'est qu'à 0,4 fois, deux chiffres à 0,1). Sous 8 pixels de haut,
-  les chiffres ne sont pas lus : ils se liraient faux (un 2 pour un 1, un 6
-  pour un 4), et la commande demande une capture plus grande.
+  chiffres soudés par l'anticrénelage, courant à la taille PC). Le nombre est
+  le groupe de glyphes le plus à droite ; l'icône de vitesse en est séparée
+  par plus de 0,8 fois la hauteur des chiffres, ou — dès qu'un écart entre
+  deux chiffres est connu — par plus de 0,3 fois et le double de cet écart
+  (sur un grand écran, l'icône n'est qu'à 0,4 fois, deux chiffres à 0,1).
+  ⚠️ **Chaque chiffre se compare à sa taille d'origine** : agrandi à
+  12 × 18, un chiffre de 7 pixels n'a plus sa forme (un 9 y ressemble à un
+  3). Chaque gabarit est au contraire réduit à la taille exacte du glyphe,
+  par moyenne de surface (l'anticrénelage du jeu), sous de petits décalages
+  d'une fraction de pixel (hauteur ± 0,5, haut et centre ± 0,5), et corrélé
+  à la luminosité brute de la zone (sans seuil), tel quel et flouté (noyau
+  3 × 3 de poids 1-2-1), le meilleur des deux comptant : une capture repassée
+  par une application qui la redimensionne n'a plus de bord net. La même
+  méthode vaut à toutes les tailles. L'ancienne lecture (glyphe agrandi à 12 × 18, sous sa
+  découpe et ses huit voisines d'un pixel) sert de second avis : un nombre
+  que les deux donnent est lu même quand deux chiffres sont proches. Sous 3
+  pixels de haut, un chiffre n'a plus de forme : il n'est pas lu.
+- **Les hypothèses**, quand la VIT n'est pas sûre (`hypothesesVit`
+  d'[ecranPreparation.ts](../../../api/_source/capture/ecranPreparation.ts)) :
+  les 351 VIT possibles (100 à 450) sont classées **en entier** — un chiffre
+  qui hésite seul se départage par ce qu'une VIT peut être (549 n'en est pas
+  une). Trois glyphes ou plus : la somme des scores de ses chiffres à la
+  taille d'origine, sur chaque suite de trois glyphes (un intrus colle parfois
+  au nombre : « 3168 » pour 316). Moins de trois — chiffres soudés ou perdus
+  par le seuil, « 00 » pour 384 — : **le nombre entier est rendu** à partir
+  des gabarits dans la boîte de son encre (chaque chiffre à sa largeur,
+  l'espace restant partagé) et comparé à la zone, sans découpage
+  (`scoresParSynthese` de chiffres.ts ; moyenne d'un gabarit sur un pixel par
+  sa table de sommes cumulées, 16 ms par VIT). Relevé sur les VIT mal lues du
+  banc de stress : glyphes à la taille d'origine justes en tête 72 fois sur
+  100, y ajouter la lecture agrandie en perdait la moitié ; la synthèse, 50,
+  ne sert que sans glyphes.
 
 Les données voyagent dans le paquet de la fonction :
 
@@ -229,26 +339,52 @@ protégé).
 
 ## Limites du prototype
 
-- **Validé sur des captures d'un téléphone** (2556 × 1179, français), **de la
+- **Validé sur des captures d'un téléphone** (2556 × 1179, français ; la
+  gestion des decks en 2640 × 1080, chiffres de 17 pixels plus fins), **de la
   fenêtre PC** (1417 × 784, 1199 × 682, 1184 × 662 avec la barre de titre ;
   1187 × 646 sans elle ; en anglais et en français), **de l'écran recadré**
   (le milieu seul, les trois cartes seules, plus larges que hautes ou non),
   avec des attaquants à cadres bleus, dorés et bronze (1229 × 415, 596 × 249,
-  en français). Chaque capture a été
-  lue avec des gabarits qui n'avaient pas ses chiffres, telle quelle,
-  réduite, agrandie et en JPEG : les cartes sont toujours trouvées, les
-  captures d'origine se lisent toutes, et aucune VIT fausse ne passe. Leurs
-  chiffres servent ensuite de gabarits.
-- **Une capture réduite sous sa taille d'origine n'est souvent pas lue** :
-  sur PC, les chiffres font 8 pixels, le plancher ; une fenêtre PC plus
-  petite que 1187 × 646 environ, ou une capture très compressée, fait
-  demander une capture plus grande.
+  en français), et de la gestion des decks d'attaque dans une petite fenêtre
+  PC (705 × 276, chiffres de 7 pixels). Chaque capture a été lue avec des
+  gabarits qui n'avaient pas ses chiffres, telle quelle, réduite, agrandie
+  et en JPEG : les cartes sont toujours trouvées, aucune VIT fausse ne passe
+  (168 justes, 18 refusées sur 186). Chacune a aussi été posée dans une
+  capture de tout un écran (3840 × 2160, 5120 × 1440, 1080 × 2400) : toutes
+  lues. Leurs chiffres servent ensuite de gabarits.
+- **Une capture très réduite ou très compressée n'est pas toujours lue** :
+  sous 6 pixels de haut, les chiffres ne sont pas lus ; à 6 pixels, ils ne le
+  sont que si les deux lectures s'accordent ; un JPEG très compressé (qualité
+  50 ou moins) de chiffres de 7 ou 8 pixels, ou une capture floutée à cette
+  taille, peut être mal lu. Agrandir une capture aux chiffres trop petits n'y
+  ajoute rien. La commande demande alors la VIT au joueur, préremplie de la
+  lecture la plus probable (juste deux fois sur trois sur le banc de stress).
+- **Banc de stress** (19 vraies captures, chacune réduite de ×0,4 à ×3,
+  compressée, floutée, recadrée, posée dans un écran 4K — 1 197 VIT) :
+  **aucune VIT fausse donnée pour sûre** ; les VIT demandées portent sur des
+  chiffres sous 7 pixels, des JPEG très compressés et des captures floutées.
+- **Seul l'écran de siège est reconnu** : trois attaquants côte à côte. Les
+  quatre monstres en losange d'un autre mode sont trouvés avec leurs VIT,
+  mais l'écran est refusé.
+- La conversion d'une image ni PNG ni JPEG compte sur le proxy d'images de
+  Discord (`format=png`) ; s'il la refuse, le journal de la fonction donne le
+  type reçu.
 - La tablette et les autres formats de téléphone ne sont vérifiés que sur des
   écrans recomposés.
-- Rien ne se corrige depuis Discord : un monstre mal reconnu ou une VIT mal
-  lue fausse le résultat, que le message signale comme incertain.
+- Un monstre mal reconnu ne se corrige pas depuis Discord : il fausse le
+  résultat, que le message signale comme incertain. Une VIT mal lue, elle,
+  est demandée.
 
 ## Vérifier
+
+**Les vraies captures** se posent en local dans `tests/captures-speedtune/`
+(gitignoré : le dépôt est public), et leurs valeurs attendues dans
+[attendus.json](../../../tests/captures-speedtune/attendus.json), versionné.
+`node tests/run.mjs testCapturesReelles` les lit toutes : telle quelle, chacune
+rend ses trois VIT et ses trois monstres ; réduite, agrandie, en JPEG ou
+posée dans un écran 4K, aucune VIT fausse. Deux captures aux chiffres de 5
+pixels y sont inscrites avec leurs VIT refusées (`vit` à `null`, les vraies
+dans `vitReelles`) : c'est la limite actuelle.
 
 [tests/speedtune-capture.test.ts](../../../tests/speedtune-capture.test.ts),
 sans aucune vraie capture : écrans recomposés aux positions réelles avec des
@@ -256,9 +392,19 @@ portraits synthétiques (sombres, jusque contre la pastille), des cadres de
 plusieurs couleurs et des chiffres dessinés depuis les gabarits — téléphone,
 fenêtre PC avec et sans barre de titre, tablette 4:3, téléphone 20:9, cartes
 plus larges que hautes, attaquants seuls, attaquants à cadres dorés, bronze
-et gris, liste des monstres sous l'équipe, rangée de six carrés seule,
-capture trop réduite, une seule carte, écran vide ; calcul
-sur les vrais monstres et leurs vrais kits (Susano, Chilling, Tarq) ; état
+et gris, liste des monstres sous l'équipe, rangée de six cartes sans VIT, cartes
+plus grandes sans VIT au-dessus de l'équipe, capture de tout un écran 4K,
+capture trop réduite, une seule carte, écran vide ; chiffres de 7 à 9 pixels
+lus, de 2 non ; hypothèses départagées en entier, glyphe intrus écarté,
+nombre rendu par synthèse ; calcul
+sur les vrais monstres et leurs vrais kits (Susano, Chilling, Tarq), fiches
+actuelle et à viser au pire du set Rapide ; état
 des menus (aller-retour, pire cas sous 100 caractères, refus) ; interactions
 signées, réponse différée, question, choix (y compris d'un autre que
-l'auteur) et message final devant un Discord simulé.
+l'auteur), VIT mal lues demandées avant tout calcul (un bouton, une modale
+au champ prérempli par monstre, saisie invalide refusée en privé, boutons de
+la 2.4.6 encore compris), Effet aug. VIT saisi d'un second bouton (une
+fenêtre, un champ par monstre buffé, au-delà de 60 % refusé en privé), aucun
+pied sous le résultat, capture collée (type annoncé absent ou quelconque) lue, capture
+WebP rendue en PNG par Discord, GIF non converti refusé,
+et message final devant un Discord simulé.

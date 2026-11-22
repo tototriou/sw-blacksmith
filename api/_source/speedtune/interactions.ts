@@ -17,7 +17,11 @@
 //      question : un menu par valeur manquante. Chaque choix revient ici
 //      (interaction de composant, type 3) avec toute la lecture dans son
 //      `custom_id` (etat.ts) ; le résultat remplace la question quand tout est
-//      précisé.
+//      précisé ;
+//   5. une VIT mal lue n'est jamais un refus : elle est demandée avant tout
+//      calcul. Un bouton (composant, type 3) ouvre une modale de saisie
+//      préremplie de la lecture la plus probable (réponse de type 9), dont la
+//      soumission (type 5) revient avec l'état et recalcule.
 
 import { createPublicKey, verify } from 'node:crypto';
 import type { Monster } from '../../../src/types';
@@ -26,25 +30,30 @@ import { kitVitesse, sortsVitesse } from '../../../src/lib/speedTuneKit';
 import { passifsVitesse, pointsDeGain, type PassifVitesse } from '../../../src/lib/speedTunePassif';
 import { sortRetenu, sortSecondRetenu, type DonneesKit, type EntreeAuto } from '../../../src/lib/speedTuneAuto';
 import { API, type Recuperer } from '../service/discordApi';
-import { decoderImage } from '../capture/image';
+import { decoderImage, imageTropGrande } from '../capture/image';
 import type { Banque } from '../capture/portraits';
 import type { Gabarits } from '../capture/chiffres';
 import { lireEcranPreparation, type LectureEcran } from '../capture/ecranPreparation';
 import { analyserEquipe } from './analyse';
-import { embedErreur, embedResultat, langueDe, messageQuestion, rangeeOutil, texteEphemere, type Demande, type Embed, type Langue, type Message, type Precision } from './message';
-import { ARTE_MAX, CUMULS_MAX, decoderEtat, encoderEtat, type Etat } from './etat';
+import {
+  champSaisie, embedErreur, embedResultat, langueDe, messageQuestion, modaleSaisie, rangeeOutil, texteEphemere,
+  type BoutonSaisie, type Demande, type Embed, type Langue, type Message, type Precision, type Saisie,
+} from './message';
+import { ARTE_MAX, CUMULS_MAX, VIT_INCONNUE, VIT_SAISIE_MAX, decoderEtat, encoderEtat, type Etat } from './etat';
 import type { Emojis } from './emojis';
 
 export const COMMANDE = 'speedtune';
 export const OPTION_CAPTURE = 'capture';
-export const TAILLE_MAX_IMAGE = 10 * 1024 * 1024;
+// Une capture PNG de deux écrans 4K chargés dépasse 10 Mo, et Discord Nitro
+// permet de l'envoyer : 25 Mo au plus.
+export const TAILLE_MAX_IMAGE = 25 * 1024 * 1024;
 const CDN_DISCORD = /^https:\/\/(cdn\.discordapp\.com|media\.discordapp\.net)\//;
 // Sous ce score, le portrait n'est pas celui d'un monstre : la capture n'est
 // pas l'écran attendu (un portrait juste dépasse 0,8).
 export const SCORE_PORTRAIT_MIN = 0.5;
 // Écart au deuxième candidat sous lequel le portrait est dit incertain.
 export const ECART_DOUTE = 0.05;
-// Sous cette confiance, la VIT lue est dite incertaine (sous 0,65, elle n'est
+// Sous cette confiance, la VIT lue est dite incertaine (sous 0,7, elle n'est
 // pas lue du tout : CONFIANCE_VIT_PLANCHER).
 export const CONFIANCE_VIT_MIN = 0.75;
 const ATTENTE_AVANT_CALCUL_MS = 50;
@@ -80,7 +89,20 @@ export function signatureValide(clePublique: string, signature: string, horodata
   }
 }
 
-interface PieceJointe { url: string; content_type?: string; size: number }
+interface PieceJointe { url: string; proxy_url?: string; content_type?: string; size: number }
+
+// Une image ni PNG ni JPEG (WebP — une image copiée ou enregistrée depuis
+// Discord l'est —, GIF, AVIF…) : le proxy d'images de Discord la rend en PNG
+// à la demande (`format=png`). `null` hors des adresses de Discord.
+export function adresseEnPng(piece: PieceJointe): string | null {
+  const base = piece.proxy_url && CDN_DISCORD.test(piece.proxy_url)
+    ? piece.proxy_url
+    : piece.url.replace(/^https:\/\/cdn\.discordapp\.com\//, 'https://media.discordapp.net/');
+  if (!CDN_DISCORD.test(base)) return null;
+  const u = new URL(base);
+  u.searchParams.set('format', 'png');
+  return u.toString();
+}
 interface Utilisateur { id: string }
 interface Interaction {
   type: number;
@@ -96,7 +118,21 @@ interface Interaction {
     custom_id?: string;
     component_type?: number;
     values?: string[];
+    components?: ComposantSoumis[]; // les champs d'une modale soumise (type 5)
   };
+}
+interface ComposantSoumis { type: number; custom_id?: string; value?: string; component?: ComposantSoumis; components?: ComposantSoumis[] }
+
+// La valeur d'un champ d'une modale soumise. ⚠️ Discord la range dans une
+// rangée (`components`) ou, pour les modales à libellés, dans `component` :
+// on la cherche à toute profondeur.
+export function valeurChamp(composants: ComposantSoumis[] | undefined, id: string): string | null {
+  for (const c of composants ?? []) {
+    if (c.custom_id === id && typeof c.value === 'string') return c.value;
+    const dedans = valeurChamp([...(c.component ? [c.component] : []), ...(c.components ?? [])], id);
+    if (dedans != null) return dedans;
+  }
+  return null;
 }
 
 const json = (corps: unknown, statut = 200) => Response.json(corps, { status: statut });
@@ -134,16 +170,31 @@ export function creerInteractions(d: DependancesInteractions) {
     // main, le temps que la réponse parte.
     await new Promise((ok) => setTimeout(ok, ATTENTE_AVANT_CALCUL_MS));
     try {
-      if (!piece || !CDN_DISCORD.test(piece.url) || !/^image\/(png|jpeg)$/.test(piece.content_type ?? '')) {
+      // ⚠️ Toute pièce jointe s'accepte, quel que soit son type annoncé (absent,
+      // WebP, `application/octet-stream` d'une image collée…) : il ne dit pas
+      // si on saura la lire, ses octets le disent — et sinon, la conversion
+      // de Discord.
+      if (!piece || !CDN_DISCORD.test(piece.url)) {
+        console.error(`capture refusée : pièce ${piece ? `de type ${piece.content_type ?? 'inconnu'}` : 'absente'}`);
         return await remplacer(token, embedErreur(langue, 'pasImage'));
       }
       if (piece.size > TAILLE_MAX_IMAGE) return await remplacer(token, embedErreur(langue, 'tropLourde'));
       const r = await d.recuperer(piece.url);
       if (!r.ok) throw new Error(`pièce jointe HTTP ${r.status}`);
       const octets = new Uint8Array(await r.arrayBuffer());
-      if (octets.length > TAILLE_MAX_IMAGE) return await remplacer(token, embedErreur(langue, 'tropLourde'));
-      const img = decoderImage(octets);
-      if (!img) return await remplacer(token, embedErreur(langue, 'pasImage'));
+      if (octets.length > TAILLE_MAX_IMAGE || imageTropGrande(octets)) return await remplacer(token, embedErreur(langue, 'tropLourde'));
+      let img = decoderImage(octets);
+      const enPng = img ? null : adresseEnPng(piece);
+      if (enPng) {
+        const rc = await d.recuperer(enPng);
+        const converti = rc.ok ? new Uint8Array(await rc.arrayBuffer()) : null;
+        if (converti && converti.length <= TAILLE_MAX_IMAGE) img = decoderImage(converti);
+      }
+      if (!img) {
+        const debut = Array.from(octets.subarray(0, 12), (o) => o.toString(16).padStart(2, '0')).join(' ');
+        console.error(`capture refusée : type ${piece.content_type ?? 'inconnu'}, ${octets.length} octets, début ${debut}`);
+        return await remplacer(token, embedErreur(langue, 'pasImage'));
+      }
       const res = await d.ressources();
       const etat = etatDeLecture(res, lireEcranPreparation(img, res.banque, res.gabarits), auteur);
       return await remplacer(token, 'erreur' in etat ? embedErreur(langue, etat.erreur) : await repondre(res, etat, langue));
@@ -170,9 +221,9 @@ export function creerInteractions(d: DependancesInteractions) {
         d.differer(traiterCapture(interaction.token, langueDe(interaction.locale ?? interaction.guild_locale), piece, auteur));
         return json({ type: 5 }); // réponse différée
       }
-      if (interaction.type === 3) {
+      if (interaction.type === 3 || interaction.type === 5) {
         const langue = langueDe(interaction.locale ?? interaction.guild_locale);
-        const ephemere = (quoi: 'pasAuteur' | 'perime') => json({ type: 4, data: { content: texteEphemere(langue, quoi), flags: 64 } });
+        const ephemere = (quoi: 'pasAuteur' | 'perime' | 'vitInvalide' | 'arteInvalide') => json({ type: 4, data: { content: texteEphemere(langue, quoi), flags: 64 } });
         const lu = decoderEtat(interaction.data?.custom_id ?? '');
         if (!lu) return ephemere('perime');
         // ⚠️ Le message est public : seul celui qui a lancé la commande répond.
@@ -181,7 +232,41 @@ export function creerInteractions(d: DependancesInteractions) {
         const qui = interaction.member?.user?.id ?? interaction.user?.id;
         if (qui !== lu.etat.auteur) return ephemere('pasAuteur');
         const sorte = lu.action[0];
-        const cible = lu.etat.attaquants[Number(lu.action.slice(1))];
+        const cible = lu.action.length > 1 ? lu.etat.attaquants[Number(lu.action.slice(1))] : undefined;
+        // Les boutons de saisie, chacun sa modale, qui revient avec l'état sous
+        // l'action `m` :
+        //   - `s` : un champ par VIT mal lue, prérempli de la lecture la plus
+        //     probable (`s0`, `s1`… : les boutons d'un message de la 2.4.6, un
+        //     par monstre — ils ouvrent la même modale) ;
+        //   - `e<masque>` : un champ par monstre qui reçoit un buff de VIT (le
+        //     masque de leurs places, porté par le bouton : la modale se
+        //     répond en 3 s, sans relire les kits sur le site).
+        if (interaction.type === 3 && (sorte === 's' || sorte === 'e')) {
+          const res = await d.ressources();
+          const champs = sorte === 's' ? champsVit(res, lu.etat) : champsArte(res, lu.etat, Number(lu.action.slice(1) || 0));
+          if (!champs.length) return ephemere('perime');
+          return json({ type: 9, data: modaleSaisie(langue, champs, encoderEtat('m', lu.etat)) });
+        }
+        // Les saisies : elles remplacent les lectures, et une VIT n'est plus à
+        // demander. Une seule invalide : rien n'est pris.
+        if (interaction.type === 5) {
+          if (sorte !== 'm') return ephemere('perime');
+          const lire = (id: string) => valeurChamp(interaction.data?.components, id)?.trim() ?? null;
+          const ancienChamp = lire('vit'); // la modale de la 2.4.6, au seul champ `vit`
+          const vits = lu.etat.attaquants.map((a, i) => lire(champSaisie('vit', i)) ?? (cible === a ? ancienChamp : null));
+          const artes = lu.etat.attaquants.map((_, i) => lire(champSaisie('arte', i)));
+          if ([...vits, ...artes].every((s) => s == null)) return ephemere('perime');
+          if (vits.some((s) => s != null && (!/^\d{1,3}$/.test(s) || Number(s) < 1 || Number(s) > VIT_SAISIE_MAX))) return ephemere('vitInvalide');
+          if (artes.some((s) => s != null && (!/^\d{1,2}$/.test(s) || Number(s) > ARTE_MAX))) return ephemere('arteInvalide');
+          lu.etat.attaquants.forEach((a, i) => {
+            if (vits[i] != null) { a.combat = Number(vits[i]); a.vitDouteuse = false; }
+            if (artes[i] != null) a.arte = Number(artes[i]);
+          });
+          d.differer(traiterChoix(interaction.token, langue, lu.etat));
+          return json({ type: 6 });
+        }
+        // Les menus : les cumuls d'un passif ; `a` : l'Effet aug. VIT des menus
+        // d'un message de la 2.4.6.
         const valeur = interaction.data?.values?.[0] ?? '';
         const max = sorte === 'c' ? CUMULS_MAX : ARTE_MAX;
         if (!cible || (sorte !== 'c' && sorte !== 'a') || !/^\d{1,2}$/.test(valeur) || Number(valeur) > max) return ephemere('perime');
@@ -197,24 +282,33 @@ export function creerInteractions(d: DependancesInteractions) {
 
 // La lecture → l'état : refus si l'écran n'est pas reconnu (`null` : les trois
 // cartes des attaquants ne sont pas dans l'image).
-export function etatDeLecture(res: Ressources, lecture: LectureEcran | null, auteur: string): Etat | { erreur: 'illisible' | { vitIllisible: string[] } } {
+//
+// ⚠️ Ce qui compte d'abord, ce sont les MONSTRES : sans eux, rien. Une VIT
+// n'est jamais une raison de refuser — la capture est celle qu'on a, en
+// redemander une plus grande ne sert à rien. La VIT sûre est prise ; une VIT
+// mal lue (pas sûre, ou d'une confiance sous CONFIANCE_VIT_MIN) est DEMANDÉE au
+// joueur avant tout calcul, sa saisie préremplie de la plus probable des
+// hypothèses du lecteur (ecranPreparation.ts) — VIT_INCONNUE sans hypothèse.
+// Une VIT de combat n'est jamais sous la VIT de base du monstre (lead, tour
+// et runes s'y ajoutent) : une hypothèse plus basse est écartée.
+export function etatDeLecture(res: Ressources, lecture: LectureEcran | null, auteur: string): Etat | { erreur: 'illisible' } {
   if (!lecture) return { erreur: 'illisible' };
   const att = lecture.attaquants;
   if (att.some((a) => !a.portrait || a.portrait.meilleur.score < SCORE_PORTRAIT_MIN)) return { erreur: 'illisible' };
   const monstres = att.map((a) => res.monstre(a.portrait!.meilleur.com2usId));
   if (monstres.some((m) => !m)) return { erreur: 'illisible' };
-  const sansVit = att.flatMap((a, i) => (a.vitesse ? [] : [monstres[i]!.name]));
-  if (sansVit.length) return { erreur: { vitIllisible: sansVit } };
   return {
-    attaquants: att.map((a) => {
+    attaquants: att.map((a, i) => {
       const p = a.portrait!;
       const suivant = p.suivants[0];
+      const base = monstres[i]!.stats.speed ?? 0;
+      const probable = a.hypotheses.find((v) => v >= base) ?? VIT_INCONNUE;
       return {
         id: p.meilleur.com2usId,
-        combat: a.vitesse!.valeur,
+        combat: a.vitesse ? a.vitesse.valeur : probable,
         cumuls: null,
         arte: null,
-        vitDouteuse: a.vitesse!.confiance < CONFIANCE_VIT_MIN,
+        vitDouteuse: !a.vitesse || a.vitesse.confiance < CONFIANCE_VIT_MIN,
         autrePortrait: suivant && p.meilleur.score - suivant.score < ECART_DOUTE ? suivant.com2usId : null,
       };
     }),
@@ -238,31 +332,11 @@ const passifCumulable = (passifs: PassifVitesse[]): PassifVitesse | null => {
 const cumulsProposes = (p: PassifVitesse, choisi: number | null) =>
   Math.max(choisi ?? 0, Math.min(CUMULS_MAX, p.gain!.plafond != null ? Math.ceil(p.gain!.plafond / p.gain!.valeur) : 10));
 
-// Le buff de VIT reçu, amplifié par l'effet aug. VIT : la MÊME troncature que
-// la simulation (speedTune.ts), multiplication avant division.
-const buffAmplifie = (base: number, arte: number) => Math.floor((base * (100 + arte)) / 100);
-
-// Les tranches d'effet aug. VIT qui donnent le même buff : de 0 à 60 %, le buff
-// de 30 % ne prend que 19 valeurs (30, 31… 48). Chaque option vaut sa borne
-// basse — le résultat est exact pour toute la tranche, et le menu tient dans
-// les 25 options de Discord.
-export function tranchesArte(base: number): { de: number; a: number; buff: number }[] {
-  const tranches: { de: number; a: number; buff: number }[] = [];
-  for (let arte = 0; arte <= ARTE_MAX; arte++) {
-    const buff = buffAmplifie(base, arte);
-    const derniere = tranches[tranches.length - 1];
-    if (derniere && derniere.buff === buff) derniere.a = arte;
-    else tranches.push({ de: arte, a: arte, buff });
-  }
-  return tranches;
-}
-
 // Qui reçoit un buff de VIT, d'après les sorts que l'analyse retient (premier
-// et second tour), et le plus fort de ces buffs. Un buff « sur un allié » peut
-// viser n'importe qui, le lanceur compris : tous le reçoivent alors.
-function buffsDeVitesse(etat: Etat, d: DonneesKit): { receveurs: Set<number>; base: number } {
+// et second tour). Un buff « sur un allié » peut viser n'importe qui, le
+// lanceur compris : tous le reçoivent alors.
+function receveursDeBuff(etat: Etat, d: DonneesKit): Set<number> {
   const receveurs = new Set<number>();
-  let base = 0;
   etat.attaquants.forEach((a, i) => {
     const e = { id: String(i), monster: { com2usId: a.id } } as EntreeAuto;
     for (const sort of [sortRetenu(e, d), sortSecondRetenu(e, d)]) {
@@ -274,10 +348,30 @@ function buffsDeVitesse(etat: Etat, d: DonneesKit): { receveurs: Set<number>; ba
         : effet.buffSoi ? [i]
         : [];
       touches.forEach((k) => receveurs.add(k));
-      base = Math.max(base, effet.buffEquipe ?? 0, effet.buffAllie ?? 0, effet.buffSoi ?? 0);
     }
   });
-  return { receveurs, base };
+  return receveurs;
+}
+
+// Une VIT mal lue (ou inconnue) est à saisir avant tout calcul.
+const aSaisir = (a: Etat['attaquants'][number]) => a.vitDouteuse || a.combat === VIT_INCONNUE;
+
+// Les champs de la fenêtre des VIT : chaque VIT à saisir, préremplie de la
+// lecture la plus probable.
+function champsVit(res: Ressources, etat: Etat): Saisie[] {
+  return etat.attaquants.flatMap((a, index) => {
+    const m = res.monstre(a.id);
+    return aSaisir(a) && m ? [{ sorte: 'vit' as const, nom: m.name, index, valeur: a.combat === VIT_INCONNUE ? null : a.combat }] : [];
+  });
+}
+
+// Les champs de la fenêtre de l'Effet aug. VIT : chaque monstre du masque
+// (bit k : la place k reçoit un buff de VIT), prérempli s'il est déjà donné.
+function champsArte(res: Ressources, etat: Etat, masque: number): Saisie[] {
+  return etat.attaquants.flatMap((a, index) => {
+    const m = res.monstre(a.id);
+    return masque & (1 << index) && m ? [{ sorte: 'arte' as const, nom: m.name, index, valeur: a.arte }] : [];
+  });
 }
 
 // L'état → le message : la question tant qu'une valeur manque, sinon
@@ -285,10 +379,11 @@ function buffsDeVitesse(etat: Etat, d: DonneesKit): { receveurs: Set<number>; ba
 export async function repondre(res: Ressources, etat: Etat, langue: Langue): Promise<Message> {
   const monstres = etat.attaquants.map((a) => res.monstre(a.id));
   if (monstres.some((m) => !m)) return { embeds: [embedErreur(langue, 'illisible')], components: [] };
-  const douteux = etat.attaquants.flatMap((a, i) => [
-    ...(a.autrePortrait != null ? [`${monstres[i]!.name} / ${res.monstre(a.autrePortrait)?.name ?? '?'}`] : []),
-    ...(a.vitDouteuse ? [`${monstres[i]!.name} ${a.combat}`] : []),
-  ]);
+  const douteux = etat.attaquants.flatMap((a, i) => (a.autrePortrait != null ? [`${monstres[i]!.name} / ${res.monstre(a.autrePortrait)?.name ?? '?'}`] : []));
+  // Les VIT mal lues : un bouton les fait toutes saisir ; rien ne se calcule
+  // avant qu'elles soient données.
+  const vits = champsVit(res, etat);
+  const equipeLue = etat.attaquants.map((a, i) => ({ nom: monstres[i]!.name, combat: aSaisir(a) ? null : a.combat }));
 
   const donnees: DonneesKit = { kits: new Map(), sorts: new Map(), passifs: new Map() };
   await Promise.all(etat.attaquants.map(async (a) => {
@@ -309,19 +404,27 @@ export async function repondre(res: Ressources, etat: Etat, langue: Langue): Pro
     demandes.push({ sorte: 'cumuls', nom: monster.name, passif: p.nom, texte: p.texte, options, choisi: a.cumuls, customId: encoderEtat(`c${i}`, etat) });
     if (a.cumuls != null) precisions.push({ sorte: 'cumuls', nom: monster.name, cumuls: a.cumuls, points: points(a.cumuls) });
   });
-  const { receveurs, base } = buffsDeVitesse(etat, donnees);
+  // L'Effet aug. VIT des monstres qui reçoivent un buff de VIT : un second
+  // bouton, sa fenêtre, un champ chacun.
+  const receveurs = [...receveursDeBuff(etat, donnees)].sort((x, y) => x - y);
   for (const i of receveurs) {
     const a = etat.attaquants[i];
-    const nom = monstres[i]!.name;
-    demandes.push({ sorte: 'arte', nom, options: tranchesArte(base), choisi: a.arte, customId: encoderEtat(`a${i}`, etat) });
-    const tranche = tranchesArte(base).find((x) => x.de === a.arte);
-    if (a.arte != null) precisions.push({ sorte: 'arte', nom, de: a.arte, a: tranche?.a ?? a.arte });
+    if (a.arte != null) precisions.push({ sorte: 'arte', nom: monstres[i]!.name, arte: a.arte });
   }
-  // Le set Rapide ne se demande pas : il ne change pas l'ordre (la VIT lue le
-  // contient), seulement la fiche d'un point d'arrondi ; elle le suppose absent.
+  const arteManquant = receveurs.some((i) => etat.attaquants[i].arte == null);
+  // Le set Rapide ne se demande pas : il ne change pas l'ordre (la VIT saisie
+  // ou lue est celle du combat) ; la fiche est donnée au cas le plus
+  // défavorable (analyse.ts).
 
-  if (demandes.some((x) => x.choisi == null)) {
-    return messageQuestion(langue, etat.attaquants.map((a, i) => ({ nom: monstres[i]!.name, combat: a.combat })), demandes, douteux);
+  if (demandes.some((x) => x.choisi == null) || vits.length || arteManquant) {
+    const boutons: BoutonSaisie[] = [
+      ...(vits.length ? [{ sorte: 'vit' as const, noms: vits.map((c) => c.nom), customId: encoderEtat('s', etat) }] : []),
+      ...(arteManquant ? [{
+        sorte: 'arte' as const, noms: receveurs.map((i) => monstres[i]!.name),
+        customId: encoderEtat(`e${receveurs.reduce((m, i) => m | (1 << i), 0)}`, etat),
+      }] : []),
+    ];
+    return messageQuestion(langue, equipeLue, demandes, douteux, boutons);
   }
 
   const resultat = analyserEquipe(

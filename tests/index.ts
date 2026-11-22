@@ -400,7 +400,7 @@ import { testApercuDeuxLignesRecherche, testApercuDeuxLignesBorne, testApercuDeu
 import { testRenduRecosApercuCentainesDeDecks } from './rendu/apercu-recos.test';
 import { testDiscordDroits, testDiscordSession, testDiscordRecoSalon, testDiscordContributeursFormat, testDiscordRouteurConnexion,
   testDiscordRouteurBureau, testDiscordRouteurSources, testDiscordRouteurSalonEtPublication, testDiscordRouteurToutEtLimites } from './discord-service.test';
-import { testCaptureImage, testCapturePortraits, testCaptureChiffres, testCaptureEcran, testSpeedtuneAnalyse,
+import { testCaptureImage, testCapturePortraits, testCaptureChiffres, testCaptureEcran, testCapturesReelles, testSpeedtuneAnalyse,
   testSpeedtuneEtat, testSpeedtuneEmojis, testSpeedtuneInteractions } from './speedtune-capture.test';
 import { testRecoDiscordEtat, testRecoDiscordRecevoir, testRecoDiscordSynchro, testRecoDiscordPublication, testRecoDiscordFusion,
   testRecoDiscordFavorisEtStockage } from './reco-discord.test';
@@ -614,6 +614,7 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testCapturePortraits', testCapturePortraits],
   ['testCaptureChiffres', testCaptureChiffres],
   ['testCaptureEcran', testCaptureEcran],
+  ['testCapturesReelles', testCapturesReelles],
   ['testSpeedtuneAnalyse', testSpeedtuneAnalyse],
   ['testSpeedtuneEtat', testSpeedtuneEtat],
   ['testSpeedtuneEmojis', testSpeedtuneEmojis],

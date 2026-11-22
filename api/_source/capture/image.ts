@@ -15,9 +15,12 @@ export interface Image {
   rgba: Uint8Array; // 4 octets par pixel, ligne par ligne
 }
 
-// Au-delà, la capture n'est pas un écran de téléphone : on refuse avant de
-// décoder (une image de 20 000 × 20 000 pèse 1,6 Go une fois décodée).
-export const PIXELS_MAX = 16_000_000;
+// Au-delà, on refuse avant de décoder (une image de 20 000 × 20 000 pèse
+// 1,6 Go une fois décodée). En deçà, toute capture d'écran passe, même de
+// tout un bureau : `Win + Impr. écran` prend tous les écrans d'un coup, et
+// deux écrans 4K font 16,6 millions de pixels ; un écran 8K (33 millions) se
+// lit en 2,3 s avec 0,5 Go de mémoire.
+export const PIXELS_MAX = 40_000_000;
 
 const estPng = (o: Uint8Array) => o.length > 8 && o[0] === 0x89 && o[1] === 0x50 && o[2] === 0x4e && o[3] === 0x47;
 const estJpeg = (o: Uint8Array) => o.length > 3 && o[0] === 0xff && o[1] === 0xd8 && o[2] === 0xff;
@@ -29,6 +32,13 @@ export function dimensionsPng(o: Uint8Array): { largeur: number; hauteur: number
   if (o.length < 24 || o[12] !== 0x49 || o[13] !== 0x48 || o[14] !== 0x44 || o[15] !== 0x52) return null;
   const vue = new DataView(o.buffer, o.byteOffset, o.byteLength);
   return { largeur: vue.getUint32(16), hauteur: vue.getUint32(20) };
+}
+
+// Un PNG dont l'en-tête annonce plus de PIXELS_MAX pixels : à refuser comme
+// trop lourd, pas comme illisible.
+export function imageTropGrande(octets: Uint8Array): boolean {
+  const dims = estPng(octets) ? dimensionsPng(octets) : null;
+  return !!dims && dims.largeur * dims.hauteur > PIXELS_MAX;
 }
 
 // `null` : ni PNG ni JPEG, illisible, ou trop grande.
@@ -102,4 +112,18 @@ export function reduire(img: Image, l: number, h: number): Float32Array {
     }
   }
   return sortie;
+}
+
+// L'image réduite de moitié, par moyenne de chaque carré de 2 × 2 pixels (une
+// colonne ou une rangée impaire en trop est laissée).
+export function demiTaille(img: Image): Image {
+  const l = Math.floor(img.largeur / 2), h = Math.floor(img.hauteur / 2);
+  const rgba = new Uint8Array(l * h * 4);
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < l; x++) {
+      const a = ((2 * y) * img.largeur + 2 * x) * 4, b = a + img.largeur * 4, o = (y * l + x) * 4;
+      for (let c = 0; c < 4; c++) rgba[o + c] = (img.rgba[a + c] + img.rgba[a + 4 + c] + img.rgba[b + c] + img.rgba[b + 4 + c] + 2) >> 2;
+    }
+  }
+  return { largeur: l, hauteur: h, rgba };
 }

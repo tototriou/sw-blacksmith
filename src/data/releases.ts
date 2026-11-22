@@ -100,8 +100,7 @@ export const RELEASES: Release[] = [
       { kind: 'feat', scope: 'Siège', text: 'Les combats, siège par siège et par pages, avec le numéro de la tour attaquée.' },
       { kind: 'feat', scope: 'Siège', text: 'Filtres des combats et des défenses : résultat, monstres, attaque ou défense.' },
       { kind: 'feat', scope: 'SW Exporter', text: 'Le plugin n’écrit plus en boucle un écran de guilde qui n’a pas changé.' },
-      { kind: 'feat', scope: 'Optimizer', text: 'Une précision minimale par sort : S1, S2 ou S3, artéfact de type compris.' },
-      { kind: 'feat', scope: 'Runes', text: '« Faisable avec ma réserve » : choisir les meules et gemmes héroïques, légendaires ou les deux.' },
+      { kind: 'feat', scope: 'Optimizer', text: 'Une précision minimale par sort : S1, S2 ou S3, artéfact de type compris.' },      { kind: 'feat', scope: 'Runes', text: '« Faisable avec ma réserve » : choisir les meules et gemmes héroïques, légendaires ou les deux.' },
       { kind: 'feat', scope: 'Application', text: '« Charger… » une session enregistrée (Ctrl+O), qui reprend tout là où tu t’étais arrêté.' },
       { kind: 'feat', scope: 'Runes', text: 'Comparaison › Historique : ta courbe de runes d’aujourd’hui face à celle des jours passés, tirée du plugin SW Blacksmith Live.' },
       { kind: 'fix', scope: 'Application', text: 'Un compte importé par fichier n’est plus remplacé par l’invocateur suivi dans le dossier SW Exporter.' },
@@ -110,6 +109,38 @@ export const RELEASES: Release[] = [
       { kind: 'fix', scope: 'Discord', text: 'Le bot invité arrive avec ses commandes, dont /speedtune.' },
       { kind: 'fix', scope: 'Recommandations', text: 'Une recommandation de centaines de decks se publie dans Discord, jusqu’à 3,5 Mo ; trop lourde, la page le dit.' },
       { kind: 'fix', scope: 'Mon compte', text: 'Sur la courbe des runes, la rune choisie reste choisie quand tu la montes.' },
+    ],
+  },
+  {
+    version: '2.4.7',
+    date: '2026-11-16',
+    title: '/speedtune : fiches sûres et VIT saisies d\'un coup',
+    changes: [
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune donne des fiches qui suffisent, set Rapide porté ou non.' },
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune demande toutes les VIT mal lues dans une seule fenêtre.' },
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune fait saisir l\'Effet aug. VIT dans une fenêtre, comme les VIT.' },
+    ],
+  },
+  {
+    version: '2.4.6',
+    date: '2026-11-16',
+    title: '/speedtune lit toute la VIT au téléphone',
+    changes: [
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune lit le dernier chiffre de la VIT quand il déborde de sa pastille (gestion des decks au téléphone).' },
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune lit les captures agrandies, réduites ou floutées, et ne donne jamais une VIT illisible.' },
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune reconnaît les monstres des captures en JPEG ou floutées.' },
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune ne demande plus de capture plus grande : une VIT mal lue se saisit d\'un clic, préremplie de la lecture la plus probable.' },
+    ],
+  },
+  {
+    version: '2.4.5',
+    date: '2026-11-16',
+    title: '/speedtune lit les petits chiffres et toutes les images',
+    changes: [
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune lit la VIT d’une petite fenêtre PC, chiffres de 7 pixels compris.' },
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune accepte une capture en WebP, comme une image copiée depuis Discord.' },
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune reconnaît l’équipe aux VIT affichées sur ses cartes, quelle que soit leur taille, même dans une capture de tout l’écran.' },
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune lit une capture collée dans Discord (Ctrl+V), et une capture de plusieurs écrans jusqu’à 25 Mo.' },
     ],
   },
   {
