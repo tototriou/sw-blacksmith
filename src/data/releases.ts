@@ -70,18 +70,22 @@ export function journal(langue: Langue): Release[] {
 // Si une ligne dépasse ~15 mots, c'est qu'elle raconte l'implémentation.
 export const RELEASES: Release[] = [
   {
-    version: null,
-    date: '2026-11-17',
-    title: 'L’Arène, l’arène dimensionnelle et ton compte en direct',
+    version: '2.5.0',
+    date: '2026-11-22',
+    title: 'L’Arène, Mes équipes et ton compte en direct',
     highlights: [
-      'Une page Arène : ta défense, ta défense interserveur et tes attaques, importées de ton compte.',
-      'L’arène dimensionnelle dans l’application de bureau : ta défense, tes attaques et tes runes du mode.',
+      'Une page Arène, et l’arène dimensionnelle dans l’application de bureau : défenses, attaques et runes du mode.',
+      'Mes équipes : toutes tes équipes construites au même endroit, runes comprises, en aller-retour avec l’Optimizer.',
       'Ton compte en direct : avec le plugin SW Exporter, « Mon compte » suit ta partie dans l’application de bureau.',
     ],
     changes: [
       { kind: 'feat', scope: 'Arène', text: 'Nouvelle page Arène : défense, défense interserveur et attaques, importées de ton compte.' },
       { kind: 'feat', scope: 'Arène', text: 'Les vitesses de combat de l’arène tiennent compte des leads d’arène.' },
       { kind: 'feat', scope: 'Speed tuning', text: 'Tes équipes d’arène se chargent dans le speed tuning.' },
+      { kind: 'feat', scope: 'Mes équipes', text: 'Nouvelle page Mes équipes : tes équipes RTA, arène, siège, guerre de guilde et PVE, runes comprises.' },
+      { kind: 'feat', scope: 'Mes équipes', text: 'Importe tes decks du jeu, du siège ou de l’Optimizer ; une pièce changée depuis est signalée.' },
+      { kind: 'feat', scope: 'Mes équipes', text: 'Envoie une équipe vers l’Optimizer, puis « Enregistrer dans Mes équipes » met à jour l’originale.' },
+      { kind: 'feat', scope: 'Optimizer', text: 'Une seule fenêtre « Importer une équipe » : decks du jeu, Mes équipes, listes et recommandations.' },
       { kind: 'feat', scope: 'Arène dimensionnelle', text: 'Dans l’application de bureau, avec le plugin SW Blacksmith Live, ta défense, tes attaques et tes runes se remplissent quand tu ouvres le mode en jeu, et suivent ce que tu y changes.' },
       { kind: 'feat', scope: 'Arène dimensionnelle', text: 'Sur le site, la version web arrive prochainement.' },
       { kind: 'feat', scope: 'Application', text: 'Avec le dossier SW Exporter, une arène vide se remplit au prochain export.' },
@@ -101,6 +105,7 @@ export const RELEASES: Release[] = [
       { kind: 'feat', scope: 'Siège', text: 'Filtres des combats et des défenses : résultat, monstres, attaque ou défense.' },
       { kind: 'feat', scope: 'SW Exporter', text: 'Le plugin n’écrit plus en boucle un écran de guilde qui n’a pas changé.' },
       { kind: 'feat', scope: 'Optimizer', text: 'Une précision minimale par sort : S1, S2 ou S3, artéfact de type compris.' },
+      { kind: 'feat', scope: 'Optimizer', text: 'La relique est « Libre » par défaut, même déjà équipée : l’Optimizer la cherche aussi.' },
       { kind: 'feat', scope: 'Runes', text: '« Faisable avec ma réserve » : choisir les meules et gemmes héroïques, légendaires ou les deux.' },
       { kind: 'feat', scope: 'Application', text: '« Charger… » une session enregistrée (Ctrl+O), qui reprend tout là où tu t’étais arrêté.' },
       { kind: 'feat', scope: 'Runes', text: 'Comparaison › Historique : ta courbe de runes d’aujourd’hui face à celle des jours passés, tirée du plugin SW Blacksmith Live.' },
@@ -110,6 +115,38 @@ export const RELEASES: Release[] = [
       { kind: 'fix', scope: 'Discord', text: 'Le bot invité arrive avec ses commandes, dont /speedtune.' },
       { kind: 'fix', scope: 'Recommandations', text: 'Une recommandation de centaines de decks se publie dans Discord, jusqu’à 3,5 Mo ; trop lourde, la page le dit.' },
       { kind: 'fix', scope: 'Mon compte', text: 'Sur la courbe des runes, la rune choisie reste choisie quand tu la montes.' },
+    ],
+  },
+  {
+    version: '2.4.7',
+    date: '2026-11-16',
+    title: '/speedtune : fiches sûres et VIT saisies d\'un coup',
+    changes: [
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune donne des fiches qui suffisent, set Rapide porté ou non.' },
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune demande toutes les VIT mal lues dans une seule fenêtre.' },
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune fait saisir l\'Effet aug. VIT dans une fenêtre, comme les VIT.' },
+    ],
+  },
+  {
+    version: '2.4.6',
+    date: '2026-11-16',
+    title: '/speedtune lit toute la VIT au téléphone',
+    changes: [
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune lit le dernier chiffre de la VIT quand il déborde de sa pastille (gestion des decks au téléphone).' },
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune lit les captures agrandies, réduites ou floutées, et ne donne jamais une VIT illisible.' },
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune reconnaît les monstres des captures en JPEG ou floutées.' },
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune ne demande plus de capture plus grande : une VIT mal lue se saisit d\'un clic, préremplie de la lecture la plus probable.' },
+    ],
+  },
+  {
+    version: '2.4.5',
+    date: '2026-11-16',
+    title: '/speedtune lit les petits chiffres et toutes les images',
+    changes: [
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune lit la VIT d’une petite fenêtre PC, chiffres de 7 pixels compris.' },
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune accepte une capture en WebP, comme une image copiée depuis Discord.' },
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune reconnaît l’équipe aux VIT affichées sur ses cartes, quelle que soit leur taille, même dans une capture de tout l’écran.' },
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune lit une capture collée dans Discord (Ctrl+V), et une capture de plusieurs écrans jusqu’à 25 Mo.' },
     ],
   },
   {

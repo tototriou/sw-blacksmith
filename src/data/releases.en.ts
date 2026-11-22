@@ -9,18 +9,22 @@ import type { Release } from './releases';
 
 export const RELEASES_EN: Release[] = [
   {
-    version: null,
-    date: '2026-11-17',
-    title: 'The Arena, the Dimensional Arena and your account live',
+    version: '2.5.0',
+    date: '2026-11-22',
+    title: 'The Arena, My teams and your account live',
     highlights: [
-      'An Arena page: your defense, cross-server defense and attacks, imported from your account.',
-      'The Dimensional Arena in the desktop app: your defense, attacks and runes for that mode.',
+      'An Arena page, and the Dimensional Arena in the desktop app: defenses, attacks and runes for that mode.',
+      'My teams: all your built teams in one place, runes included, back and forth with the Optimizer.',
       'Your account live: with the SW Exporter plugin, “My account” follows your game in the desktop app.',
     ],
     changes: [
       { kind: 'feat', scope: 'Arena', text: 'New Arena page: defense, cross-server defense and attacks, imported from your account.' },
       { kind: 'feat', scope: 'Arena', text: 'Arena combat speeds use arena leader skills.' },
       { kind: 'feat', scope: 'Speed tuning', text: 'Your arena teams load into speed tuning.' },
+      { kind: 'feat', scope: 'My teams', text: 'New My teams page: your RTA, arena, siege, Guild War and PvE teams, runes included.' },
+      { kind: 'feat', scope: 'My teams', text: 'Import your game decks, siege teams or Optimizer teams; a piece changed since is flagged.' },
+      { kind: 'feat', scope: 'My teams', text: 'Send a team to the Optimizer, then “Save to My teams” updates the original.' },
+      { kind: 'feat', scope: 'Optimizer', text: 'A single “Import a team” window: game decks, My teams, lists and recommendations.' },
       { kind: 'feat', scope: 'Dimensional Arena', text: 'In the desktop app, with the SW Blacksmith Live plugin, your defense, attacks and runes fill in when you open the mode in game, and follow what you change there.' },
       { kind: 'feat', scope: 'Dimensional Arena', text: 'On the website, the web version is coming soon.' },
       { kind: 'feat', scope: 'Application', text: 'With the SW Exporter folder, an empty arena fills in on the next export.' },
@@ -40,6 +44,7 @@ export const RELEASES_EN: Release[] = [
       { kind: 'feat', scope: 'Siege', text: 'Battle and defense filters: result, monsters, attack or defense.' },
       { kind: 'feat', scope: 'SW Exporter', text: 'The plugin no longer keeps rewriting a guild screen that has not changed.' },
       { kind: 'feat', scope: 'Optimizer', text: 'A minimum Accuracy per skill: S1, S2 or S3, type artifact included.' },
+      { kind: 'feat', scope: 'Optimizer', text: 'The relic is “Any” by default, even when already equipped: the Optimizer searches it too.' },
       { kind: 'feat', scope: 'Runes', text: '“Doable with my stock”: choose Hero grindstones and gems, Legend ones, or both.' },
       { kind: 'feat', scope: 'Application', text: '“Load…” a saved session (Ctrl+O), which picks everything up where you left off.' },
       { kind: 'feat', scope: 'Runes', text: 'Comparison › History: today’s rune curve against past days, taken from the SW Blacksmith Live plugin.' },
@@ -49,6 +54,38 @@ export const RELEASES_EN: Release[] = [
       { kind: 'fix', scope: 'Discord', text: 'The invited bot arrives with its commands, /speedtune included.' },
       { kind: 'fix', scope: 'Recommendations', text: 'A recommendation with hundreds of decks publishes to Discord, up to 3.5 MB; when too large, the page says so.' },
       { kind: 'fix', scope: 'My account', text: 'On the rune curve, the chosen rune stays chosen when you upgrade it.' },
+    ],
+  },
+  {
+    version: '2.4.7',
+    date: '2026-11-16',
+    title: '/speedtune: safe stats and all SPD entered at once',
+    changes: [
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune gives stats that are enough, Swift set worn or not.' },
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune asks for every misread SPD in a single window.' },
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune has the SPD Increasing Effect entered in a window, like the SPD.' },
+    ],
+  },
+  {
+    version: '2.4.6',
+    date: '2026-11-16',
+    title: '/speedtune reads the whole SPD on phones',
+    changes: [
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune reads the last SPD digit when it overflows its pill (deck management on phones).' },
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune reads enlarged, shrunk or blurred captures, and never gives an unreadable SPD.' },
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune recognizes the monsters of JPEG or blurred captures.' },
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune no longer asks for a larger screenshot: a misread SPD is entered in one click, pre-filled with the most likely reading.' },
+    ],
+  },
+  {
+    version: '2.4.5',
+    date: '2026-11-16',
+    title: '/speedtune reads small digits and every image',
+    changes: [
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune reads the SPD of a small PC window, 7-pixel digits included.' },
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune accepts a WebP screenshot, like an image copied from Discord.' },
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune recognises the team by the SPD shown on its cards, whatever their size, even in a full-screen capture.' },
+      { kind: 'fix', scope: 'Speed tuning', text: '/speedtune reads a screenshot pasted into Discord (Ctrl+V), and a multi-screen capture up to 25 MB.' },
     ],
   },
   {

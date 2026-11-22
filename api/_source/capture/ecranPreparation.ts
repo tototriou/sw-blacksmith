@@ -2,147 +2,108 @@
 // trois ATTAQUANTS, leader en premier, chacun avec sa VIT DE COMBAT écrite sous
 // son portrait (lead et totem compris) ; à droite la défense, sans VIT.
 //
-// ⚠️ Ni le format de l'image ni la couleur des cadres ne comptent : les cartes
-// se TROUVENT à leur contour (cartes.ts), sur un téléphone, une tablette, une
-// fenêtre PC avec ou sans barre de titre, ou une capture recadrée sur les
-// trois attaquants ; la VIT, dans la pastille trouvée de chaque carte. Sans
-// trois carrés d'attaquant trouvés, l'écran n'est pas reconnu : aucune
-// position n'est supposée.
+// ⚠️ Ni le format de l'image, ni la taille des cartes, ni la couleur des
+// cadres ne comptent : les cartes se TROUVENT à leur contour, et les
+// attaquants sont celles qui portent une pastille de VIT (cartes.ts,
+// pastille.ts). Sans trois attaquants trouvés, l'écran n'est pas reconnu :
+// aucune position n'est supposée.
 
-import { decouper, type Image } from './image';
-import { lireNombre, type Gabarits, type NombreLu } from './chiffres';
+import type { Image } from './image';
+import { lireNombre, scoresParSynthese, type Gabarits, type NombreLu } from './chiffres';
 import { variantes, type Banque, type Reconnaissance } from './portraits';
-import { trouverCartes, type Rect } from './cartes';
-
-// La VIT est écrite en clair dans une PASTILLE sombre, en bas à droite de la
-// carte, avec l'icône de vitesse à sa gauche. ⚠️ Sa place exacte varie selon
-// l'écran (plus basse sur PC, plus haute sur une carte recadrée) : on la
-// TROUVE dans la carte plutôt que de la supposer. Son bas : la plus basse
-// rangée PLEINE (une longue suite sombre, jusqu'au bord droit de la carte, où
-// la pastille s'appuie) au-dessus du cadre ; elle donne sa largeur. Les chiffres sont juste au-dessus, BLANCS : en remontant, les
-// rangées qui portent du clair dans cette largeur ; la première qui n'en porte
-// plus est le haut de la zone. ⚠️ Pas le noir : un portrait sombre qui touche
-// la pastille la prolonge, à côté des chiffres comme au-dessus. Relevé : la
-// pastille va de (30, 30, 27) à (50, 38, 17) ; les chiffres, blancs, ont leur
-// plus faible composante au-dessus de 150 au cœur du trait, qu'aucune teinte
-// vive d'un portrait n'atteint.
-const SOMBRE = 60;
-const CLAIR = 150;
-const SUITE_PASTILLE = 0.25; // longueur d'une rangée pleine de la pastille, en largeur de carte (relevé : 0,5 à 0,6)
-const HAUTEUR_PASTILLE_MAX = 0.3; // en hauteur de carte
-
-export function pastilleVitesse(img: Image, [x, y, l, h]: Rect): Rect | null {
-  const { largeur, rgba } = img;
-  const x0 = Math.max(0, Math.round(x + 0.3 * l)), x1 = Math.min(largeur - 1, Math.round(x + l) - 1);
-  const yHaut = Math.max(0, Math.round(y + 0.55 * h)), yBas = Math.min(img.hauteur - 1, Math.round(y + 0.97 * h));
-  const sombre = (xx: number, yy: number) => {
-    const i = (yy * largeur + xx) * 4;
-    return Math.max(rgba[i], rgba[i + 1], rgba[i + 2]) < SOMBRE;
-  };
-  const plusLongueSuite = (yy: number): [number, number] => {
-    let meilleure: [number, number] = [0, -1], debut = -1;
-    for (let xx = x0; xx <= x1 + 1; xx++) {
-      if (xx <= x1 && sombre(xx, yy)) { if (debut < 0) debut = xx; continue; }
-      if (debut >= 0 && xx - debut > meilleure[1] - meilleure[0] + 1) meilleure = [debut, xx - 1];
-      debut = -1;
-    }
-    return meilleure;
-  };
-  // La pastille touche le bord droit de la carte : sa suite sombre y va.
-  const pleine = (s: [number, number]) => s[1] - s[0] + 1 >= SUITE_PASTILLE * l && s[1] >= x + 0.9 * l;
-  let bas = -1, gauche = x1, droite = x0;
-  for (let yy = yBas; yy >= yHaut && bas < 0; yy--) {
-    const s = plusLongueSuite(yy);
-    if (pleine(s)) { bas = yy; [gauche, droite] = s; }
-  }
-  if (bas < 0) return null;
-  // Un clair de chiffre est posé sur la pastille : du sombre à courte distance
-  // de chaque côté (moins qu'une largeur de chiffre). Le blanc d'un portrait,
-  // au coin arrondi de la pastille, est entouré de portrait.
-  const portee = Math.max(3, Math.round(0.1 * l));
-  const blanc = (xx: number, yy: number) => {
-    const i = (yy * largeur + xx) * 4;
-    return Math.min(rgba[i], rgba[i + 1], rgba[i + 2]) >= CLAIR;
-  };
-  const surSombre = (xx: number, yy: number) => {
-    let g = false, d = false;
-    for (let k = 1; k <= portee && !g; k++) g = xx - k >= gauche && sombre(xx - k, yy);
-    for (let k = 1; k <= portee && !d; k++) d = xx + k <= droite && sombre(xx + k, yy);
-    return g && d;
-  };
-  const premierClair = (yy: number, jusque: number) => {
-    for (let xx = gauche; xx <= jusque; xx++) if (blanc(xx, yy) && surSombre(xx, yy)) return xx;
-    return -1;
-  };
-  const clair = (yy: number) => premierClair(yy, droite) >= 0;
-  // Sans rangée vide au-dessus des chiffres avant la hauteur limite, la zone
-  // s'arrête à cette limite. Aucun clair : pas de VIT dans la carte.
-  let haut = -1, chiffres = false;
-  for (let yy = bas - 1; yy >= Math.max(yHaut, bas - HAUTEUR_PASTILLE_MAX * h); yy--) {
-    haut = yy;
-    if (clair(yy)) chiffres = true;
-    else if (chiffres) break;
-  }
-  if (!chiffres) return null;
-  // À gauche, la zone part du premier clair (l'icône ou le premier chiffre),
-  // avec une marge de fond : un portrait sombre qui prolonge la pastille y
-  // mêlerait ses teintes au seuil d'encre.
-  let premier = droite;
-  for (let yy = haut; yy <= bas; yy++) {
-    const p = premierClair(yy, premier - 1);
-    if (p >= 0) premier = p;
-  }
-  const debut = Math.max(gauche, premier - Math.max(2, Math.round(0.3 * (bas - haut))));
-  return [debut, haut, droite - debut + 1, bas - haut + 1];
-}
-
-export function zoneVitesse(img: Image, carte: Rect): Image | null {
-  const p = pastilleVitesse(img, carte);
-  return p ? decouper(img, ...p) : null;
-}
+import { trouverCartesAToutesEchelles, type Rect } from './cartes';
+import { zoneVitesse } from './pastille';
 
 export interface MonstreLu {
   rect: Rect;
   portrait: Reconnaissance | null;
 }
+// `vitesse` : la VIT SÛRE (règle `plausible`), sinon `null`. `hypotheses` :
+// les VIT possibles, de la plus probable à la moins probable, même quand
+// aucune n'est sûre — vide si la pastille ne porte pas trois chiffres.
 export interface AttaquantLu extends MonstreLu {
   vitesse: NombreLu | null;
+  hypotheses: number[];
 }
 export interface LectureEcran {
   attaquants: AttaquantLu[];
   defense: MonstreLu[];
 }
 
-// Une VIT de combat possible : au-delà, ce n'est pas une VIT (une capture d'un
-// autre écran, un nombre mal découpé).
-export const VIT_MIN = 50;
+// Une VIT de combat possible en siège, où l'on règle des vitesses : au-delà,
+// ce n'est pas une VIT (une capture d'un autre écran, un nombre mal découpé,
+// un chiffre perdu — « 66 » pour 314).
+export const VIT_MIN = 100;
 export const VIT_MAX = 450;
 
-// Une VIT FAUSSE est pire qu'un refus, qui demande une capture plus grande :
-// sous CONFIANCE_VIT_PLANCHER, la VIT n'est pas lue, ni sous
-// CONFIANCE_VIT_SURE quand un de ses chiffres est presque à égalité avec un
-// autre (MARGE_VIT_MIN). Relevé sur sept vraies captures, chacune lue avec
-// des gabarits qui n'ont pas ses chiffres, réduites, agrandies et compressées :
-// aucune lecture fausse ne passe ; les captures d'origine se lisent toutes.
-export const CONFIANCE_VIT_PLANCHER = 0.65;
-const CONFIANCE_VIT_SURE = 0.75;
+// Une VIT FAUSSE donnée pour sûre est pire qu'une VIT supposée, que le message
+// dit à vérifier (`hypotheses`) : sous CONFIANCE_VIT_PLANCHER, la VIT n'est
+// pas sûre, ni quand un de ses chiffres est presque à égalité avec un autre
+// (MARGE_VIT_MIN) sans que la lecture agrandie donne le même nombre. ⚠️ Sous HAUTEUR_SURE pixels, l'écart
+// ne suffit plus : un 9 et un 0 de 6 pixels ne diffèrent que de deux ou trois
+// pixels. Relevé sur 17 vraies captures réduites jusqu'à des chiffres de 5
+// pixels et compressées : à 5 et 6 pixels, sans accord des deux lectures, 69
+// justes et 9 fausses (« 340 » pour 349, écart jusqu'à 0,07), aux écarts
+// mêlés ; seul l'accord y vaut. À 7 pixels et plus, aucune fausse ne passe la
+// règle de l'écart. ⚠️ Sous HAUTEUR_LISIBLE, même l'accord ne suffit plus : à
+// 5 pixels, les deux lectures se sont accordées sur un « 340 » pour 349 (une
+// capture réduite à 75 % et compressée) — la VIT n'y est jamais sûre.
+export const CONFIANCE_VIT_PLANCHER = 0.7;
 const MARGE_VIT_MIN = 0.05;
+const HAUTEUR_SURE = 7;
+const HAUTEUR_LISIBLE = 6;
 
 const plausible = (lu: NombreLu | null): NombreLu | null =>
-  (lu && lu.valeur >= VIT_MIN && lu.valeur <= VIT_MAX && lu.confiance >= CONFIANCE_VIT_PLANCHER
-    && (lu.confiance >= CONFIANCE_VIT_SURE || lu.marge >= MARGE_VIT_MIN) ? lu : null);
+  (lu && lu.valeur >= VIT_MIN && lu.valeur <= VIT_MAX && lu.confiance >= CONFIANCE_VIT_PLANCHER && lu.hauteur >= HAUTEUR_LISIBLE
+    && (lu.accord || (lu.marge >= MARGE_VIT_MIN && lu.hauteur >= HAUTEUR_SURE)) ? lu : null);
+
+// Les VIT possibles quand aucune n'est sûre, de la plus probable à la moins
+// probable : chaque nombre de trois chiffres entre VIT_MIN et VIT_MAX reçoit
+// un score EN ENTIER. Un chiffre qui hésite seul (un 9 ou un 0 de 5 pixels) se
+// départage ainsi par ce qu'une VIT peut être : « 549 » n'en est pas une,
+// « 349 » si.
+//   - Trois glyphes ou plus : la somme des scores de ses chiffres, lus à la
+//     taille d'origine. Plus de trois : un intrus colle au nombre (l'icône à
+//     gauche, un bout de cadre à droite — relevé : « 3168 » pour 316 sur une
+//     capture floutée) ; chaque suite de trois glyphes est essayée.
+//   - Moins de trois (des chiffres soudés ou perdus par le seuil — relevé :
+//     « 00 » ou « 1 » pour 384) : le nombre entier rendu et comparé à la zone
+//     (`scoresParSynthese`).
+// ⚠️ Relevé sur le banc de stress (VIT refusées de 20 vraies captures réduites
+// jusqu'à ×0,4, compressées, floutées) : glyphes à la taille d'origine, juste
+// en tête 72 fois sur 100 ; y ajouter la lecture agrandie, 37 ; la synthèse,
+// 50 — moins précise que les glyphes quand ils existent, elle ne sert que
+// sans eux. Combiner les deux dégradait le classement.
+export const HYPOTHESES_MAX = 10;
+const VALEURS_VIT = Array.from({ length: VIT_MAX - VIT_MIN + 1 }, (_, i) => VIT_MIN + i);
+export function hypothesesVit(zone: Image | null, lu: NombreLu | null, gabarits: Gabarits): number[] {
+  const cs = lu?.chiffres ?? [];
+  let scores: Map<number, number> | null = null;
+  if (cs.length >= 3) {
+    scores = new Map();
+    for (let debut = 0; debut + 3 <= cs.length; debut++) {
+      for (const v of VALEURS_VIT) {
+        const t = String(v);
+        const s = cs[debut].aTaille[t[0]] + cs[debut + 1].aTaille[t[1]] + cs[debut + 2].aTaille[t[2]];
+        if (s > (scores.get(v) ?? -Infinity)) scores.set(v, s);
+      }
+    }
+  } else if (zone) {
+    scores = scoresParSynthese(zone, gabarits, VALEURS_VIT);
+  }
+  return scores ? [...scores].sort((a, b) => b[1] - a[1]).slice(0, HYPOTHESES_MAX).map(([v]) => v) : [];
+}
 
 // `null` : les trois cartes des attaquants ne sont pas dans l'image.
 export function lireEcranPreparation(img: Image, banque: Banque, gabarits: Gabarits): LectureEcran | null {
-  const cartes = trouverCartes(img);
+  const cartes = trouverCartesAToutesEchelles(img);
   if (!cartes) return null;
   const monstre = (rect: Rect): MonstreLu => ({ rect, portrait: banque.reconnaitre(variantes(img, rect)) });
-  const vitesse = (rect: Rect) => {
+  const attaquant = (rect: Rect): AttaquantLu => {
     const zone = zoneVitesse(img, rect);
-    return plausible(zone ? lireNombre(zone, gabarits) : null);
+    const lu = zone ? lireNombre(zone, gabarits) : null;
+    const vitesse = plausible(lu);
+    return { ...monstre(rect), vitesse, hypotheses: vitesse ? [vitesse.valeur] : hypothesesVit(zone, lu, gabarits) };
   };
-  return {
-    attaquants: cartes.attaquants.map((rect): AttaquantLu => ({ ...monstre(rect), vitesse: vitesse(rect) })),
-    defense: cartes.defense.map(monstre),
-  };
+  return { attaquants: cartes.attaquants.map(attaquant), defense: cartes.defense.map(monstre) };
 }
