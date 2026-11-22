@@ -9,6 +9,14 @@ import type { Release } from './releases';
 
 export const RELEASES_EN: Release[] = [
   {
+    version: null,
+    date: '2026-11-22',
+    title: 'My teams from the first validated runes',
+    changes: [
+      { kind: 'feat', scope: 'Optimizer', text: '“Save to My teams” turns on as soon as one monster of the team has validated runes.' },
+    ],
+  },
+  {
     version: '2.5.0',
     date: '2026-11-22',
     title: 'The Arena, My teams and your account live',

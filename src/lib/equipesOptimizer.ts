@@ -248,12 +248,13 @@ export function equipeApresFiltrageOptimizer(
   return { equipe: resultat.teams.find(e => e.id === creation.id)!, rapport: [] };
 }
 
-// « Enregistrer dans Mes équipes » depuis la bande d'une équipe : chaque membre
-// a un build validé dans la liste, ses runes ET sa paire d'artéfacts — sans
-// quoi Mes équipes recevrait un équipement que la recherche n'a pas retenu.
-export function buildsEquipeValides(equipe: Pick<EquipeOptimizer, 'listId' | 'members'>, validated: ValidatedBuild[]): boolean {
-  return equipe.members.length > 0 && equipe.members.every((s) => {
+// « Enregistrer dans Mes équipes » depuis la bande d'une équipe : au moins un
+// membre a des runes validées dans la liste (décision de l'utilisateur) — sans
+// quoi l'enregistrement ne porterait aucun build de l'Optimizer. Les autres
+// membres gardent leur équipement (`preparerRetourOptimizer`).
+export function equipeARunesValidees(equipe: Pick<EquipeOptimizer, 'listId' | 'members'>, validated: ValidatedBuild[]): boolean {
+  return equipe.members.some((s) => {
     const build = findValidatedBuild(validated, equipe.listId, exclusionSelectorKey(s));
-    return !!build && build.runeIds.length > 0 && (build.artifactIds ?? []).length > 0;
+    return !!build && build.runeIds.length > 0;
   });
 }

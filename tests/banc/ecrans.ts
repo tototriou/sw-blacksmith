@@ -390,13 +390,13 @@ const EQ_PREPA: Record<Format, Etape[]> = {
   ordinateur: [{ cliquer: repere('[role="tab"]:has-text("RTA")') }, { cliquer: bouton('Importer une équipe') }, ...EQ_PREPA_SOURCE, EQ_FERMER_RAPPORT],
 };
 // L'équipe envoyée à l'Optimizer : la bande de son équipe de liste porte le
-// bouton de Mes équipes, entre son numéro et le speed tune, grisé tant que
-// les builds de ses membres ne sont pas validés (ils ne le sont pas à l'export).
+// bouton de Mes équipes, entre son numéro et le speed tune, grisé tant qu'aucun
+// de ses membres n'a de runes validées (ils n'en ont pas à l'export).
 // Au téléphone, les équipes de la liste vivent dans « Gérer mes listes », replié.
 const EQ_LISTES_TELEPHONE: Etape = { cliquer: { role: 'button', nom: 'Gérer mes listes', etendu: false } };
-const EQ_A_VALIDER: Cible = { role: 'button', nom: 'Valide d’abord les builds des monstres de l’équipe' };
+const EQ_A_VALIDER: Cible = { role: 'button', nom: 'Valide d’abord les runes d’un monstre de l’équipe' };
 // Le retour vers Mes équipes, par le menu de sa carte (le bouton de la bande
-// attend des builds validés, qu'aucune étape du banc ne produit).
+// attend des runes validées, qu'aucune étape du banc ne produit).
 const EQ_METTRE_A_JOUR: Etape[] = [
   { cliquer: { role: 'button', nom: 'Actions de l’équipe', pres: EQ_CARTE } },
   { cliquer: repere('[role="menuitem"]:has-text("Mettre à jour depuis l’Optimizer")') },
@@ -469,7 +469,7 @@ export const ECRANS: Ecran[] = [
       DEFAUT,
       {
         id: 'equipe-liee',
-        libelle: 'équipe exportée depuis Mes équipes : le bouton de Mes équipes grisé dans sa bande, builds à valider',
+        libelle: 'équipe exportée depuis Mes équipes : le bouton de Mes équipes grisé dans sa bande, runes à valider',
         // Pas en écran partagé : la barre latérale y mène le volet principal.
         tailles: ['telephone', 'ordinateur', 'bureau-portable', 'bureau-2560', 'conteneur-752', 'conteneur-1100'],
         preparation: { telephone: EQ_LIEE.telephone, ordinateur: EQ_LIEE.ordinateur },

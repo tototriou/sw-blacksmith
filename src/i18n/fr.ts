@@ -3048,7 +3048,7 @@ export const fr = {
       conserveSansEffet: 'Ce lead est conservé sans effet calculé.',
       modifier: 'Modifier l’équipe',
       enregistrerMesEquipes: 'Enregistrer dans Mes équipes',
-      validerDAbord: 'Valide d’abord les builds des monstres de l’équipe',
+      validerDAbord: 'Valide d’abord les runes d’un monstre de l’équipe',
       lier: 'Lier une équipe',
       sousTitre: 'Deux à six membres de cette liste. Le lead de l’équipe devient celui de chaque membre.',
       delier: 'Délier',

@@ -4,7 +4,7 @@ import { CheckCircle2, Trash2, Unlock } from 'lucide-react';
 import { IconeEquipes, IconeSpeedTuning } from '../../IconesAtelier';
 import OptimizerLeadInactif, { MotifHorsFlux } from '../OptimizerLeadInactif';
 import { resolveExclusionEntry, exclusionSelectorKey, findValidatedBuild, runesManquantesDuBuild, artefactsManquantsDuBuild, type OptimizerList, type OptimizerListMember, type ExclusionSourceData, type ExclusionSelector } from '../../../lib/optimizerExclusion';
-import { buildsEquipeValides, leadEffectifMembreOptimizer } from '../../../lib/equipesOptimizer';
+import { equipeARunesValidees, leadEffectifMembreOptimizer } from '../../../lib/equipesOptimizer';
 import LeadPill, { nomStatLead } from '../../siege/LeadPill';
 import { useTraduction } from '../../../hooks/useLangue';
 import { nomZoneLead } from '../../../i18n/jeu';
@@ -141,15 +141,15 @@ export default function MonstresDeLaListe({ activeList, activeMembers, setEquipe
                 {inactifs > 0 && <span className="sr-only">{z.leadsInactifs(inactifs)}</span>}
               </span>
               {/* « Enregistrer dans Mes équipes », centré dans la place entre le numéro et
-                  « Speed tune », dans une case oblongue de même hauteur : grisé tant qu'un
-                  membre n'a pas ses runes et ses artéfacts validés, l'infobulle dit pourquoi.
+                  « Speed tune », dans une case oblongue de même hauteur : grisé tant qu'aucun
+                  membre n'a de runes validées, l'infobulle dit pourquoi.
                   Sa case prend la place libre ; quand elle manque, le numéro se tronque avant
                   que le bouton ne déborde. Le compte « ⚠ » se glisse entre le numéro et elle :
                   son double invisible, à droite du bouton, le recentre sur l'espace entre le
                   numéro et « Speed tune » (il cède sa place quand elle manque). */}
               <span className="grid grid-cols-[1fr_auto_minmax(0,max-content)_1fr] items-center">
                 {onEnregistrerEquipe && (() => {
-                  const pret = buildsEquipeValides(g.equipe, lists.validated);
+                  const pret = equipeARunesValidees(g.equipe, lists.validated);
                   const libelle = pret ? o.equipe.enregistrerMesEquipes : o.equipe.validerDAbord;
                   // La hauteur de « Speed tune » (22 px, 40 au doigt), plus large que haute.
                   return <Bouton taille="carre" fond="doux" ton="accent" icone={<IconeEquipes size={16} />} disabled={!pret}

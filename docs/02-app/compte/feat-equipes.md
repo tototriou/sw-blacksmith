@@ -572,10 +572,13 @@ Une équipe dont la liste liée existe encore propose « Mettre à jour depuis
 l'Optimizer ». Dans l'Optimizer, **chaque équipe d'une liste** porte, sur l'en-tête
 de sa bande, centré entre « Équipe N » et « Speed tune », un bouton à l'icône de
 Mes équipes dans une case oblongue de la hauteur de « Speed tune », aux deux
-formats. Son infobulle dit « Enregistrer dans Mes équipes ». Tant
-qu'un membre de l'équipe n'a pas de build validé portant ses runes **et** ses
-artéfacts (`buildsEquipeValides`), il reste grisé et son infobulle dit « Valide
-d'abord les builds des monstres de l'équipe ». La fenêtre « Modifier l'équipe »
+formats. Son infobulle dit « Enregistrer dans Mes équipes ». Il devient
+cliquable dès qu'**un** membre de l'équipe a un build validé dans la liste qui
+porte des runes (`equipeARunesValidees`, décision de l'utilisateur) : les
+artéfacts ne sont pas exigés, et les membres sans build validé s'enregistrent
+avec leur équipement actuel, ou gardent celui de l'équipe liée (voir plus bas).
+Tant qu'aucun membre n'a de runes validées, il reste grisé et son infobulle dit
+« Valide d'abord les runes d'un monstre de l'équipe ». La fenêtre « Modifier l'équipe »
 n'a plus ce geste. **L'enregistrement se fait équipe par équipe,
 jamais pour une liste entière** (décision de l'utilisateur). Le geste ouvre « Mes
 équipes » et, après sa relecture :
