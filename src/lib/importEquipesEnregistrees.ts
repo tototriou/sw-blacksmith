@@ -61,15 +61,17 @@ function buildAValider(m: MonstreEnregistre, selector: ExclusionSelector, libell
   };
 }
 
-export function preparerExportEquipeOptimizer(
-  equipe: EquipeEnregistree, data: ExclusionSourceData, inv: InventaireCompte, t: Dictionnaire
-): ExportEquipeOptimizer {
+// Une équipe ajoutée à la proposition : ses membres et son équipe. `unitesPrises`
+// et `copies` sont partagés entre les équipes d'un même export (un groupe) : un
+// exemplaire de la Box n'y figure qu'une fois, deux occurrences d'une espèce non
+// possédée restent deux membres.
+function ajouterEquipeALaProposition(
+  equipe: EquipeEnregistree, proposition: ImportOptimizer, unitesPrises: Set<string>, copies: Map<string, number>,
+  data: ExclusionSourceData, inv: InventaireCompte, t: Dictionnaire
+): CorrespondanceOptimizer[] {
   const e = t.equipes.export;
-  const proposition: ImportOptimizer = { nomListe: equipe.nom, contenu: CONTENU_OPTIMIZER_ONGLET[categorieDe(equipe.onglet)],
-    membres: [], equipes: [], ignores: [], messages: [], buildsAValider: [] };
   const correspondance: CorrespondanceOptimizer[] = [];
-  const unitesPrises = new Set<string>();
-  const copies = new Map<string, number>();
+  const unitesDeLEquipe = new Set<string>();
   for (const m of equipe.monstres) {
     const monstre = monstreDeLEspece(m.com2usId, data);
     const libelle = monstre?.name ?? String(m.com2usId);
@@ -82,10 +84,12 @@ export function preparerExportEquipeOptimizer(
     const dansLaBox = unitKey !== null && data.box.some((b) => b.key === unitKey && b.monster.com2usId === m.com2usId);
     if (dansLaBox) {
       if (unitesPrises.has(unitKey!)) {
-        proposition.ignores.push({ selector: { source: 'box', unitKey: unitKey! }, libelle, raison: e.memeExemplaire });
+        proposition.ignores.push({ selector: { source: 'box', unitKey: unitKey! }, libelle,
+          raison: unitesDeLEquipe.has(unitKey!) ? e.memeExemplaire : e.memeExemplaireGroupe });
         continue;
       }
       unitesPrises.add(unitKey!);
+      unitesDeLEquipe.add(unitKey!);
       selector = { source: 'box', unitKey: unitKey! };
     } else {
       const n = (copies.get(String(monstre.id)) ?? 0) + 1;
@@ -111,7 +115,28 @@ export function preparerExportEquipeOptimizer(
   }
   proposition.equipes.push({ libelle: equipe.nom, members, ...(leaderSel ? { leader: leaderSel } : {}),
     lead: structuredClone(lead), ...(speedTune ? { speedTune } : {}) });
-  return { proposition, correspondance };
+  return correspondance;
+}
+
+export function preparerExportEquipeOptimizer(
+  equipe: EquipeEnregistree, data: ExclusionSourceData, inv: InventaireCompte, t: Dictionnaire
+): ExportEquipeOptimizer {
+  const proposition: ImportOptimizer = { nomListe: equipe.nom, contenu: CONTENU_OPTIMIZER_ONGLET[categorieDe(equipe.onglet)],
+    membres: [], equipes: [], ignores: [], messages: [], buildsAValider: [] };
+  return { proposition, correspondance: ajouterEquipeALaProposition(equipe, proposition, new Set(), new Map(), data, inv, t) };
+}
+
+// Un groupe part en UNE liste de l'Optimizer, nommée comme lui, avec toutes ses
+// équipes : la liste est la réserve de runes partagée de l'Optimizer.
+export interface ExportGroupeOptimizer { proposition: ImportOptimizer; correspondances: CorrespondanceOptimizer[][] }
+export function preparerExportGroupeOptimizer(
+  groupe: string, equipes: readonly EquipeEnregistree[], data: ExclusionSourceData, inv: InventaireCompte, t: Dictionnaire
+): ExportGroupeOptimizer {
+  const proposition: ImportOptimizer = { nomListe: groupe, contenu: CONTENU_OPTIMIZER_ONGLET[categorieDe(equipes[0].onglet)],
+    membres: [], equipes: [], ignores: [], messages: [], buildsAValider: [] };
+  const unitesPrises = new Set<string>();
+  const copies = new Map<string, number>();
+  return { proposition, correspondances: equipes.map((x) => ajouterEquipeALaProposition(x, proposition, unitesPrises, copies, data, inv, t)) };
 }
 
 // Le lien posé sur l'équipe après un export accepté : la liste créée, son
@@ -127,6 +152,20 @@ export function lienApresExportOptimizer(export_: ExportEquipeOptimizer, rapport
   const ignores = new Set(rapport.ignores.slice(proposition.ignores.length).map((i) => exclusionSelectorKey(i.selector)));
   return { listId: rapport.listeCreee.id, equipeId,
     correspondance: correspondance.filter((c) => !ignores.has(exclusionSelectorKey(c.selecteur))).map((c) => ({ uid: c.uid, selecteur: { ...c.selecteur } })) };
+}
+
+// Le lien de chaque équipe du groupe exporté, dans l'ordre du groupe ; `null`
+// pour une équipe que l'Optimizer n'a pas créée.
+export function liensApresExportGroupe(export_: ExportGroupeOptimizer, rapport: RapportImportOptimizer): (LienOptimizerEquipe | null)[] {
+  const liste = rapport.listeCreee;
+  const ignores = new Set(rapport.ignores.slice(export_.proposition.ignores.length).map((i) => exclusionSelectorKey(i.selector)));
+  const ids = new Map((rapport.equipesCreeesIndices ?? []).map((indice, k) => [indice, rapport.equipesCreeesIds?.[k]]));
+  return export_.correspondances.map((correspondance, i) => {
+    const equipeId = ids.get(i);
+    if (!liste || !equipeId) return null;
+    return { listId: liste.id, equipeId,
+      correspondance: correspondance.filter((c) => !ignores.has(exclusionSelectorKey(c.selecteur))).map((c) => ({ uid: c.uid, selecteur: { ...c.selecteur } })) };
+  });
 }
 
 /* --------------------------------------------------------------------------

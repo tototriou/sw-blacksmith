@@ -133,6 +133,10 @@ export interface EquipeEnregistree {
   leader: string | null;
   speedTune?: SpeedTuneEnregistre;
   lienOptimizer?: LienOptimizerEquipe;
+  // Le GROUPE : des équipes du même onglet jouées en même temps, qui se
+  // partagent les runes (raid des mondes, temple du chaos, défense siège,
+  // offense de guerre de guilde). Un nom, trimé ; absent hors groupe.
+  groupe?: string;
   creeLe: string;
   modifieLe: string;
 }
@@ -237,6 +241,7 @@ export function lireEquipeEnregistree(brut: unknown): LectureEquipe | null {
     if (lien) equipe.lienOptimizer = lien;
     else signalements.push('lienOptimizerRetire');
   }
+  if (typeof v.groupe === 'string' && v.groupe.trim()) equipe.groupe = v.groupe.trim();
   return { equipe, signalements };
 }
 
@@ -491,13 +496,25 @@ export function modifierTextes(e: EquipeEnregistree, champs: { nom?: string; not
   return touchee({ ...e, nom, note }, maintenant);
 }
 
+// Un groupe ne sort pas de son onglet : changer d'onglet quitte le groupe.
 export function deplacerVersOnglet(e: EquipeEnregistree, onglet: OngletEquipes, maintenant: Date): EquipeEnregistree {
-  return e.onglet === onglet ? e : touchee({ ...e, onglet }, maintenant);
+  if (e.onglet === onglet) return e;
+  const { groupe, ...reste } = e;
+  return touchee(groupe && categorieDe(onglet) === categorieDe(e.onglet) ? { ...reste, groupe, onglet } : { ...reste, onglet }, maintenant);
+}
+
+// Vide (après trim) : l'équipe quitte son groupe.
+export function modifierGroupe(e: EquipeEnregistree, groupe: string, maintenant: Date): EquipeEnregistree {
+  const nom = groupe.trim();
+  if ((e.groupe ?? '') === nom) return e;
+  const { groupe: _ancien, ...reste } = e;
+  return touchee(nom ? { ...reste, groupe: nom } : reste, maintenant);
 }
 
 // Nouveaux `id` et `uid` ; le leader et les liens suivent la correspondance
 // ancien → nouveau `uid`. Jamais de lien vers l'Optimizer : deux équipes ne
-// mettent pas à jour la même liste.
+// mettent pas à jour la même liste. Jamais de groupe : la copie porterait les
+// mêmes runes que l'original dans le même groupe.
 export function dupliquerEquipe(e: EquipeEnregistree, id: string, nom: string, tirerUid: TirerId, maintenant: Date): EquipeEnregistree {
   const nouveaux = new Map(e.monstres.map((m) => [m.uid, tirerUid()]));
   const d = maintenant.toISOString();
@@ -561,4 +578,49 @@ export function libelleRangement(onglet: OngletEquipes, t: Dictionnaire): string
   const c = categorieDe(onglet);
   const s = sousCategorieDe(onglet);
   return t.equipes.rangement(t.equipes.categories[c], s ? libelleSousCategorie(c, s, t) : null);
+}
+
+/* --------------------------------------------------------------------------
+ * Groupes
+ * ----------------------------------------------------------------------- */
+
+// Les groupes d'un onglet, par nom.
+export function groupesDeLOnglet(equipes: readonly EquipeEnregistree[], categorie: CategorieEquipes): string[] {
+  return [...new Set(equipes.filter((e) => categorieDe(e.onglet) === categorie && e.groupe).map((e) => e.groupe!))]
+    .sort((a, b) => a.localeCompare(b));
+}
+export function equipesDuGroupe(equipes: readonly EquipeEnregistree[], categorie: CategorieEquipes, groupe: string): EquipeEnregistree[] {
+  return equipes.filter((e) => categorieDe(e.onglet) === categorie && e.groupe === groupe);
+}
+
+// Les équipes d'un groupe se suivent, à la place de la plus récente d'entre
+// elles ; l'ordre reste celui reçu dans le groupe et hors groupe.
+export function regrouper(equipes: readonly EquipeEnregistree[]): EquipeEnregistree[] {
+  const res: EquipeEnregistree[] = [];
+  const places = new Set<string>();
+  for (const e of equipes) {
+    if (!e.groupe) { res.push(e); continue; }
+    if (places.has(e.groupe)) continue;
+    places.add(e.groupe);
+    res.push(...equipes.filter((x) => x.groupe === e.groupe));
+  }
+  return res;
+}
+
+// Ce que deux équipes d'un groupe portent à la fois : une pièce (par son
+// identifiant du jeu ; une pièce sans identifiant n'est jamais comptée) ou un
+// exemplaire de la Box. En jeu, une rune ne sert qu'à une équipe du groupe.
+export interface ConflitsGroupe { pieces: number; exemplaires: number }
+export function conflitsGroupe(equipes: readonly EquipeEnregistree[]): ConflitsGroupe {
+  const compter = (ids: (e: EquipeEnregistree) => string[]) => {
+    const vus = new Map<string, number>();
+    for (const e of equipes) for (const id of new Set(ids(e))) vus.set(id, (vus.get(id) ?? 0) + 1);
+    return [...vus.values()].filter((n) => n > 1).length;
+  };
+  const pieces = (e: EquipeEnregistree) => e.monstres.flatMap((m) => m.equipement ? [
+    ...m.equipement.runes.filter((r) => r.id > 0).map((r) => `r${r.id}`),
+    ...m.equipement.artifacts.filter((a) => a.id > 0).map((a) => `a${a.id}`),
+    ...(m.equipement.relic && m.equipement.relic.id > 0 ? [`q${m.equipement.relic.id}`] : []),
+  ] : []);
+  return { pieces: compter(pieces), exemplaires: compter((e) => e.monstres.flatMap((m) => (m.unitId === null ? [] : [String(m.unitId)]))) };
 }

@@ -197,6 +197,32 @@ export function testRenduEquipesAjoutExemplaire() {
   }
 }
 
+// Les groupes : des équipes de l'onglet jouées ensemble, sous un en-tête qui
+// dit ce qu'elles portent à la fois et les exporte en une liste.
+export function testRenduEquipesGroupes() {
+  titre('rendu · Mes équipes — groupes d’équipes liées');
+  const g = e.groupes;
+  const groupe: EquipeEnregistree[] = [
+    { ...creerEquipe('g1', 'arene/defense', 'Équipe G1', T0), groupe: 'Raid A', monstres: [monstreEx('a', 1001, 11), monstreEx('b', 1002, null, null)] },
+    { ...creerEquipe('s', 'arene/offense', 'Équipe seule', T0), monstres: [monstreEx('c', 1002, null, null), monstreEx('d', 1003, null, null)] },
+    { ...creerEquipe('g2', 'arene/rta', 'Équipe G2', T0), groupe: 'Raid A', monstres: [monstreEx('e', 1001, 11), monstreEx('f', 1003, null, null)] },
+  ];
+  const html = rendre(section({ api: api(groupe) }));
+  const t = texteVisible(html);
+  ok(html.includes('aria-label="Raid A"') && t.includes(g.equipes(2)), 'l’en-tête du groupe, son nom et ses équipes');
+  ok(t.includes(g.conflitsExemplaires(1)) && t.includes(g.conflitsPieces(9)), 'ce que deux équipes du groupe portent à la fois');
+  const [iEnTete, i1, i2, iSeule] = ['aria-label="Raid A"', 'Équipe G1', 'Équipe G2', 'Équipe seule'].map((x) => html.indexOf(x));
+  ok(iEnTete < i1 && i1 < i2 && i2 < iSeule, 'les équipes du groupe se suivent sous leur en-tête');
+  egal(bouton(html, g.exporter)?.desactive, false, 'le groupe s’exporte vers l’Optimizer');
+  const sansCompte = rendre(section({ api: api(groupe), compte: false }));
+  egal([bouton(sansCompte, g.exporter)?.desactive, bouton(sansCompte, g.exporter)?.title], [true, e.export.sansCompte], 'sans compte, l’export dit pourquoi il attend');
+  ok(auTelephone(() => texteVisible(rendre(section({ api: api(groupe) })))).includes(g.equipes(2)), 'au téléphone, le même en-tête');
+  const detail = rendre(<DetailEquipe equipe={groupe[0]} groupes={['Raid A', 'Raid B']} onChanger={() => {}} monstreDe={(c) => MONSTRES.find((m) => m.com2usId === c)}
+    box={ctx().box} inventaire={INVENTAIRE} onAjouter={() => {}} retour={null} menu={null} />);
+  const td = texteVisible(detail);
+  ok([e.detail.groupe, g.aucun, 'Raid B', g.nouveau].every((x) => td.includes(x)), 'le détail choisit le groupe parmi ceux de l’onglet, ou en crée un');
+}
+
 export const verificationsRenduEquipes: [string, () => void][] = [
   ['testRenduEquipesAjoutExemplaire', testRenduEquipesAjoutExemplaire],
   ['testRenduEquipesCreationOptimizer', testRenduEquipesCreationOptimizer],
@@ -205,4 +231,5 @@ export const verificationsRenduEquipes: [string, () => void][] = [
   ['testRenduEquipesTelephone', testRenduEquipesTelephone],
   ['testRenduEquipesDetail', testRenduEquipesDetail],
   ['testRenduEquipesImports', testRenduEquipesImports],
+  ['testRenduEquipesGroupes', testRenduEquipesGroupes],
 ];

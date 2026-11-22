@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
+import { Fragment, useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
 import { ChevronLeft, Download, FolderInput, Plus, Upload } from 'lucide-react';
 import type { Monster } from '../../../types';
 import { Bouton, Champ, ConfirmDialog, Jeton, Menu, MobileSheet, Modale, Onglets, PiedDeDialogue, Segmented, Selecteur, type ElementMenu } from '../../../ui';
@@ -7,6 +7,7 @@ import MonsterAvatar from '../../MonsterAvatar';
 import Pager from '../Pager';
 import SelecteurRangement from './SelecteurRangement';
 import CarteEquipe from './CarteEquipe';
+import EnTeteGroupe from './EnTeteGroupe';
 import DetailEquipe from './DetailEquipe';
 import AjoutMonstreModale from './AjoutMonstreModale';
 import ImportEquipeModale from './ImportEquipeModale';
@@ -21,13 +22,14 @@ import type { StockageOptimizer } from '../../../lib/optimizerMemberStorage';
 import { telechargerTexte } from '../../../lib/telechargement';
 import { ecrireFichierEquipes, lireFichierEquipes, nomFichierEquipes } from '../../../lib/equipesFichier';
 import {
-  creerDepuisEquipeOptimizer, disponibiliteRetourOptimizer, equipeLieeA, lienApresExportOptimizer, preparerExportEquipeOptimizer, preparerRetourOptimizer,
-  type DemandeEquipeOptimizer, type ExportEquipeOptimizer, type RetourOptimizer,
+  creerDepuisEquipeOptimizer, disponibiliteRetourOptimizer, equipeLieeA, lienApresExportOptimizer, liensApresExportGroupe, preparerExportEquipeOptimizer, preparerExportGroupeOptimizer,
+  preparerRetourOptimizer, type DemandeEquipeOptimizer, type ExportEquipeOptimizer, type ExportGroupeOptimizer, type RetourOptimizer,
 } from '../../../lib/importEquipesEnregistrees';
 import { sourcesImportEquipes, type ContexteSourcesEquipes, type SourceEquipement, type SourceImportEquipe } from '../../../lib/sourcesEquipesEnregistrees';
 import {
   CATEGORIES_EQUIPES, SOUS_CATEGORIES_EQUIPES, ajouterMonstre, categorieDe, compteParCategorie, compteParOnglet, libelleRangement, libelleSousCategorie, sousCategorieDe,
-  creerEquipe, deplacerVersOnglet, dupliquerEquipe, equipesFiltrees, gesteSurBrouillon, nomEquipeLibre, rangement, resumeEcarts, tireurIdentifiants,
+  conflitsGroupe, creerEquipe, deplacerVersOnglet, dupliquerEquipe, equipesDuGroupe, equipesFiltrees, gesteSurBrouillon, groupesDeLOnglet, nomEquipeLibre, rangement,
+  regrouper, resumeEcarts, tireurIdentifiants,
   type CategorieEquipes, type EquipeEnregistree, type InventaireCompte, type OngletEquipes, type SousCategorieEquipes,
 } from '../../../lib/equipesEnregistrees';
 
@@ -106,7 +108,8 @@ export default function EquipesSection({ api, ctx, inventaire, allMonsters, opti
   const recherche = rechercheIds.map(monstreDe).filter((m): m is Monster => !!m);
   const comptes = useMemo(() => compteParCategorie(api.equipes), [api.equipes]);
   const comptesRangements = useMemo(() => compteParOnglet(api.equipes), [api.equipes]);
-  const visibles = useMemo(() => equipesFiltrees(api.equipes, categorie, sous, recherche, ctx.monsterByCom2us),
+  // Les équipes d'un groupe se suivent, sous l'en-tête du groupe.
+  const visibles = useMemo(() => regrouper(equipesFiltrees(api.equipes, categorie, sous, recherche, ctx.monsterByCom2us)),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [api.equipes, categorie, sous, rechercheIds.join(','), ctx.monsterByCom2us]);
   const pages = Math.max(1, Math.ceil(visibles.length / EQUIPES_PAR_PAGE));
@@ -189,6 +192,21 @@ export default function EquipesSection({ api, ctx, inventaire, allMonsters, opti
     });
     const lien = prep && lienApresExportOptimizer(prep, rapportImport);
     if (lien) changerEquipe(x.id, (eq) => ({ ...eq, lienOptimizer: lien }));
+  };
+
+  // Le groupe entier, quel que soit le filtre : une liste où ses équipes se
+  // partagent les runes. Chaque équipe créée se lie à la sienne.
+  const exporterGroupe = (groupe: string) => {
+    if (!onImporterOptimizer || !inventaire) return;
+    const membres = equipesDuGroupe(api.equipes, categorie, groupe);
+    let prep: ExportGroupeOptimizer | null = null;
+    const rapportImport = onImporterOptimizer((data, tt) => {
+      prep = preparerExportGroupeOptimizer(groupe, membres, data, inventaire, tt);
+      return prep.proposition;
+    });
+    if (!prep) return;
+    const liens = new Map(liensApresExportGroupe(prep, rapportImport).map((l, i) => [membres[i].id, l]));
+    api.appliquer((l) => l.map((x) => { const lien = liens.get(x.id); return lien ? { ...x, lienOptimizer: lien } : x; }));
   };
 
   const refusRetour = (x: EquipeEnregistree): string | null => {
@@ -280,7 +298,7 @@ export default function EquipesSection({ api, ctx, inventaire, allMonsters, opti
 
   const detail = equipeOuverte && (
     <DetailEquipe equipe={equipeOuverte} brouillon={brouillon?.id === equipeOuverte.id} onChanger={(f) => changerEquipe(equipeOuverte.id, f)} monstreDe={monstreDe}
-      box={ctx.box} inventaire={inventaire} onAjouter={() => setAjout(true)}
+      box={ctx.box} inventaire={inventaire} groupes={groupesDeLOnglet(api.equipes, categorieDe(equipeOuverte.onglet))} onAjouter={() => setAjout(true)}
       retour={<Bouton icone={<ChevronLeft size={14} />} libelle={e.detail.retour} onClick={fermerDetail} />}
       // Le brouillon n'est pas encore une équipe : rien à exporter, déplacer ni supprimer.
       menu={brouillon?.id !== equipeOuverte.id && <Menu libelle={e.carte.actions} elements={actions(equipeOuverte).filter((a) => a.cle !== 'ouvrir')} />} />
@@ -349,12 +367,23 @@ export default function EquipesSection({ api, ctx, inventaire, allMonsters, opti
           {/* Au-dessus de la grille : dessous, il bougerait avec la hauteur de la page. */}
           {pages > 1 && <div className="mb-3"><Pager page={pageSure} pageCount={pages} onChange={setPage} /></div>}
           <div className="grid grid-cols-1 gap-3 @[640px]:grid-cols-2 @[960px]:grid-cols-3 @[1280px]:grid-cols-4">
-            {affichees.map((x) => (
-              <CarteEquipe key={x.id} equipe={x} monstreDe={monstreDe} ecarts={inventaire ? resumeEcarts(x, inventaire) : null}
-                speedTuneIncomplet={api.signalements.some((sg) => sg.id === x.id && sg.signalements.includes('speedTuneIncomplet'))}
-                categorie={sous === null && sousCategorieDe(x.onglet) ? libelleSousCategorie(categorie, sousCategorieDe(x.onglet)!, t) : null}
-                actions={actions(x)} onOuvrir={() => setOuverte(x.id)} />
-            ))}
+            {affichees.map((x, i) => {
+              // Un groupe s'ouvre sur son en-tête, repris en haut d'une page.
+              const groupe = x.groupe && (i === 0 || affichees[i - 1].groupe !== x.groupe) ? x.groupe : null;
+              const tout = groupe ? equipesDuGroupe(api.equipes, categorie, groupe) : [];
+              return (
+                <Fragment key={x.id}>
+                  {groupe && (
+                    <EnTeteGroupe nom={groupe} nombre={tout.length} conflits={conflitsGroupe(tout)}
+                      exportImpossible={!inventaire || !onImporterOptimizer ? e.export.sansCompte : null} onExporter={() => exporterGroupe(groupe)} />
+                  )}
+                  <CarteEquipe equipe={x} monstreDe={monstreDe} ecarts={inventaire ? resumeEcarts(x, inventaire) : null}
+                    speedTuneIncomplet={api.signalements.some((sg) => sg.id === x.id && sg.signalements.includes('speedTuneIncomplet'))}
+                    categorie={sous === null && sousCategorieDe(x.onglet) ? libelleSousCategorie(categorie, sousCategorieDe(x.onglet)!, t) : null}
+                    actions={actions(x)} onOuvrir={() => setOuverte(x.id)} />
+                </Fragment>
+              );
+            })}
           </div>
         </div>
       )}

@@ -392,6 +392,15 @@ const EQ_METTRE_A_JOUR: Etape[] = [
   { cliquer: repere('[role="menuitem"]:has-text("Mettre à jour depuis l’Optimizer")') },
 ];
 const EQ_NOMMER: Etape[] = [{ cliquer: bouton('Nouvelle équipe') }];
+// L'équipe importée mise dans un nouveau groupe depuis son détail, puis la
+// grille : l'en-tête du groupe au-dessus de sa carte.
+const EQ_GROUPER: Etape[] = [
+  { cliquer: EQ_CARTE },
+  { cliquer: { role: 'combobox', nom: 'Groupe' } },
+  { cliquer: { role: 'option', nom: 'Nouveau groupe…', dans: '[role="listbox"][aria-label="Groupe"]' } },
+  { cliquer: repere('[role="dialog"] button:has-text("Créer")') },
+  { cliquer: bouton('Toutes les équipes') },
+];
 const EQ_EXPORTER: Etape[] = [
   { cliquer: { role: 'button', nom: 'Actions de l’équipe', pres: EQ_CARTE } },
   { cliquer: repere('[role="menuitem"]:has-text("Exporter vers l’Optimizer")') },
@@ -707,6 +716,12 @@ export const ECRANS: Ecran[] = [
         libelle: 'détail d’une équipe ouvert',
         preparation: { telephone: [...EQ_IMPORT.telephone, { cliquer: EQ_CARTE }], ordinateur: [...EQ_IMPORT.ordinateur, { cliquer: EQ_CARTE }] },
         atteint: [{ role: 'textbox', nom: 'Note' }, bouton('Toutes les équipes')],
+      },
+      {
+        id: 'groupe',
+        libelle: 'une équipe dans un groupe : l’en-tête du groupe dans la grille',
+        preparation: { telephone: [...EQ_IMPORT.telephone, ...EQ_GROUPER], ordinateur: [...EQ_IMPORT.ordinateur, ...EQ_GROUPER] },
+        atteint: [repere('[role="group"][aria-label="Groupe 1"]'), bouton('Exporter le groupe vers l’Optimizer')],
       },
       {
         id: 'nouvelle',

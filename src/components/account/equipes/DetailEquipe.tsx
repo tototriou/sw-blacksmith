@@ -6,11 +6,12 @@ import { Bouton, BoutonIcone, Champ, Selecteur } from '../../../ui';
 import MonsterAvatar from '../../MonsterAvatar';
 import MonsterGear from '../../MonsterGear';
 import SelecteurRangement from './SelecteurRangement';
+import NouvelleEquipeModale from './NouvelleEquipeModale';
 import { CarteRune } from '../RunesList';
 import { useMediaQuery, SOUS_LG } from '../../../hooks/useMediaQuery';
 import { useTraduction } from '../../../hooks/useLangue';
 import {
-  MONSTRES_MAX_EQUIPE, MONSTRES_MIN_EQUIPE, deplacerMonstre, deplacerVersOnglet, designerLeader, etatExemplaire, etatsEquipement, modifierTextes,
+  MONSTRES_MAX_EQUIPE, MONSTRES_MIN_EQUIPE, deplacerMonstre, deplacerVersOnglet, designerLeader, etatExemplaire, etatsEquipement, modifierGroupe, modifierTextes,
   memeEquipement, remplacerEquipement, retirerMonstre,
   type EquipeEnregistree, type EtatPiece, type InventaireCompte, type MonstreEnregistre,
 } from '../../../lib/equipesEnregistrees';
@@ -24,6 +25,8 @@ interface Props {
   box: readonly BoxItem[];
   // `null` sans compte : l'équipement s'affiche tel qu'enregistré.
   inventaire: InventaireCompte | null;
+  // Les groupes déjà formés dans l'onglet de l'équipe.
+  groupes?: readonly string[];
   onAjouter: () => void;
   // L'en-tête de la page : le retour à la grille et le menu de l'équipe
   // (`null` pour un brouillon), sur la ligne du nom et de la note au bureau.
@@ -44,9 +47,37 @@ function ChampTexte({ libelle, valeur, onValider }: { libelle: string; valeur: s
   );
 }
 
+// La valeur de l'option « Nouveau groupe… » : jamais un nom, un nom est trimé
+// et ne commence pas par un caractère de contrôle.
+const NOUVEAU_GROUPE = '\u0000nouveau';
+
+// Le groupe de l'équipe parmi ceux de son onglet ; un nouveau se nomme dans
+// une fenêtre.
+function SelecteurGroupe({ valeur, groupes, onChange }: { valeur: string | undefined; groupes: readonly string[]; onChange: (g: string) => void }) {
+  const t = useTraduction();
+  const g = t.equipes.groupes;
+  const [nommage, setNommage] = useState(false);
+  const tous = valeur && !groupes.includes(valeur) ? [...groupes, valeur] : groupes;
+  const libre = (() => { for (let n = 1; ; n++) if (!tous.includes(g.nomParDefaut(n))) return g.nomParDefaut(n); })();
+  return (
+    <>
+      <Selecteur value={valeur ?? ''} aria-label={t.equipes.detail.groupe}
+        onChange={(ev) => (ev.target.value === NOUVEAU_GROUPE ? setNommage(true) : onChange(ev.target.value))}>
+        <option value="">{g.aucun}</option>
+        {tous.map((x) => <option key={x} value={x}>{x}</option>)}
+        <option value={NOUVEAU_GROUPE}>{g.nouveau}</option>
+      </Selecteur>
+      {nommage && (
+        <NouvelleEquipeModale nomParDefaut={libre} textes={g.fenetre}
+          onCreer={(nom) => { setNommage(false); onChange(nom); }} onFermer={() => setNommage(false)} />
+      )}
+    </>
+  );
+}
+
 // Le détail d'une équipe, dans la page à la place de la grille : son nom, sa
 // note et une ligne par monstre. Le même contenu aux deux formats.
-export default function DetailEquipe({ equipe, brouillon = false, onChanger, monstreDe, box, inventaire, onAjouter, retour, menu }: Props) {
+export default function DetailEquipe({ equipe, brouillon = false, onChanger, monstreDe, box, inventaire, groupes = [], onAjouter, retour, menu }: Props) {
   const t = useTraduction();
   const d = t.equipes.detail;
   const plein = equipe.monstres.length >= MONSTRES_MAX_EQUIPE;
@@ -67,11 +98,15 @@ export default function DetailEquipe({ equipe, brouillon = false, onChanger, mon
       <div className="flex flex-wrap items-end gap-3">
         {retour}
         <div className="ml-auto lg:order-last lg:ml-0">{menu}</div>
-        <div className="grid basis-full grid-cols-1 gap-3 sm:grid-cols-2 lg:min-w-0 lg:flex-1 lg:basis-0 lg:grid-cols-[minmax(0,1fr)_minmax(0,14rem)_minmax(0,1fr)]">
+        <div className="grid basis-full grid-cols-1 gap-3 sm:grid-cols-2 lg:min-w-0 lg:flex-1 lg:basis-0 lg:grid-cols-[minmax(0,1fr)_minmax(0,14rem)_minmax(0,11rem)_minmax(0,1fr)]">
           <ChampTexte libelle={d.nom} valeur={equipe.nom} onValider={(nom) => onChanger((e, n) => modifierTextes(e, { nom }, n))} />
           <label className="flex min-w-0 flex-col gap-1 text-xs text-ink-dim">
             {d.rangement}
             <SelecteurRangement valeur={equipe.onglet} onChange={(o) => onChanger((e, n) => deplacerVersOnglet(e, o, n))} />
+          </label>
+          <label className="flex min-w-0 flex-col gap-1 text-xs text-ink-dim">
+            {d.groupe}
+            <SelecteurGroupe valeur={equipe.groupe} groupes={groupes} onChange={(g) => onChanger((e, n) => modifierGroupe(e, g, n))} />
           </label>
           <ChampTexte libelle={d.note} valeur={equipe.note} onValider={(note) => onChanger((e, n) => modifierTextes(e, { note }, n))} />
         </div>

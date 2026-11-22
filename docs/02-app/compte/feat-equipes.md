@@ -78,6 +78,35 @@ Les rangements des versions de travail précédentes se relisent dans les nouvea
 `pve` en Cairos ; `guilde-offense` et `guilde-defense` (siège et guerre de guilde
 mêlés) dans Combat de guilde, sans catégorie. Un onglet gardé pour la session qui
 n'existe plus retombe sur le premier. Chaque onglet porte le nombre de ses équipes.
+
+## Groupes
+
+Certaines équipes se jouent **ensemble** et se partagent les runes du compte : les
+trois équipes du raid des mondes, celles du temple du chaos, les défenses de siège,
+les offenses de guerre de guilde. Une rune ne sert qu'à l'une d'elles. Un **groupe**
+les réunit, par un nom libre, dans un onglet (choix de l'utilisateur, plutôt qu'une
+liaison propre à chaque contenu).
+
+- Le détail d'une équipe choisit son groupe (« Groupe », `SelecteurGroupe` de
+  `DetailEquipe.tsx`) : « Aucun groupe », les groupes déjà formés dans l'onglet
+  (`groupesDeLOnglet`), ou « Nouveau groupe… », nommé dans la fenêtre de
+  `NouvelleEquipeModale` (prérempli du premier « Groupe N » libre). Un nom vide fait
+  quitter le groupe (`modifierGroupe`).
+- **Un groupe ne sort pas de son onglet** : deux groupes du même nom dans deux onglets
+  sont deux groupes (`equipesDuGroupe`). Changer de catégorie dans l'onglet garde le
+  groupe, changer d'onglet le quitte (`deplacerVersOnglet`) ; une copie
+  (« Dupliquer ») n'est dans aucun groupe.
+- Dans la grille, les équipes d'un groupe se suivent, à la place de la plus récente
+  d'entre elles (`regrouper`), sous un **en-tête** sur toute la largeur
+  (`EnTeteGroupe.tsx`) : le nom, le nombre d'équipes du groupe entier (filtre de
+  catégorie compris), ce que plusieurs d'entre elles portent à la fois, et
+  « Exporter le groupe vers l'Optimizer ». Un groupe coupé par la pagination reprend
+  son en-tête en haut de la page suivante. Même en-tête aux deux formats ; au
+  téléphone, il passe sur deux lignes.
+- Ce que l'en-tête signale (`conflitsGroupe`) : les **pièces** (runes, artéfacts,
+  relique, par leur identifiant du jeu ; une pièce sans identifiant n'est pas
+  comptée) et les **exemplaires** de la Box portés par plus d'une équipe du groupe,
+  d'après les copies enregistrées. Un doublon dans une même équipe n'est pas compté.
 L'onglet ouvert, le filtre de chaque onglet et la recherche se gardent pour la
 session, comme l'état des autres outils (`useStickyState`).
 
@@ -108,6 +137,8 @@ enregistrée s'exporte donc vers une équipe de l'Optimizer, qui en accepte 2 à
   tune malformé à la relecture (plan illisible, lien vers un `uid` absent, champ mal
   typé) ne rejette jamais l'équipe : le plan illisible devient `null`, le lien
   invalide est retiré, et la carte le signale (« Speed tune incomplet ») ;
+- `groupe` (facultatif) : le nom de son groupe dans l'onglet (§ Groupes), trimé ;
+  vide, il est oublié à la relecture ;
 - `lienOptimizer` (facultatif) : `{ listId, equipeId, correspondance }`, la liste de
   l'Optimizer créée par le dernier export de cette équipe, l'équipe de cette liste
   (toujours désignée : un lien sans équipe est retiré à la relecture), et pour chaque
@@ -232,7 +263,7 @@ sinon « N pièces modifiées », « N pièces disparues ». Le détail marque c
 
 Aucune des deux mises en page n'est dérivée de l'autre : chacune a son agencement
 et ses tests de rendu. Le banc d'affichage mesure la page (`compte-equipes` :
-ouverture, sources d'import, équipe importée, détail ; en plus des deux formats,
+ouverture, sources d'import, équipe importée, détail, groupe ; en plus des deux formats,
 à 1 920 px, runes en 3 × 2, et à 2 560 px, runes sur une rangée) et l'Optimizer sur une liste
 liée (`optimizer`, état `equipe-liee`).
 
@@ -355,9 +386,8 @@ raison (espèce inconnue, slot vide sans monstre).
 `importerEquipe` (voir [feat-import-equipes.md](../optimizer/feat-import-equipes.md)),
 avec un producteur dédié, `preparerExportEquipeOptimizer` (`src/lib/importEquipesEnregistrees.ts`) :
 
-- nom de liste : le nom de l'équipe ; contenu : celui de sa catégorie (tableau plus
-  haut) ; une catégorie sans contenu n'est pas exportable (`exportSansContenu`), le
-  menu le dit ;
+- nom de liste : le nom de l'équipe ; contenu : celui de son onglet (tableau plus
+  haut), chaque onglet s'exporte ;
 - membres, dans l'ordre de l'équipe : un monstre dont l'`unitId` est dans la Box
   prend le sélecteur Box de cette unité ; sinon le sélecteur `unowned` de son espèce,
   avec une `copie` distincte par occurrence (deux occurrences d'une espèce restent
@@ -394,6 +424,27 @@ Après acceptation, l'équipe enregistre `lienOptimizer = { listId, equipeId, co
 l'Optimizer s'ouvre, comme pour les autres exports. Le lien est stocké avec l'équipe
 enregistrée, jamais dans le stockage des listes de l'Optimizer, qui ne change pas de
 format.
+
+### Exporter un groupe
+
+« Exporter le groupe vers l'Optimizer », dans l'en-tête d'un groupe, crée **une seule
+liste**, nommée comme le groupe, avec toutes ses équipes
+(`preparerExportGroupeOptimizer`) : la liste est la réserve de runes partagée de
+l'Optimizer ([feat-listes-et-reservation.md](../optimizer/feat-listes-et-reservation.md)),
+ses équipes ne s'y prennent pas leurs runes. Chaque équipe y entre comme à l'export
+d'une équipe seule, avec ces différences :
+
+- un exemplaire de la Box n'entre qu'une fois dans la liste : déjà pris par une autre
+  équipe du groupe, il est ignoré avec sa raison (« Ce même exemplaire figure déjà
+  dans une autre équipe du groupe. ») ;
+- les monstres non possédés se numérotent (`copie`) sur tout le groupe ;
+- une pièce réservée par le build validé d'une équipe précédente refuse celui du
+  membre suivant, comme dans une équipe, et le rapport nomme les deux monstres.
+
+Après acceptation, chaque équipe que l'Optimizer a créée se lie à la sienne dans la
+liste (`liensApresExportGroupe`, d'après `equipesCreeesIndices` du rapport) ; une
+équipe restée à moins de deux membres n'est pas créée et garde son lien d'avant.
+Chaque équipe se met ensuite à jour depuis l'Optimizer seule, comme les autres.
 
 ### Mettre à jour depuis l'Optimizer
 
@@ -523,7 +574,7 @@ par la nouvelle liste.
   l'ajout, deux fichiers lus en même temps ne se donnent pas le même `id`. Un speed
   tune abîmé dans le fichier est signalé sur la carte (« Speed tune incomplet »).
   Les `lienOptimizer` importés sont retirés (ils désignent les listes d'un autre
-  navigateur). Une équipe invalide est ignorée avec sa raison ; un fichier d'un autre
+  navigateur) ; le `groupe` est gardé. Une équipe invalide est ignorée avec sa raison ; un fichier d'un autre
   format est refusé entier.
 - L'application de bureau ajoute les équipes à la session sauvegardée, comme le reste
   du travail ([feat-sauvegarde-session.md](../transverse/feat-sauvegarde-session.md)).

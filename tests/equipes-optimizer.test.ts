@@ -15,7 +15,7 @@ import type { ContenuDeck } from '../src/lib/importAccount';
 import { CONTENU_LEADS_JEU } from '../src/lib/equipesOptimizer';
 import { RANGEMENT_CONTENU_DECK } from '../src/lib/sourcesEquipesEnregistrees';
 import { CONTENU_OPTIMIZER_ONGLET, categorieDe, creerEquipe, indexerInventaire, type EquipeEnregistree, type OngletEquipes } from '../src/lib/equipesEnregistrees';
-import { creerDepuisEquipeOptimizer, disponibiliteRetourOptimizer, equipeLieeA, lienApresExportOptimizer, preparerExportEquipeOptimizer, preparerRetourOptimizer } from '../src/lib/importEquipesEnregistrees';
+import { creerDepuisEquipeOptimizer, disponibiliteRetourOptimizer, equipeLieeA, liensApresExportGroupe, lienApresExportOptimizer, preparerExportEquipeOptimizer, preparerExportGroupeOptimizer, preparerRetourOptimizer } from '../src/lib/importEquipesEnregistrees';
 import { sourcesImportEquipes } from '../src/lib/sourcesEquipesEnregistrees';
 import { fr } from '../src/i18n/fr';
 import { equipementEx, monstreEx, runeEx } from './equipes-enregistrees.test';
@@ -193,9 +193,39 @@ function testEquipesOptimizerEnregistrer() {
     'equipeAbsente', 'une équipe disparue : refus, rien créé');
 }
 
+// Un groupe part en une seule liste : ses équipes y partagent la réserve de
+// runes, et un exemplaire de la Box n'y entre qu'une fois.
+function testEquipesOptimizerExportGroupe() {
+  titre('Mes équipes — export d’un groupe vers l’Optimizer');
+  const membres = (id: string, ...m: ReturnType<typeof monstreEx>[]): EquipeEnregistree =>
+    ({ ...creerEquipe(id, 'faille/raid', `Équipe ${id}`, T0), monstres: m, groupe: 'Raid' });
+  const a = membres('A', monstreEx('a', 1001, 11), monstreEx('b', 1002, null, null));
+  const b = membres('B', monstreEx('c', 1001, 11), monstreEx('d', 1003, null, null), monstreEx('e', 1002, null, null));
+  const c = membres('C', monstreEx('f', 1003, null, null), monstreEx('g', 9999, null, null));
+  const data = sources();
+  const prep = preparerExportGroupeOptimizer('Raid', [a, b, c], data, inventaire(), fr);
+  const p = prep.proposition;
+  egal([p.nomListe, p.contenu, p.equipes.map((e) => e.libelle)], ['Raid', 'donjon', ['Équipe A', 'Équipe B', 'Équipe C']],
+    'une liste au nom du groupe, au lead de son onglet, avec chacune de ses équipes');
+  egal(p.ignores.map((i) => i.raison), [fr.equipes.export.memeExemplaireGroupe, fr.optimizer.importsEquipe.monstreInconnu],
+    'l’exemplaire déjà pris par une autre équipe du groupe est écarté');
+  egal(p.membres.map((m) => m.selector), [{ source: 'box', unitKey: '11' }, { source: 'unowned', monsterId: '2' },
+    { source: 'unowned', monsterId: '3' }, { source: 'unowned', monsterId: '2', copie: 2 }, { source: 'unowned', monsterId: '3', copie: 2 }],
+    'les non possédés se numérotent sur tout le groupe');
+  egal(prep.correspondances.map((l) => l.map((x) => x.uid)), [['a', 'b'], ['d', 'e'], ['f']], 'chaque équipe garde sa correspondance');
+  const r = consommerImportOptimizer(vide(), null, p, data, 'liste', fr);
+  egal([r.rapport.equipesCreees, r.rapport.equipesCreeesIndices], [2, [0, 1]], 'une équipe à un seul membre n’est pas créée');
+  const liens = liensApresExportGroupe(prep, r.rapport);
+  egal(liens.map((l) => l?.listId ?? null), ['liste', 'liste', null], 'les équipes créées sont liées à la liste, pas l’autre');
+  ok(liens[0]!.equipeId !== liens[1]!.equipeId, 'chacune à son équipe de l’Optimizer');
+  egal(liens[1]!.correspondance.map((x) => x.uid), ['d', 'e'], 'le lien garde les membres retenus');
+  egal(liensApresExportGroupe(prep, { ...r.rapport, listeCreee: null }), [null, null, null], 'export refusé : aucun lien');
+}
+
 export const verificationsEquipesOptimizer: [string, () => void][] = [
   ['testEquipesOptimizerEnregistrer', testEquipesOptimizerEnregistrer],
   ['testEquipesOptimizerExport', testEquipesOptimizerExport],
+  ['testEquipesOptimizerExportGroupe', testEquipesOptimizerExportGroupe],
   ['testEquipesOptimizerBuilds', testEquipesOptimizerBuilds],
   ['testEquipesOptimizerRetour', testEquipesOptimizerRetour],
   ['testEquipesOptimizerImport', testEquipesOptimizerImport],

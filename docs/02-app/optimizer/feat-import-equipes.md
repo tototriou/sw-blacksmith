@@ -360,7 +360,9 @@ accepté. Ils se valident dans la nouvelle liste, dans leur ordre ; une rune ou 
 artéfact **présent** déjà pris par un build précédent de la proposition refuse le
 build suivant, et le rapport le dit. Une pièce absente de l’inventaire reste dans
 le build comme manquante, sans réservation. Le rapport donne les identifiants des
-équipes créées (`equipesCreeesIds`), qui fixent le lien de retour.
+équipes créées (`equipesCreeesIds`), qui fixent le lien de retour, et pour chacune sa
+place dans la proposition (`equipesCreeesIndices`) : un groupe de Mes équipes, exporté
+en une liste, y retrouve chacune de ses équipes.
 
 ## Équipes et leads après filtrage
 

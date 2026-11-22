@@ -4,8 +4,8 @@ import type { BoxItem } from '../src/lib/applyAccount';
 import { fr } from '../src/i18n/fr';
 import { en } from '../src/i18n/en';
 import {
-  CATEGORIES_EQUIPES, CONTENU_OPTIMIZER_ONGLET, ONGLETS_EQUIPES, SOUS_CATEGORIES_EQUIPES, ajouterMonstre, categorieDe, comparerPiece, compteParCategorie, compteParOnglet, creerEquipe, deplacerMonstre, designerLeader, dupliquerEquipe,
-  equipesFiltrees, gesteSurBrouillon, etatExemplaire, etatPiece, indexerInventaire, lireEquipeEnregistree, modifierTextes,
+  CATEGORIES_EQUIPES, CONTENU_OPTIMIZER_ONGLET, ONGLETS_EQUIPES, SOUS_CATEGORIES_EQUIPES, ajouterMonstre, categorieDe, conflitsGroupe, equipesDuGroupe, groupesDeLOnglet, modifierGroupe, regrouper, comparerPiece, compteParCategorie, compteParOnglet, creerEquipe, deplacerMonstre, designerLeader, dupliquerEquipe,
+  deplacerVersOnglet, equipesFiltrees, gesteSurBrouillon, etatExemplaire, etatPiece, indexerInventaire, lireEquipeEnregistree, modifierTextes,
   libelleRangement, libelleSousCategorie, nomEquipeLibre, rangement, resumeEcarts, sousCategorieDe, retirerMonstre, type EquipeEnregistree, type MonstreEnregistre, type OngletEquipes,
 } from '../src/lib/equipesEnregistrees';
 
@@ -167,7 +167,34 @@ function testEquipesEnregistreesCategories() {
   egal([libelleRangement('labyrinthe/boss', fr), libelleRangement('toa', fr)], ['Labyrinthe — Boss', 'ToA'], 'le rangement se dit par l’onglet et la catégorie');
 }
 
+// Les groupes : des équipes d'un onglet jouées ensemble, qui se partagent les
+// runes (décision de l'utilisateur, 2026-11-22).
+function testEquipesEnregistreesGroupes() {
+  titre('Mes équipes — groupes d’équipes liées');
+  const T = new Date('2026-11-06T10:00:00Z');
+  const eq = (id: string, onglet: OngletEquipes, groupe: string | null, monstres: MonstreEnregistre[], quand = '2026-01-01'): EquipeEnregistree =>
+    ({ ...creerEquipe(id, onglet, id, new Date(quand)), monstres, ...(groupe ? { groupe } : {}) });
+  const a = eq('a', 'faille/raid', 'Raid A', [monstreEx('a1', 1, 11), monstreEx('a2', 2, null)], '2026-03-01');
+  egal(lireEquipeEnregistree(JSON.parse(JSON.stringify({ ...a, groupe: '  Raid A ' })))?.equipe.groupe, 'Raid A', 'le groupe se relit, trimé');
+  ok(!('groupe' in lireEquipeEnregistree({ ...a, groupe: '   ' })!.equipe), 'un groupe vide est oublié');
+  egal(modifierGroupe(a, ' Raid B ', T).groupe, 'Raid B', 'changer de groupe');
+  ok(!('groupe' in modifierGroupe(a, '  ', T)), 'un nom vide fait quitter le groupe');
+  ok(modifierGroupe(a, 'Raid A', T) === a, 'le même nom ne touche pas l’équipe');
+  egal(deplacerVersOnglet(a, 'faille/glace', T).groupe, 'Raid A', 'changer de catégorie dans l’onglet garde le groupe');
+  ok(!('groupe' in deplacerVersOnglet(a, 'cairos', T)), 'changer d’onglet quitte le groupe');
+  ok(!('groupe' in dupliquerEquipe(a, 'c', 'C', () => 'n', T)), 'la copie n’est dans aucun groupe');
+  const b = eq('b', 'faille/raid', 'Raid A', [monstreEx('b1', 3, 11), monstreEx('b2', 4, null, equipementEx(1))], '2026-01-01');
+  const seule = eq('s', 'faille/glace', null, [monstreEx('s1', 1, null, equipementEx(50)), monstreEx('s2', 2, null, null)], '2026-02-01');
+  const autre = eq('o', 'cairos', 'Raid A', [monstreEx('o1', 1, null), monstreEx('o2', 2, null)], '2026-04-01');
+  const toutes = [autre, a, seule, b];
+  egal(groupesDeLOnglet(toutes, 'faille'), ['Raid A'], 'les groupes d’un onglet');
+  egal(equipesDuGroupe(toutes, 'faille', 'Raid A').map((e) => e.id), ['a', 'b'], 'un groupe ne sort pas de son onglet, même nom ailleurs compris');
+  egal(regrouper([a, seule, b]).map((e) => e.id), ['a', 'b', 's'], 'les équipes d’un groupe se suivent, à la place de la plus récente');
+  egal(conflitsGroupe([a, b]), { pieces: 9, exemplaires: 1 }, 'les pièces et l’exemplaire portés par deux équipes du groupe');
+  egal(conflitsGroupe([a, seule]), { pieces: 0, exemplaires: 0 }, 'sans pièce commune : aucun conflit');
+}
+
 export const verificationsEquipesEnregistrees: [string, () => void][] = [
   testEquipesEnregistreesRelecture, testEquipesEnregistreesComparaison, testEquipesEnregistreesOperations, testEquipesEnregistreesRecherche,
-  testEquipesEnregistreesCategories,
+  testEquipesEnregistreesCategories, testEquipesEnregistreesGroupes,
 ].map((f) => [f.name, f]);

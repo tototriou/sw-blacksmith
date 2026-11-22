@@ -7,12 +7,16 @@ interface Props {
   nomParDefaut: string;
   onCreer: (nom: string) => void;
   onFermer: () => void;
+  // Les textes de la fenêtre : ceux d'une équipe par défaut, ceux d'un groupe
+  // depuis le détail.
+  textes?: { titre: string; nom: string; action: string };
 }
 
 // « Nouvelle équipe » : le nom se donne dès la création, avant le brouillon.
-export default function NouvelleEquipeModale({ nomParDefaut, onCreer, onFermer }: Props) {
+// Sert aussi à nommer un nouveau groupe.
+export default function NouvelleEquipeModale({ nomParDefaut, onCreer, onFermer, textes }: Props) {
   const t = useTraduction();
-  const n = t.equipes.nouvelleFenetre;
+  const n = textes ?? t.equipes.nouvelleFenetre;
   const id = useId();
   const [nom, setNom] = useState(nomParDefaut);
   const creer = () => onCreer(nom.trim() || nomParDefaut);

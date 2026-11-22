@@ -56,6 +56,8 @@ export interface RapportImportOptimizer {
   listeCreee: { id: string; name: string } | null;
   // Les équipes créées, dans l'ordre de la proposition (absent : aucune).
   equipesCreeesIds?: string[];
+  // Pour chacune, sa place dans `proposition.equipes`.
+  equipesCreeesIndices?: number[];
   buildsValides?: number;
   membresImportes: number;
   equipesCreees: number;
@@ -216,6 +218,7 @@ export function consommerImportOptimizer(
       nouveau.teams.push(speedTune ? { ...creation.equipe, speedTune } : creation.equipe);
       idsEquipes.add(id);
       (rapport.equipesCreeesIds ??= []).push(id);
+      (rapport.equipesCreeesIndices ??= []).push(i);
       rapport.equipesCreees++;
       for (const selector of members) {
         const membre = acceptes.get(exclusionSelectorKey(selector))!;
