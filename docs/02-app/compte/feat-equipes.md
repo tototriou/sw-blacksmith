@@ -88,15 +88,17 @@ jeu par l'utilisateur le 2026-11-22, portée par `monstresMax`
 | Rangement | Monstres au plus |
 | --- | --- |
 | Arène (toutes ses catégories) | 4 |
-| Combat de guilde — Offense siège, Défense siège | 3 |
+| Combat de guilde (siège et guerre de guilde) | 3 |
 | Cairos | 5 |
 | Labyrinthe | 5, sauf Sauvetage : 4 |
-| Temple du chaos | 5 |
-| Rift | 6 |
+| Subjugation | 5 |
 | Passage des dimensions | 4, sauf Raid dimensionnel : 5 |
+| Rift | 6 |
+| Temple du chaos | 5 |
+| ToA | 5 |
 
-⚠️ Guerre de guilde, Subjugation et ToA n'ont pas de règle relevée : la limite de
-l'app (6) s'applique. On ne la complète pas par ressemblance, on demande le relevé.
+⚠️ Un contenu ajouté sans règle relevée prend la limite de l'app (6) : on ne la
+complète pas par ressemblance, on demande le relevé.
 Sans catégorie choisie, la limite est la plus grande des catégories de l'onglet :
 l'alerte ne vise qu'une équipe trop grande pour chacune.
 

@@ -207,9 +207,9 @@ function testEquipesEnregistreesGroupes() {
 function testEquipesEnregistreesTaille() {
   titre('Mes équipes — monstres par équipe selon le contenu');
   const cas: [OngletEquipes, number][] = [
-    ['arene/offense', 4], ['arene', 4], ['guilde/defense-siege', 3], ['guilde/offense-siege', 3], ['guilde/offense-gdg', 6], ['guilde', 6],
+    ['arene/offense', 4], ['arene', 4], ['guilde/defense-siege', 3], ['guilde/offense-siege', 3], ['guilde/offense-gdg', 3], ['guilde/defense-gdg', 3], ['guilde', 3],
     ['cairos/geant', 5], ['labyrinthe/boss', 5], ['labyrinthe/sauvetage', 4], ['labyrinthe', 5], ['temple-chaos/feu', 5], ['faille/raid', 6],
-    ['passage-dimensions/karzhan', 4], ['passage-dimensions/raid', 5], ['passage-dimensions', 5], ['subjugation/eau', 6], ['toa', 6],
+    ['passage-dimensions/karzhan', 4], ['passage-dimensions/raid', 5], ['passage-dimensions', 5], ['subjugation/eau', 5], ['subjugation', 5], ['toa', 5],
   ];
   egal(cas.map(([o]) => monstresMax(o)), cas.map(([, n]) => n), 'la limite de chaque rangement ; sans catégorie, la plus grande de l’onglet');
   const T = new Date('2026-11-06T10:00:00Z');

@@ -89,14 +89,14 @@ export type ProvenanceEquipement = (typeof PROVENANCES_EQUIPEMENT)[number];
 export const MONSTRES_MAX_EQUIPE = 6;
 
 // Le nombre de monstres d'une équipe dans le jeu, par contenu, relevé par
-// l'utilisateur le 2026-11-22. Un rangement absent des deux tables n'a pas de
-// règle relevée (guerre de guilde, Subjugation, ToA) : la limite de l'app.
+// l'utilisateur le 2026-11-22. Un onglet absent de la table n'a pas de règle
+// relevée : la limite de l'app.
 // ⚠️ Règle de jeu : ne pas compléter par ressemblance, demander le relevé.
 const MONSTRES_MAX_CATEGORIE: Readonly<Partial<Record<CategorieEquipes, number>>> = {
-  arene: 4, cairos: 5, labyrinthe: 5, 'temple-chaos': 5, faille: 6, 'passage-dimensions': 4,
+  arene: 4, guilde: 3, cairos: 5, labyrinthe: 5, subjugation: 5, 'passage-dimensions': 4, faille: 6, 'temple-chaos': 5, toa: 5,
 };
 const MONSTRES_MAX_RANGEMENT: Readonly<Partial<Record<OngletEquipes, number>>> = {
-  'guilde/offense-siege': 3, 'guilde/defense-siege': 3, 'labyrinthe/sauvetage': 4, 'passage-dimensions/raid': 5,
+  'labyrinthe/sauvetage': 4, 'passage-dimensions/raid': 5,
 };
 // Sans catégorie choisie, la plus grande des limites de l'onglet : l'alerte ne
 // vise qu'une équipe trop grande pour toutes ses catégories.
