@@ -3,7 +3,7 @@ import type { LeaderSkill } from '../src/types';
 import { appliquerCriteres, baseCompleteCriteres } from '../src/lib/criteresOptimizer';
 import { LEADER_SKILL_STATS, LEADER_SKILL_VALEURS, resolvedLeaderSkill } from '../src/lib/damage';
 import {
-  buildsEquipeValides, creerEquipeOptimizer, ajouterMembreEquipeOptimizer, retirerMembreEquipeOptimizer,
+  equipeARunesValidees, creerEquipeOptimizer, ajouterMembreEquipeOptimizer, retirerMembreEquipeOptimizer,
   delierMembreOptimizer, dissoudreEquipeOptimizer, equipeApresFiltrageOptimizer,
   leadEffectifMembreOptimizer, synchroniserLeadsMembresOptimizer, type ContexteEquipesOptimizer,
 } from '../src/lib/equipesOptimizer';
@@ -257,13 +257,15 @@ export function testOptimizerEquipesSynchronisationLeadPersonnel() {
   ok(depart.memories === r.memories && setup(1)?.leaderSkill?.pct === 24, 'quitter l’équipe ne restaure rien : le dernier lead d’équipe reste');
 }
 
-// « Enregistrer dans Mes équipes » depuis la bande : chaque membre a ses runes ET sa paire validées.
+// « Enregistrer dans Mes équipes » depuis la bande : au moins un membre a des runes validées.
 export function testOptimizerEquipesBuildsValidesPourMesEquipes() {
-  titre('Optimizer — équipe prête pour Mes équipes : runes et artéfacts validés pour chaque membre');
+  titre('Optimizer — équipe prête pour Mes équipes : un membre aux runes validées suffit');
   const e = equipe();
-  const build = (i: number, artifactIds?: number[]): ValidatedBuild => ({ listId: 'l1', selector: membres[i], runeIds: [1, 2, 3, 4, 5, 6], ...(artifactIds ? { artifactIds } : {}) });
-  egal(buildsEquipeValides(e, [build(0, [7, 8]), build(1, [9, 10])]), true, 'deux membres, runes et paire validées');
-  egal(buildsEquipeValides(e, [build(0, [7, 8])]), false, 'un membre sans build validé');
-  egal(buildsEquipeValides(e, [build(0, [7, 8]), build(1)]), false, 'un membre sans paire d’artéfacts validée');
-  egal(buildsEquipeValides(e, [build(0, [7, 8]), { ...build(1, [9, 10]), listId: 'l2' }]), false, 'un build validé dans une autre liste ne compte pas');
+  const build = (i: number, artifactIds?: number[], runeIds = [1, 2, 3, 4, 5, 6]): ValidatedBuild => ({ listId: 'l1', selector: membres[i], runeIds, ...(artifactIds ? { artifactIds } : {}) });
+  egal(equipeARunesValidees(e, []), false, 'aucun build validé');
+  egal(equipeARunesValidees(e, [build(0, [7, 8]), build(1, [9, 10])]), true, 'deux membres, runes et paire validées');
+  egal(equipeARunesValidees(e, [build(0)]), true, 'un seul membre aux runes validées, sans artéfacts');
+  egal(equipeARunesValidees(e, [build(0, [7, 8], [])]), false, 'un build validé sans rune ne compte pas');
+  egal(equipeARunesValidees(e, [{ ...build(0), listId: 'l2' }]), false, 'un build validé dans une autre liste ne compte pas');
+  egal(equipeARunesValidees({ ...e, members: [] }, [build(0)]), false, 'une équipe sans membre');
 }

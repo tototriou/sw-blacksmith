@@ -2878,7 +2878,7 @@ export const en: Dictionnaire = {
       conserveSansEffet: 'This lead is kept with no computed effect.',
       modifier: 'Edit the team',
       enregistrerMesEquipes: 'Save to My teams',
-      validerDAbord: 'Validate the builds of the team’s monsters first',
+      validerDAbord: 'Validate the runes of one of the team’s monsters first',
       lier: 'Link a team',
       sousTitre: 'Two to six members of this list. The team lead becomes each member’s lead.',
       delier: 'Unlink',

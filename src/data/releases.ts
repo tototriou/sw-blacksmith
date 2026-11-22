@@ -70,6 +70,14 @@ export function journal(langue: Langue): Release[] {
 // Si une ligne dépasse ~15 mots, c'est qu'elle raconte l'implémentation.
 export const RELEASES: Release[] = [
   {
+    version: null,
+    date: '2026-11-22',
+    title: 'Mes équipes dès les premières runes validées',
+    changes: [
+      { kind: 'feat', scope: 'Optimizer', text: '« Enregistrer dans Mes équipes » s’active dès qu’un monstre de l’équipe a ses runes validées.' },
+    ],
+  },
+  {
     version: '2.5.0',
     date: '2026-11-22',
     title: 'L’Arène, Mes équipes et ton compte en direct',
