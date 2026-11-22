@@ -67,6 +67,8 @@ export function testRenduEquipesBureau() {
   ok(t.includes('contre Lushen'), 'la note sur la carte');
   ok(t.includes(e.carte.modifiees(1)), 'l’écart au compte : une pièce modifiée');
   for (const b of [e.nouvelle, e.importer, e.exporterFichier, e.importerFichier]) ok(bouton(html, b)?.desactive === false, `« ${b} » utilisable`);
+  egal(boutons(html).map((b) => b.texte).filter((x) => [e.nouvelle, e.importer, e.groupes.creer, e.exporterFichier].includes(x)),
+    [e.nouvelle, e.importer, e.groupes.creer, e.exporterFichier], '« Importer une équipe » entre « Nouvelle équipe » et « Nouveau groupe »');
   ok(valeurs(html, 'placeholder').includes(e.recherche), 'la recherche par monstre');
   ok(!texteVisible(rendre(section({ compte: false }))).includes(e.carte.modifiees(1)), 'sans compte, aucun écart affiché');
   const vide = rendre(section({ api: api([], 'en-cours') }));

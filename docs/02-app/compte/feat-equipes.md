@@ -289,8 +289,8 @@ sinon « N pièces modifiées », « N pièces disparues ». Le détail marque c
 ### Ordinateur
 
 - En tête : la rangée d'onglets, puis une ligne d'actions : la recherche, « Nouvelle
-  équipe », « Importer » (menu des sources), et, à droite, « Exporter le fichier » et
-  « Importer un fichier ».
+  équipe », « Importer une équipe » (menu des sources), « Nouveau groupe », et, à
+  droite, « Exporter le fichier » et « Importer un fichier ».
 - Dessous, une grille de cartes (autant de colonnes que la largeur le permet, par
   requête de conteneur). Une carte : le nom, les avatars des monstres dans l'ordre
   (le leader marqué), la note sur une ligne tronquée, le résumé d'écart, et un menu
