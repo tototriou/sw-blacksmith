@@ -697,7 +697,7 @@ export interface ConflitPieces { porteurs: PorteurPiece[]; pieces: PieceEnConfli
 export interface ConflitEspece { com2usId: number; formes: number[]; equipes: string[] } // `equipes` : les ids, dans l'ordre du groupe
 // Dans l'ordre de leur première équipe.
 export interface ConflitsGroupe { pieces: ConflitPieces[]; especes: ConflitEspece[] }
-export function conflitsGroupe(equipes: readonly EquipeEnregistree[], monstreParCom2us: ReadonlyMap<number, Monster> = new Map()): ConflitsGroupe {
+export function conflitsGroupe(equipes: readonly Pick<EquipeEnregistree, 'id' | 'monstres'>[], monstreParCom2us: ReadonlyMap<number, Monster> = new Map()): ConflitsGroupe {
   const piecesPortees = new Map<string, { piece: PieceEnConflit; porteurs: PorteurPiece[] }>();
   const porter = (cle: string, piece: PieceEnConflit, porteur: PorteurPiece) => {
     const vu = piecesPortees.get(cle);

@@ -197,16 +197,25 @@ export function categorieDuGroupe(equipes: readonly Pick<EquipeEnregistree, 'ong
   return !estPrepa(c) && equipes.every((e) => categorieDe(e.onglet) === c) ? c : null;
 }
 
-// Ce que les équipes choisies portent à la fois, comme dans un groupe de Mes
-// équipes : à lire avant de les importer ensemble. Chaque équipe y est
-// désignée par la clé de sa source.
+// Ce que les équipes et les monstres choisis portent à la fois, comme dans un
+// groupe de Mes équipes : à lire avant de les importer ensemble. Les monstres
+// choisis un à un d'une même source y forment une équipe à eux, sauf quand
+// cette source est cochée (ils y sont déjà) ; chacune y est désignée par la
+// clé de sa source.
 export function conflitsSelection(
-  sources: readonly SourceImportEquipe[], cles: readonly string[], monstreParCom2us: ReadonlyMap<number, Monster>
+  sources: readonly SourceImportEquipe[], selection: SelectionImport, monstreParCom2us: ReadonlyMap<number, Monster>
 ): ConflitsGroupe {
-  if (cles.length < 2) return { pieces: [], especes: [] };
+  const { equipes: cles } = selection;
+  const seuls = selection.monstres.filter((c) => !cles.includes(c.cle));
+  const clesSeuls = [...new Set(seuls.map((c) => c.cle))];
+  if (cles.length + clesSeuls.length < 2) return { pieces: [], especes: [] };
   let n = 0;
   const choisies = creerEquipesChoisies(sources, cles, () => cles[n++], tirerLocal('c'), new Date(0));
-  return conflitsGroupe(choisies.map((c) => ({ ...c.cree.equipe, id: c.source.cle })), monstreParCom2us);
+  const tirerUid = tirerLocal('m');
+  return conflitsGroupe([
+    ...choisies.map((c) => ({ id: c.source.cle, monstres: c.cree.equipe.monstres })),
+    ...clesSeuls.map((cle) => ({ id: cle, monstres: monstresChoisis(sources, seuls.filter((c) => c.cle === cle), tirerUid, new Date(0)) })),
+  ], monstreParCom2us);
 }
 
 const tirerLocal = (prefixe: string): TirerId => { let n = 0; return () => `${prefixe}${++n}`; };

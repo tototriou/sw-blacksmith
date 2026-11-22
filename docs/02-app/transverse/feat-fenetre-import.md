@@ -67,10 +67,12 @@ dernier import ; ses actions viennent du point d'entrée.
 ## Conflits
 
 Les decks du jeu ne sont pas liés entre eux : au temple du chaos, le joueur en choisit trois, et
-le combat ne se lance pas si deux decks partagent un monstre, une rune ou un artéfact. Quand
-plusieurs équipes sont cochées, la fenêtre calcule leurs conflits (`conflitsSelection`, par
+le combat ne se lance pas si deux decks partagent un monstre, une rune ou un artéfact. Quand la
+sélection touche plusieurs équipes, la fenêtre calcule leurs conflits (`conflitsSelection`, par
 `conflitsGroupe` de Mes équipes) et les liste avant l'import : rien ne bloque, l'utilisateur
-décide.
+décide. Les monstres choisis un à un y comptent (décision de l'utilisateur) : ceux d'une même
+équipe non cochée y forment une équipe à eux, nommée comme elle ; ceux d'une équipe cochée y sont
+déjà. Deux monstres d'une même équipe ne sont jamais en conflit entre eux.
 
 ## Ce que produit un import
 

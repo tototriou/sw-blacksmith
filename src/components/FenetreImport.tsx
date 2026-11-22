@@ -64,7 +64,7 @@ export default function FenetreImport({ titre, sources, ordre, ongletInitial, mo
   const visibles = useMemo(() => sourcesVisibles(sources, filtre), [sources, filtre]);
   const sections = useMemo(() => sectionsFenetre(visibles), [visibles]);
   const comptes = useMemo(() => comptesParContenu(sources, filtre.source), [sources, filtre.source]);
-  const conflits = useMemo(() => conflitsSelection(sources, selection.equipes, monstreParCom2us), [sources, selection.equipes, monstreParCom2us]);
+  const conflits = useMemo(() => conflitsSelection(sources, selection, monstreParCom2us), [sources, selection, monstreParCom2us]);
   // Deux gestes distincts sur une ligne : la case à gauche prend l'équipe
   // entière (son nom aussi), un portrait prend ce monstre seul (mode mixte,
   // l'Optimizer). Ils s'ajoutent, aucun ne défait l'autre.

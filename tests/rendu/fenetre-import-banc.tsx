@@ -1,6 +1,7 @@
 import { createRoot } from 'react-dom/client';
 import { flushSync } from 'react-dom';
 import FenetreImport from '../../src/components/FenetreImport';
+import { creerEquipe } from '../../src/lib/equipesEnregistrees';
 import type { SourceImportEquipe } from '../../src/lib/sourcesEquipesEnregistrees';
 import type { Monster } from '../../src/types';
 
@@ -14,7 +15,10 @@ const monstre = (id: number): Monster => ({ id, com2usId: 10100 + id, name: `Mon
 const monstres = [1, 2, 3].map(monstre);
 const source = (cle: string, src: SourceImportEquipe['source'], groupe: string, libelle: string, bloc?: string): SourceImportEquipe => ({
   cle, source: src, groupe, libelle, monstres, raison: null, rangement: groupe === 'Arène' ? 'arene' : 'guilde',
-  ...(bloc ? { bloc: { cle: bloc, nom: bloc } } : {}), creer: () => null });
+  ...(bloc ? { bloc: { cle: bloc, nom: bloc } } : {}),
+  // Une équipe créée, pour que les conflits du pied se calculent.
+  creer: (id, tirerUid, maintenant) => ({ ignores: 0, equipe: { ...creerEquipe(id, groupe === 'Arène' ? 'arene' : 'guilde', libelle, maintenant),
+    monstres: monstres.map(m => ({ uid: tirerUid(), com2usId: m.com2usId!, unitId: null, provenance: 'aucun' as const, equipement: null })) } }) });
 const sources: SourceImportEquipe[] = [
   source('equipe:1', 'equipes', 'Combat de guilde', 'Attaque 3', 'Groupe A'),
   source('equipe:2', 'equipes', 'Arène', 'Arène 1'),
@@ -74,6 +78,12 @@ export async function scenario(): Promise<[boolean, string][]> {
     'un monstre choisi porte sa coche en coin');
   verifier(caseEquipe('Attaque 3').checked && caseEquipe('Défense 1').checked, 'choisir un monstre garde les équipes cochées');
   verifier(!segment('Des monstres'), 'plus de bascule entre équipes et monstres');
+  // Un monstre choisi seul dans une équipe non cochée entre dans les conflits listés au pied.
+  const conflits = () => dialogue().querySelector('ul')?.textContent ?? '';
+  verifier(!conflits().includes('Équipe 2'), 'avant : les conflits ne nomment que les équipes cochées');
+  const ligneEquipe2 = caseEquipe('Équipe 2').closest('label')!.parentElement!;
+  await geste(() => ligneEquipe2.querySelector<HTMLButtonElement>('button[aria-pressed][title]')!.click());
+  verifier(conflits().includes('Équipe 2'), `un monstre choisi seul est compté dans les conflits ${conflits()}`);
   verifier(!erreurs.some(e => e.includes('same key')), `aucune clé de rendu en double ${erreurs.filter(e => e.includes('key')).join(' | ')}`);
   console.error = consoleErreur;
   return preuves;

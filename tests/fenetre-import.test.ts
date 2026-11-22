@@ -110,9 +110,18 @@ function testFenetreImportProduits() {
   egal(categorieDuGroupe(crees.map((c) => c.cree.equipe)), 'guilde', 'un groupe possible dans leur onglet commun');
   egal(categorieDuGroupe([{ onglet: 'guilde' }, { onglet: 'arene' }]), null, 'pas de groupe entre deux onglets');
   egal(categorieDuGroupe([{ onglet: 'rta' }, { onglet: 'rta' }]), null, 'ni entre des prépas');
-  const conflits = conflitsSelection(s, ['siege-defense:d1', 'siege-attaque:o1'], contexte().monsterByCom2us);
-  egal(conflits.especes.map((x) => [x.com2usId, x.equipes]), [[1001, ['siege-defense:d1', 'siege-attaque:o1']]],
+  const especes = (equipes: string[], monstres: { cle: string; index: number }[]) =>
+    conflitsSelection(s, { equipes, monstres }, contexte().monsterByCom2us).especes.map((x) => [x.com2usId, x.equipes]);
+  egal(especes(['siege-defense:d1', 'siege-attaque:o1'], []), [[1001, ['siege-defense:d1', 'siege-attaque:o1']]],
     'une espèce jouée dans les deux équipes, dite avant l’import');
+  egal(especes(['siege-defense:d1'], [{ cle: 'siege-attaque:o1', index: 0 }]), [[1001, ['siege-defense:d1', 'siege-attaque:o1']]],
+    'un monstre choisi seul entre dans les conflits, sous le nom de son équipe');
+  egal(especes([], [{ cle: 'siege-attaque:o1', index: 0 }, { cle: 'siege-defense:d1', index: 0 }]), [[1001, ['siege-attaque:o1', 'siege-defense:d1']]],
+    'des monstres seuls de deux équipes aussi, sans équipe cochée');
+  egal(especes(['siege-defense:d1'], [{ cle: 'siege-defense:d1', index: 0 }]), [], 'un monstre d’une équipe cochée y est déjà : rien de plus');
+  egal(especes([], [{ cle: 'siege-attaque:o1', index: 0 }, { cle: 'siege-attaque:o1', index: 2 }]), [],
+    'deux monstres d’une même équipe ne se gênent pas entre eux');
+  egal(especes([], [{ cle: 'siege-attaque:o1', index: 1 }, { cle: 'siege-defense:d1', index: 0 }]), [], 'deux espèces différentes : aucun conflit');
   // Le second Éclair de l'offense : son équipement, pas celui du premier.
   const offense = s.find((x) => x.cle === 'siege-attaque:o1')!;
   const choisis = monstresChoisis(s, [{ cle: offense.cle, index: 2 }, { cle: 'equipe:e1', index: 1 }], tirer, T0);
