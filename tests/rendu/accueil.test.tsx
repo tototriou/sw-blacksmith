@@ -82,10 +82,27 @@ export function testRenduAccueil() {
   ok(!html.includes('data-exemple'), 'sans les données du jeu : aucun exemple');
 
   // Les autres outils, en pastilles, dans l'ordre de la navigation.
-  const PASTILLES = ['#/rta/ami', '#/siege/defense', '#/compte/runes', '#/compte/artefacts', '#/bestiary', '#/mecaniques', '#/telecharger', '#/arene'];
+  const PASTILLES = [
+    '#/rta/ami',
+    '#/siege/defense',
+    '#/arene/defense',
+    '#/arene-dimensionnelle/defense',
+    '#/compte/runes',
+    '#/compte/artefacts',
+    '#/compte/equipes',
+    '#/bestiary',
+    '#/bot-discord',
+    '#/mecaniques',
+    '#/sw-exporter',
+    '#/telecharger',
+  ];
   const autres = tous.filter((l) => PASTILLES.includes(l.href) && l.texte !== v.application).map((l) => l.href);
   egal(autres, PASTILLES, 'les autres outils, en pastilles, dans l’ordre');
-  ok(tous.some((l) => l.href === '#/arene' && l.texte === `${a.cartes.arene.titre}${a.bientot}`), 'l’Arène, marquée « bientôt »');
+  ok(
+    tous.some((l) => l.href === '#/arene/defense' && l.texte === a.cartes.arene.titre) &&
+      tous.some((l) => l.href === '#/arene-dimensionnelle/defense' && l.texte === a.cartes.areneDimensionnelle.titre),
+    'l’Arène et l’arène dimensionnelle, sans « bientôt »'
+  );
 
   // La communauté : le Discord, la dernière version PUBLIÉE, le code.
   ok(t.includes(`${v.commuTitre} ${v.commuAccent}`), 'titre de la communauté');
@@ -129,6 +146,8 @@ export function testRenduAccueilBureau() {
   ok(liens(rendreAccueil(VIDE)).filter((l) => l.href === '#/telecharger').length === 2, 'sur le site : le bouton du héros et la pastille');
   const app = dansLeBureau(() => rendreAccueil(VIDE));
   ok(!liens(app).some((l) => l.href === '#/telecharger'), 'dans l’app de bureau : ni bouton ni pastille');
+  // La page SW Exporter, elle, sert surtout au bureau : sa pastille y reste.
+  ok(liens(app).some((l) => l.href === '#/sw-exporter'), 'dans l’app de bureau : la pastille SW Exporter');
 }
 
 // Le serveur Discord de l'app : un bouton dans le héros et la carte de la

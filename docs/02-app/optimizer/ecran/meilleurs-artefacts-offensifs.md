@@ -187,7 +187,7 @@ sont des critères de la recherche de runes, appliqués à tous les builds
 qu'elle examine ; le bloc ne parle que du build affiché. Au téléphone, un
 **encadré à part dans la carte** (contour atténué, fond `panel2`), sous
 les sous-propriétés verrouillées et avant le bloc « Relique » ; au bureau,
-une **section à part** de 294 px (`MeilleursArtefactsBureau`), sans cadre,
+une **section à part** de 302 px (`MeilleursArtefactsBureau`), sans cadre,
 sous « Artéfacts et relique », relique comprise, dans le même panneau.
 
 Quand la paire portée est déjà la meilleure, l'écran le **dit** au lieu

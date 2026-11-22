@@ -76,11 +76,23 @@ latérale, qui devient alors un menu.
   SW Exporter », avec le récapitulatif de l'import. Choisir un **dossier**
   qui ne contient qu'un export le désigne d'office : même import complet.
   Rechoisir l'invocateur déjà suivi ne fait rien.
+- ⚠️ **Une page vide importe tout** : sans compte ni équipes (lancement
+  avec la conservation refusée), l'export de l'invocateur suivi s'importe en
+  entier — prépa RTA et siège compris —, comme après un choix.
+- ⚠️ **Un import manuel (un fichier JSON) lâche l'invocateur suivi** : le
+  compte affiché vient du fichier, aucun invocateur n'est plus coché (carte
+  du compte, Réglages) et les exports du dossier ne s'appliquent plus ; le
+  dossier, lui, reste choisi. Rechoisir un invocateur repart d'un import
+  complet.
 - **Puis chaque nouvel export de cet invocateur** — au lancement s'il est
   plus récent que le dernier lu, puis à chaque écriture tant que l'app est
   ouverte — met à jour **« Mon compte » seulement** (box 6★, inventaire,
   reliques, runes utilisées, marqueurs), annoncé par « Compte de
-  <invocateur> mis à jour depuis SW Exporter ».
+  <invocateur> mis à jour depuis SW Exporter ». **Rattrapage** : si l'arène
+  classique est vide (aucune équipe d'aucun côté), ses équipes viennent de
+  cet export (`areneClassiqueVide`, `equipesAreneClassique`) — un dossier
+  suivi avant l'arrivée de l'arène n'aurait sinon d'import complet qu'au
+  prochain choix de l'invocateur.
 - ⚠️ **Après le choix, jamais la prépa RTA ni le siège.** L'import complet
   les REMPLACE (classement RTA, leads et ticks remis à zéro) : le faire à
   chaque connexion au jeu effacerait le travail de l'utilisateur. Le

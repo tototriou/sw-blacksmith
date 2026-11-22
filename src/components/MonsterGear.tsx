@@ -65,6 +65,9 @@ interface Props {
   // colonne « Monstre » n'a que 358 px, et la fiche s'y lit dépliée
   // (décision de l'utilisateur) plutôt qu'en deux rangées.
   carte?: boolean;
+  // Sans la roue de runes : SEUL le détail d'une équipe de « Mes équipes », au
+  // bureau, la retire, ses runes y étant déjà montrées en cartes à côté.
+  sansRoue?: boolean;
 }
 
 export default function MonsterGear({
@@ -76,6 +79,7 @@ export default function MonsterGear({
   relicUsageById,
   onLargeursNaturelles,
   carte = false,
+  sansRoue = false,
 }: Props) {
   const stats = computeStats(gear);
   const [selInterne, setSelInterne] = useState<Selected>(null);
@@ -372,7 +376,7 @@ export default function MonsterGear({
           monstre sans aucune rune importée doit quand même montrer le
           fond de la roue, pas rien du tout — même principe que les
           emplacements d'`ArtifactSlots` toujours affichés au-dessus. */}
-      <RuneWheel
+      {!sansRoue && <RuneWheel
         runes={gear.runes}
         scale={scale}
         isSelected={(_r, i) => isSel({ kind: 'rune', i })}
@@ -397,7 +401,7 @@ export default function MonsterGear({
                 </FlottantAuto>
               )
         }
-      />
+      />}
 
       {/* Relique à droite.
           ⚠️ La teinte `star` est le code du JEU pour ce qui a de la valeur, pas

@@ -17,6 +17,7 @@ import { useTraduction } from '../hooks/useLangue';
 export default function SettingsPage({
   onClearData,
   onSauvegarderSession,
+  onChargerSession,
   sauvegardeIndisponible = null,
   onKeepAccount,
   onImport,
@@ -25,6 +26,7 @@ export default function SettingsPage({
 }: {
   onClearData?: () => void;
   onSauvegarderSession?: () => void;
+  onChargerSession?: () => void;
   // Pourquoi « Sauvegarder » est désactivé (le compte se relit encore), ou
   // `null`. Le bouton reste affiché, désactivé avec cette raison en infobulle.
   sauvegardeIndisponible?: string | null;
@@ -83,6 +85,7 @@ export default function SettingsPage({
         <SettingsList
           onClearData={onClearData}
           onSauvegarderSession={onSauvegarderSession}
+          onChargerSession={onChargerSession}
           sauvegardeIndisponible={sauvegardeIndisponible}
           onKeepAccount={onKeepAccount}
           accountExportedAt={accountExportedAt}

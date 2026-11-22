@@ -25,6 +25,11 @@ export function destination(hash: string): string {
       return `compte/${n.accountSub}/${vueValide(n.accountSub, n.accountView)}`;
     case 'outils':
       return `outils/${n.toolSub}`;
+    case 'arene':
+    case 'arene-dimensionnelle':
+      return `${n.route}/${n.areneTab}`;
+    case 'bot-discord':
+      return `bot-discord/${n.ongletBot}`;
     default:
       return n.route;
   }
@@ -38,6 +43,7 @@ export const ADRESSES: Record<string, string> = {
   '#/siege/defense': 'siege/defense',
   '#/siege/offense': 'siege/offense',
   '#/siege/recommandations': 'siege/recos',
+  '#/siege/statistiques': 'siege/stats',
   '#/compte/monstres/liste': 'compte/monstres/liste',
   '#/compte/runes/resume': 'compte/runes/resume',
   '#/compte/runes/liste': 'compte/runes/liste',
@@ -48,18 +54,32 @@ export const ADRESSES: Record<string, string> = {
   '#/compte/runes/gemmes': 'compte/runes/gemmes',
   '#/compte/artefacts/resume': 'compte/artefacts/resume',
   '#/compte/artefacts/liste': 'compte/artefacts/liste',
+  '#/compte/equipes/liste': 'compte/equipes/liste',
   // Adresses tronquées, utilisées par les cartes de l'accueil.
   '#/compte/runes': 'compte/runes/resume',
   '#/compte/artefacts': 'compte/artefacts/resume',
+  '#/compte/equipes': 'compte/equipes/liste',
   '#/outils/optimizer': 'outils/optimizer',
   '#/outils/speed-tuning': 'outils/speed-tuning',
-  '#/arene': 'arene',
+  '#/arene/defense': 'arene/defense',
+  '#/arene/offense': 'arene/offense',
+  '#/arene/interserveur': 'arene/interserveur',
+  '#/arene-dimensionnelle/defense': 'arene-dimensionnelle/dimension-defense',
+  '#/arene-dimensionnelle/offense': 'arene-dimensionnelle/dimension-offense',
+  '#/arene-dimensionnelle/runes': 'arene-dimensionnelle/dimension-runes',
   '#/bestiary': 'bestiary',
   '#/mecaniques': 'mecaniques',
   '#/releases': 'releases',
   // Application de bureau : sur le SITE (ici) ; dans l'app,
   // l'adresse retombe sur l'accueil (testNavigationAdressesBureau).
   '#/telecharger': 'telecharger',
+  // Adresse tronquée, celle de la navigation, de l'accueil et de la modale des recommandations.
+  '#/bot-discord': 'bot-discord/installation',
+  '#/bot-discord/installation': 'bot-discord/installation',
+  '#/bot-discord/recommandations': 'bot-discord/recommandations',
+  '#/bot-discord/commandes': 'bot-discord/commandes',
+  // Le plugin SWEX : sur le site ET dans l'app (testNavigationAdresses).
+  '#/sw-exporter': 'sw-exporter',
   '#/parametres': 'parametres',
 };
 
@@ -69,7 +89,7 @@ export function testNavigationAdresses() {
 
   // Deux adresses distinctes de la table ne mènent jamais à la même page, sauf
   // les formes tronquées, qui mènent par construction au défaut de leur section.
-  const tronquees = new Set(['#/compte/runes', '#/compte/artefacts']);
+  const tronquees = new Set(['#/compte/runes', '#/compte/artefacts', '#/compte/equipes', '#/bot-discord']);
   const pages = Object.entries(ADRESSES).filter(([h]) => !tronquees.has(h)).map(([, p]) => p);
   egal(pages.length, new Set(pages).size, 'chaque adresse complète mène à une page différente');
 
@@ -78,6 +98,9 @@ export function testNavigationAdresses() {
   pont.swblacksmithBureau = { bureau: true, plateforme: 'win32' };
   try {
     egal(destination('#/telecharger'), 'home', 'dans l\'app de bureau, #/telecharger → accueil');
+    // Le guide du bot, lui, y existe : l'app de bureau se connecte à Discord.
+    egal(destination('#/bot-discord/commandes'), 'bot-discord/commandes', 'dans l\'app de bureau, #/bot-discord → sa page');
+    egal(destination('#/sw-exporter'), 'sw-exporter', 'dans l\'app de bureau, la page SW Exporter reste (c\'est elle qui sert le plugin)');
   } finally {
     delete pont.swblacksmithBureau;
   }
@@ -94,11 +117,21 @@ export function testNavigationAdressesDefauts() {
   egal(destination('#/siege'), 'siege/defense', '#/siege → Défense');
   egal(destination('#/compte'), 'compte/monstres/liste', '#/compte → Monstres');
   egal(destination('#/outils'), 'outils/optimizer', '#/outils → Optimizer');
+  egal(destination('#/arene'), 'arene/defense', '#/arene → Défense');
+  egal(destination('#/arene-dimensionnelle'), 'arene-dimensionnelle/dimension-defense', '#/arene-dimensionnelle → Défense');
+  egal(destination('#/bot-discord'), 'bot-discord/installation', '#/bot-discord → Installation');
+  egal(destination('#/bot-discord/inconnu'), 'bot-discord/installation', 'onglet du bot inconnu → Installation');
 
   // Sous-page inconnue : le défaut de SA section, pas l'accueil.
   egal(destination('#/rta/inconnu'), 'rta/prepa', 'RTA inconnue → Ma prépa');
   egal(destination('#/siege/inconnu'), 'siege/defense', 'Siège inconnu → Défense');
   egal(destination('#/outils/inconnu'), 'outils/optimizer', 'outil inconnu → Optimizer');
+  egal(destination('#/arene/inconnu'), 'arene/defense', 'Arène inconnue → Défense');
+  egal(
+    destination('#/arene-dimensionnelle/inconnu'),
+    'arene-dimensionnelle/dimension-defense',
+    'arène dimensionnelle inconnue → Défense'
+  );
   egal(destination('#/compte/inconnu/liste'), 'compte/monstres/liste', 'inventaire inconnu → Monstres');
   egal(destination('#/compte/runes/inconnue'), 'compte/runes/resume', 'vue de runes inconnue → Résumé');
   egal(
@@ -130,6 +163,7 @@ export function testNavigationVuesCompte() {
   egal(vueParDefaut('monstres'), 'liste', 'Monstres : la box');
   egal(vueParDefaut('runes'), 'resume', 'Runes : le Résumé');
   egal(vueParDefaut('artefacts'), 'resume', 'Artéfacts : le Résumé');
+  egal(vueParDefaut('equipes'), 'liste', 'Mes équipes : la page elle-même');
 
   // `vueValide` garde une vue qui existe, remplace celle qui n'existe pas.
   egal(vueValide('runes', 'courbes'), 'courbes', 'Runes · Courbes existe : gardée');

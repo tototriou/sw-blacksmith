@@ -9,7 +9,7 @@ import { useSiegeState } from '../../src/hooks/useSiegeState';
 import { useSiegeRecos } from '../../src/hooks/useSiegeRecos';
 import { useOptimizerState, type OptimizerState } from '../../src/hooks/useOptimizerState';
 import { useOptimizerLists, type UseOptimizerLists } from '../../src/hooks/useOptimizerLists';
-import { setPersistence } from '../../src/hooks/usePersistence';
+import { setPersistence, viderMiroir } from '../../src/hooks/usePersistence';
 import { avecNavigationImportOptimizer } from '../../src/lib/actionImportOptimizer';
 import { baseCompleteCriteres, photoCriteres } from '../../src/lib/criteresOptimizer';
 import { exclusionSelectorKey, type ExclusionSourceData } from '../../src/lib/optimizerExclusion';
@@ -85,7 +85,9 @@ export async function afficherEtatExport(charge: boolean, telephone: boolean) {
 export async function scenario(nom: string, telephone: boolean): Promise<[boolean, string][]> {
   const preuves: [boolean, string][] = [], verifier = (v: boolean, m: string) => preuves.push([v, `${nom} : ${m}`]);
   if (racine) await geste(() => racine!.unmount());
-  localStorage.clear(); setPersistence(true);
+  // Un lancement neuf : stockage ET miroir du travail vides (les hooks y
+  // relisent leur état au montage).
+  localStorage.clear(); viderMiroir(); setPersistence(true);
   attente = false; refus = ''; compteCharge = true; cote = nom === 'offense' ? 'offense' : 'defense';
   const data = initiales();
   for (const side of ['defense', 'offense'] as const) localStorage.setItem(`swblacksmith-siege-${side}-v1`, JSON.stringify({ teams: side === 'defense' ? data.siegeDefenseTeams : data.siegeOffenseTeams }));

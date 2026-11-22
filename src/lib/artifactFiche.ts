@@ -18,6 +18,7 @@ import {
 import { apportExclusive, statsAvecApport } from './relicExclusive';
 import { estExceptionRegleR } from './resolutionRapide';
 import { CODE_206, lignesSousSpeedTune, type ContrainteSpeedTune } from './contrainteSpeedTune';
+import { codesPrecisionParSort } from './precisionParSort';
 
 /**
  * Les emplacements figés sur « Comme équipé ». Une sorte absente
@@ -83,6 +84,11 @@ export const AUCUN_ARTEFACT_RESERVE: ReadonlySet<number> = new Set();
  *   (`contrainteDuMembre`, planSpeedTune.ts), `null` sans elle. Elle rend le
  *   206 incomparable, retire son verrou et suit les paramètres jusqu'à la
  *   résolution de chaque build (`entreeResolutionDuBuild`).
+ * - `sortsPrecision` : les sorts de la précision par sort en jeu
+ *   (`sortsPrecisionActifs`, precisionParSort.ts), vide sans elle. Leurs
+ *   lignes 407–409 deviennent incomparables : la résolution les borne par
+ *   build (`lignesPrecisionDuBuild`), et une pièce plus faible sur la note
+ *   peut être la seule à tenir le sort.
  */
 export function parametresArtefactsFiche(e: {
   porteur: PorteurArtefact;
@@ -96,6 +102,7 @@ export function parametresArtefactsFiche(e: {
   maxStats: Partial<Record<StatKey, number>>;
   sortDegats: number | null;
   speedTune: ContrainteSpeedTune | null;
+  sortsPrecision: readonly number[];
 }): Omit<ArtifactSearchParams, 'evaluer'> & Required<Pick<ArtifactSearchParams, 'lignesVerrouillees' | 'codesAmplification' | 'maxStatsActifs'>> {
   return {
     porteur: e.porteur,
@@ -124,7 +131,11 @@ export function parametresArtefactsFiche(e: {
     // le rattachement possède, disparaît (`lignesSousSpeedTune`). Même avec
     // les deux emplacements figés : la paire figée est alors jugée seule.
     // Absent sans contrainte : les paramètres d'avant, champ pour champ.
-    ...(e.speedTune ? { speedTune: e.speedTune, codesIncomparables: [CODE_206] } : {}),
+    ...(e.speedTune ? { speedTune: e.speedTune } : {}),
+    ...(() => {
+      const codes = [...(e.speedTune ? [CODE_206] : []), ...codesPrecisionParSort(e.sortsPrecision)];
+      return codes.length > 0 ? { codesIncomparables: codes } : {};
+    })(),
   };
 }
 

@@ -65,8 +65,9 @@ même violet que le plan ci-dessous (voir
   (`optim.regemLibre`). Allumé, une rune **déjà gemmée** peut voir sa ligne
   gemmée remplacée par **une autre stat** absente de la rune (mêmes exclusions et
   emplacements qu'une rune vierge) ; éteint, sa stat reste figée. **Grisé en
-  « Meule seule »** : sans gemme, rien à regemmer. Même bouton dans **Courbes**,
-  réglage mémorisé à part (`runesCurve.regemLibre`), comme le mode gemme/meule.
+  « Meule seule »** : sans gemme, rien à regemmer. ⚠️ **Pas aux Courbes**, qui
+  ne changent jamais la stat d'une gemme et n'en simulent aucune sur une rune
+  qui n'en a pas (voir [courbes.md](courbes.md)).
   - ⚠️ **Un réglage du CALCUL, pas un filtre** : il change le potentiel, le
     gain, le plan « Actuel | Optimisé » et la faisabilité sous « Faisable avec
     ma réserve » (la gemme réclamée peut devenir une autre). Le Résumé, lui,
@@ -142,7 +143,7 @@ même violet que le plan ci-dessous (voir
   montant** au doigt), voir l'onglet Courbes § « L'aide a DEUX supports ». Elle
   détaille les deux modes, le choix de la gemme (dont le regemme différent), le gain, **le palier** (ce qu'il
   mesure et sa reconversion), **les icônes marteau/gemme** du plan, le filtre
-  de réserve, **« Sans les immémoriaux »**, **« Runes utilisées »** et
+  de réserve et ses grades, **« Sans les immémoriaux »**, **« Runes utilisées »** et
   **« Marqueurs »**.
 
 #### ⚠️ Le panneau « Options » (mobile) ne prend que huit contrôles
@@ -178,8 +179,8 @@ rangée d'options (`modeControl`, écrit une fois, posé aux deux endroits).
   eux aussi toute la colonne (`pleineLargeur={large}`), sinon ils pendraient
   seuls, à la largeur de leur texte, sous des contrôles pleins. En ligne au
   bureau (`large` faux) ils restent serrés.
-- Sous « Runes utilisées » et « Marqueurs », le panneau montre **en
-  permanence** leurs cases (grisées filtre éteint). Au bureau, elles vivent dans
+- Sous « Faisable avec ma réserve », « Runes utilisées » et « Marqueurs », le
+  panneau montre **en permanence** leurs cases (grisées filtre éteint). Au bureau, elles vivent dans
   un flottant ouvert par un chevron : voir « Filtres à cases » plus bas.
 - **Les deux filtres à cases sont côte à côte, sur deux colonnes.** Empilés,
   bouton + six cases + bouton + neuf cases feraient
@@ -201,10 +202,12 @@ rangée d'options (`modeControl`, écrit une fois, posé aux deux endroits).
 
 ### Filtres à cases — `FiltreACases`
 
-« Runes utilisées » et « Marqueurs » partagent **un seul gabarit**, le
-composant `FiltreACases` de [RunesOptim.tsx](src/components/account/RunesOptim.tsx) :
-un **bouton-interrupteur** qui allume le filtre, et des **`Case`** qui
-choisissent ce qu'il garde, chacune suivie de son nombre de runes. Même geste,
+« Faisable avec ma réserve », « Runes utilisées » et « Marqueurs » partagent
+**un seul gabarit**, le composant `FiltreACases` de
+[RunesOptim.tsx](src/components/account/RunesOptim.tsx) : un
+**bouton-interrupteur** qui allume le filtre, et des **`Case`** qui
+choisissent ce qu'il garde, chacune suivie de son nombre (de runes, ou de
+consommables pour les grades de « Faisable »). Même geste,
 même rendu, un seul endroit où ils pourraient diverger.
 
 - ⚠️ **Deux supports, un par format, et aucun ne déplace ce qu'on clique :**
@@ -331,7 +334,8 @@ vue séparée obligerait à tout y réimplémenter.
 
 - Le **scénario suit le tri** (gain/potentiel héroïque → grade 4, sinon 5) :
   trier par gain héroïque tout en filtrant sur du légendaire n'aurait aucun sens.
-  Ce grade décide des runes **gardées** et du **plan** ouvert au clic.
+  Ce grade décide des runes **gardées** et du **plan** ouvert au clic — sauf
+  quand une seule case de grade est cochée (ci-dessous).
 - ⚠️ **Mais chaque chiffre de la tuile se vérifie contre la réserve de SON
   grade**, quel que soit le tri : **Héro** contre les consommables héroïques ou
   mieux, **Légend** contre les légendaires (`dispoReserve` dans
@@ -375,6 +379,33 @@ sets, antique et normal étanches) : [crafts.ts](src/lib/crafts.ts).
 sont toutes deux annoncées faisables — ce qui est vrai de chacune. Compter les
 quantités répondrait à une autre question (« que farmer pour toutes les faire »),
 et c'est le sujet des onglets Meules et Gemmes.
+
+#### Les grades — « Héroïque », « Légendaire »
+
+Un filtre à cases (voir « Filtres à cases ») : deux cases, **Héroïque** et
+**Légendaire** (les mots du jeu), **cochées par défaut** — le comportement
+d'avant les cases. Elles choisissent les consommables dont se servir, **meules
+ET gemmes**, chacune suivie de leur nombre dans la réserve (immémoriaux mis de
+côté s'il y a lieu). État collant : `optim.gradesReserve`.
+
+- ⚠️ **Un filtre de la RÉSERVE, pas du calcul** — même procédé que « Sans les
+  immémoriaux » : un grade décoché sort de la réserve en amont de
+  `buildCraftStock` (`reserveDesGrades` dans [crafts.ts](src/lib/crafts.ts)).
+  Potentiels, gains, plan et marquage vert/grisé suivent sans règle de plus.
+- ⚠️ **« Héroïque » seul = héroïques STRICTEMENT.** Sans les cases, un
+  scénario héroïque puise aussi dans les légendaires (grade ≥ scénario) ;
+  décochée, la légendaire n'est plus dans le sac.
+- ⚠️ **Un seul grade coché impose son scénario** au filtre et au plan
+  (`scenarioDeLaReserve`), quel que soit le tri : « Héroïque » seul trié par
+  potentiel légendaire chercherait des légendaires absents, et la liste serait
+  toujours vide. Les deux cochés : le tri, comme avant.
+- **Filtre allumé seulement**, comme toutes les cases d'un filtre à cases :
+  éteint, elles sont grisées et la réserve reste entière.
+- **Aucun coché** : liste vide, et le message le dit (« aucun grade coché pour
+  « Faisable avec ma réserve » »). Le bouton, lui, reste actif — jugé sur la
+  réserve AVANT les grades —, sans quoi on ne pourrait plus recocher.
+- Le compteur nomme le grade dès qu'un seul est coché :
+  « · faisables avec ma réserve (Héroïque) ».
 
 #### « Sans les immémoriaux » — garder la pièce rare de côté
 

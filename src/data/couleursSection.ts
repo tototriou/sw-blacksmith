@@ -27,9 +27,15 @@ export const COULEUR_SECTION = {
   compte: '#4AD8D8',
   outils: '#FFA94D',
   arene: '#F2C24C',
+  'arene-dimensionnelle': '#F2C24C',
   bestiary: '#2FA0E0',
   mecaniques: '#8890B8',
   releases: '#C79BFF',
+  // Le bleu-violet de Discord, éclairci pour le fond sombre.
+  'bot-discord': '#7984F5',
+  // Le plugin SWEX : la teinte du compte (c'est lui qu'il tient à jour), un
+  // ton plus vert pour s'en distinguer.
+  'sw-exporter': '#4AD8A8',
   // Application de bureau — site seulement.
   telecharger: '#7FD15B',
 } as const;
@@ -48,6 +54,20 @@ export const COULEUR_SIEGE_SUB = {
   defense: '#E4463A',
   offense: '#F2884C',
   recos: '#5EDB8F',
+  // L'or de l'arène, déjà dans `TEINTE_CLAIRE` : celui des classements.
+  stats: '#F2C24C',
+} as const;
+
+// Sous-sections de l'Arène, indexées par `CoteArene`. Défense et offense
+// reprennent celles du siège (même geste, même teinte) ; la défense
+// interserveur, l'accent de l'arène. L'arène dimensionnelle, section à part,
+// prend aussi l'accent de l'arène.
+// ⚠️ Des teintes DÉJÀ présentes dans `TEINTE_CLAIRE` : une teinte nouvelle y
+// demanderait sa variante claire, calculée au contraste près.
+export const COULEUR_ARENE_SUB = {
+  defense: '#E4463A',
+  offense: '#F2884C',
+  interserveur: '#F2C24C',
 } as const;
 
 // Inventaires de « Mon compte », indexés par `AccountSub`.
@@ -57,6 +77,7 @@ export const COULEUR_COMPTE_SUB = {
   monstres: '#E86A8C',
   runes: '#4AD8D8',
   artefacts: '#E08A3C',
+  equipes: '#7C9CF2',
 } as const;
 
 // ⚠️ **Variante THÈME CLAIR de chaque couleur ci-dessus** (le mainteneur, sur une
@@ -82,9 +103,11 @@ export const TEINTE_CLAIRE: Record<string, string> = {
   '#4AD8D8': '#2E8686', // compte, runes
   '#E86A8C': '#C15874', // monstres
   '#E08A3C': '#AC6A2E', // artefacts
+  '#7C9CF2': '#637DC2', // equipes
   '#FFA94D': '#A66E32', // outils
   '#F2C24C': '#94762E', // arene
   '#2FA0E0': '#2682B5', // bestiary
   '#8890B8': '#72799B', // mecaniques
   '#C79BFF': '#8B6DB3', // releases
+  '#7984F5': '#6C75DA', // bot-discord
 };

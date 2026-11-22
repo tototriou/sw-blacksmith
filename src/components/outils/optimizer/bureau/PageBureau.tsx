@@ -158,7 +158,9 @@ function Colonne({ place, children, surMesure, zone, colonne, raccord = false }:
       className={`h-full min-h-0 min-w-0 ${CADRE} ${raccord ? COIN_RACCORD : ''}`}
       style={{ width: place == null ? '100%' : place - RETRAIT_PANNEAU }}>
       <div ref={boite} data-defilement="" className={`${DEFILEMENT} ${raccord ? 'rounded-tl-none' : ''}`}>
-        <div ref={interieur} className={`flex min-h-full flex-col p-2 ${SECTIONS}`}>
+        {/* Pas de rembourrage à droite : la barre réservée (8 px) y fait déjà la
+            marge, égale aux 8 px de gauche (décision de l'utilisateur). */}
+        <div ref={interieur} className={`flex min-h-full flex-col py-2 pl-2 ${SECTIONS}`}>
           {children}
         </div>
       </div>

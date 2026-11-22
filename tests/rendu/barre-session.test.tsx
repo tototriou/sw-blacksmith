@@ -15,6 +15,7 @@ const rien = () => {};
 function barre(props: {
   onSauvegarder?: () => void;
   onSauvegarderSous?: () => void;
+  onCharger?: () => void;
   onDeconnexion?: () => void;
   sessionEnCours?: string | null;
   sauvegardeIndisponible?: string | null;
@@ -87,6 +88,8 @@ export function testRenduBarreSession() {
       !texteVisible(parametresSite).includes('Tout l’état de l’app dans un fichier'),
     'site : pas de ligne « Session » dans les Paramètres'
   );
+  ok(!bouton(htmlSite, 'Charger…') && !bouton(htmlSite, 'Charger une session (Ctrl+O)'), 'site : pas de « Charger… », aux deux formats');
+  ok(!boutons(parametresSite).some((b) => b.texte === 'Charger…'), 'site : pas de « Charger… » dans les Paramètres');
   const pont = globalThis as { swblacksmithBureau?: unknown };
   pont.swblacksmithBureau = { bureau: true, plateforme: 'win32' };
   try {
@@ -94,8 +97,24 @@ export function testRenduBarreSession() {
     ok(bouton(html, 'Sauvegarder sous…') !== undefined, 'app : « Sauvegarder sous… » dans la barre');
     ok(!bouton(html, 'Se déconnecter'), 'app : pas de « Se déconnecter »');
     ok(bouton(html, 'Sauvegarder')?.title === 'Sauvegarder la session dans un fichier (Ctrl+S)', 'app, aucune session en cours : l’infobulle ne nomme rien');
-    ok(boutons(rendreApp('#/parametres')).some((b) => b.texte === 'Sauvegarder'), 'app : la ligne « Session » des Paramètres');
+    ok(bouton(html, 'Charger…') !== undefined && bouton(html, 'Charger une session (Ctrl+O)') !== undefined, 'app : « Charger… » dans la barre, aux deux formats');
+    const reglagesApp = boutons(rendreApp('#/parametres'));
+    ok(reglagesApp.some((b) => b.texte === 'Sauvegarder'), 'app : la ligne « Session » des Paramètres');
+    ok(reglagesApp.some((b) => b.texte === 'Charger…'), 'app : « Charger… » sur la ligne « Session »');
   } finally {
     delete pont.swblacksmithBureau;
   }
+
+  titre('rendu · « Charger… » — avant « Sauvegarder », toujours disponible');
+  const avecCharger = barre({ onCharger: rien, onSauvegarder: rien, onSauvegarderSous: rien, sauvegardeIndisponible: attente });
+  const ordre = boutons(avecCharger).map((b) => b.texte || b.ariaLabel);
+  ok(ordre.indexOf('Charger…') >= 0 && ordre.indexOf('Charger…') < ordre.indexOf('Sauvegarder'), 'ordinateur : « Charger… » précède « Sauvegarder »');
+  ok(
+    ordre.indexOf('Charger une session (Ctrl+O)') < ordre.indexOf('Sauvegarder la session (Ctrl+S)'),
+    'téléphone : l’icône « Charger » précède celle de « Sauvegarder »'
+  );
+  ok(bouton(avecCharger, 'Charger…')?.title === 'Charger une session enregistrée, qui remplace l’état de l’app (Ctrl+O)', '« Charger… » : son infobulle, et Ctrl+O');
+  ok(bouton(avecCharger, 'Charger…')?.desactive === false, '« Charger… » reste disponible pendant que le compte se relit');
+  const ligneCharger = boutons(rendre(<SettingsList onSauvegarderSession={rien} onChargerSession={rien} />)).map((b) => b.texte);
+  ok(ligneCharger.indexOf('Charger…') >= 0 && ligneCharger.indexOf('Charger…') < ligneCharger.indexOf('Sauvegarder'), 'Paramètres : « Charger… » puis « Sauvegarder »');
 }

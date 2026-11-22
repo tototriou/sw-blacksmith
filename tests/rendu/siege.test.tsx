@@ -6,7 +6,7 @@
 import SiegeBoard from '../../src/components/siege/SiegeBoard';
 import SiegeTeam from '../../src/components/siege/SiegeTeam';
 import { useSiegeState, SiegeSide } from '../../src/hooks/useSiegeState';
-import type { Monster } from '../../src/types';
+import type { GearSet, Monster } from '../../src/types';
 import { egal, faussLocalStorage, monstersJson, ok, titre } from '../outils';
 import { bouton, boutons, rendre, texteVisible, valeurs } from './outils-rendu';
 
@@ -158,10 +158,47 @@ export function testRenduSiegeEdition() {
   ok(!!bouton(html, 'Déplacer à droite (le monstre suivant devient le leader)'), 'slot 1 : « → » annonce que le suivant devient le leader');
 }
 
+// L'équipement incomplet : 6 runes, aucun artéfact. Au siège, l'équipe le dit ;
+// dans l'arène dimensionnelle, dont les artéfacts ne sont pas lus, non.
+export function testRenduSiegeArtefactsDimension() {
+  titre('rendu · Siège — artéfacts manquants : signalés, sauf dans l’arène dimensionnelle');
+  faussLocalStorage();
+  const base = equipe([['Lushen', 'wind'], ['Veromos', 'dark'], ['', '']], [120, 130, null], 0);
+  const gear = { base: {}, runes: Array.from({ length: 6 }, (_, i) => ({ slot: i + 1 })), artifacts: [], relic: null } as unknown as GearSet;
+  const team = { ...base, slots: base.slots.map((s) => (s.monsterId ? { ...s, gear } : s)) };
+  const monsterById = new Map(MONSTRES.map((m) => [String(m.id), m]));
+  const rien = () => {};
+  const rendreEquipe = (avecArtefacts: boolean) =>
+    texteVisible(
+      rendre(
+        <SiegeTeam
+          avecArtefacts={avecArtefacts}
+          team={team}
+          index={0}
+          monsters={MONSTRES}
+          monsterById={monsterById}
+          expanded={false}
+          onToggleExpand={rien}
+          onRemoveTeam={rien}
+          onPickMonster={rien}
+          onClearSlot={rien}
+          onSlotRune={rien}
+          onSlotTick={rien}
+          checkTicks={false}
+          onDismissAlert={rien}
+          onVoirSpeedTune={rien}
+          onSwap={rien}
+        />
+      )
+    );
+  ok(rendreEquipe(true).includes('Artéfacts incomplets'), 'au siège : « Artéfacts incomplets »');
+  ok(!rendreEquipe(false).includes('Artéfacts incomplets'), 'arène dimensionnelle : rien sur les artéfacts');
+}
+
 // L'en-tête bureau.
 export function testRenduSiegeEnTete() {
   titre('rendu · Siège — l\'en-tête bureau et son menu « ⋯ »');
-  for (const [side, nom] of [['defense', 'Défense'], ['offense', 'Offense']] as const) {
+  for (const [side, nom] of [['defense', 'Decks de défense'], ['offense', 'Decks d’offense']] as const) {
     const html = rendreCamp(side);
     ok(texteVisible(html).includes(`${nom} 2 équipes`), `${nom} : le titre, puis le compteur`);
     ok(!!bouton(html, "Plus d'actions"), `${nom} : bouton « Plus d'actions »`);

@@ -71,10 +71,11 @@ function filtresCommuns(html: string, vue: string) {
   ok(b.some((x) => x.texte === 'Aucune antique' && x.title === 'Masquer les runes antiques' && x.presse === false), `${vue} : « Aucune antique »`);
 }
 
-// Le potentiel : avec la gemme optimale, ou meules seulement.
-function modePotentiel(html: string, vue: string) {
+// Le potentiel : avec la gemme optimale, ou meules seulement. Les Courbes ne
+// simulent aucune gemme nouvelle : leur « Gemme + meule » le dit.
+function modePotentiel(html: string, vue: string, aideGemme = 'Potentiel avec la gemme optimale + les meules') {
   const b = boutons(html);
-  ok(b.some((x) => x.texte === 'Gemme + meule' && x.title === 'Potentiel avec la gemme optimale + les meules' && x.presse === true), `${vue} : « Gemme + meule », enclenché`);
+  ok(b.some((x) => x.texte === 'Gemme + meule' && x.title === aideGemme && x.presse === true), `${vue} : « Gemme + meule », enclenché`);
   ok(b.some((x) => x.texte === 'Meule seule' && x.title === 'Potentiel en gardant les stats actuelles (meules seulement)' && x.presse === false), `${vue} : « Meule seule »`);
 }
 
@@ -130,7 +131,10 @@ export function testRenduRunesCourbes() {
   const t = texteVisible(html);
   const b = boutons(html);
   filtresCommuns(html, 'courbes');
-  modePotentiel(html, 'courbes');
+  modePotentiel(html, 'courbes', 'Potentiel avec les meules, et la gemme déjà posée relancée à son max');
+  // Aucun regemme différent aux Courbes ; la lecture « rune à rune », éteinte.
+  ok(!b.some((x) => x.texte === 'Autoriser un regemme différent'), 'courbes : pas de « Autoriser un regemme différent »');
+  ok(b.some((x) => x.texte === 'Rune à rune' && x.presse === false), 'courbes : « Rune à rune », éteint');
 
   // Combien de runes tracer.
   ok(valeurs(html, 'aria-label').includes('Nombre de runes'), 'nombre de runes à tracer');
@@ -152,7 +156,8 @@ export function testRenduRunesComparaison() {
   const t = texteVisible(html);
   const b = boutons(html);
   const sousOnglets = onglets(html);
-  egal(sousOnglets.map((o) => o.texte), ['Courbes partagées', 'Fichiers de compte'], 'deux vrais onglets (`Onglets`) : les deux sources');
+  egal(sousOnglets.map((o) => o.texte), ['Courbes partagées', 'Fichiers de compte', 'Historique'], 'trois vrais onglets (`Onglets`) : les trois sources');
+  egal(sousOnglets.filter((o) => o.desactive).map((o) => o.texte), ['Historique'], 'sur le site, « Historique » affiché mais désactivé');
   egal(sousOnglets.filter((o) => o.ouvert).map((o) => o.texte), ['Courbes partagées'], '« Courbes partagées » ouvert par défaut');
   ok(b.some((x) => x.texte === 'Exporter ma courbe'), '« Exporter ma courbe »');
   ok(b.some((x) => x.texte === 'Importer une courbe'), '« Importer une courbe »');
@@ -177,6 +182,7 @@ export function testRenduRunesOptimisation() {
   ok(valeurs(html, 'aria-label').includes('Palier'), 'palier');
   ok(b.some((x) => x.ariaLabel === 'Diminuer') && b.some((x) => x.ariaLabel === 'Augmenter'), 'palier : « Diminuer » / « Augmenter »');
   ok(b.some((x) => x.texte === 'Faisable avec ma réserve' && x.title === 'Ne garder que les runes applicables avec tes 2 meules et gemmes en réserve' && x.presse === false), '« Faisable avec ma réserve », et combien de consommables');
+  ok(b.some((x) => x.ariaLabel === 'Choisir les grades de meules et gemmes' && x.desactive), '« Faisable » : le chevron des grades, inactif filtre éteint');
   ok(b.some((x) => x.texte === 'Sans les immémoriaux' && x.presse === false && !!x.title?.startsWith('Garder tes gemmes et meules immémoriales de côté')), '« Sans les immémoriaux », et pourquoi');
   ok(b.some((x) => x.texte === 'Runes utilisées' && x.presse === false && !!x.title?.startsWith('Ne garder que les 2 runes qui jouent')), '« Runes utilisées », et combien');
   ok(b.some((x) => x.ariaLabel === 'Comment est-ce calculé ?' && x.presse === false), 'aide « Comment est-ce calculé ? »');

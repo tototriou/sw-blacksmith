@@ -15,7 +15,14 @@ import {
 
 // Le lecteur des listes historiques ignore cette clé et ne peut pas la réécrire.
 export const OPTIMIZER_MEMBERS_STORAGE_KEY = 'swblacksmith-optimizer-members-v1';
-export type ContenuListeOptimizer = 'guilde' | 'donjon' | 'arene';
+// `autre` : un contenu où n'agissent que les leads globaux et élémentaires
+// (ToA, temple du chaos).
+export type ContenuListeOptimizer = 'guilde' | 'donjon' | 'arene' | 'autre';
+// Une équipe de l'Optimizer compte 2 à 6 membres (6 : décision de l'utilisateur,
+// pour les équipes de raid et les équipes complètes de Mes équipes).
+export const MEMBRES_MIN_EQUIPE_OPTIMIZER = 2;
+export const MEMBRES_MAX_EQUIPE_OPTIMIZER = 6;
+
 export interface EquipeOptimizer {
   id: string;
   listId: string;
@@ -67,7 +74,7 @@ export function selecteurValide(v: unknown): v is ExclusionSelector {
 const REGLAGES_RETIRES = ['adapterArtefactsAuTri'] as const;
 // Champs personnels arrivés après les premières mémoires écrites : leur
 // absence se relit par leur défaut, au lieu de rejeter toute la mémoire.
-const CHAMPS_AJOUTES: Partial<CriteresOptimizer> = { sensTri: 'desc', bornesResultats: {} };
+const CHAMPS_AJOUTES: Partial<CriteresOptimizer> = { sensTri: 'desc', bornesResultats: {}, sortsPrecision: [] };
 function sansReglagesRetires(c: CriteresOptimizer): CriteresOptimizer {
   const copie: Record<string, unknown> = { ...c };
   for (const k of REGLAGES_RETIRES) delete copie[k];
@@ -98,7 +105,7 @@ function criteresValides(v: unknown, t: Dictionnaire): v is CriteresOptimizer {
     version: OPTIMIZER_RECIPE_VERSION, monsterCom2usId: 1, metric: 'eff', slotFilterPreset: 'moyen',
     objective: v.objective, damageSetup: v.damageSetup, compterAurasResPre: v.compterAurasResPre,
     artifactMainByKind: v.artifactMainByKind, relicMainChoice: v.relicMainChoice, relicUniqueChoice: v.relicUniqueChoice,
-    lignesVerrouillees: v.lignesVerrouillees,
+    lignesVerrouillees: v.lignesVerrouillees, sortsPrecision: v.sortsPrecision,
     requirement: { sets: v.comboSets, minStats: v.minStats, maxStats: v.maxStats, mainStats: v.mainStatsBySlot, lockedRunes: v.lockedRunes },
   }), t);
   return lu.recipe !== null && !lu.avertissements?.length;
@@ -119,7 +126,7 @@ export function validerEquipesOptimizer(valeur: unknown, t: Dictionnaire): { tea
   if (!Array.isArray(valeur)) return { teams, rejets: valeur === undefined ? [] : [valeur], rapport: [r.equipesIllisibles] };
   const ids = new Set<string>(), affectes = new Set<string>();
   for (const [index, v] of valeur.entries()) {
-    if (!objet(v) || !texte(v.id) || !texte(v.listId) || !Array.isArray(v.members) || v.members.length < 2 || v.members.length > 5
+    if (!objet(v) || !texte(v.id) || !texte(v.listId) || !Array.isArray(v.members) || v.members.length < MEMBRES_MIN_EQUIPE_OPTIMIZER || v.members.length > MEMBRES_MAX_EQUIPE_OPTIMIZER
       || !v.members.every(selecteurValide) || !leadValide(v.lead)
       || (v.leader !== undefined && (!selecteurValide(v.leader) || !v.members.some((s) => exclusionSelectorKey(s) === exclusionSelectorKey(v.leader as ExclusionSelector))))) {
       rejets.push(v); rapport.push(r.equipeMalformee(index + 1)); continue;
@@ -220,7 +227,7 @@ export function lireMembresOptimizer(brut: string | null, t: Dictionnaire): Donn
 }
 
 export function contenuListeValide(v: unknown): v is ContenuListeOptimizer {
-  return typeof v === 'string' && ['guilde', 'donjon', 'arene'].includes(v);
+  return typeof v === 'string' && ['guilde', 'donjon', 'arene', 'autre'].includes(v);
 }
 
 /** Retirer seulement les valeurs dont la cible est lisible, sans interpréter une clé abîmée. */

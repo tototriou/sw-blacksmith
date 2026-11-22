@@ -21,6 +21,7 @@ import {
   lireSessionRetenue,
   codeErreur,
   nomProposeValide,
+  sessionLaPlusRecente,
   texteSessionValide,
 } from '../bureau/sessionPur';
 import { presentationDossierSwblacksmith } from '../src/components/SettingsMenu';
@@ -53,6 +54,16 @@ export default async function testBureauSession() {
   const pris = new Set([join(racine, 'a.json'), join(racine, 'a (2).json')]);
   egal(cheminLibre(racine, 'b.json', (c) => pris.has(c)), join(racine, 'b.json'), 'nom libre : tel quel');
   egal(cheminLibre(racine, 'a.json', (c) => pris.has(c)), join(racine, 'a (3).json'), 'nom pris : le premier numéro libre, jamais d’écrasement');
+
+  titre('bureau · « Charger… » en mode preuve — la session la plus récente');
+  const dates: Record<string, number> = { 'a.json': 1, 'b.json': 3, '.b.json.tmp': 9, 'notes.txt': 8, '.cachee.json': 7 };
+  egal(
+    sessionLaPlusRecente(racine, () => Object.keys(dates), (c) => dates[c.slice(racine.length + 1)]),
+    join(racine, 'b.json'),
+    'la plus récente des .json, sans temporaire, fichier caché ni autre extension'
+  );
+  egal(sessionLaPlusRecente(racine, () => ['notes.txt'], () => 1), null, 'aucune session : rien');
+  egal(sessionLaPlusRecente(racine, () => { throw new Error('ENOENT'); }, () => 1), null, 'dossier illisible : rien');
 
   titre('bureau · session en cours — session.json relu avec méfiance');
   egal(lireSessionRetenue(null), null, 'premier lancement : rien');

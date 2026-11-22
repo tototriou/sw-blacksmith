@@ -175,7 +175,7 @@ const indexRunes = memoByData((data: any): ReadonlyMap<number, any> => {
 // ⚠️ **Aucune valeur ne dit « aucun marqueur »** : une rune sans marqueur est
 // simplement ABSENTE de la liste. Chaque rune_id y figure au plus une fois
 // (vérifié sur deux exports réels).
-const indexRuneMarkers = memoByData((data: any): ReadonlyMap<number, number> => {
+export const indexRuneMarkers = memoByData((data: any): ReadonlyMap<number, number> => {
   const m = new Map<number, number>();
   if (Array.isArray(data?.rune_lock_list)) {
     for (const e of data.rune_lock_list) {
@@ -291,7 +291,7 @@ function subEffLine(eff: any): EffectLine {
 
 // `markers` : voir `indexRuneMarkers`. Une rune absente de l'index n'a pas de
 // marqueur — le champ reste alors absent, jamais à 0.
-function runeToDetail(rune: any, markers: ReadonlyMap<number, number>): RuneDetail {
+export function runeToDetail(rune: any, markers: ReadonlyMap<number, number>): RuneDetail {
   const subs = Array.isArray(rune?.sec_eff)
     ? rune.sec_eff.filter((e: any) => Number(e?.[0])).map(subEffLine)
     : [];
@@ -311,7 +311,7 @@ function runeToDetail(rune: any, markers: ReadonlyMap<number, number>): RuneDeta
   };
 }
 
-function artifactToDetail(a: any): ArtifactDetail {
+export function artifactToDetail(a: any): ArtifactDetail {
   const main = effLine(a?.pri_effect) ?? { code: 0, value: 0 };
   // ⚠️ `rid` était LU pour indexer les artéfacts (voir `artById`) mais jamais
   // conservé sur le détail. Sans lui, un artéfact ne peut être ni mémorisé
@@ -520,6 +520,7 @@ function flattenIds(value: any, out: Set<number>) {
 
 export interface ImportedUnit {
   com2usId: number;
+  unitId: number; // l'exemplaire du jeu (`unit_id`)
   flatRuneSpeed: number; // SPD plate cumulée des runes RTA
   swift: boolean; // set Swift complet (4 runes) équipé en RTA
   sets: string[]; // sets de runes actifs RTA (clés RUNE_SETS)
@@ -624,7 +625,7 @@ export function parseAccountJson(src: AccountSource, t: Dictionnaire): ParseResu
     // Artéfacts RTA si disponibles, sinon les artéfacts actuellement équipés.
     const artifactObjs = rtaArts.get(uid) ?? (Array.isArray(unit?.artifacts) ? unit.artifacts : []);
     const gear = buildGear(unit, runeIds, artifactObjs, runeById, indexRuneMarkers(data));
-    units.push({ com2usId, flatRuneSpeed, swift, sets, runeCount: runeIds.length, gear });
+    units.push({ com2usId, unitId: uid, flatRuneSpeed, swift, sets, runeCount: runeIds.length, gear });
   }
 
   return { units };
@@ -649,6 +650,24 @@ export interface BoxParseResult {
   error?: string;
 }
 
+// Un monstre de la box, ou `null` s'il n'en est pas (pas 6★, espèce
+// illisible). Partagé par l'import et le compte en direct (compteDirect.ts) :
+// les deux doivent donner le même monstre.
+export function boxMonsterOf(
+  u: any,
+  runeById: ReadonlyMap<number, any>,
+  markers: ReadonlyMap<number, number>
+): BoxMonster | null {
+  if (Number(u?.class) !== 6) return null; // seuls les monstres montés 6★
+  const com2usId = Number(u?.unit_master_id);
+  const unitId = Number(u?.unit_id);
+  if (!Number.isFinite(com2usId)) return null;
+  const runeIds = Array.isArray(u?.runes) ? u.runes.map((r: any) => r?.rune_id) : [];
+  const artifactObjs = Array.isArray(u?.artifacts) ? u.artifacts : [];
+  const gear = buildGear(u, runeIds, artifactObjs, runeById, markers);
+  return { unitId, com2usId, stars: 6, level: Number(u?.unit_level) || 0, gear };
+}
+
 // Extrait toute la box 6★. L'équipement vient de l'unité elle-même (runes et
 // artéfacts embarqués) : c'est le build actuellement équipé en jeu.
 export function parseAccountBox(src: AccountSource, t: Dictionnaire): BoxParseResult {
@@ -664,14 +683,8 @@ export function parseAccountBox(src: AccountSource, t: Dictionnaire): BoxParseRe
   const markers = indexRuneMarkers(data);
   const monsters: BoxMonster[] = [];
   for (const u of unitList) {
-    if (Number(u?.class) !== 6) continue; // seuls les monstres montés 6★
-    const com2usId = Number(u?.unit_master_id);
-    const unitId = Number(u?.unit_id);
-    if (!Number.isFinite(com2usId)) continue;
-    const runeIds = Array.isArray(u?.runes) ? u.runes.map((r: any) => r?.rune_id) : [];
-    const artifactObjs = Array.isArray(u?.artifacts) ? u.artifacts : [];
-    const gear = buildGear(u, runeIds, artifactObjs, runeById, markers);
-    monsters.push({ unitId, com2usId, stars: 6, level: Number(u?.unit_level) || 0, gear });
+    const m = boxMonsterOf(u, runeById, markers);
+    if (m) monsters.push(m);
   }
 
   if (monsters.length === 0) {
@@ -1013,24 +1026,31 @@ export function parseCrafts(src: AccountSource): CraftLine[] {
   if (!Array.isArray(list)) return [];
   const out: CraftLine[] = [];
   for (const c of list) {
-    const famille = CRAFT_FAMILY[Number(c?.craft_type)];
-    if (!famille) continue;
-    const dec = decodeCraftTypeId(Number(c?.craft_type_id));
-    if (!dec) continue;
-    const amount = Number(c?.amount) || 0;
-    if (amount <= 0) continue;
-    const setKey = famille.immemorial ? null : SET_ID_KEY[dec.set];
-    if (setKey === undefined) continue; // set inconnu (nouveau set non encore mappé)
-    out.push({
-      kind: famille.kind,
-      setKey,
-      stat: dec.stat,
-      grade: dec.grade,
-      ancient: famille.ancient,
-      amount,
-    });
+    const ligne = craftLineOf(c);
+    if (ligne) out.push(ligne);
   }
   return out;
+}
+
+// Un lot de pierres, ou `null` s'il ne se lit pas ou est vide. Partagé par
+// l'import et le compte en direct (compteDirect.ts).
+export function craftLineOf(c: any): CraftLine | null {
+  const famille = CRAFT_FAMILY[Number(c?.craft_type)];
+  if (!famille) return null;
+  const dec = decodeCraftTypeId(Number(c?.craft_type_id));
+  if (!dec) return null;
+  const amount = Number(c?.amount) || 0;
+  if (amount <= 0) return null;
+  const setKey = famille.immemorial ? null : SET_ID_KEY[dec.set];
+  if (setKey === undefined) return null; // set inconnu (nouveau set non encore mappé)
+  return {
+    kind: famille.kind,
+    setKey,
+    stat: dec.stat,
+    grade: dec.grade,
+    ancient: famille.ancient,
+    amount,
+  };
 }
 
 /* --------------------------------------------------------------------------
@@ -1050,22 +1070,26 @@ const SIEGE_OFFENSE_DECK_TYPE = 22;
 
 // deck_type des équipes d'attaque d'ARÈNE (dans deck_list). Relevé fourni par
 // l'utilisateur, puis vérifié : 15 decks de ce type sur chacun de deux exports
-// réels. Sert au périmètre `arene-attaque` de `parseUsedRuneIdsParPerimetre`.
+// réels. Sert à `parseArenaOffense` et au périmètre `arene-attaque` de
+// `parseUsedRuneIdsParPerimetre`.
 const ARENA_OFFENSE_DECK_TYPE = 1;
 
 // Un slot importé, ou null pour un slot vide (unit_id = 0).
 export interface SiegeImportedSlot {
   com2usId: number;
+  // L'exemplaire du jeu (`unit_id`) : Mes équipes le garde pour retrouver le
+  // monstre dans la Box. Absent d'un compte gardé avant qu'il soit lu.
+  unitId?: number;
   flatRuneSpeed: number; // SPD plate des runes de ce build de siège
   swift: boolean; // set Swift complet équipé sur ce build de siège
   sets: string[]; // sets de runes actifs (clés RUNE_SETS), ex. ['swift','will']
   gear?: GearSet; // détail runes/artéfacts/relique de ce build
 }
 
-// Un deck = 3 slots ordonnés (index 0 = leader).
+// Un deck = ses slots ordonnés (index 0 = leader) : 3 au siège, 4 en arène.
 export interface SiegeImportedDeck {
   deckId: number | string;
-  slots: (SiegeImportedSlot | null)[]; // longueur 3, null = slot vide
+  slots: (SiegeImportedSlot | null)[]; // longueur 3 (siège) ou 4 (arène), null = slot vide
 }
 
 export interface SiegeParseResult {
@@ -1102,22 +1126,28 @@ function equipArtifactMap(equip: any): Map<number, any[]> {
 // Définition brute d'un deck avant résolution en monstres/vitesses.
 interface DeckDef {
   deckId: number | string;
-  unitIds: any[]; // 3 slots ordonnés, leader en tête ; 0 = vide
+  unitIds: any[]; // slots ordonnés, leader en tête ; 0 = vide
   runeIdsByUnit: Map<number, any[]>;
   artifactIdsByUnit: Map<number, any[]>;
 }
 
-// Résout des DeckDef en SiegeImportedDeck (mapping unité → monstre + vitesses).
+// Les places d'une équipe : 3 au siège, 4 en arène.
+const SLOTS_SIEGE = 3;
+export const SLOTS_ARENE = 4;
+
+// Résout des DeckDef en SiegeImportedDeck (mapping unité → monstre + vitesses),
+// sur `nbSlots` places.
 function buildSiegeDecks(
   defs: DeckDef[],
   runeById: ReadonlyMap<number, any>,
   unitById: ReadonlyMap<number, any>,
   artById: ReadonlyMap<number, any>,
-  markers: ReadonlyMap<number, number>
+  markers: ReadonlyMap<number, number>,
+  nbSlots = SLOTS_SIEGE
 ): SiegeImportedDeck[] {
   const decks: SiegeImportedDeck[] = [];
   for (const def of defs) {
-    const slots: (SiegeImportedSlot | null)[] = [0, 1, 2].map((i) => {
+    const slots: (SiegeImportedSlot | null)[] = Array.from({ length: nbSlots }, (_, i) => i).map((i) => {
       const uid = Number(def.unitIds[i]);
       if (!Number.isFinite(uid) || uid === 0) return null;
       const unit = unitById.get(uid);
@@ -1132,7 +1162,7 @@ function buildSiegeDecks(
       const artIds = def.artifactIdsByUnit.get(uid) ?? [];
       const artifactObjs = artIds.map((aid) => artById.get(Number(aid))).filter(Boolean);
       const gear = buildGear(unit, runeIds, artifactObjs, runeById, markers);
-      return { com2usId, flatRuneSpeed, swift, sets, gear };
+      return { com2usId, unitId: uid, flatRuneSpeed, swift, sets, gear };
     });
     // On ignore les decks totalement vides (jamais configurés).
     if (slots.some((s) => s !== null)) decks.push({ deckId: def.deckId, slots });
@@ -1196,26 +1226,496 @@ export function parseSiegeOffense(src: AccountSource, t: Dictionnaire): SiegePar
   const unitById = indexUnits(data);
   const artById = indexArtifacts(data);
 
-  const defs: DeckDef[] = offense.map((dk: any, i: number) => {
-    // Leader en tête (leader_unit_id), puis les autres unités non nulles.
-    const ids = (Array.isArray(dk?.unit_id_list) ? dk.unit_id_list : [])
-      .map(Number)
-      .filter((x: number) => Number.isFinite(x) && x !== 0);
-    const lead = Number(dk?.leader_unit_id);
-    const ordered = Number.isFinite(lead)
-      ? [lead, ...ids.filter((x: number) => x !== lead)]
-      : ids;
-    return {
-      deckId: dk?.deck_seq ?? i,
-      unitIds: [ordered[0] ?? 0, ordered[1] ?? 0, ordered[2] ?? 0],
-      runeIdsByUnit: equipArrayToMap(dk?.equip),
-      artifactIdsByUnit: equipArtifactMap(dk?.equip),
-    };
-  });
-
+  const defs = offense.map((dk: any, i: number) => deckEnregistre(dk, i, SLOTS_SIEGE));
   const decks = buildSiegeDecks(defs, runeById, unitById, artById, indexRuneMarkers(data));
   if (decks.length === 0) {
     return { decks: [], error: e.offenseVide };
   }
   return { decks };
+}
+
+/* --------------------------------------------------------------------------
+ * Import DECKS D'ARÈNE — défenses et attaques
+ *
+ * Sources de « Mes équipes » (docs/02-app/compte/feat-equipes.md, « Imports ») :
+ *  - Défenses : `defense_deck_info` (arène) et `server_arena_defense_deck_info`
+ *    (arène de serveur), chacune avec son propre preset dans `equip`. ⚠️ Leurs
+ *    `unit_id_list` n'ont pas la même forme : ids nus, ou `{ unit_id, pos_id }`.
+ *  - Attaques : `deck_list` au `deck_type` 1 ; un monstre sans preset dans
+ *    `equip` prend ce qu'il porte à l'export (même règle que les runes utilisées).
+ * ----------------------------------------------------------------------- */
+
+export type CleDeckArene = 'defense' | 'defense-serveur' | 'attaque';
+
+export interface SlotDeckArene {
+  unitId: number;
+  com2usId: number;
+  gear: GearSet;
+}
+
+export interface DeckArene {
+  cle: CleDeckArene;
+  // Rang du deck parmi ceux de sa clé (0 pour une défense).
+  rang: number;
+  // Leader en tête quand l'export le désigne.
+  slots: SlotDeckArene[];
+}
+
+export function parseArenaDecks(src: AccountSource): DeckArene[] {
+  const data = parseAccountSource(src);
+  if (!data || !Array.isArray(data?.unit_list)) return [];
+  const runeById = indexRunes(data);
+  const unitById = indexUnits(data);
+  const artById = indexArtifacts(data);
+  const markers = indexRuneMarkers(data);
+
+  const slot = (uid: number, presets: Map<number, any[]> | null, artefacts: Map<number, any[]> | null): SlotDeckArene | null => {
+    const unit = unitById.get(uid);
+    const com2usId = Number(unit?.unit_master_id);
+    if (!unit || !Number.isFinite(com2usId)) return null;
+    const preset = presets?.get(uid);
+    // Un preset présent fait foi, même vide (comme les decks de siège) ;
+    // sans entrée, ce que porte le monstre.
+    const avecPreset = preset !== undefined;
+    const runeIds = avecPreset ? preset : Array.isArray(unit.runes) ? unit.runes.map((r: any) => r?.rune_id) : [];
+    const artIds = avecPreset ? artefacts?.get(uid) ?? [] : null;
+    const artObjs = artIds ? artIds.map((a) => artById.get(Number(a))).filter(Boolean) : Array.isArray(unit.artifacts) ? unit.artifacts : [];
+    return { unitId: uid, com2usId, gear: buildGear(unit, runeIds, artObjs, runeById, markers) };
+  };
+  const ids = (liste: any[]): number[] =>
+    liste.map((u) => Number(u && typeof u === 'object' ? u.unit_id : u)).filter((x) => Number.isFinite(x) && x !== 0);
+
+  const decks: DeckArene[] = [];
+  for (const [cle, champ] of [['defense', 'defense_deck_info'], ['defense-serveur', 'server_arena_defense_deck_info']] as const) {
+    const info = data?.[champ];
+    if (!info || typeof info !== 'object' || !Array.isArray(info.unit_id_list)) continue;
+    const slots = ids(info.unit_id_list).map((u) => slot(u, equipArrayToMap(info.equip), equipArtifactMap(info.equip)))
+      .filter((s): s is SlotDeckArene => s !== null);
+    if (slots.length) decks.push({ cle, rang: 0, slots });
+  }
+  const attaques = (Array.isArray(data?.deck_list) ? data.deck_list : []).filter((dk: any) => Number(dk?.deck_type) === ARENA_OFFENSE_DECK_TYPE);
+  attaques.forEach((dk: any) => {
+    const tous = ids(Array.isArray(dk?.unit_id_list) ? dk.unit_id_list : []);
+    const lead = Number(dk?.leader_unit_id);
+    const ordre = Number.isFinite(lead) && lead !== 0 ? [lead, ...tous.filter((x) => x !== lead)] : tous;
+    const slots = ordre.map((u) => slot(u, equipArrayToMap(dk?.equip), equipArtifactMap(dk?.equip))).filter((s): s is SlotDeckArene => s !== null);
+    if (slots.length) decks.push({ cle: 'attaque', rang: decks.filter((d) => d.cle === 'attaque').length, slots });
+  });
+  return decks;
+}
+
+// Un deck de `deck_list` : le leader (`leader_unit_id`) en tête, puis les
+// autres unités non nulles, sur `nbSlots` places ; runes et artéfacts du
+// preset du deck.
+function deckEnregistre(dk: any, i: number, nbSlots: number): DeckDef {
+  const ids = (Array.isArray(dk?.unit_id_list) ? dk.unit_id_list : [])
+    .map(Number)
+    .filter((x: number) => Number.isFinite(x) && x !== 0);
+  const lead = Number(dk?.leader_unit_id);
+  const ordered = Number.isFinite(lead) && lead !== 0 ? [lead, ...ids.filter((x: number) => x !== lead)] : ids;
+  return {
+    deckId: dk?.deck_seq ?? i,
+    unitIds: Array.from({ length: nbSlots }, (_, k) => ordered[k] ?? 0),
+    runeIdsByUnit: equipArrayToMap(dk?.equip),
+    artifactIdsByUnit: equipArtifactMap(dk?.equip),
+  };
+}
+
+/* --------------------------------------------------------------------------
+ * Import ÉQUIPES D'ARÈNE — défense, défense interserveur & offense
+ *
+ * Des decks de 4 monstres (index 0 = leader), chacun avec le preset de runes
+ * et d'artéfacts du deck, comme au siège.
+ *  - Défense : `defense_deck_info`, un deck unique. `unit_id_list` : des ids
+ *    nus, dans l'ordre des places ; le leader est le 1ᵉʳ (relevé : un lead
+ *    d'arène en tête sur deux exports réels) ; 0 = place vide.
+ *  - Défense interserveur : `server_arena_defense_deck_info`, un deck
+ *    unique. ⚠️ `unit_id_list` porte des objets `{ unit_id, pos_id }` :
+ *    l'ordre est celui de `pos_id`, la position 1 est le leader (relevé : le
+ *    même leader que la défense classique sur un export réel).
+ *  - Offense : `deck_list` filtré sur `deck_type = 1`. Les équipes d'attaque
+ *    servent aux deux arènes : l'interserveur n'a pas les siennes.
+ * ----------------------------------------------------------------------- */
+
+// Un deck unique de défense d'arène (`defense_deck_info` ou
+// `server_arena_defense_deck_info`), ou null s'il est absent du fichier.
+function defenseArene(info: any): DeckDef | null {
+  if (!info || typeof info !== 'object' || !Array.isArray(info.unit_id_list)) return null;
+  const places = info.unit_id_list.map((u: any, i: number) =>
+    u && typeof u === 'object' ? { id: Number(u.unit_id), pos: Number(u.pos_id) } : { id: Number(u), pos: i + 1 }
+  );
+  places.sort((a: { pos: number }, b: { pos: number }) => a.pos - b.pos);
+  return {
+    deckId: 1,
+    unitIds: Array.from({ length: SLOTS_ARENE }, (_, k) => places[k]?.id ?? 0),
+    runeIdsByUnit: equipArrayToMap(info.equip),
+    artifactIdsByUnit: equipArtifactMap(info.equip),
+  };
+}
+
+function lireDefenseArene(
+  src: AccountSource,
+  t: Dictionnaire,
+  cle: 'defense_deck_info' | 'server_arena_defense_deck_info',
+  sans: string,
+  vide: string
+): SiegeParseResult {
+  const e = t.importCompte;
+  const data = parseAccountSource(src);
+  if (!data) return { decks: [], error: e.illisible };
+  if (!Array.isArray(data?.unit_list)) return { decks: [], error: e.pasDeUnitList };
+  const def = defenseArene(data?.[cle]);
+  if (!def) return { decks: [], error: sans };
+  const decks = buildSiegeDecks([def], indexRunes(data), indexUnits(data), indexArtifacts(data), indexRuneMarkers(data), SLOTS_ARENE);
+  return decks.length ? { decks } : { decks: [], error: vide };
+}
+
+// Import de la DÉFENSE d'arène.
+export function parseArenaDefense(src: AccountSource, t: Dictionnaire): SiegeParseResult {
+  const e = t.importCompte;
+  return lireDefenseArene(src, t, 'defense_deck_info', e.sansDefenseArene, e.defenseAreneVide);
+}
+
+// Import de la DÉFENSE d'arène interserveur.
+export function parseArenaInterserveurDefense(src: AccountSource, t: Dictionnaire): SiegeParseResult {
+  const e = t.importCompte;
+  return lireDefenseArene(src, t, 'server_arena_defense_deck_info', e.sansDefenseInterserveur, e.defenseInterserveurVide);
+}
+
+/* --------------------------------------------------------------------------
+ * ARÈNE DIMENSIONNELLE — box, runes et équipes à part
+ *
+ * La box du mode n'est PAS dans l'export de compte : elle vient de la réponse
+ * `dimensionarena_getSeasonInfo`, tenue à jour par le plugin SWEX
+ * (plugin-swex/source/dimension.ts), de la même forme qu'un export — relevé
+ * sur un journal réel (2026-11) :
+ *  - `unit_list` : les monstres obtenus dans le mode, chacun avec les runes
+ *    GAGNÉES qu'il porte (`runes`, de 0 à 6) ;
+ *  - `rune_list` : les runes gagnées en inventaire ;
+ *  - `default_unit_list` : un build de 6 runes par espèce (`is_default`),
+ *    celui avec lequel un monstre est invoqué ;
+ *  - `defense_deck_info.unit_id_list` : la défense, `[[id, id, id, id]]`,
+ *    leader en tête comme la défense d'arène.
+ * Pas d'artéfacts dans ce mode (`artifact_list` vide).
+ *
+ * ⚠️ **Un emplacement sans rune gagnée porte la rune du build par défaut de
+ * l'espèce.** Un monstre sans aucune rune porte tout ce build : relevé de
+ * l'utilisateur en jeu sur sa défense. Le complément emplacement par
+ * emplacement (un monstre qui porte 4 runes gagnées) en est le prolongement,
+ * non relevé.
+ *
+ * L'export, lui, garde la trace des équipes d'ATTAQUE jouées :
+ * `deck_recent_list` de type 28, des identifiants de la box dimensionnelle,
+ * sans runes (`equip` vide) — relevé : les 4 monstres de la dernière attaque,
+ * dont celui qui porte une rune retrouvée dans le journal.
+ * ----------------------------------------------------------------------- */
+
+// Le type des équipes d'attaque d'arène dimensionnelle dans `deck_recent_list`.
+const DIMENSION_OFFENSE_RECENT_TYPE = 28;
+
+// La box dimensionnelle sous la forme d'un export, pour les index communs :
+// les monstres de la box ET les builds par défaut (identifiants courts, 1001…,
+// disjoints de ceux de la box), les runes en inventaire.
+const donneesDimension = memoByData((saison: any) => ({
+  unit_list: [
+    ...(Array.isArray(saison?.unit_list) ? saison.unit_list : []),
+    ...(Array.isArray(saison?.default_unit_list) ? saison.default_unit_list : []),
+  ],
+  runes: Array.isArray(saison?.rune_list) ? saison.rune_list : [],
+}));
+
+// Build par défaut de chaque espèce : unit_master_id → ses runes.
+const buildsParDefaut = memoByData((saison: any): ReadonlyMap<number, any[]> => {
+  const m = new Map<number, any[]>();
+  for (const u of Array.isArray(saison?.default_unit_list) ? saison.default_unit_list : []) {
+    if (Array.isArray(u?.runes)) m.set(Number(u.unit_master_id), u.runes);
+  }
+  return m;
+});
+
+// Les runes que porte un monstre de la box : les siennes, et pour chaque
+// emplacement sans rune gagnée, celle du build par défaut de son espèce.
+function runesDimension(unit: any, saison: any): number[] {
+  const propres = Array.isArray(unit?.runes) ? unit.runes : [];
+  const occupes = new Set(propres.map((r: any) => Number(r?.slot_no)));
+  const defaut = (buildsParDefaut(saison).get(Number(unit?.unit_master_id)) ?? []).filter(
+    (r: any) => !occupes.has(Number(r?.slot_no))
+  );
+  return [...propres, ...defaut].map((r: any) => Number(r?.rune_id)).filter(Number.isFinite);
+}
+
+// Résout des équipes de la box dimensionnelle (identifiants ordonnés, leader
+// en tête) en decks de 4 places, chaque monstre avec ses runes du mode.
+function decksDimension(equipes: { deckId: number | string; ids: number[] }[], saison: any): SiegeImportedDeck[] {
+  const data = donneesDimension(saison);
+  const unitById = indexUnits(data);
+  const defs: DeckDef[] = equipes.map(({ deckId, ids }) => {
+    const unitIds = Array.from({ length: SLOTS_ARENE }, (_, k) => ids[k] ?? 0);
+    const runeIdsByUnit = new Map<number, any[]>();
+    for (const id of unitIds) {
+      const unit = unitById.get(id);
+      if (unit) runeIdsByUnit.set(id, runesDimension(unit, saison));
+    }
+    return { deckId, unitIds, runeIdsByUnit, artifactIdsByUnit: new Map() };
+  });
+  return buildSiegeDecks(defs, indexRunes(data), unitById, new Map(), new Map(), SLOTS_ARENE);
+}
+
+const idsNonNuls = (liste: any[]): number[] =>
+  liste.map(Number).filter((x: number) => Number.isFinite(x) && x !== 0);
+
+// Les runes GAGNÉES dans l'arène dimensionnelle : en inventaire (`rune_list`)
+// et portées par les monstres de la box. Pas celles des builds par défaut,
+// que le joueur ne possède pas : elles comblent les emplacements libres.
+export function parseDimensionRunes(saison: Record<string, any> | null): RuneDetail[] {
+  const monstres = Array.isArray(saison?.unit_list) ? saison.unit_list : [];
+  const toutes = [
+    ...(Array.isArray(saison?.rune_list) ? saison.rune_list : []),
+    ...monstres.flatMap((u: any) => (Array.isArray(u?.runes) ? u.runes : [])),
+  ];
+  const parId = new Map<number, any>();
+  for (const r of toutes) if (Number.isFinite(Number(r?.rune_id))) parId.set(Number(r.rune_id), r);
+  return [...parId.values()].map((r) => runeToDetail(r, new Map())).filter((r) => r.main.code !== 0);
+}
+
+// La DÉFENSE de l'arène dimensionnelle, depuis la saison lue dans le journal
+// SWEX (`lireSaisonDimension`).
+export function parseDimensionDefense(saison: Record<string, any> | null, t: Dictionnaire): SiegeParseResult {
+  const e = t.importCompte;
+  const liste = saison?.defense_deck_info?.unit_id_list;
+  if (!Array.isArray(liste)) return { decks: [], error: e.sansDefenseDimension };
+  // `[[…]]` relevé ; une liste à plat est lue de même.
+  const ids = idsNonNuls(Array.isArray(liste[0]) ? liste[0] : liste);
+  const decks = decksDimension([{ deckId: 1, ids }], saison);
+  return decks.length ? { decks } : { decks: [], error: e.defenseDimensionVide };
+}
+
+// Les équipes d'ATTAQUE de l'arène dimensionnelle : celles de type 28 de
+// `deck_recent_list` dans l'export (`leader_unit_id` en tête), résolues dans
+// la box de la saison. Sans saison, leurs monstres sont inconnus.
+export function parseDimensionOffense(
+  src: AccountSource,
+  saison: Record<string, any> | null,
+  t: Dictionnaire
+): SiegeParseResult {
+  const e = t.importCompte;
+  const data = parseAccountSource(src);
+  if (!data) return { decks: [], error: e.illisible };
+  const recents = Array.isArray(data?.deck_recent_list) ? data.deck_recent_list : [];
+  const equipes = recents
+    .filter((dk: any) => Number(dk?.type) === DIMENSION_OFFENSE_RECENT_TYPE)
+    .map((dk: any, i: number) => {
+      const ids = idsNonNuls(Array.isArray(dk?.unit_id_list) ? dk.unit_id_list : []);
+      const lead = Number(dk?.leader_unit_id);
+      return { deckId: i + 1, ids: ids.includes(lead) ? [lead, ...ids.filter((x) => x !== lead)] : ids };
+    });
+  if (equipes.length === 0) return { decks: [], error: e.sansOffenseDimension };
+  if (!saison) return { decks: [], error: e.offenseDimensionSansSaison };
+  const decks = decksDimension(equipes, saison);
+  return decks.length ? { decks } : { decks: [], error: e.offenseDimensionInconnue };
+}
+
+// Import des ÉQUIPES D'ATTAQUE d'arène.
+export function parseArenaOffense(src: AccountSource, t: Dictionnaire): SiegeParseResult {
+  const e = t.importCompte;
+  const data = parseAccountSource(src);
+  if (!data) return { decks: [], error: e.illisible };
+  if (!Array.isArray(data?.unit_list)) return { decks: [], error: e.pasDeUnitList };
+  const deckList = Array.isArray(data?.deck_list) ? data.deck_list : [];
+  const offense = deckList.filter((dk: any) => Number(dk?.deck_type) === ARENA_OFFENSE_DECK_TYPE);
+  if (offense.length === 0) return { decks: [], error: e.sansOffenseArene };
+  const defs = offense.map((dk: any, i: number) => deckEnregistre(dk, i, SLOTS_ARENE));
+  const decks = buildSiegeDecks(defs, indexRunes(data), indexUnits(data), indexArtifacts(data), indexRuneMarkers(data), SLOTS_ARENE);
+  return decks.length ? { decks } : { decks: [], error: e.offenseAreneVide };
+}
+
+/* --------------------------------------------------------------------------
+ * Import de TOUS LES DECKS ENREGISTRÉS (`deck_list`), contenu par contenu
+ *
+ * Le jeu enregistre dans `deck_list` les équipes de chaque contenu : arène,
+ * siège, guerre de guilde, donjons, ToA, labyrinthe… Un deck porte son
+ * contenu (`deck_type`), son numéro (`deck_seq`), son leader et le preset de
+ * runes et d'artéfacts de chaque monstre (`equip`, parfois absent : le
+ * monstre combat alors avec ce qu'il porte).
+ *
+ * ⚠️ Le fichier ne NOMME pas les contenus : la table `CONTENUS_DECK` vient de
+ * relevés. Un `deck_type` absent de la table n'est jamais écarté : il sort en
+ * `autre`, avec son numéro, pour que l'écran le montre tel quel.
+ *
+ * ⚠️ `unit_id_list` a TOUJOURS 8 cases, 0 pour une case vide (relevé sur deux
+ * exports réels, 131 et 133 decks). Les monstres d'un raid y sont placés sur
+ * la grille du combat (cases 1, 2, 4, 5, 6, 7) : on ne garde que l'ordre,
+ * leader en tête, comme pour les autres decks.
+ *
+ * ⚠️ Sur certains contenus, `deck_seq` vaut `catégorie × 100 + emplacement`
+ * (101, 201, 202…, 1001) : relevé sur les `deck_type` 24 à 27 de deux
+ * exports. `categorie` le décompose ; elle est null sous 100.
+ * ----------------------------------------------------------------------- */
+
+// Les contenus identifiés. La clé d'un contenu est stable (elle part dans les
+// imports de l'écran) ; son libellé vit dans le dictionnaire.
+export type ContenuDeck =
+  | 'arene-offense'
+  | 'guerre-guilde-offense'
+  | 'raid-mondes'
+  | 'labyrinthe-normal'
+  | 'labyrinthe-sauvetage'
+  | 'labyrinthe-temps-limite'
+  | 'labyrinthe-boss'
+  | 'labyrinthe-temps-pause'
+  | 'labyrinthe-vitesse-limitee'
+  | 'labyrinthe-explosion'
+  | 'tribunal-ascension'
+  | 'tour-eau'
+  | 'tour-feu'
+  | 'tour-vent'
+  | 'tour-lumiere'
+  | 'tour-tenebres'
+  | 'tour-celeste'
+  | 'raid-dimensionnel-1'
+  | 'raid-dimensionnel-2'
+  | 'raid-dimensionnel-3'
+  | 'siege-offense'
+  | 'temple-chaos'
+  | 'cairos'
+  | 'faille-mondes'
+  | 'passage-dimensions'
+  | 'subjugation'
+  | 'autre';
+
+// `deck_type` → contenu. Seuls les types relevés figurent ici : 1 et 22 sur
+// des exports réels, les autres nommés par l'utilisateur d'après ses decks en
+// jeu (2026-11-18 et 2026-11-21).
+export const CONTENUS_DECK: Readonly<Record<number, ContenuDeck>> = {
+  [ARENA_OFFENSE_DECK_TYPE]: 'arene-offense',
+  2: 'guerre-guilde-offense',
+  3: 'raid-mondes',
+  4: 'labyrinthe-normal',
+  5: 'labyrinthe-sauvetage',
+  6: 'tribunal-ascension',
+  7: 'labyrinthe-vitesse-limitee',
+  8: 'labyrinthe-temps-limite',
+  9: 'labyrinthe-temps-pause',
+  10: 'labyrinthe-explosion',
+  11: 'labyrinthe-boss',
+  12: 'tour-eau',
+  13: 'tour-feu',
+  14: 'tour-vent',
+  15: 'tour-lumiere',
+  16: 'tour-tenebres',
+  17: 'tour-celeste',
+  19: 'raid-dimensionnel-1',
+  20: 'raid-dimensionnel-2',
+  21: 'raid-dimensionnel-3',
+  [SIEGE_OFFENSE_DECK_TYPE]: 'siege-offense',
+  23: 'temple-chaos',
+  24: 'cairos',
+  25: 'faille-mondes',
+  26: 'passage-dimensions',
+  27: 'subjugation',
+};
+
+export function contenuDuDeckType(deckType: number): ContenuDeck {
+  return CONTENUS_DECK[deckType] ?? 'autre';
+}
+
+// Les contenus à sous-catégories : la catégorie de `deck_seq` (centaines)
+// désigne un donjon ou une variante. Nommées par l'utilisateur ; une catégorie
+// absente de la table sort en null, avec son numéro dans `categorie`.
+export type SousContenuDeck =
+  | 'castel-geant'
+  | 'taniere-dragon'
+  | 'necropolis'
+  | 'royaume-spirituel'
+  | 'forteresse-acier'
+  | 'crypte-jugement'
+  | 'bete-glace'
+  | 'bete-enflammee'
+  | 'bete-orage'
+  | 'bete-radiance'
+  | 'bete-marecage'
+  | 'foret-fauves-rugissants'
+  | 'sanctuaire-fees-reveuses'
+  | 'falaise-hommes-betes'
+  | 'ruines-mort-silencieuse'
+  | 'chateau-heros-oublies'
+  | 'terre-infernale-embrasee'
+  | 'subjugation-eau'
+  | 'subjugation-feu'
+  | 'subjugation-vent'
+  | 'subjugation-boss';
+
+export const SOUS_CONTENUS_DECK: Readonly<Partial<Record<ContenuDeck, Readonly<Record<number, SousContenuDeck>>>>> = {
+  cairos: {
+    1: 'castel-geant',
+    2: 'taniere-dragon',
+    3: 'necropolis',
+    4: 'royaume-spirituel',
+    5: 'forteresse-acier',
+    6: 'crypte-jugement',
+  },
+  'faille-mondes': { 1: 'bete-glace', 2: 'bete-enflammee', 3: 'bete-orage', 4: 'bete-radiance', 5: 'bete-marecage' },
+  'passage-dimensions': {
+    1: 'foret-fauves-rugissants',
+    2: 'sanctuaire-fees-reveuses',
+    3: 'falaise-hommes-betes',
+    4: 'ruines-mort-silencieuse',
+    5: 'chateau-heros-oublies',
+    6: 'terre-infernale-embrasee',
+  },
+  subjugation: { 1: 'subjugation-eau', 2: 'subjugation-feu', 3: 'subjugation-vent', 10: 'subjugation-boss' },
+};
+
+export function sousContenuDuDeck(contenu: ContenuDeck, categorie: number | null): SousContenuDeck | null {
+  return categorie === null ? null : (SOUS_CONTENUS_DECK[contenu]?.[categorie] ?? null);
+}
+
+// `deck_seq` → catégorie et emplacement, quand le numéro est en centaines.
+export function decomposerDeckSeq(seq: number): { categorie: number | null; emplacement: number } {
+  if (!Number.isInteger(seq) || seq < 100) return { categorie: null, emplacement: seq };
+  return { categorie: Math.floor(seq / 100), emplacement: seq % 100 };
+}
+
+export interface DeckEnregistreImporte extends SiegeImportedDeck {
+  deckType: number;
+  contenu: ContenuDeck;
+  sousContenu: SousContenuDeck | null;
+  categorie: number | null;
+  emplacement: number;
+}
+
+// Le plus grand deck enregistré : 6 monstres (raid, faille).
+const SLOTS_DECK_MAX = 6;
+
+// Tous les decks enregistrés, dans l'ordre du fichier. Un deck sans aucun
+// monstre connu de la box est écarté (jamais configuré, ou monstres vendus).
+// Chaque deck a autant de places que de monstres, leader en tête.
+export function parseDecksEnregistres(src: AccountSource): DeckEnregistreImporte[] {
+  const data = parseAccountSource(src);
+  if (!data || !Array.isArray(data?.unit_list) || !Array.isArray(data?.deck_list)) return [];
+  const runeById = indexRunes(data);
+  const unitById = indexUnits(data);
+  const artById = indexArtifacts(data);
+  const markers = indexRuneMarkers(data);
+  const out: DeckEnregistreImporte[] = [];
+  data.deck_list.forEach((dk: any, i: number) => {
+    const deckType = Number(dk?.deck_type);
+    if (!Number.isFinite(deckType)) return;
+    const brut = deckEnregistre(dk, i, SLOTS_DECK_MAX);
+    const places = brut.unitIds.filter((id) => Number(id) !== 0).length;
+    const [deck] = buildSiegeDecks(
+      [{ ...brut, unitIds: brut.unitIds.slice(0, places) }],
+      runeById,
+      unitById,
+      artById,
+      markers,
+      places
+    );
+    if (!deck) return;
+    const seq = Number(dk?.deck_seq);
+    const contenu = contenuDuDeckType(deckType);
+    const numero = decomposerDeckSeq(Number.isFinite(seq) ? seq : i);
+    out.push({ ...deck, deckType, contenu, sousContenu: sousContenuDuDeck(contenu, numero.categorie), ...numero });
+  });
+  return out;
 }

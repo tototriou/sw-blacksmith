@@ -1,11 +1,12 @@
 import { CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Github, Download, Plus, Gauge, Save, SunMoon, FilePlus, AlertTriangle } from 'lucide-react';
+import { Github, Download, Plus, Gauge, Save, SunMoon, FilePlus, FolderOpen, AlertTriangle } from 'lucide-react';
 import {
   IconeAtelier,
   IconeAccueil,
   IconeAmi,
   IconeArene,
   IconeArtefacts,
+  IconeEquipes,
   IconeMonstres,
   IconeRunes,
   IconeBestiaire,
@@ -14,11 +15,14 @@ import {
   IconeMecaniques,
   IconeNouveautes,
   IconeTelecharger,
+  IconeBotDiscord,
+  IconeSwex,
   IconeOffense,
   IconeOptimizer,
   IconeOutils,
   IconeParametres,
   IconeRecos,
+  IconeStatistiques,
   IconeRta,
   IconeSiege,
   IconeSpeedTuning,
@@ -41,10 +45,13 @@ import SiegePage, { SiegeTab } from './pages/SiegePage';
 import MechanicsPage from './pages/MechanicsPage';
 import ReleasesPage from './pages/ReleasesPage';
 import TelechargerPage from './pages/TelechargerPage';
+import BotDiscordPage from './pages/BotDiscordPage';
+import { ongletBotValide, type OngletBot } from './lib/botDiscord';
+import SwExporterPage from './pages/SwExporterPage';
 import AccountPage from './pages/AccountPage';
 import OutilsPage from './pages/OutilsPage';
 import OptimizerImportRapport from './components/outils/OptimizerImportRapport';
-import ComingSoon from './pages/ComingSoon';
+import ArenePage, { RunesDimensionPage } from './pages/ArenePage';
 import SettingsPage from './pages/SettingsPage';
 import AccountImportControl from './components/AccountImportControl';
 import SettingsMenu from './components/SettingsMenu';
@@ -69,21 +76,29 @@ import {
   composerSession,
   ecrireSession,
   empreinteTravail,
+  lireSession,
   nomFichierSession,
   Session,
   travailNonSauvegarde,
 } from './lib/session';
-import { photoOptimizer } from './lib/sessionOptimizer';
+import { photoOptimizer, restaurerOptimizer } from './lib/sessionOptimizer';
+import { sessionChargee } from './lib/chargementSession';
 import {
   dialogueMasque,
   lireTravail,
   persistenceEnabled,
   purgeDonneesConservees,
   setDialogueMasque,
+  persistenceChoisie,
   setPersistence,
   storageAvailable,
 } from './hooks/usePersistence';
 import { ConfirmDialog, KeepAccountDialog, Modale } from './ui/Dialogs';
+import { useEquipesEnregistrees } from './hooks/useEquipesEnregistrees';
+import EquipesSection from './components/account/equipes/EquipesSection';
+import type { DemandeEquipeOptimizer } from './lib/importEquipesEnregistrees';
+import type { ContexteSourcesEquipes } from './lib/sourcesEquipesEnregistrees';
+import { indexerInventaire } from './lib/equipesEnregistrees';
 import { FournisseurNotification, useNotifier } from './ui/Notification';
 import { Bouton, DeuxVolets } from './ui';
 import VoletEcran from './components/VoletEcran';
@@ -110,27 +125,30 @@ import {
 import { useSessionEnCours } from './hooks/useSessionEnCours';
 import MiseAJourBureau from './components/MiseAJourBureau';
 import SuiviSwex from './components/SuiviSwex';
+import { DirectSwexContext, useCompteDirect } from './hooks/useCompteDirect';
 import ChangementCompteDialog from './components/ChangementCompteDialog';
 import { GardeChangementCompte } from './hooks/useEtatSwex';
-import { estBureau, messageEchecSession, selonSupport, sessionBureau, type EchecSession } from './lib/bureau';
+import { estBureau, messageEchecChargement, messageEchecSession, selonSupport, sessionBureau, swex, type EchecSession } from './lib/bureau';
 import {
   COULEUR_SECTION,
   COULEUR_RTA_SUB,
   COULEUR_SIEGE_SUB,
+  COULEUR_ARENE_SUB,
   COULEUR_COMPTE_SUB,
 } from './data/couleursSection';
 import { ArtifactDetail, CraftLine, Monster, RelicDetail, RuneDetail } from './types';
 import { useMonsters } from './hooks/useMonsters';
 import { useCustomMonsters } from './hooks/useCustomMonsters';
 import { useRtaState } from './hooks/useRtaState';
-import { useSiegeState } from './hooks/useSiegeState';
+import { EquipesAreneContext, useEquipesArene, useSiegeState, type CoteArene } from './hooks/useSiegeState';
+import { useRunesDimension } from './hooks/useRunesDimension';
 import { useSiegeRecos } from './hooks/useSiegeRecos';
 import { useOptimizerState } from './hooks/useOptimizerState';
 import { avecNavigationImportOptimizer } from './lib/actionImportOptimizer';
 import type { RapportImportOptimizer } from './lib/importEquipes';
 import { useOptimizerLists } from './hooks/useOptimizerLists';
 import { ExclusionSourceData } from './lib/optimizerExclusion';
-import { reverifierStockageOptimizer, type StockageOptimizer } from './lib/optimizerMemberStorage';
+import { reverifierStockageOptimizer, type EquipeOptimizer, type StockageOptimizer } from './lib/optimizerMemberStorage';
 import { acquerirIdentitesMembres } from './lib/optimizerRattachement';
 import { collectOwnedBuilds, collectOwnedTeams, countCopiesByCom2us } from './lib/ownedBuilds';
 import {
@@ -141,6 +159,11 @@ import {
   parseAccountSource,
   parseSiegeDefense,
   parseSiegeOffense,
+  parseArenaDecks,
+  parseDecksEnregistres,
+  type DeckArene,
+  type DeckEnregistreImporte,
+  parseDimensionRunes,
   parseAccountBox,
   parseAccountInventory,
   parseUsedRuneIdsParPerimetre,
@@ -149,7 +172,15 @@ import {
   RunesUtilisees,
   runesUtiliseesVides,
 } from './lib/importAccount';
-import { mapRtaItems, mapSiegeTeams, mapBoxMonsters, BoxItem } from './lib/applyAccount';
+import {
+  mapRtaItems,
+  mapSiegeTeams,
+  mapBoxMonsters,
+  BoxItem,
+  areneClassiqueVide,
+  equipesAreneClassique,
+  equipesDimension,
+} from './lib/applyAccount';
 import { photographierMemoire, reinitialiserSticky, useStickyState } from './hooks/useStickyState';
 import { PREFIXE_SPEED_TUNE } from './hooks/useSpeedTune';
 import { VUES_INVENTAIRE, hashVue, vueParDefaut, vueValide, type CleNavigation } from './lib/accountViews';
@@ -173,7 +204,7 @@ const SITE_GITHUB = 'github.com/tototriou';
 // ⚠️ Même chose pour Accueil, Mécaniques, Nouveautés et Paramètres : aucune
 // action à y loger. Leur ouvrir un panneau vide serait pire que ne rien
 // proposer — c'est la règle qui décide de l'appartenance à cette liste.
-const PAGES_AVEC_MENU = new Set<Route>(['rta', 'siege', 'bestiary', 'compte', 'outils']);
+const PAGES_AVEC_MENU = new Set<Route>(['rta', 'siege', 'arene', 'arene-dimensionnelle', 'bestiary', 'compte', 'outils']);
 
 // La page d'une adresse porte-t-elle un panneau d'actions au format téléphone ?
 // Au téléphone, pour la page affichée ; en écran partagé, pour celle de chaque
@@ -185,15 +216,18 @@ function aPanneau(n: ReturnType<typeof parseHash>): boolean {
     // catégories, tout effacer) : aucune n'a de sens en consultant celle d'un
     // ami, où l'on ne modifie rien.
     (n.route !== 'rta' || n.rtaSub === 'prepa') &&
+    // ⚠️ La vue LUE, pas celle de l'adresse : `#/compte/equipes` n'en porte
+    // aucune et s'ouvre pourtant sur la liste.
     (n.route !== 'compte' ||
       n.accountSub === 'monstres' ||
-      n.accountView === 'liste' ||
-      n.accountView === 'optimisation') &&
+      ['liste', 'optimisation'].includes(vueValide(n.accountSub, n.accountView))) &&
     // ⚠️ Un seul outil aujourd'hui (Optimizer), mais la vérification
     // reste écrite : un futur outil sans réglages avancés n'hériterait pas
     // du bouton par accident (même raison que la garde ci-dessus sur
     // « Mon compte »).
-    (n.route !== 'outils' || n.toolSub === 'optimizer')
+    (n.route !== 'outils' || n.toolSub === 'optimizer') &&
+    // Les statistiques du siège n'ont aucune action de page.
+    (n.route !== 'siege' || n.siegeTab !== 'stats')
   );
 }
 
@@ -203,13 +237,16 @@ type Route =
   | 'rta'
   | 'siege'
   | 'arene'
+  | 'arene-dimensionnelle'
   | 'mecaniques'
   | 'compte'
   | 'outils'
   | 'releases'
   | 'telecharger'
+  | 'bot-discord'
+  | 'sw-exporter'
   | 'parametres';
-export type AccountSub = 'monstres' | 'runes' | 'artefacts';
+export type AccountSub = 'monstres' | 'runes' | 'artefacts' | 'equipes';
 
 // Sous-sections de RTA. `prepa` = la sienne (tout l'écran historique), `ami` =
 // celle de quelqu'un d'autre, en lecture.
@@ -235,6 +272,11 @@ export type AccountView =
   | 'meules'
   | 'gemmes';
 export type ToolSub = 'optimizer' | 'speed-tuning';
+// Les onglets de l'Arène et de l'arène dimensionnelle : un côté d'équipes, ou
+// les runes de l'arène dimensionnelle.
+export type OngletArene = CoteArene | 'dimension-runes';
+// Le côté d'équipes d'un onglet (celui des runes n'en a pas : la défense).
+const coteDe = (onglet: OngletArene): CoteArene => (onglet === 'dimension-runes' ? 'dimension-defense' : onglet);
 
 // Route + sous-route de siège (offense/défense) + sous-section « Mon compte »
 // + sous-section « Outils » déduites du hash.
@@ -244,38 +286,58 @@ export function parseHash(hash: string = window.location.hash): {
   route: Route;
   rtaSub: RtaSub;
   siegeTab: SiegeTab;
+  areneTab: OngletArene;
   accountSub: AccountSub;
   accountView: AccountView;
   toolSub: ToolSub;
+  ongletBot: OngletBot;
 } {
   const h = hash.replace(/^#\/?/, '');
   const base = {
     rtaSub: 'prepa' as RtaSub,
     siegeTab: 'defense' as SiegeTab,
+    areneTab: 'defense' as OngletArene,
     accountSub: 'monstres' as AccountSub,
     accountView: 'resume' as AccountView,
     toolSub: 'optimizer' as ToolSub,
+    ongletBot: 'installation' as OngletBot,
   };
   if (h === 'rta' || h.startsWith('rta/')) {
     const [, sub] = h.split('/');
     return { route: 'rta', ...base, rtaSub: sub === 'ami' ? 'ami' : 'prepa' };
   }
   if (h === 'bestiary') return { route: 'bestiary', ...base };
-  if (h === 'arene') return { route: 'arene', ...base };
+  // `#/arene` mène à la défense, comme `#/siege`.
+  if (h === 'arene' || h.startsWith('arene/')) {
+    const areneTab: CoteArene = h === 'arene/offense' ? 'offense' : h === 'arene/interserveur' ? 'interserveur' : 'defense';
+    return { route: 'arene', ...base, areneTab };
+  }
+  // `#/arene-dimensionnelle` mène à la défense, comme `#/arene`.
+  if (h === 'arene-dimensionnelle' || h.startsWith('arene-dimensionnelle/')) {
+    const areneTab: OngletArene =
+      h === 'arene-dimensionnelle/offense'
+        ? 'dimension-offense'
+        : h === 'arene-dimensionnelle/runes'
+          ? 'dimension-runes'
+          : 'dimension-defense';
+    return { route: 'arene-dimensionnelle', ...base, areneTab };
+  }
   if (h === 'compte' || h.startsWith('compte/')) {
     // `compte/runes/courbes` → sous-section « runes », vue « courbes ».
     const [, sub, vue] = h.split('/');
     const accountSub: AccountSub =
-      sub === 'runes' ? 'runes' : sub === 'artefacts' ? 'artefacts' : 'monstres';
+      sub === 'runes' ? 'runes' : sub === 'artefacts' ? 'artefacts' : sub === 'equipes' ? 'equipes' : 'monstres';
     return {
       route: 'compte',
       rtaSub: 'prepa',
       siegeTab: 'defense',
+      areneTab: 'defense',
       accountSub,
       // ⚠️ Défaut « resume » : on arrive sur l'état du stock, pas sur 2 000
       // tuiles. C'était déjà le défaut des onglets internes.
       accountView: (vue as AccountView) || 'resume',
       toolSub: 'optimizer',
+      ongletBot: 'installation',
     };
   }
   if (h === 'outils' || h.startsWith('outils/')) {
@@ -288,10 +350,22 @@ export function parseHash(hash: string = window.location.hash): {
   // Site seulement (application de bureau) : dans l'app, on a
   // déjà l'app — l'adresse retombe sur l'accueil.
   if (h === 'telecharger' && !estBureau()) return { route: 'telecharger', ...base };
+  // `#/bot-discord` mène à l'installation ; un onglet inconnu aussi.
+  if (h === 'bot-discord' || h.startsWith('bot-discord/')) {
+    const [, onglet] = h.split('/');
+    return { route: 'bot-discord', ...base, ongletBot: ongletBotValide(onglet) };
+  }
+  if (h === 'sw-exporter') return { route: 'sw-exporter', ...base };
   if (h === 'parametres') return { route: 'parametres', ...base };
   if (h === 'siege' || h.startsWith('siege/')) {
     const siegeTab: SiegeTab =
-      h === 'siege/offense' ? 'offense' : h === 'siege/recommandations' ? 'recos' : 'defense';
+      h === 'siege/offense'
+        ? 'offense'
+        : h === 'siege/recommandations'
+          ? 'recos'
+          : h === 'siege/statistiques'
+            ? 'stats'
+            : 'defense';
     return { route: 'siege', ...base, siegeTab };
   }
   return { route: 'home', ...base };
@@ -322,7 +396,33 @@ const NAV: NavItem[] = [
   { key: 'siege', texte: 'siege', icon: IconeSiege, hash: '#/siege/defense', couleur: COULEUR_SECTION.siege },
 ];
 
-const ARENE_ITEM: NavItem = { key: 'arene', texte: 'arene', icon: IconeArene, hash: '#/arene', couleur: COULEUR_SECTION.arene };
+const ARENE_ITEM: NavItem = { key: 'arene', texte: 'arene', icon: IconeArene, hash: '#/arene/defense', couleur: COULEUR_SECTION.arene };
+// L'arène dimensionnelle : une section à part, sur sa propre box.
+const ARENE_DIMENSIONNELLE_ITEM: NavItem = {
+  key: 'arene-dimensionnelle',
+  texte: 'areneDimensionnelle',
+  icon: IconeArene,
+  hash: '#/arene-dimensionnelle/defense',
+  couleur: COULEUR_SECTION['arene-dimensionnelle'],
+};
+
+// Sous-sections de « Arène » : la défense, l'offense (commune aux deux arènes)
+// et la défense interserveur — portées par la barre latérale et le panneau de
+// navigation, comme celles du Siège.
+const ARENE_SUBS: { tab: CoteArene; texte: CleNavigation; icon: IconeAtelier; hash: string; couleur: string }[] = [
+  { tab: 'defense', texte: 'defense', icon: IconeDefense, hash: '#/arene/defense', couleur: COULEUR_ARENE_SUB.defense },
+  { tab: 'offense', texte: 'offense', icon: IconeOffense, hash: '#/arene/offense', couleur: COULEUR_ARENE_SUB.offense },
+  { tab: 'interserveur', texte: 'interserveur', icon: IconeDefense, hash: '#/arene/interserveur', couleur: COULEUR_ARENE_SUB.interserveur },
+];
+
+// Sous-sections de l'arène dimensionnelle : sa défense et son offense, sur sa
+// propre box — mêmes gestes et mêmes teintes que celles de l'Arène —, et ses
+// runes, avec l'icône et la teinte des Runes de « Mon compte ».
+const ARENE_DIMENSIONNELLE_SUBS: { tab: OngletArene; texte: CleNavigation; icon: IconeAtelier; hash: string; couleur: string }[] = [
+  { tab: 'dimension-defense', texte: 'defense', icon: IconeDefense, hash: '#/arene-dimensionnelle/defense', couleur: COULEUR_ARENE_SUB.defense },
+  { tab: 'dimension-offense', texte: 'offense', icon: IconeOffense, hash: '#/arene-dimensionnelle/offense', couleur: COULEUR_ARENE_SUB.offense },
+  { tab: 'dimension-runes', texte: 'runes', icon: IconeRunes, hash: '#/arene-dimensionnelle/runes', couleur: COULEUR_COMPTE_SUB.runes },
+];
 
 // Sous-sections de « RTA » (dropdown de nav).
 // ⚠️ `prepa` porte le hash NU `#/rta` : c'est l'écran historique, et les liens
@@ -344,6 +444,7 @@ const ACCOUNT_SUBS: { sub: AccountSub; texte: CleNavigation; icon: IconeAtelier;
   { sub: 'monstres', texte: 'monstres', icon: IconeMonstres, couleur: COULEUR_COMPTE_SUB.monstres },
   { sub: 'runes', texte: 'runes', icon: IconeRunes, couleur: COULEUR_COMPTE_SUB.runes },
   { sub: 'artefacts', texte: 'artefacts', icon: IconeArtefacts, couleur: COULEUR_COMPTE_SUB.artefacts },
+  { sub: 'equipes', texte: 'mesEquipes', icon: IconeEquipes, couleur: COULEUR_COMPTE_SUB.equipes },
 ];
 
 // Sous-sections d'« Outils » (dropdown de nav) — un seul outil pour l'instant,
@@ -357,21 +458,30 @@ const OUTILS_SUBS: { sub: ToolSub; texte: CleNavigation; icon: IconeAtelier; has
 // étaient des onglets posés en haut de la page, et chaque section avait le sien
 // avec son propre rendu. La barre latérale les porte toutes de la même façon.
 const SIEGE_SUBS: { tab: SiegeTab; texte: CleNavigation; icon: IconeAtelier; hash: string; couleur: string }[] = [
-  { tab: 'defense', texte: 'defense', icon: IconeDefense, hash: '#/siege/defense', couleur: COULEUR_SIEGE_SUB.defense },
-  { tab: 'offense', texte: 'offense', icon: IconeOffense, hash: '#/siege/offense', couleur: COULEUR_SIEGE_SUB.offense },
+  // ⚠️ « Decks de défense » et « Decks d'offense » : des clés à elles, l'Arène
+  // garde « Défense » et « Offense » (`defense`, `offense`).
+  { tab: 'defense', texte: 'decksDefense', icon: IconeDefense, hash: '#/siege/defense', couleur: COULEUR_SIEGE_SUB.defense },
+  { tab: 'offense', texte: 'decksOffense', icon: IconeOffense, hash: '#/siege/offense', couleur: COULEUR_SIEGE_SUB.offense },
   { tab: 'recos', texte: 'recommandations', icon: IconeRecos, hash: '#/siege/recommandations', couleur: COULEUR_SIEGE_SUB.recos },
+  // Les sièges joués, lus dans les fichiers du plugin SWEX (application de
+  // bureau ; sur le site, la sous-section dit comment les obtenir).
+  { tab: 'stats', texte: 'statistiquesSiege', icon: IconeStatistiques, hash: '#/siege/statistiques', couleur: COULEUR_SIEGE_SUB.stats },
 ];
 
 // Regroupées sous « Ressources ».
-// ⚠️ « Télécharger » (application de bureau) : sous
-// « Nouveautés », sur le SITE seulement — `estBureau()` se lit au chargement
+// ⚠️ « Télécharger » (application de bureau) : en dernier,
+// sur le SITE seulement — `estBureau()` se lit au chargement
 // du module, le préchargement de l'app ayant posé son objet avant la page.
 // Barre latérale, panneau mobile, palette et titre dérivent tous de cette
 // liste : l'entrée y apparaît (ou non) partout d'un coup.
 const RESOURCES: NavItem[] = [
   { key: 'bestiary', texte: 'bestiaire', icon: IconeBestiaire, hash: '#/bestiary', couleur: COULEUR_SECTION.bestiary },
+  // Le guide du bot : sur le site ET dans l'app de bureau (les deux s'y connectent).
+  { key: 'bot-discord', texte: 'botDiscord', icon: IconeBotDiscord, hash: '#/bot-discord', couleur: COULEUR_SECTION['bot-discord'] },
   { key: 'mecaniques', texte: 'mecaniques', icon: IconeMecaniques, hash: '#/mecaniques', couleur: COULEUR_SECTION.mecaniques },
   { key: 'releases', texte: 'nouveautes', icon: IconeNouveautes, hash: '#/releases', couleur: COULEUR_SECTION.releases },
+  // Le plugin SWEX : sur le site ET dans l'app de bureau (c'est elle qui s'en sert).
+  { key: 'sw-exporter', texte: 'swExporter', icon: IconeSwex, hash: '#/sw-exporter', couleur: COULEUR_SECTION['sw-exporter'] },
   ...(estBureau()
     ? []
     : [{ key: 'telecharger' as const, texte: 'telecharger' as const, icon: IconeTelecharger, hash: '#/telecharger', couleur: COULEUR_SECTION.telecharger }]),
@@ -401,6 +511,23 @@ function Application() {
   const rta = useRtaState();
   const siegeDef = useSiegeState('defense');
   const siegeOff = useSiegeState('offense');
+  const areneDef = useEquipesArene('defense');
+  const areneOff = useEquipesArene('offense');
+  const areneInter = useEquipesArene('interserveur');
+  const areneDimDef = useEquipesArene('dimension-defense');
+  const areneDimOff = useEquipesArene('dimension-offense');
+  const runesDimension = useRunesDimension();
+  // Pour le speed tuning, où qu'il s'ouvre (voir EquipesAreneContext).
+  const equipesArene = useMemo(
+    () => ({
+      defense: areneDef.state.teams,
+      offense: areneOff.state.teams,
+      interserveur: areneInter.state.teams,
+      'dimension-defense': areneDimDef.state.teams,
+      'dimension-offense': areneDimOff.state.teams,
+    }),
+    [areneDef.state.teams, areneOff.state.teams, areneInter.state.teams, areneDimDef.state.teams, areneDimOff.state.teams]
+  );
   const recos = useSiegeRecos();
   // Listes de travail de l'Optimizer — SÉPARÉES de `useOptimizerState`,
   // voir useOptimizerLists.ts : c'est la seule part de l'écran Optimizer qui
@@ -429,6 +556,13 @@ function Application() {
   // Libellés des marqueurs de runes (`parseRuneMarkerLabels`) — même raison :
   // `markers` ne vit que dans l'export brut.
   const [runeMarkerLabels, setRuneMarkerLabels] = useState<Record<number, string>>({});
+  // Les decks d'arène, sources de « Mes équipes ». `null` : pas lus (compte
+  // conservé avant ce champ) — distinct d'un compte qui n'en a aucun.
+  const [arenaDecks, setArenaDecks] = useState<DeckArene[] | null>(null);
+  const [decksEnregistres, setDecksEnregistres] = useState<DeckEnregistreImporte[] | null>(null);
+  // « Mes équipes » : ici, comme les listes de l'Optimizer, pour que la page
+  // et l'Optimizer partagent les mêmes équipes et que la session les emporte.
+  const equipesEnregistrees = useEquipesEnregistrees();
 
   // Un nouveau compte importé (`appliquerImport`, `setBox` avec une NOUVELLE
   // référence) rend obsolètes les « Critères de recherche »/« Combinaisons
@@ -520,8 +654,10 @@ function Application() {
   // afficherait « ton compte n'est pas chargé » pendant les quelques dizaines de
   // millisecondes de lecture, puis tout apparaîtrait : on croit à une perte de
   // données, puis à un miracle.
+  // Une session chargée à ce démarrage porte son compte : il se relit aussi
+  // conservation refusée (src/lib/chargementSession.ts).
   const [accountHydrating, setAccountHydrating] = useState(
-    () => persistenceEnabled() && storageAvailable()
+    () => sessionChargee() !== null || (persistenceEnabled() && storageAvailable())
   );
   // Un import manuel pendant l'hydratation doit gagner : la lecture en cours ne
   // doit pas écraser le fichier que l'utilisateur vient de déposer.
@@ -537,7 +673,7 @@ function Application() {
   // on compare les runes — et rien ne disait lequel était affiché.
   const [accountName, setAccountName] = useState<string | null>(null);
 
-  const [{ route, rtaSub, siegeTab, accountSub, accountView, toolSub }, setNav] = useState(parseHash);
+  const [{ route, rtaSub, siegeTab, areneTab, accountSub, accountView, toolSub, ongletBot }, setNav] = useState(parseHash);
 
   // Écran d'où l'on vient, pour que le bouton ⚙ RAMÈNE là où on était.
   //
@@ -604,7 +740,7 @@ function Application() {
   // milliers de tuiles à montrer — chaque rangée de filtre leur prend un écran de
   // résultats. **Avoir des filtres ne suffit donc pas : il faut aussi que la page
   // ait de quoi remplir la place qu'ils libèrent.**
-  const pageAPanneau = aPanneau({ route, rtaSub, siegeTab, accountSub, accountView, toolSub });
+  const pageAPanneau = aPanneau({ route, rtaSub, siegeTab, areneTab, accountSub, accountView, toolSub, ongletBot });
 
   // Écran partagé : le panneau d'actions d'un volet ÉTROIT, qui a pris la mise
   // en page de téléphone de sa page (voir VoletEcran). Un par volet : celui du
@@ -676,6 +812,44 @@ function Application() {
     return m;
   }, [allMonsters]);
 
+  // Application de bureau : le compte EN DIRECT, lu dans le fichier live du
+  // plugin SWEX. Donné à « Mon compte » seulement, interrupteur activé ; le
+  // compte de l'app ne change qu'à « Mettre à jour » (page SW Exporter), qui
+  // l'applique comme un nouvel export du dossier SWEX.
+  const { direct, enDirect } = useCompteDirect(monsterByCom2us, rafraichirCompte);
+
+  // « Mes équipes » : ses sources, l'inventaire de comparaison et les listes
+  // de l'Optimizer pour l'aller-retour (docs/02-app/compte/feat-equipes.md).
+  const compteCharge = box.length > 0 || runes.length > 0;
+  const contexteEquipes = useMemo<ContexteSourcesEquipes>(() => ({ box,
+    siegeDefenseTeams: siegeDef.state.teams, siegeOffenseTeams: siegeOff.state.teams, rta: rta.state, arenaDecks, decksEnregistres, compte: compteCharge,
+    monsterById: optimizerData.monsterById, monsterByCom2us }),
+  [box, siegeDef.state.teams, siegeOff.state.teams, rta.state, arenaDecks, decksEnregistres, compteCharge, optimizerData.monsterById, monsterByCom2us]);
+  const inventaireEquipes = useMemo(() => (compteCharge ? indexerInventaire(runes, artifacts, relics) : null),
+    [compteCharge, runes, artifacts, relics]);
+  const optimizerPourEquipes = useMemo(() => ({ data: optimizerData, stockage: {
+    identities: optimizerLists.identities, lists: optimizerLists.lists, members: optimizerLists.members,
+    validated: optimizerLists.validated, memories: optimizerLists.memories, teams: optimizerLists.teams,
+    listContents: optimizerLists.listContents, rejets: optimizerLists.rejets } }),
+  [optimizerData, optimizerLists.identities, optimizerLists.lists, optimizerLists.members, optimizerLists.validated,
+    optimizerLists.memories, optimizerLists.teams, optimizerLists.listContents, optimizerLists.rejets]);
+  // La fenêtre d'import de l'Optimizer lit aussi les decks de l'export et Mes équipes.
+  const importCommunOptimizer = useMemo(() => ({ ctx: contexteEquipes, equipes: equipesEnregistrees.equipes }),
+    [contexteEquipes, equipesEnregistrees.equipes]);
+  // La première équipe créée ou importée pose la question de conservation,
+  // tant qu'elle n'a jamais été tranchée.
+  const demanderConservationEquipes = () => {
+    if (!persistenceChoisie() && storageAvailable()) setAskKeep(true);
+  };
+  // « Enregistrer dans Mes équipes » depuis une équipe de l'Optimizer : Mes
+  // équipes s'ouvre et décide, après sa relecture, de la mise à jour de
+  // l'équipe liée ou de la création d'une nouvelle.
+  const [demandeOptimizer, setDemandeOptimizer] = useState<DemandeEquipeOptimizer | null>(null);
+  const enregistrerEquipeOptimizer = useCallback((equipe: EquipeOptimizer) => {
+    setDemandeOptimizer({ listId: equipe.listId, equipeId: equipe.id });
+    window.location.hash = hashVue('equipes', vueParDefaut('equipes'));
+  }, []);
+
   // ---- PALETTE Ctrl K --------------------------------
   // Ouverte par Ctrl/⌘ K de n'importe où, par le champ de la barre latérale, et
   // au téléphone par la loupe de la barre du haut. Ce qu'elle ouvre (fiche d'un
@@ -705,6 +879,11 @@ function Application() {
         e.preventDefault();
         if (!e.repeat) sauvegarderSessionRef.current();
       }
+      // Ctrl/⌘ O : « Charger… » une session, dans l'app de bureau seulement.
+      if (estBureau() && (e.metaKey || e.ctrlKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'o') {
+        e.preventDefault();
+        if (!e.repeat) chargerSessionRef.current();
+      }
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -725,7 +904,11 @@ function Application() {
     }
     if (allMonsters.length === 0) return;
     let annule = false;
-    loadAccount().then((rec) => {
+    // Une session chargée à ce démarrage (« Charger… », src/lib/chargementSession.ts)
+    // porte son compte : il prime sur IndexedDB, que la conservation soit
+    // acceptée ou non — refusée, il n'est que là.
+    const chargee = sessionChargee();
+    (chargee ? Promise.resolve(chargee.compte) : loadAccount()).then((rec) => {
       if (annule) return;
       // L'utilisateur a déposé un fichier pendant la lecture : son geste prime.
       if (rec && !importedManuallyRef.current) {
@@ -741,6 +924,8 @@ function Application() {
         setUsedRuneIds(rec.usedRuneIds);
         setRelicUsageById(rec.relicUsageById);
         setRuneMarkerLabels(rec.runeMarkerLabels);
+        setArenaDecks(rec.arenaDecks ?? null);
+        setDecksEnregistres(rec.decksEnregistres ?? null);
         setAccountExportedAt(rec.exportedAt);
         setAccountName(rec.wizardName ?? null);
       }
@@ -790,12 +975,22 @@ function Application() {
   // fusion : c'était le cas, et fusionner des équipes de siège les DÉDOUBLAIT
   // (un compte à 50 attaques repartait à 100). Un import de compte est un
   // rafraîchissement de l'état du jeu, jamais un ajout.
-  function importAccount(text: string) {
-    const aDejaDesDonnees =
+  // Le travail qu'un import complet REMPLACERAIT : prépa RTA, siège, arènes.
+  function aDesEquipes() {
+    return (
       Object.keys(rta.state.entries).length > 0 ||
       siegeDef.state.teams.length > 0 ||
-      siegeOff.state.teams.length > 0;
-    if (aDejaDesDonnees) {
+      siegeOff.state.teams.length > 0 ||
+      areneDef.state.teams.length > 0 ||
+      areneOff.state.teams.length > 0 ||
+      areneInter.state.teams.length > 0 ||
+      areneDimDef.state.teams.length > 0 ||
+      areneDimOff.state.teams.length > 0
+    );
+  }
+
+  function importAccount(text: string) {
+    if (aDesEquipes()) {
       setImportEnAttente(text);
       return;
     }
@@ -812,18 +1007,25 @@ function Application() {
       setImportMsg({ ok: false, text: textes.importCompte.illisible });
       return;
     }
-    appliquerTout(data, preparerCompte(data), true);
+    // ⚠️ Application de bureau : le compte affiché vient du FICHIER, plus de
+    // l'invocateur suivi dans le dossier SW Exporter — qui est lâché, sinon
+    // son prochain export remplacerait « Mon compte » sous la prépa et le
+    // siège du fichier (bureau/swex.ts).
+    if (appliquerTout(data, preparerCompte(data), true)) void swex()?.aucunInvocateur();
   }
 
   // L'import COMPLET d'un export déjà parsé : prépa RTA, siège et « Mon
   // compte ». Partagé par l'import manuel et par le dossier SW Exporter
   // après le choix d'un invocateur — qui, lui, ne pose pas la question de
   // conservation (`demanderConservation`) : le dossier est un réglage.
+  // L'arène dimensionnelle n'en vient pas : sa box est tenue par le plugin
+  // SWEX, lue par l'application de bureau (`appliquerDimension`). Rend `false`
+  // si l'export n'avait rien à importer (rien n'est touché).
   function appliquerTout(
     data: Record<string, any>,
     compte: ReturnType<typeof preparerCompte>,
     demanderConservation: boolean
-  ) {
+  ): boolean {
     const rtaRes = parseAccountJson(data, textes);
     const defRes = parseSiegeDefense(data, textes);
     const offRes = parseSiegeOffense(data, textes);
@@ -831,6 +1033,10 @@ function Application() {
     const rtaItems = rtaRes.units ? mapRtaItems(rtaRes.units, monsterByCom2us) : [];
     const def = mapSiegeTeams(defRes.decks ?? [], monsterByCom2us);
     const off = mapSiegeTeams(offRes.decks ?? [], monsterByCom2us);
+    // L'arène : ses équipes de 4, avec les leads d'arène. Un compte sans arène
+    // ne la vide pas (seules les cibles qui ont des données sont touchées).
+    const arene = equipesAreneClassique(data, monsterByCom2us, textes);
+    const { defense: areneDefRes, offense: areneOffRes, interserveur: areneInterRes } = arene;
     const { boxItems } = compte;
 
     if (
@@ -844,7 +1050,7 @@ function Application() {
         text:
           rtaRes.error || defRes.error || offRes.error || compte.boxRes.error || textes.importCompte.rien,
       });
-      return;
+      return false;
     }
 
     if (rtaItems.length) {
@@ -853,6 +1059,7 @@ function Application() {
     }
     if (def.teams.length) siegeDef.importTeams(def.teams);
     if (off.teams.length) siegeOff.importTeams(off.teams);
+    appliquerArene(arene);
 
     appliquerCompte(data, compte);
 
@@ -862,7 +1069,9 @@ function Application() {
     if (rtaItems.length) parts.push(ic.monstresRta(rtaItems.length));
     if (def.teams.length) parts.push(ic.defenses(def.teams.length));
     if (off.teams.length) parts.push(ic.attaques(off.teams.length));
-    const missing = def.missing + off.missing;
+    const equipesArene = areneDefRes.teams.length + areneOffRes.teams.length + areneInterRes.teams.length;
+    if (equipesArene) parts.push(ic.equipesArene(equipesArene));
+    const missing = def.missing + off.missing + areneDefRes.missing + areneOffRes.missing + areneInterRes.missing;
     setImportMsg({
       ok: true,
       text: ic.bilan(parts.join(' · ')) + (missing > 0 ? ic.introuvables(missing) : '') + '.',
@@ -877,6 +1086,7 @@ function Application() {
     // ⚠️ **Après le succès seulement.** Proposer de conserver des données
     // qu'on vient d'échouer à lire n'aurait aucun sens.
     if (demanderConservation && !dialogueMasque() && storageAvailable()) setAskKeep(true);
+    return true;
   }
 
   // « Mon compte » d'un export déjà parsé — box 6★, inventaire, identité —, lu
@@ -894,6 +1104,8 @@ function Application() {
       // siège), réduits aux runes qui y jouent — rangés par périmètre.
       usedRunes: parseUsedRuneIdsParPerimetre(data),
       markerLabels: parseRuneMarkerLabels(data),
+      decksArene: parseArenaDecks(data),
+      decksEnregistres: parseDecksEnregistres(data),
     };
   }
 
@@ -910,7 +1122,7 @@ function Application() {
     // Regroupé avec la relecture du compte conservé, ce vrai import doit
     // être revérifié : sinon la photo resterait posée et bloquerait l'import d'équipe.
     hydrationJustAppliedRef.current = false;
-    const { exporte, nomJoueur, boxRes, invRes, boxItems, usedRunes, markerLabels } = compte;
+    const { exporte, nomJoueur, boxRes, invRes, boxItems, usedRunes, markerLabels, decksArene, decksEnregistres: decksDuCompte } = compte;
     // Exclusion manuelle de runes de l'Optimizer (excludedSelectors) : à
     // effacer sur un compte VRAIMENT DIFFÉRENT (autre wizard_id — voir
     // parseWizardId), pas sur une simple nouvelle version RÉEXPORTÉE du même
@@ -949,6 +1161,8 @@ function Application() {
     setUsedRuneIds(usedRunes);
     setRelicUsageById(invRes.relicUsageById ?? {});
     setRuneMarkerLabels(markerLabels);
+    setArenaDecks(decksArene);
+    setDecksEnregistres(decksDuCompte);
 
     // Enregistrement **après** la mise à jour de l'affichage et sans attendre :
     // une écriture de 2 Mo ne doit pas retarder l'apparition du compte. Un échec
@@ -966,6 +1180,8 @@ function Application() {
         runeMarkerLabels: markerLabels,
         exportedAt: exporte,
         wizardName: nomJoueur,
+        arenaDecks: decksArene,
+        decksEnregistres: decksDuCompte,
       });
     }
   }
@@ -974,6 +1190,10 @@ function Application() {
   // le choix d'un invocateur, déjà gardé par `avantChangementCompte`) : tout
   // s'importe, comme l'import manuel. Sinon, « Mon compte » seulement. Pas
   // de question de conservation (c'est un réglage, posé une fois).
+  // ⚠️ **Une page VIDE — ni compte, ni équipes — importe tout** : elle n'a
+  // rien à perdre. C'est le lancement avec la conservation refusée : rien
+  // n'est resté, et « Mon compte » seul laissait la prépa RTA et le siège
+  // vides sous un invocateur pourtant suivi.
   // `ok: false` — fichier illisible (à moitié écrit ?) ou sans box : rien
   // n'est touché, et l'export n'est pas marqué lu (bureau/swex.ts le
   // redonnera au prochain changement).
@@ -982,9 +1202,36 @@ function Application() {
     if (!data) return { ok: false, nom: null };
     const compte = preparerCompte(data);
     if (compte.boxItems.length === 0) return { ok: false, nom: null };
-    if (complet) appliquerTout(data, compte, false);
-    else appliquerCompte(data, compte);
+    if (complet || (box.length === 0 && !aDesEquipes())) appliquerTout(data, compte, false);
+    else {
+      appliquerCompte(data, compte);
+      // Rattrapage : l'arène classique, vide, se remplit de cet export — un
+      // dossier suivi avant l'arrivée de l'arène n'aurait sinon d'import
+      // complet qu'au prochain choix de l'invocateur.
+      if (areneClassiqueVide(equipesArene)) appliquerArene(equipesAreneClassique(data, monsterByCom2us, textes));
+    }
     return { ok: true, nom: compte.nomJoueur };
+  }
+
+  // Les équipes de l'arène classique : seuls les côtés qui en ont sont touchés.
+  function appliquerArene(arene: ReturnType<typeof equipesAreneClassique>) {
+    if (arene.defense.teams.length) areneDef.importTeams(arene.defense.teams);
+    if (arene.offense.teams.length) areneOff.importTeams(arene.offense.teams);
+    if (arene.interserveur.teams.length) areneInter.importTeams(arene.interserveur.teams);
+  }
+
+  // Le dossier SW Exporter : la saison de l'arène dimensionnelle tenue par le
+  // plugin SWEX (bureau/swex.ts). Elle REMPLACE la défense, les attaques et
+  // les runes de ce mode — un miroir du jeu, mis à jour à l'ouverture du mode
+  // et à chaque changement fait dedans. Un côté sans équipe reconnue n'est pas
+  // touché. Rend le nombre d'équipes appliquées.
+  function appliquerDimension(saison: Record<string, any>, recents: unknown[]): number {
+    const { defense, offense } = equipesDimension(saison, recents, monsterByCom2us, textes);
+    if (defense.teams.length) areneDimDef.importTeams(defense.teams);
+    if (offense.teams.length) areneDimOff.importTeams(offense.teams);
+    const runes = parseDimensionRunes(saison);
+    if (runes.length) runesDimension.remplacer(runes);
+    return defense.teams.length + offense.teams.length;
   }
 
   // Réponse à la fenêtre de choix. `null` = fermée sans répondre : on
@@ -1044,6 +1291,8 @@ function Application() {
       runeMarkerLabels,
       exportedAt: accountExportedAt,
       wizardName: accountName,
+      ...(arenaDecks ? { arenaDecks } : {}),
+      ...(decksEnregistres ? { decksEnregistres } : {}),
     });
   }
 
@@ -1079,7 +1328,9 @@ function Application() {
   // Pourquoi « Sauvegarder » est désactivé, ou `null` s'il ne l'est pas.
   const sauvegardeIndisponible = accountHydrating
     ? textes.donnees.compteEnChargement
-    : null;
+    : equipesEnregistrees.relecture === 'en-cours'
+      ? textes.donnees.equipesEnChargement
+      : null;
   const sauvegarderSession = () => void enregistrerSession(false);
   const sauvegarderSessionSous = () => void enregistrerSession(true);
   // Ctrl+S lit la DERNIÈRE version : l'écouteur, lui, ne se pose qu'une fois.
@@ -1091,6 +1342,7 @@ function Application() {
       maintenant,
       versionApp: __APP_VERSION__,
       stockage: Object.fromEntries(CLES_SESSION.map((cle) => [cle, lireTravail(cle)])),
+      equipes: equipesEnregistrees.equipes,
       compte: compteDeSession(
         {
           exportedAt: accountExportedAt,
@@ -1103,6 +1355,8 @@ function Application() {
           usedRuneIds,
           relicUsageById,
           runeMarkerLabels,
+          ...(arenaDecks ? { arenaDecks } : {}),
+          ...(decksEnregistres ? { decksEnregistres } : {}),
         },
         maintenant
       ),
@@ -1116,14 +1370,18 @@ function Application() {
   // Si le travail a changé depuis la dernière sauvegarde, on propose d'abord
   // de sauvegarder (`ChangementCompteDialog`) ; `changementCompte` garde le
   // changement le temps de la réponse.
+  // ⚠️ La même garde avant de CHARGER une session (`motif` 'session') : elle
+  // remplace tout le travail, comme un changement de compte.
   const empreinteSauvegardeRef = useRef<string | null>(null);
-  const [changementCompte, setChangementCompte] = useState<(() => void) | null>(null);
-  function avantChangementCompte(changer: () => void) {
+  const [changementCompte, setChangementCompte] = useState<{ changer: () => void; motif: 'compte' | 'session' } | null>(null);
+  function avantChangementCompte(changer: () => void, motif: 'compte' | 'session' = 'compte') {
     // Ce que le changement remplacerait — ce qui serait perdu.
     const aDuTravail =
-      Object.keys(rta.state.entries).length > 0 || siegeDef.state.teams.length > 0 || siegeOff.state.teams.length > 0;
+      Object.keys(rta.state.entries).length > 0 || siegeDef.state.teams.length > 0 || siegeOff.state.teams.length > 0 ||
+      areneDef.state.teams.length > 0 || areneOff.state.teams.length > 0 || areneInter.state.teams.length > 0 ||
+      areneDimDef.state.teams.length > 0 || areneDimOff.state.teams.length > 0;
     const empreinte = empreinteTravail(sessionCourante(new Date()));
-    if (travailNonSauvegarde(empreinte, empreinteSauvegardeRef.current, aDuTravail)) setChangementCompte(() => changer);
+    if (travailNonSauvegarde(empreinte, empreinteSauvegardeRef.current, aDuTravail)) setChangementCompte({ changer, motif });
     else changer();
   }
   // La garde lit la DERNIÈRE version ; le fournisseur, lui, ne change pas.
@@ -1131,11 +1389,77 @@ function Application() {
   avantChangementCompteRef.current = avantChangementCompte;
   const gardeChangementCompte = useCallback((changer: () => void) => avantChangementCompteRef.current(changer), []);
   async function sauvegarderPuisChanger() {
-    const changer = changementCompte;
+    const changer = changementCompte?.changer;
     setChangementCompte(null);
     // Sauvegarde annulée ou en échec : on ne change pas de compte.
     if (changer && (await enregistrerSession(false))) changer();
   }
+
+  // « Charger… » (docs/02-app/transverse/feat-sauvegarde-session.md) : le
+  // bureau ouvre la boîte et lit le fichier, la page le VALIDE entier
+  // (`lireSession`) avant que rien ne change. Puis la garde (sauvegarder
+  // d'abord ?), et la confirmation : le fichier devient la session en cours,
+  // et la page redémarre pour l'appliquer (main.tsx).
+  // ⚠️ **Une session qui porte un compte lâche l'invocateur suivi** du dossier
+  // SW Exporter, comme un import par fichier : sinon son prochain export
+  // remplacerait le compte de la session.
+  const [echecChargement, setEchecChargement] = useState<string | null>(null);
+  async function chargerSession() {
+    const pont = sessionBureau();
+    if (!pont) return;
+    const r = await pont.charger();
+    if (!r || r.issue === 'annulee') return;
+    if (r.issue === 'echec') {
+      setEchecChargement(messageEchecChargement(r, textes));
+      return;
+    }
+    const lecture = lireSession(r.texte);
+    if (!lecture.ok) {
+      setEchecChargement(messageEchecChargement(lecture.erreur, textes));
+      return;
+    }
+    avantChangementCompte(() => {
+      void (async () => {
+        if (lecture.session.compte) await swex()?.aucunInvocateur();
+        if (await pont.confirmerChargement()) location.reload();
+      })();
+    }, 'session');
+  }
+  // Ctrl+O lit la DERNIÈRE version, comme Ctrl+S.
+  const chargerSessionRef = useRef(chargerSession);
+  chargerSessionRef.current = chargerSession;
+
+  // Après le redémarrage d'un chargement : l'annonce, ce qui n'a pas pu être
+  // repris, l'Optimizer rejoué (`restaurerOptimizer`) une fois le compte relu
+  // — son exemplaire se revérifie contre la box —, puis l'empreinte de la
+  // session, qui vient d'être chargée telle quelle : rien n'est encore à
+  // sauvegarder.
+  const [avertissementsChargement, setAvertissementsChargement] = useState<string[]>([]);
+  const chargementRepris = useRef(false);
+  const [empreinteAPoser, setEmpreinteAPoser] = useState(false);
+  useEffect(() => {
+    const chargee = sessionChargee();
+    if (!chargee || accountHydrating || chargementRepris.current) return;
+    chargementRepris.current = true;
+    const c = textes.donnees.chargement;
+    const avertissements = chargee.avertissements.map((a) =>
+      (a === 'comptePerime' ? c.comptePerime : a === 'optimizerIllisible' ? c.optimizerIllisible : c.equipesIllisibles(a.nombre)));
+    if (chargee.optimizer) {
+      const laisses = restaurerOptimizer(optimizer, chargee.optimizer);
+      if (laisses.length) avertissements.push(c.optimizerLaisses(laisses.join(', ')));
+    }
+    setAvertissementsChargement(avertissements);
+    notifier({ message: textes.donnees.sessionChargee(chargee.nom) });
+    setEmpreinteAPoser(true);
+  }, [accountHydrating, optimizer, notifier, textes]);
+  // Le rendu APRÈS la reprise : l'Optimizer rejoué y est à l'écran.
+  const sessionCouranteRef = useRef(sessionCourante);
+  sessionCouranteRef.current = sessionCourante;
+  useEffect(() => {
+    if (!empreinteAPoser) return;
+    setEmpreinteAPoser(false);
+    empreinteSauvegardeRef.current = empreinteTravail(sessionCouranteRef.current(new Date()));
+  }, [empreinteAPoser]);
 
   // ⚠️ **Le ⚙ BASCULE, il ne navigue pas** : il ouvre les paramètres, puis
   // ramène à l'écran d'où l'on vient. Écrit UNE fois et branché aux DEUX
@@ -1256,6 +1580,22 @@ function Application() {
     ],
   };
 
+  const sectionArene: SidebarSection = {
+    titre: nomNav('arene'),
+    icon: <IconeArene size={17} color={COULEUR_SECTION.arene} />,
+    groupes: [
+      {
+        liens: ARENE_SUBS.map((t) => ({
+          key: t.tab,
+          label: nomNav(t.texte),
+          hash: t.hash,
+          icon: <t.icon size={17} color={t.couleur} />,
+          actif: route === 'arene' && areneTab === t.tab,
+        })),
+      },
+    ],
+  };
+
   const sectionRta: SidebarSection = {
     titre: nomNav('rta'),
     icon: <IconeRta size={17} color={COULEUR_SECTION.rta} />,
@@ -1323,6 +1663,8 @@ function Application() {
       ? sectionRta
       : route === 'siege'
       ? sectionSiege
+      : route === 'arene'
+      ? sectionArene
       : route === 'compte'
         ? sectionCompte
         : route === 'outils'
@@ -1365,6 +1707,26 @@ function Application() {
     icon: <IconeSiege size={16} />,
     groupes: [{ liens: SIEGE_SUBS.map((t) => ({ key: t.tab, label: nomNav(t.texte), hash: t.hash, icon: <t.icon size={16} />, actif: route === 'siege' && siegeTab === t.tab })) }],
   };
+  const sectionAreneBureau: SidebarSection = {
+    titre: nomNav('arene'),
+    icon: <IconeArene size={16} />,
+    groupes: [{ liens: ARENE_SUBS.map((t) => ({ key: t.tab, label: nomNav(t.texte), hash: t.hash, icon: <t.icon size={16} />, actif: route === 'arene' && areneTab === t.tab })) }],
+  };
+  const sectionAreneDimensionnelleBureau: SidebarSection = {
+    titre: nomNav('areneDimensionnelle'),
+    icon: <IconeArene size={16} />,
+    groupes: [
+      {
+        liens: ARENE_DIMENSIONNELLE_SUBS.map((t) => ({
+          key: t.tab,
+          label: nomNav(t.texte),
+          hash: t.hash,
+          icon: <t.icon size={16} />,
+          actif: route === 'arene-dimensionnelle' && areneTab === t.tab,
+        })),
+      },
+    ],
+  };
   // Un inventaire à plusieurs vues devient une section à part entière (Runes,
   // Artéfacts) : ses vues en entrées, sans le niveau « Mon compte » au-dessus.
   const sectionInventaireBureau = (sub: AccountSub): SidebarSection => {
@@ -1400,7 +1762,14 @@ function Application() {
       liens: [
         { key: 'rta', label: nomNav('rta'), icon: <IconeRta size={16} />, ouvre: sectionRtaBureau, actif: route === 'rta' },
         { key: 'siege', label: nomNav('siege'), icon: <IconeSiege size={16} />, ouvre: sectionSiegeBureau, actif: route === 'siege' },
-        { key: ARENE_ITEM.key, label: nomNav(ARENE_ITEM.texte), hash: ARENE_ITEM.hash, icon: <ARENE_ITEM.icon size={16} />, badge: nomNav('bientot'), actif: route === 'arene' },
+        { key: ARENE_ITEM.key, label: nomNav(ARENE_ITEM.texte), icon: <ARENE_ITEM.icon size={16} />, ouvre: sectionAreneBureau, actif: route === 'arene' },
+        {
+          key: ARENE_DIMENSIONNELLE_ITEM.key,
+          label: nomNav(ARENE_DIMENSIONNELLE_ITEM.texte),
+          icon: <ARENE_DIMENSIONNELLE_ITEM.icon size={16} />,
+          ouvre: sectionAreneDimensionnelleBureau,
+          actif: route === 'arene-dimensionnelle',
+        },
       ],
     },
     {
@@ -1415,6 +1784,13 @@ function Application() {
         },
         { key: 'runes', label: nomNav('runes'), icon: <IconeRunes size={18} />, ouvre: sectionRunesBureau, actif: route === 'compte' && accountSub === 'runes' },
         { key: 'artefacts', label: nomNav('artefacts'), icon: <IconeArtefacts size={18} />, ouvre: sectionArtefactsBureau, actif: route === 'compte' && accountSub === 'artefacts' },
+        {
+          key: 'equipes',
+          label: nomNav('mesEquipes'),
+          hash: hashVue('equipes', vueParDefaut('equipes')),
+          icon: <IconeEquipes size={18} />,
+          actif: route === 'compte' && accountSub === 'equipes',
+        },
       ],
     },
     {
@@ -1452,10 +1828,16 @@ function Application() {
   // l'onglet du bas au doigt, l'en-tête de section de la barre latérale à la
   // souris. Nommer la sous-section apprend où l'on est au lieu de répéter le
   // niveau au-dessus.
-  const entreeCourante = [...NAV, ARENE_ITEM, ...RESOURCES].find((i) => i.key === route);
+  const entreeCourante = [...NAV, ARENE_ITEM, ARENE_DIMENSIONNELLE_ITEM, ...RESOURCES].find((i) => i.key === route);
   const rtaSubItem = route === 'rta' ? RTA_SUBS.find((s) => s.sub === rtaSub) : null;
   const compteSub = route === 'compte' ? ACCOUNT_SUBS.find((s) => s.sub === accountSub) : null;
   const siegeSub = route === 'siege' ? SIEGE_SUBS.find((s) => s.tab === siegeTab) : null;
+  const areneSub =
+    route === 'arene'
+      ? ARENE_SUBS.find((s) => s.tab === areneTab)
+      : route === 'arene-dimensionnelle'
+        ? ARENE_DIMENSIONNELLE_SUBS.find((s) => s.tab === areneTab)
+        : null;
   // ⚠️ Sur « Mon compte », le titre nomme l'inventaire ET SA VUE
   // (« Runes · Liste »). Il ne disait que l'inventaire : la vue était portée par
   // une rangée d'onglets dans la page, qui est passée dans le panneau de
@@ -1474,6 +1856,7 @@ function Application() {
     (compteSub ? `${nomNav(compteSub.texte)}${compteVue ? ` · ${compteVue}` : ''}` : null) ??
     (rtaSubItem ? nomNav(rtaSubItem.texte) : null) ??
     (siegeSub ? nomNav(siegeSub.texte) : null) ??
+    (areneSub ? nomNav(areneSub.texte) : null) ??
     sectionOuverte?.titre ??
     (entreeCourante ? nomNav(entreeCourante.texte) : null) ??
     (route === 'parametres' ? nomNav('parametres') : NOM_APP);
@@ -1553,6 +1936,8 @@ function Application() {
     <rtaSubItem.icon size={16} color={rtaSubItem.couleur} />
   ) : siegeSub ? (
     <siegeSub.icon size={16} color={siegeSub.couleur} />
+  ) : areneSub ? (
+    <areneSub.icon size={16} color={areneSub.couleur} />
   ) : (
     sectionOuverte?.icon ??
     (entreeCourante ? <entreeCourante.icon size={16} color={entreeCourante.couleur} /> : null) ??
@@ -1614,12 +1999,20 @@ function Application() {
       icon: <sub.icon size={16} />,
       contexte: nomNav('outils'),
     })),
-    {
-      key: ARENE_ITEM.key,
-      label: nomNav(ARENE_ITEM.texte),
-      hash: ARENE_ITEM.hash,
-      icon: <ARENE_ITEM.icon size={16} />,
-    },
+    ...ARENE_SUBS.map((t) => ({
+      key: `arene-${t.tab}`,
+      label: nomNav(t.texte),
+      hash: t.hash,
+      icon: <t.icon size={16} />,
+      contexte: nomNav('arene'),
+    })),
+    ...ARENE_DIMENSIONNELLE_SUBS.map((t) => ({
+      key: `arene-dimensionnelle-${t.tab}`,
+      label: nomNav(t.texte),
+      hash: t.hash,
+      icon: <t.icon size={16} />,
+      contexte: nomNav('areneDimensionnelle'),
+    })),
     ...RESOURCES.map((i) => ({
       key: i.key,
       label: nomNav(i.texte),
@@ -1661,6 +2054,7 @@ function Application() {
           ? [
               { cle: 'a-session-sauver', libelle: textes.palette.sauvegarderSession, contexte: textes.palette.sauvegarderSessionAide, icone: <Save size={16} />, faire: sauvegarderSession },
               { cle: 'a-session-sous', libelle: textes.palette.sauvegarderSous, contexte: textes.palette.sauvegarderSousAide, icone: <FilePlus size={16} />, faire: sauvegarderSessionSous },
+              { cle: 'a-session-charger', libelle: textes.palette.chargerSession, contexte: textes.palette.chargerSessionAide, icone: <FolderOpen size={16} />, faire: () => void chargerSession() },
             ]
           : []),
         ...choixTheme(textes).map((t) => ({
@@ -1724,15 +2118,40 @@ function Application() {
     { key: 'rta', label: nomNav('rta'), ouvre: sectionRta.titre, icon: <IconeRta size={17} color={COULEUR_SECTION.rta} />, actif: route === 'rta' },
     { key: 'siege', label: nomNav('siege'), ouvre: sectionSiege.titre, icon: <IconeSiege size={17} color={COULEUR_SECTION.siege} />, actif: route === 'siege' },
     { key: 'compte', label: nomNav('compte'), ouvre: sectionCompte.titre, icon: <IconeCompte size={17} color={COULEUR_SECTION.compte} />, actif: route === 'compte' },
-    { key: 'outils', label: nomNav('outils'), ouvre: sectionOutils.titre, icon: <IconeOutils size={17} color={COULEUR_SECTION.outils} />, actif: route === 'outils' || route === 'bestiary' || route === 'mecaniques' || route === 'releases' || route === 'telecharger' || route === 'arene' },
+    { key: 'outils', label: nomNav('outils'), ouvre: sectionOutils.titre, icon: <IconeOutils size={17} color={COULEUR_SECTION.outils} />, actif: route === 'outils' || route === 'bestiary' || route === 'mecaniques' || route === 'releases' || route === 'telecharger' || route === 'bot-discord' || route === 'sw-exporter' || route === 'arene' || route === 'arene-dimensionnelle' },
   ];
 
   // La section dont on choisit la sous-section, sur téléphone.
   // ⚠️ Son TITRE, jamais son objet : un objet mémorisé se fige à l'instant du
   // clic et son surlignage reste en arrière de la navigation — la barre
   // latérale a déjà payé cette leçon (voir Sidebar, `ouverte`).
+  // ⚠️ L'Arène n'a pas d'onglet du bas : comme avant elle, elle vit sous
+  // « Outils », dont le panneau porte un groupe « Arène » — ses trois
+  // sous-sections — et un groupe « Arène dimensionnelle » — les deux siennes.
+  const sectionOutilsMobile: SidebarSection = {
+    ...sectionOutils,
+    groupes: [
+      ...sectionOutils.groupes,
+      {
+        titre: nomNav('arene'),
+        icone: <IconeArene size={17} color={COULEUR_SECTION.arene} />,
+        liens: sectionArene.groupes[0]?.liens ?? [],
+      },
+      {
+        titre: nomNav('areneDimensionnelle'),
+        icone: <IconeArene size={17} color={ARENE_DIMENSIONNELLE_ITEM.couleur} />,
+        liens: ARENE_DIMENSIONNELLE_SUBS.map((t) => ({
+          key: `arene-dimensionnelle-${t.tab}`,
+          label: nomNav(t.texte),
+          hash: t.hash,
+          icon: <t.icon size={17} color={t.couleur} />,
+          actif: route === 'arene-dimensionnelle' && areneTab === t.tab,
+        })),
+      },
+    ],
+  };
   const sectionMobile =
-    [sectionRta, sectionSiege, sectionCompte, sectionOutils].find((s) => s.titre === navMobileOuverte) ??
+    [sectionRta, sectionSiege, sectionCompte, sectionOutilsMobile].find((s) => s.titre === navMobileOuverte) ??
     null;
 
   // La page d'une adresse. ⚠️ Appelée UNE fois en pleine page, une fois PAR
@@ -1792,10 +2211,56 @@ function Application() {
         onFermerMenu={menu.fermer}
       />
     ) : n.route === 'arene' ? (
-      <ComingSoon
-        title={textes.navigation.arene}
-        icon={IconeArene}
-        description={textes.donnees.areneBientot}
+      <ArenePage
+        tab={coteDe(n.areneTab)}
+        onImporterEquipe={importerEquipe}
+        sourcesOptimizer={optimizerData}
+        compteCharge={box.length > 0 || runes.length > 0}
+        equipes={n.areneTab === 'offense' ? areneOff : n.areneTab === 'interserveur' ? areneInter : areneDef}
+        siegeDefenseTeams={siegeDef.state.teams}
+        siegeOffenseTeams={siegeOff.state.teams}
+        monsters={allMonsters}
+        loadState={data.loadState}
+        onCreateMonster={custom.addCustomMonster}
+        customMonsters={custom.customMonsters}
+        onDeleteMonster={custom.removeCustomMonster}
+        menuOuvert={menu.ouvert}
+        onFermerMenu={menu.fermer}
+      />
+    ) : n.route === 'arene-dimensionnelle' && n.areneTab === 'dimension-runes' ? (
+      <RunesDimensionPage runes={runesDimension.runes} menuOuvert={menu.ouvert} onFermerMenu={menu.fermer} />
+    ) : n.route === 'arene-dimensionnelle' ? (
+      <ArenePage
+        tab={coteDe(n.areneTab)}
+        onImporterEquipe={importerEquipe}
+        sourcesOptimizer={optimizerData}
+        compteCharge={box.length > 0 || runes.length > 0}
+        equipes={n.areneTab === 'dimension-offense' ? areneDimOff : areneDimDef}
+        siegeDefenseTeams={siegeDef.state.teams}
+        siegeOffenseTeams={siegeOff.state.teams}
+        monsters={allMonsters}
+        loadState={data.loadState}
+        onCreateMonster={custom.addCustomMonster}
+        customMonsters={custom.customMonsters}
+        onDeleteMonster={custom.removeCustomMonster}
+        menuOuvert={menu.ouvert}
+        onFermerMenu={menu.fermer}
+      />
+    ) : n.route === 'compte' && n.accountSub === 'equipes' ? (
+      // ⚠️ Avant les écrans du compte : « Mes équipes » se lit sans compte importé.
+      <EquipesSection
+        api={equipesEnregistrees}
+        ctx={contexteEquipes}
+        inventaire={inventaireEquipes}
+        allMonsters={allMonsters}
+        optimizer={optimizerPourEquipes}
+        recos={recos.state.recos}
+        onImporterOptimizer={importerEquipe}
+        onEquipeCreee={demanderConservationEquipes}
+        demandeOptimizer={demandeOptimizer}
+        onDemandeTraitee={() => setDemandeOptimizer(null)}
+        menuOuvert={menu.ouvert}
+        onFermerMenu={menu.fermer}
       />
     ) : n.route === 'compte' ? (
       <AccountPage
@@ -1803,12 +2268,12 @@ function Application() {
         // ⚠️ `vueValide` : passer des Runes (sur « Courbes ») aux Artéfacts,
         // qui n'ont pas de courbes, laissait sinon un écran blanc.
         vue={vueValide(n.accountSub, n.accountView)}
-        box={box}
-        runes={runes}
-        artifacts={artifacts}
-        crafts={crafts}
-        usedRuneIds={usedRuneIds}
-        runeMarkerLabels={runeMarkerLabels}
+        box={enDirect?.box ?? box}
+        runes={enDirect?.runes ?? runes}
+        artifacts={enDirect?.artifacts ?? artifacts}
+        crafts={enDirect?.crafts ?? crafts}
+        usedRuneIds={enDirect?.usedRuneIds ?? usedRuneIds}
+        runeMarkerLabels={enDirect?.runeMarkerLabels ?? runeMarkerLabels}
         loadState={data.loadState}
         hydrating={accountHydrating}
         // ⚠️ Le bestiaire COMPLET, pas seulement la box : la fiche d'un
@@ -1832,6 +2297,7 @@ function Application() {
         optimizer={optimizer}
         onImporterEquipe={importerEquipeFlottant}
         onExporterEquipe={importerEquipe}
+        importCommun={importCommunOptimizer}
         allMonsters={allMonsters}
         rtaEntries={rta.state.entries}
         siegeDefenseTeams={siegeDef.state.teams}
@@ -1844,17 +2310,23 @@ function Application() {
         // au doigt — seule page qui le demande.
         onOuvrirMenu={menu.ouvrir}
         onMonstreHorsVue={setMonstreOptions}
+        onEnregistrerEquipe={enregistrerEquipeOptimizer}
       />
     ) : n.route === 'releases' ? (
       <ReleasesPage />
     ) : n.route === 'telecharger' ? (
       <TelechargerPage />
+    ) : n.route === 'bot-discord' ? (
+      <BotDiscordPage onglet={n.ongletBot} />
+    ) : n.route === 'sw-exporter' ? (
+      <SwExporterPage />
     ) : n.route === 'mecaniques' ? (
       <MechanicsPage />
     ) : n.route === 'parametres' ? (
       <SettingsPage
         onClearData={() => setPurgeGlobale(true)}
         onSauvegarderSession={estBureau() ? sauvegarderSession : undefined}
+        onChargerSession={estBureau() ? () => void chargerSession() : undefined}
         sauvegardeIndisponible={sauvegardeIndisponible}
         onKeepAccount={persistCurrentAccount}
         onImport={importAccount}
@@ -1882,7 +2354,7 @@ function Application() {
   // fil : il montre le sélecteur de page.
   const vide = coteVide(volets);
   const navDuCote = (cote: Cote) =>
-    cote === volets.actif ? { route, rtaSub, siegeTab, accountSub, accountView, toolSub } : navAutre;  // Le sélecteur d'un volet vide : les pages de la palette Ctrl K, sans celle
+    cote === volets.actif ? { route, rtaSub, siegeTab, areneTab, accountSub, accountView, toolSub, ongletBot } : navAutre;  // Le sélecteur d'un volet vide : les pages de la palette Ctrl K, sans celle
   // déjà affichée à côté. Choisir une page navigue, et la navigation remplit
   // le volet vide (src/lib/volets.ts).
   const groupesPagesVolet = (saisie: string) =>
@@ -1946,14 +2418,18 @@ function Application() {
     // Les deux accès au choix de l'invocateur (carte du compte, Réglages)
     // passent par la garde du changement de compte.
     <GardeChangementCompte.Provider value={gardeChangementCompte}>
+    <DirectSwexContext.Provider value={direct}>
+    <EquipesAreneContext.Provider value={equipesArene}>
     {/* Application de bureau : « Mise à jour prête · Redémarrer ». Inerte sur le site. */}
     <MiseAJourBureau />
     {/* Application de bureau : le dossier SW Exporter importe le compte
         choisi, puis met « Mon compte » à jour. Inerte sur le site. */}
     <SuiviSwex
       appliquer={rafraichirCompte}
+      appliquerDimension={appliquerDimension}
       pret={!accountHydrating && allMonsters.length > 0}
       sansCompte={box.length === 0}
+      sansDimension={runesDimension.runes.length === 0}
     />
     {/* ⚠️ `data-ctx` sur la RACINE : c'est lui qui décide de l'accent
         contextuel de tout l'écran (voir index.css). Une page qui parle d'un
@@ -2037,6 +2513,7 @@ function Application() {
         onSauvegarder={estBureau() ? sauvegarderSession : undefined}
         sauvegardeIndisponible={sauvegardeIndisponible}
         onSauvegarderSous={estBureau() ? sauvegarderSessionSous : undefined}
+        onCharger={estBureau() ? () => void chargerSession() : undefined}
         sessionEnCours={sessionEnCours?.nom ?? null}
         decalage={sidebarRetractee ? LARGEUR_SIDEBAR_RETRACTEE : LARGEUR_SIDEBAR}
         // ⚠️ Le burger n'apparaît que sur les pages qui ONT des actions : un
@@ -2144,7 +2621,7 @@ function Application() {
             libelleSeparateur={textes.donnees.redimensionner}
           />
         ) : (
-          pageDe({ route, rtaSub, siegeTab, accountSub, accountView, toolSub })
+          pageDe({ route, rtaSub, siegeTab, areneTab, accountSub, accountView, toolSub, ongletBot })
         )}
 
         {/* ⚠️ **Le pied de page de la toile : UNE rangée** (rebranding R4 —
@@ -2254,10 +2731,11 @@ function Application() {
 
         {changementCompte !== null && (
           <ChangementCompteDialog
+            motif={changementCompte.motif}
             sauvegardeIndisponible={sauvegardeIndisponible}
             onSauvegarder={() => void sauvegarderPuisChanger()}
             onChanger={() => {
-              const changer = changementCompte;
+              const { changer } = changementCompte;
               setChangementCompte(null);
               changer();
             }}
@@ -2302,6 +2780,45 @@ function Application() {
             }
             actions={<Bouton onClick={() => setEchecSession(null)} autoFocus ton="accent" fond="doux" libelle={textes.commun.fermer} />}
           />
+        )}
+
+        {/* « Charger… » : un fichier refusé, rien n'a changé. */}
+        {echecChargement !== null && (
+          <Modale
+            onClose={() => setEchecChargement(null)}
+            labelledBy="echec-chargement-titre"
+            titre={textes.donnees.chargement.echecTitre}
+            sousTitre={echecChargement}
+            icone={
+              <span className="mt-0.5 flex-none rounded-lg bg-bad/15 p-2 text-bad">
+                <AlertTriangle size={18} />
+              </span>
+            }
+            actions={<Bouton onClick={() => setEchecChargement(null)} autoFocus ton="accent" fond="doux" libelle={textes.commun.fermer} />}
+          />
+        )}
+
+        {/* Une session chargée, sauf une partie : la dire, plutôt que de
+            laisser croire que tout est revenu. */}
+        {avertissementsChargement.length > 0 && (
+          <Modale
+            onClose={() => setAvertissementsChargement([])}
+            labelledBy="avertissements-chargement-titre"
+            titre={textes.donnees.chargement.avertissementsTitre}
+            sousTitre={textes.donnees.chargement.avertissementsTexte}
+            icone={
+              <span className="mt-0.5 flex-none rounded-lg bg-warn/15 p-2 text-warn">
+                <AlertTriangle size={18} />
+              </span>
+            }
+            actions={<Bouton onClick={() => setAvertissementsChargement([])} autoFocus ton="accent" fond="doux" libelle={textes.commun.fermer} />}
+          >
+            <ul className="list-disc pl-5 text-sm text-ink-dim" data-avertissements-chargement>
+              {avertissementsChargement.map((a) => (
+                <li key={a}>{a}</li>
+              ))}
+            </ul>
+          </Modale>
         )}
 
         {/* La question de la conservation, modale : la réponse conditionne ce
@@ -2352,6 +2869,8 @@ function Application() {
         />
       </div>
     </div>
+    </EquipesAreneContext.Provider>
+    </DirectSwexContext.Provider>
     </GardeChangementCompte.Provider>
   );
 }

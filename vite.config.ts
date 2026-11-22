@@ -5,6 +5,7 @@ import autoprefixer from 'autoprefixer';
 import pkg from './package.json';
 import { NOM_APP } from './src/marque';
 import { postcssVolets } from './scripts/lib/postcssVolets';
+import { CHEMIN_PLUGIN, texteDuPluginSwex } from './scripts/lib/construirePluginSwex.mjs';
 
 // Le nom de l'app dans `index.html` (titre de l'onglet, aperçus de partage) :
 // `%NOM_APP%` y est remplacé par la constante de `src/marque.ts`, la même que
@@ -17,9 +18,32 @@ function nomDansIndex(): Plugin {
   };
 }
 
+// Le plugin SWEX « SW Blacksmith Live » (plugin-swex/), téléchargeable depuis
+// la page SW Exporter : émis à la construction dans `dist/plugin-swex/` (le
+// site le sert, l'app de bureau l'embarque), et servi en développement à la
+// même adresse, reconstruit à chaque demande. Voir
+// docs/02-app/bureau/feat-swex-direct.md.
+function pluginSwex(): Plugin {
+  return {
+    name: 'plugin-swex',
+    configureServer(serveur) {
+      serveur.middlewares.use(`/${CHEMIN_PLUGIN}`, (_req, res, suite) => {
+        texteDuPluginSwex().then(({ texte }) => {
+          res.setHeader('Content-Type', 'text/javascript; charset=utf-8');
+          res.end(texte);
+        }, suite);
+      });
+    },
+    async generateBundle() {
+      const { texte } = await texteDuPluginSwex();
+      this.emitFile({ type: 'asset', fileName: CHEMIN_PLUGIN, source: texte });
+    },
+  };
+}
+
 // Servi à la racine du domaine (Vercel) -> base '/'.
 export default defineConfig({
-  plugins: [react(), nomDansIndex()],
+  plugins: [react(), nomDansIndex(), pluginSwex()],
   base: '/',
   // La version affichée dans l'app vient de package.json : UNE seule source,
   // celle que la release incrémente (voir README, « Versions & releases »).

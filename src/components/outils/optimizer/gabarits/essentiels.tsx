@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState, type Dispatch, type SetStateAction } from 'react';
+import type { SortPrecision } from '../../../../lib/precisionParSort';
 import ListeDeTravailBureau from '../bureau/ListeDeTravailBureau';
 import SetDeRunesCompact from '../bureau/SetDeRunesCompact';
 import PrincipalesImposeesBureau, { LARGEUR_COLONNE_ETROITE } from '../bureau/PrincipalesImposeesBureau';
@@ -7,7 +8,7 @@ import EtatMonstreEssentiels from '../bureau/EtatMonstreEssentiels';
 import { Onglets } from '../../../../ui';
 import SelecteurListes from '../SelecteurListes';
 import MonsterSourcePicker from '../../MonsterSourcePicker';
-import OptimizerImportButton from '../../OptimizerImportButton';
+import OptimizerImportButton, { AUCUN_IMPORT_OPTIMIZER } from '../../OptimizerImportButton';
 import { listesInertes, optimizerInerte } from './inertes';
 import type { ContexteGabarits, Gabarit } from './types';
 import { exclusionSelectorKey, type OptimizerListMember } from '../../../../lib/optimizerExclusion';
@@ -72,7 +73,7 @@ function ListeGabarit({ ctx, mode }: { ctx: ContexteGabarits; mode: 'vide' | 're
   return (
     <ListeDeTravailBureau
       listes={<SelecteurListes lists={lists} memberCounts={compte} titreSection
-        action={<OptimizerImportButton enLigne sources={[]} onImporter={optimizer.importerEquipe} rapport={null} />} />}
+        action={<OptimizerImportButton enLigne fenetre={AUCUN_IMPORT_OPTIMIZER} onImporter={optimizer.importerEquipe} rapport={null} />} />}
       recherche={<MonsterSourcePicker mode="bestiary" candidates={ctx.allMonsters} onPick={rien} />}
       liste={{
         activeList, activeMembers, groupesMembres, lists, optimizer, exclusionData: ctx.exclusionData, artifacts: ctx.artifacts,
@@ -102,8 +103,9 @@ function PrincipalesGabarit({ initial }: { initial: Principales }) {
 }
 
 type Stats = Partial<Record<StatKey, number>>;
-function ConditionsGabarit({ ctx, min, max }: { ctx: ContexteGabarits; min: Stats; max: Stats }) {
+function ConditionsGabarit({ ctx, min, max, sorts = [] }: { ctx: ContexteGabarits; min: Stats; max: Stats; sorts?: SortPrecision[] }) {
   const [minStats, setMinStats] = useState(min);
+  const [sortsPrecision, setSortsPrecision] = useState<SortPrecision[]>(sorts);
   const [maxStats, setMaxStats] = useState(max);
   const [excludeBase, setExcludeBase] = useState(ctx.optimizer.excludeBase);
   const monstre = monstreReel(ctx) ?? (ctx.box.find((b) => b.gear) ? { gear: ctx.box.find((b) => b.gear)!.gear! } : null);
@@ -112,7 +114,8 @@ function ConditionsGabarit({ ctx, min, max }: { ctx: ContexteGabarits; min: Stat
     artifactConditionFloor(key, base, bonusMode, ctx.optimizer.optimiserArtefacts ? ctx.optimizer.artifactMainByKind : { element: 'equipped', archetype: 'equipped' }, monstre?.gear.artifacts ?? [])
     + relicConditionFloor(key, base, ctx.optimizer.relicMainChoice, monstre?.gear.relic);
   return <ConditionsBureau excludeBase={excludeBase} setExcludeBase={setExcludeBase} baseOf={baseOf} artifactFloorOf={artifactFloorOf}
-    minStats={minStats} maxStats={maxStats} setMinStats={setMinStats} setMaxStats={setMaxStats} />;
+    minStats={minStats} maxStats={maxStats} setMinStats={setMinStats} setMaxStats={setMaxStats}
+    sortsPrecision={sortsPrecision} setSortsPrecision={setSortsPrecision} sortsDisponibles={[1, 3]} />;
 }
 
 function EtatGabarit({ ctx, patch = {}, equipe = false }: { ctx: ContexteGabarits; patch?: Partial<DamageSetup>; equipe?: boolean }) {
@@ -140,7 +143,7 @@ function OngletsGabarit({ largeur, initial }: { largeur: number; initial: Onglet
 
 export const GABARITS_ESSENTIELS: Gabarit[] = [
   {
-    id: 'liste', nom: 'Liste de travail (et choix du monstre)', largeur: 358, hauteurEstimee: 412,
+    id: 'liste', nom: 'Liste de travail (et choix du monstre)', largeur: 366, hauteurEstimee: 412,
     composant: 'ListeDeTravailBureau (bureau/ListeDeTravailBureau.tsx), composant à part',
     telephone: 'Partage MonstresDeLaListe avec le téléphone, par une variante qu\'il ne prend pas (prop enTete) ; SelecteurListes, MonsterSourcePicker et OptimizerImportButton tels quels.',
     changements: [
@@ -193,18 +196,19 @@ export const GABARITS_ESSENTIELS: Gabarit[] = [
     ],
   },
   {
-    id: 'conditions', nom: 'Conditions', largeur: LARGEUR_CONDITIONS, hauteurEstimee: 336,
+    id: 'conditions', nom: 'Conditions', largeur: LARGEUR_CONDITIONS, hauteurEstimee: 368,
     composant: 'ConditionsBureau (bureau/ConditionsBureau.tsx) : une carte autour de Conditions, variante bureau',
     telephone: 'Partage Conditions avec le téléphone, par une variante qu\'il ne prend pas (prop bureau).',
     changements: ['Dans sa propre carte de 362 px : la colonne des libellés prend la largeur du plus long d\'entre eux (plus 90 px au moins), Min et Max s\'en rapprochent ; les champs gardent leur largeur.'],
     etats: [
       { id: 'vides', nom: 'Conditions vides', rendu: (ctx) => <ConditionsGabarit ctx={ctx} min={{}} max={{}} /> },
       { id: 'remplies', nom: 'PV, VIT et Taux Crit minimum, Taux Crit maximum', rendu: (ctx) => <ConditionsGabarit ctx={ctx} min={{ hp: 20000, spd: 200, cr: 85 }} max={{ cr: 100 }} /> },
-      { id: 'reelles', nom: 'Conditions de l\'Optimizer', rendu: (ctx) => <ConditionsGabarit ctx={ctx} min={ctx.optimizer.minStats} max={ctx.optimizer.maxStats} /> },
+      { id: 'par-sort', nom: 'Précision minimum sur S1 et S3, S2 indisponible', rendu: (ctx) => <ConditionsGabarit ctx={ctx} min={{ acc: 85 }} max={{}} sorts={[1, 3]} /> },
+      { id: 'reelles', nom: 'Conditions de l\'Optimizer', rendu: (ctx) => <ConditionsGabarit ctx={ctx} min={ctx.optimizer.minStats} max={ctx.optimizer.maxStats} sorts={ctx.optimizer.sortsPrecision} /> },
     ],
   },
   {
-    id: 'etat', nom: 'État de mon monstre : buffs et lead', largeur: 294, hauteurEstimee: 150,
+    id: 'etat', nom: 'État de mon monstre : buffs et lead', largeur: 302, hauteurEstimee: 150,
     composant: 'EtatMonstreEssentiels (bureau/EtatMonstreEssentiels.tsx), composant à part',
     telephone: 'EtatMonstre (partagé) exporte son titre, son choix du lead et ses rappels, rendu inchangé ; le téléphone garde EtatMonstre entier.',
     changements: [

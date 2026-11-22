@@ -130,7 +130,7 @@ export async function testRenduOptimizerGabaritsGestes() {
       };
     });
     ok(disposition.valeurADroite && disposition.dedans && disposition.buffsDessous,
-      `état à 294 px : la valeur du lead à droite du type, dans la section, les trois buffs ensemble dessous (${JSON.stringify(disposition)})`);
+      `état à 302 px : la valeur du lead à droite du type, dans la section, les trois buffs ensemble dessous (${JSON.stringify(disposition)})`);
   } finally { await browser.close(); }
 }
 
@@ -156,7 +156,7 @@ export async function testRenduOptimizerGabaritsLargeurs() {
         stats: [r(stats.left), r(stats.right), r(stats.top), r(stats.bottom)], groupe: [r(groupe.left), r(groupe.right), r(groupe.top)],
       };
     });
-    for (const largeur of [358, 598]) {
+    for (const largeur of [366, 598]) {
       await page.evaluate(monterA('exemplaire', largeur));
       await page.waitForTimeout(100);
       const f = await fiche();

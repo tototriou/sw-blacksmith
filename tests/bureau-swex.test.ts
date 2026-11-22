@@ -5,11 +5,16 @@
 // mal reconnu suivrait le mauvais compte, un réglage mal relu inventerait un
 // chemin, une décision « donner » trop large réannoncerait sans cesse.
 
-import { readFileSync } from 'fs';
-import { aDonner, exportsDuDossier, lireNomExport, lireReglage } from '../bureau/swexPur';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'fs';
+import { tmpdir } from 'os';
+import { join } from 'path';
+import { aDonner, dimensionADonner, exportsDuDossier, lireNomExport, lireReglage } from '../bureau/swexPur';
+import { lireDimension } from '../bureau/swexDimension';
+import { appliquerDimension } from '../plugin-swex/source/dimension';
+import { COMPTE_LIVE, DIMENSION, DOSSIER_PLUGIN } from '../plugin-swex/source/fichiers';
 import { presentationSwex } from '../src/components/BlocApplication';
 import { messageExportSwex } from '../src/components/SuiviSwex';
-import { egal, ok, titre } from './outils';
+import { egal, ok, saisonDimensionMiniature, titre } from './outils';
 import { fr } from '../src/i18n/fr';
 
 export default function testBureauSwex() {
@@ -28,13 +33,16 @@ export default function testBureauSwex() {
   );
 
   titre('bureau · SW Exporter — le réglage relu avec méfiance');
-  egal(lireReglage(null), { dossier: null, fichier: null, dernierLu: null }, 'premier lancement : rien');
-  egal(lireReglage('abîmé'), { dossier: null, fichier: null, dernierLu: null }, 'fichier abîmé : rien');
-  const bon = { dossier: 'C:\\SWEX', fichier: 'tototriou-12889591.json', dernierLu: 1759737040000 };
+  const vide = { dossier: null, fichier: null, dernierLu: null, dimensionLue: null, direct: false };
+  egal(lireReglage(null), vide, 'premier lancement : rien, direct coupé');
+  egal(lireReglage('abîmé'), vide, 'fichier abîmé : rien');
+  const bon = { dossier: 'C:\\SWEX', fichier: 'tototriou-12889591.json', dernierLu: 1759737040000, dimensionLue: 1794858558, direct: true };
   egal(lireReglage(bon), bon, 'réglage complet : relu tel quel');
   egal(lireReglage({ ...bon, fichier: '..\\..\\Windows\\win.ini' }).fichier, null, 'un CHEMIN à la place du nom de fichier : refusé');
   egal(lireReglage({ ...bon, fichier: 'sous/tototriou-1.json' }).fichier, null, 'un sous-dossier : refusé');
   egal(lireReglage({ ...bon, dernierLu: 'hier' }).dernierLu, null, 'date illisible : oubliée');
+  egal(lireReglage({ ...bon, dimensionLue: 'hier' }).dimensionLue, null, 'saison dimensionnelle illisible : oubliée');
+  egal(lireReglage({ ...bon, direct: 'oui' }).direct, false, 'direct illisible : coupé');
 
   titre('bureau · SW Exporter — donner l’export à la page, ou pas');
   egal(aDonner(1000, null, false), { donner: true, nouveau: true }, 'jamais lu : donné, annoncé');
@@ -74,7 +82,63 @@ export default function testBureauSwex() {
   // (`npm run bureau:preuve -- --swex`).
   titre('bureau · SW Exporter — l’export qui suit un choix part complet');
   const principal = readFileSync('bureau/swex.ts', 'utf8');
-  ok(/fichier, dernierLu: null \};\s*complet = true;/.test(principal), 'bureau/swex.ts : choisir un invocateur rend l’export suivant complet');
+  ok(/fichier, dernierLu: null, dimensionLue: null \};\s*complet = true;/.test(principal), 'bureau/swex.ts : choisir un invocateur rend l’export suivant complet, et sa saison dimensionnelle à redonner');
   ok(/dernierLu: modifie \};\s*complet = false;/.test(principal), 'bureau/swex.ts : appliqué par la page, l’export suivant redevient « Mon compte »');
   ok(principal.includes("envoyer('bureau:swex-export', { texte, modifie, nouveau, fichier, complet });"), 'bureau/swex.ts : `complet` part avec l’export');
+}
+
+// L'arène dimensionnelle : la saison tenue par le plugin SWEX, lue dans son
+// dossier (bureau/swexDimension.ts), et son passage à la page (bureau/swex.ts,
+// SuiviSwex, App.tsx).
+export async function testBureauSwexDimension() {
+  titre('bureau · SW Exporter — la saison dimensionnelle du plugin SWEX');
+  const dossier = mkdtempSync(join(tmpdir(), 'swb-dimension-'));
+  try {
+    const suivi = join(dossier, DOSSIER_PLUGIN, 'Essai-424242');
+    egal(await lireDimension(dossier, '424242'), null, 'pas de dossier du plugin : rien');
+    mkdirSync(suivi, { recursive: true });
+    writeFileSync(join(suivi, COMPTE_LIVE), '{}\n');
+    egal(await lireDimension(dossier, '424242'), null, 'le mode jamais ouvert : rien');
+    const saison = appliquerDimension(null, 'dimensionarena_getSeasonInfo', {}, saisonDimensionMiniature(), 'essai')!;
+    const attaquee = appliquerDimension(saison, 'dimensionarena_battleStart', { unit_id_list: [900002, 900001, 0, 0] }, { tvalue: 2500, season_id: 1 }, 'essai')!;
+    writeFileSync(join(suivi, DIMENSION), JSON.stringify(saison));
+    const lue = await lireDimension(dossier, '424242');
+    egal([lue?.ouverture, lue?.t, lue?.attaques, lue?.saison.unit_list.length], [2000, 2000, [], 3], 'la saison de l’ouverture : ses heures, aucune attaque vue');
+    writeFileSync(join(suivi, DIMENSION), JSON.stringify(attaquee));
+    egal(
+      await lireDimension(dossier, '424242').then((l) => [l?.ouverture, l?.t, l?.attaques.length]),
+      [2000, 2500, 1],
+      'un changement dans le mode : la même ouverture, une heure plus récente, l’attaque jouée'
+    );
+    egal(await lireDimension(dossier, '777'), null, 'un autre invocateur : pas son dossier');
+    writeFileSync(join(suivi, DIMENSION), JSON.stringify({ ...saison, wizard_id: 777 }));
+    egal(await lireDimension(dossier, '424242'), null, 'une saison d’un autre invocateur dans le dossier : refusée');
+    writeFileSync(join(suivi, DIMENSION), JSON.stringify({ ...saison, swblacksmith: undefined }));
+    egal(await lireDimension(dossier, '424242'), null, 'un fichier sans la marque du plugin : refusé');
+    writeFileSync(join(suivi, DIMENSION), '{"wizard_id":4242');
+    egal(await lireDimension(dossier, '424242'), null, 'un fichier à moitié écrit : rien, le prochain changement redonnera');
+  } finally {
+    rmSync(dossier, { recursive: true, force: true });
+  }
+
+  titre('bureau · SW Exporter — donner une saison dimensionnelle, ou pas');
+  ok(dimensionADonner(2000, null), 'jamais appliquée : donnée');
+  ok(dimensionADonner(2000, 1000), 'plus récente que la dernière appliquée : donnée');
+  ok(!dimensionADonner(2000, 2000), 'déjà appliquée : rien');
+  ok(!dimensionADonner(undefined, null), 'sans heure serveur lisible : jamais');
+  ok(dimensionADonner(2000, 2000, true), 'déjà appliquée, mais la page n’a rien de ce mode : redonnée');
+
+  // Le passage à la page, sans Electron : un contrôle de source, comme plus haut.
+  titre('bureau · SW Exporter — la saison part à la page, qui la confirme');
+  const principal = readFileSync('bureau/swex.ts', 'utf8');
+  ok(principal.includes("envoyer('bureau:swex-dimension', { saison: lue.saison, recents, cle: lue.t, nouvelle });"), 'bureau/swex.ts : la saison part avec les attaques, sa clé est l’heure du dernier changement');
+  ok(principal.includes('const nouvelle = dimensionADonner(lue.ouverture, reglage.dimensionLue);'), 'bureau/swex.ts : annoncée seulement après une OUVERTURE du mode non appliquée, pas à chaque changement');
+  ok(
+    /\/dimension\/\.test\(String\(nom\)\)\) dimensionChangee\(\);/.test(principal) && /pagePrete = true;[\s\S]*?void donnerDimension\(pageSansDimension === true\);/.test(principal),
+    'bureau/swex.ts : relue à la page prête (redonnée si la page n’a rien de ce mode), puis à chaque écriture du fichier par le plugin'
+  );
+  ok(!principal.includes('full_log') && !principal.includes('journalSwex'), 'bureau/swex.ts : plus de journal Full Logger');
+  const preload = readFileSync('bureau/preload.ts', 'utf8');
+  ok(preload.includes("'bureau:swex-dimension'") && preload.includes("'bureau:swex-dimension-lue'"), 'bureau/preload.ts : les deux canaux');
+  egal(fr.application.dimensionMiseAJour(2), 'Arène dimensionnelle mise à jour depuis SW Exporter : 2 équipes', 'l’annonce');
 }

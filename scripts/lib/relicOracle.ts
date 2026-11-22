@@ -443,7 +443,7 @@ export function chargerPointOracle(argv: readonly string[]): PointOracle {
   const chargee = chargerRecette(exportPath, recipePath, mode);
   const data = parseAccountSource(readFileSync(exportPath, 'utf8'))!;
   const { relics } = parseAccountInventory(data, fr);
-  const contexte = resoudreContexteRelique(recipeToRelicIntent(chargee.recipe, chargee.loaded), chargee.loaded.gear.relic, relics);
+  const contexte = resoudreContexteRelique(recipeToRelicIntent(chargee.recipe), chargee.loaded.gear.relic, relics);
   let params = chargee.params;
   if (paireArg != null) {
     const espece = loadMonstersList().find((m) => m.com2usId === chargee.loaded.com2usId);

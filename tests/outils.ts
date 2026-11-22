@@ -4,6 +4,7 @@
 
 import { existsSync, readFileSync } from 'fs';
 import { resolve } from 'path';
+import { viderMiroir } from '../src/hooks/usePersistence';
 
 /* --------------------------------------------------------------------------
  * Assertions
@@ -61,7 +62,11 @@ export function titre(t: string) {
 
 // `localStorage` minimal, énumérable — le module de persistance parcourt ses
 // clés (`Object.keys`) pour purger les données.
+// ⚠️ Un faux stockage neuf simule un LANCEMENT : le miroir du travail
+// (`usePersistence`) repart vide, sinon les hooks, qui y relisent leur état
+// au démarrage, y trouveraient celui d'un test précédent.
 export function faussLocalStorage(initial: Record<string, string> = {}) {
+  viderMiroir();
   const mem = new Map(Object.entries(initial));
   const api = {
     getItem: (k: string) => mem.get(k) ?? null,
@@ -98,6 +103,13 @@ export function exportExemplairesMultiples(): string {
   return readFileSync(resolve(racine, 'tests/fixtures/compte-exemplaires-multiples.json'), 'utf8');
 }
 
+// Saison de l'arène dimensionnelle écrite à la main (la réponse à
+// `dimensionarena_getSeasonInfo`), commitée, sans donnée réelle — voir son
+// `_lisezmoi`.
+export function saisonDimensionMiniature(): Record<string, any> {
+  return JSON.parse(readFileSync(resolve(racine, 'tests/fixtures/dimension-saison-miniature.json'), 'utf8'));
+}
+
 // ⚠️ Export RÉEL du développeur — **gitignoré**, donc absent partout ailleurs.
 // Les tests qui s'en servent (mesures, cas réels) s'ignorent quand il manque.
 export function exportReel(): string | null {
@@ -107,6 +119,15 @@ export function exportReel(): string | null {
     if (existsSync(chemin)) return readFileSync(chemin, 'utf8');
   }
   return null;
+}
+
+// ⚠️ Journal SWEX RÉEL du développeur (`full_log.txt`, du plugin Full Logger
+// de SWEX) — **gitignoré**, comme l'export réel. L'app ne le lit pas : il
+// sert à rejouer de vrais échanges dans le plugin. Les tests qui s'en servent
+// s'ignorent quand il manque.
+export function journalSwexReel(): string | null {
+  const chemin = resolve(racine, 'full_log.txt');
+  return existsSync(chemin) ? readFileSync(chemin, 'utf8') : null;
 }
 
 export function monstersJson(): any[] {

@@ -1,5 +1,5 @@
-import { Dispatch, SetStateAction, useMemo, useRef, useState } from 'react';
-import { Download, Upload, FileJson, LineChart, Boxes, Trash2 } from 'lucide-react';
+import { Dispatch, SetStateAction, useEffect, useMemo, useRef, useState } from 'react';
+import { Download, Upload, FileJson, LineChart, Boxes, Trash2, History } from 'lucide-react';
 import { RuneDetail } from '../../types';
 import { runeEfficiency, runeScore } from '../../lib/effects';
 import { encodeCurveJson, decodeCurve } from '../../lib/runeCurveShare';
@@ -10,6 +10,7 @@ import { useStickyState } from '../../hooks/useStickyState';
 import { useRuneMetric } from '../../hooks/useRuneMetric';
 import CurveChart, { CurveSeries, OWN_COLOR } from './CurveChart';
 import CurveLegend from './CurveLegend';
+import InterrupteurDirect from './InterrupteurDirect';
 import { couleurLibre } from './curveColors';
 import SetFilter from './SetFilter';
 import SlotFilter from './SlotFilter';
@@ -21,8 +22,13 @@ import AncientFilter, {
 } from './AncientFilter';
 import Bouton from '../../ui/Bouton';
 import Onglets from '../../ui/Onglets';
+import SelecteurMultiple from '../../ui/SelecteurMultiple';
 import { PREFIXE_FICHIER } from '../../marque';
-import { useTraduction } from '../../hooks/useLangue';
+import { useLangue, useTraduction } from '../../hooks/useLangue';
+import { useHistoriqueSwex, type EtatHistorique } from '../../hooks/useHistoriqueSwex';
+import { formatDateHeure } from '../../i18n/format';
+import { swex } from '../../lib/bureau';
+import { runesDeLEtat } from '../../lib/historiqueRunes';
 
 interface Props {
   runes: RuneDetail[];
@@ -47,7 +53,7 @@ interface AccountOverlay {
   color: string;
 }
 
-type Onglet = 'courbes' | 'comptes';
+type Onglet = 'courbes' | 'comptes' | 'historique';
 
 const desc = (a: number, b: number) => b - a;
 
@@ -66,7 +72,11 @@ const desc = (a: number, b: number) => b - a;
 export default function RunesCompare({ runes }: Props) {
   const textes = useTraduction();
   const c = textes.comparaison;
-  const [onglet, setOnglet] = useStickyState<Onglet>('runesCompare.tab', 'courbes');
+  const [ongletChoisi, setOnglet] = useStickyState<Onglet>('runesCompare.tab', 'courbes');
+  // L'historique vient de l'archive du plugin SWEX : sur le site, son onglet
+  // reste affiché, désactivé, et dit pourquoi.
+  const historique = useHistoriqueSwex();
+  const onglet: Onglet = ongletChoisi === 'historique' && historique.etat === 'site' ? 'courbes' : ongletChoisi;
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const metric = useRuneMetric();
   const flash = (ok: boolean, text: string) => setMsg({ ok, text });
@@ -104,12 +114,19 @@ export default function RunesCompare({ runes }: Props) {
 
   return (
     <div>
+      {/* Au doigt, l'interrupteur « Direct » seul sur sa ligne ; rien (pas
+          même la marge) sans lui. */}
+      <div className="mb-3 empty:hidden lg:hidden">
+        <InterrupteurDirect />
+      </div>
       {/* Au doigt, sans rien d'importé, la rangée n'a rien à porter (le titre
           est réservé à la souris) : elle ne laisse pas de marge vide. */}
       <div className={`mb-3 items-center gap-2 flex-wrap lg:flex lg:gap-3 ${importes > 0 ? 'flex' : 'hidden'}`}>
         {/* ⚠️ **À la SOURIS, le titre de la vue en tête de la rangée** (la maquette).
             Au doigt, la barre du haut dit déjà la vue. */}
         <h1 className="hidden font-display text-xl tracking-wide text-ink lg:block">{c.titre}</h1>
+        {/* Application de bureau : « Mon compte » en direct (ta courbe). */}
+        <InterrupteurDirect className="hidden lg:inline-flex" />
 
         {importes > 0 && (
           <Bouton
@@ -138,12 +155,28 @@ export default function RunesCompare({ runes }: Props) {
         options={[
           { cle: 'courbes', libelle: c.courbesPartagees, icone: <LineChart size={14} /> },
           { cle: 'comptes', libelle: c.fichiersCompte, icone: <Boxes size={14} /> },
+          {
+            cle: 'historique',
+            libelle: c.historique,
+            icone: <History size={14} />,
+            desactive: historique.etat === 'site',
+            title: historique.etat === 'site' ? c.historiqueSite : undefined,
+          },
         ]}
       />
 
       {msg && <p className={`text-xs mb-3 ${msg.ok ? 'text-good' : 'text-bad'}`}>{msg.text}</p>}
 
-      {onglet === 'courbes' ? (
+      {onglet === 'historique' ? (
+        <OngletHistorique
+          runes={runes}
+          metric={metric}
+          flash={flash}
+          historique={historique}
+          hidden={hidden}
+          setHidden={setHidden}
+        />
+      ) : onglet === 'courbes' ? (
         <OngletCourbes
           runes={runes}
           metric={metric}
@@ -367,13 +400,12 @@ function OngletComptes({
 }) {
   const textes = useTraduction();
   const c = textes.comparaison;
-  // Liste blanche, tout coché par défaut (voir RunesList) : coché = affiché,
-  // aucun coché = rien.
-  const [sets, setSets] = useStickyState<Set<string>>('runesCompare.sets', new Set(runes.map((r) => r.set)));
-  const [slots, setSlots] = useStickyState<Set<number>>('runesCompare.slots', new Set([1, 2, 3, 4, 5, 6]));
-  const [ancientBrut, setAncient] = useStickyState<AncientFilterValue>('runesCompare.ancient', 'all');
-  const ancient = normFiltreAntique(ancientBrut);
-  const [limit, setLimit] = useStickyState('runesCompare.accountsLimit', DEFAULT_LIMIT);
+  const filtres = useFiltresComparaison(
+    { sets: 'runesCompare.sets', slots: 'runesCompare.slots', ancient: 'runesCompare.ancient', limit: 'runesCompare.accountsLimit' },
+    runes,
+    metric
+  );
+  const { setSets, classees } = filtres;
   const jsonRef = useRef<HTMLInputElement>(null);
   // Runes lues, en attente du nom sous lequel les afficher.
   const [compteEnAttente, setCompteEnAttente] = useState<{ runes: RuneDetail[]; repli: string } | null>(
@@ -423,27 +455,6 @@ function OngletComptes({
     reader.readAsText(file);
   }
 
-  // ⚠️ Le MÊME filtre est appliqué à tout le monde : c'est ce qui rend la
-  // comparaison honnête (mon top Violent contre le sien, pas contre son stock).
-  const filtrer = (rs: RuneDetail[]) =>
-    rs.filter((r) => {
-      if (!sets.has(r.set)) return false;
-      if (!slots.has(r.slot)) return false;
-      if (!keepAncient(r, ancient)) return false;
-      return true;
-    });
-
-  // ⚠️ Valeurs ET runes triées ENSEMBLE : le graphe ouvre la rune d'un point
-  // par son rang, les deux tableaux doivent donc rester alignés. Un `filtrer`
-  // puis un `sort` séparés auraient suffi à décaler l'un par rapport à l'autre.
-  const classees = (rs: RuneDetail[]) => {
-    const tri = filtrer(rs)
-      .map((r) => ({ rune: r, val: metric === 'eff' ? runeEfficiency(r) : runeScore(r) }))
-      .sort((a, b) => b.val - a.val)
-      .slice(0, Math.max(1, limit));
-    return { effs: tri.map((t) => t.val), runes: tri.map((t) => t.rune) };
-  };
-
   // Ici TOUTES les séries portent leurs runes — les fichiers de compte en
   // contiennent, contrairement aux courbes partagées. Chacune est donc ouvrable.
   const lignes: Ligne[] = [
@@ -476,24 +487,7 @@ function OngletComptes({
         </span>
       </div>
 
-      <div className="flex flex-col gap-3 mb-4">
-        <SetFilter runes={toutesLesRunes} value={sets} onChange={setSets} />
-        <div className="flex flex-wrap items-center gap-2">
-          <SlotFilter value={slots} onChange={setSlots} />
-          <AncientFilter value={ancient} onChange={setAncient} />
-          <div className="ml-auto flex items-center gap-2">
-            <span className="label">{textes.courbes.nbRunes}</span>
-            <NumberField
-              value={limit}
-              min={1}
-              step={50}
-              width="w-14"
-              ariaLabel={textes.courbes.nombreRunes}
-              onChange={(v) => setLimit(Math.max(1, v ?? 1))}
-            />
-          </div>
-        </div>
-      </div>
+      <BarreFiltres filtres={filtres} runes={toutesLesRunes} />
 
       {overlays.length === 0 && (
         <p className="mb-3 text-xs leading-relaxed text-ink-dim">
@@ -518,7 +512,233 @@ function OngletComptes({
   );
 }
 
+/* ---- Onglet 3 : historique du compte (archive du plugin SWEX) ------------- */
+
+// Un état de l'archive, tracé : ses runes (celles de ce jour-là), sa date et
+// sa couleur. Le nom n'est pas gardé : la date se formate dans la langue du
+// moment.
+interface HistoriqueOverlay {
+  cle: string;
+  t: number;
+  runes: RuneDetail[];
+  color: string;
+}
+
+// Clé de masquage d'un état : sa clé d'archive, pas sa date affichée (qui
+// suit la langue).
+const cleMasquage = (cle: string) => `historique:${cle}`;
+
+function OngletHistorique({
+  runes,
+  metric,
+  flash,
+  historique,
+  hidden,
+  setHidden,
+}: {
+  runes: RuneDetail[];
+  metric: 'eff' | 'score';
+  flash: (ok: boolean, text: string) => void;
+  historique: EtatHistorique;
+  hidden: Set<string>;
+  setHidden: Dispatch<SetStateAction<Set<string>>>;
+}) {
+  const textes = useTraduction();
+  const c = textes.comparaison;
+  const langue = useLangue();
+  const filtres = useFiltresComparaison(
+    {
+      sets: 'runesCompare.historique.sets',
+      slots: 'runesCompare.historique.slots',
+      ancient: 'runesCompare.historique.ancient',
+      limit: 'runesCompare.historique.limit',
+    },
+    runes,
+    metric
+  );
+  const { setSets, classees } = filtres;
+  // ⚠️ En mémoire seulement, comme le reste de la Comparaison : un état se
+  // relit dans l'archive, il n'a rien à faire dans le stockage de l'app.
+  const [traces, setTraces] = useStickyState<HistoriqueOverlay[]>('runesCompare.historique.traces', []);
+  const [enLecture, setEnLecture] = useState<Set<string>>(new Set());
+
+  const etats = historique.etat === 'pret' ? historique.etats : null;
+  const dateDe = (t: number) =>
+    formatDateHeure(t, langue, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+  // Un autre invocateur suivi, ou une archive refaite : les états tracés qui
+  // n'y sont plus partent du graphe.
+  useEffect(() => {
+    if (historique.etat !== 'pret') return;
+    const presentes = new Set((etats ?? []).map((e) => e.cle));
+    setTraces((prev) => (prev.every((o) => presentes.has(o.cle)) ? prev : prev.filter((o) => presentes.has(o.cle))));
+  }, [historique, etats, setTraces]);
+
+  function choisir(cles: string[]) {
+    const voulues = new Set(cles);
+    setTraces((prev) => prev.filter((o) => voulues.has(o.cle)));
+    const pont = swex();
+    if (!pont) return;
+    for (const cle of cles) {
+      if (traces.some((o) => o.cle === cle) || enLecture.has(cle)) continue;
+      setEnLecture((prev) => new Set(prev).add(cle));
+      const finir = () =>
+        setEnLecture((prev) => {
+          const suite = new Set(prev);
+          suite.delete(cle);
+          return suite;
+        });
+      const date = dateDe(etats?.find((e) => e.cle === cle)?.t ?? 0);
+      pont
+        .etatHistorique(cle)
+        .then((lu) => {
+          const runesDuJour = lu ? runesDeLEtat(lu.runes) : [];
+          if (!lu || runesDuJour.length === 0) return flash(false, c.historiqueIllisible(date));
+          setTraces((prev) =>
+            prev.some((o) => o.cle === cle)
+              ? prev
+              : [...prev, { cle, t: lu.t, runes: runesDuJour, color: couleurLibre(prev.map((o) => o.color)) }].sort(
+                  (a, b) => b.t - a.t
+                )
+          );
+          // Les sets de ce jour-là rejoignent la sélection (voir OngletComptes).
+          setSets((prev) => new Set([...prev, ...runesDuJour.map((r) => r.set)]));
+        })
+        .catch(() => flash(false, c.historiqueIllisible(date)))
+        .finally(finir);
+    }
+  }
+
+  const lignes: Ligne[] = [
+    { cle: CLE_MOI, series: { name: c.moi, ...classees(runes), color: OWN_COLOR, own: true } },
+    ...traces.map((o) => ({
+      cle: cleMasquage(o.cle),
+      series: { name: dateDe(o.t), ...classees(o.runes), color: o.color, own: false },
+      remove: () => setTraces((prev) => prev.filter((x) => x.cle !== o.cle)),
+    })),
+  ];
+  const toutesLesRunes = useMemo(() => [...runes, ...traces.flatMap((o) => o.runes)], [runes, traces]);
+
+  const choisies = [...traces.map((o) => o.cle), ...enLecture];
+  const message =
+    historique.etat === 'chargement'
+      ? c.historiqueChargement
+      : etats === null
+        ? c.historiqueIndisponible
+        : etats.length === 0
+          ? c.historiqueVide
+          : null;
+
+  return (
+    <>
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        {/* Toujours affiché, désactivé tant qu'il n'y a rien à choisir. */}
+        <div className="w-full sm:w-72">
+          <SelecteurMultiple
+            libelle={c.historiqueDates}
+            vide={c.historiqueAucuneDate}
+            taille="sm"
+            options={(etats ?? []).map((e) => ({
+              valeur: e.cle,
+              libelle: dateDe(e.t),
+              disabled: enLecture.has(e.cle),
+            }))}
+            valeurs={choisies}
+            onChange={choisir}
+            disabled={!etats || etats.length === 0}
+            title={message ?? undefined}
+          />
+        </div>
+      </div>
+
+      <p className="mb-3 text-xs leading-relaxed text-ink-dim">
+        {message ?? (
+          <>
+            {c.historiqueAide1} <b className="text-ink">{c.historiqueAideGras}</b>
+            {c.historiqueAide2}
+          </>
+        )}
+      </p>
+
+      <BarreFiltres filtres={filtres} runes={toutesLesRunes} />
+
+      <Graphe lignes={lignes} metric={metric} hidden={hidden} setHidden={setHidden} />
+    </>
+  );
+}
+
 /* ---- Communs -------------------------------------------------------------- */
+
+interface FiltresComparaison {
+  sets: Set<string>;
+  setSets: Dispatch<SetStateAction<Set<string>>>;
+  slots: Set<number>;
+  setSlots: Dispatch<SetStateAction<Set<number>>>;
+  ancient: ReturnType<typeof normFiltreAntique>;
+  setAncient: Dispatch<SetStateAction<AncientFilterValue>>;
+  limit: number;
+  setLimit: Dispatch<SetStateAction<number>>;
+  // Valeurs ET runes triées ensemble, filtrées puis coupées au nombre choisi.
+  classees: (rs: RuneDetail[]) => { effs: number[]; runes: RuneDetail[] };
+}
+
+// Les filtres des onglets qui portent des runes (Fichiers de compte,
+// Historique), chacun sous ses clés : sets, emplacement, antiques, nombre.
+function useFiltresComparaison(
+  cles: { sets: string; slots: string; ancient: string; limit: string },
+  runes: RuneDetail[],
+  metric: 'eff' | 'score'
+): FiltresComparaison {
+  // Liste blanche, tout coché par défaut (voir RunesList) : coché = affiché,
+  // aucun coché = rien.
+  const [sets, setSets] = useStickyState<Set<string>>(cles.sets, new Set(runes.map((r) => r.set)));
+  const [slots, setSlots] = useStickyState<Set<number>>(cles.slots, new Set([1, 2, 3, 4, 5, 6]));
+  const [ancientBrut, setAncient] = useStickyState<AncientFilterValue>(cles.ancient, 'all');
+  const ancient = normFiltreAntique(ancientBrut);
+  const [limit, setLimit] = useStickyState(cles.limit, DEFAULT_LIMIT);
+
+  // ⚠️ Le MÊME filtre est appliqué à tout le monde : c'est ce qui rend la
+  // comparaison honnête (mon top Violent contre le sien, pas contre son stock).
+  // ⚠️ Valeurs ET runes triées ENSEMBLE : le graphe ouvre la rune d'un point
+  // par son rang, les deux tableaux doivent donc rester alignés. Un filtre
+  // puis un `sort` séparés auraient suffi à décaler l'un par rapport à l'autre.
+  const classees = (rs: RuneDetail[]) => {
+    const tri = rs
+      .filter((r) => sets.has(r.set) && slots.has(r.slot) && keepAncient(r, ancient))
+      .map((r) => ({ rune: r, val: metric === 'eff' ? runeEfficiency(r) : runeScore(r) }))
+      .sort((a, b) => b.val - a.val)
+      .slice(0, Math.max(1, limit));
+    return { effs: tri.map((t) => t.val), runes: tri.map((t) => t.rune) };
+  };
+  return { sets, setSets, slots, setSlots, ancient, setAncient, limit, setLimit, classees };
+}
+
+// La rangée des filtres. `runes` : toutes celles du graphe, pour que le filtre
+// de sets propose aussi ceux qu'on ne possède pas (ou plus).
+function BarreFiltres({ filtres, runes }: { filtres: FiltresComparaison; runes: RuneDetail[] }) {
+  const textes = useTraduction();
+  const { sets, setSets, slots, setSlots, ancient, setAncient, limit, setLimit } = filtres;
+  return (
+    <div className="flex flex-col gap-3 mb-4">
+      <SetFilter runes={runes} value={sets} onChange={setSets} />
+      <div className="flex flex-wrap items-center gap-2">
+        <SlotFilter value={slots} onChange={setSlots} />
+        <AncientFilter value={ancient} onChange={setAncient} />
+        <div className="ml-auto flex items-center gap-2">
+          <span className="label">{textes.courbes.nbRunes}</span>
+          <NumberField
+            value={limit}
+            min={1}
+            step={50}
+            width="w-14"
+            ariaLabel={textes.courbes.nombreRunes}
+            onChange={(v) => setLimit(Math.max(1, v ?? 1))}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // Deux courbes homonymes seraient impossibles à distinguer dans la légende.
 function nomLibre(souhaite: string, pris: string[]): string {

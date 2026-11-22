@@ -332,8 +332,10 @@ protégé).
    `--serveur <id>` la limite à un serveur, où elle apparaît aussitôt ;
    `--retirer` (avec ou sans `--serveur`) la retire — une commande déclarée
    sur un serveur ET globalement y apparaît deux fois.
-4. Un serveur l'obtient en invitant le bot avec les scopes `bot` et
-   `applications.commands` (portail Discord, *OAuth2 → URL Generator*).
+4. Un serveur l'obtient en invitant le bot : l'invitation de l'app
+   (`/api/discord/invitation`, « Inviter le bot ») porte les scopes `bot` et
+   `applications.commands`. Un serveur invité sans ses commandes les obtient
+   en réinvitant le bot.
 
 ## Limites du prototype
 

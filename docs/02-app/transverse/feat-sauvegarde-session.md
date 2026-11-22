@@ -9,8 +9,9 @@ s'était arrêté.
 ⚠️ **Dans l'application de bureau seulement.** Sur le site, aucun des accès
 ci-dessous n'existe : ni bouton dans la barre du haut (aux deux formats), ni
 ligne « Session » dans les Paramètres, ni action dans la palette, et Ctrl+S
-y reste « Enregistrer la page » du navigateur. `App.tsx` ne passe les
-actions de sauvegarde que si `estBureau()`.
+y reste « Enregistrer la page » du navigateur, Ctrl+O « Ouvrir un fichier ».
+`App.tsx` ne passe les actions de sauvegarde et de chargement que si
+`estBureau()`.
 
 ## Sauvegarder
 
@@ -139,11 +140,79 @@ testé).
   concordent.
 - **Messages** (`bureau/preload.ts`, objet `session`) : `etat()`,
   `surEtat(rappel)`, `retenir(oui)`, `sauvegarder(texte, nomPropose)`,
-  `sauvegarderSous(texte, nomPropose)`, `choisirDossier()`,
+  `sauvegarderSous(texte, nomPropose)`, `charger()`,
+  `confirmerChargement()`, `aCharger()`, `choisirDossier()`,
   `oublierDossier()`, `oublier()`. L'état vaut `{ chemin, nom, dossier }`
   et il est diffusé à chaque changement ; `sauvegarder` et
   `sauvegarderSous` rendent `enregistree` (avec l'état), `annulee` ou
-  `echec` (avec le message).
+  `echec` (avec le message) ; `charger` rend `lue` (le texte et le nom),
+  `annulee` ou `echec` (`pas-une-session`, `lecture` et son code). Le
+  fichier lu ne vit qu'en mémoire du processus principal, jusqu'à ce que la
+  page redémarrée le demande (`aCharger`, une seule fois).
+
+## Charger (application de bureau)
+
+Quatre accès à « **Charger…** », qui font tous la même chose
+(`chargerSession`, `src/App.tsx`) :
+
+- **Barre du haut** : à l'ordinateur, le bouton « Charger… » (icône
+  `FolderOpen`), avant « Sauvegarder », infobulle « Charger une session
+  enregistrée, qui remplace l'état de l'app (Ctrl+O) » ; au téléphone,
+  l'icône seule, nommée « Charger une session (Ctrl+O) », avant celle de
+  « Sauvegarder ». Toujours disponible, même pendant que le compte conservé
+  se relit.
+- **Ctrl+O** (⌘O), sans Maj ni Alt ; une touche tenue ne charge qu'une fois.
+- **Paramètres**, ligne « Session » : « Charger… » à côté de « Sauvegarder ».
+- **Palette Ctrl K** : « Charger une session », sous-titrée « Reprendre une
+  session enregistrée ».
+
+Le geste :
+
+1. Le bureau ouvre la boîte « Charger une session » dans le sous-dossier
+   `sessions` du dossier SW Blacksmith (les Documents sans dossier), filtre
+   `.json`, et lit le fichier (64 Mo au plus, format `swblacksmith/session`).
+   Annulée : rien. Illisible : une modale « La session n'a pas été chargée »
+   avec la cause, et rien ne change.
+2. La page valide le fichier ENTIER (`lireSession`) avant que rien ne change ;
+   refusé, la même modale dit pourquoi.
+3. Si le travail a changé depuis la dernière sauvegarde, « Sauvegarder ta
+   session ? » s'ouvre d'abord, avec ses mots à elle (« La session choisie va
+   remplacer… ») : « Charger sans sauvegarder », « Annuler », « Sauvegarder
+   et charger » (le défaut, qui ne perd rien).
+4. ⚠️ **Une session qui porte un compte lâche l'invocateur suivi** du dossier
+   SW Exporter (`aucunInvocateur`), comme un import par fichier : sinon son
+   prochain export remplacerait le compte de la session.
+5. Le fichier devient la **session en cours** (Ctrl+S le réécrit, retenu dans
+   `session.json` avec « Garder mes données »), puis **la page redémarre**.
+
+⚠️ **La session s'applique au redémarrage, AVANT le premier rendu**
+(`src/lib/chargementSession.ts`, appelé par `main.tsx`, qui n'importe l'app
+qu'ensuite) : des réglages se lisent au chargement de leur module (thème,
+langue, mesure…), et recoller une quinzaine d'états à chaud aurait été
+fragile. Au démarrage, la page demande au bureau la session choisie
+(`aCharger`, une seule fois), la relit, puis :
+
+- **le stockage** : TOUTES les clés de `CLES_SESSION`, une clé absente du
+  fichier effaçant la valeur d'avant (`ecrireDepuisSession`,
+  `usePersistence.ts`). Un réglage s'écrit tel quel ; le travail suit
+  « Garder mes données » — accepté, sur le disque ; refusé, dans le miroir
+  seulement. ⚠️ Les hooks du travail relisent donc leur état au démarrage
+  par `lireTravail` (le miroir d'abord), jamais par `localStorage` seul ;
+- **le compte** : écrit dans IndexedDB si la conservation est acceptée
+  (effacé si la session n'en a pas), et relu par `App.tsx` depuis
+  `sessionChargee()` dans les deux cas ;
+- **la mémoire des outils** : posée dans `useStickyState`
+  (`amorcerMemoire`) ;
+- **l'Optimizer** : rejoué une fois le compte relu, par les `set…` de ses
+  champs (`restaurerOptimizer`, `sessionOptimizer.ts`), dans l'ordre de
+  `CHAMPS_OPTIMIZER_SESSION` ; une valeur d'une autre forme que l'état de
+  l'écran est laissée.
+
+Puis la notification « Session chargée · <nom>.json ». Ce qui n'a pas pu être
+repris (compte d'un schéma périmé, critères de l'Optimizer illisibles ou d'une
+autre forme) s'affiche dans une modale « Session chargée, en partie ».
+L'empreinte de la dernière sauvegarde devient celle de la session chargée :
+rien n'est à sauvegarder juste après.
 
 ## Changements non enregistrés (application de bureau)
 
@@ -174,6 +243,7 @@ compact (`composerSession`, `ecrireSession`, `src/lib/session.ts`) :
 | `enregistreeLe`, `versionApp` | date ISO du clic ; version de l'app | — |
 | `stockage` | clé → valeur brute, pour les clés de `CLES_SESSION` : prépa RTA, ses catégories, ses deux points de retour ; siège défense et offense ; recommandations ; monstres perso ; listes de l'Optimizer ; thème, langue, score, overcap, adversaire de référence, builds les plus rapides (du JSON, relu et validé par `lireReglageBuildsRapides`) | `lireTravail` (`usePersistence.ts`) : la dernière valeur écrite par `saveLocal`, gardée en mémoire même conservation refusée (`saveLocal` n'écrit alors rien sur le disque), sinon le stockage local ; `oublierLocal` efface les deux |
 | `compte` | le compte importé (`StoredAccount`, schéma 7), ou `null` | le compte en mémoire de `App.tsx`, pas IndexedDB |
+| `equipes` | les équipes de « Mes équipes » ([feat-equipes.md](../compte/feat-equipes.md)) ; absent d'une session plus ancienne, relu comme un tableau vide | `useEquipesEnregistrees` (`App.tsx`), en mémoire, pas IndexedDB |
 | `outils.memoire` | clé → valeur de chaque `useStickyState`, sauf `STICKY_HORS_SESSION` (`sidebar.retractee`, `mobileNotice.ferme`, `ecranPartage.volets`) | `photographierMemoire` (`useStickyState.ts`) |
 | `outils.optimizer` | les champs `CHAMPS_OPTIMIZER_SESSION` de `useOptimizerState` : monstre choisi et son exemplaire, set, conditions min/max, principales imposées, runes imposées, sous-propriétés verrouillées, artéfacts, relique, objectif et réglages de combat, exclusions, réglages avancés, tri | `photoOptimizer` (`sessionOptimizer.ts`) |
 
@@ -224,13 +294,16 @@ plus que par la colonne VIT) s'y relit `spd`, sans avertissement, par
   `light`, `dark` ; score `eff`, `score` ; overcap et adversaire `0`, `1` ;
   le reste du JSON, sauf le texte opaque du point de sauvegarde Optimizer).
 - **Lu, avec un avertissement** : un compte qui ne passe pas `compteValide`
-  (schéma périmé) devient `null` ; un `outils.optimizer` qui n'est pas un
+  (schéma périmé) devient `null` ; une équipe qui ne passe pas
+  `lireEquipeEnregistree` est laissée ; un `outils.optimizer` qui n'est pas un
   objet devient `null`.
 - **Ignoré** : un champ inconnu ; une clé de stockage hors `CLES_SESSION` ;
   une clé de mémoire de `STICKY_HORS_SESSION` ; dans l'Optimizer, un champ
   hors `CHAMPS_OPTIMIZER_SESSION`.
 
-Le chargement d'une session dans l'app n'existe pas encore.
+Les codes d'erreur (`ErreurSession`) et d'avertissement
+(`AvertissementSession`) sont rédigés par la page, dans sa langue
+(`messageEchecChargement`, `src/lib/bureau.ts`).
 
 Les compétences d'invocateur de l'Optimizer sont enregistrées sous `normal`
 ou `guilde` (« Contenu normal » ou « Contenu de guilde »). La lecture traduit
@@ -239,7 +312,7 @@ la valeur `combat` en `normal`, comme les recettes et mémoires de membres.
 ## Vérifier
 
 ```
-node tests/run.mjs session persistance optimizerexemplairemontage renduparametres rendubureautextes rendubarresession renduchangementcompte bureausession bureauswex
+node tests/run.mjs session chargementsession allerretoursession restaureroptimizer messageechecchargement persistance optimizerexemplairemontage renduparametres rendubureautextes rendubarresession renduchangementcompte bureausession bureauswex
 npm run bureau:preuve -- --session       # l'app, conservation refusée (après vite build et bureau:construire)
 npm run bureau:preuve -- --conservation  # l'app, conservation activée : la session en cours survit à la fermeture
 ```
@@ -249,9 +322,17 @@ réel), `compteDeSession`, la photo de l'Optimizer, le miroir de
 `saveLocal`, `exemplaireAuMontage`, et `bureau/sessionPur.ts` (relecture
 de `session.json` et de `dossier-swblacksmith.json`, sous-dossier
 `sessions`, nom libre, nom proposé, texte, ligne des Paramètres, messages
-d'échec, écriture sûre sur un dossier temporaire). Tests de rendu : la
-ligne « Session » et son texte ; « Sauvegarder » et « Sauvegarder sous… »
-de la barre du haut et leurs infobulles dans l'app ; sur le site, l'absence
+d'échec, écriture sûre sur un dossier temporaire, session la plus récente du
+mode preuve). Le chargement (`tests/chargement-session.test.ts`) : la session
+appliquée, conservation refusée (miroir seul, réglages écrits, clé absente
+effacée, mémoire posée) puis acceptée (disque et IndexedDB) ; l'aller-retour
+complet (écrite, relue, appliquée, recomposée : identique, `Set` et `Map`
+compris) ; l'Optimizer
+rejoué dans l'ordre, une valeur d'une autre forme laissée ; les messages d'un
+chargement refusé. Tests de rendu : la ligne « Session » et son texte ;
+« Charger… », « Sauvegarder » et « Sauvegarder sous… » de la barre du haut,
+leur ordre et leurs infobulles dans l'app ; la garde « Sauvegarder ta
+session ? » avant un chargement ; sur le site, l'absence de « Charger… » et
 de « Sauvegarder » dans la barre (aux deux formats) et de la ligne
 « Session » des Paramètres.
 
@@ -259,7 +340,16 @@ de « Sauvegarder » dans la barre (aux deux formats) et de la ligne
 (il doit être oublié, son fichier jamais réécrit), sans dossier SW
 Blacksmith, puis enchaîne Paramètres (le dossier est demandé), palette,
 Ctrl+S, « Sauvegarder sous… » et « Sauvegarder » de la barre, « Retirer »
-le dossier et Ctrl+S ; après chaque geste, il relève les fichiers écrits
+le dossier et Ctrl+S, puis un rechargement (la page repart vide) et Ctrl+O,
+qui reprend la session la plus récente — prépa RTA et compte revenus, rien
+sur le disque. ⚠️ **L'aller-retour complet** : avant le rechargement, de
+vrais gestes enrichissent l'état (thème sombre par la palette, « Autoriser un
+regemme différent » à l'onglet Optimisation, un monstre choisi dans
+l'Optimizer), Ctrl+S écrit la RÉFÉRENCE ; après le chargement, les mêmes
+écrans revisités, Ctrl+S la réécrit, et le script compare les deux fichiers
+partie par partie — travail et réglages, compte, mémoire des écrans, critères
+de l'Optimizer — en nommant chaque clé qui diffère. Après chaque geste, il
+relève les fichiers écrits
 et leur date, l'infobulle, la notification, la ligne « Dossier SW
 Blacksmith », `session.json` et `dossier-swblacksmith.json`. En mode
 preuve, aucune boîte ne s'ouvre : le dossier SW Blacksmith « choisi » est

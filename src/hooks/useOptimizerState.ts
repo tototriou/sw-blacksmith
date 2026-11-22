@@ -1,4 +1,5 @@
 import { Dispatch, MutableRefObject, SetStateAction, useCallback, useEffect, useRef, useState } from 'react';
+import type { SortPrecision } from '../lib/precisionParSort';
 import { useTraduction } from './useLangue';
 import { StatKey } from '../lib/effects';
 import { Objective, SlotFilterPresetKey } from '../lib/runeBuildOptim';
@@ -6,13 +7,13 @@ import { bornesAvecMesure, type ColonneResultat } from '../lib/colonnesResultats
 import type { BornesResultats } from '../lib/filtresResultats';
 import type { SensTri } from '../lib/tri';
 import { DamageSetup } from '../lib/damage';
-import { appliquerCriteres, baseCompleteCriteres, criteresApresChangementEspece, defaultRelicMainChoice, photoCriteres, type CriteresOptimizer } from '../lib/criteresOptimizer';
+import { appliquerCriteres, baseCompleteCriteres, criteresApresChangementEspece, DEFAULT_RELIC_MAIN_CHOICE, photoCriteres, type CriteresOptimizer } from '../lib/criteresOptimizer';
 import { rattacherProprietaireCriteres, validerProprietaireCriteres, type ProprietaireCriteresOptimizer } from '../lib/optimizerCriteriaOwner';
 import { cleMemoireMembre, type StockageOptimizer, type RapportReverificationOptimizer } from '../lib/optimizerMemberStorage';
 import type { UseOptimizerLists } from './useOptimizerLists';
 import { consommerImportOptimizer, type ProducteurImportOptimizer, type RapportImportOptimizer } from '../lib/importEquipes';
 import { preparerRepriseOptimizer } from '../lib/optimizerBackup';
-import { AutoExclusionScope, ExclusionSelector, ExclusionSource, resolveExclusionEntry, type ExclusionSourceData } from '../lib/optimizerExclusion';
+import { AutoExclusionScope, ExclusionSelector, ExclusionSource, exclusionSelectorKey, resolveExclusionEntry, type ExclusionSourceData } from '../lib/optimizerExclusion';
 import { ArtifactKind, type LeaderSkill } from '../types';
 import { leadEffectifMembreOptimizer, memeLeadOptimizer, modifierEquipeOptimizer, type MotifLeadOptimizer } from '../lib/equipesOptimizer';
 import type { EquipeOptimizer } from '../lib/optimizerMemberStorage';
@@ -25,7 +26,7 @@ import type { BuildEpingle, EpinglesParMembre } from '../lib/epinglesOptimizer';
 
 export type { SlotFilterPresetKey };
 // API historique conservée pour l'écran, les recettes et les scripts.
-export { defaultRelicMainChoice, relicMainChoiceApresChangementExemplaire, criteresApresChangementEspece, baseCompleteCriteres } from '../lib/criteresOptimizer';
+export { DEFAULT_RELIC_MAIN_CHOICE, relicMainChoiceApresChangementExemplaire, criteresApresChangementEspece, baseCompleteCriteres } from '../lib/criteresOptimizer';
 // Le tri des résultats : une de leurs onze colonnes. L'objectif de recherche
 // Vitesse se trie par la colonne VIT (`triDesResultats`).
 export type OptimizerSortKey = ColonneResultat;
@@ -127,11 +128,12 @@ export interface OptimizerState {
   effacerProprietaireCriteres: () => void;
   choisirMembre: (listId: string, selector: ExclusionSelector) => CriteresOptimizer | null;
   reprendrePoint: (artifactIds: Set<number>) => void;
-  importerEquipe: (produire: ProducteurImportOptimizer) => RapportImportOptimizer;
+  // `cible` : l'id de la liste où ajouter l'import ; absent : une nouvelle liste.
+  importerEquipe: (produire: ProducteurImportOptimizer, cible?: string) => RapportImportOptimizer;
   capturerMembre: (listId: string, selector: ExclusionSelector) => void;
   poserTriRecherche: (tri: OptimizerSortKey) => void;
   poserCriteresAutomatiques: (patch: Partial<CriteresOptimizer> | ((courants: CriteresOptimizer) => Partial<CriteresOptimizer>)) => void;
-  traiterReliqueImportee: (relique: Parameters<typeof defaultRelicMainChoice>[0]) => void;
+  traiterReliqueImportee: () => void;
   appliquerReverificationMembres: (stockage: StockageOptimizer, rapport: RapportReverificationOptimizer, data: ExclusionSourceData, runeIds: Set<number>) => void;
   selectedId: string | null;
   setSelectedId: Dispatch<SetStateAction<string | null>>;
@@ -227,6 +229,12 @@ export interface OptimizerState {
   // des deux déborde.
   lignesVerrouillees: LigneVerrouillee[];
   setLignesVerrouillees: Dispatch<SetStateAction<LigneVerrouillee[]>>;
+  // Précision minimale PAR SORT (precisionParSort.ts) : les sorts cochés sous
+  // la ligne « Précision » des conditions. Vide = le minimum de Précision
+  // porte sur la stat. Un CRITÈRE, remis à zéro au changement de monstre :
+  // les sorts sont ceux de ce monstre.
+  sortsPrecision: SortPrecision[];
+  setSortsPrecision: Dispatch<SetStateAction<SortPrecision[]>>;
   mainStatsBySlot: Partial<Record<2 | 4 | 6, number[]>>;
   setMainStatsBySlot: Dispatch<SetStateAction<Partial<Record<2 | 4 | 6, number[]>>>>;
   // Runes IMPOSÉES par emplacement (1..6) — `lockedRunes[slot] = runeId`.
@@ -437,14 +445,13 @@ export function useOptimizerState(contexte?: ContexteMembresOptimizer): Optimize
   // et il ne coute rien a la recherche de runes (temps masque).
   const [optimiserArtefacts, setOptimiserArtefacts] = useState(base.optimiserArtefacts);
   const [artifactMainByKind, setArtifactMainByKind] = useState<Partial<Record<ArtifactKind, ArtifactMainChoice>>>(base.artifactMainByKind);
-  // ⚠️ Défaut STATIQUE ('libre') volontairement — le vrai défaut
-  // ('equipped' si le monstre porte une relique) se calcule au choix du
-  // monstre (`defaultRelicMainChoice`), câblé par `pickSpecies` hors liste et
-  // par la base complète d’un membre ; pas à l’initialisation de ce hook.
+  // Défaut « Libre » (`DEFAULT_RELIC_MAIN_CHOICE`), le même que celui que
+  // reposent `pickSpecies` hors liste et la base complète d’un membre.
   const [relicMainChoice, setRelicMainChoice] = useState<RelicMainChoice>(base.relicMainChoice);
   const [relicUniqueChoice, setRelicUniqueChoice] = useState<RelicUniqueChoice>(base.relicUniqueChoice);
   const [relicMinUpgrade, setRelicMinUpgrade] = useState(DEFAULT_RELIC_MIN_UPGRADE);
   const [lignesVerrouillees, setLignesVerrouillees] = useState<LigneVerrouillee[]>(base.lignesVerrouillees);
+  const [sortsPrecision, setSortsPrecision] = useState<SortPrecision[]>(base.sortsPrecision);
   const [mainStatsBySlot, setMainStatsBySlot] = useState<Partial<Record<2 | 4 | 6, number[]>>>(base.mainStatsBySlot);
   const [lockedRunes, setLockedRunes] = useState<Partial<Record<number, number>>>(base.lockedRunes);
   const [objective, setObjective] = useState<Objective>(base.objective);
@@ -510,7 +517,7 @@ export function useOptimizerState(contexte?: ContexteMembresOptimizer): Optimize
   // Les callbacks retardés lisent le dernier affichage, jamais la fermeture
   // du membre qui était sélectionné au début d'une lecture de fichier.
   const criteresAffiches: CriteresOptimizer = { comboSets, minStats, maxStats, excludeBase, optimiserArtefacts,
-      artifactMainByKind, relicMainChoice, relicUniqueChoice, lignesVerrouillees, mainStatsBySlot,
+      artifactMainByKind, relicMainChoice, relicUniqueChoice, lignesVerrouillees, sortsPrecision, mainStatsBySlot,
       lockedRunes, objective, damageSetup, sortBy, sensTri, bornesResultats, compterAurasResPre, critereArtefacts };
   const vivant = useRef({ contexte, selectedId, sourceSelector, proprietaire: proprietaireCriteres, criteres: criteresAffiches, importDuCompte });
   vivant.current = { contexte, selectedId, sourceSelector, proprietaire: proprietaireCriteres, criteres: criteresAffiches, importDuCompte };
@@ -536,7 +543,8 @@ export function useOptimizerState(contexte?: ContexteMembresOptimizer): Optimize
     setExcludeBase(suivante.excludeBase); setOptimiserArtefacts(suivante.optimiserArtefacts);
     setArtifactMainByKind(suivante.artifactMainByKind);
     setRelicMainChoice(suivante.relicMainChoice); setRelicUniqueChoice(suivante.relicUniqueChoice);
-    setLignesVerrouillees(suivante.lignesVerrouillees); setMainStatsBySlot(suivante.mainStatsBySlot);
+    setLignesVerrouillees(suivante.lignesVerrouillees); setSortsPrecision(suivante.sortsPrecision);
+    setMainStatsBySlot(suivante.mainStatsBySlot);
     setLockedRunes(suivante.lockedRunes); setObjective(suivante.objective); setDamageSetup(suivante.damageSetup);
     setSortBy(suivante.sortBy); setSensTri(suivante.sensTri); setBornesResultats(suivante.bornesResultats);
     setCompterAurasResPre(suivante.compterAurasResPre); setCritereArtefacts(suivante.critereArtefacts);
@@ -549,13 +557,13 @@ export function useOptimizerState(contexte?: ContexteMembresOptimizer): Optimize
     appliquerPhoto({ ...courants, ...(typeof patch === 'function' ? patch(courants) : patch) });
   }
 
-  function traiterReliqueImportee(relique: Parameters<typeof defaultRelicMainChoice>[0]) {
+  function traiterReliqueImportee() {
     const v = vivant.current;
     if (importReliqueTraite.current === v.importDuCompte) return;
     importReliqueTraite.current = v.importDuCompte;
     // Un choix de membre écran démonté prime sur le défaut différé du compte.
     if (v.contexte && validerProprietaireCriteres(v.proprietaire, v.contexte.lists, v, v.contexte.data)) return;
-    poserCriteresAutomatiques({ relicMainChoice: defaultRelicMainChoice(relique) });
+    poserCriteresAutomatiques({ relicMainChoice: DEFAULT_RELIC_MAIN_CHOICE });
   }
 
   function restaurerMembre(listId: string, selector: ExclusionSelector, choisir: boolean): CriteresOptimizer | null {
@@ -611,7 +619,7 @@ export function useOptimizerState(contexte?: ContexteMembresOptimizer): Optimize
     return restaurerMembre(listId, selector, true);
   }
 
-  function importerEquipe(produire: ProducteurImportOptimizer): RapportImportOptimizer {
+  function importerEquipe(produire: ProducteurImportOptimizer, cible?: string): RapportImportOptimizer {
     const v = vivant.current, c = v.contexte;
     if (!c) throw new Error('Import impossible sans le contexte des listes.');
     // Le réimport publie une photo préparée avant le remplacement du compte :
@@ -620,6 +628,21 @@ export function useOptimizerState(contexte?: ContexteMembresOptimizer): Optimize
       ignores: [], equipesNonCreees: [], messages: [messages().importEnAttente] };
     const courant = c.lists.lireStockageCourant();
     const t = textesVivants.current;
+    if (cible !== undefined) {
+      // « Ajouter à la liste active » : la liste existe déjà, seuls ses ajouts se publient.
+      const ajout = consommerImportOptimizer(courant, courant.activeListId, produire(c.data, t), c.data, 'import', t, cible);
+      if (!ajout.rapport.listeCompletee) return ajout.rapport;
+      if (!c.lists.completerParImport(courant, ajout.stockage, cible)) return { ...ajout.rapport,
+        listeCompletee: null, membresImportes: 0, equipesCreees: 0,
+        messages: [...ajout.rapport.messages, messages().importCollision] };
+      effacerProprietaireCriteres();
+      v.contexte = { ...c, lists: { ...c.lists, ...ajout.stockage, activeListId: cible } };
+      const avant = new Set(courant.members.filter(x => x.listId === cible).map(x => exclusionSelectorKey(x.selector)));
+      const premierAjoute = ajout.stockage.members.find(x => x.listId === cible && !avant.has(exclusionSelectorKey(x.selector)));
+      if (premierAjoute) choisirMembre(cible, premierAjoute.selector);
+      listePrecedente.current = cible;
+      return ajout.rapport;
+    }
     const resultat = consommerImportOptimizer(courant, courant.activeListId, produire(c.data, t), c.data, 'import', t);
     if (!resultat.rapport.listeCreee) return resultat.rapport;
     const listId = resultat.rapport.listeCreee.id;
@@ -809,9 +832,7 @@ export function useOptimizerState(contexte?: ContexteMembresOptimizer): Optimize
     setExcludeBase(suivant.excludeBase);
     setOptimiserArtefacts(suivant.optimiserArtefacts);
     setArtifactMainByKind(suivant.artifactMainByKind);
-    // ⚠️ Défaut statique ici — voir le commentaire du `useState` ci-dessus ;
-    // `pickSpecies` surcharge avec `defaultRelicMainChoice` juste après cet
-    // appel, comme il le fait déjà pour `objective`.
+    // Le défaut, `DEFAULT_RELIC_MAIN_CHOICE` — voir le commentaire du `useState` ci-dessus.
     setRelicMainChoice(suivant.relicMainChoice);
     setRelicUniqueChoice(suivant.relicUniqueChoice);
     // ⚠️ Remis à zéro au changement de monstre, comme les runes imposées : une
@@ -820,6 +841,8 @@ export function useOptimizerState(contexte?: ContexteMembresOptimizer): Optimize
     // exigence oubliée d'un monstre précédent rendrait « 0 build » sans que
     // rien ne rappelle d'où elle vient.
     setLignesVerrouillees(suivant.lignesVerrouillees);
+    // Les sorts cochés sont ceux de l'ancien monstre : remis à zéro aussi.
+    setSortsPrecision(suivant.sortsPrecision);
     setMainStatsBySlot(suivant.mainStatsBySlot);
     // ⚠️ Une rune imposée référence un `runeId` PRÉCIS, choisi pour l'ancien
     // monstre — le garder verrouillerait la recherche du nouveau sur une
@@ -903,6 +926,8 @@ export function useOptimizerState(contexte?: ContexteMembresOptimizer): Optimize
     setRelicMinUpgrade,
     lignesVerrouillees,
     setLignesVerrouillees: saisie('lignesVerrouillees', setLignesVerrouillees),
+    sortsPrecision,
+    setSortsPrecision: saisie('sortsPrecision', setSortsPrecision),
     mainStatsBySlot,
     setMainStatsBySlot: saisie('mainStatsBySlot', setMainStatsBySlot),
     lockedRunes,

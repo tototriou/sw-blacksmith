@@ -33,7 +33,7 @@ function sources(): ExclusionSourceData {
     '2': { monsterId: '2', section: 'Non classé', runeSpeed: null, gear: gear() },
   }, siegeDefenseTeams: [deck('d1'), deck('d2', [1, 2, null])],
   siegeOffenseTeams: [deck('o1'), deck('o2', [2, null, null])],
-  monsterById: new Map([1, 2, 3, 4, 5, 6].map(id => [String(id), monstre(id)])) };
+  monsterById: new Map([1, 2, 3, 4, 5, 6, 7].map(id => [String(id), monstre(id)])) };
 }
 function stockage(): StockageOptimizer {
   const selector = { source: 'rta' as const, monsterId: '1' };
@@ -78,7 +78,7 @@ export function testImportEquipesOffenseSiege() {
   ok(!isDeepStrictEqual(data.box[0].gear, data.siegeOffenseTeams[0].slots[0].gear), 'équipement Box distinct de celui du deck');
   egal(p.membres.map(m => exclusionSelectorKey(m.selector)), ['siege-offense:o1:0', 'siege-offense:o1:1', 'siege-offense:o1:2'], 'uniquement les exemplaires du deck demandé');
   egal(memoiresNouvelles(r)[0].selector, { source: 'siege-offense', teamId: 'o1', slotIndex: 0 }, 'sélecteur du deck conservé jusqu’à la mémoire');
-  egal(memoiresNouvelles(r)[0].criteres.relicMainChoice, 'equipped', 'défaut de relique du deck, pas celui de la copie Box sans relique');
+  egal(memoiresNouvelles(r)[0].criteres.relicMainChoice, 'libre', 'défaut de relique « libre », même sur un exemplaire du deck qui en porte une');
   egal(r.rapport.equipesCreees, 1, 'une seule équipe');
   egal(p.equipes[0].lead, lead, 'team.lead = 99 n’est pas importé');
   const absent = consommer(importerOffenseSiegeOptimizer('absent', data, fr), data);
@@ -314,15 +314,15 @@ export function testImportEquipesFiltrageEtCardinalites() {
   const sans = consommer(proposition, sansLeader);
   egal(sans.stockage.teams[1].leader, undefined, 'leader filtré sans désigner un autre membre');
   egal(sans.stockage.teams[1].lead, lead, 'lead conservé comme donnée de l’équipe');
-  for (const n of [2, 5, 6]) {
+  for (const n of [2, 6, 7]) {
     const d = sources(), q = importerPrepaRtaOptimizer(d, fr);
     for (let i = 3; i <= n; i++) d.rtaEntries[String(i)] = { monsterId: String(i), section: 'autre', runeSpeed: null, gear: gear() };
     q.membres = importerPrepaRtaOptimizer(d, fr).membres;
     q.equipes = [{ libelle: 'Équipe proposée', members: q.membres.map(m => m.selector), lead }];
     const rr = consommer(q, d);
-    egal(rr.rapport.equipesCreees, n === 6 ? 0 : 1, `${n} membres : cardinalité du modèle`);
+    egal(rr.rapport.equipesCreees, n === 7 ? 0 : 1, `${n} membres : cardinalité du modèle`);
     egal(rr.rapport.membresImportes, n, `${n} membres restent importés`);
-    if (n === 6) ok(rr.rapport.messages.some(m => m.includes('Plus de cinq')), 'hors cardinalité rapporté');
+    if (n === 7) ok(rr.rapport.messages.some(m => m.includes('Plus de six')), 'hors cardinalité rapporté');
   }
   const d = sources(), q = importerOffenseSiegeOptimizer('o1', d, fr); q.equipes.push(structuredClone(q.equipes[0]));
   const rr = consommer(q, d);

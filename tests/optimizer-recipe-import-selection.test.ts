@@ -10,12 +10,12 @@ import { readFileSync } from 'fs';
 import { egal, ok, titre } from './outils';
 import { buildOptimizerRecipe, parseOptimizerRecipe, relicMainPourCeCompte } from '../src/lib/optimizerRecipe';
 import {
-  defaultRelicMainChoice,
+  DEFAULT_RELIC_MAIN_CHOICE,
   relicIntentDepuisEtat,
   relicMainChoiceApresChangementExemplaire,
 } from '../src/hooks/useOptimizerState';
+import { baseCompleteCriteres } from '../src/lib/criteresOptimizer';
 import { recipeToRelicIntent } from '../scripts/lib/recipeToSearchParams';
-import { LoadedMonster } from '../scripts/lib/loadMonster';
 import { DEFAULT_DAMAGE_SETUP } from '../src/lib/damage';
 import { fr } from '../src/i18n/fr';
 
@@ -100,18 +100,6 @@ function recetteDeBase(extra: Partial<Parameters<typeof buildOptimizerRecipe>[0]
   });
 }
 
-function monstreCharge(relic?: LoadedMonster['gear']['relic']): LoadedMonster {
-  return {
-    unitId: 1,
-    com2usId: 14104,
-    monsterName: 'Camilla (test)',
-    gear: { base: { hp: 10000, atk: 1000, def: 800, spd: 100, cr: 15, cd: 50, res: 15, acc: 0 }, runes: [], artifacts: [], relic },
-    allRunes: [],
-    allArtifacts: [],
-    allRelics: relic ? [relic] : [],
-  };
-}
-
 function testRecetteRelique() {
   titre('Optimizer · recette de relique — trois champs, défauts, bascule');
 
@@ -169,27 +157,26 @@ function testRecetteRelique() {
     // Le CLI (`recipeToSearchParams.ts`) ne bascule JAMAIS — même règle que
     // l'artéfact : reproduire fidèlement l'export signalé, pas
     // « corriger » une intention exportée avec un compte explicite.
-    const rechargeParLeCli = recipeToRelicIntent({ ...recetteDeBase(), relicMainChoice: 'equipped' }, monstreCharge());
+    const rechargeParLeCli = recipeToRelicIntent({ ...recetteDeBase(), relicMainChoice: 'equipped' });
     egal(rechargeParLeCli.principale, 'equipped', 'le CLI reproduit « equipped » tel quel, sans bascule de compte');
   }
 
-  // Le défaut de `relicMainChoice` se CALCULE contre le monstre — jamais une
-  // constante : un défaut affiché FAUX pour le monstre choisi est invisible.
+  // Le défaut de `relicMainChoice` est « libre », que le monstre porte une
+  // relique ou non : « Comme équipée » ne s'obtient que par un choix explicite.
   {
-    egal(defaultRelicMainChoice(undefined), 'libre', 'monstre sans relique → défaut « libre »');
-    egal(
-      defaultRelicMainChoice({ id: 7, upgrade: 6, main: { code: 100, value: 11 } }),
-      'equipped',
-      'monstre AVEC relique → défaut « equipped »'
-    );
+    const relique = { id: 7, upgrade: 6, main: { code: 100, value: 11 } };
+    egal(DEFAULT_RELIC_MAIN_CHOICE, 'libre', 'défaut de la principale de relique : « libre »');
+    egal(baseCompleteCriteres({ relic: relique }).relicMainChoice, 'libre',
+      'base complète d’un monstre AVEC relique → « libre », pas « equipped »');
+    egal(baseCompleteCriteres({ relic: undefined }).relicMainChoice, 'libre', 'base complète sans relique → « libre »');
   }
 
   // Changement d'exemplaire hors du bestiaire (liste de travail, « un autre
   // exemplaire », réimport) : même règle que depuis le bestiaire.
   {
     const relique = { id: 7, upgrade: 6, main: { code: 100, value: 11 } };
-    egal(relicMainChoiceApresChangementExemplaire('libre', relique, false), 'equipped',
-      'autre espèce portant une relique → « equipped », comme depuis le bestiaire');
+    egal(relicMainChoiceApresChangementExemplaire('equipped', relique, false), 'libre',
+      'autre espèce portant une relique → « libre », comme depuis le bestiaire');
     egal(relicMainChoiceApresChangementExemplaire('equipped', undefined, false), 'libre',
       'autre espèce sans relique → « libre »');
     egal(relicMainChoiceApresChangementExemplaire('equipped', undefined, true), 'libre',
@@ -201,19 +188,16 @@ function testRecetteRelique() {
   }
 
   // `recipeToRelicIntent` (CLI) applique les mêmes défauts qu'un écran qui
-  // câblerait `defaultRelicMainChoice` — même recette, mêmes
-  // réglages résolus, qu'il y ait ou non une relique portée.
+  // câblerait `DEFAULT_RELIC_MAIN_CHOICE` — même recette, mêmes réglages
+  // résolus, la relique portée n'entre plus dans le défaut.
   {
     const recetteAncienne = recetteDeBase();
-    const sansRelique = recipeToRelicIntent(recetteAncienne, monstreCharge(undefined));
-    egal(sansRelique, { mode: 'recherche', principale: 'libre', type: 'libre', seuil: 6 }, 'sans relique portée : intention « libre » par défaut, seuil par défaut +6');
+    const sansChamp = recipeToRelicIntent(recetteAncienne);
+    egal(sansChamp, { mode: 'recherche', principale: 'libre', type: 'libre', seuil: 6 }, 'recette sans principale : intention « libre » par défaut, seuil par défaut +6');
 
-    const avecRelique = recipeToRelicIntent(recetteAncienne, monstreCharge({ id: 7, upgrade: 6, main: { code: 100, value: 11 } }));
-    egal(avecRelique, { mode: 'equipped', principale: 'equipped', type: 'libre', seuil: 6 }, 'avec relique portée : intention « equipped » par défaut');
-
-    // Interrupteur coupé (`ignoreArtifacts`) : mode « off », quelle que soit
-    // la relique portée — pas d'interrupteur propre à la relique.
-    const interrupteurCoupe = recipeToRelicIntent({ ...recetteAncienne, ignoreArtifacts: true }, monstreCharge({ id: 7, upgrade: 6, main: { code: 100, value: 11 } }));
+    // Interrupteur coupé (`ignoreArtifacts`) : mode « off » — pas
+    // d'interrupteur propre à la relique.
+    const interrupteurCoupe = recipeToRelicIntent({ ...recetteAncienne, ignoreArtifacts: true });
     egal(interrupteurCoupe.mode, 'off', "« Activer l'optimisation d'artéfacts » coupé : mode « off » pour la relique aussi");
   }
 
@@ -224,18 +208,16 @@ function testRecetteRelique() {
   // pour un même jeu de valeurs — l'unicité du point de lecture
   // ne tient que si les deux constructeurs convergent.
   {
-    const relique = { id: 7, upgrade: 6, main: { code: 100, value: 11 } };
-
     // Trois recettes couvrant les trois modes.
     const recetteLibre = { ...recetteDeBase(), relicMainChoice: 101 as const, relicUniqueChoice: 7, relicMinUpgrade: 9 };
     const recetteEquipee = { ...recetteDeBase(), relicMainChoice: 'equipped' as const };
     const recetteCoupee = { ...recetteDeBase(), ignoreArtifacts: true, relicMainChoice: 101 as const };
 
     for (const recette of [recetteLibre, recetteEquipee, recetteCoupee]) {
-      const depuisCli = recipeToRelicIntent(recette, monstreCharge(relique));
+      const depuisCli = recipeToRelicIntent(recette);
       const depuisEcran = relicIntentDepuisEtat(
         !recette.ignoreArtifacts,
-        recette.relicMainChoice ?? defaultRelicMainChoice(relique),
+        recette.relicMainChoice ?? DEFAULT_RELIC_MAIN_CHOICE,
         recette.relicUniqueChoice ?? 'libre',
         recette.relicMinUpgrade ?? 6
       );
@@ -243,12 +225,12 @@ function testRecetteRelique() {
     }
 
     // Recette ANCIENNE (avant ces champs, aucun des trois champs) : les deux
-    // constructeurs retombent sur le même défaut — ici avec relique portée.
+    // constructeurs retombent sur le même défaut.
     const ancienne = recetteDeBase();
-    const depuisCliAncienne = recipeToRelicIntent(ancienne, monstreCharge(relique));
+    const depuisCliAncienne = recipeToRelicIntent(ancienne);
     const depuisEcranAncienne = relicIntentDepuisEtat(
       true,
-      defaultRelicMainChoice(relique),
+      DEFAULT_RELIC_MAIN_CHOICE,
       'libre',
       6
     );

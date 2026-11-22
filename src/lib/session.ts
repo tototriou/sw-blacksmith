@@ -25,6 +25,7 @@ import { lireCompetencesInvocateur } from './competencesInvocateur';
 import { triDesResultats } from './colonnesResultats';
 import { CLE_ECRAN_PARTAGE } from './volets';
 import { LANGUES } from '../i18n/langue';
+import { lireEquipeEnregistree, type EquipeEnregistree } from './equipesEnregistrees';
 
 export const FORMAT_SESSION = formatExport('session');
 export const VERSION_SESSION = 2;
@@ -41,6 +42,12 @@ export const CLES_SESSION = [
   'swblacksmith-rta-import-v1',
   'swblacksmith-siege-defense-v1',
   'swblacksmith-siege-offense-v1',
+  'swblacksmith-arene-defense-v1',
+  'swblacksmith-arene-offense-v1',
+  'swblacksmith-arene-interserveur-v1',
+  'swblacksmith-arene-dimension-defense-v1',
+  'swblacksmith-arene-dimension-offense-v1',
+  'swblacksmith-arene-dimension-runes-v1',
   'swblacksmith-siege-recos-v1',
   'swblacksmith-custom-monsters-v1',
   'swblacksmith-optimizer-lists-v1',
@@ -97,6 +104,9 @@ export interface Session {
   // Clé du stockage local → sa valeur brute, telle que l'app l'écrit.
   stockage: Partial<Record<(typeof CLES_SESSION)[number], string>>;
   compte: StoredAccount | null;
+  // Les équipes de « Mes équipes » (IndexedDB, hors du stockage local). Une
+  // session écrite avant ce champ se relit avec un tableau vide.
+  equipes: EquipeEnregistree[];
   outils: {
     // Clé `useStickyState` → valeur ; `Set` et `Map` encodés (`encoder`).
     memoire: Record<string, unknown>;
@@ -111,6 +121,8 @@ export interface SourcesSession {
   versionApp: string;
   stockage: Record<string, string | null | undefined>;
   compte: StoredAccount | null;
+  // Absent : aucune équipe (les appelants qui n'en ont pas, comme les tests).
+  equipes?: readonly EquipeEnregistree[];
   memoire: Record<string, unknown>;
   optimizer: Record<string, unknown> | null;
 }
@@ -192,6 +204,7 @@ export function composerSession(s: SourcesSession): Session {
     versionApp: s.versionApp,
     stockage,
     compte: s.compte,
+    equipes: [...(s.equipes ?? [])],
     outils: { memoire, optimizer: s.optimizer ? (encoder(garderChampsOptimizer(s.optimizer)) as Record<string, unknown>) : null },
   };
 }
@@ -205,7 +218,7 @@ export const ecrireSession = (session: Session): string => JSON.stringify({ ...s
 
 // L'empreinte du TRAVAIL d'une session : tout, sauf sa date, la version de
 // l'app et le compte — un instantané du jeu, que l'export redonne.
-export const empreinteTravail = (s: Session): string => JSON.stringify({ stockage: s.stockage, outils: s.outils });
+export const empreinteTravail = (s: Session): string => JSON.stringify({ stockage: s.stockage, equipes: s.equipes, outils: s.outils });
 
 // `derniere` : l'empreinte de la dernière sauvegarde, `null` sans sauvegarde
 // depuis le lancement. Alors tout travail que le changement de compte
@@ -223,32 +236,44 @@ export function nomFichierSession(d: Date): string {
 
 // ── Relire ──────────────────────────────────────────────────────────────
 
+// ⚠️ **Des codes, pas des phrases** : la page les rédige dans la langue de
+// l'interface (`texteErreurSession`, `texteAvertissementSession`, src/i18n/).
+export type ErreurSession =
+  | { code: 'illisible' }
+  | { code: 'autreFormat' }
+  | { code: 'versionIllisible' }
+  | { code: 'tropRecente' }
+  | { code: 'travailIllisible' }
+  | { code: 'valeurIllisible'; cle: string };
+// `equipesIllisibles` porte le nombre d'équipes de « Mes équipes » laissées.
+export type AvertissementSession = 'comptePerime' | 'optimizerIllisible' | { code: 'equipesIllisibles'; nombre: number };
+
 export type LectureSession =
-  | { ok: true; session: Session; avertissements: string[] }
-  | { ok: false; erreur: string };
+  | { ok: true; session: Session; avertissements: AvertissementSession[] }
+  | { ok: false; erreur: ErreurSession };
 
 export function lireSession(texte: string): LectureSession {
   let brut: unknown;
   try {
     brut = JSON.parse(texte);
   } catch {
-    return { ok: false, erreur: 'Fichier illisible : ce n’est pas une sauvegarde de session.' };
+    return { ok: false, erreur: { code: 'illisible' } };
   }
   if (!brut || typeof brut !== 'object' || Array.isArray(brut)) {
-    return { ok: false, erreur: 'Fichier illisible : ce n’est pas une sauvegarde de session.' };
+    return { ok: false, erreur: { code: 'illisible' } };
   }
   const o = brut as Record<string, unknown>;
   if (!formatReconnu(o.format, 'session')) {
-    return { ok: false, erreur: 'Ce fichier n’est pas une sauvegarde de session (un autre export de l’app ?).' };
+    return { ok: false, erreur: { code: 'autreFormat' } };
   }
   if (typeof o.version !== 'number' || !Number.isInteger(o.version) || o.version < 1) {
-    return { ok: false, erreur: 'Sauvegarde de session abîmée : version illisible.' };
+    return { ok: false, erreur: { code: 'versionIllisible' } };
   }
   if (o.version > VERSION_SESSION) {
-    return { ok: false, erreur: 'Cette sauvegarde vient d’une version plus récente de l’app : mets-la à jour pour la charger.' };
+    return { ok: false, erreur: { code: 'tropRecente' } };
   }
 
-  const avertissements: string[] = [];
+  const avertissements: AvertissementSession[] = [];
 
   // Le stockage : chaque valeur est le TEXTE que l'app écrit. Une valeur qui
   // n'a pas la forme que son hook relit fait refuser le fichier : la charger
@@ -257,13 +282,13 @@ export function lireSession(texte: string): LectureSession {
   const stockage: Session['stockage'] = {};
   const st = o.stockage;
   if (st !== undefined && (!st || typeof st !== 'object' || Array.isArray(st))) {
-    return { ok: false, erreur: 'Sauvegarde de session abîmée : le travail est illisible.' };
+    return { ok: false, erreur: { code: 'travailIllisible' } };
   }
   for (const cle of CLES_SESSION) {
     const v = (st as Record<string, unknown> | undefined)?.[cle];
     if (v === undefined) continue;
     if (typeof v !== 'string' || !valeurStockageValide(cle, v)) {
-      return { ok: false, erreur: `Sauvegarde de session abîmée : « ${cle} » illisible.` };
+      return { ok: false, erreur: { code: 'valeurIllisible', cle } };
     }
     stockage[cle] = v;
   }
@@ -273,7 +298,20 @@ export function lireSession(texte: string): LectureSession {
   let compte: StoredAccount | null = null;
   if (o.compte !== undefined && o.compte !== null) {
     compte = compteValide(o.compte);
-    if (!compte) avertissements.push('Le compte importé de cette sauvegarde n’est plus lisible : réimporte ton export SWEX.');
+    if (!compte) avertissements.push('comptePerime');
+  }
+
+  // Les équipes : chacune validée comme à la relecture d'IndexedDB ; une
+  // équipe illisible est laissée et dite, sans refuser le fichier.
+  const equipes: EquipeEnregistree[] = [];
+  if (Array.isArray(o.equipes)) {
+    let illisibles = 0;
+    for (const e of o.equipes) {
+      const lu = lireEquipeEnregistree(e);
+      if (lu) equipes.push(lu.equipe);
+      else illisibles++;
+    }
+    if (illisibles) avertissements.push({ code: 'equipesIllisibles', nombre: illisibles });
   }
 
   // Les outils.
@@ -291,7 +329,7 @@ export function lireSession(texte: string): LectureSession {
   if (out.optimizer !== undefined && out.optimizer !== null) {
     if (typeof out.optimizer === 'object' && !Array.isArray(out.optimizer)) {
       optimizer = decoder(garderChampsOptimizer(out.optimizer as Record<string, unknown>)) as Record<string, unknown>;
-    } else avertissements.push('Les critères de l’Optimizer de cette sauvegarde sont illisibles : ignorés.');
+    } else avertissements.push('optimizerIllisible');
   }
 
   return {
@@ -304,6 +342,7 @@ export function lireSession(texte: string): LectureSession {
       versionApp: typeof o.versionApp === 'string' ? o.versionApp : '',
       stockage,
       compte,
+      equipes,
       outils: { memoire, optimizer },
     },
   };

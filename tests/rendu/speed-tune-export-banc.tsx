@@ -8,7 +8,7 @@ import OptimizerImportRapport from '../../src/components/outils/OptimizerImportR
 import { useOptimizerState, type OptimizerState } from '../../src/hooks/useOptimizerState';
 import { useOptimizerLists, type UseOptimizerLists } from '../../src/hooks/useOptimizerLists';
 import { reinitialiserSticky } from '../../src/hooks/useStickyState';
-import { setPersistence } from '../../src/hooks/usePersistence';
+import { setPersistence, viderMiroir } from '../../src/hooks/usePersistence';
 import { avecNavigationImportOptimizer } from '../../src/lib/actionImportOptimizer';
 import { baseCompleteCriteres, photoCriteres } from '../../src/lib/criteresOptimizer';
 import { exclusionSelectorKey, type ExclusionSourceData } from '../../src/lib/optimizerExclusion';
@@ -85,7 +85,7 @@ const texteRapport = () => document.querySelector<HTMLElement>('[aria-label="Rap
 export async function scenario(nom: string, telephone: boolean): Promise<[boolean, string][]> {
   const preuves: [boolean, string][] = [], verifier = (v: boolean, m: string) => preuves.push([v, `${nom} : ${m}`]);
   if (racine) await geste(() => racine!.unmount());
-  reinitialiserSticky('speedTune.'); localStorage.clear(); setPersistence(true);
+  reinitialiserSticky('speedTune.'); localStorage.clear(); viderMiroir(); setPersistence(true);
   modale = nom.startsWith('modale'); attente = false; refus = ''; fermetures = 0; appels = 0;
   location.hash = modale ? '#/siege/offense' : '#/outils/speed-tuning';
   globalThis.fetch = async () => new Response('{}', { status: 404 });
@@ -95,7 +95,7 @@ export async function scenario(nom: string, telephone: boolean): Promise<[boolea
   if (!modale) {
     verifier(!!exporter() && exporter().disabled && exporter().title.includes('Aucun monstre importable'), 'bouton présent sans ligne, raison dite');
     // Le vrai import de deck remplit les lignes ; la page ne stocke pas son origine.
-    await geste(() => boutons('Importer un deck de siège')[0].click());
+    await geste(() => boutons('Importer un deck de siège ou d’arène')[0].click());
     const options = [...outil().querySelectorAll<HTMLElement>('[role="option"]')];
     const option = options[options.length - 1];
     if (!option) throw new Error('Deck d’offense absent du flottant.');

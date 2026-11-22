@@ -96,6 +96,9 @@ export async function testClientDiscord() {
   egal((await pub(201, { version: v })).type, 'publie', '201 : publiée');
   egal(await pub(409, { conflit: true, version: v }), { type: 'conflit', version: v }, '409 : conflit, avec la version courante');
   egal((await pub(400, { erreur: 'contenu' })).type, 'invalide', '400 : contenu refusé');
+  egal((await pub(413, { erreur: 'contenu', details: ['trop-gros'] })).type, 'trop-gros',
+    '413 : trop lourde, dit comme telle (avant : « au moins un deck avec un monstre »)');
+  egal((await pub(413)).type, 'trop-gros', '413 de Vercel, sans corps : trop lourde aussi');
   egal((await pub(403, { acces: true })).type, 'refuse', '403 : droits');
   egal((await pub(401)).type, 'non-connecte', '401 : session échue');
   egal((await pub(500)).type, 'indisponible', '500 : service en panne');

@@ -268,6 +268,11 @@ export interface BoutonProps
   // suivre dans le même onglet quitterait l'app, et ce qui n'est pas conservé
   // serait perdu.
   nouvelOnglet?: boolean;
+  // Avec `href` : le lien ENREGISTRE le fichier sous ce nom (`download`), au
+  // lieu de l'ouvrir. ⚠️ Indispensable pour un fichier que le navigateur sait
+  // afficher (le plugin SWEX, un `.js`) : sans lui, le clic montrait le code à
+  // la place de l'app.
+  telechargement?: string;
 }
 
 const Bouton = forwardRef<HTMLButtonElement, BoutonProps>(function Bouton(
@@ -286,6 +291,7 @@ const Bouton = forwardRef<HTMLButtonElement, BoutonProps>(function Bouton(
     actif,
     href,
     nouvelOnglet = false,
+    telechargement,
     className = '',
     type = 'button',
     ...reste
@@ -346,6 +352,7 @@ const Bouton = forwardRef<HTMLButtonElement, BoutonProps>(function Bouton(
       <a
         href={href}
         {...(nouvelOnglet ? { target: '_blank', rel: 'noreferrer' } : {})}
+        {...(telechargement != null ? { download: telechargement } : {})}
         data-bouton=""
         className={classes}
         {...(reste as React.AnchorHTMLAttributes<HTMLAnchorElement>)}

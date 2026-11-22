@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Monster, SiegeTeam } from '../types';
-import { LeadInfo, runeSpeedForTarget } from '../lib/speed';
+import { LeadInfo, runeSpeedForTarget, type RegleLead } from '../lib/speed';
 import {
   ArtefactRequis,
   Camp,
@@ -27,6 +27,7 @@ import {
   combatDe as combatDeLigne,
   entreeDe as entreeDeLigne,
   plateauDeLignes,
+  plateauDesRequis,
   estimerCumuls,
   gainPassifDe as gainPassifDeLigne,
   leadDe as leadDeCamp,
@@ -63,11 +64,33 @@ import { useDonneesKitPlan } from './useZoneSpeedTune';
 import { useStickyState } from './useStickyState';
 import { etatDepuisPlan, type EtatOutil, type OuvertureOptimizer } from '../lib/speedTuneDepuisPlan';
 import { useTraduction } from './useLangue';
+import { EquipesAreneContext, type EquipesArene } from './useSiegeState';
 
-// Un deck proposé à l'import : une équipe de siège et le camp d'où elle vient.
+// D'où vient un deck : un côté du siège, ou un côté de l'arène.
+export type SourceDeck =
+  | 'defense'
+  | 'offense'
+  | 'arene-defense'
+  | 'arene-offense'
+  | 'arene-interserveur'
+  | 'arene-dimension-defense'
+  | 'arene-dimension-offense';
+
+// Les règles de lead d'un deck, selon sa source.
+export const regleDeSource = (source: SourceDeck): RegleLead => (source.startsWith('arene-') ? 'arene' : 'siege');
+
+// Les équipes d'une source.
+export function equipesDeSource(source: SourceDeck, siegeDefense: SiegeTeam[], siegeOffense: SiegeTeam[], arene: EquipesArene): SiegeTeam[] {
+  if (source === 'defense') return siegeDefense;
+  if (source === 'offense') return siegeOffense;
+  return arene[source.slice('arene-'.length) as keyof EquipesArene];
+}
+
+// Un deck proposé à l'import : une équipe (de siège ou d'arène) et le camp
+// d'où elle vient.
 export interface DeckDispo {
   cle: string;
-  source: 'defense' | 'offense';
+  source: SourceDeck;
   team: SiegeTeam;
   libelle: string;
   monstres: Monster[];
@@ -75,9 +98,9 @@ export interface DeckDispo {
 
 export type ChampMod = 'atbMod' | 'speedMod';
 
-// L'équipe de siège avec laquelle l'outil s'ouvre, et le camp d'où elle vient.
+// L'équipe avec laquelle l'outil s'ouvre, et le camp d'où elle vient.
 export interface DeckInitial {
-  source: 'defense' | 'offense';
+  source: SourceDeck;
   teamId: string;
 }
 
@@ -118,6 +141,7 @@ export function useSpeedTune({
   const espace = useRef(ouverture ? ESPACE_SPEED_TUNE_OPTIMIZER : PREFIXE_SPEED_TUNE).current;
   const useCle = <T,>(cle: string, initial: T) => useStickyState<T>(espace + cle.slice(PREFIXE_SPEED_TUNE.length), initial);
   const equipeVide = useTraduction().siege.equipeVide;
+  const equipesArene = useContext(EquipesAreneContext);
   // ⚠️ **TOUTES les clés collantes de l'outil portent ce préfixe**, sans
   // exception : c'est lui qui permet de tout réinitialiser d'un coup quand on
   // importe le JSON d'un AUTRE compte (voir App.tsx). Une clé ajoutée en dehors
@@ -236,11 +260,11 @@ export function useSpeedTune({
   useEffect(() => {
     if (arrivee.current || !deckInitial) return;
     arrivee.current = true;
-    const teams = deckInitial.source === 'defense' ? siegeDefenseTeams : siegeOffenseTeams;
+    const teams = equipesDeSource(deckInitial.source, siegeDefenseTeams, siegeOffenseTeams, equipesArene);
     const team =
       teams.find((t) => t.id === deckInitial.teamId) ?? teams[Number(deckInitial.teamId)];
-    if (team && importerDeck('allie', team)) setAnalyseALOuverture(true);
-  }, [deckInitial, siegeDefenseTeams, siegeOffenseTeams]);
+    if (team && importerDeck('allie', team, regleDeSource(deckInitial.source))) setAnalyseALOuverture(true);
+  }, [deckInitial, siegeDefenseTeams, siegeOffenseTeams, equipesArene]);
 
 
 
@@ -327,7 +351,7 @@ export function useSpeedTune({
   // de listes différentes peuvent partager un id (voir OptimizerSection.tsx).
   const decks = useMemo<DeckDispo[]>(() => {
     const out: DeckDispo[] = [];
-    const ajouter = (source: 'defense' | 'offense', teams: SiegeTeam[]) => {
+    const ajouter = (source: SourceDeck, teams: SiegeTeam[]) => {
       teams.forEach((team, i) => {
         const monstres = team.slots
           .map((sl) => (sl.monsterId ? monsterById.get(sl.monsterId) : null))
@@ -338,8 +362,14 @@ export function useSpeedTune({
     };
     ajouter('defense', siegeDefenseTeams);
     ajouter('offense', siegeOffenseTeams);
+    // L'arène après le siège : ses équipes de 4, avec les leads d'arène.
+    ajouter('arene-defense', equipesArene.defense);
+    ajouter('arene-offense', equipesArene.offense);
+    ajouter('arene-interserveur', equipesArene.interserveur);
+    ajouter('arene-dimension-defense', equipesArene['dimension-defense']);
+    ajouter('arene-dimension-offense', equipesArene['dimension-offense']);
     return out;
-  }, [siegeDefenseTeams, siegeOffenseTeams, monsterById, equipeVide]);
+  }, [siegeDefenseTeams, siegeOffenseTeams, equipesArene, monsterById, equipeVide]);
 
   function ajouter(camp: Camp, id: string) {
     const uid = uidDe(camp, id);
@@ -362,8 +392,10 @@ export function useSpeedTune({
   // l'autre bord, et c'est même là qu'on la connaît le mieux (on l'a affrontée).
   // Rend `true` si l'équipe a bien été importée — un deck dont aucun monstre
   // n'est connu ne change rien, et l'appelant ne doit pas croire le contraire.
-  function importerDeck(camp: Camp, team: SiegeTeam): boolean {
-    const deck = deckPourSpeedTune(team, monsterById);
+  // `regle` : celle du contenu de l'équipe — une équipe d'arène applique les
+  // leads d'arène (voir `regleDeSource`).
+  function importerDeck(camp: Camp, team: SiegeTeam, regle: RegleLead = 'siege'): boolean {
+    const deck = deckPourSpeedTune(team, monsterById, regle);
     if (deck.monstres.length === 0) return false;
     // ⚠️ Changer de deck OUBLIE l'analyse précédente : elle portait sur une autre
     // composition, et la relancer toute seule écrirait par-dessus un réglage
@@ -727,18 +759,31 @@ export function useSpeedTune({
     }
   }, [lignes, leadChoisi, leadAllie, leadEnnemi]);
 
+  // ⚠️⚠️ **Le plateau où se cherchent les vitesses REQUIS (chaîne et ordre des
+  // sorts) n'est pas celui des tableaux.** Après une analyse, les grilles
+  // portent chaque effet de sort au tick où son lanceur jouait AUX VITESSES DU
+  // MOMENT. Chercher dessus la vitesse qui manque à un lanceur le faisait jouer
+  // plus tôt sans déplacer son boost : avec Kabilla puis Eludia en boosts
+  // d'équipe, Eludia coupée, les vitesses annoncées pour Eludia, Lagmaron et
+  // Trinity ne comptaient que le boost de Kabilla. Ici, chaque effet suit son
+  // lanceur (`plateauDesRequis`) ; sans analyse, ou si la provenance d'une
+  // grille est inconnue, les grilles restent la source.
+  const plateauRequis = useMemo(
+    () => (auto ? (plateauDesRequis(lignes, leads, donneesKit, choixSorts) ?? tune) : tune),
+    [auto, lignes, leadAllie, leadEnnemi, donneesKit, choixSorts, tune]
+  );
   // Chaîne d'ouverture : toute l'équipe joue-t-elle avant le premier adverse ?
   // Et sinon, quelle vitesse de combat faut-il à ceux qui sont coupés.
   const chaine = useMemo(() => diagnostiquerChaine(tune, HORIZON_TICKS), [tune]);
   const requis = useMemo(
-    () => (chaine.ok ? [] : vitessesRequises(tune, HORIZON_TICKS)),
-    [tune, chaine]
+    () => (chaine.ok ? [] : vitessesRequises(plateauRequis, HORIZON_TICKS)),
+    [plateauRequis, chaine]
   );
   // L'AUTRE levier quand un buff de vitesse est en jeu : monter l'artéfact
   // « Effet aug. VIT », qui l'amplifie. Vide s'il n'y a rien à en attendre.
   const arteRequis = useMemo(
-    () => (chaine.ok ? [] : artefactsRequis(tune, HORIZON_TICKS)),
-    [tune, chaine]
+    () => (chaine.ok ? [] : artefactsRequis(plateauRequis, HORIZON_TICKS)),
+    [plateauRequis, chaine]
   );
 
   // Premiers tours (ordre de tour), numéro d'action par (monstre, tick) et
@@ -791,14 +836,15 @@ export function useSpeedTune({
   // (« min 286, max 151 ») — l'écran disait « trop lent » SANS DIRE DE COMBIEN,
   // précisément sur le monstre qu'on cherchait à régler. C'est la question qu'on
   // pose ici : quelles vitesses pour que TOUT passe.
+  // ⚠️ Sur le plateau des requis, comme la chaîne : chaque boost suit son lanceur.
   const fenetres = useMemo(
-    () => fenetresRequises(tune, ordreVoulu, HORIZON_TICKS, 'combat', true),
-    [tune, ordreVoulu]
+    () => fenetresRequises(plateauRequis, ordreVoulu, HORIZON_TICKS, 'combat', true),
+    [plateauRequis, ordreVoulu]
   );
   // Le même calcul sur l'autre levier : l'artéfact qui amplifie le buff reçu.
   const fenetresArte = useMemo(
-    () => fenetresRequises(tune, ordreVoulu, HORIZON_TICKS, 'artefactBuff', true),
-    [tune, ordreVoulu]
+    () => fenetresRequises(plateauRequis, ordreVoulu, HORIZON_TICKS, 'artefactBuff', true),
+    [plateauRequis, ordreVoulu]
   );
   const fenetreParUid = useMemo(() => new Map(fenetres.map((f) => [f.id, f])), [fenetres]);
   const fenetreArteParUid = useMemo(() => new Map(fenetresArte.map((f) => [f.id, f])), [fenetresArte]);

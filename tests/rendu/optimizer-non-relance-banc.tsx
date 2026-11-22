@@ -5,7 +5,7 @@ import OptimizerSection from '../../src/components/outils/OptimizerSection';
 import { SettingsList } from '../../src/components/SettingsMenu';
 import { useOptimizerState, type OptimizerState } from '../../src/hooks/useOptimizerState';
 import { useOptimizerLists, type UseOptimizerLists } from '../../src/hooks/useOptimizerLists';
-import { setPersistence } from '../../src/hooks/usePersistence';
+import { setPersistence, viderMiroir } from '../../src/hooks/usePersistence';
 import { searchBuilds } from '../../src/lib/rechercheRunes';
 import { ajouterObjetCandidat, creerColonnesCandidats, extraireBlocs, tamponsCandidats } from '../../src/lib/candidatsCompacts';
 import type { DemandeDeRecherche } from '../../src/workers/runeBuildOptim.worker';
@@ -142,7 +142,7 @@ export function relacherUneResolution() {
 
 /** `garder` : la conservation acceptée, pour qu'un rechargement relise listes et réglages. */
 export async function monter(garder = false) {
-  localStorage.clear();
+  localStorage.clear(); viderMiroir();
   setPersistence(garder);
   globalThis.fetch = async () => new Response('{}', { status: 404 });
   installerWorkers();
@@ -154,6 +154,9 @@ export async function monter(garder = false) {
   await geste(() => { listes.addMember(listId, premier, 10101); listes.addMember(listId, second, 10102); });
   await geste(() => { etat.choisirMembre(listId, premier); });
   await geste(() => { etat.setComboSets(['energy', 'energy', 'energy']); });
+  // Les pages comptent K = 100 notés (relique « Comme équipée ») : le choix
+  // se pose, puisque le défaut est « Libre » (K = 300).
+  await geste(() => { etat.setRelicMainChoice('equipped'); });
   return { listId };
 }
 

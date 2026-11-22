@@ -3,10 +3,10 @@ import { createRoot, type Root } from 'react-dom/client';
 import { flushSync } from 'react-dom';
 import { useOptimizerState, type OptimizerState } from '../../src/hooks/useOptimizerState';
 import { useOptimizerLists, type UseOptimizerLists } from '../../src/hooks/useOptimizerLists';
-import { setPersistence } from '../../src/hooks/usePersistence';
+import { setPersistence, viderMiroir } from '../../src/hooks/usePersistence';
 import OptimizerSection from '../../src/components/outils/OptimizerSection';
 import { baseCompleteCriteres, photoCriteres } from '../../src/lib/criteresOptimizer';
-import { cleMemoireMembre, ecrireMembresOptimizer, OPTIMIZER_MEMBERS_STORAGE_KEY, type MemoireMembreOptimizer } from '../../src/lib/optimizerMemberStorage';
+import { cleMemoireMembre, ecrireMembresOptimizer, OPTIMIZER_MEMBERS_STORAGE_KEY, type MemoireMembreOptimizer, type EquipeOptimizer } from '../../src/lib/optimizerMemberStorage';
 import type { Monster, RtaEntry, SiegeTeam, RuneDetail, ArtifactDetail, RelicDetail } from '../../src/types';
 import { preuvesExemplaireLecture } from './optimizer-exemplaire-lecture-preuves';
 import type { BoxItem } from '../../src/lib/applyAccount';
@@ -25,6 +25,7 @@ import { preuvesRechercheOptimizer } from './optimizer-recherche-preuves';
 import { preuvesCreationObligatoire, preuvesEtatAuras, preuvesEnteteEquipe, preuvesDialogueElement, preuvesActionsZoneC } from './optimizer-retouches-preuves';
 import { preuvesEquipeImpossible } from './optimizer-equipe-impossible-preuves';
 import { preuvesSpeedTuneDepuisOptimizer } from './optimizer-speed-tune-outil-preuves';
+import { preuvesMesEquipesBande } from './optimizer-mes-equipes-bande-preuves';
 import { preuvesReglagesAvances, preuvesGuidage, preuvesRappelDeuxRendus, preuvesListesEcran, preuvesMessageImport, preuvesResultats } from './optimizer-ecran-preuves';
 import { rechercheClasseeTest } from './optimizer-classement-banc';
 import { preuvesCarteContexte, preuvesFiltresBranchement, preuvesFiltresEcran, preuvesFiltresMemoire, preuvesFiltresMesure } from './optimizer-filtres-preuves';
@@ -55,6 +56,8 @@ let changerReliques: (reliques: RelicDetail[]) => void;
 let avecPoint = false;
 let menuOuvert = false, changerMenu: (ouvert: boolean) => void;
 let rechercheForcee: Record<string, unknown> | null = null, rafraichir: () => void;
+// L'équipe passée à « Enregistrer dans Mes équipes », comme App.tsx la reçoit.
+let versMesEquipes: EquipeOptimizer | null = null;
 const artefactsPoint: ArtifactDetail[] = [
   { id: 71, kind: 'element', element: 'fire', level: 15, rarity: 5, main: { code: 100, value: 1500 }, subs: [] },
   { id: 72, kind: 'archetype', archetype: 'attack', level: 15, rarity: 5, main: { code: 101, value: 100 }, subs: [] },
@@ -98,7 +101,8 @@ function Banc() {
   const optimizer = rechercheForcee ? { ...etat, search: { ...etat.search, ...rechercheForcee } } as OptimizerState : etat;
   return visible ? <OptimizerSection box={compte} runes={inventaire} artifacts={arts} relics={reliques} relicUsageById={{}}
     optimizer={optimizer} onImporterEquipe={etat.importerEquipe} lists={listes} allMonsters={monstres} rtaEntries={rtaEntries} siegeDefenseTeams={defenses} siegeOffenseTeams={siegeOffenseTeams}
-    accountName="Synthétique" menuOuvert={menu} onFermerMenu={() => setMenu(false)} onOuvrirMenu={() => setMenu(true)} /> : <div>Autre onglet</div>;
+    accountName="Synthétique" menuOuvert={menu} onFermerMenu={() => setMenu(false)} onOuvrirMenu={() => setMenu(true)}
+    onEnregistrerEquipe={e => { versMesEquipes = e; }} /> : <div>Autre onglet</div>;
 }
 
 export async function geste(action: () => void) {
@@ -112,7 +116,7 @@ export async function geste(action: () => void) {
 }
 
 export async function monter(avecRapport = false) {
-  localStorage.clear();
+  localStorage.clear(); viderMiroir();
   rechercheForcee = null;
   const criteres = baseCompleteCriteres(undefined);
   criteres.minStats = { spd: 230 }; criteres.comboSets = ['swift']; criteres.critereArtefacts = 'reel';
@@ -202,6 +206,7 @@ export async function scenario(nom: string): Promise<[boolean, string][]> {
   if (nom === 'dialogue-equipe') return preuvesDialogueEquipeOptimizer(bancEquipes);
   if (nom === 'contenu-creation') return preuvesContenuCreationOptimizer(bancEquipes);
   if (nom === 'speed-tune-outil') return preuvesSpeedTuneDepuisOptimizer(bancEquipes, monstres);
+  if (nom === 'mes-equipes-bande') { versMesEquipes = null; return preuvesMesEquipesBande(bancEquipes, () => versMesEquipes); }
   if (nom === 'identite-enregistree') return preuvesIdentiteEnregistree({ etat: () => etat, listes: () => listes,
     data: () => compteActuel, changerBox, geste, premier });
   const supplement = await preuvesSupplementaires(nom, { etat: () => etat, listes: () => listes, geste, premier, second, rta, siege });

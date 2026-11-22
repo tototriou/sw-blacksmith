@@ -8,13 +8,13 @@ import { CSSProperties } from 'react';
 // ACTIONS (importer, exporter, rechercher…) gardent les formes standard de
 // lucide — la toile le dit : « des symboles standards pour les actions ».
 //
-// Origine des tracés : ceux de la toile (planche « Icônes »), tels quels ; sept
+// Origine des tracés : ceux de la toile (planche « Icônes »), tels quels ; huit
 // dessinées pour l'app, choisies par le mainteneur sur planche — la
-// coupe (Arène), les tenailles (Outils), le compas (Optimizer), les deux
+// coupe (Arène), la clé à molette (Outils), l'enclume (Optimizer), les deux
 // compagnons (Ami), le chronomètre (Speed tuning), l'œuf (Monstres), et le
-// médaillon (Artéfacts) repris d'`InventaireIcon`.
+// médaillon (Artéfacts) repris d'`InventaireIcon` ; le dossier à l'étoile (Mes équipes).
 // ⚠️ **Une exception, voulue par le mainteneur (2026-11-10)** : l'action
-// « Exporter vers l'Optimizer » porte le compas de l'Optimizer (`IconeOptimizer`),
+// « Exporter vers l'Optimizer » porte l'enclume de l'Optimizer (`IconeOptimizer`),
 // partout où elle existe — on voit d'un coup d'œil où l'équipe part.
 // ⚠️ **`InventaireIcon` n'est PAS modifié** : la refonte l'a rangé parmi les
 // rendus du jeu à l'identique (ses silhouettes de monstre, de rune et
@@ -74,7 +74,16 @@ export const IconeNouveautes = fabrique('M11 3l1.8 5.2L18 10l-5.2 1.8L11 17l-1.8
 // flèche qui descend dans le bac. Dessinée pour l'app, pas choisie sur
 // planche comme les autres : remplaçable par un objet d'atelier.
 export const IconeTelecharger = fabrique('M12 3v11M7.5 9.5 12 14l4.5-4.5M4 15v3a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-3');
+// Bot Discord : la tête de robot de lucide (`bot`), telle quelle.
+export const IconeBotDiscord = fabrique(
+  'M12 8V4H8M6 8h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2zM2 14h2M20 14h2M15 13v2M9 13v2'
+);
+// La page « SW Exporter » : le compte qui suit le jeu — deux flèches en
+// boucle autour d'un point (le fichier tenu à jour).
+export const IconeSwex = fabrique('M20 12a8 8 0 0 1-14 5.3M4 12a8 8 0 0 1 14-5.3M18 3v3.7h-3.7M6 21v-3.7h3.7' + cercle(12, 12, 2));
 // Notions de la toile (« Défense », « Attaque »).
+// Statistiques des sièges : des barres sur une ligne de base.
+export const IconeStatistiques = fabrique('M3 21h18M6 17v-5M10.5 17V7M15 17v-8M19.5 17V4');
 export const IconeDefense = fabrique('M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6zM12 8v8M9 11h6');
 export const IconeOffense = fabrique('M14.5 17.5 3 6V3h3l11.5 11.5M13 19l6-6M16 16l4 4M19 21l2-2');
 // Action « Réglages » de la toile : Paramètres (l'engrenage est à
@@ -87,10 +96,14 @@ export const IconeParametres = fabrique(
 export const IconeArene = fabrique(
   'M7 3h10v5a5 5 0 0 1-10 0zM7 5H4v1.5A3.5 3.5 0 0 0 7.5 10M17 5h3v1.5A3.5 3.5 0 0 1 16.5 10M12 13v3M8 21h8M9 16h6l1 5H8z'
 );
-export const IconeOutils = fabrique(cercle(12, 12, 1.4) + 'M10.8 11 8 3.5h2.5l2 6M13.2 11 16 3.5h-2.5l-2 6M11 13.2 7 21M13 13.2l4 7.8');
-// Tête grossie et arc entre les branches : le compas fin se lisait comme un
-// « A » à 14 px, la taille des boutons d'export.
-export const IconeOptimizer = fabrique(cercle(12, 4.5, 2) + 'M10.9 6.3 5.5 20M13.1 6.3 18.5 20M4 15.5a10 10 0 0 0 16 0');
+// La clé à molette, mâchoire ouverte, la molette marquée sur le manche.
+export const IconeOutils = fabrique(
+  'M19.47 7.08L17.04 9.51L14.49 6.96L16.92 4.53A4.6 4.6 0 0 0 11.06 10.81L3.54 18.34A1.5 1.5 0 0 0 5.66 20.46L13.19 12.94A4.6 4.6 0 0 0 19.47 7.08ZM9.76 12.12L11.88 14.24'
+);
+// L'enclume et ses étincelles : on y forge le meilleur équipement (le nom de l'app).
+export const IconeOptimizer = fabrique(
+  'M3 9h12.5c2.5 0 4.5-1 5.5-3v3.5c0 2.5-2 4-5 4H15v2.5l2.5 3.5h-11L9 16v-2.5H5.5A2.5 2.5 0 0 1 3 11zM8 2.5v2.5M11.5 3.5 10.5 5M4.5 3.5 5.5 5'
+);
 export const IconeAmi = fabrique(cercle(8, 8, 3) + cercle(16, 8, 3) + 'M2 20a6 6 0 0 1 12 0M10 20a6 6 0 0 1 12 0');
 export const IconeSpeedTuning = fabrique(cercle(12, 14, 8) + 'M12 14l3.5-3.5M10 2h4M12 2v4M19 5l1.5 1.5');
 // Les trois inventaires de « Mon compte », dans la NAVIGATION.
@@ -101,3 +114,8 @@ export const IconeMonstres = fabrique(
 export const IconeRunes = fabrique('M12 2l8.5 5v10L12 22l-8.5-5V7zM12 7v10M12 10.5l3-2M12 13.5l-3-2');
 // Le médaillon, repris tel quel d'`InventaireIcon` (le mainteneur l'a préféré).
 export const IconeArtefacts = fabrique('M2.5 12L7 3.7H17L21.5 12L17 20.3H7ZM12 8L15 12L12 16L9 12Z');
+// « Mes équipes » : un dossier marqué de l'étoile des runes — des équipes rangées
+// avec leur équipement.
+export const IconeEquipes = fabrique(
+  'M3 6.5A1.5 1.5 0 0 1 4.5 5H9l2 2h8.5A1.5 1.5 0 0 1 21 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 17.5zM12 9.4 13.05 11.18 15.12 11.2 14.1 13 15.12 14.8 13.05 14.82 12 16.6 10.95 14.82 8.88 14.8 9.9 13 8.88 11.2 10.95 11.18Z'
+);

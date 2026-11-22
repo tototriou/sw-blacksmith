@@ -110,7 +110,7 @@ export default tseslint.config(
     rules: { 'swblacksmith/texte-en-dur': 'error' },
   },
   {
-    files: ['bureau/**/*.ts', 'api/**/*.{ts,mjs}', 'scripts/**/*.{ts,mjs,js}', 'tests/**/*.{ts,tsx,mjs}', '.claude/**/*.mjs', '*.{js,mjs,ts}'],
+    files: ['bureau/**/*.ts', 'plugin-swex/**/*.{ts,js}', 'api/**/*.{ts,mjs}', 'scripts/**/*.{ts,mjs,js}', 'tests/**/*.{ts,tsx,mjs}', '.claude/**/*.mjs', '*.{js,mjs,ts}'],
     languageOptions: { globals: globals.node },
   },
   {

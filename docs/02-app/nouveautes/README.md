@@ -1,7 +1,7 @@
 # Ressources · Nouveautés (`#/releases`)
 
 Journal des versions, **destiné aux joueurs** : ce qui a changé, version par
-version. Rangé sous **Ressources**, à côté du Bestiaire et des Mécaniques.
+version. Rangé sous **Ressources**, après les Mécaniques.
 
 Fichiers : [ReleasesPage.tsx](src/pages/ReleasesPage.tsx) ·
 [releases.ts](src/data/releases.ts) (le contenu, en français) ·

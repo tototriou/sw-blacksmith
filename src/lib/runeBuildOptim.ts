@@ -58,6 +58,7 @@ import type { EtatRelique } from './relicQueue';
 // compilation) : l'importer à l'exécution ne ferme aucun cycle — il est déjà
 // chargé par `relicExclusive.ts`.
 import { reliquesRepresentatives } from './relicOptim';
+import type { PrecisionParSort } from './precisionParSort';
 import type { RelicContext, RelicVide } from './relicOptim';
 import {
   DEF_FACTOR_CONST,
@@ -109,6 +110,12 @@ export interface BuildRequirement {
   // propres au build) entrent dans les conditions. Absent = aucune aura dans
   // les conditions ; « éteint » s'écrit `compter: false`, jamais par l'absence.
   auraResPre?: { res: number; acc: number; compter: boolean };
+  // Dérivé au lancement par `exigencePrecisionParSort` (precisionParSort.ts),
+  // seul producteur ; absent d'une recette. La précision minimale PAR SORT :
+  // `minStats.acc` ne porte alors plus que le minimum RELÂCHÉ que voient les
+  // runes, et ce champ la condition exacte, jugée à la résolution sur la vraie
+  // paire (`entreeResolutionDuBuild`). Absent = aucune précision par sort.
+  precisionParSort?: PrecisionParSort;
   // Statistiques principales AUTORISÉES sur les slots 2/4/6 (codes RUNE_EFFECT,
   // voir SLOT_MAIN_OPTIONS). Absent/vide pour un slot = pas de contrainte.
   mainStats?: Partial<Record<2 | 4 | 6, number[]>>;
@@ -147,6 +154,17 @@ function totalCondition(total: number, key: string, requirement: Pick<BuildRequi
   const aura = requirement.auraResPre;
   if (!aura?.compter) return total;
   return total + aura[key] + pointsAuraResPrePropres(propres)[key];
+}
+
+// La Précision d'une fiche telle que la jugent les conditions (auras
+// comprises selon le toggle) : celle que la précision par sort complète par
+// la ligne du sort (`lignesPrecisionDuBuild`, precisionParSort.ts).
+export function precisionJugee(
+  stats: { key: string; total: number }[],
+  requirement: Pick<BuildRequirement, 'auraResPre'>,
+  propres: AurasPropres
+): number {
+  return totalCondition(stats.find((s) => s.key === 'acc')?.total ?? 0, 'acc', requirement, propres);
 }
 
 export interface BuildCandidate {
@@ -377,8 +395,8 @@ const LIBELLE_VIDE: Record<RelicVide, string> = {
  * ⚠️ `mode: 'equipped'` sans relique portée (`vide: 'equipee'`) ne refuse
  * PAS : le moteur y reste byte-identique à avant (une recherche sans relique
  * est exactement ce que « garder l'équipée » veut dire quand il n'y en a
- * pas) — c'est le défaut calculé (`defaultRelicMainChoice`) qui évite ce cas
- * à l'écran.
+ * pas) — c'est la garde de cohérence (`relicMainChoiceApresChangementExemplaire`)
+ * qui évite ce cas à l'écran, et le défaut est « Libre ».
  */
 export class RechercheRefusee extends Error {
   readonly motif = 'relique-pool-vide' as const;

@@ -1,6 +1,6 @@
 import MonsterSourcePicker from '../MonsterSourcePicker';
 import MonsterAvatar from '../../MonsterAvatar';
-import OptimizerImportButton, { type SourceImportOptimizer } from '../OptimizerImportButton';
+import OptimizerImportButton, { type ImportFenetreOptimizer } from '../OptimizerImportButton';
 import { ZoneCliquable } from '../../../ui';
 import { ChevronDown } from 'lucide-react';
 import Segmented from '../../../ui/Segmented';
@@ -19,8 +19,8 @@ export interface MonstreEquipementTelephoneProps {
   ligneMonstreTelephoneRef: RefObject<HTMLDivElement>;
   selected: { monster: Monster; gear: GearSet; } | null;
   selectionAffichee: { monster: Monster; gear: GearSet; } | null;
-  sourcesImport: SourceImportOptimizer[];
-  importerDepuisEcran: (produire: ProducteurImportOptimizer) => RapportImportOptimizer;
+  fenetreImport: ImportFenetreOptimizer;
+  importerDepuisEcran: (produire: ProducteurImportOptimizer, cible?: string) => RapportImportOptimizer;
   rapportImport: RapportImportOptimizer | null;
   setZoneCOpen: Dispatch<SetStateAction<boolean>>;
   zoneCOpen: boolean;
@@ -43,7 +43,7 @@ export interface MonstreEquipementTelephoneProps {
   validateBuildButton: ReactNode;
 }
 
-export default function MonstreEquipementTelephone({ allMonsters, pickSpecies, disponibiliteEspece, ligneMonstreTelephoneRef, selected, selectionAffichee, sourcesImport, importerDepuisEcran, rapportImport, setZoneCOpen, zoneCOpen, eclatImport, listesTelephone, sourceOptions, vuesExemplaire, gearSource, pickSource, allSourcesEmpty, zoneDOpen, zoneDList, zoneCContent, validatedBadge, selectionFiche, setSelectionFiche, relicUsageById, mesuresFiche, validateBuildButton }: MonstreEquipementTelephoneProps) {
+export default function MonstreEquipementTelephone({ allMonsters, pickSpecies, disponibiliteEspece, ligneMonstreTelephoneRef, selected, selectionAffichee, fenetreImport, importerDepuisEcran, rapportImport, setZoneCOpen, zoneCOpen, eclatImport, listesTelephone, sourceOptions, vuesExemplaire, gearSource, pickSource, allSourcesEmpty, zoneDOpen, zoneDList, zoneCContent, validatedBadge, selectionFiche, setSelectionFiche, relicUsageById, mesuresFiche, validateBuildButton }: MonstreEquipementTelephoneProps) {
   const c = useTraduction().optimizer.criteres;
   return (
     <div className="space-y-3">
@@ -60,7 +60,7 @@ export default function MonstreEquipementTelephone({ allMonsters, pickSpecies, d
           </>}
         </div>
         <div className="mt-3">
-          <OptimizerImportButton sources={sourcesImport} onImporter={importerDepuisEcran} rapport={rapportImport} />
+          <OptimizerImportButton fenetre={fenetreImport} onImporter={importerDepuisEcran} rapport={rapportImport} />
         </div>
         <ZoneCliquable
           onClick={() => setZoneCOpen((v) => !v)}

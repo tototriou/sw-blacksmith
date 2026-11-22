@@ -39,6 +39,13 @@ export function raisonRefus(refus: RefusPlan, lignes: readonly Ligne[], t: Dicti
   }
 }
 
+// Un deck de l'arène DIMENSIONNELLE : ses monstres sont ceux de la box du mode,
+// avec ses runes — pas les exemplaires du compte, sur lesquels travaille
+// l'Optimizer. Les exporter enverrait un autre monstre, avec d'autres runes.
+export function deckDimensionnel(deckInitial?: DeckInitial): boolean {
+  return deckInitial?.source === 'arene-dimension-defense' || deckInitial?.source === 'arene-dimension-offense';
+}
+
 export function importerSpeedTuneOptimizer(
   lignes: readonly Ligne[], lead: LeadInfo | null, data: ExclusionSourceData, t: Dictionnaire, deckInitial?: DeckInitial,
   etatPlan?: EtatPlanSpeedTune
@@ -56,12 +63,20 @@ export function importerSpeedTuneOptimizer(
   const liens: { membre: ImportOptimizer['membres'][number]; lien: MembreLigne; sansPlan: ImportOptimizer['membres'][number]['criteres'] }[] = [];
   let deck: SiegeTeam | undefined;
   let sourceDeck: 'siege-defense' | 'siege-offense' | undefined;
-  if (deckInitial) {
-    const teams = deckInitial.source === 'defense' ? data.siegeDefenseTeams : data.siegeOffenseTeams;
+  // Un deck de SIÈGE : ses monstres partent avec les runes de son preset, et
+  // un monstre sans exemplaire dans ce deck est écarté.
+  const deckDeSiege = deckInitial && (deckInitial.source === 'defense' || deckInitial.source === 'offense') ? deckInitial : undefined;
+  // ⚠️ Un deck d'ARÈNE n'est cherché ni parmi les équipes de siège (il n'y est
+  // pas, et l'index d'une offense de siège y désignerait une autre équipe), ni
+  // par sa composition : l'Optimizer ne connaît pas les équipes d'arène.
+  // Chaque monstre part avec son exemplaire de la box.
+  const deckDArene = !!deckInitial && !deckDeSiege;
+  if (deckDeSiege) {
+    const teams = deckDeSiege.source === 'defense' ? data.siegeDefenseTeams : data.siegeOffenseTeams;
     // Même résolution que l'ouverture du speed tuning depuis un deck.
-    deck = teams.find(e => e.id === deckInitial.teamId) ?? teams[Number(deckInitial.teamId)];
-    sourceDeck = deckInitial.source === 'defense' ? 'siege-defense' : 'siege-offense';
-  } else {
+    deck = teams.find(e => e.id === deckDeSiege.teamId) ?? teams[Number(deckDeSiege.teamId)];
+    sourceDeck = deckDeSiege.source === 'defense' ? 'siege-defense' : 'siege-offense';
+  } else if (!deckDArene) {
     const composition = lignes.filter(l => l.camp === 'allie').map(l => {
       const monstre = data.monsterById.get(String(l.monster.id));
       return monstre?.com2usId === l.monster.com2usId ? monstre?.com2usId ?? null : null;
@@ -81,7 +96,11 @@ export function importerSpeedTuneOptimizer(
       ignorer(m.reco.monstreInconnu);
       continue;
     }
-    if (deckInitial && !deck) {
+    if (deckDimensionnel(deckInitial)) {
+      ignorer(s.deckDimensionnel);
+      continue;
+    }
+    if (deckDeSiege && !deck) {
       ignorer(s.deckIntrouvable);
       continue;
     }

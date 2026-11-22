@@ -6,7 +6,7 @@ import { configurationBureau, type ColonneReglage, type OngletBureau } from '../
 import { GABARITS_ESSENTIELS } from './essentiels';
 import { GABARITS_COLONNES } from './colonnes';
 import ObjectifEtRechercherBureau, { LARGEUR_OBJECTIF_LARGE_MIN } from '../bureau/ObjectifEtRechercherBureau';
-const LARGEUR_EXEMPLAIRE = 358;
+const LARGEUR_EXEMPLAIRE = 366;
 import ResultatsBureau, { LARGEUR_RESULTATS_MIN, type AttenteResultats } from '../bureau/ResultatsBureau';
 import BandeauBuildValide from '../BandeauBuildValide';
 import BoutonValiderBuild from '../BoutonValiderBuild';

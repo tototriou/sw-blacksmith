@@ -643,3 +643,42 @@ laquelle la page de chaque côté ne se lit plus, quelle que soit la fenêtre.
 ⚠️ **La taille est contrôlée** (`taille`, pourcentage de la zone de gauche) :
 seul un geste de l'utilisateur la remonte (`onTaille`), jamais un recalcul de
 la librairie au montage ou à un redimensionnement de la fenêtre.
+
+#### `Tableau`
+
+**`Tableau`** — un tableau de données triable, tiré du tableau des résultats de
+l'Optimizer ([TableauResultats.tsx](src/components/outils/optimizer/TableauResultats.tsx))
+pour en garder la grammaire : une carte (`rounded-xl`, contour `border`, fond
+`panel`), des en-têtes qui sont des `Bouton` pleine largeur (accent plein sur la
+colonne triée, son sens en icône), la colonne triée **teintée sur toute sa
+hauteur** et en gras, des chiffres `font-mono` alignés, un trait doux
+(`border-soft`) entre les lignes, le survol en `panel2`. Premiers usages : les
+tableaux par membre de Siège › Statistiques
+([statistiques.md](../../../02-app/siege/statistiques.md)).
+
+- **Des colonnes, décrites par l'appelant** (`ColonneTableau`) : un libellé court
+  et son sens entier (`titre`, infobulle), la valeur de tri, le contenu de la
+  cellule s'il n'est pas la valeur, une colonne **fixée** à gauche (le nom).
+  ⚠️ **Ni barre ni couleur de donnée dans les cellules** : un tableau se lit
+  par ses chiffres (des barres de taux y ont été retirées à la demande de
+  l'utilisateur).
+- **Le tri, en trois clics** sur un même en-tête (`triApresClic`) : trié par la
+  colonne (les nombres du plus grand au plus petit, le texte de A à Z), puis
+  inversé, puis **plus trié du tout** — le tableau revient à l'ordre de ses
+  lignes, l'ordre de base que choisit l'appelant. ⚠️ Une valeur inconnue
+  (`null`) reste **toujours en dernier**, dans les deux sens.
+- **Une ligne marquée** (`marquee`, fond `panel2`, comme une fiche épinglée) et
+  **une ligne qui s'ouvre** (`onLigne`) : en entier à la souris, au clavier par
+  sa cellule fixe (`ZoneCliquable`).
+- **Des lignes à part** (`aPart`) : après toutes les autres, sous un intertitre
+  (`label`, contour plein au-dessus), comme un second tableau qui partage les
+  colonnes. Le tri s'applique **dans chaque groupe**, jamais d'un groupe à
+  l'autre ; sans aucune ligne à part, pas d'intertitre. L'intertitre reste à
+  gauche quand le tableau défile sur le côté.
+- ⚠️ **À la largeur de son contenu**, jamais étiré sur toute la page : des
+  colonnes de chiffres étalées sur un écran large se lisent mal.
+- ⚠️ **Deux formats, un seul rendu** : trop large, il défile sur le côté, la
+  colonne fixe reste en place.
+- Le tableau des résultats de l'Optimizer garde sa propre mise en page : ses
+  lignes de bornes Min / Max, ses épinglés et sa fiche d'« Exemplaire » en font
+  plus qu'un tableau de données.

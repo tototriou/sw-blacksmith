@@ -10,7 +10,8 @@ interface Props {
   description?: string;
 }
 
-// Page placeholder pour les outils à venir (Siège, Arène…).
+// Page placeholder pour les outils à venir (Siège, Arène…). `description` :
+// ce qui est à venir, quand le texte générique ne suffit pas.
 export default function ComingSoon({ title, icon: Icon, description }: Props) {
   const t = useTraduction();
   return (
@@ -25,7 +26,7 @@ export default function ComingSoon({ title, icon: Icon, description }: Props) {
           <Icon size={28} className="text-ink-dim" />
         </div>
         <h2 className="font-display text-[22px] tracking-wide mb-2">{t.bientot.titre}</h2>
-        <p className="text-ink-dim text-sm max-w-md leading-relaxed">{t.bientot.texte}</p>
+        <p className="text-ink-dim text-sm max-w-md leading-relaxed">{description ?? t.bientot.texte}</p>
       </motion.div>
     </div>
   );

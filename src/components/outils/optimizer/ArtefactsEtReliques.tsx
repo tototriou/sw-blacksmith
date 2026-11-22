@@ -81,7 +81,7 @@ export default function ArtefactsEtReliques({ optimiserArtefacts, setOptimiserAr
       </div>
       {/* Rangée Attribut/Type — le bloc Relique ferme la carte (voir plus bas). */}
       {optimiserArtefacts && (
-        // ⚠️ Au bureau, les deux tiennent sur une ligne de 294 px à 1 px près
+        // ⚠️ Au bureau, les deux tiennent sur une ligne de 302 px (294 à 1 px près)
         // (libellés, listes de 107 px, 8 px entre les deux) : rembourrage
         // droit de la liste ramené de 24 à 20 px (le chevron, de 12 px à
         // 6 px du bord, garde 2 px de marge), 4 px entre libellé et liste.

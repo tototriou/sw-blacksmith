@@ -55,13 +55,13 @@ import { teamSummary } from '../../lib/recoFromSiege';
 import { formesJouables } from '../../lib/monsterForms';
 import LeadPill from '../siege/LeadPill';
 import { useComboboxNav } from '../../hooks/useComboboxNav';
-import { useSpeedTune, DeckDispo, ChampMod, DeckInitial, type OuvertureOptimizer } from '../../hooks/useSpeedTune';
+import { useSpeedTune, DeckDispo, ChampMod, DeckInitial, regleDeSource, type OuvertureOptimizer } from '../../hooks/useSpeedTune';
 import type { PlanSpeedTune } from '../../lib/planSpeedTune';
 import { Colonnes, OrdreDeTour, RepereTicks, TableauBarres, TeteTicks, largeurTable } from './speedTune/VuesSpeedTune';
 import { jugerApplication, perdOrigine } from '../../lib/speedTuneDepuisPlan';
 import type { ActionImportOptimizer } from '../../lib/actionImportOptimizer';
 import type { ExclusionSourceData } from '../../lib/optimizerExclusion';
-import { importerSpeedTuneOptimizer, raisonRefus } from '../../lib/importSpeedTuneOptimizer';
+import { deckDimensionnel, importerSpeedTuneOptimizer, raisonRefus } from '../../lib/importSpeedTuneOptimizer';
 
 import { useAdversaireReference } from '../../hooks/useAdversaireReference';
 import { useStickyState } from '../../hooks/useStickyState';
@@ -312,6 +312,7 @@ export default function SpeedTuningSection({
   } = useSpeedTune({ allMonsters, siegeDefenseTeams, siegeOffenseTeams, deckInitial, ouverture: appliquer?.ouverture });
 
   const raisonExportOptimizer = useMemo(() => {
+    if (deckDimensionnel(deckInitial ?? undefined)) return st.export.dimension;
     if (!compteCharge) return st.export.sansCompte;
     if (!onImporterEquipe || !sourcesOptimizer) return st.export.indisponible;
     return importerSpeedTuneOptimizer(lignes, leadAllie, sourcesOptimizer, textes, deckInitial ?? undefined).membres.length
@@ -444,7 +445,7 @@ export default function SpeedTuningSection({
           kits={kits}
           onArtefact={setArtefact}
           decks={decks}
-          onImporterDeck={(team) => importerDeck('allie', team)}
+          onImporterDeck={(deck) => importerDeck('allie', deck.team, regleDeSource(deck.source))}
           onExporterOptimizer={appliquer ? undefined : exporterOptimizer}
           raisonExportOptimizer={raisonExportOptimizer}
           appliquer={actionAppliquer || undefined}
@@ -473,7 +474,7 @@ export default function SpeedTuningSection({
           kits={kits}
           onArtefact={setArtefact}
           decks={decks}
-          onImporterDeck={(team) => importerDeck('ennemi', team)}
+          onImporterDeck={(deck) => importerDeck('ennemi', deck.team, regleDeSource(deck.source))}
         />
       </div>
 
@@ -963,7 +964,7 @@ interface CampProps {
   // Le bouton d'import d'un deck de siège, dans les DEUX camps : on reprend sa
   // propre compo d'un côté, la défense qu'on affronte de l'autre.
   decks?: DeckDispo[];
-  onImporterDeck?: (team: SiegeTeam) => void;
+  onImporterDeck?: (deck: DeckDispo) => void;
   onExporterOptimizer?: () => void;
   raisonExportOptimizer?: string;
   // Ouvert depuis l'Optimizer : « Appliquer à l'équipe » remplace l'export.
@@ -1769,7 +1770,7 @@ function ImportDeck({
   enTete = false,
 }: {
   decks: DeckDispo[];
-  onImporter: (team: SiegeTeam) => void;
+  onImporter: (deck: DeckDispo) => void;
   adv: boolean;
   // Posé dans l'en-tête du camp (à la souris) : bouton compact,
   // liste calée à DROITE — le bouton est au bord droit de la carte, une liste
@@ -1833,7 +1834,7 @@ function ImportDeck({
                 <ZoneCliquable
                   role="option"
                   onClick={() => {
-                    onImporter(deck.team);
+                    onImporter(deck);
                     setOpen(false);
                   }}
                   className="flex w-full items-center gap-2.5 px-3 py-2 text-left hoverable:bg-accent-soft"

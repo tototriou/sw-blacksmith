@@ -4,14 +4,18 @@ Ce document décrit les conditions, l'inventaire et les réglages avancés.
 
 7. **Conditions** — les 8 stats (PV, ATQ, DEF, VIT, Tx critiq., Dgts critiq., RES,
    Précision), nommées comme dans le jeu. Chaque stat porte **deux champs, minimum et maximum**, tous
-   deux facultatifs — champ vide = pas de contrainte. Au téléphone, en bas
+   deux facultatifs — champ vide = pas de contrainte. Sous « Précision », une
+   rangée « Précision par sort » de trois pastilles (S1, S2, S3) porte le minimum de
+   Précision sur les sorts cochés, ligne de précision de l'artéfact de type
+   comprise : [../feat-precision-par-sort.md](../feat-precision-par-sort.md).
+   Au téléphone, en bas
    de « Critères de recherche », sous le set et les principales ; au bureau,
-   une section « Conditions » de 294 px de « Critères », sous le set, au-dessus
+   une section « Conditions » de 302 px de « Critères », sous le set, au-dessus
    des principales et d'« État de mon monstre » (`ConditionsBureau`). La
    colonne des libellés y prend la largeur du plus long d'entre eux et les
    colonnes s'écartent de 12 px. ⚠️ **« Min » et « Max » y sont des
    en-têtes de colonne posés une fois**, comme au téléphone : collés à
-   chaque champ, ils faisaient déborder la grille des 294 px de la section.
+   chaque champ, ils faisaient déborder la grille des 302 px de la section.
    Les champs gardent leur largeur, et la grille est centrée dans la
    section (décision de l'utilisateur). « Artéfacts et relique » est une carte à
    part (voir artefacts.md § Place de la carte à l'écran).
@@ -127,7 +131,8 @@ Ce document décrit les conditions, l'inventaire et les réglages avancés.
      `compterAurasResPre` se règle dans
      « Réglages avancés » (point 9 ci-dessous).
    - **« Réinitialiser les conditions »**, en bas à droite de la grille, vide
-     en un clic les 16 champs (les 8 minimums et les 8 maximums), sans
+     en un clic les 16 champs (les 8 minimums et les 8 maximums) et décoche
+     les sorts de la précision par sort, sans
      toucher à « Stats de base exclues » ni aux autres réglages de l'écran
      (set, statistique principale, objectif…) — seules les VALEURS saisies
      sont concernées.
@@ -141,7 +146,7 @@ Ce document décrit les conditions, l'inventaire et les réglages avancés.
 ## Réglages avancés
 
 9. **« Réglages avancés »**. ⚠️ **Au bureau, en ligne** dans la colonne
-   repliable « Aura, exclusion, avancés », section de 294 px de son panneau,
+   repliable « Aura, exclusion, avancés », section de 302 px de son panneau,
    **sans titre** (ni icône ni en-tête : le téléphone garde le sien dans le
    panneau « Options »), après « Exclusion de runes », sur une seule colonne : pré-filtrage, puis
    les interrupteurs (voir

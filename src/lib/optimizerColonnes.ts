@@ -15,9 +15,9 @@ export type ConfigurationBureau = 'groupe-large' | 'groupe' | 'quatre-onglets';
 // Des places : le panneau retire 8 px, la gouttière en ajoute 10, soit
 // 18 px entre panneaux (décision de l'utilisateur : des écarts plus
 // serrés). La barre de défilement est dans le panneau, dont le cadre ne
-// défile jamais : un panneau compte son contour (2), son rembourrage (2 × 8)
-// et la barre (8) autour de son contenu ; `reglage` garde ainsi 294 px de
-// contenu, et « Monstre » 358. Les résultats, sans place, prennent toute
+// défile jamais : un panneau compte son contour (2), son rembourrage de
+// gauche (8) et la barre (8), qui fait la marge de droite, autour de son
+// contenu ; `reglage` garde ainsi 302 px de contenu, et « Monstre » 366. Les résultats, sans place, prennent toute
 // leur piste. `reglageLarge` : la place de « Monstre » (décision de
 // l'utilisateur : les deux colonnes de même largeur).
 export const LARGEURS_BUREAU = { monstre: 392, reglage: 328, reglageLarge: 392, resultats: 360, gouttiere: 10 } as const;
@@ -40,8 +40,10 @@ export interface DispositionBureau {
 // La largeur que les résultats demandent pour le tableau : sa largeur
 // minimale (`SEUIL_TABLEAU_PX`, TableauResultats.tsx, 661) plus ce que la
 // colonne ou l'onglet des résultats prennent autour de la zone : contour 2,
-// rembourrage 2 × 8 et barre réservée de 8, dans le panneau
-// (bureau/panneau.ts, `DEFILEMENT`).
+// rembourrage de gauche 8 et barre réservée de 8, dans le panneau
+// (bureau/panneau.ts, `DEFILEMENT`), plus 8 de marge : le rembourrage de
+// droite retiré n'a pas déplacé les seuils du tableau (ni les tailles de
+// frontière du banc qui les encadrent).
 export const RESULTATS_TABLEAU = 661 + 26;
 
 const GROUPE: OngletBureau[] = ['criteres', 'artefacts', 'complements'];

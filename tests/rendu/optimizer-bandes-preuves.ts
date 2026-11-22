@@ -36,7 +36,8 @@ export async function preuvesBandesEquipes(b: Banc): Promise<[boolean, string][]
   verifier(a.contains(a.querySelector('img[src*="leader_skill_"]')) && !a.textContent!.includes('Leader :')
     && cartes(a).length === 2 && [...a.querySelectorAll('button')].some(e => e.textContent === 'Modifier l’équipe'), 'bande : numéro sans leader, LeadPill, modifier et deux cartes');
   const centre = (e: Element) => { const r = e.getBoundingClientRect(); return r.top + r.height / 2; };
-  const titre = [...a.querySelectorAll('span')].find(e => e.textContent?.startsWith('Équipe 1'))!;
+  // Le numéro lui-même (son infobulle le porte), pas la case qu'il partage avec le bouton de Mes équipes.
+  const titre = a.querySelector<HTMLElement>('span[title="Équipe 1"]')!;
   const modifier = [...a.querySelectorAll('button')].find(e => e.textContent === 'Modifier l’équipe')!;
   // Une ligne : LeadPill, numéro lisible en entier, « Speed tune » et « Modifier l'équipe ».
   const speedTune = [...a.querySelectorAll('button')].find(e => e.textContent === 'Speed tune');
@@ -50,9 +51,13 @@ export async function preuvesBandesEquipes(b: Banc): Promise<[boolean, string][]
     }
     return hauts.size === 1;
   };
+  // Au doigt, « Speed tune » ne garde que son icône (son nom reste dans aria-label).
+  const auDoigt = matchMedia('(pointer: coarse)').matches;
   verifier([a.querySelector('img[src*="leader_skill_"]')!, modifier, ...(speedTune ? [speedTune] : [])].every(e => Math.abs(centre(e) - centre(titre)) < 2)
-    && titre.scrollWidth <= titre.clientWidth && [modifier, ...(speedTune ? [speedTune] : [])].every(unLigne),
+    && titre.scrollWidth <= titre.clientWidth && [modifier, ...(speedTune && !auDoigt ? [speedTune] : [])].every(unLigne),
     `en-tête : LeadPill, numéro entier, Speed tune et Modifier sur une seule ligne — ${[titre, modifier].map(centre).join(' / ')} · ${titre.scrollWidth}/${titre.clientWidth}`);
+  verifier(!!speedTune && Math.abs(centre(speedTune) - centre(modifier)) < 0.5,
+    `« Speed tune » et « Modifier l’équipe » à la même hauteur (${speedTune && centre(speedTune)} / ${centre(modifier)})`);
   verifier(libres.firstElementChild?.textContent === 'Sans équipe' && !!(a.compareDocumentPosition(libres) & Node.DOCUMENT_POSITION_FOLLOWING), 'les libres suivent sous Sans équipe');
   const styleA = getComputedStyle(a), styleB = getComputedStyle(autre);
   const jeton = (nom: string) => `rgb(${getComputedStyle(document.documentElement).getPropertyValue(nom).trim().split(/\s+/).join(', ')})`;
@@ -102,7 +107,10 @@ export async function preuvesBandesEquipes(b: Banc): Promise<[boolean, string][]
   verifier(!a.querySelector('[aria-label^="Lead inactif"]') && !autre.querySelector('[aria-label^="Lead inactif"]'), 'lead actif : aucune icône ni cible accessible');
   const geometrie = () => JSON.stringify(lignes.map(e => {
     const r = e.getBoundingClientRect();
-    return [r.x, r.y, r.width, r.height, ...[...e.querySelectorAll('button')].filter(b => !b.getAttribute('aria-label')?.startsWith('Lead inactif')).flatMap(b => {
+    // Le bouton de Mes équipes est centré entre le numéro et « Speed tune » (décision de
+    // l'utilisateur) : il suit le numéro, qui suit le lead. Les autres ne bougent pas.
+    return [r.x, r.y, r.width, r.height, ...[...e.querySelectorAll('button')].filter(b => !b.getAttribute('aria-label')?.startsWith('Lead inactif')
+      && !b.getAttribute('aria-label')?.includes('Mes équipes') && !b.getAttribute('aria-label')?.includes('builds des monstres')).flatMap(b => {
       const p = b.getBoundingClientRect(); return [p.x, p.y, p.width, p.height];
     })];
   }));

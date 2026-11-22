@@ -38,8 +38,10 @@ import {
   BuildCandidate,
   BuildRequirement,
   conditionsPaireFixePosees,
+  precisionJugee,
   respecteConditionsPaireFixe,
 } from './runeBuildOptim';
+import { lignesPrecisionDuBuild } from './precisionParSort';
 import { RelicContext } from './relicOptim';
 import { lignesBorneesDuBuild } from './contrainteSpeedTune';
 import type { LigneBornee } from './artifactOptim';
@@ -75,12 +77,15 @@ export interface CachesResolution {
   // plages (`lignesBorneesDuBuild`) : deux builds aux mêmes 206 admissibles
   // partagent le même objet, donc les mémoires indexées par identité.
   bornesSpeedTune: Map<string, LigneBornee[]>;
+  // Les lignes bornées de la précision par sort, une par écart à combler
+  // (`lignesPrecisionDuBuild`), même raison.
+  bornesPrecision: Map<string, LigneBornee[]>;
 }
 
 export function nouveauxCachesResolution(): CachesResolution {
   return {
     profils: new CacheProfilsParPaire(), preFiltre: new MemoPreFiltre(), rapide: new CachesResolutionRapide(),
-    reglage: new PreparationReglage(), bornesSpeedTune: new Map(),
+    reglage: new PreparationReglage(), bornesSpeedTune: new Map(), bornesPrecision: new Map(),
   };
 }
 
@@ -253,16 +258,29 @@ export function entreeResolutionDuBuild(e: {
   // sets activés donnent les 206 admissibles (`lignesBorneesDuBuild`) ;
   // aucune paire hors de ces plages n'est notée ni retenue. Les autres
   // champs gardent leur identité : les mémoires de la file restent valides.
-  const artifactParams: Omit<ArtifactSearchParams, 'evaluer'> = e.artifactParams.speedTune
-    ? {
-        ...e.artifactParams,
-        lignesBornees: lignesBorneesDuBuild(
-          e.artifactParams.speedTune,
-          computeStats(gear).find((s) => s.key === 'spd')?.total ?? 0,
-          gear.runes.map((r) => r.set),
-          e.caches?.bornesSpeedTune
-        ),
-      }
+  //
+  // ⚠️ **La précision par sort aussi** (`requirement.precisionParSort`) : la
+  // ligne du sort doit combler l'écart entre le minimum et la Précision jugée
+  // de CE build (`lignesPrecisionDuBuild`) ; ni artéfact ni relique ne porte
+  // la Précision de fiche. Les deux contraintes réunies forment un tableau
+  // neuf par build (cas rare : seule chacune prise à part garde l'identité).
+  const statsFiche = e.artifactParams.speedTune || e.requirement.precisionParSort ? computeStats(gear) : null;
+  const bornesSpeedTune = e.artifactParams.speedTune
+    ? lignesBorneesDuBuild(
+        e.artifactParams.speedTune,
+        statsFiche!.find((s) => s.key === 'spd')?.total ?? 0,
+        gear.runes.map((r) => r.set),
+        e.caches?.bornesSpeedTune
+      )
+    : null;
+  const bornesPrecision = e.requirement.precisionParSort
+    ? lignesPrecisionDuBuild(e.requirement.precisionParSort, precisionJugee(statsFiche!, e.requirement, propres), e.caches?.bornesPrecision)
+    : null;
+  const lignesBornees = bornesSpeedTune && bornesPrecision?.length
+    ? [...bornesSpeedTune, ...bornesPrecision]
+    : bornesSpeedTune ?? (bornesPrecision?.length ? bornesPrecision : null);
+  const artifactParams: Omit<ArtifactSearchParams, 'evaluer'> = lignesBornees
+    ? { ...e.artifactParams, lignesBornees }
     : e.artifactParams;
   return {
     gear,

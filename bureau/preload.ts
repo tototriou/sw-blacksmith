@@ -47,6 +47,7 @@ contextBridge.exposeInMainWorld(
       etat: () => ipcRenderer.invoke('bureau:swex-etat'),
       choisirDossier: () => ipcRenderer.invoke('bureau:swex-choisir-dossier'),
       choisirInvocateur: (fichier: string) => ipcRenderer.invoke('bureau:swex-choisir-invocateur', fichier),
+      aucunInvocateur: () => ipcRenderer.invoke('bureau:swex-aucun-invocateur'),
       oublier: () => ipcRenderer.invoke('bureau:swex-oublier'),
       surEtat: (rappel: (etat: unknown) => void) => {
         const ecouteur = (_e: unknown, etat: unknown) => rappel(etat);
@@ -62,12 +63,63 @@ contextBridge.exposeInMainWorld(
           ipcRenderer.removeListener('bureau:swex-export', ecouteur);
         };
       },
-      pret: (pageSansCompte: boolean) => ipcRenderer.send('bureau:swex-pret', pageSansCompte),
+      pret: (pageSansCompte: boolean, pageSansDimension: boolean) =>
+        ipcRenderer.send('bureau:swex-pret', pageSansCompte, pageSansDimension),
       lu: (modifie: number) => ipcRenderer.send('bureau:swex-lu', modifie),
+      // L'arène dimensionnelle, tenue par le plugin SWEX (dimension.json).
+      surDimension: (rappel: (dim: unknown) => void) => {
+        const ecouteur = (_e: unknown, dim: unknown) => rappel(dim);
+        ipcRenderer.on('bureau:swex-dimension', ecouteur);
+        return () => {
+          ipcRenderer.removeListener('bureau:swex-dimension', ecouteur);
+        };
+      },
+      dimensionLue: (cle: number) => ipcRenderer.send('bureau:swex-dimension-lue', cle),
+      // Le direct : le fichier live du plugin, ligne à ligne, l'interrupteur,
+      // et « Mettre à jour ».
+      etatDirect: () => ipcRenderer.invoke('bureau:swex-direct-etat'),
+      activerDirect: (oui: boolean) => ipcRenderer.invoke('bureau:swex-direct-activer', oui),
+      surEtatDirect: (rappel: (etat: unknown) => void) => {
+        const ecouteur = (_e: unknown, etat: unknown) => rappel(etat);
+        ipcRenderer.on('bureau:swex-direct-etat', ecouteur);
+        return () => {
+          ipcRenderer.removeListener('bureau:swex-direct-etat', ecouteur);
+        };
+      },
+      surLignesDirect: (rappel: (lignes: unknown) => void) => {
+        const ecouteur = (_e: unknown, lignes: unknown) => rappel(lignes);
+        ipcRenderer.on('bureau:swex-direct-lignes', ecouteur);
+        return () => {
+          ipcRenderer.removeListener('bureau:swex-direct-lignes', ecouteur);
+        };
+      },
+      mettreAJour: () => ipcRenderer.invoke('bureau:swex-mettre-a-jour'),
+      // Les sièges, tirés des fichiers de guilde du plugin, et leur
+      // changement (une ligne ajoutée, une session archivée).
+      sieges: () => ipcRenderer.invoke('bureau:swex-sieges'),
+      surSiegesChanges: (rappel: () => void) => {
+        const ecouteur = () => rappel();
+        ipcRenderer.on('bureau:swex-sieges-changes', ecouteur);
+        return () => {
+          ipcRenderer.removeListener('bureau:swex-sieges-changes', ecouteur);
+        };
+      },
+      // L'historique du compte, tiré de l'archive du plugin : la liste des
+      // états, un état, et leur changement (une connexion archivée).
+      historique: () => ipcRenderer.invoke('bureau:swex-historique'),
+      etatHistorique: (cle: string) => ipcRenderer.invoke('bureau:swex-historique-etat', cle),
+      surHistoriqueChange: (rappel: () => void) => {
+        const ecouteur = () => rappel();
+        ipcRenderer.on('bureau:swex-historique-change', ecouteur);
+        return () => {
+          ipcRenderer.removeListener('bureau:swex-historique-change', ecouteur);
+        };
+      },
     }),
     // La session en cours (voir bureau/session.ts) : son état et ses
     // changements, « Garder mes données » redit à chaque changement,
-    // « Sauvegarder », « Sauvegarder sous… », le dossier SW Blacksmith
+    // « Sauvegarder », « Sauvegarder sous… », « Charger… » (choisir, confirmer,
+    // puis la reprise au redémarrage), le dossier SW Blacksmith
     // (« Choisir… », « Retirer ») et l'oubli de « Tout supprimer ».
     session: Object.freeze({
       etat: () => ipcRenderer.invoke('bureau:session-etat'),
@@ -81,6 +133,9 @@ contextBridge.exposeInMainWorld(
       retenir: (oui: boolean) => ipcRenderer.invoke('bureau:session-retenir', oui),
       sauvegarder: (texte: string, nomPropose: string) => ipcRenderer.invoke('bureau:session-sauvegarder', texte, nomPropose),
       sauvegarderSous: (texte: string, nomPropose: string) => ipcRenderer.invoke('bureau:session-sauvegarder-sous', texte, nomPropose),
+      charger: () => ipcRenderer.invoke('bureau:session-charger'),
+      confirmerChargement: () => ipcRenderer.invoke('bureau:session-charger-confirmer'),
+      aCharger: () => ipcRenderer.invoke('bureau:session-a-charger'),
       choisirDossier: () => ipcRenderer.invoke('bureau:session-choisir-dossier'),
       oublierDossier: () => ipcRenderer.invoke('bureau:session-oublier-dossier'),
       oublier: () => ipcRenderer.invoke('bureau:session-oublier'),

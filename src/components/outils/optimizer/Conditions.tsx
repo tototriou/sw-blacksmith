@@ -1,11 +1,12 @@
 import HelpPopover from '../../HelpPopover';
-import { Interrupteur, NumberField, Bouton } from '../../../ui';
+import { Interrupteur, NumberField, Bouton, Pastille } from '../../../ui';
 import { RECO_STATS } from '../../../types';
 import { BASE_TOGGLE_STATS, CAPPED_100 } from './constantes';
 import { Fragment, type Dispatch, type ReactNode, type SetStateAction } from 'react';
 import { RotateCcw } from 'lucide-react';
 import { type StatKey } from '../../../lib/effects';
 import { useTraduction } from '../../../hooks/useLangue';
+import { SORTS_PRECISION, type SortPrecision } from '../../../lib/precisionParSort';
 
 export interface ConditionsProps {
   excludeBase: boolean;
@@ -17,11 +18,11 @@ export interface ConditionsProps {
   setMinStats: Dispatch<SetStateAction<Partial<Record<StatKey, number>>>>;
   setMaxStats: Dispatch<SetStateAction<Partial<Record<StatKey, number>>>>;
   // Variante de « Critères » au bureau (`bureau/ConditionsBureau.tsx`, section
-  // de 294 px) : la colonne des libellés prend la largeur du plus long d'entre
+  // de 302 px) : la colonne des libellés prend la largeur du plus long d'entre
   // eux au lieu de 90 px au moins, les colonnes s'écartent de 12 px au lieu de
   // 16, et la grille est centrée dans la section. « Min » et « Max » y sont des
   // en-têtes de colonne posés une fois, comme au téléphone : collés à chaque
-  // champ, ils faisaient déborder la grille des 294 px (≈ 322). Le téléphone
+  // champ, ils faisaient déborder la grille de la colonne (≈ 322). Le téléphone
   // ne la passe pas.
   bureau?: boolean;
   // L'encart « Speed tune » du membre contraint
@@ -30,9 +31,16 @@ export interface ConditionsProps {
   // ni ne se saisit ; la VIT maximum reste une condition du membre.
   speedTune?: ReactNode;
   vitessePossedee?: boolean;
+  // Précision minimale PAR SORT (precisionParSort.ts) : les sorts cochés sous
+  // la ligne « Précision ». `sortsDisponibles` : ceux que le monstre peut
+  // lancer (`sortsPrecisionDisponibles`) ; un sort absent reste décochable.
+  // Absents (gabarits du banc sans état) : la rangée ne s'affiche pas.
+  sortsPrecision?: SortPrecision[];
+  setSortsPrecision?: Dispatch<SetStateAction<SortPrecision[]>>;
+  sortsDisponibles?: readonly SortPrecision[];
 }
 
-export default function Conditions({ excludeBase, setExcludeBase, baseOf, artifactFloorOf, minStats, maxStats, setMinStats, setMaxStats, bureau = false, speedTune, vitessePossedee = false }: ConditionsProps) {
+export default function Conditions({ excludeBase, setExcludeBase, baseOf, artifactFloorOf, minStats, maxStats, setMinStats, setMaxStats, bureau = false, speedTune, vitessePossedee = false, sortsPrecision, setSortsPrecision, sortsDisponibles = SORTS_PRECISION }: ConditionsProps) {
   const textes = useTraduction();
   const jeu = textes.jeu;
   const k = textes.optimizer.conditions;
@@ -99,6 +107,7 @@ export default function Conditions({ excludeBase, setExcludeBase, baseOf, artifa
           const minDisplayed = minTotal == null ? null : bonusMode ? minTotal - base : minTotal;
           const maxTotalVal = maxStats[st.key] ?? null;
           const maxDisplayed = maxTotalVal == null ? null : bonusMode ? maxTotalVal - base : maxTotalVal;
+          const parSort = st.key === 'acc' && (sortsPrecision?.length ?? 0) > 0;
 
           return (
             <Fragment key={st.key}>
@@ -128,7 +137,7 @@ export default function Conditions({ excludeBase, setExcludeBase, baseOf, artifa
                   suffix={st.suffix || undefined}
                   boxWidth="w-24"
                   ariaLabel={`${jeu.stats[st.key]} minimum`}
-                  title={k.minimum}
+                  title={parSort ? k.minimumParSort(sortsPrecision!.map((n) => k.sortCourt(n)).join(', ')) : k.minimum}
                 />
                 {!bureau && <span className="hidden sm:inline text-ink-dim text-micro">{k.min}</span>}
               </div>
@@ -181,6 +190,41 @@ export default function Conditions({ excludeBase, setExcludeBase, baseOf, artifa
                 />
                 {!bureau && <span className="hidden sm:inline text-ink-dim text-micro">{k.max}</span>}
               </div>
+              {/* ⚠️ Rangée TOUJOURS posée sous « Précision » : cocher un sort ne
+                  déplace rien (un clic ne déplace jamais ce qu'on vient de
+                  cliquer). Les pastilles occupent les colonnes Min et Max. */}
+              {st.key === 'acc' && sortsPrecision && setSortsPrecision && (
+                <>
+                  <span className="flex items-center gap-1 text-xs text-ink-dim">
+                    {k.parSort}
+                    <HelpPopover title={k.parSort}>{k.parSortAide}</HelpPopover>
+                  </span>
+                  <div className="col-span-2 flex items-center gap-1.5">
+                    {SORTS_PRECISION.map((n) => {
+                      const actif = sortsPrecision.includes(n);
+                      const disponible = sortsDisponibles.includes(n);
+                      return (
+                        <Pastille
+                          key={n}
+                          actif={actif}
+                          libelle={k.sortCourt(n)}
+                          aria-label={k.sortAria(n)}
+                          title={disponible ? k.sortAria(n) : k.sortIndisponible}
+                          // Un sort coché reste décochable même indisponible
+                          // (recette importée d'un autre monstre).
+                          disabled={!disponible && !actif}
+                          className="disabled:opacity-40"
+                          onClick={() =>
+                            setSortsPrecision((prev) =>
+                              prev.includes(n) ? prev.filter((x) => x !== n) : SORTS_PRECISION.filter((x) => x === n || prev.includes(x))
+                            )
+                          }
+                        />
+                      );
+                    })}
+                  </div>
+                </>
+              )}
             </Fragment>
           );
         })}
@@ -193,6 +237,7 @@ export default function Conditions({ excludeBase, setExcludeBase, baseOf, artifa
           onClick={() => {
             setMinStats({});
             setMaxStats({});
+            setSortsPrecision?.([]);
           }}
           icone={<RotateCcw size={13} />}
           libelle={k.reinitialiser}

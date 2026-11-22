@@ -4,7 +4,7 @@ import { appliquerCriteres, baseCompleteCriteres } from '../src/lib/criteresOpti
 import { paireRespecteLignes } from '../src/lib/artifactOptim';
 import { leadEffectifMembreOptimizer } from '../src/lib/equipesOptimizer';
 import { consommerImportOptimizer } from '../src/lib/importEquipes';
-import { importerSpeedTuneOptimizer, type EtatPlanSpeedTune } from '../src/lib/importSpeedTuneOptimizer';
+import { deckDimensionnel, importerSpeedTuneOptimizer, type EtatPlanSpeedTune } from '../src/lib/importSpeedTuneOptimizer';
 import { planDepuisSpeedTune, planTient } from '../src/lib/planSpeedTune';
 import { exclusionSelectorKey, type ExclusionSourceData } from '../src/lib/optimizerExclusion';
 import { cleMemoireMembre, type StockageOptimizer } from '../src/lib/optimizerMemberStorage';
@@ -118,7 +118,7 @@ export function testImportSpeedTuneLignesIgnorees() {
 function cardinalite(nombre: number) {
   const data = sources(), p = importerSpeedTuneOptimizer(Array.from({ length: nombre }, (_, i) => ligne(i + 1)), lead, data, fr), r = consommer(p, data);
   egal(r.rapport.membresImportes, nombre, 'tous les membres retenus sont importés');
-  egal(r.rapport.equipesCreees, 0, 'aucune équipe hors de 2 à 5 membres');
+  egal(r.rapport.equipesCreees, 0, 'aucune équipe hors de 2 à 6 membres');
   egal(r.rapport.listeCreee !== null, nombre > 0, 'liste créée seulement si non vide');
   egal(r.rapport.equipesNonCreees[0].lead, p.equipes[0].lead, 'lead du camp nommé même sans équipe');
   ok(r.rapport.messages.some(m => m.includes('n’est appliqué à personne')), 'absence d’application dite');
@@ -129,7 +129,7 @@ function cardinalite(nombre: number) {
 }
 export function testImportSpeedTuneZeroMembre() { titre('Import speed tuning · zéro membre'); cardinalite(0); }
 export function testImportSpeedTuneUnMembre() { titre('Import speed tuning · un membre sans équipe'); cardinalite(1); }
-export function testImportSpeedTuneSixMembres() { titre('Import speed tuning · six espèces sans équipe'); cardinalite(6); }
+export function testImportSpeedTuneSeptMembres() { titre('Import speed tuning · sept espèces sans équipe'); cardinalite(7); }
 export function testImportSpeedTuneAvecDeckOrigine() {
   titre('Import speed tuning · exemplaires du deck d’origine facultatif');
   for (const source of ['defense', 'offense'] as const) {
@@ -138,7 +138,7 @@ export function testImportSpeedTuneAvecDeckOrigine() {
     const prefixe = source === 'defense' ? 'siege-defense' : 'siege-offense';
     egal(p.membres.map(m => exclusionSelectorKey(m.selector)), [`${prefixe}:${origine.teamId}:1`, `${prefixe}:${origine.teamId}:0`], 'slots retrouvés par espèce après déplacement des lignes');
     egal(p.equipes[0].leader, p.membres[1].selector, 'leader du slot 0, pas première ligne');
-    egal([...r.stockage.memories.values()].map(m => m.criteres.relicMainChoice), ['equipped', 'equipped'], 'défaut de relique du deck, pas de la Box');
+    egal([...r.stockage.memories.values()].map(m => m.criteres.relicMainChoice), ['libre', 'libre'], 'défaut de relique « libre », relique du deck portée ou non');
     egal(p.membres.map(m => m.criteres.vitesse?.minimum), [201, 227], 'saisies actuelles, pas vitesses 999 du deck');
     egal(p.equipes[0].lead?.amount, 30, 'lead du camp actuel, pas team.lead = 99');
     const absent = importerSpeedTuneOptimizer([ligne(1)], lead, data, fr, { source, teamId: 'absent' });
@@ -154,6 +154,23 @@ export function testImportSpeedTuneAvecDeckOrigine() {
     egal(invalide.membres.map(m => m.selector), [{ source: source === 'defense' ? 'siege-defense' : 'siege-offense', teamId: team.id, slotIndex: 0 }],
       'slot du deck sans équipement gardé, non remplacé par Box');
   }
+}
+export function testImportSpeedTuneDeckArene() {
+  titre('Import speed tuning · deck d’arène : exemplaires de la Box ; arène dimensionnelle : refusée');
+  for (const source of ['arene-defense', 'arene-offense', 'arene-interserveur'] as const) {
+    // Les monstres 1 et 2 sont aussi dans un deck de siège : l'arène ne le
+    // reprend pas, l'Optimizer ne connaît pas ses équipes.
+    const p = importerSpeedTuneOptimizer([ligne(1), ligne(2)], lead, sources(), fr, { source, teamId: 'a1' });
+    egal(p.membres.map(m => exclusionSelectorKey(m.selector)), ['box:box-1', 'box:box-2'], `${source} : chaque monstre avec son exemplaire de la Box`);
+    egal(p.ignores.length, 0, `${source} : aucun monstre écarté faute de deck d’origine`);
+  }
+  for (const source of ['arene-dimension-defense', 'arene-dimension-offense'] as const) {
+    ok(deckDimensionnel({ source, teamId: 'x' }), `${source} : deck de l’arène dimensionnelle`);
+    const p = importerSpeedTuneOptimizer([ligne(1), ligne(2)], lead, sources(), fr, { source, teamId: 'x' });
+    egal([p.membres.length, p.ignores.map(i => i.raison)], [0, [fr.optimizer.importsEquipe.speedTune.deckDimensionnel, fr.optimizer.importsEquipe.speedTune.deckDimensionnel]],
+      `${source} : rien n’est exporté, et la raison est dite`);
+  }
+  ok(!deckDimensionnel({ source: 'arene-defense', teamId: 'x' }) && !deckDimensionnel(undefined), 'l’arène classique et l’outil seul ne sont pas dimensionnels');
 }
 export function testImportSpeedTuneSansDeckOrigine() {
   titre('Import speed tuning · premier exemplaire Box, RTA, défense puis offense');
@@ -209,8 +226,8 @@ export function testImportSpeedTuneCompositionRetrouvee() {
   egal(p.membres.map(m => exclusionSelectorKey(m.selector)), ['siege-offense:o1:2', 'siege-offense:o1:0', 'siege-offense:o1:1'],
     'camp complet retrouvé dans l’offense, avant les copies Box');
   egal(p.equipes[0].leader, p.membres[1].selector, 'leader du deck retrouvé, même après permutation');
-  egal([...consommer(p, data).stockage.memories.values()].map(m => m.criteres.relicMainChoice), ['equipped', 'equipped', 'equipped'],
-    'défauts construits sur les exemplaires du deck retrouvé');
+  egal([...consommer(p, data).stockage.memories.values()].map(m => m.criteres.relicMainChoice), ['libre', 'libre', 'libre'],
+    'défaut de relique « libre » sur les exemplaires du deck retrouvé');
 }
 export function testImportSpeedTuneCompositionAmbigue() {
   titre('Import speed tuning · première composition exacte, défense puis offense');
@@ -320,8 +337,8 @@ export function testImportSpeedTunePlanMasqueEtRefus() {
 export const verificationsImportSpeedTune: [string, () => void][] = [
   testImportSpeedTuneFicheSwift, testImportSpeedTuneFicheSansSwift, testImportSpeedTuneEcartSwift,
   testImportSpeedTuneLigne206, testImportSpeedTuneLeadElement, testImportSpeedTuneLignesIgnorees,
-  testImportSpeedTuneZeroMembre, testImportSpeedTuneUnMembre, testImportSpeedTuneSixMembres,
-  testImportSpeedTuneAvecDeckOrigine, testImportSpeedTuneSansDeckOrigine, testImportSpeedTunePureteEtAnalyse,
+  testImportSpeedTuneZeroMembre, testImportSpeedTuneUnMembre, testImportSpeedTuneSeptMembres,
+  testImportSpeedTuneAvecDeckOrigine, testImportSpeedTuneDeckArene, testImportSpeedTuneSansDeckOrigine, testImportSpeedTunePureteEtAnalyse,
   testImportSpeedTuneCopiesDeckEtReverification,
   testImportSpeedTuneCompositionRetrouvee, testImportSpeedTuneCompositionAmbigue,
   testImportSpeedTuneCompositionModifiee, testImportSpeedTuneCompositionCopies,

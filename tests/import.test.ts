@@ -11,14 +11,27 @@ import {
   parseAccountSource,
   parseSiegeDefense,
   parseSiegeOffense,
+  parseArenaDefense,
+  parseArenaInterserveurDefense,
+  parseArenaOffense,
+  parseDecksEnregistres,
+  decomposerDeckSeq,
+  contenuDuDeckType,
+  sousContenuDuDeck,
+  parseDimensionDefense,
+  parseDimensionOffense,
+  parseDimensionRunes,
   parseRuneMarkerLabels,
   parseUsedRuneIds,
   parseUsedRuneIdsParPerimetre,
   parseWizardId,
   unionRunesUtilisees,
 } from '../src/lib/importAccount';
+import { rejouerDimension } from './plugin-swex-dimension.test';
+import { areneClassiqueVide, equipesAreneClassique, equipesDimension, mapSiegeTeams } from '../src/lib/applyAccount';
+import type { Monster } from '../src/types';
 import { formatRelicUnique } from '../src/lib/effects';
-import { egal, exportReel, exportExemplairesMultiples, exportSynthetique, ignore, ok, titre } from './outils';
+import { egal, exportReel, exportExemplairesMultiples, exportSynthetique, ignore, journalSwexReel, ok, saisonDimensionMiniature, titre } from './outils';
 import { fr } from '../src/i18n/fr';
 
 export default function testImport() {
@@ -179,6 +192,146 @@ export default function testImport() {
   const off = parseSiegeOffense(objet, fr);
   egal(off.decks!.length, 1, 'siège attaque : seuls les decks de type 22');
   egal(off.decks![0].slots[0]!.com2usId, 14314, 'siège attaque : le leader est en tête');
+  egal(off.decks![0].slots.length, 3, 'siège attaque : trois places');
+
+  // Arène : des decks de 4 places. Le fichier d'exemple porte une attaque de
+  // type 1 (unité 101), une défense classique (unité 102, ids nus) et une
+  // défense interserveur (101 en position 1 et 102 en position 2, listées
+  // dans le désordre).
+  const com2us = (d: { slots: ({ com2usId: number } | null)[] }) => d.slots.map((s) => s?.com2usId ?? null);
+  const offArene = parseArenaOffense(objet, fr);
+  egal(offArene.decks.map(com2us), [[15105, null, null, null]], 'arène attaque : les decks de type 1, sur 4 places');
+  egal(com2us(parseArenaDefense(objet, fr).decks[0]), [14314, null, null, null], 'arène défense : defense_deck_info, sur 4 places');
+  egal(
+    com2us(parseArenaInterserveurDefense(objet, fr).decks[0]),
+    [15105, 14314, null, null],
+    'arène interserveur : l’ordre des positions, la position 1 en leader'
+  );
+  ok(
+    parseArenaInterserveurDefense(objet, fr).decks[0].slots[0]!.flatRuneSpeed > 0,
+    'arène interserveur : les runes du preset de la défense'
+  );
+  const sansArene = { ...objet, deck_list: [], defense_deck_info: undefined, server_arena_defense_deck_info: undefined };
+  egal(
+    [parseArenaOffense(sansArene, fr).error, parseArenaDefense(sansArene, fr).error, parseArenaInterserveurDefense(sansArene, fr).error],
+    [fr.importCompte.sansOffenseArene, fr.importCompte.sansDefenseArene, fr.importCompte.sansDefenseInterserveur],
+    'arène : sans ses données, chaque lecture dit ce qui manque'
+  );
+
+  /* --- Tous les decks enregistrés (`deck_list`) ---------------------------- */
+
+  // Le fichier d'exemple : siège (22, seq 7), arène (1, seq 8), un type 3
+  // (seq 9), un type 24 sur 8 cases (seq 201 : 101 et 102 placés en cases 1
+  // et 3, 102 leader) et un type 6 vide.
+  const decks = parseDecksEnregistres(objet);
+  egal(
+    decks.map((d) => [d.deckType, d.contenu, d.sousContenu, d.categorie, d.emplacement, com2us(d)]),
+    [
+      [22, 'siege-offense', null, null, 7, [14314, 15105]],
+      [1, 'arene-offense', null, null, 8, [15105]],
+      [3, 'raid-mondes', null, null, 9, [14314]],
+      [24, 'cairos', 'taniere-dragon', 2, 1, [14314, 15105]],
+    ],
+    'decks enregistrés : tous les types, une place par monstre, leader en tête ; le deck vide est écarté'
+  );
+  ok(decks.flatMap((d) => d.slots).every((s) => s === null || (Number.isInteger(s.unitId) && s.unitId! > 0)),
+    'decks enregistrés : chaque case garde son exemplaire (unit_id)');
+  egal(
+    decks[3].slots[1]!.gear?.runes.map((r) => r.id),
+    [1004],
+    'decks enregistrés : le preset du deck, malgré les cases vides'
+  );
+  egal([decomposerDeckSeq(1001), decomposerDeckSeq(15)], [{ categorie: 10, emplacement: 1 }, { categorie: null, emplacement: 15 }], 'deck_seq : catégorie × 100 + emplacement à partir de 100');
+  egal(
+    [sousContenuDuDeck('subjugation', 10), sousContenuDuDeck('faille-mondes', 4), sousContenuDuDeck('cairos', 7), sousContenuDuDeck('temple-chaos', null)],
+    ['subjugation-boss', 'bete-radiance', null, null],
+    'decks enregistrés : la catégorie nomme le donjon quand elle est relevée, null sinon'
+  );
+  egal(contenuDuDeckType(99), 'autre', 'decks enregistrés : un deck_type non relevé sort en « autre »');
+  egal(parseDecksEnregistres('{oops'), [], 'decks enregistrés : fichier illisible → aucun deck');
+
+  /* --- Arène dimensionnelle : la saison tenue par le plugin SWEX -------- */
+
+  // La saison miniature (la réponse du jeu, telle que le plugin l'écrit).
+  const saison = saisonDimensionMiniature();
+  const defDim = parseDimensionDefense(saison, fr).decks[0];
+  egal(com2us(defDim), [15105, 14314, null, null], 'dimension défense : defense_deck_info, leader en tête, 4 places');
+  // 900001 sans rune : tout le build par défaut de 14314 (VIT 42 + 15,
+  // Violent + Volonté).
+  egal(
+    [defDim.slots[1]!.flatRuneSpeed, [...defDim.slots[1]!.sets].sort(), defDim.slots[1]!.gear!.runes.length],
+    [57, ['violent', 'will'], 6],
+    'dimension défense : un monstre sans rune porte le build par défaut de son espèce'
+  );
+  // 900002 : ses runes gagnées en 5 et 6, le build par défaut de 15105 en 1 à
+  // 4 (VIT 42 + 10 + 20 meulée +3 = 75) ; les VIT 30 des runes par défaut 5
+  // et 6 ne comptent pas.
+  egal(
+    [defDim.slots[0]!.flatRuneSpeed, defDim.slots[0]!.swift, defDim.slots[0]!.gear!.runes.map((r) => r.slot)],
+    [75, true, [1, 2, 3, 4, 5, 6]],
+    'dimension défense : un emplacement sans rune gagnée prend la rune par défaut, les autres gardent la leur'
+  );
+  // Les runes gagnées : l'inventaire du mode et celles des monstres de la box,
+  // pas celles des builds par défaut.
+  egal(
+    parseDimensionRunes(saison).map((r) => r.id).sort(),
+    [2000005, 2000006, 2000100],
+    'dimension runes : l’inventaire et les runes portées, sans les builds par défaut'
+  );
+  egal(parseDimensionRunes(null), [], 'dimension runes : sans saison, aucune');
+  egal(
+    [parseDimensionDefense(null, fr).error, parseDimensionDefense({ defense_deck_info: { unit_id_list: [[123, 0, 0, 0]] } }, fr).error],
+    [fr.importCompte.sansDefenseDimension, fr.importCompte.defenseDimensionVide],
+    'dimension défense : sans saison, ou sans monstre connu, la lecture le dit'
+  );
+
+  // L'attaque : les équipes de type 28 de l'export, résolues dans la box.
+  const avecAttaqueDim = {
+    ...objet,
+    deck_recent_list: [
+      { type: 1, sub_type: 1, unit_id_list: [101, 0, 0, 0], leader_unit_id: 101, equip: [] },
+      { type: 28, sub_type: 1, unit_id_list: [900001, 900003, 900002, 0, 0, 0, 0, 0], leader_unit_id: 900002, equip: [] },
+    ],
+  };
+  egal(
+    parseDimensionOffense(avecAttaqueDim, saison, fr).decks.map(com2us),
+    [[15105, 14314, 14314, null]],
+    'dimension attaque : les équipes de type 28, leader en tête'
+  );
+  egal(
+    [parseDimensionOffense(avecAttaqueDim, null, fr).error, parseDimensionOffense(objet, saison, fr).error],
+    [fr.importCompte.offenseDimensionSansSaison, fr.importCompte.sansOffenseDimension],
+    'dimension attaque : sans saison, ou sans équipe de type 28, la lecture le dit'
+  );
+
+  // Ce que l'app applique à chaque saison du dossier SW Exporter : la défense
+  // et les attaques, avec les monstres de l'app.
+  const monstre = (id: string, speed: number) => ({ id, name: id, element: 'wind', stats: { speed } }) as unknown as Monster;
+  const parCom2us = new Map<number, Monster>([[14314, monstre('m14314', 100)], [15105, monstre('m15105', 105)]]);
+  const dim = equipesDimension(saison!, avecAttaqueDim.deck_recent_list, parCom2us, fr);
+  egal(
+    [dim.defense.teams.map((e) => e.slots.map((s) => s.monsterId)), dim.offense.teams.length, dim.defense.missing + dim.offense.missing],
+    [[['m15105', 'm14314', null, null]], 1, 0],
+    'dimension : la défense et les attaques, prêtes pour les états'
+  );
+
+  // L'arène classique, prête pour les états — partagée par l'import complet et
+  // le rattrapage du dossier SW Exporter (arène vide).
+  const classique = equipesAreneClassique(objet, parCom2us, fr);
+  egal(
+    [classique.defense.teams.length, classique.offense.teams.length, classique.interserveur.teams.length],
+    [1, 1, 1],
+    'arène classique : défense, offense et interserveur de l’export'
+  );
+  const siegeMappe = mapSiegeTeams(parseSiegeOffense(objet, fr).decks!, parCom2us);
+  egal(siegeMappe.teams[0].slots[0].unitId, parseSiegeOffense(objet, fr).decks![0].slots[0]!.unitId,
+    'siège : l’exemplaire de chaque monstre suit le deck jusqu’à la page Siège');
+  ok(Number.isInteger(siegeMappe.teams[0].slots[0].unitId), 'siège : un exemplaire connu');
+  ok(
+    areneClassiqueVide({ defense: [], offense: [], interserveur: [] }) &&
+      !areneClassiqueVide({ defense: [], offense: [{}], interserveur: [] }),
+    'arène classique vide : aucune équipe d’aucun côté, et elle seule'
+  );
 
   /* --- Runes utilisées (decks tous contenus + RTA) --------------------- */
 
@@ -206,7 +359,9 @@ export default function testImport() {
   // sinon ce que l'unité porte ». Le fichier d'exemple ajoute :
   //  - défense d'arène (`defense_deck_info`, unité 102 sans preset) ;
   //  - défense d'arène de serveur (unité 101, preset 1004, ids en objets) ;
-  //  - un deck de type 3 (ni siège ni arène) → « autres ».
+  //  - un deck de type 3 (ni siège ni arène) → « autres » ;
+  //  - un deck de type 24 sur 8 cases (unité 101 preset 1004, unité 102 sans
+  //    preset) → « autres » aussi.
   const parPerimetre = parseUsedRuneIdsParPerimetre(objet);
   egal(parPerimetre.rta, [1001, 1002, 1003, 2001, 2002, 9002], 'périmètre RTA : les presets RTA');
   egal(parPerimetre['siege-defense'], [1001, 1002, 1003, 2001, 2002], 'périmètre siège — défense');
@@ -221,7 +376,7 @@ export default function testImport() {
     [1004, 2001, 2002],
     'périmètre arène — défense : les deux défenses, ids nus et en objets'
   );
-  egal(parPerimetre.autres, [2001, 2002], 'périmètre autres : tout autre deck_type');
+  egal(parPerimetre.autres, [1004, 2001, 2002], 'périmètre autres : tout autre deck_type');
   egal(unionRunesUtilisees(parPerimetre), utilisees, 'l’union des périmètres = les runes utilisées');
   egal(
     unionRunesUtilisees(parPerimetre, ['siege-attaque', 'arene-defense']),
@@ -364,4 +519,48 @@ export default function testImport() {
   );
   const marquees = parseAccountInventory(reelObjet, fr).runes.filter((r) => r.marker !== undefined).length;
   ok(marquees > 0, `export réel : ${marquees} runes marquées`);
+  // Arène : des attaques de 4 monstres (15 relevées), et deux défenses pleines.
+  // Leur leader n'est pas forcément le même : le joueur compose chacune.
+  const offAreneReel = parseArenaOffense(reelObjet, fr).decks;
+  ok(
+    offAreneReel.length > 0 && offAreneReel.every((dk) => dk.slots.length === 4 && dk.slots[0] !== null),
+    `export réel : ${offAreneReel.length} attaques d'arène, leader en tête, sur 4 places`
+  );
+  const defReel = parseArenaDefense(reelObjet, fr).decks[0];
+  const interReel = parseArenaInterserveurDefense(reelObjet, fr).decks[0];
+  ok(
+    !!defReel && !!interReel && defReel.slots.every(Boolean) && interReel.slots.every(Boolean),
+    'export réel : défense d’arène et défense interserveur pleines'
+  );
+
+  // Arène dimensionnelle : la saison réelle telle que le plugin la tient (le
+  // journal SWEX réel rejoué dans son moteur) — la défense pleine, chaque
+  // monstre avec 6 runes (les siennes ou celles du build par défaut) ;
+  // l'attaque de type 28 de l'export, résolue dans sa box.
+  const journalReel = journalSwexReel();
+  if (!journalReel) {
+    ignore('journal réel : box dimensionnelle', 'journal SWEX réel (full_log.txt) absent');
+    return;
+  }
+  const saisonReelle = rejouerDimension(journalReel).tenues.get(Number(parseWizardId(reelObjet))) ?? null;
+  ok(saisonReelle !== null, 'journal réel : la saison de l’invocateur de l’export, tenue par le plugin');
+  const defDimReel = parseDimensionDefense(saisonReelle, fr).decks[0];
+  ok(
+    !!defDimReel && defDimReel.slots.every((s) => s !== null && s.gear!.runes.length === 6),
+    'journal réel : défense dimensionnelle pleine, 6 runes par monstre'
+  );
+  const offDimReel = parseDimensionOffense(reelObjet, saisonReelle, fr);
+  ok(
+    offDimReel.decks.length > 0 && offDimReel.decks.every((dk) => dk.slots.every((s) => s !== null)),
+    `journal réel : ${offDimReel.decks.length} attaque(s) dimensionnelle(s) de l'export, résolue(s) dans la box ${offDimReel.error ?? ''}`
+  );
+  if (!saisonReelle?.deck_recent_list) {
+    ignore('journal réel : attaques vues par le plugin', 'aucun combat d’arène dimensionnelle dans ce journal');
+    return;
+  }
+  const offDimPlugin = parseDimensionOffense({ deck_recent_list: saisonReelle.deck_recent_list }, saisonReelle, fr);
+  ok(
+    offDimPlugin.decks.length > 0 && offDimPlugin.decks.every((dk) => dk.slots.every((s) => s !== null)),
+    `journal réel : ${offDimPlugin.decks.length} attaque(s) vue(s) jouer par le plugin, résolue(s) dans la box ${offDimPlugin.error ?? ''}`
+  );
 }

@@ -61,8 +61,8 @@ export default function testBancSelection() {
   egal(hors.details.map((d) => d.regle), ['aucun', 'aucun'], 'fichiers hors table : règle « aucun »');
 
   // Mélange : l'union, dans l'ordre de la table, les fichiers hors table signalés à part.
-  const melange = ecransPourFichiers(['src/pages/MechanicsPage.tsx', 'src/pages/ComingSoon.tsx', 'README.md']);
-  egal(melange.ecrans.map((e) => e.id), ['mecaniques', 'arene'], 'union des écrans, dans l’ordre de la table');
+  const melange = ecransPourFichiers(['src/pages/MechanicsPage.tsx', 'src/pages/ArenePage.tsx', 'README.md']);
+  egal(melange.ecrans.map((e) => e.id), ['mecaniques', 'arene', 'arene-dimensionnelle'], 'union des écrans, dans l’ordre de la table');
   egal(melange.horsTable, ['README.md'], 'le fichier hors table reste signalé à côté des autres');
 
   // Normalisation et doublons.

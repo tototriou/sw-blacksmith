@@ -26,7 +26,7 @@ IndexedDB n'a aucun de ces défauts, et son **structured clone** évite le
 ### Ce qu'on stocke
 
 Une base `swblacksmith`, un store `account`, **une clé fixe** `current` :
-`{ schema, savedAt, box, runes, artifacts, relics, crafts, usedRuneIds, relicUsageById, runeMarkerLabels }`.
+`{ schema, savedAt, box, runes, artifacts, relics, crafts, usedRuneIds, relicUsageById, runeMarkerLabels, arenaDecks?, decksEnregistres? }`.
 
 - ⚠️ **Une base nommée `sw-forge` est reprise.**
   À la première ouverture, `reprendreAncienneBase` recopie son compte dans la
@@ -53,6 +53,13 @@ Une base `swblacksmith`, un store `account`, **une clé fixe** `current` :
   la lecture.
 - ⚠️ **`runeMarkerLabels` aussi** : `markers` ne vit que dans l'export brut. Le
   marqueur de chaque rune, lui, voyage dans `runes` (`RuneDetail.marker`).
+- ⚠️ **`arenaDecks` est facultatif**, sans incrément du schéma : les decks
+  d'arène (`parseArenaDecks`), sources de « Mes équipes ». Un compte conservé
+  avant ce champ se relit sans eux, et la page dit de réimporter pour les lire ;
+  l'incrément aurait rejeté tous les comptes conservés pour une source d'import.
+- ⚠️ **`decksEnregistres` aussi**, pour la même raison : les decks enregistrés du
+  jeu (`parseDecksEnregistres`, [decks-enregistres.md](decks-enregistres.md)),
+  sources de « Mes équipes ». Mal formé, il est oublié, pas le compte.
 - `schema` (`ACCOUNT_SCHEMA`, **7**) est à **incrémenter dès qu'un extracteur
   produit un champ de plus** : un enregistrement d'un autre schéma est ignoré à
   la lecture, et l'app invite à réimporter — sinon elle afficherait des
@@ -219,6 +226,13 @@ Rien n'est envoyé à un serveur. Aucune authentification.
   ([synchronisation-discord.md](../../siege/feat-recommandations/synchronisation-discord.md)). Ce
   ne sont pas les données de l'utilisateur, et le refus lui-même doit être
   mémorisé pour ne pas reposer la question.
+- ⚠️ **Un hook de données relit son état par `lireTravail`**, au démarrage
+  comme ailleurs : le **miroir** (la dernière valeur écrite par `saveLocal`,
+  en mémoire, conservation acceptée OU refusée) d'abord, le disque ensuite.
+  Une session chargée sans conservation n'existe que dans le miroir
+  ([feat-sauvegarde-session.md](../feat-sauvegarde-session.md), « Charger »).
+  Le miroir repart vide à chaque lancement ; les tests qui simulent un
+  lancement le vident aussi (`viderMiroir`).
 - ⚠️ **Toute clé de réglage est déclarée dans `CLES_DE_REGLAGE`.** Une clé qui
   n'y figure pas est une donnée : à elle seule elle vaudrait consentement, et
   un refus ou « Tout supprimer » l'effacerait.
@@ -244,6 +258,8 @@ Ce qui part :
   [usePersistence.ts](src/hooks/usePersistence.ts)) ;
 - **le compte importé**, en IndexedDB (`clearAccount()`, attendu avant le
   rechargement) ;
+- **les équipes de « Mes équipes »**, dans leur propre base IndexedDB
+  (`viderEquipes()`, attendu avec le compte) ;
 - dans l'**application de bureau**, la **session en cours** est oubliée : l'app
   repart vide, et un Ctrl+S réécrirait le fichier avec ce vide. La
   **connexion à Discord** aussi (`discord.json`), comme toute donnée gardée

@@ -1,9 +1,10 @@
 import OptimizerBackupBar from '../OptimizerBackupBar';
 import { Bouton, ZoneCliquable, BoutonIcone } from '../../../ui';
-import { CheckCircle2, Gauge, Trash2, Unlock } from 'lucide-react';
+import { CheckCircle2, Trash2, Unlock } from 'lucide-react';
+import { IconeEquipes, IconeSpeedTuning } from '../../IconesAtelier';
 import OptimizerLeadInactif, { MotifHorsFlux } from '../OptimizerLeadInactif';
 import { resolveExclusionEntry, exclusionSelectorKey, findValidatedBuild, runesManquantesDuBuild, artefactsManquantsDuBuild, type OptimizerList, type OptimizerListMember, type ExclusionSourceData, type ExclusionSelector } from '../../../lib/optimizerExclusion';
-import { leadEffectifMembreOptimizer } from '../../../lib/equipesOptimizer';
+import { buildsEquipeValides, leadEffectifMembreOptimizer } from '../../../lib/equipesOptimizer';
 import LeadPill, { nomStatLead } from '../../siege/LeadPill';
 import { useTraduction } from '../../../hooks/useLangue';
 import { nomZoneLead } from '../../../i18n/jeu';
@@ -49,9 +50,11 @@ export interface MonstresDeLaListeProps {
   // « Régler / Modifier le speed tune » sur une équipe : absent hors d'une
   // liste de siège (feat-speed-tune-depuis-optimizer.md).
   onSpeedTune?: (equipe: EquipeOptimizer) => void;
+  // « Enregistrer dans Mes équipes » sur une équipe (docs/02-app/compte/feat-equipes.md).
+  onEnregistrerEquipe?: (equipe: EquipeOptimizer) => void;
 }
 
-export default function MonstresDeLaListe({ activeList, activeMembers, setEquipeOuverte, lists, optimizer, exclusionData, artifacts, rapportZoneC, groupesMembres, runeById, artifactById, choisirMembreDeLaListe, membreChoisi, setReleaseConfirm, setReleaseArtifactsConfirm, setRemoveMemberConfirm, rappelAuras, listHasValidated, setReleaseAllConfirm, enTete, onSpeedTune }: MonstresDeLaListeProps) {
+export default function MonstresDeLaListe({ activeList, activeMembers, setEquipeOuverte, lists, optimizer, exclusionData, artifacts, rapportZoneC, groupesMembres, runeById, artifactById, choisirMembreDeLaListe, membreChoisi, setReleaseConfirm, setReleaseArtifactsConfirm, setRemoveMemberConfirm, rappelAuras, listHasValidated, setReleaseAllConfirm, enTete, onSpeedTune, onEnregistrerEquipe }: MonstresDeLaListeProps) {
   const textes = useTraduction();
   const jeu = textes.jeu;
   const o = textes.optimizer;
@@ -119,9 +122,13 @@ export default function MonstresDeLaListe({ activeList, activeMembers, setEquipe
             });
             const inactifs = membres.filter(m => m.motif).length;
             return <section key={g.equipe?.id ?? 'sans-equipe'} aria-label={g.equipe ? z.equipe(numero + 1) : z.sansEquipe} className={`space-y-0.5 ${g.equipe ? `rounded-lg p-1.5 ${numero % 2 === 0 ? 'bg-equipe-a' : 'bg-equipe-b'}` : ''}`}>
-            {g.equipe && <div className="grid grid-cols-[auto_minmax(0,1fr)_auto_auto_auto] items-center gap-x-1 py-0.5">
-              {/* Lead, numéro, compte des leads inactifs et gestes de l'équipe sur une seule ligne. */}
-              <span className="flex h-7 items-center whitespace-nowrap">
+            {g.equipe && <div className="grid grid-cols-[max-content_minmax(0,max-content)_max-content_1fr_max-content_max-content] items-center gap-x-px py-0.5">
+              {/* Lead, numéro, compte des leads inactifs et gestes de l'équipe sur une seule ligne.
+                  ⚠️ Six cases dans une colonne de 330 px : l'écart est d'un pixel (le lead garde
+                  le sien) et « Speed tune » perd son mot au doigt, sans quoi le numéro de
+                  l'équipe se tronque. Les gestes en `max-content` : seul le numéro rétrécit,
+                  jamais un bouton qui passerait à la ligne. */}
+              <span className="flex h-7 items-center whitespace-nowrap pr-0.5">
                 {g.equipe.lead ? <LeadPill ls={g.equipe.lead} titre={z.leadEquipe(g.equipe.lead.amount, nomStatLead(jeu, g.equipe.lead.stat), nomZoneLead(jeu, g.equipe.lead.area))} /> : <span className="text-xs text-ink-dim">{z.sansLead}</span>}
               </span>
               {/* Le numéro seul : le leader, tronqué à toutes les largeurs, ne se lisait jamais. */}
@@ -133,9 +140,28 @@ export default function MonstresDeLaListe({ activeList, activeMembers, setEquipe
                 <span className={`col-start-1 row-start-1 ${inactifs ? '' : 'invisible'}`} aria-hidden>⚠ {inactifs}</span>
                 {inactifs > 0 && <span className="sr-only">{z.leadsInactifs(inactifs)}</span>}
               </span>
+              {/* « Enregistrer dans Mes équipes », centré dans la place entre le numéro et
+                  « Speed tune », dans une case oblongue de même hauteur : grisé tant qu'un
+                  membre n'a pas ses runes et ses artéfacts validés, l'infobulle dit pourquoi.
+                  Sa case prend la place libre ; quand elle manque, le numéro se tronque avant
+                  que le bouton ne déborde. Le compte « ⚠ » se glisse entre le numéro et elle :
+                  son double invisible, à droite du bouton, le recentre sur l'espace entre le
+                  numéro et « Speed tune » (il cède sa place quand elle manque). */}
+              <span className="grid grid-cols-[1fr_auto_minmax(0,max-content)_1fr] items-center">
+                {onEnregistrerEquipe && (() => {
+                  const pret = buildsEquipeValides(g.equipe, lists.validated);
+                  const libelle = pret ? o.equipe.enregistrerMesEquipes : o.equipe.validerDAbord;
+                  // La hauteur de « Speed tune » (22 px, 40 au doigt), plus large que haute.
+                  return <Bouton taille="carre" fond="doux" ton="accent" icone={<IconeEquipes size={16} />} disabled={!pret}
+                    className="col-start-2 h-[22px] w-8 compact:w-12" aria-label={libelle} title={libelle} onClick={() => onEnregistrerEquipe(g.equipe!)} />;
+                })()}
+                {onEnregistrerEquipe && <span aria-hidden className="invisible col-start-3 overflow-hidden whitespace-nowrap pl-px text-micro">⚠ 5</span>}
+              </span>
               {/* Place réservée hors siège : changer le contenu de la liste ne déplace pas « Modifier ». */}
-              <span className={onSpeedTune ? '' : 'invisible'} aria-hidden={!onSpeedTune}>
-                <Bouton taille="xs" fond="doux" ton="accent" icone={<Gauge size={12} />} libelle={o.speedTune.titre} disabled={!onSpeedTune} tabIndex={onSpeedTune ? undefined : -1}
+              {/* ⚠️ `flex` : en ligne, le bouton se posait sur la ligne de base de sa case et
+                  pouvait remonter d'un pixel par rapport à « Modifier l'équipe » selon la police. */}
+              <span className={`flex ${onSpeedTune ? '' : 'invisible'}`} aria-hidden={!onSpeedTune}>
+                <Bouton taille="xs" fond="doux" ton="accent" icone={<IconeSpeedTuning size={12} />} libelle={o.speedTune.titre} libelleAuDoigt={false} disabled={!onSpeedTune} tabIndex={onSpeedTune ? undefined : -1}
                   aria-label={g.equipe.speedTune?.plan ? o.speedTune.modifier : o.speedTune.regler}
                   title={g.equipe.speedTune?.plan ? o.speedTune.modifier : o.speedTune.regler} onClick={() => onSpeedTune?.(g.equipe!)} />
               </span>

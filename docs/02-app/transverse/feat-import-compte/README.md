@@ -7,6 +7,9 @@ côté navigateur** — aucun fichier n'est envoyé. Un **seul import global** r
 - **Box RTA** → prépa RTA (`parseAccountJson`).
 - **Défenses de siège** → équipes de défense (`parseSiegeDefense`).
 - **Offense de siège** → équipes d'attaque sauvegardées (`parseSiegeOffense`).
+- **Arène** → défense (`parseArenaDefense`), défense interserveur
+  (`parseArenaInterserveurDefense`) et équipes d'attaque (`parseArenaOffense`).
+- **Tous les decks enregistrés**, contenu par contenu (`parseDecksEnregistres`).
 - **Box 6★** → page « Mon compte » (`parseAccountBox`).
 - **Inventaire runes/artéfacts** → page « Mon compte » (`parseAccountInventory`).
 
@@ -22,7 +25,10 @@ Fichiers : [importAccount.ts](src/lib/importAccount.ts) (parseurs) ·
 | `src/components/AccountImportControl.tsx`, `importAccount` de `src/App.tsx`, le dossier SW Exporter (`bureau/swex.ts`) | [bouton-import.md](bouton-import.md) |
 | `parseAccountJson` de `src/lib/importAccount.ts`, la box RTA importée | [box-rta.md](box-rta.md) |
 | `parseSiegeDefense`, `parseSiegeOffense`, le mapping de `src/lib/applyAccount.ts` | [equipes-siege.md](equipes-siege.md) |
+| `parseArenaDefense`, `parseArenaInterserveurDefense`, `parseArenaOffense` | [equipes-arene.md](equipes-arene.md) |
+| `parseDecksEnregistres`, `CONTENUS_DECK`, `decomposerDeckSeq` | [decks-enregistres.md](decks-enregistres.md) |
 | `parseAccountBox`, `parseAccountInventory`, les marqueurs et les runes utilisées | [mon-compte.md](mon-compte.md) |
+| `parseArenaDecks` de `src/lib/importAccount.ts`, les decks d'arène | [../../compte/feat-equipes.md](../../compte/feat-equipes.md) (« Imports ») |
 | `src/lib/accountStore.ts`, `src/hooks/usePersistence.ts`, « Garder mes données », « Tout supprimer » (`clearAllData`), `src/lib/migrationStockage.ts`, `src/components/AccountFreshness.tsx` | [persistance.md](persistance.md) |
 
 ## Parties
@@ -32,6 +38,8 @@ Fichiers : [importAccount.ts](src/lib/importAccount.ts) (parseurs) ·
 | [bouton-import.md](bouton-import.md) | Un seul bouton d'import invariant dans la barre de nav, le dossier SW Exporter de l'application de bureau, un seul `JSON.parse` par import. |
 | [box-rta.md](box-rta.md) | L'import de la box RTA : objectif métier, algorithme, constantes SW, consommation côté RTA. |
 | [equipes-siege.md](equipes-siege.md) | L'import des équipes de siège : défense (`parseSiegeDefense`), offense (`parseSiegeOffense`), modèle commun, mapping. |
+| [equipes-arene.md](equipes-arene.md) | L'import des équipes d'arène, sur 4 places : défense, défense interserveur, offense ; l'arène dimensionnelle, depuis la saison tenue par le plugin SWEX, lue par l'application de bureau. |
+| [decks-enregistres.md](decks-enregistres.md) | Tous les decks de `deck_list` : contenu de chaque `deck_type`, sous-catégories de `deck_seq`, forme sur 8 cases ; ce que l'export ne contient pas. |
 | [mon-compte.md](mon-compte.md) | L'import pour « Mon compte » : box 6★, inventaire runes et artéfacts, marqueurs de runes, runes utilisées. |
 | [persistance.md](persistance.md) | L'interrupteur de conservation de toute l'app (`usePersistence.ts`) et la persistance optionnelle du compte (`accountStore.ts`, IndexedDB) : pourquoi pas `localStorage`, ce qu'on stocke, concurrence, la question posée à chaque import, cycle de vie, âge du compte, repli ; ce que « Tout supprimer » efface et garde ; la migration des clés d'un autre préfixe. |
 

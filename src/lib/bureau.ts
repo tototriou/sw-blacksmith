@@ -6,6 +6,8 @@
 // rien n'est posé ni écouté. Le site ne change pas.
 
 import type { Dictionnaire } from '../i18n/fr';
+import type { ErreurSession } from './session';
+import type { RelevesSiege } from './siegeStatistiques';
 
 // L'objet exposé par le préchargement (bureau/preload.ts), seul pont vers le
 // processus principal.
@@ -26,11 +28,29 @@ interface PontBureau {
     etat: () => Promise<EtatSwex | null>;
     choisirDossier: () => Promise<EtatSwex | null>;
     choisirInvocateur: (fichier: string) => Promise<EtatSwex | null>;
+    // Plus aucun invocateur suivi, le dossier gardé (après un import manuel).
+    aucunInvocateur: () => Promise<EtatSwex | null>;
     oublier: () => Promise<EtatSwex | null>;
     surEtat: (rappel: (etat: EtatSwex) => void) => () => void;
     surExport: (rappel: (exp: ExportSwex) => void) => () => void;
-    pret: (pageSansCompte: boolean) => void;
+    pret: (pageSansCompte: boolean, pageSansDimension: boolean) => void;
     lu: (modifie: number) => void;
+    surDimension: (rappel: (dim: DimensionSwex) => void) => () => void;
+    dimensionLue: (cle: number) => void;
+    etatDirect: () => Promise<EtatDirectSwex | null>;
+    activerDirect: (oui: boolean) => Promise<EtatDirectSwex | null>;
+    surEtatDirect: (rappel: (etat: EtatDirectSwex) => void) => () => void;
+    surLignesDirect: (rappel: (lignes: LignesDirect) => void) => () => void;
+    mettreAJour: () => Promise<{ texte: string; t: number | null } | null>;
+    // `null` : pas de dossier, d'invocateur suivi ni de dossier du plugin.
+    sieges: () => Promise<RelevesSiege | null>;
+    surSiegesChanges: (rappel: () => void) => () => void;
+    // L'historique du compte (archive du plugin), du plus récent au plus
+    // ancien ; `null` : pas de dossier, d'invocateur suivi ni de dossier du
+    // plugin. Un état : ses runes BRUTES (format de l'export).
+    historique: () => Promise<EtatHistoriqueSwex[] | null>;
+    etatHistorique: (cle: string) => Promise<{ t: number; runes: unknown[] } | null>;
+    surHistoriqueChange: (rappel: () => void) => () => void;
   };
   session: {
     etat: () => Promise<EtatSession | null>;
@@ -38,6 +58,11 @@ interface PontBureau {
     retenir: (oui: boolean) => Promise<EtatSession | null>;
     sauvegarder: (texte: string, nomPropose: string) => Promise<IssueSession | null>;
     sauvegarderSous: (texte: string, nomPropose: string) => Promise<IssueSession | null>;
+    // « Charger… » : le fichier choisi, lu ; puis, la page l'ayant validé,
+    // il devient la session en cours et attend le redémarrage (`aCharger`).
+    charger: () => Promise<IssueChargement | null>;
+    confirmerChargement: () => Promise<EtatSession | null>;
+    aCharger: () => Promise<{ texte: string; nom: string } | null>;
     choisirDossier: () => Promise<EtatSession | null>;
     oublierDossier: () => Promise<EtatSession | null>;
     oublier: () => Promise<EtatSession | null>;
@@ -92,6 +117,45 @@ export type IssueSession =
 // Un échec rendu par le bureau : son motif et le code d'erreur du système.
 // Le message se rédige ici, dans la langue de l'app (`messageEchecSession`).
 export type EchecSession = { issue: 'echec'; motif: 'pas-une-session' | 'ecriture' | 'dossier'; code: string | null };
+// « Charger… » : le fichier lu (la page le valide), ou pourquoi il ne l'a pas été.
+export type IssueChargement =
+  | { issue: 'lue'; texte: string; nom: string }
+  | { issue: 'annulee' }
+  | EchecChargement;
+export type EchecChargement = { issue: 'echec'; motif: 'pas-une-session' | 'lecture'; code: string | null };
+
+// Pourquoi une session n'a pas été chargée : le bureau n'a pas pu lire le
+// fichier, ou la page l'a refusé (`lireSession`). Dans la langue de l'app.
+export function messageEchecChargement(echec: EchecChargement | ErreurSession, t: Dictionnaire): string {
+  const c = t.donnees.chargement;
+  if ('issue' in echec) {
+    if (echec.motif === 'pas-une-session') return c.pasUneSession;
+    switch (echec.code) {
+      case 'ENOENT':
+        return c.introuvable;
+      case 'EACCES':
+      case 'EPERM':
+        return c.refus;
+      case 'EBUSY':
+        return c.occupe;
+      default:
+        return c.autre(echec.code);
+    }
+  }
+  switch (echec.code) {
+    case 'illisible':
+      return c.pasUneSession;
+    case 'autreFormat':
+      return c.autreFormat;
+    case 'versionIllisible':
+    case 'travailIllisible':
+      return c.abimee;
+    case 'tropRecente':
+      return c.tropRecente;
+    case 'valeurIllisible':
+      return c.valeurIllisible(echec.cle);
+  }
+}
 
 // Le message d'un échec de sauvegarde. Le dossier SW Blacksmith inaccessible
 // (`dossier`) renvoie vers les Paramètres : « Sauvegarder sous… » échouerait
@@ -152,6 +216,43 @@ export interface ExportSwex {
   nouveau: boolean;
   fichier: string;
   complet: boolean;
+}
+// L'arène dimensionnelle donnée à la page : la saison de l'invocateur suivi,
+// tenue par le plugin SWEX (`dimension.json`, la forme de
+// `dimensionarena_getSeasonInfo`), les attaques jouées (vues par le plugin,
+// sinon celle de l'export), la clé à renvoyer une fois appliquée (l'heure
+// serveur du dernier changement), et si elle est NOUVELLE (une ouverture du
+// mode, à annoncer) ou seulement un changement fait dans le mode, ou redonnée
+// à une page qui n'a rien de ce mode.
+export interface DimensionSwex {
+  saison: Record<string, any>;
+  recents: unknown[];
+  cle: number;
+  nouvelle: boolean;
+}
+
+// Le direct (voir bureau/swex.ts) : l'interrupteur, s'il y a un fichier live
+// de la dernière connexion, sa dernière écriture (ms), et le plugin installé
+// comparé à l'app.
+export type StatutPlugin = 'absent' | 'a-jour' | 'ancien' | 'plus-recent';
+export interface EtatDirectSwex {
+  actif: boolean;
+  disponible: boolean;
+  maj: number | null;
+  plugin: { installee: string | null; app: string; statut: StatutPlugin };
+}
+// Des lignes du fichier live : le fichier entier (`debut`), ou celles qui s'y
+// sont ajoutées. `debut` sans ligne : la page oublie le compte en direct.
+export interface LignesDirect {
+  debut: boolean;
+  lignes: string[];
+}
+
+// Un état de l'historique du compte (bureau/swexHistorique.ts) : la clé qui le
+// redemande, et l'heure de la connexion (ms).
+export interface EtatHistoriqueSwex {
+  cle: string;
+  t: number;
 }
 
 // Le pont du dossier SW Exporter, ou `null` sur le site.

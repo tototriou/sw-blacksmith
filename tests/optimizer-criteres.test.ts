@@ -60,7 +60,7 @@ export async function testOptimizerCriteresBase() {
   const relic = { id: 7, upgrade: 6, main: { code: 100, value: 11 } };
   const exemplaire = { relic };
   const avecRelique = baseCompleteCriteres(exemplaire);
-  egal(avecRelique, { ...base, relicMainChoice: 'equipped' }, 'base complète : relique résolue contre l’exemplaire');
+  egal(avecRelique, { ...base, relicMainChoice: 'libre' }, 'base complète : relique « libre » même si l’exemplaire en porte une');
   egal(completerCriteresImport({}, exemplaire), avecRelique, 'import vide et membre sans mémoire partagent la même base');
   const partiels: CriteresPartielsOptimizer = { vitesse: { minimum: 250 }, comboSets: ['Swift'], minStats: { hp: 20000 } };
   const importes = completerCriteresImport(partiels, exemplaire);
@@ -80,7 +80,7 @@ export async function testOptimizerCriteresBase() {
   egal(completerCriteresImport({ vitesse: vitesseEtendue }, undefined).minStats, { spd: 260 }, 'objet VIT extensible sans changer les autres producteurs');
   for (const motif of ['bestiaire', 'membre', 'compte'] as const) {
     const suivant = criteresApresChangementEspece(sale, motif, exemplaire);
-    egal(suivant.relicMainChoice, 'equipped', `${motif} : défaut relique résolu`);
+    egal(suivant.relicMainChoice, 'libre', `${motif} : défaut relique « libre », relique portée ou non`);
     egal(suivant.objective, 'efficience', `${motif} : objectif au défaut`);
     egal(suivant.compterAurasResPre, motif === 'compte', `${motif} : distinction des auras`);
     egal(suivant.critereArtefacts, motif === 'bestiaire' ? 'brut' : 'reel', `${motif} : cran historique conservé`);

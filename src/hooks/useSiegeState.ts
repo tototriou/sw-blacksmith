@@ -1,13 +1,50 @@
-import { useCallback, useEffect, useState } from 'react';
+import { createContext, useCallback, useEffect, useState } from 'react';
 import { SiegeState, SiegeTeam, SiegeSlot, GearSet } from '../types';
-import { saveLocal, usePersistence } from './usePersistence';
+import { lireTravail, loadLocal, saveLocal, usePersistence } from './usePersistence';
 import { reinsererA } from '../lib/reinsererA';
 
 // Défense et offense de siège = deux listes d'équipes indépendantes.
 export type SiegeSide = 'offense' | 'defense';
+// L'arène : la défense classique, l'offense (commune aux deux arènes), la
+// défense interserveur, et la défense et l'offense de l'arène dimensionnelle —
+// des équipes de 4.
+export type CoteArene = 'defense' | 'offense' | 'interserveur' | 'dimension-defense' | 'dimension-offense';
+
+// Le côté joué : l'offense, ou une défense.
+export const estOffenseArene = (cote: CoteArene) => cote === 'offense' || cote === 'dimension-offense';
+// Un côté de l'arène dimensionnelle : sa box à part, sans artéfacts lus.
+export const estDimension = (cote: CoteArene) => cote === 'dimension-defense' || cote === 'dimension-offense';
 
 const OLD_STORAGE_KEY = 'swblacksmith-siege-v1'; // ancienne clé unique (→ migrée vers défense)
 const storageKey = (side: SiegeSide) => `swblacksmith-siege-${side}-v1`;
+export const cleArene = (cote: CoteArene) => `swblacksmith-arene-${cote}-v1`;
+
+// Les équipes d'arène de chaque côté, telles que l'app les tient.
+export interface EquipesArene {
+  defense: SiegeTeam[];
+  offense: SiegeTeam[];
+  interserveur: SiegeTeam[];
+  // La défense et l'offense de l'arène dimensionnelle, sur sa propre box.
+  'dimension-defense': SiegeTeam[];
+  'dimension-offense': SiegeTeam[];
+}
+export const AUCUNE_EQUIPE_ARENE: EquipesArene = {
+  defense: [],
+  offense: [],
+  interserveur: [],
+  'dimension-defense': [],
+  'dimension-offense': [],
+};
+// ⚠️ **Un contexte, pas une prop** : le speed tuning s'ouvre depuis huit
+// endroits (page Outils, Optimizer, siège, arène, palette…), qui se passent les
+// équipes de siège de main en main. Les équipes d'arène n'ont pas à refaire ce
+// chemin : l'App les fournit, l'outil les lit. Sans fournisseur (un test), aucune.
+export const EquipesAreneContext = createContext<EquipesArene>(AUCUNE_EQUIPE_ARENE);
+
+// Les places d'une équipe : 3 au siège, 4 en arène.
+const PLACES_SIEGE = 3;
+export const PLACES_ARENE = 4;
+const places = (n: number) => Array.from({ length: n }, (_, i) => i);
 
 function newId(): string {
   const c = globalThis.crypto as Crypto | undefined;
@@ -19,22 +56,22 @@ function emptySlot(): SiegeSlot {
   return { monsterId: null, runeSpeed: null, tick: 0, sets: [] };
 }
 
-function newTeam(): SiegeTeam {
-  return { id: newId(), slots: [emptySlot(), emptySlot(), emptySlot()], lead: 0, tickAlertDismissed: false };
+function newTeam(n: number): SiegeTeam {
+  return { id: newId(), slots: places(n).map(() => emptySlot()), lead: 0, tickAlertDismissed: false };
 }
 
-function load(side: SiegeSide): SiegeState {
+// `ancienne` : une clé dont l'état est repris si `cle` est vide (migration).
+function load(cle: string, n: number, ancienne?: string): SiegeState {
   try {
-    let raw = localStorage.getItem(storageKey(side));
-    // Migration : l'ancien état unique devient la DÉFENSE.
-    if (raw === null && side === 'defense') raw = localStorage.getItem(OLD_STORAGE_KEY);
+    let raw = lireTravail(cle);
+    if (raw === null && ancienne) raw = loadLocal(ancienne);
     if (!raw) return { teams: [] };
     const parsed = JSON.parse(raw) as Partial<SiegeState>;
     if (!Array.isArray(parsed.teams)) return { teams: [] };
     const teams: SiegeTeam[] = parsed.teams.map((t) => {
       // Migration : ancien tick d'équipe → tick par défaut de chaque slot.
       const legacyTick = typeof (t as { tick?: number })?.tick === 'number' ? (t as { tick?: number }).tick! : 0;
-      const slots: SiegeSlot[] = [0, 1, 2].map((i) => {
+      const slots: SiegeSlot[] = places(n).map((i) => {
         const s = t?.slots?.[i];
         return {
           monsterId: s && typeof s.monsterId === 'string' ? s.monsterId : null,
@@ -42,6 +79,7 @@ function load(side: SiegeSide): SiegeState {
           tick: s && typeof s.tick === 'number' ? s.tick : legacyTick,
           sets: s && Array.isArray(s.sets) ? s.sets.filter((x): x is string => typeof x === 'string') : [],
           gear: s && (s as { gear?: unknown }).gear && typeof (s as { gear?: unknown }).gear === 'object' ? ((s as { gear?: GearSet }).gear) : undefined,
+          ...(s && Number.isInteger(s.unitId) && s.unitId! > 0 ? { unitId: s.unitId } : {}),
           ...(s && s.gearPartage && typeof s.gearPartage === 'object' ? { gearPartage: s.gearPartage } : {}),
         };
       });
@@ -86,13 +124,25 @@ export interface UseSiegeState {
   clearAll: () => void;
 }
 
+// Les équipes d'un côté du siège (3 places). Migration : l'ancien état unique
+// devient la DÉFENSE.
 export function useSiegeState(side: SiegeSide): UseSiegeState {
-  const [state, setState] = useState<SiegeState>(() => load(side));
+  return useEquipes(storageKey(side), PLACES_SIEGE, side === 'defense' ? OLD_STORAGE_KEY : undefined);
+}
+
+// Les équipes d'un côté de l'arène (4 places).
+export function useEquipesArene(cote: CoteArene): UseSiegeState {
+  return useEquipes(cleArene(cote), PLACES_ARENE);
+}
+
+// Une liste d'équipes de `n` places, enregistrée sous `cle`.
+function useEquipes(cle: string, n: number, ancienne?: string): UseSiegeState {
+  const [state, setState] = useState<SiegeState>(() => load(cle, n, ancienne));
 
   const persist = usePersistence();
   useEffect(() => {
-    saveLocal(storageKey(side), JSON.stringify(state));
-  }, [state, side, persist]);
+    saveLocal(cle, JSON.stringify(state));
+  }, [state, cle, persist]);
 
   // Applique une modification à une équipe donnée.
   const updateTeam = useCallback((teamId: string, fn: (t: SiegeTeam) => SiegeTeam) => {
@@ -114,7 +164,7 @@ export function useSiegeState(side: SiegeSide): UseSiegeState {
     [updateTeam]
   );
 
-  const addTeam = useCallback(() => setState((s) => ({ ...s, teams: [...s.teams, newTeam()] })), []);
+  const addTeam = useCallback(() => setState((s) => ({ ...s, teams: [...s.teams, newTeam(n)] })), [n]);
 
   const removeTeam = useCallback(
     (teamId: string) => setState((s) => ({ ...s, teams: s.teams.filter((t) => t.id !== teamId) })),
@@ -131,11 +181,12 @@ export function useSiegeState(side: SiegeSide): UseSiegeState {
   );
 
   // ⚠️ L'équipement REÇU part avec le monstre qu'il décrivait : laissé là, les
-  // runes de l'auteur s'afficheraient sous un autre monstre.
+  // runes de l'auteur s'afficheraient sous un autre monstre. L'exemplaire du
+  // jeu part de même : il désignait l'ancien monstre.
   const setSlotMonster = useCallback(
     (teamId: string, idx: number, monsterId: string) =>
       updateSlot(teamId, idx, (sl) => {
-        const { gearPartage: _recu, ...reste } = sl;
+        const { gearPartage: _recu, unitId: _exemplaire, ...reste } = sl;
         return { ...reste, monsterId };
       }),
     [updateSlot]
@@ -182,7 +233,7 @@ export function useSiegeState(side: SiegeSide): UseSiegeState {
   );
 
   // Import de decks (depuis un export de compte) : chaque deck devient une
-  // équipe de 3 slots (slot 0 = leader).
+  // équipe de `n` slots (slot 0 = leader).
   //
   // ⚠️ REMPLACE toujours les équipes existantes. Une variante « ajouter à la
   // suite » a existé : elle DÉDOUBLAIT tout le siège quand l'utilisateur croyait
@@ -190,11 +241,11 @@ export function useSiegeState(side: SiegeSide): UseSiegeState {
   // cumule pas avec le précédent.
   const importTeams = useCallback(
     (
-      teams: { slots: { monsterId: string | null; runeSpeed: number | null; sets?: string[]; tick?: number; gear?: GearSet }[] }[]
+      teams: { slots: { monsterId: string | null; runeSpeed: number | null; sets?: string[]; tick?: number; gear?: GearSet; unitId?: number }[] }[]
     ) => {
       setState((s) => {
         const built: SiegeTeam[] = teams.map((t, i) => {
-          const slots: SiegeSlot[] = [0, 1, 2].map((i) => {
+          const slots: SiegeSlot[] = places(n).map((i) => {
             const sl = t.slots[i];
             return {
               monsterId: sl && typeof sl.monsterId === 'string' ? sl.monsterId : null,
@@ -202,6 +253,7 @@ export function useSiegeState(side: SiegeSide): UseSiegeState {
               tick: sl && typeof sl.tick === 'number' ? sl.tick : 0,
               sets: sl && Array.isArray(sl.sets) ? sl.sets : [],
               gear: sl && sl.gear && typeof sl.gear === 'object' ? sl.gear : undefined,
+              ...(sl && typeof sl.unitId === 'number' ? { unitId: sl.unitId } : {}),
             };
           });
           // ⚠️⚠️ **L'IDENTITÉ D'UNE ÉQUIPE SURVIT AU RÉIMPORT.** Elle était
@@ -222,7 +274,7 @@ export function useSiegeState(side: SiegeSide): UseSiegeState {
         return { teams: built };
       });
     },
-    []
+    [n]
   );
 
   const clearAll = useCallback(() => setState({ teams: [] }), []);
@@ -246,7 +298,7 @@ export function useSiegeState(side: SiegeSide): UseSiegeState {
           ...s.teams,
           ...teams.map((t) => ({
             id: newId(),
-            slots: [0, 1, 2].map((i) => {
+            slots: places(n).map((i) => {
               const sl = t.slots[i];
               return {
                 monsterId: sl && typeof sl.monsterId === 'string' ? sl.monsterId : null,
@@ -262,7 +314,7 @@ export function useSiegeState(side: SiegeSide): UseSiegeState {
         ],
       }));
     },
-    []
+    [n]
   );
 
   return {

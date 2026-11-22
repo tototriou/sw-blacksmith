@@ -10,8 +10,9 @@
 // (voir main.ts) : une preuve ne touche jamais celles de l'utilisateur.
 
 import { app, BrowserWindow } from 'electron';
-import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { appendFileSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { depuisConnexion, ligneConnexion } from '../plugin-swex/source/etatDirect';
 import type { PreuveMiseAJour } from './miseAJour';
 import type { PreuveSession } from './session';
 import type { PreuveSwex } from './swex';
@@ -165,7 +166,10 @@ export async function lancerPreuveConservation(fenetre: BrowserWindow, dossier: 
 // propose d'abord de sauvegarder ; le choix de l'invocateur importe TOUT.
 // Puis l'export réécrit pendant que l'app tourne, l'invocateur déjà suivi
 // rechoisi, un rechargement, une écriture dans `live` : « Mon compte »
-// seulement, la prépa RTA et le siège INCHANGÉS.
+// seulement, la prépa RTA et le siège INCHANGÉS. Puis le direct du plugin
+// SWEX ; une relance avec la conservation refusée (tout importé) ; enfin un
+// import manuel : l'invocateur suivi est lâché, ses exports ne s'appliquent
+// plus.
 export async function lancerPreuveSwex(fenetre: BrowserWindow, dossier: string, fixtures: string, compte: string) {
   mkdirSync(dossier, { recursive: true });
   const resultats: Record<string, unknown> = {};
@@ -328,7 +332,121 @@ export async function lancerPreuveSwex(fenetre: BrowserWindow, dossier: string, 
     await attendre(3000);
     resultats.apresSauvegarde = { sessionsEcrites: sessions().length - sessionsAvant, compte: await compteAffiche(), recapitulatif: await recapitulatif() };
 
-    resultats.reglageRetenu = JSON.parse(readFileSync(join(dossier, 'donnees', 'swex.json'), 'utf8'));
+    // 10. Le direct (plugin SWEX) : un plugin ANCIEN installé, et le fichier
+    // live de « Testeur », à la même connexion que son export.
+    await fermerNotification();
+    const racineAvant = readdirSync(fixtures).sort();
+    const exportAvant = readFileSync(join(fixtures, 'Testeur-1.json'), 'utf8');
+    mkdirSync(join(fixtures, 'plugins'), { recursive: true });
+    writeFileSync(join(fixtures, 'plugins', 'SWBlacksmithLive.js'), '// SW Blacksmith Live 1.0.0 — plugin SW Exporter.\n');
+    const live = join(fixtures, 'SWBlacksmith', 'Testeur-1', 'compte.live.jsonl');
+    mkdirSync(join(fixtures, 'SWBlacksmith', 'Testeur-1'), { recursive: true });
+    const etatLive = depuisConnexion(JSON.parse(compte));
+    writeFileSync(live, `${JSON.stringify(ligneConnexion(etatLive, '1.0.0'))}\n`);
+    // Le nombre de runes de l'inventaire, en tête de la liste (« 8 runes »).
+    const nombreRunes = () =>
+      js(`[...document.querySelectorAll('span, p')].map((e) => e.textContent.trim()).find((t) => /^\\d+ runes?$/.test(t)) ?? 'aucun'`);
+    const interrupteur = () =>
+      js(`(() => { const b = document.querySelector('[data-interrupteur-direct]'); return b ? { presse: b.getAttribute('aria-pressed'), titre: b.title } : 'absent'; })()`);
+    const cliquer = (selecteur: string) =>
+      js(`(() => { const b = document.querySelector(${JSON.stringify(selecteur)}); if (!b) return 'absent'; b.click(); return 'cliqué'; })()`);
+    const basculer = () => cliquer('[data-interrupteur-direct]');
+    await js(`location.hash = '#/compte/runes/liste'`);
+    await attendre(2500);
+    resultats.directAvant = { runes: await nombreRunes(), interrupteur: await interrupteur() };
+    await basculer();
+    await attendre(1500);
+    resultats.directActive = { runes: await nombreRunes(), interrupteur: await interrupteur() };
+    // Une rune vendue pendant la partie : une ligne ajoutée au fichier.
+    const vendue = Number(JSON.parse(compte).runes[0].rune_id);
+    appendFileSync(live, `${JSON.stringify({ type: 'changement', t: (etatLive.tvalue ?? 0) + 10, commande: 'SellRune', maj: {}, retires: { runes: [vendue] } })}\n`);
+    await attendre(2500);
+    resultats.directVente = { runes: await nombreRunes(), notification: await notification() };
+    // La page SW Exporter : le plugin, la session, « Mettre à jour mon compte ».
+    const carte = () => js(`document.querySelector('[data-etat-plugin]')?.innerText.replace(/\\s+/g, ' ').trim() ?? 'aucune carte'`);
+    await js(`location.hash = '#/sw-exporter'`);
+    await attendre(1500);
+    resultats.cartePlugin = await carte();
+    resultats.mettreAJour = await cliquer('[data-mettre-a-jour]');
+    await attendre(2500);
+    resultats.apresMiseAJour = { carte: await carte(), notification: await notification() };
+    // Direct coupé : « Mon compte » revient au compte de l'app, mis à jour.
+    await js(`location.hash = '#/compte/runes/liste'`);
+    await attendre(1500);
+    await basculer();
+    await attendre(1500);
+    resultats.directCoupe = { runes: await nombreRunes(), interrupteur: await interrupteur() };
+    resultats.dossierSwexIntact = {
+      export: readFileSync(join(fixtures, 'Testeur-1.json'), 'utf8') === exportAvant,
+      racine: JSON.stringify(readdirSync(fixtures).sort().filter((f) => f !== 'plugins' && f !== 'SWBlacksmith')) === JSON.stringify(racineAvant.filter((f) => f !== 'SWBlacksmith')),
+      dossierPlugin: readdirSync(join(fixtures, 'SWBlacksmith', 'Testeur-1')),
+    };
+
+    const reglageDisque = () => JSON.parse(readFileSync(join(dossier, 'donnees', 'swex.json'), 'utf8'));
+    resultats.reglageRetenu = reglageDisque();
+
+    // 11. La conservation refusée (Paramètres), puis une relance : rien
+    // n'est resté sur le disque, et l'export de l'invocateur suivi
+    // s'importe EN ENTIER — la prépa RTA revient, pas seulement « Mon compte ».
+    // Le compteur de « Ma prépa » en témoigne (bureau : à côté du titre).
+    const compteurPrepa = async () => {
+      await js(`location.hash = '#/rta'`);
+      await attendre(1200);
+      return js(`[...document.querySelectorAll('h1')].find((h) => h.textContent.trim() === 'Ma prépa')?.nextElementSibling?.textContent.trim() ?? 'aucun'`);
+    };
+    await fermerNotification();
+    resultats.prepaAvantRefus = await compteurPrepa();
+    await js(`location.hash = '#/parametres'`);
+    await attendre(1000);
+    resultats.refus = await js(`(() => {
+      const s = document.querySelector('[role="switch"][aria-label="Garder mes données sur cet appareil"]');
+      if (!s) return 'pas d’interrupteur';
+      if (s.getAttribute('aria-checked') !== 'true') return 'déjà refusée';
+      s.click();
+      return 'cliqué';
+    })()`);
+    await attendre(1500);
+    fenetre.webContents.reload();
+    await new Promise<void>((r) => fenetre.webContents.once('did-finish-load', () => r()));
+    await attendre(4000);
+    resultats.apresRelanceSansConservation = {
+      conservation: await js(`localStorage.getItem('swblacksmith-persist-v1')`),
+      compte: await compteAffiche(),
+      prepa: await compteurPrepa(),
+      notification: await notification(),
+    };
+    await js(`location.hash = '#/parametres'`);
+    await attendre(1000);
+
+    // 12. Un import MANUEL, « Testeur » suivi : l'invocateur est lâché, le
+    // dossier reste — aucun coché, ni au menu ni dans les Réglages. Puis
+    // l'export de l'ancien invocateur, réécrit : il ne s'applique plus.
+    await fermerNotification();
+    const manuel = JSON.parse(compte);
+    manuel.wizard_info = { ...manuel.wizard_info, wizard_id: 3, wizard_name: 'Manuel' };
+    await js(`(() => {
+      const champ = document.querySelector('aside input[type="file"]');
+      const dt = new DataTransfer();
+      dt.items.add(new File([${JSON.stringify(JSON.stringify(manuel))}], 'manuel.json', { type: 'application/json' }));
+      champ.files = dt.files;
+      champ.dispatchEvent(new Event('change', { bubbles: true }));
+    })()`);
+    await attendre(800);
+    resultats.remplacerManuel = await cliquerDansModale('Remplacer');
+    await attendre(1500);
+    await cliquerQuandPret(fenetre, 'Garder mes données (recommandé)', 2000);
+    await attendre(800);
+    resultats.apresImportManuel = {
+      compte: await compteAffiche(),
+      menu: await menuCarte(),
+      selecteur: await js(`document.querySelector('[data-reglage-swex] select')?.value`),
+      reglage: reglageDisque(),
+    };
+    await js(`document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))`);
+    await fermerNotification();
+    writeFileSync(join(fixtures, 'Testeur-1.json'), JSON.stringify({ ...manuel, wizard_info: { ...manuel.wizard_info, wizard_id: 1, wizard_name: 'Testeur-bis' } }));
+    await attendre(4500);
+    resultats.apresAncienExport = { compte: await compteAffiche(), notification: await notification() };
   } catch (e) {
     resultats.erreur = String(e);
   } finally {
@@ -345,9 +463,10 @@ export async function lancerPreuveSwex(fenetre: BrowserWindow, dossier: string, 
 // demandé — sans boîte en mode preuve — puis la session s'écrit dans son
 // sous-dossier `sessions`), « Sauvegarder la session » de la palette, Ctrl+S,
 // « Sauvegarder sous… » puis « Sauvegarder » de la barre du haut, enfin
-// « Retirer » le dossier dans les Paramètres et Ctrl+S. Après chaque geste,
-// `releverSession`. Le script relit chaque fichier de session par
-// `lireSession`.
+// « Retirer » le dossier dans les Paramètres et Ctrl+S ; puis un rechargement
+// (la page repart vide) et Ctrl+O, « Charger… », qui reprend la session la
+// plus récente. Après chaque geste, `releverSession`. Le script relit chaque
+// fichier de session par `lireSession`.
 // Le script pose avant le lancement un `session.json` d'une ouverture
 // précédente : conservation refusée, il doit être oublié, jamais réécrit.
 export async function lancerPreuveSession(fenetre: BrowserWindow, dossier: string, compte: string, telechargements: string) {
@@ -434,6 +553,127 @@ export async function lancerPreuveSession(fenetre: BrowserWindow, dossier: strin
     resultats.apresRetrait = await releve();
     await js(`document.dispatchEvent(new KeyboardEvent('keydown', { key: 's', ctrlKey: true, bubbles: true }))`);
     resultats.apresRetraitCtrlS = await releve();
+
+    // 7. « Charger… » : un rechargement d'abord — conservation refusée, la
+    // page repart vide —, puis Ctrl+O, qui reprend la session la plus récente
+    // (mode preuve, sans boîte). La prépa RTA revient, le compte aussi, et
+    // rien n'est écrit sur le disque.
+    const compteurPrepa = async () => {
+      await js(`location.hash = '#/rta'`);
+      await attendre(1200);
+      return js(`[...document.querySelectorAll('h1')].find((h) => h.textContent.trim() === 'Ma prépa')?.nextElementSibling?.textContent.trim() ?? 'aucun'`);
+    };
+    const compteAffiche = () =>
+      js(`document.querySelector('aside button[aria-label="Importer un compte"], aside button[aria-label="Changer de compte"]')?.querySelector('.font-semibold')?.textContent.trim() ?? 'aucun'`);
+    // Un état RICHE pour l'aller-retour, par de vrais gestes : un thème (un
+    // réglage), « Autoriser un regemme différent » à l'onglet Optimisation
+    // (la mémoire d'un écran), un monstre choisi dans l'Optimizer (sa photo).
+    await js(`document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true, bubbles: true }))`);
+    await attendre(800);
+    resultats.etatRiche = {
+      theme: await js(`(() => {
+        const o = [...document.querySelectorAll('[role="option"]')].find((x) => x.textContent.includes('Thème sombre'));
+        if (!o) return 'pas d’action';
+        o.click();
+        return 'cliqué';
+      })()`),
+    } as Record<string, unknown>;
+    await attendre(600);
+    await js(`location.hash = '#/compte/runes/optimisation'`);
+    await attendre(1500);
+    (resultats.etatRiche as Record<string, unknown>).regemme = await js(`(() => {
+      const b = [...document.querySelectorAll('button')].find((x) => x.textContent.trim() === 'Autoriser un regemme différent' && x.offsetParent !== null);
+      if (!b) return 'pas de bouton';
+      if (b.disabled) return 'désactivé';
+      b.click();
+      return 'cliqué';
+    })()`);
+    await js(`location.hash = '#/outils/optimizer'`);
+    await attendre(1500);
+    // ⚠️ Attentes RELANCÉES, pas fixes : l'écran de l'Optimizer se charge à
+    // part, son champ et ses suggestions peuvent tarder.
+    (resultats.etatRiche as Record<string, unknown>).monstre = await js(`(async () => {
+      const attendreQue = async (f) => {
+        for (let i = 0; i < 40; i++) {
+          const v = f();
+          if (v) return v;
+          await new Promise((r) => setTimeout(r, 150));
+        }
+        return null;
+      };
+      // La première suggestion choisissable : la box du compte de test n'a
+      // que trois monstres, leur nom importe peu. ⚠️ La saisie est RETENTÉE :
+      // l'écran finit de se monter juste après l'apparition du champ, et peut
+      // remplacer celui où l'on vient de taper.
+      let champ = null;
+      let o = null;
+      for (let essai = 0; essai < 3 && !o; essai++) {
+        champ = await attendreQue(() => [...document.querySelectorAll('input[placeholder="Rechercher un monstre…"]')].find((x) => x.offsetParent !== null));
+        if (!champ) return 'pas de champ';
+        // ⚠️ La liste ne s'ouvre qu'au focus (useComboboxNav). Fenêtre sans le
+        // focus du système, \`focus()\` n'émet pas l'événement que React écoute :
+        // il est émis ici.
+        champ.focus();
+        champ.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(champ, 'e');
+        champ.dispatchEvent(new Event('input', { bubbles: true }));
+        for (let i = 0; i < 10 && !o; i++) {
+          await new Promise((r) => setTimeout(r, 150));
+          o = [...document.querySelectorAll('[role="option"]')].find((x) => x.getAttribute('aria-disabled') !== 'true') ?? null;
+        }
+      }
+      if (!o) return 'pas de suggestion : ' + JSON.stringify({
+        champs: document.querySelectorAll('input[placeholder="Rechercher un monstre…"]').length,
+        valeur: champ.value,
+        options: document.querySelectorAll('[role="option"]').length,
+        listes: document.querySelectorAll('[role="listbox"]').length,
+        actif: document.activeElement === champ,
+        hash: location.hash,
+      });
+      o.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
+      return 'choisi : ' + o.textContent.trim();
+    })()`);
+    await attendre(1200);
+
+    resultats.prepaAvantChargement = await compteurPrepa();
+    // La RÉFÉRENCE de l'aller-retour : la session telle qu'elle est maintenant,
+    // écrite par Ctrl+S et copiée à part (elle sera réécrite après le
+    // chargement, puis comparée champ par champ par le script).
+    await js(`document.dispatchEvent(new KeyboardEvent('keydown', { key: 's', ctrlKey: true, bubbles: true }))`);
+    const reference = await releve();
+    resultats.reference = reference;
+    const nomCourante = /Sauvegarder dans (.+) \(Ctrl\+S\)/.exec(reference.infobulle ?? '')?.[1] ?? null;
+    resultats.nomCourante = nomCourante;
+    const cheminCourante = nomCourante ? join(dossier, 'swblacksmith', 'sessions', nomCourante) : null;
+    if (cheminCourante && existsSync(cheminCourante)) writeFileSync(join(dossier, 'reference-session.json'), readFileSync(cheminCourante));
+    fenetre.webContents.reload();
+    await new Promise<void>((r) => fenetre.webContents.once('did-finish-load', () => r()));
+    await attendre(3000);
+    resultats.apresRechargementVide = { prepa: await compteurPrepa(), compte: await compteAffiche() };
+    const charge = new Promise<void>((r) => fenetre.webContents.once('did-finish-load', () => r()));
+    await js(`document.dispatchEvent(new KeyboardEvent('keydown', { key: 'o', ctrlKey: true, bubbles: true }))`);
+    await charge;
+    await attendre(3500);
+    const notificationCharge = await js(`[...document.querySelectorAll('[role="status"]')].map((e) => e.innerText.trim()).join(' | ')`);
+    resultats.apresChargement = {
+      notification: notificationCharge,
+      prepa: await compteurPrepa(),
+      compte: await compteAffiche(),
+      disque: await js(`({
+        conservation: localStorage.getItem('swblacksmith-persist-v1'),
+        prepaRta: localStorage.getItem('swblacksmith-rta-v1'),
+      })`),
+      session: await releve(),
+    };
+    // 8. L'aller-retour : les écrans de la référence revisités, puis Ctrl+S
+    // réécrit la session chargée — le script la compare à la référence.
+    for (const ecran of ['#/siege/defense', '#/outils/optimizer', '#/rta']) {
+      await js(`location.hash = '${ecran}'`);
+      await attendre(1500);
+    }
+    await js(`document.dispatchEvent(new KeyboardEvent('keydown', { key: 's', ctrlKey: true, bubbles: true }))`);
+    resultats.apresResauvegarde = await releve();
+    if (cheminCourante && existsSync(cheminCourante)) writeFileSync(join(dossier, 'resauvegarde-session.json'), readFileSync(cheminCourante));
   } catch (e) {
     resultats.erreur = String(e);
   } finally {

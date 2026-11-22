@@ -9,7 +9,7 @@ commits, vérifications) sont dans [AGENTS.md](../../AGENTS.md) et
 | | |
 | --- | --- |
 | Framework | React 18 + TypeScript 5 strict, **sans router** (routage par `window.location.hash`) |
-| Build | Vite 5, Tailwind 3, PostCSS + autoprefixer, et le plugin de l'écran partagé (`scripts/lib/postcssVolets.ts`), tous déclarés dans `vite.config.ts` |
+| Build | Vite 6, Tailwind 3, PostCSS + autoprefixer, et le plugin de l'écran partagé (`scripts/lib/postcssVolets.ts`), tous déclarés dans `vite.config.ts` |
 | Dépendances runtime | `lucide-react` (icônes), `framer-motion` (animations), `react-resizable-panels` (séparateur de l'écran partagé) — aucune mesure d'audience |
 | Node | **24** (LTS active), déclaré à trois endroits qui doivent rester alignés : `engines` de `package.json` (`24.x` : une borne ouverte comme `>=24` fait construire Vercel sur la dernière version majeure, au mépris du réglage du projet), `.nvmrc` et la CI |
 | Calcul lourd | Web Workers de recherche, classement et résolution (`src/workers/`) ; corps de calcul partagés avec les outils Node |
@@ -34,6 +34,11 @@ Code dans **`bureau/`** (hors de `src/` : il tourne dans Node) :
   `preload.ts` ;
 - `miseAJour.ts` (mise à jour automatique, `electron-updater`) ;
 - `swex.ts` + `swexPur.ts` (dossier SW Exporter : « Mon compte » suit les exports) ;
+  `swexLive.ts` (le fichier live du plugin SWEX, lu au fil de l'eau : « Mon compte » en direct,
+  « Mettre à jour mon compte », la version du plugin installé) ;
+  `swexDimension.ts` (la saison de l'arène dimensionnelle tenue par le plugin SWEX) ;
+  `swexGuilde.ts` (les fichiers de guilde du plugin : les sièges) ;
+  `swexHistorique.ts` (l'archive du compte du plugin : l'historique des runes) ;
 - `session.ts` + `sessionPur.ts` (session en cours : « Sauvegarder » la réécrit, « Sauvegarder
   sous… », `session.json` ; dossier SW Blacksmith et son sous-dossier `sessions`,
   `dossier-swblacksmith.json`) ;
@@ -52,13 +57,24 @@ Code nettoyé par `scripts/lib/environnementElectron.mjs`). Côté page : `src/l
 mise à jour, cœurs physiques), `src/components/MiseAJourBureau.tsx` (la mise à jour dite par la notification),
 `src/components/BlocApplication.tsx` (bloc « Application » des Réglages : version, mise à jour à
 portée, dossier SW Exporter), `src/components/SuiviSwex.tsx` (applique l'export : tout après le
-choix d'un invocateur, « Mon compte » ensuite), `src/hooks/useEtatSwex.ts` (l'état du dossier, lu
+choix d'un invocateur, « Mon compte » ensuite), `src/hooks/useCompteDirect.ts` +
+`src/lib/compteDirect.ts` (« Mon compte » en direct, objet par objet, et « Mettre à jour mon compte »),
+`src/components/account/InterrupteurDirect.tsx` (l'interrupteur « Direct » des vues de « Mon compte »),
+`src/hooks/useEtatSwex.ts` (l'état du dossier, lu
 par les Réglages et par `SidebarCompte`, dont la carte devient le menu des invocateurs ; ses choix
 passent par la garde `GardeChangementCompte`), `src/components/ChangementCompteDialog.tsx`
 (« Sauvegarder ta session ? » avant un changement de compte), `src/hooks/useSessionEnCours.ts`
 (la session en cours, « Garder mes données » redit au bureau ; `useEtatSession` pour la ligne
 « Dossier SW Blacksmith » de `SettingsList`, bloc « Mes données »). Comportement :
 [bureau/](../02-app/bureau/README.md).
+
+**Plugin SWEX** (`plugin-swex/`, à la racine) : `plugin-swex/source/etatDirect.ts` (le compte tenu à jour, pur),
+`plugin-swex/source/guilde.ts` (les combats de guilde, pur), `plugin-swex/source/archive.ts` (l'archive : un bloc gzip
+par session), `plugin-swex/source/fichiers.ts` (noms, dossier par invocateur, écriture atomique),
+`plugin-swex/source/plugin.ts` (ce que SWEX charge), assemblés par `scripts/lib/construirePluginSwex.mjs` en
+`dist/plugin-swex/SWBlacksmithLive.js` (émis par Vite, `pluginSwex` de `vite.config.ts` ; seul :
+`npm run plugin-swex`), téléchargeable depuis `src/pages/SwExporterPage.tsx`. Comportement :
+[feat-swex-direct.md](../02-app/bureau/feat-swex-direct.md).
 
 ## Commandes
 
@@ -67,7 +83,8 @@ nvm use                # lit .nvmrc
 npm install            # installe aussi les hooks Git (script prepare → scripts/installer-hooks.mjs --automatique)
 npm run fetch-data     # régénère les données monstres et compétences depuis SWARFARM (mode démo si l'API est KO)
 npm run dev            # serveur de dev, http://localhost:5173
-npm run build          # build de prod (⚠️ seul endroit où l'on voit le CSS réellement émis), puis le service api/
+npm run build          # build de prod (⚠️ seul endroit où l'on voit le CSS réellement émis ; Vite y émet le plugin SWEX), puis le service api/
+npm run plugin-swex    # le plugin SWEX seul (dist/plugin-swex/SWBlacksmithLive.js)
 npm run dev:api        # le site et le service Discord en local, http://localhost:3000 (vercel dev)
 npm test               # = node tests/run.mjs
 node tests/run.mjs --lister <filtre>        # sélection finale, sans exécution
@@ -77,7 +94,8 @@ npm run benchmark:optim
 npm run bureau         # l'application de bureau sur le serveur de dev
 npm run bureau:local   # l'application de bureau sur le build (comme installée)
 npm run bureau:preuve  # l'app se contrôle elle-même, captures + resultats.json (--exe : l'app installée ;
-                       # --conservation : les données survivent à la fermeture ; --swex : le dossier SW Exporter)
+                       # --conservation : les données survivent à la fermeture ; --swex : le dossier SW Exporter
+                       # et le direct du plugin SWEX)
 npm run bureau:paquet  # l'installeur de la plateforme courante dans paquets/ (electron-builder.yml)
 ```
 

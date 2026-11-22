@@ -124,6 +124,11 @@ export type { Annonce } from './Notification';
 // <button> volontairement NU. Voir le composant — la nudité y est la règle, pas
 // un oubli.
 export { default as ZoneCliquable } from './ZoneCliquable';
+
+// Tableau de données triable, tiré du tableau des résultats de l'Optimizer :
+// en-têtes `Bouton`, colonne triée teintée, colonne du nom fixée, barre de taux.
+export { default as Tableau, triApresClic } from './Tableau';
+export type { TableauProps, ColonneTableau, ValeurTri, TriTableau } from './Tableau';
 export type { ZoneCliquableProps } from './ZoneCliquable';
 
 export { default as Case } from './Case';

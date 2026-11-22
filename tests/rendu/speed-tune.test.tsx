@@ -82,7 +82,7 @@ function valeurChamp(html: string, nom: string): string | null {
 
 const LEADS =
   'Sans +33% +28% +24% +21% +19% +17% +16% +15% +10% +30% · Ténèbres +23% · Ténèbres +30% · Feu +23% · Feu +30% · Lumière +23% · Lumière +30% · Eau +23% · Eau +30% · Vent +23% · Vent';
-const IMPORT_VIDE = 'Aucune équipe de siège enregistrée — importe ton compte, ou compose une défense / offense dans Siège.';
+const IMPORT_VIDE = 'Aucune équipe de siège ni d’arène enregistrée — importe ton compte, ou compose une défense / offense dans Siège ou Arène.';
 
 export function testRenduSpeedTuneVide() {
   titre('rendu · Speed tuning — sans monstre');
@@ -96,12 +96,12 @@ export function testRenduSpeedTuneVide() {
   ok(aria.includes('Lead de vitesse — Ton équipe') && aria.includes('Lead de vitesse — En face'), 'le lead de chaque camp est nommé');
   const places = valeurs(html, 'placeholder');
   ok(places.includes('Ajouter un monstre à ton équipe…') && places.includes('Ajouter un monstre adverse…'), 'une recherche d\'ajout par camp');
-  const imports = b.filter((x) => x.texte === 'Importer un deck de siège');
+  const imports = b.filter((x) => x.texte === 'Importer un deck de siège ou d’arène');
   // ⚠️ Un bouton par camp ET par format — en tête de
   // carte à la souris, sous la recherche au doigt, un seul visible. Le compte
   // passe de 2 à 4 ; le sens (un import par camp) ne change pas.
-  egal(imports.length, 4, '« Importer un deck de siège » dans chaque camp, à chaque format');
-  ok(imports.every((x) => x.desactive && x.title === IMPORT_VIDE), 'désactivé sans équipe de siège, et pourquoi');
+  egal(imports.length, 4, '« Importer un deck de siège ou d’arène » dans chaque camp, à chaque format');
+  ok(imports.every((x) => x.desactive && x.title === IMPORT_VIDE), 'désactivé sans équipe de siège ni d’arène, et pourquoi');
   ok(t.endsWith('Ajoute au moins un monstre pour visualiser le remplissage des barres et l\'ordre de tour.'), 'ce qu\'il faut faire pour voir les tableaux');
 }
 
@@ -156,6 +156,26 @@ export function testRenduSpeedTuneAnalyse() {
   ok(b.find((x) => x.ariaLabel === 'Galleon — tick 3 — buff +30 %')?.presse === true, 'le buff +30 % posé, enclenché');
   ok(b.find((x) => x.ariaLabel === 'Toute ton équipe — tick 1 — buff +30 %')?.presse === false, 'le buff d\'un clic pour tout le camp');
   ok(t.endsWith('Ordre de tour 1 Veromos tick 4 → 2 Galleon tick 5 → 3 Belladeon tick 6 → 4 Lushen tick 7'), 'l\'ordre de tour, rang et tick');
+}
+
+// Ouvert depuis une équipe d'arène : l'export vers l'Optimizer part (les
+// exemplaires de la Box) ; depuis l'arène dimensionnelle, il est désactivé, et
+// le bouton dit pourquoi.
+export function testRenduSpeedTuneExportArene() {
+  titre('rendu · Speed tuning — export vers l’Optimizer depuis une équipe d’arène');
+  const c = fr.speedTuning.camp;
+  const sources = { box: [], rtaEntries: {}, siegeDefenseTeams: [], siegeOffenseTeams: [], monsterById: new Map(MONSTRES.map((m) => [String(m.id), m])) };
+  const exporter = (source: 'arene-defense' | 'arene-dimension-defense') => {
+    faussLocalStorage({});
+    const html = avecEtat(ETAT_EQUIPE(), () => rendre(
+      <SpeedTuningSection allMonsters={MONSTRES} siegeDefenseTeams={[]} siegeOffenseTeams={[]} compteCharge
+        onImporterEquipe={() => { throw new Error('non appelé au rendu'); }} sourcesOptimizer={sources}
+        deckInitial={{ source, teamId: 'x' }} />));
+    return boutons(html).find((x) => x.texte === c.exporter);
+  };
+  const dimension = exporter('arene-dimension-defense');
+  ok(!!dimension && dimension.desactive && dimension.title === fr.speedTuning.export.dimension, 'arène dimensionnelle : export désactivé, la raison est dite');
+  ok(exporter('arene-defense')?.title !== fr.speedTuning.export.dimension, 'arène classique : pas cette raison');
 }
 
 // Ouvert depuis une équipe de l'Optimizer (feat-speed-tune-depuis-optimizer.md) :

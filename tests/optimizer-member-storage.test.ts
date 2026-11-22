@@ -142,7 +142,7 @@ export function testSessionOptimizerVersionDeux() {
   const lu = lireSession(JSON.stringify({ ...session, version: 1 }));
   ok(lu.ok && lu.session.version === 1, 'une session version 1 reste relue');
   const future = lireSession(JSON.stringify({ ...session, version: 3 }));
-  ok(!future.ok && future.erreur.includes('mets-la à jour'), 'le nouveau lecteur refuse une version future');
+  ok(!future.ok && future.erreur.code === 'tropRecente', 'le nouveau lecteur refuse une version future');
 }
 export async function testMemoireOptimizerEffacement() {
   titre('Mémoire des membres · effacement disque et miroir');

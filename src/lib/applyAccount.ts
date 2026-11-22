@@ -3,9 +3,20 @@
 // global (App) pour alimenter toutes les pages d'un coup.
 
 import { GearSet, Monster, RTA_OTHER, RTA_UNASSIGNED, RUNE_SETS } from '../types';
-import { BoxMonster, ImportedUnit, SiegeImportedDeck } from './importAccount';
+import {
+  AccountSource,
+  BoxMonster,
+  ImportedUnit,
+  SiegeImportedDeck,
+  parseArenaDefense,
+  parseArenaInterserveurDefense,
+  parseArenaOffense,
+  parseDimensionDefense,
+  parseDimensionOffense,
+} from './importAccount';
+import type { Dictionnaire } from '../i18n/fr';
 import { RtaVueAmi } from './rtaShare';
-import { SIEGE_TICKS, combatSpeed, siegeLeadFor, speedLeadOf } from './speed';
+import { SIEGE_TICKS, combatSpeed, leadPour, speedLeadOf, type RegleLead } from './speed';
 
 // Set principal pour pré-classer un monstre en RTA (4 pièces prioritaires).
 const RTA_SET_PRIORITY = ['violent', 'swift', 'despair', 'rage', 'fatal', 'vampire'];
@@ -14,7 +25,7 @@ function primarySection(sets: string[]): string {
   return RTA_OTHER;
 }
 
-type MappedSlot = { monsterId: string | null; runeSpeed: number | null; sets?: string[]; tick?: number; gear?: GearSet };
+type MappedSlot = { monsterId: string | null; runeSpeed: number | null; sets?: string[]; tick?: number; gear?: GearSet; unitId?: number };
 
 // Vitesse de runes finale = SPD plate + bonus Swift (25 % de la base) si set
 // complet. Arrondi au SUPÉRIEUR, comme tous les bonus en % de l'app.
@@ -46,8 +57,8 @@ function nearestTick(combat: number | null): number {
 export function mapRtaItems(
   units: ImportedUnit[],
   byCom2us: Map<number, Monster>
-): { monsterId: string; runeSpeed: number; section: string; sets: string[]; gear?: GearSet }[] {
-  const best = new Map<string, { runeSpeed: number; sets: string[]; runeCount: number; gear?: GearSet }>();
+): { monsterId: string; runeSpeed: number; section: string; sets: string[]; gear?: GearSet; unitId?: number }[] {
+  const best = new Map<string, { runeSpeed: number; sets: string[]; runeCount: number; gear?: GearSet; unitId?: number }>();
   for (const u of units) {
     const mon = byCom2us.get(u.com2usId);
     if (!mon) continue;
@@ -55,7 +66,7 @@ export function mapRtaItems(
     const id = String(mon.id);
     const prev = best.get(id);
     if (!prev || rs > prev.runeSpeed) {
-      best.set(id, { runeSpeed: rs, sets: u.sets ?? [], runeCount: u.runeCount ?? 0, gear: u.gear });
+      best.set(id, { runeSpeed: rs, sets: u.sets ?? [], runeCount: u.runeCount ?? 0, gear: u.gear, unitId: u.unitId });
     }
   }
   return Array.from(best, ([monsterId, v]) => ({
@@ -63,6 +74,7 @@ export function mapRtaItems(
     runeSpeed: v.runeSpeed,
     sets: v.sets,
     gear: v.gear,
+    ...(v.unitId !== undefined ? { unitId: v.unitId } : {}),
     // Build incomplet (< 6 runes) → on laisse en « Non classé ».
     section: v.runeCount >= 6 ? primarySection(v.sets) : RTA_UNASSIGNED,
   }));
@@ -154,10 +166,12 @@ export function mapBoxMonsters(box: BoxMonster[], byCom2us: Map<number, Monster>
   return out;
 }
 
-// Decks de siège → équipes { slots }. `missing` = monstres non trouvés (slots laissés vides).
+// Decks de siège (ou d'arène, `regle`) → équipes { slots }. `missing` =
+// monstres non trouvés (slots laissés vides).
 export function mapSiegeTeams(
   decks: SiegeImportedDeck[],
-  byCom2us: Map<number, Monster>
+  byCom2us: Map<number, Monster>,
+  regle: RegleLead = 'siege'
 ): { teams: { slots: MappedSlot[] }[]; missing: number } {
   let missing = 0;
   const teams = decks.map((dk) => {
@@ -180,7 +194,7 @@ export function mapSiegeTeams(
         const combat = combatSpeed(
           mon.stats.speed,
           runeSpeed,
-          siegeLeadFor(leadInfo, mon.element),
+          leadPour(regle, leadInfo, mon.element),
           slot.swift
         );
         return {
@@ -189,9 +203,48 @@ export function mapSiegeTeams(
           sets: slot.sets,
           tick: noTick ? 0 : nearestTick(combat),
           gear: slot.gear,
+          ...(slot.unitId !== undefined ? { unitId: slot.unitId } : {}),
         };
       }),
     };
   });
   return { teams, missing };
+}
+
+// Les équipes de l'arène classique d'un export, prêtes pour les états :
+// défense, offense, défense interserveur. Leads d'arène.
+export function equipesAreneClassique(
+  data: AccountSource,
+  byCom2us: Map<number, Monster>,
+  t: Dictionnaire
+): Record<'defense' | 'offense' | 'interserveur', ReturnType<typeof mapSiegeTeams>> {
+  return {
+    defense: mapSiegeTeams(parseArenaDefense(data, t).decks, byCom2us, 'arene'),
+    offense: mapSiegeTeams(parseArenaOffense(data, t).decks, byCom2us, 'arene'),
+    interserveur: mapSiegeTeams(parseArenaInterserveurDefense(data, t).decks, byCom2us, 'arene'),
+  };
+}
+
+// L'arène classique est-elle vide (aucune équipe d'aucun côté) ? Le dossier
+// SW Exporter la remplit alors depuis un export qui ne met à jour que « Mon
+// compte » : l'arène, arrivée après le choix de l'invocateur, n'attendrait
+// sinon qu'un nouveau choix.
+export function areneClassiqueVide(equipes: { defense: unknown[]; offense: unknown[]; interserveur: unknown[] }): boolean {
+  return equipes.defense.length === 0 && equipes.offense.length === 0 && equipes.interserveur.length === 0;
+}
+
+// Les équipes de l'arène dimensionnelle, prêtes pour les états : la défense de
+// la saison (tenue par le plugin SWEX), les attaques des équipes récentes
+// (`deck_recent_list` : vues jouer par le plugin, sinon celle de l'export),
+// reconnues dans la box de la saison. Leads d'arène.
+export function equipesDimension(
+  saison: Record<string, any>,
+  recents: unknown[],
+  byCom2us: Map<number, Monster>,
+  t: Dictionnaire
+): { defense: ReturnType<typeof mapSiegeTeams>; offense: ReturnType<typeof mapSiegeTeams> } {
+  return {
+    defense: mapSiegeTeams(parseDimensionDefense(saison, t).decks, byCom2us, 'arene'),
+    offense: mapSiegeTeams(parseDimensionOffense({ deck_recent_list: recents }, saison, t).decks, byCom2us, 'arene'),
+  };
 }

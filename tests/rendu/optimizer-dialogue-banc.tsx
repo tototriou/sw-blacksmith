@@ -3,7 +3,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { flushSync } from 'react-dom';
 import OptimizerEquipeDialog from '../../src/components/outils/OptimizerEquipeDialog';
 import { useOptimizerLists, type UseOptimizerLists } from '../../src/hooks/useOptimizerLists';
-import { setPersistence } from '../../src/hooks/usePersistence';
+import { setPersistence, viderMiroir } from '../../src/hooks/usePersistence';
 import { ecrireMembresOptimizer, OPTIMIZER_MEMBERS_STORAGE_KEY, type EquipeOptimizer } from '../../src/lib/optimizerMemberStorage';
 import { exclusionSelectorKey, type ExclusionSelector } from '../../src/lib/optimizerExclusion';
 import type { Monster } from '../../src/types';
@@ -41,7 +41,7 @@ async function geste(action: () => void) {
 }
 export async function preparer(modification = false, avecReferences = false) {
   if (root) await geste(() => root.unmount());
-  fermee = false; localStorage.clear(); setPersistence(true);
+  fermee = false; localStorage.clear(); viderMiroir(); setPersistence(true);
   localStorage.setItem('swblacksmith-optimizer-lists-v1', JSON.stringify({
     lists: [{ id: 'a', name: 'Alpha' }, { id: 'b', name: 'Bêta' }], activeListId: 'a', validated: [],
     members: ['a', 'b'].flatMap(listId => [...membres, ...(avecReferences ? references : [])].map(selector => ({ listId, selector }))),
@@ -160,6 +160,12 @@ export async function scenario(nom: string): Promise<[boolean, string][]> {
     const fin = mesurer();
     verifier(fixes.every(i => JSON.stringify(avant[i]) === JSON.stringify(fin[i])), 'les positions fixes restent identiques jusqu’au bas de la liste');
     verifier(document.documentElement.scrollWidth <= window.innerWidth, 'aucun débordement horizontal');
+  } else if (nom === 'mes-equipes') {
+    await preparer(false);
+    verifier(!bouton('Enregistrer dans Mes équipes'), 'création : pas d’enregistrement dans Mes équipes dans la fenêtre');
+    await preparer(true);
+    // L'enregistrement vit dans la bande de l'équipe (MonstresDeLaListe), plus dans sa fenêtre.
+    verifier(!bouton('Enregistrer dans Mes équipes'), 'modification : pas d’enregistrement dans Mes équipes dans la fenêtre');
   } else throw new Error(`Scénario de dialogue inconnu : ${nom}`);
   return preuves;
 }

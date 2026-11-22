@@ -20,6 +20,7 @@ import Pager from '../components/account/Pager';
 import { ELEMENT_FILTER_STYLES } from '../components/elementStyles';
 import RunesSection from '../components/account/RunesSection';
 import ArtifactsSection from '../components/account/ArtifactsSection';
+import InterrupteurDirect from '../components/account/InterrupteurDirect';
 import { useStickyState } from '../hooks/useStickyState';
 import { useTraduction } from '../hooks/useLangue';
 import { nomElement } from '../i18n/jeu';
@@ -36,9 +37,10 @@ import MobileSheet from '../ui/MobileSheet';
 import Champ from '../ui/Champ';
 import Pastille from '../ui/Pastille';
 import Bouton from '../ui/Bouton';
-import type { AccountView } from '../App';
+import type { AccountSub, AccountView } from '../App';
 
-type Sub = 'monstres' | 'runes' | 'artefacts';
+// « Mes équipes » est rendue par App avant cette page : elle se lit sans compte.
+type Sub = AccountSub;
 
 interface Props {
   sub: Sub; // inventaire courant, piloté par la barre latérale
@@ -231,6 +233,10 @@ function MonsterBoxSection({
 
   const filtres = (
     <>
+        {/* Application de bureau : « Mon compte » en direct (plugin SWEX).
+            En tête : il choisit le compte que les filtres parcourent. */}
+        <InterrupteurDirect className="self-start lg:self-auto" />
+
         {/* Filtre élément — la teinte de l'élément est portée par l'appelant
             (tokens partagés avec le Bestiaire), pas par la librairie. */}
         <div className="flex flex-wrap items-center gap-2">

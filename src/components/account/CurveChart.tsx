@@ -2,13 +2,14 @@
 // Ordonnée = efficience (%), abscisse = nombre de runes (rang cumulé).
 // Réutilisé par « Courbes » (une série) et « Comparaison » (plusieurs séries).
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { ChevronLeft, ChevronRight, Maximize2, Minimize2, X } from 'lucide-react';
 import { RuneDetail } from '../../types';
 import { RuneDetailBox } from '../PieceDetail';
 import RuneSlotIcon from '../RuneSlotIcon';
 import { useScrollBloque } from '../../hooks/useScrollBloque';
+import { choixAuRang, suivreChoix, type ChoixCourbe } from '../../lib/courbeChoix';
 import { BoutonIcone } from '../../ui';
 import { useTraduction } from '../../hooks/useLangue';
 import { nomSet } from '../../i18n/jeu';
@@ -23,6 +24,17 @@ export interface CurveSeries {
   // elles sont là, un clic sur le graphe ouvre celle du point visé ; sinon le
   // graphe reste en lecture seule, sans rien annoncer de cliquable.
   runes?: RuneDetail[];
+  // `false` = valeurs NON triées (potentiels lus « rune à rune », alignés sur
+  // le classement d'une autre courbe) : tracé en segments droits. Le lissage
+  // de Catmull-Rom, fait pour une courbe monotone, dépasserait chaque pic et
+  // inventerait des valeurs qu'aucune rune n'a.
+  lisse?: boolean;
+}
+
+// Le tracé d'une série : lissé si elle est triée, en segments droits sinon.
+function tracer(s: CurveSeries, pts: Pt[]): string {
+  if (s.lisse !== false) return smoothPath(pts);
+  return pts.map((p, i) => `${i ? 'L' : 'M'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
 }
 
 const W = 820;
@@ -83,14 +95,26 @@ function downsample(effs: number[], toX: (i: number) => number, toY: (e: number)
 }
 
 // `yLabel` / `unit` : le graphe sert aussi bien à l'efficience qu'au score SW.
+// `ordreCartes` : l'ordre des cartes ouvertes au clic — par valeur décroissante
+// (Comparaison : des comptes différents, lus comme les courbes au point X), ou
+// dans l'ordre des séries (Courbes : Actuelle, Héro, Légend, toujours à la même
+// place d'un rang à l'autre).
 export default function CurveChart({
   series,
   yLabel,
   unit = '%',
+  ordreCartes = 'valeur',
+  valeursRune,
 }: {
   series: CurveSeries[];
   yLabel?: string;
   unit?: string; // suffixe des valeurs (graduations et infobulle)
+  ordreCartes?: 'valeur' | 'series';
+  // Les valeurs à lire sur la fiche d'une rune, au lieu de la seule valeur de
+  // la courbe qui l'a désignée (Courbes : actuelle, potentiel héroïque,
+  // potentiel légendaire). `name` relie une valeur à sa série : celles des
+  // courbes qui désignent la rune sont mises en avant.
+  valeursRune?: (rune: RuneDetail) => { name: string; color: string; val: number }[];
 }) {
   const textes = useTraduction();
   const jeu = textes.jeu;
@@ -98,13 +122,16 @@ export default function CurveChart({
   const axeY = yLabel ?? k.axeEfficience;
   const svgRef = useRef<SVGSVGElement>(null);
   const [hover, setHover] = useState<number | null>(null);
-  // Rang cliqué. `null` = fermé.
-  //
-  // ⚠️ On mémorise le RANG seul, jamais les runes : les séries se recalculent à
-  // chaque changement de filtre ou de mesure, et des runes figées désigneraient
-  // un point qui n'existe plus. Le rang désigne une POSITION du classement, et
-  // c'est cette position qu'on lit sur toutes les courbes à la fois.
-  const [choisi, setChoisi] = useState<{ rang: number } | null>(null);
+  // Rang cliqué, avec la rune qui l'occupe (`null` = fermé). Le rang se lit
+  // sur toutes les courbes à la fois ; ⚠️ quand les courbes se recalculent (une
+  // rune montée change de rang), le choix SUIT SA RUNE (src/lib/courbeChoix.ts).
+  const [choisi, setChoisi] = useState<ChoixCourbe | null>(null);
+  const seriesCourantes = useRef(series);
+  seriesCourantes.current = series;
+  const choisir = (rang: number) => choixAuRang(seriesCourantes.current, rang);
+  // Avant le dessin : la courbe recalculée ne montre jamais, même une image,
+  // l'autre rune venue au rang.
+  useLayoutEffect(() => setChoisi((c) => suivreChoix(c, series)), [series]);
 
   // ── Plein écran ────────────────────────────────────────────────────────────
   //
@@ -190,9 +217,9 @@ export default function CurveChart({
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setChoisi(null);
       else if (e.key === 'ArrowLeft')
-        setChoisi((c) => (c && c.rang > 0 ? { rang: c.rang - 1 } : c));
+        setChoisi((c) => (c && c.rang > 0 ? choisir(c.rang - 1) : c));
       else if (e.key === 'ArrowRight')
-        setChoisi((c) => (c && c.rang < nbRangs - 1 ? { rang: c.rang + 1 } : c));
+        setChoisi((c) => (c && c.rang < nbRangs - 1 ? choisir(c.rang + 1) : c));
       else return;
       // Seulement pour les touches qu'on traite : ne pas confisquer le reste.
       e.preventDefault();
@@ -344,14 +371,26 @@ export default function CurveChart({
   // qu'une obligeait à recliquer chaque courbe pour la même question.
   //
   // Ordonnées par valeur décroissante, comme les courbes au point X et comme
-  // l'infobulle de survol : la lecture est la même de haut en bas.
-  const runesChoisies =
-    choisi == null
-      ? []
-      : ouvrables
-          .filter((s) => choisi.rang < (s.runes?.length ?? 0))
-          .map((s) => ({ serie: s, rune: s.runes![choisi.rang], val: s.effs[choisi.rang] }))
-          .sort((a, b) => b.val - a.val);
+  // l'infobulle de survol — ou dans l'ordre des séries (`ordreCartes`).
+  const runesChoisies = (() => {
+    if (choisi == null) return [];
+    const lues = ouvrables
+      .filter((s) => choisi.rang < (s.runes?.length ?? 0))
+      .map((s) => ({ serie: s, rune: s.runes![choisi.rang], val: s.effs[choisi.rang] }));
+    return ordreCartes === 'valeur' ? lues.sort((a, b) => b.val - a.val) : lues;
+  })();
+
+  // ⚠️ UNE carte par RUNE, pas par courbe : deux courbes qui désignent la même
+  // rune à ce rang (lecture « rune à rune », où les trois parlent de la même)
+  // la partagent, avec une ligne par courbe. Trois fiches identiques côte à côte
+  // ne diraient rien de plus. Même objet = même rune : deux fichiers de compte
+  // en comparaison ne partagent jamais leurs objets, même pour un même `id`.
+  const cartes: { rune: RuneDetail; lignes: { serie: CurveSeries; val: number }[] }[] = [];
+  for (const { serie, rune, val } of runesChoisies) {
+    const carte = cartes.find((c) => c.rune === rune);
+    if (carte) carte.lignes.push({ serie, val });
+    else cartes.push({ rune, lignes: [{ serie, val }] });
+  }
 
   // Combien de rangs on peut parcourir : la plus longue des courbes ouvrables.
   // ⚠️ Le max et non le min : une courbe plus courte s'arrête simplement d'être
@@ -365,7 +404,7 @@ export default function CurveChart({
     // détail reste à sa place, dans la page.
     if (pleinEcran || !cliquable || hover == null) return;
     // Re-cliquer le même rang referme : le geste est son propre inverse.
-    setChoisi((cur) => (cur && cur.rang === hover ? null : { rang: hover }));
+    setChoisi((cur) => (cur && cur.rang === hover ? null : choisir(hover)));
   }
 
   // ⚠️ **L'infobulle de survol est du HTML, posé AU-DESSUS du SVG** (le mainteneur :
@@ -509,7 +548,7 @@ export default function CurveChart({
         {/* Aire sous ma courbe */}
         {me &&
           (() => {
-            const line = smoothPath(downsample(me.effs, x, y));
+            const line = tracer(me, downsample(me.effs, x, y));
             const area = `${line} L${x(me.effs.length - 1).toFixed(1)},${(PAD_T + IH).toFixed(1)} L${x(0).toFixed(1)},${(PAD_T + IH).toFixed(1)} Z`;
             return <path d={area} fill="url(#rcFill)" />;
           })()}
@@ -520,7 +559,7 @@ export default function CurveChart({
           .map((s) => (
             <path
               key={s.name}
-              d={smoothPath(downsample(s.effs, x, y))}
+              d={tracer(s, downsample(s.effs, x, y))}
               fill="none"
               stroke={s.color}
               strokeWidth={s.own ? 1.4 : 1.2}
@@ -656,7 +695,7 @@ export default function CurveChart({
               de position. Aux extrémités, la flèche est désactivée. */}
           <div className="mb-2 flex items-center justify-center gap-1">
             <button
-              onClick={() => setChoisi((c) => (c && c.rang > 0 ? { rang: c.rang - 1 } : c))}
+              onClick={() => setChoisi((c) => (c && c.rang > 0 ? choisir(c.rang - 1) : c))}
               disabled={choisi.rang === 0}
               className="flex-none rounded-lg border border-border bg-panel p-1.5 text-ink-dim
                          transition hoverable:border-accent hoverable:text-ink
@@ -674,7 +713,7 @@ export default function CurveChart({
             </span>
             <button
               onClick={() =>
-                setChoisi((c) => (c && c.rang < rangMax - 1 ? { rang: c.rang + 1 } : c))
+                setChoisi((c) => (c && c.rang < rangMax - 1 ? choisir(c.rang + 1) : c))
               }
               disabled={choisi.rang >= rangMax - 1}
               className="flex-none rounded-lg border border-border bg-panel p-1.5 text-ink-dim
@@ -694,8 +733,24 @@ export default function CurveChart({
               Elles sont ordonnées par valeur décroissante, comme les courbes au
               point X et comme l'infobulle de survol : même lecture partout. */}
           <div className="flex flex-wrap items-start justify-center gap-3">
-            {runesChoisies.map(({ serie, rune, val }) => (
-              <div key={serie.name} className="w-[260px] max-w-full">
+            {cartes.map(({ rune, lignes }) => (
+              <div key={lignes[0].serie.name} className="w-[260px] max-w-full">
+                {/* ⚠️ La courbe (ou les courbes) qui a OUVERT cette carte, en
+                    tête, dès qu'il y a plusieurs cartes : avec `valeursRune`,
+                    chaque fiche liste les trois valeurs de sa rune, et la
+                    seule mise en gras ne disait pas à quelle courbe la carte
+                    répond. Une carte seule (lecture « rune à rune », ou une
+                    seule courbe ouverte) n'a rien à départager. */}
+                {valeursRune && cartes.length > 1 && (
+                  <div className="mb-1.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 border-b border-border-soft pb-1 text-xs font-bold text-ink">
+                    {lignes.map(({ serie }) => (
+                      <span key={serie.name} className="flex items-center gap-1.5">
+                        <span className="inline-block h-2 w-3.5 flex-none rounded-full" style={{ background: serie.color }} />
+                        {serie.name}
+                      </span>
+                    ))}
+                  </div>
+                )}
                 {/* En-tête : l'IMAGE de la rune (cadre du slot + symbole du set,
                     comme dans le jeu et dans la liste de runes) puis son set et
                     son slot. ⚠️ L'image d'abord : c'est à elle qu'on reconnaît
@@ -715,23 +770,52 @@ export default function CurveChart({
                       <span className="text-ink-dim">{k.slot(rune.slot)}</span>
                     </div>
                     {/* Le rang n'est PAS répété ici : il vit dans la barre de
-                        navigation au-dessus, entre les deux flèches. */}
-                    <div className="font-mono text-micro text-ink-dim">
-                      {unit === '%' ? val.toFixed(1) : String(Math.round(val))}
-                      {unit}
-                    </div>
-                    {/* ⚠️ Le nom de la courbe n'apparaît QUE s'il y en a
-                        plusieurs d'ouvrables : sur l'onglet Courbes, où seule la
-                        mienne l'est, il n'apprend rien. */}
-                    {ouvrables.length > 1 && (
-                      <div className="mt-0.5 flex items-center gap-1.5 font-mono text-micro">
-                        <span
-                          className="inline-block h-1.5 w-3 flex-none rounded-full"
-                          style={{ background: serie.color }}
-                        />
-                        <span className="truncate text-ink">{serie.name}</span>
+                        navigation au-dessus, entre les deux flèches.
+                        Une ligne par courbe qui désigne cette rune — ou, avec
+                        `valeursRune`, toutes les valeurs de la rune, celles des
+                        courbes qui la désignent en avant.
+                        ⚠️ Le nom de la courbe n'apparaît QUE s'il y en a
+                        plusieurs d'ouvrables : une seule courbe ouverte (les
+                        autres masquées), il n'apprend rien. */}
+                    {/* `valeursRune` : les valeurs sur UNE rangée, pastille +
+                        nombre, sans les noms — la pastille a la couleur de la
+                        légende, le nom reste en infobulle et en tête de carte.
+                        Trois lignes « pastille · nom · valeur » allongeaient
+                        l'en-tête pour une information qui tient en une. */}
+                    {valeursRune ? (
+                      <div className="mt-0.5 flex flex-wrap items-center gap-x-2.5 font-mono text-micro">
+                        {valeursRune(rune).map(({ name, color, val }) => {
+                          const designe = lignes.some((l) => l.serie.name === name);
+                          return (
+                            <span
+                              key={name}
+                              title={name}
+                              className={`flex items-center gap-1 ${designe ? 'font-bold text-ink' : 'text-ink-dim'}`}
+                            >
+                              <span className="inline-block h-1.5 w-1.5 flex-none rounded-full" style={{ background: color }} />
+                              {unit === '%' ? val.toFixed(1) : String(Math.round(val))}
+                              {unit}
+                            </span>
+                          );
+                        })}
                       </div>
-                    )}
+                    ) : lignes.map(({ serie, val }) => {
+                      const valeur = `${unit === '%' ? val.toFixed(1) : String(Math.round(val))}${unit}`;
+                      return ouvrables.length > 1 ? (
+                        <div key={serie.name} className="mt-0.5 flex items-center gap-1.5 font-mono text-micro">
+                          <span
+                            className="inline-block h-1.5 w-3 flex-none rounded-full"
+                            style={{ background: serie.color }}
+                          />
+                          <span className="truncate text-ink">{serie.name}</span>
+                          <span className="text-ink-dim">{valeur}</span>
+                        </div>
+                      ) : (
+                        <div key={serie.name} className="font-mono text-micro text-ink-dim">
+                          {valeur}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
 

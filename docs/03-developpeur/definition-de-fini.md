@@ -58,12 +58,17 @@ Chaque niveau que la fonctionnalité touche a sa vérification, inscrite au regi
   branché à la mauvaise condition, ne se voit qu'ici.
 - **L'outillage touché** (build, script, plugin) : vérifié sur ses vraies entrées, pas seulement
   sur un exemple écrit à la main.
-- **Les tests existants** que la fonctionnalité fait mentir : corrigés pour dire le nouveau
-  comportement, jamais supprimés pour faire passer la suite.
+- ⚠️ **Les tests existants** de la fonctionnalité ou de l'écran touchés : mis à jour dans la même
+  branche, pas seulement complétés par des tests neufs. Ils se trouvent par un `grep` de `tests/`
+  sur ce qui change : les textes affichés, le nom du composant ou de la fonction, la route ou la
+  vue. Chacun se lance par filtre avant la pull request ; celui qui ne dit plus le nouveau
+  comportement est corrigé, jamais supprimé pour faire passer la suite. La CI ne sert pas à les
+  découvrir.
 
 ## Avant de proposer la fusion
 
-- La documentation et les tests ci-dessus sont dans la branche.
+- La documentation et les tests ci-dessus sont dans la branche, les tests existants de ce qui a
+  changé compris : retrouvés, mis à jour et lancés.
 - `npx tsc --noEmit`, `npm run lint`, `npm run build` passent.
 - Les vérifications liées au changement passent (`node tests/run.mjs --depuis origin/<base>`, ou
   par filtre). La suite complète, c'est la CI de la pull request qui la passe ; en local, elle ne

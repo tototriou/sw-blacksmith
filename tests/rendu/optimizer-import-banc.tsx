@@ -6,7 +6,7 @@ import { ClassementVideTest, demandeClassementTest } from '../classement-fixture
 import { flushSync } from 'react-dom';
 import { useOptimizerState, type OptimizerState } from '../../src/hooks/useOptimizerState';
 import { useOptimizerLists, type UseOptimizerLists } from '../../src/hooks/useOptimizerLists';
-import { setPersistence } from '../../src/hooks/usePersistence';
+import { setPersistence, viderMiroir } from '../../src/hooks/usePersistence';
 import OptimizerSection from '../../src/components/outils/OptimizerSection';
 import { baseCompleteCriteres, photoCriteres } from '../../src/lib/criteresOptimizer';
 import { cleMemoireMembre, ecrireMembresOptimizer, reverifierStockageOptimizer, OPTIMIZER_MEMBERS_STORAGE_KEY, type StockageOptimizer } from '../../src/lib/optimizerMemberStorage';
@@ -49,8 +49,12 @@ const visible = (e: Element) => e.getBoundingClientRect().width > 0 && getComput
 const bouton = (nom: string) => [...document.querySelectorAll<HTMLButtonElement>('button')].find(e => visible(e) && (e.textContent?.trim() === nom || e.getAttribute('aria-label') === nom))!;
 const position = (e: Element) => { const { x, y, width, height } = e.getBoundingClientRect(); return { x, y, width, height }; };
 const texte = () => document.getElementById('racine')!.innerText;
-const source = (nom: string) => [...document.querySelectorAll<HTMLButtonElement>('[aria-label="Sources d’import"] button')].find(e => visible(e) && e.getAttribute('aria-label') === nom)!;
-const sourceDebut = (debut: string) => [...document.querySelectorAll<HTMLButtonElement>('[aria-label="Sources d’import"] button')].find(e => visible(e) && e.getAttribute('aria-label')?.startsWith(debut));
+// La fenêtre d'import : la case d'une équipe (par son nom), celle d'un bloc.
+// La case d'une équipe, à gauche de sa ligne, porte le nom de l'équipe.
+const caseEquipe = (nom: string) => [...document.querySelectorAll<HTMLInputElement>('[role="dialog"] input[type="checkbox"]')]
+  .find(i => i.getAttribute('aria-label') === nom && visible(i.closest('label')!)) ?? null;
+const caseBloc = (nom: string) => document.querySelector<HTMLInputElement>(`[role="dialog"] input[aria-label="Tout « ${nom} »"]`);
+const texteFenetre = () => document.querySelector('[role="dialog"]')?.textContent ?? '';
 const photographierExistant = (stockage: StockageOptimizer, ids: Set<string>) => JSON.stringify({
   lists: stockage.lists.filter(l => ids.has(l.id)), members: stockage.members.filter(m => ids.has(m.listId)),
   validated: stockage.validated.filter(v => ids.has(v.listId)),
@@ -94,24 +98,23 @@ export async function scenarioDisponibiliteMemoisee(): Promise<[boolean, string]
     const preuves = await scenario('rta');
     appels.clear();
     await geste(() => etat.setResultsPage(3));
-    preuves.push([appels.size === 0, 'rendu sans changement des sources, flottant fermé : aucun producteur rappelé']);
+    // La fenêtre lit les sources sans rien proposer : un producteur ne tourne
+    // qu'au geste d'import.
+    preuves.push([appels.size === 0, 'rendu sans changement des sources, fenêtre fermée : aucun producteur appelé']);
     await geste(() => bouton('Importer une équipe').click());
     await geste(() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })));
-    preuves.push([appels.size === 0, 'ouverture et fermeture sans changement des sources : propositions réutilisées']);
+    preuves.push([appels.size === 0, 'ouverture et fermeture de la fenêtre : aucun producteur appelé']);
     await geste(() => changerSources({ ...data, rtaEntries: {} }));
-    preuves.push([noms.every((nom, i) => appels.get(nom) === (i === 1 ? 2 : 1)),
-      'sources modifiées : chaque proposition recalculée une fois pour les deux formats']);
-    appels.clear();
+    preuves.push([appels.size === 0, 'sources modifiées : aucun producteur appelé avant un import']);
     await changerDisponibiliteImport(false);
-    preuves.push([appels.get(noms[0]) === 1 && !appels.has(noms[1]) && appels.get(noms[2]) === 1
-      && bouton('Importer une équipe').disabled, 'nouvelles sources vides : disponibilité actualisée sans double calcul']);
+    preuves.push([appels.size === 0 && bouton('Importer une équipe').disabled, 'nouvelles sources vides : bouton désactivé, sans producteur appelé']);
     return preuves;
   } finally { noms.forEach((nom, i) => Object.defineProperty(importsEquipes, nom, descripteurs[i])); }
 }
 
 export async function scenario(nom: string): Promise<[boolean, string][]> {
   const preuves: [boolean, string][] = [], verifier = (oui: boolean, libelle: string) => preuves.push([oui, libelle]);
-  localStorage.clear(); setPersistence(true); reverificationEnAttente = false;
+  localStorage.clear(); viderMiroir(); setPersistence(true); reverificationEnAttente = false;
   const criteres = baseCompleteCriteres(undefined); criteres.comboSets = ['violent']; criteres.minStats = { spd: 999 }; criteres.objective = 'ehp';
   localStorage.setItem('swblacksmith-optimizer-lists-v1', JSON.stringify({ lists: [{ id: 'a', name: 'Ancienne' }], activeListId: 'a',
     members: [selector, autreSelector].map(selector => ({ listId: 'a', selector })), validated: [{ listId: 'a', selector, runeIds: [91], artifactIds: [92] }] }));
@@ -147,7 +150,8 @@ export async function scenario(nom: string): Promise<[boolean, string][]> {
     verifier(photographierAffichage() === affichageAvant && etat.search.result === resultatAvant,
       'refus : sélection, propriétaire après réconciliation, critères et tous les résultats conservés');
     await geste(() => bouton('Importer une équipe').click());
-    await geste(() => source('Défenses de siège').click());
+    await geste(() => caseBloc('Défenses de siège')!.click());
+    await geste(() => bouton('Nouvelle liste').click());
     verifier([...document.querySelectorAll('[aria-label="Rapport d’import"]')].some(e => visible(e)
       && e.textContent?.includes('revérification') && e.textContent.includes('en attente')), 'refus de revérification lu dans le rapport à l’écran');
     verifier(photographierAffichage() === affichageAvant && etat.search.result === resultatAvant,
@@ -290,37 +294,32 @@ globalThis.Worker = ClassementVideTest as unknown as typeof Worker;
     ] }));
     if (nom === 'indisponible') {
       await geste(() => changerSources({ ...data, rtaEntries: {}, siegeDefenseTeams: [deck('inconnu')].map(e => ({ ...e, slots: e.slots.map(s => ({ ...s, monsterId: 'inconnu' })) })), siegeOffenseTeams: [] }));
-      verifier(ancre.disabled && ancre.title.includes('Aucune source utilisable'), 'bouton toujours visible, source non vide mais inutilisable : désactivé avec raison');
+      verifier(ancre.disabled && ancre.title.includes('Rien à importer'), 'bouton toujours visible, source non vide mais inutilisable : désactivé avec raison');
     } else {
       ancre.scrollIntoView({ block: 'center' });
       const avant = JSON.stringify(position(ancre));
       await geste(() => ancre.click());
       verifier(JSON.stringify(position(ancre)) === avant, `ouverture : géométrie de l’ancre intacte ${avant}`);
-      verifier(['Défenses de siège', 'Prépa RTA', 'Offense de siège 2 · Monstre 1, Monstre 2, Monstre 1'].every(t => !!source(t)) && !!sourceDebut('Offense de siège 1 · '),
-        'flottant : défenses, chaque deck distinct et toute la prépa RTA, désignés par leur nom complet');
-      verifier(['Défenses de siège', 'Offenses de siège', 'Prépa RTA', 'Toutes les défenses', 'Offense 2', 'Tous les monstres'].every(t => document.getElementById('racine')!.textContent!.includes(t)),
-        'flottant : en-têtes de section et libellés courts lus à l’écran');
-      const offense = source('Offense de siège 2 · Monstre 1, Monstre 2, Monstre 1');
-      verifier(offense.firstElementChild?.childElementCount === 3 && offense.lastElementChild?.previousElementSibling?.textContent === 'Offense 2',
-        'chaque deck montre ses trois monstres avant son libellé');
-      const cible = nom === 'defenses' ? 'Défenses de siège' : nom === 'rta' ? 'Prépa RTA' : 'Offense de siège 2 · Monstre 1, Monstre 2, Monstre 1';
-      await geste(() => source(cible).click());
-      verifier(JSON.stringify(position(ancre)) === avant, `rapport : géométrie de l’ancre intacte ${JSON.stringify(position(ancre))}`);
-      // Réussi, l'import replie les sources ; le rapport se relit en les rouvrant.
-      verifier(ancre.getAttribute('aria-expanded') === 'false', 'import réussi : sources repliées');
+      verifier(['Défense 1', 'Défense 2', 'Offense 1', 'Offense 2', 'Prépa de la page RTA'].every(t => !!caseEquipe(t)),
+        'fenêtre : chaque défense, chaque offense et la prépa RTA, chacune sa case');
+      verifier(['Défenses de siège', 'Offenses de siège', 'Decks du jeu'].every(t => texteFenetre().includes(t)), 'fenêtre : en-têtes de section lus');
+      const ligneOffense = caseEquipe('Offense 2')!.closest('label')!.parentElement!;
+      verifier(ligneOffense.children[1]?.querySelectorAll('[data-portrait]').length === 3 && ligneOffense.lastElementChild?.textContent?.trim() === 'Offense 2',
+        'chaque deck : sa case, ses trois monstres, puis son libellé');
+      if (nom === 'defenses') verifier(caseEquipe('Défense 3')?.disabled === true && texteFenetre().includes('Moins de deux monstres connus.'),
+        'une défense d’un seul monstre connu : sa case désactivée, avec sa raison');
+      await geste(() => (nom === 'defenses' ? caseBloc('Défenses de siège')! : caseEquipe(nom === 'rta' ? 'Prépa de la page RTA' : 'Offense 2')!).click());
+      await geste(() => bouton('Nouvelle liste').click());
+      verifier(JSON.stringify(position(ancre)) === avant, `import : géométrie de l’ancre intacte ${JSON.stringify(position(ancre))}`);
+      // Réussi, l'import referme la fenêtre ; le rapport se relit en la rouvrant.
+      verifier(ancre.getAttribute('aria-expanded') === 'false' && !document.querySelector('[role="dialog"]'), 'import réussi : fenêtre refermée');
       await geste(() => ancre.click());
       const rapport = [...document.querySelectorAll<HTMLElement>('[aria-label="Rapport d’import"]')].find(visible)!;
-      verifier(!!rapport && rapport.textContent!.includes('créée') && rapport.textContent!.includes(nom === 'defenses' ? '7 monstre(s), 2 équipe(s)' : nom === 'rta' ? '1 monstre(s), 0 équipe(s)' : '3 monstre(s), 1 équipe(s)'), 'rapport de création lu à l’écran');
-      if (nom === 'defenses') verifier(rapport.textContent!.includes('inconnu : Monstre inconnu.')
-        && rapport.textContent!.includes('Défense 3 — lead de la source') && rapport.textContent!.includes('appliqué'), 'rapport lu à l’écran : membre inconnu ignoré, équipe à un membre et lead non appliqué dits');
-      // La surface est un `Flottant` : couche supérieure du navigateur
-      // (`popover` ouvert), position calculée en `fixed`, jamais rognée par la
-      // colonne qui défile.
-      const surface = rapport.parentElement!;
-      verifier(getComputedStyle(surface).position === 'fixed' && surface.getAttribute('popover') === 'manual' && surface.matches(':popover-open')
-        && getComputedStyle(surface).borderTopWidth === '1px', 'rapport hors du flux, en couche supérieure, dans la surface au contour de 1 px');
+      verifier(!!rapport && rapport.textContent!.includes('créée') && rapport.textContent!.includes(nom === 'defenses' ? '6 monstre(s), 2 équipe(s)' : nom === 'rta' ? '1 monstre(s), 0 équipe(s)' : '3 monstre(s), 1 équipe(s)'), 'rapport de création lu à l’écran');
+      // Le rapport vit dans la fenêtre : une modale, hors du flux de la page.
+      verifier(!!rapport.closest('[role="dialog"]'), 'rapport lu dans la fenêtre d’import, hors du flux');
       await geste(() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })));
-      verifier(ancre.getAttribute('aria-expanded') === 'false', 'Échap ferme les sources sans import supplémentaire');
+      verifier(ancre.getAttribute('aria-expanded') === 'false', 'Échap ferme la fenêtre sans import supplémentaire');
       // Au téléphone, l'import déplie « Gérer mes listes » de lui-même.
       const pli = bouton('Gérer mes listes');
       verifier(!pli || pli.getAttribute('aria-expanded') === 'true', 'téléphone : « Gérer mes listes » déplié par l’import');
