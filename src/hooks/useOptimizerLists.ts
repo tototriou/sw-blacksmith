@@ -134,6 +134,8 @@ function newId(): string {
 export interface UseOptimizerLists {
   lireStockageCourant: () => StockageOptimizer & { activeListId: string | null };
   ajouterParImport: (stockage: StockageOptimizer, activeListId: string) => boolean;
+  /** Publie ce qu'un import a ajouté à la liste `listId` existante ; faux si elle a disparu. */
+  completerParImport: (avant: StockageOptimizer, apres: StockageOptimizer, listId: string) => boolean;
   point: PointOptimizer | null;
   pointExiste: boolean;
   rapportPoint: string[];
@@ -268,6 +270,34 @@ export function useOptimizerLists(): UseOptimizerLists {
           memories: new Map([...s.memberStorage.memories, ...[...importe.memories].filter(([, m]) => m.listId === activeListId)]),
           teams: [...s.memberStorage.teams, ...importe.teams.filter(e => e.listId === activeListId)],
           listContents: new Map([...s.memberStorage.listContents, ...[...importe.listContents].filter(([id]) => id === activeListId)]) } };
+    });
+    return true;
+  }, [setState, lireStockageCourant]);
+
+  // « Ajouter à la liste active » : publie ce que l'import a ajouté à une liste
+  // existante (`apres` moins `avant`) — membres, builds validés, identités,
+  // mémoires, équipes —, sans rien retirer. Refusé si la liste a disparu.
+  const completerParImport = useCallback((avant: StockageOptimizer, apres: StockageOptimizer, listId: string) => {
+    if (!lireStockageCourant().lists.some(l => l.id === listId)) return false;
+    const cleMembre = (m: OptimizerListMember) => `${m.listId}|${exclusionSelectorKey(m.selector)}`;
+    const membresAvant = new Set(avant.members.map(cleMembre));
+    const validesAvant = new Set(avant.validated.map(v => `${v.listId}|${exclusionSelectorKey(v.selector)}`));
+    const equipesAvant = new Set(avant.teams.map(e => e.id));
+    const membres = apres.members.filter(m => m.listId === listId && !membresAvant.has(cleMembre(m)));
+    const valides = apres.validated.filter(v => v.listId === listId && !validesAvant.has(`${v.listId}|${exclusionSelectorKey(v.selector)}`));
+    const identites = [...apres.identities].filter(([cle, m]) => m.listId === listId && !avant.identities.has(cle));
+    const memoires = [...apres.memories].filter(([cle, m]) => m.listId === listId && !avant.memories.has(cle));
+    const equipes = apres.teams.filter(e => e.listId === listId && !equipesAvant.has(e.id));
+    setState(s => {
+      if (!s.lists.some(l => l.id === listId)) return s;
+      const presents = new Set(s.members.map(cleMembre));
+      return { ...s, activeListId: listId,
+        members: [...s.members, ...membres.filter(m => !presents.has(cleMembre(m)))],
+        validated: [...s.validated, ...valides],
+        memberStorage: { ...s.memberStorage, raw: null,
+          identities: new Map([...s.memberStorage.identities, ...identites]),
+          memories: new Map([...s.memberStorage.memories, ...memoires]),
+          teams: [...s.memberStorage.teams, ...equipes.filter(e => !s.memberStorage.teams.some(x => x.id === e.id))] } };
     });
     return true;
   }, [setState, lireStockageCourant]);
@@ -485,6 +515,7 @@ export function useOptimizerLists(): UseOptimizerLists {
   return {
     lireStockageCourant,
     ajouterParImport,
+    completerParImport,
     point: pointStocke.point,
     pointExiste: pointStocke.brut !== null,
     rapportPoint: pointStocke.rapport,

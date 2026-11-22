@@ -833,6 +833,9 @@ function Application() {
     listContents: optimizerLists.listContents, rejets: optimizerLists.rejets } }),
   [optimizerData, optimizerLists.identities, optimizerLists.lists, optimizerLists.members, optimizerLists.validated,
     optimizerLists.memories, optimizerLists.teams, optimizerLists.listContents, optimizerLists.rejets]);
+  // La fenêtre d'import de l'Optimizer lit aussi les decks de l'export et Mes équipes.
+  const importCommunOptimizer = useMemo(() => ({ ctx: contexteEquipes, equipes: equipesEnregistrees.equipes }),
+    [contexteEquipes, equipesEnregistrees.equipes]);
   // La première équipe créée ou importée pose la question de conservation,
   // tant qu'elle n'a jamais été tranchée.
   const demanderConservationEquipes = () => {
@@ -2251,6 +2254,7 @@ function Application() {
         inventaire={inventaireEquipes}
         allMonsters={allMonsters}
         optimizer={optimizerPourEquipes}
+        recos={recos.state.recos}
         onImporterOptimizer={importerEquipe}
         onEquipeCreee={demanderConservationEquipes}
         demandeOptimizer={demandeOptimizer}
@@ -2293,6 +2297,7 @@ function Application() {
         optimizer={optimizer}
         onImporterEquipe={importerEquipeFlottant}
         onExporterEquipe={importerEquipe}
+        importCommun={importCommunOptimizer}
         allMonsters={allMonsters}
         rtaEntries={rta.state.entries}
         siegeDefenseTeams={siegeDef.state.teams}

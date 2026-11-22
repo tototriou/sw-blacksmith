@@ -80,7 +80,7 @@ export async function testRenduOptimizerImportRapportPartage() {
     ok(JSON.stringify(await bouton().boundingBox()) === JSON.stringify(avant), 'le rappel du rapport au téléphone garde la géométrie de l’ancre');
     if (process.env.CAPTURES) await page.screenshot({ path: `${process.env.CAPTURES}/rapport-partage-telephone.png`, fullPage: true });
     await page.evaluate(() => (globalThis as unknown as { bancOptimizer: { changerDisponibiliteImport: (v: boolean) => Promise<void> } }).bancOptimizer.changerDisponibiliteImport(false));
-    ok(await bouton().isDisabled() && (await bouton().getAttribute('title'))?.includes('Aucune source utilisable') === true,
+    ok(await bouton().isDisabled() && (await bouton().getAttribute('title'))?.includes('Rien à importer') === true,
       'toutes les sources devenues inutilisables : bouton désactivé avec raison');
     ok(await rapport().count() === 1 && await rapport().innerText() === texte, 'rapport déjà ouvert conservé sans source utilisable');
     await page.keyboard.press('Escape');

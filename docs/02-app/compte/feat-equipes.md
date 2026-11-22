@@ -15,7 +15,7 @@ Fichiers : `src/components/account/equipes/` (écran), `src/lib/equipesEnregistr
 `src/hooks/useEquipesEnregistrees.ts` (état, instancié dans `src/App.tsx`).
 
 Voir aussi : [feat-import-equipes.md](../optimizer/feat-import-equipes.md) (le modèle
-d'import de l'Optimizer, que l'export réutilise),
+d'import de l'Optimizer, que l'export réutilise), [feat-fenetre-import.md](../transverse/feat-fenetre-import.md) (la fenêtre d'import),
 [persistance.md](../transverse/feat-import-compte/persistance.md) (l'interrupteur de
 conservation).
 
@@ -302,7 +302,7 @@ sinon « N pièces modifiées », « N pièces disparues ». Le détail marque c
 ### Ordinateur
 
 - En tête : la rangée d'onglets, puis une ligne d'actions : la recherche, « Nouvelle
-  équipe », « Importer une équipe » (menu des sources), « Nouveau groupe », et, à
+  équipe », « Importer une équipe » (fenêtre d'import), « Nouveau groupe », et, à
   droite, « Exporter le fichier » et « Importer un fichier ».
 - Dessous, une grille de cartes (autant de colonnes que la largeur le permet, par
   requête de conteneur). Une carte : le nom, les avatars des monstres dans l'ordre
@@ -355,7 +355,7 @@ sinon « N pièces modifiées », « N pièces disparues ». Le détail marque c
 
 Aucune des deux mises en page n'est dérivée de l'autre : chacune a son agencement
 et ses tests de rendu. Le banc d'affichage mesure la page (`compte-equipes` :
-ouverture, sources d'import, équipe importée, détail, groupe, « Nouveau groupe » ; en plus des deux formats,
+ouverture, fenêtre d'import, import en groupe, import de monstres, équipe importée, détail, groupe, « Nouveau groupe » ; en plus des deux formats,
 à 1 920 px, runes en 3 × 2, et à 2 560 px, runes sur une rangée) et l'Optimizer sur une liste
 liée (`optimizer`, état `equipe-liee`).
 
@@ -410,19 +410,29 @@ liée (`optimizer`, état `equipe-liee`).
 
 ## Imports
 
-Le menu « Importer » liste ses sources avec la grammaire de l'import de l'Optimizer
-(un en-tête par section, avatars, libellé court, source sans contenu désactivée avec
-sa raison). Chaque choix crée **une nouvelle équipe** ; rien d'existant n'est
-modifié.
+« Importer une équipe » ouvre la fenêtre d'import commune
+([feat-fenetre-import.md](../transverse/feat-fenetre-import.md)), sur les sources
+« Decks du jeu », « Optimizer » et « Recommandations », filtrée sur l'**onglet ouvert**
+et sa sous-catégorie (décision de l'utilisateur) ; le filtre « Contenu » l'élargit. On y
+coche une ou plusieurs équipes, ou un bloc entier (toutes les défenses de siège, une
+recommandation) :
 
-Les sources suivent l'**onglet ouvert** (décision de l'utilisateur,
-`ordonnerSourcesPourOnglet`, par le rangement de chaque source) : d'abord celles de
-la catégorie filtrée, puis celles de l'onglet, puis le reste dans l'ordre de base
-(défenses de siège, offenses de siège, arène, prépa de la page RTA, decks du jeu,
-Optimizer). Dans Combat
-de guilde filtré sur « Défense siège », les défenses de siège, puis les offenses de
-siège et de guerre de guilde, puis le reste ; sous « Tout », toutes les sources de
-l'onglet d'abord.
+- une équipe : « Importer » ;
+- plusieurs : « Importer séparément » (une équipe chacune) ou « Importer en groupe »
+  (ces équipes dans un groupe nouveau, nommé comme « Nouveau groupe »). Le groupe exige
+  au moins deux équipes d'une même catégorie hors RTA ; sinon l'action est désactivée
+  et le dit. Les conflits de monstres, de runes et d'artéfacts entre les équipes
+  cochées sont listés avant l'import (cas du temple du chaos, où trois decks se
+  choisissent ensemble) ; ils ne bloquent pas.
+
+Chaque équipe importée est **une nouvelle équipe**, rangée selon la table ci-dessous ;
+rien d'existant n'est modifié.
+
+« Importer des monstres », dans une équipe ouverte à côté de « Ajouter un monstre »,
+ouvre la même fenêtre en mode monstres, avec en plus la source « Mes équipes » (l'équipe
+ouverte exclue) : on y choisit des monstres un à un, par leur portrait, dans la limite
+des places libres de l'équipe. Chacun arrive avec l'équipement de sa source. Désactivé
+quand l'équipe est pleine.
 
 | Source | Rangement de l'équipe créée | Équipement copié |
 | --- | --- | --- |
@@ -434,6 +444,7 @@ l'onglet d'abord.
 | La prépa de la page RTA (avec les decks du jeu) | RTA, une prépa | le build de chaque monstre dans la prépa |
 | Un deck enregistré du jeu | son onglet et sa catégorie (`rangementDeck`) ; un type non relevé, l'onglet ouvert | le preset du deck |
 | Une équipe de l'Optimizer | l'onglet ouvert | le build validé du membre, sinon son équipement affiché |
+| Un deck d'une recommandation | Combat de guilde | aucun (une recommandation ne dit que les espèces) |
 
 - Siège : depuis les équipes de siège de l'app (`SiegeTeam`, slot 0 = leader).
 - Prépa de la page RTA : la prépa telle qu'elle est (`RtaState`), entière, dans
@@ -449,10 +460,8 @@ l'onglet d'abord.
   source est désactivée, « Réimporte ton compte pour lire tes decks d'arène ». Ces
   decks connaissent l'unité de chaque monstre : leurs monstres gardent leur
   `unitId`.
-- RTA : la prépa RTA n'est pas une source, ni d'équipe ni d'équipement (décision de
-  l'utilisateur) ; les équipes RTA se créent à la main ou depuis l'Optimizer.
-- Optimizer : une équipe d'une liste (ses membres, son leader, son speed tune), une à
-  la fois. **Jamais une liste entière** (décision de l'utilisateur) : une liste sans
+- Optimizer : une équipe d'une liste (ses membres, son leader, son speed tune) ; on
+  peut en cocher plusieurs. **Jamais une liste entière** (décision de l'utilisateur) : une liste sans
   équipe n'est pas une source ; sans aucune équipe, la source est désactivée, « Aucune
   équipe dans l'Optimizer ». Une source dont un membre ne se résout plus dans le compte
   est désactivée, avec sa raison.
@@ -478,8 +487,13 @@ l'onglet d'abord.
   sans catégorie (l'export ne dit pas l'élément). Un deck sans donjon connu va dans
   son onglet, sans catégorie.
 
-Un rapport (modale) suit chaque import : l'équipe créée, les monstres ignorés et leur
-raison (espèce inconnue, slot vide sans monstre).
+- Recommandations : chaque deck de chaque recommandation de la page Siège, une
+  recommandation formant un bloc. Un deck de moins de deux monstres connus est
+  désactivé avec sa raison ; ses monstres restent choisissables un à un.
+
+Un rapport (modale) suit chaque import : les équipes créées (et leur groupe), les
+monstres ajoutés, les monstres ignorés et leur raison (espèce inconnue, slot vide sans
+monstre).
 
 ## Aller-retour avec l'Optimizer
 

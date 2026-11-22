@@ -8,7 +8,7 @@ import EtatMonstreEssentiels from '../bureau/EtatMonstreEssentiels';
 import { Onglets } from '../../../../ui';
 import SelecteurListes from '../SelecteurListes';
 import MonsterSourcePicker from '../../MonsterSourcePicker';
-import OptimizerImportButton from '../../OptimizerImportButton';
+import OptimizerImportButton, { AUCUN_IMPORT_OPTIMIZER } from '../../OptimizerImportButton';
 import { listesInertes, optimizerInerte } from './inertes';
 import type { ContexteGabarits, Gabarit } from './types';
 import { exclusionSelectorKey, type OptimizerListMember } from '../../../../lib/optimizerExclusion';
@@ -73,7 +73,7 @@ function ListeGabarit({ ctx, mode }: { ctx: ContexteGabarits; mode: 'vide' | 're
   return (
     <ListeDeTravailBureau
       listes={<SelecteurListes lists={lists} memberCounts={compte} titreSection
-        action={<OptimizerImportButton enLigne sources={[]} onImporter={optimizer.importerEquipe} rapport={null} />} />}
+        action={<OptimizerImportButton enLigne fenetre={AUCUN_IMPORT_OPTIMIZER} onImporter={optimizer.importerEquipe} rapport={null} />} />}
       recherche={<MonsterSourcePicker mode="bestiary" candidates={ctx.allMonsters} onPick={rien} />}
       liste={{
         activeList, activeMembers, groupesMembres, lists, optimizer, exclusionData: ctx.exclusionData, artifacts: ctx.artifacts,

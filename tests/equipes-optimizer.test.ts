@@ -163,7 +163,7 @@ function testEquipesOptimizerImport() {
   const data = sources();
   const ctx = { box: data.box, siegeDefenseTeams: [], siegeOffenseTeams: [], rta: { sections: [], entries: {} }, arenaDecks: [], decksEnregistres: [], compte: true,
     monsterById: data.monsterById, monsterByCom2us: new Map([...data.monsterById.values()].map((m) => [m.com2usId as number, m])) };
-  const src = sourcesImportEquipes(ctx, { stockage: r.stockage, data }, inventaire(), 'cairos', fr).filter((x) => x.groupe === fr.equipes.imports.optimizer);
+  const src = sourcesImportEquipes(ctx, { stockage: r.stockage, data }, inventaire(), 'cairos', fr).filter((x) => x.source === 'optimizer');
   egal(src.map((x) => [x.libelle, x.raison]), [['Défense GW — équipe 1', null]], 'une source par équipe de liste');
   let n = 0;
   const cree = src[0].creer('neuve', () => `u${++n}`, T1);
@@ -177,10 +177,10 @@ function testEquipesOptimizerImport() {
   egal(cree.ignores, 0, 'tous les membres repris');
   // Un membre que les sources ne résolvent plus rend la source indisponible.
   const sansDeux = { ...data, monsterById: new Map([...data.monsterById].filter(([k]) => k !== '2')) };
-  const src2 = sourcesImportEquipes(ctx, { stockage: r.stockage, data: sansDeux }, inventaire(), 'cairos', fr).find((x) => x.groupe === fr.equipes.imports.optimizer)!;
+  const src2 = sourcesImportEquipes(ctx, { stockage: r.stockage, data: sansDeux }, inventaire(), 'cairos', fr).find((x) => x.source === 'optimizer')!;
   egal(src2.raison, fr.equipes.retour.refus.membresIntrouvables, 'un membre introuvable désactive la source, avec sa raison');
   // Jamais une liste entière : une liste sans équipe n'est pas une source.
-  const sansEquipe = sourcesImportEquipes(ctx, { stockage: { ...r.stockage, teams: [] }, data }, inventaire(), 'cairos', fr).filter((x) => x.groupe === fr.equipes.imports.optimizer);
+  const sansEquipe = sourcesImportEquipes(ctx, { stockage: { ...r.stockage, teams: [] }, data }, inventaire(), 'cairos', fr).filter((x) => x.source === 'optimizer');
   egal(sansEquipe.map((x) => [x.libelle, x.raison]), [['Optimizer', fr.equipes.imports.aucuneEquipe]], 'une liste sans équipe : aucune source, la raison le dit');
 }
 

@@ -1900,6 +1900,13 @@ export const fr = {
       aucuneEquipe: 'Aucune équipe dans l’Optimizer.',
       cree: (nom: string, onglet: string) => `« ${nom} » créée dans ${onglet}.`,
       ignores: (n: number) => (n > 1 ? `${n} monstres ignorés (espèce inconnue).` : 'Un monstre ignoré (espèce inconnue).'),
+      recos: 'Recommandations',
+      aucuneReco: 'Aucune recommandation.',
+      mesEquipes: 'Mes équipes',
+      aucuneEquipeEnregistree: 'Aucune autre équipe enregistrée.',
+      creeesGroupe: (groupe: string, n: number, onglet: string) => `Groupe « ${groupe} » : ${n} équipes créées dans ${onglet}.`,
+      importerMonstres: 'Importer des monstres',
+      monstresAjoutes: (n: number, equipe: string) => (n > 1 ? `${n} monstres ajoutés à « ${equipe} ».` : `Un monstre ajouté à « ${equipe} ».`),
     },
     fichier: {
       titre: 'Fichier de Mes équipes',
@@ -1954,6 +1961,42 @@ export const fr = {
         membresIntrouvables: 'Un monstre de l’équipe est introuvable dans le compte : rien n’est repris.',
       },
     },
+  },
+
+  // La fenêtre d'import commune à Mes équipes et à l'Optimizer (FenetreImport).
+  fenetreImport: {
+    titre: 'Importer',
+    titreMonstres: 'Importer des monstres',
+    source: 'Source',
+    sources: { jeu: 'Decks du jeu', equipes: 'Mes équipes', optimizer: 'Optimizer', recos: 'Recommandations' },
+    contenu: 'Contenu',
+    tousContenus: 'Tous les contenus',
+    tout: 'Tout',
+    chercher: 'Chercher une équipe ou un monstre',
+    aucunResultat: 'Rien à importer ici.',
+    // La case d'un bloc : toutes ses équipes d'un geste.
+    toutLeBloc: (nom: string) => `Tout « ${nom} »`,
+    equipes: (n: number) => (n > 1 ? `${n} équipes` : '1 équipe'),
+    monstre: (nom: string, equipe: string) => `${nom} — ${equipe}`,
+    aide: {
+      equipes: 'Coche les équipes à importer.',
+      mixte: 'Coche des équipes, ou touche des monstres pour les importer seuls.',
+      monstres: (n: number) => (n > 1 ? `Touche les monstres à ajouter : ${n} places libres.` : 'Touche le monstre à ajouter : 1 place libre.'),
+      complete: 'L’équipe est complète.',
+    },
+    equipesChoisies: (n: number) => (n > 1 ? `${n} équipes choisies` : '1 équipe choisie'),
+    monstresChoisis: (n: number) => (n > 1 ? `${n} monstres choisis` : '1 monstre choisi'),
+    importer: 'Importer',
+    importerSeparement: 'Importer séparément',
+    importerGroupe: 'Importer en groupe',
+    groupeImpossible: 'Un groupe réunit des équipes d’un même onglet, hors RTA.',
+    ajouterMonstres: (n: number) => (n > 1 ? `Ajouter ${n} monstres` : 'Ajouter 1 monstre'),
+    ajouterA: (liste: string) => `Ajouter à « ${liste} »`,
+    ajouterListeActive: 'Ajouter à la liste active',
+    pasDeListeActive: 'Aucune liste active.',
+    nouvelleListe: 'Nouvelle liste',
+    nomSelection: (premier: string, autres: number) => `${premier} +${autres}`,
+    conflits: 'Joués ensemble, ces choix se gênent :',
   },
 
   // La prépa RTA (#/rta).
@@ -3469,17 +3512,7 @@ export const fr = {
       aucunGain: 'Aucun artéfact équipable n’apporte de dégâts supplémentaires pour ce critère.',
       // Les sources proposées par « Importer une équipe ».
       import: {
-        prepaRta: 'Prépa RTA',
-        tousLesMonstres: 'Tous les monstres',
-        defenses: 'Défenses de siège',
-        toutesLesDefenses: 'Toutes les défenses',
-        offenses: 'Offenses de siège',
-        offense: (n: number) => `Offense ${n}`,
-        offenseDeSiege: (n: number) => `Offense de siège ${n}`,
-        deckVide: 'Deck vide',
-        recommandations: 'Recommandations',
         recommandation: (n: number) => `Recommandation ${n}`,
-        sansNom: 'Sans nom',
         deck: (n: number) => `Deck ${n}`,
       },
       // Le message d'import d'une recette (« Importer les paramètres de recherche »).
@@ -3773,6 +3806,9 @@ export const fr = {
       leadNonApplique: (equipe: string, lead: string, raisons: string) => `${equipe} — lead de la source : ${lead}. ${raisons}`,
       leadInactif: (equipe: string, membre: string, motif: string) => `${equipe} — ${membre} : ${motif}`,
       importVide: 'Import vide : aucune liste créée.',
+      listeCibleAbsente: 'Import refusé : la liste visée n’existe plus.',
+      dejaDansLaListe: 'Déjà dans la liste.',
+      buildDeLaListe: 'un build de la liste',
       buildNonValide: (monstre: string, autre: string) => `${monstre} : build non validé, une pièce est déjà réservée par ${autre}.`,
       reco: {
         deckRecommande: 'Deck recommandé',
@@ -3881,13 +3917,11 @@ export const fr = {
     importEquipe: {
       importer: 'Importer une équipe',
       creee: 'Liste créée',
-      aide: 'Créer une nouvelle liste depuis le siège, la prépa RTA ou un deck recommandé.',
-      aucuneSource:
-        'Aucune source utilisable dans les défenses de siège, les offenses de siège, la prépa RTA ou les recommandations.',
-      fermer: 'Fermer les sources d’import',
-      sources: 'Sources d’import',
-      importerSource: (nom: string) => `${nom} — importer dans une nouvelle liste.`,
-      sourceVide: 'Aucun membre résolvable dans cette source.',
+      aide: 'Ajouter à la liste active, ou créer une liste, depuis Mes équipes, les decks du jeu ou les recommandations.',
+      aucuneSource: 'Rien à importer dans Mes équipes, les decks du jeu ou les recommandations.',
+      completee: 'Ajouté à la liste',
+      listeCompletee: (nom: string, monstres: number, equipes: number) =>
+        `Ajouté à « ${nom} » : ${monstres} monstre(s), ${equipes} équipe(s).`,
       exportVersOptimizer: "Export vers l'Optimizer",
       rapport: 'Rapport d’import',
       listeCreee: (nom: string, monstres: number, equipes: number) =>
