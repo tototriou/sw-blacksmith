@@ -223,6 +223,9 @@ export function testRenduEquipesGroupes() {
     'et chaque pièce partagée, avec ses porteurs');
   const [iEnTete, i1, i2, iSans, iSeule] = ['aria-label="Raid A"', 'Équipe G1', 'Équipe G2', `aria-label="${g.sansGroupe}"`, 'Équipe seule'].map((x) => html.indexOf(x));
   ok(iEnTete < i1 && i1 < i2 && i2 < iSans && iSans < iSeule, 'le groupe d’abord, puis « Non groupées » au-dessus des autres équipes');
+  const panneau = (nom: string) => /class="([^"]*)"/.exec(html.slice(html.indexOf(`aria-label="${nom}"`)))?.[1] ?? '';
+  ok(panneau('Raid A').includes('bg-panel2') && !panneau(g.sansGroupe).includes('bg-panel2'),
+    'un groupe tient dans un panneau (en-tête, conflits, cartes) ; les non groupées non');
   ok(!rendre(section()).includes(`aria-label="${g.sansGroupe}"`), 'sans groupe dans l’onglet, pas d’en-tête « Non groupées »');
   egal([bouton(html, g.creer)?.desactive, bouton(html, g.modifier)?.desactive], [false, false], 'former un groupe et le modifier depuis la grille');
   egal(bouton(rendre(section({ api: api([EQUIPES[2]]) })), g.creer)?.desactive, true, 'rien à grouper dans un onglet vide');

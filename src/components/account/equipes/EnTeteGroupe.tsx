@@ -14,13 +14,13 @@ interface Props {
   children?: ReactNode;
 }
 
-// L'en-tête d'un bloc de la grille, sur toute sa largeur : un groupe (son nom,
-// ses équipes, ce que plusieurs d'entre elles portent à la fois, ses gestes),
-// ou les équipes non groupées qui suivent les groupes. Les cartes du bloc le
-// suivent.
+// L'en-tête d'un bloc de la grille : un groupe (son nom, ses équipes, ce que
+// plusieurs d'entre elles portent à la fois, ses gestes), ou les équipes non
+// groupées qui suivent les groupes. Le bloc qui l'entoure porte son nom
+// (`role="group"`) ; ses cartes le suivent.
 export default function EnTeteGroupe({ nom, detail, signaux = [], details = [], libelleDetails, children }: Props) {
   return (
-    <div role="group" aria-label={nom} className="col-span-full flex min-w-0 flex-col gap-1 border-b border-border pb-1.5 pt-1">
+    <div className="flex min-w-0 flex-col gap-1 border-b border-border pb-1.5 pt-1">
       <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
         <span className="flex min-w-0 items-baseline gap-2">
           <Layers size={14} className="flex-none self-center text-ink-dim" aria-hidden />

@@ -171,8 +171,11 @@ plutôt qu'une liaison propre à chaque contenu).
 - Dans la grille, **les groupes d'abord**, chacun d'un bloc, dans l'ordre de leur
   équipe la plus récente, puis les équipes hors groupe sous un en-tête « Non
   groupées » (absent quand l'onglet n'a aucun groupe) : une carte hors groupe ne
-  paraît jamais sous l'en-tête d'un groupe (`regrouper`). L'**en-tête** d'un groupe,
-  sur toute la largeur (`EnTeteGroupe.tsx`), donne le nom, le nombre d'équipes du
+  paraît jamais sous l'en-tête d'un groupe (`regrouper`). Chaque groupe tient dans
+  un **panneau** (fond teinté, contour adouci, `role="group"` à son nom) qui réunit
+  son en-tête, ses conflits et ses cartes, séparé du bloc suivant par un espace : ce
+  qui concerne un groupe ne se lit pas avec son voisin. Les non groupées restent
+  hors panneau. L'**en-tête** d'un groupe (`EnTeteGroupe.tsx`) donne le nom, le nombre d'équipes du
   groupe entier (filtre de catégorie compris), ce que plusieurs d'entre elles
   portent à la fois, « Modifier le groupe » et « Exporter le groupe vers
   l'Optimizer ». Un bloc coupé par la pagination reprend son en-tête en haut de la

@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
 import { ChevronLeft, Download, FolderInput, Layers, Pencil, Plus, Send, Upload } from 'lucide-react';
 import type { Monster } from '../../../types';
 import { Bouton, Champ, ConfirmDialog, Jeton, Menu, MobileSheet, Modale, Onglets, PiedDeDialogue, Segmented, Selecteur, type ElementMenu } from '../../../ui';
@@ -326,6 +326,13 @@ export default function EquipesSection({ api, ctx, inventaire, allMonsters, opti
       title={equipesOnglet.length === 0 ? e.aucune : undefined} onClick={() => setGroupeEdite({ groupe: null })} />
   );
   const nomDe = (com2usId: number) => monstreDe(com2usId)?.name ?? String(com2usId);
+  // Les équipes d'une page, par bloc : `regrouper` met chaque groupe d'un
+  // tenant, puis les non groupées.
+  const blocsDeLaPage = (liste: readonly EquipeEnregistree[]) => liste.reduce<{ groupe: string | null; equipes: EquipeEnregistree[] }[]>((blocs, x) => {
+    const dernier = blocs[blocs.length - 1];
+    if (dernier && dernier.groupe === (x.groupe ?? null)) dernier.equipes.push(x); else blocs.push({ groupe: x.groupe ?? null, equipes: [x] });
+    return blocs;
+  }, []);
   // Chaque conflit d'un groupe, nommé : les espèces et leurs équipes, puis
   // les pièces et leurs porteurs.
   const detailsConflits = (c: ConflitsGroupe, equipes: readonly EquipeEnregistree[]) => {
@@ -410,36 +417,51 @@ export default function EquipesSection({ api, ctx, inventaire, allMonsters, opti
       ) : visibles.length === 0 ? (
         <p className="py-8 text-center text-sm text-ink-dim">{recherche.length ? e.aucuneRecherche : textesNouvelle.aucune}</p>
       ) : (
-        <div className="@container">
+        <div>
           {/* Au-dessus de la grille : dessous, il bougerait avec la hauteur de la page. */}
           {pages > 1 && <div className="mb-3"><Pager page={pageSure} pageCount={pages} onChange={setPage} /></div>}
-          <div className="grid grid-cols-1 gap-3 @[640px]:grid-cols-2 @[960px]:grid-cols-3 @[1280px]:grid-cols-4">
-            {affichees.map((x, i) => {
-              // Chaque bloc s'ouvre sur son en-tête, repris en haut d'une page :
-              // les groupes, puis les équipes non groupées (s'il y a un groupe).
-              const debut = i === 0 || affichees[i - 1].groupe !== x.groupe;
-              const groupe = x.groupe && debut ? x.groupe : null;
-              const tout = groupe ? equipesDuGroupe(api.equipes, categorie, groupe) : [];
-              const conflits = groupe ? conflitsGroupe(tout) : null;
+          {/* Un bloc par groupe, repris en haut d'une page qui le coupe, puis les
+              équipes non groupées. Un groupe tient dans un panneau : son en-tête,
+              ses conflits et ses cartes se lisent ensemble, à part du voisin. */}
+          <div className="flex flex-col gap-5">
+            {blocsDeLaPage(affichees).map((bloc) => {
+              const grille = (
+                <div className="@container">
+                  <div className="grid grid-cols-1 gap-3 @[640px]:grid-cols-2 @[960px]:grid-cols-3 @[1280px]:grid-cols-4">
+                    {bloc.equipes.map((x) => (
+                      <CarteEquipe key={x.id} equipe={x} monstreDe={monstreDe} ecarts={inventaire ? resumeEcarts(x, inventaire) : null}
+                        speedTuneIncomplet={api.signalements.some((sg) => sg.id === x.id && sg.signalements.includes('speedTuneIncomplet'))}
+                        categorie={sous === null && sousCategorieDe(x.onglet) ? libelleSousCategorie(categorie, sousCategorieDe(x.onglet)!, t) : null}
+                        alerte={tropDeMonstres(x) ? e.carte.tropDeMonstres(x.monstres.length, monstresMax(x.onglet)) : null}
+                        actions={actions(x)} onOuvrir={() => setOuverte(x.id)} />
+                    ))}
+                  </div>
+                </div>
+              );
+              const groupe = bloc.groupe;
+              if (!groupe) {
+                // « Non groupées » seulement à la suite d'un groupe de l'onglet.
+                return visibles.some((v) => v.groupe) ? (
+                  <div key="" role="group" aria-label={g.sansGroupe} className="flex flex-col gap-3">
+                    <EnTeteGroupe nom={g.sansGroupe} />
+                    {grille}
+                  </div>
+                ) : <div key="">{grille}</div>;
+              }
+              const tout = equipesDuGroupe(api.equipes, categorie, groupe);
+              const conflits = conflitsGroupe(tout);
               return (
-                <Fragment key={x.id}>
-                  {groupe && conflits && (
-                    <EnTeteGroupe nom={groupe} detail={g.equipes(tout.length)} signaux={[
-                      ...(conflits.especes.length ? [g.conflitsEspeces(conflits.especes.length)] : []),
-                      ...(conflits.pieces.length ? [g.conflitsPieces(nombrePiecesEnConflit(conflits))] : [])]}
-                      details={detailsConflits(conflits, tout)} libelleDetails={g.detailAria}>
-                      <Bouton taille="sm" icone={<Pencil size={14} />} libelle={g.modifier} onClick={() => setGroupeEdite({ groupe })} />
-                      <Bouton taille="sm" icone={<Send size={14} />} libelle={g.exporter} disabled={exportImpossible !== null}
-                        title={exportImpossible ?? undefined} onClick={() => exporterGroupe(groupe)} />
-                    </EnTeteGroupe>
-                  )}
-                  {!x.groupe && debut && visibles.some((v) => v.groupe) && <EnTeteGroupe nom={g.sansGroupe} />}
-                  <CarteEquipe equipe={x} monstreDe={monstreDe} ecarts={inventaire ? resumeEcarts(x, inventaire) : null}
-                    speedTuneIncomplet={api.signalements.some((sg) => sg.id === x.id && sg.signalements.includes('speedTuneIncomplet'))}
-                    categorie={sous === null && sousCategorieDe(x.onglet) ? libelleSousCategorie(categorie, sousCategorieDe(x.onglet)!, t) : null}
-                    alerte={tropDeMonstres(x) ? e.carte.tropDeMonstres(x.monstres.length, monstresMax(x.onglet)) : null}
-                    actions={actions(x)} onOuvrir={() => setOuverte(x.id)} />
-                </Fragment>
+                <div key={groupe} role="group" aria-label={groupe} className="flex flex-col gap-3 rounded-lg border border-border-soft bg-panel2/40 p-3">
+                  <EnTeteGroupe nom={groupe} detail={g.equipes(tout.length)} signaux={[
+                    ...(conflits.especes.length ? [g.conflitsEspeces(conflits.especes.length)] : []),
+                    ...(conflits.pieces.length ? [g.conflitsPieces(nombrePiecesEnConflit(conflits))] : [])]}
+                    details={detailsConflits(conflits, tout)} libelleDetails={g.detailAria}>
+                    <Bouton taille="sm" icone={<Pencil size={14} />} libelle={g.modifier} onClick={() => setGroupeEdite({ groupe })} />
+                    <Bouton taille="sm" icone={<Send size={14} />} libelle={g.exporter} disabled={exportImpossible !== null}
+                      title={exportImpossible ?? undefined} onClick={() => exporterGroupe(groupe)} />
+                  </EnTeteGroupe>
+                  {grille}
+                </div>
               );
             })}
           </div>
