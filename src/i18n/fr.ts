@@ -1709,7 +1709,6 @@ export const fr = {
       piece: {
         rune: (set: string, slot: number) => `Rune ${set} slot ${slot}`,
         artefact: (sorte: string, valeur: string) => `Artéfact (${sorte} : ${valeur})`,
-        relique: 'Relique',
       },
       detailAria: 'Détail des conflits du groupe',
       exporter: 'Exporter le groupe vers l’Optimizer',

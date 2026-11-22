@@ -178,17 +178,17 @@ plutôt qu'une liaison propre à chaque contenu).
   l'Optimizer ». Un bloc coupé par la pagination reprend son en-tête en haut de la
   page suivante. Même en-tête aux deux formats ; au téléphone, il passe sur
   plusieurs lignes.
-- Ce que l'en-tête signale (`conflitsGroupe`) : les **pièces** (runes, artéfacts,
-  relique, par leur identifiant du jeu ; une pièce sans identifiant n'est pas
-  comptée) et les **espèces** (par `com2usId`, quel que soit l'exemplaire),
+- Ce que l'en-tête signale (`conflitsGroupe`) : les **pièces** (runes et artéfacts,
+  par leur identifiant du jeu ; une pièce sans identifiant n'est pas comptée ; la
+  relique jamais, elle ne fait pas conflit dans le jeu) et les **espèces** (par `com2usId`, quel que soit l'exemplaire),
   présentes dans plus d'une équipe du groupe, d'après les copies enregistrées. Un
   doublon dans une même équipe n'est pas compté. Une collaboration et sa version SW
   comptent pour deux espèces : la règle ne dit rien d'elles. Le résumé (leur
   nombre) suit le nom ; dessous, une ligne par conflit nomme ses éléments : une
   espèce et ses équipes (« Lushen dans Raid A et Raid B »), des pièces et leurs
   porteurs (« Lushen (Raid A) et Lushen (Raid B) portent : Rune Violente slot 1,
-  …, Relique »). Les pièces des mêmes porteurs tiennent sur une ligne, un monstre
-  recopié dans deux équipes partageant tout son équipement. Une pièce se nomme par
+  …, Artéfact (Attribut : Feu) »). Les pièces des mêmes porteurs tiennent sur une
+  ligne, un monstre recopié dans deux équipes partageant ses runes et artéfacts. Une pièce se nomme par
   ce qui la distingue sur son porteur (`libellePieceEnConflit`) : set et slot d'une
   rune, sorte et attribut ou type d'un artéfact (« Intangible » le cas échéant).
 L'onglet ouvert, le filtre de chaque onglet et la recherche se gardent pour la

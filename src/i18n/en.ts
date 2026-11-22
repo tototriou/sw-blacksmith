@@ -1618,7 +1618,6 @@ export const en: Dictionnaire = {
       piece: {
         rune: (set: string, slot: number) => `${set} rune slot ${slot}`,
         artefact: (sorte: string, valeur: string) => `Artifact (${sorte}: ${valeur})`,
-        relique: 'Relic',
       },
       detailAria: 'Group conflict details',
       exporter: 'Export the group to the Optimizer',

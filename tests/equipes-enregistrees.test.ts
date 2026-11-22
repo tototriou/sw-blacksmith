@@ -193,16 +193,16 @@ function testEquipesEnregistreesGroupes() {
   const [ab] = conflitsGroupe([a, b]).pieces;
   egal(ab.porteurs, [{ equipe: 'a', uid: 'a1', com2usId: 1 }, { equipe: 'a', uid: 'a2', com2usId: 2 }, { equipe: 'b', uid: 'b1', com2usId: 3 }, { equipe: 'b', uid: 'b2', com2usId: 4 }],
     'les pièces portées par deux équipes du groupe : chacun de leurs porteurs');
-  egal(ab.pieces.map((p) => libellePieceEnConflit(p, fr)), [1, 2, 3, 4, 5, 6].map((s) => `Rune Rapide slot ${s}`).concat(['Artéfact (Attribut : Feu)', 'Artéfact (Type : Attaque)', 'Relique']),
-    'et chaque pièce nommée : set et slot de la rune, sorte et valeur de l’artéfact, la relique');
-  egal(nombrePiecesEnConflit(conflitsGroupe([a, b])), 9, 'les mêmes porteurs : une ligne pour leurs neuf pièces');
+  egal(ab.pieces.map((p) => libellePieceEnConflit(p, fr)), [1, 2, 3, 4, 5, 6].map((s) => `Rune Rapide slot ${s}`).concat(['Artéfact (Attribut : Feu)', 'Artéfact (Type : Attaque)']),
+    'et chaque pièce nommée : set et slot de la rune, sorte et valeur de l’artéfact ; jamais la relique');
+  egal(nombrePiecesEnConflit(conflitsGroupe([a, b])), 8, 'les mêmes porteurs : une ligne pour leurs huit pièces');
   egal(conflitsGroupe([a, seule]), { pieces: [], especes: [{ com2usId: 1, equipes: ['a', 's'] }, { com2usId: 2, equipes: ['a', 's'] }] },
     'une même espèce dans deux équipes, même d’exemplaires différents, avec ses équipes');
   const deux = conflitsGroupe([
     eq('p', 'faille/raid', 'Raid A', [monstreEx('p1', 1, null, equipementEx(1)), monstreEx('p2', 2, null, equipementEx(20))]),
-    eq('q', 'faille/raid', 'Raid A', [monstreEx('q1', 3, null, { ...equipementEx(30), runes: [runeEx(1, 1)] }), monstreEx('q2', 4, null, { ...equipementEx(40), relic: reliqueEx(2000) })]),
+    eq('q', 'faille/raid', 'Raid A', [monstreEx('q1', 3, null, { ...equipementEx(30), runes: [runeEx(1, 1)] }), monstreEx('q2', 4, null, { ...equipementEx(40), artifacts: [artefactEx(200, 'element')] })]),
   ]).pieces;
-  egal(deux.map((c) => [c.porteurs.map((p) => p.uid), c.pieces.map((p) => p.piece.id)]), [[['p1', 'q1'], [1]], [['p2', 'q2'], [2000]]],
+  egal(deux.map((c) => [c.porteurs.map((p) => p.uid), c.pieces.map((p) => p.piece.id)]), [[['p1', 'q1'], [1]], [['p2', 'q2'], [200]]],
     'des porteurs différents : une ligne chacun');
   const intangible = libellePieceEnConflit({ type: 'artefact', piece: { ...artefactEx(9, 'archetype'), intangible: true } }, fr);
   egal(intangible, 'Artéfact (Type : Intangible)', 'un artéfact intangible le dit, quelle que soit sa valeur lue');

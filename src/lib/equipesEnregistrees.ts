@@ -675,8 +675,10 @@ export function appliquerGroupe(
   });
 }
 
-// Ce que deux équipes d'un groupe portent à la fois : une pièce (par son
-// identifiant du jeu ; une pièce sans identifiant n'est jamais comptée), ou
+// Ce que deux équipes d'un groupe portent à la fois : une rune ou un artéfact
+// (par son identifiant du jeu ; une pièce sans identifiant n'est jamais
+// comptée), jamais la relique (règle relevée par l'utilisateur le
+// 2026-11-22 : elle ne fait pas conflit entre équipes d'un groupe), ou
 // une espèce, quel que soit l'exemplaire. Règle de jeu relevée par
 // l'utilisateur le 2026-11-22 : dans un contenu où les équipes se jouent
 // ensemble, une rune ne sert qu'à l'une d'elles, et une espèce ne s'y joue
@@ -685,11 +687,10 @@ export function appliquerGroupe(
 // ceux qui la portent, l'espèce et ses équipes.
 export type PieceEnConflit =
   | { type: 'rune'; piece: RuneDetail }
-  | { type: 'artefact'; piece: ArtifactDetail }
-  | { type: 'relique'; piece: RelicDetail };
+  | { type: 'artefact'; piece: ArtifactDetail };
 export interface PorteurPiece { equipe: string; uid: string; com2usId: number } // `equipe` : son id
 // Les pièces de mêmes porteurs, réunies : un monstre recopié dans deux équipes
-// partage tout son équipement, et une ligne le dit au lieu de neuf.
+// partage ses runes et ses artéfacts, et une ligne le dit au lieu de huit.
 export interface ConflitPieces { porteurs: PorteurPiece[]; pieces: PieceEnConflit[] }
 export interface ConflitEspece { com2usId: number; equipes: string[] } // les ids, dans l'ordre du groupe
 // Dans l'ordre de leur première équipe.
@@ -708,7 +709,6 @@ export function conflitsGroupe(equipes: readonly EquipeEnregistree[]): ConflitsG
       if (eq) {
         for (const r of eq.runes) if (r.id > 0) porter(`r${r.id}`, { type: 'rune', piece: r }, p);
         for (const a of eq.artifacts) if (a.id > 0) porter(`a${a.id}`, { type: 'artefact', piece: a }, p);
-        if (eq.relic && eq.relic.id > 0) porter(`q${eq.relic.id}`, { type: 'relique', piece: eq.relic }, p);
       }
       const vues = especes.get(m.com2usId) ?? [];
       if (!vues.includes(e.id)) especes.set(m.com2usId, [...vues, e.id]);
@@ -735,12 +735,10 @@ export function nombrePiecesEnConflit(c: ConflitsGroupe): number {
 }
 
 // Une pièce dite par ce qui la distingue sur son porteur : le set et le slot
-// d'une rune, la sorte et l'attribut ou le type d'un artéfact ; un monstre ne
-// porte qu'une relique.
+// d'une rune, la sorte et l'attribut ou le type d'un artéfact.
 export function libellePieceEnConflit(p: PieceEnConflit, t: Dictionnaire): string {
   const c = t.equipes.groupes.piece;
   if (p.type === 'rune') return c.rune(nomSet(t.jeu, p.piece.set), p.piece.slot);
-  if (p.type === 'relique') return c.relique;
   const a = p.piece;
   const valeur = a.intangible ? nomSet(t.jeu, 'intangible')
     : a.kind === 'element' ? nomElement(t.jeu, a.element) : (t.jeu.archetypes as Record<string, string>)[a.archetype ?? ''] ?? '—';
