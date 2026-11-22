@@ -395,8 +395,8 @@ const LIBELLE_VIDE: Record<RelicVide, string> = {
  * ⚠️ `mode: 'equipped'` sans relique portée (`vide: 'equipee'`) ne refuse
  * PAS : le moteur y reste byte-identique à avant (une recherche sans relique
  * est exactement ce que « garder l'équipée » veut dire quand il n'y en a
- * pas) — c'est le défaut calculé (`defaultRelicMainChoice`) qui évite ce cas
- * à l'écran.
+ * pas) — c'est la garde de cohérence (`relicMainChoiceApresChangementExemplaire`)
+ * qui évite ce cas à l'écran, et le défaut est « Libre ».
  */
 export class RechercheRefusee extends Error {
   readonly motif = 'relique-pool-vide' as const;

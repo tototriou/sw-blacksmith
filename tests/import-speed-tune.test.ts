@@ -138,7 +138,7 @@ export function testImportSpeedTuneAvecDeckOrigine() {
     const prefixe = source === 'defense' ? 'siege-defense' : 'siege-offense';
     egal(p.membres.map(m => exclusionSelectorKey(m.selector)), [`${prefixe}:${origine.teamId}:1`, `${prefixe}:${origine.teamId}:0`], 'slots retrouvés par espèce après déplacement des lignes');
     egal(p.equipes[0].leader, p.membres[1].selector, 'leader du slot 0, pas première ligne');
-    egal([...r.stockage.memories.values()].map(m => m.criteres.relicMainChoice), ['equipped', 'equipped'], 'défaut de relique du deck, pas de la Box');
+    egal([...r.stockage.memories.values()].map(m => m.criteres.relicMainChoice), ['libre', 'libre'], 'défaut de relique « libre », relique du deck portée ou non');
     egal(p.membres.map(m => m.criteres.vitesse?.minimum), [201, 227], 'saisies actuelles, pas vitesses 999 du deck');
     egal(p.equipes[0].lead?.amount, 30, 'lead du camp actuel, pas team.lead = 99');
     const absent = importerSpeedTuneOptimizer([ligne(1)], lead, data, fr, { source, teamId: 'absent' });
@@ -226,8 +226,8 @@ export function testImportSpeedTuneCompositionRetrouvee() {
   egal(p.membres.map(m => exclusionSelectorKey(m.selector)), ['siege-offense:o1:2', 'siege-offense:o1:0', 'siege-offense:o1:1'],
     'camp complet retrouvé dans l’offense, avant les copies Box');
   egal(p.equipes[0].leader, p.membres[1].selector, 'leader du deck retrouvé, même après permutation');
-  egal([...consommer(p, data).stockage.memories.values()].map(m => m.criteres.relicMainChoice), ['equipped', 'equipped', 'equipped'],
-    'défauts construits sur les exemplaires du deck retrouvé');
+  egal([...consommer(p, data).stockage.memories.values()].map(m => m.criteres.relicMainChoice), ['libre', 'libre', 'libre'],
+    'défaut de relique « libre » sur les exemplaires du deck retrouvé');
 }
 export function testImportSpeedTuneCompositionAmbigue() {
   titre('Import speed tuning · première composition exacte, défense puis offense');

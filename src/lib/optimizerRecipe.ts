@@ -215,7 +215,7 @@ export interface OptimizerRecipe {
    * propriété unique demandées, seuil de niveau. **Trois champs OPTIONNELS,
    * et ils doivent le rester** : une recette exportée sans ces champs n'en
    * porte aucun — tout lecteur applique le défaut de
-   * `defaultRelicMainChoice`/`'libre'`/`DEFAULT_RELIC_MIN_UPGRADE`
+   * `DEFAULT_RELIC_MAIN_CHOICE`/`'libre'`/`DEFAULT_RELIC_MIN_UPGRADE`
    * (hooks/useOptimizerState.ts), jamais une valeur devinée ici. Sans effet
    * sur `SearchParams` hors du mode `recherche` (`libre` et le type n'ont
    * d'effet qu'avec la recherche de relique).
