@@ -67,8 +67,8 @@ recherche : [pipeline.md § Pipeline de la recherche de runes](pipeline.md).
   (`scripts/lib/recipeToSearchParams.ts`). Mode `off` quand l'optimisation
   d'artéfacts et reliques est coupée ; `equipped` quand la principale vaut
   « Comme équipée » ; `recherche` sinon. Sans principale dans la
-  recette, le CLI calcule le défaut contre la relique portée
-  (`defaultRelicMainChoice`), comme l'écran.
+  recette, le CLI prend le défaut « Libre » (`DEFAULT_RELIC_MAIN_CHOICE`),
+  comme l'écran.
 - **`resoudreContexteRelique(intention, reliqueEquipee, inventaire)`**
   (`src/lib/relicOptim.ts`) résout l'intention une fois, en un
   `RelicContext` : `mode`, `principale`, `type`, `seuil`, `equipee`,

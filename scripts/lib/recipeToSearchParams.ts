@@ -12,7 +12,7 @@ import { exigencePrecisionParSort, sortsPrecisionActifs } from '../../src/lib/pr
 import { ExclusionSourceData, autoExcludedRuneIds, resolveExcludedRuneIds } from '../../src/lib/optimizerExclusion';
 import { OptimizerRecipe } from '../../src/lib/optimizerRecipe';
 import { poolDeRecherche } from '../../src/lib/runesMaxees';
-import { DEFAULT_RELIC_MIN_UPGRADE, RelicIntent, defaultRelicMainChoice } from '../../src/hooks/useOptimizerState';
+import { DEFAULT_RELIC_MIN_UPGRADE, RelicIntent, DEFAULT_RELIC_MAIN_CHOICE } from '../../src/hooks/useOptimizerState';
 import { resoudreContexteRelique } from '../../src/lib/relicOptim';
 import {
   DEFAULT_DAMAGE_SETUP,
@@ -147,13 +147,12 @@ export function resolveArtifacts(recipe: OptimizerRecipe, loaded: LoadedMonster)
  * ⚠️ `mode: 'off'` suit `ignoreArtifacts` (l'interrupteur « Activer
  * l'optimisation d'artéfacts » s'étend aux reliques, aucun interrupteur
  * propre). Sans `relicMainChoice` (recette antérieure à ce champ, ou
- * écran qui ne l'a pas encore posé), le défaut se CALCULE contre la relique
- * réellement portée par `loaded` (`defaultRelicMainChoice`), jamais une
- * constante — même règle que l'écran, pour que les deux
- * convergent sur la même valeur à recette égale.
+ * écran qui ne l'a pas encore posé), le défaut est `DEFAULT_RELIC_MAIN_CHOICE`
+ * — la même source que l'écran, pour que les deux convergent sur la même
+ * valeur à recette égale.
  */
-export function recipeToRelicIntent(recipe: OptimizerRecipe, loaded: LoadedMonster): RelicIntent {
-  const principale = recipe.relicMainChoice ?? defaultRelicMainChoice(loaded.gear.relic);
+export function recipeToRelicIntent(recipe: OptimizerRecipe): RelicIntent {
+  const principale = recipe.relicMainChoice ?? DEFAULT_RELIC_MAIN_CHOICE;
   return {
     mode: recipe.ignoreArtifacts ? 'off' : principale === 'equipped' ? 'equipped' : 'recherche',
     principale,
@@ -550,7 +549,7 @@ export function recipeToSearchParams(
     // autres : `buildCaseSearchParams` de perfShared.ts, et l'écran). L'intention
     // vient d'UN seul point de lecture (`recipeToRelicIntent`), résolue contre la relique portée et l'inventaire du
     // compte — exactement ce que `relicOracleCli` fait pour l'oracle.
-    relicContext: resoudreContexteRelique(recipeToRelicIntent(recipe, loaded), loaded.gear.relic, loaded.allRelics),
+    relicContext: resoudreContexteRelique(recipeToRelicIntent(recipe),loaded.gear.relic, loaded.allRelics),
     pool: resolvePool(recipe, loaded, exclusionData),
     requirement: exigenceDeLaRecette(recipe, piecesTypeDuCli(recipe, loaded)),
     metric: recipe.metric,

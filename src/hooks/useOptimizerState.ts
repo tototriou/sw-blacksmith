@@ -7,7 +7,7 @@ import { bornesAvecMesure, type ColonneResultat } from '../lib/colonnesResultats
 import type { BornesResultats } from '../lib/filtresResultats';
 import type { SensTri } from '../lib/tri';
 import { DamageSetup } from '../lib/damage';
-import { appliquerCriteres, baseCompleteCriteres, criteresApresChangementEspece, defaultRelicMainChoice, photoCriteres, type CriteresOptimizer } from '../lib/criteresOptimizer';
+import { appliquerCriteres, baseCompleteCriteres, criteresApresChangementEspece, DEFAULT_RELIC_MAIN_CHOICE, photoCriteres, type CriteresOptimizer } from '../lib/criteresOptimizer';
 import { rattacherProprietaireCriteres, validerProprietaireCriteres, type ProprietaireCriteresOptimizer } from '../lib/optimizerCriteriaOwner';
 import { cleMemoireMembre, type StockageOptimizer, type RapportReverificationOptimizer } from '../lib/optimizerMemberStorage';
 import type { UseOptimizerLists } from './useOptimizerLists';
@@ -26,7 +26,7 @@ import type { BuildEpingle, EpinglesParMembre } from '../lib/epinglesOptimizer';
 
 export type { SlotFilterPresetKey };
 // API historique conservée pour l'écran, les recettes et les scripts.
-export { defaultRelicMainChoice, relicMainChoiceApresChangementExemplaire, criteresApresChangementEspece, baseCompleteCriteres } from '../lib/criteresOptimizer';
+export { DEFAULT_RELIC_MAIN_CHOICE, relicMainChoiceApresChangementExemplaire, criteresApresChangementEspece, baseCompleteCriteres } from '../lib/criteresOptimizer';
 // Le tri des résultats : une de leurs onze colonnes. L'objectif de recherche
 // Vitesse se trie par la colonne VIT (`triDesResultats`).
 export type OptimizerSortKey = ColonneResultat;
@@ -132,7 +132,7 @@ export interface OptimizerState {
   capturerMembre: (listId: string, selector: ExclusionSelector) => void;
   poserTriRecherche: (tri: OptimizerSortKey) => void;
   poserCriteresAutomatiques: (patch: Partial<CriteresOptimizer> | ((courants: CriteresOptimizer) => Partial<CriteresOptimizer>)) => void;
-  traiterReliqueImportee: (relique: Parameters<typeof defaultRelicMainChoice>[0]) => void;
+  traiterReliqueImportee: () => void;
   appliquerReverificationMembres: (stockage: StockageOptimizer, rapport: RapportReverificationOptimizer, data: ExclusionSourceData, runeIds: Set<number>) => void;
   selectedId: string | null;
   setSelectedId: Dispatch<SetStateAction<string | null>>;
@@ -444,10 +444,8 @@ export function useOptimizerState(contexte?: ContexteMembresOptimizer): Optimize
   // et il ne coute rien a la recherche de runes (temps masque).
   const [optimiserArtefacts, setOptimiserArtefacts] = useState(base.optimiserArtefacts);
   const [artifactMainByKind, setArtifactMainByKind] = useState<Partial<Record<ArtifactKind, ArtifactMainChoice>>>(base.artifactMainByKind);
-  // ⚠️ Défaut STATIQUE ('libre') volontairement — le vrai défaut
-  // ('equipped' si le monstre porte une relique) se calcule au choix du
-  // monstre (`defaultRelicMainChoice`), câblé par `pickSpecies` hors liste et
-  // par la base complète d’un membre ; pas à l’initialisation de ce hook.
+  // Défaut « Libre » (`DEFAULT_RELIC_MAIN_CHOICE`), le même que celui que
+  // reposent `pickSpecies` hors liste et la base complète d’un membre.
   const [relicMainChoice, setRelicMainChoice] = useState<RelicMainChoice>(base.relicMainChoice);
   const [relicUniqueChoice, setRelicUniqueChoice] = useState<RelicUniqueChoice>(base.relicUniqueChoice);
   const [relicMinUpgrade, setRelicMinUpgrade] = useState(DEFAULT_RELIC_MIN_UPGRADE);
@@ -558,13 +556,13 @@ export function useOptimizerState(contexte?: ContexteMembresOptimizer): Optimize
     appliquerPhoto({ ...courants, ...(typeof patch === 'function' ? patch(courants) : patch) });
   }
 
-  function traiterReliqueImportee(relique: Parameters<typeof defaultRelicMainChoice>[0]) {
+  function traiterReliqueImportee() {
     const v = vivant.current;
     if (importReliqueTraite.current === v.importDuCompte) return;
     importReliqueTraite.current = v.importDuCompte;
     // Un choix de membre écran démonté prime sur le défaut différé du compte.
     if (v.contexte && validerProprietaireCriteres(v.proprietaire, v.contexte.lists, v, v.contexte.data)) return;
-    poserCriteresAutomatiques({ relicMainChoice: defaultRelicMainChoice(relique) });
+    poserCriteresAutomatiques({ relicMainChoice: DEFAULT_RELIC_MAIN_CHOICE });
   }
 
   function restaurerMembre(listId: string, selector: ExclusionSelector, choisir: boolean): CriteresOptimizer | null {
@@ -818,9 +816,7 @@ export function useOptimizerState(contexte?: ContexteMembresOptimizer): Optimize
     setExcludeBase(suivant.excludeBase);
     setOptimiserArtefacts(suivant.optimiserArtefacts);
     setArtifactMainByKind(suivant.artifactMainByKind);
-    // ⚠️ Défaut statique ici — voir le commentaire du `useState` ci-dessus ;
-    // `pickSpecies` surcharge avec `defaultRelicMainChoice` juste après cet
-    // appel, comme il le fait déjà pour `objective`.
+    // Le défaut, `DEFAULT_RELIC_MAIN_CHOICE` — voir le commentaire du `useState` ci-dessus.
     setRelicMainChoice(suivant.relicMainChoice);
     setRelicUniqueChoice(suivant.relicUniqueChoice);
     // ⚠️ Remis à zéro au changement de monstre, comme les runes imposées : une

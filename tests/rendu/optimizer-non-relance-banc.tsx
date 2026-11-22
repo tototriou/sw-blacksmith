@@ -154,6 +154,9 @@ export async function monter(garder = false) {
   await geste(() => { listes.addMember(listId, premier, 10101); listes.addMember(listId, second, 10102); });
   await geste(() => { etat.choisirMembre(listId, premier); });
   await geste(() => { etat.setComboSets(['energy', 'energy', 'energy']); });
+  // Les pages comptent K = 100 notés (relique « Comme équipée ») : le choix
+  // se pose, puisque le défaut est « Libre » (K = 300).
+  await geste(() => { etat.setRelicMainChoice('equipped'); });
   return { listId };
 }
 

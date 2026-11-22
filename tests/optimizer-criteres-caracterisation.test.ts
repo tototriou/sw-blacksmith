@@ -2,7 +2,7 @@ import { bancOptimizer, fonctionDeSource } from './optimizer-transition-banc';
 import * as transitions from '../src/hooks/useOptimizerState';
 import { egal, ok, titre } from './outils';
 import {
-  defaultRelicMainChoice, relicMainChoiceApresChangementExemplaire,
+  relicMainChoiceApresChangementExemplaire,
   type OptimizerState,
 } from '../src/hooks/useOptimizerState';
 import { DEFAULT_DAMAGE_SETUP, resolvedLeaderSkill } from '../src/lib/damage';
@@ -77,7 +77,7 @@ export default async function testOptimizerCriteresCaracterisation() {
         lists: { activeListId: 'a', members: [] }, setAddListPromptOpen: () => {}, inclureSelectionRecherche: () => {},
         disponibiliteEspece: () => ({ suivant: selector, raison: null }),
         resolveExclusionEntry: () => ({ gear: { relic } }), exclusionSelectorKey,
-        defaultRelicMainChoice, relicMainChoiceApresChangementExemplaire,
+        relicMainChoiceApresChangementExemplaire,
         setZoneDOpen: (v: boolean) => { zoneOuverte = v; },
         setApercu: () => {},
       };
@@ -93,7 +93,8 @@ export default async function testOptimizerCriteresCaracterisation() {
       egal(apres.selectedId, espece, `${libelle} : sélection`);
       egal(apres.sourceSelector, selector, `${libelle} : exemplaire`);
       egal(apres.gearSource, 'box', `${libelle} : source`);
-      egal(apres.relicMainChoice, autreEspece ? (avecRelique ? 'equipped' : 'libre') : 101, `${libelle} : relique`);
+      // « Libre » par défaut, relique portée ou non.
+      egal(apres.relicMainChoice, autreEspece ? 'libre' : 101, `${libelle} : relique`);
       egal(apres.damageSetup, autreEspece ? damageSetupApresChangementMonstre(avant.damageSetup) : avant.damageSetup, `${libelle} : contexte/sort`);
       egal(apres.comboSets, autreEspece ? [] : ['Swift'], `${libelle} : set`);
       egal(apres.objective, autreEspece ? 'efficience' : 'degats_reels', `${libelle} : objectif`);
