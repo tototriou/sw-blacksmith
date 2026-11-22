@@ -85,10 +85,12 @@ export function testRenduEquipesTelephone() {
   titre('rendu · Mes équipes — téléphone');
   const ferme = auTelephone(() => rendre(section()));
   ok(bouton(ferme, e.nouvelle) !== undefined, '« Nouvelle équipe » sous la recherche');
-  ok(bouton(ferme, e.importerFichier) === undefined, 'les fichiers et imports attendent le panneau Options');
+  ok(bouton(ferme, e.importerFichier) === undefined, 'les fichiers attendent le panneau Options');
+  egal(boutons(ferme).map((b) => b.texte).filter((x) => [e.nouvelle, e.importer, e.groupes.creer].includes(x)), [e.nouvelle, e.importer, e.groupes.creer],
+    '« Importer une équipe » entre « Nouvelle équipe » et « Nouveau groupe », comme à l’ordinateur');
   const ouvert = auTelephone(() => rendre(section({ menuOuvert: true })));
   ok(texteVisible(ouvert).includes(e.options), 'le panneau Options');
-  for (const b of [e.importer, e.exporterFichier, e.importerFichier]) ok(bouton(ouvert, b) !== undefined, `« ${b} » dans le panneau`);
+  for (const b of [e.exporterFichier, e.importerFichier]) ok(bouton(ouvert, b) !== undefined, `« ${b} » dans le panneau`);
 }
 
 export function testRenduEquipesDetail() {

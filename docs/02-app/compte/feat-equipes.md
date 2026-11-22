@@ -150,8 +150,8 @@ les offenses de guerre de guilde. Règle de jeu relevée par l'utilisateur
 **groupe** les réunit, par un nom libre, dans un onglet (choix de l'utilisateur,
 plutôt qu'une liaison propre à chaque contenu).
 
-- « Nouveau groupe », à côté de « Nouvelle équipe » (au téléphone, sur la même
-  ligne), forme un groupe depuis la grille (`ModaleGroupe.tsx`) : son nom (prérempli
+- « Nouveau groupe », après « Nouvelle équipe » et « Importer une équipe » (au
+  téléphone, les trois empilés), forme un groupe depuis la grille (`ModaleGroupe.tsx`) : son nom (prérempli
   du premier « Groupe N » libre) et les équipes de l'onglet à cocher. Une équipe d'un
   autre groupe le dit (« dans Raid A ») et, cochée, en change. « Modifier le
   groupe », dans l'en-tête du groupe, rouvre la même fenêtre : renommer, ajouter,
@@ -339,9 +339,11 @@ sinon « N pièces modifiées », « N pièces disparues ». Le détail marque c
 ### Téléphone
 
 - La rangée d'onglets défile de côté. Sous elle, la recherche sur toute la largeur,
-  puis « Nouvelle équipe ». Le bouton « Options » de la barre du haut (panneau
+  puis « Nouvelle équipe », « Importer une équipe » et « Nouveau groupe », empilés
+  sur toute la largeur (sur deux colonnes, « Importer une équipe » passait sur deux
+  lignes). Le bouton « Options » de la barre du haut (panneau
   d'actions, [panneau-actions-mobile.md](../transverse/feat-navigation/panneau-actions-mobile.md))
-  regroupe les imports et les fichiers.
+  regroupe les fichiers.
 - Les équipes en une colonne de cartes, mêmes informations, même menu.
 - « Ouvrir » affiche l'équipe dans la page comme au bureau, les monstres à la
   suite : l'identité passe au-dessus de l'équipement (requête de conteneur), et le

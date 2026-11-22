@@ -365,9 +365,7 @@ const RECO_CONTRES: Cible[] = [
 ];
 
 // « Mes équipes » remplie par ses propres imports : la défense de siège 1 du
-// compte du banc (deux monstres). Au téléphone, « Importer une équipe » vit
-// dans le panneau d'actions de la page.
-const EQ_OPTIONS: Cible = { role: 'button', nom: 'Filtres et actions de la page' };
+// compte du banc (deux monstres).
 const EQ_SOURCES: Cible = { role: 'dialog', nom: 'Importer une équipe' };
 // La source se repère dans la modale des sources (le panneau d'actions qui
 // se referme est encore un dialogue visible) ; l'import ouvre l'onglet de
@@ -375,14 +373,14 @@ const EQ_SOURCES: Cible = { role: 'dialog', nom: 'Importer une équipe' };
 const EQ_SOURCE_DEFENSE: Etape = { cliquer: repere('[role="dialog"]:has-text("Défenses de siège") [aria-label="Défense 1"]') };
 const EQ_FERMER_RAPPORT: Etape = { cliquer: repere('[role="dialog"]:has-text("créée dans") button:has-text("Fermer")') };
 const EQ_IMPORT: Record<Format, Etape[]> = {
-  telephone: [{ cliquer: EQ_OPTIONS }, { cliquer: bouton('Importer une équipe') }, EQ_SOURCE_DEFENSE, EQ_FERMER_RAPPORT],
+  telephone: [{ cliquer: bouton('Importer une équipe') }, EQ_SOURCE_DEFENSE, EQ_FERMER_RAPPORT],
   ordinateur: [{ cliquer: bouton('Importer une équipe') }, EQ_SOURCE_DEFENSE, EQ_FERMER_RAPPORT],
 };
 const EQ_CARTE: Cible = { role: 'button', nom: 'Ouvrir Défense 1' };
 // L'onglet RTA, puis la prépa de la page RTA importée en une prépa enregistrée.
 const EQ_PREPA_SOURCE: Etape = { cliquer: repere('[role="dialog"]:has-text("Decks du jeu") [aria-label="Prépa de la page RTA"]') };
 const EQ_PREPA: Record<Format, Etape[]> = {
-  telephone: [{ cliquer: repere('[role="tab"]:has-text("RTA")') }, { cliquer: EQ_OPTIONS }, { cliquer: bouton('Importer une équipe') }, EQ_PREPA_SOURCE, EQ_FERMER_RAPPORT],
+  telephone: [{ cliquer: repere('[role="tab"]:has-text("RTA")') }, { cliquer: bouton('Importer une équipe') }, EQ_PREPA_SOURCE, EQ_FERMER_RAPPORT],
   ordinateur: [{ cliquer: repere('[role="tab"]:has-text("RTA")') }, { cliquer: bouton('Importer une équipe') }, EQ_PREPA_SOURCE, EQ_FERMER_RAPPORT],
 };
 // L'équipe envoyée à l'Optimizer : la bande de son équipe de liste porte le
@@ -720,7 +718,7 @@ export const ECRANS: Ecran[] = [
         id: 'imports',
         libelle: 'sources d’import ouvertes',
         preparation: {
-          telephone: [{ cliquer: EQ_OPTIONS }, { cliquer: bouton('Importer une équipe') }],
+          telephone: [{ cliquer: bouton('Importer une équipe') }],
           ordinateur: [{ cliquer: bouton('Importer une équipe') }],
         },
         atteint: [EQ_SOURCES],

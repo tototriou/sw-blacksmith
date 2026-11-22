@@ -302,14 +302,14 @@ export default function EquipesSection({ api, ctx, inventaire, allMonsters, opti
       ))}
     </div>
   );
-  // À l'ordinateur, « Importer une équipe » se range entre « Nouvelle équipe »
-  // et « Nouveau groupe » ; au téléphone, dans le panneau Options.
+  // « Importer une équipe » se range entre « Nouvelle équipe » et « Nouveau
+  // groupe », aux deux formats ; les fichiers restent au panneau Options du
+  // téléphone.
   const boutonImporter = (
     <Bouton icone={<FolderInput size={14} />} libelle={e.importer} pleineLargeur={telephone} onClick={() => { setImports(true); onFermerMenu(); }} />
   );
   const boutonsImports: ReactNode = (
     <>
-      {telephone && boutonImporter}
       <Bouton icone={<Download size={14} />} libelle={e.exporterFichier} pleineLargeur={telephone} disabled={api.equipes.length === 0} onClick={exporterFichier} />
       <Bouton icone={<Upload size={14} />} libelle={e.importerFichier} pleineLargeur={telephone} disabled={enRelecture}
         title={enRelecture ? e.fichier.enLecture : undefined} onClick={() => { fichier.current?.click(); onFermerMenu(); }} />
@@ -374,8 +374,10 @@ export default function EquipesSection({ api, ctx, inventaire, allMonsters, opti
         <div className="flex flex-col gap-2">
           {recherchePicker}
           {jetons}
-          <div className={`grid gap-2 ${ongletPrepa ? 'grid-cols-1' : 'grid-cols-2'}`}>
+          {/* Empilés : « Importer une équipe » passerait sur deux lignes à 360 px. */}
+          <div className="flex flex-col gap-2">
             <Bouton icone={<Plus size={14} />} libelle={textesNouvelle.nouvelle} pleineLargeur onClick={nouvelle} />
+            {boutonImporter}
             {boutonNouveauGroupe}
           </div>
         </div>
