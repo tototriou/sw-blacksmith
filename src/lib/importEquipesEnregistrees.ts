@@ -80,7 +80,11 @@ function ajouterEquipeALaProposition(
       continue;
     }
     let selector: ExclusionSelector;
-    const unitKey = m.unitId === null ? null : String(m.unitId);
+    // Sans exemplaire connu (une équipe de la page Siège, un deck importé
+    // avant que l'exemplaire soit lu), l'espèce possédée une seule fois dans
+    // la Box ne laisse pas de doute : c'est lui.
+    const seul = m.unitId === null ? data.box.filter((b) => b.monster.com2usId === m.com2usId) : [];
+    const unitKey = m.unitId !== null ? String(m.unitId) : seul.length === 1 ? seul[0].key : null;
     const dansLaBox = unitKey !== null && data.box.some((b) => b.key === unitKey && b.monster.com2usId === m.com2usId);
     if (dansLaBox) {
       if (unitesPrises.has(unitKey!)) {

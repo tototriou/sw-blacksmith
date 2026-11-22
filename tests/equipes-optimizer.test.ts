@@ -73,6 +73,17 @@ function testEquipesOptimizerExport() {
     'un build à valider par monstre aux 6 runes, les pièces absentes de l’inventaire dites manquantes');
   ok(p.messages.includes(fr.equipes.export.piecesModifiees('Monstre 1', 1)), 'une pièce changée depuis l’enregistrement est dite');
   ok(p.messages.includes(fr.equipes.export.nonPossede('Monstre 2')), 'un monstre non possédé est dit');
+  // Sans exemplaire connu : l'espèce possédée une seule fois est cet exemplaire.
+  const sansUnite = { ...equipe(), monstres: [monstreEx('a', 1001, null), monstreEx('b', 1002, null, equipementEx(20))], leader: 'a' };
+  const ps = preparerExportEquipeOptimizer(sansUnite, sources(), inventaire(), fr).proposition;
+  egal(ps.membres.map((m) => m.selector), [{ source: 'box', unitKey: '11' }, { source: 'unowned', monsterId: '2' }],
+    'sans exemplaire enregistré, le seul de la Box est pris ; une espèce absente reste non possédée');
+  egal(ps.messages.filter((m) => m === fr.equipes.export.nonPossede('Monstre 1')), [], 'et rien n’est dit de lui');
+  const deuxCopies = { ...sources(), box: [...sources().box, { key: '12', monster: monstre(1), stars: 6, level: 40 }] };
+  egal(preparerExportEquipeOptimizer(sansUnite, deuxCopies, inventaire(), fr).proposition.membres[0].selector, { source: 'unowned', monsterId: '1' },
+    'deux exemplaires dans la Box : aucun n’est choisi à sa place');
+  egal(preparerExportEquipeOptimizer({ ...sansUnite, monstres: [monstreEx('a', 1001, 99), monstreEx('b', 1002, null)] }, sources(), inventaire(), fr).proposition.membres[0].selector,
+    { source: 'unowned', monsterId: '1' }, 'un exemplaire enregistré disparu de la Box n’est pas remplacé par un autre');
   const incomplet = { ...equipe(), monstres: [monstreEx('a', 1001, 11, { ...equipementEx(1), runes: equipementEx(1).runes.slice(0, 5) })] };
   egal(preparerExportEquipeOptimizer(incomplet, sources(), inventaire(), fr).proposition.buildsAValider, [], 'moins de 6 runes : aucun build proposé');
 }

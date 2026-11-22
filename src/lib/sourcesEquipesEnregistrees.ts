@@ -257,7 +257,7 @@ function sourcesDansLOrdreDeBase(
     decks.sort((a, b) => ordre(a.onglet) - ordre(b.onglet));
     for (const { d, onglet } of decks) {
       const nom = libelleDeckEnregistre(d, t);
-      const membres: MembreBrut[] = d.slots.flatMap((s, i) => (s ? [{ com2usId: s.com2usId, unitId: null, equipement: s.gear ?? null, leader: i === 0 }] : []));
+      const membres: MembreBrut[] = d.slots.flatMap((s, i) => (s ? [{ com2usId: s.com2usId, unitId: s.unitId ?? null, equipement: s.gear ?? null, leader: i === 0 }] : []));
       const connus = monstresConnus(membres.map((m) => m.com2usId), ctx);
       res.push({ cle: `deck:${d.contenu}:${d.deckType}:${d.deckId}`, groupe: t.equipes.categories[categorieDe(onglet)], libelle: nom, monstres: connus,
         raison: raisonDeck(membres, connus, im), rangement: onglet,

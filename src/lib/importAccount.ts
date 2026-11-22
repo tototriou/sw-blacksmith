@@ -1077,6 +1077,9 @@ const ARENA_OFFENSE_DECK_TYPE = 1;
 // Un slot importé, ou null pour un slot vide (unit_id = 0).
 export interface SiegeImportedSlot {
   com2usId: number;
+  // L'exemplaire du jeu (`unit_id`) : Mes équipes le garde pour retrouver le
+  // monstre dans la Box. Absent d'un compte gardé avant qu'il soit lu.
+  unitId?: number;
   flatRuneSpeed: number; // SPD plate des runes de ce build de siège
   swift: boolean; // set Swift complet équipé sur ce build de siège
   sets: string[]; // sets de runes actifs (clés RUNE_SETS), ex. ['swift','will']
@@ -1159,7 +1162,7 @@ function buildSiegeDecks(
       const artIds = def.artifactIdsByUnit.get(uid) ?? [];
       const artifactObjs = artIds.map((aid) => artById.get(Number(aid))).filter(Boolean);
       const gear = buildGear(unit, runeIds, artifactObjs, runeById, markers);
-      return { com2usId, flatRuneSpeed, swift, sets, gear };
+      return { com2usId, unitId: uid, flatRuneSpeed, swift, sets, gear };
     });
     // On ignore les decks totalement vides (jamais configurés).
     if (slots.some((s) => s !== null)) decks.push({ deckId: def.deckId, slots });

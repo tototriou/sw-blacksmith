@@ -23,7 +23,7 @@ function monstre(id: number): Monster {
 }
 const deck = (id: string, ids: (string | null)[]): SiegeTeam => ({ id, lead: 0, tickAlertDismissed: false,
   slots: ids.map((m, i) => ({ monsterId: m, runeSpeed: null, tick: 0, gear: equipementEx(10 * (i + 1)) })) });
-const slotDeck = (com2usId: number) => ({ com2usId, flatRuneSpeed: 0, swift: false, sets: [], gear: equipementEx(com2usId) });
+const slotDeck = (com2usId: number) => ({ com2usId, unitId: com2usId * 10, flatRuneSpeed: 0, swift: false, sets: [], gear: equipementEx(com2usId) });
 const deckJeu = (deckType: number, contenu: DeckEnregistreImporte['contenu'], ids: (number | null)[], extra: Partial<DeckEnregistreImporte> = {}): DeckEnregistreImporte =>
   ({ deckId: `${deckType}-${ids.join('-')}`, deckType, contenu, sousContenu: null, categorie: null, emplacement: 1,
     slots: ids.map((c) => (c === null ? null : slotDeck(c))), ...extra });
@@ -141,7 +141,10 @@ function testEquipesSourcesDecksEnregistres() {
   egal(decks[0].raison, fr.equipes.imports.moinsDeDeux, 'un deck d’une seule espèce connue : pas importable');
   const cairos = decks[1].creer('e1', uid, T0);
   egal(cairos && [cairos.equipe.onglet, cairos.equipe.leader, cairos.equipe.monstres.map((m) => [m.com2usId, m.unitId, m.provenance])],
-    ['cairos/dragon', null, [[1001, null, 'deck'], [1002, null, 'deck']]], 'rangée dans son donjon, sans unité ; une tête vide laisse l’équipe sans leader');
+    ['cairos/dragon', null, [[1001, 10010, 'deck'], [1002, 10020, 'deck']]], 'rangée dans son donjon, chaque monstre avec son exemplaire ; une tête vide laisse l’équipe sans leader');
+  const ancien = { ...ctx, decksEnregistres: ctx.decksEnregistres.map((d) => ({ ...d, slots: d.slots.map((s) => (s ? { ...s, unitId: undefined } : s)) })) };
+  const sansExemplaire = sourcesImportEquipes(ancien, null, inv, 'arene/offense', fr).find((x) => x.cle === decks[1].cle)?.creer('e3', uid, T0);
+  egal(sansExemplaire?.equipe.monstres.map((m) => m.unitId), [null, null], 'un compte gardé avant la lecture de l’exemplaire : unitId null');
   egal(cairos?.equipe.monstres[0].equipement, equipementEx(1001), 'l’équipement du deck est copié');
   const tour = decks[3].creer('e2', uid, T0);
   egal(tour && [tour.equipe.onglet, tour.equipe.leader === tour.equipe.monstres[0].uid], ['toa', true], 'le slot 0 est le leader');

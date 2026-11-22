@@ -234,6 +234,8 @@ export default function testImport() {
     ],
     'decks enregistrés : tous les types, une place par monstre, leader en tête ; le deck vide est écarté'
   );
+  ok(decks.flatMap((d) => d.slots).every((s) => s === null || (Number.isInteger(s.unitId) && s.unitId! > 0)),
+    'decks enregistrés : chaque case garde son exemplaire (unit_id)');
   egal(
     decks[3].slots[1]!.gear?.runes.map((r) => r.id),
     [1004],

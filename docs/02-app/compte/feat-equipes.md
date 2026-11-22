@@ -243,9 +243,10 @@ enregistrée s'exporte donc vers une équipe de l'Optimizer, qui en accepte 2 à
 - `com2usId` : l'espèce. Le `Monster` se re-résout à chaque lecture avec les données
   du jour, jamais figé dans l'enregistrement (même règle que le compte conservé) ;
 - `unitId` : l'unité du jeu (`unit_id`) **quand la source la connaît** : un
-  exemplaire de la Box, un membre Box de l'Optimizer, un deck d'arène. Les presets de
-  siège ne la portent pas dans l'app : `unitId` vaut alors `null`, et aucune copie de la
-  Box n'est choisie à sa place. Même règle pour un monstre ajouté sans exemplaire ;
+  exemplaire de la Box, un membre Box de l'Optimizer, un deck d'arène, un deck du jeu
+  (`SiegeImportedSlot.unitId`). Les équipes de la page Siège ne la portent pas dans
+  l'app : `unitId` vaut alors `null`. Même règle pour un monstre ajouté sans
+  exemplaire ;
 - `provenance` : d'où vient l'équipement (`porte`, `rta`, `siege-defense`,
   `siege-attaque`, `arene-defense`, `arene-attaque`, `deck`, `optimizer`, `aucun`) ;
 - `equipement` : un `GearSet` **copié** au moment de l'enregistrement — stats de base
@@ -462,8 +463,8 @@ l'onglet d'abord.
   donjon ou sa catégorie s'il en a un, et son numéro (« Cairos — Tanière du dragon
   · 2 »). Le type 1 (arène — offense) et le type 22 (siège — offense) n'y sont pas
   repris : les decks d'arène et les équipes de siège les portent déjà. Le leader est
-  le slot 0 ; les monstres n'ont pas d'`unitId` (le deck ne garde que l'espèce et
-  l'équipement). Sans ce champ (compte conservé avant lui), la source est désactivée,
+  le slot 0 ; chaque monstre garde son exemplaire (`unitId`, lu dans le deck), sauf
+  d'un compte conservé avant cette lecture (`unitId` `null`). Sans ce champ (compte conservé avant lui), la source est désactivée,
   « Réimporte ton compte ». Le rangement (`RANGEMENT_CONTENU_DECK`, puis
   `RANGEMENT_SOUS_CONTENU_DECK` pour le donjon) : guerre de guilde en Offense guerre
   de guilde ; chaque mode du labyrinthe dans le sien ; tribunal d'ascension et tours
@@ -487,7 +488,10 @@ avec un producteur dédié, `preparerExportEquipeOptimizer` (`src/lib/importEqui
 - nom de liste : le nom de l'équipe ; contenu : celui de son onglet (tableau plus
   haut), chaque onglet s'exporte ;
 - membres, dans l'ordre de l'équipe : un monstre dont l'`unitId` est dans la Box
-  prend le sélecteur Box de cette unité ; sinon le sélecteur `unowned` de son espèce,
+  prend le sélecteur Box de cette unité ; un monstre **sans** `unitId` dont l'espèce
+  n'a qu'un exemplaire dans la Box prend celui-ci (aucun doute possible ; deux
+  exemplaires ou plus : aucun n'est choisi, et un `unitId` connu mais disparu de la
+  Box n'est jamais remplacé) ; sinon le sélecteur `unowned` de son espèce,
   avec une `copie` distincte par occurrence (deux occurrences d'une espèce restent
   deux membres), et le rapport le dit. Deux monstres de la même unité Box : le
   second est ignoré avec sa raison (un exemplaire ne figure qu'une fois dans une
