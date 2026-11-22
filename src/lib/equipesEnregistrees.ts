@@ -14,6 +14,7 @@ import type { RepliSpeedTune } from './speedTuneEquipe';
 import { planSpeedTuneValide } from './speedTuneEquipe';
 import { idCanoniqueCollab } from './monsterForms';
 import type { Dictionnaire } from '../i18n/fr';
+import { nomElement, nomSet } from '../i18n/jeu';
 
 // Les ONGLETS, un par contenu du jeu, dans l'ordre choisi par l'utilisateur ;
 // le premier est ouvert par défaut. Chacun a ses CATÉGORIES (un donjon, un
@@ -680,18 +681,68 @@ export function appliquerGroupe(
 // l'utilisateur le 2026-11-22 : dans un contenu où les équipes se jouent
 // ensemble, une rune ne sert qu'à l'une d'elles, et une espèce ne s'y joue
 // qu'une fois, même si le compte en a plusieurs exemplaires.
-// `especes` : les `com2usId`, dans l'ordre de leur première équipe.
-export interface ConflitsGroupe { pieces: number; especes: number[] }
+// Chaque conflit nomme ses éléments (demande de l'utilisateur) : la pièce et
+// ceux qui la portent, l'espèce et ses équipes.
+export type PieceEnConflit =
+  | { type: 'rune'; piece: RuneDetail }
+  | { type: 'artefact'; piece: ArtifactDetail }
+  | { type: 'relique'; piece: RelicDetail };
+export interface PorteurPiece { equipe: string; uid: string; com2usId: number } // `equipe` : son id
+// Les pièces de mêmes porteurs, réunies : un monstre recopié dans deux équipes
+// partage tout son équipement, et une ligne le dit au lieu de neuf.
+export interface ConflitPieces { porteurs: PorteurPiece[]; pieces: PieceEnConflit[] }
+export interface ConflitEspece { com2usId: number; equipes: string[] } // les ids, dans l'ordre du groupe
+// Dans l'ordre de leur première équipe.
+export interface ConflitsGroupe { pieces: ConflitPieces[]; especes: ConflitEspece[] }
 export function conflitsGroupe(equipes: readonly EquipeEnregistree[]): ConflitsGroupe {
-  const compter = (ids: (e: EquipeEnregistree) => string[]) => {
-    const vus = new Map<string, number>();
-    for (const e of equipes) for (const id of new Set(ids(e))) vus.set(id, (vus.get(id) ?? 0) + 1);
-    return [...vus].filter(([, n]) => n > 1).map(([id]) => id);
+  const piecesPortees = new Map<string, { piece: PieceEnConflit; porteurs: PorteurPiece[] }>();
+  const porter = (cle: string, piece: PieceEnConflit, porteur: PorteurPiece) => {
+    const vu = piecesPortees.get(cle);
+    if (vu) vu.porteurs.push(porteur); else piecesPortees.set(cle, { piece, porteurs: [porteur] });
   };
-  const pieces = (e: EquipeEnregistree) => e.monstres.flatMap((m) => m.equipement ? [
-    ...m.equipement.runes.filter((r) => r.id > 0).map((r) => `r${r.id}`),
-    ...m.equipement.artifacts.filter((a) => a.id > 0).map((a) => `a${a.id}`),
-    ...(m.equipement.relic && m.equipement.relic.id > 0 ? [`q${m.equipement.relic.id}`] : []),
-  ] : []);
-  return { pieces: compter(pieces).length, especes: compter((e) => e.monstres.map((m) => String(m.com2usId))).map(Number) };
+  const especes = new Map<number, string[]>();
+  for (const e of equipes) {
+    for (const m of e.monstres) {
+      const p: PorteurPiece = { equipe: e.id, uid: m.uid, com2usId: m.com2usId };
+      const eq = m.equipement;
+      if (eq) {
+        for (const r of eq.runes) if (r.id > 0) porter(`r${r.id}`, { type: 'rune', piece: r }, p);
+        for (const a of eq.artifacts) if (a.id > 0) porter(`a${a.id}`, { type: 'artefact', piece: a }, p);
+        if (eq.relic && eq.relic.id > 0) porter(`q${eq.relic.id}`, { type: 'relique', piece: eq.relic }, p);
+      }
+      const vues = especes.get(m.com2usId) ?? [];
+      if (!vues.includes(e.id)) especes.set(m.com2usId, [...vues, e.id]);
+    }
+  }
+  // Une pièce compte quand deux équipes la portent ; deux monstres d'une même
+  // équipe qui la portent ne sont pas un conflit de groupe.
+  const parPorteurs = new Map<string, ConflitPieces>();
+  for (const { piece, porteurs } of piecesPortees.values()) {
+    if (new Set(porteurs.map((p) => p.equipe)).size < 2) continue;
+    const cle = porteurs.map((p) => `${p.equipe}:${p.uid}`).join('|');
+    const conflit = parPorteurs.get(cle);
+    if (conflit) conflit.pieces.push(piece); else parPorteurs.set(cle, { porteurs, pieces: [piece] });
+  }
+  return {
+    pieces: [...parPorteurs.values()],
+    especes: [...especes].filter(([, ids]) => ids.length > 1).map(([com2usId, ids]) => ({ com2usId, equipes: ids })),
+  };
+}
+
+// Le nombre de pièces portées par plusieurs équipes du groupe.
+export function nombrePiecesEnConflit(c: ConflitsGroupe): number {
+  return c.pieces.reduce((n, x) => n + x.pieces.length, 0);
+}
+
+// Une pièce dite par ce qui la distingue sur son porteur : le set et le slot
+// d'une rune, la sorte et l'attribut ou le type d'un artéfact ; un monstre ne
+// porte qu'une relique.
+export function libellePieceEnConflit(p: PieceEnConflit, t: Dictionnaire): string {
+  const c = t.equipes.groupes.piece;
+  if (p.type === 'rune') return c.rune(nomSet(t.jeu, p.piece.set), p.piece.slot);
+  if (p.type === 'relique') return c.relique;
+  const a = p.piece;
+  const valeur = a.intangible ? nomSet(t.jeu, 'intangible')
+    : a.kind === 'element' ? nomElement(t.jeu, a.element) : (t.jeu.archetypes as Record<string, string>)[a.archetype ?? ''] ?? '—';
+  return c.artefact(t.jeu.sortesArtefact[a.kind], valeur);
 }

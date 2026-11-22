@@ -15,6 +15,9 @@
 import { jeuFr } from './jeu/fr';
 import type { Langue } from './langue';
 
+// « A », « A et B », « A, B et C ».
+const listeFr = (x: readonly string[]) => (x.length > 1 ? `${x.slice(0, -1).join(', ')} et ${x[x.length - 1]}` : x[0] ?? '');
+
 export const fr = {
   // La langue du dictionnaire : une lib qui écrit un nombre la passe à
   // `formatNombre` (src/i18n/format.ts).
@@ -1698,7 +1701,17 @@ export const fr = {
       aide: 'Les équipes d’un groupe se jouent ensemble : une rune ne sert qu’à l’une d’elles, et un monstre ne s’y joue qu’une fois.',
       equipes: (n: number) => (n > 1 ? `${n} équipes` : '1 équipe'),
       conflitsPieces: (n: number) => (n > 1 ? `${n} pièces dans plusieurs équipes` : '1 pièce dans plusieurs équipes'),
-      conflitsEspeces: (noms: string) => `Même monstre dans plusieurs équipes : ${noms}`,
+      conflitsEspeces: (n: number) => (n > 1 ? `${n} monstres dans plusieurs équipes` : '1 monstre dans plusieurs équipes'),
+      // Le détail, une ligne par conflit sous l'en-tête du groupe.
+      porteur: (monstre: string, equipe: string) => `${monstre} (${equipe})`,
+      detailPieces: (porteurs: readonly string[], pieces: readonly string[]) => `${listeFr(porteurs)} portent : ${pieces.join(', ')}`,
+      detailEspece: (monstre: string, equipes: readonly string[]) => `${monstre} dans ${listeFr(equipes)}`,
+      piece: {
+        rune: (set: string, slot: number) => `Rune ${set} slot ${slot}`,
+        artefact: (sorte: string, valeur: string) => `Artéfact (${sorte} : ${valeur})`,
+        relique: 'Relique',
+      },
+      detailAria: 'Détail des conflits du groupe',
       exporter: 'Exporter le groupe vers l’Optimizer',
       sansGroupe: 'Non groupées',
       creer: 'Nouveau groupe',

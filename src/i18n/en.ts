@@ -14,6 +14,9 @@ const ordinalEn = (n: number) => {
   return `${n}${suffixe}`;
 };
 
+// “A”, “A and B”, “A, B and C”.
+const listeEn = (x: readonly string[]) => (x.length > 1 ? `${x.slice(0, -1).join(', ')} and ${x[x.length - 1]}` : x[0] ?? '');
+
 export const en: Dictionnaire = {
   codeLangue: 'en',
   jeu: jeuEn,
@@ -1608,7 +1611,16 @@ export const en: Dictionnaire = {
       aide: 'The teams of a group are played together: a rune serves only one of them, and a monster is played only once.',
       equipes: (n: number) => (n > 1 ? `${n} teams` : '1 team'),
       conflitsPieces: (n: number) => (n > 1 ? `${n} pieces in several teams` : '1 piece in several teams'),
-      conflitsEspeces: (noms: string) => `Same monster in several teams: ${noms}`,
+      conflitsEspeces: (n: number) => (n > 1 ? `${n} monsters in several teams` : '1 monster in several teams'),
+      porteur: (monstre: string, equipe: string) => `${monstre} (${equipe})`,
+      detailPieces: (porteurs: readonly string[], pieces: readonly string[]) => `${listeEn(porteurs)} wear: ${pieces.join(', ')}`,
+      detailEspece: (monstre: string, equipes: readonly string[]) => `${monstre} in ${listeEn(equipes)}`,
+      piece: {
+        rune: (set: string, slot: number) => `${set} rune slot ${slot}`,
+        artefact: (sorte: string, valeur: string) => `Artifact (${sorte}: ${valeur})`,
+        relique: 'Relic',
+      },
+      detailAria: 'Group conflict details',
       exporter: 'Export the group to the Optimizer',
       sansGroupe: 'Ungrouped',
       creer: 'New group',

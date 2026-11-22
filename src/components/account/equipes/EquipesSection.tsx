@@ -30,8 +30,8 @@ import { sourcesImportEquipes, type ContexteSourcesEquipes, type SourceEquipemen
 import {
   CATEGORIES_EQUIPES, SOUS_CATEGORIES_EQUIPES, ajouterMonstre, categorieDe, compteParCategorie, compteParOnglet, libelleRangement, libelleSousCategorie, sousCategorieDe,
   appliquerGroupe, conflitsGroupe, creerEquipe, deplacerVersOnglet, dupliquerEquipe, equipesDuGroupe, equipesFiltrees, gesteSurBrouillon, groupesDeLOnglet, nomEquipeLibre, rangement,
-  estPrepa, modifierTextes, monstresMax, nomGroupeLibre, regrouper, resumeEcarts, tireurIdentifiants, tropDeMonstres,
-  type CategorieEquipes, type EquipeEnregistree, type InventaireCompte, type OngletEquipes, type SousCategorieEquipes,
+  estPrepa, libellePieceEnConflit, modifierTextes, monstresMax, nombrePiecesEnConflit, nomGroupeLibre, regrouper, resumeEcarts, tireurIdentifiants, tropDeMonstres,
+  type CategorieEquipes, type ConflitsGroupe, type EquipeEnregistree, type InventaireCompte, type OngletEquipes, type SousCategorieEquipes,
 } from '../../../lib/equipesEnregistrees';
 
 // Au-delà, la grille se pagine.
@@ -326,6 +326,16 @@ export default function EquipesSection({ api, ctx, inventaire, allMonsters, opti
       title={equipesOnglet.length === 0 ? e.aucune : undefined} onClick={() => setGroupeEdite({ groupe: null })} />
   );
   const nomDe = (com2usId: number) => monstreDe(com2usId)?.name ?? String(com2usId);
+  // Chaque conflit d'un groupe, nommé : les espèces et leurs équipes, puis
+  // les pièces et leurs porteurs.
+  const detailsConflits = (c: ConflitsGroupe, equipes: readonly EquipeEnregistree[]) => {
+    const nomEquipe = (id: string) => equipes.find((x) => x.id === id)?.nom ?? id;
+    return [
+      ...c.especes.map((x) => g.detailEspece(nomDe(x.com2usId), x.equipes.map(nomEquipe))),
+      ...c.pieces.map((x) => g.detailPieces(x.porteurs.map((p) => g.porteur(nomDe(p.com2usId), nomEquipe(p.equipe))),
+        x.pieces.map((p) => libellePieceEnConflit(p, t)))),
+    ];
+  };
   const exportImpossible = !inventaire || !onImporterOptimizer ? e.export.sansCompte : null;
 
   const detail = equipeOuverte && (
@@ -415,8 +425,9 @@ export default function EquipesSection({ api, ctx, inventaire, allMonsters, opti
                 <Fragment key={x.id}>
                   {groupe && conflits && (
                     <EnTeteGroupe nom={groupe} detail={g.equipes(tout.length)} signaux={[
-                      ...(conflits.especes.length ? [g.conflitsEspeces(conflits.especes.map(nomDe).join(', '))] : []),
-                      ...(conflits.pieces ? [g.conflitsPieces(conflits.pieces)] : [])]}>
+                      ...(conflits.especes.length ? [g.conflitsEspeces(conflits.especes.length)] : []),
+                      ...(conflits.pieces.length ? [g.conflitsPieces(nombrePiecesEnConflit(conflits))] : [])]}
+                      details={detailsConflits(conflits, tout)} libelleDetails={g.detailAria}>
                       <Bouton taille="sm" icone={<Pencil size={14} />} libelle={g.modifier} onClick={() => setGroupeEdite({ groupe })} />
                       <Bouton taille="sm" icone={<Send size={14} />} libelle={g.exporter} disabled={exportImpossible !== null}
                         title={exportImpossible ?? undefined} onClick={() => exporterGroupe(groupe)} />

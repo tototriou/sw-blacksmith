@@ -217,7 +217,10 @@ export function testRenduEquipesGroupes() {
   const html = rendre(section({ api: api(groupe) }));
   const t = texteVisible(html);
   ok(html.includes('aria-label="Raid A"') && t.includes(g.equipes(2)), 'l’en-tête du groupe, son nom et ses équipes');
-  ok(t.includes(g.conflitsEspeces('Monstre 1')) && t.includes(g.conflitsPieces(9)), 'la même espèce et les pièces portées par deux équipes du groupe');
+  ok(t.includes(g.conflitsEspeces(1)) && t.includes(g.conflitsPieces(9)), 'la même espèce et les pièces portées par deux équipes du groupe');
+  ok(html.includes(`aria-label="${g.detailAria}"`) && t.includes(g.detailEspece('Monstre 1', ['Équipe G1', 'Équipe G2'])), 'le détail nomme l’espèce et ses équipes');
+  ok(t.includes(g.detailPieces(['Monstre 1 (Équipe G1)', 'Monstre 1 (Équipe G2)'], [1, 2, 3, 4, 5, 6].map((s) => `Rune Rapide slot ${s}`).concat(['Artéfact (Attribut : Feu)', 'Artéfact (Type : Attaque)', 'Relique']))),
+    'et chaque pièce partagée, avec ses porteurs');
   const [iEnTete, i1, i2, iSans, iSeule] = ['aria-label="Raid A"', 'Équipe G1', 'Équipe G2', `aria-label="${g.sansGroupe}"`, 'Équipe seule'].map((x) => html.indexOf(x));
   ok(iEnTete < i1 && i1 < i2 && i2 < iSans && iSans < iSeule, 'le groupe d’abord, puis « Non groupées » au-dessus des autres équipes');
   ok(!rendre(section()).includes(`aria-label="${g.sansGroupe}"`), 'sans groupe dans l’onglet, pas d’en-tête « Non groupées »');

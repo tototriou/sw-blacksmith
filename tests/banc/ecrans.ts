@@ -411,6 +411,16 @@ const EQ_GROUPER: Etape[] = [
   { cliquer: repere('[role="dialog"] button:has-text("Créer")') },
   { cliquer: bouton('Toutes les équipes') },
 ];
+// L'équipe importée et sa copie, réunies dans un groupe : elles portent les
+// mêmes monstres et les mêmes pièces, que l'en-tête détaille.
+const EQ_CONFLITS: Etape[] = [
+  { cliquer: { role: 'button', nom: 'Actions de l’équipe', pres: EQ_CARTE } },
+  { cliquer: repere('[role="menuitem"]:has-text("Dupliquer")') },
+  { cliquer: bouton('Nouveau groupe') },
+  { cliquer: repere('[role="dialog"] span:text-is("Défense 1")') },
+  { cliquer: repere('[role="dialog"] span:text-is("Défense 1 (copie)")') },
+  { cliquer: repere('[role="dialog"] button:has-text("Créer")') },
+];
 const EQ_EXPORTER: Etape[] = [
   { cliquer: { role: 'button', nom: 'Actions de l’équipe', pres: EQ_CARTE } },
   { cliquer: repere('[role="menuitem"]:has-text("Exporter vers l’Optimizer")') },
@@ -732,6 +742,12 @@ export const ECRANS: Ecran[] = [
         libelle: 'une équipe dans un groupe : l’en-tête du groupe dans la grille',
         preparation: { telephone: [...EQ_IMPORT.telephone, ...EQ_GROUPER], ordinateur: [...EQ_IMPORT.ordinateur, ...EQ_GROUPER] },
         atteint: [repere('[role="group"][aria-label="Groupe 1"]'), bouton('Exporter le groupe vers l’Optimizer')],
+      },
+      {
+        id: 'groupe-conflits',
+        libelle: 'un groupe dont deux équipes portent les mêmes monstres et pièces : le détail sous l’en-tête',
+        preparation: { telephone: [...EQ_IMPORT.telephone, ...EQ_CONFLITS], ordinateur: [...EQ_IMPORT.ordinateur, ...EQ_CONFLITS] },
+        atteint: [repere('[aria-label="Détail des conflits du groupe"]')],
       },
       {
         id: 'prepa-rta',

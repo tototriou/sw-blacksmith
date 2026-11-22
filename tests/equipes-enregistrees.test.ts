@@ -4,7 +4,7 @@ import type { BoxItem } from '../src/lib/applyAccount';
 import { fr } from '../src/i18n/fr';
 import { en } from '../src/i18n/en';
 import {
-  CATEGORIES_EQUIPES, CONTENU_OPTIMIZER_ONGLET, ONGLETS_EQUIPES, SOUS_CATEGORIES_EQUIPES, MONSTRES_MAX_PREPA, ajouterMonstre, appliquerGroupe, normaliserPrepa, categorieDe, conflitsGroupe, monstresMax, nomGroupeLibre, tropDeMonstres, equipesDuGroupe, groupesDeLOnglet, modifierGroupe, regrouper, comparerPiece, compteParCategorie, compteParOnglet, creerEquipe, deplacerMonstre, designerLeader, dupliquerEquipe,
+  CATEGORIES_EQUIPES, CONTENU_OPTIMIZER_ONGLET, ONGLETS_EQUIPES, SOUS_CATEGORIES_EQUIPES, MONSTRES_MAX_PREPA, ajouterMonstre, appliquerGroupe, normaliserPrepa, categorieDe, conflitsGroupe, libellePieceEnConflit, nombrePiecesEnConflit, monstresMax, nomGroupeLibre, tropDeMonstres, equipesDuGroupe, groupesDeLOnglet, modifierGroupe, regrouper, comparerPiece, compteParCategorie, compteParOnglet, creerEquipe, deplacerMonstre, designerLeader, dupliquerEquipe,
   deplacerVersOnglet, equipesFiltrees, gesteSurBrouillon, etatExemplaire, etatPiece, indexerInventaire, lireEquipeEnregistree, modifierTextes,
   libelleRangement, libelleSousCategorie, nomEquipeLibre, rangement, resumeEcarts, sousCategorieDe, retirerMonstre, type EquipeEnregistree, type MonstreEnregistre, type OngletEquipes,
 } from '../src/lib/equipesEnregistrees';
@@ -190,8 +190,22 @@ function testEquipesEnregistreesGroupes() {
   egal(groupesDeLOnglet(toutes, 'faille'), ['Raid A'], 'les groupes d’un onglet');
   egal(equipesDuGroupe(toutes, 'faille', 'Raid A').map((e) => e.id), ['a', 'b'], 'un groupe ne sort pas de son onglet, même nom ailleurs compris');
   egal(regrouper([seule, a, b]).map((e) => e.id), ['a', 'b', 's'], 'les groupes d’abord, chacun d’un bloc, puis les équipes non groupées');
-  egal(conflitsGroupe([a, b]), { pieces: 9, especes: [] }, 'les pièces portées par deux équipes du groupe');
-  egal(conflitsGroupe([a, seule]), { pieces: 0, especes: [1, 2] }, 'une même espèce dans deux équipes, même d’exemplaires différents');
+  const [ab] = conflitsGroupe([a, b]).pieces;
+  egal(ab.porteurs, [{ equipe: 'a', uid: 'a1', com2usId: 1 }, { equipe: 'a', uid: 'a2', com2usId: 2 }, { equipe: 'b', uid: 'b1', com2usId: 3 }, { equipe: 'b', uid: 'b2', com2usId: 4 }],
+    'les pièces portées par deux équipes du groupe : chacun de leurs porteurs');
+  egal(ab.pieces.map((p) => libellePieceEnConflit(p, fr)), [1, 2, 3, 4, 5, 6].map((s) => `Rune Rapide slot ${s}`).concat(['Artéfact (Attribut : Feu)', 'Artéfact (Type : Attaque)', 'Relique']),
+    'et chaque pièce nommée : set et slot de la rune, sorte et valeur de l’artéfact, la relique');
+  egal(nombrePiecesEnConflit(conflitsGroupe([a, b])), 9, 'les mêmes porteurs : une ligne pour leurs neuf pièces');
+  egal(conflitsGroupe([a, seule]), { pieces: [], especes: [{ com2usId: 1, equipes: ['a', 's'] }, { com2usId: 2, equipes: ['a', 's'] }] },
+    'une même espèce dans deux équipes, même d’exemplaires différents, avec ses équipes');
+  const deux = conflitsGroupe([
+    eq('p', 'faille/raid', 'Raid A', [monstreEx('p1', 1, null, equipementEx(1)), monstreEx('p2', 2, null, equipementEx(20))]),
+    eq('q', 'faille/raid', 'Raid A', [monstreEx('q1', 3, null, { ...equipementEx(30), runes: [runeEx(1, 1)] }), monstreEx('q2', 4, null, { ...equipementEx(40), relic: reliqueEx(2000) })]),
+  ]).pieces;
+  egal(deux.map((c) => [c.porteurs.map((p) => p.uid), c.pieces.map((p) => p.piece.id)]), [[['p1', 'q1'], [1]], [['p2', 'q2'], [2000]]],
+    'des porteurs différents : une ligne chacun');
+  const intangible = libellePieceEnConflit({ type: 'artefact', piece: { ...artefactEx(9, 'archetype'), intangible: true } }, fr);
+  egal(intangible, 'Artéfact (Type : Intangible)', 'un artéfact intangible le dit, quelle que soit sa valeur lue');
   egal(conflitsGroupe([b, eq('x', 'faille/raid', 'Raid A', [monstreEx('x1', 9, null, null), monstreEx('x2', 9, null, null)])]).especes, [],
     'deux fois l’espèce dans une même équipe : pas un conflit de groupe');
   // Former un groupe depuis la page.
