@@ -69,7 +69,7 @@ export function sourcesEquipementEspece(com2usId: number, ctx: ContexteSourcesEq
   const siege = (teams: readonly SiegeTeam[], provenance: ProvenanceEquipement, libelle: (n: number) => string) =>
     teams.forEach((team, i) => team.slots.forEach((slot, s) => {
       if (slot.monsterId !== null && slot.gear && ctx.monsterById.get(slot.monsterId)?.com2usId === com2usId)
-        res.push({ cle: `${provenance}:${team.id}:${s}`, libelle: libelle(i + 1), provenance, unitId: null, equipement: slot.gear,
+        res.push({ cle: `${provenance}:${team.id}:${s}`, libelle: libelle(i + 1), provenance, unitId: slot.unitId ?? null, equipement: slot.gear,
           equipe: { membres: team.slots.map((x) => (x.monsterId === null ? null : ctx.monsterById.get(x.monsterId) ?? null)), position: s } });
     }));
   siege(ctx.siegeDefenseTeams, 'siege-defense', a.defense);
@@ -208,7 +208,7 @@ function sourcesDansLOrdreDeBase(
     teams.forEach((team, i) => {
       // Le leader est le slot 0, et lui seul : un slot 0 vide laisse l'équipe sans leader.
       const membres: MembreBrut[] = team.slots.flatMap((s, i) => (s.monsterId === null ? [] : [{
-        com2usId: ctx.monsterById.get(s.monsterId)?.com2usId ?? null, unitId: null, equipement: s.gear ?? null, leader: i === 0 }]));
+        com2usId: ctx.monsterById.get(s.monsterId)?.com2usId ?? null, unitId: s.unitId ?? null, equipement: s.gear ?? null, leader: i === 0 }]));
       const connus = monstresConnus(membres.map((m) => m.com2usId), ctx);
       res.push({ cle: `${provenance}:${team.id}`, groupe, libelle: libelle(i + 1), monstres: connus, raison: raisonDeck(membres, connus, im), rangement: onglet,
         creer: (id, tirerUid, maintenant) => equipeDepuisMembres(membres, onglet, libelle(i + 1), provenance, ctx, id, tirerUid, maintenant) });

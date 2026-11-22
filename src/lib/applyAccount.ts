@@ -25,7 +25,7 @@ function primarySection(sets: string[]): string {
   return RTA_OTHER;
 }
 
-type MappedSlot = { monsterId: string | null; runeSpeed: number | null; sets?: string[]; tick?: number; gear?: GearSet };
+type MappedSlot = { monsterId: string | null; runeSpeed: number | null; sets?: string[]; tick?: number; gear?: GearSet; unitId?: number };
 
 // Vitesse de runes finale = SPD plate + bonus Swift (25 % de la base) si set
 // complet. Arrondi au SUPÉRIEUR, comme tous les bonus en % de l'app.
@@ -203,6 +203,7 @@ export function mapSiegeTeams(
           sets: slot.sets,
           tick: noTick ? 0 : nearestTick(combat),
           gear: slot.gear,
+          ...(slot.unitId !== undefined ? { unitId: slot.unitId } : {}),
         };
       }),
     };

@@ -22,7 +22,7 @@ function monstre(id: number): Monster {
     image: null, stats: { hp: 1, attack: 1, defense: 1, speed: 100, critRate: 15, critDamage: 50, resistance: 15, accuracy: 0 }, leaderSkill: null };
 }
 const deck = (id: string, ids: (string | null)[]): SiegeTeam => ({ id, lead: 0, tickAlertDismissed: false,
-  slots: ids.map((m, i) => ({ monsterId: m, runeSpeed: null, tick: 0, gear: equipementEx(10 * (i + 1)) })) });
+  slots: ids.map((m, i) => ({ monsterId: m, runeSpeed: null, tick: 0, gear: equipementEx(10 * (i + 1)), ...(i === 0 ? { unitId: 31 } : {}) })) });
 const slotDeck = (com2usId: number) => ({ com2usId, unitId: com2usId * 10, flatRuneSpeed: 0, swift: false, sets: [], gear: equipementEx(com2usId) });
 const deckJeu = (deckType: number, contenu: DeckEnregistreImporte['contenu'], ids: (number | null)[], extra: Partial<DeckEnregistreImporte> = {}): DeckEnregistreImporte =>
   ({ deckId: `${deckType}-${ids.join('-')}`, deckType, contenu, sousContenu: null, categorie: null, emplacement: 1,
@@ -48,9 +48,9 @@ function testEquipesSourcesEquipement() {
   const s = sourcesEquipementEspece(1001, contexte(), fr);
   egal(s.map((x) => [x.libelle, x.provenance, x.unitId]), [
     ['Équipement porté (niveau 40)', 'porte', 11], ['Équipement porté (niveau 35)', 'porte', 12],
-['Défense de siège 1', 'siege-defense', null],
+['Défense de siège 1', 'siege-defense', 31],
     ['Défense d’arène', 'arene-defense', 11], ['Sans équipement', 'aucun', null],
-  ], 'chaque exemplaire de la Box, les decks ; un deck de siège sans unité garde unitId null');
+  ], 'chaque exemplaire de la Box, les decks, chacun avec son exemplaire');
   egal(s.map((x) => x.equipe && [x.equipe.membres.map((m) => m?.name ?? null), x.equipe.position]), [
     undefined, undefined, [['Monstre 1', 'Monstre 2', null], 0], [['Monstre 1', 'Monstre 2'], 0], undefined,
   ], 'un deck dit ses coéquipiers et la place du monstre, une espèce inconnue reste une place vide');
@@ -71,7 +71,7 @@ function testEquipesSourcesImports() {
   ok(cree !== null, 'la défense crée une équipe');
   if (!cree) return;
   egal([cree.equipe.onglet, cree.equipe.nom, cree.equipe.monstres.map((m) => [m.com2usId, m.unitId, m.provenance])],
-    ['guilde/defense-siege', 'Défense 1', [[1001, null, 'siege-defense'], [1002, null, 'siege-defense']]], 'dans son onglet, le preset copié, sans unité');
+    ['guilde/defense-siege', 'Défense 1', [[1001, 31, 'siege-defense'], [1002, null, 'siege-defense']]], 'dans son onglet, le preset copié, l’exemplaire quand la page Siège le connaît');
   egal(cree.ignores, 1, 'un monstre inconnu est compté');
   egal(cree.equipe.leader, cree.equipe.monstres[0].uid, 'le slot 0 est le leader');
   cree.equipe.monstres[0].equipement!.runes[0].level = 0;

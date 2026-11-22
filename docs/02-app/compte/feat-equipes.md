@@ -245,9 +245,10 @@ enregistrée s'exporte donc vers une équipe de l'Optimizer, qui en accepte 2 à
   du jour, jamais figé dans l'enregistrement (même règle que le compte conservé) ;
 - `unitId` : l'unité du jeu (`unit_id`) **quand la source la connaît** : un
   exemplaire de la Box, un membre Box de l'Optimizer, un deck d'arène, un deck du jeu
-  (`SiegeImportedSlot.unitId`). Les équipes de la page Siège ne la portent pas dans
-  l'app : `unitId` vaut alors `null`. Même règle pour un monstre ajouté sans
-  exemplaire ;
+  (`SiegeImportedSlot.unitId`), une équipe de la page Siège importée du compte
+  (`SiegeSlot.unitId`, retiré quand on y change le monstre). Sinon `unitId` vaut
+  `null` : un monstre choisi à la main sur la page Siège, un compte importé avant
+  cette lecture, un monstre ajouté sans exemplaire ;
 - `provenance` : d'où vient l'équipement (`porte`, `rta`, `siege-defense`,
   `siege-attaque`, `arene-defense`, `arene-attaque`, `deck`, `optimizer`, `aucun`) ;
 - `equipement` : un `GearSet` **copié** au moment de l'enregistrement — stats de base
