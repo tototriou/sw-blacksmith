@@ -129,7 +129,9 @@ plutôt qu'une liaison propre à chaque contenu).
   autre groupe le dit (« dans Raid A ») et, cochée, en change. « Modifier le
   groupe », dans l'en-tête du groupe, rouvre la même fenêtre : renommer, ajouter,
   décocher pour faire quitter le groupe (`appliquerGroupe`). Il faut au moins une
-  équipe cochée, et un nom qu'aucun autre groupe de l'onglet ne porte.
+  équipe cochée, et un nom qu'aucun autre groupe de l'onglet ne porte. « Supprimer le
+  groupe », dans la même fenêtre, le fait disparaître après confirmation (défaut
+  « Annuler ») : ses équipes restent, sans groupe.
 - Le détail d'une équipe choisit son groupe (« Groupe », `SelecteurGroupe` de
   `DetailEquipe.tsx`) : « Aucun groupe », les groupes déjà formés dans l'onglet
   (`groupesDeLOnglet`), ou « Nouveau groupe… », nommé dans la fenêtre de

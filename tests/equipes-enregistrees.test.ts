@@ -199,6 +199,8 @@ function testEquipesEnregistreesGroupes() {
   egal(formes.map((e) => e.groupe ?? null), ['Raid A', 'Raid B', 'Raid B', 'Raid A'], 'les équipes cochées de l’onglet, même d’un autre groupe ; jamais hors de l’onglet');
   const modifie = appliquerGroupe(toutes, 'faille', 'Raid A', 'Raid C', new Set(['b']), T);
   egal(modifie.map((e) => e.groupe ?? null), ['Raid A', null, null, 'Raid C'], 'renommer : une équipe décochée quitte le groupe');
+  egal(appliquerGroupe(toutes, 'faille', 'Raid A', '', new Set(), T).map((e) => e.groupe ?? null), ['Raid A', null, null, null],
+    'supprimer le groupe : ses équipes de l’onglet restent, sans groupe');
   egal(nomGroupeLibre(['Groupe 1', 'Groupe 3'], (n) => `Groupe ${n}`), 'Groupe 2', 'le premier nom libre');
 }
 

@@ -229,6 +229,10 @@ export function testRenduEquipesGroupes() {
   const modale = (gr: string | null) => auTelephone(() => rendre(<ModaleGroupe equipes={groupe} groupe={gr} nomParDefaut="Groupe 1" autresGroupes={[]} onValider={() => {}} onFermer={() => {}} />));
   const edition = modale('Raid A');
   egal([(edition.match(/checked=""/g) ?? []).length, valeurs(edition, 'value').includes('Raid A')], [2, true], 'modifier : le nom et les équipes du groupe cochées');
+  const avecSuppression = auTelephone(() => rendre(<ModaleGroupe equipes={groupe} groupe="Raid A" nomParDefaut="Groupe 1" autresGroupes={[]}
+    onValider={() => {}} onSupprimer={() => {}} onFermer={() => {}} />));
+  egal(bouton(avecSuppression, g.supprimer.action)?.desactive, false, 'un groupe modifié se supprime');
+  ok(bouton(modale(null), g.supprimer.action) === undefined, 'rien à supprimer à la création');
   const creation = modale(null);
   ok(valeurs(creation, 'value').includes('Groupe 1') && texteVisible(creation).includes(g.edition.dansGroupe('Raid A')), 'former : « Groupe 1 », et l’équipe d’un autre groupe le dit');
   egal(bouton(creation, g.fenetre.action)?.title, g.edition.auMoinsUne, 'rien de coché : « Créer » attend une équipe');

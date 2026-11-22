@@ -1600,6 +1600,11 @@ export const en: Dictionnaire = {
       sansGroupe: 'Ungrouped',
       creer: 'New group',
       modifier: 'Edit the group',
+      supprimer: {
+        action: 'Delete the group',
+        titre: 'Delete the group?',
+        message: (nom: string) => `The group ${nom} goes away; its teams stay, without a group.`,
+      },
       edition: {
         titre: 'Edit the group',
         equipes: 'Teams of the group',

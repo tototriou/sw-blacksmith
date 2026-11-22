@@ -13,12 +13,14 @@ interface Props {
   // Les autres groupes de l'onglet : un nom pris est refusé.
   autresGroupes: readonly string[];
   onValider: (nom: string, ids: ReadonlySet<string>) => void;
+  // Supprimer le groupe modifié (ses équipes restent, sans groupe).
+  onSupprimer?: () => void;
   onFermer: () => void;
 }
 
 // Former ou modifier un groupe depuis la grille : son nom et les équipes de
 // l'onglet qui en font partie. Une équipe d'un autre groupe cochée en change.
-export default function ModaleGroupe({ equipes, groupe, nomParDefaut, autresGroupes, onValider, onFermer }: Props) {
+export default function ModaleGroupe({ equipes, groupe, nomParDefaut, autresGroupes, onValider, onSupprimer, onFermer }: Props) {
   const t = useTraduction();
   const g = t.equipes.groupes;
   const id = useId();
@@ -31,6 +33,7 @@ export default function ModaleGroupe({ equipes, groupe, nomParDefaut, autresGrou
   return (
     <Modale onClose={onFermer} labelledBy={id} titre={groupe === null ? g.fenetre.titre : g.edition.titre} croix largeur="max-w-[460px]"
       actions={<PiedDeDialogue>
+        {groupe !== null && onSupprimer && <Bouton ton="danger" fond="vide" libelle={g.supprimer.action} onClick={onSupprimer} />}
         <Bouton libelle={t.commun.annuler} onClick={onFermer} />
         <Bouton ton="accent" fond="plein" libelle={groupe === null ? g.fenetre.action : g.edition.enregistrer}
           disabled={refus !== null} title={refus ?? undefined} onClick={valider} />

@@ -1689,6 +1689,11 @@ export const fr = {
       sansGroupe: 'Non groupées',
       creer: 'Nouveau groupe',
       modifier: 'Modifier le groupe',
+      supprimer: {
+        action: 'Supprimer le groupe',
+        titre: 'Supprimer le groupe ?',
+        message: (nom: string) => `Le groupe ${nom} disparaît ; ses équipes restent, sans groupe.`,
+      },
       edition: {
         titre: 'Modifier le groupe',
         equipes: 'Équipes du groupe',

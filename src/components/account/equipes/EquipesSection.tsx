@@ -102,6 +102,7 @@ export default function EquipesSection({ api, ctx, inventaire, allMonsters, opti
   const [aSupprimer, setASupprimer] = useState<EquipeEnregistree | null>(null);
   // Le groupe formé (`null`) ou modifié depuis la grille.
   const [groupeEdite, setGroupeEdite] = useState<{ groupe: string | null } | null>(null);
+  const [groupeASupprimer, setGroupeASupprimer] = useState<string | null>(null);
   // Un déplacement vers un rangement où l'équipe a trop de monstres : à confirmer.
   const [deplacement, setDeplacement] = useState<{ equipe: EquipeEnregistree; onglet: OngletEquipes } | null>(null);
   const [retour, setRetour] = useState<RetourOptimizer | null>(null);
@@ -439,9 +440,19 @@ export default function EquipesSection({ api, ctx, inventaire, allMonsters, opti
         <ModaleGroupe equipes={regrouper(equipesOnglet)} groupe={groupeEdite.groupe}
           nomParDefaut={nomGroupeLibre(groupesOnglet, g.nomParDefaut)} autresGroupes={groupesOnglet.filter((x) => x !== groupeEdite.groupe)}
           onFermer={() => setGroupeEdite(null)}
+          onSupprimer={() => { setGroupeASupprimer(groupeEdite.groupe); setGroupeEdite(null); }}
           onValider={(nom, ids) => {
             setGroupeEdite(null);
             api.appliquer((l) => appliquerGroupe(l, categorie, groupeEdite.groupe, nom, ids, new Date()));
+          }} />
+      )}
+      {groupeASupprimer !== null && (
+        <ConfirmDialog titre={g.supprimer.titre} message={g.supprimer.message(groupeASupprimer)} libelleAction={g.supprimer.action} destructif
+          onCancel={() => setGroupeASupprimer(null)}
+          onConfirm={() => {
+            const nom = groupeASupprimer;
+            setGroupeASupprimer(null);
+            api.appliquer((l) => appliquerGroupe(l, categorie, nom, '', new Set(), new Date()));
           }} />
       )}
       {deplacement && (
