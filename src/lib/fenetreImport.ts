@@ -74,20 +74,33 @@ export function comptesParContenu(sources: readonly SourceImportEquipe[], source
 }
 
 // Les sources sous leur en-tête de section, et dans une section les équipes
-// d'un même bloc (une liste, un groupe, les défenses de siège) à la suite.
+// d'un même bloc (une liste, un groupe, les défenses de siège) ensemble. Le
+// regroupement suit la première apparition de chaque section et de chaque bloc,
+// même quand leurs sources ne se suivent pas (Mes équipes, rangé par onglet,
+// revient plusieurs fois au même contenu) : une section ou un bloc n'apparaît
+// qu'une fois, et son nom sert de clé de rendu sans doublon.
 export interface BlocFenetre { bloc: { cle: string; nom: string } | null; sources: SourceImportEquipe[] }
 export interface SectionFenetre { groupe: string; blocs: BlocFenetre[] }
 export function sectionsFenetre(visibles: readonly SourceImportEquipe[]): SectionFenetre[] {
-  const sections: SectionFenetre[] = [];
+  const sections = new Map<string, SectionFenetre>();
+  const blocs = new Map<string, BlocFenetre>();
   for (const s of visibles) {
-    let section = sections[sections.length - 1];
-    if (!section || section.groupe !== s.groupe) sections.push(section = { groupe: s.groupe, blocs: [] });
+    let section = sections.get(s.groupe);
+    if (!section) sections.set(s.groupe, section = { groupe: s.groupe, blocs: [] });
+    const cle = s.bloc?.cle;
     const dernier = section.blocs[section.blocs.length - 1];
-    const cle = s.bloc?.cle ?? null;
-    if (dernier && (dernier.bloc?.cle ?? null) === cle && cle !== null) dernier.sources.push(s);
-    else section.blocs.push({ bloc: s.bloc ?? null, sources: [s] });
+    if (cle === undefined) {
+      // Les équipes hors bloc qui se suivent partagent une enveloppe.
+      if (dernier && dernier.bloc === null) dernier.sources.push(s);
+      else section.blocs.push({ bloc: null, sources: [s] });
+      continue;
+    }
+    const cleBloc = `${s.groupe}\u0000${cle}`;
+    const bloc = blocs.get(cleBloc);
+    if (bloc) bloc.sources.push(s);
+    else { const nouveau = { bloc: s.bloc!, sources: [s] }; blocs.set(cleBloc, nouveau); section.blocs.push(nouveau); }
   }
-  return sections;
+  return [...sections.values()];
 }
 
 // Le contenu ouvert au départ : l'onglet de Mes équipes, avec sa catégorie ;
@@ -109,7 +122,9 @@ export function sourceInitiale(sources: readonly SourceImportEquipe[], ordre: re
 // Un monstre d'une source : la source, et sa place parmi les monstres connus
 // qu'elle montre.
 export interface ChoixMonstre { cle: string; index: number }
-// Des équipes OU des monstres, jamais les deux : choisir l'un vide l'autre.
+// Des équipes et des monstres : la case d'une équipe la prend entière, un
+// portrait prend ce monstre seul, et l'un ne retire jamais l'autre (un portrait
+// touché par mégarde ne défait pas les équipes cochées).
 export interface SelectionImport { equipes: string[]; monstres: ChoixMonstre[] }
 export const SELECTION_VIDE: SelectionImport = { equipes: [], monstres: [] };
 
@@ -117,21 +132,21 @@ export const selectionVide = (s: SelectionImport): boolean => s.equipes.length =
 export const monstreChoisi = (s: SelectionImport, c: ChoixMonstre): boolean => s.monstres.some((x) => x.cle === c.cle && x.index === c.index);
 
 export function basculerEquipe(s: SelectionImport, cle: string): SelectionImport {
-  return { equipes: s.equipes.includes(cle) ? s.equipes.filter((x) => x !== cle) : [...s.equipes, cle], monstres: [] };
+  return { ...s, equipes: s.equipes.includes(cle) ? s.equipes.filter((x) => x !== cle) : [...s.equipes, cle] };
 }
 
 // Tout le bloc : coché s'il ne l'était pas entièrement, décoché sinon.
 export function basculerBloc(s: SelectionImport, cles: readonly string[]): SelectionImport {
   const tous = cles.length > 0 && cles.every((c) => s.equipes.includes(c));
-  return { equipes: tous ? s.equipes.filter((c) => !cles.includes(c)) : [...s.equipes, ...cles.filter((c) => !s.equipes.includes(c))], monstres: [] };
+  return { ...s, equipes: tous ? s.equipes.filter((c) => !cles.includes(c)) : [...s.equipes, ...cles.filter((c) => !s.equipes.includes(c))] };
 }
 
 // `max` : la place qui reste (l'équipe ouverte de Mes équipes) ; au-delà, le
 // geste n'ajoute rien.
 export function basculerMonstre(s: SelectionImport, c: ChoixMonstre, max = Infinity): SelectionImport {
-  if (monstreChoisi(s, c)) return { equipes: [], monstres: s.monstres.filter((x) => x.cle !== c.cle || x.index !== c.index) };
-  if (s.monstres.length >= max) return { equipes: [], monstres: s.monstres };
-  return { equipes: [], monstres: [...s.monstres, c] };
+  if (monstreChoisi(s, c)) return { ...s, monstres: s.monstres.filter((x) => x.cle !== c.cle || x.index !== c.index) };
+  if (s.monstres.length >= max) return s;
+  return { ...s, monstres: [...s.monstres, c] };
 }
 
 /* --------------------------------------------------------------------------
@@ -182,16 +197,25 @@ export function categorieDuGroupe(equipes: readonly Pick<EquipeEnregistree, 'ong
   return !estPrepa(c) && equipes.every((e) => categorieDe(e.onglet) === c) ? c : null;
 }
 
-// Ce que les équipes choisies portent à la fois, comme dans un groupe de Mes
-// équipes : à lire avant de les importer ensemble. Chaque équipe y est
-// désignée par la clé de sa source.
+// Ce que les équipes et les monstres choisis portent à la fois, comme dans un
+// groupe de Mes équipes : à lire avant de les importer ensemble. Les monstres
+// choisis un à un d'une même source y forment une équipe à eux, sauf quand
+// cette source est cochée (ils y sont déjà) ; chacune y est désignée par la
+// clé de sa source.
 export function conflitsSelection(
-  sources: readonly SourceImportEquipe[], cles: readonly string[], monstreParCom2us: ReadonlyMap<number, Monster>
+  sources: readonly SourceImportEquipe[], selection: SelectionImport, monstreParCom2us: ReadonlyMap<number, Monster>
 ): ConflitsGroupe {
-  if (cles.length < 2) return { pieces: [], especes: [] };
+  const { equipes: cles } = selection;
+  const seuls = selection.monstres.filter((c) => !cles.includes(c.cle));
+  const clesSeuls = [...new Set(seuls.map((c) => c.cle))];
+  if (cles.length + clesSeuls.length < 2) return { pieces: [], especes: [] };
   let n = 0;
   const choisies = creerEquipesChoisies(sources, cles, () => cles[n++], tirerLocal('c'), new Date(0));
-  return conflitsGroupe(choisies.map((c) => ({ ...c.cree.equipe, id: c.source.cle })), monstreParCom2us);
+  const tirerUid = tirerLocal('m');
+  return conflitsGroupe([
+    ...choisies.map((c) => ({ id: c.source.cle, monstres: c.cree.equipe.monstres })),
+    ...clesSeuls.map((cle) => ({ id: cle, monstres: monstresChoisis(sources, seuls.filter((c) => c.cle === cle), tirerUid, new Date(0)) })),
+  ], monstreParCom2us);
 }
 
 const tirerLocal = (prefixe: string): TirerId => { let n = 0; return () => `${prefixe}${++n}`; };
@@ -244,30 +268,16 @@ function blocEntier(sources: readonly SourceImportEquipe[], cles: readonly strin
 // L'import de l'Optimizer pour le choix. Une équipe seule garde l'import de sa
 // source (siège, prépa RTA, recommandation) ; plusieurs se réunissent en une
 // liste, celles sans import propre passant comme un groupe de Mes équipes.
-// Des monstres partent en membres seuls, sans équipe. `ongletDefaut` : le
-// contenu de la liste quand le choix n'en désigne pas.
+// Les monstres choisis s'y ajoutent en membres seuls, sans équipe. `ongletDefaut` :
+// le contenu de la liste quand le choix n'en désigne pas.
 export function producteurChoix(
   sources: readonly SourceImportEquipe[], selection: SelectionImport, inv: InventaireCompte, ongletDefaut: OngletEquipes
 ): ProducteurImportOptimizer | null {
-  if (selection.monstres.length) {
-    const choix = selection.monstres;
-    return (data, t) => {
-      const monstres = monstresChoisis(sources, choix, tirerLocal('m'), new Date());
-      const premiere = sources.find((s) => s.cle === choix[0].cle);
-      const onglet = premiere?.rangement ?? ongletDefaut;
-      const premier = premiere?.monstres[choix[0].index]?.name ?? '';
-      const nom = nomDuChoix(premier, monstres.length - 1, null, t);
-      const equipe: EquipeEnregistree = { ...creerEquipe('choix', onglet, nom, new Date()), monstres };
-      // Des monstres seuls : des membres, sans équipe ni lead.
-      return { ...preparerExportEquipeOptimizer(equipe, data, inv, t).proposition, equipes: [] };
-    };
-  }
-  const cles = selection.equipes;
-  if (!cles.length) return null;
-  const choisies = cles.map((c) => sources.find((s) => s.cle === c)).filter((s): s is SourceImportEquipe => !!s && s.raison === null);
-  if (!choisies.length) return null;
-  if (choisies.length === 1 && choisies[0].produireOptimizer) return choisies[0].produireOptimizer;
-  const bloc = blocEntier(sources, cles);
+  const choix = selection.monstres;
+  const choisies = selection.equipes.map((c) => sources.find((s) => s.cle === c)).filter((s): s is SourceImportEquipe => !!s && s.raison === null);
+  if (!choix.length && !choisies.length) return null;
+  if (!choix.length && choisies.length === 1 && choisies[0].produireOptimizer) return choisies[0].produireOptimizer;
+  const bloc = choix.length ? null : blocEntier(sources, selection.equipes);
   return (data: ExclusionSourceData, t: Dictionnaire) => {
     const propositions: ImportOptimizer[] = [];
     const sansImport: EquipeEnregistree[] = [];
@@ -278,9 +288,16 @@ export function producteurChoix(
       const cree = s.creer(`choix:${s.cle}`, tirerLocal(`u${sansImport.length}-`), new Date());
       if (cree) sansImport.push(cree.equipe);
     }
-    if (sansImport.length) {
-      propositions.push(preparerExportGroupeOptimizer('', sansImport, data, inv, t).proposition);
+    if (sansImport.length) propositions.push(preparerExportGroupeOptimizer('', sansImport, data, inv, t).proposition);
+    let premier = choisies[0]?.libelle ?? '';
+    if (choix.length) {
+      const monstres = monstresChoisis(sources, choix, tirerLocal('m'), new Date());
+      const premiere = sources.find((s) => s.cle === choix[0].cle);
+      if (!choisies.length) premier = premiere?.monstres[choix[0].index]?.name ?? '';
+      const equipe: EquipeEnregistree = { ...creerEquipe('choix', premiere?.rangement ?? ongletDefaut, premier, new Date()), monstres };
+      // Des monstres seuls : des membres, sans équipe ni lead.
+      propositions.push({ ...preparerExportEquipeOptimizer(equipe, data, inv, t).proposition, equipes: [] });
     }
-    return fusionnerImports(propositions, nomDuChoix(choisies[0].libelle, choisies.length - 1, bloc, t));
+    return fusionnerImports(propositions, nomDuChoix(premier, choisies.length + choix.length - 1, bloc, t));
   };
 }

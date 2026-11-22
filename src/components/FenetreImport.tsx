@@ -1,5 +1,5 @@
 import { useId, useMemo, useState, type ReactNode } from 'react';
-import { Layers, Search } from 'lucide-react';
+import { Check, Layers, Search } from 'lucide-react';
 import type { Monster } from '../types';
 import { Bouton, Case, Champ, Modale, Pastille, PiedDeDialogue, Segmented, Selecteur, ZoneCliquable } from '../ui';
 import MonsterAvatar from './MonsterAvatar';
@@ -64,7 +64,10 @@ export default function FenetreImport({ titre, sources, ordre, ongletInitial, mo
   const visibles = useMemo(() => sourcesVisibles(sources, filtre), [sources, filtre]);
   const sections = useMemo(() => sectionsFenetre(visibles), [visibles]);
   const comptes = useMemo(() => comptesParContenu(sources, filtre.source), [sources, filtre.source]);
-  const conflits = useMemo(() => conflitsSelection(sources, selection.equipes, monstreParCom2us), [sources, selection.equipes, monstreParCom2us]);
+  const conflits = useMemo(() => conflitsSelection(sources, selection, monstreParCom2us), [sources, selection, monstreParCom2us]);
+  // Deux gestes distincts sur une ligne : la case à gauche prend l'équipe
+  // entière (son nom aussi), un portrait prend ce monstre seul (mode mixte,
+  // l'Optimizer). Ils s'ajoutent, aucun ne défait l'autre.
   const equipesCochables = mode !== 'monstres';
   const monstresCliquables = mode !== 'equipes';
   const placesRestantes = maxMonstres - selection.monstres.length;
@@ -80,42 +83,65 @@ export default function FenetreImport({ titre, sources, ordre, ongletInitial, mo
   const sousCategories: readonly SousCategorieEquipes[] = filtre.categorie ? SOUS_CATEGORIES_EQUIPES[filtre.categorie] : [];
   const compte = (cle: string) => comptes.get(cle) ?? 0;
   const aide = mode === 'equipes' ? f.aide.equipes : mode === 'mixte' ? f.aide.mixte : maxMonstres > 0 ? f.aide.monstres(maxMonstres) : f.aide.complete;
-  const resume = selection.equipes.length ? f.equipesChoisies(selection.equipes.length)
-    : selection.monstres.length ? f.monstresChoisis(selection.monstres.length) : aide;
+  const resume = [selection.equipes.length ? f.equipesChoisies(selection.equipes.length) : '',
+    selection.monstres.length ? f.monstresChoisis(selection.monstres.length) : ''].filter(Boolean).join(' · ') || aide;
 
+  // Au téléphone, le nom d'un deck (« Cairos — Tanière du dragon · 2 ») passe
+  // sur deux lignes : tronqué à une, il ne disait plus lequel c'était.
+  const libelleLigne = telephone ? 'line-clamp-2 break-words' : 'truncate';
   const ligne = (s: SourceImportEquipe) => {
     const utilisable = s.raison === null;
     const tousPortraits = monstresCliquables || s.monstres.length <= PORTRAITS_MAX;
     const portraits = tousPortraits ? s.monstres : s.monstres.slice(0, PORTRAITS_MAX);
+    const nom = (
+      // La raison sous le nom : à côté, elle le tronquerait au téléphone.
+      <span className="flex min-w-0 flex-1 flex-col">
+        <span className={`${libelleLigne} text-sm`} title={s.libelle}>{s.libelle}</span>
+        {s.raison && <span className="text-xs text-ink-dimmer">{s.raison}</span>}
+      </span>
+    );
+    const rangee = (
+      portraits.length > 0 && (
+        <span className={`flex min-w-0 items-center gap-1 ${monstresCliquables ? 'flex-wrap' : 'flex-none'}`}>
+          {portraits.map((m, i) => {
+            const choix = { cle: s.cle, index: i };
+            if (!monstresCliquables || !utilisable) return <MonsterAvatar key={`${m.id}-${i}`} monster={m} size={28} element={false} />;
+            const choisi = monstreChoisi(selection, choix);
+            return (
+              // Le contour est réservé au repos (transparent) : choisir ne déplace rien.
+              // Choisi, le portrait porte en plus une coche d'accent en coin,
+              // hors du flux : le contour seul se perdait sur un portrait coloré.
+              <ZoneCliquable key={`${m.id}-${i}`} aria-pressed={choisi} aria-label={f.monstre(m.name, s.libelle)} title={m.name}
+                disabled={!choisi && placesRestantes <= 0}
+                onClick={() => setSelection((x) => basculerMonstre(x, choix, maxMonstres))}
+                className={`relative flex flex-none rounded-md border p-px ${choisi ? 'border-accent bg-accent-soft' : 'border-transparent hoverable:border-border'}`}>
+                <MonsterAvatar monster={m} size={28} element={false} />
+                {choisi && (
+                  <span aria-hidden className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-accent text-accent-ink">
+                    <Check size={11} strokeWidth={3} />
+                  </span>
+                )}
+              </ZoneCliquable>
+            );
+          })}
+          {!tousPortraits && <span className="text-micro text-ink-dim">+{s.monstres.length - PORTRAITS_MAX}</span>}
+        </span>
+      )
+    );
+    const teinte = utilisable ? 'text-ink' : 'text-ink-dimmer';
+    // La case d'abord, à gauche : son nom accessible est celui de l'équipe, et
+    // le nom affiché la coche aussi (son `label`).
+    const idCase = `${id}-${s.cle}`;
     return (
-      <div key={s.cle} className={`flex items-center gap-2.5 px-4 py-2 ${utilisable ? 'text-ink' : 'text-ink-dimmer'}`}>
-        {portraits.length > 0 && (
-          <span className={`flex min-w-0 items-center gap-1 ${monstresCliquables ? 'flex-wrap' : 'flex-none'}`}>
-            {portraits.map((m, i) => {
-              const choix = { cle: s.cle, index: i };
-              if (!monstresCliquables || !utilisable) return <MonsterAvatar key={`${m.id}-${i}`} monster={m} size={28} element={false} />;
-              const choisi = monstreChoisi(selection, choix);
-              return (
-                // Le contour est réservé au repos (transparent) : choisir ne déplace rien.
-                <ZoneCliquable key={`${m.id}-${i}`} aria-pressed={choisi} aria-label={f.monstre(m.name, s.libelle)} title={m.name}
-                  disabled={!choisi && placesRestantes <= 0}
-                  onClick={() => setSelection((x) => basculerMonstre(x, choix, maxMonstres))}
-                  className={`flex flex-none rounded-md border p-px ${choisi ? 'border-accent bg-accent-soft' : 'border-transparent hoverable:border-border'}`}>
-                  <MonsterAvatar monster={m} size={28} element={false} />
-                </ZoneCliquable>
-              );
-            })}
-            {!tousPortraits && <span className="text-micro text-ink-dim">+{s.monstres.length - PORTRAITS_MAX}</span>}
-          </span>
+      <div key={s.cle} className={`flex items-center gap-2.5 px-4 py-2 ${teinte}`}>
+        {equipesCochables && (
+          <Case id={idCase} libelle={null} aria-label={s.libelle} checked={selection.equipes.includes(s.cle)} disabled={!utilisable}
+            onChange={() => setSelection((x) => basculerEquipe(x, s.cle))} />
         )}
-        {/* La raison sous le nom : à côté, elle le tronquerait au téléphone. */}
-        <div className="flex min-w-0 flex-1 flex-col">
-          {equipesCochables ? (
-            <Case className="min-w-0 !text-sm !text-inherit" checked={selection.equipes.includes(s.cle)} disabled={!utilisable}
-              onChange={() => setSelection((x) => basculerEquipe(x, s.cle))} libelle={<span className="truncate">{s.libelle}</span>} />
-          ) : <span className="truncate text-sm">{s.libelle}</span>}
-          {s.raison && <span className="text-xs text-ink-dimmer">{s.raison}</span>}
-        </div>
+        {rangee}
+        {equipesCochables
+          ? <label htmlFor={idCase} className={`flex min-w-0 flex-1 ${utilisable ? 'cursor-pointer' : ''}`}>{nom}</label>
+          : nom}
       </div>
     );
   };
@@ -159,14 +185,17 @@ export default function FenetreImport({ titre, sources, ordre, ongletInitial, mo
   );
 
   return (
-    <Modale onClose={onFermer} labelledBy={id} titre={titre} croix largeur="max-w-[720px]" corpsFixeBas={pied}
+    // Au téléphone, la fenêtre prend toute la hauteur permise et la liste le
+    // reste : elle ne se réduit plus à quelques lignes, et la fenêtre ne change
+    // pas de taille (ni les filtres de place) quand un filtre vide la liste.
+    <Modale onClose={onFermer} labelledBy={id} titre={titre} croix largeur={telephone ? 'max-w-[720px] h-[90dvh]' : 'max-w-[720px]'} corpsFixeBas={pied}
       actions={<PiedDeDialogue>
         {actions(selection).map((a) => (
           <Bouton key={a.cle} libelle={a.libelle} disabled={a.disabled} title={a.title}
             {...(a.principale ? { ton: 'accent' as const, fond: 'plein' as const } : {})} onClick={() => a.onClick(selection)} />
         ))}
       </PiedDeDialogue>}>
-      <div className="flex flex-col gap-3">
+      <div className={`flex flex-col gap-3 ${telephone ? 'min-h-0 flex-1' : ''}`}>
         {ordre.length > 1 && (
           <div role="group" aria-label={f.source}>
             <Segmented<SourceFenetre> value={filtre.source} onChange={(source) => setFiltre((x) => ({ ...x, source }))}
@@ -177,7 +206,7 @@ export default function FenetreImport({ titre, sources, ordre, ongletInitial, mo
         <Champ icone={<Search size={14} />} placeholder={f.chercher} aria-label={f.chercher} value={filtre.texte}
           onChange={(ev) => setFiltre((x) => ({ ...x, texte: ev.target.value }))} onBlur={() => setFiltre((x) => ({ ...x, texte: x.texte.trim() }))} />
         {/* La liste sort du rembourrage : ses bandes touchent les bords. */}
-        <div className="-mx-5 max-h-[50dvh] overflow-y-auto border-t border-border-soft">
+        <div className={`-mx-5 overflow-y-auto border-t border-border-soft ${telephone ? 'min-h-0 flex-1' : 'max-h-[50dvh]'}`}>
           {sections.length === 0 && <p className="px-4 py-6 text-center text-sm text-ink-dim">{f.aucunResultat}</p>}
           {sections.map((section) => (
             <div key={section.groupe}>

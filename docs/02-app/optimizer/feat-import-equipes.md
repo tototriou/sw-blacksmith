@@ -38,7 +38,8 @@ sources « Mes équipes », « Decks du jeu » (siège, arène, decks enregistr�
 « Recommandations », filtrée sur « Tous les contenus ». Les decks de siège créés dans la
 page Siège y restent des decks du jeu, comme avant. On y coche une ou plusieurs équipes,
 un bloc entier (un groupe de Mes équipes, toutes les défenses de siège, une
-recommandation) ou des monstres un à un. Deux actions, toujours (décision de
+recommandation) par leur case, et des monstres un à un par leur portrait, les deux
+ensemble dans un même import (décision de l’utilisateur). Deux actions, toujours (décision de
 l’utilisateur) :
 
 - « Ajouter à « liste active » » complète la liste active (désactivé, avec sa raison,

@@ -79,6 +79,13 @@ function testFenetreImportFiltres() {
   egal(sections.map((x) => [x.groupe, x.blocs.map((b) => [b.bloc?.nom ?? null, b.sources.length])]),
     [[fr.equipes.imports.siegeDefenses, [[fr.equipes.imports.siegeDefenses, 2]]], [fr.equipes.imports.siegeAttaques, [[null, 1]]]],
     'les défenses de siège en un bloc, sous leur section');
+  // Mes équipes revient au même contenu après un autre, et coupe un groupe :
+  // une section et un bloc n'apparaissent qu'une fois (clés de rendu uniques).
+  const x = (cle: string, groupe: string, bloc?: string) => ({ ...s[0], cle, groupe, ...(bloc ? { bloc: { cle: bloc, nom: bloc } } : { bloc: undefined }) });
+  const melees = sectionsFenetre([x('1', 'Guilde', 'G'), x('2', 'Arène'), x('3', 'Guilde', 'G'), x('4', 'Guilde'), x('5', 'Arène')]);
+  egal(melees.map((m) => [m.groupe, m.blocs.map((b) => [b.bloc?.nom ?? null, b.sources.map((y) => y.cle)])]),
+    [['Guilde', [['G', ['1', '3']], [null, ['4']]]], ['Arène', [[null, ['2', '5']]]]],
+    'sections et blocs réunis à leur première apparition');
 }
 
 function testFenetreImportSelection() {
@@ -88,8 +95,8 @@ function testFenetreImportSelection() {
   egal(sel.equipes, ['a', 'b'], 'un bloc complète le choix');
   egal(basculerBloc(sel, ['a', 'b']).equipes, [], 'un bloc entier se décoche d’un geste');
   const m = basculerMonstre(sel, { cle: 'x', index: 0 });
-  egal([m.equipes, m.monstres.length], [[], 1], 'choisir un monstre vide le choix d’équipes');
-  egal(basculerEquipe(m, 'a').monstres, [], 'et l’inverse');
+  egal([m.equipes, m.monstres.length], [['a', 'b'], 1], 'choisir un monstre garde les équipes cochées');
+  egal(basculerEquipe(m, 'a').monstres.length, 1, 'et décocher une équipe garde les monstres');
   egal(basculerMonstre(m, { cle: 'x', index: 1 }, 1).monstres.length, 1, 'au-delà de la place libre, rien n’est ajouté');
   egal(basculerMonstre(m, { cle: 'x', index: 0 }).monstres, [], 'un monstre choisi se retire');
 }
@@ -103,9 +110,18 @@ function testFenetreImportProduits() {
   egal(categorieDuGroupe(crees.map((c) => c.cree.equipe)), 'guilde', 'un groupe possible dans leur onglet commun');
   egal(categorieDuGroupe([{ onglet: 'guilde' }, { onglet: 'arene' }]), null, 'pas de groupe entre deux onglets');
   egal(categorieDuGroupe([{ onglet: 'rta' }, { onglet: 'rta' }]), null, 'ni entre des prépas');
-  const conflits = conflitsSelection(s, ['siege-defense:d1', 'siege-attaque:o1'], contexte().monsterByCom2us);
-  egal(conflits.especes.map((x) => [x.com2usId, x.equipes]), [[1001, ['siege-defense:d1', 'siege-attaque:o1']]],
+  const especes = (equipes: string[], monstres: { cle: string; index: number }[]) =>
+    conflitsSelection(s, { equipes, monstres }, contexte().monsterByCom2us).especes.map((x) => [x.com2usId, x.equipes]);
+  egal(especes(['siege-defense:d1', 'siege-attaque:o1'], []), [[1001, ['siege-defense:d1', 'siege-attaque:o1']]],
     'une espèce jouée dans les deux équipes, dite avant l’import');
+  egal(especes(['siege-defense:d1'], [{ cle: 'siege-attaque:o1', index: 0 }]), [[1001, ['siege-defense:d1', 'siege-attaque:o1']]],
+    'un monstre choisi seul entre dans les conflits, sous le nom de son équipe');
+  egal(especes([], [{ cle: 'siege-attaque:o1', index: 0 }, { cle: 'siege-defense:d1', index: 0 }]), [[1001, ['siege-attaque:o1', 'siege-defense:d1']]],
+    'des monstres seuls de deux équipes aussi, sans équipe cochée');
+  egal(especes(['siege-defense:d1'], [{ cle: 'siege-defense:d1', index: 0 }]), [], 'un monstre d’une équipe cochée y est déjà : rien de plus');
+  egal(especes([], [{ cle: 'siege-attaque:o1', index: 0 }, { cle: 'siege-attaque:o1', index: 2 }]), [],
+    'deux monstres d’une même équipe ne se gênent pas entre eux');
+  egal(especes([], [{ cle: 'siege-attaque:o1', index: 1 }, { cle: 'siege-defense:d1', index: 0 }]), [], 'deux espèces différentes : aucun conflit');
   // Le second Éclair de l'offense : son équipement, pas celui du premier.
   const offense = s.find((x) => x.cle === 'siege-attaque:o1')!;
   const choisis = monstresChoisis(s, [{ cle: offense.cle, index: 2 }, { cle: 'equipe:e1', index: 1 }], tirer, T0);
@@ -125,6 +141,10 @@ function testFenetreImportOptimizer() {
     'des équipes de sources différentes : une liste, chacune son équipe');
   const monstres = producteurChoix(s, { equipes: [], monstres: [{ cle: offense.cle, index: 1 }] }, INV, 'guilde')!(data(), fr);
   egal([monstres.nomListe, monstres.membres.length, monstres.equipes.length], ['Monstre 3', 1, 0], 'des monstres seuls : des membres, sans équipe');
+  const seule = producteurChoix(s, { equipes: ['equipe:e1'], monstres: [] }, INV, 'arene')!(data(), fr);
+  const ensemble = producteurChoix(s, { equipes: ['equipe:e1'], monstres: [{ cle: offense.cle, index: 1 }] }, INV, 'arene')!(data(), fr);
+  egal([ensemble.nomListe, ensemble.equipes.length, ensemble.membres.length], [fr.fenetreImport.nomSelection('Raid 1', 1), 1, seule.membres.length + 1],
+    'une équipe et un monstre ensemble : une liste, l’équipe, et le monstre en membre seul');
   egal(producteurChoix(s, SELECTION_VIDE, INV, 'arene'), null, 'rien de choisi, rien à importer');
   const double = fusionnerImports([importerOffenseSiegeOptimizer('o1', data(), fr), importerOffenseSiegeOptimizer('o1', data(), fr)], 'X');
   egal([double.membres.length, double.equipes.length], [3, 2], 'un même membre proposé deux fois n’entre qu’une fois');
