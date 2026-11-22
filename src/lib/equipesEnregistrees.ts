@@ -13,69 +13,73 @@ import type { PlanSpeedTune } from './planSpeedTune';
 import type { RepliSpeedTune } from './speedTuneEquipe';
 import { planSpeedTuneValide } from './speedTuneEquipe';
 import { idCanoniqueCollab } from './monsterForms';
-import type { ContenuDeck } from './importAccount';
-import { CONTENU_LEADS_JEU } from './equipesOptimizer';
+import type { Dictionnaire } from '../i18n/fr';
 
-// Les CATÉGORIES, une par onglet, dans l'ordre affiché choisi par
-// l'utilisateur ; la première est ouverte par défaut. Sept onglets, jamais un
-// par contenu de jeu : les decks de l'export se rangent dans ces catégories.
-export const CATEGORIES_EQUIPES = ['arene', 'guilde', 'labyrinthe', 'rta', 'cairos', 'toa', 'passage-dimensions'] as const;
+// Les ONGLETS, un par contenu du jeu, dans l'ordre choisi par l'utilisateur ;
+// le premier est ouvert par défaut. Chacun a ses CATÉGORIES (un donjon, un
+// mode, un côté), filtrables dans l'onglet ; la ToA n'en a pas.
+export const CATEGORIES_EQUIPES = [
+  'arene', 'guilde', 'cairos', 'labyrinthe', 'subjugation', 'passage-dimensions', 'faille', 'temple-chaos', 'toa',
+] as const;
 export type CategorieEquipes = (typeof CATEGORIES_EQUIPES)[number];
 
-// Arène et combat de guilde distinguent l'offense de la défense : un filtre
-// dans l'onglet, le côté porté par chaque équipe.
-export type CoteEquipe = 'offense' | 'defense';
-export const CATEGORIES_A_COTE: readonly CategorieEquipes[] = ['arene', 'guilde'];
+export const SOUS_CATEGORIES_EQUIPES = {
+  arene: ['offense', 'defense', 'defense-serveur', 'dimensionnelle', 'rta'],
+  guilde: ['offense-siege', 'defense-siege', 'offense-gdg', 'defense-gdg'],
+  cairos: ['geant', 'dragon', 'necropolis', 'royaume-spirituel', 'forteresse-acier', 'crypte-jugement'],
+  labyrinthe: ['boss', 'normal', 'sauvetage', 'explosion', 'vitesse-limitee', 'temps-limite', 'temps-pause'],
+  subjugation: ['eau', 'feu', 'vent', 'boss'],
+  'passage-dimensions': ['karzhan', 'ellunia', 'lumel', 'khalderun', 'sacreon', 'inferas', 'raid'],
+  faille: ['glace', 'orage', 'marecage', 'enflammee', 'radiance', 'raid'],
+  'temple-chaos': ['eau', 'feu', 'vent', 'tenebres', 'lumiere'],
+  toa: [],
+} as const satisfies Record<CategorieEquipes, readonly string[]>;
+export type SousCategorieDe<C extends CategorieEquipes> = (typeof SOUS_CATEGORIES_EQUIPES)[C][number];
+export type SousCategorieEquipes = SousCategorieDe<CategorieEquipes>;
 
-// Le RANGEMENT d'une équipe, son champ `onglet` : la catégorie, avec son côté
-// pour l'arène et le combat de guilde.
-export const ONGLETS_EQUIPES = [
-  'arene-offense', 'arene-defense', 'guilde-offense', 'guilde-defense', 'labyrinthe', 'rta', 'cairos', 'toa', 'passage-dimensions',
-] as const;
-export type OngletEquipes = (typeof ONGLETS_EQUIPES)[number];
+// Le RANGEMENT d'une équipe, son champ `onglet` : l'onglet seul (catégorie non
+// choisie), ou l'onglet et sa catégorie, `arene/rta`.
+export type OngletEquipes = { [C in CategorieEquipes]: C | `${C}/${SousCategorieDe<C>}` }[CategorieEquipes];
+export const ONGLETS_EQUIPES: readonly OngletEquipes[] = CATEGORIES_EQUIPES.flatMap((c) =>
+  [c, ...SOUS_CATEGORIES_EQUIPES[c].map((x) => `${c}/${x}` as OngletEquipes)]);
 
 export function categorieDe(onglet: OngletEquipes): CategorieEquipes {
-  return onglet.startsWith('arene-') ? 'arene' : onglet.startsWith('guilde-') ? 'guilde' : onglet as CategorieEquipes;
+  return onglet.split('/')[0] as CategorieEquipes;
 }
-export function coteDe(onglet: OngletEquipes): CoteEquipe | null {
-  return onglet.endsWith('-offense') ? 'offense' : onglet.endsWith('-defense') ? 'defense' : null;
+export function sousCategorieDe(onglet: OngletEquipes): SousCategorieEquipes | null {
+  return (onglet.split('/')[1] as SousCategorieEquipes | undefined) ?? null;
 }
-// Le rangement d'une catégorie ; sans côté choisi, l'offense.
-export function rangement(categorie: CategorieEquipes, cote: CoteEquipe | null): OngletEquipes {
-  return CATEGORIES_A_COTE.includes(categorie) ? `${categorie as 'arene' | 'guilde'}-${cote ?? 'offense'}` : categorie as OngletEquipes;
+// `null` : l'onglet sans catégorie ; une catégorie d'un autre onglet est ignorée.
+export function rangement(categorie: CategorieEquipes, sous: string | null): OngletEquipes {
+  return sous !== null && (SOUS_CATEGORIES_EQUIPES[categorie] as readonly string[]).includes(sous)
+    ? `${categorie}/${sous}` as OngletEquipes : categorie;
 }
 
-// Les rangements d'avant les sept catégories, relus dans les nouveaux : le
-// siège et la guerre de guilde rejoignent le combat de guilde, le « PVE »
-// Cairos ; l'ancien onglet unique de guerre de guilde se relit en offense.
+// Les rangements des versions de travail précédentes, relus dans les nouveaux.
+// Sans équivalent sûr (l'ancien combat de guilde mêlait siège et guerre de
+// guilde), l'onglet seul.
 const ONGLETS_ANCIENS: Readonly<Record<string, OngletEquipes>> = {
-  'siege-attaque': 'guilde-offense', 'siege-defense': 'guilde-defense',
-  'guerre-guilde': 'guilde-offense', 'guerre-guilde-offense': 'guilde-offense', 'guerre-guilde-defense': 'guilde-defense',
-  'arene-attaque': 'arene-offense', pve: 'cairos',
+  'siege-attaque': 'guilde/offense-siege', 'siege-defense': 'guilde/defense-siege',
+  'guerre-guilde': 'guilde/offense-gdg', 'guerre-guilde-offense': 'guilde/offense-gdg', 'guerre-guilde-defense': 'guilde/defense-gdg',
+  'guilde-offense': 'guilde', 'guilde-defense': 'guilde',
+  'arene-attaque': 'arene/offense', 'arene-offense': 'arene/offense', 'arene-defense': 'arene/defense', rta: 'arene/rta',
+  pve: 'cairos',
 };
 
-// Le contenu de la liste créée par l'export vers l'Optimizer, pour une équipe
-// sans contenu du jeu (`contenuJeu`) : le lead qui agit dans la catégorie,
-// d'après `CONTENU_LEADS_JEU` (labyrinthe : guilde ; passage des dimensions :
-// donjon ; RTA : arène ; ToA : autre, leads globaux et élémentaires seuls).
-export const CONTENU_OPTIMIZER_ONGLET: Readonly<Partial<Record<CategorieEquipes, ContenuListeOptimizer>>> = {
+// Le contenu de la liste créée par l'export vers l'Optimizer : le lead qui
+// agit dans l'onglet, d'après la règle relevée en jeu (`CONTENU_LEADS_JEU`) ;
+// le même pour toutes ses catégories.
+export const CONTENU_OPTIMIZER_ONGLET: Readonly<Record<CategorieEquipes, ContenuListeOptimizer>> = {
   arene: 'arene',
   guilde: 'guilde',
-  labyrinthe: 'guilde',
-  rta: 'arene',
   cairos: 'donjon',
+  labyrinthe: 'guilde',
+  subjugation: 'guilde',
   'passage-dimensions': 'donjon',
+  faille: 'donjon',
+  'temple-chaos': 'autre',
   toa: 'autre',
 };
-
-// Le contenu de l'Optimizer d'une équipe : celui de son contenu du jeu s'il
-// est connu (une subjugation, rangée en Cairos, applique le lead de guilde),
-// sinon celui de sa catégorie ; `null` : pas de règle relevée (un type de
-// deck inconnu).
-export function contenuOptimizerEquipe(e: Pick<EquipeEnregistree, 'onglet' | 'contenuJeu'>): ContenuListeOptimizer | null {
-  if (e.contenuJeu) return CONTENU_LEADS_JEU[e.contenuJeu];
-  return CONTENU_OPTIMIZER_ONGLET[categorieDe(e.onglet)] ?? null;
-}
 
 export const PROVENANCES_EQUIPEMENT = [
   'porte', 'siege-defense', 'siege-attaque', 'arene-defense', 'arene-attaque', 'deck', 'optimizer', 'aucun',
@@ -129,11 +133,6 @@ export interface EquipeEnregistree {
   leader: string | null;
   speedTune?: SpeedTuneEnregistre;
   lienOptimizer?: LienOptimizerEquipe;
-  // Le contenu du jeu du deck importé (une catégorie en mêle plusieurs) :
-  // il choisit le lead appliqué à l'export (`contenuOptimizerEquipe`).
-  // Absent pour une équipe faite à la main ; retiré quand elle change de
-  // catégorie.
-  contenuJeu?: ContenuDeck;
   creeLe: string;
   modifieLe: string;
 }
@@ -238,9 +237,6 @@ export function lireEquipeEnregistree(brut: unknown): LectureEquipe | null {
     if (lien) equipe.lienOptimizer = lien;
     else signalements.push('lienOptimizerRetire');
   }
-  // Un contenu inconnu (fichier d'une version plus récente) est oublié : la
-  // catégorie choisit alors le lead.
-  if (typeof v.contenuJeu === 'string' && Object.prototype.hasOwnProperty.call(CONTENU_LEADS_JEU, v.contenuJeu)) equipe.contenuJeu = v.contenuJeu as ContenuDeck;
   return { equipe, signalements };
 }
 
@@ -396,23 +392,24 @@ export function resumeEcarts(e: EquipeEnregistree, inv: InventaireCompte): Resum
  * Recherche et ordre
  * ----------------------------------------------------------------------- */
 
-// Les équipes d'un onglet (catégorie), filtrées par côté (`null` : tous) et
-// par monstres recherchés, les plus récemment modifiées d'abord.
+// Les équipes d'un onglet, filtrées par catégorie (`null` : toutes) et par
+// monstres recherchés, les plus récemment modifiées d'abord.
 // Une équipe est retenue si elle contient TOUS les monstres recherchés ; une
 // collaboration et sa version SW comptent pour la même espèce.
 export function equipesFiltrees(
-  equipes: readonly EquipeEnregistree[], categorie: CategorieEquipes, cote: CoteEquipe | null, recherche: readonly Monster[],
+  equipes: readonly EquipeEnregistree[], categorie: CategorieEquipes, sous: SousCategorieEquipes | null, recherche: readonly Monster[],
   monstreParCom2us: ReadonlyMap<number, Monster>
 ): EquipeEnregistree[] {
   const canon = (com2usId: number) => idCanoniqueCollab(com2usId, monstreParCom2us.get(com2usId)?.jumeauCollab);
   const voulus = recherche.filter((m) => m.com2usId != null).map((m) => idCanoniqueCollab(m.com2usId as number, m.jumeauCollab));
   return equipes
-    .filter((e) => categorieDe(e.onglet) === categorie && (cote === null || coteDe(e.onglet) === cote))
+    .filter((e) => categorieDe(e.onglet) === categorie && (sous === null || sousCategorieDe(e.onglet) === sous))
     .filter((e) => { const ids = new Set(e.monstres.map((m) => canon(m.com2usId))); return voulus.every((v) => ids.has(v)); })
     .sort((a, b) => Date.parse(b.modifieLe) - Date.parse(a.modifieLe) || a.id.localeCompare(b.id));
 }
 
-// Le total de chaque rangement ; celui d'un onglet est la somme de ses côtés.
+// Le total de chaque rangement ; celui d'un onglet est la somme de ses
+// catégories et de ses équipes sans catégorie.
 export function compteParOnglet(equipes: readonly EquipeEnregistree[]): Record<OngletEquipes, number> {
   const c = Object.fromEntries(ONGLETS_EQUIPES.map((o) => [o, 0])) as Record<OngletEquipes, number>;
   for (const e of equipes) c[e.onglet]++;
@@ -495,10 +492,7 @@ export function modifierTextes(e: EquipeEnregistree, champs: { nom?: string; not
 }
 
 export function deplacerVersOnglet(e: EquipeEnregistree, onglet: OngletEquipes, maintenant: Date): EquipeEnregistree {
-  if (e.onglet === onglet) return e;
-  const { contenuJeu, ...reste } = e;
-  // Changer de côté garde le contenu du jeu ; changer de catégorie le retire.
-  return touchee(contenuJeu && categorieDe(onglet) === categorieDe(e.onglet) ? { ...reste, contenuJeu, onglet } : { ...reste, onglet }, maintenant);
+  return e.onglet === onglet ? e : touchee({ ...e, onglet }, maintenant);
 }
 
 // Nouveaux `id` et `uid` ; le leader et les liens suivent la correspondance
@@ -511,7 +505,6 @@ export function dupliquerEquipe(e: EquipeEnregistree, id: string, nom: string, t
     id, onglet: e.onglet, nom, note: e.note,
     monstres: e.monstres.map((m) => ({ ...copierMonstre(m), uid: nouveaux.get(m.uid)! })),
     leader: e.leader === null ? null : nouveaux.get(e.leader) ?? null,
-    ...(e.contenuJeu ? { contenuJeu: e.contenuJeu } : {}),
     creeLe: d, modifieLe: d,
   };
   if (e.speedTune) {
@@ -554,4 +547,18 @@ export function ecrituresEntre(
     aEcrire: apres.filter((e) => anciens.get(e.id) !== e),
     aSupprimer: avant.filter((e) => !presents.has(e.id)).map((e) => e.id),
   };
+}
+
+/* --------------------------------------------------------------------------
+ * Libellés
+ * ----------------------------------------------------------------------- */
+
+export function libelleSousCategorie(categorie: CategorieEquipes, sous: SousCategorieEquipes, t: Dictionnaire): string {
+  return (t.equipes.sousCategories[categorie] as Readonly<Record<string, string>>)[sous] ?? sous;
+}
+// « Cairos — Géant », ou l'onglet seul pour une équipe sans catégorie.
+export function libelleRangement(onglet: OngletEquipes, t: Dictionnaire): string {
+  const c = categorieDe(onglet);
+  const s = sousCategorieDe(onglet);
+  return t.equipes.rangement(t.equipes.categories[c], s ? libelleSousCategorie(c, s, t) : null);
 }

@@ -10,9 +10,8 @@ interface Props {
   // `null` sans compte : aucune comparaison n'est affichée.
   ecarts: ResumeEcarts | null;
   speedTuneIncomplet: boolean;
-  // Le côté (offense, défense) quand l'onglet les mêle, filtre sur « Tout » ;
-  // `null` sinon.
-  cote?: string | null;
+  // Sa catégorie dans l'onglet, quand le filtre est sur « Tout » ; `null` sinon.
+  categorie?: string | null;
   actions: ElementMenu[];
   onOuvrir: () => void;
 }
@@ -20,7 +19,7 @@ interface Props {
 // Une carte de « Mes équipes » : le nom, les monstres dans l'ordre (le leader
 // couronné), la note sur une ligne, l'écart au compte et le menu d'actions.
 // Même contenu aux deux formats ; seule la taille des avatars change.
-export default function CarteEquipe({ equipe, monstreDe, ecarts, speedTuneIncomplet, cote = null, actions, onOuvrir }: Props) {
+export default function CarteEquipe({ equipe, monstreDe, ecarts, speedTuneIncomplet, categorie = null, actions, onOuvrir }: Props) {
   const c = useTraduction().equipes.carte;
   const signaux = [
     ecarts && ecarts.modifiees > 0 ? c.modifiees(ecarts.modifiees) : null,
@@ -33,7 +32,7 @@ export default function CarteEquipe({ equipe, monstreDe, ecarts, speedTuneIncomp
         className="flex min-w-0 flex-1 flex-col gap-2 p-3 pr-11 text-left hoverable:bg-panel2">
         <span className="flex min-w-0 items-baseline gap-2">
           <span className="truncate text-sm font-semibold text-ink">{equipe.nom}</span>
-          {cote && <span className="flex-none text-micro font-semibold uppercase tracking-wide text-ink-dim">{cote}</span>}
+          {categorie && <span className="flex-none text-micro font-semibold uppercase tracking-wide text-ink-dim">{categorie}</span>}
         </span>
         <span className="flex min-h-[40px] flex-wrap items-center gap-1.5">
           {equipe.monstres.map((m) => {

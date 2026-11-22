@@ -9,13 +9,13 @@
 import type { GearSet, Monster, SiegeTeam } from '../types';
 import type { BoxItem } from './applyAccount';
 import type { Dictionnaire } from '../i18n/fr';
-import type { ContenuDeck, DeckArene, DeckEnregistreImporte } from './importAccount';
+import type { ContenuDeck, DeckArene, DeckEnregistreImporte, SousContenuDeck } from './importAccount';
 import { resolveExclusionEntry, type ExclusionSelector, type ExclusionSourceData } from './optimizerExclusion';
 import type { StockageOptimizer } from './optimizerMemberStorage';
 import { creerDepuisEquipeOptimizer, disponibiliteRetourOptimizer } from './importEquipesEnregistrees';
 import {
-  CATEGORIES_EQUIPES, MONSTRES_MAX_EQUIPE, MONSTRES_MIN_EQUIPE, categorieDe, coteDe, creerEquipe,
-  type CategorieEquipes, type CoteEquipe, type EquipeEnregistree, type InventaireCompte, type MonstreEnregistre, type OngletEquipes,
+  CATEGORIES_EQUIPES, MONSTRES_MAX_EQUIPE, MONSTRES_MIN_EQUIPE, categorieDe, creerEquipe, sousCategorieDe,
+  type EquipeEnregistree, type InventaireCompte, type MonstreEnregistre, type OngletEquipes,
   type ProvenanceEquipement, type TirerId,
 } from './equipesEnregistrees';
 
@@ -99,6 +99,9 @@ export interface SourceImportEquipe {
   monstres: Monster[];
   // La raison quand la source n'a rien à importer ; `null` : utilisable.
   raison: string | null;
+  // Où va l'équipe créée ; absent : l'onglet ouvert (Optimizer), ou une
+  // source sans contenu.
+  rangement?: OngletEquipes;
   creer: (id: string, tirerUid: TirerId, maintenant: Date) => ImportEquipeCree | null;
 }
 
@@ -129,52 +132,53 @@ const monstresConnus = (ids: (number | null)[], ctx: ContexteSourcesEquipes) =>
 const raisonDeck = (membres: MembreBrut[], connus: Monster[], im: Dictionnaire['equipes']['imports']) =>
   !membres.length ? im.aucunDeck : connus.slice(0, MONSTRES_MAX_EQUIPE).length < MONSTRES_MIN_EQUIPE ? im.moinsDeDeux : null;
 
-// Le rangement d'un deck de l'export dans les sept catégories (décision de
-// l'utilisateur, 2026-11-22). Un contenu non relevé (`autre`) va dans
-// l'onglet ouvert. Les types 1 (arène — offense) et 22 (siège — offense) ne
-// sont pas repris ici : les decks d'arène et les équipes de siège les portent
-// déjà.
+// Le rangement d'un deck de l'export dans les onglets et leurs catégories
+// (décision de l'utilisateur, 2026-11-22) : par son contenu, et par son donjon
+// pour Cairos, la faille, le passage des dimensions et la subjugation. Un
+// contenu non relevé (`autre`) va dans l'onglet ouvert. Les types 1 (arène —
+// offense) et 22 (siège — offense) ne sont pas repris ici : les decks d'arène
+// et les équipes de siège les portent déjà.
 export const RANGEMENT_CONTENU_DECK: Readonly<Record<ContenuDeck, OngletEquipes | null>> = {
-  'arene-offense': 'arene-offense',
-  'guerre-guilde-offense': 'guilde-offense',
-  'siege-offense': 'guilde-offense',
-  'labyrinthe-normal': 'labyrinthe', 'labyrinthe-sauvetage': 'labyrinthe', 'labyrinthe-temps-limite': 'labyrinthe',
-  'labyrinthe-boss': 'labyrinthe', 'labyrinthe-temps-pause': 'labyrinthe', 'labyrinthe-vitesse-limitee': 'labyrinthe',
-  'labyrinthe-explosion': 'labyrinthe',
+  'arene-offense': 'arene/offense',
+  'guerre-guilde-offense': 'guilde/offense-gdg',
+  'siege-offense': 'guilde/offense-siege',
+  'labyrinthe-normal': 'labyrinthe/normal', 'labyrinthe-sauvetage': 'labyrinthe/sauvetage',
+  'labyrinthe-temps-limite': 'labyrinthe/temps-limite', 'labyrinthe-boss': 'labyrinthe/boss',
+  'labyrinthe-temps-pause': 'labyrinthe/temps-pause', 'labyrinthe-vitesse-limitee': 'labyrinthe/vitesse-limitee',
+  'labyrinthe-explosion': 'labyrinthe/explosion',
   'tribunal-ascension': 'toa', 'tour-eau': 'toa', 'tour-feu': 'toa', 'tour-vent': 'toa', 'tour-lumiere': 'toa',
   'tour-tenebres': 'toa', 'tour-celeste': 'toa',
-  'passage-dimensions': 'passage-dimensions', 'raid-dimensionnel-1': 'passage-dimensions',
-  'raid-dimensionnel-2': 'passage-dimensions', 'raid-dimensionnel-3': 'passage-dimensions',
-  cairos: 'cairos', 'faille-mondes': 'cairos', 'raid-mondes': 'cairos', subjugation: 'cairos', 'temple-chaos': 'cairos',
+  'passage-dimensions': 'passage-dimensions', 'raid-dimensionnel-1': 'passage-dimensions/raid',
+  'raid-dimensionnel-2': 'passage-dimensions/raid', 'raid-dimensionnel-3': 'passage-dimensions/raid',
+  cairos: 'cairos', 'faille-mondes': 'faille', 'raid-mondes': 'faille/raid', subjugation: 'subjugation',
+  // L'export ne dit pas l'élément du temple : l'onglet seul.
+  'temple-chaos': 'temple-chaos',
   autre: null,
 };
+export const RANGEMENT_SOUS_CONTENU_DECK: Readonly<Record<SousContenuDeck, OngletEquipes>> = {
+  'castel-geant': 'cairos/geant', 'taniere-dragon': 'cairos/dragon', necropolis: 'cairos/necropolis',
+  'royaume-spirituel': 'cairos/royaume-spirituel', 'forteresse-acier': 'cairos/forteresse-acier', 'crypte-jugement': 'cairos/crypte-jugement',
+  'bete-glace': 'faille/glace', 'bete-enflammee': 'faille/enflammee', 'bete-orage': 'faille/orage',
+  'bete-radiance': 'faille/radiance', 'bete-marecage': 'faille/marecage',
+  'foret-fauves-rugissants': 'passage-dimensions/karzhan', 'sanctuaire-fees-reveuses': 'passage-dimensions/ellunia',
+  'falaise-hommes-betes': 'passage-dimensions/lumel', 'ruines-mort-silencieuse': 'passage-dimensions/khalderun',
+  'chateau-heros-oublies': 'passage-dimensions/sacreon', 'terre-infernale-embrasee': 'passage-dimensions/inferas',
+  'subjugation-eau': 'subjugation/eau', 'subjugation-feu': 'subjugation/feu', 'subjugation-vent': 'subjugation/vent',
+  'subjugation-boss': 'subjugation/boss',
+};
+export const rangementDeck = (d: Pick<DeckEnregistreImporte, 'contenu' | 'sousContenu'>): OngletEquipes | null =>
+  (d.sousContenu ? RANGEMENT_SOUS_CONTENU_DECK[d.sousContenu] : null) ?? RANGEMENT_CONTENU_DECK[d.contenu];
 const CONTENUS_DEJA_SOURCES: readonly ContenuDeck[] = ['arene-offense', 'siege-offense'];
 
 // L'ordre des sources pour l'onglet ouvert (décision de l'utilisateur) :
-// d'abord la même catégorie du même côté, puis la même catégorie de l'autre
-// côté, puis le reste dans l'ordre de base. Dans le combat de guilde, le
-// siège et la guerre de guilde comptent pour une même catégorie : en
-// défense, les défenses de siège, puis les offenses de siège et de guerre de
-// guilde (l'export n'a pas de défense de guerre de guilde). La RTA garde
-// l'ordre de base.
-function genreSource(cle: string): { categorie: CategorieEquipes; cote: CoteEquipe | null } | null {
-  if (cle.startsWith('siege-defense:')) return { categorie: 'guilde', cote: 'defense' };
-  if (cle.startsWith('siege-attaque:')) return { categorie: 'guilde', cote: 'offense' };
-  if (cle.startsWith('arene:attaque:')) return { categorie: 'arene', cote: 'offense' };
-  if (cle.startsWith('arene:')) return { categorie: 'arene', cote: 'defense' };
-  if (cle === 'arene') return { categorie: 'arene', cote: null };
-  const deck = /^deck:([^:]+):/.exec(cle);
-  const r = deck ? RANGEMENT_CONTENU_DECK[deck[1] as ContenuDeck] : null;
-  return r ? { categorie: categorieDe(r), cote: coteDe(r) } : null;
-}
-export function ordonnerSourcesPourOnglet<T extends { cle: string }>(sources: T[], onglet: OngletEquipes): T[] {
+// d'abord celles de la catégorie filtrée, puis celles de l'onglet, puis le
+// reste dans l'ordre de base. Sans catégorie filtrée, l'onglet d'abord.
+export function ordonnerSourcesPourOnglet<T extends { cle: string; rangement?: OngletEquipes }>(sources: T[], onglet: OngletEquipes): T[] {
   const categorie = categorieDe(onglet);
-  if (categorie === 'rta') return sources;
-  const cote = coteDe(onglet);
+  const sous = sousCategorieDe(onglet);
   const rang = (s: T) => {
-    const g = genreSource(s.cle);
-    if (!g || g.categorie !== categorie) return 2;
-    return g.cote === null || cote === null || g.cote === cote ? 0 : 1;
+    if (!s.rangement || categorieDe(s.rangement) !== categorie) return 2;
+    return sous === null || sousCategorieDe(s.rangement) === sous ? 0 : 1;
   };
   // `sort` est stable : à rang égal, l'ordre de base.
   return [...sources].sort((a, b) => rang(a) - rang(b));
@@ -199,23 +203,23 @@ function sourcesDansLOrdreDeBase(
       const membres: MembreBrut[] = team.slots.flatMap((s, i) => (s.monsterId === null ? [] : [{
         com2usId: ctx.monsterById.get(s.monsterId)?.com2usId ?? null, unitId: null, equipement: s.gear ?? null, leader: i === 0 }]));
       const connus = monstresConnus(membres.map((m) => m.com2usId), ctx);
-      res.push({ cle: `${provenance}:${team.id}`, groupe, libelle: libelle(i + 1), monstres: connus, raison: raisonDeck(membres, connus, im),
+      res.push({ cle: `${provenance}:${team.id}`, groupe, libelle: libelle(i + 1), monstres: connus, raison: raisonDeck(membres, connus, im), rangement: onglet,
         creer: (id, tirerUid, maintenant) => equipeDepuisMembres(membres, onglet, libelle(i + 1), provenance, ctx, id, tirerUid, maintenant) });
     });
-  siege(ctx.siegeDefenseTeams, im.siegeDefenses, 'guilde-defense', 'siege-defense', im.defense);
-  siege(ctx.siegeOffenseTeams, im.siegeAttaques, 'guilde-offense', 'siege-attaque', im.attaque);
+  siege(ctx.siegeDefenseTeams, im.siegeDefenses, 'guilde/defense-siege', 'siege-defense', im.defense);
+  siege(ctx.siegeOffenseTeams, im.siegeAttaques, 'guilde/offense-siege', 'siege-attaque', im.attaque);
 
   // Arène : lue dans l'export de compte.
   if (!ctx.compte || ctx.arenaDecks === null || ctx.arenaDecks.length === 0) {
     const raison = !ctx.compte ? im.sansCompte : ctx.arenaDecks === null ? im.reimporter : im.aucunDeck;
-    res.push({ cle: 'arene', groupe: im.arene, libelle: im.arene, monstres: [], raison, creer: () => null });
+    res.push({ cle: 'arene', groupe: im.arene, libelle: im.arene, monstres: [], raison, rangement: 'arene', creer: () => null });
   } else for (const deck of ctx.arenaDecks) {
     const libelle = deck.cle === 'defense' ? im.areneDefense : deck.cle === 'defense-serveur' ? im.areneDefenseServeur : im.areneAttaque(deck.rang + 1);
-    const onglet: OngletEquipes = deck.cle === 'attaque' ? 'arene-offense' : 'arene-defense';
+    const onglet: OngletEquipes = deck.cle === 'attaque' ? 'arene/offense' : deck.cle === 'defense-serveur' ? 'arene/defense-serveur' : 'arene/defense';
     const provenance: ProvenanceEquipement = deck.cle === 'attaque' ? 'arene-attaque' : 'arene-defense';
     const membres: MembreBrut[] = deck.slots.map((s, i) => ({ com2usId: s.com2usId, unitId: s.unitId, equipement: s.gear, leader: i === 0 }));
     const connus = monstresConnus(membres.map((m) => m.com2usId), ctx);
-    res.push({ cle: `arene:${deck.cle}:${deck.rang}`, groupe: im.arene, libelle, monstres: connus, raison: raisonDeck(membres, connus, im),
+    res.push({ cle: `arene:${deck.cle}:${deck.rang}`, groupe: im.arene, libelle, monstres: connus, raison: raisonDeck(membres, connus, im), rangement: onglet,
       creer: (id, tirerUid, maintenant) => equipeDepuisMembres(membres, onglet, libelle, provenance, ctx, id, tirerUid, maintenant) });
   }
 
@@ -226,7 +230,7 @@ function sourcesDansLOrdreDeBase(
   } else {
     const decks = ctx.decksEnregistres
       .filter((d) => !CONTENUS_DEJA_SOURCES.includes(d.contenu))
-      .map((d) => ({ d, onglet: RANGEMENT_CONTENU_DECK[d.contenu] ?? ongletOuvert }));
+      .map((d) => ({ d, onglet: rangementDeck(d) ?? ongletOuvert }));
     const ordre = (o: OngletEquipes) => CATEGORIES_EQUIPES.indexOf(categorieDe(o));
     decks.sort((a, b) => ordre(a.onglet) - ordre(b.onglet));
     for (const { d, onglet } of decks) {
@@ -234,11 +238,8 @@ function sourcesDansLOrdreDeBase(
       const membres: MembreBrut[] = d.slots.flatMap((s, i) => (s ? [{ com2usId: s.com2usId, unitId: null, equipement: s.gear ?? null, leader: i === 0 }] : []));
       const connus = monstresConnus(membres.map((m) => m.com2usId), ctx);
       res.push({ cle: `deck:${d.contenu}:${d.deckType}:${d.deckId}`, groupe: t.equipes.categories[categorieDe(onglet)], libelle: nom, monstres: connus,
-        raison: raisonDeck(membres, connus, im),
-        creer: (id, tirerUid, maintenant) => {
-          const cree = equipeDepuisMembres(membres, onglet, nom, 'deck', ctx, id, tirerUid, maintenant);
-          return { ...cree, equipe: { ...cree.equipe, contenuJeu: d.contenu } };
-        } });
+        raison: raisonDeck(membres, connus, im), rangement: onglet,
+        creer: (id, tirerUid, maintenant) => equipeDepuisMembres(membres, onglet, nom, 'deck', ctx, id, tirerUid, maintenant) });
     }
   }
 

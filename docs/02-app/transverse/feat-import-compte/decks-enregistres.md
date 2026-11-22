@@ -79,8 +79,7 @@ dans chaque langue.
 
 ## Où ces decks servent
 
-« Mes équipes » les propose à l'import, rangés dans ses sept catégories, et garde le contenu du deck
-sur l'équipe créée pour choisir le lead de son export vers l'Optimizer
+« Mes équipes » les propose à l'import, rangés dans ses onglets et leurs catégories
 ([feat-equipes.md](../../compte/feat-equipes.md) § Imports). Ils sont conservés avec le compte dans
 le champ facultatif `decksEnregistres` ([persistance.md](persistance.md)). Le lead qui agit dans
 chaque contenu : [§ Lead par contenu du jeu](../../optimizer/feat-listes-equipes-et-sauvegarde.md#lead-par-contenu-du-jeu).

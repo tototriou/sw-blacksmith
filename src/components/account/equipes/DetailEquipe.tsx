@@ -5,11 +5,12 @@ import type { BoxItem } from '../../../lib/applyAccount';
 import { Bouton, BoutonIcone, Champ, Selecteur } from '../../../ui';
 import MonsterAvatar from '../../MonsterAvatar';
 import MonsterGear from '../../MonsterGear';
+import SelecteurRangement from './SelecteurRangement';
 import { CarteRune } from '../RunesList';
 import { useMediaQuery, SOUS_LG } from '../../../hooks/useMediaQuery';
 import { useTraduction } from '../../../hooks/useLangue';
 import {
-  MONSTRES_MAX_EQUIPE, MONSTRES_MIN_EQUIPE, deplacerMonstre, designerLeader, etatExemplaire, etatsEquipement, modifierTextes,
+  MONSTRES_MAX_EQUIPE, MONSTRES_MIN_EQUIPE, deplacerMonstre, deplacerVersOnglet, designerLeader, etatExemplaire, etatsEquipement, modifierTextes,
   memeEquipement, remplacerEquipement, retirerMonstre,
   type EquipeEnregistree, type EtatPiece, type InventaireCompte, type MonstreEnregistre,
 } from '../../../lib/equipesEnregistrees';
@@ -66,8 +67,12 @@ export default function DetailEquipe({ equipe, brouillon = false, onChanger, mon
       <div className="flex flex-wrap items-end gap-3">
         {retour}
         <div className="ml-auto lg:order-last lg:ml-0">{menu}</div>
-        <div className="grid basis-full grid-cols-1 gap-3 sm:grid-cols-2 lg:min-w-0 lg:flex-1 lg:basis-0">
+        <div className="grid basis-full grid-cols-1 gap-3 sm:grid-cols-2 lg:min-w-0 lg:flex-1 lg:basis-0 lg:grid-cols-[minmax(0,1fr)_minmax(0,14rem)_minmax(0,1fr)]">
           <ChampTexte libelle={d.nom} valeur={equipe.nom} onValider={(nom) => onChanger((e, n) => modifierTextes(e, { nom }, n))} />
+          <label className="flex min-w-0 flex-col gap-1 text-xs text-ink-dim">
+            {d.rangement}
+            <SelecteurRangement valeur={equipe.onglet} onChange={(o) => onChanger((e, n) => deplacerVersOnglet(e, o, n))} />
+          </label>
           <ChampTexte libelle={d.note} valeur={equipe.note} onValider={(note) => onChanger((e, n) => modifierTextes(e, { note }, n))} />
         </div>
       </div>

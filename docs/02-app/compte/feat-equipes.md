@@ -32,48 +32,56 @@ conservation).
 
 ## Onglets
 
-Une rangée `Onglets` (`src/ui/Onglets.tsx`) de **sept catégories**, dans cet ordre,
-choisi par l'utilisateur (la première est ouverte par défaut) : une par grand contenu
-du jeu, jamais une par type de deck de l'export (décision de l'utilisateur,
-`CATEGORIES_EQUIPES`).
+Une rangée `Onglets` (`src/ui/Onglets.tsx`) de **neuf onglets**, un par contenu du jeu,
+dans cet ordre, choisi par l'utilisateur (le premier est ouvert par défaut ;
+`CATEGORIES_EQUIPES`). Chacun a ses **catégories**, nommées par l'utilisateur, que
+l'on filtre dans l'onglet et que l'on choisit pour chaque équipe
+(`SOUS_CATEGORIES_EQUIPES`) ; la ToA n'en a pas.
 
-| Catégorie | Libellé | Côtés | Contenu de liste de l'Optimizer |
-| --- | --- | --- | --- |
-| `arene` | « Arène » | offense, défense | `arene` |
-| `guilde` | « Combat de guilde » (siège et guerre de guilde) | offense, défense | `guilde` |
-| `labyrinthe` | « Labyrinthe » | — | `guilde` |
-| `rta` | « RTA » | — | `arene` |
-| `cairos` | « Cairos » (donjons, faille, raid des mondes, subjugation, temple du chaos) | — | `donjon` |
-| `toa` | « ToA » (tribunal d'ascension et tours) | — | `autre` |
-| `passage-dimensions` | « Passage des dimensions » (et ses raids) | — | `donjon` |
+| Onglet | Catégories | Contenu de liste de l'Optimizer |
+| --- | --- | --- |
+| `arene` « Arène » | Offense arène, Défense arène, Défense inter serveur, Arène dimensionnelle, RTA | `arene` |
+| `guilde` « Combat de guilde » | Offense siège, Défense siège, Offense guerre de guilde, Défense guerre de guilde | `guilde` |
+| `cairos` « Cairos » | Géant, Dragon, Nécropolis, Royaume Spirituel, Forteresse d'Acier, Crypte du jugement | `donjon` |
+| `labyrinthe` « Labyrinthe » | Boss, Normal, Sauvetage, Explosion, Vitesse limitée, Temps limité, Temps de pause | `guilde` |
+| `subjugation` « Subjugation » | Eau, Feu, Vent, Boss | `guilde` |
+| `passage-dimensions` « Passage des dimensions » | Karzhan, Ellunia, Lumel, Khalderun, Sacreon, Inferas, Raid dimensionnel (ses trois phases) | `donjon` |
+| `faille` « Rift » | Bête de glace, Orage, Marécages, Enflammée, Radiance, Raid des mondes | `donjon` |
+| `temple-chaos` « Temple du chaos » | Eau, Feu, Vent, Ténèbres, Lumière | `autre` |
+| `toa` « ToA » (tribunal d'ascension et tours) | — | `autre` |
 
-L'arène et le combat de guilde séparent l'offense de la défense par un **filtre dans
-l'onglet** (décision de l'utilisateur) : « Tout », « Offense », « Défense », chacun
-avec son nombre d'équipes ; sous « Tout », chaque carte dit son côté. Une équipe
-porte son **rangement** dans `onglet` : la catégorie, avec son côté pour ces deux-là
-(`arene-offense`, `arene-defense`, `guilde-offense`, `guilde-defense`, puis
-`labyrinthe`, `rta`, `cairos`, `toa`, `passage-dimensions`). Une équipe créée ou
-importée dans l'onglet ouvert prend le côté filtré, l'offense sous « Tout ».
+« Temps de pause » n'était pas dans la liste de l'utilisateur ; il est ajouté parce que
+l'export porte ce mode du labyrinthe (`deck_type` 9).
 
-Le contenu de liste suit le lead qui agit dans la catégorie, relevé en jeu par
-l'utilisateur ([§ Lead par contenu du jeu](../optimizer/feat-listes-equipes-et-sauvegarde.md#lead-par-contenu-du-jeu)).
-Une équipe importée d'un deck du jeu garde son contenu (`contenuJeu`), qui l'emporte
-sur la catégorie (`contenuOptimizerEquipe`) : une subjugation, rangée en Cairos,
-part avec le lead de guilde, une équipe du temple du chaos en `autre` (leads globaux
-et élémentaires seuls). Seule une équipe d'un type de deck inconnu n'a pas de règle :
-son export vers l'Optimizer est désactivé avec sa raison plutôt que d'appliquer
-celle d'un autre contenu par ressemblance.
+Le filtre est au-dessus de la grille : « Tout » puis chaque catégorie, chacune avec
+son nombre d'équipes ; sous « Tout », chaque carte dit sa catégorie. À la souris, un
+`Segmented` ; au téléphone, un menu (`Selecteur`) : sept crans n'y tiendraient pas.
+Le filtre se garde par onglet pour la session.
 
-Les rangements d'avant les catégories se relisent dans les nouveaux (stockage,
-fichier, session ; `ONGLETS_ANCIENS`) : `siege-attaque` et `guerre-guilde-offense`
-(et l'ancien onglet unique `guerre-guilde`) en `guilde-offense`, `siege-defense` et
-`guerre-guilde-defense` en `guilde-defense`, `arene-attaque` en `arene-offense`,
-`pve` en `cairos`. Une catégorie gardée pour la session qui n'existe plus retombe
-sur la première. Chaque libellé porte le nombre d'équipes de la catégorie, ses deux
-côtés confondus. La catégorie ouverte, le côté filtré et la recherche se gardent pour
-la session, comme l'état des autres outils (`useStickyState`).
+Une équipe porte son **rangement** dans `onglet` : l'onglet seul (catégorie non
+choisie), ou l'onglet et sa catégorie, `arene/rta`, `cairos/geant`. Une équipe créée
+ou importée dans l'onglet ouvert prend la catégorie filtrée, aucune sous « Tout ».
+Le détail d'une équipe change son rangement (« Onglet et catégorie », un menu groupé
+par onglet, `SelecteurRangement`) ; « Déplacer vers… » du menu de la carte l'envoie
+dans un autre onglet, sans catégorie.
 
-Une équipe a un seul rangement ; « Déplacer vers… » le change (catégorie et côté). Elle
+Le contenu de liste suit le lead qui agit dans l'onglet, le même pour toutes ses
+catégories, relevé en jeu par l'utilisateur
+([§ Lead par contenu du jeu](../optimizer/feat-listes-equipes-et-sauvegarde.md#lead-par-contenu-du-jeu)) :
+chaque onglet s'exporte.
+
+Les rangements des versions de travail précédentes se relisent dans les nouveaux
+(stockage, fichier, session ; `ONGLETS_ANCIENS`) : `siege-attaque` en Offense siège,
+`siege-defense` en Défense siège, `guerre-guilde`, `guerre-guilde-offense` et
+`guerre-guilde-defense` en offense et défense de guerre de guilde, `arene-attaque` et
+`arene-offense` en Offense arène, `arene-defense` en Défense arène, `rta` en RTA,
+`pve` en Cairos ; `guilde-offense` et `guilde-defense` (siège et guerre de guilde
+mêlés) dans Combat de guilde, sans catégorie. Un onglet gardé pour la session qui
+n'existe plus retombe sur le premier. Chaque onglet porte le nombre de ses équipes.
+L'onglet ouvert, le filtre de chaque onglet et la recherche se gardent pour la
+session, comme l'état des autres outils (`useStickyState`).
+
+Une équipe a un seul rangement. Elle
 compte **de 2 à 6 monstres** (décision de l'utilisateur), quel que soit l'onglet : le
 jeu impose des tailles différentes selon le contenu (3 au siège, 4 en arène, 5 en
 donjon, 6 en raid), et la page n'en refuse aucune dans cet intervalle. Une équipe de
@@ -87,10 +95,7 @@ enregistrée s'exporte donc vers une équipe de l'Optimizer, qui en accepte 2 à
 `EquipeEnregistree` :
 
 - `id` : chaîne unique, tirée à la création, jamais réutilisée ;
-- `onglet` : son rangement, catégorie et côté (plus haut) ;
-- `contenuJeu` (facultatif) : le contenu du jeu du deck importé (`ContenuDeck`) ; un
-  contenu inconnu est oublié à la relecture. Changer de côté le garde, changer de
-  catégorie le retire, la copie le garde ;
+- `onglet` : son rangement, l'onglet et sa catégorie (plus haut) ;
 - `nom` : texte non vide (« Équipe N » libre par défaut), trimé à la sortie du champ ;
 - `note` : texte libre, vide par défaut ;
 - `monstres` : 0 à 6 `MonstreEnregistre`, **dans l'ordre de l'équipe** ;
@@ -285,22 +290,21 @@ sa raison). Chaque choix crée **une nouvelle équipe** ; rien d'existant n'est
 modifié.
 
 Les sources suivent l'**onglet ouvert** (décision de l'utilisateur,
-`ordonnerSourcesPourOnglet`) : d'abord la même catégorie du même côté, puis la même
-catégorie de l'autre côté, puis le reste dans l'ordre de base (défenses de siège,
-offenses de siège, arène, decks du jeu, Optimizer). Siège et guerre de guilde sont
-la même catégorie : dans le combat de guilde filtré sur « Défense », les défenses de
-siège, puis les offenses de siège et de guerre de guilde (l'export n'a pas de
-défense de guerre de guilde), puis le reste ; dans l'arène filtrée sur « Offense »,
-les offenses d'arène, puis ses défenses. Sous « Tout », les deux côtés de la
-catégorie viennent en premier. La RTA garde l'ordre de base.
+`ordonnerSourcesPourOnglet`, par le rangement de chaque source) : d'abord celles de
+la catégorie filtrée, puis celles de l'onglet, puis le reste dans l'ordre de base
+(défenses de siège, offenses de siège, arène, decks du jeu, Optimizer). Dans Combat
+de guilde filtré sur « Défense siège », les défenses de siège, puis les offenses de
+siège et de guerre de guilde, puis le reste ; sous « Tout », toutes les sources de
+l'onglet d'abord.
 
 | Source | Rangement de l'équipe créée | Équipement copié |
 | --- | --- | --- |
-| Une défense de siège | combat de guilde, défense | le preset du deck |
-| Une offense de siège | combat de guilde, offense | le preset du deck |
-| La défense d'arène (et celle d'arène de serveur) | arène, défense | le preset de la défense, même vide ; sans preset pour l'unité, ce qu'elle porte |
-| Une offense d'arène | arène, offense | ce que portent les monstres à l'export |
-| Un deck enregistré du jeu | sa catégorie (`RANGEMENT_CONTENU_DECK`) ; un type non relevé, l'onglet ouvert | le preset du deck |
+| Une défense de siège | Combat de guilde — Défense siège | le preset du deck |
+| Une offense de siège | Combat de guilde — Offense siège | le preset du deck |
+| La défense d'arène | Arène — Défense arène | le preset de la défense, même vide ; sans preset pour l'unité, ce qu'elle porte |
+| La défense d'arène de serveur | Arène — Défense inter serveur | idem |
+| Une offense d'arène | Arène — Offense arène | ce que portent les monstres à l'export |
+| Un deck enregistré du jeu | son onglet et sa catégorie (`rangementDeck`) ; un type non relevé, l'onglet ouvert | le preset du deck |
 | Une équipe de l'Optimizer | l'onglet ouvert | le build validé du membre, sinon son équipement affiché |
 
 - Siège : depuis les équipes de siège de l'app (`SiegeTeam`, slot 0 = leader).
@@ -325,16 +329,20 @@ catégorie viennent en premier. La RTA garde l'ordre de base.
 - Decks du jeu : les decks enregistrés de l'export (`deck_list`, lus par
   `parseDecksEnregistres`, [decks-enregistres.md](../transverse/feat-import-compte/decks-enregistres.md))
   et conservés avec le compte dans un champ facultatif, `decksEnregistres`. Un groupe
-  par catégorie, dans l'ordre des onglets ; chaque deck nommé par son contenu, son
+  par onglet, dans l'ordre des onglets ; chaque deck nommé par son contenu, son
   donjon ou sa catégorie s'il en a un, et son numéro (« Cairos — Tanière du dragon
   · 2 »). Le type 1 (arène — offense) et le type 22 (siège — offense) n'y sont pas
   repris : les decks d'arène et les équipes de siège les portent déjà. Le leader est
   le slot 0 ; les monstres n'ont pas d'`unitId` (le deck ne garde que l'espèce et
   l'équipement). Sans ce champ (compte conservé avant lui), la source est désactivée,
-  « Réimporte ton compte ». Le rangement des contenus : guerre de guilde en combat de
-  guilde (offense) ; labyrinthe (ses sept modes) ; tribunal d'ascension et tours en
-  ToA ; passage des dimensions et ses trois raids ; donjons de Cairos, faille des
-  mondes, raid des mondes, subjugation et temple du chaos en Cairos.
+  « Réimporte ton compte ». Le rangement (`RANGEMENT_CONTENU_DECK`, puis
+  `RANGEMENT_SOUS_CONTENU_DECK` pour le donjon) : guerre de guilde en Offense guerre
+  de guilde ; chaque mode du labyrinthe dans le sien ; tribunal d'ascension et tours
+  en ToA ; chaque donjon de Cairos, de la faille, du passage des dimensions et de la
+  subjugation dans le sien ; les trois phases du raid dimensionnel en Raid
+  dimensionnel ; le raid des mondes dans Rift ; le temple du chaos dans son onglet,
+  sans catégorie (l'export ne dit pas l'élément). Un deck sans donjon connu va dans
+  son onglet, sans catégorie.
 
 Un rapport (modale) suit chaque import : l'équipe créée, les monstres ignorés et leur
 raison (espèce inconnue, slot vide sans monstre).

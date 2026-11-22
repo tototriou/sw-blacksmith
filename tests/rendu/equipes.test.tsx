@@ -32,8 +32,8 @@ const ctx = (compte = true): ContexteSourcesEquipes => ({
 const eq1 = equipementEx(1);
 const INVENTAIRE = indexerInventaire(eq1.runes.map((r) => (r.id === 3 ? runeEx(3, 3, 99) : r)), eq1.artifacts, [eq1.relic!]);
 const EQUIPES: EquipeEnregistree[] = [
-  { ...creerEquipe('e1', 'arene-offense', 'Ma RTA', T0), note: 'contre Lushen', monstres: [monstreEx('a', 1001, 11), monstreEx('b', 1002, null, null)], leader: 'a' },
-  { ...creerEquipe('e2', 'arene-defense', 'Autre RTA', T0), monstres: [monstreEx('d', 1002, null, null), monstreEx('e', 1003, null, null)] },
+  { ...creerEquipe('e1', 'arene/offense', 'Ma RTA', T0), note: 'contre Lushen', monstres: [monstreEx('a', 1001, 11), monstreEx('b', 1002, null, null)], leader: 'a' },
+  { ...creerEquipe('e2', 'arene/rta', 'Autre RTA', T0), monstres: [monstreEx('d', 1002, null, null), monstreEx('e', 1003, null, null)] },
   { ...creerEquipe('e3', 'cairos', 'Donjon', T0), monstres: [monstreEx('c', 1003, null, null), monstreEx('f', 1001, null, null)] },
 ];
 const api = (equipes = EQUIPES, relecture: 'en-cours' | 'finie' = 'finie'): EquipesEnregistreesApi => ({
@@ -51,14 +51,17 @@ export function testRenduEquipesBureau() {
   const html = rendre(section());
   const t = texteVisible(html);
   egal(onglets(html).map((o) => [o.texte, o.ouvert]), [
-    ['Arène 2', true], ['Combat de guilde 0', false], ['Labyrinthe 0', false], ['RTA 0', false], ['Cairos 1', false],
-    ['ToA 0', false], ['Passage des dimensions 0', false],
-  ], 'sept onglets de catégorie dans l’ordre choisi, chacun avec son total, le premier ouvert');
-  ok(t.includes('Ma RTA') && t.includes('Autre RTA') && !t.includes('Donjon'), 'les cartes de l’onglet ouvert seulement, ses deux côtés');
-  const filtre = html.slice(html.indexOf(`aria-label="${e.cotes.aria}"`));
-  ok(filtre !== html, 'l’arène a son filtre offense / défense');
-  egal(boutons(filtre).slice(0, 3).map((b) => b.texte), ['Tout 2', 'Offense 1', 'Défense 1'], 'le filtre compte chaque côté');
-  ok(/Ma RTA\s*Offense/.test(t) && /Autre RTA\s*Défense/.test(t), 'sous « Tout », chaque carte dit son côté');
+    ['Arène 2', true], ['Combat de guilde 0', false], ['Cairos 1', false], ['Labyrinthe 0', false], ['Subjugation 0', false],
+    ['Passage des dimensions 0', false], ['Rift 0', false], ['Temple du chaos 0', false], ['ToA 0', false],
+  ], 'neuf onglets dans l’ordre choisi, chacun avec son total, le premier ouvert');
+  ok(t.includes('Ma RTA') && t.includes('Autre RTA') && !t.includes('Donjon'), 'les cartes de l’onglet ouvert seulement, toutes catégories');
+  const filtre = html.slice(html.indexOf(`aria-label="${e.filtre.aria}"`));
+  ok(filtre !== html, 'l’arène a son filtre de catégories');
+  egal(boutons(filtre).slice(0, 6).map((b) => b.texte), ['Tout 2', 'Offense arène 1', 'Défense arène 0', 'Défense inter serveur 0', 'Arène dimensionnelle 0', 'RTA 1'],
+    'le filtre : chaque catégorie de l’onglet avec son compte');
+  ok(/Ma RTA\s*Offense arène/.test(t) && /Autre RTA\s*RTA/.test(t), 'sous « Tout », chaque carte dit sa catégorie');
+  const telephone = auTelephone(() => rendre(section()));
+  ok(telephone.includes(`aria-label="${e.filtre.aria}"`) && texteVisible(telephone).includes('Arène dimensionnelle (0)'), 'au téléphone, le filtre est un menu');
   ok(t.includes('contre Lushen'), 'la note sur la carte');
   ok(t.includes(e.carte.modifiees(1)), 'l’écart au compte : une pièce modifiée');
   for (const b of [e.nouvelle, e.importer, e.exporterFichier, e.importerFichier]) ok(bouton(html, b)?.desactive === false, `« ${b} » utilisable`);
@@ -87,6 +90,7 @@ export function testRenduEquipesDetail() {
     box={ctx().box} inventaire={INVENTAIRE} onAjouter={() => {}} retour={null} menu={null} />);
   const t = texteVisible(html);
   ok(valeurs(html, 'value').includes('Ma RTA') && valeurs(html, 'value').includes('contre Lushen'), 'nom et note éditables');
+  ok(t.includes(e.detail.rangement) && t.includes('Arène — Offense arène') && t.includes('Rift — Raid des mondes'), 'l’onglet et la catégorie se changent dans le détail, chaque onglet avec ses catégories');
   ok(t.includes(`${e.detail.provenance.porte} · ${e.detail.exemplaire['equipe-ainsi']}`), 'la provenance et ce que porte l’exemplaire');
   ok(t.includes(`${e.detail.rune(3)} : ${e.detail.etats.modifiee}`), 'la pièce modifiée nommée');
   egal(bouton(html, e.detail.minimum)?.desactive, true, 'à deux monstres, le retrait est refusé et l’infobulle dit pourquoi');
@@ -137,7 +141,7 @@ export function testRenduEquipesDetail() {
 
 export function testRenduEquipesImports() {
   titre('rendu · Mes équipes — sources d’import');
-  const sources = sourcesImportEquipes({ ...ctx(), arenaDecks: null }, null, INVENTAIRE, 'rta', fr);
+  const sources = sourcesImportEquipes({ ...ctx(), arenaDecks: null }, null, INVENTAIRE, 'arene/rta', fr);
   const html = auTelephone(() => rendre(<ImportEquipeModale sources={sources} onChoisir={() => {}} onFermer={() => {}} />));
   const t = texteVisible(html);
   ok(t.includes(e.imports.titre), 'le titre de la modale');
@@ -165,7 +169,7 @@ export function testRenduEquipesCreationOptimizer() {
     const t = texteVisible(html);
     ok(t.includes(e.creation.message), 'ce que crée l’enregistrement, et qu’il restera lié');
     ok(t.includes(e.creation.nom) && valeurs(html, 'value').includes('Liste — équipe 1'), 'le nom se donne avant d’enregistrer, le nom proposé prérempli');
-    ok(t.includes(e.creation.onglet) && t.includes(e.onglets.rta), 'l’onglet se choisit, l’onglet ouvert par défaut');
+    ok(t.includes(e.creation.onglet) && t.includes('Arène — RTA'), 'l’onglet et la catégorie se choisissent, l’onglet ouvert par défaut');
     ok(t.includes(e.retour.manquante('Monstre 1', e.retour.pieces.rune, 999)), 'une pièce introuvable est nommée');
     ok(!t.includes(e.retour.resume(2, 9)), 'pas de résumé de changements : tout est nouveau');
     ok(bouton(html, e.creation.action)?.desactive === false, '« Enregistrer » utilisable');

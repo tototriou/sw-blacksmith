@@ -312,9 +312,9 @@ l'utilisateur le 2026-11-22** ; c'est une règle du jeu, pas une déduction :
 
 Un lead général agit partout, un lead d'élément sur son élément (`ACTIVITE_LEADS_OPTIMIZER`).
 ⚠️ Seul un type de deck inconnu (`autre` de `ContenuDeck`) vaut `null` : non relevé, il ne se
-complète pas par ressemblance avec un autre contenu. « Mes équipes » se sert de cette table pour le
-contenu de la liste créée par son export ([feat-equipes.md](../compte/feat-equipes.md) § Onglets),
-et refuse l'export d'un contenu non relevé.
+complète pas par ressemblance avec un autre contenu. Chaque onglet de « Mes équipes » applique le
+lead de ses contenus à la liste créée par son export ([feat-equipes.md](../compte/feat-equipes.md)
+§ Onglets) ; un test vérifie que les deux tables s'accordent.
 
 ## Modèle pur des équipes
 

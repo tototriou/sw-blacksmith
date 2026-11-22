@@ -1,10 +1,12 @@
 import { egal, ok, titre } from './outils';
 import type { ArtifactDetail, GearSet, Monster, RelicDetail, RuneDetail } from '../src/types';
 import type { BoxItem } from '../src/lib/applyAccount';
+import { fr } from '../src/i18n/fr';
+import { en } from '../src/i18n/en';
 import {
-  CATEGORIES_EQUIPES, CONTENU_OPTIMIZER_ONGLET, ONGLETS_EQUIPES, ajouterMonstre, categorieDe, comparerPiece, compteParCategorie, compteParOnglet, coteDe, creerEquipe, deplacerVersOnglet, deplacerMonstre, designerLeader, dupliquerEquipe,
+  CATEGORIES_EQUIPES, CONTENU_OPTIMIZER_ONGLET, ONGLETS_EQUIPES, SOUS_CATEGORIES_EQUIPES, ajouterMonstre, categorieDe, comparerPiece, compteParCategorie, compteParOnglet, creerEquipe, deplacerMonstre, designerLeader, dupliquerEquipe,
   equipesFiltrees, gesteSurBrouillon, etatExemplaire, etatPiece, indexerInventaire, lireEquipeEnregistree, modifierTextes,
-  nomEquipeLibre, rangement, resumeEcarts, retirerMonstre, type EquipeEnregistree, type MonstreEnregistre, type OngletEquipes,
+  libelleRangement, libelleSousCategorie, nomEquipeLibre, rangement, resumeEcarts, sousCategorieDe, retirerMonstre, type EquipeEnregistree, type MonstreEnregistre, type OngletEquipes,
 } from '../src/lib/equipesEnregistrees';
 
 const T0 = new Date('2026-11-05T10:00:00Z');
@@ -35,7 +37,7 @@ function monstreJeu(com2usId: number, jumeauCollab?: number): Monster {
 
 function testEquipesEnregistreesRelecture() {
   titre('Mes équipes — relecture d’une équipe enregistrée');
-  const base = creerEquipe('e1', 'guilde-defense', 'Équipe 1', T0);
+  const base = creerEquipe('e1', 'guilde/defense-siege', 'Équipe 1', T0);
   const e: EquipeEnregistree = { ...base, monstres: [monstreEx('a', 1, 11), monstreEx('b', 2, null, null)], leader: 'a' };
   const lu = lireEquipeEnregistree(JSON.parse(JSON.stringify(e)));
   egal(lu?.equipe, e, 'une équipe valide se relit à l’identique');
@@ -43,11 +45,13 @@ function testEquipesEnregistreesRelecture() {
   for (const n of [0, 1]) ok(lireEquipeEnregistree({ ...e, monstres: e.monstres.slice(0, n) }) === null, `${n} monstre : illisible, une équipe en a au moins deux`);
   ok(lireEquipeEnregistree({ ...e, onglet: 'inconnu' }) === null, 'un onglet inconnu rend l’équipe illisible');
   const anciens: [string, string][] = [
-    ['guerre-guilde', 'guilde-offense'], ['guerre-guilde-offense', 'guilde-offense'], ['guerre-guilde-defense', 'guilde-defense'],
-    ['siege-attaque', 'guilde-offense'], ['siege-defense', 'guilde-defense'], ['arene-attaque', 'arene-offense'],
-    ['arene-defense', 'arene-defense'], ['pve', 'cairos'], ['rta', 'rta'],
+    ['guerre-guilde', 'guilde/offense-gdg'], ['guerre-guilde-offense', 'guilde/offense-gdg'], ['guerre-guilde-defense', 'guilde/defense-gdg'],
+    ['siege-attaque', 'guilde/offense-siege'], ['siege-defense', 'guilde/defense-siege'], ['arene-attaque', 'arene/offense'],
+    ['arene-offense', 'arene/offense'], ['arene-defense', 'arene/defense'], ['rta', 'arene/rta'], ['pve', 'cairos'],
+    ['guilde-offense', 'guilde'], ['guilde-defense', 'guilde'], ['labyrinthe', 'labyrinthe'], ['passage-dimensions', 'passage-dimensions'],
   ];
   for (const [avant, apres] of anciens) egal(lireEquipeEnregistree({ ...e, onglet: avant })?.equipe.onglet, apres, `l’ancien rangement ${avant} se relit en ${apres}`);
+  ok(lireEquipeEnregistree({ ...e, onglet: 'cairos/boss' }) === null, 'une catégorie d’un autre onglet rend l’équipe illisible');
   ok(lireEquipeEnregistree({ ...e, onglet: 'toString' }) === null, 'un nom hérité d’Object n’est pas un ancien rangement');
   ok(lireEquipeEnregistree({ ...e, monstres: [1, 2, 3, 4, 5, 6, 7].map((i) => monstreEx(`u${i}`, i, null)) }) === null, 'plus de 6 monstres : illisible');
   ok(lireEquipeEnregistree({ ...e, monstres: [monstreEx('a', 1, 11), monstreEx('a', 2, 12)] }) === null, 'deux uid identiques : illisible');
@@ -83,7 +87,7 @@ function testEquipesEnregistreesComparaison() {
   egal(etatPiece('rune', runeEx(2, 2), inv), 'modifiee', 'pièce modifiée');
   egal(etatPiece('rune', runeEx(3, 3), inv), 'disparue', 'pièce disparue');
   egal(etatPiece('artefact', artefactEx(0, 'element'), inv), 'hors-compte', 'une pièce synthétique n’est jamais comparée');
-  const e = { ...creerEquipe('e', 'rta', 'E', T0), monstres: [monstreEx('a', 1, 11)] };
+  const e = { ...creerEquipe('e', 'arene/rta', 'E', T0), monstres: [monstreEx('a', 1, 11)] };
   egal(resumeEcarts(e, inv), { modifiees: 1, disparues: 4 + 1 }, 'résumé : 1 modifiée, 4 runes et 1 artéfact disparus');
   const box: BoxItem[] = [{ key: '11', monster: monstreJeu(1), stars: 6, level: 40, gear: equipementEx() }];
   egal(etatExemplaire(monstreEx('a', 1, 11), box), 'equipe-ainsi', 'l’exemplaire porte exactement l’enregistré');
@@ -134,31 +138,33 @@ function testEquipesEnregistreesRecherche() {
   const index = new Map([[1, monstreJeu(1)], [2, monstreJeu(2)], [1001, werner], [2001, gojo]]);
   const eq = (id: string, onglet: OngletEquipes, ids: number[], quand: string): EquipeEnregistree =>
     ({ ...creerEquipe(id, onglet, id, new Date(quand)), monstres: ids.map((c, i) => monstreEx(`${id}${i}`, c, null)) });
-  const toutes = [eq('a', 'rta', [1, 2], '2026-01-01'), eq('b', 'rta', [1, 1001], '2026-02-01'), eq('c', 'cairos', [1, 2], '2026-03-01'),
-    eq('d', 'guilde-offense', [1, 2], '2026-04-01'), eq('f', 'guilde-defense', [1, 2], '2026-05-01')];
-  egal(equipesFiltrees(toutes, 'rta', null, [], index).map((e) => e.id), ['b', 'a'], 'sans recherche : l’onglet, dernière modifiée en premier');
-  egal(equipesFiltrees(toutes, 'rta', null, [monstreJeu(1), monstreJeu(2)], index).map((e) => e.id), ['a'], 'tous les monstres recherchés sont exigés');
-  egal(equipesFiltrees(toutes, 'rta', null, [gojo], index).map((e) => e.id), ['b'], 'une collaboration et sa version SW comptent pour la même espèce');
-  egal(equipesFiltrees(toutes, 'guilde', null, [], index).map((e) => e.id), ['f', 'd'], 'sans côté : l’offense et la défense de l’onglet');
-  egal(equipesFiltrees(toutes, 'guilde', 'defense', [], index).map((e) => e.id), ['f'], 'le filtre de côté ne garde que le sien');
-  egal(compteParOnglet(toutes).rta, 2, 'compte par rangement');
-  egal([compteParCategorie(toutes).guilde, compteParOnglet(toutes)['guilde-offense']], [2, 1], 'un onglet compte ses deux côtés');
+  const toutes = [eq('a', 'toa', [1, 2], '2026-01-01'), eq('b', 'toa', [1, 1001], '2026-02-01'), eq('c', 'cairos/geant', [1, 2], '2026-03-01'),
+    eq('d', 'cairos', [1, 2], '2026-04-01'), eq('f', 'cairos/dragon', [1, 2], '2026-05-01')];
+  egal(equipesFiltrees(toutes, 'toa', null, [], index).map((e) => e.id), ['b', 'a'], 'sans recherche : l’onglet, dernière modifiée en premier');
+  egal(equipesFiltrees(toutes, 'toa', null, [monstreJeu(1), monstreJeu(2)], index).map((e) => e.id), ['a'], 'tous les monstres recherchés sont exigés');
+  egal(equipesFiltrees(toutes, 'toa', null, [gojo], index).map((e) => e.id), ['b'], 'une collaboration et sa version SW comptent pour la même espèce');
+  egal(equipesFiltrees(toutes, 'cairos', null, [], index).map((e) => e.id), ['f', 'd', 'c'], 'sous « Tout » : chaque catégorie de l’onglet, et ses équipes sans catégorie');
+  egal(equipesFiltrees(toutes, 'cairos', 'dragon', [], index).map((e) => e.id), ['f'], 'le filtre ne garde que sa catégorie');
+  egal(compteParOnglet(toutes).toa, 2, 'compte par rangement');
+  egal([compteParCategorie(toutes).cairos, compteParOnglet(toutes)['cairos/geant'], compteParOnglet(toutes).cairos], [3, 1, 1], 'un onglet compte toutes ses équipes');
 }
 
 function testEquipesEnregistreesCategories() {
   titre('Mes équipes — catégories, côtés et rangements');
-  egal(CATEGORIES_EQUIPES.map((c) => [c, rangement(c, null)]).filter(([c, r]) => c !== r).map(([c]) => c), ['arene', 'guilde'], 'seules l’arène et le combat de guilde ont un côté');
-  egal([rangement('arene', 'defense'), rangement('guilde', null), rangement('toa', 'defense')], ['arene-defense', 'guilde-offense', 'toa'], 'rangement : le côté, l’offense par défaut, ignoré sans côté');
-  for (const o of ONGLETS_EQUIPES) egal(rangement(categorieDe(o), coteDe(o)), o, `${o} : catégorie et côté refont le rangement`);
-  egal(CATEGORIES_EQUIPES.filter((c) => !CONTENU_OPTIMIZER_ONGLET[c]), [], 'chaque catégorie a son contenu de l’Optimizer');
-  const T = new Date('2026-11-06T10:00:00Z');
-  const deDeck: EquipeEnregistree = { ...creerEquipe('s', 'cairos', 'S', T0), monstres: [monstreEx('a', 1, null), monstreEx('b', 2, null)], contenuJeu: 'subjugation' };
-  egal(lireEquipeEnregistree(JSON.parse(JSON.stringify(deDeck)))?.equipe.contenuJeu, 'subjugation', 'le contenu du jeu se relit');
-  ok(!('contenuJeu' in lireEquipeEnregistree({ ...deDeck, contenuJeu: 'inconnu' })!.equipe), 'un contenu du jeu inconnu est oublié, pas l’équipe');
-  ok(!('contenuJeu' in deplacerVersOnglet(deDeck, 'rta', T)), 'changer de catégorie retire le contenu du jeu');
-  const garde = { ...deDeck, onglet: 'guilde-offense' as const, contenuJeu: 'siege-offense' as const };
-  egal(deplacerVersOnglet(garde, 'guilde-defense', T).contenuJeu, 'siege-offense', 'changer de côté le garde');
-  egal(dupliquerEquipe(deDeck, 'c', 'C', () => 'n', T).contenuJeu, 'subjugation', 'la copie le garde');
+  egal([...CATEGORIES_EQUIPES], ['arene', 'guilde', 'cairos', 'labyrinthe', 'subjugation', 'passage-dimensions', 'faille', 'temple-chaos', 'toa'],
+    'les onglets dans l’ordre choisi');
+  egal(CATEGORIES_EQUIPES.filter((c) => SOUS_CATEGORIES_EQUIPES[c].length === 0), ['toa'], 'seule la ToA n’a pas de catégorie');
+  egal([rangement('arene', 'rta'), rangement('cairos', null), rangement('toa', 'eau'), rangement('cairos', 'eau')],
+    ['arene/rta', 'cairos', 'toa', 'cairos'], 'rangement : l’onglet et sa catégorie ; une catégorie d’un autre onglet est ignorée');
+  for (const o of ONGLETS_EQUIPES) egal(rangement(categorieDe(o), sousCategorieDe(o)), o, `${o} : onglet et catégorie refont le rangement`);
+  egal(Object.entries(CONTENU_OPTIMIZER_ONGLET), [['arene', 'arene'], ['guilde', 'guilde'], ['cairos', 'donjon'], ['labyrinthe', 'guilde'],
+    ['subjugation', 'guilde'], ['passage-dimensions', 'donjon'], ['faille', 'donjon'], ['temple-chaos', 'autre'], ['toa', 'autre']],
+    'le lead de chaque onglet, d’après la règle relevée en jeu');
+  for (const [dico, langue] of [[fr, 'fr'], [en, 'en']] as const) {
+    const manquants = ONGLETS_EQUIPES.filter((o) => sousCategorieDe(o) && libelleSousCategorie(categorieDe(o), sousCategorieDe(o)!, dico) === sousCategorieDe(o));
+    egal(manquants, [], `${langue} : chaque catégorie a son libellé`);
+  }
+  egal([libelleRangement('labyrinthe/boss', fr), libelleRangement('toa', fr)], ['Labyrinthe — Boss', 'ToA'], 'le rangement se dit par l’onglet et la catégorie');
 }
 
 export const verificationsEquipesEnregistrees: [string, () => void][] = [

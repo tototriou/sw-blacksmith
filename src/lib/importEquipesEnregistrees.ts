@@ -13,7 +13,7 @@ import { exclusionSelectorKey, resolveExclusionEntry, type ExclusionSelector, ty
 import type { StockageOptimizer } from './optimizerMemberStorage';
 import type { SpeedTuneEquipe } from './speedTuneEquipe';
 import {
-  comparerPiece, contenuOptimizerEquipe, creerEquipe,
+  CONTENU_OPTIMIZER_ONGLET, categorieDe, comparerPiece, creerEquipe,
   type CorrespondanceOptimizer, type EquipeEnregistree, type LienOptimizerEquipe, type InventaireCompte, type LienLigneEnregistre,
   type MonstreEnregistre, type OngletEquipes, type SpeedTuneEnregistre, type TirerId,
 } from './equipesEnregistrees';
@@ -61,18 +61,11 @@ function buildAValider(m: MonstreEnregistre, selector: ExclusionSelector, libell
   };
 }
 
-// Une équipe sans contenu de l'Optimizer (règle des leads non relevée pour
-// son contenu) n'est pas exportable : l'Optimizer ne saurait quels leads appliquer.
-export const exportSansContenu = (equipe: EquipeEnregistree): boolean => contenuOptimizerEquipe(equipe) === null;
-
 export function preparerExportEquipeOptimizer(
   equipe: EquipeEnregistree, data: ExclusionSourceData, inv: InventaireCompte, t: Dictionnaire
 ): ExportEquipeOptimizer {
   const e = t.equipes.export;
-  const contenu = contenuOptimizerEquipe(equipe);
-  // L'écran refuse l'export d'une catégorie sans contenu (`exportSansContenu`).
-  if (!contenu) throw new Error(`Pas de contenu de l'Optimizer pour ${equipe.onglet}`);
-  const proposition: ImportOptimizer = { nomListe: equipe.nom, contenu,
+  const proposition: ImportOptimizer = { nomListe: equipe.nom, contenu: CONTENU_OPTIMIZER_ONGLET[categorieDe(equipe.onglet)],
     membres: [], equipes: [], ignores: [], messages: [], buildsAValider: [] };
   const correspondance: CorrespondanceOptimizer[] = [];
   const unitesPrises = new Set<string>();
