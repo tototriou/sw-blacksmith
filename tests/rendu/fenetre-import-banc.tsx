@@ -55,6 +55,10 @@ export async function scenario(): Promise<[boolean, string][]> {
     `Recommandations : la liste remplacée ${JSON.stringify(lignes())}`);
   await geste(() => segment('Mes équipes').click());
   verifier(lignes().length === 5, 'retour à Mes équipes : ses cinq équipes, sans reste');
+  const portrait = dialogue().querySelector<HTMLButtonElement>('button[aria-pressed][title]')!;
+  await geste(() => portrait.click());
+  verifier(portrait.getAttribute('aria-pressed') === 'true' && !!portrait.querySelector('span[aria-hidden] svg'),
+    'un monstre choisi porte sa coche en coin');
   verifier(!erreurs.some(e => e.includes('same key')), `aucune clé de rendu en double ${erreurs.filter(e => e.includes('key')).join(' | ')}`);
   console.error = consoleErreur;
   return preuves;

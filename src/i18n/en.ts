@@ -1895,7 +1895,7 @@ export const en: Dictionnaire = {
     importerSeparement: 'Import separately',
     importerGroupe: 'Import as a group',
     groupeImpossible: 'A group gathers teams of one tab, RTA excepted.',
-    ajouterMonstres: (n: number) => (n > 1 ? `Add ${n} monsters` : 'Add 1 monster'),
+    ajouterMonstres: (n: number) => (n > 1 ? `Add ${n} monsters` : n === 1 ? 'Add 1 monster' : 'Add'),
     ajouterA: (liste: string) => `Add to “${liste}”`,
     ajouterListeActive: 'Add to the active list',
     pasDeListeActive: 'No active list.',

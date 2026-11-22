@@ -1990,7 +1990,7 @@ export const fr = {
     importerSeparement: 'Importer séparément',
     importerGroupe: 'Importer en groupe',
     groupeImpossible: 'Un groupe réunit des équipes d’un même onglet, hors RTA.',
-    ajouterMonstres: (n: number) => (n > 1 ? `Ajouter ${n} monstres` : 'Ajouter 1 monstre'),
+    ajouterMonstres: (n: number) => (n > 1 ? `Ajouter ${n} monstres` : n === 1 ? 'Ajouter 1 monstre' : 'Ajouter'),
     ajouterA: (liste: string) => `Ajouter à « ${liste} »`,
     ajouterListeActive: 'Ajouter à la liste active',
     pasDeListeActive: 'Aucune liste active.',
