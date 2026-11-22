@@ -71,7 +71,9 @@ connexion (`plugin-swex/source/archive.ts`), garde le contenu des combats de gui
 (`plugin-swex/source/dimension.ts`). L'app de bureau lit son fichier live (`bureau/swexLive.ts`) :
 « Mon compte » en direct (`src/lib/compteDirect.ts`, `src/hooks/useCompteDirect.ts`) et « Mettre à
 jour mon compte » (page SW Exporter). Elle lit aussi ses fichiers de guilde (`bureau/swexGuilde.ts`) :
-les sièges, relevés par `src/lib/siegeStatistiques.ts` ; et sa saison dimensionnelle
+les sièges, relevés par `src/lib/siegeStatistiques.ts` ; l'archive du compte
+(`bureau/swexHistorique.ts`) : l'historique des runes de Comparaison › Historique (hook
+`useHistoriqueSwex`, `src/lib/historiqueRunes.ts`) ; et sa saison dimensionnelle
 (`bureau/swexDimension.ts`) : la box, la défense et les attaques de l'arène dimensionnelle. Détail :
 [feat-swex-direct.md](../02-app/bureau/feat-swex-direct.md),
 [statistiques.md](../02-app/siege/statistiques.md).
@@ -184,10 +186,11 @@ sont les deux racines ; dessous : `RunesList`, `RunesSummary` + `BuildsRapides`,
 `DetailEquipe`, `AjoutMonstreModale` ; la fenêtre « Importer » est `src/components/FenetreImport.tsx`,
 partagée avec l'Optimizer (modèle pur `src/lib/fenetreImport.ts`).
 Lib `accountStore` (IndexedDB), `accountViews`, `runeSort`, `runeOptim`, `runeCourbes`, `buildsRapides`,
-`artifactsTop`, `monsterSort`, `crafts` ; « Mes équipes » : `equipesEnregistrees` (modèle pur),
-`equipesStore` (sa base IndexedDB), `equipesFichier`, `sourcesEquipesEnregistrees` (équipement d'un
-monstre ajouté, imports), `importEquipesEnregistrees` (aller-retour avec l'Optimizer) ; hook
-`useEquipesEnregistrees`.
+`artifactsTop`, `monsterSort`, `crafts`, `historiqueRunes` (un état de l'archive du plugin, pour
+Comparaison › Historique ; hook `useHistoriqueSwex`) ; « Mes équipes » : `equipesEnregistrees`
+(modèle pur), `equipesStore` (sa base IndexedDB), `equipesFichier`, `sourcesEquipesEnregistrees`
+(équipement d'un monstre ajouté, imports), `importEquipesEnregistrees` (aller-retour avec
+l'Optimizer) ; hook `useEquipesEnregistrees`.
 
 **Optimizer** — dans `src/components/outils/` : `OptimizerSection.tsx` (racine),
 `MonsterSourcePicker` (recherche — deux modes, bestiaire ou compte réel), `OptimizerListPicker`

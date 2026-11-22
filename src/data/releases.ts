@@ -103,6 +103,7 @@ export const RELEASES: Release[] = [
       { kind: 'feat', scope: 'Optimizer', text: 'Une précision minimale par sort : S1, S2 ou S3, artéfact de type compris.' },
       { kind: 'feat', scope: 'Runes', text: '« Faisable avec ma réserve » : choisir les meules et gemmes héroïques, légendaires ou les deux.' },
       { kind: 'feat', scope: 'Application', text: '« Charger… » une session enregistrée (Ctrl+O), qui reprend tout là où tu t’étais arrêté.' },
+      { kind: 'feat', scope: 'Runes', text: 'Comparaison › Historique : ta courbe de runes d’aujourd’hui face à celle des jours passés, tirée du plugin SW Blacksmith Live.' },
       { kind: 'fix', scope: 'Application', text: 'Un compte importé par fichier n’est plus remplacé par l’invocateur suivi dans le dossier SW Exporter.' },
       { kind: 'fix', scope: 'Application', text: 'Sans données gardées, l’invocateur suivi se recharge en entier au lancement, prépa RTA et siège compris.' },
       { kind: 'docs', scope: 'Discord', text: 'Une page Bot Discord : installation, recommandations et commandes, avec captures.' },

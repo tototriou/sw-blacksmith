@@ -45,6 +45,12 @@ interface PontBureau {
     // `null` : pas de dossier, d'invocateur suivi ni de dossier du plugin.
     sieges: () => Promise<RelevesSiege | null>;
     surSiegesChanges: (rappel: () => void) => () => void;
+    // L'historique du compte (archive du plugin), du plus récent au plus
+    // ancien ; `null` : pas de dossier, d'invocateur suivi ni de dossier du
+    // plugin. Un état : ses runes BRUTES (format de l'export).
+    historique: () => Promise<EtatHistoriqueSwex[] | null>;
+    etatHistorique: (cle: string) => Promise<{ t: number; runes: unknown[] } | null>;
+    surHistoriqueChange: (rappel: () => void) => () => void;
   };
   session: {
     etat: () => Promise<EtatSession | null>;
@@ -240,6 +246,13 @@ export interface EtatDirectSwex {
 export interface LignesDirect {
   debut: boolean;
   lignes: string[];
+}
+
+// Un état de l'historique du compte (bureau/swexHistorique.ts) : la clé qui le
+// redemande, et l'heure de la connexion (ms).
+export interface EtatHistoriqueSwex {
+  cle: string;
+  t: number;
 }
 
 // Le pont du dossier SW Exporter, ou `null` sur le site.

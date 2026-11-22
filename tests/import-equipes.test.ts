@@ -78,7 +78,7 @@ export function testImportEquipesOffenseSiege() {
   ok(!isDeepStrictEqual(data.box[0].gear, data.siegeOffenseTeams[0].slots[0].gear), 'équipement Box distinct de celui du deck');
   egal(p.membres.map(m => exclusionSelectorKey(m.selector)), ['siege-offense:o1:0', 'siege-offense:o1:1', 'siege-offense:o1:2'], 'uniquement les exemplaires du deck demandé');
   egal(memoiresNouvelles(r)[0].selector, { source: 'siege-offense', teamId: 'o1', slotIndex: 0 }, 'sélecteur du deck conservé jusqu’à la mémoire');
-  egal(memoiresNouvelles(r)[0].criteres.relicMainChoice, 'equipped', 'défaut de relique du deck, pas celui de la copie Box sans relique');
+  egal(memoiresNouvelles(r)[0].criteres.relicMainChoice, 'libre', 'défaut de relique « libre », même sur un exemplaire du deck qui en porte une');
   egal(r.rapport.equipesCreees, 1, 'une seule équipe');
   egal(p.equipes[0].lead, lead, 'team.lead = 99 n’est pas importé');
   const absent = consommer(importerOffenseSiegeOptimizer('absent', data, fr), data);

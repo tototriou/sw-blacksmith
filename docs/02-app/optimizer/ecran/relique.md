@@ -21,10 +21,10 @@
    - **Principale** : **« Comme équipée »** (pièce entière,
      rien n'est cherché), **ATQ %**, **DEF %**, **PV %** (courts comme
      ceux de l'artéfact), **« Libre »** (cherche parmi toutes les reliques
-     éligibles). **Défaut : « Comme équipée » si le monstre
-     choisi porte une relique, « Libre » sinon** — calculé au choix du
-     monstre, comme pour l'artéfact : bestiaire, « un autre exemplaire »,
-     puce de source, zone D et réimport du compte. Un membre de liste
+     éligibles). **Défaut : « Libre », même si le monstre choisi porte
+     déjà une relique** — reposé au choix du monstre : bestiaire, « un
+     autre exemplaire », puce de source, zone D et réimport du compte ;
+     « Comme équipée » ne s'obtient que par un choix explicite. Un membre de liste
      restaure son choix mémorisé ; ce défaut n'est posé que sans mémoire
      applicable. Une recette pose son propre choix après validation.
      Entre deux exemplaires de la **même espèce** choisis hors liste, le choix de

@@ -119,7 +119,7 @@ import { jourLocal, telechargerTexte } from '../../lib/telechargement';
 import {
   OptimizerState,
   DEFAULT_RELIC_MIN_UPGRADE,
-  defaultRelicMainChoice,
+  DEFAULT_RELIC_MAIN_CHOICE,
   criteresApresChangementEspece,
   relicIntentDepuisEtat,
   relicMainChoiceApresChangementExemplaire,
@@ -1051,9 +1051,9 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
       resetSearch();
       const defauts = criteresApresChangementEspece(optimizer, 'bestiaire', equipement);
       // ⚠️ **Le défaut affiché doit être celui qui s'applique — jamais un
-      // défaut faux, comme cela s'est vu pour les artéfacts** : `defaultRelicMainChoice` (useOptimizerState.ts)
-      // est la SOURCE du défaut, câblée ici parce que c'est le seul site qui
-      // connaît le monstre choisi (le hook n'y a pas accès) — comme
+      // défaut faux, comme cela s'est vu pour les artéfacts** : la base
+      // complète (`DEFAULT_RELIC_MAIN_CHOICE`, criteresOptimizer.ts) est la
+      // SOURCE du défaut, reposée ici après `resetSearch` — comme
       // `objective` juste en dessous, remis à zéro puis surchargé au même
       // endroit.
       optimizer.poserCriteresAutomatiques({ relicMainChoice: defauts.relicMainChoice });
@@ -1255,14 +1255,11 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
   const vueFiche: 'apercu' | 'valide' | 'actuel' = apercu ? 'apercu' : ownValidatedBuild && !showRealGear ? 'valide' : 'actuel';
 
   // Un réimport du compte remet les critères à zéro (`resetSearch('compte')`,
-  // App.tsx) sans connaître le monstre resté sélectionné : le défaut de
-  // relique se recalcule ici, contre la relique qu'il porte dans le compte
-  // réimporté — UNE fois par import. Le traitement partagé garde aussi les
-  // critères d'un membre choisi après le réimport pendant l'absence de l'écran.
-  const reliqueAffichee = useRef<RelicDetail | undefined>(undefined);
-  reliqueAffichee.current = selected?.gear.relic;
+  // App.tsx) : le défaut de relique se repose ici — UNE fois par import. Le
+  // traitement partagé garde aussi les critères d'un membre choisi après le
+  // réimport pendant l'absence de l'écran.
   useEffect(() => {
-    traiterReliqueImportee(reliqueAffichee.current);
+    traiterReliqueImportee();
   }, [importDuCompte, traiterReliqueImportee]);
 
   /**
@@ -2252,9 +2249,8 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
       // ⚠️ **Même canal que la bascule artéfact** (« mêmes trois
       // règles ») : `relicMainPourCeCompte` (optimizerRecipe.ts) applique la
       // bascule « equipped » → « libre » sur compte différent ; le défaut
-      // (`defaultRelicMainChoice`, contre la relique réellement portée)
-      // ne s'applique QUE si la recette ne porte pas le champ (recette
-      // antérieure à ce champ) — résolu plus bas, une fois le monstre trouvé.
+      // (`DEFAULT_RELIC_MAIN_CHOICE`) ne s'applique QUE si la recette ne
+      // porte pas le champ (recette antérieure à ce champ) — posé plus bas.
       const { main: relicMainResolu, bascule: relicBascule } = relicMainPourCeCompte(recipe, accountName);
       optimizer.poserCriteresAutomatiques({ relicUniqueChoice: recipe.relicUniqueChoice ?? 'libre' });
       setRelicMinUpgrade(recipe.relicMinUpgrade ?? DEFAULT_RELIC_MIN_UPGRADE);
@@ -2291,10 +2287,9 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
         setSourceSelector(boxCandidates[0]?.selector ?? unownedSelectorIfNoneOwned(match, box, exclusionData));
         setZoneDOpen(false);
         setSelectedId(String(match.id));
-        // ⚠️ Défaut calculé contre la relique de l'EXEMPLAIRE résolu ici
-        // (même source que `pickSpecies`), jamais une constante — seulement
-        // si la recette ne porte pas le champ (`relicMainResolu` absent).
-        optimizer.poserCriteresAutomatiques({ relicMainChoice: relicMainResolu ?? defaultRelicMainChoice(boxCandidates[0]?.gear.relic) });
+        // Défaut (même source que `pickSpecies`) seulement si la recette ne
+        // porte pas le champ (`relicMainResolu` absent).
+        optimizer.poserCriteresAutomatiques({ relicMainChoice: relicMainResolu ?? DEFAULT_RELIC_MAIN_CHOICE });
         setImportMsg({ text: `${os.recette.importes(recipe.monsterName)}${suffixeLocks}`, avertissement: avecAvertissement });
       } else {
         // Cas limite : le `com2usId` de la recette ne correspond à AUCUN
@@ -2302,10 +2297,7 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
         // devrait rester rare maintenant que `allMonsters` couvre tout le
         // bestiaire (autrement, ce message apparaîtrait dès que le
         // monstre n'est simplement pas POSSÉDÉ, un cas bien plus courant).
-        // ⚠️ Aucun exemplaire résolu : pas de relique connue pour calculer le
-        // défaut, repli sur « libre » (même situation que `pickSpecies`
-        // sur une espèce possédée nulle part).
-        optimizer.poserCriteresAutomatiques({ relicMainChoice: relicMainResolu ?? 'libre' });
+        optimizer.poserCriteresAutomatiques({ relicMainChoice: relicMainResolu ?? DEFAULT_RELIC_MAIN_CHOICE });
         setImportMsg({
           text: `${os.recette.monstreIntrouvable(recipe.monsterName)}${suffixeLocks}`,
           avertissement: avecAvertissement,

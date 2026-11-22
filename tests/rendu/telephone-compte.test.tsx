@@ -102,7 +102,7 @@ export function testRenduTelephoneRunes() {
   ok(to.includes('Gemme + meule Meule seule Sets'), 'Optimisation : le mode du potentiel en tête de la page, avant les filtres');
 
   const comparaison = texteVisible(rendreRunes('comparaison', true));
-  ok(comparaison.includes('Courbes partagées Fichiers de compte') && comparaison.includes('Exporter ma courbe Importer une courbe'), 'Comparaison : sous-onglets, export, import');
+  ok(comparaison.includes('Courbes partagées Fichiers de compte Historique') &&comparaison.includes('Exporter ma courbe Importer une courbe'), 'Comparaison : sous-onglets, export, import');
 
   const resume = rendreRunes('resume', true);
   egal(dialogues(resume), 0, 'Résumé : pas de panneau');

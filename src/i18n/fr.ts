@@ -1293,6 +1293,18 @@ export const fr = {
     comptesAide2: 'Une courbe partagée ne peut pas apparaître ici.',
     nomCompte: 'Nom de ce compte',
     nomCompteAide: "Il sert d'étiquette sur le graphe, rien de plus.",
+    historique: 'Historique',
+    historiqueSite: "L'historique se lit dans l'application de bureau, avec le plugin SW Blacksmith Live.",
+    historiqueDates: 'États du compte',
+    historiqueAucuneDate: 'Aucune date',
+    historiqueChargement: "Lecture de l'historique…",
+    historiqueIndisponible:
+      "Aucun historique : choisis l'invocateur à suivre dans Paramètres › Application, sous « Dossier SW Exporter », avec le plugin SW Blacksmith Live installé.",
+    historiqueVide: "L'historique commence à ta prochaine connexion au jeu avec le plugin SW Blacksmith Live.",
+    historiqueAide1: 'Un état par connexion au jeu, tiré de l’archive du plugin SW Blacksmith Live.',
+    historiqueAideGras: "Efficience et score sont recalculés avec la formule d'aujourd'hui",
+    historiqueAide2: ', et les filtres s’appliquent à chaque date de la même façon.',
+    historiqueIllisible: (date: string) => `L’état du ${date} n’a pas pu être lu.`,
   },
 
   // Compte → Résumé des runes.

@@ -97,20 +97,19 @@ export function appliquerCriteres(photo: CriteresOptimizer, lead: LeadEffectifOp
 }
 
 /**
- * Le défaut de `relicMainChoice`, calculé au choix du MONSTRE — jamais une
- * constante : `'equipped'` s'il porte déjà une relique,
- * `'libre'` sinon. Fonction PURE et exportée exprès (même raison que
- * `mainsPourCeCompte`, optimizerRecipe.ts) : elle sert à la fois à
- * `recipeToRelicIntent` (une recette exportée sans ce champ ne le porte pas),
- * à `pickSpecies` (OptimizerSection.tsx) et à la base complète ci-dessous.
+ * Le défaut de `relicMainChoice` : « Libre », que le monstre porte une
+ * relique ou non — chercher la relique est le comportement utile, comme
+ * pour les artéfacts ; « Comme équipée » reste un choix explicite.
+ * Constante exportée exprès : elle sert à `recipeToRelicIntent` (une
+ * recette exportée sans ce champ ne le porte pas), à `pickSpecies`
+ * (OptimizerSection.tsx), au réimport du compte et à la base complète
+ * ci-dessous.
  *
  * ⚠️ **Le moteur fait foi pour le défaut** : l'écran doit AFFICHER la
- * valeur que le moteur applique, jamais l'inverse — cette fonction est donc
- * la source unique du calcul, pas une case à cocher qui devinerait.
+ * valeur que le moteur applique, jamais l'inverse — cette constante est donc
+ * la source unique, pas une valeur recopiée à chaque site.
  */
-export function defaultRelicMainChoice(relic: RelicDetail | undefined): RelicMainChoice {
-  return relic ? 'equipped' : 'libre';
-}
+export const DEFAULT_RELIC_MAIN_CHOICE: RelicMainChoice = 'libre';
 
 /**
  * Le choix de relique après un changement d'EXEMPLAIRE optimisé, hors du
@@ -118,8 +117,7 @@ export function defaultRelicMainChoice(relic: RelicDetail | undefined): RelicMai
  * réimport du compte).
  *
  * - Autre espèce, ou compte réimporté : les critères repartent de zéro, le
- *   défaut se recalcule contre la relique du nouvel exemplaire, comme dans
- *   `pickSpecies`.
+ *   choix revient au défaut, comme dans `pickSpecies`.
  * - Même espèce : les critères sont conservés, sauf l'incohérence
  *   « Comme équipée » sur un exemplaire qui n'en porte pas :
  *   le mode `equipped` ne refuse pas la recherche, il la ferait tourner SANS
@@ -128,17 +126,19 @@ export function defaultRelicMainChoice(relic: RelicDetail | undefined): RelicMai
 export function relicMainChoiceApresChangementExemplaire(
   choixActuel: RelicMainChoice, relic: RelicDetail | undefined, conserverCriteres: boolean
 ): RelicMainChoice {
-  if (!conserverCriteres) return defaultRelicMainChoice(relic);
+  if (!conserverCriteres) return DEFAULT_RELIC_MAIN_CHOICE;
   return choixActuel === 'equipped' && !relic ? 'libre' : choixActuel;
 }
 
 // Une seule base complète pour l'import et le membre sans mémoire,
-// indépendante des critères affichés et résolue contre l'exemplaire réel.
-export function baseCompleteCriteres(exemplaire: Pick<GearSet, 'relic'> | undefined): CriteresOptimizer {
+// indépendante des critères affichés. L'exemplaire reste dans la signature :
+// les gestes qui la demandent le désignent, même si la base n'en dépend plus
+// depuis que la relique est « Libre » par défaut.
+export function baseCompleteCriteres(_exemplaire: Pick<GearSet, 'relic'> | undefined): CriteresOptimizer {
   return {
     comboSets: [], minStats: {}, maxStats: {}, excludeBase: true,
     optimiserArtefacts: true, artifactMainByKind: {},
-    relicMainChoice: defaultRelicMainChoice(exemplaire?.relic), relicUniqueChoice: 'libre',
+    relicMainChoice: DEFAULT_RELIC_MAIN_CHOICE, relicUniqueChoice: 'libre',
     lignesVerrouillees: [], sortsPrecision: [], mainStatsBySlot: {}, lockedRunes: {}, objective: 'efficience',
     damageSetup: copie(DEFAULT_DAMAGE_SETUP), sortBy: 'efficience',
     // Filtres d'affichage des résultats : décroissant, aucune borne.
