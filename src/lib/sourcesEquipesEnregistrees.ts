@@ -6,7 +6,9 @@
 // de siège, decks d'arène, listes de l'Optimizer) ; rien n'est écrit ici, le
 // geste rend une équipe neuve que l'écran ajoute.
 
-import { RTA_UNASSIGNED, type GearSet, type Monster, type RtaState, type SiegeTeam } from '../types';
+import { RTA_UNASSIGNED, type GearSet, type Monster, type Reco, type RtaState, type SiegeTeam } from '../types';
+import { importerDefensesSiegeOptimizer, importerOffenseSiegeOptimizer, importerPrepaRtaOptimizer, type ProducteurImportOptimizer } from './importEquipes';
+import { importerRecoOptimizer } from './importRecoOptimizer';
 import type { BoxItem } from './applyAccount';
 import type { Dictionnaire } from '../i18n/fr';
 import type { ContenuDeck, DeckArene, DeckEnregistreImporte, SousContenuDeck } from './importAccount';
@@ -14,7 +16,7 @@ import { resolveExclusionEntry, type ExclusionSelector, type ExclusionSourceData
 import type { StockageOptimizer } from './optimizerMemberStorage';
 import { creerDepuisEquipeOptimizer, disponibiliteRetourOptimizer } from './importEquipesEnregistrees';
 import {
-  CATEGORIES_EQUIPES, MONSTRES_MAX_EQUIPE, MONSTRES_MAX_PREPA, MONSTRES_MIN_EQUIPE, categorieDe, creerEquipe, normaliserPrepa, sousCategorieDe,
+  CATEGORIES_EQUIPES, MONSTRES_MAX_EQUIPE, MONSTRES_MAX_PREPA, MONSTRES_MIN_EQUIPE, categorieDe, creerEquipe, dupliquerEquipe, normaliserPrepa, sousCategorieDe,
   type EquipeEnregistree, type InventaireCompte, type MonstreEnregistre, type OngletEquipes,
   type ProvenanceEquipement, type TirerId,
 } from './equipesEnregistrees';
@@ -98,8 +100,15 @@ export interface ImportEquipeCree {
   ignores: number;
 }
 
+// D'où vient une source, l'onglet « Source » de la fenêtre d'import
+// (docs/02-app/transverse/feat-fenetre-import.md) : les données du compte
+// dans l'app (« Decks du jeu » : export, page Siège, prépa RTA), les équipes
+// enregistrées, les listes de l'Optimizer, les recommandations.
+export type SourceFenetre = 'jeu' | 'equipes' | 'optimizer' | 'recos';
+
 export interface SourceImportEquipe {
   cle: string;
+  source: SourceFenetre;
   groupe: string;
   libelle: string;
   monstres: Monster[];
@@ -108,6 +117,13 @@ export interface SourceImportEquipe {
   // Où va l'équipe créée ; absent : l'onglet ouvert (Optimizer), ou une
   // source sans contenu.
   rangement?: OngletEquipes;
+  // Les équipes qui se choisissent ensemble : une liste de l'Optimizer, un
+  // groupe de Mes équipes, les défenses de siège, une recommandation.
+  bloc?: { cle: string; nom: string };
+  // L'import vers l'Optimizer propre à la source (siège, prépa RTA,
+  // recommandation), celui qu'elle avait avant la fenêtre commune ; absent :
+  // l'équipe créée part comme un export de Mes équipes.
+  produireOptimizer?: ProducteurImportOptimizer;
   creer: (id: string, tirerUid: TirerId, maintenant: Date) => ImportEquipeCree | null;
 }
 
@@ -210,7 +226,14 @@ function sourcesDansLOrdreDeBase(
       const membres: MembreBrut[] = team.slots.flatMap((s, i) => (s.monsterId === null ? [] : [{
         com2usId: ctx.monsterById.get(s.monsterId)?.com2usId ?? null, unitId: s.unitId ?? null, equipement: s.gear ?? null, leader: i === 0 }]));
       const connus = monstresConnus(membres.map((m) => m.com2usId), ctx);
-      res.push({ cle: `${provenance}:${team.id}`, groupe, libelle: libelle(i + 1), monstres: connus, raison: raisonDeck(membres, connus, im), rangement: onglet,
+      // Les défenses de siège se jouent ensemble (un bloc) ; vers l'Optimizer,
+      // chaque deck garde l'import du siège, rattaché à la page Siège.
+      const defense = provenance === 'siege-defense';
+      const produireOptimizer: ProducteurImportOptimizer = defense
+        ? (data, tt) => ({ ...importerDefensesSiegeOptimizer({ ...data, siegeDefenseTeams: data.siegeDefenseTeams.filter((x) => x.id === team.id) }, tt), nomListe: libelle(i + 1) })
+        : (data, tt) => importerOffenseSiegeOptimizer(team.id, data, tt);
+      res.push({ cle: `${provenance}:${team.id}`, source: 'jeu', groupe, libelle: libelle(i + 1), monstres: connus, raison: raisonDeck(membres, connus, im), rangement: onglet,
+        ...(defense ? { bloc: { cle: 'siege-defense', nom: im.siegeDefenses } } : {}), produireOptimizer,
         creer: (id, tirerUid, maintenant) => equipeDepuisMembres(membres, onglet, libelle(i + 1), provenance, ctx, id, tirerUid, maintenant) });
     });
   siege(ctx.siegeDefenseTeams, im.siegeDefenses, 'guilde/defense-siege', 'siege-defense', im.defense);
@@ -219,14 +242,14 @@ function sourcesDansLOrdreDeBase(
   // Arène : lue dans l'export de compte.
   if (!ctx.compte || ctx.arenaDecks === null || ctx.arenaDecks.length === 0) {
     const raison = !ctx.compte ? im.sansCompte : ctx.arenaDecks === null ? im.reimporter : im.aucunDeck;
-    res.push({ cle: 'arene', groupe: im.arene, libelle: im.arene, monstres: [], raison, rangement: 'arene', creer: () => null });
+    res.push({ cle: 'arene', source: 'jeu', groupe: im.arene, libelle: im.arene, monstres: [], raison, rangement: 'arene', creer: () => null });
   } else for (const deck of ctx.arenaDecks) {
     const libelle = deck.cle === 'defense' ? im.areneDefense : deck.cle === 'defense-serveur' ? im.areneDefenseServeur : im.areneAttaque(deck.rang + 1);
     const onglet: OngletEquipes = deck.cle === 'attaque' ? 'arene/offense' : deck.cle === 'defense-serveur' ? 'arene/defense-serveur' : 'arene/defense';
     const provenance: ProvenanceEquipement = deck.cle === 'attaque' ? 'arene-attaque' : 'arene-defense';
     const membres: MembreBrut[] = deck.slots.map((s, i) => ({ com2usId: s.com2usId, unitId: s.unitId, equipement: s.gear, leader: i === 0 }));
     const connus = monstresConnus(membres.map((m) => m.com2usId), ctx);
-    res.push({ cle: `arene:${deck.cle}:${deck.rang}`, groupe: im.arene, libelle, monstres: connus, raison: raisonDeck(membres, connus, im), rangement: onglet,
+    res.push({ cle: `arene:${deck.cle}:${deck.rang}`, source: 'jeu', groupe: im.arene, libelle, monstres: connus, raison: raisonDeck(membres, connus, im), rangement: onglet,
       creer: (id, tirerUid, maintenant) => equipeDepuisMembres(membres, onglet, libelle, provenance, ctx, id, tirerUid, maintenant) });
   }
 
@@ -241,14 +264,15 @@ function sourcesDansLOrdreDeBase(
     const membres: MembreBrut[] = entrees.map((e) => ({ com2usId: ctx.monsterById.get(e.monsterId)?.com2usId ?? null,
       unitId: e.unitId ?? null, equipement: e.gear ?? null, leader: false }));
     const connus = monstresConnus(membres.map((m) => m.com2usId), ctx);
-    res.push({ cle: 'rta', groupe: im.decks, libelle: im.prepaRta, monstres: connus, raison: connus.length ? null : im.prepaVide, rangement: 'rta',
+    res.push({ cle: 'rta', source: 'jeu', groupe: im.decks, libelle: im.prepaRta, monstres: connus, raison: connus.length ? null : im.prepaVide, rangement: 'rta',
+      produireOptimizer: importerPrepaRtaOptimizer,
       creer: (id, tirerUid, maintenant) => equipeDepuisMembres(membres, 'rta', im.prepaRta, 'rta', ctx, id, tirerUid, maintenant, MONSTRES_MAX_PREPA) });
   }
 
   // Les autres decks enregistrés du jeu (labyrinthe, Cairos, ToA…), rangés
   // dans leur catégorie, groupés par catégorie dans l'ordre des onglets.
   if (!ctx.compte || ctx.decksEnregistres === null) {
-    res.push({ cle: 'decks', groupe: im.decks, libelle: im.decks, monstres: [], raison: !ctx.compte ? im.sansCompte : im.reimporter, creer: () => null });
+    res.push({ cle: 'decks', source: 'jeu', groupe: im.decks, libelle: im.decks, monstres: [], raison: !ctx.compte ? im.sansCompte : im.reimporter, creer: () => null });
   } else {
     const decks = ctx.decksEnregistres
       .filter((d) => !CONTENUS_DEJA_SOURCES.includes(d.contenu))
@@ -259,7 +283,7 @@ function sourcesDansLOrdreDeBase(
       const nom = libelleDeckEnregistre(d, t);
       const membres: MembreBrut[] = d.slots.flatMap((s, i) => (s ? [{ com2usId: s.com2usId, unitId: s.unitId ?? null, equipement: s.gear ?? null, leader: i === 0 }] : []));
       const connus = monstresConnus(membres.map((m) => m.com2usId), ctx);
-      res.push({ cle: `deck:${d.contenu}:${d.deckType}:${d.deckId}`, groupe: t.equipes.categories[categorieDe(onglet)], libelle: nom, monstres: connus,
+      res.push({ cle: `deck:${d.contenu}:${d.deckType}:${d.deckId}`, source: 'jeu', groupe: t.equipes.categories[categorieDe(onglet)], libelle: nom, monstres: connus,
         raison: raisonDeck(membres, connus, im), rangement: onglet,
         creer: (id, tirerUid, maintenant) => equipeDepuisMembres(membres, onglet, nom, 'deck', ctx, id, tirerUid, maintenant) });
     }
@@ -268,7 +292,7 @@ function sourcesDansLOrdreDeBase(
   // Optimizer : une équipe d'une liste.
   const st = optimizer?.stockage;
   if (!optimizer || !st || st.lists.length === 0) {
-    res.push({ cle: 'optimizer', groupe: im.optimizer, libelle: im.optimizer, monstres: [], raison: im.aucuneListe, creer: () => null });
+    res.push({ cle: 'optimizer', source: 'optimizer', groupe: im.optimizer, libelle: im.optimizer, monstres: [], raison: im.aucuneListe, creer: () => null });
     return res;
   }
   for (const liste of st.lists) {
@@ -295,11 +319,55 @@ function sourcesDansLOrdreDeBase(
     // une liste sans équipe n'est pas une source.
     equipes.forEach((e, i) => {
       const nom = im.equipeListe(liste.name, i + 1);
-      res.push({ cle: `optimizer:${liste.id}:${e.id}`, groupe: im.optimizer, libelle: nom, monstres: especes(e.members), raison: raisonOptimizer(e.id), creer: creerDepuis(e.id, nom) });
+      res.push({ cle: `optimizer:${liste.id}:${e.id}`, source: 'optimizer', groupe: liste.name, bloc: { cle: `liste:${liste.id}`, nom: liste.name }, libelle: nom, monstres: especes(e.members), raison: raisonOptimizer(e.id), creer: creerDepuis(e.id, nom) });
     });
   }
-  if (!res.some((x) => x.groupe === im.optimizer))
-    res.push({ cle: 'optimizer', groupe: im.optimizer, libelle: im.optimizer, monstres: [], raison: im.aucuneEquipe, creer: () => null });
+  if (!res.some((x) => x.source === 'optimizer'))
+    res.push({ cle: 'optimizer', source: 'optimizer', groupe: im.optimizer, libelle: im.optimizer, monstres: [], raison: im.aucuneEquipe, creer: () => null });
+  return res;
+}
+
+// Les recommandations : chaque deck une source, chaque recommandation un bloc.
+// Un deck recommandé n'a que des espèces, sans équipement ni exemplaire ; il
+// se range dans Combat de guilde (des decks de siège, leader au slot 0).
+export function sourcesRecommandations(recos: readonly Reco[], ctx: ContexteSourcesEquipes, t: Dictionnaire): SourceImportEquipe[] {
+  const im = t.equipes.imports;
+  const os = t.optimizer.section.import;
+  const res: SourceImportEquipe[] = [];
+  recos.forEach((reco, ri) => {
+    const nomReco = reco.name || os.recommandation(ri + 1);
+    reco.decks.forEach((deck, di) => {
+      const libelle = `${deck.name.trim() || os.deck(di + 1)}`;
+      const membres: MembreBrut[] = deck.slots.flatMap((s, i) => (s.com2usId === null ? [] : [{ com2usId: s.com2usId, unitId: null, equipement: null, leader: i === 0 }]));
+      const connus = monstresConnus(membres.map((m) => m.com2usId), ctx);
+      res.push({ cle: `reco:${reco.id}:${di}`, source: 'recos', groupe: nomReco, bloc: { cle: `reco:${reco.id}`, nom: nomReco }, libelle,
+        monstres: connus, raison: raisonDeck(membres, connus, im), rangement: 'guilde',
+        produireOptimizer: (data, tt) => importerRecoOptimizer(deck, data, tt),
+        creer: (id, tirerUid, maintenant) => equipeDepuisMembres(membres, 'guilde', libelle, 'aucun', ctx, id, tirerUid, maintenant) });
+    });
+  });
+  if (!res.length) res.push({ cle: 'recos', source: 'recos', groupe: im.recos, libelle: im.recos, monstres: [], raison: im.aucuneReco, creer: () => null });
+  return res;
+}
+
+// Les équipes enregistrées, sources de l'Optimizer et d'« Importer des
+// monstres » : une copie, sans lien ni groupe ; un groupe de Mes équipes est un
+// bloc. `exclure` : l'équipe ouverte, qui ne se copie pas en elle-même.
+export function sourcesMesEquipes(equipes: readonly EquipeEnregistree[], ctx: ContexteSourcesEquipes, t: Dictionnaire, exclure: string | null = null): SourceImportEquipe[] {
+  const im = t.equipes.imports;
+  const res: SourceImportEquipe[] = [];
+  for (const x of equipes) {
+    if (x.id === exclure) continue;
+    const monstres = x.monstres.map((m) => ctx.monsterByCom2us.get(m.com2usId)).filter((m): m is Monster => !!m);
+    res.push({ cle: `equipe:${x.id}`, source: 'equipes', groupe: t.equipes.categories[categorieDe(x.onglet)], libelle: x.nom, monstres,
+      raison: monstres.length ? null : im.moinsDeDeux, rangement: x.onglet,
+      ...(x.groupe ? { bloc: { cle: `groupe:${categorieDe(x.onglet)}:${x.groupe}`, nom: x.groupe } } : {}),
+      creer: (id, tirerUid, maintenant) => {
+        const { groupe: _g, lienOptimizer: _l, ...copie } = dupliquerEquipe(x, id, x.nom, tirerUid, maintenant);
+        return { equipe: copie, ignores: 0 };
+      } });
+  }
+  if (!res.length) res.push({ cle: 'equipes', source: 'equipes', groupe: im.mesEquipes, libelle: im.mesEquipes, monstres: [], raison: im.aucuneEquipeEnregistree, creer: () => null });
   return res;
 }
 

@@ -27,28 +27,30 @@ bureau, dans « Monstre & équipement » au téléphone, même lorsque
 « Gérer mes listes » est replié. Sans membre résolvable dans aucune
 source, le bouton est désactivé et son `title` en donne la raison.
 Sans compte, l’écran vide existant remplace l’Optimizer et ne montre pas ce bouton.
-La disponibilité est dérivée des producteurs, y compris pour une source
-non vide mais inutilisable. Les propositions sont mémorisées sur les données
-sources et partagées entre les deux formats ; un rendu sans changement de
-ces données ne rappelle pas les producteurs, flottant fermé compris.
+La disponibilité se lit sur les sources de la fenêtre (une source non vide
+mais inutilisable porte sa raison) ; aucun producteur ne tourne avant le
+geste d’import. Les sources sont mémorisées sur leurs données et partagées
+entre les deux formats.
 
-Le bouton ouvre un `FlottantAuto`, de la largeur de son ancre au téléphone,
-de 320 px au bureau : toutes les défenses de siège, chaque deck d’offense,
-toute la prépa RTA avec ses vitesses. Une source sans membre
-résolvable reste affichée désactivée avec sa raison. Les recommandations ajoutent
-un choix par deck. Elles utilisent `importerRecoOptimizer`,
-comme l’export du deck ; leurs disponibilités suivent aussi les modifications
-des recommandations. La liste reprend la grammaire de l’import de deck du
-Speed tuning : un en-tête par section, dans cet ordre (« Prépa RTA »,
-« Défenses de siège », « Offenses de siège », « Recommandations »), puis, sur chaque ligne, les
-icônes des monstres importés (cinq au plus, puis leur nombre restant) et un
-libellé court (« Toutes les défenses », « Offense 2 », « Tous les monstres »,
-nom de la recommandation et numéro du deck). Le nom complet de chaque choix,
-numéro, nom de la recommandation et composition compris, reste son nom
-accessible et son infobulle.
-Échap, la croix ou
-le clic extérieur ferment le flottant. Ses choix sont des contrôles de
-`src/ui/`, sans second contour autour des rangées.
+Le bouton ouvre la fenêtre d’import commune
+([feat-fenetre-import.md](../transverse/feat-fenetre-import.md)), en mode mixte, sur les
+sources « Mes équipes », « Decks du jeu » (siège, arène, decks enregistrés, prépa RTA) et
+« Recommandations », filtrée sur « Tous les contenus ». Les decks de siège créés dans la
+page Siège y restent des decks du jeu, comme avant. On y coche une ou plusieurs équipes,
+un bloc entier (un groupe de Mes équipes, toutes les défenses de siège, une
+recommandation) ou des monstres un à un. Deux actions, toujours (décision de
+l’utilisateur) :
+
+- « Ajouter à « liste active » » complète la liste active (désactivé, avec sa raison,
+  quand il n’y en a pas) ;
+- « Nouvelle liste » (action principale) crée une liste.
+
+Une source sans membre résolvable reste affichée désactivée avec sa raison. Les
+recommandations passent par `importerRecoOptimizer`, comme l’export du deck ; une équipe
+de Mes équipes par `preparerExportEquipeOptimizer`, sans lien de retour (le lien ne naît
+que de l’export depuis Mes équipes). Les producteurs ne tournent qu’au geste d’import ;
+la disponibilité du bouton se lit sur les sources.
+Échap ou la croix ferment la fenêtre.
 
 L’action appelle le producteur sur les sources courantes, puis le
 consommateur unique. Si aucun membre n’est accepté, elle rend le rapport
@@ -73,17 +75,17 @@ sur son premier membre. Ce choix restaure ses critères et efface les
 résultats, progression, page, arrêt manuel et détail ouvert, sans lancer
 de recherche. La réconciliation garde le propriétaire établi par le
 geste ; la prochaine saisie écrit vers ce premier membre seulement.
-Aucune liste existante ni aucun point de sauvegarde n’est modifié.
+Hors « Ajouter à la liste active » (ci-dessous, § Consommation), aucune liste existante n’est modifiée ; aucun point de sauvegarde ne l’est jamais.
 Après acceptation, l’action commune ouvre l’Optimizer par la route
 `#/outils/optimizer`. Un import vide, une collision ou une revérification
 en attente rendent leur rapport sans navigation.
 Le point d’entrée décide où rendre le rapport, indépendamment de la route.
-Seul le flottant « Importer une équipe » de l’Optimizer garde son rapport
+Seule la fenêtre « Importer une équipe » de l’Optimizer garde son rapport
 interne, sans seconde modale. Tous les autres points d’entrée (siège, RTA,
 recommandations, speed tuning en page et ses deux modales) reçoivent la modale
 portée par `App.tsx`, après acceptation comme après refus, même lorsque la
 modale du speed tuning est ouverte au-dessus de l’Optimizer. `App.tsx` prépare
-deux actions avec la même navigation : celle du flottant et celle qui ouvre
+deux actions avec la même navigation : celle de la fenêtre et celle qui ouvre
 le rapport global ; les parents relaient chacune à son point d’entrée.
 La préparation lit aussi les écritures des listes en attente dans le même
 geste React pour attribuer un identifiant libre. La publication ajoute seulement
@@ -92,28 +94,28 @@ mise à jour fonctionnelle de l’état courant. Une saisie mémorisée, une cr�
 une modification de liste ou une revérification précédant l’import dans le même
 geste reste conservée ; aucun état existant n’est republié depuis un ancien rendu.
 
-Le rapport se lit dans le flottant : nom de la liste,
+Le rapport se lit dans le pied de la fenêtre : nom de la liste,
 nombre de monstres et d’équipes, membres ignorés et raisons, messages du
-consommateur, dont les leads non appliqués. Un import refusé laisse le
-flottant ouvert sur son rapport. Un import réussi le replie, et le bouton « Importer une
-équipe » affiche « ✓ Liste créée » pendant deux secondes, aux deux formats,
-sans changer de largeur (les deux libellés occupent la même case) ; au téléphone, « Gérer mes listes » se déplie et s’illumine un
-instant avec la liste active. Le rapport complet se relit en rouvrant les
-sources. Il se conserve jusqu’au choix
+consommateur, dont les leads non appliqués. Un import refusé laisse la
+fenêtre ouverte sur son rapport. Un import réussi la ferme, et le bouton « Importer une
+équipe » affiche « ✓ Liste créée » (ou « ✓ Ajouté à la liste ») pendant deux secondes, aux deux formats,
+sans changer de largeur (les libellés occupent la même case) ; au téléphone, « Gérer mes listes » se déplie et s’illumine un
+instant avec la liste active. Le rapport complet se relit en rouvrant la
+fenêtre. Il se conserve jusqu’au choix
 suivant ou au démontage de l’écran. Un seul rapport appartient à l’écran :
 passer du bureau au téléphone le conserve et permet de le relire en rouvrant
-les sources. Si toutes les sources deviennent inutilisables, le bouton reste
+la fenêtre. Si toutes les sources deviennent inutilisables, le bouton reste
 désactivé avec sa raison : le rapport déjà ouvert reste lisible, mais une fois
 fermé il ne peut être rouvert avant le retour d’une source utilisable. Le rapport
 reste conservé pendant cette indisponibilité.
 Au bureau, le bouton termine la ligne de « Liste active » et « Contenu »,
-à leur hauteur, et ses sources s’ouvrent sur une largeur propre. Au
+à leur hauteur. Au
 téléphone, il suit la recherche et le monstre choisi, au-dessus de « Gérer
 mes listes », hors de son dépliement, sur toute la largeur ; un import qui
 crée une liste déplie « Gérer mes listes » pour la montrer. La ligne du monstre
 choisi garde sa hauteur lorsqu’elle est vide ; un nom long reste sur une
 ligne, tronqué avec son texte complet en `title`, pour que le premier import
-ne déplace pas l’ancre. L’ouverture des sources et le rapport sortent du flux.
+ne déplace pas l’ancre. La fenêtre et son rapport sortent du flux.
 
 ## F4 — Exporter depuis le siège
 
@@ -318,7 +320,7 @@ Demandé sur les deux pièces, **une seule présence sur la paire suffit** à
 l’import, et le rapport le précise : un build peut satisfaire le verrou
 importé tout en échouant à la recommandation, qui exige la présence par sorte.
 
-## Consommation dans une nouvelle liste
+## Consommation dans une nouvelle liste ou la liste active
 
 Le consommateur reçoit le stockage, la liste active, l’import, les sources
 actuelles du compte et un identifiant proposé par l’appelant. Il rend le
@@ -347,7 +349,16 @@ refusés n’ajoutent pas le membre. RTA et siège suivent leur sélecteur : une
 autre copie de la même espèce dans la même entrée reçoit les critères ;
 le remplacement de copie n’est pas détectable.
 
-Seule une nouvelle liste et ses membres, mémoires, équipes et contenu sont ajoutés.
+Avec une **cible** (`consommerImportOptimizer(…, cible)`, le geste « Ajouter à la
+liste active »), l’import complète cette liste au lieu d’en créer une : son nom, son
+contenu, ses membres et ses builds validés restent. Une cible disparue refuse l’import
+(« Import refusé : la liste visée n’existe plus. »). Un exemplaire déjà dans la liste est ignoré avec sa
+raison (« Déjà dans la liste. »), mais garde sa place dans l’équipe importée ; un build
+proposé dont une pièce est déjà réservée par un build validé de la liste n’est pas
+validé, comme entre deux builds de l’import. Le rapport porte alors `listeCompletee` au
+lieu de `listeCreee` ; `useOptimizerLists.completerParImport` publie les ajouts.
+
+Sans cible, seule une nouvelle liste et ses membres, mémoires, équipes et contenu sont ajoutés.
 Aucune liste existante, mémoire existante, équipe existante, valeur rejetée,
 contenu existant ou build validé n’est remplacé ni supprimé. Les producteurs du
 siège, de la prépa RTA et des recommandations ne valident aucun build : aucune rune

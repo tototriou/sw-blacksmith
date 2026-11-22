@@ -11,7 +11,7 @@ import EnTeteGroupe from './EnTeteGroupe';
 import ModaleGroupe from './ModaleGroupe';
 import DetailEquipe from './DetailEquipe';
 import AjoutMonstreModale from './AjoutMonstreModale';
-import ImportEquipeModale from './ImportEquipeModale';
+import FenetreImport, { type ActionFenetreImport } from '../../FenetreImport';
 import NouvelleEquipeModale from './NouvelleEquipeModale';
 import { useTraduction } from '../../../hooks/useLangue';
 import { useStickyState } from '../../../hooks/useStickyState';
@@ -26,7 +26,11 @@ import {
   creerDepuisEquipeOptimizer, disponibiliteRetourOptimizer, equipeLieeA, lienApresExportOptimizer, liensApresExportGroupe, preparerExportEquipeOptimizer, preparerExportGroupeOptimizer,
   preparerRetourOptimizer, type DemandeEquipeOptimizer, type ExportEquipeOptimizer, type ExportGroupeOptimizer, type RetourOptimizer,
 } from '../../../lib/importEquipesEnregistrees';
-import { sourcesImportEquipes, type ContexteSourcesEquipes, type SourceEquipement, type SourceImportEquipe } from '../../../lib/sourcesEquipesEnregistrees';
+import {
+  sourcesImportEquipes, sourcesMesEquipes, sourcesRecommandations, type ContexteSourcesEquipes, type SourceEquipement, type SourceImportEquipe,
+} from '../../../lib/sourcesEquipesEnregistrees';
+import { categorieDuGroupe, creerEquipesChoisies, monstresChoisis, type SelectionImport } from '../../../lib/fenetreImport';
+import type { Reco } from '../../../types';
 import {
   CATEGORIES_EQUIPES, SOUS_CATEGORIES_EQUIPES, ajouterMonstre, categorieDe, compteParCategorie, compteParOnglet, libelleRangement, libelleSousCategorie, sousCategorieDe,
   appliquerGroupe, conflitsGroupe, creerEquipe, deplacerVersOnglet, dupliquerEquipe, equipesDuGroupe, equipesFiltrees, gesteSurBrouillon, groupesDeLOnglet, nomEquipeLibre, rangement,
@@ -47,6 +51,8 @@ interface Props {
   inventaire: InventaireCompte | null;
   allMonsters: Monster[];
   optimizer: { stockage: StockageOptimizer; data: ExclusionSourceData } | null;
+  // Les recommandations de la page Siège, une source d'import.
+  recos?: readonly Reco[];
   // L'action commune d'import de l'Optimizer, qui l'ouvre après acceptation.
   onImporterOptimizer: ActionImportOptimizer | null;
   // La première équipe créée pose la question de conservation (App).
@@ -64,7 +70,7 @@ interface Rapport { titre: string; lignes: string[] }
 // La page « Mes équipes » (docs/02-app/compte/feat-equipes.md) : les onglets,
 // la recherche par monstre dans l'onglet ouvert, la grille de cartes, le
 // détail, les imports et le fichier.
-export default function EquipesSection({ api, ctx, inventaire, allMonsters, optimizer, onImporterOptimizer, onEquipeCreee, demandeOptimizer = null, onDemandeTraitee, menuOuvert, onFermerMenu }: Props) {
+export default function EquipesSection({ api, ctx, inventaire, allMonsters, optimizer, recos = [], onImporterOptimizer, onEquipeCreee, demandeOptimizer = null, onDemandeTraitee, menuOuvert, onFermerMenu }: Props) {
   const t = useTraduction();
   const e = t.equipes;
   const g = e.groupes;
@@ -100,6 +106,8 @@ export default function EquipesSection({ api, ctx, inventaire, allMonsters, opti
   const [nommage, setNommage] = useState(false);
   const [aRenommer, setARenommer] = useState<EquipeEnregistree | null>(null);
   const [imports, setImports] = useState(false);
+  // « Importer des monstres » dans l'équipe ouverte.
+  const [importMonstres, setImportMonstres] = useState(false);
   const [aSupprimer, setASupprimer] = useState<EquipeEnregistree | null>(null);
   // Le groupe formé (`null`) ou modifié depuis la grille.
   const [groupeEdite, setGroupeEdite] = useState<{ groupe: string | null } | null>(null);
@@ -180,15 +188,53 @@ export default function EquipesSection({ api, ctx, inventaire, allMonsters, opti
       ...(lu.nouveauxId ? [e.fichier.nouveauxId(lu.nouveauxId)] : []), ...(lu.ignorees ? [e.fichier.ignorees(lu.ignorees)] : [])] });
   };
 
-  const importer = (s: SourceImportEquipe) => {
+  // Les sources de la fenêtre d'import (docs/02-app/transverse/feat-fenetre-import.md) :
+  // « Importer » crée des équipes, « Importer des monstres » remplit l'équipe ouverte.
+  const sourcesImport = useMemo<SourceImportEquipe[]>(() => (imports || importMonstres ? [
+    ...(importMonstres ? sourcesMesEquipes(api.equipes, ctx, t, ouverte) : []),
+    ...sourcesImportEquipes(ctx, optimizer, inventaire ?? { runes: new Map(), artefacts: new Map(), reliques: new Map() }, onglet, t),
+    ...sourcesRecommandations(recos, ctx, t),
+  ] : []), [imports, importMonstres, api.equipes, ctx, optimizer, inventaire, onglet, t, recos, ouverte]);
+  const ongletDe = (cle: string) => sourcesImport.find((s) => s.cle === cle)?.rangement ?? onglet;
+
+  // Séparément, chaque équipe dans son rangement ; en groupe, en plus, un
+  // groupe neuf de leur onglet commun.
+  const importerEquipes = (selection: SelectionImport, enGroupe: boolean) => {
     setImports(false);
-    const cree = s.creer(tirerIdEquipe(), tirerUid, new Date());
-    if (!cree) return;
-    ajouterEquipes([cree.equipe]);
-    setOnglet(cree.equipe.onglet);
+    const maintenant = new Date();
+    const crees = creerEquipesChoisies(sourcesImport, selection.equipes, tirerIdEquipe, tirerUid, maintenant);
+    if (!crees.length) return;
+    const categorieGroupe = enGroupe ? categorieDuGroupe(crees.map((c) => c.cree.equipe)) : null;
+    const nomGroupe = categorieGroupe ? nomGroupeLibre(groupesDeLOnglet(api.equipes, categorieGroupe), g.nomParDefaut) : null;
+    const equipes = crees.map((c) => (nomGroupe ? { ...c.cree.equipe, groupe: nomGroupe } : c.cree.equipe));
+    ajouterEquipes(equipes);
+    setOnglet(equipes[0].onglet);
     setPage(0);
-    setRapport({ titre: e.imports.titre, lignes: [e.imports.cree(cree.equipe.nom, libelleRangement(cree.equipe.onglet, t)),
-      ...(cree.ignores ? [e.imports.ignores(cree.ignores)] : [])] });
+    const ignores = crees.reduce((n, c) => n + c.cree.ignores, 0);
+    setRapport({ titre: e.imports.titre, lignes: [
+      ...(nomGroupe && categorieGroupe ? [e.imports.creeesGroupe(nomGroupe, equipes.length, e.categories[categorieGroupe])]
+        : equipes.map((x) => e.imports.cree(x.nom, libelleRangement(x.onglet, t)))),
+      ...(ignores ? [e.imports.ignores(ignores)] : [])] });
+  };
+  const actionsImport = (selection: SelectionImport): ActionFenetreImport[] => {
+    const f = t.fenetreImport;
+    const n = selection.equipes.length;
+    if (n < 2) return [{ cle: 'importer', libelle: f.importer, principale: true, disabled: n === 0, onClick: (s) => importerEquipes(s, false) }];
+    const groupable = categorieDuGroupe(selection.equipes.map((c) => ({ onglet: ongletDe(c) }))) !== null;
+    return [
+      { cle: 'separement', libelle: f.importerSeparement, onClick: (s) => importerEquipes(s, false) },
+      { cle: 'groupe', libelle: f.importerGroupe, principale: true, disabled: !groupable, title: groupable ? undefined : f.groupeImpossible,
+        onClick: (s) => importerEquipes(s, true) },
+    ];
+  };
+  // Les monstres choisis, à la suite de ceux de l'équipe ouverte, dans la limite de son contenu.
+  const importerMonstres = (selection: SelectionImport) => {
+    setImportMonstres(false);
+    if (!equipeOuverte) return;
+    const monstres = monstresChoisis(sourcesImport, selection.monstres, tirerUid, new Date());
+    const ajoutes = Math.min(monstres.length, Math.max(0, monstresMax(equipeOuverte.onglet) - equipeOuverte.monstres.length));
+    changerEquipe(equipeOuverte.id, (eq, maintenant) => monstres.reduce((x, m) => ajouterMonstre(x, m, maintenant) ?? x, eq));
+    if (ajoutes) setRapport({ titre: e.imports.importerMonstres, lignes: [e.imports.monstresAjoutes(ajoutes, equipeOuverte.nom)] });
   };
 
   const exporterOptimizer = (x: EquipeEnregistree) => {
@@ -348,6 +394,7 @@ export default function EquipesSection({ api, ctx, inventaire, allMonsters, opti
   const detail = equipeOuverte && (
     <DetailEquipe equipe={equipeOuverte} brouillon={brouillon?.id === equipeOuverte.id} onChanger={(f) => changerEquipe(equipeOuverte.id, f)} monstreDe={monstreDe}
       box={ctx.box} inventaire={inventaire} groupes={groupesDeLOnglet(api.equipes, categorieDe(equipeOuverte.onglet))} onAjouter={() => setAjout(true)}
+      onImporterMonstres={() => setImportMonstres(true)}
       retour={<Bouton icone={<ChevronLeft size={14} />} libelle={e.detail.retour} onClick={fermerDetail} />}
       // Le brouillon n'est pas encore une équipe : rien à exporter, déplacer ni supprimer.
       menu={brouillon?.id !== equipeOuverte.id && <Menu libelle={e.carte.actions} elements={actions(equipeOuverte).filter((a) => a.cle !== 'ouvrir' && a.cle !== 'renommer')} />} />
@@ -491,8 +538,15 @@ export default function EquipesSection({ api, ctx, inventaire, allMonsters, opti
         <AjoutMonstreModale monstres={allMonsters} ctx={ctx} onChoisir={ajouterMonstreChoisi} onFermer={() => setAjout(false)} />
       )}
       {imports && (
-        <ImportEquipeModale sources={sourcesImportEquipes(ctx, optimizer, inventaire ?? { runes: new Map(), artefacts: new Map(), reliques: new Map() }, onglet, t)}
-          onChoisir={importer} onFermer={() => setImports(false)} />
+        <FenetreImport titre={t.fenetreImport.titre} sources={sourcesImport} ordre={['jeu', 'optimizer', 'recos']} ongletInitial={onglet}
+          mode="equipes" monstreParCom2us={ctx.monsterByCom2us} actions={actionsImport} onFermer={() => setImports(false)} />
+      )}
+      {importMonstres && equipeOuverte && (
+        <FenetreImport titre={t.fenetreImport.titreMonstres} sources={sourcesImport} ordre={['equipes', 'jeu', 'optimizer', 'recos']}
+          ongletInitial={null} mode="monstres" maxMonstres={Math.max(0, monstresMax(equipeOuverte.onglet) - equipeOuverte.monstres.length)}
+          monstreParCom2us={ctx.monsterByCom2us} onFermer={() => setImportMonstres(false)}
+          actions={(s) => [{ cle: 'ajouter', libelle: t.fenetreImport.ajouterMonstres(s.monstres.length), principale: true,
+            disabled: s.monstres.length === 0, onClick: importerMonstres }]} />
       )}
       {groupeEdite && (
         <ModaleGroupe equipes={regrouper(equipesOnglet)} groupe={groupeEdite.groupe}

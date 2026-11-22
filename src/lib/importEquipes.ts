@@ -54,6 +54,9 @@ export type ProducteurImportOptimizer = (data: ExclusionSourceData, t: Dictionna
 
 export interface RapportImportOptimizer {
   listeCreee: { id: string; name: string } | null;
+  // L'import ajouté à une liste existante (« Ajouter à la liste active ») ;
+  // absent ou `null` : rien n'y a été ajouté. Exclusif de `listeCreee`.
+  listeCompletee?: { id: string; name: string } | null;
   // Les équipes créées, dans l'ordre de la proposition (absent : aucune).
   equipesCreeesIds?: string[];
   // Pour chacune, sa place dans `proposition.equipes`.
@@ -161,20 +164,31 @@ export function identifiantListeImportOccupe(stockage: StockageOptimizer, id: st
   return identifiantsOccupes(stockage, 'listId').has(id);
 }
 
+// `cible` : l'id d'une liste existante où AJOUTER l'import (« Ajouter à la
+// liste active ») au lieu d'en créer une. Ses membres, son contenu et ses
+// builds validés restent ; un exemplaire déjà dans la liste est ignoré avec sa
+// raison, et un build proposé dont une pièce est déjà réservée dans la liste
+// n'est pas validé, comme entre deux builds de l'import.
 export function consommerImportOptimizer(
   stockage: StockageOptimizer, activeListId: string | null, proposition: ImportOptimizer,
-  data: ExclusionSourceData, idPropose: string, t: Dictionnaire
+  data: ExclusionSourceData, idPropose: string, t: Dictionnaire, cible?: string
 ): { stockage: StockageOptimizer; activeListId: string | null; rapport: RapportImportOptimizer } {
   const m = t.optimizer.importsEquipe;
   const rapport: RapportImportOptimizer = { listeCreee: null, membresImportes: 0, equipesCreees: 0,
     ignores: structuredClone(proposition.ignores), equipesNonCreees: [], messages: [...proposition.messages] };
-  if (!contenuListeValide(proposition.contenu)) {
+  const existante = cible === undefined ? null : stockage.lists.find(l => l.id === cible) ?? null;
+  if (cible !== undefined && !existante) {
+    rapport.messages.push(m.listeCibleAbsente);
+    return { stockage, activeListId, rapport };
+  }
+  if (!existante && !contenuListeValide(proposition.contenu)) {
     rapport.messages.push(m.contenuInconnu);
     return { stockage, activeListId, rapport };
   }
-  const listId = suffixer(idPropose.trim() || 'import', identifiantsOccupes(stockage, 'listId'));
-  const name = suffixer(proposition.nomListe.trim() || m.equipeImportee, new Set(stockage.lists.map(l => l.name)));
+  const listId = existante ? existante.id : suffixer(idPropose.trim() || 'import', identifiantsOccupes(stockage, 'listId'));
+  const name = existante ? existante.name : suffixer(proposition.nomListe.trim() || m.equipeImportee, new Set(stockage.lists.map(l => l.name)));
   const acceptes = new Map<string, MembreImportOptimizer>(), vus = new Set<string>();
+  const dejaDansLaListe = new Set(existante ? stockage.members.filter(x => x.listId === listId).map(x => exclusionSelectorKey(x.selector)) : []);
   let memories = stockage.memories;
   let identities = stockage.identities;
   for (const membre of proposition.membres) {
@@ -182,6 +196,7 @@ export function consommerImportOptimizer(
     const resolu = resolveExclusionEntry(membre.selector, data);
     let raison: string | undefined;
     if (vus.has(cle)) raison = m.doublon;
+    else if (dejaDansLaListe.has(cle)) raison = m.dejaDansLaListe;
     else if (!resolu) raison = m.exemplaireAbsent;
     else if (!identiteValide(membre.com2usId) || resolu.monster.com2usId !== membre.com2usId) raison = m.identiteDifferente;
     vus.add(cle);
@@ -198,12 +213,16 @@ export function consommerImportOptimizer(
     if (raison) rapport.ignores.push({ selector: { ...membre.selector }, libelle: membre.libelle, raison });
   }
   rapport.membresImportes = acceptes.size;
-  const nouveau: StockageOptimizer = { ...stockage, lists: [...stockage.lists, { id: listId, name }],
+  const nouveau: StockageOptimizer = { ...stockage, lists: existante ? stockage.lists : [...stockage.lists, { id: listId, name }],
     members: [...stockage.members, ...[...acceptes.values()].map(m => ({ listId, selector: { ...m.selector } }))],
-    memories, identities, teams: [...stockage.teams], listContents: new Map([...stockage.listContents, [listId, proposition.contenu]]) };
+    memories, identities, teams: [...stockage.teams],
+    listContents: existante ? stockage.listContents : new Map([...stockage.listContents, [listId, proposition.contenu]]) };
   const idsEquipes = identifiantsOccupes(stockage, 'id');
   proposition.equipes.forEach((equipe, i) => {
-    const members = equipe.members.filter(s => acceptes.has(exclusionSelectorKey(s)));
+    // Dans une liste existante, un membre déjà présent garde sa place dans
+    // l'équipe importée : seul son second ajout est ignoré.
+    const garde = (k: string) => acceptes.has(k) || dejaDansLaListe.has(k);
+    const members = equipe.members.filter(s => garde(exclusionSelectorKey(s)));
     const leader = equipe.leader && members.find(s => exclusionSelectorKey(s) === exclusionSelectorKey(equipe.leader!));
     const id = suffixer(`${listId}:equipe:${i + 1}`, idsEquipes);
     const creation = equipeApresFiltrageOptimizer(nouveau, { id, listId, members,
@@ -214,17 +233,18 @@ export function consommerImportOptimizer(
       rapport.messages.push(m.leadNonApplique(equipe.libelle, lead, creation.rapport.join(' ')));
     } else {
       const speedTune = equipe.speedTune && { plan: structuredClone(equipe.speedTune.plan),
-        membres: structuredClone(equipe.speedTune.membres.filter((l) => acceptes.has(exclusionSelectorKey(l.selector)))) };
+        membres: structuredClone(equipe.speedTune.membres.filter((l) => garde(exclusionSelectorKey(l.selector)))) };
       nouveau.teams.push(speedTune ? { ...creation.equipe, speedTune } : creation.equipe);
       idsEquipes.add(id);
       (rapport.equipesCreeesIds ??= []).push(id);
       (rapport.equipesCreeesIndices ??= []).push(i);
       rapport.equipesCreees++;
       for (const selector of members) {
-        const membre = acceptes.get(exclusionSelectorKey(selector))!;
-        const monstre = resolveExclusionEntry(selector, data)!.monster;
+        const monstre = resolveExclusionEntry(selector, data)?.monster;
+        if (!monstre) continue;
+        const libelle = acceptes.get(exclusionSelectorKey(selector))?.libelle ?? monstre.name;
         const effectif = leadEffectifMembreOptimizer(nouveau, listId, selector, monstre.element);
-        if (effectif.type === 'aucun') rapport.messages.push(m.leadInactif(equipe.libelle, membre.libelle, t.optimizer.motifsLead[effectif.motif]));
+        if (effectif.type === 'aucun') rapport.messages.push(m.leadInactif(equipe.libelle, libelle, t.optimizer.motifsLead[effectif.motif]));
       }
     }
   });
@@ -237,6 +257,12 @@ export function consommerImportOptimizer(
   // comme la validation sans recherche (feat-listes-et-reservation.md).
   if (proposition.buildsAValider?.length) {
     const runesPrises = new Map<number, string>(), artefactsPris = new Map<number, string>();
+    // Dans une liste existante, ses builds validés réservent déjà leurs pièces.
+    for (const v of existante ? stockage.validated.filter(x => x.listId === listId) : []) {
+      const porteur = resolveExclusionEntry(v.selector, data)?.monster.name ?? m.buildDeLaListe;
+      for (const id of v.runeIds) if (id > 0) runesPrises.set(id, porteur);
+      for (const id of v.artifactIds ?? []) if (id > 0) artefactsPris.set(id, porteur);
+    }
     const valides: ValidatedBuild[] = [];
     for (const b of proposition.buildsAValider) {
       if (!acceptes.has(exclusionSelectorKey(b.selector))) continue;
@@ -255,6 +281,7 @@ export function consommerImportOptimizer(
     nouveau.validated = [...stockage.validated, ...valides];
     rapport.buildsValides = valides.length;
   }
-  rapport.listeCreee = { id: listId, name };
+  if (existante) rapport.listeCompletee = { id: listId, name };
+  else rapport.listeCreee = { id: listId, name };
   return { stockage: nouveau, activeListId: listId, rapport };
 }

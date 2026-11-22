@@ -181,7 +181,8 @@ sont les deux racines ; dessous : `RunesList`, `RunesSummary` + `BuildsRapides`,
 `CurveChart` + `curveColors`, `RunesCompare`, `RunesOptim`, `SetFilter`, `SlotFilter`,
 `SubSearchBar` + `SubSearchDialog`, `Pager`, `SummaryBits`, `ArtifactsList`, `ArtifactsSummary`,
 `ArtifactsTop` ; « Mes équipes » dans `src/components/account/equipes/` : `EquipesSection` (racine), `CarteEquipe`,
-`DetailEquipe`, `AjoutMonstreModale`, `ImportEquipeModale`.
+`DetailEquipe`, `AjoutMonstreModale` ; la fenêtre « Importer » est `src/components/FenetreImport.tsx`,
+partagée avec l'Optimizer (modèle pur `src/lib/fenetreImport.ts`).
 Lib `accountStore` (IndexedDB), `accountViews`, `runeSort`, `runeOptim`, `runeCourbes`, `buildsRapides`,
 `artifactsTop`, `monsterSort`, `crafts` ; « Mes équipes » : `equipesEnregistrees` (modèle pur),
 `equipesStore` (sa base IndexedDB), `equipesFichier`, `sourcesEquipesEnregistrees` (équipement d'un
@@ -271,8 +272,8 @@ d'une liste depuis sa fenêtre (`creerListeDepuisDialogue`) restent calculés pa
 Autour de la liste, dans le même dossier : `OptimizerBackupBar` (point de sauvegarde des listes :
 sauvegarder, reprendre), `OptimizerCreateListDialog` (création d'une liste et choix de son contenu
 Guilde / Donjon / Arène / Autre), `OptimizerEquipeDialog` (édition des membres et du leader d'une équipe
-de la liste), `OptimizerImportButton` (« Importer une équipe » depuis le siège, la prépa RTA, les
-recommandations ou le speed tuning), `OptimizerImportRapport` (modale du rapport d'un import,
+de la liste), `OptimizerImportButton` (« Importer une équipe » : la fenêtre d'import commune, sur Mes équipes,
+les decks du jeu et les recommandations, vers la liste active ou une nouvelle liste), `OptimizerImportRapport` (modale du rapport d'un import,
 montée par `App`), `OptimizerLeadInactif` (l'icône ⚠ qui dit pourquoi le lead d'un membre ne
 s'applique pas).
 
@@ -375,7 +376,7 @@ Fonctions **pures**, testables sans rendu. C'est ici que va toute logique, jamai
 | Artéfacts | `artifacts.ts` |
 | Dégâts réels | `damage.ts` ([degats-reels/](../02-app/degats-reels/README.md)) |
 | Import de compte | `importAccount.ts` (parse SWEX, decks enregistrés compris), `journalSwex.ts` (journal complet de SWEX : la box de l'arène dimensionnelle), `compteDirect.ts` (« Mon compte » en direct : le fichier live du plugin SWEX converti objet par objet par les fonctions de l'import), `applyAccount.ts` (→ états), `accountStore.ts` (IndexedDB), `accountViews.ts` |
-| Mes équipes | `equipesEnregistrees.ts` (modèle, comparaison au compte, opérations), `equipesStore.ts` (IndexedDB `swblacksmith-equipes`), `equipesFichier.ts` (format `swblacksmith/equipes`), `sourcesEquipesEnregistrees.ts` (sources d'équipement et d'import), `importEquipesEnregistrees.ts` (export vers l'Optimizer et mise à jour au retour) |
+| Mes équipes | `equipesEnregistrees.ts` (modèle, comparaison au compte, opérations), `equipesStore.ts` (IndexedDB `swblacksmith-equipes`), `equipesFichier.ts` (format `swblacksmith/equipes`), `sourcesEquipesEnregistrees.ts` (sources d'équipement et d'import), `importEquipesEnregistrees.ts` (export vers l'Optimizer et mise à jour au retour), `fenetreImport.ts` (filtres, sélection et produits de la fenêtre d'import commune) |
 | Monstres | `monsterForms.ts`, `monsterSkills.ts`, `monsterSort.ts`, `collabPairs.ts` |
 | Siège / statistiques | `siegeStatistiques.ts` (les sièges tirés des fichiers de guilde du plugin SWEX : combats, défenses, résultat, saison, bilan par joueur) |
 | Siège / recos | `recoMatch.ts`, `recoSearch.ts`, `recoShare.ts`, `recoFromSiege.ts`, `recoDefenses.ts`, `recoFusion.ts` (import qui fusionne dans la recommandation qu'il complète), `ownedBuilds.ts`, `annulerEdition.ts` (« Annuler les modifications » d'une reco ou d'un deck en édition), `reinsererA.ts` (« Annuler » une suppression : l'élément revient à sa place, équipes et recos) |

@@ -1,4 +1,4 @@
-import { lazy, Suspense, type ReactNode } from 'react';
+import { lazy, Suspense, type ComponentProps, type ReactNode } from 'react';
 import { Wrench } from 'lucide-react';
 import { ArtifactDetail, RelicDetail, RuneDetail, Monster, RtaEntry, SiegeTeam, Reco } from '../types';
 import { BoxItem } from '../lib/applyAccount';
@@ -39,6 +39,8 @@ interface Props {
   optimizer: OptimizerState;
   onImporterEquipe: OptimizerState['importerEquipe'];
   onExporterEquipe?: OptimizerState['importerEquipe'];
+  // Les sources de la fenêtre d'import de l'Optimizer que la page ne lit pas (OptimizerSection).
+  importCommun?: ComponentProps<typeof OptimizerSection>['importCommun'];
   allMonsters: Monster[];
   rtaEntries: Record<string, RtaEntry>;
   siegeDefenseTeams: SiegeTeam[];
@@ -65,7 +67,7 @@ interface Props {
 // Shell fin, miroir d'AccountPage.tsx : un seul outil aujourd'hui
 // (Optimizer), structuré pour en accueillir d'autres sans retoucher la nav
 // ni ce fichier (ajouter une branche = ajouter un outil).
-export default function OutilsPage({ recommandations, sub, box, runes, artifacts, relics, relicUsageById, loadState, hydrating, optimizer, onImporterEquipe, onExporterEquipe, allMonsters, rtaEntries, siegeDefenseTeams, siegeOffenseTeams, lists, accountName, menuOuvert, onFermerMenu, onOuvrirMenu, onMonstreHorsVue, onEnregistrerEquipe }: Props) {
+export default function OutilsPage({ recommandations, sub, box, runes, artifacts, relics, relicUsageById, loadState, hydrating, optimizer, onImporterEquipe, onExporterEquipe, importCommun, allMonsters, rtaEntries, siegeDefenseTeams, siegeOffenseTeams, lists, accountName, menuOuvert, onFermerMenu, onOuvrirMenu, onMonstreHorsVue, onEnregistrerEquipe }: Props) {
   // Speed tuning ne dépend PAS d'un compte importé : on ajoute n'importe quel
   // monstre du bestiaire et on saisit sa vitesse de runes à la main. Il passe
   // donc AVANT la garde « aucune donnée de compte » (propre à l'Optimizer).
@@ -131,6 +133,7 @@ export default function OutilsPage({ recommandations, sub, box, runes, artifacts
           relicUsageById={relicUsageById}
           optimizer={optimizer}
           onImporterEquipe={onImporterEquipe}
+          importCommun={importCommun}
           allMonsters={allMonsters}
           rtaEntries={rtaEntries}
           siegeDefenseTeams={siegeDefenseTeams}

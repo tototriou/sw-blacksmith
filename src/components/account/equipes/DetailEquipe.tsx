@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { Crown, Plus, RefreshCw, X } from 'lucide-react';
+import { Crown, FolderInput, Plus, RefreshCw, X } from 'lucide-react';
 import type { Monster } from '../../../types';
 import type { BoxItem } from '../../../lib/applyAccount';
 import { Bouton, BoutonIcone, Champ, ConfirmDialog, Selecteur } from '../../../ui';
@@ -28,6 +28,8 @@ interface Props {
   // Les groupes déjà formés dans l'onglet de l'équipe.
   groupes?: readonly string[];
   onAjouter: () => void;
+  // « Importer des monstres » : la fenêtre d'import, en monstres seuls.
+  onImporterMonstres?: () => void;
   // L'en-tête de la page : le retour à la grille et le menu de l'équipe
   // (`null` pour un brouillon), sur la ligne du nom et de la note au bureau.
   retour: ReactNode;
@@ -77,7 +79,7 @@ function SelecteurGroupe({ valeur, groupes, onChange }: { valeur: string | undef
 
 // Le détail d'une équipe, dans la page à la place de la grille : son nom, sa
 // note et une ligne par monstre. Le même contenu aux deux formats.
-export default function DetailEquipe({ equipe, brouillon = false, onChanger, monstreDe, box, inventaire, groupes = [], onAjouter, retour, menu }: Props) {
+export default function DetailEquipe({ equipe, brouillon = false, onChanger, monstreDe, box, inventaire, groupes = [], onAjouter, onImporterMonstres, retour, menu }: Props) {
   const t = useTraduction();
   const d = t.equipes.detail;
   const tt = t.equipes.taille;
@@ -148,9 +150,13 @@ export default function DetailEquipe({ equipe, brouillon = false, onChanger, mon
           ))}
         </div>
       </div>
-      <div>
+      <div className="flex flex-wrap gap-2">
         <Bouton trait="pointille" icone={<Plus size={14} />} libelle={d.ajouter} disabled={plein}
           title={plein ? raisonPlein : undefined} onClick={onAjouter} />
+        {onImporterMonstres && (
+          <Bouton trait="pointille" icone={<FolderInput size={14} />} libelle={t.equipes.imports.importerMonstres} disabled={plein}
+            title={plein ? raisonPlein : undefined} onClick={onImporterMonstres} />
+        )}
       </div>
     </div>
   );

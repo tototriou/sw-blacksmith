@@ -366,22 +366,28 @@ const RECO_CONTRES: Cible[] = [
 
 // « Mes équipes » remplie par ses propres imports : la défense de siège 1 du
 // compte du banc (deux monstres).
-const EQ_SOURCES: Cible = { role: 'dialog', nom: 'Importer une équipe' };
-// La source se repère dans la modale des sources (le panneau d'actions qui
-// se referme est encore un dialogue visible) ; l'import ouvre l'onglet de
-// l'équipe et dit ce qu'il a créé, dans une modale qu'on ferme.
-const EQ_SOURCE_DEFENSE: Etape = { cliquer: repere('[role="dialog"]:has-text("Défenses de siège") [aria-label="Défense 1"]') };
+const EQ_SOURCES: Cible = { role: 'dialog', nom: 'Importer' };
+// La fenêtre d'import s'ouvre sur l'onglet ouvert (Arène) : « Tous les
+// contenus », puis la case de la défense et « Importer ». L'import ouvre
+// l'onglet de l'équipe et dit ce qu'il a créé, dans une modale qu'on ferme.
+const EQ_TOUS_CONTENUS: Etape[] = [
+  { cliquer: { role: 'combobox', nom: 'Contenu' } },
+  { cliquer: repere('[role="listbox"][aria-label="Contenu"] [role="option"]:has-text("Tous les contenus")') },
+];
+const EQ_IMPORTER: Etape = { cliquer: bouton('Importer') };
+const EQ_SOURCE_DEFENSE: Etape[] = [...EQ_TOUS_CONTENUS, { cliquer: repere('[role="dialog"] label:has-text("Défense 1")') }, EQ_IMPORTER];
 const EQ_FERMER_RAPPORT: Etape = { cliquer: repere('[role="dialog"]:has-text("créée dans") button:has-text("Fermer")') };
 const EQ_IMPORT: Record<Format, Etape[]> = {
-  telephone: [{ cliquer: bouton('Importer une équipe') }, EQ_SOURCE_DEFENSE, EQ_FERMER_RAPPORT],
-  ordinateur: [{ cliquer: bouton('Importer une équipe') }, EQ_SOURCE_DEFENSE, EQ_FERMER_RAPPORT],
+  telephone: [{ cliquer: bouton('Importer une équipe') }, ...EQ_SOURCE_DEFENSE, EQ_FERMER_RAPPORT],
+  ordinateur: [{ cliquer: bouton('Importer une équipe') }, ...EQ_SOURCE_DEFENSE, EQ_FERMER_RAPPORT],
 };
 const EQ_CARTE: Cible = { role: 'button', nom: 'Ouvrir Défense 1' };
 // L'onglet RTA, puis la prépa de la page RTA importée en une prépa enregistrée.
-const EQ_PREPA_SOURCE: Etape = { cliquer: repere('[role="dialog"]:has-text("Decks du jeu") [aria-label="Prépa de la page RTA"]') };
+// Ouverte sur l'onglet RTA, la fenêtre montre la prépa parmi les decks du jeu.
+const EQ_PREPA_SOURCE: Etape[] = [{ cliquer: repere('[role="dialog"] label:has-text("Prépa de la page RTA")') }, EQ_IMPORTER];
 const EQ_PREPA: Record<Format, Etape[]> = {
-  telephone: [{ cliquer: repere('[role="tab"]:has-text("RTA")') }, { cliquer: bouton('Importer une équipe') }, EQ_PREPA_SOURCE, EQ_FERMER_RAPPORT],
-  ordinateur: [{ cliquer: repere('[role="tab"]:has-text("RTA")') }, { cliquer: bouton('Importer une équipe') }, EQ_PREPA_SOURCE, EQ_FERMER_RAPPORT],
+  telephone: [{ cliquer: repere('[role="tab"]:has-text("RTA")') }, { cliquer: bouton('Importer une équipe') }, ...EQ_PREPA_SOURCE, EQ_FERMER_RAPPORT],
+  ordinateur: [{ cliquer: repere('[role="tab"]:has-text("RTA")') }, { cliquer: bouton('Importer une équipe') }, ...EQ_PREPA_SOURCE, EQ_FERMER_RAPPORT],
 };
 // L'équipe envoyée à l'Optimizer : la bande de son équipe de liste porte le
 // bouton de Mes équipes, entre son numéro et le speed tune, grisé tant que
@@ -468,6 +474,13 @@ export const ECRANS: Ecran[] = [
         tailles: ['telephone', 'ordinateur', 'bureau-portable', 'bureau-2560', 'conteneur-752', 'conteneur-1100'],
         preparation: { telephone: EQ_LIEE.telephone, ordinateur: EQ_LIEE.ordinateur },
         atteint: [EQ_A_VALIDER],
+      },
+      {
+        id: 'import',
+        libelle: 'fenêtre d’import ouverte : Mes équipes, decks du jeu, recommandations ; liste active ou nouvelle liste',
+        tailles: ['telephone', 'ordinateur'],
+        preparation: { telephone: [{ cliquer: bouton('Importer une équipe') }], ordinateur: [{ cliquer: bouton('Importer une équipe') }] },
+        atteint: [{ role: 'dialog', nom: 'Importer' }, bouton('Nouvelle liste')],
       },
       {
         id: 'reglages-avances',
@@ -716,7 +729,7 @@ export const ECRANS: Ecran[] = [
       DEFAUT,
       {
         id: 'imports',
-        libelle: 'sources d’import ouvertes',
+        libelle: 'fenêtre d’import ouverte, sur l’onglet ouvert',
         preparation: {
           telephone: [{ cliquer: bouton('Importer une équipe') }],
           ordinateur: [{ cliquer: bouton('Importer une équipe') }],
@@ -752,6 +765,24 @@ export const ECRANS: Ecran[] = [
         libelle: 'onglet RTA : la prépa de la page RTA enregistrée',
         preparation: EQ_PREPA,
         atteint: [repere('article[aria-label="Prépa de la page RTA"]'), bouton('Nouvelle prépa')],
+      },
+      {
+        id: 'import-groupe',
+        libelle: 'fenêtre d’import : une défense et une offense de siège cochées, « Importer en groupe » et ce qu’elles portent à la fois',
+        preparation: {
+          telephone: [{ cliquer: bouton('Importer une équipe') }, ...EQ_TOUS_CONTENUS, { cliquer: repere('[role="dialog"] label:has-text("Défense 1")') }, { cliquer: repere('[role="dialog"] label:has-text("Offense 1")') }],
+          ordinateur: [{ cliquer: bouton('Importer une équipe') }, ...EQ_TOUS_CONTENUS, { cliquer: repere('[role="dialog"] label:has-text("Défense 1")') }, { cliquer: repere('[role="dialog"] label:has-text("Offense 1")') }],
+        },
+        atteint: [bouton('Importer en groupe'), bouton('Importer séparément')],
+      },
+      {
+        id: 'import-monstres',
+        libelle: '« Importer des monstres » depuis une équipe ouverte : les portraits se choisissent',
+        preparation: {
+          telephone: [...EQ_IMPORT.telephone, { cliquer: EQ_CARTE }, { cliquer: bouton('Importer des monstres') }],
+          ordinateur: [...EQ_IMPORT.ordinateur, { cliquer: EQ_CARTE }, { cliquer: bouton('Importer des monstres') }],
+        },
+        atteint: [{ role: 'dialog', nom: 'Importer des monstres' }],
       },
       {
         id: 'nouveau-groupe',

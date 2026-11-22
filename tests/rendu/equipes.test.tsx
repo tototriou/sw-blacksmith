@@ -7,7 +7,7 @@ import EquipesSection, { ConfirmationCreation } from '../../src/components/accou
 import NouvelleEquipeModale from '../../src/components/account/equipes/NouvelleEquipeModale';
 import DetailEquipe from '../../src/components/account/equipes/DetailEquipe';
 import ModaleGroupe from '../../src/components/account/equipes/ModaleGroupe';
-import ImportEquipeModale from '../../src/components/account/equipes/ImportEquipeModale';
+import FenetreImport from '../../src/components/FenetreImport';
 import { ChoixEquipement } from '../../src/components/account/equipes/AjoutMonstreModale';
 import type { EquipesEnregistreesApi } from '../../src/hooks/useEquipesEnregistrees';
 import { creerEquipe, indexerInventaire, type EquipeEnregistree } from '../../src/lib/equipesEnregistrees';
@@ -149,13 +149,31 @@ export function testRenduEquipesDetail() {
 }
 
 export function testRenduEquipesImports() {
-  titre('rendu · Mes équipes — sources d’import');
-  const sources = sourcesImportEquipes({ ...ctx(), arenaDecks: null }, null, INVENTAIRE, 'arene/offense', fr);
-  const html = auTelephone(() => rendre(<ImportEquipeModale sources={sources} onChoisir={() => {}} onFermer={() => {}} />));
+  titre('rendu · fenêtre d’import — Mes équipes');
+  const f = fr.fenetreImport;
+  const deck = (id: string) => ({ id, lead: 0, tickAlertDismissed: false, slots: [1, 2].map((m) => ({ monsterId: String(m), runeSpeed: 120, tick: 0 })) });
+  const sources = sourcesImportEquipes({ ...ctx(), arenaDecks: null, siegeDefenseTeams: [deck('d1'), deck('d2')] }, null, INVENTAIRE, 'guilde', fr);
+  const fenetre = (mode: 'equipes' | 'monstres' | 'mixte', onglet: 'guilde' | 'arene' | null) => auTelephone(() => rendre(
+    <FenetreImport titre={f.titre} sources={sources} ordre={['jeu', 'optimizer', 'recos']} ongletInitial={onglet} mode={mode} maxMonstres={2}
+      monstreParCom2us={ctx().monsterByCom2us} onFermer={() => {}}
+      actions={() => [{ cle: 'importer', libelle: f.importer, principale: true, disabled: true, onClick: () => {} }]} />));
+  const html = fenetre('equipes', 'guilde');
   const t = texteVisible(html);
-  ok(t.includes(e.imports.titre), 'le titre de la modale');
-  egal(bouton(html, e.imports.arene)?.desactive, true, 'une source sans contenu est désactivée');
-  ok(t.includes(e.imports.reimporter), 'avec sa raison');
+  ok(t.includes(f.titre), 'le titre de la fenêtre');
+  ok([f.sources.jeu, f.sources.optimizer, f.sources.recos].every((x) => bouton(html, x)), 'les sources de Mes équipes, dans leur ordre');
+  ok(valeurs(html, 'value').includes('guilde'), 'le contenu de l’onglet ouvert, choisi d’avance');
+  ok(t.includes('Défense 1') && t.includes('Défense 2'), 'les équipes du contenu');
+  ok(html.includes(`aria-label="${f.toutLeBloc(e.imports.siegeDefenses)}"`), 'les défenses de siège, un bloc qui se coche d’un geste');
+  ok(!t.includes(e.imports.reimporter), 'les autres contenus sont filtrés (l’arène et sa raison)');
+  egal(bouton(html, f.importer)?.desactive, true, '« Importer » attend un choix');
+  ok(t.includes(f.aide.equipes), 'le pied dit quoi faire');
+  ok(!html.includes(`aria-label="${f.monstre('Monstre 1', 'Défense 1')}"`), 'en équipes, les portraits ne se choisissent pas');
+  const tous = fenetre('equipes', null);
+  ok(texteVisible(tous).includes(e.imports.reimporter), 'tous les contenus : une source vide dit sa raison');
+  const monstres = fenetre('monstres', 'guilde');
+  ok(bouton(monstres, f.monstre('Monstre 1', 'Défense 1'))?.desactive === false, 'en monstres, chaque portrait se choisit');
+  ok(texteVisible(monstres).includes(f.aide.monstres(2)), 'et la place libre est dite');
+  ok(!monstres.includes(`aria-label="${f.toutLeBloc(e.imports.siegeDefenses)}"`), 'sans case d’équipe ni de bloc');
 }
 
 export function testRenduEquipesNouvelleNommee() {
