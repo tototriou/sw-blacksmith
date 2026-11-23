@@ -18,7 +18,7 @@ import { app, BrowserWindow, ipcMain, net, safeStorage, shell } from 'electron';
 import { readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
-  adresseConnexion, adresseInvitation, chiffrementSur, codeColle, corpsAutorise, ENTETE_SESSION, lireFichierSession, nouveauSecret, routeAutorisee,
+  adresseConnexion, adresseInvitation, chiffrementSur, codeColle, corpsAutorise, corpsTropGros, ENTETE_SESSION, lireFichierSession, nouveauSecret, routeAutorisee,
 } from './discordPur';
 
 export type IssueCode = 'connecte' | 'invalide' | 'sans-demande' | 'indisponible';
@@ -134,6 +134,7 @@ export function brancherDiscord(fenetre: BrowserWindow, options: OptionsDiscord)
   ipcMain.handle('bureau:discord-appeler', async (e, cheminBrut: unknown, methode: unknown, corpsBrut: unknown) => {
     if (!deLaPage(e)) return null;
     const route = routeAutorisee(cheminBrut, methode);
+    if (route && corpsTropGros(route, corpsBrut)) return { statut: 413, corps: '{"erreur":"trop-gros"}' };
     const corps = route ? corpsAutorise(route, corpsBrut) : null;
     if (!route || corps === null) return { statut: 400, corps: '{"erreur":"route"}' };
     await pret;

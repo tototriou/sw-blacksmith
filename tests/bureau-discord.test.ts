@@ -10,12 +10,13 @@
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import {
-  adresseConnexion, adresseInvitation, adresseService, chiffrementSur, codeColle, corpsAutorise, lireFichierSession, nouveauSecret, routeAutorisee, SERVICE_PAR_DEFAUT,
+  adresseConnexion, adresseInvitation, adresseService, chiffrementSur, codeColle, corpsAutorise, CORPS_PUBLICATION_MAX, corpsTropGros, lireFichierSession, nouveauSecret, routeAutorisee, SERVICE_PAR_DEFAUT,
 } from '../bureau/discordPur';
 import { ENTETE_SESSION, FORME_DEFI } from '../api/_source/service/session';
+import { TAILLE_MAX } from '../api/_source/service/recoSalon';
 import { ENTETE_SESSION as ENTETE_BUREAU } from '../bureau/discordPur';
 import { recupererParLeBureau, type PontDiscord } from '../src/lib/bureau';
-import { lireTout } from '../src/lib/discordClient';
+import { lireTout, publier } from '../src/lib/discordClient';
 import { egal, ok, titre } from './outils';
 
 const sansCommentaires = (source: string) =>
@@ -43,8 +44,17 @@ export default async function testBureauDiscord() {
     ['session', 'sources', 'tout', 'salon?id=123', null, null, null], 'GET : seules les lectures du service');
   egal(['publier', 'deconnexion', 'tout'].map((c) => routeAutorisee(c, 'POST')), ['publier', 'deconnexion', null], 'POST : publier et se déconnecter seulement');
   egal(routeAutorisee('tout', 'DELETE'), null, 'aucune autre méthode');
-  egal([corpsAutorise('publier', '{}'), corpsAutorise('publier', 'x'.repeat(600 * 1024)), corpsAutorise('publier', undefined), corpsAutorise('tout', undefined), corpsAutorise('tout', 'x')],
-    ['{}', null, null, undefined, null], 'un corps pour publier seulement, borné');
+  egal([corpsAutorise('publier', '{}'), corpsAutorise('publier', undefined), corpsAutorise('tout', undefined), corpsAutorise('tout', 'x')],
+    ['{}', null, undefined, null], 'un corps pour publier seulement');
+  // ⚠️ La borne est celle du service (routeur.ts : 413 au-delà de TAILLE_MAX * 2
+  // caractères) : plus basse, l'app refusait une recommandation tirée de
+  // vidéos (1,3 Mo compacte) que le site publie.
+  egal(CORPS_PUBLICATION_MAX, TAILLE_MAX * 2, 'le corps d\'une publication borné comme par le service');
+  const grosse = 'x'.repeat(2 * 1024 * 1024);
+  egal([corpsAutorise('publier', grosse) === grosse, corpsTropGros('publier', grosse)], [true, false], 'une recommandation de 2 Mo passe');
+  const tropGrosse = 'x'.repeat(CORPS_PUBLICATION_MAX + 1);
+  egal([corpsAutorise('publier', tropGrosse), corpsTropGros('publier', tropGrosse), corpsTropGros('publier', 'x'.repeat(CORPS_PUBLICATION_MAX)), corpsTropGros('tout', tropGrosse)],
+    [null, true, false, false], 'au-delà de la borne : refusée pour sa taille, la publication seulement');
 
   egal([chiffrementSur(true, 'win32', null), chiffrementSur(false, 'win32', null), chiffrementSur(true, 'linux', 'gnome_libsecret'),
     chiffrementSur(true, 'linux', 'basic_text'), chiffrementSur(true, 'linux', 'unknown')],
@@ -63,6 +73,7 @@ export default async function testBureauDiscord() {
   egal(appels[0], ['tout', 'GET', undefined], 'le chemin de la route, sans l\'adresse du service');
   egal(await lireTout(recupererParLeBureau(pont(401, '{"connecte":false}'))), { ok: false, echec: 'non-connecte' }, '401 : non connecté, comme sur le site');
   egal(await lireTout(recupererParLeBureau(pont(0, ''))), { ok: false, echec: 'indisponible' }, 'service injoignable : indisponible');
+  egal(await publier(recupererParLeBureau(pont(413, '{"erreur":"trop-gros"}')), '1', null, '{}'), { type: 'trop-gros' }, '413 du processus principal : trop volumineuse, pas « sans deck »');
 
   // Les canaux : déclarés au préchargement, vérifiés (expéditeur) dans le
   // processus principal, branchés dans main.ts et suivis par la session.
@@ -72,6 +83,8 @@ export default async function testBureauDiscord() {
     ok(preload.includes(`ipcRenderer.invoke('bureau:discord-${canal}'`), `préchargement : bureau:discord-${canal}`);
     ok(new RegExp(`ipcMain\\.handle\\('bureau:discord-${canal}',[^]*?deLaPage\\(e\\)`).test(discord), `processus principal : bureau:discord-${canal}, de la page seulement`);
   }
+  ok(/corpsTropGros\(route, corpsBrut\)\) return \{ statut: 413/.test(discord) && discord.indexOf('corpsTropGros(route') < discord.indexOf('corpsAutorise(route'),
+    'un corps trop gros répond 413, avant le refus d\'une route ou d\'un corps (400)');
   ok(!/session/.test(preload.slice(preload.indexOf('discord:'))), 'la page ne reçoit jamais la session');
   const main = sansCommentaires(readFileSync('bureau/main.ts', 'utf8'));
   ok(/brancherSession\(fenetre, preuve\?\.session, discord\)/.test(main), '« Garder mes données » et « Tout supprimer » suivis par la connexion');
