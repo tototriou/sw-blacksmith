@@ -21,6 +21,7 @@
 
 import type { Competence, DetailMonstre } from './monsterSkills';
 import type { SummonerSkills } from './competencesInvocateur';
+import type { SaisieAdversaire } from './saisieAdversaire';
 import type { Dictionnaire } from '../i18n/fr';
 import { phraseDegats } from '../i18n/phrasesDegats';
 export type { SummonerSkills } from './competencesInvocateur';
@@ -6145,9 +6146,16 @@ export interface DamageSetup {
   // : une recette exportée avant ce champ n'en a aucun, `resolvedEnemySpd`
   // retombe alors sur `DEFAULT_DAMAGE_SETUP.enemySpd`.
   enemySpd?: number;
-  // ÉLÉMENT de l'adversaire visé — sert UNIQUEMENT aux lignes d'artéfact
+  // Saisie en parties de l'adversaire (lead, base, runes) qui PRODUIT les
+  // quatre totaux ci-dessus — le calcul ne lit jamais ce champ, seulement
+  // `enemyHp`/`enemyDef`/`enemyAtk`/`enemySpd`, que `avecTotauxAdversaire`
+  // (saisieAdversaire.ts) tient à jour. Absent (ancienne recette, défaut) :
+  // les totaux sont ceux qui ont été écrits.
+  adversaire?: SaisieAdversaire;
+  // ÉLÉMENT de l'adversaire visé — sert aux lignes d'artéfact
   // « Aug. des dgts infl. au <élément> » (codes 300-304, voir
-  // `ArtifactDamageProfile`).
+  // `ArtifactDamageProfile`) et, quand l'adversaire est saisi en parties, à
+  // l'ATQ élémentaire de SES compétences d'invocateur (`detailAdversaire`).
   //
   // ⚠️ **`null`/absent = « ignorer l'élément »**, et c'est le défaut : ces
   // lignes comptent alors **0**, et l'artéfact d'attribut se juge sur ses

@@ -15,6 +15,7 @@
 // de plus, pas de moins.
 import { BuildRequirement, Objective, SLOT_FILTER_PRESETS, SLOT_MAIN_OPTIONS } from './runeBuildOptim';
 import { DamageSetup, IGNORE_DEF_A_PARTIR_DU_COUP_PAR_ID, LEADER_SKILL_STATS, cibleSecondairePriseEnCharge, ignoreDefParCoupChoisi, rangsDeLaRegleIgnoreDef } from './damage';
+import { STATS_ADVERSAIRE, STATS_LEAD_ADVERSAIRE } from './saisieAdversaire';
 import { erreurAurasExternes } from './aurasExternes';
 import { AutoExclusionScope, ExclusionSelector } from './optimizerExclusion';
 import { ArtifactKind, RUNE_SETS } from '../types';
@@ -264,6 +265,28 @@ function estObjet(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
+function validerSaisieAdversaire(adv: unknown): ErreurRecette | null {
+  const chemin = 'damageSetup.adversaire';
+  if (!estObjet(adv)) return erreur(chemin, (a) => a.objet);
+  if (adv.monstreId !== null && typeof adv.monstreId !== 'string') return erreur(`${chemin}.monstreId`, (a) => a.valeurInconnue);
+  for (const colonne of ['base', 'runes']) {
+    const valeurs = adv[colonne];
+    if (!estObjet(valeurs)) return erreur(`${chemin}.${colonne}`, (a) => a.objetStats);
+    for (const stat of STATS_ADVERSAIRE) {
+      const e = validerNombre(valeurs[stat], `${chemin}.${colonne}.${stat}`);
+      if (e) return e;
+      if ((valeurs[stat] as number) < 0) return erreur(`${chemin}.${colonne}.${stat}`, (a) => a.positif);
+    }
+  }
+  if (adv.lead !== null) {
+    if (!estObjet(adv.lead)) return erreur(`${chemin}.lead`, (a) => a.objet);
+    if (!(STATS_LEAD_ADVERSAIRE as readonly unknown[]).includes(adv.lead.stat)) return erreur(`${chemin}.lead.stat`, (a) => a.statLead);
+    const e = validerNombre(adv.lead.pct, `${chemin}.lead.pct`);
+    if (e) return e;
+  }
+  return null;
+}
+
 function erreur(chemin: string, attente: AttenteRecette): ErreurRecette {
   return { chemin, attente };
 }
@@ -360,6 +383,13 @@ function validerDamageSetup(value: unknown): ErreurRecette | null {
       return erreur('damageSetup.leaderSkill.stat', (a) => a.statLead);
     }
     const e = validerNombre(lead.pct, 'damageSetup.leaderSkill.pct');
+    if (e) return e;
+  }
+  // La saisie de l'adversaire en parties (saisieAdversaire.ts) : la recette
+  // porte AUSSI les totaux qu'elle produit, que le calcul lit seuls ; elle se
+  // valide quand même, pour que l'écran ne rouvre pas une saisie illisible.
+  if (setup.adversaire !== undefined) {
+    const e = validerSaisieAdversaire(setup.adversaire);
     if (e) return e;
   }
   for (const champ of ['ownHpPct', 'livingAlliesPct', 'sacrificeReservePct', 'enemyDestroyedHpPct']) {

@@ -3509,6 +3509,7 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
           modificateursVit={modificateursVit}
           setup={damageSetup}
           setSetup={setDamageSetup}
+          monstres={allMonsters}
           chargement={skillLoading}
           etroit={etroit}
           critSiPlusRapide={critSiPlusRapide}

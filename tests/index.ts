@@ -437,6 +437,8 @@ import { testRenduChangementCompte } from './rendu/changement-compte.test';
 import { testRenduComparaisonHistorique } from './rendu/comparaison-historique.test';
 import { testRenduIcones } from './rendu/icones.test';
 import { testRenduAttaqueConjointeEcran } from './rendu/attaque-conjointe-ecran.test';
+import { testRenduSaisieAdversaire, testRenduSaisieAdversaireAnglais, testSaisieAdversaireBranchement } from './rendu/saisie-adversaire.test';
+import { testSaisieAdversaireCalcul, testSaisieAdversaireRecette } from './saisie-adversaire.test';
 import { testRenduEffetsEntreCoupsEcran, testRenduEffetsEntreCoupsAnglais } from './rendu/effets-entre-coups-ecran.test';
 import { testRenduRecosPage, testRenduRecosEnTete, testRenduRecosLigneDeckReduite, testRenduRecosDeploiement, testRenduRecosEdition, testRenduRecosVueDefense, testRenduRecosTicks, testRenduRecosAnnulerEdition, testRenduRecosStatsEnTotal } from './rendu/recos.test';
 import testAnnulerEdition from './annuler-edition.test';
@@ -813,6 +815,11 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testRenduComparaisonHistorique', testRenduComparaisonHistorique],
   ['testRenduIcones', testRenduIcones],
   ['testRenduAttaqueConjointeEcran', testRenduAttaqueConjointeEcran],
+  ['testSaisieAdversaireCalcul', testSaisieAdversaireCalcul],
+  ['testSaisieAdversaireRecette', testSaisieAdversaireRecette],
+  ['testRenduSaisieAdversaire', testRenduSaisieAdversaire],
+  ['testRenduSaisieAdversaireAnglais', testRenduSaisieAdversaireAnglais],
+  ['testSaisieAdversaireBranchement', testSaisieAdversaireBranchement],
   ['testRenduEffetsEntreCoupsEcran', testRenduEffetsEntreCoupsEcran],
   ['testRenduEffetsEntreCoupsAnglais', testRenduEffetsEntreCoupsAnglais],
   ['testRenduRtaPrepa', testRenduRtaPrepa],

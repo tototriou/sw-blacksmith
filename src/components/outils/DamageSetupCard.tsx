@@ -79,8 +79,9 @@ import Jeton from '../../ui/Jeton';
 import NumberField from '../../ui/NumberField';
 import Option from '../../ui/Option';
 import Segmented from '../../ui/Segmented';
+import SaisieAdversaire from './SaisieAdversaire';
 import Selecteur from '../../ui/Selecteur';
-import { ELEMENTS, type ElementKey } from '../../types';
+import { ELEMENTS, type ElementKey, type Monster } from '../../types';
 import HelpPopover from '../HelpPopover';
 import { useTraduction } from '../../hooks/useLangue';
 import { nomElement } from '../../i18n/jeu';
@@ -128,6 +129,9 @@ interface Props {
   modificateursVit: ModificateurVitAffichage[];
   setup: DamageSetup;
   setSetup: Dispatch<SetStateAction<DamageSetup>>;
+  // Tous les monstres connus (SWARFARM et monstres perso) : la recherche qui
+  // importe les stats de base de l'adversaire (SaisieAdversaire.tsx).
+  monstres: Monster[];
   // `true` tant que la fiche du monstre n'est pas arrivée.
   chargement: boolean;
   etroit: boolean;
@@ -416,6 +420,7 @@ export default function DamageSetupCard({
   modificateursVit,
   setup,
   setSetup,
+  monstres,
   chargement,
   etroit,
   critSiPlusRapide,
@@ -1504,48 +1509,29 @@ export default function DamageSetupCard({
           <p className="label">{d.adversaire.titre}</p>
           <HelpPopover title={d.adversaire.titre}>{d.adversaire.aide}</HelpPopover>
         </div>
-        {/* `flex-wrap` : les deux champs passent l'un sous l'autre au doigt
-            plutôt que de comprimer les boutons − / + sous la taille de cible.
-            Empilés, leurs libellés prennent une largeur commune
-            (`libelleAdversaire`) pour que les champs s'alignent. */}
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-          <label className="flex items-center gap-2">
-            <span className={libelleAdversaire}>{jeu.stats.hp}</span>
-            <NumberField
-              value={setup.enemyHp}
-              onChange={(v) => maj({ enemyHp: v ?? 0 })}
-              step={1000}
-              min={1}
-              boxWidth="w-32"
-              ariaLabel={d.adversaire.pvAria}
-            />
-          </label>
-          {montreDefEnnemie && (
-            <label className="flex items-center gap-2">
-              <span className={libelleAdversaire}>{jeu.stats.def}</span>
-              <NumberField
-                value={setup.enemyDef}
-                onChange={(v) => maj({ enemyDef: v ?? 0 })}
-                step={50}
-                min={0}
-                boxWidth="w-32"
-                ariaLabel={d.adversaire.defAria}
-              />
-            </label>
-          )}
-          {demandeAtkCible && (
-            <label className="flex items-center gap-2">
-              <span className={libelleAdversaire}>{d.adversaire.atq}</span>
-              <NumberField
-                value={setup.enemyAtk ?? DEFAULT_DAMAGE_SETUP.enemyAtk!}
-                onChange={(v) => maj({ enemyAtk: v ?? 0 })}
-                min={0}
-                step={50}
-                boxWidth="w-32"
-                ariaLabel={d.adversaire.atqAria}
-              />
-            </label>
-          )}
+        {/* Les stats de l'adversaire en parties — lead, base, runes, total
+            (SaisieAdversaire.tsx). Mêmes stats qu'avant selon le sort : PV
+            toujours, DEF si le sort lit la défense, ATQ et VIT quand une
+            condition ou la formule les lit. */}
+        <SaisieAdversaire
+          setup={setup}
+          maj={maj}
+          etroit={etroit}
+          monstres={monstres}
+          stats={[
+            'hp',
+            ...(montreDefEnnemie ? (['def'] as const) : []),
+            ...(demandeAtkCible ? (['atk'] as const) : []),
+            ...(utilise('Relative SPD') || utilise('Target SPD') || critSiPlusRapide || bonusDegatsSelonVit || demandeVitCible
+              ? (['spd'] as const)
+              : []),
+          ]}
+        />
+        {/* Le reste de l'adversaire, sous le tableau. `flex-wrap` : les
+            champs passent l'un sous l'autre au doigt plutôt que de comprimer
+            les boutons − / + sous la taille de cible. Empilés, leurs libellés
+            prennent une largeur commune (`libelleAdversaire`). */}
+        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
           {/* Pour les sorts dont la formule lit les PV COURANTS de la cible
               (« dégâts proportionnels aux PV perdus ») — mais AUSSI quand un
               passif porte un seuil de PV (Final Strike : +20 % sous 30 %),
@@ -2025,31 +2011,6 @@ export default function DamageSetupCard({
               tous ses dégâts selon l'écart de VIT (`bonusDegatsSelonVit`,
               Sonia), même si le sort CHOISI ne lit pas cette variable
               (ex. Rigna S1, ou n'importe quel sort de Sonia). */}
-          {(utilise('Relative SPD') || utilise('Target SPD') || critSiPlusRapide || bonusDegatsSelonVit || demandeVitCible) && (
-            <>
-              <label className="flex items-center gap-2">
-                <span className="text-xs text-ink-dim">{d.adversaire.vit}</span>
-                <NumberField
-                  value={setup.enemySpd ?? DEFAULT_DAMAGE_SETUP.enemySpd!}
-                  onChange={(v) => maj({ enemySpd: v ?? 0 })}
-                  step={10}
-                  min={1}
-                  boxWidth="w-32"
-                  ariaLabel={d.adversaire.vitAria}
-                />
-              </label>
-              {/* ⚠️ Pas de champ « Leader skill VIT » ici : généralisé au
-                  contrôle unique de « Effets actifs » (`LeaderSkillPicker`,
-                  demande explicite de l'utilisateur), qui couvre les 6
-                  stats — PV/ATQ/DEF/VIT/Taux Crit/Dégâts Crit — plutôt qu'un
-                  champ dédié à la seule VIT ici.
-                  Pas de rappel de `critSiPlusRapide`/`bonusDegatsSelonVit`
-                  non plus : ces deux modificateurs apparaissent maintenant
-                  dans « Passifs offensifs » ci-dessus (icône + description),
-                  plus complet qu'une ligne de texte — les dupliquer ferait
-                  redite. */}
-            </>
-          )}
         </div>
       </div>
 

@@ -305,6 +305,13 @@ monstre perso) ne reçoit aucune des cinq compétences élémentaires.
 totaux), d'où un double arrondi supérieur : au plus 1 point d'écart sur la
 statistique, sans effet sur un classement de builds.
 
+⚠️ **L'adversaire aussi** : saisi en parties dans la fenêtre « Dégâts
+réels » ([saisieAdversaire.ts](../../../src/lib/saisieAdversaire.ts)), il
+reçoit les mêmes pourcentages sur SA base, dans le même contenu que le
+monstre optimisé ; son ATQ élémentaire suit l'élément visé, et ne compte pas
+quand il est ignoré. Ses Dgts Crit ne servent à rien ici. Détail de
+l'écran : [objectif-de-recherche.md](../optimizer/ecran/objectif-de-recherche.md).
+
 **Défaut et minimum : « Contenu normal »** — pas de cran « Aucune », car ces
 compétences s'appliquent dans toute situation réelle du jeu. Une recette
 exportée avant ce retrait reste lisible : « Aucune » y est normalisée vers

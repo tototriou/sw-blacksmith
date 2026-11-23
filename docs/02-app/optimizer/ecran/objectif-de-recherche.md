@@ -43,10 +43,8 @@ Ce document décrit la carte « Objectif de recherche » et ses quatre objectifs
   change. Une fois la fenêtre fermée, une **ligne de résumé** prend sa
   place sous l'objectif : `S1 Flying Cards · élément ignoré · PV 40 000 ·
   DEF 1 500 · Critique`. On la clique pour rouvrir.
-  Les PV et la DEF de l'adversaire sont ses **totaux** (stats de base,
-  runes, lead…), ce que dit l'aide de « Adversaire ».
-  Au téléphone, les champs de l'adversaire (PV, DEF…) s'empilent sur une
-  largeur de libellé commune : leurs cases s'alignent.
+  Le calcul lit les **totaux** de l'adversaire (PV, DEF, ATQ, VIT) ; la
+  fenêtre les fait saisir en parties (voir « Adversaire » plus bas).
   Cette fenêtre porte aussi les PV propres, les
   ennemis vivants, la réserve de Sacrifice, les comparaisons de stats et
   les états de combat propres au monstre choisi. Les compteurs de débuffs
@@ -190,7 +188,41 @@ Ce que contient ce réglage :
 
 ## Dégâts réels — adversaire, effets actifs et coup critique
 
-- **Adversaire** — PV et DEF. ⚠️ Les **PV ne classent rien** : ils ne
+- **Adversaire** — une saisie en parties
+  ([SaisieAdversaire.tsx](src/components/outils/SaisieAdversaire.tsx),
+  calcul dans [saisieAdversaire.ts](src/lib/saisieAdversaire.ts)) :
+  - une ligne **Lead** (leader skill de l'équipe adverse : PV, ATQ, DEF ou
+    VIT, aux paliers de `LEADER_SKILL_VALEURS` ; « Aucun » par défaut) et
+    **Monstre** (la recherche de monstre de l'app, formes jouables) ;
+  - un **tableau** : une ligne par stat que le sort lit — PV toujours, DEF
+    si le sort lit la défense, ATQ et VIT selon les conditions et la
+    formule, comme avant —, et les colonnes **Base**, **Runes** (le « + »
+    vert de la fiche du jeu, une valeur fixe), **Lead**, **Invoc.** et
+    **Total**, en lecture seule. Au téléphone, Lead et Invoc. disparaissent
+    (comptées dans le total) et les champs perdent leurs boutons − / + :
+    cinq colonnes ne tiennent pas dans 360 px ;
+  - une phrase sous le tableau dit les compétences d'invocateur appliquées.
+  
+  Le **total** = base + runes + base × lead % + base × compétences
+  d'invocateur %. L'adversaire est supposé dans le **même contenu**
+  (normal ou guilde) que le monstre optimisé, réglé dans « État de mon
+  monstre » ; l'ATQ élémentaire ne compte que si l'**élément visé** est
+  posé. **Importer un monstre** pose son portrait, ses stats de base
+  SWARFARM (6★ niv. 40) et son élément visé ; les runes et le lead saisis
+  restent (le lead vient du chef de l'équipe adverse, pas de la cible),
+  sauf sur un réglage encore sans saisie, dont les « runes » sont les
+  anciens totaux : l'import part alors de runes à 0, sans quoi la cible
+  serait comptée deux fois.
+  ⚠️ **Les totaux restent les seules valeurs du calcul** (`enemyHp`,
+  `enemyDef`, `enemyAtk`, `enemySpd`) : la saisie (`DamageSetup.adversaire`)
+  les **écrit**, par `avecTotauxAdversaire`, que le setter de l'écran
+  appelle à chaque écriture du réglage — changer le contenu dans « État de
+  mon monstre » ou l'élément visé recalcule donc les totaux fenêtre fermée.
+  Recette, CLI et Worker lisent les totaux, inchangés. Un réglage **sans
+  saisie** (ancienne recette, défaut) affiche chaque total écrit dans la
+  colonne **Runes**, base à 0 : rien ne change de valeur, alors qu'un
+  total rangé dans la base serait majoré d'au moins 15 % au premier geste.
+  ⚠️ Les **PV ne classent rien** : ils ne
   servent qu'à lire le résultat (« 42 % des PV », « tue la cible »).
   Un champ **PV restants** n'apparaît que pour les sorts dont la
   formule lit les PV courants de la cible. Un champ **Effets sur la

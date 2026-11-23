@@ -45,6 +45,7 @@ function carte(monstre: number, skillCom2usId: number, etroit: boolean, setup: P
       modificateursVit={[]}
       setup={damageSetup}
       setSetup={() => {}}
+      monstres={[]}
       chargement={false}
       etroit={etroit}
       critSiPlusRapide={false}

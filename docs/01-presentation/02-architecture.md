@@ -194,7 +194,8 @@ l'Optimizer) ; hook `useEquipesEnregistrees`.
 
 **Optimizer** — dans `src/components/outils/` : `OptimizerSection.tsx` (racine),
 `MonsterSourcePicker` (recherche — deux modes, bestiaire ou compte réel), `OptimizerListPicker`
-(listes de travail), `SetComboPicker`, `BuildCandidateCard` — fiche :
+(listes de travail), `SetComboPicker`, `BuildCandidateCard`, `SaisieAdversaire` (l'adversaire des
+dégâts réels en parties, calcul dans `src/lib/saisieAdversaire.ts`) — fiche :
 [optimizer/ecran/](../02-app/optimizer/ecran/README.md). Hooks `useOptimizerState` +
 `useBuildOptimSearch` (saisie et recherche, jamais persistées) et `useOptimizerLists` (listes de
 travail créées par l'utilisateur + runes validées scopées par liste — seul état PERSISTÉ de
@@ -377,7 +378,7 @@ Fonctions **pures**, testables sans rendu. C'est ici que va toute logique, jamai
 | Reliques | `relicOptim.ts` (choix de la meilleure relique pour un build, pertinence et dominance structurelle) ; `relicQueue.ts` (résolution EXACTE de l'équipement d'un build — paire d'artéfacts ET relique, ensemble — la partie pure de la file du classeur, et l'état de la relique d'un candidat pour l'écran) ; `resolutionRapide.ts` (la résolution de l'app, appelée par `relicQueue.ts` : elle ne note que les paires faisables) ; `resolutionExhaustive.ts` (la même résolution, toutes les paires notées : référence des tests et diagnostic d'un build rejeté, à la demande) |
 | Tri | `tri.ts` (le SENS d'un tri, partagé par toutes les listes) |
 | Artéfacts | `artifacts.ts` |
-| Dégâts réels | `damage.ts` ([degats-reels/](../02-app/degats-reels/README.md)) |
+| Dégâts réels | `damage.ts`, `saisieAdversaire.ts` (l'adversaire saisi en parties, qui écrit ses totaux) ([degats-reels/](../02-app/degats-reels/README.md)) |
 | Import de compte | `importAccount.ts` (parse SWEX, decks enregistrés compris), `journalSwex.ts` (journal complet de SWEX : la box de l'arène dimensionnelle), `compteDirect.ts` (« Mon compte » en direct : le fichier live du plugin SWEX converti objet par objet par les fonctions de l'import), `applyAccount.ts` (→ états), `accountStore.ts` (IndexedDB), `accountViews.ts` |
 | Mes équipes | `equipesEnregistrees.ts` (modèle, comparaison au compte, opérations), `equipesStore.ts` (IndexedDB `swblacksmith-equipes`), `equipesFichier.ts` (format `swblacksmith/equipes`), `sourcesEquipesEnregistrees.ts` (sources d'équipement et d'import), `importEquipesEnregistrees.ts` (export vers l'Optimizer et mise à jour au retour), `fenetreImport.ts` (filtres, sélection et produits de la fenêtre d'import commune) |
 | Monstres | `monsterForms.ts`, `monsterSkills.ts`, `monsterSort.ts`, `collabPairs.ts` |
