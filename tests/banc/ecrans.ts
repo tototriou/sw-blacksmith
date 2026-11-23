@@ -237,6 +237,11 @@ const OPT_LISTE: Etape[] = [
   { saisir: { role: 'combobox', nom: 'Rechercher un monstre…' }, texte: 'Cassie' },
   { cliquer: { role: 'option', nom: 'Cassie dark Cassie' } },
 ];
+// Importer Chasun comme adversaire, dans la fenêtre « Dégâts réels ».
+const IMPORT_ADVERSAIRE: Etape[] = [
+  { saisir: { role: 'combobox', nom: "Importer les stats de base d'un monstre adverse" }, texte: 'Chasun' },
+  { cliquer: { role: 'option', nom: 'Chasun wind Chasun SPD 101' } },
+];
 const OPT_MEMBRES = [repere('[data-membre-optimizer="13812"]'), repere('[data-membre-optimizer="19315"]')];
 const OPT_IMPORT: Etape = {
   importer: bouton('Importer les paramètres de recherche'), fichier: 'optimizer-banc-recette.json',
@@ -524,6 +529,20 @@ export const ECRANS: Ecran[] = [
         atteint: [
           { role: 'dialog', nom: 'Dégâts réels' },
           { role: 'button', nom: 'Non critique' },
+        ],
+      },
+      {
+        id: 'degats-reels-adversaire',
+        libelle: 'modale « Dégâts réels », adversaire importé (Chasun)',
+        // La saisie de l'adversaire en parties (SaisieAdversaire.tsx) : le
+        // portrait, le nom et le tableau remplis par l'import d'un monstre.
+        preparation: {
+          telephone: [{ cliquer: bouton('Gérer mes listes') }, ...OPT_LISTE, { cliquer: OBJECTIF_DEGATS_REELS }, ...IMPORT_ADVERSAIRE],
+          ordinateur: [...OPT_LISTE, VOIR_RESULTATS, { cliquer: OBJECTIF_DEGATS_REELS }, ...IMPORT_ADVERSAIRE],
+        },
+        atteint: [
+          { role: 'dialog', nom: 'Dégâts réels' },
+          { role: 'repere', nom: '[data-saisie-adversaire] [data-portrait]' },
         ],
       },
       {
