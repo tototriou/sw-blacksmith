@@ -70,8 +70,8 @@ export function journal(langue: Langue): Release[] {
 // Si une ligne dépasse ~15 mots, c'est qu'elle raconte l'implémentation.
 export const RELEASES: Release[] = [
   {
-    version: null,
-    date: '2026-11-22',
+    version: '2.5.1',
+    date: '2026-11-23',
     title: 'Le plugin SW Blacksmith Live suit chaque compte',
     changes: [
       { kind: 'fix', scope: 'SW Exporter', text: 'Le plugin ne s’arrête plus à la connexion sur « object is not iterable » : il suit toute ta session.' },
