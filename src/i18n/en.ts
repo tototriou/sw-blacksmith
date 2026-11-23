@@ -743,7 +743,7 @@ export const en: Dictionnaire = {
       'RTA favorites and presets, decks, siege defense, rune locks and experience gained outside battles: the plugin does not follow them yet, they arrive at your next login to the game.',
     miseAJourTitre: 'Updating the plugin',
     miseAJour:
-      'When the plugin changes, the desktop app lets you know with a notification: download it again, replace the old file, then restart SWEX. A new app version does not always change the plugin.',
+      'When the plugin changes, the desktop app lets you know with a notification: download it again, replace the old file, then restart SW Exporter and log in to the game again. SW Exporter only loads its plugins when it starts: without a restart, the old one keeps running. A new app version does not always change the plugin.',
   },
 
   siegeStats: {

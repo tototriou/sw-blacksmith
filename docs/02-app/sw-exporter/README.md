@@ -85,7 +85,9 @@ Fichiers : [SwExporterPage.tsx](src/pages/SwExporterPage.tsx) ·
   les messages de l'app.
 - Deux cartes : **Mettre à jour le plugin** (quand son code change,
   l'application de bureau le notifie et sa notification ouvre cette page ;
-  une version de l'app ne change pas toujours le plugin —
+  le remplacer, puis redémarrer SW Exporter, qui ne charge ses plugins qu'à
+  son démarrage, et se reconnecter au jeu ; une version de l'app ne change
+  pas toujours le plugin —
   [feat-swex-direct.md](../bureau/feat-swex-direct.md)) et **Ce qui attend la connexion
   suivante** (ce que le plugin ne suit pas encore : favoris et préréglages
   RTA, decks, défense de siège, verrous de runes, expérience hors combat).

@@ -779,7 +779,7 @@ export const fr = {
       "Les favoris et préréglages de la RTA, les decks, la défense de siège, les verrous de runes et l'expérience gagnée hors combat : le plugin ne les suit pas encore, ils arrivent à la prochaine connexion au jeu.",
     miseAJourTitre: 'Mettre à jour le plugin',
     miseAJour:
-      "Quand le plugin change, l'application de bureau te prévient par une notification : retélécharge-le, remplace l'ancien fichier, puis redémarre SWEX. Une nouvelle version de l'application ne change pas toujours le plugin.",
+      "Quand le plugin change, l'application de bureau te prévient par une notification : retélécharge-le, remplace l'ancien fichier, puis redémarre SW Exporter et reconnecte-toi au jeu. SW Exporter ne charge ses plugins qu'à son démarrage : sans redémarrage, l'ancien continue de tourner. Une nouvelle version de l'application ne change pas toujours le plugin.",
   },
 
   // Siège › Statistiques (#/siege/statistiques) : les sièges relevés par le
