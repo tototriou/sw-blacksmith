@@ -72,8 +72,9 @@ export const RELEASES: Release[] = [
   {
     version: null,
     date: '2026-11-23',
-    title: 'Les options de l’Optimizer allégées',
+    title: 'Mes équipes plus tôt, options de l’Optimizer allégées',
     changes: [
+      { kind: 'feat', scope: 'Optimizer', text: '« Enregistrer dans Mes équipes » s’active dès qu’un monstre de l’équipe a ses runes validées.' },
       { kind: 'feat', scope: 'Optimizer', text: '« Simuler +15 » et « Simuler max meules/gemmes » deviennent deux options séparées.' },
       { kind: 'feat', scope: 'Optimizer', text: 'Les meules et gemmes se simulent en Héro ou en Légend, à part pour les runes antiques.' },
       { kind: 'feat', scope: 'Optimizer', text: '« Rechercher jusqu’à épuisement complet » disparaît : les recherches tiennent largement dans le temps.' },

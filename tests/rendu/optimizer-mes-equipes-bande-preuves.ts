@@ -1,6 +1,6 @@
 // Branchement — « Enregistrer dans Mes équipes » dans la bande d'une équipe de
-// l'Optimizer : entre le numéro et le speed tune, grisé tant qu'un membre n'a
-// pas ses runes et ses artéfacts validés, et absent de la fenêtre de l'équipe.
+// l'Optimizer : entre le numéro et le speed tune, grisé tant qu'aucun membre
+// n'a de runes validées, et absent de la fenêtre de l'équipe.
 // Spec : docs/02-app/compte/feat-equipes.md, « Aller-retour avec l'Optimizer ».
 import type { UseOptimizerLists } from '../../src/hooks/useOptimizerLists';
 import type { ExclusionSelector } from '../../src/lib/optimizerExclusion';
@@ -45,12 +45,10 @@ export async function preuvesMesEquipesBande(b: Banc, enregistree: () => EquipeO
   verifier(!!style && !!rg && !!rs && style.borderTopWidth === '1px' && style.backgroundColor !== 'rgba(0, 0, 0, 0)'
     && rg.width > rg.height && Math.abs(rg.height - rs.height) < 1, `dans une case oblongue de la hauteur de « Speed tune » (${rg?.width}×${rg?.height}, ${rs?.height})`);
 
-  // Le premier validé seul ne suffit pas : chaque membre, runes et paire.
-  await b.geste(() => b.listes().validateBuild('a', b.premier, [1, 2, 3, 4, 5, 6], [1, 2], undefined, 10101));
-  verifier(!!boutons(q.validerDAbord, groupe()!)[0]?.disabled, 'un membre validé sur deux : toujours grisé');
-  await b.geste(() => b.listes().validateBuild('a', b.second, [7, 8, 9, 10, 11, 12], [3, 4], undefined, 10101));
+  // Les runes d'un seul membre suffisent, sans artéfacts ni second membre.
+  await b.geste(() => b.listes().validateBuild('a', b.premier, [1, 2, 3, 4, 5, 6], [], undefined, 10101));
   const actif = boutons(q.enregistrerMesEquipes, groupe()!)[0];
-  verifier(!!actif && !actif.disabled, 'tous les membres validés : « Enregistrer dans Mes équipes » actif');
+  verifier(!!actif && !actif.disabled && actif.title === q.enregistrerMesEquipes, 'un membre aux runes validées : « Enregistrer dans Mes équipes » actif');
   await b.geste(() => actif!.click());
   verifier(enregistree()?.id === 'ea', 'le clic passe l’équipe à Mes équipes');
 
