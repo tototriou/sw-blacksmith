@@ -77,6 +77,7 @@ export const RELEASES: Release[] = [
       { kind: 'fix', scope: 'SW Exporter', text: 'Le plugin ne s’arrête plus à la connexion sur « object is not iterable » : il suit toute ta session.' },
       { kind: 'fix', scope: 'SW Exporter', text: 'Une erreur du plugin dans SW Exporter dit maintenant sur quelle action du jeu elle s’est produite.' },
       { kind: 'fix', scope: 'Application', text: 'Une recommandation de plusieurs centaines de decks se publie dans Discord, comme depuis le site.' },
+      { kind: 'fix', scope: 'Mon compte', text: 'Optimisation des runes : sans « Autoriser un regemme différent », une rune sans gemme n’en reçoit plus.' },
       { kind: 'docs', scope: 'SW Exporter', text: 'L’installation du plugin, pas à pas jusqu’au choix de l’invocateur, et une aide quand ça ne marche pas.' },
     ],
   },

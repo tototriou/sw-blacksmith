@@ -127,12 +127,16 @@ interface Best {
 // qu'on va **réellement poser**, et on ne pose jamais une meule qui dégrade.
 //
 // `regemLibre` : une rune DÉJÀ gemmée peut voir sa ligne gemmée passer à une
-// autre stat (bouton « Autoriser un regemme différent », éteint par défaut).
+// autre stat.
 //
 // `gemmeExistanteSeule` : aucune gemme n'est SIMULÉE sur une rune qui n'en
 // porte pas — seule une gemme déjà posée peut être relancée (même stat). C'est
 // la lecture des Courbes : créditer chaque rune vierge de la meilleure gemme au
 // jet maximal la faisait passer devant des runes finies.
+//
+// L'onglet Optimisation passe les deux selon « Autoriser un regemme
+// différent » : éteint, `gemmeExistanteSeule` (une gemme posée se relance, une
+// rune vierge n'en reçoit pas) ; allumé, `regemLibre` (toute gemme possible).
 function best(
   rune: RuneDetail,
   G: Tbl,
@@ -184,7 +188,7 @@ function best(
   // ⚠️ Rune DÉJÀ gemmée, par défaut : la stat gemmée reste FIXE. C'est un CHOIX
   // PRODUIT, pas une règle du jeu : le joueur a peut-être gemmé pour autre chose
   // que l'efficience, et on ne remet pas sa décision en cause. `regemLibre`
-  // (« Autoriser un regemme différent ») lève ce choix.
+  // lève ce choix.
   const lignes = gemmedIdx >= 0 ? [gemmedIdx] : subs.map((_, j) => j);
   const figee = gemmedIdx >= 0 && !regemLibre;
 
@@ -315,7 +319,8 @@ export function runePlan(
   metric: OptimMetric = 'eff',
   noDowngrade = false,
   dispo?: CraftDispo,
-  regemLibre = false
+  regemLibre = false,
+  gemmeExistanteSeule = false
 ): RunePlan {
   const anc = rune.rank > 10;
   const G =
@@ -323,7 +328,7 @@ export function runePlan(
   const M = scenario === 'hero' ? (anc ? GEM_HERO_ANC : GEM_HERO) : anc ? GEM_LEGEND_ANC : GEM_LEGEND;
 
   const gGemPlan = (code: number) => (dispo && !dispo('grind', code) ? 0 : G[code] ?? 0);
-  const b = best(rune, G, M, withGem, metric, noDowngrade, dispo, regemLibre);
+  const b = best(rune, G, M, withGem, metric, noDowngrade, dispo, regemLibre, gemmeExistanteSeule);
   const subs: PlanSub[] = rune.subs.map((s, j) => {
     const curGrind = s.grind ?? 0;
     const curBase = s.value - curGrind;
