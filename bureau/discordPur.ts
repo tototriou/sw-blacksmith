@@ -56,11 +56,25 @@ export function routeAutorisee(chemin: unknown, methode: unknown): string | null
   return null;
 }
 
-// Le corps d'une publication : du texte, borné (le service refuse au-delà
-// de 512 Ko). Les autres routes n'en ont pas.
+// La borne du corps d'une publication, en caractères : celle du service
+// (`TAILLE_MAX * 2` dans api/_source/service/routeur.ts, `TAILLE_MAX` de
+// recoSalon.ts), que tests/bureau-discord.test.ts compare. Recopiée et non
+// importée : recoSalon.ts tirerait le validateur des recommandations dans le
+// processus principal. ⚠️ Une borne plus basse que celle du service refuse ici
+// une recommandation que le site publie.
+export const CORPS_PUBLICATION_MAX = 2 * 3.5 * 1024 * 1024;
+
+// Le corps d'une publication : du texte, borné comme par le service. Les
+// autres routes n'en ont pas.
 export function corpsAutorise(chemin: string, corps: unknown): string | undefined | null {
   if (chemin !== 'publier') return corps === undefined || corps === null ? undefined : null;
-  return typeof corps === 'string' && corps.length <= 512 * 1024 ? corps : null;
+  return typeof corps === 'string' && corps.length <= CORPS_PUBLICATION_MAX ? corps : null;
+}
+
+// Un corps de publication refusé pour sa seule taille : la page le dit comme
+// telle (413, comme le service), pas comme une recommandation sans deck (400).
+export function corpsTropGros(chemin: string, corps: unknown): boolean {
+  return chemin === 'publier' && typeof corps === 'string' && corps.length > CORPS_PUBLICATION_MAX;
 }
 
 // Le système sait-il chiffrer la session ? Sous Linux sans trousseau,

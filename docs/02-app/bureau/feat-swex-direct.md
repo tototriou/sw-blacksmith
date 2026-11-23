@@ -171,7 +171,8 @@ moitié du gain).
 
 - ⚠️ **Jamais d'exception vers SWEX** : une erreur est écrite dans le journal
   de SWEX, et le plugin continue. Une commande qu'il ne comprend pas ne doit
-  gêner ni le jeu ni les autres plugins.
+  gêner ni le jeu ni les autres plugins. Le message commence par la commande
+  (`HubUserLogin : …`) : un signalement dit ainsi où chercher.
 - Le plugin construit est vérifié sous Node 18 : SWEX embarque un Electron
   ancien.
 
@@ -317,6 +318,13 @@ Calcul pur, sans disque ni Electron, testé par
   `session_key_node` ni `reqid`** : ProfileExport les écrit, le plugin jamais.
 - **`ligneConnexion`**, **`depuisLignesLive`**, **`versEtatArchive`** : la
   première ligne du fichier live, sa relecture, l'état allégé archivé.
+- ⚠️ **Une liste du jeu peut arriver en objet indexé** (`{"1": …, "3": …}`,
+  une liste à trous), par exemple les runes d'un monstre. Parcourue telle
+  quelle, elle levait une exception dès la connexion (« object is not
+  iterable ») : le plugin ne suivait rien de la session. Toute liste lue du
+  jeu passe donc par `enListe` ou `objets` (ses valeurs, dans l'ordre), et un
+  monstre reçu ainsi est écrit avec des listes (`uniteEnListes`) : l'export
+  et l'import de l'app n'en lisent pas d'autre forme.
 
 ### ⚠️ Un registre, pas l'arbre de l'export
 

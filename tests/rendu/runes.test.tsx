@@ -71,9 +71,13 @@ function filtresCommuns(html: string, vue: string) {
   ok(b.some((x) => x.texte === 'Aucune antique' && x.title === 'Masquer les runes antiques' && x.presse === false), `${vue} : « Aucune antique »`);
 }
 
-// Le potentiel : avec la gemme optimale, ou meules seulement. Les Courbes ne
-// simulent aucune gemme nouvelle : leur « Gemme + meule » le dit.
-function modePotentiel(html: string, vue: string, aideGemme = 'Potentiel avec la gemme optimale + les meules') {
+// Le potentiel : avec la gemme, ou meules seulement. Aucun des deux onglets ne
+// simule de gemme nouvelle par défaut : leur « Gemme + meule » le dit.
+function modePotentiel(
+  html: string,
+  vue: string,
+  aideGemme = 'Potentiel avec les meules et la gemme déjà posée relancée à son max (toute gemme avec « Autoriser un regemme différent »)',
+) {
   const b = boutons(html);
   ok(b.some((x) => x.texte === 'Gemme + meule' && x.title === aideGemme && x.presse === true), `${vue} : « Gemme + meule », enclenché`);
   ok(b.some((x) => x.texte === 'Meule seule' && x.title === 'Potentiel en gardant les stats actuelles (meules seulement)' && x.presse === false), `${vue} : « Meule seule »`);
@@ -187,7 +191,11 @@ export function testRenduRunesOptimisation() {
   ok(b.some((x) => x.texte === 'Runes utilisées' && x.presse === false && !!x.title?.startsWith('Ne garder que les 2 runes qui jouent')), '« Runes utilisées », et combien');
   ok(b.some((x) => x.ariaLabel === 'Comment est-ce calculé ?' && x.presse === false), 'aide « Comment est-ce calculé ? »');
   ok(t.includes('1 rune ≥ 100%'), 'combien de runes au palier');
-  ok(b.some((x) => x.texte === 'Dgts critiq. +80% actuelle 109.5% Héro +19.9 → 129.5% Légend +28.3 → 137.8%'), 'une rune : actuelle, puis gain et potentiel héroïque et légendaire');
+  // « Autoriser un regemme différent » éteint : cette rune, jamais gemmée, ne
+  // reçoit AUCUNE gemme — seules les meules montent (allumé, une gemme PV% la
+  // porterait à 129.5 / 137.8 : runeOptim, testRegemmeDifferent).
+  ok(b.some((x) => x.texte === 'Autoriser un regemme différent' && x.presse === false && !!x.title?.startsWith('Proposer aussi une gemme d’une autre stat')), '« Autoriser un regemme différent », éteint, et ce qu’il ajoute');
+  ok(b.some((x) => x.texte === 'Dgts critiq. +80% actuelle 109.5% Héro +11.0 → 120.5% Légend +14.9 → 124.4%'), 'une rune vierge : actuelle, puis gain et potentiel héroïque et légendaire, sans gemme');
 }
 
 export function testRenduRunesAVenir() {

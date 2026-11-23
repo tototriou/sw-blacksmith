@@ -20,6 +20,18 @@ export const RELEASES_EN: Release[] = [
     ],
   },
   {
+    version: '2.5.1',
+    date: '2026-11-23',
+    title: 'The SW Blacksmith Live plugin follows every account',
+    changes: [
+      { kind: 'fix', scope: 'SW Exporter', text: 'The plugin no longer stops at login on “object is not iterable”: it follows your whole session.' },
+      { kind: 'fix', scope: 'SW Exporter', text: 'A plugin error in SW Exporter now says which game action it happened on.' },
+      { kind: 'fix', scope: 'Application', text: 'A recommendation with hundreds of decks now publishes to Discord, as it does from the website.' },
+      { kind: 'fix', scope: 'My account', text: 'Rune optimization: without “Allow a different regem”, a rune with no gem no longer gets one.' },
+      { kind: 'docs', scope: 'SW Exporter', text: 'Installing the plugin, step by step up to choosing your summoner, and help when it does not work.' },
+    ],
+  },
+  {
     version: '2.5.0',
     date: '2026-11-22',
     title: 'The Arena, My teams and your account live',

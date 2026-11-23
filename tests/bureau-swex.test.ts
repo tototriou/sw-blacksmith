@@ -67,7 +67,7 @@ export default function testBureauSwex() {
   egal(presentationSwex(etat, fr).options.map((o) => o.libelle), ['tototriou', 'Sam (1)', 'Sam (2)'], 'deux homonymes : l’identifiant les sépare');
   ok(presentationSwex(etat, fr).invocateur.endsWith('— lu.'), 'export suivi déjà appliqué : « — lu. »');
   ok(presentationSwex({ ...etat, dernierLu: 1000 }, fr).invocateur.endsWith('lecture en cours…'), 'export plus récent que le dernier lu : « lecture en cours… »');
-  egal(presentationSwex({ ...etat, fichier: null }, fr).invocateur, 'Choisis l’invocateur à suivre.', 'dossier choisi, invocateur non');
+  egal(presentationSwex({ ...etat, fichier: null }, fr).invocateur, 'Choisis l’invocateur à suivre : sans lui, ni ton compte ni le plugin ne sont lus.','dossier choisi, invocateur non');
   egal(presentationSwex({ ...etat, exports: [] }, fr).invocateur, 'Aucun export de compte à la racine de ce dossier.', 'dossier sans export');
   ok(presentationSwex({ ...etat, introuvable: true }, fr).invocateur.startsWith('Dossier introuvable'), 'dossier disparu : dit');
 

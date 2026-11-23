@@ -24,7 +24,11 @@ distinctes**) :
   max (RES/Précision/Taux Crit/Dmg Crit **non grindables**). Une rune déjà grindée
   au-delà (ex. légendaire) est **ramenée** au max du scénario en héroïque (delta
   négatif possible).
-- **Gemme** :
+- **Gemme** — ⚠️ **par défaut, seule une gemme DÉJÀ posée est relancée** ; une
+  rune vierge n'en reçoit aucune (choix du mainteneur : changer la stat d'une
+  ligne, RES → ATQ% par exemple, est déjà un « regemme différent »). Les deux
+  cas ci-dessous ne valent tels quels qu'avec **« Autoriser un regemme
+  différent »** allumé (voir Modes) :
   - rune **non gemmée** → on choisit **le meilleur substat à remplacer** par la
     **meilleure stat grindable** (PV%/ATQ%/DEF%/VIT, sinon un flat), **sans
     doublon** (≠ principale / innée / **autres** substats) et en respectant les
@@ -59,16 +63,20 @@ même violet que le plan ci-dessous (voir
 
 ### Modes
 
-- **Gemme + meule** (défaut) : potentiel complet ci-dessus.
+- **Gemme + meule** (défaut) : potentiel ci-dessus — meules au max, et la gemme
+  déjà posée relancée à son max.
 - **Meule seule** : garde les **stats actuelles** (aucune gemme), ne pousse que les
   meules → pour repérer les runes à **grinder en priorité**.
 - **« Autoriser un regemme différent »** — bouton, **éteint par défaut**, mémorisé
-  (`optim.regemLibre`). Allumé, une rune **déjà gemmée** peut voir sa ligne
-  gemmée remplacée par **une autre stat** absente de la rune (mêmes exclusions et
-  emplacements qu'une rune vierge) ; éteint, sa stat reste figée. **Grisé en
-  « Meule seule »** : sans gemme, rien à regemmer. ⚠️ **Pas aux Courbes**, qui
-  ne changent jamais la stat d'une gemme et n'en simulent aucune sur une rune
-  qui n'en a pas (voir [courbes.md](courbes.md)).
+  (`optim.regemLibre`). **Éteint** : une gemme déjà posée se relance dans sa
+  stat, une rune vierge ne reçoit **aucune** gemme (`gemmeExistanteSeule` de
+  `runePotential` et `runePlan`, la même lecture que les Courbes). **Allumé** :
+  toute gemme — la ligne gemmée peut passer à **une autre stat** absente de la
+  rune, et une rune vierge reçoit la meilleure gemme sur la ligne qui y gagne le
+  plus (`regemLibre`). **Grisé en « Meule seule »** : sans gemme, rien à
+  regemmer. ⚠️ **Pas aux Courbes**, qui ne changent jamais la stat d'une gemme
+  et n'en simulent aucune sur une rune qui n'en a pas (voir
+  [courbes.md](courbes.md)).
   - ⚠️ **Un réglage du CALCUL, pas un filtre** : il change le potentiel, le
     gain, le plan « Actuel | Optimisé » et la faisabilité sous « Faisable avec
     ma réserve » (la gemme réclamée peut devenir une autre). Le Résumé, lui,
