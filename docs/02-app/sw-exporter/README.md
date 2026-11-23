@@ -65,9 +65,9 @@ Fichiers : [SwExporterPage.tsx](src/pages/SwExporterPage.tsx) ·
      guilde s'y coupe) ;
   5. se connecter au jeu : SWEX écrit l'export du compte, le plugin commence
      à suivre ;
-  6. choisir le dossier dans l'app (Paramètres › Application › Dossier SW
-     Exporter › « Choisir… ») — « Summoners War Exporter Files » lui-même,
-     pas `plugins` ;
+  6. lier l'application au plugin SWEX : Paramètres › Application › Dossier
+     SW Exporter › « Choisir… », sur « Summoners War Exporter Files »
+     lui-même, pas `plugins` ;
   7. choisir l'invocateur juste en dessous ; une liste vide renvoie à
      l'étape 5.
 - **Utiliser le plugin**, trois étapes, sur le site comme dans l'app :

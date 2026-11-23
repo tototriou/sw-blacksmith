@@ -671,9 +671,9 @@ export const en: Dictionnaire = {
           'With SW Exporter open, start Summoners War and log in: SW Exporter saves your account to a file named after you, and the plugin starts following your game.',
       },
       {
-        titre: 'Choose the folder in the app',
+        titre: 'Link the app to the SWEX plugin',
         texte:
-          'In the desktop app: Settings › Application › SW Exporter folder › “Choose…”. Select the “Summoners War Exporter Files” folder itself, not its “plugins” subfolder.',
+          'In the desktop app: Settings › Application › SW Exporter folder › “Choose…”, then select the “Summoners War Exporter Files” folder itself, not its “plugins” subfolder. The app then reads what the plugin records there.',
       },
       {
         titre: 'Choose your summoner',
