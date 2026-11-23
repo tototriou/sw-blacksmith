@@ -705,6 +705,8 @@ export const en: Dictionnaire = {
     pluginAncien: (v: string, app: string) => `Installed · version ${v} · version ${app} is available`,
     pluginPlusRecent: (v: string) => `Installed · version ${v}, newer than the app`,
     pluginAbsent: 'Not found in the SW Exporter plugins folder.',
+    notifPluginAncien: 'New SW Blacksmith Live plugin version available',
+    notifPluginAction: 'Update',
     sansDossier:
       'The plugin and live only work once the SW Exporter folder and your summoner are chosen: Settings › Application › SW Exporter folder (steps 6 and 7 below).',
     telechargerDernier: 'Download the latest version',
@@ -741,7 +743,7 @@ export const en: Dictionnaire = {
       'RTA favorites and presets, decks, siege defense, rune locks and experience gained outside battles: the plugin does not follow them yet, they arrive at your next login to the game.',
     miseAJourTitre: 'Updating the plugin',
     miseAJour:
-      'The plugin carries the app version: when the app changes version, download it again and replace the old file, then restart SWEX.',
+      'When the plugin changes, the desktop app lets you know with a notification: download it again, replace the old file, then restart SWEX. A new app version does not always change the plugin.',
   },
 
   siegeStats: {

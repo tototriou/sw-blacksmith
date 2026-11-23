@@ -739,6 +739,10 @@ export const fr = {
     pluginAncien: (v: string, app: string) => `Installé · version ${v} · la version ${app} est disponible`,
     pluginPlusRecent: (v: string) => `Installé · version ${v}, plus récente que l'application`,
     pluginAbsent: "Pas trouvé dans le dossier plugins de SW Exporter.",
+    // La notification d'un plugin à remplacer (application de bureau) ; son
+    // action ouvre cette page.
+    notifPluginAncien: 'Nouvelle version du plugin SW Blacksmith Live disponible',
+    notifPluginAction: 'Mettre à jour',
     sansDossier:
       "Le plugin et le direct ne marchent qu'une fois le dossier SW Exporter et ton invocateur choisis : Paramètres › Application › Dossier SW Exporter (étapes 6 et 7 ci-dessous).",
     telechargerDernier: 'Télécharger la dernière version',
@@ -775,7 +779,7 @@ export const fr = {
       "Les favoris et préréglages de la RTA, les decks, la défense de siège, les verrous de runes et l'expérience gagnée hors combat : le plugin ne les suit pas encore, ils arrivent à la prochaine connexion au jeu.",
     miseAJourTitre: 'Mettre à jour le plugin',
     miseAJour:
-      "Le plugin porte la version de l'application : quand l'application change de version, retélécharge-le et remplace l'ancien fichier, puis redémarre SWEX.",
+      "Quand le plugin change, l'application de bureau te prévient par une notification : retélécharge-le, remplace l'ancien fichier, puis redémarre SWEX. Une nouvelle version de l'application ne change pas toujours le plugin.",
   },
 
   // Siège › Statistiques (#/siege/statistiques) : les sièges relevés par le

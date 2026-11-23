@@ -83,8 +83,10 @@ Fichiers : [SwExporterPage.tsx](src/pages/SwExporterPage.tsx) ·
   se reconnecter) ; une erreur « SWBlacksmithLive » dans le journal de SWEX
   (plugin plus ancien que l'app). Un test vérifie que les titres reprennent
   les messages de l'app.
-- Deux cartes : **Mettre à jour le plugin** (il porte la version de l'app :
-  le retélécharger à chaque version) et **Ce qui attend la connexion
+- Deux cartes : **Mettre à jour le plugin** (quand son code change,
+  l'application de bureau le notifie et sa notification ouvre cette page ;
+  une version de l'app ne change pas toujours le plugin —
+  [feat-swex-direct.md](../bureau/feat-swex-direct.md)) et **Ce qui attend la connexion
   suivante** (ce que le plugin ne suit pas encore : favoris et préréglages
   RTA, decks, défense de siège, verrous de runes, expérience hors combat).
 

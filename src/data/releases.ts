@@ -78,6 +78,9 @@ export const RELEASES: Release[] = [
       { kind: 'feat', scope: 'Optimizer', text: '« Simuler +15 » et « Simuler max meules/gemmes » deviennent deux options séparées.' },
       { kind: 'feat', scope: 'Optimizer', text: 'Les meules et gemmes se simulent en Héro ou en Légend, à part pour les runes antiques.' },
       { kind: 'feat', scope: 'Optimizer', text: '« Rechercher jusqu’à épuisement complet » disparaît : les recherches tiennent largement dans le temps.' },
+      { kind: 'feat', scope: 'SW Exporter', text: 'Dans l’application de bureau, une notification te prévient quand le plugin SW Blacksmith Live a une nouvelle version.' },
+      { kind: 'feat', scope: 'SW Exporter', text: 'Une version de l’app qui ne change pas le plugin ne demande plus de le retélécharger.' },
+      { kind: 'feat', scope: 'Application', text: 'Une notification qui pose une question revient après une annonce qui l’avait remplacée.' },
     ],
   },
   {
