@@ -19,6 +19,7 @@ import type { AutoExclusionScope, ExclusionSelector } from '../../../../lib/opti
 import type { SlotFilterPresetKey } from '../../../../lib/runeBuildOptim';
 import type { AuraExterne } from '../../../../lib/aurasExternes';
 import type { DamageSetup } from '../../../../lib/damage';
+import { SIMULATION_RUNES_AUCUNE, type SimulationRunes } from '../../../../lib/runesMaxees';
 import type { ArtifactDetail, ArtifactKind } from '../../../../types';
 
 // Les gabarits des deux colonnes de réglages du bureau : « Artéfacts et relique »
@@ -116,23 +117,22 @@ function ExclusionGabarit({ ctx, initial }: { ctx: ContexteGabarits; initial: Re
   );
 }
 
-interface ReglagesAvances { prefiltrage?: SlotFilterPresetKey; epuisement?: boolean; diagnostic?: boolean; toutes?: boolean; auras?: boolean }
+interface ReglagesAvances { prefiltrage?: SlotFilterPresetKey; simulation?: SimulationRunes; diagnostic?: boolean; toutes?: boolean; auras?: boolean }
 function AvancesGabarit({ ctx, initial }: { ctx: ContexteGabarits; initial: ReglagesAvances }) {
   const o = ctx.optimizer;
   const [prefiltrage, setPrefiltrage] = useState(initial.prefiltrage ?? o.slotFilterPreset);
-  const [epuisement, setEpuisement] = useState(initial.epuisement ?? o.exhaustiveSearch);
   const [diagnostic, setDiagnostic] = useState(initial.diagnostic ?? false);
   const [toutes, setToutes] = useState(initial.toutes ?? o.verifierToutesLesCombinaisons);
   const [auras, setAuras] = useState(initial.auras ?? o.compterAurasResPre);
-  const [maxees, setMaxees] = useState(o.simulerRunesMaxees);
+  const [simulation, setSimulation] = useState(initial.simulation ?? o.simulationRunes);
   const ref = { current: null };
   return (
     <ReglagesAvancesBureau>
       <ReglagesAvancesContenu slotFilterPreset={prefiltrage} handleSlotFilterPresetChange={setPrefiltrage} dansPanneau={false} estimate={null}
-        exhaustiveSearch={epuisement} setExhaustiveSearch={setEpuisement} diagnoseBlockingEnabled={diagnostic} setDiagnoseBlockingEnabled={setDiagnostic}
+        diagnoseBlockingEnabled={diagnostic} setDiagnoseBlockingEnabled={setDiagnostic}
         optimiserArtefacts={o.optimiserArtefacts}
         verifierToutesLesCombinaisons={toutes} setVerifierToutesLesCombinaisons={setToutes}
-        simulerRunesMaxees={maxees} setSimulerRunesMaxees={setMaxees} interrupteurResPrePanneauRef={ref}
+        simulationRunes={simulation} setSimulationRunes={setSimulation} interrupteurResPrePanneauRef={ref}
         interrupteurResPreBureauRef={ref} attentionResPre={null} compterAurasResPre={auras} setCompterAurasResPre={setAuras} bureau />
     </ReglagesAvancesBureau>
   );
@@ -215,8 +215,8 @@ export const GABARITS_COLONNES: Gabarit[] = [
       'L\'estimation du pool n\'est plus sous les réglages : elle est en tête du bloc « Objectif et Rechercher ».',
     ],
     etats: [
-      { id: 'defaut', nom: 'Par défaut', rendu: (ctx) => <AvancesGabarit ctx={ctx} initial={{ prefiltrage: 'moyen', epuisement: false, diagnostic: false, toutes: false, auras: false }} /> },
-      { id: 'modifies', nom: 'Modifiés : Extrême, tout activé', rendu: (ctx) => <AvancesGabarit ctx={ctx} initial={{ prefiltrage: 'extreme', epuisement: true, diagnostic: true, toutes: true, auras: true }} /> },
+      { id: 'defaut', nom: 'Par défaut', rendu: (ctx) => <AvancesGabarit ctx={ctx} initial={{ prefiltrage: 'moyen', simulation: SIMULATION_RUNES_AUCUNE, diagnostic: false, toutes: false, auras: false }} /> },
+      { id: 'modifies', nom: 'Modifiés : Extrême, tout activé', rendu: (ctx) => <AvancesGabarit ctx={ctx} initial={{ prefiltrage: 'extreme', simulation: { plus15: true, meules: { actif: true, grade: 'hero' }, meulesAntiques: { actif: true, grade: 'legend' } }, diagnostic: true, toutes: true, auras: true }} /> },
       { id: 'reel', nom: 'Réglages de l\'Optimizer', rendu: (ctx) => <AvancesGabarit ctx={ctx} initial={{}} /> },
     ],
   },

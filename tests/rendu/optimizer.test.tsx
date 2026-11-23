@@ -208,8 +208,9 @@ export function testRenduOptimizerReglages() {
   ok(texteVisible(panneau).includes('Réglages avancés Profondeur de recherche'), 'la profondeur de recherche');
   for (const p of PALIERS) ok(!!bp.find((x) => x.texte === p && x.title), `le palier « ${p} », expliqué`);
   ok(bp.find((x) => x.texte === 'Moyen')?.presse === true, '« Moyen » par défaut');
-  for (const r of ["Rechercher jusqu'à épuisement complet", 'Diagnostic approfondi sur 0 résultat'])
+  for (const r of ['Simuler +15', 'Simuler max meules/gemmes', 'Simuler max meules/gemmes antiques', 'Diagnostic approfondi sur 0 résultat'])
     ok(bp.some((x) => x.ariaLabel === r), `l'option « ${r} »`);
+  ok(!bp.some((x) => x.ariaLabel === "Rechercher jusqu'à épuisement complet"), '« Rechercher jusqu’à épuisement complet » retiré');
   ok(!bp.some((x) => x.ariaLabel === 'Prioriser les stats les plus difficiles'), '« Prioriser les stats les plus difficiles » retiré');
   ok(t.includes('Objectif de recherche Efficience'), 'l\'objectif de recherche');
   ok(b.find((x) => x.texte === 'Efficience')?.presse === true, 'l\'efficience par défaut');

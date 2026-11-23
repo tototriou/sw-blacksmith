@@ -3100,21 +3100,24 @@ export const en: Dictionnaire = {
     avances: {
       profondeur: 'Search depth',
       pool: (n: string) => `Rune pool = ${n}`,
-      runesMaxees: 'Simulate +15 and max grinds/gems',
-      runesMaxeesAide: {
-        debut: 'On, the search assumes your runes are maxed: the main stat of each 6★ rune goes to its value ',
+      plus15: 'Simulate +15',
+      plus15Aide: {
+        debut: 'On, the search assumes your 6★ runes are leveled: the main stat of each, ancient ones included, goes to its value ',
         niveau: 'at +15',
-        meules: ', every grindable line (HP, ATK, DEF, SPD), ground or not, gets the ',
-        legendaire: 'maximum legendary grind',
-        fin: ', and each gem already applied its maximum legendary value (ancient on an ancient rune). No gem is added, and the upcoming substats of a rune not yet at +12 are not guessed.',
-        couleur:
-          'In the detail of a result rune, what was simulated is shown in purple. The setting applies to the next search: the results shown do not change.',
+        fin: '. The upcoming substats of a rune not yet at +12 are not guessed.',
       },
-      exhaustif: 'Search until fully exhausted',
-      exhaustifAide:
-        'Removes the 10-minute time limit: the search goes on as long as combinations remain to examine. Can take a very long time on a search with few conditions — the ',
-      exhaustifArreter: '“Stop”',
-      exhaustifAideFin: ' button stays available and keeps the best found so far. The cap of one million collected results stays active.',
+      meules: 'Simulate max grinds/gems',
+      meulesAntiques: 'Simulate max ancient grinds/gems',
+      grades: { hero: 'Hero', legend: 'Legend' },
+      meulesAide: {
+        debut: (antiques: boolean) =>
+          `On, on your ${antiques ? 'ancient runes' : 'normal runes (not the ancient ones)'}, every grindable line (HP, ATK, DEF, SPD), ground or not, gets the `,
+        maximale: 'maximum grind of the chosen grade',
+        gemme: ', and each gem already applied its maximum value at that grade. No gem is added or changed.',
+        jamaisBaisse: 'Nothing goes down: on Hero, a legendary grind or gem already applied stays as it is.',
+      },
+      simulationCouleur:
+        'In the detail of a result rune, what was simulated is shown in purple. The setting applies to the next search: the results shown do not change.',
       diagnostic: 'In-depth diagnosis on 0 results',
       diagnosticAide: 'After a search with 0 results, identifies which set condition frees the most candidates when removed — ',
       diagnosticIndice: 'a hint, not a proof',

@@ -127,7 +127,7 @@ sans relance automatique ni reconstruction d'un résultat depuis l'écran.
     (`RuneDetailBox`, partagé avec Mon compte → Runes) : dans un
     `FlottantAuto` ancré sur la rune à la souris, en ligne sous la carte
     au doigt. Les runes d'un candidat sont de vraies runes du compte —
-    sauf sous « Simuler +15 et max meules/gemmes » (voir
+    sauf sous les lignes de simulation des runes maxées (voir
     conditions-et-reglages.md § Réglages avancés) : ce sont alors les
     copies maxées du pool photographié, mêmes identifiants. Le détail écrit
     en **violet** (`VIOLET` de `PieceDetail.tsx`, la teinte du plan

@@ -56,7 +56,6 @@ export function testRecetteClesIdentifiant() {
         monsterCom2usId: LAPIS, monsterName: 'Lapis',
         requirement: { sets: [], minStats: {} }, objective: 'degats_reels',
         damageSetup: DEFAULT_DAMAGE_SETUP, metric: 'eff', slotFilterPreset: 'bas',
-        exhaustiveSearch: false,
         excludeUsedRunes: false, excludeUsedScope: 'box', excludedSelectors: [],
         ignoreArtifacts: true, artifactMainByKind: {},
       })

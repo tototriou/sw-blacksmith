@@ -245,7 +245,6 @@ export function resoudreCas(index: number, commun: OptionsLot): { config: Config
     compterAurasResPre: true,
     metric: 'eff',
     slotFilterPreset: PRESET_LOT,
-    exhaustiveSearch: false,
     excludeUsedRunes: false,
     excludeUsedScope: 'box',
     excludedSelectors: [],

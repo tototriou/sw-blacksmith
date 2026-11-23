@@ -199,8 +199,7 @@ rétablirait un mesurerait une recherche tronquée que la production ne fait
 pas. `maxMs` est la seule borne qui puisse tronquer, et le premier paramètre à
 vérifier : 15 s par défaut moteur (`DEFAULT_MAX_MS`,
 `src/lib/runeBuildOptim.ts:1206`), 10 min à l'écran (`HARD_TIMEOUT_MS`,
-`src/components/outils/OptimizerSection.tsx:918`), sans limite en recherche
-exhaustive. En synthétique sans `maxMs`, le harnais applique les 10 min de
+`src/components/outils/OptimizerSection.tsx`), toujours. En synthétique sans `maxMs`, le harnais applique les 10 min de
 l'écran et le dit (`scripts/lib/diagnosticConfig.ts:137-147`).
 
 **Piège A — la cascade.** Sans override, `bucketCap` est DÉRIVÉ :

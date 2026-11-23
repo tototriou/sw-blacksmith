@@ -487,13 +487,14 @@ export function signatureReglages(parts: {
    */
   empreinteSpeedTune: string | null;
   /**
-   * « Simuler +15 et max meules/gemmes » (`poolDeRecherche`, runesMaxees.ts) :
-   * le cache est indexé par les identifiants de runes, que les runes simulées
-   * GARDENT. Sans ce champ, relancer réglage basculé, aux mêmes réglages
-   * sinon, rendait les paires résolues sur les valeurs de l'autre inventaire.
-   * Obligatoire, pour la même raison qu'`artefactsReserves`.
+   * La simulation des runes maxées (`empreinteSimulation`, runesMaxees.ts),
+   * `null` quand rien n'est simulé : le cache est indexé par les identifiants
+   * de runes, que les runes simulées GARDENT. Sans ce champ, relancer une
+   * ligne basculée ou un grade changé, aux mêmes réglages sinon, rendait les
+   * paires résolues sur les valeurs de l'autre inventaire. Obligatoire, pour
+   * la même raison qu'`artefactsReserves`.
    */
-  runesMaxees: boolean;
+  runesMaxees: string | null;
 }): string {
   // ⚠️ Un minimum à 0 n'exige RIEN : le retenir ferait relancer 100
   // optimisations pour rien dès qu'on tape puis efface une valeur. L'ordre de
@@ -533,7 +534,7 @@ export function signatureReglages(parts: {
     // Même règle : sans contrainte de speed tune, composant omis.
     ...(parts.empreinteSpeedTune != null ? [`speedtune:${parts.empreinteSpeedTune}`] : []),
     // Même règle : désactivé, composant omis.
-    ...(parts.runesMaxees ? ['runes-maxees'] : []),
+    ...(parts.runesMaxees != null ? [`runes-maxees:${parts.runesMaxees}`] : []),
   ].join('§');
 }
 
@@ -568,8 +569,8 @@ export function signatureArtefacts(parts: {
   importDuCompte: number;
   // L'empreinte de la contrainte de speed tune — voir `signatureReglages`.
   empreinteSpeedTune: string | null;
-  // « Simuler +15 et max meules/gemmes » — voir `signatureReglages`.
-  runesMaxees: boolean;
+  // L'empreinte de la simulation des runes maxées — voir `signatureReglages`.
+  runesMaxees: string | null;
 }): string {
   return signatureReglages({
     monstreCom2usId: parts.monstreCom2usId,

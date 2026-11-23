@@ -388,7 +388,7 @@ export function RuneDetailBox({
   // Une rune sans aucune meule n'a rien à basculer : les deux lectures y sont
   // identiques, et un clic sans effet se lit comme un défaut.
   const aDeLaMeule = rune.subs.some((s) => (s.grind ?? 0) > 0);
-  // Une rune simulée par l'Optimizer (« Simuler +15 et max meules/gemmes ») :
+  // Une rune simulée par l'Optimizer (« Simuler +15 », « Simuler max meules/gemmes »…) :
   // ce qui diffère de la vraie rune s'écrit en violet, la valeur réelle en
   // `title`. Absent sur une rune de l'inventaire : rien ne change.
   const avant = rune.avantSimulation;

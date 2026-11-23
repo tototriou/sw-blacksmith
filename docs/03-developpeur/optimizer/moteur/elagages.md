@@ -509,7 +509,7 @@ porte la ligne 218, même si les PV ne sont pas une stat du sort.
   construit (`src/workers/buildHalf.worker.ts`), et l'appariement se répartit sur
   plusieurs Workers dès que l'espace compte au moins
   `PARALLEL_PAIRING_THRESHOLD` paires (`totalPairCount`), en recherche
-  normale comme en mode « Rechercher jusqu'à épuisement complet ». Mêmes
+  quel que soit le filet de temps. Mêmes
   résultats, dans le même ordre : `tests/appariement-parallele.test.ts`
   compare le parallèle au séquentiel, sur des Workers simulés et sur de
   vrais `worker_threads`. Détail :

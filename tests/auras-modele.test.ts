@@ -72,7 +72,6 @@ function recette() {
     monsterCom2usId: 14104, monsterName: 'Monstre du test',
     requirement: { sets: [], minStats: {} }, objective: 'ehp', damageSetup: SETUP,
     compterAurasResPre: true, metric: 'eff', slotFilterPreset: 'bas',
-    exhaustiveSearch: false,
     excludeUsedRunes: false, excludeUsedScope: 'box', excludedSelectors: [],
     ignoreArtifacts: false, artifactMainByKind: {},
   });
@@ -325,12 +324,12 @@ export function testAurasPariteEcranCliEtCache() {
   const signature = (compterAurasResPre: boolean) => signatureArtefacts({ monstreCom2usId: 1, damageSetup: SETUP,
     compterAurasResPre, regimeEquipement: 'ehp', ignoreArtifacts: false, principaleParSorte: {},
     lignesVerrouillees: [], relique: null, nbArtefacts: 0, empreinteRelique: null,
-    requirement: { minStats: { res: 8 }, maxStats: {} }, artefactsReserves: [], piecesFigees: [], importDuCompte: 0, empreinteSpeedTune: null, runesMaxees: false });
+    requirement: { minStats: { res: 8 }, maxStats: {} }, artefactsReserves: [], piecesFigees: [], importDuCompte: 0, empreinteSpeedTune: null, runesMaxees: null });
   ok(signature(true) !== signature(false), 'le toggle invalide le cache');
   ok(signatureArtefacts({ monstreCom2usId: 1, damageSetup: { ...SETUP, setsAuraExternes: [] },
     compterAurasResPre: true, regimeEquipement: 'ehp', ignoreArtifacts: false, principaleParSorte: {},
     lignesVerrouillees: [], relique: null, nbArtefacts: 0, empreinteRelique: null,
-    requirement: { minStats: { res: 8 }, maxStats: {} }, artefactsReserves: [], piecesFigees: [], importDuCompte: 0, empreinteSpeedTune: null, runesMaxees: false }) !== signature(true), 'la liste invalide le cache');
+    requirement: { minStats: { res: 8 }, maxStats: {} }, artefactsReserves: [], piecesFigees: [], importDuCompte: 0, empreinteSpeedTune: null, runesMaxees: null }) !== signature(true), 'la liste invalide le cache');
 
   // Cache. La signature GLOBALE suit le nombre d'auras
   // externes, le toggle et le régime ; la clé PAR BUILD (six runeIds, sans
@@ -338,7 +337,7 @@ export function testAurasPariteEcranCliEtCache() {
   const sig = (externes: Partial<Record<SetAura, number>>, compter: boolean, regime: string) => signatureArtefacts({
     monstreCom2usId: 1, damageSetup: avecExternes(externes), compterAurasResPre: compter, regimeEquipement: regime,
     ignoreArtifacts: false, principaleParSorte: {}, lignesVerrouillees: [], relique: null, nbArtefacts: 0,
-    empreinteRelique: null, requirement: { minStats: { res: 8 }, maxStats: {} }, artefactsReserves: [], piecesFigees: [], importDuCompte: 0, empreinteSpeedTune: null, runesMaxees: false });
+    empreinteRelique: null, requirement: { minStats: { res: 8 }, maxStats: {} }, artefactsReserves: [], piecesFigees: [], importDuCompte: 0, empreinteSpeedTune: null, runesMaxees: null });
   ok(sig({ fight: 3 }, true, 'degats_reels') !== sig({ fight: 2 }, true, 'degats_reels'), 'cache : 3 → 2 Fight externes invalide');
   ok(sig({ fight: 3 }, true, 'degats_reels') !== sig({ fight: 3 }, false, 'degats_reels'), 'cache : toggle RES/PRE invalide');
   ok(sig({ fight: 3 }, true, 'degats_reels') !== sig({ fight: 3 }, true, 'ehp'), 'cache : changement de régime invalide');
@@ -919,7 +918,6 @@ export async function testAurasPariteRegimes() {
     monsterCom2usId: 13413, monsterName: 'Lushen',
     requirement: { sets: [], minStats: {} }, objective: 'degats_reels', damageSetup: setup,
     compterAurasResPre: true, metric: 'eff', slotFilterPreset: 'bas',
-    exhaustiveSearch: true,
     excludeUsedRunes: false, excludeUsedScope: 'box', excludedSelectors: [],
     ignoreArtifacts: true, artifactMainByKind: {},
   });

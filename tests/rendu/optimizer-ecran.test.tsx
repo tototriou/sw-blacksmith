@@ -17,7 +17,10 @@ import EnteteResultats from '../../src/components/outils/optimizer/EnteteResulta
 import PaginationResultats from '../../src/components/outils/optimizer/PaginationResultats';
 import { rechercheClasseeTest } from './optimizer-classement-banc';
 
-const MAXEES = 'Simuler +15 et max meules/gemmes';
+const PLUS15 = 'Simuler +15';
+const MEULES = 'Simuler max meules/gemmes';
+const MEULES_ANTIQUES = 'Simuler max meules/gemmes antiques';
+// Retiré de l'écran, comme « Prioriser… » ci-dessous.
 const EPUISEMENT = "Rechercher jusqu'à épuisement complet";
 const DIAGNOSTIC = 'Diagnostic approfondi sur 0 résultat';
 // Retiré de l'écran : ne doit plus apparaître dans aucun format.
@@ -57,10 +60,10 @@ export function testRenduOptimizerReglagesAvancesContenu() {
   const telephone = options(MONSTRE);
   const aidesFixes = [...telephone.matchAll(/<div class="flex-none"><div class="relative"><button\b[^>]*aria-label="([^"]+)"/g)].map((m) => decoder(m[1]));
   ok(aidesFixes.includes(COMPTER), 'panneau « Options » : l’aide des auras garde sa largeur, seul le libellé peut rétrécir');
-  egal(noms(telephone), [MAXEES, EPUISEMENT, DIAGNOSTIC, VERIFIER, COMPTER],
-    'panneau « Options » : les interrupteurs, « Simuler +15… » en tête, l’interrupteur des auras en dernier');
+  egal(noms(telephone), [PLUS15, MEULES, MEULES_ANTIQUES, DIAGNOSTIC, VERIFIER, COMPTER],
+    'panneau « Options » : les interrupteurs, les trois lignes de simulation en tête, l’interrupteur des auras en dernier');
   const sansFile = options({ ...MONSTRE, optimiserArtefacts: false });
-  egal(noms(sansFile), [MAXEES, EPUISEMENT, DIAGNOSTIC, COMPTER],
+  egal(noms(sansFile), [PLUS15, MEULES, MEULES_ANTIQUES, DIAGNOSTIC, COMPTER],
     'sans optimisation d’artéfacts : « Vérifier toutes… » masqué, l’interrupteur des auras rendu sans condition, en dernier');
 
   const etat = (html: string, nom: string) => interrupteurs(html, ANCRE).find((x) => x.nom === nom)?.coche;
@@ -68,14 +71,29 @@ export function testRenduOptimizerReglagesAvancesContenu() {
     'l’interrupteur des auras affiche `compterAurasResPre`');
   ok(etat(telephone, VERIFIER) === false && etat(options({ ...MONSTRE, verifierToutesLesCombinaisons: true }), VERIFIER) === true,
     '« Vérifier toutes… » affiche `verifierToutesLesCombinaisons`');
-  ok(etat(telephone, MAXEES) === false && etat(options({ ...MONSTRE, simulerRunesMaxees: true }), MAXEES) === true,
-    '« Simuler +15… » : désactivé par défaut, affiche `simulerRunesMaxees`');
-  ok(boutons(telephone).some((b) => b.ariaLabel === MAXEES), '« Simuler +15… » a son aide');
+  const simulation = { plus15: true, meules: { actif: false, grade: 'hero' }, meulesAntiques: { actif: true, grade: 'legend' } };
+  const simule = options({ ...MONSTRE, simulationRunes: simulation });
+  egal([PLUS15, MEULES, MEULES_ANTIQUES].map((n) => etat(telephone, n)), [false, false, false], 'les trois lignes de simulation : désactivées par défaut');
+  egal([PLUS15, MEULES, MEULES_ANTIQUES].map((n) => etat(simule, n)), [true, false, true], 'chaque interrupteur affiche sa ligne de `simulationRunes`');
+  for (const n of [PLUS15, MEULES, MEULES_ANTIQUES]) ok(boutons(telephone).some((b) => b.ariaLabel === n), `« ${n} » a son aide`);
+  // Le grade de chaque ligne de meules : deux crans « Héro » · « Légend »,
+  // entre le libellé et le « ? », visibles même interrupteur éteint.
+  const grades = (html: string, ligne: string) => {
+    const debut = html.indexOf(`${ligne}</span>`);
+    const fin = html.indexOf(`aria-label="${ligne}"`, debut);
+    return boutons(html.slice(debut, fin)).filter((b) => b.texte === 'Héro' || b.texte === 'Légend').map((b) => [b.texte, b.presse]);
+  };
+  egal(grades(telephone, MEULES), [['Héro', false], ['Légend', true]], '« Simuler max meules/gemmes » : Légend par défaut, entre le libellé et le « ? »');
+  egal(grades(simule, MEULES), [['Héro', true], ['Légend', false]], 'le grade choisi s’affiche, interrupteur éteint');
+  egal(grades(simule, MEULES_ANTIQUES), [['Héro', false], ['Légend', true]], 'la ligne antique a son propre grade');
+  ok(grades(telephone, PLUS15).length === 0, '« Simuler +15 » n’a pas de grade');
 
   for (const [nom, html] of [['téléphone', telephone]] as const) {
     const t = texteVisible(html);
-    ok(!t.includes(PRIORISER) && !boutons(html).some((b) => b.ariaLabel === PRIORISER),
-      `${nom} : plus d’interrupteur « ${PRIORISER} », ni libellé ni aide`);
+    for (const retire of [PRIORISER, EPUISEMENT]) {
+      ok(!t.includes(retire) && !boutons(html).some((b) => b.ariaLabel === retire),
+        `${nom} : plus d’interrupteur « ${retire} », ni libellé ni aide`);
+    }
     ok(t.includes(COMPTER) && t.includes(VERIFIER), `${nom} : les deux rangées portent leur libellé exact`);
     const aides = boutons(html).filter((b) => b.ariaLabel === COMPTER || b.ariaLabel === VERIFIER).map((b) => b.ariaLabel);
     ok(aides.includes(COMPTER) && aides.includes(VERIFIER), `${nom} : chacune a son aide`);

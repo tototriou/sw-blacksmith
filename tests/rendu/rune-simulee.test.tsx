@@ -1,12 +1,12 @@
-// Rendu — le détail d'une rune SIMULÉE par l'Optimizer (« Simuler +15 et max
-// meules/gemmes », runesMaxees.ts) : ce que la simulation a changé s'écrit en
+// Rendu — le détail d'une rune SIMULÉE par l'Optimizer (« Simuler +15 », « Simuler
+// max meules/gemmes », runesMaxees.ts) : ce que la simulation a changé s'écrit en
 // violet (la teinte du plan « Actuel | Optimisé » de Mon compte > Runes >
 // Optimisation), la valeur réelle en infobulle ; une rune de l'inventaire ne
 // change pas. C'est la carte des résultats (BuildCandidateCard), aux deux
 // formats : le même composant au survol et sous la roue.
 
 import { RuneDetailBox, VIOLET } from '../../src/components/PieceDetail';
-import { runeMaxee } from '../../src/lib/runesMaxees';
+import { runeMaxee, simulationDepuisAncienReglage } from '../../src/lib/runesMaxees';
 import type { RuneDetail } from '../../src/types';
 import { auTelephone, rendre, texteVisible } from './outils-rendu';
 import { ok, titre } from '../outils';
@@ -31,7 +31,7 @@ export function testRenduRuneSimulee() {
     ['téléphone', (r: RuneDetail) => auTelephone(() => rendre(<RuneDetailBox rune={r} />))]] as const) {
     const reelle = rendu(RUNE);
     ok(violets(reelle).length === 0 && !reelle.includes('Simulé'), `${format} : rune de l’inventaire, aucune ligne en violet ni infobulle de simulation`);
-    const simulee = rendu(runeMaxee(RUNE));
+    const simulee = rendu(runeMaxee(RUNE, simulationDepuisAncienReglage(true)));
     const v = violets(simulee);
     ok(v.includes('VIT +42'), `${format} : principale montée à +15 en violet (${v.join(' | ')})`);
     ok(v.includes('ATQ 13%') && v.includes('+10%'), `${format} : gemme ATQ % 7 → 13 et sa meule +3 → +10, chacune en violet`);

@@ -1485,15 +1485,10 @@ const BUCKET_CAP = 3000;
 // nulle part. `perf-battery.ts` (`slotFilterCap=80` fixe) ne vérifie qu'un build CIBLE
 // connu, jamais le NOMBRE de builds valides retenus (voir plus haut) :
 // `--monotonicity` le vérifie directement.
-// ⚠️ À Extrême, `bucketCap=22 500` fait ATTEINDRE le filet de temps de 10
-// min (`HARD_TIMEOUT_MS`) sur des cas volumineux — resserrer à une valeur
-// juste suffisante (9000, mesurée) N'ÉVITE PAS la troncature (la recherche
-// consomme de toute façon tout le budget-temps disponible) et trouve
-// MOINS de builds en prime — conservé tel quel après mesure, pas par
-// défaut. Détails complets, y compris la piste « objectif de recherche
-// mieux aligné » testée et écartée : docs/03-developpeur/optimizer/
-// § Pré-filtrage heuristique et compartiments et § Variantes écartées ou gardées en réserve. Script de calibration réutilisable :
-// scripts/bucket-cap-scaling-diag.ts.
+// Détails, y compris la piste « objectif de recherche mieux aligné » testée
+// et écartée : docs/03-developpeur/optimizer/ § Pré-filtrage heuristique et
+// compartiments et § Variantes écartées ou gardées en réserve. Script de
+// calibration réutilisable : scripts/bucket-cap-scaling-diag.ts.
 // ⚠️ Volontairement IDENTIQUE à `MAX_PER_SLOT_MATCH` — les deux dérivent du
 // même préréglage « Bas » (slotFilterCap=40) : l'un est le plafond de
 // rétention par défaut de `filterSlot`/le repli de `prepareSearch` quand

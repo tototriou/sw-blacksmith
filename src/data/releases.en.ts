@@ -10,10 +10,13 @@ import type { Release } from './releases';
 export const RELEASES_EN: Release[] = [
   {
     version: null,
-    date: '2026-11-22',
-    title: 'My teams from the first validated runes',
+    date: '2026-11-23',
+    title: 'My teams sooner, lighter Optimizer options',
     changes: [
       { kind: 'feat', scope: 'Optimizer', text: '“Save to My teams” turns on as soon as one monster of the team has validated runes.' },
+      { kind: 'feat', scope: 'Optimizer', text: '“Simulate +15” and “Simulate max grinds/gems” become two separate options.' },
+      { kind: 'feat', scope: 'Optimizer', text: 'Grinds and gems are simulated at Hero or Legend, separately for ancient runes.' },
+      { kind: 'feat', scope: 'Optimizer', text: '“Search until fully exhausted” is gone: searches fit well within the time limit.' },
     ],
   },
   {
