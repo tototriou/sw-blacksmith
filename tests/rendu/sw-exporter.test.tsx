@@ -4,6 +4,7 @@
 
 import SwExporterPage from '../../src/pages/SwExporterPage';
 import { CHEMIN_PLUGIN_SWEX, FICHIER_PLUGIN_SWEX, SW_EXPORTER } from '../../src/lib/pluginSwex';
+import { fr } from '../../src/i18n/fr';
 import { egal, ok, titre } from '../outils';
 import { rendre, texteVisible } from './outils-rendu';
 
@@ -39,14 +40,34 @@ export function testRenduSwExporter() {
   ok(a.some((x) => x.href === '#/telecharger' && !x.nouvelOnglet), 'site : lien vers Télécharger, dans la page');
 
   // Le tuto, dans l'ordre, et SWEX lui-même dans un nouvel onglet.
-  const etapes = ['Installe SW Exporter', 'Télécharge le plugin', 'Dépose-le dans le dossier plugins', 'Redémarre SW Exporter', 'Suis le dossier dans l’application'];
+  const etapes = [
+    'Installe SW Exporter',
+    'Télécharge le plugin',
+    'Dépose-le dans le dossier plugins',
+    'Redémarre SW Exporter',
+    'Connecte-toi au jeu',
+    'Choisis le dossier dans l’application',
+    'Choisis ton invocateur',
+  ];
   const positions = etapes.map((e) => t.indexOf(e));
-  ok(positions.every((p, i) => p >= 0 && (i === 0 || p > positions[i - 1])), 'les cinq étapes, dans l’ordre');
+  ok(positions.every((p, i) => p >= 0 && (i === 0 || p > positions[i - 1])), 'les sept étapes, dans l’ordre');
   ok(t.includes('Laisse son plugin ProfileExport activé'), 'ProfileExport doit rester activé');
-  ok(t.includes('Paramètres › Dossier SW Exporter'), 'où choisir le dossier dans l’app');
+  ok(t.includes('Paramètres › Application › Dossier SW Exporter'), 'où choisir le dossier dans l’app');
+  ok(t.includes('pas son sous-dossier « plugins »'), 'le dossier à choisir : celui de SWEX, pas « plugins »');
   ok(a.some((x) => x.href === SW_EXPORTER && x.nouvelOnglet && x.texte === 'SW Exporter sur GitHub'), 'SW Exporter sur GitHub, nouvel onglet');
 
-  for (const s of ['Mettre à jour le plugin', 'Ce qui attend la connexion suivante']) ok(t.includes(s), `« ${s} »`);
+  // Le piège : sans dossier ni invocateur, rien n'est lu — dit AVANT les étapes.
+  const avertissement = t.indexOf('Les étapes 6 et 7 sont indispensables');
+  ok(avertissement >= 0 && avertissement < positions[0], 'l’avertissement dossier + invocateur, avant les étapes');
+
+  // Le dépannage reprend les messages tels que l'application les affiche.
+  ok(t.indexOf('Ça ne marche pas ?') > positions[positions.length - 1], 'le dépannage, après les étapes');
+  const s = fr.swExporter;
+  const messages = [fr.application.swexAucunExport, s.pluginAbsent, s.sansSession.split(' :')[0]];
+  for (const m of messages) ok(s.depannage.some((d) => d.titre.includes(m)), `dépannage : « ${m} » tel que l’app l’affiche`);
+  for (const d of s.depannage) ok(t.includes(d.titre), `dépannage affiché : ${d.titre}`);
+
+  for (const x of ['Mettre à jour le plugin', 'Ce qui attend la connexion suivante']) ok(t.includes(x), `« ${x} »`);
 }
 
 // Dans l'app de bureau : pas de renvoi vers « Télécharger », qui n'y existe pas.

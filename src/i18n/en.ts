@@ -646,25 +646,39 @@ export const en: Dictionnaire = {
     telechargerApp: 'Download the app',
     auTelephone: 'Install it from a computer, next to SW Exporter.',
     tutoTitre: 'Install the plugin',
+    tutoAvertissement:
+      'Steps 6 and 7 are required: until the SW Exporter folder and the summoner are chosen in the app, it reads nothing the plugin records. No live account, no guild battles, no Dimensional Arena.',
     etapes: [
       {
         titre: 'Install SW Exporter',
         texte:
-          'If you have not already: download it, run it and log in to the game once. Keep its ProfileExport plugin enabled: it writes the starting export.',
+          'If you have not already: download it, run it and follow its instructions to connect the game. Keep its ProfileExport plugin enabled: it saves your account.',
       },
-      { titre: 'Download the plugin', texte: 'The button above gives you the SWBlacksmithLive.js file.' },
+      { titre: 'Download the plugin', texte: 'The button above saves the SWBlacksmithLive.js file to your computer.' },
       {
         titre: 'Drop it in the plugins folder',
         texte:
-          'The “Summoners War Exporter Files” folder, where SWEX saves your exports, contains a “plugins” folder: put the file in it.',
+          'Open the “Summoners War Exporter Files” folder, where SW Exporter saves your exports (in your Documents by default), and put the file in its “plugins” subfolder.',
       },
       {
         titre: 'Restart SW Exporter',
-        texte: '“SWBlacksmithLive” appears in its plugin list, enabled. Guild battles can be turned off in the same place.',
+        texte:
+          'Close it and run it again: “SWBlacksmithLive” appears, enabled, in its plugin list. You can turn off guild battle tracking there if you do not want it.',
       },
       {
-        titre: 'Follow the folder in the app',
-        texte: 'In the desktop app: Settings › SW Exporter folder. Log in to the game: your account loads.',
+        titre: 'Log in to the game',
+        texte:
+          'With SW Exporter open, start Summoners War and log in: SW Exporter saves your account to a file named after you, and the plugin starts following your game.',
+      },
+      {
+        titre: 'Choose the folder in the app',
+        texte:
+          'In the desktop app: Settings › Application › SW Exporter folder › “Choose…”. Select the “Summoners War Exporter Files” folder itself, not its “plugins” subfolder.',
+      },
+      {
+        titre: 'Choose your summoner',
+        texte:
+          'Right below, in “Summoner”, choose your account: it loads in the app, and live is ready. The list is empty? Log in to the game once with SW Exporter open (step 5).',
       },
     ],
     swexSurGithub: 'SW Exporter on GitHub',
@@ -691,13 +705,37 @@ export const en: Dictionnaire = {
     pluginAncien: (v: string, app: string) => `Installed · version ${v} · version ${app} is available`,
     pluginPlusRecent: (v: string) => `Installed · version ${v}, newer than the app`,
     pluginAbsent: 'Not found in the SW Exporter plugins folder.',
-    sansDossier: 'Choose the SW Exporter folder in Settings to see the plugin and your session.',
+    sansDossier:
+      'The plugin and live only work once the SW Exporter folder and your summoner are chosen: Settings › Application › SW Exporter folder (steps 6 and 7 below).',
     telechargerDernier: 'Download the latest version',
     session: (heure: string) => `Live session · last action at ${heure}`,
     sansSession: 'No live session: log in to the game with SW Exporter open and the plugin installed.',
     mettreAJour: 'Update my account',
     misAJour: (heure: string) => `Account updated at ${heure}.`,
     echecMiseAJour: 'Nothing to update: no readable live session.',
+    depannageTitre: 'Not working?',
+    depannage: [
+      {
+        titre: '“No account export at the root of this folder.”',
+        texte:
+          'The chosen folder is not the right one, often “plugins” or “SWBlacksmith”: choose “Summoners War Exporter Files” itself. If it already is, log in to the game once with SW Exporter open.',
+      },
+      {
+        titre: '“Not found in the SW Exporter plugins folder.”',
+        texte:
+          'The file is not in the “plugins” subfolder of the folder chosen in the app. Check steps 3 and 6: it must be the same “Summoners War Exporter Files” folder.',
+      },
+      {
+        titre: '“No live session”',
+        texte:
+          'The plugin only follows a session from the moment you log in to the game: restart SW Exporter, check that “SWBlacksmithLive” is enabled there, then log in to the game again.',
+      },
+      {
+        titre: 'A “SWBlacksmithLive” error in the SW Exporter log',
+        texte:
+          'Your plugin is probably older than the app: download the latest version, replace the old file, restart SW Exporter and log in again. If the error remains, report it with its log line.',
+      },
+    ],
     limitesTitre: 'What waits for the next login',
     limites:
       'RTA favorites and presets, decks, siege defense, rune locks and experience gained outside battles: the plugin does not follow them yet, they arrive at your next login to the game.',
@@ -1015,7 +1053,7 @@ export const en: Dictionnaire = {
     swexAucunDossier: 'No folder chosen.',
     swexIntrouvable: 'Folder not found: check it still exists, or choose another one.',
     swexAucunExport: 'No account export at the root of this folder.',
-    swexChoisirInvocateur: 'Choose the summoner to follow.',
+    swexChoisirInvocateur: 'Choose the summoner to follow: without one, neither your account nor the plugin is read.',
     swexLu: (date: string) => `Export of ${date} — read.`,
     swexEnLecture: (date: string) => `Export of ${date} — reading…`,
     exportCharge: (nom: string | null) => `${nom ? `${nom}’s account` : 'Account'} loaded from SW Exporter`,
