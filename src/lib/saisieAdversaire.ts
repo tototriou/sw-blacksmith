@@ -168,3 +168,16 @@ export function avecLeadAdversaire(setup: DamageSetup, lead: { stat: LeaderSkill
     },
   };
 }
+
+/**
+ * Un TOTAL saisi directement (vue simple). Sans saisie en parties, il s'écrit
+ * tel quel dans le champ `enemy…`. Avec une saisie, la différence va aux
+ * runes : base, lead et compétences d'invocateur restent ce qu'on a importé,
+ * et le total affiché est celui qu'on vient de taper (au plus proche, runes ≥ 0).
+ */
+export function avecTotalAdversaire(setup: DamageSetup, stat: StatAdversaire, total: number): Partial<DamageSetup> {
+  if (!setup.adversaire) return { [CHAMP_TOTAL[stat]]: Math.max(0, total) };
+  const d = detailAdversaire(setup.adversaire, setup.summonerSkills, setup.enemyElement ?? null)[stat];
+  const runes = Math.max(0, Math.round(total - d.base - d.lead - d.invocateur));
+  return avecValeurAdversaire(setup, 'runes', stat, runes);
+}

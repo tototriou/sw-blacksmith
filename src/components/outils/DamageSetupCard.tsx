@@ -79,7 +79,7 @@ import Jeton from '../../ui/Jeton';
 import NumberField from '../../ui/NumberField';
 import Option from '../../ui/Option';
 import Segmented from '../../ui/Segmented';
-import SaisieAdversaire from './SaisieAdversaire';
+import AdversaireDepliable from './AdversaireDepliable';
 import Selecteur from '../../ui/Selecteur';
 import { ELEMENTS, type ElementKey, type Monster } from '../../types';
 import HelpPopover from '../HelpPopover';
@@ -1513,11 +1513,12 @@ export default function DamageSetupCard({
             (SaisieAdversaire.tsx). Mêmes stats qu'avant selon le sort : PV
             toujours, DEF si le sort lit la défense, ATQ et VIT quand une
             condition ou la formule les lit. */}
-        <SaisieAdversaire
+        <AdversaireDepliable
           setup={setup}
           maj={maj}
           etroit={etroit}
           monstres={monstres}
+          libelle={libelleAdversaire}
           stats={[
             'hp',
             ...(montreDefEnnemie ? (['def'] as const) : []),
