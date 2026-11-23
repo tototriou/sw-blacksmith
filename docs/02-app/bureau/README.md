@@ -391,7 +391,9 @@ de SWEX n'est nécessaire.
   `SW-Blacksmith.deb`, `SW-Blacksmith.AppImage`) : seule adresse fixe pour
   `releases/latest/download`.
 - Le paquet ne contient que `dist/`, les deux `.cjs` et `package.json`
-  (aucun `node_modules`) ; l'icône Windows est `bureau/icone.ico`
+  (aucun `node_modules`) ; `LICENSE.md` et `NOTICE.md` sont posés à côté de
+  l'exécutable (`extraFiles`), comme les licences d'Electron : qui reçoit
+  l'app reçoit les termes de sa licence. L'icône Windows est `bureau/icone.ico`
   (`scripts/generer-icone-bureau.mjs`), petites tailles en BMP.
 - **Une mise à jour garde les données** (l'ancien désinstalleur passe avec
   `--updated`) ; **une désinstallation efface tout** — données, raccourcis,

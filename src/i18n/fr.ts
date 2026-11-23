@@ -332,7 +332,7 @@ export const fr = {
       commuAccent: 'la communauté',
       discordTitre: (app: string) => `Les joueurs qui utilisent ${app} sont sur Discord`,
       nouveautesTexte: 'Ce qui change à chaque version.',
-      githubTitre: 'Le code est open source',
+      githubTitre: 'Le code est public',
       githubTexte: 'Si tu n\'es pas sûr de ce que fait l\'application, vérifie par toi-même et propose des améliorations.',
       voirGithub: 'Voir sur GitHub',
     },

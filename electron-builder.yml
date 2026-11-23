@@ -51,6 +51,12 @@ files:
   - package.json
   - "!node_modules/**/*"
 
+# La licence et ses mentions, à côté de l'exécutable (comme celles
+# d'Electron) : qui reçoit l'app reçoit aussi leurs termes (NOTICE.md).
+extraFiles:
+  - LICENSE.md
+  - NOTICE.md
+
 win:
   target: nsis
   # ⚠️ Pas `public/favicon.png` converti par electron-builder : il écrit

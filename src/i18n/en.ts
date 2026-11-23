@@ -314,7 +314,7 @@ export const en: Dictionnaire = {
       commuAccent: 'the community',
       discordTitre: (app: string) => `Players who use ${app} are on Discord`,
       nouveautesTexte: 'What changes in each version.',
-      githubTitre: 'The code is open source',
+      githubTitre: 'The code is public',
       githubTexte: 'Not sure what the app does? Check for yourself and suggest improvements.',
       voirGithub: 'See on GitHub',
     },

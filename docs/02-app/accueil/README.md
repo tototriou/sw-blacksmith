@@ -111,7 +111,8 @@ Trois cartes **de même taille** sur une rangée (une colonne au téléphone) :
 - **Nouveautés** — la **dernière version PUBLIÉE** (une version en préparation
   est en tête du journal sans être en ligne) et son titre, « Voir les
   nouveautés » → [Nouveautés](../nouveautes/) ;
-- **Le code** — open source, lien vers GitHub (nouvel onglet).
+- **Le code** — « Le code est public » (licence non commerciale, pas « open
+  source » : [NOTICE.md](../../../NOTICE.md)), lien vers GitHub (nouvel onglet).
 
 ⚠️ Compacte, sans grande bande (le mainteneur : « trop grosse comparée au
 reste ») : le Discord se distingue par sa teinte, pas par sa taille.
