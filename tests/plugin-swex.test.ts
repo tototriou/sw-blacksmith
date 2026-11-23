@@ -268,6 +268,31 @@ export function testPluginSwexEtat() {
   ok(!appliquer(e, 'SellRune', req({ rune_id_list: [12] }), { ret_code: 1 }), 'commande en échec : ignorée');
   ok(!appliquer(e, 'SellRune', { wizard_id: AUTRE, rune_id_list: [12] }, ok0()), 'autre invocateur : ignoré');
   egal(JSON.stringify(versExport(e)), fige, 'rien n’a changé');
+
+  // ⚠️ Une liste du jeu en OBJET indexé (une liste à trous) : la connexion
+  // levait « object is not iterable », et le plugin ne suivait rien.
+  const enObjet = (l: Json[]): Json => Object.fromEntries(l.map((o, i) => [String(2 * i + 1), o]));
+  const attendu = versExport(depuisConnexion(connexion()));
+  const brute = connexion();
+  const runesDu1 = enObjet(brute.unit_list[0].runes);
+  brute.unit_list[0] = { ...brute.unit_list[0], runes: runesDu1, artifacts: enObjet(brute.unit_list[0].artifacts), relics: enObjet(brute.unit_list[0].relics) };
+  brute.runes = enObjet(brute.runes);
+  brute.relics = enObjet(brute.relics);
+  const eo = depuisConnexion(brute);
+  const xo = versExport(eo);
+  egal(
+    [idsPortees(xo, 1), idsInventaire(xo), xo.artifacts.length, xo.relics.map((r: Json) => r.rid)],
+    [idsPortees(attendu, 1), idsInventaire(attendu), attendu.artifacts.length, attendu.relics.map((r: Json) => r.rid)],
+    'listes en objet indexé : la connexion se lit comme en listes'
+  );
+  const monstre1 = xo.unit_list.find((u: Json) => u.unit_id === 1);
+  ok([monstre1.runes, monstre1.artifacts, monstre1.relics].every(Array.isArray), 'l’export : runes, artéfacts et reliques du monstre en listes');
+  ok(brute.unit_list[0].runes === runesDu1, 'la réponse de connexion n’est pas modifiée');
+  // Un monstre reçu aux runes en objet : reconnu, la rune posée, l'ancienne rendue.
+  appliquer(eo, 'UpdateUnitEquip', req(), ok0({ unit_info: { ...unite(1, [], [artefact(31, 1)]), runes: enObjet([rune(12, { unite: 1 })]) } }));
+  egal([idsPortees(versExport(eo), 1), idsInventaire(versExport(eo))], [[12], [11, 13]], 'monstre reçu aux runes en objet : équipement suivi');
+  appliquer(eo, 'SellRune', req({ rune_id_list: { 0: 13 } }), ok0());
+  egal(idsInventaire(versExport(eo)), [11], 'vente, liste en objet : la rune vendue disparaît');
 }
 
 // Une partie fabriquée : meules, vente, équipement, combat, monstre mis en
@@ -600,6 +625,26 @@ export async function testPluginSwexPaquet() {
     vueSiege();
     await attendre();
     egal(lire(GUILDE_LIVE).map((l) => JSON.parse(l).type), ['session', 'vue'], 'guilde réactivée : en-tête, puis la vue');
+
+    // Une connexion dont les runes d'un monstre arrivent en objet indexé :
+    // suivie, sans erreur (elle levait « object is not iterable »).
+    const erreurs = () => journal.filter((l) => l.startsWith('error'));
+    const aTrous = connexion();
+    aTrous.unit_list[0].runes = { 1: rune(11, { unite: 1 }) };
+    seConnecter(aTrous);
+    await attendre();
+    egal([erreurs(), live().length], [[], 1], 'connexion aux runes en objet : aucune erreur, le live repart');
+    egal(idsPortees(versExport(depuisLignesLive(live())!), 1), [11], 'relu, le live donne la rune portée');
+    // Une erreur dit la commande où elle s'est produite.
+    const illisible: Json = { ret_code: 0, wizard_info: { wizard_id: MOI, wizard_name: 'Essai.Pro' } };
+    Object.defineProperty(illisible, 'unit_list', {
+      enumerable: true,
+      get() {
+        throw new Error('réponse illisible');
+      },
+    });
+    ecouteur(req({ command: 'HubUserLogin' }), illisible);
+    egal(erreurs(), ['error HubUserLogin : réponse illisible'], 'une erreur nomme sa commande dans le journal de SWEX');
 
     // Désactivé dans SWEX : plus rien n'est écrit.
     reglages.enabled = false;

@@ -70,6 +70,15 @@ export function journal(langue: Langue): Release[] {
 // Si une ligne dépasse ~15 mots, c'est qu'elle raconte l'implémentation.
 export const RELEASES: Release[] = [
   {
+    version: null,
+    date: '2026-11-22',
+    title: 'Le plugin SW Blacksmith Live suit chaque compte',
+    changes: [
+      { kind: 'fix', scope: 'SW Exporter', text: 'Le plugin ne s’arrête plus à la connexion sur « object is not iterable » : il suit toute ta session.' },
+      { kind: 'fix', scope: 'SW Exporter', text: 'Une erreur du plugin dans SW Exporter dit maintenant sur quelle action du jeu elle s’est produite.' },
+    ],
+  },
+  {
     version: '2.5.0',
     date: '2026-11-22',
     title: 'L’Arène, Mes équipes et ton compte en direct',
