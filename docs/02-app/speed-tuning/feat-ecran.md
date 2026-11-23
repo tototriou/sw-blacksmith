@@ -28,10 +28,20 @@ le siège répondent la MÊME chose :
 
 De haut en bas :
 
-### Repère des ticks et deux camps
+### Contenu, repère des ticks et deux camps
 
+0. **Contenu** — « Siège · Arène », « Raid », « RTA » (`Segmented`), siège
+   par défaut : il fixe la taille du tick (7 %, 4,5 %, 1,5 %), donc tout ce qui
+   suit. L'infobulle de chaque option dit sa taille de tick ; la règle en tête
+   de page les donne toutes les trois, parce qu'elle sert aussi de sous-titre
+   à la modale, qui ne connaît pas le contenu choisi. Modèle :
+   [feat-formule.md](feat-formule.md).
 1. **Repère des ticks** — bandeau : la vitesse de combat mini pour agir à chaque
-   tick, **dans le sens croissant (3 → 11)**.
+   tick, **dans le sens croissant (3 → 11)** en siège.
+   ⚠️ **En raid et en RTA, les ticks de l'équipe**, un de part et d'autre
+   (`ticksDuRepere`) : à 1,5 %, la plage du siège (130 à 477) couvrirait 39
+   ticks. Sans monstre, cette plage-là. Les ticks « Rapide » et « Lent » ne
+   sont marqués qu'en siège.
    ⚠️ Comme les trois tableaux qui suivent, et comme le temps. Dans le sens
    inverse (11 → 3, du plus lent au plus rapide), on lirait l'écran dans un
    sens en haut et dans l'autre en dessous, et il faudrait retourner sa lecture
@@ -42,7 +52,7 @@ De haut en bas :
    **pas de dégradé arc-en-ciel** (couleurs = tokens uniquement, voir
    [../../03-developpeur/interface/](../../03-developpeur/interface/)). **Chaque monstre
    ajouté voit son portrait posé dans la case du tick que lui donne sa vitesse**
-   (tick NATUREL = `⌈10000/(7×combat)⌉`, sans la règle « un par tick » : le repère
+   (tick NATUREL = `⌈10000/(7×combat)⌉` en siège, `tickDeVitesse`, sans la règle « un par tick » : le repère
    lit la VITESSE, pas l'ordre final). Un adversaire porte un contour `bad` — on
    repère d'un coup d'œil un ennemi qui tombe au même tick que soi.
 2. **Deux camps** côte à côte (flex-wrap, qui suit la place réelle — page ou
@@ -300,9 +310,17 @@ De haut en bas :
 des autres pages (police d'affichage), sans la pastille d'icône, la règle des
 ticks dessous. En modale, pas d'en-tête : la modale porte titre et règle.
 
-Les trois tableaux **partagent les mêmes colonnes de ticks** (1 → au moins 12,
-étendu jusqu'au dernier tick d'action) : on peut donc poser un modificateur sur
-un tick avant qu'un monstre n'agisse.
+Les trois tableaux **partagent les mêmes 40 colonnes de ticks** : on peut donc
+poser un modificateur sur un tick avant qu'un monstre n'agisse.
+
+- **En siège, du tick 1 au tick 40** : les numéros se lisent tels quels.
+- ⚠️ **En raid et en RTA, à partir du premier tour** (`debutAffiche`) :
+  personne ne joue avant le 15ᵉ tick au mieux en RTA, et 40 colonnes depuis
+  le tick 1 n'en montreraient presque rien. Les colonnes partent d'une case
+  **saisie** plus tôt s'il y en a une — avant le premier tour, seule une
+  saisie peut poser quelque chose, et cachée elle avancerait un tour sans
+  qu'on puisse la voir ni l'effacer. Elles ne dépassent jamais la fin de
+  l'horloge (63 ticks en raid, 187 en RTA).
 
 ## État & persistance
 

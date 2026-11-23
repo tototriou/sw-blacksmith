@@ -16,11 +16,14 @@ import { Monster } from '../types';
 import {
   ARTE_MAX,
   Camp,
+  ContenuSpeedTune,
   EffetSort,
+  Horloge,
   ModParTick,
   ProblemeOrdre,
   TuneMonstre,
   diagnostiquerSequence,
+  horlogePour,
   litOccurrence,
 } from './speedTune';
 import {
@@ -75,7 +78,15 @@ export interface PlanSpeedTune {
   // Gain de passif EFFECTIF de référence, par ligne dont le gain dépend des
   // cumuls (voir `gainsDeReference`).
   referenceGains: Record<string, number>;
+  // ⚠️ **Le contenu du speed tune** (siège, raid, RTA) : il fixe la taille du
+  // tick, donc le verdict, que l'Optimizer rejoue (`horlogeDuPlan`). Absent :
+  // le siège — un plan exporté avant ce champ, et tout plan de siège, qui ne
+  // l'écrit pas.
+  contenu?: ContenuSpeedTune;
 }
+
+// L'horloge où se rejoue un plan : celle de son contenu.
+export const horlogeDuPlan = (plan: Pick<PlanSpeedTune, 'contenu'>): Horloge => horlogePour(plan.contenu ?? 'siege');
 
 export type RefusPlan =
   | { motif: 'ordre-vide' }
@@ -112,7 +123,8 @@ export function planDepuisSpeedTune(
   leads: Leads,
   choix: ChoixSorts,
   ordre: string[],
-  d: DonneesKit
+  d: DonneesKit,
+  contenu: ContenuSpeedTune = 'siege'
 ): { plan: PlanSpeedTune } | { refus: RefusPlan } {
   const vues = visibles(lignes);
   const allies = vues.filter((l) => l.camp === 'allie');
@@ -165,6 +177,8 @@ export function planDepuisSpeedTune(
     leads: { allie: leads.allie, ennemi: leads.ennemi },
     origine,
     referenceGains: {},
+    // Le siège ne s'écrit pas : un plan de siège reste celui d'avant ce champ.
+    ...(contenu !== 'siege' ? { contenu } : {}),
   };
   return { plan: { ...sans, referenceGains: gainsDeReference(sans, d, monstres) } };
 }
@@ -229,7 +243,7 @@ export function projecteur(
   const saisiesAllies = new Map(
     plan.lignes.filter((l) => l.camp === 'allie').map((l) => [l.uid, { atb: l.atb, speed: l.speed }] as const)
   );
-  const options = { choix: plan.choix, deviner: false, saisiesAllies };
+  const options = { choix: plan.choix, deviner: false, saisiesAllies, horizon: horlogeDuPlan(plan) };
   const base = entreesDuPlan(plan, monstres);
   return (substitutions) => {
     const entrees = substitutions?.size
@@ -259,7 +273,7 @@ export function planTient(
   monstres: Bestiaire,
   substitutions?: ReadonlyMap<string, EntreesLigne>
 ): { ok: boolean; probleme: ProblemeOrdre | null } {
-  const diag = diagnostiquerSequence(plateauDuPlan(plan, d, monstres, substitutions), plan.ordre);
+  const diag = diagnostiquerSequence(plateauDuPlan(plan, d, monstres, substitutions), plan.ordre, horlogeDuPlan(plan));
   return { ok: diag.ok, probleme: diag.problemes[0] ?? null };
 }
 
@@ -404,7 +418,7 @@ export function zoneMembre(
         let tient = false;
         if (fiche <= haut) {
           subs.set(uid, { runeSpeed: fiche - base, swift, sets: ligne.sets, artefactBuff: c.min });
-          tient = diagnostiquerSequence(projeter(subs), plan.ordre).ok;
+          tient = diagnostiquerSequence(projeter(subs), plan.ordre, horlogeDuPlan(plan)).ok;
         }
         if (tient && debut == null) debut = fiche;
         if (!tient && debut != null) {

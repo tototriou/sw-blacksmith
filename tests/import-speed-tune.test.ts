@@ -275,7 +275,7 @@ function etat(lignes: Ligne[], ordre = lignes.filter(l => l.camp === 'allie' && 
   const base = { leads: { allie: lead, ennemi: null }, choix: {}, ordre, donnees: { kits: new Map(), sorts: new Map(), passifs: new Map() } };
   const r = planDepuisSpeedTune(lignes, base.leads, base.choix, base.ordre, base.donnees);
   const tient = 'plan' in r ? planTient(r.plan, base.donnees, new Map(lignes.map(l => [l.monster.id, l.monster] as const))).ok : true;
-  return { ...base, verdictEcran: ecart ? !tient : tient };
+  return { ...base, verdictEcran: ecart ? !tient : tient, contenu: 'siege' };
 }
 export function testImportSpeedTunePlanPose() {
   titre('Import speed tuning · plan posé : contrainte à la place de la VIT minimum et du verrou');

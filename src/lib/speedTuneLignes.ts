@@ -11,7 +11,7 @@
 
 import { Monster } from '../types';
 import { LeadInfo, combatSpeed, isSiegeLeadActive, siegeLeadFor, speedLeadOf } from './speed';
-import { Camp, ModParTick, TuneMonstre, cleOccurrence, litOccurrence } from './speedTune';
+import { Camp, ContenuSpeedTune, ModParTick, TuneMonstre, cleOccurrence, litOccurrence, tickDeVitesse } from './speedTune';
 import { SortVitesse } from './speedTuneKit';
 import { PassifVitesse, pointsDeGain } from './speedTunePassif';
 import {
@@ -297,12 +297,18 @@ function sortsDesTours(l: Ligne, d: DonneesKit, choix: ChoixSorts) {
 // Regroupement par tick NATUREL (vitesse seule, sans modificateur) : le repère
 // des ticks pose chaque portrait dans la case qui correspond à sa vitesse.
 // ⚠️ Le gain de passif (`d`) en fait partie, comme dans la card et le tableau.
-export function parTickNaturel(lignes: Ligne[], leads: Leads, d: DonneesKit): Map<number, Ligne[]> {
+// ⚠️ Le tick naturel dépend de la taille du tick, donc du contenu (`contenu`).
+export function parTickNaturel(
+  lignes: Ligne[],
+  leads: Leads,
+  d: DonneesKit,
+  contenu: ContenuSpeedTune = 'siege'
+): Map<number, Ligne[]> {
   const map = new Map<number, Ligne[]>();
   for (const l of visibles(lignes)) {
     const c = combatDe(l, leadDe(leads, l.camp), d);
     if (c == null || c <= 0) continue;
-    const n = Math.ceil(10000 / (7 * c));
+    const n = tickDeVitesse(c, contenu);
     (map.get(n) ?? map.set(n, []).get(n)!).push(l);
   }
   return map;

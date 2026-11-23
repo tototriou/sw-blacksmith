@@ -52,6 +52,7 @@ import { testRenduOptimizerLeadEquipePersonnel, testRenduTelephoneOptimizerLeadE
   testRenduOptimizerCombatEffectifAffiche, testRenduTelephoneOptimizerCombatEffectifAffiche } from './rendu/optimizer-equipes.test';
 import { verificationsImportSpeedTune } from './import-speed-tune.test';
 import { verificationsPlanSpeedTune } from './plan-speed-tune.test';
+import { testSpeedTuneContenus } from './speed-tune-contenus.test';
 import { verificationsSpeedTuneDepuisPlan } from './speed-tune-depuis-plan.test';
 import { testRenduOptimizerPointGestes, testRenduTelephoneOptimizerPointGestes, testRenduOptimizerPointReimport,
   testRenduTelephoneOptimizerPointReimport, testRenduOptimizerPointCompteVide, testRenduTelephoneOptimizerPointCompteVide,
@@ -442,7 +443,7 @@ import { testRenduRecosPage, testRenduRecosEnTete, testRenduRecosLigneDeckReduit
 import testAnnulerEdition from './annuler-edition.test';
 import { testRenduRunesResume, testRenduRunesListe, testRenduRunesCourbes, testRenduRunesComparaison, testRenduRunesOptimisation, testRenduRunesAVenir, testRenduRunesFiltresLigne, testRenduRunesTriOnglets, testRenduRunesResumeSouris, testRenduRunesListeSouris, testRenduRunesVuesSouris } from './rendu/runes.test';
 import { testRenduCompteMonstres, testRenduCompteArtefactsResume, testRenduCompteArtefactsListe, testRenduCompteArtefactsTop, testRenduCompteSouris, testRenduCompteEffacerFiltres } from './rendu/compte.test';
-import { testRenduSpeedTuneVide, testRenduSpeedTuneCamps, testRenduSpeedTuneAnalyse, testRenduSpeedTuneAppliquer, testRenduSpeedTuneExportArene } from './rendu/speed-tune.test';
+import { testRenduSpeedTuneVide, testRenduSpeedTuneRta, testRenduSpeedTuneCamps, testRenduSpeedTuneAnalyse, testRenduSpeedTuneAppliquer, testRenduSpeedTuneExportArene } from './rendu/speed-tune.test';
 import { testRenduOptimizerVide, testRenduOptimizerMonstre, testRenduOptimizerReglages, testRenduTelephoneOptimizer, testRenduOptimizerPrecisionParSort } from './rendu/optimizer.test';
 import { testRenduOptimizerGabaritsComposants, testRenduOptimizerGabaritsVue, testRenduOptimizerGabaritsAdresse } from './rendu/optimizer-gabarits.test';
 import { testRenduOptimizerGabaritsColonnes, testRenduOptimizerGabaritsDroite, testRenduOptimizerPageBureauDroite } from './rendu/optimizer-gabarits-droite.test';
@@ -678,6 +679,7 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testRenduCompteSouris', testRenduCompteSouris],
   ['testRenduCompteEffacerFiltres', testRenduCompteEffacerFiltres],
   ['testRenduSpeedTuneVide', testRenduSpeedTuneVide],
+  ['testRenduSpeedTuneRta', testRenduSpeedTuneRta],
   ['testRenduSpeedTuneCamps', testRenduSpeedTuneCamps],
   ['testRenduSpeedTuneAnalyse', testRenduSpeedTuneAnalyse],
   ['testRenduSpeedTuneAppliquer', testRenduSpeedTuneAppliquer],
@@ -1002,6 +1004,7 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ...verificationsRenduEquipes,
   ...verificationsImportSpeedTune,
   ...verificationsPlanSpeedTune,
+  ['testSpeedTuneContenus', testSpeedTuneContenus],
   ...verificationsSpeedTuneDepuisPlan,
   ...verificationsImportReco,
   ...verificationsImportRecoCopies,

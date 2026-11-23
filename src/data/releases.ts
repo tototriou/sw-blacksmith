@@ -78,6 +78,7 @@ export const RELEASES: Release[] = [
       { kind: 'feat', scope: 'Optimizer', text: '« Simuler +15 » et « Simuler max meules/gemmes » deviennent deux options séparées.' },
       { kind: 'feat', scope: 'Optimizer', text: 'Les meules et gemmes se simulent en Héro ou en Légend, à part pour les runes antiques.' },
       { kind: 'feat', scope: 'Optimizer', text: '« Rechercher jusqu’à épuisement complet » disparaît : les recherches tiennent largement dans le temps.' },
+      { kind: 'feat', scope: 'Speed tuning', text: 'Choisis le contenu : siège et arène, raid ou RTA, avec les ticks de chacun.' },
     ],
   },
   {

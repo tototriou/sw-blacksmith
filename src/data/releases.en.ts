@@ -17,6 +17,7 @@ export const RELEASES_EN: Release[] = [
       { kind: 'feat', scope: 'Optimizer', text: '“Simulate +15” and “Simulate max grinds/gems” become two separate options.' },
       { kind: 'feat', scope: 'Optimizer', text: 'Grinds and gems are simulated at Hero or Legend, separately for ancient runes.' },
       { kind: 'feat', scope: 'Optimizer', text: '“Search until fully exhausted” is gone: searches fit well within the time limit.' },
+      { kind: 'feat', scope: 'Speed tuning', text: 'Choose the content: Siege and Arena, Raid or RTA, each with its own ticks.' },
     ],
   },
   {

@@ -7,12 +7,17 @@ Partie de [Outils · Speed tuning](README.md).
 Même modèle que la page Mécaniques et que les ticks de siège :
 
 ```
-ΔATB par tick = vitesse_combat × 7 / 100     (un monstre agit à 100)
+ΔATB par tick = vitesse_combat × taille du tick     (un monstre agit à 100)
 vitesse_combat = base + runes + ⌈ base × (15 + lead) / 100 ⌉
 ```
 
-- Le **totem +15 %** est **toujours** inclus (présent dans tous les contenus) —
-  il est dans `combatSpeed` de speed.ts, pas un réglage.
+- La **taille du tick** dépend du contenu choisi en tête de l'outil (voir
+  « Contenu : siège, raid, RTA » plus bas) : **7 %** en siège et en arène,
+  **4,5 %** en raid, **1,5 %** en RTA.
+- Le **totem +15 %** est **toujours** inclus, dans les trois contenus — il est
+  dans `combatSpeed` de speed.ts, pas un réglage. ⚠️ En **RTA et en raid**,
+  c'est **affirmé par le mainteneur, non mesuré** ni cité : sans lui, une
+  vitesse de base de 100 compterait 15 de moins.
 - Le **lead** est saisi **par camp** (ton équipe / en face) : chaque camp a son
   leader.
 - ⚠️ **Le set RAPIDITÉ (Swift) se coche par monstre**, et il compte. Ses 25 %
@@ -24,10 +29,12 @@ vitesse_combat = base + runes + ⌈ base × (15 + lead) / 100 ⌉
   Mihyang / Adriana / Sonia, l'oublier donnerait 374 et 350 au lieu de 373 et 349.
   Un deck importé du siège coche la case tout seul (le slot porte ses sets).
 - La **vitesse de combat minimale pour agir au tick n** est
-  `⌈ 10000 / (7n) ⌉` (`speedForTick`) : 130 au tick 11, **239 au tick 6**
-  (« Lent » en siège), **286 au tick 5** (« Rapide »), 477 au tick 3.
+  `⌈ 100 / (taille × n) ⌉` (`speedForTick`). En siège, `⌈ 10000 / (7n) ⌉` :
+  130 au tick 11, **239 au tick 6** (« Lent » en siège), **286 au tick 5**
+  (« Rapide »), 477 au tick 3. En RTA, 334 au tick 20 ; en raid, 318 au
+  tick 7. Son inverse, le tick naturel d'une vitesse, est `tickDeVitesse`.
 
-### ⚠️ Mode RTA — non modélisé, chantier à ouvrir
+### Contenu : siège, raid, RTA
 
 **Les 7 % par tick sont ceux du siège** (et de l'arène, de la guerre de
 guilde). **La RTA remplit la barre de 1,5 % de la vitesse par tick**, les
@@ -38,21 +45,33 @@ raids de 4,5 % :
 > [Ellia's Wiki](https://elliabot.neocities.org/game_mechanics/attack_bar/),
 > même chose sur le [wiki Fandom](https://summonerswar.fandom.com/wiki/Attack_Bar).
 
-L'outil ne connaît que le siège : un réglage validé ici ne vaut pas pour la
-RTA dès qu'un boost de barre ou un buff de vitesse entre en jeu (sans
-modificateur, l'ordre est le même : tout le monde est ralenti dans la même
-proportion). Un mode RTA est un **chantier à part** (il touche `src/lib/`). Ce
-qu'il devra trancher :
+Le contenu se choisit en tête de l'outil (« Siège · Arène », « Raid », « RTA »,
+[feat-ecran.md](feat-ecran.md)), siège par défaut ; il est retenu comme les
+autres réglages de l'outil (`speedTune.contenu`).
 
-- un réglage **Siège / RTA** de l'outil, qui change la constante du moteur
-  (`speedTune.ts`), le seuil par tick (`speedForTick`) et le repère des ticks
-  (239 / 286 n'existent qu'en siège) ;
-- la **longueur des tableaux** : à 1,5 %, un monstre à 300 de vitesse joue
-  vers le 23ᵉ tick — les 40 colonnes ne montreraient que son premier tour ;
-- le **totem +15 %**, compté partout aujourd'hui (voir plus haut), y
-  compris dans l'ordre de tour de la RTA : les bâtiments comptent-ils en
-  RTA ? **Non établi** — à citer ou à mesurer en jeu avant de coder (skill
-  `game-data-curation`, §6 ter : pas de déduction par ressemblance).
+- **Le moteur** ([speedTune.ts](src/lib/speedTune.ts)) : la taille du tick
+  est en dixièmes de pour cent (`TICK_DIXIEMES` : 70, 45, 15), pour que les
+  seuils restent calculés en entiers jusqu'à leur dernière division — `1.5`
+  en flottant ferait tomber un seuil juste sous son entier.
+- **L'horloge** (`Horloge` : nombre de ticks et contenu) remplace le nombre
+  de ticks partout où il passait : simulation, chaîne d'ouverture, vitesses et
+  artéfacts requis, ordre voulu et fenêtres, analyse automatique. Un nombre
+  seul reste un horizon de siège.
+- **La même durée de jeu dans les trois contenus** (`horlogePour`) : 40 ticks
+  en siège, 63 en raid, 187 en RTA. Un monstre à 100 de vitesse joue au tick
+  67 en RTA : il reste dans le calcul comme il l'est en siège (tick 15).
+- **Sans modificateur, l'ordre ne change pas** : tout le monde est ralenti
+  dans la même proportion. Le contenu compte dès qu'un boost de barre ou un
+  buff de vitesse entre en jeu, et pour les numéros de tick.
+- ⚠️ **Une case de grille vaut UN tick du contenu.** Un buff saisi sur une
+  seule case dure 4,7 fois moins longtemps en RTA qu'en siège : un buff qui
+  dure plusieurs ticks se marque sur chacun d'eux, comme en siège.
+- **Le plan exporté vers l'Optimizer** emporte son contenu
+  ([feat-contrainte-speed-tune.md](../optimizer/feat-contrainte-speed-tune.md)).
+
+Coût : en RTA, l'écran simule 187 ticks au lieu de 40 ; un changement y coûte
+environ trois fois ce qu'il coûte en siège (mesure ponctuelle, 56 ms contre
+18 ms sur une équipe de six avec boost, buff et artéfact).
 
 Deux **modificateurs par tick** (saisis dans les grilles, voir plus bas) entrent
 dans la simulation. ⚠️ **Une valeur saisie REMPLACE ce que les compétences
