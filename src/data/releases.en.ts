@@ -16,6 +16,7 @@ export const RELEASES_EN: Release[] = [
       { kind: 'fix', scope: 'SW Exporter', text: 'The plugin no longer stops at login on “object is not iterable”: it follows your whole session.' },
       { kind: 'fix', scope: 'SW Exporter', text: 'A plugin error in SW Exporter now says which game action it happened on.' },
       { kind: 'fix', scope: 'Application', text: 'A recommendation with hundreds of decks now publishes to Discord, as it does from the website.' },
+      { kind: 'docs', scope: 'SW Exporter', text: 'Installing the plugin, step by step up to choosing your summoner, and help when it does not work.' },
     ],
   },
   {

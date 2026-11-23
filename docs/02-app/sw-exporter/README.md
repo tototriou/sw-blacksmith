@@ -47,21 +47,42 @@ Fichiers : [SwExporterPage.tsx](src/pages/SwExporterPage.tsx) ·
     sous le bouton, à une place réservée, sans notification. Détail :
     [feat-swex-direct.md](../bureau/feat-swex-direct.md) § « Mettre à jour mon
     compte ».
-  - Sans dossier SWEX suivi : une ligne renvoie aux Paramètres.
+  - Sans dossier SWEX ni invocateur suivis : une ligne dit que le plugin et le
+    direct n'en marchent pas, et renvoie aux Paramètres (étapes 6 et 7).
 
   L'état est redemandé à l'ouverture de la page : un plugin installé depuis
   le lancement compte.
-- **Installer le plugin**, cinq étapes numérotées : installer SW Exporter
-  (lien « SW Exporter sur GitHub », nouvel onglet ; garder ProfileExport
-  activé) ; télécharger le plugin ; le déposer dans le dossier `plugins` de
-  « Summoners War Exporter Files » ; redémarrer SWEX (le plugin apparaît
-  activé, les combats de guilde se désactivent au même endroit) ; suivre le
-  dossier dans l'app (Paramètres › Dossier SW Exporter).
+- **Installer le plugin**, ouvert par un **avertissement** : les étapes 6 et 7
+  sont indispensables — sans dossier ni invocateur choisis, l'application ne
+  lit rien de ce que le plugin enregistre (ni direct, ni guilde, ni arène
+  dimensionnelle). Puis sept étapes numérotées, chacune un seul geste :
+  1. installer SW Exporter (lien « SW Exporter sur GitHub », nouvel onglet ;
+     garder ProfileExport activé) ;
+  2. télécharger le plugin ;
+  3. le déposer dans le sous-dossier `plugins` de « Summoners War Exporter
+     Files » (par défaut dans les Documents) ;
+  4. redémarrer SWEX (le plugin apparaît activé ; le suivi des combats de
+     guilde s'y coupe) ;
+  5. se connecter au jeu : SWEX écrit l'export du compte, le plugin commence
+     à suivre ;
+  6. lier l'application au plugin SWEX : Paramètres › Application › Dossier
+     SW Exporter › « Choisir… », sur « Summoners War Exporter Files »
+     lui-même, pas `plugins` ;
+  7. choisir l'invocateur juste en dessous ; une liste vide renvoie à
+     l'étape 5.
 - **Utiliser le plugin**, trois étapes, sur le site comme dans l'app :
   activer « Direct » dans « Mon compte » (coupé par défaut, sans
   notification) ; le direct ne change que « Mon compte » ; « Mettre à jour mon
   compte » reporte la session sans reconnexion, et rien n'est écrit dans le
   dossier de SWEX.
+- **Ça ne marche pas ?**, quatre cas, chacun titré par le message que
+  l'utilisateur voit : « Aucun export de compte à la racine de ce dossier. »
+  (mauvais dossier, ou pas encore connecté) ; « Pas trouvé dans le dossier
+  plugins de SW Exporter. » (fichier hors du `plugins` du dossier choisi) ;
+  « Aucune session en direct » (redémarrer SWEX, vérifier le plugin activé,
+  se reconnecter) ; une erreur « SWBlacksmithLive » dans le journal de SWEX
+  (plugin plus ancien que l'app). Un test vérifie que les titres reprennent
+  les messages de l'app.
 - Deux cartes : **Mettre à jour le plugin** (il porte la version de l'app :
   le retélécharger à chaque version) et **Ce qui attend la connexion
   suivante** (ce que le plugin ne suit pas encore : favoris et préréglages
