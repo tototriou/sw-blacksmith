@@ -307,7 +307,7 @@ export default function testPrecisionParSort() {
     const sig = (requirement: BuildRequirement) => signatureReglages({
       monstreCom2usId: 1, damageSetup: DEFAULT_DAMAGE_SETUP, objective: 'aucun', ignoreArtifacts: false, principaleParSorte: {},
       lignesVerrouillees: [], relique: null, nbArtefacts: 3, empreinteRelique: null, requirement, artefactsReserves: [],
-      piecesFigees: [], importDuCompte: 0, empreinteSpeedTune: null, runesMaxees: false,
+      piecesFigees: [], importDuCompte: 0, empreinteSpeedTune: null, runesMaxees: null,
     });
     const r1: BuildRequirement = { sets: [], minStats: { acc: 60 }, precisionParSort: { sorts: [1], min: 80 } };
     ok(sig(r1) !== sig({ ...r1, precisionParSort: { sorts: [3], min: 80 } }), 'signature : un autre sort, même relâchement, autre cache');
@@ -315,7 +315,7 @@ export default function testPrecisionParSort() {
 
     const recette = (r: Partial<OptimizerRecipe>) => buildOptimizerRecipe({
       monsterCom2usId: 14714, monsterName: 'test', requirement: { sets: [], minStats: { acc: 85 } }, objective: 'efficience',
-      damageSetup: DEFAULT_DAMAGE_SETUP, metric: 'eff', slotFilterPreset: 'bas', exhaustiveSearch: false,
+      damageSetup: DEFAULT_DAMAGE_SETUP, metric: 'eff', slotFilterPreset: 'bas', 
       excludeUsedRunes: false, excludeUsedScope: 'rta', excludedSelectors: [], ignoreArtifacts: false,
       artifactMainByKind: {}, relicMainChoice: 'equipped', ...r,
     });

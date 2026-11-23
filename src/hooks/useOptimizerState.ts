@@ -23,6 +23,7 @@ import { useBuildOptimSearch } from './useBuildOptimSearch';
 import { useRuneMetric } from './useRuneMetric';
 import { combatSelonContenuListeOptimizer } from '../lib/combatListeOptimizer';
 import type { BuildEpingle, EpinglesParMembre } from '../lib/epinglesOptimizer';
+import { SIMULATION_RUNES_AUCUNE, type SimulationRunes } from '../lib/runesMaxees';
 
 
 export type { SlotFilterPresetKey };
@@ -213,7 +214,7 @@ export interface OptimizerState {
   // Seuil de niveau minimum d'une relique éligible (+0 à +15, +6 par
   // défaut) — un RÉGLAGE AVANCÉ, pas un critère : `resetSearch` ne le remet
   // PAS à zéro au changement de monstre, comme `slotFilterPreset` ou
-  // `exhaustiveSearch`. Se règle par le champ « Niveau minimum » de la carte
+  // `simulationRunes`. Se règle par le champ « Niveau minimum » de la carte
   // relique (docs/02-app/optimizer/ § Relique).
   relicMinUpgrade: number;
   setRelicMinUpgrade: Dispatch<SetStateAction<number>>;
@@ -282,30 +283,23 @@ export interface OptimizerState {
   // remplace pas) — voir lib/optimizerExclusion.ts. Vide par défaut.
   excludedSelectors: ExclusionSelector[];
   setExcludedSelectors: Dispatch<SetStateAction<ExclusionSelector[]>>;
-  // Toggle « Rechercher jusqu'à épuisement complet » — désactivé par défaut,
-  // lu par `handleSearch` au moment du clic sur « Rechercher », pas un bouton
-  // séparé qui lance sa propre recherche. Retire
-  // la limite de temps de 10 minutes (`maxMs: Infinity`, déjà supporté par le
-  // moteur — voir OptimizerSection.tsx) ; ne touche PAS au plafond d'un million de
-  // candidats collectés, qui reste une limite indépendante.
-  exhaustiveSearch: boolean;
-  setExhaustiveSearch: Dispatch<SetStateAction<boolean>>;
   // Toggle « Vérifier toutes les combinaisons trouvées » — désactivé par défaut : la file de résolution s'arrête à K
   // combinaisons confirmées (300 en relique « recherche », 100 sinon) ; activé,
   // elle vérifie tous les builds trouvés (`cibleDeLaFile`). Un RÉGLAGE AVANCÉ,
-  // comme `exhaustiveSearch` : `resetSearch` ne le remet pas à zéro. Lu en
+  // comme `slotFilterPreset` : `resetSearch` ne le remet pas à zéro. Lu en
   // direct par la file, pas par `handleSearch` : il ne change pas la recherche
   // de runes. Gardé dans la recette (`OptimizerRecipe.verifierToutesLesCombinaisons`).
   verifierToutesLesCombinaisons: boolean;
   setVerifierToutesLesCombinaisons: Dispatch<SetStateAction<boolean>>;
-  // Toggle « Simuler +15 et max meules/gemmes » — désactivé par défaut. Un
-  // RÉGLAGE AVANCÉ de la recherche, comme `exhaustiveSearch` : `resetSearch`
-  // ne le remet pas à zéro, et il n'agit qu'au clic sur « Rechercher »
-  // (`poolDeRecherche`, runesMaxees.ts) ; le changer ne touche pas un
+  // Les trois lignes « Simuler +15 », « Simuler max meules/gemmes » et
+  // « … antiques », chacune désactivée par défaut, en un seul objet
+  // (`SimulationRunes`, runesMaxees.ts). Un RÉGLAGE AVANCÉ de la recherche :
+  // `resetSearch` ne le remet pas à zéro, et il n'agit qu'au clic sur
+  // « Rechercher » (`poolDeRecherche`) ; le changer ne touche pas un
   // résultat déjà affiché. Gardé dans la recette
-  // (`OptimizerRecipe.simulerRunesMaxees`).
-  simulerRunesMaxees: boolean;
-  setSimulerRunesMaxees: Dispatch<SetStateAction<boolean>>;
+  // (`OptimizerRecipe.simulationRunes`).
+  simulationRunes: SimulationRunes;
+  setSimulationRunes: Dispatch<SetStateAction<SimulationRunes>>;
   sortBy: OptimizerSortKey;
   setSortBy: Dispatch<SetStateAction<OptimizerSortKey>>;
   // Le sens du tri des résultats et leurs filtres d'affichage (une borne
@@ -476,9 +470,8 @@ export function useOptimizerState(contexte?: ContexteMembresOptimizer): Optimize
   const [excludeUsedRunes, setExcludeUsedRunes] = useState(false);
   const [excludeUsedScope, setExcludeUsedScope] = useState<AutoExclusionScope>('rta');
   const [excludedSelectors, setExcludedSelectors] = useState<ExclusionSelector[]>([]);
-  const [exhaustiveSearch, setExhaustiveSearch] = useState(false);
   const [verifierToutesLesCombinaisons, setVerifierToutesLesCombinaisons] = useState(false);
-  const [simulerRunesMaxees, setSimulerRunesMaxees] = useState(false);
+  const [simulationRunes, setSimulationRunes] = useState<SimulationRunes>(SIMULATION_RUNES_AUCUNE);
   const [sortBy, setSortBy] = useState<OptimizerSortKey>(base.sortBy);
   const [sensTri, setSensTri] = useState<SensTri>(base.sensTri);
   const [bornesResultats, setBornesResultats] = useState<BornesResultats>(base.bornesResultats);
@@ -952,12 +945,10 @@ export function useOptimizerState(contexte?: ContexteMembresOptimizer): Optimize
     setExcludeUsedScope,
     excludedSelectors,
     setExcludedSelectors,
-    exhaustiveSearch,
-    setExhaustiveSearch,
     verifierToutesLesCombinaisons,
     setVerifierToutesLesCombinaisons,
-    simulerRunesMaxees,
-    setSimulerRunesMaxees,
+    simulationRunes,
+    setSimulationRunes,
     sortBy,
     setSortBy: saisie('sortBy', setSortBy),
     sensTri,

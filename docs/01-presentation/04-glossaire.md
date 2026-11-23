@@ -160,8 +160,8 @@ fiche qui fait foi : les règles détaillées et les valeurs chiffrées restent 
   **« Garder mes données »** décide si l'app conserve quoi que ce soit dans le navigateur
   ([persistance.md](../02-app/transverse/feat-import-compte/persistance.md)) ; la **sauvegarde
   RTA** exporte et partage une prépa ([feat-sauvegarde-partage.md](../02-app/rta/feat-sauvegarde-partage.md)).
-- **Filet de temps** : le temps au-delà duquel l'Optimizer arrête sa recherche : 10 minutes, ou
-  aucun avec « Recherche jusqu'à épuisement complet ». Code : `maxMs` (`HARD_TIMEOUT_MS`).
+- **Filet de temps** : le temps au-delà duquel l'Optimizer arrête sa recherche : 10 minutes, non
+  réglable. Code : `maxMs` (`HARD_TIMEOUT_MS`).
   → [feat-interruption.md](../02-app/optimizer/feat-interruption.md)
 
 ## Moteur et code

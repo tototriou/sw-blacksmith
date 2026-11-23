@@ -5,11 +5,10 @@ plus du plafond de candidats collectés :
 
 - **Filet de temps** — 10 minutes par défaut, pas un réglage direct : une
   garde-fou en cas de recherche anormalement longue. Le vrai moyen de
-  reprendre la main **avant** reste le bouton « Arrêter ». Peut être retiré
-  via « Rechercher jusqu'à épuisement complet » (Réglages avancés, décoché
-  par défaut) — la recherche continue alors jusqu'à épuisement des
-  combinaisons à examiner (ou du plafond de candidats collectés, voir
-  ci-dessous), sans limite de temps automatique.
+  reprendre la main **avant** reste le bouton « Arrêter ». Il ne se retire
+  plus : l'ancien « Rechercher jusqu'à épuisement complet » est supprimé, les
+  recherches les plus lourdes mesurées s'achevant en moins d'une minute
+  (ecran/conditions-et-reglages.md § Réglages avancés).
 - **« Profondeur de recherche »** (le pré-filtrage par emplacement) — les presets « Réglages avancés »
   (voir ecran/conditions-et-reglages.md § Réglages avancés) : plus le preset est
   large, plus le pool considéré par emplacement grandit, et plus la
@@ -85,8 +84,8 @@ barre) :
 pct = max(explored / totalPairs, found / maxCollected, tempsÉcoulé / maxMs)
 ```
 
-Le troisième terme vaut 0 quand le filet de temps est retiré
-(« Rechercher jusqu'à épuisement complet »). Sous la barre : le compteur
+Le troisième terme vaut 0 quand `maxMs` n'est pas fini (un script de
+diagnostic ; l'écran passe toujours ses 10 minutes). Sous la barre : le compteur
 `explored`/`totalPairs`/`found`, puis le message doré (point 12 de
 ecran/lancer-la-recherche.md § Lancer la recherche) — et rien d'autre : un second chiffre
 « espace de recherche à épuiser (au pire) » doublerait le dénominateur de

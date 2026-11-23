@@ -65,7 +65,6 @@ function recette(setup: DamageSetup): OptimizerRecipe {
     monsterCom2usId: LAPIS, monsterName: 'Lapis',
     requirement: { sets: [], minStats: {} }, objective: 'degats_reels',
     damageSetup: setup, metric: 'eff', slotFilterPreset: 'bas',
-    exhaustiveSearch: false,
     excludeUsedRunes: false, excludeUsedScope: 'box', excludedSelectors: [],
     ignoreArtifacts: true, artifactMainByKind: {},
   });

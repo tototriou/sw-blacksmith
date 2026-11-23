@@ -155,6 +155,14 @@ export function taillesPour(ecran: Ecran): Taille[] {
 }
 
 const DEFAUT: Etat = { id: 'defaut', libelle: 'à l’ouverture', preparation: [], atteint: [] };
+// Les trois lignes de simulation des runes maxées activées, et la ligne des
+// runes normales passée en Héro (réglages avancés de l'Optimizer).
+const SIMULATION_TOUT_ACTIVE: Etape[] = [
+  { cliquer: { role: 'switch', nom: 'Simuler +15' } },
+  { cliquer: { role: 'switch', nom: 'Simuler max meules/gemmes' } },
+  { cliquer: { role: 'switch', nom: 'Simuler max meules/gemmes antiques' } },
+  { cliquer: { role: 'button', nom: 'Héro', pres: { role: 'switch', nom: 'Simuler max meules/gemmes' } } },
+];
 
 /**
  * Motifs qui sélectionnent TOUS les écrans : la librairie d'interface, la
@@ -499,9 +507,21 @@ export const ECRANS: Ecran[] = [
           ordinateur: [choisirReglage('Options', 'complements')],
         },
         atteint: {
-          telephone: [{ role: 'dialog', nom: 'Options de recherche' }, { role: 'switch', nom: 'Simuler +15 et max meules/gemmes' }],
-          ordinateur: [{ role: 'switch', nom: "Rechercher jusqu'à épuisement complet" }, { role: 'switch', nom: 'Simuler +15 et max meules/gemmes' }],
+          telephone: [{ role: 'dialog', nom: 'Options de recherche' }, { role: 'switch', nom: 'Simuler max meules/gemmes antiques' }],
+          ordinateur: [{ role: 'switch', nom: 'Simuler +15' }, { role: 'switch', nom: 'Simuler max meules/gemmes antiques' }],
         },
+      },
+      {
+        // Les trois lignes de simulation activées, la ligne des runes normales
+        // en Héro : le sélecteur de grade, entre le libellé et le « ? », ne
+        // doit rien pousser hors de la colonne de 314 px ni du panneau.
+        id: 'simulation-heroique',
+        libelle: 'réglages avancés, trois lignes de simulation activées, meules normales en Héro',
+        preparation: {
+          telephone: [{ cliquer: { role: 'button', nom: 'Filtres et actions de la page' } }, ...SIMULATION_TOUT_ACTIVE],
+          ordinateur: [choisirReglage('Options', 'complements'), ...SIMULATION_TOUT_ACTIVE],
+        },
+        atteint: [{ role: 'switch', nom: 'Simuler max meules/gemmes antiques' }, { role: 'button', nom: 'Héro', pres: { role: 'switch', nom: 'Simuler max meules/gemmes' } }],
       },
       {
         id: 'degats-reels',
@@ -621,7 +641,8 @@ export const ECRANS: Ecran[] = [
         id: 'rune-simulee', libelle: 'résultats sous « Simuler +15 », détail d’une rune simulée ouvert', tailles: OPT_COLONNE_RESULTATS,
         preparation: [
           ...OPT_LISTE, VOIR_RESULTATS, OPT_IMPORT, choisirReglage('Options', 'complements'),
-          { cliquer: { role: 'switch', nom: 'Simuler +15 et max meules/gemmes' } },
+          { cliquer: { role: 'switch', nom: 'Simuler +15' } },
+          { cliquer: { role: 'switch', nom: 'Simuler max meules/gemmes' } },
           { cliquer: bouton('Rechercher') },
           { attendre: repere('[data-carte-resultat]:nth-child(2)'), delaiMs: 30000 },
           { attendre: bouton('Rechercher'), delaiMs: 30000 },

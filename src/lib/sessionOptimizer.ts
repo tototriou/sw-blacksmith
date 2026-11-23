@@ -13,6 +13,7 @@
 
 import type { OptimizerState } from '../hooks/useOptimizerState';
 import { normaliserCompetencesInvocateur } from './competencesInvocateur';
+import { estSimulationRunes, simulationDepuisAncienReglage } from './runesMaxees';
 
 export const CHAMPS_OPTIMIZER_SESSION = [
   'selectedId',
@@ -39,9 +40,8 @@ export const CHAMPS_OPTIMIZER_SESSION = [
   'excludeUsedRunes',
   'excludeUsedScope',
   'excludedSelectors',
-  'exhaustiveSearch',
   'verifierToutesLesCombinaisons',
-  'simulerRunesMaxees',
+  'simulationRunes',
   'slotFilterPreset',
   'sortBy',
   // Les filtres d'affichage des résultats voyagent avec le tri.
@@ -110,12 +110,24 @@ function forme(v: unknown): string {
 // qui la lit — elle est laissée, et son champ rendu. Un champ encore vide à
 // l'écran (rien de choisi) accepte toute valeur.
 // Rend les champs laissés.
+// ⚠️ Une photo d'avant les trois lignes de simulation porte l'ancien
+// interrupteur unique `simulerRunesMaxees`, traduit comme dans une recette
+// (`simulationDepuisAncienReglage`) ; l'ancien `exhaustiveSearch`, retiré,
+// est ignoré. `simulationRunes` se vérifie jusque dans ses lignes : un objet
+// d'une autre forme casserait la colonne des options.
 export function restaurerOptimizer(etat: OptimizerState, photo: Record<string, unknown>): string[] {
   const laisses: string[] = [];
+  if (!('simulationRunes' in photo) && typeof photo.simulerRunesMaxees === 'boolean') {
+    photo = { ...photo, simulationRunes: simulationDepuisAncienReglage(photo.simulerRunesMaxees) };
+  }
   for (const champ of CHAMPS_OPTIMIZER_SESSION) {
     if (!(champ in photo)) continue;
     const valeur = photo[champ];
     const courant = etat[champ];
+    if (champ === 'simulationRunes' && !estSimulationRunes(valeur)) {
+      laisses.push(champ);
+      continue;
+    }
     if (forme(valeur) !== forme(courant) && forme(courant) !== 'vide') {
       laisses.push(champ);
       continue;

@@ -20,7 +20,7 @@ const contrainte = (): ContrainteSpeedTune => ({ version: 1, setsAdmis: [{ will:
 function recette(r: Partial<OptimizerRecipe>): OptimizerRecipe {
   return buildOptimizerRecipe({
     monsterCom2usId: LUSHEN, monsterName: 'Lushen (test)', requirement: { sets: [], minStats: {}, maxStats: { spd: 185 } }, objective: 'efficience',
-    damageSetup: DEFAULT_DAMAGE_SETUP, metric: 'eff', slotFilterPreset: 'bas', exhaustiveSearch: false,
+    damageSetup: DEFAULT_DAMAGE_SETUP, metric: 'eff', slotFilterPreset: 'bas', 
     excludeUsedRunes: false, excludeUsedScope: 'rta', excludedSelectors: [], ignoreArtifacts: false,
     artifactMainByKind: { element: 'libre', archetype: 'libre' }, relicMainChoice: 'equipped', lignesVerrouillees: [{ code: 206, min: 5 }, { code: 210, min: 2 }],
     ...r,

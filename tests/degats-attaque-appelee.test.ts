@@ -690,7 +690,6 @@ export function testAttaqueAppeleeParSortCooperatif() {
     damageSetup,
     metric: 'eff',
     slotFilterPreset: 'bas',
-    exhaustiveSearch: false,
     excludeUsedRunes: false,
     excludeUsedScope: 'box',
     excludedSelectors: [],

@@ -63,14 +63,14 @@ async function nonRelance(telephone: boolean) {
     await interrupteur.click();
     ok(await interrupteur.getAttribute('aria-checked') === 'true', `${format} : l’interrupteur est activé par un vrai clic`);
     const tout = await inchange('vérifier toutes les combinaisons');
-    // « Simuler +15 et max meules/gemmes », le vrai interrupteur, même surface : il
+    // « Simuler max meules/gemmes », le vrai interrupteur, même surface : il
     // ne prépare que la prochaine recherche, le pool photographié reste le réel.
     ok(lance.simuleesPhoto === 0, `${format} : désactivé par défaut, la recherche lancée porte sur les runes réelles`);
-    const maxees = page.getByRole('switch', { name: 'Simuler +15 et max meules/gemmes' });
+    const maxees = page.getByRole('switch', { name: 'Simuler max meules/gemmes', exact: true });
     await maxees.click();
-    ok(await maxees.getAttribute('aria-checked') === 'true', `${format} : « Simuler +15… » activé par un vrai clic`);
-    const apresMaxees = await inchange('simuler +15 et max meules/gemmes');
-    egal([apresMaxees.simulerRunesMaxees, apresMaxees.simuleesPhoto], [true, 0], `${format} : le réglage est posé, le pool du résultat affiché reste le réel`);
+    ok(await maxees.getAttribute('aria-checked') === 'true', `${format} : « Simuler max meules/gemmes » activé par un vrai clic`);
+    const apresMaxees = await inchange('simuler max meules/gemmes');
+    egal([apresMaxees.meulesActives, apresMaxees.simuleesPhoto], [true, 0], `${format} : le réglage est posé, le pool du résultat affiché reste le réel`);
     if (telephone) await appel(page, 'menuTelephone', false);
     else await page.getByRole('tab', { name: 'Critères', exact: true }).click();
     egal(tout.toutVerifierPhoto, false, `${format} : « Vérifier toutes les combinaisons » reste celui du lancement dans le contexte`);

@@ -71,6 +71,7 @@ import { runSearchToCompletion } from './lib/runSearch';
 import { buildRealDamageContext } from './lib/realDamageCli';
 import { NearMiss, RechercheRefusee, candidateMetricTotal, scoreDuCandidat } from '../src/lib/runeBuildOptim';
 import { etatReliqueDuBuild } from '../src/lib/relicQueue';
+import { SIMULATION_RUNES_AUCUNE, empreinteSimulation } from '../src/lib/runesMaxees';
 import { cleBuild } from '../src/lib/artifactQueue';
 import { LIGNES_IMPRIMEES, classerCommeLEcran } from './lib/classementCli';
 import { autoExcludedRuneIds, resolveExcludedRuneIds } from '../src/lib/optimizerExclusion';
@@ -127,7 +128,7 @@ console.log(
     `exclure les runes déjà utilisées ${
       recipe.excludeUsedRunes ? `ON (${recipe.excludeUsedScope})` : 'off'
     } — vérifier toutes les combinaisons trouvées ${toutVerifierDeLaRecette(recipe) ? 'ON' : 'off'} — ` +
-    `simuler +15 et max meules/gemmes ${(recipe.simulerRunesMaxees ?? false) ? 'ON' : 'off'}`
+    `simuler ${empreinteSimulation(recipe.simulationRunes ?? SIMULATION_RUNES_AUCUNE) ?? 'off'}`
 );
 console.log(`minStats : ${JSON.stringify(recipe.requirement.minStats)}`);
 console.log(

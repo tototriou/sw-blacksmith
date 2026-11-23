@@ -56,7 +56,7 @@ const WORKER_COUNTS = [1, 2, 4, 8].filter((n) => n <= MAX_WORKERS);
 // plafond (Sonia d14), mesurait en fait une recherche TRONQUÉE : régime déjà
 // prouvé risqué (voir docs/05-feuille-de-route/, pistes de l'Optimizer, « point 9 », round-robin par rang ET
 // équilibrage par charge perdent tous les deux des candidats valides sous
-// troncature). Le mode visé ici (« Rechercher jusqu'à épuisement complet »)
+// troncature). Le mode visé ici (sans filet de temps, `maxMs` infini)
 // n'a PAR DÉFINITION aucun plafond — donc aucun risque de troncature, quel
 // que soit le découpage. Mesure corrigée : budget de paires INFINI pour N=1
 // ET pour chaque worker à N>1 (vraie complétion, pas une approximation
@@ -76,15 +76,13 @@ async function main() {
     const { gear, allRunes, requirement } = loadCase(c);
     // ⚠️ Fidélité vérifiée contre le vrai appel de production
     // (`OptimizerSection.tsx`, `handleSearch`) : PAS de `maxCollected` ici,
-    // volontairement — la prod ne le passe JAMAIS, même en mode exhaustif
-    // (`exhaustiveSearch` ne touche QUE `maxMs`, décision actée), donc le
+    // volontairement — la prod ne le passe JAMAIS, donc le
     // défaut réel `MAX_COLLECTED` (1 000 000, runeBuildOptim.ts) doit s'appliquer tel quel. Une
     // première version de ce script le forçait à `MAX_SAFE_INTEGER` — un
     // vrai écart de fidélité, pas un détail (voir le skill
     // `optimizer-perf-testing`/section « Fidélité des scripts diagnostics »
-    // d'`algo-verify`). `maxMs` reste infini : seul champ que `exhaustiveSearch` fait
-    // réellement varier en prod, donc le seul qu'on a le droit de diverger
-    // du défaut d'écran ici.
+    // d'`algo-verify`). `maxMs` reste infini, seul écart au défaut d'écran
+    // (10 min) : un diagnostic ne doit pas être coupé par le filet.
     const params: SearchParams = {
       base: gear.base,
       artifacts: gear.artifacts,

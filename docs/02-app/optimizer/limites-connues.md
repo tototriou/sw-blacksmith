@@ -54,8 +54,7 @@ ici.
   candidats l'interrompt, la part non explorée peut contenir mieux que ce
   qui est affiché ([feat-interruption.md § Interruption — filet de temps, pré-filtrage et arrêt manuel](feat-interruption.md)).
 - **Le plafond de candidats collectés n'a pas de réglage.**
-  `MAX_COLLECTED` (1 000 000) s'applique toujours ; « Rechercher jusqu'à
-  épuisement complet » ne retire que le filet de temps. Atteint, il arrête
+  `MAX_COLLECTED` (1 000 000) s'applique toujours. Atteint, il arrête
   la recherche : le résultat est le meilleur des candidats collectés
   jusque-là, et l'écran dit « resserre tes critères pour un résultat
   exhaustif ». Sous le plafond, tous les builds trouvés sont gardés, jamais
@@ -116,8 +115,8 @@ ici.
 
 - **Trois réglages de l'écran agissent sur la recherche**, sous
   « Réglages avancés » : le préréglage de pré-filtrage (`slotFilterCap`,
-  dont dérive `bucketCap` par `bucketCapFor`), « Rechercher jusqu'à
-  épuisement complet » (filet de temps de 10 minutes retiré) et
+  dont dérive `bucketCap` par `bucketCapFor`), les trois lignes de
+  simulation des runes maxées (le pool, en amont du moteur) et
   « Compter les effets d'auras Tolerance et Précision dans les
   conditions » (`compterAurasResPre`). Ne sont pas exposés :
   `MAX_COLLECTED`, `BUCKET_CAP` et `combosOrderMode` ;

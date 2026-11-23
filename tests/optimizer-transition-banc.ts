@@ -14,6 +14,7 @@ import * as equipes from '../src/lib/equipesOptimizer';
 import * as imports from '../src/lib/importEquipes';
 import * as sauvegardes from '../src/lib/optimizerBackup';
 import * as colonnesResultats from '../src/lib/colonnesResultats';
+import * as runesMaxees from '../src/lib/runesMaxees';
 import type { OptimizerState } from '../src/hooks/useOptimizerState';
 import { fr } from '../src/i18n/fr';
 
@@ -56,6 +57,7 @@ export async function bancOptimizer() {
     '../lib/importEquipes': imports,
     '../lib/optimizerBackup': sauvegardes,
     '../lib/colonnesResultats': colonnesResultats,
+    '../lib/runesMaxees': runesMaxees,
     react: {
       useCallback<T>(callback: T) { return callback; },
       useEffect() {},
