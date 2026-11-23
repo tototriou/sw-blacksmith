@@ -705,7 +705,7 @@ export const fr = {
           'SW Exporter ouvert, lance Summoners War et connecte-toi : SW Exporter enregistre ton compte dans un fichier à ton nom, et le plugin commence à suivre ta partie.',
       },
       {
-        titre: 'Lie l’application au plugin SWEX',
+        titre: 'Lier l’application au plugin SWEX',
         texte:
           "Dans l'application de bureau : Paramètres › Application › Dossier SW Exporter › « Choisir… », puis sélectionne le dossier « Summoners War Exporter Files » lui-même, pas son sous-dossier « plugins ». L'application lit alors ce que le plugin y enregistre.",
       },

@@ -46,7 +46,7 @@ export function testRenduSwExporter() {
     'Dépose-le dans le dossier plugins',
     'Redémarre SW Exporter',
     'Connecte-toi au jeu',
-    'Lie l’application au plugin SWEX',
+    'Lier l’application au plugin SWEX',
     'Choisis ton invocateur',
   ];
   const positions = etapes.map((e) => t.indexOf(e));
