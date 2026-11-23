@@ -94,7 +94,7 @@ export function testSaisieAdversaireRecette() {
         monsterCom2usId: 19315, monsterName: 'Cassie',
         requirement: { sets: [], minStats: {} }, objective: 'degats_reels',
         damageSetup: DEFAULT_DAMAGE_SETUP, metric: 'eff', slotFilterPreset: 'bas',
-        exhaustiveSearch: false, excludeUsedRunes: false, excludeUsedScope: 'box', excludedSelectors: [],
+        excludeUsedRunes: false, excludeUsedScope: 'box', excludedSelectors: [],
         ignoreArtifacts: true, artifactMainByKind: {},
       }),
       damageSetup,
