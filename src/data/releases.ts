@@ -70,6 +70,18 @@ export function journal(langue: Langue): Release[] {
 // Si une ligne dépasse ~15 mots, c'est qu'elle raconte l'implémentation.
 export const RELEASES: Release[] = [
   {
+    version: '2.5.1',
+    date: '2026-11-23',
+    title: 'Le plugin SW Blacksmith Live suit chaque compte',
+    changes: [
+      { kind: 'fix', scope: 'SW Exporter', text: 'Le plugin ne s’arrête plus à la connexion sur « object is not iterable » : il suit toute ta session.' },
+      { kind: 'fix', scope: 'SW Exporter', text: 'Une erreur du plugin dans SW Exporter dit maintenant sur quelle action du jeu elle s’est produite.' },
+      { kind: 'fix', scope: 'Application', text: 'Une recommandation de plusieurs centaines de decks se publie dans Discord, comme depuis le site.' },
+      { kind: 'fix', scope: 'Mon compte', text: 'Optimisation des runes : sans « Autoriser un regemme différent », une rune sans gemme n’en reçoit plus.' },
+      { kind: 'docs', scope: 'SW Exporter', text: 'L’installation du plugin, pas à pas jusqu’au choix de l’invocateur, et une aide quand ça ne marche pas.' },
+    ],
+  },
+  {
     version: '2.5.0',
     date: '2026-11-22',
     title: 'L’Arène, Mes équipes et ton compte en direct',

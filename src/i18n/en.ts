@@ -646,25 +646,39 @@ export const en: Dictionnaire = {
     telechargerApp: 'Download the app',
     auTelephone: 'Install it from a computer, next to SW Exporter.',
     tutoTitre: 'Install the plugin',
+    tutoAvertissement:
+      'Steps 6 and 7 are required: until the SW Exporter folder and the summoner are chosen in the app, it reads nothing the plugin records. No live account, no guild battles, no Dimensional Arena.',
     etapes: [
       {
         titre: 'Install SW Exporter',
         texte:
-          'If you have not already: download it, run it and log in to the game once. Keep its ProfileExport plugin enabled: it writes the starting export.',
+          'If you have not already: download it, run it and follow its instructions to connect the game. Keep its ProfileExport plugin enabled: it saves your account.',
       },
-      { titre: 'Download the plugin', texte: 'The button above gives you the SWBlacksmithLive.js file.' },
+      { titre: 'Download the plugin', texte: 'The button above saves the SWBlacksmithLive.js file to your computer.' },
       {
         titre: 'Drop it in the plugins folder',
         texte:
-          'The “Summoners War Exporter Files” folder, where SWEX saves your exports, contains a “plugins” folder: put the file in it.',
+          'Open the “Summoners War Exporter Files” folder, where SW Exporter saves your exports (in your Documents by default), and put the file in its “plugins” subfolder.',
       },
       {
         titre: 'Restart SW Exporter',
-        texte: '“SWBlacksmithLive” appears in its plugin list, enabled. Guild battles can be turned off in the same place.',
+        texte:
+          'Close it and run it again: “SWBlacksmithLive” appears, enabled, in its plugin list. You can turn off guild battle tracking there if you do not want it.',
       },
       {
-        titre: 'Follow the folder in the app',
-        texte: 'In the desktop app: Settings › SW Exporter folder. Log in to the game: your account loads.',
+        titre: 'Log in to the game',
+        texte:
+          'With SW Exporter open, start Summoners War and log in: SW Exporter saves your account to a file named after you, and the plugin starts following your game.',
+      },
+      {
+        titre: 'Link the app to the SWEX plugin',
+        texte:
+          'In the desktop app: Settings › Application › SW Exporter folder › “Choose…”, then select the “Summoners War Exporter Files” folder itself, not its “plugins” subfolder. The app then reads what the plugin records there.',
+      },
+      {
+        titre: 'Choose your summoner',
+        texte:
+          'Right below, in “Summoner”, choose your account: it loads in the app, and live is ready. The list is empty? Log in to the game once with SW Exporter open (step 5).',
       },
     ],
     swexSurGithub: 'SW Exporter on GitHub',
@@ -691,13 +705,37 @@ export const en: Dictionnaire = {
     pluginAncien: (v: string, app: string) => `Installed · version ${v} · version ${app} is available`,
     pluginPlusRecent: (v: string) => `Installed · version ${v}, newer than the app`,
     pluginAbsent: 'Not found in the SW Exporter plugins folder.',
-    sansDossier: 'Choose the SW Exporter folder in Settings to see the plugin and your session.',
+    sansDossier:
+      'The plugin and live only work once the SW Exporter folder and your summoner are chosen: Settings › Application › SW Exporter folder (steps 6 and 7 below).',
     telechargerDernier: 'Download the latest version',
     session: (heure: string) => `Live session · last action at ${heure}`,
     sansSession: 'No live session: log in to the game with SW Exporter open and the plugin installed.',
     mettreAJour: 'Update my account',
     misAJour: (heure: string) => `Account updated at ${heure}.`,
     echecMiseAJour: 'Nothing to update: no readable live session.',
+    depannageTitre: 'Not working?',
+    depannage: [
+      {
+        titre: '“No account export at the root of this folder.”',
+        texte:
+          'The chosen folder is not the right one, often “plugins” or “SWBlacksmith”: choose “Summoners War Exporter Files” itself. If it already is, log in to the game once with SW Exporter open.',
+      },
+      {
+        titre: '“Not found in the SW Exporter plugins folder.”',
+        texte:
+          'The file is not in the “plugins” subfolder of the folder chosen in the app. Check steps 3 and 6: it must be the same “Summoners War Exporter Files” folder.',
+      },
+      {
+        titre: '“No live session”',
+        texte:
+          'The plugin only follows a session from the moment you log in to the game: restart SW Exporter, check that “SWBlacksmithLive” is enabled there, then log in to the game again.',
+      },
+      {
+        titre: 'A “SWBlacksmithLive” error in the SW Exporter log',
+        texte:
+          'Your plugin is probably older than the app: download the latest version, replace the old file, restart SW Exporter and log in again. If the error remains, report it with its log line.',
+      },
+    ],
     limitesTitre: 'What waits for the next login',
     limites:
       'RTA favorites and presets, decks, siege defense, rune locks and experience gained outside battles: the plugin does not follow them yet, they arrive at your next login to the game.',
@@ -1015,7 +1053,7 @@ export const en: Dictionnaire = {
     swexAucunDossier: 'No folder chosen.',
     swexIntrouvable: 'Folder not found: check it still exists, or choose another one.',
     swexAucunExport: 'No account export at the root of this folder.',
-    swexChoisirInvocateur: 'Choose the summoner to follow.',
+    swexChoisirInvocateur: 'Choose the summoner to follow: without one, neither your account nor the plugin is read.',
     swexLu: (date: string) => `Export of ${date} — read.`,
     swexEnLecture: (date: string) => `Export of ${date} — reading…`,
     exportCharge: (nom: string | null) => `${nom ? `${nom}’s account` : 'Account'} loaded from SW Exporter`,
@@ -1140,7 +1178,7 @@ export const en: Dictionnaire = {
     potentielHero: 'Hero potential',
     potentielLegend: 'Legend potential',
     gemmeMeule: 'Gem + grind',
-    gemmeMeuleAide: 'Potential with the best gem + grindstones',
+    gemmeMeuleAide: 'Potential with grindstones and the gem already in place rerolled to its max (any gem with “Allow a different regem”)',
     gemmeMeuleAideCourbes: 'Potential with grindstones, and the gem already in place rerolled to its max',
     meuleSeule: 'Grind only',
     meuleSeuleAide: 'Potential keeping the current stats (grindstones only)',
@@ -1326,7 +1364,8 @@ export const en: Dictionnaire = {
     sansMarqueur: 'No marker',
     marqueur: (n: number) => `Marker ${n}`,
     palier: 'Threshold',
-    regemmeAide: 'Already gemmed rune: also suggest regemming its gemmed line into another stat it does not have',
+    regemmeAide:
+      'Also suggest a gem of another stat: on the already gemmed line, or on a rune that has no gem yet. Off, only a gem already in place is rerolled',
     regemmeSansObjet: 'Not relevant in “Grind only”: no gem is suggested',
     faisable: 'Doable with my stock',
     faisableAide: (n: number) => `Keep only the runes you can improve with your ${n} grindstones and gems in stock`,
@@ -1348,8 +1387,8 @@ export const en: Dictionnaire = {
     avertissementApres:
       ' optimization: it is not always the right answer for your runes (the most efficient stat is not always the one your monster needs).',
     aideTitre: 'How is it computed?',
-    aideGemmeMeule: ': best possible gem, then all grindstones maxed.',
-    aideMeuleSeule: ': current stats, grindstones maxed. An already gemmed rune keeps its gemmed stat, unless',
+    aideGemmeMeule: ': the gem already in place rerolled to its max, then all grindstones maxed.',
+    aideMeuleSeule: ': current stats, grindstones maxed. A gem that changes a line’s stat, or a gem on a rune without one: with',
     gain: 'Gain',
     aideGain: '= potential − current efficiency.',
     aidePalier: ': filters on the',
