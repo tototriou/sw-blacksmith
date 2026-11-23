@@ -1240,7 +1240,7 @@ export const fr = {
     potentielHero: 'Potentiel Héro',
     potentielLegend: 'Potentiel Légend',
     gemmeMeule: 'Gemme + meule',
-    gemmeMeuleAide: 'Potentiel avec la gemme optimale + les meules',
+    gemmeMeuleAide: 'Potentiel avec les meules et la gemme déjà posée relancée à son max (toute gemme avec « Autoriser un regemme différent »)',
     gemmeMeuleAideCourbes: 'Potentiel avec les meules, et la gemme déjà posée relancée à son max',
     meuleSeule: 'Meule seule',
     meuleSeuleAide: 'Potentiel en gardant les stats actuelles (meules seulement)',
@@ -1433,7 +1433,8 @@ export const fr = {
     sansMarqueur: 'Sans marqueur',
     marqueur: (n: number) => `Marqueur ${n}`,
     palier: 'Palier',
-    regemmeAide: 'Rune déjà gemmée : proposer aussi de regemmer sa ligne gemmée avec une autre stat, absente de la rune',
+    regemmeAide:
+      'Proposer aussi une gemme d’une autre stat : sur la ligne déjà gemmée, ou sur une rune qui n’a pas encore de gemme. Éteint, seule une gemme déjà posée est relancée',
     regemmeSansObjet: 'Sans objet en « Meule seule » : aucune gemme n’est proposée',
     faisable: 'Faisable avec ma réserve',
     faisableAide: (n: number) => `Ne garder que les runes applicables avec tes ${n} meules et gemmes en réserve`,
@@ -1456,8 +1457,9 @@ export const fr = {
     avertissementApres:
       " : ce n'est pas toujours la bonne solution pour tes runes (la stat la plus efficiente n'est pas forcément celle utile à ton monstre).",
     aideTitre: 'Comment est-ce calculé ?',
-    aideGemmeMeule: ': meilleure gemme possible, puis toutes les meules au max.',
-    aideMeuleSeule: ': les stats actuelles, meules au max. Une rune déjà gemmée garde sa stat gemmée, sauf avec',
+    aideGemmeMeule: ': la gemme déjà posée relancée à son max, puis toutes les meules au max.',
+    aideMeuleSeule:
+      ': les stats actuelles, meules au max. Une gemme qui change la stat d’une ligne, ou une gemme sur une rune qui n’en a pas : avec',
     gain: 'Gain',
     aideGain: '= potentiel − efficience actuelle.',
     aidePalier: ': filtre sur la',

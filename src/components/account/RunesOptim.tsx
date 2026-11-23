@@ -234,9 +234,11 @@ export default function RunesOptim({
   // Sens du tri — le même axe que dans la Liste, le même bouton (voir lib/tri.ts).
   const [sens, setSens] = useStickyState<SensTri>('optim.sens', SENS_PAR_DEFAUT);
   const [gemMode, setGemMode] = useStickyState<'gem' | 'grind'>('optim.gemMode', 'gem');
-  // « Autoriser un regemme différent » — éteint par défaut : la stat d'une rune
-  // DÉJÀ gemmée reste celle choisie par le joueur (choix produit, voir
-  // runeOptim.ts). Allumé, sa ligne gemmée peut passer à une autre stat.
+  // « Autoriser un regemme différent » — éteint par défaut : seule une gemme
+  // DÉJÀ posée est relancée, dans sa stat, et une rune vierge ne reçoit aucune
+  // gemme (choix produit du mainteneur : on ne change pas la stat d'une ligne
+  // sans qu'il le demande). Allumé, toute gemme : la ligne gemmée peut changer
+  // de stat, une rune vierge reçoit la meilleure gemme.
   const [regemLibre, setRegemLibre] = useStickyState('optim.regemLibre', false);
   // Antiques : elles ont leurs propres tables de max, donc un potentiel qui ne
   // se compare pas aux runes normales — pouvoir les écarter (ou n'avoir qu'elles)
@@ -449,7 +451,8 @@ export default function RunesOptim({
             verifie
               ? { hero: dispoReserve(stock, rune, 'hero'), legend: dispoReserve(stock, rune, 'legend') }
               : undefined,
-            regemLibre
+            regemLibre,
+            !regemLibre
           ),
         })
       ),
@@ -463,7 +466,7 @@ export default function RunesOptim({
     if (!verifie) return null;
     const ok = new Set<number>();
     for (const r of rows) {
-      const plan = runePlan(r.rune, scenario, withGem, metric, true, dispoReserve(stock, r.rune, scenario), regemLibre);
+      const plan = runePlan(r.rune, scenario, withGem, metric, true, dispoReserve(stock, r.rune, scenario), regemLibre, !regemLibre);
       if (planNeeds(plan).length > 0 && plan.targetEff > plan.eff) ok.add(r.id);
     }
     return ok;
@@ -1182,7 +1185,7 @@ export function OptimPlanBox({
 
   // Le plan affiché doit être CELUI du chiffre affiché : sous le filtre, il se
   // limite lui aussi à ce que la réserve permet.
-  const plan = runePlan(rune, scenario, withGem, metric, noDowngrade, restreint ? dispo : undefined, regemLibre);
+  const plan = runePlan(rune, scenario, withGem, metric, noDowngrade, restreint ? dispo : undefined, regemLibre, !regemLibre);
   const gain = plan.targetEff - plan.eff;
 
   return (
