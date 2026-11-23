@@ -680,26 +680,39 @@ export const fr = {
     telechargerApp: "Télécharger l'application",
     auTelephone: "À installer depuis un ordinateur, à côté de SW Exporter.",
     tutoTitre: 'Installer le plugin',
+    tutoAvertissement:
+      "Les étapes 6 et 7 sont indispensables : tant que le dossier SW Exporter et l'invocateur ne sont pas choisis dans l'application, elle ne lit rien de ce que le plugin enregistre. Pas de direct, pas de combats de guilde, pas d'arène dimensionnelle.",
     etapes: [
       {
         titre: 'Installe SW Exporter',
         texte:
-          "Si ce n'est pas déjà fait : télécharge-le, lance-le et connecte-toi une fois au jeu. Laisse son plugin ProfileExport activé : c'est lui qui écrit l'export de départ.",
+          "Si ce n'est pas déjà fait : télécharge-le, lance-le et suis ses instructions pour y relier le jeu. Laisse son plugin ProfileExport activé : c'est lui qui enregistre ton compte.",
       },
-      { titre: 'Télécharge le plugin', texte: 'Le bouton ci-dessus donne le fichier SWBlacksmithLive.js.' },
+      { titre: 'Télécharge le plugin', texte: 'Le bouton ci-dessus enregistre le fichier SWBlacksmithLive.js sur ton ordinateur.' },
       {
         titre: 'Dépose-le dans le dossier plugins',
         texte:
-          'Le dossier « Summoners War Exporter Files », où SWEX enregistre tes exports, contient un dossier « plugins » : place le fichier dedans.',
+          'Ouvre le dossier « Summoners War Exporter Files », où SW Exporter enregistre tes exports (par défaut dans tes Documents), et place le fichier dans son sous-dossier « plugins ».',
       },
       {
         titre: 'Redémarre SW Exporter',
-        texte: '« SWBlacksmithLive » apparaît dans la liste de ses plugins, activé. Les combats de guilde se désactivent au même endroit.',
+        texte:
+          "Ferme-le et relance-le : « SWBlacksmithLive » apparaît, activé, dans la liste de ses plugins. Tu peux y couper le suivi des combats de guilde si tu n'en veux pas.",
       },
       {
-        titre: 'Suis le dossier dans l’application',
+        titre: 'Connecte-toi au jeu',
         texte:
-          "Dans l'application de bureau : Paramètres › Dossier SW Exporter. Connecte-toi au jeu : ton compte se charge.",
+          'SW Exporter ouvert, lance Summoners War et connecte-toi : SW Exporter enregistre ton compte dans un fichier à ton nom, et le plugin commence à suivre ta partie.',
+      },
+      {
+        titre: 'Lier l’application au plugin SWEX',
+        texte:
+          "Dans l'application de bureau : Paramètres › Application › Dossier SW Exporter › « Choisir… », puis sélectionne le dossier « Summoners War Exporter Files » lui-même, pas son sous-dossier « plugins ». L'application lit alors ce que le plugin y enregistre.",
+      },
+      {
+        titre: 'Choisis ton invocateur',
+        texte:
+          "Juste en dessous, dans « Invocateur », choisis ton compte : il se charge dans l'application, et le direct est prêt. La liste est vide ? Connecte-toi une fois au jeu, SW Exporter ouvert (étape 5).",
       },
     ],
     swexSurGithub: 'SW Exporter sur GitHub',
@@ -726,19 +739,47 @@ export const fr = {
     pluginAncien: (v: string, app: string) => `Installé · version ${v} · la version ${app} est disponible`,
     pluginPlusRecent: (v: string) => `Installé · version ${v}, plus récente que l'application`,
     pluginAbsent: "Pas trouvé dans le dossier plugins de SW Exporter.",
-    sansDossier: 'Choisis le dossier SW Exporter dans Paramètres pour voir le plugin et ta session.',
+    // La notification d'un plugin à remplacer (application de bureau) ; son
+    // action ouvre cette page.
+    notifPluginAncien: 'Nouvelle version du plugin SW Blacksmith Live disponible',
+    notifPluginAction: 'Mettre à jour',
+    sansDossier:
+      "Le plugin et le direct ne marchent qu'une fois le dossier SW Exporter et ton invocateur choisis : Paramètres › Application › Dossier SW Exporter (étapes 6 et 7 ci-dessous).",
     telechargerDernier: 'Télécharger la dernière version',
     session: (heure: string) => `Session en direct · dernière action à ${heure}`,
     sansSession: 'Aucune session en direct : connecte-toi au jeu, SW Exporter ouvert avec le plugin.',
     mettreAJour: 'Mettre à jour mon compte',
     misAJour: (heure: string) => `Compte mis à jour à ${heure}.`,
     echecMiseAJour: 'Rien à mettre à jour : aucune session en direct lisible.',
+    depannageTitre: 'Ça ne marche pas ?',
+    depannage: [
+      {
+        titre: '« Aucun export de compte à la racine de ce dossier. »',
+        texte:
+          "Le dossier choisi n'est pas le bon, souvent « plugins » ou « SWBlacksmith » : choisis « Summoners War Exporter Files » lui-même. Si c'est déjà lui, connecte-toi une fois au jeu, SW Exporter ouvert.",
+      },
+      {
+        titre: '« Pas trouvé dans le dossier plugins de SW Exporter. »',
+        texte:
+          "Le fichier n'est pas dans le sous-dossier « plugins » du dossier choisi dans l'application. Vérifie les étapes 3 et 6 : ce doit être le même dossier « Summoners War Exporter Files ».",
+      },
+      {
+        titre: '« Aucune session en direct »',
+        texte:
+          "Le plugin ne suit une session qu'à partir de la connexion au jeu : redémarre SW Exporter, vérifie que « SWBlacksmithLive » y est activé, puis reconnecte-toi au jeu.",
+      },
+      {
+        titre: 'Une erreur « SWBlacksmithLive » dans le journal de SW Exporter',
+        texte:
+          "Ton plugin est sans doute plus ancien que l'application : télécharge la dernière version, remplace l'ancien fichier, redémarre SW Exporter et reconnecte-toi. Si l'erreur reste, signale-la avec sa ligne du journal.",
+      },
+    ],
     limitesTitre: "Ce qui attend la connexion suivante",
     limites:
       "Les favoris et préréglages de la RTA, les decks, la défense de siège, les verrous de runes et l'expérience gagnée hors combat : le plugin ne les suit pas encore, ils arrivent à la prochaine connexion au jeu.",
     miseAJourTitre: 'Mettre à jour le plugin',
     miseAJour:
-      "Le plugin porte la version de l'application : quand l'application change de version, retélécharge-le et remplace l'ancien fichier, puis redémarre SWEX.",
+      "Quand le plugin change, l'application de bureau te prévient par une notification : retélécharge-le, remplace l'ancien fichier, puis redémarre SW Exporter et reconnecte-toi au jeu. SW Exporter ne charge ses plugins qu'à son démarrage : sans redémarrage, l'ancien continue de tourner. Une nouvelle version de l'application ne change pas toujours le plugin.",
   },
 
   // Siège › Statistiques (#/siege/statistiques) : les sièges relevés par le
@@ -1066,7 +1107,7 @@ export const fr = {
     swexAucunDossier: 'Aucun dossier choisi.',
     swexIntrouvable: 'Dossier introuvable : vérifie qu’il existe encore, ou choisis-en un autre.',
     swexAucunExport: 'Aucun export de compte à la racine de ce dossier.',
-    swexChoisirInvocateur: 'Choisis l’invocateur à suivre.',
+    swexChoisirInvocateur: 'Choisis l’invocateur à suivre : sans lui, ni ton compte ni le plugin ne sont lus.',
     swexLu: (date: string) => `Export du ${date} — lu.`,
     swexEnLecture: (date: string) => `Export du ${date} — lecture en cours…`,
     exportCharge: (nom: string | null) => `${nom ? `Compte de ${nom}` : 'Compte'} chargé depuis SW Exporter`,
@@ -1203,7 +1244,7 @@ export const fr = {
     potentielHero: 'Potentiel Héro',
     potentielLegend: 'Potentiel Légend',
     gemmeMeule: 'Gemme + meule',
-    gemmeMeuleAide: 'Potentiel avec la gemme optimale + les meules',
+    gemmeMeuleAide: 'Potentiel avec les meules et la gemme déjà posée relancée à son max (toute gemme avec « Autoriser un regemme différent »)',
     gemmeMeuleAideCourbes: 'Potentiel avec les meules, et la gemme déjà posée relancée à son max',
     meuleSeule: 'Meule seule',
     meuleSeuleAide: 'Potentiel en gardant les stats actuelles (meules seulement)',
@@ -1396,7 +1437,8 @@ export const fr = {
     sansMarqueur: 'Sans marqueur',
     marqueur: (n: number) => `Marqueur ${n}`,
     palier: 'Palier',
-    regemmeAide: 'Rune déjà gemmée : proposer aussi de regemmer sa ligne gemmée avec une autre stat, absente de la rune',
+    regemmeAide:
+      'Proposer aussi une gemme d’une autre stat : sur la ligne déjà gemmée, ou sur une rune qui n’a pas encore de gemme. Éteint, seule une gemme déjà posée est relancée',
     regemmeSansObjet: 'Sans objet en « Meule seule » : aucune gemme n’est proposée',
     faisable: 'Faisable avec ma réserve',
     faisableAide: (n: number) => `Ne garder que les runes applicables avec tes ${n} meules et gemmes en réserve`,
@@ -1419,8 +1461,9 @@ export const fr = {
     avertissementApres:
       " : ce n'est pas toujours la bonne solution pour tes runes (la stat la plus efficiente n'est pas forcément celle utile à ton monstre).",
     aideTitre: 'Comment est-ce calculé ?',
-    aideGemmeMeule: ': meilleure gemme possible, puis toutes les meules au max.',
-    aideMeuleSeule: ': les stats actuelles, meules au max. Une rune déjà gemmée garde sa stat gemmée, sauf avec',
+    aideGemmeMeule: ': la gemme déjà posée relancée à son max, puis toutes les meules au max.',
+    aideMeuleSeule:
+      ': les stats actuelles, meules au max. Une gemme qui change la stat d’une ligne, ou une gemme sur une rune qui n’en a pas : avec',
     gain: 'Gain',
     aideGain: '= potentiel − efficience actuelle.',
     aidePalier: ': filtre sur la',

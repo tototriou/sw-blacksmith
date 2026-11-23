@@ -1,6 +1,6 @@
 // Le direct de l'application de bureau : le fichier live du plugin SWEX
 // trouvé, jugé et lu (bureau/swexPur.ts, bureau/swexLive.ts), et le plugin
-// installé comparé à l'app.
+// installé comparé à celui que sert l'app — par l'empreinte de son code.
 //
 // ⚠️ Ce qui se joue ici : suivre le fichier d'un AUTRE invocateur, ou un
 // fichier périmé (plugin retiré), montrerait un faux compte ; relire une
@@ -15,17 +15,19 @@ import {
   DOSSIER_PLUGIN as DOSSIER_PLUGIN_PLUGIN,
 } from '../plugin-swex/source/fichiers';
 import {
+  CHEMIN_PLUGIN_SERVI,
   COMPTE_LIVE,
   DOSSIER_PLUGIN,
   comparerVersions,
   dossierDeLInvocateur,
   enteteLive,
   liveAJour,
+  lirePlugin,
+  pluginAMontrer,
   statutPlugin,
-  versionDuPlugin,
 } from '../bureau/swexPur';
-import { cheminLive, enteteDuLive, heureExport, lireLive, versionInstallee } from '../bureau/swexLive';
-import { texteDuPluginSwex } from '../scripts/lib/construirePluginSwex.mjs';
+import { cheminLive, enteteDuLive, heureExport, lireLive, lirePluginDe, pluginsInstalles } from '../bureau/swexLive';
+import { CHEMIN_PLUGIN, texteDuPluginSwex } from '../scripts/lib/construirePluginSwex.mjs';
 import { connexion } from './plugin-swex.test';
 import { egal, ok, titre } from './outils';
 
@@ -58,27 +60,80 @@ export async function testBureauSwexDirect() {
   ok(!liveAJour(null, 1000), 'connexion sans heure : périmé');
 
   titre('bureau · direct — la version du plugin');
-  const { texte, version } = await texteDuPluginSwex();
-  egal(versionDuPlugin(texte.slice(0, 200)), version, 'la bannière du plugin construit donne sa version');
-  egal(versionDuPlugin('// un autre plugin\n'), null, 'un autre plugin : rien');
-  ok(comparerVersions('2.4.10', '2.4.9') > 0 && comparerVersions('2.4', '2.4.0') === 0 && comparerVersions('2.3.9', '2.4.0') < 0, 'versions comparées nombre par nombre');
+  egal(CHEMIN_PLUGIN_SERVI, CHEMIN_PLUGIN, 'le plugin servi : l’adresse où Vite l’émet');
+  const { texte, version, code } = await texteDuPluginSwex();
+  ok(/^[0-9a-f]{12}$/.test(code), 'l’empreinte du code : 12 chiffres hexadécimaux');
+  const autre = await texteDuPluginSwex('9.9.9');
+  egal([autre.code, lirePlugin(autre.texte)?.version], [code, '9.9.9'], 'le même code construit sous un autre numéro : même empreinte');
+  egal(lirePlugin(texte.slice(0, 200)), { version, code }, 'la bannière du plugin construit donne sa version et son empreinte');
   egal(
-    [statutPlugin(null, '2.4.4'), statutPlugin('2.4.4', '2.4.4'), statutPlugin('2.4.2', '2.4.4'), statutPlugin('2.5.0', '2.4.4')],
-    ['absent', 'a-jour', 'ancien', 'plus-recent'],
-    'statut : absent, à jour, ancien, plus récent'
+    lirePlugin('// SW Blacksmith Live 2.5.1 — plugin SW Exporter. Source : plugin-swex/ du dépôt SW Blacksmith.\n'),
+    { version: '2.5.1', code: null },
+    'un plugin d’avant l’empreinte : sa version seule'
+  );
+  egal(lirePlugin('// un autre plugin\n'), null, 'un autre plugin : rien');
+  ok(comparerVersions('2.4.10', '2.4.9') > 0 && comparerVersions('2.4', '2.4.0') === 0 && comparerVersions('2.3.9', '2.4.0') < 0, 'versions comparées nombre par nombre');
+
+  const servi = { version: '2.6.1', code: 'aaaaaaaaaaaa' };
+  egal(
+    [
+      statutPlugin(null, servi),
+      statutPlugin({ version: '2.6.1', code: 'aaaaaaaaaaaa' }, servi),
+      statutPlugin({ version: '2.6.0', code: 'aaaaaaaaaaaa' }, servi),
+      statutPlugin({ version: '2.6.0', code: 'bbbbbbbbbbbb' }, servi),
+      statutPlugin({ version: '2.6.1', code: 'bbbbbbbbbbbb' }, servi),
+      statutPlugin({ version: '2.7.0', code: 'bbbbbbbbbbbb' }, servi),
+    ],
+    ['absent', 'a-jour', 'a-jour', 'ancien', 'ancien', 'plus-recent'],
+    'même code : à jour, même d’une version précédente ; code différent : ancien, sauf numéro plus récent que l’app'
+  );
+  egal(
+    [
+      statutPlugin({ version: '2.5.1', code: null }, servi),
+      statutPlugin({ version: '2.6.1', code: null }, servi),
+      statutPlugin({ version: '2.6.0', code: 'bbbbbbbbbbbb' }, { version: '2.6.0', code: null }),
+      statutPlugin({ version: '2.7.0', code: null }, servi),
+    ],
+    ['ancien', 'a-jour', 'a-jour', 'plus-recent'],
+    'sans empreinte d’un côté (plugin d’avant elle, app sans fichier servi) : le numéro décide'
+  );
+  egal(pluginAMontrer([], servi), { installe: null, statut: 'absent' }, 'aucune copie : absent');
+  egal(
+    pluginAMontrer(
+      [
+        { version: '2.6.1', code: 'aaaaaaaaaaaa' },
+        { version: '2.5.0', code: null },
+        { version: '2.4.0', code: null },
+        { version: '2.7.0', code: 'cccccccccccc' },
+      ],
+      servi
+    ),
+    { installe: { version: '2.4.0', code: null }, statut: 'ancien' },
+    'plusieurs copies : la plus ancienne des anciennes, celle qu’il faut remplacer'
+  );
+  egal(
+    pluginAMontrer([{ version: '2.6.1', code: 'aaaaaaaaaaaa' }, { version: '2.7.0', code: 'cccccccccccc' }], servi).statut,
+    'plus-recent',
+    'une copie à jour et une plus récente : la plus récente est montrée'
   );
 
   titre('bureau · direct — sur le disque');
   const swex = mkdtempSync(join(tmpdir(), 'swex-direct-'));
   try {
     egal(await cheminLive(swex, '100'), null, 'sans dossier SWBlacksmith : rien');
-    egal(await versionInstallee(swex), null, 'sans dossier plugins : rien');
+    egal(await pluginsInstalles(swex), [], 'sans dossier plugins : rien');
     mkdirSync(join(swex, 'plugins'));
     writeFileSync(join(swex, 'plugins', 'SWBlacksmithLive.js'), texte);
     writeFileSync(join(swex, 'plugins', 'AutrePlugin.js'), '// autre\n');
-    egal(await versionInstallee(swex), version, 'le plugin installé et sa version');
+    egal(await pluginsInstalles(swex), [{ version, code }], 'le plugin installé, sa version et son empreinte ; un autre plugin : écarté');
+    egal(await lirePluginDe(join(swex, 'plugins', 'SWBlacksmithLive.js')), { version, code }, 'un fichier lu sur le disque');
+    egal(await lirePluginDe(join(swex, 'absent.js')), null, 'un fichier absent (le plugin servi, en développement) : rien');
     writeFileSync(join(swex, 'plugins', 'copie.js'), '// SW Blacksmith Live 1.0.0 — plugin SW Exporter.\n');
-    egal(await versionInstallee(swex), '1.0.0', 'une ancienne copie à côté : c’est elle qu’on montre');
+    egal(
+      pluginAMontrer(await pluginsInstalles(swex), { version, code }),
+      { installe: { version: '1.0.0', code: null }, statut: 'ancien' },
+      'une ancienne copie à côté : c’est elle qu’on montre'
+    );
 
     const dossier = join(swex, DOSSIER_PLUGIN, 'Essai-100');
     mkdirSync(dossier, { recursive: true });

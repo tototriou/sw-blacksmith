@@ -308,9 +308,10 @@ Total d'une stat gemmée = **`gemMax + grindMax`** (même code).
    (les non grindables inchangés). Calculer l'efficience. Une meule déjà au-delà
    du max cible est **ramenée** au max (delta négatif possible en héroïque).
 2. Si mode **« Meule seule »** → renvoyer cette efficience (pas de gemme).
-   De même avec `gemmeExistanteSeule` (onglet **Courbes**) pour une rune **sans
-   gemme** : aucune gemme n'est simulée ; une rune gemmée y garde sa stat
-   (`regemLibre` éteint), seule sa relance est comptée.
+   De même avec `gemmeExistanteSeule` (onglet **Courbes**, et onglet
+   **Optimisation** tant que « Autoriser un regemme différent » est éteint) pour
+   une rune **sans gemme** : aucune gemme n'est simulée ; une rune gemmée y garde
+   sa stat (`regemLibre` éteint), seule sa relance est comptée.
 3. **Gemme** :
    - Rune **déjà gemmée** (un substat a `enchant`) : la stat est **figée** —
      **choix produit** : le jeu autoriserait de la regemmer vers une autre stat

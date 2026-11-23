@@ -124,6 +124,7 @@ import {
 } from './lib/volets';
 import { useSessionEnCours } from './hooks/useSessionEnCours';
 import MiseAJourBureau from './components/MiseAJourBureau';
+import MiseAJourPlugin from './components/MiseAJourPlugin';
 import SuiviSwex from './components/SuiviSwex';
 import { DirectSwexContext, useCompteDirect } from './hooks/useCompteDirect';
 import ChangementCompteDialog from './components/ChangementCompteDialog';
@@ -2422,6 +2423,9 @@ function Application() {
     <EquipesAreneContext.Provider value={equipesArene}>
     {/* Application de bureau : « Mise à jour prête · Redémarrer ». Inerte sur le site. */}
     <MiseAJourBureau />
+    {/* Application de bureau : « Nouvelle version du plugin SW Blacksmith Live
+        disponible · Mettre à jour », vers la page SW Exporter. Inerte sur le site. */}
+    <MiseAJourPlugin />
     {/* Application de bureau : le dossier SW Exporter importe le compte
         choisi, puis met « Mon compte » à jour. Inerte sur le site. */}
     <SuiviSwex

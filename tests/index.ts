@@ -430,6 +430,7 @@ import {
 } from './rendu/bot-discord.test';
 import { testRenduSwExporter, testRenduSwExporterBureau } from './rendu/sw-exporter.test';
 import { testRenduCompteDirect } from './rendu/compte-direct.test';
+import { testRenduNotifPlugin } from './rendu/notif-plugin.test';
 import { testRenduBureauTextes } from './rendu/bureau-textes.test';
 import { testRenduBureauCoeursRecherche } from './rendu/recherche-coeurs.test';
 import { testRenduBarreSession } from './rendu/barre-session.test';
@@ -806,6 +807,7 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testRenduSwExporter', testRenduSwExporter],
   ['testRenduSwExporterBureau', testRenduSwExporterBureau],
   ['testRenduCompteDirect', testRenduCompteDirect],
+  ['testRenduNotifPlugin', testRenduNotifPlugin],
   ['testRenduBureauTextes', testRenduBureauTextes],
   ['testRenduBureauCoeursRecherche', testRenduBureauCoeursRecherche],
   ['testRenduBarreSession', testRenduBarreSession],
