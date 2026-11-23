@@ -2,7 +2,7 @@
 
 Explorer et analyser **tout l'inventaire de runes**. Composant conteneur :
 `RunesSection` ([RunesSection.tsx](src/components/account/RunesSection.tsx)), avec
-**7 onglets internes** (« Résumé » en premier, **vue par défaut**) :
+**8 onglets internes** (« Résumé » en premier, **vue par défaut**) :
 
 | Onglet | Composant | Rôle |
 |--------|-----------|------|
@@ -11,6 +11,7 @@ Explorer et analyser **tout l'inventaire de runes**. Composant conteneur :
 | Courbes | `RunesCurve` | Courbes de qualité (actuelle + potentiels) |
 | Comparaison | `RunesCompare` | Export/import & superposition de courbes entre amis |
 | Optimisation | `RunesOptim` | Ce qu'il faut grinder/gemmer pour gagner en qualité |
+| Objectifs | `ObjectifsRunes` | Le compte face aux objectifs des Paramètres — [feat-objectifs.md](../feat-objectifs.md) |
 | Meules | `ComingSoon` | **En construction** — ce qui manque en meules, et où le farmer |
 | Gemmes | `ComingSoon` | **En construction** — ce qui manque en gemmes, et où le farmer |
 

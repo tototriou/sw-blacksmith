@@ -1,4 +1,4 @@
-import { Gauge, List, LineChart, GitCompare, Wand2, Hammer, Gem } from 'lucide-react';
+import { Gauge, List, LineChart, GitCompare, Wand2, Target, Hammer, Gem } from 'lucide-react';
 import type { AccountSub, AccountView } from '../App';
 import type { Dictionnaire } from '../i18n';
 
@@ -35,6 +35,8 @@ const RUNES: VueInventaire[] = [
   { key: 'courbes', texte: 'courbes', icon: LineChart },
   { key: 'comparaison', texte: 'comparaison', icon: GitCompare },
   { key: 'optimisation', texte: 'optimisation', icon: Wand2 },
+  // L'état du compte face aux objectifs réglés dans les Paramètres.
+  { key: 'objectifs', texte: 'objectifs', icon: Target },
   // ⚠️ Ces deux-là ne refont pas l'Optimisation : « quelles runes puis-je
   // améliorer avec ce que j'ai » y est un simple FILTRE, sans quoi il faudrait
   // y réimplémenter potentiels et gains. Ils porteront la question inverse —
@@ -49,6 +51,7 @@ const RUNES: VueInventaire[] = [
 const ARTEFACTS: VueInventaire[] = [
   { key: 'resume', texte: 'resume', icon: Gauge },
   { key: 'liste', texte: 'liste', icon: List },
+  { key: 'objectifs', texte: 'objectifs', icon: Target },
 ];
 
 export const VUES_INVENTAIRE: Record<AccountSub, VueInventaire[]> = {

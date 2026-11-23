@@ -1,5 +1,5 @@
 import { Hammer, Gem } from 'lucide-react';
-import { CraftLine, RuneDetail } from '../../types';
+import { ArtifactDetail, CraftLine, RuneDetail } from '../../types';
 import type { RunesUtilisees } from '../../lib/importAccount';
 import type { AccountView } from '../../App';
 import RunesSummary from './RunesSummary';
@@ -8,10 +8,14 @@ import RunesCurve from './RunesCurve';
 import RunesCompare from './RunesCompare';
 import RunesOptim from './RunesOptim';
 import ComingSoon from '../../pages/ComingSoon';
+import { ObjectifsRunes } from './VueObjectifs';
 import { useTraduction } from '../../hooks/useLangue';
 
 interface Props {
   runes: RuneDetail[];
+  // Seuls les Objectifs s'en servent : leur résumé porte aussi le score des
+  // artéfacts.
+  artifacts?: ArtifactDetail[];
   crafts: CraftLine[];
   // Runes UTILISÉES (`rune_id`) par périmètre — voir
   // `parseUsedRuneIdsParPerimetre`. Seule l'Optimisation s'en sert pour
@@ -29,6 +33,7 @@ interface Props {
 
 export default function RunesSection({
   runes,
+  artifacts,
   crafts,
   usedRuneIds,
   runeMarkerLabels,
@@ -55,7 +60,8 @@ export default function RunesSection({
           onFermerMenu={onFermerMenu}
         />
       )}
-      {view === 'meules' && <ComingSoon title={textes.jeu.objets.meules} icon={Hammer} />}
+      {view === 'objectifs' && <ObjectifsRunes runes={runes} artifacts={artifacts} />}
+      {view === 'meules' &&<ComingSoon title={textes.jeu.objets.meules} icon={Hammer} />}
       {view === 'gemmes' && <ComingSoon title={textes.jeu.objets.gemmes} icon={Gem} />}
     </div>
   );

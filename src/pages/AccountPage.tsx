@@ -531,6 +531,7 @@ export default function AccountPage({
       {sub === 'runes' && (
         <RunesSection
           runes={runes}
+          artifacts={artifacts}
           crafts={crafts}
           usedRuneIds={usedRuneIds}
           runeMarkerLabels={runeMarkerLabels}

@@ -231,7 +231,9 @@ import {
 import testRuneOptim from './rune-optim.test';
 import testRuneOptimDifferential from './rune-optim-differential.test';
 import testBuildsRapides from './builds-rapides.test';
+import testObjectifsCompte from './objectifs-compte.test';
 import { testRenduBuildsRapides } from './rendu/builds-rapides.test';
+import { testRenduObjectifs } from './rendu/objectifs.test';
 import testRuneOptimOnStage from './rune-optim-onstage.test';
 import testRandomPool from './random-pool.test';
 import testDiagnosticHarness, { testDiagnosticHarnessClassementDegatsReels } from './diagnostic-harness.test';
@@ -939,7 +941,9 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testRuneOptim', testRuneOptim],
   ['testRuneOptimDifferential', testRuneOptimDifferential],
   ['testBuildsRapides', testBuildsRapides],
+  ['testObjectifsCompte', testObjectifsCompte],
   ['testRenduBuildsRapides', testRenduBuildsRapides],
+  ['testRenduObjectifs', testRenduObjectifs],
   ['testRuneOptimOnStage', testRuneOptimOnStage],
   ['testRandomPool', testRandomPool],
   ['testDiagnosticHarness', async () => { await testDiagnosticHarness(); }],

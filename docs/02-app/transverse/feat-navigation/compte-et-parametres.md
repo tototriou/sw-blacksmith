@@ -56,13 +56,21 @@ pied de la barre latérale (bureau).
 
 ## Page Paramètres
 
-`#/parametres` — la **même liste** (`SettingsList`) que le popover ⚙, pas une
+Deux onglets (`Onglets`), sous le titre : **« Général »** (`#/parametres`) et
+**« Objectifs »** (`#/parametres/objectifs`). L'onglet vit dans l'adresse : la
+vue « Objectifs » de Mon compte y renvoie directement. « Objectifs » règle ce
+que le joueur vise sur son compte : voir
+[compte/feat-objectifs.md](../../compte/feat-objectifs.md).
+
+« Général » porte la **même liste** (`SettingsList`) que le popover ⚙, pas une
 copie : deux listes auraient divergé au premier réglage ajouté, et personne ne
 s'en serait aperçu puisqu'on n'ouvre jamais les deux à la fois.
 
 - ⚠️ **Colonne centrée (620 px)**, contrairement aux autres pages : ce sont des
   lignes « intitulé / contrôle ». Alignées à gauche sur toute la largeur, l'œil
-  devrait traverser le vide pour relier les deux.
+  devrait traverser le vide pour relier les deux. L'onglet « Objectifs »
+  s'élargit à 760 px : ses grilles de saisie (six emplacements et « Tous »)
+  n'y tiendraient pas.
 - Le popover reste le geste rapide ; la page est là pour s'y attarder — deux de
   ses réglages portent trois lignes d'explication, illisibles dans 260 px.
 - ⚠️ **À la souris** : le titre

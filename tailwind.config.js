@@ -79,6 +79,13 @@ export default {
         'guilde-bleue': 'rgb(var(--guilde-bleue) / <alpha-value>)',
         'guilde-rouge': 'rgb(var(--guilde-rouge) / <alpha-value>)',
         'guilde-jaune': 'rgb(var(--guilde-jaune) / <alpha-value>)',
+        // Les niveaux d'un objectif du compte, du rouge au vert (index.css).
+        'niveau-0': 'rgb(var(--niveau-0) / <alpha-value>)',
+        'niveau-1': 'rgb(var(--niveau-1) / <alpha-value>)',
+        'niveau-2': 'rgb(var(--niveau-2) / <alpha-value>)',
+        'niveau-3': 'rgb(var(--niveau-3) / <alpha-value>)',
+        'niveau-4': 'rgb(var(--niveau-4) / <alpha-value>)',
+        'niveau-ink': 'rgb(var(--niveau-ink) / <alpha-value>)',
 
         // Éléments — vocabulaire Summoners War. Deux valeurs par élément
         // (voir docs/03-developpeur/interface/design/tokens-couleurs.md) : le Vent et la Lumière sont illisibles sur clair.

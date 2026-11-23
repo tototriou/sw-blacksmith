@@ -54,7 +54,8 @@ l'adresse et en déduit la page et ses sous-niveaux.
 | `#/outils/optimizer`, `/speed-tuning` | Outils |
 | `#/arene/defense`, `/offense`, `/interserveur` | Arène |
 | `#/arene-dimensionnelle/defense`, `/offense`, `/runes` | Arène dimensionnelle |
-| `#/bestiary`, `#/mecaniques`, `#/releases`, `#/sw-exporter`, `#/parametres` | une page chacune |
+| `#/bestiary`, `#/mecaniques`, `#/releases`, `#/sw-exporter` | une page chacune |
+| `#/parametres`, `#/parametres/objectifs` | Paramètres, onglets « Général » et « Objectifs » ; un onglet inconnu mène à « Général » |
 | `#/bot-discord/installation`, `/recommandations`, `/commandes` | Bot Discord, un onglet chacune ; `#/bot-discord` mène à l'installation |
 | `#/telecharger` | Télécharger — **site seulement** ; dans l'app de bureau, l'accueil |
 

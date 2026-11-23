@@ -182,10 +182,12 @@ dans la carte).
 sont les deux racines ; dessous : `RunesList`, `RunesSummary` + `BuildsRapides`, `RunesCurve` +
 `CurveChart` + `curveColors`, `RunesCompare`, `RunesOptim`, `SetFilter`, `SlotFilter`,
 `SubSearchBar` + `SubSearchDialog`, `Pager`, `SummaryBits`, `ArtifactsList`, `ArtifactsSummary`,
-`ArtifactsTop` ; « Mes équipes » dans `src/components/account/equipes/` : `EquipesSection` (racine), `CarteEquipe`,
+`ArtifactsTop`, `VueObjectifs` (la vue « Objectifs » des runes et des artéfacts ; son réglage,
+`src/components/ReglagesObjectifs.tsx`, est l'onglet « Objectifs » des Paramètres) ; « Mes équipes » dans `src/components/account/equipes/` : `EquipesSection` (racine), `CarteEquipe`,
 `DetailEquipe`, `AjoutMonstreModale` ; la fenêtre « Importer » est `src/components/FenetreImport.tsx`,
 partagée avec l'Optimizer (modèle pur `src/lib/fenetreImport.ts`).
 Lib `accountStore` (IndexedDB), `accountViews`, `runeSort`, `runeOptim`, `runeCourbes`, `buildsRapides`,
+`objectifsCompte` (objectifs du compte : défauts, fichier, scores),
 `artifactsTop`, `monsterSort`, `crafts`, `historiqueRunes` (un état de l'archive du plugin, pour
 Comparaison › Historique ; hook `useHistoriqueSwex`) ; « Mes équipes » : `equipesEnregistrees`
 (modèle pur), `equipesStore` (sa base IndexedDB), `equipesFichier`, `sourcesEquipesEnregistrees`
@@ -360,6 +362,7 @@ exemptés.
 | `useDonneesKit` | charge kits, sorts et passifs d'une poignée de monstres (outil **et** siège, un seul chemin) |
 | `useAdversaireReference` | réglage global : toujours poser l'adversaire de référence en face |
 | `useBuildsRapides` | réglage global : les combinaisons et le nombre de builds du bloc « Builds les plus rapides » (Résumé des runes) |
+| `useObjectifsCompte` | réglage global : les objectifs du compte (Paramètres › Objectifs), lus par les vues « Objectifs » des runes et des artéfacts |
 | `useFormeResultats` | réglage : les résultats de l'Optimizer en cartes ou en tableau (bureau) |
 | `useEtatSwex` | l'état du dossier SW Exporter au bureau, lu par les Réglages et par `SidebarCompte` |
 | `useCompteDirect` | le compte en direct du plugin SWEX au bureau, pour « Mon compte » seulement ; l'interrupteur « Direct » et « Mettre à jour mon compte » par `DirectSwexContext` |

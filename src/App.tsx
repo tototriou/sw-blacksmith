@@ -270,9 +270,12 @@ export type AccountView =
   | 'courbes'
   | 'comparaison'
   | 'optimisation'
+  | 'objectifs'
   | 'meules'
   | 'gemmes';
 export type ToolSub = 'optimizer' | 'speed-tuning';
+// Les onglets des Paramètres : l'actuel, et les objectifs du compte.
+export type OngletParametres = 'general' | 'objectifs';
 // Les onglets de l'Arène et de l'arène dimensionnelle : un côté d'équipes, ou
 // les runes de l'arène dimensionnelle.
 export type OngletArene = CoteArene | 'dimension-runes';
@@ -292,6 +295,7 @@ export function parseHash(hash: string = window.location.hash): {
   accountView: AccountView;
   toolSub: ToolSub;
   ongletBot: OngletBot;
+  ongletParametres: OngletParametres;
 } {
   const h = hash.replace(/^#\/?/, '');
   const base = {
@@ -302,6 +306,7 @@ export function parseHash(hash: string = window.location.hash): {
     accountView: 'resume' as AccountView,
     toolSub: 'optimizer' as ToolSub,
     ongletBot: 'installation' as OngletBot,
+    ongletParametres: 'general' as OngletParametres,
   };
   if (h === 'rta' || h.startsWith('rta/')) {
     const [, sub] = h.split('/');
@@ -339,6 +344,7 @@ export function parseHash(hash: string = window.location.hash): {
       accountView: (vue as AccountView) || 'resume',
       toolSub: 'optimizer',
       ongletBot: 'installation',
+      ongletParametres: 'general',
     };
   }
   if (h === 'outils' || h.startsWith('outils/')) {
@@ -357,7 +363,12 @@ export function parseHash(hash: string = window.location.hash): {
     return { route: 'bot-discord', ...base, ongletBot: ongletBotValide(onglet) };
   }
   if (h === 'sw-exporter') return { route: 'sw-exporter', ...base };
-  if (h === 'parametres') return { route: 'parametres', ...base };
+  // `#/parametres/objectifs` ouvre l'onglet des objectifs du compte ; un onglet
+  // inconnu retombe sur « Général ».
+  if (h === 'parametres' || h.startsWith('parametres/')) {
+    const [, onglet] = h.split('/');
+    return { route: 'parametres', ...base, ongletParametres: onglet === 'objectifs' ? 'objectifs' : 'general' };
+  }
   if (h === 'siege' || h.startsWith('siege/')) {
     const siegeTab: SiegeTab =
       h === 'siege/offense'
@@ -674,7 +685,7 @@ function Application() {
   // on compare les runes — et rien ne disait lequel était affiché.
   const [accountName, setAccountName] = useState<string | null>(null);
 
-  const [{ route, rtaSub, siegeTab, areneTab, accountSub, accountView, toolSub, ongletBot }, setNav] = useState(parseHash);
+  const [{ route, rtaSub, siegeTab, areneTab, accountSub, accountView, toolSub, ongletBot, ongletParametres }, setNav] = useState(parseHash);
 
   // Écran d'où l'on vient, pour que le bouton ⚙ RAMÈNE là où on était.
   //
@@ -741,7 +752,7 @@ function Application() {
   // milliers de tuiles à montrer — chaque rangée de filtre leur prend un écran de
   // résultats. **Avoir des filtres ne suffit donc pas : il faut aussi que la page
   // ait de quoi remplir la place qu'ils libèrent.**
-  const pageAPanneau = aPanneau({ route, rtaSub, siegeTab, areneTab, accountSub, accountView, toolSub, ongletBot });
+  const pageAPanneau = aPanneau({ route, rtaSub, siegeTab, areneTab, accountSub, accountView, toolSub, ongletBot, ongletParametres });
 
   // Écran partagé : le panneau d'actions d'un volet ÉTROIT, qui a pris la mise
   // en page de téléphone de sa page (voir VoletEcran). Un par volet : celui du
@@ -2325,6 +2336,7 @@ function Application() {
       <MechanicsPage />
     ) : n.route === 'parametres' ? (
       <SettingsPage
+        onglet={n.ongletParametres}
         onClearData={() => setPurgeGlobale(true)}
         onSauvegarderSession={estBureau() ? sauvegarderSession : undefined}
         onChargerSession={estBureau() ? () => void chargerSession() : undefined}
@@ -2355,7 +2367,7 @@ function Application() {
   // fil : il montre le sélecteur de page.
   const vide = coteVide(volets);
   const navDuCote = (cote: Cote) =>
-    cote === volets.actif ? { route, rtaSub, siegeTab, areneTab, accountSub, accountView, toolSub, ongletBot } : navAutre;  // Le sélecteur d'un volet vide : les pages de la palette Ctrl K, sans celle
+    cote === volets.actif ? { route, rtaSub, siegeTab, areneTab, accountSub, accountView, toolSub, ongletBot, ongletParametres } : navAutre;  // Le sélecteur d'un volet vide : les pages de la palette Ctrl K, sans celle
   // déjà affichée à côté. Choisir une page navigue, et la navigation remplit
   // le volet vide (src/lib/volets.ts).
   const groupesPagesVolet = (saisie: string) =>
@@ -2625,7 +2637,7 @@ function Application() {
             libelleSeparateur={textes.donnees.redimensionner}
           />
         ) : (
-          pageDe({ route, rtaSub, siegeTab, areneTab, accountSub, accountView, toolSub, ongletBot })
+          pageDe({ route, rtaSub, siegeTab, areneTab, accountSub, accountView, toolSub, ongletBot, ongletParametres })
         )}
 
         {/* ⚠️ **Le pied de page de la toile : UNE rangée** (rebranding R4 —

@@ -2,6 +2,9 @@ import { Settings } from 'lucide-react';
 import { SettingsList } from '../components/SettingsMenu';
 import AccountImportControl from '../components/AccountImportControl';
 import { useTraduction } from '../hooks/useLangue';
+import { Onglets } from '../ui';
+import ReglagesObjectifs from '../components/ReglagesObjectifs';
+import type { OngletParametres } from '../App';
 
 // Page des RÉGLAGES (`#/parametres`).
 //
@@ -15,6 +18,7 @@ import { useTraduction } from '../hooks/useLangue';
 // listes auraient divergé au premier réglage ajouté, et personne ne s'en serait
 // aperçu puisqu'on n'ouvre jamais les deux à la fois.
 export default function SettingsPage({
+  onglet = 'general',
   onClearData,
   onSauvegarderSession,
   onChargerSession,
@@ -24,6 +28,7 @@ export default function SettingsPage({
   accountExportedAt,
   accountName,
 }: {
+  onglet?: OngletParametres;
   onClearData?: () => void;
   onSauvegarderSession?: () => void;
   onChargerSession?: () => void;
@@ -41,57 +46,80 @@ export default function SettingsPage({
   // « lequel est chargé ? » appelle « en charger un autre ».
   onImport: (texte: string) => void;
 }) {
-  const t = useTraduction().parametres;
+  const textes = useTraduction();
+  const t = textes.parametres;
   // ⚠️ **Colonne CENTRÉE**, contrairement aux autres pages. Celles-ci portent
   // des grilles et des tableaux qui se lisent en largeur ; les réglages sont une
   // pile de lignes courtes « intitulé / contrôle ». Alignés à gauche dans un
   // conteneur de 1180 px, ils laissaient les deux tiers de l'écran vides à
   // droite — et l'œil devait traverser ce vide pour relier l'intitulé au
   // contrôle.
+  //
+  // ⚠️ L'onglet « Objectifs » s'élargit : ses grilles de saisie (six
+  // emplacements et « Tous ») ne tiennent pas dans 620 px.
   return (
-    <div className="mx-auto max-w-[620px]">
+    <div className={`mx-auto ${onglet === 'objectifs' ? 'max-w-[760px]' : 'max-w-[620px]'}`}>
       {/* ⚠️ À la SOURIS, le titre de la page (la
           maquette), au gabarit des autres pages. Au doigt, la barre du haut
           le dit déjà. */}
       <h1 className="mb-1 hidden font-display text-xl tracking-wide text-ink lg:block">{t.titre}</h1>
-      <p className="mb-4 text-sm leading-relaxed text-ink-dim">
-        {t.intro}
-      </p>
-
-      {/* QUEL compte est chargé. Il précède les réglages : c'est ce sur quoi
-          ils portent, et la question « est-ce le bon compte ? » vient avant
-          « comment est-il affiché ? ». */}
-      <div className="mb-4 flex flex-wrap items-center gap-3 rounded-xl border border-border
-                      bg-panel px-4 py-3">
-        {accountName ? (
-          <>
-            <span className="h-2 w-2 flex-none rounded-full bg-good" aria-hidden />
-            <div className="min-w-0 flex-1">
-              <span className="label">{t.compteCharge}</span>
-              <div className="truncate text-sm font-semibold text-ink">{accountName}</div>
-            </div>
-          </>
-        ) : (
-          <div className="min-w-0 flex-1">
-            <span className="label">{t.compte}</span>
-            <div className="text-sm text-ink-dim">{t.aucunCompte}</div>
-          </div>
-        )}
-        <AccountImportControl onImport={onImport} variant="desktop" />
-      </div>
-      {/* ⚠️ Pas de carte ici : la liste pose ses deux blocs intitulés, chacun
-          dans sa carte (`groupes`, la maquette), aux deux formats. */}
-      <div className="mt-5">
-        <SettingsList
-          onClearData={onClearData}
-          onSauvegarderSession={onSauvegarderSession}
-          onChargerSession={onChargerSession}
-          sauvegardeIndisponible={sauvegardeIndisponible}
-          onKeepAccount={onKeepAccount}
-          accountExportedAt={accountExportedAt}
-          groupes
+      {/* L'onglet vit dans l'adresse (`#/parametres/objectifs`) : la vue
+          « Objectifs » des runes y renvoie directement. */}
+      <div className="mb-4 overflow-x-auto">
+        <Onglets<OngletParametres>
+          aria-label={textes.objectifs.ongletsAria}
+          valeur={onglet}
+          onChange={(o) => {
+            window.location.hash = o === 'objectifs' ? '#/parametres/objectifs' : '#/parametres';
+          }}
+          options={[
+            { cle: 'general', libelle: textes.objectifs.ongletGeneral },
+            { cle: 'objectifs', libelle: textes.objectifs.ongletObjectifs },
+          ]}
         />
       </div>
+      {onglet === 'objectifs' ? (
+        <ReglagesObjectifs />
+      ) : (
+        <>
+          <p className="mb-4 text-sm leading-relaxed text-ink-dim">{t.intro}</p>
+
+          {/* QUEL compte est chargé. Il précède les réglages : c'est ce sur quoi
+              ils portent, et la question « est-ce le bon compte ? » vient avant
+              « comment est-il affiché ? ». */}
+          <div className="mb-4 flex flex-wrap items-center gap-3 rounded-xl border border-border
+                          bg-panel px-4 py-3">
+            {accountName ? (
+              <>
+                <span className="h-2 w-2 flex-none rounded-full bg-good" aria-hidden />
+                <div className="min-w-0 flex-1">
+                  <span className="label">{t.compteCharge}</span>
+                  <div className="truncate text-sm font-semibold text-ink">{accountName}</div>
+                </div>
+              </>
+            ) : (
+              <div className="min-w-0 flex-1">
+                <span className="label">{t.compte}</span>
+                <div className="text-sm text-ink-dim">{t.aucunCompte}</div>
+              </div>
+            )}
+            <AccountImportControl onImport={onImport} variant="desktop" />
+          </div>
+          {/* ⚠️ Pas de carte ici : la liste pose ses deux blocs intitulés, chacun
+              dans sa carte (`groupes`, la maquette), aux deux formats. */}
+          <div className="mt-5">
+            <SettingsList
+              onClearData={onClearData}
+              onSauvegarderSession={onSauvegarderSession}
+              onChargerSession={onChargerSession}
+              sauvegardeIndisponible={sauvegardeIndisponible}
+              onKeepAccount={onKeepAccount}
+              accountExportedAt={accountExportedAt}
+              groupes
+            />
+          </div>
+        </>
+      )}
     </div>
   );
 }

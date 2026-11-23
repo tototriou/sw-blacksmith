@@ -17,6 +17,7 @@ prop depuis [App.tsx](src/App.tsx) : `box` (6★), `runes`, `artifacts`.
 | `src/components/account/ArtifactsSection.tsx`, `src/components/account/ArtifactsList.tsx`, `src/components/account/ArtifactsSummary.tsx`, `src/components/account/ArtifactsTop.tsx`, `src/lib/artifactsTop.ts` | [feat-artefacts.md](feat-artefacts.md) |
 | `src/lib/runeOptim.ts`, `src/lib/stats.ts`, `src/lib/effects.ts`, une formule d'efficience ou le décodage SWEX | [feat-calcul-runes.md](feat-calcul-runes.md) |
 | `src/lib/artifacts.ts`, le score ou l'efficience d'un artéfact | [feat-calcul-artefacts.md](feat-calcul-artefacts.md) |
+| `src/lib/objectifsCompte.ts`, `src/hooks/useObjectifsCompte.ts`, `src/components/account/VueObjectifs.tsx`, `src/components/ReglagesObjectifs.tsx` | [feat-objectifs.md](feat-objectifs.md) |
 | `src/components/account/equipes/`, `src/lib/equipesEnregistrees.ts`, `src/lib/equipesStore.ts`, `src/lib/equipesFichier.ts`, `src/lib/importEquipesEnregistrees.ts`, `src/lib/sourcesEquipesEnregistrees.ts`, `src/hooks/useEquipesEnregistrees.ts` | [feat-equipes.md](feat-equipes.md) |
 
 ## Navigation par dropdown
@@ -30,6 +31,10 @@ prop depuis [App.tsx](src/App.tsx) : `box` (6★), `runes`, `artifacts`.
 | Runes | `#/compte/runes` | [feat-runes/](feat-runes/README.md) |
 | Artéfacts | `#/compte/artefacts` | [feat-artefacts.md](feat-artefacts.md) |
 | Mes équipes | `#/compte/equipes` | [feat-equipes.md](feat-equipes.md) |
+
+Runes et Artéfacts ont chacun une vue **« Objectifs »** (`#/compte/runes/objectifs`,
+`#/compte/artefacts/objectifs`) : le compte face aux objectifs réglés dans
+Paramètres › Objectifs — [feat-objectifs.md](feat-objectifs.md).
 
 **Référence de calcul** (auto-suffisante : formules, tables, décodage SWEX,
 algorithme d'optimisation) : [feat-calcul-runes.md](feat-calcul-runes.md) ; pour
