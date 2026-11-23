@@ -28,9 +28,11 @@ Partie de [Système visuel](README.md).
   - **la durée** (`persistante`) : une **question** reste jusqu'à l'action
     ou la croix, au lieu de 6 secondes — elle ne s'efface pas avant qu'on
     l'ait lue. Défaut : 6 secondes, comme les gestes qui se défont.
-- ⚠️ « Une seule à la fois » vaut aussi pour elle : un geste qui se défait
-  pendant qu'une question est affichée la remplace (pour la mise à jour,
-  elle revient au lancement suivant).
+- ⚠️ « Une seule à la fois » vaut aussi pour elle : une annonce passagère
+  (un geste qui se défait, un export appliqué) arrivée pendant une question
+  la remplace, puis lui **rend la place** en partant (croix, action ou fin
+  des 6 secondes ; `questionEnAttente`). Une nouvelle question remplace
+  l'ancienne pour de bon. Une question fermée ne revient pas.
 - Même gabarit que les flottants de l'app : fond `panel`, contour 1 px,
   ombre des panneaux.
 
