@@ -6,7 +6,7 @@
 // lit comme avant ; un speed tune malformé est écarté et signalé, jamais
 // l'équipe avec lui.
 
-import type { Camp, ModParTick } from './speedTune';
+import { CONTENUS_SPEED_TUNE, type Camp, type ContenuSpeedTune, type ModParTick } from './speedTune';
 import type { ChoixSorts } from './speedTuneAuto';
 import type { LeadInfo } from './speed';
 import { refusDeLOrdre, type EntreesLigne, type LignePlan, type PlanSpeedTune } from './planSpeedTune';
@@ -99,6 +99,9 @@ function choix(v: unknown): v is ChoixSorts {
 // une autre désignation des membres (equipesEnregistrees.ts).
 export function planSpeedTuneValide(v: unknown): v is PlanSpeedTune {
   if (!objet(v) || v.version !== 1 || !Array.isArray(v.lignes) || !v.lignes.every(ligne) || !choix(v.choix)) return false;
+  // Absent : un plan de siège. Un contenu inconnu rendrait un verdict sur une
+  // taille de tick que personne n'a choisie : le plan est écarté.
+  if (v.contenu !== undefined && !CONTENUS_SPEED_TUNE.includes(v.contenu as ContenuSpeedTune)) return false;
   if (!Array.isArray(v.ordre) || !v.ordre.every(texte) || !objet(v.leads) || !lead(v.leads.allie) || !lead(v.leads.ennemi)) return false;
   const uids = new Set((v.lignes as LignePlan[]).map((l) => l.uid));
   if (uids.size !== v.lignes.length) return false;

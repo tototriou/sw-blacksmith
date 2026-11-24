@@ -7,6 +7,7 @@ import type { LeadInfo } from './speed';
 import type { Ligne } from './speedTuneLignes';
 import type { Leads } from './speedTuneLignes';
 import type { ChoixSorts, DonneesKit } from './speedTuneAuto';
+import type { ContenuSpeedTune } from './speedTune';
 import { planDepuisSpeedTune, planTient, type PlanSpeedTune, type RefusPlan } from './planSpeedTune';
 import type { MembreLigne } from './speedTuneEquipe';
 import { artifactSubName } from './effects';
@@ -22,6 +23,8 @@ export interface EtatPlanSpeedTune {
   donnees: DonneesKit;
   // Le verdict que l'écran affiche (`sequence.ok`), comparé à celui du plan.
   verdictEcran: boolean;
+  // Le contenu de l'outil (taille du tick), que le plan emporte.
+  contenu: ContenuSpeedTune;
 }
 
 // Le refus du constructeur dans les mots du rapport d'export ; repris par
@@ -54,7 +57,9 @@ export function importerSpeedTuneOptimizer(
   const s = m.speedTune;
   const resultat: ImportOptimizer = { nomListe: s.nomListe, contenu: 'guilde', membres: [], equipes: [], ignores: [],
     messages: [] };
-  const construit = etatPlan ? planDepuisSpeedTune([...lignes], etatPlan.leads, etatPlan.choix, etatPlan.ordre, etatPlan.donnees) : null;
+  const construit = etatPlan
+    ? planDepuisSpeedTune([...lignes], etatPlan.leads, etatPlan.choix, etatPlan.ordre, etatPlan.donnees, etatPlan.contenu)
+    : null;
   let plan: PlanSpeedTune | null = construit && 'plan' in construit ? construit.plan : null;
   if (construit && 'refus' in construit) resultat.messages.push(s.sansPlan(raisonRefus(construit.refus, lignes, t), artifactSubName(206, t.jeu)));
   const alliesDuPlan = new Set(plan?.lignes.filter((l) => l.camp === 'allie').map((l) => l.uid) ?? []);

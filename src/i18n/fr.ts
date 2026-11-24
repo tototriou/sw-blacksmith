@@ -4126,8 +4126,14 @@ export const fr = {
     titre: 'Speed tuning',
     regle: {
       debut: "À chaque tick, la barre d'action monte de ",
-      formule: 'vitesse × 7 %',
-      fin: " ; un seul monstre agit par tick. Ajoute tes monstres et ceux d'en face pour voir qui joue avant qui.",
+      formule: 'vitesse × taille du tick',
+      fin: " (7 % en siège et en arène, 4,5 % en raid, 1,5 % en RTA) ; un seul monstre agit par tick. Ajoute tes monstres et ceux d'en face pour voir qui joue avant qui.",
+    },
+    // Le contenu du combat : il fixe la taille du tick (SpeedTuningSection).
+    contenu: {
+      titre: 'Contenu',
+      options: { siege: 'Siège · Arène', raid: 'Raid', rta: 'RTA' },
+      aide: (taille: string) => `La barre monte de vitesse × ${taille} % à chaque tick`,
     },
     tick: (n: number) => `tick ${n}`,
     ordreDeTour: 'Ordre de tour',

@@ -259,7 +259,8 @@ export function testRenduLangueSpeedTuning() {
   const vide = enAnglais(() => rendreSpeedTune());
   const tv = texteVisible(vide);
   // `texteVisible` sépare chaque nœud d'une espace : « 7% ; » vient de la balise qui met la formule en valeur.
-  ok(tv.startsWith('Speed tuning Each tick, the attack bar fills by speed × 7% ; only one monster acts per tick. Add your monsters and the opposing ones to see who moves first.'), 'le titre et la règle des ticks');
+  ok(tv.startsWith('Speed tuning Each tick, the attack bar fills by speed × tick size (7% in Siege and Arena, 4.5% in Raids, 1.5% in RTA); only one monster acts per tick. Add your monsters and the opposing ones to see who moves first.'), 'le titre et la règle des ticks');
+  ok(tv.includes('Content Siege · Arena Raid RTA'), 'le choix du contenu');
   ok(tv.includes('Combat speed needed to act at tick · speed tune reference 3 477 4 358'), 'le repère des ticks');
   ok(tv.includes('Your team Lead None +33%') && tv.includes('Opponent Lead None +33%'), 'les deux camps et leurs leads');
   ok(valeurs(vide, 'aria-label').includes('Speed lead — Your team') && valeurs(vide, 'placeholder').includes('Add an opposing monster…'), 'le lead nommé, la recherche d’ajout');

@@ -3883,8 +3883,13 @@ export const en: Dictionnaire = {
     titre: 'Speed tuning',
     regle: {
       debut: 'Each tick, the attack bar fills by ',
-      formule: 'speed × 7%',
-      fin: '; only one monster acts per tick. Add your monsters and the opposing ones to see who moves first.',
+      formule: 'speed × tick size',
+      fin: ' (7% in Siege and Arena, 4.5% in Raids, 1.5% in RTA); only one monster acts per tick. Add your monsters and the opposing ones to see who moves first.',
+    },
+    contenu: {
+      titre: 'Content',
+      options: { siege: 'Siege · Arena', raid: 'Raid', rta: 'RTA' },
+      aide: (taille: string) => `The bar fills by speed × ${taille}% each tick`,
     },
     tick: (n: number) => `tick ${n}`,
     ordreDeTour: 'Turn order',

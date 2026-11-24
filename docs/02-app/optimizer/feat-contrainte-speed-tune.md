@@ -127,10 +127,19 @@ ou qu'une case est de provenance inconnue. Les membres reçoivent alors la VIT m
 
 ### Portée
 
-Le plan vaut pour le siège, comme le speed tuning, qui modélise 7 % de barre
-par tick. La RTA n'est pas modélisée
-([feat-formule.md](../speed-tuning/feat-formule.md)) et le plan ne prétend
-rien pour elle.
+Le plan vaut pour le contenu de l'outil au moment du geste : siège et arène
+(7 % de barre par tick), raid (4,5 %) ou RTA (1,5 %)
+([feat-formule.md](../speed-tuning/feat-formule.md)).
+
+- `PlanSpeedTune.contenu` le porte, **facultatif** : absent, c'est le siège.
+  Un plan de siège ne l'écrit pas, et un plan exporté avant ce champ se relit
+  donc tel quel.
+- L'Optimizer rejoue le plan sur l'horloge de son contenu (`horlogeDuPlan`) :
+  verdict (`planTient`), projection (`projecteur`), zones.
+- À la relecture (`planSpeedTuneValide`), un contenu inconnu écarte le plan,
+  comme toute autre malformation.
+- Rouvert dans l'outil (`etatDepuisPlan`), le plan rend son contenu ; l'état
+  rendu depuis les membres, sans plan, part du siège.
 
 ## Membres et lignes
 

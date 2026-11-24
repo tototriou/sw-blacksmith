@@ -14,6 +14,8 @@ import {
   fenetresRequises,
   Fenetre,
   HORIZON_TICKS,
+  CONTENUS_SPEED_TUNE,
+  TICK_DIXIEMES,
   Camp,
   TuneMonstre,
   ModParTick,
@@ -79,6 +81,7 @@ import {
   BoutonIcone,
   ZoneCliquable,
   ConfirmDialog,
+  Segmented,
 } from '../../ui';
 import { useTraduction } from '../../hooks/useLangue';
 import { nomElement } from '../../i18n/jeu';
@@ -184,7 +187,9 @@ function libelleSort(x: SortVitesse, t: Dictionnaire): string {
 // montrer.
 // Les colonnes communes aux trois tableaux (même grille, défilement
 // synchronisé) et les vues de résultat vivent dans speedTune/VuesSpeedTune.tsx.
-const TICKS = Array.from({ length: HORIZON_TICKS }, (_, i) => i + 1);
+// Les 40 ticks montrés, à partir du premier (le tick 1 en siège, le premier
+// tour en raid et en RTA : `debutAffiche`).
+const ticksMontres = (debut: number) => Array.from({ length: HORIZON_TICKS }, (_, i) => debut + i);
 const LARGEUR_TABLE = largeurTable();
 
 export default function SpeedTuningSection({
@@ -306,6 +311,9 @@ export default function SpeedTuningSection({
     sortsSignature,
     toujoursReference,
     tune,
+    contenu,
+    setContenu,
+    debut,
     restauration,
     bestiaire,
     kitsLus,
@@ -320,7 +328,7 @@ export default function SpeedTuningSection({
   }, [compteCharge, onImporterEquipe, sourcesOptimizer, lignes, leadAllie, deckInitial, textes, st]);
   // Le plan photographié à l'export : l'état de l'outil au geste
   // (feat-contrainte-speed-tune.md, « Le plan de speed tune »).
-  const etatPlan = { leads, choix: choixSorts, ordre: ordreVoulu, donnees: donneesKit, verdictEcran: sequence.ok };
+  const etatPlan = { leads, choix: choixSorts, ordre: ordreVoulu, donnees: donneesKit, verdictEcran: sequence.ok, contenu };
   const exporterOptimizer = () => onImporterEquipe?.((data, t) => importerSpeedTuneOptimizer(lignes, leadAllie, data, t, deckInitial ?? undefined, etatPlan));
 
   // « Appliquer à l'équipe » : refus dit sous le bouton, verdict différent de
@@ -330,7 +338,7 @@ export default function SpeedTuningSection({
   useEffect(() => setRefusAppliquer(null), [lignes, ordreVoulu]);
   const appliquerALEquipe = () => {
     if (!appliquer) return;
-    const r = jugerApplication(lignes, leads, choixSorts, ordreVoulu, donneesKit, bestiaire, sequence.ok);
+    const r = jugerApplication(lignes, leads, choixSorts, ordreVoulu, donneesKit, bestiaire, sequence.ok, contenu);
     if ('manque' in r) return setRefusAppliquer(st.camp.vitesseManquante(r.manque.monster.name));
     if ('refus' in r) return setRefusAppliquer(raisonRefus(r.refus, lignes, textes));
     setRefusAppliquer(null);
@@ -411,8 +419,22 @@ export default function SpeedTuningSection({
         </header>
       )}
 
+      {/* Le contenu fixe la taille du tick : tout ce qui suit en dépend. */}
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5" data-contenu-speed-tune>
+        <span className="text-xs font-semibold text-ink-dim">{st.contenu.titre}</span>
+        <Segmented
+          value={contenu}
+          onChange={setContenu}
+          options={CONTENUS_SPEED_TUNE.map((c) => ({
+            key: c,
+            label: st.contenu.options[c],
+            hint: st.contenu.aide(formatNombre(TICK_DIXIEMES[c] / 10, textes.codeLangue)),
+          }))}
+        />
+      </div>
+
       {/* Repère des ticks */}
-      <RepereTicks parTick={parTick} />
+      <RepereTicks parTick={parTick} contenu={contenu} />
 
       {/* Camps — flex-wrap : côte à côte quand il y a la place, empilés sinon.
           ⚠️ **Au TÉLÉPHONE, toujours empilés** (`max-lg:flex-col`) :
@@ -869,6 +891,7 @@ export default function SpeedTuningSection({
             lignesTableau={lignesTableau}
             ligneParUid={ligneParUid}
             numAction={numAction}
+            debut={debut}
             refConteneur={enregistrer(0)}
             onScroll={synchro}
           />
@@ -885,6 +908,7 @@ export default function SpeedTuningSection({
             aEnnemi={aEnnemi}
             onSet={setMod}
             onSetEquipe={setModEquipe}
+            debut={debut}
             refConteneur={enregistrer(1)}
             onScrollSync={synchro}
           />
@@ -901,6 +925,7 @@ export default function SpeedTuningSection({
             aEnnemi={aEnnemi}
             onSet={setMod}
             onSetEquipe={setModEquipe}
+            debut={debut}
             refConteneur={enregistrer(2)}
             onScrollSync={synchro}
           />
@@ -1428,6 +1453,8 @@ interface GrilleModProps {
   aEnnemi: boolean;
   onSet: (champ: ChampMod, uid: string, tick: number, v: number | null) => void;
   onSetEquipe: (champ: ChampMod, camp: Camp, tick: number, v: number | null) => void;
+  // Le premier tick montré, le même que le tableau des barres (`debutAffiche`).
+  debut: number;
   refConteneur: (el: HTMLDivElement | null) => void;
   onScrollSync: (e: React.UIEvent<HTMLDivElement>) => void;
 }
@@ -1446,10 +1473,12 @@ function GrilleMod({
   aEnnemi,
   onSet,
   onSetEquipe,
+  debut,
   refConteneur,
   onScrollSync,
 }: GrilleModProps) {
   const st = useTraduction().speedTuning;
+  const ticks = ticksMontres(debut);
   // Valeur commune d'un camp à un tick (pour la ligne « Toute l'équipe ») :
   // la valeur partagée si tous l'ont, sinon null (mélange).
   const valeurEquipe = (camp: Camp, tick: number): number | null => {
@@ -1538,7 +1567,7 @@ function GrilleMod({
           style={{ width: LARGEUR_TABLE }}
         >
           <Colonnes />
-          <TeteTicks premiere={st.grilles.cible} />
+          <TeteTicks premiere={st.grilles.cible} debut={debut} />
           <tbody>
             {camps.map(({ camp, label, present }) => {
               if (!present) return null;
@@ -1558,7 +1587,7 @@ function GrilleMod({
                         {label}
                       </span>
                     </th>
-                    {TICKS.map((t) => (
+                    {ticks.map((t) => (
                       <td key={t} className="py-1 text-center">
                         {cellule(
                           valeurEquipe(camp, t),
@@ -1583,7 +1612,7 @@ function GrilleMod({
                           <span className="text-sm">{l.monster.name}</span>
                         </span>
                       </th>
-                      {TICKS.map((t) => (
+                      {ticks.map((t) => (
                         <td key={t} className="py-1 text-center">
                           {cellule(
                             l[champ][t] ?? null,

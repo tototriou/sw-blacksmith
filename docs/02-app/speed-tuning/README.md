@@ -3,8 +3,8 @@
 Voir aussi : feat-passifs-vitesse.md, ../outils/README.md, [Exporter vers l’Optimizer](feat-export-optimizer.md).
 
 Outil de speed tune : à chaque « tick » d'horloge, la barre d'action (ATB) de
-chaque monstre monte de `vitesse_combat × 7 %` ; **un seul monstre agit par
-tick**. L'écran répond à une question précise — « est-ce que je joue **avant**
+chaque monstre monte de `vitesse_combat × 7 %` (4,5 % en raid, 1,5 % en RTA,
+selon le contenu choisi) ; **un seul monstre agit par tick**. L'écran répond à une question précise — « est-ce que je joue **avant**
 tel monstre ? » — d'où les deux camps et l'ordre de tour qui les entrelace.
 
 Fichiers : [SpeedTuningSection.tsx](src/components/outils/SpeedTuningSection.tsx)
@@ -33,7 +33,7 @@ Fichiers : [SpeedTuningSection.tsx](src/components/outils/SpeedTuningSection.tsx
 
 | Document | Contenu |
 | --- | --- |
-| [feat-formule.md](feat-formule.md) | La formule ATB (modèle partagé avec Mécaniques et les ticks de siège), le totem, les leads, et le mode RTA non modélisé. |
+| [feat-formule.md](feat-formule.md) | La formule ATB (modèle partagé avec Mécaniques et les ticks de siège), le totem, les leads, et le contenu : siège, raid, RTA (taille du tick, horloge). |
 | [feat-import-deck-siege.md](feat-import-deck-siege.md) | L'import d'un deck de siège, et l'autre sens : « Voir le speed tune » depuis un deck. |
 | [feat-chaine-ouverture.md](feat-chaine-ouverture.md) | Le diagnostic de la chaîne d'ouverture (problèmes dans l'ordre de jeu) et la façon dont le réglage est cherché. |
 | [feat-ordre-des-sorts.md](feat-ordre-des-sorts.md) | L'ordre des sorts (sous-bloc de « Analyse automatique ») : un monstre qui joue plusieurs fois, les fenêtres de vitesse. |

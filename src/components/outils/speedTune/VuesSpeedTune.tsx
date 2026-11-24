@@ -3,7 +3,14 @@ import MonsterAvatar from '../../MonsterAvatar';
 import { Jeton } from '../../../ui';
 import { useTraduction } from '../../../hooks/useLangue';
 import { SIEGE_TICKS } from '../../../lib/speed';
-import { speedForTick, HORIZON_TICKS, type Action, type LigneSim } from '../../../lib/speedTune';
+import {
+  speedForTick,
+  tickDeVitesse,
+  HORIZON_TICKS,
+  type Action,
+  type ContenuSpeedTune,
+  type LigneSim,
+} from '../../../lib/speedTune';
 import type { Ligne } from '../../../lib/speedTuneLignes';
 
 // Les vues du speed tuning qui ne font QU'AFFICHER un résultat : le repère des
@@ -23,6 +30,20 @@ import type { Ligne } from '../../../lib/speedTuneLignes';
 // l'autre en dessous, et il fallait retourner sa lecture à chaque aller-retour.
 const RULER_TICKS = [3, 4, 5, 6, 7, 8, 9, 10, 11];
 const TICKS_SIEGE = new Set(SIEGE_TICKS.map((t) => t.value));
+// La plage de vitesses de combat du repère de siège (tick 3 à tick 11).
+const VITESSE_HAUTE = 477;
+const VITESSE_BASSE = 130;
+
+// Les ticks du repère. ⚠️ **En raid et en RTA, ceux de l'équipe**, un de part
+// et d'autre : à 1,5 %, la plage du siège (130 à 477) couvre 39 ticks, une
+// règle qu'on ne lit plus. Sans monstre, cette plage-là.
+export function ticksDuRepere(parTick: Map<number, Ligne[]>, contenu: ContenuSpeedTune): number[] {
+  if (contenu === 'siege') return RULER_TICKS;
+  const occupes = [...parTick.keys()];
+  const de = occupes.length ? Math.max(1, Math.min(...occupes) - 1) : tickDeVitesse(VITESSE_HAUTE, contenu);
+  const a = occupes.length ? Math.max(...occupes) + 1 : tickDeVitesse(VITESSE_BASSE, contenu);
+  return Array.from({ length: a - de + 1 }, (_, i) => de + i);
+}
 
 // ⚠️ **Les trois tableaux (barres, boost, buff) partagent EXACTEMENT la même
 // grille de colonnes** — même largeur de colonne « cible », même largeur de
@@ -30,7 +51,9 @@ const TICKS_SIEGE = new Set(SIEGE_TICKS.map((t) => t.value));
 // ça, tick 12 du boost ne tombait pas sous tick 12 des barres : on se perdait.
 export const LARGEUR_CIBLE = 210; // colonne de gauche (portrait + nom)
 export const LARGEUR_TICK = 92; // chaque colonne de tick (3 décimales, voir plus bas)
-const ticksJusqua = (n: number) => Array.from({ length: n }, (_, i) => i + 1);
+// Les `n` ticks montrés, à partir de `debut` (le tick 1 en siège, le premier
+// tour en raid et en RTA : `debutAffiche`).
+const ticksJusqua = (n: number, debut = 1) => Array.from({ length: n }, (_, i) => debut + i);
 export const largeurTable = (n: number = HORIZON_TICKS) => LARGEUR_CIBLE + n * LARGEUR_TICK;
 
 // Colonnes fixes communes, posées à l'identique dans chaque tableau.
@@ -45,15 +68,16 @@ export function Colonnes({ nbTicks = HORIZON_TICKS }: { nbTicks?: number }) {
   );
 }
 
-// En-tête de ticks commun (numéros 1 → 40).
-export function TeteTicks({ premiere, nbTicks = HORIZON_TICKS }: { premiere: string; nbTicks?: number }) {
+// En-tête de ticks commun (numéros 1 → 40 en siège ; à partir du premier tour
+// en raid et en RTA).
+export function TeteTicks({ premiere, nbTicks = HORIZON_TICKS, debut = 1 }: { premiere: string; nbTicks?: number; debut?: number }) {
   return (
     <thead>
       <tr className="border-b border-border text-ink-dimmer">
         <th className="sticky left-0 z-[2] border-r border-border-soft bg-panel px-3 py-2 text-left text-xs font-semibold">
           {premiere}
         </th>
-        {ticksJusqua(nbTicks).map((t) => (
+        {ticksJusqua(nbTicks, debut).map((t) => (
           <th key={t} className="px-1 py-2 text-center font-mono text-xs font-semibold">
             {t}
           </th>
@@ -65,7 +89,7 @@ export function TeteTicks({ premiere, nbTicks = HORIZON_TICKS }: { premiere: str
 
 // Le repère des ticks : chaque monstre posé dans la case du tick que lui donne
 // sa vitesse (tick NATUREL, regroupé par `parTick`).
-export function RepereTicks({ parTick }: { parTick: Map<number, Ligne[]> }) {
+export function RepereTicks({ parTick, contenu = 'siege' }: { parTick: Map<number, Ligne[]>; contenu?: ContenuSpeedTune }) {
   const st = useTraduction().speedTuning;
   return (
     <section className="rounded-lg border border-border bg-panel">
@@ -74,9 +98,10 @@ export function RepereTicks({ parTick }: { parTick: Map<number, Ligne[]> }) {
         <span className="ml-2 font-normal normal-case tracking-normal text-ink-dimmer">{st.repere.sousTitre}</span>
       </div>
       <div className="flex overflow-x-auto">
-        {RULER_TICKS.map((n, i) => {
-          const sp = speedForTick(n);
-          const siege = TICKS_SIEGE.has(sp);
+        {ticksDuRepere(parTick, contenu).map((n, i) => {
+          const sp = speedForTick(n, contenu);
+          // Les ticks « Rapide » et « Lent » n'existent qu'à 7 %.
+          const siege = contenu === 'siege' && TICKS_SIEGE.has(sp);
           const ici = parTick.get(n) ?? [];
           return (
             <div
@@ -162,6 +187,7 @@ export function TableauBarres({
   ligneParUid,
   numAction,
   nbTicks = HORIZON_TICKS,
+  debut = 1,
   refConteneur,
   onScroll,
 }: {
@@ -169,6 +195,8 @@ export function TableauBarres({
   ligneParUid: Map<string, Ligne>;
   numAction: Map<string, number>;
   nbTicks?: number;
+  // Le premier tick montré (`debutAffiche`) : 1 en siège.
+  debut?: number;
   refConteneur?: (el: HTMLDivElement | null) => void;
   onScroll?: UIEventHandler<HTMLDivElement>;
 }) {
@@ -185,7 +213,7 @@ export function TableauBarres({
           style={{ width: largeurTable(nbTicks) }}
         >
           <Colonnes nbTicks={nbTicks} />
-          <TeteTicks premiere={st.barres.monstre} nbTicks={nbTicks} />
+          <TeteTicks premiere={st.barres.monstre} nbTicks={nbTicks} debut={debut} />
           <tbody>
             {lignesTableau.map((e) => {
               const l = ligneParUid.get(e.id);
@@ -220,7 +248,7 @@ export function TableauBarres({
                       </span>
                     </span>
                   </th>
-                  {ticksJusqua(nbTicks).map((t) => {
+                  {ticksJusqua(nbTicks, debut).map((t) => {
                     const num = numAction.get(`${e.id}@${t}`);
                     const estAction = num != null;
                     const atb = e.trajectoire[t - 1];
