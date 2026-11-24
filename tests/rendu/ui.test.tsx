@@ -15,7 +15,7 @@ import Jeton from '../../src/ui/Jeton';
 import Selecteur from '../../src/ui/Selecteur';
 import SelecteurMultiple from '../../src/ui/SelecteurMultiple';
 import Menu from '../../src/ui/Menu';
-import { BandeauNotification } from '../../src/ui/Notification';
+import { BandeauNotification, questionEnAttente } from '../../src/ui/Notification';
 import Palette from '../../src/components/Palette';
 import type { GroupePalette } from '../../src/components/palette/recherchePalette';
 import { egal, ok, titre } from '../outils';
@@ -274,6 +274,16 @@ export function testRenduUiNotification() {
   const maj = rendre(<BandeauNotification annonce={{ message: 'Mise à jour prête', action: rien, libelleAction: 'Redémarrer' }} onFermer={rien} />);
   ok(texteVisible(maj).startsWith('Mise à jour prête Redémarrer'), 'libellé donné : « Redémarrer »');
   ok(!!bouton(maj, 'Redémarrer') && !bouton(maj, 'Annuler'), '« Redémarrer » remplace « Annuler », pas les deux');
+
+  // Une question remplacée par une annonce passagère revient après elle
+  // (le scénario complet, au navigateur : tests/rendu/notif-plugin.test.ts).
+  const question = { message: 'Nouvelle version', persistante: true };
+  const passagere = { message: 'Compte mis à jour' };
+  egal(questionEnAttente(question, null, passagere), question, 'une annonce passagère met la question de côté');
+  egal(questionEnAttente(passagere, question, { message: 'Deck supprimé' }), question, 'une deuxième annonce passagère la garde de côté');
+  egal(questionEnAttente(question, null, { message: 'Autre question', persistante: true }), null, 'une nouvelle question la remplace');
+  egal(questionEnAttente(passagere, question, { message: 'Autre question', persistante: true }), null, 'même mise de côté');
+  egal(questionEnAttente(null, null, passagere), null, 'rien à mettre de côté');
 }
 
 // Les onglets — ajoutés pour le Top 10 des artéfacts.

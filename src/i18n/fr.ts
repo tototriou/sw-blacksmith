@@ -98,6 +98,8 @@ export const fr = {
     courbes: 'Courbes',
     comparaison: 'Comparaison',
     optimisation: 'Optimisation',
+    objectifs: 'Objectifs',
+    reglage: 'Réglage',
     meules: 'Meules',
     gemmes: 'Gemmes',
   },
@@ -357,6 +359,7 @@ export const fr = {
       recos: { rubrique: 'Partage', titre: 'Recommandations' },
       runes: { rubrique: 'Compte', titre: 'Analyse de runes' },
       artefacts: { rubrique: 'Compte', titre: "Analyse d'artéfacts" },
+      objectifs: { rubrique: 'Compte', titre: 'Objectifs du compte' },
       equipes: { rubrique: 'Compte', titre: 'Mes équipes' },
       optimizer: { rubrique: 'Outils', titre: 'Optimiseur de runes' },
       speedTuning: { rubrique: 'Outils', titre: 'Speed tuning' },
@@ -680,26 +683,39 @@ export const fr = {
     telechargerApp: "Télécharger l'application",
     auTelephone: "À installer depuis un ordinateur, à côté de SW Exporter.",
     tutoTitre: 'Installer le plugin',
+    tutoAvertissement:
+      "Les étapes 6 et 7 sont indispensables : tant que le dossier SW Exporter et l'invocateur ne sont pas choisis dans l'application, elle ne lit rien de ce que le plugin enregistre. Pas de direct, pas de combats de guilde, pas d'arène dimensionnelle.",
     etapes: [
       {
         titre: 'Installe SW Exporter',
         texte:
-          "Si ce n'est pas déjà fait : télécharge-le, lance-le et connecte-toi une fois au jeu. Laisse son plugin ProfileExport activé : c'est lui qui écrit l'export de départ.",
+          "Si ce n'est pas déjà fait : télécharge-le, lance-le et suis ses instructions pour y relier le jeu. Laisse son plugin ProfileExport activé : c'est lui qui enregistre ton compte.",
       },
-      { titre: 'Télécharge le plugin', texte: 'Le bouton ci-dessus donne le fichier SWBlacksmithLive.js.' },
+      { titre: 'Télécharge le plugin', texte: 'Le bouton ci-dessus enregistre le fichier SWBlacksmithLive.js sur ton ordinateur.' },
       {
         titre: 'Dépose-le dans le dossier plugins',
         texte:
-          'Le dossier « Summoners War Exporter Files », où SWEX enregistre tes exports, contient un dossier « plugins » : place le fichier dedans.',
+          'Ouvre le dossier « Summoners War Exporter Files », où SW Exporter enregistre tes exports (par défaut dans tes Documents), et place le fichier dans son sous-dossier « plugins ».',
       },
       {
         titre: 'Redémarre SW Exporter',
-        texte: '« SWBlacksmithLive » apparaît dans la liste de ses plugins, activé. Les combats de guilde se désactivent au même endroit.',
+        texte:
+          "Ferme-le et relance-le : « SWBlacksmithLive » apparaît, activé, dans la liste de ses plugins. Tu peux y couper le suivi des combats de guilde si tu n'en veux pas.",
       },
       {
-        titre: 'Suis le dossier dans l’application',
+        titre: 'Connecte-toi au jeu',
         texte:
-          "Dans l'application de bureau : Paramètres › Dossier SW Exporter. Connecte-toi au jeu : ton compte se charge.",
+          'SW Exporter ouvert, lance Summoners War et connecte-toi : SW Exporter enregistre ton compte dans un fichier à ton nom, et le plugin commence à suivre ta partie.',
+      },
+      {
+        titre: 'Lier l’application au plugin SWEX',
+        texte:
+          "Dans l'application de bureau : Paramètres › Application › Dossier SW Exporter › « Choisir… », puis sélectionne le dossier « Summoners War Exporter Files » lui-même, pas son sous-dossier « plugins ». L'application lit alors ce que le plugin y enregistre.",
+      },
+      {
+        titre: 'Choisis ton invocateur',
+        texte:
+          "Juste en dessous, dans « Invocateur », choisis ton compte : il se charge dans l'application, et le direct est prêt. La liste est vide ? Connecte-toi une fois au jeu, SW Exporter ouvert (étape 5).",
       },
     ],
     swexSurGithub: 'SW Exporter sur GitHub',
@@ -726,19 +742,47 @@ export const fr = {
     pluginAncien: (v: string, app: string) => `Installé · version ${v} · la version ${app} est disponible`,
     pluginPlusRecent: (v: string) => `Installé · version ${v}, plus récente que l'application`,
     pluginAbsent: "Pas trouvé dans le dossier plugins de SW Exporter.",
-    sansDossier: 'Choisis le dossier SW Exporter dans Paramètres pour voir le plugin et ta session.',
+    // La notification d'un plugin à remplacer (application de bureau) ; son
+    // action ouvre cette page.
+    notifPluginAncien: 'Nouvelle version du plugin SW Blacksmith Live disponible',
+    notifPluginAction: 'Mettre à jour',
+    sansDossier:
+      "Le plugin et le direct ne marchent qu'une fois le dossier SW Exporter et ton invocateur choisis : Paramètres › Application › Dossier SW Exporter (étapes 6 et 7 ci-dessous).",
     telechargerDernier: 'Télécharger la dernière version',
     session: (heure: string) => `Session en direct · dernière action à ${heure}`,
     sansSession: 'Aucune session en direct : connecte-toi au jeu, SW Exporter ouvert avec le plugin.',
     mettreAJour: 'Mettre à jour mon compte',
     misAJour: (heure: string) => `Compte mis à jour à ${heure}.`,
     echecMiseAJour: 'Rien à mettre à jour : aucune session en direct lisible.',
+    depannageTitre: 'Ça ne marche pas ?',
+    depannage: [
+      {
+        titre: '« Aucun export de compte à la racine de ce dossier. »',
+        texte:
+          "Le dossier choisi n'est pas le bon, souvent « plugins » ou « SWBlacksmith » : choisis « Summoners War Exporter Files » lui-même. Si c'est déjà lui, connecte-toi une fois au jeu, SW Exporter ouvert.",
+      },
+      {
+        titre: '« Pas trouvé dans le dossier plugins de SW Exporter. »',
+        texte:
+          "Le fichier n'est pas dans le sous-dossier « plugins » du dossier choisi dans l'application. Vérifie les étapes 3 et 6 : ce doit être le même dossier « Summoners War Exporter Files ».",
+      },
+      {
+        titre: '« Aucune session en direct »',
+        texte:
+          "Le plugin ne suit une session qu'à partir de la connexion au jeu : redémarre SW Exporter, vérifie que « SWBlacksmithLive » y est activé, puis reconnecte-toi au jeu.",
+      },
+      {
+        titre: 'Une erreur « SWBlacksmithLive » dans le journal de SW Exporter',
+        texte:
+          "Ton plugin est sans doute plus ancien que l'application : télécharge la dernière version, remplace l'ancien fichier, redémarre SW Exporter et reconnecte-toi. Si l'erreur reste, signale-la avec sa ligne du journal.",
+      },
+    ],
     limitesTitre: "Ce qui attend la connexion suivante",
     limites:
       "Les favoris et préréglages de la RTA, les decks, la défense de siège, les verrous de runes et l'expérience gagnée hors combat : le plugin ne les suit pas encore, ils arrivent à la prochaine connexion au jeu.",
     miseAJourTitre: 'Mettre à jour le plugin',
     miseAJour:
-      "Le plugin porte la version de l'application : quand l'application change de version, retélécharge-le et remplace l'ancien fichier, puis redémarre SWEX.",
+      "Quand le plugin change, l'application de bureau te prévient par une notification : retélécharge-le, remplace l'ancien fichier, puis redémarre SW Exporter et reconnecte-toi au jeu. SW Exporter ne charge ses plugins qu'à son démarrage : sans redémarrage, l'ancien continue de tourner. Une nouvelle version de l'application ne change pas toujours le plugin.",
   },
 
   // Siège › Statistiques (#/siege/statistiques) : les sièges relevés par le
@@ -1066,7 +1110,7 @@ export const fr = {
     swexAucunDossier: 'Aucun dossier choisi.',
     swexIntrouvable: 'Dossier introuvable : vérifie qu’il existe encore, ou choisis-en un autre.',
     swexAucunExport: 'Aucun export de compte à la racine de ce dossier.',
-    swexChoisirInvocateur: 'Choisis l’invocateur à suivre.',
+    swexChoisirInvocateur: 'Choisis l’invocateur à suivre : sans lui, ni ton compte ni le plugin ne sont lus.',
     swexLu: (date: string) => `Export du ${date} — lu.`,
     swexEnLecture: (date: string) => `Export du ${date} — lecture en cours…`,
     exportCharge: (nom: string | null) => `${nom ? `Compte de ${nom}` : 'Compte'} chargé depuis SW Exporter`,
@@ -1203,7 +1247,7 @@ export const fr = {
     potentielHero: 'Potentiel Héro',
     potentielLegend: 'Potentiel Légend',
     gemmeMeule: 'Gemme + meule',
-    gemmeMeuleAide: 'Potentiel avec la gemme optimale + les meules',
+    gemmeMeuleAide: 'Potentiel avec les meules et la gemme déjà posée relancée à son max (toute gemme avec « Autoriser un regemme différent »)',
     gemmeMeuleAideCourbes: 'Potentiel avec les meules, et la gemme déjà posée relancée à son max',
     meuleSeule: 'Meule seule',
     meuleSeuleAide: 'Potentiel en gardant les stats actuelles (meules seulement)',
@@ -1340,6 +1384,135 @@ export const fr = {
     max: 'max',
   },
 
+  // Les objectifs du compte : leur réglage (Paramètres › Objectifs) et les
+  // vues « Objectifs » des runes et des artéfacts.
+  objectifs: {
+    intro:
+      'Ce que tu vises sur ton compte : combien de runes et d’artéfacts de qualité, par set et par emplacement, et tes listes de monstres. Le Résumé, les Runes, les Artéfacts et les Monstres de cette section comparent ton compte à ces chiffres.',
+    sousSections: 'Sous-sections des objectifs',
+    efficience: 'Profondeur par efficience',
+    efficienceAide: 'Par palier, les runes de chaque set dont l’efficience atteint le seuil.',
+    vitesse: 'Vitesse par emplacement',
+    vitesseAide: 'Les runes dont la vitesse en secondaire (meule et innée comprises) atteint le seuil. L’emplacement 2, qui porte la vitesse en principale, n’en fait pas partie.',
+    artefacts: 'Artéfacts',
+    artefactsAide:
+      'Les artéfacts qui portent une secondaire à une valeur donnée au moins (« -22 % » s’écrit 22), par élément (Attribut) ou par style (Type), et par principale.',
+    valeurMin: 'Valeur min.',
+    choisirSecondaire: 'Choisir une secondaire',
+    ajouterSecondaire: 'Ajouter une secondaire',
+    secondairesMax: (n: number) => `${n} secondaires au plus`,
+    retirerSecondaire: (nom: string) => `Retirer ${nom}`,
+    palierParDefaut: (rang: number) => (rang === 0 ? 'Base' : rang === 1 ? 'Premium' : `Palier ${rang + 1}`),
+    nomPalier: 'Nom du palier',
+    potentiel: 'Si max',
+    potentielAide: 'Ce que compte la ligne « si max » du palier',
+    potentiels: { heroique: 'Meule héroïque', legendaire: 'Meule légendaire' },
+    ajouterPalier: 'Ajouter un palier',
+    palierMax: (n: number) => `${n} paliers au plus`,
+    retirerPalier: (nom: string) => `Retirer le palier ${nom}`,
+    ajouterSet: 'Ajouter',
+    choisirSet: 'Set à ajouter',
+    tousLesSets: 'Tous les sets sont déjà là',
+    retirerSet: (nom: string) => `Retirer ${nom}`,
+    seuil: 'Seuil',
+    quantite: 'Quantité',
+    tous: 'Tous',
+    tousAide: 'La même valeur partout',
+    emplacement: (n: number) => `Emplacement ${n}`,
+    exporter: 'Exporter',
+    importer: 'Importer',
+    retablir: 'Valeurs par défaut',
+    importes: 'Objectifs importés',
+    retablis: 'Objectifs par défaut rétablis',
+    fenetre: {
+      exporter: {
+        titre: 'Exporter les objectifs',
+        texte: 'Les sous-sections à mettre dans le fichier.',
+        action: 'Exporter',
+      },
+      importer: {
+        titre: 'Importer des objectifs',
+        texte: 'Les sous-sections cochées remplacent les tiennes ; les autres ne changent pas.',
+        action: 'Importer',
+        indisponible: 'absente du fichier',
+      },
+      retablir: {
+        titre: 'Valeurs par défaut',
+        texte: 'Les sous-sections cochées reviennent aux valeurs par défaut ; les autres ne changent pas.',
+        action: 'Rétablir',
+        indisponible: 'déjà aux valeurs par défaut',
+      },
+    },
+    refus: {
+      format: 'Ce fichier n’est pas un fichier d’objectifs SW Blacksmith.',
+      contenu: 'Ce fichier d’objectifs est mal formé : rien n’a été changé.',
+    },
+    // Les listes de monstres : la vue Monstres et leur réglage.
+    monstres: {
+      titre: 'Monstres',
+      aMonter: 'À monter',
+      aGarder: 'À garder',
+      aSniper: 'À sniper en event',
+      aide: {
+        aMonter: 'Le nombre d’exemplaires 6★ visés, comparé à ta box.',
+        aGarder: 'Les monstres à ne pas utiliser en nourriture.',
+        aSniper: 'Les monstres à guetter dans les events.',
+      },
+      reglageAide:
+        'Tes listes de monstres. « À monter » compte tes exemplaires 6★ ; les deux autres sont des mémos : ta box importée ne compte que les 6★.',
+      vide: 'Aucun monstre dans cette liste : ajoute-en dans la vue Réglage.',
+      chercher: (liste: string) => `Ajouter un monstre à « ${liste} »`,
+      exemplaires: (possedes: number, vise: number) => `${possedes} / ${vise}`,
+      exemplairesChamp: (nom: string) => `Exemplaires 6★ visés de ${nom}`,
+      possedes: (n: number) => `6★ ×${n}`,
+      retirer: (nom: string) => `Retirer ${nom}`,
+      listeMax: (n: number) => `${n} monstres au plus`,
+    },
+    // Les vues « Objectifs ».
+    vue: {
+      sansCompte: 'Importe ton compte pour le comparer à tes objectifs.',
+      sousTitreResume: 'Ton compte face à tes objectifs, bloc par bloc.',
+      sousTitreRunes: 'Tes runes face à tes objectifs, set par set et emplacement par emplacement.',
+      sousTitreArtefacts: 'Tes artéfacts face à tes objectifs, par élément, par style et par principale.',
+      sousTitreMonstres: 'Les monstres à monter, à garder et à sniper.',
+      reglerObjectifs: 'Régler les objectifs',
+      resume: 'Résumé',
+      resumeParSet: 'Score de chaque set dans chaque bloc',
+      vitesseCourt: 'Vitesse',
+      parEmplacement: (n: number) => `${n} par emplacement`,
+      parElementEtPrincipale: (n: number) => `${n} par élément et principale`,
+      parStyleEtPrincipale: (n: number) => `${n} par style et principale`,
+      seuilCommun: (seuil: string) => `Seuil ${seuil}`,
+      seuilFiche: (seuil: string) => `seuil ${seuil}`,
+      bande: { emplacement: 'Par emplacement', element: 'Par élément', style: 'Par style' },
+      lignes: {
+        emplacement: 'Empl.',
+        seuil: 'Seuil',
+        vise: 'Visé',
+        maxHero: 'Max héro',
+        maxLeg: 'Max lég.',
+        plusRapide: 'Plus rapide',
+        intangible: 'Intang.',
+      },
+      actuel: 'Actuel',
+      siMax: 'Si max héroïque',
+      siMaxAide: 'Le compte si chaque rune était meulée au maximum héroïque, gemmes inchangées',
+      siMaxLeg: 'Si max légendaire',
+      siMaxLegAide: 'Le compte si chaque rune était meulée au maximum légendaire, gemmes inchangées',
+      objectif: 'Objectif',
+      intangibleAide: 'Runes Intangibles qui passent le seuil : elles complètent n’importe quel set, sans compter dans le score',
+      intangibleArtefactAide: 'Artéfacts Intangibles qui portent la secondaire, sans élément ni style : hors colonnes et hors score',
+      aucunObjectif: 'Aucun objectif dans ce bloc.',
+      farm: {
+        titre: 'Où farmer',
+        aide: 'La part des pièces visées que tu as déjà, donjon par donjon, tous blocs confondus, et raid par palier pour les meules : le moins avancé d’abord.',
+        raid: (raid: string, palier: string) => `${raid} · ${palier}`,
+        rang: (n: number) => `#${n}`,
+        rien: 'Aucun set ni artéfact visé : rien à farmer.',
+      },
+    },
+  },
+
   // Compte → Résumé : les builds les plus rapides.
   buildsRapides: {
     titre: 'Builds les plus rapides',
@@ -1396,7 +1569,8 @@ export const fr = {
     sansMarqueur: 'Sans marqueur',
     marqueur: (n: number) => `Marqueur ${n}`,
     palier: 'Palier',
-    regemmeAide: 'Rune déjà gemmée : proposer aussi de regemmer sa ligne gemmée avec une autre stat, absente de la rune',
+    regemmeAide:
+      'Proposer aussi une gemme d’une autre stat : sur la ligne déjà gemmée, ou sur une rune qui n’a pas encore de gemme. Éteint, seule une gemme déjà posée est relancée',
     regemmeSansObjet: 'Sans objet en « Meule seule » : aucune gemme n’est proposée',
     faisable: 'Faisable avec ma réserve',
     faisableAide: (n: number) => `Ne garder que les runes applicables avec tes ${n} meules et gemmes en réserve`,
@@ -1419,8 +1593,9 @@ export const fr = {
     avertissementApres:
       " : ce n'est pas toujours la bonne solution pour tes runes (la stat la plus efficiente n'est pas forcément celle utile à ton monstre).",
     aideTitre: 'Comment est-ce calculé ?',
-    aideGemmeMeule: ': meilleure gemme possible, puis toutes les meules au max.',
-    aideMeuleSeule: ': les stats actuelles, meules au max. Une rune déjà gemmée garde sa stat gemmée, sauf avec',
+    aideGemmeMeule: ': la gemme déjà posée relancée à son max, puis toutes les meules au max.',
+    aideMeuleSeule:
+      ': les stats actuelles, meules au max. Une gemme qui change la stat d’une ligne, ou une gemme sur une rune qui n’en a pas : avec',
     gain: 'Gain',
     aideGain: '= potentiel − efficience actuelle.',
     aidePalier: ': filtre sur la',

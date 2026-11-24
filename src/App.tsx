@@ -8,6 +8,7 @@ import {
   IconeArtefacts,
   IconeEquipes,
   IconeMonstres,
+  IconeObjectifs,
   IconeRunes,
   IconeBestiaire,
   IconeCompte,
@@ -96,6 +97,7 @@ import {
 import { ConfirmDialog, KeepAccountDialog, Modale } from './ui/Dialogs';
 import { useEquipesEnregistrees } from './hooks/useEquipesEnregistrees';
 import EquipesSection from './components/account/equipes/EquipesSection';
+import ObjectifsSection from './components/account/ObjectifsSection';
 import type { DemandeEquipeOptimizer } from './lib/importEquipesEnregistrees';
 import type { ContexteSourcesEquipes } from './lib/sourcesEquipesEnregistrees';
 import { indexerInventaire } from './lib/equipesEnregistrees';
@@ -124,6 +126,7 @@ import {
 } from './lib/volets';
 import { useSessionEnCours } from './hooks/useSessionEnCours';
 import MiseAJourBureau from './components/MiseAJourBureau';
+import MiseAJourPlugin from './components/MiseAJourPlugin';
 import SuiviSwex from './components/SuiviSwex';
 import { DirectSwexContext, useCompteDirect } from './hooks/useCompteDirect';
 import ChangementCompteDialog from './components/ChangementCompteDialog';
@@ -246,7 +249,7 @@ type Route =
   | 'bot-discord'
   | 'sw-exporter'
   | 'parametres';
-export type AccountSub = 'monstres' | 'runes' | 'artefacts' | 'equipes';
+export type AccountSub = 'monstres' | 'runes' | 'artefacts' | 'objectifs' | 'equipes';
 
 // Sous-sections de RTA. `prepa` = la sienne (tout l'écran historique), `ami` =
 // celle de quelqu'un d'autre, en lecture.
@@ -270,7 +273,13 @@ export type AccountView =
   | 'comparaison'
   | 'optimisation'
   | 'meules'
-  | 'gemmes';
+  | 'gemmes'
+  // Les vues des Objectifs : le détail de chaque inventaire, les monstres, et
+  // le réglage.
+  | 'runes'
+  | 'artefacts'
+  | 'monstres'
+  | 'reglage';
 export type ToolSub = 'optimizer' | 'speed-tuning';
 // Les onglets de l'Arène et de l'arène dimensionnelle : un côté d'équipes, ou
 // les runes de l'arène dimensionnelle.
@@ -326,7 +335,7 @@ export function parseHash(hash: string = window.location.hash): {
     // `compte/runes/courbes` → sous-section « runes », vue « courbes ».
     const [, sub, vue] = h.split('/');
     const accountSub: AccountSub =
-      sub === 'runes' ? 'runes' : sub === 'artefacts' ? 'artefacts' : sub === 'equipes' ? 'equipes' : 'monstres';
+      sub === 'runes' || sub === 'artefacts' || sub === 'objectifs' || sub === 'equipes' ? sub : 'monstres';
     return {
       route: 'compte',
       rtaSub: 'prepa',
@@ -444,6 +453,7 @@ const ACCOUNT_SUBS: { sub: AccountSub; texte: CleNavigation; icon: IconeAtelier;
   { sub: 'monstres', texte: 'monstres', icon: IconeMonstres, couleur: COULEUR_COMPTE_SUB.monstres },
   { sub: 'runes', texte: 'runes', icon: IconeRunes, couleur: COULEUR_COMPTE_SUB.runes },
   { sub: 'artefacts', texte: 'artefacts', icon: IconeArtefacts, couleur: COULEUR_COMPTE_SUB.artefacts },
+  { sub: 'objectifs', texte: 'objectifs', icon: IconeObjectifs, couleur: COULEUR_COMPTE_SUB.objectifs },
   { sub: 'equipes', texte: 'mesEquipes', icon: IconeEquipes, couleur: COULEUR_COMPTE_SUB.equipes },
 ];
 
@@ -1751,6 +1761,7 @@ function Application() {
   };
   const sectionRunesBureau = sectionInventaireBureau('runes');
   const sectionArtefactsBureau = sectionInventaireBureau('artefacts');
+  const sectionObjectifsBureau = sectionInventaireBureau('objectifs');
 
   // Premier niveau. ⚠️ L'ordre d'importance est gardé — Accueil, puis le jeu
   // (RTA, Siège, Arène), le compte, les outils, les ressources — mais Arène
@@ -1784,6 +1795,7 @@ function Application() {
         },
         { key: 'runes', label: nomNav('runes'), icon: <IconeRunes size={18} />, ouvre: sectionRunesBureau, actif: route === 'compte' && accountSub === 'runes' },
         { key: 'artefacts', label: nomNav('artefacts'), icon: <IconeArtefacts size={18} />, ouvre: sectionArtefactsBureau, actif: route === 'compte' && accountSub === 'artefacts' },
+        { key: 'objectifs', label: nomNav('objectifs'), icon: <IconeObjectifs size={18} />, ouvre: sectionObjectifsBureau, actif: route === 'compte' && accountSub === 'objectifs' },
         {
           key: 'equipes',
           label: nomNav('mesEquipes'),
@@ -2246,6 +2258,17 @@ function Application() {
         menuOuvert={menu.ouvert}
         onFermerMenu={menu.fermer}
       />
+    ) : n.route === 'compte' && n.accountSub === 'objectifs' ? (
+      // ⚠️ Avant les écrans du compte : le Réglage se fait sans compte importé.
+      <ObjectifsSection
+        vue={vueValide('objectifs', n.accountView)}
+        runes={enDirect?.runes ?? runes}
+        artifacts={enDirect?.artifacts ?? artifacts}
+        box={enDirect?.box ?? box}
+        allMonsters={allMonsters}
+        monsterByCom2us={monsterByCom2us}
+        hydrating={accountHydrating}
+      />
     ) : n.route === 'compte' && n.accountSub === 'equipes' ? (
       // ⚠️ Avant les écrans du compte : « Mes équipes » se lit sans compte importé.
       <EquipesSection
@@ -2422,6 +2445,9 @@ function Application() {
     <EquipesAreneContext.Provider value={equipesArene}>
     {/* Application de bureau : « Mise à jour prête · Redémarrer ». Inerte sur le site. */}
     <MiseAJourBureau />
+    {/* Application de bureau : « Nouvelle version du plugin SW Blacksmith Live
+        disponible · Mettre à jour », vers la page SW Exporter. Inerte sur le site. */}
+    <MiseAJourPlugin />
     {/* Application de bureau : le dossier SW Exporter importe le compte
         choisi, puis met « Mon compte » à jour. Inerte sur le site. */}
     <SuiviSwex

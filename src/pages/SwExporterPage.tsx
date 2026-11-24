@@ -74,6 +74,11 @@ export default function SwExporterPage() {
       {bureau && <EtatPlugin />}
 
       <h2 className="label mt-8 mb-3">{s.tutoTitre}</h2>
+      {/* ⚠️ Le piège le plus courant : sans dossier ni invocateur choisis,
+          l'application ne lit rien du plugin. Dit avant les étapes. */}
+      <p className="mb-3 rounded-xl border border-accent/40 bg-accent/10 px-4 py-3 text-xs leading-relaxed text-ink" data-avertissement-tuto>
+        {s.tutoAvertissement}
+      </p>
       <ol className="flex flex-col gap-3">
         {s.etapes.map((e, i) => (
           <li key={e.titre} className="flex gap-3 rounded-xl border border-border-soft bg-panel px-4 py-3">
@@ -115,6 +120,18 @@ export default function SwExporterPage() {
           </li>
         ))}
       </ol>
+
+      {/* Le dépannage : chaque titre reprend le message que l'application
+          ou SW Exporter affiche, pour qu'on s'y retrouve en le lisant. */}
+      <h2 className="label mt-8 mb-3">{s.depannageTitre}</h2>
+      <ul className="flex flex-col gap-3">
+        {s.depannage.map((d) => (
+          <li key={d.titre} className="rounded-xl border border-border-soft bg-panel px-4 py-3">
+            <p className="text-sm font-semibold text-ink">{d.titre}</p>
+            <p className="mt-1 text-xs leading-relaxed text-ink-dim">{d.texte}</p>
+          </li>
+        ))}
+      </ul>
 
       <div className="mt-8 grid gap-3 sm:grid-cols-2">
         <section className="rounded-xl border border-border-soft bg-panel px-4 py-3">

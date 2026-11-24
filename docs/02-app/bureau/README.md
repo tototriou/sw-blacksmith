@@ -217,6 +217,13 @@ côté du service : [service-discord.md § Application de bureau](../siege/feat-
   `deconnexion` ; `routeAutorisee`), avec leur méthode : jamais une adresse
   quelconque. Côté page, `recupererParLeBureau` (`src/lib/bureau.ts`) en
   fait le `fetch` du client : la synchronisation est celle du site.
+- **Le corps d'une publication** est borné comme par le service
+  (`CORPS_PUBLICATION_MAX`, le double de `TAILLE_MAX` de
+  `api/_source/service/recoSalon.ts`, comparés par
+  `tests/bureau-discord.test.ts`) : au-delà, le processus principal répond
+  413 sans appeler le service, et la page dit la recommandation trop
+  volumineuse. ⚠️ Une borne plus basse que celle du service refuserait ici
+  ce que le site publie (une recommandation tirée de vidéos pèse plus d'un Mo).
 - **La session** : remplacée par celle que rend le service quand il la
   renouvelle (en-tête `x-session-discord`) ; oubliée à la déconnexion, à un
   401, et par « Tout supprimer ». Un appel attend la première réponse de la

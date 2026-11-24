@@ -67,6 +67,10 @@ export function lireReglage(brut: unknown): ReglageSwex {
 
 export const DOSSIER_PLUGIN = 'SWBlacksmith';
 export const COMPTE_LIVE = 'compte.live.jsonl';
+// Le plugin que sert l'app, dans son build : l'adresse où Vite l'émet
+// (`CHEMIN_PLUGIN` de scripts/lib/construirePluginSwex.mjs — un test vérifie
+// qu'elles concordent).
+export const CHEMIN_PLUGIN_SERVI = 'plugin-swex/SWBlacksmithLive.js';
 
 // Le dossier d'un invocateur : parmi ceux dont le nom finit par `-<id>`, celui
 // dont le fichier live est le plus récent (`modifie`, `null` : pas de fichier
@@ -98,10 +102,16 @@ export function liveAJour(tLive: number | null, tExport: number | null): boolean
   return tExport === null || tLive >= tExport;
 }
 
-// La version écrite en tête du plugin (bannière de
-// scripts/lib/construirePluginSwex.mjs).
-export function versionDuPlugin(debut: string): string | null {
-  return /^\/\/ SW Blacksmith Live (\d+(?:\.\d+)*)\b/.exec(debut)?.[1] ?? null;
+// Un plugin, d'après sa bannière (scripts/lib/construirePluginSwex.mjs) : sa
+// version, et l'empreinte de son code — `null` pour un plugin d'avant
+// l'empreinte (2.5.1 et plus ancien).
+export interface PluginLu {
+  version: string;
+  code: string | null;
+}
+export function lirePlugin(debut: string): PluginLu | null {
+  const m = /^\/\/ SW Blacksmith Live (\d+(?:\.\d+)*)\b(?: · code ([0-9a-f]+)\b)?/.exec(debut);
+  return m ? { version: m[1], code: m[2] ?? null } : null;
 }
 
 // Compare deux versions `x.y.z` nombre par nombre : < 0, 0 ou > 0.
@@ -115,13 +125,34 @@ export function comparerVersions(a: string, b: string): number {
   return 0;
 }
 
-// Le plugin installé, comparé à l'app : il porte la version de l'app qui l'a
-// construit, et l'app sert le sien (la dernière version qu'elle connaît).
+// Le plugin installé, comparé à celui que l'app sert (la dernière version
+// qu'elle connaît).
+//
+// ⚠️ **Le CODE fait foi, pas le numéro** : le plugin porte le numéro de l'app
+// qui l'a construit, et une version de l'app qui ne le change pas ne doit pas
+// demander de le remplacer. Même empreinte : à jour, quel que soit le numéro.
+// Sans empreinte d'un côté (plugin d'avant elle, ou app sans le fichier
+// servi, en développement), le numéro décide.
 export type StatutPlugin = 'absent' | 'a-jour' | 'ancien' | 'plus-recent';
-export function statutPlugin(installee: string | null, app: string): StatutPlugin {
-  if (!installee) return 'absent';
-  const d = comparerVersions(installee, app);
+export function statutPlugin(installe: PluginLu | null, servi: PluginLu): StatutPlugin {
+  if (!installe) return 'absent';
+  const d = comparerVersions(installe.version, servi.version);
+  if (installe.code && servi.code) return installe.code === servi.code ? 'a-jour' : d > 0 ? 'plus-recent' : 'ancien';
   return d === 0 ? 'a-jour' : d < 0 ? 'ancien' : 'plus-recent';
+}
+
+// Plusieurs copies dans le dossier `plugins` (une ancienne laissée sous un
+// autre nom) : celle qu'il faut remplacer est montrée — une ancienne d'abord,
+// puis une plus récente que l'app ; la plus ancienne des anciennes.
+const RANG: Record<StatutPlugin, number> = { ancien: 0, 'plus-recent': 1, 'a-jour': 2, absent: 3 };
+export function pluginAMontrer(installes: PluginLu[], servi: PluginLu): { installe: PluginLu | null; statut: StatutPlugin } {
+  let choisi: { installe: PluginLu | null; statut: StatutPlugin } = { installe: null, statut: 'absent' };
+  for (const p of installes) {
+    const statut = statutPlugin(p, servi);
+    const avant = RANG[statut] - RANG[choisi.statut] || (choisi.installe ? comparerVersions(p.version, choisi.installe.version) : -1);
+    if (avant < 0) choisi = { installe: p, statut };
+  }
+  return choisi;
 }
 
 // Une saison de l'arène dimensionnelle est-elle à donner à la page ? Celle

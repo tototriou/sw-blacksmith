@@ -82,6 +82,24 @@ séparent que par leur **clarté** : un jaune plus sombre ou un rouge plus clair
 `#b98c12` / `#e5484d` : ΔE 5,4). L'écusson d'une tour, rendu du jeu, prend les valeurs Forge
 (`forge-guilde-*`) dans les deux thèmes, sur fond sombre.
 
+### Niveaux d'un objectif du compte
+
+| Token | Les deux thèmes | Rôle |
+|---|---|---|
+| `niveau-0` | `#f08a8a` | Rouge — moins de 30 % ; une case vide |
+| `niveau-1` | `#f2ab78` | Orange — moins de 50 % |
+| `niveau-2` | `#ecd970` | Jaune — moins de 70 % ; une case entamée |
+| `niveau-3` | `#c3e07e` | Vert clair — moins de 100 % ; une case atteinte tout juste |
+| `niveau-4` | `#8fd48f` | Vert — objectif atteint ; une case dépassée |
+| `niveau-ink` | `#1b1a19` | L'encre posée sur ces aplats |
+
+L'échelle de la section Objectifs de Mon compte
+([feat-objectifs.md](../../../02-app/compte/feat-objectifs.md)) : cartes du résumé, score et
+colonnes des fiches. Des **aplats pastel sous une encre sombre**, les mêmes dans les deux thèmes
+(7:1 au pire, sur le rouge). ⚠️ Une échelle de **données**, comme les séries : son orange n'est
+pas `warn`, et il ne sert qu'ici. Le pourcentage reste toujours écrit — le rouge et le vert se
+confondent pour un deutéranope.
+
 ⚠️ **« Orange » dans le code = `warn`.** Le statut d'avertissement s'appelle
 `orange` dans le code (`statutEquipe`, les verdicts) et dans certaines fiches ;
 il se DESSINE en jaune / ocre. Lire `warn`, pas une teinte. (Ne concerne pas

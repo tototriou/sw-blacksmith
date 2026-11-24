@@ -13,6 +13,8 @@ import type { EtatDirectSwex } from '../../src/lib/bureau';
 import { CHEMIN_PLUGIN_SWEX, FICHIER_PLUGIN_SWEX } from '../../src/lib/pluginSwex';
 import { runesUtiliseesVides } from '../../src/lib/importAccount';
 import { fr } from '../../src/i18n/fr';
+import { en } from '../../src/i18n/en';
+import { annoncePlugin, clePlugin } from '../../src/components/MiseAJourPlugin';
 import type { Monster } from '../../src/types';
 import { egal, faussLocalStorage, monstersJson, ok, titre } from '../outils';
 import { ARTEFACTS, BOX } from './compte.test';
@@ -109,6 +111,23 @@ export function testRenduCompteDirect() {
   ok(texteVisible(carte(etat(), true, 'Compte mis à jour à 14:35.')).includes('Compte mis à jour à 14:35.'), 'le résultat s’écrit sous le bouton, sans notification');
   egal(lignePlugin(etat({}, { installee: null, statut: 'absent' }), s), s.pluginAbsent, 'absent : pas trouvé dans plugins');
   egal(lignePlugin(etat({}, { installee: '2.5.0', statut: 'plus-recent' }), s), "Installé · version 2.5.0, plus récente que l'application", 'plus récent que l’app : dit tel quel');
+
+  titre('rendu · direct — la notification d’un plugin à remplacer (application de bureau)');
+  const ouvrir = () => {};
+  egal(annoncePlugin(null, fr, ouvrir), null, 'sur le site : rien');
+  for (const statut of ['a-jour', 'plus-recent', 'absent'] as const)
+    egal(annoncePlugin(etat({}, { statut }), fr, ouvrir), null, `${statut} : rien`);
+  egal(
+    annoncePlugin(etat({}, { installee: '2.5.1', app: '2.6.0', statut: 'ancien' }), fr, ouvrir),
+    { message: s.notifPluginAncien, action: ouvrir, libelleAction: s.notifPluginAction, persistante: true },
+    'ancien : une question, persistante, qui ouvre la page SW Exporter'
+  );
+  egal(annoncePlugin(etat({}, { statut: 'ancien' }), en, ouvrir)?.message, 'New SW Blacksmith Live plugin version available', 'en anglais');
+  egal(
+    [clePlugin(null), clePlugin(etat()), clePlugin(etat({}, { installee: '2.5.1', app: '2.6.0', statut: 'ancien' }))],
+    [null, null, '2.5.1>2.6.0'],
+    'ce qui a été notifié : le plugin installé face à l’app, seulement s’il est ancien'
+  );
 
   titre('rendu · direct — le tuto d’utilisation (site et application)');
   const page = texteVisible(rendre(<SwExporterPage />));

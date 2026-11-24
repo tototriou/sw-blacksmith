@@ -65,6 +65,30 @@ export interface Changement {
   retires: Partial<Record<NomRegistre, number[]>>;
 }
 
+// ⚠️ **Une liste du jeu peut arriver en OBJET indexé** (`{"1": …, "3": …}`,
+// une liste à trous). Parcourue telle quelle, elle levait une exception dès la
+// connexion (« object is not iterable ») : le plugin ne suivait alors rien de
+// la session. Toute liste lue dans une réponse ou une requête passe donc par
+// `enListe` (ses valeurs, dans l'ordre), ou par `objets` quand elle contient
+// des objets du compte ; une autre valeur ne donne rien.
+export function enListe(x: unknown): unknown[] {
+  if (Array.isArray(x)) return x;
+  return x && typeof x === 'object' ? Object.values(x) : [];
+}
+export function objets(x: unknown): Json[] {
+  return enListe(x).filter((o): o is Json => !!o && typeof o === 'object' && !Array.isArray(o));
+}
+// Un monstre dont les runes ou les artéfacts sont en objet : copié, avec des
+// listes — l'export, et l'import de l'app qui le lit, n'en connaissent pas
+// d'autre forme. Déjà en listes : le même objet.
+function uniteEnListes(u: Json): Json {
+  const aConvertir = ['runes', 'artifacts', 'relics'].filter((k) => k in u && !Array.isArray(u[k]));
+  if (!aConvertir.length) return u;
+  const copie = { ...u };
+  for (const k of aConvertir) copie[k] = objets(u[k]);
+  return copie;
+}
+
 function noter(etat: EtatDirect, nom: NomRegistre, id: number, objet: Json | null) {
   etat.touches?.[nom].set(id, objet);
 }
@@ -108,7 +132,7 @@ const CLES_IGNOREES = /repurchase|prev|before|history|reward_result/i;
 // Commandes dont on ne lit QU'UNE partie de la réponse.
 const LECTURES_CIBLEES: Record<string, (res: Json) => unknown> = {
   receiveServerArenaReward_v2: (res) =>
-    (res.user_reward_info?.reward_result ?? []).filter((r: Json) => Number(r.reward_id) === Number(res.reward_id)),
+    objets(res.user_reward_info?.reward_result).filter((r) => Number(r.reward_id) === Number(res.reward_id)),
 };
 
 // Les objets DU COMPTE, reconnus à leur forme. ⚠️ Le `wizard_id` est exigé (et
@@ -120,13 +144,14 @@ const estRune = (o: Json) =>
   'rune_id' in o && 'slot_no' in o && 'set_id' in o && Array.isArray(o.sec_eff) && [1, 2].includes(Number(o.occupied_type));
 const estArtefact = (o: Json) => 'rid' in o && 'pri_effect' in o && Array.isArray(o.sec_effects) && 'natural_rank' in o;
 // Un monstre COMPLET : ses runes sont des objets (un deck n'en donne que les
-// identifiants), et il a son niveau.
+// identifiants), en liste ou en objet indexé (`enListe`), et il a son niveau.
 const estUnite = (o: Json) =>
   'unit_id' in o &&
   'unit_master_id' in o &&
   'unit_level' in o &&
-  Array.isArray(o.runes) &&
-  o.runes.every((r: unknown) => !!r && typeof r === 'object');
+  !!o.runes &&
+  typeof o.runes === 'object' &&
+  enListe(o.runes).every((r: unknown) => !!r && typeof r === 'object');
 const estCraft = (o: Json) => 'craft_item_id' in o && 'craft_type' in o && 'craft_type_id' in o && 'amount' in o;
 const estRelique = (o: Json) => 'rid' in o && 'durability' in o && Array.isArray(o.sec_effect) && Array.isArray(o.pri_effect);
 
@@ -142,11 +167,11 @@ export function depuisConnexion(connexion: Json): EtatDirect {
     tvalue: typeof connexion.tvalue === 'number' ? connexion.tvalue : null,
     touches: null,
   };
-  for (const u of connexion.unit_list ?? []) poserUnite(etat, u, false);
-  for (const r of connexion.runes ?? []) etat.runes.set(r.rune_id, r);
-  for (const a of connexion.artifacts ?? []) etat.artefacts.set(a.rid, a);
-  for (const c of connexion.rune_craft_item_list ?? []) etat.crafts.set(c.craft_item_id, c);
-  for (const r of connexion.relics ?? []) etat.reliques.set(r.rid, r);
+  for (const u of objets(connexion.unit_list)) poserUnite(etat, u, false);
+  for (const r of objets(connexion.runes)) etat.runes.set(r.rune_id, r);
+  for (const a of objets(connexion.artifacts)) etat.artefacts.set(a.rid, a);
+  for (const c of objets(connexion.rune_craft_item_list)) etat.crafts.set(c.craft_item_id, c);
+  for (const r of objets(connexion.relics)) etat.reliques.set(r.rid, r);
   return etat;
 }
 
@@ -159,11 +184,12 @@ export function depuisConnexion(connexion: Json): EtatDirect {
 // réponse est reprise par lui, avant ou après : son objet dit son nouveau
 // porteur, il ne correspond plus à celui-ci.
 // `rendre` : faux à la connexion, où rien n'a encore été porté.
-function poserUnite(etat: EtatDirect, u: Json, rendre = true) {
+function poserUnite(etat: EtatDirect, brut: Json, rendre = true) {
+  const u = uniteEnListes(brut);
   const id = Number(u.unit_id);
   if (rendre) {
-    const runes = new Set((u.runes ?? []).map((r: Json) => Number(r.rune_id)));
-    const artefacts = new Set((u.artifacts ?? []).map((a: Json) => Number(a.rid)));
+    const runes = new Set(objets(u.runes).map((r) => Number(r.rune_id)));
+    const artefacts = new Set(objets(u.artifacts).map((a) => Number(a.rid)));
     for (const [rid, r] of etat.runes)
       if (Number(r.occupied_type) === 1 && Number(r.occupied_id) === id && !runes.has(rid))
         mettre(etat, 'runes', rid, { ...r, occupied_type: 2, occupied_id: 0 });
@@ -171,8 +197,8 @@ function poserUnite(etat: EtatDirect, u: Json, rendre = true) {
       if (Number(a.occupied_id) === id && !artefacts.has(aid)) mettre(etat, 'artefacts', aid, { ...a, occupied_id: 0, slot: 0 });
   }
   mettre(etat, 'unites', id, u);
-  for (const r of u.runes ?? []) mettre(etat, 'runes', r.rune_id, r);
-  for (const a of u.artifacts ?? []) mettre(etat, 'artefacts', a.rid, a);
+  for (const r of objets(u.runes)) mettre(etat, 'runes', r.rune_id, r);
+  for (const a of objets(u.artifacts)) mettre(etat, 'artefacts', a.rid, a);
 }
 
 // Les objets du compte vus dans une réponse, en profondeur. Seuls ceux de
@@ -201,7 +227,7 @@ function parcourir(x: unknown, moi: number, vus: Vus) {
       vus.unites.push(o);
       // Ses runes et artéfacts entrent avec lui ; ses reliques, copies de
       // celles du compte, en donnent l'état courant.
-      for (const r of o.relics ?? []) if (r && typeof r === 'object' && estRelique(r)) vus.reliques.push(r);
+      for (const r of objets(o.relics)) if (estRelique(r)) vus.reliques.push(r);
       return;
     }
     if (estRelique(o)) {
@@ -237,10 +263,10 @@ const REGLES: Record<string, (etat: EtatDirect, req: Json, res: Json) => void> =
     if (r && typeof r === 'object' && Number(r.wizard_id) === e.wizardId && estRune(r)) mettre(e, 'runes', Number(r.rune_id), r);
   },
   SellRune: (e, req) => {
-    for (const id of req.rune_id_list ?? []) oter(e, 'runes', Number(id));
+    for (const id of enListe(req.rune_id_list)) oter(e, 'runes', Number(id));
   },
   SellArtifacts: (e, req) => {
-    for (const id of req.artifact_ids ?? []) oter(e, 'artefacts', Number(id));
+    for (const id of enListe(req.artifact_ids)) oter(e, 'artefacts', Number(id));
   },
   // Une pierre vendue : la réponse donne le lot restant (lu plus bas, même
   // pour ces commandes hors lecture générale).
@@ -248,8 +274,8 @@ const REGLES: Record<string, (etat: EtatDirect, req: Json, res: Json) => void> =
     if (res.rune_craft_item) poserCraft(e, res.rune_craft_item);
   },
   SellRuneCraftItemList: (e, req, res) => {
-    const restants = new Map<number, Json>((res.rune_craft_item_list ?? []).map((c: Json) => [c.craft_item_id, c]));
-    for (const c of req.craft_item_list ?? []) {
+    const restants = new Map<number, Json>(objets(res.rune_craft_item_list).map((c) => [c.craft_item_id, c]));
+    for (const c of objets(req.craft_item_list)) {
       const reste = restants.get(c.craft_item_id);
       if (reste) poserCraft(e, reste);
       else oter(e, 'crafts', Number(c.craft_item_id));
@@ -272,12 +298,12 @@ function retirerUnites(etat: EtatDirect, req: Json, res: Json) {
   const chercher = (x: unknown) => {
     if (!x || typeof x !== 'object' || Array.isArray(x)) return;
     for (const [k, v] of Object.entries(x as Json)) {
-      if ((k === 'remove_unit_id_list' || k === 'removed_unit_id_list') && Array.isArray(v)) ids.push(...v);
+      if (k === 'remove_unit_id_list' || k === 'removed_unit_id_list') ids.push(...(enListe(v) as number[]));
       else if (!CLES_IGNOREES.test(k)) chercher(v);
     }
   };
   chercher(res);
-  for (const s of req.source_unit_list ?? []) ids.push(typeof s === 'object' ? s.unit_id : s);
+  for (const s of enListe(req.source_unit_list)) ids.push(s && typeof s === 'object' ? (s as Json).unit_id : (s as number));
   for (const id of ids) oter(etat, 'unites', Number(id));
 }
 

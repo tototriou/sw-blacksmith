@@ -17,19 +17,25 @@ prop depuis [App.tsx](src/App.tsx) : `box` (6★), `runes`, `artifacts`.
 | `src/components/account/ArtifactsSection.tsx`, `src/components/account/ArtifactsList.tsx`, `src/components/account/ArtifactsSummary.tsx`, `src/components/account/ArtifactsTop.tsx`, `src/lib/artifactsTop.ts` | [feat-artefacts.md](feat-artefacts.md) |
 | `src/lib/runeOptim.ts`, `src/lib/stats.ts`, `src/lib/effects.ts`, une formule d'efficience ou le décodage SWEX | [feat-calcul-runes.md](feat-calcul-runes.md) |
 | `src/lib/artifacts.ts`, le score ou l'efficience d'un artéfact | [feat-calcul-artefacts.md](feat-calcul-artefacts.md) |
+| `src/lib/objectifsCompte.ts`, `src/lib/farmObjectifs.ts`, `src/hooks/useObjectifsCompte.ts`, `src/components/account/ObjectifsSection.tsx`, `src/components/account/VueObjectifs.tsx`, `src/components/ReglagesObjectifs.tsx`, `src/components/IconePrincipale.tsx` | [feat-objectifs.md](feat-objectifs.md) |
 | `src/components/account/equipes/`, `src/lib/equipesEnregistrees.ts`, `src/lib/equipesStore.ts`, `src/lib/equipesFichier.ts`, `src/lib/importEquipesEnregistrees.ts`, `src/lib/sourcesEquipesEnregistrees.ts`, `src/hooks/useEquipesEnregistrees.ts` | [feat-equipes.md](feat-equipes.md) |
 
 ## Navigation par dropdown
 
 « Mon compte » n'est **pas un onglet simple** mais un **dropdown de nav** (comme
-« Ressources »), avec quatre sous-sections adressables par hash :
+« Ressources »), avec cinq sous-sections adressables par hash :
 
 | Sous-section | Route | Spec |
 |--------------|-------|------|
 | Monstres (box 6★) | `#/compte` | [feat-monstres.md](feat-monstres.md) |
 | Runes | `#/compte/runes` | [feat-runes/](feat-runes/README.md) |
 | Artéfacts | `#/compte/artefacts` | [feat-artefacts.md](feat-artefacts.md) |
+| Objectifs | `#/compte/objectifs` | [feat-objectifs.md](feat-objectifs.md) |
 | Mes équipes | `#/compte/equipes` | [feat-equipes.md](feat-equipes.md) |
+
+**Objectifs** est une section à part entière, pas une vue des inventaires : elle
+mesure les runes ET les artéfacts face aux objectifs du joueur, qu'elle règle
+elle-même (Résumé, Runes, Artéfacts, Réglage).
 
 **Référence de calcul** (auto-suffisante : formules, tables, décodage SWEX,
 algorithme d'optimisation) : [feat-calcul-runes.md](feat-calcul-runes.md) ; pour

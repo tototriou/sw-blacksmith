@@ -14,7 +14,7 @@
 
 import { promises } from 'node:fs';
 import { join } from 'node:path';
-import { COMPTE_LIVE, DOSSIER_PLUGIN, comparerVersions, dossierDeLInvocateur, enteteLive, versionDuPlugin } from './swexPur';
+import { COMPTE_LIVE, DOSSIER_PLUGIN, dossierDeLInvocateur, enteteLive, lirePlugin, type PluginLu } from './swexPur';
 
 export interface LectureLive {
   chemin: string;
@@ -101,24 +101,29 @@ export async function enteteDuLive(chemin: string) {
   return enteteLive(await debutDe(chemin));
 }
 
-// La version du plugin installé dans SWEX (son dossier `plugins`), ou `null`. Tout `.js`
-// du dossier est regardé : l'utilisateur a pu renommer le fichier.
-export async function versionInstallee(dossierSwex: string): Promise<string | null> {
+// Les copies du plugin installées dans SWEX (son dossier `plugins`) : chaque
+// `.js` dont la bannière est la sienne — l'utilisateur a pu renommer le
+// fichier, ou en laisser une ancienne à côté (`pluginAMontrer` choisit).
+export async function pluginsInstalles(dossierSwex: string): Promise<PluginLu[]> {
   const dossier = join(dossierSwex, 'plugins');
   let noms: string[];
   try {
     noms = (await promises.readdir(dossier)).filter((n) => n.toLowerCase().endsWith('.js'));
   } catch {
-    return null;
+    return [];
   }
-  let meilleure: string | null = null;
+  const lus: PluginLu[] = [];
   for (const nom of noms) {
-    const v = versionDuPlugin(await debutDe(join(dossier, nom), 200).catch(() => ''));
-    // Deux copies (une ancienne laissée sous un autre nom) : la plus ancienne
-    // est montrée — c'est elle qu'il faut remplacer.
-    if (v && (meilleure === null || comparerVersions(v, meilleure) < 0)) meilleure = v;
+    const p = await lirePluginDe(join(dossier, nom));
+    if (p) lus.push(p);
   }
-  return meilleure;
+  return lus;
+}
+
+// Le plugin d'un fichier, d'après sa bannière ; `null` si ce n'est pas lui ou
+// s'il est illisible (le plugin que sert l'app, absent en développement).
+export async function lirePluginDe(chemin: string): Promise<PluginLu | null> {
+  return lirePlugin(await debutDe(chemin, 200).catch(() => ''));
 }
 
 // L'heure serveur (`tvalue`) de l'export, mémorisée par fichier et date : un
