@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
-import { Heart, Shield, Swords, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { ArtifactDetail } from '../../types';
 import { ARTIFACT_MAIN, splitArtifactSub } from '../../lib/effects';
 import { useLangue, useTraduction } from '../../hooks/useLangue';
@@ -23,6 +23,7 @@ import { SOUS_LG, useMediaQuery } from '../../hooks/useMediaQuery';
 import { ArtifactGlyph } from '../ArtifactIcon';
 import { ArtifactDetailBox } from '../PieceDetail';
 import ElementIcon from '../ElementIcon';
+import { ICONE_PRINCIPALE } from '../IconePrincipale';
 import Pastille from '../../ui/Pastille';
 import Onglets from '../../ui/Onglets';
 import FlottantAuto from '../../ui/FlottantAuto';
@@ -33,18 +34,6 @@ import { Panel } from './SummaryBits';
 // pour un attribut ou un type (intangibles compris), et les stats principales
 // cochées, les meilleures valeurs de chaque propriété secondaire.
 // Calcul : lib/artifactsTop.ts. Voir docs/02-app/compte/feat-artefacts.md.
-
-// L'icône de la stat principale devant chaque valeur : ♥ PV, ⚔ ATQ, 🛡 DEF.
-//
-// ⚠️ **En COULEUR**, comme les outils de référence du jeu : sur dix rangs
-// serrés, c'est la teinte qu'on repère d'un coup d'œil, pas la forme. Le cœur
-// rouge et le bouclier bleu reprennent les tokens du Feu et de l'Eau (deux
-// valeurs par thème, déjà mesurées), les épées restent à l'encre.
-const ICONE_PRINCIPALE: Record<number, { Icone: typeof Heart; couleur: string }> = {
-  100: { Icone: Heart, couleur: 'text-fire' },
-  101: { Icone: Swords, couleur: 'text-ink' },
-  102: { Icone: Shield, couleur: 'text-water' },
-};
 
 export default function ArtifactsTop({ artifacts }: { artifacts: ArtifactDetail[] }) {
   const textes = useTraduction();
