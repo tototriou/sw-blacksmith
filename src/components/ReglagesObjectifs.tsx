@@ -113,9 +113,10 @@ function GrilleCibles({
                 </td>
               ))}
               <td className="px-0.5 py-0.5 pl-2">
+                {/* Vide quand les colonnes diffèrent ; vidé à la frappe, il vaut
+                    0 pour toutes, comme une case seule. */}
                 <NumberField
                   sansBoutons
-                  allowEmpty
                   boxWidth="w-14"
                   value={commune(l.cle)}
                   min={l.bornes.min}
@@ -123,7 +124,7 @@ function GrilleCibles({
                   suffix={l.suffixe}
                   ariaLabel={`${l.libelle} · ${t.tous}`}
                   title={t.tousAide}
-                  onChange={(v) => v !== null && onChange(cases.map((x) => ({ ...x, [l.cle]: v })))}
+                  onChange={(v) => onChange(cases.map((x) => ({ ...x, [l.cle]: v ?? 0 })))}
                 />
               </td>
             </tr>
@@ -303,14 +304,13 @@ function LigneArtefactReglage({
                   <td className="px-0.5 py-0.5 pl-2">
                     <NumberField
                       sansBoutons
-                      allowEmpty
                       boxWidth="w-12"
                       value={commune}
                       min={BORNES.quantite.min}
                       max={BORNES.quantite.max}
                       ariaLabel={`${nom} · ${stat} · ${t.tous}`}
                       title={t.tousAide}
-                      onChange={(x) => x !== null && poser(null, x)}
+                      onChange={(x) => poser(null, x ?? 0)}
                     />
                   </td>
                 </tr>

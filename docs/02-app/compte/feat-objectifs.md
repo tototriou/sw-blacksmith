@@ -281,7 +281,8 @@ pas et n'ont pas de détail (retirés à la demande de Thomas : ils ne servaient
   dans une fenêtre (plus bas).
 - Chaque geste s'applique tout de suite. Par set, une grille : une colonne par
   emplacement, une ligne « Seuil » et une ligne « Quantité », et une colonne
-  « Tous » qui pose la même valeur partout (vide quand les valeurs diffèrent).
+  « Tous » qui pose la même valeur partout (vide quand les valeurs diffèrent ;
+  vidée à la frappe, elle pose 0 partout, comme une case seule).
   Au doigt, la grille défile de côté.
 - Paliers : nom (trimé à la sortie du champ), « si max » (héroïque ou
   légendaire ; un palier ajouté est héroïque), ajout (cinq au plus, bouton
