@@ -61,6 +61,8 @@ export const CLES_SESSION = [
   'swblacksmith-adversaire-reference-v1',
   // Du JSON, relu et validé par son hook (`lireReglageBuildsRapides`).
   'swblacksmith-builds-rapides-v1',
+  // Du JSON aussi, relu par `lireObjectifsStockes` (objectifsCompte.ts).
+  'swblacksmith-objectifs-compte-v1',
   'swblacksmith-optimizer-resultats-forme-v1',
 ] as const;
 

@@ -281,7 +281,10 @@ la barre du haut dit « Résumé », pas ce qu'est ce bloc.
   ferme ; une seule ouverte à la fois.
   - ⚠️ **L'icône est EN COULEUR** — ♥ PV rouge (`text-fire`), ⚔ ATQ à l'encre,
     🛡 DEF bleu (`text-water`), comme les outils de référence du jeu : sur dix
-    rangs serrés, c'est la teinte qu'on repère d'un coup d'œil.
+    rangs serrés, c'est la teinte qu'on repère d'un coup d'œil. Les mêmes
+    icônes (`ICONE_PRINCIPALE`, [IconePrincipale.tsx](src/components/IconePrincipale.tsx))
+    marquent les principales des objectifs d'artéfacts
+    ([feat-objectifs.md](feat-objectifs.md)), rangés par les mêmes familles.
 - ⚠️ **Des tableaux SERRÉS** : chaque carte prend la largeur de son tableau
   (`w-fit`), les colonnes ont une largeur fixe (4,5 rem ; 7 rem pour un nom
   complet), les rangs 20 px. Étirées sur la page, les colonnes écartaient

@@ -232,7 +232,10 @@ import {
 import testRuneOptim from './rune-optim.test';
 import testRuneOptimDifferential from './rune-optim-differential.test';
 import testBuildsRapides from './builds-rapides.test';
+import testObjectifsCompte, { testObjectifsMonstresCollab, testObjectifsSousSections } from './objectifs-compte.test';
+import testFarmObjectifs from './farm-objectifs.test';
 import { testRenduBuildsRapides } from './rendu/builds-rapides.test';
+import { testRenduObjectifs } from './rendu/objectifs.test';
 import testRuneOptimOnStage from './rune-optim-onstage.test';
 import testRandomPool from './random-pool.test';
 import testDiagnosticHarness, { testDiagnosticHarnessClassementDegatsReels } from './diagnostic-harness.test';
@@ -431,6 +434,7 @@ import {
 } from './rendu/bot-discord.test';
 import { testRenduSwExporter, testRenduSwExporterBureau } from './rendu/sw-exporter.test';
 import { testRenduCompteDirect } from './rendu/compte-direct.test';
+import { testRenduNotifPlugin } from './rendu/notif-plugin.test';
 import { testRenduBureauTextes } from './rendu/bureau-textes.test';
 import { testRenduBureauCoeursRecherche } from './rendu/recherche-coeurs.test';
 import { testRenduBarreSession } from './rendu/barre-session.test';
@@ -808,6 +812,7 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testRenduSwExporter', testRenduSwExporter],
   ['testRenduSwExporterBureau', testRenduSwExporterBureau],
   ['testRenduCompteDirect', testRenduCompteDirect],
+  ['testRenduNotifPlugin', testRenduNotifPlugin],
   ['testRenduBureauTextes', testRenduBureauTextes],
   ['testRenduBureauCoeursRecherche', testRenduBureauCoeursRecherche],
   ['testRenduBarreSession', testRenduBarreSession],
@@ -939,7 +944,12 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testRuneOptim', testRuneOptim],
   ['testRuneOptimDifferential', testRuneOptimDifferential],
   ['testBuildsRapides', testBuildsRapides],
+  ['testObjectifsCompte', testObjectifsCompte],
+  ['testObjectifsSousSections', testObjectifsSousSections],
+  ['testObjectifsMonstresCollab', testObjectifsMonstresCollab],
+  ['testFarmObjectifs', testFarmObjectifs],
   ['testRenduBuildsRapides', testRenduBuildsRapides],
+  ['testRenduObjectifs', testRenduObjectifs],
   ['testRuneOptimOnStage', testRuneOptimOnStage],
   ['testRandomPool', testRandomPool],
   ['testDiagnosticHarness', async () => { await testDiagnosticHarness(); }],

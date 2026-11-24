@@ -98,6 +98,7 @@ export default tseslint.config(
       'src/hooks/useRuneMetric.ts',
       'src/hooks/useAdversaireReference.ts',
       'src/hooks/useBuildsRapides.ts',
+      'src/hooks/useObjectifsCompte.ts',
       'src/hooks/useFormeResultats.ts',
       'src/hooks/useReglagesDiscord.ts',
     ],

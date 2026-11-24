@@ -30,9 +30,16 @@ embarque son propre Electron, parfois ancien).
   l'écrit ailleurs.
 - ⚠️ **Sa version est celle de l'app** (`package.json`), injectée à la
   construction (`__VERSION_PLUGIN__`), écrite dans sa description, en tête
-  du fichier et dans la première ligne de chaque session (`plugin`) : de quoi
-  la comparer, côté app, à celle de l'app. Un test le vérifie sur le fichier
-  construit.
+  du fichier et dans la première ligne de chaque session (`plugin`). Un test
+  le vérifie sur le fichier construit.
+- ⚠️ **Sa bannière porte aussi l'empreinte de son code** :
+  `// SW Blacksmith Live 2.6.0 · code 1a2b3c4d5e6f — …`, les 12 premiers
+  chiffres du SHA-256 du plugin construit avec un numéro neutre, fins de
+  ligne ramenées à `\n` (le site et l'installeur Windows doivent trouver la
+  même). Deux versions de l'app qui ne changent pas le plugin lui donnent la
+  même empreinte : c'est elle que l'app de bureau compare, pas le numéro. Un
+  test vérifie que le même code construit sous un autre numéro garde son
+  empreinte.
 - Réglages dans SWEX : **activé**, et **combats de guilde** (tous deux par
   défaut). Description et libellés en anglais et en français : SWEX n'a qu'une
   langue.
@@ -171,7 +178,8 @@ moitié du gain).
 
 - ⚠️ **Jamais d'exception vers SWEX** : une erreur est écrite dans le journal
   de SWEX, et le plugin continue. Une commande qu'il ne comprend pas ne doit
-  gêner ni le jeu ni les autres plugins.
+  gêner ni le jeu ni les autres plugins. Le message commence par la commande
+  (`HubUserLogin : …`) : un signalement dit ainsi où chercher.
 - Le plugin construit est vérifié sous Node 18 : SWEX embarque un Electron
   ancien.
 
@@ -226,10 +234,30 @@ dossier de SWEX** : l'app ne fait que lire.
   ancienne que celle de l'export (`tvalue`, relue à chaque nouvel export).
   Plus ancienne, le plugin ne tournait pas à la dernière connexion (retiré,
   désactivé) : le fichier est **périmé**, l'app l'ignore.
-- **Le plugin installé** : la version écrite en tête des `.js` du dossier
-  `plugins` de SWEX (`versionInstallee`), comparée à celle de l'app
-  (`statutPlugin` : absent, à jour, ancien, plus récent). Deux copies : la plus
-  ancienne est montrée, c'est elle qu'il faut remplacer.
+- **Le plugin installé** : la bannière des `.js` du dossier `plugins` de
+  SWEX (`pluginsInstalles`, `lirePlugin`), comparée à celle du plugin que
+  sert l'app, lue une fois dans son build (`dist/plugin-swex/`,
+  `CHEMIN_PLUGIN_SERVI`). `statutPlugin` : absent, à jour, ancien, plus
+  récent.
+  - ⚠️ **L'empreinte du code fait foi** : même empreinte, à jour, quel que
+    soit le numéro ; empreinte différente, ancien, sauf numéro plus récent
+    que l'app.
+  - Sans empreinte d'un côté (plugin 2.5.1 ou plus ancien, ou app sans le
+    fichier servi, en développement), le numéro décide.
+  - Plusieurs copies (`pluginAMontrer`) : une ancienne d'abord, la plus
+    ancienne des anciennes, puis une plus récente que l'app. C'est celle
+    qu'il faut remplacer.
+- **La notification** ([MiseAJourPlugin.tsx](src/components/MiseAJourPlugin.tsx)) :
+  plugin ancien, « Nouvelle version du plugin SW Blacksmith Live disponible ·
+  **Mettre à jour** », qui ouvre la page [SW Exporter](../sw-exporter/).
+  - Une **question** : elle reste jusqu'à l'action ou la croix. Une annonce
+    passagère (un export appliqué) qui la remplace lui rend la place en
+    partant.
+  - **Une fois par plugin installé et par lancement** : l'état du direct
+    revient à chaque action en jeu, elle ne revient pas avec lui. Une autre
+    copie ancienne, ou une autre version de l'app, se notifie.
+  - Fermée, la carte de la page SW Exporter le dit encore. Un dossier
+    SW Exporter suffit : elle n'attend pas le choix de l'invocateur.
 
 ### « Mon compte » en direct
 
@@ -317,6 +345,13 @@ Calcul pur, sans disque ni Electron, testé par
   `session_key_node` ni `reqid`** : ProfileExport les écrit, le plugin jamais.
 - **`ligneConnexion`**, **`depuisLignesLive`**, **`versEtatArchive`** : la
   première ligne du fichier live, sa relecture, l'état allégé archivé.
+- ⚠️ **Une liste du jeu peut arriver en objet indexé** (`{"1": …, "3": …}`,
+  une liste à trous), par exemple les runes d'un monstre. Parcourue telle
+  quelle, elle levait une exception dès la connexion (« object is not
+  iterable ») : le plugin ne suivait rien de la session. Toute liste lue du
+  jeu passe donc par `enListe` ou `objets` (ses valeurs, dans l'ordre), et un
+  monstre reçu ainsi est écrit avec des listes (`uniteEnListes`) : l'export
+  et l'import de l'app n'en lisent pas d'autre forme.
 
 ### ⚠️ Un registre, pas l'arbre de l'export
 

@@ -51,6 +51,7 @@ import { join } from 'node:path';
 import { depuisLignesLive, versExport } from '../plugin-swex/source/etatDirect';
 import {
   aDonner,
+  CHEMIN_PLUGIN_SERVI,
   dimensionADonner,
   DOSSIER_PLUGIN,
   ExportCompte,
@@ -58,11 +59,12 @@ import {
   liveAJour,
   lireNomExport,
   lireReglage,
+  pluginAMontrer,
+  PluginLu,
   ReglageSwex,
-  statutPlugin,
   StatutPlugin,
 } from './swexPur';
-import { cheminLive, enteteDuLive, heureExport, lireLive, LectureLive, versionInstallee } from './swexLive';
+import { cheminLive, enteteDuLive, heureExport, lireLive, LectureLive, lirePluginDe, pluginsInstalles } from './swexLive';
 import { CacheGuilde, lireSieges } from './swexGuilde';
 import { lireEtatCompte, listerEtatsCompte } from './swexHistorique';
 import { lireDimension } from './swexDimension';
@@ -100,7 +102,13 @@ const ATTENTE_DIRECT = 300;
 // instant, dossier synchronisé, dossier absent au lancement).
 const RELANCE = 5000;
 
-export function brancherSwex(fenetre: BrowserWindow, preuve?: PreuveSwex) {
+// `racine` : le build que sert la fenêtre (`dist/`), où est le plugin qu'elle
+// propose au téléchargement — celui auquel l'installé se compare.
+export function brancherSwex(fenetre: BrowserWindow, racine: string, preuve?: PreuveSwex) {
+  // Lu une fois : il ne change qu'avec l'app. Absent (développement, build
+  // pas fait) : `null`, le numéro de l'app décide.
+  let pluginServi: Promise<PluginLu | null> | null = null;
+  const lirePluginServi = () => (pluginServi ??= lirePluginDe(join(racine, CHEMIN_PLUGIN_SERVI)));
   const cheminReglage = () => join(app.getPath('userData'), 'swex.json');
   const lire = (): ReglageSwex => {
     try {
@@ -224,7 +232,8 @@ export function brancherSwex(fenetre: BrowserWindow, preuve?: PreuveSwex) {
   async function calculerDirect(): Promise<{ etat: EtatDirectSwex; chemin: string | null }> {
     const { dossier, fichier } = reglage;
     const versionApp = app.getVersion();
-    const installee = dossier ? await versionInstallee(dossier) : null;
+    const servi = (await lirePluginServi()) ?? { version: versionApp, code: null };
+    const { installe, statut } = pluginAMontrer(dossier ? await pluginsInstalles(dossier) : [], servi);
     const id = fichier ? lireNomExport(fichier)?.id : undefined;
     let chemin: string | null = null;
     let maj: number | null = null;
@@ -244,7 +253,7 @@ export function brancherSwex(fenetre: BrowserWindow, preuve?: PreuveSwex) {
         actif: reglage.direct,
         disponible: chemin !== null,
         maj,
-        plugin: { installee, app: versionApp, statut: statutPlugin(installee, versionApp) },
+        plugin: { installee: installe?.version ?? null, app: versionApp, statut },
       },
       chemin,
     };

@@ -135,6 +135,19 @@
      d'`accent-ink` : blanc ici (6.9 sur `bad`), sombre en Forge, où le rouge
      est clair. */
   --bad-ink: 255 255 255;
+  /* Les NIVEAUX d'un objectif du compte (Mon compte › Objectifs) : rouge,
+     orange, jaune, vert clair, vert — moins de 30 %, 50 %, 70 %, 100 %, puis
+     atteint. Des APLATS pastel sous une encre sombre (`niveau-ink`), les mêmes
+     dans les deux thèmes : 7:1 au pire (le rouge). ⚠️ Une échelle de DONNÉES,
+     comme les séries : l'orange n'y est pas `warn`, et le pourcentage écrit
+     porte toujours la valeur (rouge et vert se confondent pour un
+     deutéranope). */
+  --niveau-0: 240 138 138;
+  --niveau-1: 242 171 120;
+  --niveau-2: 236 217 112;
+  --niveau-3: 195 224 126;
+  --niveau-4: 143 212 143;
+  --niveau-ink: 27 26 25;
 
   /* Éléments — teinte conservée, SATURATION poussée.
      ⚠️ Le ratio WCAG mesure la luminance, pas la présence d'une couleur : à

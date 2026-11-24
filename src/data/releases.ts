@@ -79,6 +79,22 @@ export const RELEASES: Release[] = [
       { kind: 'feat', scope: 'Optimizer', text: 'Les meules et gemmes se simulent en Héro ou en Légend, à part pour les runes antiques.' },
       { kind: 'feat', scope: 'Optimizer', text: '« Rechercher jusqu’à épuisement complet » disparaît : les recherches tiennent largement dans le temps.' },
       { kind: 'feat', scope: 'Speed tuning', text: 'Choisis le contenu : siège et arène, raid ou RTA, avec les ticks de chacun.' },
+      { kind: 'feat', scope: 'SW Exporter', text: 'Dans l’application de bureau, une notification te prévient quand le plugin SW Blacksmith Live a une nouvelle version.' },
+      { kind: 'feat', scope: 'SW Exporter', text: 'Une version de l’app qui ne change pas le plugin ne demande plus de le retélécharger.' },
+      { kind: 'feat', scope: 'Application', text: 'Une notification qui pose une question revient après une annonce qui l’avait remplacée.' },
+      { kind: 'feat', scope: 'Mon compte', text: 'Une section « Objectifs » compare tes runes et tes artéfacts à ce que tu vises : runes set par set et emplacement par emplacement, artéfacts par élément ou style et par principale ; les objectifs s’y règlent, s’exportent et s’importent.' },
+    ],
+  },
+  {
+    version: '2.5.1',
+    date: '2026-11-23',
+    title: 'Le plugin SW Blacksmith Live suit chaque compte',
+    changes: [
+      { kind: 'fix', scope: 'SW Exporter', text: 'Le plugin ne s’arrête plus à la connexion sur « object is not iterable » : il suit toute ta session.' },
+      { kind: 'fix', scope: 'SW Exporter', text: 'Une erreur du plugin dans SW Exporter dit maintenant sur quelle action du jeu elle s’est produite.' },
+      { kind: 'fix', scope: 'Application', text: 'Une recommandation de plusieurs centaines de decks se publie dans Discord, comme depuis le site.' },
+      { kind: 'fix', scope: 'Mon compte', text: 'Optimisation des runes : sans « Autoriser un regemme différent », une rune sans gemme n’en reçoit plus.' },
+      { kind: 'docs', scope: 'SW Exporter', text: 'L’installation du plugin, pas à pas jusqu’au choix de l’invocateur, et une aide quand ça ne marche pas.' },
     ],
   },
   {

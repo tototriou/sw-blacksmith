@@ -114,6 +114,8 @@ export const IconeMonstres = fabrique(
 export const IconeRunes = fabrique('M12 2l8.5 5v10L12 22l-8.5-5V7zM12 7v10M12 10.5l3-2M12 13.5l-3-2');
 // Le médaillon, repris tel quel d'`InventaireIcon` (le mainteneur l'a préféré).
 export const IconeArtefacts = fabrique('M2.5 12L7 3.7H17L21.5 12L17 20.3H7ZM12 8L15 12L12 16L9 12Z');
+// « Objectifs » : une cible.
+export const IconeObjectifs = fabrique(cercle(12, 12, 9) + cercle(12, 12, 5) + cercle(12, 12, 1));
 // « Mes équipes » : un dossier marqué de l'étoile des runes — des équipes rangées
 // avec leur équipement.
 export const IconeEquipes = fabrique(
