@@ -11,10 +11,11 @@ n'est la vue d'aucun des deux.
 | Résumé (défaut) | `#/compte/objectifs/resume` | une carte par bloc, lien vers la vue qui le détaille ; le résumé par set |
 | Runes | `#/compte/objectifs/runes` | les paliers d'efficience et la vitesse |
 | Artéfacts | `#/compte/objectifs/artefacts` | l'Attribut et le Type, par famille |
+| Monstres | `#/compte/objectifs/monstres` | les monstres à monter, à garder et à sniper |
 | Réglage | `#/compte/objectifs/reglage` | les objectifs eux-mêmes, leur export et leur import |
 
 - ⚠️ **Rendue par App avant les écrans du compte** (`ObjectifsSection`) : le
-  Réglage se fait sans compte importé. Sans compte, les trois autres vues
+  Réglage se fait sans compte importé. Sans compte, les quatre autres vues
   invitent à l'importer (« Chargement… » pendant la relecture d'un compte
   conservé).
 - « Régler les objectifs », en tête du Résumé, des Runes et des Artéfacts,

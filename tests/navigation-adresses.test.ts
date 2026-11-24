@@ -57,6 +57,7 @@ export const ADRESSES: Record<string, string> = {
   '#/compte/objectifs/resume': 'compte/objectifs/resume',
   '#/compte/objectifs/runes': 'compte/objectifs/runes',
   '#/compte/objectifs/artefacts': 'compte/objectifs/artefacts',
+  '#/compte/objectifs/monstres': 'compte/objectifs/monstres',
   '#/compte/objectifs/reglage': 'compte/objectifs/reglage',
   '#/compte/equipes/liste': 'compte/equipes/liste',
   // Adresses tronquées, utilisées par les cartes de l'accueil.
