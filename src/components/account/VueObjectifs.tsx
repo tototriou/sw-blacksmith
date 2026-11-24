@@ -35,6 +35,7 @@ import RuneIcon from '../RuneIcon';
 import { hashVue } from '../../lib/accountViews';
 import { LieuFarm, RecoFarm, idLieu, recosFarm } from '../../lib/farmObjectifs';
 import { ICONE_PRINCIPALE } from '../IconePrincipale';
+import { IconeArtefacts, IconeAtelier, IconeMonstres, IconeRunes, IconeSpeedTuning } from '../IconesAtelier';
 
 // Les vues de la section Mon compte › Objectifs : le compte face aux objectifs
 // de la vue Réglage. Rendu seul ; tout le calcul est dans
@@ -77,14 +78,31 @@ const scoreDe = (...blocs: BlocProfondeur[]) => scoreDesTableaux(blocs.flatMap((
 // de la même vue (`section`), ou mène à la vue qui la détaille (`href`).
 // ⚠️ Pas d'ancre `#…` vers une section : l'adresse porte la route de l'app
 // (App.tsx).
-function CarteBloc({ titre, score, section, href }: { titre: string; score: number | null; section?: string; href?: string }) {
+// L'icône d'une carte dit de quel inventaire elle parle — runes, vitesse,
+// artéfacts, monstres — : « Base » ou « Type » seuls ne le disent pas.
+function CarteBloc({
+  titre,
+  icone: Icone,
+  score,
+  section,
+  href,
+}: {
+  titre: string;
+  icone: IconeAtelier;
+  score: number | null;
+  section?: string;
+  href?: string;
+}) {
   const pourcent = usePourcent();
   const classe =
     'flex min-w-[9rem] flex-1 items-stretch lg:w-40 lg:flex-none justify-between gap-3 rounded-xl border border-border bg-panel px-3.5 py-3 text-left transition-colors hover:border-ink-dim';
   const contenu = (
     <>
       <span className="flex min-w-0 flex-col justify-between gap-2">
-        <span className="font-mono text-micro font-semibold uppercase leading-tight tracking-wider text-ink-dim">{titre}</span>
+        <span className="flex items-start gap-1.5 font-mono text-micro font-semibold uppercase leading-tight tracking-wider text-ink-dim">
+          <Icone size={13} />
+          {titre}
+        </span>
         <span className="text-xl font-bold leading-none tabular-nums text-ink">{pourcent(score)}</span>
       </span>
       <Jauge score={score} className="h-12 w-3 shrink-0" />
@@ -658,13 +676,19 @@ export function ObjectifsResume({
       <EnTete titre={textes.navigation.resume} sousTitre={t.vue.sousTitreResume} />
       <section className="flex flex-wrap gap-2.5" aria-label={t.vue.resume}>
         {paliers.map((bloc, i) => (
-          <CarteBloc key={i} titre={nomPalier(i)} score={scoreDe(bloc)} href={versRunes} />
+          <CarteBloc key={i} titre={nomPalier(i)} icone={IconeRunes} score={scoreDe(bloc)} href={versRunes} />
         ))}
-        <CarteBloc titre={t.vitesse} score={scoreDe(vitesse)} href={versRunes} />
+        <CarteBloc titre={t.vitesse} icone={IconeSpeedTuning} score={scoreDe(vitesse)} href={versRunes} />
         {(['attribut', 'type'] as const).map((sorte) => (
-          <CarteBloc key={sorte} titre={nomSorte(textes.jeu, sorte)} score={scoreDe(...blocsDe(artefacts[sorte]))} href={versArtefacts} />
+          <CarteBloc
+            key={sorte}
+            titre={nomSorte(textes.jeu, sorte)}
+            icone={IconeArtefacts}
+            score={scoreDe(...blocsDe(artefacts[sorte]))}
+            href={versArtefacts}
+          />
         ))}
-        <CarteBloc titre={t.monstres.aMonter} score={monstres.score} href={hashVue('objectifs', 'monstres')} />
+        <CarteBloc titre={t.monstres.aMonter} icone={IconeMonstres} score={monstres.score} href={hashVue('objectifs', 'monstres')} />
       </section>
       <OuFarmer recos={recos} />
       <ResumeParSet
@@ -707,9 +731,9 @@ export function ObjectifsRunes({ runes }: { runes: RuneDetail[] }) {
       <EnTete titre={textes.navigation.runes} sousTitre={t.vue.sousTitreRunes} />
       <section className="flex flex-wrap gap-2.5" aria-label={t.vue.resume}>
         {paliers.map((bloc, i) => (
-          <CarteBloc key={i} titre={nomPalier(i)} score={scoreDe(bloc)} section={`objectifs-palier-${i}`} />
+          <CarteBloc key={i} titre={nomPalier(i)} icone={IconeRunes} score={scoreDe(bloc)} section={`objectifs-palier-${i}`} />
         ))}
-        <CarteBloc titre={t.vitesse} score={scoreDe(vitesse)} section="objectifs-vitesse" />
+        <CarteBloc titre={t.vitesse} icone={IconeSpeedTuning} score={scoreDe(vitesse)} section="objectifs-vitesse" />
       </section>
       {paliers.map((bloc, i) => (
         <Detail
@@ -750,7 +774,13 @@ export function ObjectifsArtefacts({ artifacts }: { artifacts: ArtifactDetail[] 
       <EnTete titre={textes.navigation.artefacts} sousTitre={t.vue.sousTitreArtefacts} />
       <section className="flex flex-wrap gap-2.5" aria-label={t.vue.resume}>
         {(['attribut', 'type'] as const).map((sorte) => (
-          <CarteBloc key={sorte} titre={nomSorte(textes.jeu, sorte)} score={scoreDe(...blocsDe(blocs[sorte]))} section={`objectifs-${sorte}-0`} />
+          <CarteBloc
+            key={sorte}
+            titre={nomSorte(textes.jeu, sorte)}
+            icone={IconeArtefacts}
+            score={scoreDe(...blocsDe(blocs[sorte]))}
+            section={`objectifs-${sorte}-0`}
+          />
         ))}
       </section>
       <SectionsArtefacts familles={blocs.attribut} sorte="attribut" />
@@ -792,7 +822,7 @@ export function ObjectifsMonstres({ box, parCom2us }: { box: readonly BoxItem[];
     <div className="flex flex-col gap-6">
       <EnTete titre={textes.navigation.monstres} sousTitre={t.vue.sousTitreMonstres} />
       <section className="flex flex-wrap gap-2.5" aria-label={t.vue.resume}>
-        <CarteBloc titre={t.monstres.aMonter} score={mesure.score} section="objectifs-monstres-aMonter" />
+        <CarteBloc titre={t.monstres.aMonter} icone={IconeMonstres} score={mesure.score} section="objectifs-monstres-aMonter" />
       </section>
       {LISTES_MONSTRES.map((liste) => (
         <section key={liste} id={`objectifs-monstres-${liste}`} className="flex scroll-mt-4 flex-col gap-2.5" aria-labelledby={`objectifs-monstres-${liste}-titre`}>

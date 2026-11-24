@@ -51,6 +51,10 @@ export function testRenduObjectifs() {
   );
   ok(/bg-niveau-0" style="height:25%"/.test(html), 'la jauge verticale de la carte : remplie à 25 %, rouge');
   ok(
+    [...html.matchAll(/<a href="#\/compte\/objectifs\/[^"]*"[^>]*>([\s\S]*?)<\/a>/g)].every(([, c]) => /<svg[^>]*aria-hidden="true"/.test(c)),
+    'chaque carte porte l’icône de son inventaire, muette pour le lecteur d’écran'
+  );
+  ok(
     t.includes('Violente 25,0 % 13,3 % Base Vitesse Désespoir — 0,0 % Base Vitesse Rapide — 0,0 % Base Vitesse Volonté — 0,0 % Base Vitesse'),
     'résumé par set : le score de chaque set dans chaque bloc, « — » quand le bloc ne le vise pas'
   );

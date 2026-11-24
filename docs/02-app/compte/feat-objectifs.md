@@ -114,8 +114,11 @@ une valeur donnée au moins** (« dégâts reçus de l'Eau -22 % ou mieux »).
 ## Ce que montrent les vues
 
 - **Des cartes d'abord** : une **carte par bloc** — chaque palier, la vitesse,
-  l'Attribut, le Type — avec son score et une **jauge verticale remplie
-  jusqu'au score, à la couleur de son niveau**. Pas de pièces visées sur la
+  l'Attribut, le Type, « à monter » — avec son score et une **jauge verticale
+  remplie jusqu'au score, à la couleur de son niveau**. Devant son titre,
+  l'**icône de son inventaire** (runes pour les paliers, chronomètre pour la
+  vitesse, artéfacts, monstres) : « Base » ou « Type » seuls ne disent pas de
+  quoi la carte parle. Pas de pièces visées sur la
   carte : le score suffit. Au **Résumé**, toutes les cartes, chacune un
   **lien** vers la vue qui la détaille (Runes ou Artéfacts). Aux **Runes** et
   aux **Artéfacts**, les cartes de la vue, des **raccourcis** qui font
