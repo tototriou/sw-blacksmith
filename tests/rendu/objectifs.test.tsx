@@ -41,12 +41,12 @@ export function testRenduObjectifs() {
   // sans les pièces visées. Vitesse : les deux Violentes de l'emplacement 1
   // ont 30 de VIT (2 / 55).
   ok(
-    t.includes('Régler les objectifs Base 25,0 % Vitesse par emplacement 3,6 % Attribut 0,5 % Type 0,0 %'),
-    'une carte par palier, la vitesse, l’Attribut et le Type — le score seul'
+    t.includes('Régler les objectifs Base 25,0 % Vitesse par emplacement 3,6 % Attribut 0,5 % Type 0,0 % À monter —'),
+    'une carte par palier, la vitesse, l’Attribut, le Type et les monstres à monter — le score seul, « — » sans liste'
   );
   egal(
     valeurs(html, 'href'),
-    ['#/compte/objectifs/runes', '#/compte/objectifs/runes', '#/compte/objectifs/artefacts', '#/compte/objectifs/artefacts'],
+    ['#/compte/objectifs/runes', '#/compte/objectifs/runes', '#/compte/objectifs/artefacts', '#/compte/objectifs/artefacts', '#/compte/objectifs/monstres'],
     'chaque carte mène à la vue qui la détaille'
   );
   ok(/bg-niveau-0" style="height:25%"/.test(html), 'la jauge verticale de la carte : remplie à 25 %, rouge');
@@ -64,7 +64,7 @@ export function testRenduObjectifs() {
   // avancé d'abord.
   ok(
     t.includes(
-      'Type 0,0 % Où farmer La part des pièces visées que tu as déjà, donjon par donjon, tous blocs confondus, et raid par palier pour les meules : le moins avancé d’abord. #1 Crypte du Jugement 0,0 % #2 Castel du Géant 0,0 % #3 Nécropolis 0,0 % #4 Forteresse d’Acier 0,5 % #5 Tanière du dragon 18,5 % #6 Raid des mondes · Base 100,0 % Violente'
+      'À monter — Où farmer La part des pièces visées que tu as déjà, donjon par donjon, tous blocs confondus, et raid par palier pour les meules : le moins avancé d’abord. #1 Crypte du Jugement 0,0 % #2 Castel du Géant 0,0 % #3 Nécropolis 0,0 % #4 Forteresse d’Acier 0,5 % #5 Tanière du dragon 18,5 % #6 Raid des mondes · Base 100,0 % Violente'
     ),
     'où farmer : les donjons et le raid du palier par part acquise, sans détail — avant le résumé par set'
   );
