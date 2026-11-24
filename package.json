@@ -6,6 +6,7 @@
   "main": "dist-bureau/main.cjs",
   "description": "SW Blacksmith — boîte à outils Summoners War : siège, RTA, runes et analyse de compte. Local par défaut, rien n'est envoyé sans ton accord.",
   "author": "SW Blacksmith",
+  "license": "PolyForm-Noncommercial-1.0.0",
   "engines": {
     "node": "24.x"
   },
