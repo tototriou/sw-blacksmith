@@ -67,6 +67,11 @@ const TITRES: [string, string][] = [
   ['#/compte/runes/gemmes', 'Mon compte · Runes Gemmes'],
   ['#/compte/artefacts/resume', 'Mon compte · Artéfacts Résumé'],
   ['#/compte/artefacts/liste', 'Mon compte · Artéfacts Liste'],
+  ['#/compte/objectifs/resume', 'Mon compte · Objectifs Résumé'],
+  ['#/compte/objectifs/runes', 'Mon compte · Objectifs Runes'],
+  ['#/compte/objectifs/artefacts', 'Mon compte · Objectifs Artéfacts'],
+  // Sans compte importé, le réglage se fait : son éditeur en témoigne.
+  ['#/compte/objectifs/reglage', 'Exporter Importer Valeurs par défaut'],
   // Sans compte importé, la page se lit : ses onglets en témoignent.
   ['#/compte/equipes/liste', 'Passage des dimensions'],
   ['#/outils/optimizer', 'Outils'],

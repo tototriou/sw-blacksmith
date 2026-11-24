@@ -2,7 +2,6 @@ import { ArtifactDetail } from '../../types';
 import type { AccountView } from '../../App';
 import ArtifactsSummary from './ArtifactsSummary';
 import ArtifactsList from './ArtifactsList';
-import { ObjectifsArtefacts } from './VueObjectifs';
 
 interface Props {
   artifacts: ArtifactDetail[];
@@ -36,7 +35,6 @@ export default function ArtifactsSection({
           onFermerMenu={onFermerMenu}
         />
       )}
-      {view === 'objectifs' && <ObjectifsArtefacts artifacts={artifacts} />}
     </div>
   );
 }

@@ -93,7 +93,7 @@ séparent que par leur **clarté** : un jaune plus sombre ou un rouge plus clair
 | `niveau-4` | `#8fd48f` | Vert — objectif atteint ; une case dépassée |
 | `niveau-ink` | `#1b1a19` | L'encre posée sur ces aplats |
 
-L'échelle des vues « Objectifs » de Mon compte
+L'échelle de la section Objectifs de Mon compte
 ([feat-objectifs.md](../../../02-app/compte/feat-objectifs.md)) : cartes du résumé, score et
 colonnes des fiches. Des **aplats pastel sous une encre sombre**, les mêmes dans les deux thèmes
 (7:1 au pire, sur le rouge). ⚠️ Une échelle de **données**, comme les séries : son orange n'est

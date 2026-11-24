@@ -368,7 +368,9 @@ combinaisons des builds les plus rapides du Résumé des runes
 deux sources de la Comparaison des runes
 ([feat-runes/comparaison.md](../../../02-app/compte/feat-runes/comparaison.md)),
 les formes d'un monstre transformable dans sa fiche
-([feat-monstres.md](../../../02-app/compte/feat-monstres.md)), les sections de
+([feat-monstres.md](../../../02-app/compte/feat-monstres.md)), les
+sous-sections du Réglage des objectifs
+([feat-objectifs.md](../../../02-app/compte/feat-objectifs.md)), les sections de
 la prépa RTA au téléphone
 ([feat-sections-runes.md](../../../02-app/rta/feat-sections-runes.md)).
 

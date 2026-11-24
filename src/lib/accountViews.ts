@@ -1,6 +1,7 @@
-import { Gauge, List, LineChart, GitCompare, Wand2, Target, Hammer, Gem } from 'lucide-react';
+import { Gauge, List, LineChart, GitCompare, Wand2, Hammer, Gem, SlidersHorizontal } from 'lucide-react';
 import type { AccountSub, AccountView } from '../App';
 import type { Dictionnaire } from '../i18n';
+import { IconeArtefacts, IconeMonstres, IconeRunes, type IconeAtelier } from '../components/IconesAtelier';
 
 // Une clé de `navigation` dans le dictionnaire : une destination nommée.
 export type CleNavigation = keyof Dictionnaire['navigation'];
@@ -20,7 +21,9 @@ export interface VueInventaire {
   key: AccountView;
   // Le libellé, par sa clé dans `navigation` du dictionnaire (src/i18n/).
   texte: CleNavigation;
-  icon: typeof List;
+  // Les Objectifs nomment leurs vues Runes et Artéfacts par l'icône de nav de
+  // ces inventaires.
+  icon: typeof List | IconeAtelier;
 }
 
 // ⚠️ Les monstres n'ont qu'une vue : la box elle-même. Elle existe quand même
@@ -35,8 +38,6 @@ const RUNES: VueInventaire[] = [
   { key: 'courbes', texte: 'courbes', icon: LineChart },
   { key: 'comparaison', texte: 'comparaison', icon: GitCompare },
   { key: 'optimisation', texte: 'optimisation', icon: Wand2 },
-  // L'état du compte face aux objectifs réglés dans les Paramètres.
-  { key: 'objectifs', texte: 'objectifs', icon: Target },
   // ⚠️ Ces deux-là ne refont pas l'Optimisation : « quelles runes puis-je
   // améliorer avec ce que j'ai » y est un simple FILTRE, sans quoi il faudrait
   // y réimplémenter potentiels et gains. Ils porteront la question inverse —
@@ -51,13 +52,25 @@ const RUNES: VueInventaire[] = [
 const ARTEFACTS: VueInventaire[] = [
   { key: 'resume', texte: 'resume', icon: Gauge },
   { key: 'liste', texte: 'liste', icon: List },
-  { key: 'objectifs', texte: 'objectifs', icon: Target },
+];
+
+// Les objectifs du compte : runes ET artéfacts, d'où une section à part
+// entière plutôt qu'une vue de chaque inventaire. Le résumé d'abord, le détail
+// de chaque inventaire ensuite, les listes de monstres, et leur réglage. Voir
+// docs/02-app/compte/feat-objectifs.md.
+const OBJECTIFS: VueInventaire[] = [
+  { key: 'resume', texte: 'resume', icon: Gauge },
+  { key: 'runes', texte: 'runes', icon: IconeRunes },
+  { key: 'artefacts', texte: 'artefacts', icon: IconeArtefacts },
+  { key: 'monstres', texte: 'monstres', icon: IconeMonstres },
+  { key: 'reglage', texte: 'reglage', icon: SlidersHorizontal },
 ];
 
 export const VUES_INVENTAIRE: Record<AccountSub, VueInventaire[]> = {
   monstres: MONSTRES,
   runes: RUNES,
   artefacts: ARTEFACTS,
+  objectifs: OBJECTIFS,
   // Une seule vue, comme les monstres : la page des équipes elle-même.
   equipes: [{ key: 'liste', texte: 'mesEquipes', icon: List }],
 };

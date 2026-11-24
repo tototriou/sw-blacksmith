@@ -134,7 +134,7 @@ tous les autres dans n'importe quelle analyse de dépendances.
 | Accueil | `#/` | `src/pages/HomePage.tsx` | `src/components/accueil/ExemplesAccueil.tsx` (les vrais composants des outils en exemple), `src/lib/demoAccueil.ts` (leurs équipes de démo), `ElementIcon`, `src/data/releases.ts` | [accueil/](../02-app/accueil/README.md) |
 | **RTA** | `#/rta`, `#/rta/ami` | `src/pages/RtaPage.tsx` | tout `src/components/rta/` | [rta/](../02-app/rta/README.md) |
 | **Siège** | `#/siege/defense`, `/offense`, `/recommandations`, `/statistiques` | `src/pages/SiegePage.tsx` | tout `src/components/siege/` | [siege/](../02-app/siege/README.md) |
-| **Mon compte** | `#/compte`, `/runes`, `/artefacts`, `/equipes` | `src/pages/AccountPage.tsx` ; « Mes équipes » : `EquipesSection`, rendue par `App.tsx` avant elle | tout `src/components/account/` | [compte/](../02-app/compte/README.md) |
+| **Mon compte** | `#/compte`, `/runes`, `/artefacts`, `/objectifs`, `/equipes` | `src/pages/AccountPage.tsx` ; « Objectifs » et « Mes équipes » : `ObjectifsSection` et `EquipesSection`, rendues par `App.tsx` avant elle | tout `src/components/account/` | [compte/](../02-app/compte/README.md) |
 | **Outils** | `#/outils/optimizer`, `/speed-tuning` | `src/pages/OutilsPage.tsx` | tout `src/components/outils/` | [outils/](../02-app/outils/README.md), [optimizer/](../02-app/optimizer/README.md), [speed-tuning/](../02-app/speed-tuning/README.md), [degats-reels/](../02-app/degats-reels/README.md) |
 | Bestiaire | `#/bestiary` | `src/pages/BestiaryPage.tsx` | `MonsterGrid`, `FilterBar`, `SearchBar`, `MonsterDetailDialog`, `Pager` | [bestiaire/](../02-app/bestiaire/README.md) |
 | Paramètres | `#/parametres` | `src/pages/SettingsPage.tsx` | `SettingsMenu`, `AccountImportControl` | [feat-navigation/compte-et-parametres.md](../02-app/transverse/feat-navigation/compte-et-parametres.md) |
@@ -182,12 +182,13 @@ dans la carte).
 sont les deux racines ; dessous : `RunesList`, `RunesSummary` + `BuildsRapides`, `RunesCurve` +
 `CurveChart` + `curveColors`, `RunesCompare`, `RunesOptim`, `SetFilter`, `SlotFilter`,
 `SubSearchBar` + `SubSearchDialog`, `Pager`, `SummaryBits`, `ArtifactsList`, `ArtifactsSummary`,
-`ArtifactsTop`, `VueObjectifs` (la vue « Objectifs » des runes et des artéfacts ; son réglage,
-`src/components/ReglagesObjectifs.tsx`, est l'onglet « Objectifs » des Paramètres) ; « Mes équipes » dans `src/components/account/equipes/` : `EquipesSection` (racine), `CarteEquipe`,
+`ArtifactsTop`, `ObjectifsSection` (la section Objectifs : ses vues Résumé, Runes et Artéfacts
+dans `VueObjectifs`, son Réglage dans `src/components/ReglagesObjectifs.tsx`) ; « Mes équipes » dans `src/components/account/equipes/` : `EquipesSection` (racine), `CarteEquipe`,
 `DetailEquipe`, `AjoutMonstreModale` ; la fenêtre « Importer » est `src/components/FenetreImport.tsx`,
 partagée avec l'Optimizer (modèle pur `src/lib/fenetreImport.ts`).
 Lib `accountStore` (IndexedDB), `accountViews`, `runeSort`, `runeOptim`, `runeCourbes`, `buildsRapides`,
-`objectifsCompte` (objectifs du compte : défauts, fichier, scores),
+`objectifsCompte` (objectifs du compte : défauts, fichier, scores), `farmObjectifs` (où farmer :
+les drops des donjons de Cairos, le Raid des mondes pour les meules, la part acquise et le manque de chacun),
 `artifactsTop`, `monsterSort`, `crafts`, `historiqueRunes` (un état de l'archive du plugin, pour
 Comparaison › Historique ; hook `useHistoriqueSwex`) ; « Mes équipes » : `equipesEnregistrees`
 (modèle pur), `equipesStore` (sa base IndexedDB), `equipesFichier`, `sourcesEquipesEnregistrees`
@@ -334,7 +335,8 @@ coquille unique** des fiches de rune ET d'artéfact), `RuneIcon`, `SetsPortes` (
 rangée** des sets portés par un monstre : taille, espacement et marge par écran, et l'option
 `troisSetsSerres`, trois sets à 10 px collés au doigt), `RuneSlotIcon`, `RuneWheel`,
 `ArtifactIcon`, `ArtifactFrameIcon`, `ArtifactSlots`, `BoutonSensTri`, `ElementIcon`,
-`InventaireIcon`, `CollabPortrait`, `HelpPopover`.
+`IconePrincipale` (l'icône en couleur de la principale d'un artéfact : Top 10 par propriété,
+objectifs), `InventaireIcon`, `CollabPortrait`, `HelpPopover`.
 
 ⚠️ **Frontière interface / jeu** : les composants de `src/ui/` suivent la règle du contour unique de
 1 px. Runes, artéfacts et reliques se marquent **comme dans le jeu** (halo, éclat) et en sont
@@ -362,7 +364,7 @@ exemptés.
 | `useDonneesKit` | charge kits, sorts et passifs d'une poignée de monstres (outil **et** siège, un seul chemin) |
 | `useAdversaireReference` | réglage global : toujours poser l'adversaire de référence en face |
 | `useBuildsRapides` | réglage global : les combinaisons et le nombre de builds du bloc « Builds les plus rapides » (Résumé des runes) |
-| `useObjectifsCompte` | réglage global : les objectifs du compte (Paramètres › Objectifs), lus par les vues « Objectifs » des runes et des artéfacts |
+| `useObjectifsCompte` | réglage global : les objectifs du compte (Mon compte › Objectifs › Réglage), lus par les vues de la section |
 | `useFormeResultats` | réglage : les résultats de l'Optimizer en cartes ou en tableau (bureau) |
 | `useEtatSwex` | l'état du dossier SW Exporter au bureau, lu par les Réglages et par `SidebarCompte` |
 | `useCompteDirect` | le compte en direct du plugin SWEX au bureau, pour « Mon compte » seulement ; l'interrupteur « Direct » et « Mettre à jour mon compte » par `DirectSwexContext` |

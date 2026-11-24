@@ -9,6 +9,7 @@ import {
 } from './effects';
 import { runePotential } from './runeOptim';
 import { formatExport, formatReconnu } from './formatsExport';
+import { CleFamille, ORDRE_FAMILLES, PRINCIPALES, familleArtefact } from './artifactsTop';
 
 // OBJECTIFS DU COMPTE : combien de runes et d'artéfacts de qualité le joueur
 // vise, par set et par emplacement, et où en est son compte.
@@ -37,8 +38,8 @@ export interface ObjectifSet {
 // donnée resterait en français pour un joueur anglais.
 export interface Palier {
   nom?: string;
-  // Le « si max » du palier : meule et gemme au maximum héroïque, ou au maximum
-  // légendaire. Absent = héroïque.
+  // Le « si max » du palier : meule au maximum héroïque, ou au maximum
+  // légendaire ; les gemmes restent telles quelles. Absent = héroïque.
   potentiel?: Potentiel;
   sets: ObjectifSet[];
 }
@@ -52,29 +53,45 @@ export type CleArtefact = 'fire' | 'water' | 'wind' | 'light' | 'dark' | Artifac
 // l'utilité des lignes, et ne dit rien de ce qu'un artéfact apporte. On compte
 // les artéfacts qui portent UNE secondaire donnée à une valeur donnée au moins.
 //
-// Un tableau : une sorte (Attribut ou Type), un filtre de principale (0 =
-// toutes), et des lignes. Une ligne : une secondaire (code com2us, 200-411),
-// sa valeur minimale, et la quantité visée par colonne — chaque élément
-// (Attribut) ou chaque style (Type), dans l'ordre de `COLONNES_ARTEFACT`.
+// Une sorte (Attribut ou Type) : une liste de lignes. Une ligne : une
+// secondaire (code com2us, 200-411), sa valeur minimale, et la quantité visée
+// par colonne ET par principale — `quantites[colonne][principale]`, les
+// colonnes (chaque élément, ou chaque style) dans l'ordre de
+// `COLONNES_ARTEFACT`, les principales dans celui de `PRINCIPALES_ARTEFACT`.
+// ⚠️ Pas d'objectif « toutes principales » : une pièce visée l'est sur SA
+// principale, celle qui décide du monstre qui la portera.
 export type SorteArtefact = 'attribut' | 'type';
-export type FiltrePrincipale = 0 | 100 | 101 | 102;
-export const FILTRES_PRINCIPALE: FiltrePrincipale[] = [0, 100, 101, 102];
+export type PrincipaleArtefact = (typeof PRINCIPALES_ARTEFACT)[number];
+// L'ordre du jeu, celui du Top 10 par propriété : PV, ATQ, DEF.
+export const PRINCIPALES_ARTEFACT = PRINCIPALES;
 
 export interface LigneArtefact {
   effet: number;
   seuil: number;
-  quantites: number[];
+  quantites: number[][];
 }
 
-export interface TableauArtefact {
-  principale: FiltrePrincipale;
-  lignes: LigneArtefact[];
+// MONSTRES : trois listes que le joueur tient, par identifiant com2us (celui
+// des exports). « À monter » vise un nombre d'exemplaires 6★, mesuré sur la
+// box ; « à garder » (pas en nourriture) et « à sniper » (dans les events)
+// sont des mémos, sans mesure : la box importée ne compte que les 6★.
+export interface MonstreAMonter {
+  monstre: number;
+  exemplaires: number;
 }
+export interface ObjectifsMonstres {
+  aMonter: MonstreAMonter[];
+  aGarder: number[];
+  aSniper: number[];
+}
+export type ListeMonstres = keyof ObjectifsMonstres;
+export const LISTES_MONSTRES: ListeMonstres[] = ['aMonter', 'aGarder', 'aSniper'];
 
 export interface ObjectifsCompte {
   paliers: Palier[];
   vitesse: ObjectifSet[];
-  artefacts: Record<SorteArtefact, TableauArtefact[]>;
+  artefacts: Record<SorteArtefact, LigneArtefact[]>;
+  monstres: ObjectifsMonstres;
 }
 
 export const EMPLACEMENTS = [1, 2, 3, 4, 5, 6] as const;
@@ -93,8 +110,7 @@ export function effetsArtefact(sorte: SorteArtefact): number[] {
   );
 }
 
-export const TABLEAUX_ARTEFACT_MAX = 12;
-export const LIGNES_ARTEFACT_MAX = 30;
+export const LIGNES_ARTEFACT_MAX = 40;
 
 // Le joker : il complète n'importe quel set, donc il n'en remplit aucun. Il a
 // sa propre colonne et ne s'objective pas.
@@ -102,12 +118,16 @@ const INTANGIBLE = 'intangible';
 export const SETS_OBJECTIFS: string[] = RUNE_SETS.map((s) => s.key).filter((k) => k !== INTANGIBLE);
 
 export const PALIERS_MAX = 5;
+// Une liste de monstres : de quoi tenir une box entière, pas plus.
+export const MONSTRES_MAX = 200;
 export const BORNES = {
   efficience: { min: 0, max: 200 },
   vitesse: { min: 0, max: 99 },
   quantite: { min: 0, max: 999 },
   // Une secondaire d'artéfact, en valeur absolue (« -22 % » s'écrit 22).
   sousPropriete: { min: 0, max: 100 },
+  // Les exemplaires 6★ d'un monstre à monter.
+  exemplaires: { min: 1, max: 20 },
 } as const;
 
 // Les défauts : un palier « Base » à 100 %, un « Premium » à 110 % avec moins
@@ -143,81 +163,121 @@ const palierDefaut = (seuil: number, potentiel: Potentiel, rang: 0 | 1): Palier 
   })),
 });
 
-// Artéfacts d'attribut : dégâts infligés à chaque élément (300-304, dans
-// l'ordre de `ELEMENTS_ARTEFACT`) au moins +18 %, et dégâts reçus de chaque
-// élément (305-309) au moins -22 %.
-const INFLIGES = [300, 301, 302, 303, 304];
+// Artéfacts d'attribut : dégâts reçus de chaque élément (305-309, dans l'ordre
+// de `ELEMENTS_ARTEFACT`) au moins -22 %, et dégâts infligés à chaque élément
+// (300-304) au moins +18 % — l'ordre des familles du Top 10.
 const RECUS = [305, 306, 307, 308, 309];
+const INFLIGES = [300, 301, 302, 303, 304];
 // L'élément que chacun bat : un artéfact de cet élément-là gagne à réduire les
 // dégâts de celui-ci, d'où une pièce de plus visée.
 const BAT: Record<string, CleArtefact> = { water: 'fire', fire: 'wind', wind: 'water', light: 'dark', dark: 'light' };
-const partout = (q: number) => ELEMENTS_ARTEFACT.map(() => q);
-const tableauInfliges = (principale: FiltrePrincipale, q: number): TableauArtefact => ({
-  principale,
-  lignes: INFLIGES.map((effet) => ({ effet, seuil: 18, quantites: partout(q) })),
-});
-const tableauRecus = (principale: FiltrePrincipale): TableauArtefact => ({
-  principale,
-  lignes: RECUS.map((effet, r) => ({
-    effet,
-    seuil: 22,
-    quantites: ELEMENTS_ARTEFACT.map((c) => (BAT[ELEMENTS_ARTEFACT[r]] === c ? 3 : 2)),
-  })),
-});
+// [PV, ATQ, DEF] : les dégâts reçus se réduisent sur les pièces PV et DEF,
+// les dégâts infligés se cherchent d'abord sur l'ATQ.
+const lignesRecus: LigneArtefact[] = RECUS.map((effet, r) => ({
+  effet,
+  seuil: 22,
+  quantites: ELEMENTS_ARTEFACT.map((c) => {
+    const q = BAT[ELEMENTS_ARTEFACT[r]] === c ? 3 : 2;
+    return [q, 0, q];
+  }),
+}));
+const lignesInfliges: LigneArtefact[] = INFLIGES.map((effet) => ({
+  effet,
+  seuil: 18,
+  quantites: ELEMENTS_ARTEFACT.map(() => [1, 2, 1]),
+}));
 
 // Artéfacts de type : [secondaire, valeur minimale], puis la quantité visée par
-// style (Attaque, Défense, PV, Support) pour chaque principale.
-const TYPE_DEFAUT: [number, number, Record<100 | 101 | 102, number[]>][] = [
-  [407, 22, { 100: [1, 2, 2, 2], 101: [0, 0, 0, 0], 102: [0, 2, 2, 2] }], // [Comp.1] Précision
-  [408, 22, { 100: [1, 2, 2, 2], 101: [0, 0, 0, 0], 102: [0, 2, 2, 2] }], // [Comp.2] Précision
-  [409, 22, { 100: [1, 2, 2, 2], 101: [0, 0, 0, 0], 102: [0, 2, 2, 2] }], // [Comp.3] Précision
-  [214, 14, { 100: [1, 2, 2, 2], 101: [0, 0, 0, 0], 102: [0, 1, 1, 1] }], // Dgts CRIT reçus
-  [206, 22, { 100: [1, 1, 2, 2], 101: [1, 1, 1, 1], 102: [1, 1, 1, 1] }], // Effet aug. VIT
+// style (Attaque, Défense, PV, Support) pour chaque principale. Rangés par
+// famille : dégâts CRIT, soins, précision, renforcement, puis les autres.
+const TYPE_DEFAUT: [number, number, Record<PrincipaleArtefact, number[]>][] = [
   [400, 22, { 100: [1, 1, 1, 1], 101: [2, 0, 1, 1], 102: [0, 1, 1, 1] }], // [Comp.1] Dgts CRIT
   [401, 22, { 100: [1, 1, 1, 1], 101: [2, 0, 1, 2], 102: [0, 1, 1, 1] }], // [Comp.2] Dgts CRIT
   [402, 22, { 100: [1, 1, 1, 1], 101: [2, 0, 1, 2], 102: [0, 1, 1, 1] }], // [Comp.3] Dgts CRIT
   [404, 22, { 100: [1, 1, 1, 2], 101: [1, 0, 1, 1], 102: [0, 1, 1, 1] }], // [Comp.1] Soins
   [405, 22, { 100: [1, 1, 2, 2], 101: [1, 0, 1, 1], 102: [0, 1, 1, 1] }], // [Comp.2] Soins
   [406, 22, { 100: [1, 1, 2, 2], 101: [1, 0, 1, 1], 102: [0, 1, 1, 1] }], // [Comp.3] Soins
+  [407, 22, { 100: [1, 2, 2, 2], 101: [0, 0, 0, 0], 102: [0, 2, 2, 2] }], // [Comp.1] Précision
+  [408, 22, { 100: [1, 2, 2, 2], 101: [0, 0, 0, 0], 102: [0, 2, 2, 2] }], // [Comp.2] Précision
+  [409, 22, { 100: [1, 2, 2, 2], 101: [0, 0, 0, 0], 102: [0, 2, 2, 2] }], // [Comp.3] Précision
+  [204, 15, { 100: [0, 0, 0, 0], 101: [1, 0, 1, 1], 102: [0, 0, 0, 0] }], // Effet renforcement ATQ
+  [214, 14, { 100: [1, 2, 2, 2], 101: [0, 0, 0, 0], 102: [0, 1, 1, 1] }], // Dgts CRIT reçus
+  [206, 22, { 100: [1, 1, 2, 2], 101: [1, 1, 1, 1], 102: [1, 1, 1, 1] }], // Effet aug. VIT
 ];
-const tableauType = (principale: 100 | 101 | 102): TableauArtefact => ({
-  principale,
-  lignes: TYPE_DEFAUT.map(([effet, seuil, q]) => ({ effet, seuil, quantites: [...q[principale]] })),
-});
 
 export const ARTEFACTS_DEFAUT: ObjectifsCompte['artefacts'] = {
-  attribut: [
-    tableauInfliges(0, 2),
-    tableauInfliges(100, 1),
-    tableauInfliges(101, 2),
-    tableauInfliges(102, 1),
-    tableauRecus(0),
-    tableauRecus(100),
-    tableauRecus(102),
-  ],
-  type: [
-    tableauType(100),
-    tableauType(101),
-    tableauType(102),
-    // Effet renforcement ATQ, sur les artéfacts d'ATQ.
-    { principale: 101, lignes: [{ effet: 204, seuil: 15, quantites: [1, 0, 1, 1] }] },
-  ],
+  attribut: [...lignesRecus, ...lignesInfliges],
+  type: TYPE_DEFAUT.map(([effet, seuil, q]) => ({
+    effet,
+    seuil,
+    quantites: STYLES_ARTEFACT.map((_, s) => PRINCIPALES_ARTEFACT.map((p) => q[p][s])),
+  })),
 };
 
-// « Premium » : meule et gemme légendaires, ce qu'on met sur les meilleures
+// « Premium » : meule légendaire, ce qu'on met sur les meilleures
 // runes ; « Base » : héroïques.
 export const OBJECTIFS_DEFAUT: ObjectifsCompte = {
   paliers: [palierDefaut(100, 'heroique', 0), palierDefaut(110, 'legendaire', 1)],
   vitesse: VITESSE_DEFAUT.map(([set, s, q]) => ({ set, cases: cases(EMPLACEMENTS_VITESSE.length, s, q) })),
   artefacts: ARTEFACTS_DEFAUT,
+  monstres: { aMonter: [], aGarder: [], aSniper: [] },
 };
+
+// ─── Sous-sections ─────────────────────────────────────────────────────────
+
+// Les sous-sections du réglage, dans l'ordre de ses onglets : chacune porte UNE
+// clé des objectifs. Export, import et valeurs par défaut se choisissent par
+// sous-section.
+export const SOUS_SECTIONS = ['efficience', 'vitesse', 'artefacts', 'monstres'] as const;
+export type SousSection = (typeof SOUS_SECTIONS)[number];
+const CLE_SOUS_SECTION = {
+  efficience: 'paliers',
+  vitesse: 'vitesse',
+  artefacts: 'artefacts',
+  monstres: 'monstres',
+} as const satisfies Record<SousSection, keyof ObjectifsCompte>;
+
+// Une partie des objectifs : celle d'un fichier qui n'en porte que certaines
+// sous-sections.
+export type ObjectifsPartiels = Partial<ObjectifsCompte>;
+
+// Les sous-sections que porte `p`, dans l'ordre des onglets.
+export function sousSectionsPresentes(p: ObjectifsPartiels): SousSection[] {
+  return SOUS_SECTIONS.filter((s) => p[CLE_SOUS_SECTION[s]] !== undefined);
+}
+
+// Les sous-sections où `a` et `b` diffèrent : « Valeurs par défaut » ne
+// propose que celles qu'il changerait.
+export function sousSectionsDifferentes(a: ObjectifsCompte, b: ObjectifsCompte): SousSection[] {
+  return SOUS_SECTIONS.filter((s) => JSON.stringify(a[CLE_SOUS_SECTION[s]]) !== JSON.stringify(b[CLE_SOUS_SECTION[s]]));
+}
+
+// `base`, où les sous-sections choisies prennent la valeur de `source`. ⚠️ Une
+// sous-section choisie mais absente de `source` reste celle de `base` : on ne
+// remplace jamais par du vide.
+export function remplacerSousSections(
+  base: ObjectifsCompte,
+  source: ObjectifsPartiels,
+  choisies: readonly SousSection[]
+): ObjectifsCompte {
+  const r = { ...base };
+  const copier = <K extends keyof ObjectifsCompte>(cle: K) => {
+    const v = source[cle];
+    if (v !== undefined) r[cle] = v as ObjectifsCompte[K];
+  };
+  for (const s of choisies) copier(CLE_SOUS_SECTION[s]);
+  return r;
+}
 
 // ─── Lecture ───────────────────────────────────────────────────────────────
 
 // Pourquoi une valeur n'a pas été lue : le fichier n'est pas un fichier
 // d'objectifs, ou il en est un mais mal formé. Le texte vient du dictionnaire.
 export type RaisonRefus = 'format' | 'contenu';
-export type Lecture = { ok: true; objectifs: ObjectifsCompte } | { ok: false; raison: RaisonRefus };
+// Un fichier lu : les sous-sections qu'il porte (au moins une), et leurs valeurs.
+export type Lecture =
+  | { ok: true; objectifs: ObjectifsPartiels; sousSections: SousSection[] }
+  | { ok: false; raison: RaisonRefus };
 
 const estObjet = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
 const entierBorne = (v: unknown, b: { min: number; max: number }): number | null =>
@@ -252,42 +312,66 @@ function lireSets(v: unknown, n: number, seuil: { min: number; max: number }): O
   return sortie;
 }
 
-// Les tableaux d'une sorte d'artéfact : une secondaire que la sorte ne peut pas
-// porter, une principale inconnue ou un nombre de colonnes faux rendent le
-// tout illisible.
-function lireArtefacts(v: unknown, sorte: SorteArtefact): TableauArtefact[] | null {
-  if (!Array.isArray(v) || v.length > TABLEAUX_ARTEFACT_MAX) return null;
+// Les lignes d'une sorte d'artéfact : une secondaire que la sorte ne peut pas
+// porter, ou un nombre de colonnes ou de principales faux, rendent le tout
+// illisible.
+function lireArtefacts(v: unknown, sorte: SorteArtefact): LigneArtefact[] | null {
+  if (!Array.isArray(v) || v.length > LIGNES_ARTEFACT_MAX) return null;
   const n = COLONNES_ARTEFACT[sorte].length;
-  const sortie: TableauArtefact[] = [];
-  for (const t of v) {
-    if (!estObjet(t) || !FILTRES_PRINCIPALE.includes(t.principale as FiltrePrincipale)) return null;
-    if (!Array.isArray(t.lignes) || t.lignes.length > LIGNES_ARTEFACT_MAX) return null;
-    const lignes: LigneArtefact[] = [];
-    for (const l of t.lignes) {
-      if (!estObjet(l) || typeof l.effet !== 'number' || !isArtifactSub(l.effet)) return null;
-      if (!artifactSubKinds(l.effet).includes(KIND[sorte])) return null;
-      const seuil = entierBorne(l.seuil, BORNES.sousPropriete);
-      if (seuil === null || !Array.isArray(l.quantites) || l.quantites.length !== n) return null;
-      const quantites: number[] = [];
-      for (const q of l.quantites) {
+  const sortie: LigneArtefact[] = [];
+  for (const l of v) {
+    if (!estObjet(l) || typeof l.effet !== 'number' || !isArtifactSub(l.effet)) return null;
+    if (!artifactSubKinds(l.effet).includes(KIND[sorte])) return null;
+    const seuil = entierBorne(l.seuil, BORNES.sousPropriete);
+    if (seuil === null || !Array.isArray(l.quantites) || l.quantites.length !== n) return null;
+    const quantites: number[][] = [];
+    for (const colonne of l.quantites) {
+      if (!Array.isArray(colonne) || colonne.length !== PRINCIPALES_ARTEFACT.length) return null;
+      const lues: number[] = [];
+      for (const q of colonne) {
         const lu = entierBorne(q, BORNES.quantite);
         if (lu === null || !Number.isInteger(lu)) return null;
-        quantites.push(lu);
+        lues.push(lu);
       }
-      lignes.push({ effet: l.effet, seuil, quantites });
+      quantites.push(lues);
     }
-    sortie.push({ principale: t.principale as FiltrePrincipale, lignes });
+    sortie.push({ effet: l.effet, seuil, quantites });
   }
   return sortie;
 }
 
-// Les objectifs eux-mêmes, sans enveloppe de fichier. ⚠️ Tout ou rien : une
-// partie lisible et une autre non ne donnent pas un mélange de valeurs lues et
-// de défauts, qui ne serait ni ce que le joueur a écrit ni ce que l'app propose.
-export function lireObjectifs(v: unknown): ObjectifsCompte | null {
-  if (!estObjet(v) || !Array.isArray(v.paliers) || v.paliers.length > PALIERS_MAX) return null;
+// Une liste d'identifiants com2us : un identifiant qui n'est pas un entier
+// positif, ou un doublon, la rendent illisible.
+function lireIds(v: unknown): number[] | null {
+  if (!Array.isArray(v) || v.length > MONSTRES_MAX) return null;
+  const vus = new Set<number>();
+  for (const id of v) {
+    if (typeof id !== 'number' || !Number.isInteger(id) || id <= 0 || vus.has(id)) return null;
+    vus.add(id);
+  }
+  return [...vus];
+}
+
+function lireMonstres(v: unknown): ObjectifsMonstres | null {
+  if (!estObjet(v) || !Array.isArray(v.aMonter) || v.aMonter.length > MONSTRES_MAX) return null;
+  const aMonter: MonstreAMonter[] = [];
+  for (const m of v.aMonter) {
+    if (!estObjet(m)) return null;
+    const exemplaires = entierBorne(m.exemplaires, BORNES.exemplaires);
+    if (exemplaires === null || !Number.isInteger(exemplaires)) return null;
+    aMonter.push({ monstre: m.monstre as number, exemplaires });
+  }
+  const ids = lireIds(aMonter.map((m) => m.monstre));
+  const aGarder = lireIds(v.aGarder);
+  const aSniper = lireIds(v.aSniper);
+  if (!ids || !aGarder || !aSniper) return null;
+  return { aMonter, aGarder, aSniper };
+}
+
+function lirePaliers(v: unknown): Palier[] | null {
+  if (!Array.isArray(v) || v.length > PALIERS_MAX) return null;
   const paliers: Palier[] = [];
-  for (const p of v.paliers) {
+  for (const p of v) {
     if (!estObjet(p)) return null;
     if (p.nom !== undefined && typeof p.nom !== 'string') return null;
     if (p.potentiel !== undefined && !POTENTIELS.includes(p.potentiel as Potentiel)) return null;
@@ -300,12 +384,51 @@ export function lireObjectifs(v: unknown): ObjectifsCompte | null {
       sets,
     });
   }
-  const vitesse = lireSets(v.vitesse, EMPLACEMENTS_VITESSE.length, BORNES.vitesse);
-  if (!vitesse || !estObjet(v.artefacts)) return null;
-  const attribut = lireArtefacts(v.artefacts.attribut, 'attribut');
-  const type = lireArtefacts(v.artefacts.type, 'type');
-  if (!attribut || !type) return null;
-  return { paliers, vitesse, artefacts: { attribut, type } };
+  return paliers;
+}
+
+function lireBlocArtefacts(v: unknown): ObjectifsCompte['artefacts'] | null {
+  if (!estObjet(v)) return null;
+  const attribut = lireArtefacts(v.attribut, 'attribut');
+  const type = lireArtefacts(v.type, 'type');
+  return attribut && type ? { attribut, type } : null;
+}
+
+// Le lecteur de chaque clé des objectifs.
+const LECTEURS: { [K in keyof ObjectifsCompte]: (v: unknown) => ObjectifsCompte[K] | null } = {
+  paliers: lirePaliers,
+  vitesse: (v) => lireSets(v, EMPLACEMENTS_VITESSE.length, BORNES.vitesse),
+  artefacts: lireBlocArtefacts,
+  monstres: lireMonstres,
+};
+
+// Les sous-sections présentes dans `v`. ⚠️ Tout ou rien, sous-section par
+// sous-section : une seule illisible rend le tout illisible — on n'importe
+// pas la moitié d'un fichier abîmé. Null aussi quand aucune n'est là.
+function lireObjectifsPartiels(v: unknown): ObjectifsPartiels | null {
+  if (!estObjet(v)) return null;
+  const sortie: ObjectifsPartiels = {};
+  const lire = <K extends keyof ObjectifsCompte>(cle: K): boolean => {
+    if (v[cle] === undefined) return true;
+    const lu = LECTEURS[cle](v[cle]);
+    if (lu === null) return false;
+    sortie[cle] = lu;
+    return true;
+  };
+  for (const s of SOUS_SECTIONS) if (!lire(CLE_SOUS_SECTION[s])) return null;
+  return sousSectionsPresentes(sortie).length > 0 ? sortie : null;
+}
+
+// Les objectifs eux-mêmes, sans enveloppe de fichier. ⚠️ Tout ou rien : une
+// partie lisible et une autre non ne donnent pas un mélange de valeurs lues et
+// de défauts, qui ne serait ni ce que le joueur a écrit ni ce que l'app propose.
+// ⚠️ **Les listes de monstres absentes valent des listes vides** : elles sont
+// venues après les premiers objectifs, et un stockage d'avant reste lisible.
+export function lireObjectifs(v: unknown): ObjectifsCompte | null {
+  if (!estObjet(v)) return null;
+  const lu = lireObjectifsPartiels({ ...v, monstres: v.monstres ?? OBJECTIFS_DEFAUT.monstres });
+  if (!lu || !lu.paliers || !lu.vitesse || !lu.artefacts || !lu.monstres) return null;
+  return { paliers: lu.paliers, vitesse: lu.vitesse, artefacts: lu.artefacts, monstres: lu.monstres };
 }
 
 // Relit la valeur du stockage (ou d'une session) : illisible → les défauts.
@@ -321,8 +444,15 @@ export function lireObjectifsStockes(brut: string | null): ObjectifsCompte {
 export const FORMAT_OBJECTIFS = 'objectifs-compte';
 const VERSION_FICHIER = 1;
 
-export function fichierObjectifs(o: ObjectifsCompte): string {
-  return JSON.stringify({ format: formatExport(FORMAT_OBJECTIFS), version: VERSION_FICHIER, objectifs: o }, null, 2);
+// Le fichier ne porte que les sous-sections choisies (toutes par défaut), dans
+// l'ordre des onglets.
+export function fichierObjectifs(o: ObjectifsCompte, choisies: readonly SousSection[] = SOUS_SECTIONS): string {
+  const objectifs: ObjectifsPartiels = {};
+  const copier = <K extends keyof ObjectifsCompte>(cle: K) => {
+    objectifs[cle] = o[cle];
+  };
+  for (const s of SOUS_SECTIONS) if (choisies.includes(s)) copier(CLE_SOUS_SECTION[s]);
+  return JSON.stringify({ format: formatExport(FORMAT_OBJECTIFS), version: VERSION_FICHIER, objectifs }, null, 2);
 }
 
 export function lireFichierObjectifs(texte: string): Lecture {
@@ -334,15 +464,20 @@ export function lireFichierObjectifs(texte: string): Lecture {
   }
   if (!estObjet(v) || !formatReconnu(v.format, FORMAT_OBJECTIFS)) return { ok: false, raison: 'format' };
   if (v.version !== VERSION_FICHIER) return { ok: false, raison: 'contenu' };
-  const objectifs = lireObjectifs(v.objectifs);
-  return objectifs ? { ok: true, objectifs } : { ok: false, raison: 'contenu' };
+  const objectifs = lireObjectifsPartiels(v.objectifs);
+  return objectifs ? { ok: true, objectifs, sousSections: sousSectionsPresentes(objectifs) } : { ok: false, raison: 'contenu' };
 }
 
 // ─── Calcul ────────────────────────────────────────────────────────────────
 
-// Une ligne d'un tableau : un emplacement (runes) ou une principale (artéfacts).
+// Une ligne d'un tableau : un emplacement (runes), ou un élément (un style) et
+// une principale (artéfacts).
 export interface LigneProfondeur {
   cle: number;
+  // Artéfacts : la colonne (rang dans `COLONNES_ARTEFACT`) et la principale de
+  // la sous-colonne.
+  colonne?: number;
+  principale?: PrincipaleArtefact;
   seuil: number;
   vise: number;
   actuel: number;
@@ -361,7 +496,8 @@ export interface TableauProfondeur {
   lignes: LigneProfondeur[];
   vise: number;
   compte: number; // Σ min(actuel, visé)
-  score: number | null; // compte / visé, null si rien n'est visé
+  surplus: number; // Σ (actuel − visé) des cases dépassées
+  score: number | null; // voir `scoreObjectif` ; null si rien n'est visé
   compteMax?: number;
   scoreMax?: number | null;
   // Artéfacts : les Intangibles qui portent la secondaire, hors colonnes et
@@ -371,12 +507,21 @@ export interface TableauProfondeur {
 
 export interface BlocProfondeur {
   tableaux: TableauProfondeur[];
-  // Score de chaque emplacement (ou principale), tous sets confondus.
+  // Score de chaque emplacement (ou élément, style), tous sets confondus.
   parLigne: { cle: number; score: number | null }[];
   global: number | null;
 }
 
-const ratio = (compte: number, vise: number): number | null => (vise > 0 ? compte / vise : null);
+// Un SCORE : `compte / visé`, sous 1 tant qu'une case manque ; toutes les
+// cases atteintes, le surplus s'ajoute — `(visé + surplus) / visé`, 1 ou plus.
+// ⚠️ Au-delà de 100 % SEULEMENT quand tout est atteint (demande de Thomas) :
+// avant, le surplus d'une case cacherait le manque d'une autre.
+export function scoreObjectif(compte: number, vise: number, surplus: number): number | null {
+  if (vise <= 0) return null;
+  return (compte + (compte >= vise ? surplus : 0)) / vise;
+}
+// Ce qu'une case a en plus de son visé ; une case sans visée n'en a pas.
+const surplusCase = (actuel: number, vise: number) => (vise > 0 ? Math.max(0, actuel - vise) : 0);
 
 // Le NIVEAU d'un score, de 0 (rouge) à 4 (vert) : moins de 30 %, moins de 50 %,
 // moins de 70 %, moins de 100 %, puis l'objectif atteint. Il colore les
@@ -406,16 +551,22 @@ export function niveauCase(compte: number, vise: number): Niveau | null {
 function tableau(cle: string, lignes: LigneProfondeur[], avecMax: boolean): TableauProfondeur {
   let vise = 0;
   let compte = 0;
+  let surplus = 0;
   let compteMax = 0;
+  let surplusMax = 0;
   for (const l of lignes) {
     vise += l.vise;
     compte += Math.min(l.actuel, l.vise);
-    if (l.siMax !== undefined) compteMax += Math.min(l.siMax, l.vise);
+    surplus += surplusCase(l.actuel, l.vise);
+    if (l.siMax !== undefined) {
+      compteMax += Math.min(l.siMax, l.vise);
+      surplusMax += surplusCase(l.siMax, l.vise);
+    }
   }
-  const t: TableauProfondeur = { cle, lignes, vise, compte, score: ratio(compte, vise) };
+  const t: TableauProfondeur = { cle, lignes, vise, compte, surplus, score: scoreObjectif(compte, vise, surplus) };
   if (avecMax) {
     t.compteMax = compteMax;
-    t.scoreMax = ratio(compteMax, vise);
+    t.scoreMax = scoreObjectif(compteMax, vise, surplusMax);
   }
   return t;
 }
@@ -423,36 +574,54 @@ function tableau(cle: string, lignes: LigneProfondeur[], avecMax: boolean): Tabl
 // Scores par ligne et global : le RAPPORT DES TOTAUX, pas la moyenne des
 // pourcentages. Un set dont on vise 20 runes pèse plus qu'un set dont on en vise
 // 2 : c'est la part des runes visées qu'on possède, toutes confondues.
-function bloc(tableaux: TableauProfondeur[], cles: readonly number[]): BlocProfondeur {
+// `groupe` : la clé de bandeau d'une ligne — son emplacement, ou la colonne
+// d'artéfact qui réunit ses trois principales.
+function bloc(
+  tableaux: TableauProfondeur[],
+  cles: readonly number[],
+  groupe: (l: LigneProfondeur) => number = (l) => l.cle
+): BlocProfondeur {
   const parLigne = cles.map((cle) => {
     let vise = 0;
     let compte = 0;
-    for (const t of tableaux) {
-      const l = t.lignes.find((x) => x.cle === cle);
-      if (!l) continue;
-      vise += l.vise;
-      compte += Math.min(l.actuel, l.vise);
-    }
-    return { cle, score: ratio(compte, vise) };
+    let surplus = 0;
+    for (const t of tableaux)
+      for (const l of t.lignes) {
+        if (groupe(l) !== cle) continue;
+        vise += l.vise;
+        compte += Math.min(l.actuel, l.vise);
+        surplus += surplusCase(l.actuel, l.vise);
+      }
+    return { cle, score: scoreObjectif(compte, vise, surplus) };
   });
-  const vise = tableaux.reduce((n, t) => n + t.vise, 0);
-  const compte = tableaux.reduce((n, t) => n + t.compte, 0);
-  return { tableaux, parLigne, global: ratio(compte, vise) };
+  return { tableaux, parLigne, global: scoreDesTableaux(tableaux) };
+}
+
+// Le score de plusieurs tableaux réunis (un bloc, plusieurs blocs) : le
+// rapport des totaux.
+export function scoreDesTableaux(tableaux: readonly TableauProfondeur[]): number | null {
+  let vise = 0;
+  let compte = 0;
+  let surplus = 0;
+  for (const t of tableaux) {
+    vise += t.vise;
+    compte += t.compte;
+    surplus += t.surplus;
+  }
+  return scoreObjectif(compte, vise, surplus);
 }
 
 // L'efficience actuelle et les deux « si max » de chaque rune, calculés UNE
-// fois pour tous les paliers : meule et gemme au maximum héroïque, ou au
+// fois pour tous les paliers : chaque ligne meulée au maximum héroïque, ou au
 // maximum légendaire.
 //
-// ⚠️ Les gemmes comme l'onglet Optimisation, « regemme différent » éteint
-// (`gemmeExistanteSeule`, runeOptim.ts) : une gemme déjà posée se relance au
-// maximum sur SA stat, une rune vierge n'en reçoit pas. Créditer chaque rune
-// vierge de la meilleure gemme compterait des runes que le joueur n'a pas.
+// ⚠️ La meule seule (`runePotential` sans gemme) : une gemme déjà posée garde
+// sa valeur (sa ligne se meule comme les autres), une rune vierge n'en reçoit
+// pas. Simuler les gemmes compterait des runes que le joueur n'a pas.
 //
-// ⚠️ `max(actuelle, potentiel)` : un scénario ramène chaque meule et gemme à
-// SON maximum, et une rune déjà mieux meulée ou mieux gemmée (au héroïque, pour
-// le scénario légendaire) « perdrait » sa place. Meuler ne fait jamais baisser
-// une rune en jeu.
+// ⚠️ `max(actuelle, potentiel)` : une meule déjà posée n'est jamais reprise à
+// la baisse (une meule légendaire face au scénario héroïque) — meuler ne fait
+// jamais baisser une rune en jeu.
 export interface RuneMesuree {
   rune: RuneDetail;
   eff: number;
@@ -462,7 +631,7 @@ export interface RuneMesuree {
 export function mesurerRunes(runes: readonly RuneDetail[]): RuneMesuree[] {
   return runes.map((rune) => {
     const eff = runeEfficiency(rune);
-    const p = runePotential(rune, true, 'eff', true, undefined, false, true);
+    const p = runePotential(rune, false, 'eff', true);
     return { rune, eff, effMax: { heroique: Math.max(eff, p.heroEff), legendaire: Math.max(eff, p.legendEff) } };
   });
 }
@@ -536,41 +705,61 @@ export function profondeurVitesse(objectifs: readonly ObjectifSet[], runes: read
   return bloc(tableaux, EMPLACEMENTS_VITESSE);
 }
 
-// Un tableau d'artéfacts : une fiche par secondaire (sa `cle` est son rang dans
-// le tableau, une même secondaire pouvant revenir à deux valeurs), une colonne
-// par élément ou par style (`cle` = son rang dans `COLONNES_ARTEFACT`).
+// Les objectifs d'une sorte d'artéfact, rangés par FAMILLE de secondaire (celles
+// du Top 10 par propriété, dans son ordre ; `familleArtefact`) : un bloc par
+// famille, une fiche par ligne (sa `cle` est son rang dans le réglage, une même
+// secondaire pouvant revenir à deux valeurs), et dans la fiche une
+// sous-colonne par élément (ou style) ET par principale — `cle` = colonne ×
+// 3 + rang de la principale. Le bandeau réunit les trois principales d'une
+// colonne. Dans une famille, les lignes gardent l'ordre du réglage.
 //
 // ⚠️ Les Intangibles n'ont ni élément ni style : ils se comptent par ligne
-// (`TableauProfondeur.intangible`), pas par colonne, et jamais dans le score.
+// (`TableauProfondeur.intangible`), toutes principales confondues, pas par
+// colonne, et jamais dans le score.
+export interface FamilleObjectifs {
+  famille: CleFamille;
+  // Le rang dans le réglage de chaque ligne du bloc, dans l'ordre des fiches.
+  lignes: number[];
+  bloc: BlocProfondeur;
+}
+
 export function profondeurArtefacts(
-  objectif: TableauArtefact,
+  lignes: readonly LigneArtefact[],
   artefacts: readonly ArtifactDetail[],
   sorte: SorteArtefact
-): BlocProfondeur {
+): FamilleObjectifs[] {
   const colonnes = COLONNES_ARTEFACT[sorte];
-  const ici = artefacts.filter(
-    (a) => a.kind === KIND[sorte] && (objectif.principale === 0 || a.main.code === objectif.principale)
-  );
-  const tableaux = objectif.lignes.map((l, i) => {
+  const ici = artefacts.filter((a) => a.kind === KIND[sorte]);
+  const fiche = (l: LigneArtefact, i: number) => {
     // La valeur NETTOYÉE (`valeurArtefactPropre`) : le jeu accumule les rolls en
     // virgule flottante, et un bruit sous la valeur affichée manquerait le seuil.
     const ok = (a: ArtifactDetail) => a.subs.some((s) => s.code === l.effet && valeurArtefactPropre(s.value) >= l.seuil);
     const t = tableau(
       String(i),
-      colonnes.map((c, j) => ({
-        cle: j,
-        seuil: l.seuil,
-        vise: l.quantites[j],
-        actuel: ici.filter((a) => !a.intangible && (a.element ?? a.archetype) === c && ok(a)).length,
-        intangible: 0,
-      })),
+      colonnes.flatMap((c, j) =>
+        PRINCIPALES_ARTEFACT.map((p, k) => ({
+          cle: j * PRINCIPALES_ARTEFACT.length + k,
+          colonne: j,
+          principale: p,
+          seuil: l.seuil,
+          vise: l.quantites[j][k],
+          actuel: ici.filter((a) => !a.intangible && (a.element ?? a.archetype) === c && a.main.code === p && ok(a)).length,
+          intangible: 0,
+        }))
+      ),
       false
     );
     t.intangible = ici.filter((a) => a.intangible && ok(a)).length;
     return t;
+  };
+  return ORDRE_FAMILLES.flatMap((famille) => {
+    const rangs = lignes.map((_, i) => i).filter((i) => familleArtefact(lignes[i].effet) === famille);
+    if (rangs.length === 0) return [];
+    const b = bloc(
+      rangs.map((i) => fiche(lignes[i], i)),
+      colonnes.map((_, j) => j),
+      (l) => l.colonne ?? l.cle
+    );
+    return [{ famille, lignes: rangs, bloc: b }];
   });
-  return bloc(
-    tableaux,
-    colonnes.map((_, j) => j)
-  );
 }

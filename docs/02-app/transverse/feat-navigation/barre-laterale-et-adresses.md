@@ -54,14 +54,13 @@ l'adresse et en déduit la page et ses sous-niveaux.
 | `#/outils/optimizer`, `/speed-tuning` | Outils |
 | `#/arene/defense`, `/offense`, `/interserveur` | Arène |
 | `#/arene-dimensionnelle/defense`, `/offense`, `/runes` | Arène dimensionnelle |
-| `#/bestiary`, `#/mecaniques`, `#/releases`, `#/sw-exporter` | une page chacune |
-| `#/parametres`, `#/parametres/objectifs` | Paramètres, onglets « Général » et « Objectifs » ; un onglet inconnu mène à « Général » |
+| `#/bestiary`, `#/mecaniques`, `#/releases`, `#/sw-exporter`, `#/parametres` | une page chacune |
 | `#/bot-discord/installation`, `/recommandations`, `/commandes` | Bot Discord, un onglet chacune ; `#/bot-discord` mène à l'installation |
 | `#/telecharger` | Télécharger — **site seulement** ; dans l'app de bureau, l'accueil |
 
 - ⚠️ **Une adresse tronquée mène au défaut de sa section**, jamais à un écran
-  vide : `#/siege` → Défense, `#/arene` et `#/arene-dimensionnelle` → Défense, `#/compte` → Monstres, `#/compte/runes` →
-  Résumé, `#/outils` → Optimizer. L'accueil s'en sert (`#/compte/runes`).
+  vide : `#/siege` → Défense, `#/arene` et `#/arene-dimensionnelle` → Défense, `#/compte` → Monstres, `#/compte/runes` et
+  `#/compte/objectifs` → Résumé, `#/outils` → Optimizer. L'accueil s'en sert (`#/compte/runes`).
 - ⚠️ **Une sous-page inconnue retombe sur le défaut de SA section**
   (`#/compte/artefacts/courbes` → Artéfacts · Résumé, par `vueValide`) ; une
   **section inconnue** retombe sur l'accueil. Jamais d'exception.

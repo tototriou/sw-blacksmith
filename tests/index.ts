@@ -231,7 +231,8 @@ import {
 import testRuneOptim from './rune-optim.test';
 import testRuneOptimDifferential from './rune-optim-differential.test';
 import testBuildsRapides from './builds-rapides.test';
-import testObjectifsCompte from './objectifs-compte.test';
+import testObjectifsCompte, { testObjectifsMonstresCollab, testObjectifsSousSections } from './objectifs-compte.test';
+import testFarmObjectifs from './farm-objectifs.test';
 import { testRenduBuildsRapides } from './rendu/builds-rapides.test';
 import { testRenduObjectifs } from './rendu/objectifs.test';
 import testRuneOptimOnStage from './rune-optim-onstage.test';
@@ -942,6 +943,9 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testRuneOptimDifferential', testRuneOptimDifferential],
   ['testBuildsRapides', testBuildsRapides],
   ['testObjectifsCompte', testObjectifsCompte],
+  ['testObjectifsSousSections', testObjectifsSousSections],
+  ['testObjectifsMonstresCollab', testObjectifsMonstresCollab],
+  ['testFarmObjectifs', testFarmObjectifs],
   ['testRenduBuildsRapides', testRenduBuildsRapides],
   ['testRenduObjectifs', testRenduObjectifs],
   ['testRuneOptimOnStage', testRuneOptimOnStage],

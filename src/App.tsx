@@ -8,6 +8,7 @@ import {
   IconeArtefacts,
   IconeEquipes,
   IconeMonstres,
+  IconeObjectifs,
   IconeRunes,
   IconeBestiaire,
   IconeCompte,
@@ -96,6 +97,7 @@ import {
 import { ConfirmDialog, KeepAccountDialog, Modale } from './ui/Dialogs';
 import { useEquipesEnregistrees } from './hooks/useEquipesEnregistrees';
 import EquipesSection from './components/account/equipes/EquipesSection';
+import ObjectifsSection from './components/account/ObjectifsSection';
 import type { DemandeEquipeOptimizer } from './lib/importEquipesEnregistrees';
 import type { ContexteSourcesEquipes } from './lib/sourcesEquipesEnregistrees';
 import { indexerInventaire } from './lib/equipesEnregistrees';
@@ -247,7 +249,7 @@ type Route =
   | 'bot-discord'
   | 'sw-exporter'
   | 'parametres';
-export type AccountSub = 'monstres' | 'runes' | 'artefacts' | 'equipes';
+export type AccountSub = 'monstres' | 'runes' | 'artefacts' | 'objectifs' | 'equipes';
 
 // Sous-sections de RTA. `prepa` = la sienne (tout l'écran historique), `ami` =
 // celle de quelqu'un d'autre, en lecture.
@@ -270,12 +272,15 @@ export type AccountView =
   | 'courbes'
   | 'comparaison'
   | 'optimisation'
-  | 'objectifs'
   | 'meules'
-  | 'gemmes';
+  | 'gemmes'
+  // Les vues des Objectifs : le détail de chaque inventaire, les monstres, et
+  // le réglage.
+  | 'runes'
+  | 'artefacts'
+  | 'monstres'
+  | 'reglage';
 export type ToolSub = 'optimizer' | 'speed-tuning';
-// Les onglets des Paramètres : l'actuel, et les objectifs du compte.
-export type OngletParametres = 'general' | 'objectifs';
 // Les onglets de l'Arène et de l'arène dimensionnelle : un côté d'équipes, ou
 // les runes de l'arène dimensionnelle.
 export type OngletArene = CoteArene | 'dimension-runes';
@@ -295,7 +300,6 @@ export function parseHash(hash: string = window.location.hash): {
   accountView: AccountView;
   toolSub: ToolSub;
   ongletBot: OngletBot;
-  ongletParametres: OngletParametres;
 } {
   const h = hash.replace(/^#\/?/, '');
   const base = {
@@ -306,7 +310,6 @@ export function parseHash(hash: string = window.location.hash): {
     accountView: 'resume' as AccountView,
     toolSub: 'optimizer' as ToolSub,
     ongletBot: 'installation' as OngletBot,
-    ongletParametres: 'general' as OngletParametres,
   };
   if (h === 'rta' || h.startsWith('rta/')) {
     const [, sub] = h.split('/');
@@ -332,7 +335,7 @@ export function parseHash(hash: string = window.location.hash): {
     // `compte/runes/courbes` → sous-section « runes », vue « courbes ».
     const [, sub, vue] = h.split('/');
     const accountSub: AccountSub =
-      sub === 'runes' ? 'runes' : sub === 'artefacts' ? 'artefacts' : sub === 'equipes' ? 'equipes' : 'monstres';
+      sub === 'runes' || sub === 'artefacts' || sub === 'objectifs' || sub === 'equipes' ? sub : 'monstres';
     return {
       route: 'compte',
       rtaSub: 'prepa',
@@ -344,7 +347,6 @@ export function parseHash(hash: string = window.location.hash): {
       accountView: (vue as AccountView) || 'resume',
       toolSub: 'optimizer',
       ongletBot: 'installation',
-      ongletParametres: 'general',
     };
   }
   if (h === 'outils' || h.startsWith('outils/')) {
@@ -363,12 +365,7 @@ export function parseHash(hash: string = window.location.hash): {
     return { route: 'bot-discord', ...base, ongletBot: ongletBotValide(onglet) };
   }
   if (h === 'sw-exporter') return { route: 'sw-exporter', ...base };
-  // `#/parametres/objectifs` ouvre l'onglet des objectifs du compte ; un onglet
-  // inconnu retombe sur « Général ».
-  if (h === 'parametres' || h.startsWith('parametres/')) {
-    const [, onglet] = h.split('/');
-    return { route: 'parametres', ...base, ongletParametres: onglet === 'objectifs' ? 'objectifs' : 'general' };
-  }
+  if (h === 'parametres') return { route: 'parametres', ...base };
   if (h === 'siege' || h.startsWith('siege/')) {
     const siegeTab: SiegeTab =
       h === 'siege/offense'
@@ -456,6 +453,7 @@ const ACCOUNT_SUBS: { sub: AccountSub; texte: CleNavigation; icon: IconeAtelier;
   { sub: 'monstres', texte: 'monstres', icon: IconeMonstres, couleur: COULEUR_COMPTE_SUB.monstres },
   { sub: 'runes', texte: 'runes', icon: IconeRunes, couleur: COULEUR_COMPTE_SUB.runes },
   { sub: 'artefacts', texte: 'artefacts', icon: IconeArtefacts, couleur: COULEUR_COMPTE_SUB.artefacts },
+  { sub: 'objectifs', texte: 'objectifs', icon: IconeObjectifs, couleur: COULEUR_COMPTE_SUB.objectifs },
   { sub: 'equipes', texte: 'mesEquipes', icon: IconeEquipes, couleur: COULEUR_COMPTE_SUB.equipes },
 ];
 
@@ -685,7 +683,7 @@ function Application() {
   // on compare les runes — et rien ne disait lequel était affiché.
   const [accountName, setAccountName] = useState<string | null>(null);
 
-  const [{ route, rtaSub, siegeTab, areneTab, accountSub, accountView, toolSub, ongletBot, ongletParametres }, setNav] = useState(parseHash);
+  const [{ route, rtaSub, siegeTab, areneTab, accountSub, accountView, toolSub, ongletBot }, setNav] = useState(parseHash);
 
   // Écran d'où l'on vient, pour que le bouton ⚙ RAMÈNE là où on était.
   //
@@ -752,7 +750,7 @@ function Application() {
   // milliers de tuiles à montrer — chaque rangée de filtre leur prend un écran de
   // résultats. **Avoir des filtres ne suffit donc pas : il faut aussi que la page
   // ait de quoi remplir la place qu'ils libèrent.**
-  const pageAPanneau = aPanneau({ route, rtaSub, siegeTab, areneTab, accountSub, accountView, toolSub, ongletBot, ongletParametres });
+  const pageAPanneau = aPanneau({ route, rtaSub, siegeTab, areneTab, accountSub, accountView, toolSub, ongletBot });
 
   // Écran partagé : le panneau d'actions d'un volet ÉTROIT, qui a pris la mise
   // en page de téléphone de sa page (voir VoletEcran). Un par volet : celui du
@@ -1763,6 +1761,7 @@ function Application() {
   };
   const sectionRunesBureau = sectionInventaireBureau('runes');
   const sectionArtefactsBureau = sectionInventaireBureau('artefacts');
+  const sectionObjectifsBureau = sectionInventaireBureau('objectifs');
 
   // Premier niveau. ⚠️ L'ordre d'importance est gardé — Accueil, puis le jeu
   // (RTA, Siège, Arène), le compte, les outils, les ressources — mais Arène
@@ -1796,6 +1795,7 @@ function Application() {
         },
         { key: 'runes', label: nomNav('runes'), icon: <IconeRunes size={18} />, ouvre: sectionRunesBureau, actif: route === 'compte' && accountSub === 'runes' },
         { key: 'artefacts', label: nomNav('artefacts'), icon: <IconeArtefacts size={18} />, ouvre: sectionArtefactsBureau, actif: route === 'compte' && accountSub === 'artefacts' },
+        { key: 'objectifs', label: nomNav('objectifs'), icon: <IconeObjectifs size={18} />, ouvre: sectionObjectifsBureau, actif: route === 'compte' && accountSub === 'objectifs' },
         {
           key: 'equipes',
           label: nomNav('mesEquipes'),
@@ -2258,6 +2258,17 @@ function Application() {
         menuOuvert={menu.ouvert}
         onFermerMenu={menu.fermer}
       />
+    ) : n.route === 'compte' && n.accountSub === 'objectifs' ? (
+      // ⚠️ Avant les écrans du compte : le Réglage se fait sans compte importé.
+      <ObjectifsSection
+        vue={vueValide('objectifs', n.accountView)}
+        runes={enDirect?.runes ?? runes}
+        artifacts={enDirect?.artifacts ?? artifacts}
+        box={enDirect?.box ?? box}
+        allMonsters={allMonsters}
+        monsterByCom2us={monsterByCom2us}
+        hydrating={accountHydrating}
+      />
     ) : n.route === 'compte' && n.accountSub === 'equipes' ? (
       // ⚠️ Avant les écrans du compte : « Mes équipes » se lit sans compte importé.
       <EquipesSection
@@ -2336,7 +2347,6 @@ function Application() {
       <MechanicsPage />
     ) : n.route === 'parametres' ? (
       <SettingsPage
-        onglet={n.ongletParametres}
         onClearData={() => setPurgeGlobale(true)}
         onSauvegarderSession={estBureau() ? sauvegarderSession : undefined}
         onChargerSession={estBureau() ? () => void chargerSession() : undefined}
@@ -2367,7 +2377,7 @@ function Application() {
   // fil : il montre le sélecteur de page.
   const vide = coteVide(volets);
   const navDuCote = (cote: Cote) =>
-    cote === volets.actif ? { route, rtaSub, siegeTab, areneTab, accountSub, accountView, toolSub, ongletBot, ongletParametres } : navAutre;  // Le sélecteur d'un volet vide : les pages de la palette Ctrl K, sans celle
+    cote === volets.actif ? { route, rtaSub, siegeTab, areneTab, accountSub, accountView, toolSub, ongletBot } : navAutre;  // Le sélecteur d'un volet vide : les pages de la palette Ctrl K, sans celle
   // déjà affichée à côté. Choisir une page navigue, et la navigation remplit
   // le volet vide (src/lib/volets.ts).
   const groupesPagesVolet = (saisie: string) =>
@@ -2637,7 +2647,7 @@ function Application() {
             libelleSeparateur={textes.donnees.redimensionner}
           />
         ) : (
-          pageDe({ route, rtaSub, siegeTab, areneTab, accountSub, accountView, toolSub, ongletBot, ongletParametres })
+          pageDe({ route, rtaSub, siegeTab, areneTab, accountSub, accountView, toolSub, ongletBot })
         )}
 
         {/* ⚠️ **Le pied de page de la toile : UNE rangée** (rebranding R4 —

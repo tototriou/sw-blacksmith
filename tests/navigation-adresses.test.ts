@@ -30,8 +30,6 @@ export function destination(hash: string): string {
       return `${n.route}/${n.areneTab}`;
     case 'bot-discord':
       return `bot-discord/${n.ongletBot}`;
-    case 'parametres':
-      return n.ongletParametres === 'objectifs' ? 'parametres/objectifs' : 'parametres';
     default:
       return n.route;
   }
@@ -52,16 +50,19 @@ export const ADRESSES: Record<string, string> = {
   '#/compte/runes/courbes': 'compte/runes/courbes',
   '#/compte/runes/comparaison': 'compte/runes/comparaison',
   '#/compte/runes/optimisation': 'compte/runes/optimisation',
-  '#/compte/runes/objectifs': 'compte/runes/objectifs',
   '#/compte/runes/meules': 'compte/runes/meules',
   '#/compte/runes/gemmes': 'compte/runes/gemmes',
   '#/compte/artefacts/resume': 'compte/artefacts/resume',
   '#/compte/artefacts/liste': 'compte/artefacts/liste',
-  '#/compte/artefacts/objectifs': 'compte/artefacts/objectifs',
+  '#/compte/objectifs/resume': 'compte/objectifs/resume',
+  '#/compte/objectifs/runes': 'compte/objectifs/runes',
+  '#/compte/objectifs/artefacts': 'compte/objectifs/artefacts',
+  '#/compte/objectifs/reglage': 'compte/objectifs/reglage',
   '#/compte/equipes/liste': 'compte/equipes/liste',
   // Adresses tronquées, utilisées par les cartes de l'accueil.
   '#/compte/runes': 'compte/runes/resume',
   '#/compte/artefacts': 'compte/artefacts/resume',
+  '#/compte/objectifs': 'compte/objectifs/resume',
   '#/compte/equipes': 'compte/equipes/liste',
   '#/outils/optimizer': 'outils/optimizer',
   '#/outils/speed-tuning': 'outils/speed-tuning',
@@ -85,8 +86,6 @@ export const ADRESSES: Record<string, string> = {
   // Le plugin SWEX : sur le site ET dans l'app (testNavigationAdresses).
   '#/sw-exporter': 'sw-exporter',
   '#/parametres': 'parametres',
-  // L'onglet des objectifs du compte, où renvoie la vue « Objectifs ».
-  '#/parametres/objectifs': 'parametres/objectifs',
 };
 
 export function testNavigationAdresses() {
@@ -95,7 +94,7 @@ export function testNavigationAdresses() {
 
   // Deux adresses distinctes de la table ne mènent jamais à la même page, sauf
   // les formes tronquées, qui mènent par construction au défaut de leur section.
-  const tronquees = new Set(['#/compte/runes', '#/compte/artefacts', '#/compte/equipes', '#/bot-discord']);
+  const tronquees = new Set(['#/compte/runes', '#/compte/artefacts', '#/compte/objectifs', '#/compte/equipes', '#/bot-discord']);
   const pages = Object.entries(ADRESSES).filter(([h]) => !tronquees.has(h)).map(([, p]) => p);
   egal(pages.length, new Set(pages).size, 'chaque adresse complète mène à une page différente');
 
@@ -127,7 +126,6 @@ export function testNavigationAdressesDefauts() {
   egal(destination('#/arene-dimensionnelle'), 'arene-dimensionnelle/dimension-defense', '#/arene-dimensionnelle → Défense');
   egal(destination('#/bot-discord'), 'bot-discord/installation', '#/bot-discord → Installation');
   egal(destination('#/bot-discord/inconnu'), 'bot-discord/installation', 'onglet du bot inconnu → Installation');
-  egal(destination('#/parametres/inconnu'), 'parametres', 'onglet des paramètres inconnu → Général');
 
   // Sous-page inconnue : le défaut de SA section, pas l'accueil.
   egal(destination('#/rta/inconnu'), 'rta/prepa', 'RTA inconnue → Ma prépa');
@@ -146,6 +144,8 @@ export function testNavigationAdressesDefauts() {
     'compte/artefacts/resume',
     'vue qui n’existe pas pour cet inventaire (les artéfacts n’ont pas de courbes) → Résumé'
   );
+  egal(destination('#/compte/objectifs/liste'), 'compte/objectifs/resume', 'les Objectifs n’ont pas de liste → Résumé');
+  egal(destination('#/compte/runes/reglage'), 'compte/runes/resume', 'le Réglage n’existe que dans les Objectifs → Résumé des runes');
 
   // Section inconnue : l'accueil.
   egal(destination('#/nimportequoi'), 'home', 'section inconnue → accueil');
