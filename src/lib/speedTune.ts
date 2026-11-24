@@ -4,26 +4,86 @@
 // avec les ticks de siège (voir lib/speed.ts). Fonctions PURES, testées sans
 // rendu (voir tests/speed-tune.test.ts).
 
-// Un tick fait monter l'ATB de 7 % de la vitesse de combat.
+// Un tick fait monter l'ATB de 7 % de la vitesse de combat (siège, arène).
 export const ATB_PAR_TICK = 7;
+
+// ⚠️ **LA TAILLE DU TICK DÉPEND DU CONTENU** : 7 % presque partout, 4,5 % en
+// raid, 1,5 % en RTA — « In most areas of the game the tick size is 7%, the
+// only exceptions are in Raids (4.5%) and RTA (1.5%) »
+// ([Ellia's Wiki](https://elliabot.neocities.org/game_mechanics/attack_bar/)).
+// En DIXIÈMES de pour cent, pour que tout calcul reste en entiers jusqu'à sa
+// dernière division : `1.5` en flottant ferait tomber un seuil juste sous son
+// entier, comme l'artéfact (voir `simuler`).
+export type ContenuSpeedTune = 'siege' | 'raid' | 'rta';
+export const CONTENUS_SPEED_TUNE: readonly ContenuSpeedTune[] = ['siege', 'raid', 'rta'];
+export const TICK_DIXIEMES: Record<ContenuSpeedTune, number> = { siege: 70, raid: 45, rta: 15 };
 
 // Horizon de simulation par défaut : on déroule 40 ticks pour voir plusieurs
 // TOURS de chaque monstre, pas seulement le premier.
 export const HORIZON_TICKS = 40;
 
+// ⚠️ **L'horloge d'une simulation : combien de ticks, et de quelle taille.**
+// Elle se passe partout où passait le nombre de ticks (`Horizon`) : un nombre
+// seul reste un horizon de siège, ce que tout le code d'avant suppose.
+export interface Horloge {
+  ticks: number;
+  contenu: ContenuSpeedTune;
+}
+export type Horizon = number | Horloge;
+export const ticksDe = (h: Horizon): number => (typeof h === 'number' ? h : h.ticks);
+export const contenuDe = (h: Horizon): ContenuSpeedTune => (typeof h === 'number' ? 'siege' : h.contenu);
+
+// L'horloge d'un contenu : la MÊME DURÉE DE JEU que les 40 ticks du siège —
+// 40 ticks en siège, 63 en raid, 187 en RTA. Un monstre lent (100 de vitesse
+// joue au tick 67 en RTA) reste ainsi dans le calcul en RTA comme il l'est en
+// siège ; l'écran, lui, n'en montre que 40 colonnes (`debutAffiche`).
+export function horlogePour(contenu: ContenuSpeedTune): Horloge {
+  return { ticks: Math.ceil((HORIZON_TICKS * TICK_DIXIEMES.siege) / TICK_DIXIEMES[contenu]), contenu };
+}
+
 // ATB gagnée par tick pour une vitesse de combat donnée.
-export function atbParTick(combat: number): number {
-  return (combat * ATB_PAR_TICK) / 100;
+export function atbParTick(combat: number, contenu: ContenuSpeedTune = 'siege'): number {
+  return (combat * TICK_DIXIEMES[contenu]) / 1000;
 }
 
 // Vitesse de combat MINIMALE pour agir au tick `n` (barre pleine à ce tick) :
-//   combat × 7/100 × n ≥ 100  ⇔  combat ≥ 10000 / (7n).
+//   combat × 7/100 × n ≥ 100  ⇔  combat ≥ 10000 / (7n)   (siège).
 // Arrondi au supérieur (il faut ATTEINDRE 100, pas s'en approcher). C'est la
 // « règle des ticks » affichée en tête de page — 130 au tick 11, 239 au tick 6
-// (« Lent » en siège), 286 au tick 5 (« Rapide »)…
-export function speedForTick(n: number): number {
+// (« Lent » en siège), 286 au tick 5 (« Rapide »)… En RTA, 334 au tick 20.
+export function speedForTick(n: number, contenu: ContenuSpeedTune = 'siege'): number {
   if (n <= 0) return Infinity;
-  return Math.ceil(10000 / (ATB_PAR_TICK * n));
+  return Math.ceil(100000 / (TICK_DIXIEMES[contenu] * n));
+}
+
+// Le tick NATUREL d'une vitesse de combat (sans modificateur) : le premier où
+// sa barre atteint 100. L'inverse de `speedForTick`.
+export function tickDeVitesse(combat: number, contenu: ContenuSpeedTune = 'siege'): number {
+  return Math.ceil(100000 / (TICK_DIXIEMES[contenu] * combat));
+}
+
+// La première colonne MONTRÉE des tableaux : le tick du premier tour joué.
+// ⚠️ **En siège, toujours le tick 1** : ses numéros de tick se lisent tels
+// quels (« Rapide » au 5, « Lent » au 6). En raid et en RTA, personne ne joue
+// avant des dizaines de ticks (le 15ᵉ au mieux en RTA) : les 40 colonnes
+// commencent au premier tour, sans dépasser la fin de l'horloge.
+// ⚠️ **Ni après une case SAISIE** (`monstres`) : avant le premier tour, seule
+// une saisie peut poser quelque chose, et elle compte. Cachée, elle avancerait
+// un tour sans qu'on puisse la voir ni l'effacer.
+export function debutAffiche(
+  sim: Simulation,
+  contenu: ContenuSpeedTune,
+  monstres: readonly TuneMonstre[] = [],
+  colonnes = HORIZON_TICKS
+): number {
+  if (contenu === 'siege') return 1;
+  let premier = sim.actions[0]?.tick ?? 1;
+  for (const m of monstres) {
+    for (const grille of [m.atbMod, m.speedMod]) {
+      for (const [t, v] of Object.entries(grille ?? {})) if (v !== undefined && Number(t) < premier) premier = Number(t);
+    }
+  }
+  return Math.max(1, Math.min(premier, sim.horizon - colonnes + 1));
 }
 
 export type Camp = 'allie' | 'ennemi';
@@ -258,13 +318,15 @@ export function sansReductionAdverse(e: EffetSort): EffetSort {
   return copie;
 }
 
-export function simuler(monstres: TuneMonstre[], horizon = HORIZON_TICKS): Simulation {
+export function simuler(monstres: TuneMonstre[], horloge: Horizon = HORIZON_TICKS): Simulation {
+  const horizon = ticksDe(horloge);
+  const contenu = contenuDe(horloge);
   // Vitesse de base ≤ 0 (base inconnue) → n'agit jamais, écarté de la
   // simulation (plutôt que de fausser la lecture avec une barre plate).
   const etat = monstres
     .map((m, placement) => ({
       ...m,
-      incBase: atbParTick(m.combat),
+      incBase: atbParTick(m.combat, contenu),
       atb: 0,
       placement,
       traj: [] as number[],
@@ -324,7 +386,7 @@ export function simuler(monstres: TuneMonstre[], horizon = HORIZON_TICKS): Simul
       // faux pas. 12 couples sur 10 100 étaient touchés, tous SOUS-ÉVALUÉS.
       const buff =
         buffBase > 0 ? Math.floor((buffBase * (100 + (m.artefactBuff ?? 0))) / 100) : buffBase;
-      m.atb += atbParTick((m.combat * (100 + buff)) / 100);
+      m.atb += atbParTick((m.combat * (100 + buff)) / 100, contenu);
       if (m.atb < 0) m.atb = 0;
       // On enregistre AVANT la remise à zéro : la case du tour montre la barre
       // pleine (≥ 100) qui a déclenché l'action.
@@ -561,7 +623,7 @@ export interface Coupure {
 // donnée dans l'ordre des slots oblige à reconstruire mentalement la chronologie
 // pour comprendre qui coupe qui — alors que c'est précisément la question. Dans
 // l'ordre de jeu, on lit la chaîne comme elle se déroule.
-export function ordreDeJeu(monstres: TuneMonstre[], horizon = HORIZON_TICKS): Map<string, number> {
+export function ordreDeJeu(monstres: TuneMonstre[], horizon: Horizon = HORIZON_TICKS): Map<string, number> {
   return new Map(premiersTours(simuler(monstres, horizon)).map((a) => [a.id, a.tick]));
 }
 
@@ -574,7 +636,7 @@ function rangerParJeu<T extends { id: string }>(liste: T[], ordre: Map<string, n
   );
 }
 
-export function diagnostiquerChaine(monstres: TuneMonstre[], horizon = HORIZON_TICKS): Coupure {
+export function diagnostiquerChaine(monstres: TuneMonstre[], horizon: Horizon = HORIZON_TICKS): Coupure {
   const sim = simuler(monstres, horizon);
   const premiers = premiersTours(sim);
   const coupeur = premiers.find((a) => a.camp === 'ennemi') ?? null;
@@ -674,7 +736,7 @@ const DESCENTES_MAX = 4;
 
 // L'ordre de jeu des ALLIÉS, du premier au dernier. Celui qui n'agit pas dans
 // l'horizon ferme la marche (il ne s'insère nulle part).
-function ordreAllies(monstres: TuneMonstre[], horizon: number): string[] {
+function ordreAllies(monstres: TuneMonstre[], horizon: Horizon): string[] {
   const premiers = premiersTours(simuler(monstres, horizon));
   const tick = new Map(premiers.map((a) => [a.id, a.tick] as const));
   return monstres
@@ -685,7 +747,7 @@ function ordreAllies(monstres: TuneMonstre[], horizon: number): string[] {
 }
 
 // Les alliés qui jouent avant le premier adverse, dans l'état donné.
-function passants(monstres: TuneMonstre[], horizon: number): Set<string> {
+function passants(monstres: TuneMonstre[], horizon: Horizon): Set<string> {
   const premiers = premiersTours(simuler(monstres, horizon));
   const adverse = premiers.find((a) => a.camp === 'ennemi');
   const out = new Set<string>();
@@ -703,7 +765,7 @@ function passants(monstres: TuneMonstre[], horizon: number): Set<string> {
 // insensible au levier (l'artéfact n'amplifie que le buff) : le tasser ne change
 // rien et il ressort `null` — c'est le comportement attendu, il n'y a rien à
 // proposer de ce côté-là.
-function resoudre(monstres: TuneMonstre[], horizon: number, axe: Axe): Resolution[] {
+function resoudre(monstres: TuneMonstre[], horizon: Horizon, axe: Axe): Resolution[] {
   const valeur = (m: TuneMonstre): number => (axe === 'combat' ? m.combat : (m.artefactBuff ?? 0));
   const poser = (m: TuneMonstre, v: number) => {
     if (axe === 'combat') m.combat = v;
@@ -904,7 +966,7 @@ function resoudre(monstres: TuneMonstre[], horizon: number, axe: Axe): Resolutio
         const t = sonTick(id, e);
         // Début du palier suivant : la plus petite valeur qui le fait jouer plus
         // tôt. Au-dessus de tout palier utile, il n'y a plus rien à essayer.
-        const suivant = t === Infinity ? seuil(horizon, v + 1) : seuil(t - 1, v + 1);
+        const suivant = t === Infinity ? seuil(ticksDe(horizon), v + 1) : seuil(t - 1, v + 1);
         if (suivant > haut) break;
         // Le HAUT du palier courant : même tick, dépassement d'ATB maximal. S'il
         // tient alors que le bas ne tenait pas, c'est qu'une ÉGALITÉ bascule
@@ -950,7 +1012,7 @@ function resoudre(monstres: TuneMonstre[], horizon: number, axe: Axe): Resolutio
   return rangerParJeu(out, ordreDeJeu(monstres, horizon));
 }
 
-export function vitessesRequises(monstres: TuneMonstre[], horizon = HORIZON_TICKS): VitesseRequise[] {
+export function vitessesRequises(monstres: TuneMonstre[], horizon: Horizon = HORIZON_TICKS): VitesseRequise[] {
   return resoudre(monstres, horizon, 'combat').map((r) => ({
     id: r.id,
     combatActuel: r.actuel,
@@ -971,7 +1033,7 @@ export interface ArtefactRequis {
   artefactRequis: number | null;
 }
 
-export function artefactsRequis(monstres: TuneMonstre[], horizon = HORIZON_TICKS): ArtefactRequis[] {
+export function artefactsRequis(monstres: TuneMonstre[], horizon: Horizon = HORIZON_TICKS): ArtefactRequis[] {
   return resoudre(monstres, horizon, 'artefactBuff').map((r) => ({
     id: r.id,
     artefactActuel: r.actuel,
@@ -1058,7 +1120,7 @@ export function ticksParOccurrence(sim: Simulation): Map<string, number> {
 export function diagnostiquerSequence(
   monstres: TuneMonstre[],
   ordre: string[],
-  horizon = HORIZON_TICKS
+  horizon: Horizon = HORIZON_TICKS
 ): DiagnosticSequence {
   const sim = simuler(monstres, horizon);
   const coupeur = sim.actions.find((a) => a.camp === 'ennemi') ?? null;
@@ -1132,7 +1194,7 @@ function borneBasse(
   monstres: TuneMonstre[],
   ordre: string[],
   id: string,
-  horizon: number,
+  horizon: Horizon,
   axe: 'combat' | 'artefactBuff',
   plafond: number
 ): number | null {
@@ -1175,7 +1237,7 @@ function borneBasse(
 export function fenetresRequises(
   monstres: TuneMonstre[],
   ordre: string[],
-  horizon = HORIZON_TICKS,
+  horizon: Horizon = HORIZON_TICKS,
   // Sur quel levier chercher : la vitesse de combat, ou l'artéfact qui amplifie
   // le buff de vitesse reçu (voir `artefactsRequis`). Même méthode, même
   // garanties — seule la grandeur cherchée change.

@@ -26,7 +26,8 @@ export function testRenduTelephoneOutilsRessources() {
     return rendre(<SpeedTuningSection allMonsters={MONSTRES} siegeDefenseTeams={[]} siegeOffenseTeams={[]} />);
   });
   const ts = texteVisible(speed);
-  ok(ts.startsWith('Speed tuning À chaque tick, la barre d\'action monte de vitesse × 7 %'), 'Speed tuning : titre et règle');
+  ok(ts.startsWith('Speed tuning À chaque tick, la barre d\'action monte de vitesse × taille du tick'), 'Speed tuning : titre et règle');
+  ok(ts.includes('Contenu Siège · Arène Raid RTA'), 'Speed tuning : le choix du contenu, au téléphone aussi');
   ok(ts.includes('repère de speed tune 3 477 4 358 5 286 6 239'), 'Speed tuning : le repère des ticks');
   ok(valeurs(speed, 'aria-label').includes('Lead de vitesse — Ton équipe') && valeurs(speed, 'aria-label').includes('Lead de vitesse — En face'), 'Speed tuning : les deux camps et leur lead');
   ok(ts.endsWith('Ajoute au moins un monstre pour visualiser le remplissage des barres et l\'ordre de tour.'), 'Speed tuning : ce qu\'il faut faire');

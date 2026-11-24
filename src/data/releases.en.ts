@@ -17,6 +17,7 @@ export const RELEASES_EN: Release[] = [
       { kind: 'feat', scope: 'Optimizer', text: '“Simulate +15” and “Simulate max grinds/gems” become two separate options.' },
       { kind: 'feat', scope: 'Optimizer', text: 'Grinds and gems are simulated at Hero or Legend, separately for ancient runes.' },
       { kind: 'feat', scope: 'Optimizer', text: '“Search until fully exhausted” is gone: searches fit well within the time limit.' },
+      { kind: 'feat', scope: 'Speed tuning', text: 'Choose the content: Siege and Arena, Raid or RTA, each with its own ticks.' },
       { kind: 'feat', scope: 'SW Exporter', text: 'In the desktop app, a notification tells you when the SW Blacksmith Live plugin has a new version.' },
       { kind: 'feat', scope: 'SW Exporter', text: 'An app version that does not change the plugin no longer asks you to download it again.' },
       { kind: 'feat', scope: 'Application', text: 'A notification asking a question comes back after an announcement that had replaced it.' },
