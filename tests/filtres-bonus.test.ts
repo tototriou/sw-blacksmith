@@ -45,6 +45,7 @@ export function testFiltresResultatsDecimales() {
   egal(lireFrappe('78,8', 1), { brouillon: '78,8', valeur: 78.8 }, '« 78,8 » : la virgule est admise');
   egal([lireFrappe('78.88', 1), lireFrappe('78.8', 0), lireFrappe('7a', 1)], [null, null, null], 'trop de décimales, une décimale sur un entier, une lettre : frappe ignorée');
   egal([lireFrappe('', 1, true), lireFrappe('-', 1), lireFrappe('150000', 0)], [{ valeur: null }, { brouillon: '-' }, { valeur: 150000 }], 'vide, signe seul et entier : comme avant');
+  egal(lireFrappe(''), { brouillon: '', valeur: 0 }, 'vidé sans allowEmpty : vaut 0, mais le champ reste vide à l’écran jusqu’à la sortie');
   // De la frappe au classeur : « 78.8 » saisi en minimum garde la décimale, et
   // la borne départage 78.8 de 78.7.
   const saisie = lireFrappe('78.8', 1)?.valeur ?? null;
