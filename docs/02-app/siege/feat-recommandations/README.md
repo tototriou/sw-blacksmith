@@ -9,6 +9,7 @@ et les **stats à viser** sur chacun ; de **l'exporter** d'un bloc pour la parta
 Fichiers :
 - [RecoBoard.tsx](src/components/siege/RecoBoard.tsx) — barre d'actions, import/export, liste.
 - [RecoCard.tsx](src/components/siege/RecoCard.tsx) — une recommandation (vue & édition).
+- [EtoilesFiabilite.tsx](src/components/siege/EtoilesFiabilite.tsx) — la fiabilité d'un deck contre une défense, en étoiles : affichage et saisie.
 - [useSiegeRecos.ts](src/hooks/useSiegeRecos.ts) — état + persistance.
 - [recoShare.ts](src/lib/recoShare.ts) — export/import JSON + validation.
 - [recoFusion.ts](src/lib/recoFusion.ts) — import qui fusionne dans la recommandation qu'il complète (calcul pur).
@@ -17,6 +18,7 @@ Fichiers :
 - [ownedBuilds.ts](src/lib/ownedBuilds.ts) — collecte de tous les builds du joueur.
 - [recoFromSiege.ts](src/lib/recoFromSiege.ts) — deck pré-rempli depuis une équipe d'offense.
 - [recoSearch.ts](src/lib/recoSearch.ts) — recherche d'un monstre dans les recos (calcul pur).
+- [pagesRecos.ts](src/lib/pagesRecos.ts) — une page de decks, de lignes d'analyse ou de défenses à la fois (calcul pur).
 - [recoDiscord.ts](src/lib/recoDiscord.ts) — recommandations liées à un salon Discord : état, synchronisation, fusion à trois voies (calcul pur).
 - [provenancesRecos.ts](src/lib/provenancesRecos.ts) — les provenances de la page, ce que chacune montre, l'état affiché, les raisons de ne pas publier (calcul pur).
 - [discordClient.ts](src/lib/discordClient.ts), [useDiscord.ts](src/hooks/useDiscord.ts), [useReglagesDiscord.ts](src/hooks/useReglagesDiscord.ts) — appels au service, lecture et publication, réglages « Discord activé » et favoris.
@@ -29,14 +31,14 @@ Fichiers :
 | --- | --- |
 | l'en-tête, la barre d'outils, les boutons et couleurs de `src/components/siege/RecoCard.tsx` ou `src/components/siege/RecoBoard.tsx` | [rendu-de-la-page.md](rendu-de-la-page.md) |
 | le type d'une recommandation, l'origine, la vue Attaque / Défense, `src/lib/recoDefenses.ts` | [modele.md](modele.md) |
-| `src/lib/recoSearch.ts`, la recherche par monstre | [recherche-par-monstre.md](recherche-par-monstre.md) |
+| `src/lib/recoSearch.ts`, la recherche par monstre, son tri par fiabilité | [recherche-par-monstre.md](recherche-par-monstre.md) |
 | les consignes, l'affichage ou la saisie des stats d'un monstre recommandé | [consignes.md](consignes.md) |
 | les sets de runes recommandés | [sets-de-runes.md](sets-de-runes.md) |
-| les défenses visées (« Fort contre ») | [defenses-visees.md](defenses-visees.md) |
+| les défenses visées (« Fort contre »), leur fiabilité, `src/components/siege/EtoilesFiabilite.tsx` | [defenses-visees.md](defenses-visees.md) |
 | les propriétés d'artéfact recommandées | [proprietes-artefact.md](proprietes-artefact.md) |
 | `src/lib/recoShare.ts`, `src/hooks/useSiegeRecos.ts`, `src/lib/recoFusion.ts`, `src/components/siege/ChoixFusionRecos.tsx`, l'export, l'import, sa validation et sa fusion | [persistance-et-partage.md](persistance-et-partage.md) |
 | `src/lib/recoMatch.ts`, `src/lib/ownedBuilds.ts`, « Analyser mes decks » | [confrontation.md](confrontation.md) |
-| le repli, l'édition, `src/lib/annulerEdition.ts` | [interactions.md](interactions.md) |
+| le repli, l'édition, `src/lib/annulerEdition.ts`, la pagination des decks, `src/lib/pagesRecos.ts` | [interactions.md](interactions.md) |
 | `src/lib/recoFromSiege.ts`, « Importer un deck d'offense » | [import-deck-offense.md](import-deck-offense.md) |
 | `api/`, `vercel.json`, `scripts/construire-api.mjs`, le service Discord, ses routes, droits, cache et variables | [service-discord.md](service-discord.md) |
 | `src/lib/recoDiscord.ts`, `src/lib/discordClient.ts`, `src/hooks/useDiscord.ts`, `src/hooks/useReglagesDiscord.ts`, une recommandation liée à un salon, son état, la synchronisation, la fusion à trois voies, les favoris | [synchronisation-discord.md](synchronisation-discord.md) |
@@ -48,10 +50,10 @@ Fichiers :
 | --- | --- |
 | [rendu-de-la-page.md](rendu-de-la-page.md) | Le rendu à la souris et au doigt : en-tête, barre d'outils, en-tête d'une recommandation, crayon d'un deck, boutons d'icône et à libellé, couleurs et pastilles de statut. |
 | [modele.md](modele.md) | Le modèle (une recommandation = un lot de decks), l'origine, la vue Attaque / Défense. |
-| [recherche-par-monstre.md](recherche-par-monstre.md) | La recherche par monstre (jusqu'à trois, avec un rôle) : la vue, la recherche par composition, le cumul en ET, le rendu des trois cases. |
+| [recherche-par-monstre.md](recherche-par-monstre.md) | La recherche par monstre (jusqu'à trois, avec un rôle) : la vue, la recherche par composition, le tri par fiabilité, le cumul en ET, le rendu des trois cases. |
 | [consignes.md](consignes.md) | Les consignes à deux niveaux et l'affichage des stats : lignes `flex-wrap`, stats de fiche seulement, raccourci « Tick rapide / Tick lent ». |
 | [sets-de-runes.md](sets-de-runes.md) | Les sets de runes recommandés : plusieurs runages au choix, choix par icônes, activation côté joueur. |
-| [defenses-visees.md](defenses-visees.md) | Les défenses visées (« Fort contre ») : précision en popover, recherche sans précision ouverte, bouton « + », défense vide non conservée. |
+| [defenses-visees.md](defenses-visees.md) | Les défenses visées (« Fort contre ») : précision en popover, recherche sans précision ouverte, bouton « + », défense vide non conservée, fiabilité en étoiles. |
 | [proprietes-artefact.md](proprietes-artefact.md) | Les propriétés d'artéfact recommandées : présence seule exigée, quelle propriété sur quelle sorte d'artéfact, choix par liste déroulante, confrontation. |
 | [persistance-et-partage.md](persistance-et-partage.md) | La persistance (`localStorage`), le partage par fichier JSON (format et versions), la validation d'un fichier importé, et sa fusion dans la recommandation qu'il complète (champ `source`). |
 | [confrontation.md](confrontation.md) | « Analyser mes decks » : à la demande, depuis « Options » au doigt, ce que l'analyse affiche (ordre, filtres de verdict, « réalisable N fois »), source des builds, causes d'un `ko`. |

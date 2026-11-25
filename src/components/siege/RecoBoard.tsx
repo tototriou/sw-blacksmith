@@ -10,7 +10,10 @@ import { encodeRecosJson, validateRecosImport, ImportReport, slugify } from '../
 import { appliquerImport, BilanImport, messageFusion, trouverCorrespondances } from '../../lib/recoFusion';
 import ChoixFusionRecos from './ChoixFusionRecos';
 import { contexteConfrontationReco, matchReco, RecoMatch } from '../../lib/recoMatch';
-import { chercheMonstre, RecoHit, RecoSearchMode } from '../../lib/recoSearch';
+import {
+  chercheMonstre, ordreDe, suivreOrdre, trierParFiabilite,
+  type OrdreResultats, type RecoHit, type RecoSearchMode, type TriRecherche,
+} from '../../lib/recoSearch';
 import type { VueRecos } from '../../lib/recoDefenses';
 import { ConfirmDialog } from '../../ui/Dialogs';
 import { useTraduction } from '../../hooks/useLangue';
@@ -76,6 +79,7 @@ const VUES: VueRecos[] = ['attaque', 'defense'];
 // de l'autre rôle n'est pas affiché — voir lib/recoSearch.ts.
 // Libellés et infobulles : `recos.modes` du dictionnaire.
 const SEARCH_MODES: RecoSearchMode[] = ['all', 'defense', 'offense'];
+const TRIS_RECHERCHE: TriRecherche[] = ['ordre', 'fiabilite'];
 
 // Le message quand la recherche ne renvoie rien nomme le rôle où l'on vient de
 // chercher, puisque le sélecteur filtre : `recos.aucunResultat` du dictionnaire.
@@ -118,6 +122,8 @@ export default function RecoBoard({
   // données chargées — il ne porterait alors aucun id local.
   const [queries, setQueries] = useStickyState<string[]>('recos.queries', ['', '', '']);
   const [searchMode, setSearchMode] = useStickyState<RecoSearchMode>('recos.searchMode', 'all');
+  // L'ordre des résultats : celui des recommandations, ou la fiabilité.
+  const [triRecherche, setTriRecherche] = useStickyState<TriRecherche>('recos.tri', 'ordre');
   const termesPoses = queries.map((q) => q.trim()).filter(Boolean);
   const aUneRecherche = termesPoses.length > 0;
   // Vide les trois cases d'un coup.
@@ -438,10 +444,22 @@ export default function RecoBoard({
   // Recherche par monstre. `null` = aucune recherche en cours (état neutre de la
   // page : rien n'est filtré, rien n'est déplié d'office). Elle porte sur la
   // provenance choisie.
-  const hits = useMemo(
+  const hitsBruts = useMemo(
     () => chercheMonstre(deLaProvenance, queries, searchMode, monsterByCom2us),
     [deLaProvenance, queries, searchMode, monsterByCom2us]
   );
+  // Trié par fiabilité : l'ordre est pris au tri, ou à une autre recherche,
+  // puis TENU (`suivreOrdre`) — noter un deck pendant qu'on l'édite ne le
+  // déplace pas sous le clic. Il se refait à la recherche suivante.
+  const cleTri = JSON.stringify([queries, searchMode, provenance, triRecherche]);
+  const ordreFige = useRef<{ cle: string; ordre: OrdreResultats } | null>(null);
+  const hits = useMemo(() => {
+    if (!hitsBruts || triRecherche !== 'fiabilite') return hitsBruts;
+    if (ordreFige.current?.cle === cleTri) return suivreOrdre(hitsBruts, ordreFige.current.ordre);
+    const tries = trierParFiabilite(hitsBruts);
+    ordreFige.current = { cle: cleTri, ordre: ordreDe(tries) };
+    return tries;
+  }, [hitsBruts, triRecherche, cleTri]);
   const list = hits ? hits.map((h) => h.reco) : deLaProvenance;
   // Où se trouve le monstre, par recommandation — la carte s'en sert pour
   // déplier les bons decks et surligner les bons portraits.
@@ -823,7 +841,12 @@ export default function RecoBoard({
                 />
               </div>
             ) : (
-              <p className="flex-1 text-xs text-ink-dim">
+              // ⚠️ **La boîte du champ qu'il remplace**, plafond de 260 px
+              // compris : en `flex-1` nu, le message prenait toute la rangée à
+              // la souris et poussait les trois cases et « Vider » au bord
+              // droit de la page dès le troisième monstre posé — les cases
+              // bougeaient sous le clic qui les remplissait.
+              <p className="min-w-[min(180px,100%)] flex-1 text-xs text-ink-dim lg:max-w-[260px]" data-trois-poses>
                 {r.troisPoses}
               </p>
             )}
@@ -920,6 +943,20 @@ export default function RecoBoard({
                   {hits.length === 0 ? r.aucunResultat : r.resultats(hits.length)}
                 </span>
               )}
+            </div>
+          )}
+          {/* L'ordre des résultats : celui des recommandations, ou la
+              fiabilité — le deck le plus sûr contre la défense cherchée
+              d'abord (recoSearch.ts, `trierParFiabilite`). Même rangée,
+              même intitulé de largeur fixe que « Rôle ». */}
+          {aUneRecherche && (
+            <div className="flex flex-wrap items-center gap-2 lg:basis-full" data-tri-recherche>
+              <span className="w-[76px] flex-none label">{r.tri}</span>
+              <Segmented
+                value={triRecherche}
+                onChange={setTriRecherche}
+                options={TRIS_RECHERCHE.map((key) => ({ key, label: r.tris[key].label, hint: r.tris[key].hint }))}
+              />
             </div>
           )}
         </div>

@@ -39,11 +39,23 @@ import {
 } from '../../types';
 import { DeckMatch, FaultCause, RecoMatch, SlotMatch, deckFaults, fmtStat, slotFaults } from '../../lib/recoMatch';
 import { DeckHit, RecoHit } from '../../lib/recoSearch';
-import { VueDefenses, VueRecos, vueDefenses } from '../../lib/recoDefenses';
+import { VueDefenses, VueRecos, parFiabilite, vueDefenses } from '../../lib/recoDefenses';
 import { Bouton, BoutonIcone, Champ, Flottant, Selecteur, ZoneCliquable, useNotifier } from '../../ui';
 import { NOTE_MAX, DECK_NOTE_MAX, COUNTER_NOTE_MAX } from '../../lib/recoShare';
 import { deckFromSiegeTeam } from '../../lib/recoFromSiege';
 import { compterLignes, etapeRecherche, rechercheInitiale } from '../../lib/apercuDeuxLignes';
+import {
+  DECKS_PAR_PAGE,
+  DEFENSES_PAR_PAGE,
+  LIGNES_ANALYSE_PAR_PAGE,
+  nombrePages,
+  pageBornee,
+  pageDeLaPosition,
+  pageDuDeck,
+  plageDeLaPage,
+  tranche,
+} from '../../lib/pagesRecos';
+import Pager from '../account/Pager';
 import {
   artifactSubLabel,
   artifactSubsFor,
@@ -66,6 +78,7 @@ import MonsterPicker from '../MonsterPicker';
 import { JetonSlot, prochainFocus } from './slotVideSuivant';
 import MonsterAvatar from '../MonsterAvatar';
 import LeadPill from './LeadPill';
+import { ChoixFiabilite, EtoilesFiabilite } from './EtoilesFiabilite';
 import { SIEGE_TICKS, TICK_ABOVE_MARGIN, ficheSpeedForTick, siegeLeadFor, speedLeadOf } from '../../lib/speed';
 import {
   ContenuDeck,
@@ -306,20 +319,10 @@ export default function RecoCard({
       next.has(i) ? next.delete(i) : next.add(i);
       return next;
     });
-  // « Déplier / Replier tous les decks » — un geste, deux boutons (lien au
-  // doigt, bouton fantôme à la souris).
-  const basculerTousLesDecks = () =>
-    setOpenDecks((s) =>
-      s.size === reco.decks.length ? new Set() : new Set(reco.decks.map((_, i) => i))
-    );
-  const tousOuverts = openDecks.size === reco.decks.length;
-
-  // Decks contenant le monstre cherché : dépliés d'office pendant la recherche.
-  //
-  // ⚠️ Calculé à côté de `openDecks`, jamais fusionné dedans : c'est un état de
-  // CONSULTATION, pas un choix de l'utilisateur. Effacer la recherche rend à la
-  // carte exactement le repli qu'elle avait avant — sans ça, on se retrouverait
-  // avec six decks ouverts sans les avoir ouverts.
+  // Decks contenant le monstre cherché : les seuls affichés pendant la
+  // recherche, REPLIÉS comme les autres. Les déplier d'office ouvrait d'un
+  // coup des dizaines de decks sur un gros lot ; leurs portraits suffisent à
+  // choisir lequel ouvrir.
   const decksTrouves = useMemo(
     () => new Set((hit?.decks ?? []).map((d) => d.deckIndex)),
     [hit]
@@ -329,6 +332,43 @@ export default function RecoCard({
   const decksFiltres = hit != null;
   // Positions du monstre dans un deck donné, pour le surlignage.
   const hitDeDeck = (di: number) => hit?.decks.find((d) => d.deckIndex === di) ?? null;
+
+  // ── Une page de decks à la fois ─────────────────────────────────────────
+  //
+  // ⚠️ Une recommandation peut porter des centaines de decks (un lot de
+  // salon Discord) : les monter tous figeait la page. On n'en rend qu'une page
+  // (voir pagesRecos.ts). Les decks AFFICHÉS, dans l'ordre : tous, ou ceux
+  // qu'une recherche trouve, DANS L'ORDRE DE SES RÉSULTATS (celui de la
+  // recommandation, ou la fiabilité si on trie par elle) — c'est cette liste
+  // qui se pagine, et `di` reste l'index réel du deck.
+  const indexAffiches = useMemo(
+    () => (hit ? hit.decks.map((d) => d.deckIndex) : reco.decks.map((_, i) => i)),
+    [reco.decks, hit]
+  );
+  const [pageDecks, setPageDecks] = useState(0);
+  const pageDecksBornee = pageBornee(pageDecks, indexAffiches.length, DECKS_PAR_PAGE);
+  const decksDeLaPage = tranche(indexAffiches, pageDecks, DECKS_PAR_PAGE);
+  // « Déplier / Replier tous les decks » — un geste, deux boutons (lien au
+  // doigt, bouton fantôme à la souris). Il porte sur les decks AFFICHÉS :
+  // pendant une recherche, ceux qu'elle trouve, pas ceux qu'elle masque.
+  const tousOuverts = indexAffiches.every((i) => openDecks.has(i));
+  const basculerTousLesDecks = () =>
+    setOpenDecks((s) => {
+      const next = new Set(s);
+      for (const i of indexAffiches) tousOuverts ? next.delete(i) : next.add(i);
+      return next;
+    });
+  // Une autre recherche, ou un autre tri : la liste change, on repart de sa
+  // première page. ⚠️ Clé = les decks affichés dans leur ordre, pas l'objet
+  // `hit` : celui-ci est recalculé à chaque modification de la recommandation,
+  // et éditer un deck de la page 3 ramenait à la page 1.
+  const cleListe = hit ? indexAffiches.join(',') : '';
+  useEffect(() => setPageDecks(0), [cleListe]);
+  // Le deck en édition est TOUJOURS à l'écran : un deck ajouté (en fin de
+  // liste) ouvre la dernière page, sinon on l'éditerait sans le voir.
+  useEffect(() => {
+    if (editingDeck != null && !decksFiltres) setPageDecks(pageDeLaPosition(editingDeck, DECKS_PAR_PAGE));
+  }, [editingDeck, decksFiltres]);
 
   // ── Vue Défense ─────────────────────────────────────────────────────────
   //
@@ -372,6 +412,9 @@ export default function RecoCard({
     // deck visé n'est pas rendu du tout.
     if (!expanded) onToggleOpen(reco.id);
     setOpenDecks((s) => new Set(s).add(di));
+    // La page qui le porte, sinon il n'est pas rendu et rien ne défile.
+    const p = pageDuDeck(indexAffiches, di, DECKS_PAR_PAGE);
+    if (p != null) setPageDecks(p);
     setDeckAViser(di);
   };
 
@@ -798,11 +841,20 @@ export default function RecoCard({
       {/* Les decks de la recommandation */}
       {expanded && !enVueDefense && (
         <>
-          {/* ⚠️ Masqué pendant une recherche : les decks trouvés sont déjà
-              dépliés d'office, et « Déplier tous les decks » désignerait des
-              decks qui ne sont plus à l'écran. */}
-          {reco.decks.length > 1 && !decksFiltres && (
-            <div className="flex justify-end mb-1.5">
+          {/* ⚠️ La pagination À GAUCHE de « Déplier tous », sur la même
+              rangée : au-dessus du tableau, elle ne bouge pas quand la page
+              change de hauteur (un clic ne déplace jamais ce qu'on vient de
+              cliquer). Absente sous une page. */}
+          {indexAffiches.length > 1 && (
+            <div className="flex items-center justify-end gap-3 flex-wrap mb-1.5">
+              <BarrePages
+                page={pageDecksBornee}
+                n={indexAffiches.length}
+                parPage={DECKS_PAR_PAGE}
+                onChange={setPageDecks}
+                className="mr-auto"
+              />
+              {indexAffiches.length > 1 && (<>
               {/* Au doigt : le lien souligné d'avant, inchangé. */}
               <button
                 onClick={basculerTousLesDecks}
@@ -823,6 +875,7 @@ export default function RecoCard({
                 libelle={tousOuverts ? cr.replierTous : cr.deplierTous}
                 className={`hidden lg:inline-flex ${BOUTON_LG}`}
               />
+              </>)}
             </div>
           )}
           {/* Les decks se posent au dépliage plutôt que d'apparaître d'un bloc.
@@ -859,9 +912,10 @@ export default function RecoCard({
                 encore chercher à l'œil lequel répondait. Le filtre porte donc
                 sur les deux niveaux : quelles recos, et quels decks dedans.
                 ⚠️ On itère sur les decks D'ORIGINE et on filtre : `di` doit
-                rester l'index réel, il indexe le match, l'édition et le repli. */}
-            {reco.decks.map((deck, di) => {
-              if (decksFiltres && !decksTrouves.has(di)) return null;
+                rester l'index réel, il indexe le match, l'édition et le repli.
+                ⚠️ Seule la PAGE courante est rendue (`decksDeLaPage`). */}
+            {decksDeLaPage.map((di) => {
+              const deck = reco.decks[di];
               return (
                 // Conteneur porteur de la ref : c'est la cible du défilement
                 // quand on clique la ligne correspondante du résumé.
@@ -885,7 +939,7 @@ export default function RecoCard({
                     onToggleEdit={() => setEditingDeck((cur) => (cur === di ? null : di))}
                     onAnnulerEdition={annulerDeck}
                     annulable={editingDeck === di && deckModifie}
-                    folded={!openDecks.has(di) && editingDeck !== di && !decksTrouves.has(di)}
+                    folded={!openDecks.has(di) && editingDeck !== di}
                     onToggleFold={() => toggleDeck(di)}
                     hit={hitDeDeck(di)}
                     recos={recos}
@@ -895,6 +949,18 @@ export default function RecoCard({
               );
             })}
           </div>
+          {/* La même pagination au bas de la page, pour ne pas remonter tout
+              le tableau. ⚠️ Pas en édition : le pied d'ajout des decks est
+              collé sous le tableau, rien ne s'intercale. */}
+          {!editing && (
+            <BarrePages
+              page={pageDecksBornee}
+              n={indexAffiches.length}
+              parPage={DECKS_PAR_PAGE}
+              onChange={setPageDecks}
+              className="mt-2 justify-center"
+            />
+          )}
         </>
       )}
 
@@ -992,6 +1058,29 @@ export default function RecoCard({
 }
 
 
+/* ---- Pagination --------------------------------------------------------- */
+
+// « 21–40 sur 700 » puis le `Pager` de l'inventaire (flèches et champ de
+// page). Rien sous une page : une recommandation ordinaire n'en voit rien.
+function BarrePages({ page, n, parPage, onChange, className = '' }: {
+  page: number;
+  n: number;
+  parPage: number;
+  onChange: (p: number) => void;
+  className?: string;
+}) {
+  const cr = useTraduction().carteReco;
+  const pages = nombrePages(n, parPage);
+  if (pages <= 1) return null;
+  const { debut, fin } = plageDeLaPage(page, n, parPage);
+  return (
+    <div className={`flex items-center gap-2 ${className}`} data-pages-reco>
+      <span className="font-mono text-micro text-ink-dim">{cr.plage(debut, fin, n)}</span>
+      <Pager page={page} pageCount={pages} onChange={onChange} />
+    </div>
+  );
+}
+
 /* ---- Aperçu replié ------------------------------------------------------ */
 
 // L'aperçu d'une recommandation repliée — une pastille par deck (ou par
@@ -1007,6 +1096,13 @@ export default function RecoCard({
 // moins par rendu : au-delà de 50 rendus imbriqués, React démonte toute l'app
 // (src/lib/apercuDeuxLignes.ts). Un redimensionnement relance la recherche.
 // En rendu serveur, tout est rendu.
+// ⚠️ **La recherche ne porte que sur les PLAFOND_APERCU premières pastilles.**
+// Deux lignes n'en tiennent jamais autant (une pastille fait au moins ~40 px) ;
+// le premier essai les rendait pourtant TOUTES — sept cents pour un lot de
+// sept cents decks, à chaque dépliage ou redimensionnement. Le « +N » compte,
+// lui, toutes les autres.
+const PLAFOND_APERCU = 60;
+
 export function ApercuDeuxLignes({ pastilles, fin }: {
   pastilles: { cle: string; nom: string; noeud: React.ReactNode }[];
   fin: React.ReactNode;
@@ -1015,12 +1111,14 @@ export function ApercuDeuxLignes({ pastilles, fin }: {
   const [largeur, setLargeur] = useState(0);
 
   // Le contenu, en une chaîne : une pastille renommée relance la recherche,
-  // comme un changement de largeur.
-  const signature = pastilles.map((p) => `${p.cle}:${p.nom}`).join('|');
+  // comme un changement de largeur. Le total y entre : un deck de plus, au-delà
+  // du plafond, change le « +N ».
+  const candidates = pastilles.slice(0, PLAFOND_APERCU);
+  const signature = `${pastilles.length}|${candidates.map((p) => `${p.cle}:${p.nom}`).join('|')}`;
   const cle = `${largeur}|${signature}`;
-  const [etat, setEtat] = useState(() => rechercheInitiale(cle, pastilles.length));
-  // Une autre clé : la recherche repart de toutes les pastilles dès ce rendu.
-  const recherche = etat.cle === cle ? etat : rechercheInitiale(cle, pastilles.length);
+  const [etat, setEtat] = useState(() => rechercheInitiale(cle, candidates.length));
+  // Une autre clé : la recherche repart de toutes les candidates dès ce rendu.
+  const recherche = etat.cle === cle ? etat : rechercheInitiale(cle, candidates.length);
   const visibles = recherche.essai;
 
   // Chaque essai rendu est mesuré (chaque pastille, le « +N » et la fin
@@ -1254,7 +1352,14 @@ function AnalysisSummary({
   // filtres tous éteints qui n'afficherait rien se lirait comme une analyse
   // vide. Cocher restreint, et l'ensemble reste cumulable (plusieurs couleurs
   // à la fois) — d'où des pastilles indépendantes et non un `Segmented`.
-  const [vus, setVus] = useState<Set<VerdictKey>>(new Set());
+  const [vus, setVusBrut] = useState<Set<VerdictKey>>(new Set());
+  // Une page de lignes à la fois (voir pagesRecos.ts) ; un autre filtre de
+  // verdict repart de la première.
+  const [page, setPage] = useState(0);
+  const setVus = (next: Set<VerdictKey> | ((cur: Set<VerdictKey>) => Set<VerdictKey>)) => {
+    setVusBrut(next);
+    setPage(0);
+  };
   const bascule = (k: VerdictKey) =>
     setVus((cur) => {
       const next = new Set(cur);
@@ -1262,6 +1367,8 @@ function AnalysisSummary({
       return next;
     });
   const visibles = vus.size === 0 ? lignes : lignes.filter((l) => vus.has(l.verdict));
+  const pageAffichee = pageBornee(page, visibles.length, LIGNES_ANALYSE_PAR_PAGE);
+  const lignesDeLaPage = tranche(visibles, page, LIGNES_ANALYSE_PAR_PAGE);
 
   // Referme le résultat : la carte redevient neutre (halo et pastille compris).
   const closeBtn = (
@@ -1380,8 +1487,16 @@ function AnalysisSummary({
       {/* ⚠️ TOUS les decks sont listés, les bons compris : « lesquels puis-je
           poser » est la question qu'on se pose devant une défense de guilde, et
           un simple compteur obligeait à rouvrir la carte pour y répondre. */}
+      {/* Au-dessus de la liste : elle ne bouge pas quand la page change. */}
+      <BarrePages
+        page={pageAffichee}
+        n={visibles.length}
+        parPage={LIGNES_ANALYSE_PAR_PAGE}
+        onChange={setPage}
+        className="mt-2"
+      />
       <ul className="mt-2 space-y-1.5">
-        {visibles.map(({ deck, i, dm, verdict }) => {
+        {lignesDeLaPage.map(({ deck, i, dm, verdict }) => {
           const v = VERDICTS.find((x) => x.key === verdict)!;
           return (
             <li key={i}>
@@ -1505,7 +1620,7 @@ const BOUTON_LG = 'lg:h-7';
 // deck d'offense » et « + Défense » l'ont été un temps, et ne
 // ressortaient pas. Ils gardent le fond d'un bouton et le bord POINTILLÉ d'un ajout.
 
-function DeckBlock({
+export function DeckBlock({
   raisonExportOptimizer,
   onExporterOptimizer,
   reco,
@@ -1597,6 +1712,11 @@ function DeckBlock({
   // Lead porté par le slot 0 du deck recommandé.
   const leaderId = deck.slots[0]?.com2usId;
   const leaderLead = leaderId != null ? monsterByCom2us.get(leaderId)?.leaderSkill ?? null : null;
+  // La défense de la ligne repliée : pendant une recherche, la plus fiable de
+  // celles qui répondent ; sinon la première.
+  const defenseMontree: RecoCounter | undefined = hit?.counters.length
+    ? [...hit.counters].map((i) => deck.counters[i]).sort(parFiabilite)[0]
+    : deck.counters[0];
   // Lead de VITESSE du deck (slot 0), pour le raccourci « Rapide / Lent » de la
   // saisie : la VIT de fiche qui tombe sur un tick dépend du lead.
   const leadVitesse = speedLeadOf(leaderId != null ? monsterByCom2us.get(leaderId) : null);
@@ -1694,10 +1814,14 @@ function DeckBlock({
               un filet. Il était réservé à la souris.
               `max-lg:pr-1 max-lg:-mr-1` : même place pour l'icône d'élément
               de son dernier portrait (sans « +N », c'est lui qui le finit). */}
+          {/* ⚠️ Pendant une recherche, la défense montrée est celle QUI
+              RÉPOND (« quel deck bat cette défense ? »), pas la première — et
+              ses étoiles disent avec quelle fiabilité. Hors recherche, la
+              première, avec les siennes. */}
           <span className="flex min-w-0 flex-none items-center gap-1 max-lg:border-l max-lg:border-border-soft max-lg:pl-2 max-lg:pr-1 max-lg:-mr-1">
-            {deck.counters.length > 0 ? (
+            {defenseMontree ? (
               <>
-                {deck.counters[0].monsters
+                {defenseMontree.monsters
                   .filter((cm) => cm.com2usId != null || cm.name)
                   .map((cm, i) => (
                     <MiniMonster
@@ -1707,6 +1831,9 @@ function DeckBlock({
                       size={24}
                     />
                   ))}
+                {defenseMontree.fiabilite !== undefined && (
+                  <span className="ml-0.5"><EtoilesFiabilite note={defenseMontree.fiabilite} taille={10} /></span>
+                )}
                 {deck.counters.length > 1 && (
                   <span className="font-mono text-micro text-ink-dim">+{deck.counters.length - 1}</span>
                 )}
@@ -2265,6 +2392,17 @@ function CounterRow({
         )}
       </div>
     );
+    // La fiabilité, sous les portraits : la vignette garde sa largeur (cinq
+    // étoiles de 12 px tiennent sous trois portraits de 30).
+    const contenu =
+      counter.fiabilite === undefined ? (
+        portraits
+      ) : (
+        <div className="flex flex-col items-start gap-0.5">
+          {portraits}
+          <EtoilesFiabilite note={counter.fiabilite} />
+        </div>
+      );
 
     // La vignette dont la précision est ouverte prend la bordure d'accent, comme
     // le monstre sélectionné d'une équipe de siège dont on consulte les runes
@@ -2316,10 +2454,10 @@ function CounterRow({
             className="flex w-full items-center rounded-lg px-2 py-1.5 transition hoverable:brightness-110"
             title={noteOuverte ? cr.masquerPrecision : cr.voirPrecision}
           >
-            {portraits}
+            {contenu}
           </ZoneCliquable>
         ) : (
-          <div className="px-2 py-1.5">{portraits}</div>
+          <div className="px-2 py-1.5">{contenu}</div>
         )}
 
         {/* La précision, en POPOVER ancré sous SA vignette.
@@ -2444,6 +2582,14 @@ function CounterRow({
         placeholder={cr.precisionAide}
         className="mt-1.5 bg-panel py-1 text-micro"
       />
+      {/* La fiabilité de CE deck contre CETTE défense : classe les offenses
+          d'une même défense en vue Défense, la plus fiable d'abord. */}
+      <div className="mt-1.5">
+        <ChoixFiabilite
+          note={counter.fiabilite}
+          onChange={(n) => recos.setCounterFiabilite(reco.id, deckIndex, counterIndex, n)}
+        />
+      </div>
     </div>
   );
 }
@@ -2498,7 +2644,9 @@ function TableauDefenses({
   // Une offense : ses trois portraits (le leader porte son lead), le point de
   // son verdict si la recommandation est analysée, et la précision que CE deck
   // donne sur la défense (« si Galleon est en lead »).
-  const offense = (deckIndex: number, note: string) => {
+  // Sa fiabilité contre CETTE défense, en étoiles : les offenses arrivent déjà
+  // triées, la plus fiable d'abord (`vueDefenses`).
+  const offense = (deckIndex: number, note: string, fiabilite?: number) => {
     const deck = reco.decks[deckIndex];
     const st = match?.decks[deckIndex]?.status ?? 'unknown';
     const leader = monstre(deck.slots[0]?.com2usId ?? null);
@@ -2525,6 +2673,7 @@ function TableauDefenses({
           ))}
         </span>
         <span className="text-xs text-ink">{deckLabel(deck, monsterByCom2us, deckIndex)}</span>
+        {fiabilite !== undefined && <EtoilesFiabilite note={fiabilite} />}
         <Bouton aria-label={textes.commun.exporterOptimizer} icone={<IconeOptimizer size={14} />} taille="carre" trait="aucun" fond="vide"
           disabled={!!raisonsExportOptimizer[deckIndex]} title={raisonsExportOptimizer[deckIndex] ?? textes.commun.exporterOptimizer}
           onClick={() => onExporterDeckOptimizer(deck)} className={`h-7 w-7 ${ICONE_LG}`} />
@@ -2533,11 +2682,38 @@ function TableauDefenses({
     );
   };
 
+  // ⚠️ Une page à la fois (voir pagesRecos.ts), sur UNE liste : les défenses,
+  // puis chaque deck sans défense. Paginer les défenses seules laissait le bloc
+  // « Aucune défense visée » entier — sept cents offenses pour un lot dont
+  // personne n'a renseigné les défenses. Une autre vue (recherche) repart de la
+  // première page.
+  const elements = useMemo(
+    () => [
+      ...vue.defenses.map((d) => ({ defense: d, sans: null })),
+      ...vue.sansDefense.map((di) => ({ defense: null, sans: di })),
+    ],
+    [vue]
+  );
+  const [page, setPage] = useState(0);
+  useEffect(() => setPage(0), [vue]);
+  const pageAffichee = pageBornee(page, elements.length, DEFENSES_PAR_PAGE);
+  const deLaPage = tranche(elements, page, DEFENSES_PAR_PAGE);
+  const defensesDeLaPage = deLaPage.flatMap((e) => (e.defense ? [e.defense] : []));
+  const sansDeLaPage = deLaPage.flatMap((e) => (e.sans != null ? [e.sans] : []));
+
   if (vue.defenses.length === 0 && vue.sansDefense.length === 0) {
     return <p className="py-3 text-center text-xs text-ink-dim">{cr.aucunDeckDansReco}</p>;
   }
 
   return (
+    <>
+    <BarrePages
+      page={pageAffichee}
+      n={elements.length}
+      parPage={DEFENSES_PAR_PAGE}
+      onChange={setPage}
+      className="mb-1.5"
+    />
     <div
       className="grid grid-cols-1 gap-2.5 animate-[apparition_180ms_var(--ease-out)]
                  lg:gap-0 lg:overflow-hidden lg:rounded-xl lg:border lg:border-border-soft"
@@ -2550,7 +2726,7 @@ function TableauDefenses({
         <span className="label">{cr.defense}</span>
         <span className="label">{cr.offensesFortes}</span>
       </div>
-      {vue.defenses.map((d) => {
+      {defensesDeLaPage.map((d) => {
         const leader = monstre(d.monsters[0]?.com2usId ?? null);
         return (
           <div
@@ -2577,23 +2753,24 @@ function TableauDefenses({
                 {defenseLabel(d.monsters, monsterByCom2us)}
               </span>
             </div>
-            <ul className="flex flex-col gap-1.5">{d.offenses.map((o) => offense(o.deckIndex, o.note))}</ul>
+            <ul className="flex flex-col gap-1.5">{d.offenses.map((o) => offense(o.deckIndex, o.note, o.fiabilite))}</ul>
           </div>
         );
       })}
       {/* Les decks sans défense visée : pas de ligne à eux, mais ils ne
           disparaissent pas en changeant de vue. */}
-      {vue.sansDefense.length > 0 && (
+      {sansDeLaPage.length > 0 && (
         <div
           className="rounded-xl border border-dashed border-border-soft p-2.5 compact:p-1.5
                      lg:grid lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:items-center lg:gap-3
                      lg:rounded-none lg:border-0 lg:border-t lg:border-solid lg:px-3 lg:py-2"
         >
           <p className="mb-2 text-xs text-ink-dim lg:mb-0">{textes.recos.videSelon.defense}</p>
-          <ul className="flex flex-col gap-1.5">{vue.sansDefense.map((di) => offense(di, ''))}</ul>
+          <ul className="flex flex-col gap-1.5">{sansDeLaPage.map((di) => offense(di, ''))}</ul>
         </div>
       )}
     </div>
+    </>
   );
 }
 
