@@ -1089,7 +1089,7 @@ export const fr = {
     telechargement: 'Téléchargement…',
     redemarrer: 'Redémarrer',
     reessayer: 'Réessayer',
-    aucune: 'Les nouvelles versions sont cherchées au lancement.',
+    aucune: 'Les nouvelles versions sont cherchées au lancement, puis chaque jour.',
     enRecherche: "Recherche d'une nouvelle version…",
     aJour: 'Tu as la dernière version.',
     injoignable: 'Impossible de vérifier : pas de connexion ?',

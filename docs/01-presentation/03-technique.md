@@ -32,7 +32,7 @@ Code dans **`bureau/`** (hors de `src/` : il tourne dans Node) :
   fichier servi, adresse interne, lien ouvrable dehors), `navigation.ts` (liens vers le
   navigateur, navigations bloquées, « Enregistrer sous »), `fenetre.ts` (état mémorisé, pur),
   `preload.ts` ;
-- `miseAJour.ts` (mise à jour automatique, `electron-updater`) ;
+- `miseAJour.ts` + `miseAJourPur.ts` (mise à jour automatique, `electron-updater` : au lancement, puis chaque jour) ;
 - `swex.ts` + `swexPur.ts` (dossier SW Exporter : « Mon compte » suit les exports) ;
   `swexLive.ts` (le fichier live du plugin SWEX, lu au fil de l'eau : « Mon compte » en direct,
   « Mettre à jour mon compte », la version du plugin installé) ;

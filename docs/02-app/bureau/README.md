@@ -439,8 +439,19 @@ notification), `BlocApplication` (Réglages).
   fermeture. « Réessayer » si le téléchargement demandé échoue.
 - **Remise à plus tard** : le bloc « Application » des Réglages garde
   l'offre, et peut relancer une recherche (« Rechercher »).
+- **Puis chaque jour, le même mécanisme** : app restée ouverte, un contrôle
+  toutes les heures (`PAS_CONTROLE_MS`) et au réveil de la machine
+  (`powerMonitor` `resume`) relance la recherche du lancement dès que 24 h
+  (`DELAI_VERIFICATION_MS`) sont passées depuis la précédente — du
+  lancement, de « Rechercher » ou périodique ; l'heure reste en mémoire,
+  chaque lancement recherchant déjà. Une version déjà proposée (notification
+  fermée par la croix, ou téléchargement échoué) n'est pas recherchée à
+  nouveau : la même question « Nouvelle version X disponible · Mettre à
+  jour » revient, et une recherche hors ligne ne peut pas effacer l'offre.
+  Rien pendant une recherche, un téléchargement, ni une mise à jour prête.
+  Décision pure : `actionPeriodique` (`bureau/miseAJourPur.ts`).
 - **Jamais de bruit sans demande** : une recherche qui échoue au lancement
-  ne dit rien ; tout va dans `mise-a-jour.log` (dossier des données).
+  ou au contrôle quotidien ne dit rien ; tout va dans `mise-a-jour.log` (dossier des données).
 - ⚠️ **Une recherche se conclut toujours** : quand `checkForUpdates` se
   termine sans aucun événement (il rend `null` quand electron-updater
   s'estime inactif, une AppImage extraite par exemple), elle passe en
@@ -461,7 +472,7 @@ boutons restent affichés, désactivés quand il n'y a rien à faire.
 
   | Phase | Bouton | Ligne dessous |
   |-------|--------|---------------|
-  | `aucune` (ou rien reçu) | Rechercher | Les nouvelles versions sont cherchées au lancement. |
+  | `aucune` (ou rien reçu) | Rechercher | Les nouvelles versions sont cherchées au lancement, puis chaque jour. |
   | `recherche` | Recherche… (désactivé) | Recherche d'une nouvelle version… |
   | `a-jour` | Rechercher | Tu as la dernière version. |
   | `injoignable` | Rechercher | Impossible de vérifier : pas de connexion ? |
@@ -500,6 +511,6 @@ il ne touche jamais celles de l'utilisateur. Il note les liens au lieu de
 les ouvrir, range les téléchargements dans `<dossier>/telechargements` et
 les sessions dans `<dossier>/swblacksmith/sessions` (le dossier SW
 Blacksmith « choisi ») sans boîte de dialogue, simule la
-mise à jour, se contrôle de l'intérieur,
+mise à jour (et son contrôle quotidien, à une heure simulée), se contrôle de l'intérieur,
 écrit ses résultats en JSON puis quitte, sans capture d'écran ; le script
 compare et rend 1 si un verdict échoue.
