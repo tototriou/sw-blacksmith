@@ -2575,6 +2575,7 @@ export const en: Dictionnaire = {
     provenances: 'Sources',
     toutes: 'All recommendations',
     appareil: 'On this device',
+    suivis: 'Followed',
     favoris: 'Favorites',
     favorisVide: 'No favorite channel: click a channel’s star to find its recommendation here.',
     etats: { 'a-jour': 'Up to date', modifiee: 'Modified', conflit: 'Conflict', 'lecture-seule': 'Read only' },

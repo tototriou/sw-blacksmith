@@ -27,7 +27,7 @@ recommandation liée sur l'appareil :
 [synchronisation-discord.md](synchronisation-discord.md).
 
 - **Les provenances** : « Toutes les recommandations », « Sur cet appareil »,
-  puis un groupe par serveur Discord, une ligne par salon qui porte une
+  « Suivis », « Favoris » (application de bureau), puis un groupe par serveur Discord, une ligne par salon qui porte une
   recommandation, avec l'état de celle-ci (À jour, Modifiée, Conflit, Lecture
   seule ; pastilles colorées comme celles des decks). ⚠️ **À l'ordinateur, une
   colonne** à gauche du contenu, sous la barre d'outils (vue, recherche) ;
@@ -40,10 +40,17 @@ recommandation liée sur l'appareil :
   de la colonne. Quand il y a des salons, chaque carte porte sa provenance
   (le salon, ou « Sur cet appareil ») et l'état de son salon ; sans Discord,
   rien ne change sur les cartes. Un salon qui disparaît ramène à « Toutes ».
+- **La provenance « Suivis »**, juste sous « Sur cet appareil », avec son
+  compte : seulement les recommandations liées à un salon, tous salons
+  confondus, serveur par serveur dans l'ordre de la colonne. Chaque carte y
+  porte son salon et son état, comme dans « Toutes ». Sur le site comme dans
+  l'application de bureau, **dès que la colonne a un salon** — jamais vide,
+  donc ; le dernier salon détaché (depuis sa carte) la retire et ramène à
+  « Toutes » (`provenanceValide`).
 - **Favoris** : dans l'application de bureau seulement, une étoile devant
   chaque salon ; les favoris passent en tête de leur serveur. Aucun salon ne
   se masque.
-  - **La provenance « Favoris »**, juste sous « Sur cet appareil », avec son
+  - **La provenance « Favoris »**, juste sous « Suivis », avec son
     compte : les recommandations des salons étoilés seulement, serveur par
     serveur dans l'ordre de la colonne (`recosFavorites`). Chaque carte y
     porte son salon et son état, comme dans « Toutes ».

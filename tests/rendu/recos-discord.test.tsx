@@ -33,6 +33,7 @@ export function testRenduRecosDiscordPage() {
   const html = rendreRecos({ recos: [...RECOS.recos, lieeSiege] });
   const t = texteVisible(html);
   ok(t.includes('Toutes les recommandations 3') && t.includes('Sur cet appareil 2'), 'colonne : « Toutes » et « Sur cet appareil », avec leurs comptes');
+  ok(t.includes('Suivis 1'), 'colonne : « Suivis », avec le compte des recommandations liées');
   ok(t.includes('Ma guilde') && t.includes('blacksmith-reco-siege À jour'), 'colonne : le serveur, son salon et son état');
   ok(/aria-current="true"[^>]*>(?:(?!<\/button>)[\s\S])*Toutes les recommandations/.test(html), '« Toutes les recommandations » choisie à l\'ouverture');
   ok(t.includes('Contres des défenses feu') && t.includes('Defs de guilde') && t.includes('Défenses GvO'), '« Toutes » montre les recommandations locales et celle du salon');
@@ -63,7 +64,7 @@ const etatConnecte = () => ({ statut: 'connecte' as const, utilisateur: { id: 'U
 
 function props(recos: Reco[], extra: Partial<PropsProvenances> = {}): PropsProvenances {
   return {
-    groupes: groupesSalons(recos, null, ['b']), compteToutes: recos.length, compteAppareil: 0, compteFavoris: 1, provenance: { type: 'salon', salonId: 'b' },
+    groupes: groupesSalons(recos, null, ['b']), compteToutes: recos.length, compteAppareil: 0, compteSuivis: recos.length, compteFavoris: 1, provenance: { type: 'salon', salonId: 'b' },
     onChoisir: () => {}, discord: etatConnecte(), favoris: true, onFavori: () => {}, onConnecter: () => {}, onActualiser: () => {},
     onDeconnecter: () => {}, onAideInstallation: () => {}, ...extra,
   };
@@ -92,9 +93,12 @@ export function testRenduRecosDiscordComposants() {
   egal(bc.filter((x) => x.ariaLabel === 'Retirer des favoris' || x.ariaLabel === 'Mettre en favori').map((x) => [x.ariaLabel, x.presse]),
     [['Retirer des favoris', true], ['Mettre en favori', false]], 'application de bureau : une étoile par salon, le favori en tête');
   ok(!boutons(rendre(<ColonneProvenances {...props([a, b], { favoris: false })} />)).some((x) => x.ariaLabel === 'Mettre en favori'), 'sur le site : pas d\'étoile');
-  // La provenance « Favoris », juste sous « Sur cet appareil », avec son compte.
+  // « Suivis » puis « Favoris », sous « Sur cet appareil », chacune avec son compte.
   const lignes = boutons(colonne).map((x) => x.texte).filter(Boolean);
-  egal(lignes.slice(0, 3), ['Toutes les recommandations 2', 'Sur cet appareil 0', 'Favoris 1'], 'application de bureau : « Favoris » sous « Sur cet appareil », avec son compte');
+  egal(lignes.slice(0, 4), ['Toutes les recommandations 2', 'Sur cet appareil 0', 'Suivis 2', 'Favoris 1'],
+    'application de bureau : « Suivis » puis « Favoris » sous « Sur cet appareil », avec leur compte');
+  ok(texteVisible(rendre(<ColonneProvenances {...props([a, b], { favoris: false })} />)).includes('Suivis 2'), 'sur le site aussi : « Suivis »');
+  ok(!texteVisible(rendre(<ColonneProvenances {...props([], { favoris: false })} />)).includes('Suivis'), 'aucun salon lié : pas de « Suivis »');
   ok(texteVisible(rendre(<ColonneProvenances {...props([a, b], { favoris: true, compteFavoris: 0 })} />)).includes('Favoris 0'), '« Favoris » reste à 0 : la colonne ne bouge pas sous l\'étoile');
   ok(!texteVisible(rendre(<ColonneProvenances {...props([a, b], { favoris: false })} />)).includes('Favoris'), 'sur le site : pas de « Favoris »');
   ok(!colonne.includes('data-connexion-non-gardee'), 'connexion gardée : rien à dire');
