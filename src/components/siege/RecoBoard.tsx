@@ -36,7 +36,7 @@ import { useNotifier } from '../../ui/Notification';
 import { estBureau } from '../../lib/bureau';
 import { fusionEnAttente, type Fusion } from '../../lib/recoDiscord';
 import {
-  etatAffiche, groupesSalons, provenanceValide, recosDeProvenance, salonsDePublication, TOUTES,
+  etatAffiche, groupesSalons, provenanceValide, recosDeProvenance, recosFavorites, salonsDePublication, TOUTES,
   type Provenance, type SalonDePublication,
 } from '../../lib/provenancesRecos';
 import type { VersionSalon } from '../../types';
@@ -387,7 +387,7 @@ export default function RecoBoard({
   // À l'arrivée sur la page : « Toutes les recommandations » (décision du
   // 2026-11-09). Un salon qui disparaît y ramène.
   const [provenanceChoisie, setProvenance] = useState<Provenance>(TOUTES);
-  const provenance = provenanceValide(provenanceChoisie, groupes);
+  const provenance = provenanceValide(provenanceChoisie, groupes, favorisActifs);
   const deLaProvenance = useMemo(() => recosDeProvenance(all, provenance, groupes), [all, provenance, groupes]);
   const [enCours, setEnCours] = useState(false);
   const [connexionOuverte, setConnexionOuverte] = useState(false);
@@ -430,6 +430,7 @@ export default function RecoBoard({
     groupes,
     compteToutes: all.length,
     compteAppareil: all.filter((x) => !x.lien).length,
+    compteFavoris: recosFavorites(groupes).length,
     provenance,
     onChoisir: setProvenance,
     discord: discord.etat,
@@ -983,6 +984,12 @@ export default function RecoBoard({
             {r.vide7}
           </p>
         </div>
+      ) : list.length === 0 && !hits && provenance.type === 'favoris' ? (
+        // « Favoris » sans salon étoilé : dire comment le remplir, plutôt
+        // qu'une page vide qui se lit comme une perte.
+        <div className="mt-4 rounded-xl border border-dashed border-border bg-panel/40 py-8 px-6 text-center lg:mt-0" data-favoris-vide>
+          <p className="text-sm text-ink-dim">{td.favorisVide}</p>
+        </div>
       ) : list.length === 0 && hits ? (
         // ⚠️ La RECHERCHE ne renvoie rien — message distinct de celui du filtre.
         // Dire « tu n'as créé aucune recommandation » alors qu'on vient de taper
@@ -1051,8 +1058,9 @@ export default function RecoBoard({
               <RecoCard
                 sousBandeau={!!reco.lien && provenance.type === 'salon'}
                 // La provenance sur la carte, dans « Toutes », seulement quand
-                // il y a des salons : sans Discord, toutes viennent d'ici.
-                provenance={provenance.type === 'toutes' && groupes.length > 0
+                // il y a des salons : sans Discord, toutes viennent d'ici. Et
+                // dans « Favoris », qui réunit plusieurs salons.
+                provenance={(provenance.type === 'favoris' || (provenance.type === 'toutes' && groupes.length > 0))
                   ? { nom: reco.lien ? reco.lien.nomSalon : td.appareil, etat: etatAffiche(reco) }
                   : undefined}
                 onDetacher={reco.lien ? () => setADetacher(reco) : undefined}

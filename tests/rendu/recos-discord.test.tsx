@@ -63,7 +63,7 @@ const etatConnecte = () => ({ statut: 'connecte' as const, utilisateur: { id: 'U
 
 function props(recos: Reco[], extra: Partial<PropsProvenances> = {}): PropsProvenances {
   return {
-    groupes: groupesSalons(recos, null, ['b']), compteToutes: recos.length, compteAppareil: 0, provenance: { type: 'salon', salonId: 'b' },
+    groupes: groupesSalons(recos, null, ['b']), compteToutes: recos.length, compteAppareil: 0, compteFavoris: 1, provenance: { type: 'salon', salonId: 'b' },
     onChoisir: () => {}, discord: etatConnecte(), favoris: true, onFavori: () => {}, onConnecter: () => {}, onActualiser: () => {},
     onDeconnecter: () => {}, onAideInstallation: () => {}, ...extra,
   };
@@ -92,6 +92,11 @@ export function testRenduRecosDiscordComposants() {
   egal(bc.filter((x) => x.ariaLabel === 'Retirer des favoris' || x.ariaLabel === 'Mettre en favori').map((x) => [x.ariaLabel, x.presse]),
     [['Retirer des favoris', true], ['Mettre en favori', false]], 'application de bureau : une étoile par salon, le favori en tête');
   ok(!boutons(rendre(<ColonneProvenances {...props([a, b], { favoris: false })} />)).some((x) => x.ariaLabel === 'Mettre en favori'), 'sur le site : pas d\'étoile');
+  // La provenance « Favoris », juste sous « Sur cet appareil », avec son compte.
+  const lignes = boutons(colonne).map((x) => x.texte).filter(Boolean);
+  egal(lignes.slice(0, 3), ['Toutes les recommandations 2', 'Sur cet appareil 0', 'Favoris 1'], 'application de bureau : « Favoris » sous « Sur cet appareil », avec son compte');
+  ok(texteVisible(rendre(<ColonneProvenances {...props([a, b], { favoris: true, compteFavoris: 0 })} />)).includes('Favoris 0'), '« Favoris » reste à 0 : la colonne ne bouge pas sous l\'étoile');
+  ok(!texteVisible(rendre(<ColonneProvenances {...props([a, b], { favoris: false })} />)).includes('Favoris'), 'sur le site : pas de « Favoris »');
   ok(!colonne.includes('data-connexion-non-gardee'), 'connexion gardée : rien à dire');
   ok(texteVisible(rendre(<ColonneProvenances {...props([a], { discord: { ...etatConnecte(), conservable: false } })} />))
     .includes('Connexion gardée jusqu\'à la fermeture : ce système ne sait pas la chiffrer.'),

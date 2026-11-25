@@ -138,7 +138,9 @@ L'écran : [rendu-de-la-page.md](rendu-de-la-page.md#provenances-et-discord).
 ## Favoris
 
 Les salons favoris s'affichent d'abord, puis les autres, chacun dans l'ordre
-reçu (`ordonnerSalons`, `basculerFavori`). Aucun salon ne se masque. Ils
+reçu (`ordonnerSalons`, `basculerFavori`). Aucun salon ne se masque ; la
+provenance « Favoris » réunit leurs recommandations
+([rendu-de-la-page.md](rendu-de-la-page.md#provenances-et-discord)). Ils
 n'existent que dans l'application de bureau, et se gardent comme un réglage,
 même sans « Garder mes données ».
 
