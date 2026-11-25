@@ -40,11 +40,11 @@ export function testRenduSpeedTuneEncart() {
   titre('rendu · Optimizer — encart « Speed tune » d’un membre');
   const pret = membre();
   ok(pret.includes(s.titreMembre('M9101')) && pret.includes(s.zoneTitre('M9101')), 'le nom du monstre du membre dans le titre et la zone');
-  ok(pret.includes(s.verdictTenu) && ['VIT. combat', 'VIT totale', 'Effet aug. VIT', 'Set Rapide'].every((c) => pret.includes(c)),
-    'zone prête : verdict, tableau aux colonnes VIT. combat, VIT totale, Effet aug. VIT, Set Rapide');
-  ok(pret.includes('0 Non') || pret.includes('0Non'), 'classe sans artéfact : effet 0, Rapide « Non »');
   const html = rendre(<SpeedTuneEncart m={{ ...brut(), detacher: rien, rattacher: rien, recalculer: rien, restaurer: rien }} monstres={bestiaire} donnees={d} />);
-  ok(/aria-expanded="true"[^>]*>[\s\S]*?Vitesses de M9101/.test(html) && html.includes('<table'), 'le titre de la zone replie le tableau, déplié par défaut');
+  ok(pret.includes(s.verdictTenu) && /aria-expanded="false"[^>]*>[\s\S]*?Vitesses de M9101/.test(html) && !html.includes('<table'),
+    'zone prête : verdict visible, tableau replié par défaut sous son titre');
+  ok(membre({ zone: { etat: 'prete', empreinte: 'x', contrainte: { ...contrainte, setsAdmis: [] } } }).includes(s.setsImpossibles),
+    'tableau replié : « aucun jeu de sets » reste visible');
   ok(!pret.includes('Les autres lignes du plan'), 'pas d’intitulé au-dessus des autres lignes');
   ok(pret.includes(s.detacher) && !pret.includes(s.rattacher), 'attaché : « Détacher » seul');
   ok(!pret.includes(s.modifier), 'sans ouverture possible : pas de « Modifier le speed tune »');
