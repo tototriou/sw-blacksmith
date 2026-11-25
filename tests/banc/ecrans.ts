@@ -245,6 +245,29 @@ const OPT_LISTE: Etape[] = [
   { saisir: { role: 'combobox', nom: 'Rechercher un monstre…' }, texte: 'Cassie' },
   { cliquer: { role: 'option', nom: 'Cassie dark Cassie' } },
 ];
+// La même liste en contenu Guilde : le speed tune s'y règle depuis l'équipe.
+const OPT_LISTE_GUILDE: Etape[] = OPT_LISTE.map((e) => ('cliquer' in e && e.cliquer.nom === 'Arène'
+  ? { cliquer: { ...e.cliquer, nom: 'Guilde' } } : e));
+const OPT_SPEED_TUNE: Etape[] = [
+  { cliquer: bouton('Lier une équipe') },
+  { cliquer: { role: 'texte', nom: 'Vanessa', dans: '[role="dialog"]' } },
+  { cliquer: { role: 'texte', nom: 'Cassie', dans: '[role="dialog"]' } },
+  { cliquer: { role: 'button', nom: 'Lier', dans: '[role="dialog"]' } },
+  { cliquer: bouton('Régler le speed tune') },
+  // Cassie n'est pas possédée : sa vitesse de runes se saisit.
+  { saisir: { role: 'textbox', nom: 'Vitesse des runes de Cassie' }, texte: '60' },
+  { cliquer: bouton("Appliquer à l'équipe") },
+];
+// Vanessa, par son nom : le centre de la carte tombe sur son statut au doigt.
+const OPT_MEMBRE_TUNE: Etape = { cliquer: repere('[data-membre-optimizer="13812"] > :first-child') };
+const OPT_VIT_MAX: Etape[] = [
+  // La zone calculée : son tableau.
+  { attendre: { role: 'texte', nom: 'VIT. combat' }, delaiMs: 20000 },
+  // Stats de base exclues : 20 de bonus, sous le bas de la zone.
+  { saisir: { role: 'textbox', nom: 'VIT maximum' }, texte: '20' },
+  { cliquer: { role: 'texte', nom: 'Conditions' } },
+  { montrer: repere('[data-conflit-vitesse]') },
+];
 const OPT_MEMBRES = [repere('[data-membre-optimizer="13812"]'), repere('[data-membre-optimizer="19315"]')];
 const OPT_IMPORT: Etape = {
   importer: bouton('Importer les paramètres de recherche'), fichier: 'optimizer-banc-recette.json',
@@ -635,6 +658,18 @@ export const ECRANS: Ecran[] = [
         id: 'guidage-set', libelle: 'Rechercher sans set ouvre Critères et montre le set', tailles: OPT_BUREAU,
         preparation: [...OPT_LISTE, choisirReglage('Options', 'complements'), VOIR_RESULTATS, { cliquer: bouton('Rechercher') }],
         atteint: [repere('[data-colonne="criteres"]'), { role: 'texte', nom: 'Sélectionne au moins un set avant de lancer la recherche.' }],
+      },
+      {
+        // Speed tune appliqué depuis l'Optimizer (membres attachés), puis une
+        // VIT maximum sous le bas de la zone : le champ en rouge et le message.
+        id: 'vitesse-max-speed-tune', libelle: 'membre attaché au speed tune, VIT maximum sous la zone : champ rouge et message',
+        tailles: ['telephone', 'ordinateur'],
+        preparation: {
+          telephone: [{ cliquer: bouton('Gérer mes listes') }, ...OPT_LISTE_GUILDE, ...OPT_SPEED_TUNE, OPT_MEMBRE_TUNE,
+            ...OPT_VIT_MAX],
+          ordinateur: [...OPT_LISTE_GUILDE, ...OPT_SPEED_TUNE, OPT_MEMBRE_TUNE, choisirReglage('Critères', 'criteres'), ...OPT_VIT_MAX],
+        },
+        atteint: [repere('[data-conflit-vitesse]')],
       },
       {
         // Quatre onglets : depuis Options, l'onglet Résultats montre l'objectif et « Rechercher ».

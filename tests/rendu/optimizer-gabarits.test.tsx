@@ -100,6 +100,22 @@ export function testRenduOptimizerGabaritsComposants() {
   ok(['Conditions', 'Stats de base exclues', 'Tx critiq.', 'Réinitialiser les conditions'].every((t) => conditions.includes(t)), 'conditions : les libellés d\'aujourd\'hui');
   ok(/grid-cols-\[auto_auto_auto\]/.test(conditionsHtml) && !/minmax\(90px,auto\)/.test(conditionsHtml), 'conditions : variante bureau, la colonne des libellés à la largeur du plus long');
 
+  // Speed tune attaché, VIT maximum sous le bas de la zone : le champ en rouge
+  // et le message, sans quoi « Rechercher » ne fait rien sans rien dire.
+  const conflit = (p: { possedee?: boolean; conflit?: { max: number; min: number } | null; excludeBase?: boolean }) =>
+    rendre(<ConditionsBureau excludeBase={p.excludeBase ?? false} setExcludeBase={rien} baseOf={(k) => (k === 'spd' ? 100 : 0)} artifactFloorOf={() => 0}
+      minStats={{}} maxStats={{ spd: 150 }} setMinStats={rien} setMaxStats={rien} vitessePossedee={p.possedee ?? true} conflitVitesse={p.conflit} />);
+  const k = fr.optimizer.conditions;
+  const enConflit = conflit({ conflit: { max: 150, min: 180 } });
+  ok(texteVisible(enConflit).includes(k.vitesseMaxSousSpeedTune('150', '180')) && enConflit.includes('role="alert"'),
+    'VIT max sous le speed tune : le message, avec les deux valeurs');
+  ok(enConflit.includes('border-bad/50') && enConflit.includes('text-bad'), '… et le champ VIT maximum en rouge');
+  ok(texteVisible(conflit({ conflit: { max: 150, min: 180 }, excludeBase: true })).includes(k.vitesseMaxSousSpeedTune('50', '80')),
+    '… en mode bonus, les valeurs du champ (base retirée)');
+  const sansConflit = conflit({ conflit: null });
+  ok(!sansConflit.includes('role="alert"') && !sansConflit.includes('border-bad/50'), 'sans conflit : ni message ni rouge');
+  ok(!conflit({ possedee: false, conflit: { max: 150, min: 180 } }).includes('role="alert"'), 'détaché : la VIT minimum se saisit, pas de message');
+
   // État de mon monstre : buffs et lead, sans les sets d'aura.
   const etat = rendre(<EtatMonstreEssentiels setup={{ ...DEFAULT_DAMAGE_SETUP, atkBuff: true }} maj={rien} etroit={false}
     rappelsBuffs={[]} />);

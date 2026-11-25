@@ -3454,6 +3454,7 @@ export const fr = {
       reinitialiser: 'Réinitialiser les conditions',
       vitesseSpeedTune: 'La VIT minimum est tenue par le speed tune du membre ; la détacher la rend saisissable.',
       vitesseSpeedTuneCourt: 'Speed tune',
+      vitesseMaxSousSpeedTune: (max: string, min: string) => `La VIT maximum (${max}) est sous le minimum imposé par le speed tune (${min}) : la recherche ne peut pas partir. Relève-la ou vide le champ.`,
       parSort: 'Précision par sort',
       parSortAide:
         'Sorts cochés, le minimum de Précision porte sur chacun d’eux plutôt que sur la stat : la Précision de la fiche (auras comprises si elles comptent) plus la ligne « [Comp.N] Aug. Précision » de l’artéfact de type. Le maximum reste sur la stat. Le jeu ne donne cette ligne qu’aux sorts 1 à 3.',
