@@ -5,7 +5,8 @@ import { memeProvenance, type EtatAffiche, type GroupeServeur, type Provenance }
 import type { EtatDiscord } from '../../../hooks/useDiscord';
 
 // Les provenances de la page Recommandations : « Toutes les recommandations »,
-// « Sur cet appareil », puis un groupe par serveur Discord et ses salons, et le
+// « Sur cet appareil », « Favoris » (application de bureau), puis un groupe
+// par serveur Discord et ses salons, et le
 // compte Discord en pied. À l'ordinateur, une COLONNE à gauche du contenu ; au
 // téléphone, le même bloc en tête de la page, à plat
 // (docs/02-app/siege/feat-recommandations/rendu-de-la-page.md).
@@ -34,6 +35,7 @@ export interface PropsProvenances {
   groupes: GroupeServeur[];
   compteToutes: number;
   compteAppareil: number;
+  compteFavoris: number;
   provenance: Provenance;
   onChoisir: (p: Provenance) => void;
   discord: EtatDiscord;
@@ -82,6 +84,14 @@ export function ListeProvenances(p: PropsProvenances) {
         icone={<LayoutList size={14} />} nom={t.toutes} fin={<Compteur n={p.compteToutes} />} />
       <Ligne auDoigt={p.auDoigt} choisie={p.provenance.type === 'appareil'} onClick={() => p.onChoisir({ type: 'appareil' })}
         icone={<Smartphone size={14} />} nom={t.appareil} fin={<Compteur n={p.compteAppareil} />} />
+      {/* « Favoris » : les recommandations des salons étoilés. ⚠️ Toujours
+          là quand les favoris existent (application de bureau), même à 0 :
+          apparaître à la première étoile, ou disparaître à la dernière
+          retirée, décalerait les salons sous le clic de l'étoile. */}
+      {p.favoris && (
+        <Ligne auDoigt={p.auDoigt} choisie={p.provenance.type === 'favoris'} onClick={() => p.onChoisir({ type: 'favoris' })}
+          icone={<Star size={14} />} nom={t.favoris} fin={<Compteur n={p.compteFavoris} />} />
+      )}
       {p.groupes.map((g) => (
         <div key={g.serveurId} className="mt-2 flex flex-col gap-0.5" data-serveur={g.serveurId}>
           <div className="flex items-center gap-1.5 px-2 pb-0.5 label">

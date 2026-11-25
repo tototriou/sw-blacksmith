@@ -2606,6 +2606,11 @@ export const fr = {
       defense: { label: 'Défense à taper', hint: 'Uniquement dans les défenses visées — quels decks la battent' },
       offense: { label: 'Offense à runer', hint: 'Uniquement dans les monstres des decks — qui joue ce monstre' },
     },
+    tri: 'Tri',
+    tris: {
+      ordre: { label: 'Ordre des recos', hint: 'Les decks dans l’ordre de leur recommandation' },
+      fiabilite: { label: 'Fiabilité', hint: 'Le deck le plus fiable contre la défense cherchée d’abord' },
+    },
     videSelon: {
       all: 'Aucun deck ni défense visée',
       defense: 'Aucune défense visée',
@@ -2699,6 +2704,8 @@ export const fr = {
     provenances: 'Provenances',
     toutes: 'Toutes les recommandations',
     appareil: 'Sur cet appareil',
+    favoris: 'Favoris',
+    favorisVide: 'Aucun salon en favori : clique l’étoile d’un salon pour retrouver ici sa recommandation.',
     etats: { 'a-jour': 'À jour', modifiee: 'Modifiée', conflit: 'Conflit', 'lecture-seule': 'Lecture seule' },
     etatsPhrase: {
       'a-jour': 'identique à celle du salon',
@@ -2880,6 +2887,8 @@ export const fr = {
     consignes: 'consignes',
     replierTous: 'Replier tous les decks',
     deplierTous: 'Déplier tous les decks',
+    // La page affichée d'une liste paginée (decks, analyse, défenses).
+    plage: (debut: number, fin: number, total: number) => `${debut}–${fin} sur ${total}`,
     colOffense: 'Offense',
     colFortContre: 'Fort contre',
     colVerdict: 'Verdict',
@@ -2937,6 +2946,13 @@ export const fr = {
     retirerMonstre: 'Retirer ce monstre',
     retirerDefense: 'Retirer cette défense',
     precisionAide: 'Précision (ex. « si le Chloe est en lead »)…',
+    fiabilite: 'Fiabilité',
+    fiabiliteNote: (note: string) => `Fiabilité ${note} sur 5`,
+    fiabiliteNonNotee: 'Non notée',
+    fiabiliteNoter: (note: string) => `Noter ${note} sur 5`,
+    fiabiliteMoins: 'Une demi-étoile de moins',
+    fiabilitePlus: 'Une demi-étoile de plus',
+    fiabiliteEffacer: 'Retirer la note',
     aucunDeckDansReco: 'Aucun deck dans cette recommandation.',
     offensesFortes: 'Offenses fortes contre elle',
     // « Tick rapide / Tick lent » : la VIT de fiche qui tombe pile sur le tick.

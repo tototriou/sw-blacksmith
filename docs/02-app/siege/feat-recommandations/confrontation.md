@@ -78,6 +78,13 @@ Un **encart de synthèse** sous l'en-tête, visible **même recommandation repli
     `Bella — set Violent manquant · artéfact d'attribut : Dégâts sur l'Eau +X% absent · VIT 117 au lieu de 212`
 - aucun deck rempli → « Rien à analyser ».
 
+⚠️ **Une page de 50 lignes à la fois** (`LIGNES_ANALYSE_PAR_PAGE`,
+[pagesRecos.ts](../../../../src/lib/pagesRecos.ts)) : un lot de centaines de
+decks donnait autant de lignes. La barre de pages (« 1–50 sur 700 » et le
+`Pager`) se pose **au-dessus de la liste**, sous les filtres de verdict ;
+changer de filtre repart de la première page. Sous 51 lignes, rien ne change.
+Voir [interactions.md](interactions.md#une-page-de-decks-à-la-fois).
+
 #### Ordre de la liste — ⚠️ ROUGE → ORANGE → VERT
 
 Du plus urgent au plus tranquille : **monstre manquant**, **à revoir**, **à

@@ -398,10 +398,12 @@ import testSiegeStatut from './siege-statut.test';
 import testSiegePastille from './siege-pastille.test';
 import testSiegeSlotSuivant from './siege-slot-suivant.test';
 import testRecoDefenses from './reco-defenses.test';
+import testRecoFiabilite from './reco-fiabilite.test';
 import { testRecoFusionCorrespondance, testRecoFusionDecks, testRecoFusionChef, testRecoFusionImport, testRecoFusionSource } from './reco-fusion.test';
 import { testRenduRecoFusionChoix, testRenduRecoFusionStockage } from './rendu/reco-fusion.test';
 import { testApercuDeuxLignesRecherche, testApercuDeuxLignesBorne, testApercuDeuxLignesNonMonotone, testApercuDeuxLignesFinQuiGrandit, testApercuDeuxLignesRangees } from './apercu-deux-lignes.test';
 import { testRenduRecosApercuCentainesDeDecks } from './rendu/apercu-recos.test';
+import { testPagesRecos, testPagesRecosDeckVise } from './pages-recos.test';
 import { testDiscordDroits, testDiscordSession, testDiscordRecoSalon, testDiscordContributeursFormat, testDiscordRouteurConnexion,
   testDiscordRouteurBureau, testDiscordRouteurSources, testDiscordRouteurSalonEtPublication, testDiscordRouteurToutEtLimites } from './discord-service.test';
 import { testCaptureImage, testCapturePortraits, testCaptureChiffres, testCaptureEcran, testCapturesReelles, testSpeedtuneAnalyse,
@@ -443,7 +445,7 @@ import { testRenduComparaisonHistorique } from './rendu/comparaison-historique.t
 import { testRenduIcones } from './rendu/icones.test';
 import { testRenduAttaqueConjointeEcran } from './rendu/attaque-conjointe-ecran.test';
 import { testRenduEffetsEntreCoupsEcran, testRenduEffetsEntreCoupsAnglais } from './rendu/effets-entre-coups-ecran.test';
-import { testRenduRecosPage, testRenduRecosEnTete, testRenduRecosLigneDeckReduite, testRenduRecosDeploiement, testRenduRecosEdition, testRenduRecosVueDefense, testRenduRecosTicks, testRenduRecosAnnulerEdition, testRenduRecosStatsEnTotal } from './rendu/recos.test';
+import { testRenduRecosPage, testRenduRecosEnTete, testRenduRecosLigneDeckReduite, testRenduRecosDeploiement, testRenduRecosEdition, testRenduRecosVueDefense, testRenduRecosFiabilite, testRenduRecosGrosLot, testRenduRecosTicks, testRenduRecosAnnulerEdition, testRenduRecosStatsEnTotal } from './rendu/recos.test';
 import testAnnulerEdition from './annuler-edition.test';
 import { testRenduRunesResume, testRenduRunesListe, testRenduRunesCourbes, testRenduRunesComparaison, testRenduRunesOptimisation, testRenduRunesAVenir, testRenduRunesFiltresLigne, testRenduRunesTriOnglets, testRenduRunesResumeSouris, testRenduRunesListeSouris, testRenduRunesVuesSouris } from './rendu/runes.test';
 import { testRenduCompteMonstres, testRenduCompteArtefactsResume, testRenduCompteArtefactsListe, testRenduCompteArtefactsTop, testRenduCompteSouris, testRenduCompteEffacerFiltres } from './rendu/compte.test';
@@ -606,6 +608,7 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testSiegePastille', testSiegePastille],
   ['testSiegeSlotSuivant', testSiegeSlotSuivant],
   ['testRecoDefenses', testRecoDefenses],
+  ['testRecoFiabilite', testRecoFiabilite],
   ['testDiscordDroits', testDiscordDroits],
   ['testDiscordSession', testDiscordSession],
   ['testDiscordRecoSalon', testDiscordRecoSalon],
@@ -648,6 +651,8 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testApercuDeuxLignesFinQuiGrandit', testApercuDeuxLignesFinQuiGrandit],
   ['testApercuDeuxLignesRangees', testApercuDeuxLignesRangees],
   ['testRenduRecosApercuCentainesDeDecks', testRenduRecosApercuCentainesDeDecks],
+  ['testPagesRecos', testPagesRecos],
+  ['testPagesRecosDeckVise', testPagesRecosDeckVise],
   ['testSiegePartage', testSiegePartage],
   ['testMarque', testMarque],
   ['testRenduSiegeDefense', testRenduSiegeDefense],
@@ -661,6 +666,8 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testRenduRecosDeploiement', testRenduRecosDeploiement],
   ['testRenduRecosEdition', testRenduRecosEdition],
   ['testRenduRecosVueDefense', testRenduRecosVueDefense],
+  ['testRenduRecosFiabilite', testRenduRecosFiabilite],
+  ['testRenduRecosGrosLot', testRenduRecosGrosLot],
   ['testRenduRecosTicks', testRenduRecosTicks],
   ['testRenduRecosStatsEnTotal', testRenduRecosStatsEnTotal],
   ['testRenduRecosAnnulerEdition', testRenduRecosAnnulerEdition],

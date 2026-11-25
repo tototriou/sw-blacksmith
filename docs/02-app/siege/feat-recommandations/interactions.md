@@ -162,6 +162,45 @@ Indépendamment du repli de la carte, **chaque deck a son propre chevron**.
   Replier puis rouvrir la recommandation **conserve** les decks qu'on avait
   ouverts.
 
+### Une page de decks à la fois
+
+⚠️ **Une recommandation n'a pas de taille plafond** : un lot importé d'un salon
+Discord peut porter des centaines de decks. Les monter tous d'un coup
+(portraits, pastilles, actions de chaque ligne) figeait la page et faisait
+grimper la mémoire — 700 decks rendaient l'application inutilisable. Le calcul
+est dans [pagesRecos.ts](../../../../src/lib/pagesRecos.ts) (pur, testé :
+`pages-recos`).
+
+- **20 decks par page** (`DECKS_PAR_PAGE`), aux deux formats. Sous 21 decks,
+  **rien ne change** : aucune pagination n'apparaît.
+- La barre de pages : **« 21–40 sur 700 »** puis le `Pager` de l'inventaire de
+  runes (flèches, champ pour aller directement à une page — à 35 pages,
+  avancer d'une flèche à la fois est intenable). **Au-dessus du tableau**, à
+  gauche de « Déplier tous les decks », sur la même rangée : elle ne bouge
+  pas quand la page change de hauteur. **Répétée sous le tableau**, sauf en
+  édition, où le pied d'ajout des decks est collé au tableau.
+- ⚠️ **Ce qui se pagine, ce sont les decks AFFICHÉS** : tous, ou pendant une
+  recherche ceux qu'elle trouve. Une autre recherche repart de la première
+  page. `di` reste l'index réel du deck (match, édition, repli).
+- ⚠️ **Le deck visé est toujours rendu** :
+  - une ligne du résumé d'analyse ouvre **la page qui porte son deck**
+    (`pageDuDeck` — sa position parmi les decks affichés, pas son index) avant
+    d'y faire défiler ;
+  - le deck en édition aussi : « Ajouter un deck vide » ou « Importer un deck
+    d'offense » ouvre **la dernière page**, où le nouveau deck arrive.
+- Une liste qui raccourcit (deck supprimé) **retombe sur sa dernière page**
+  (`pageBornee`) au lieu d'afficher une page vide.
+- « Déplier tous les decks » déplie **tous** les decks affichés (pendant une
+  recherche, ceux qu'elle trouve), pas seulement la page : on les retrouve
+  dépliés en changeant de page.
+- **Repliée**, l'aperçu d'une ligne ne cherche sa place que parmi les **60
+  premières pastilles** (`PLAFOND_APERCU` d'`ApercuDeuxLignes`) — deux lignes
+  n'en tiennent jamais autant — et le « +N » compte toutes les autres. Son
+  premier essai les rendait toutes, sept cents pour sept cents decks.
+- Même règle pour le **résumé d'analyse** (50 lignes par page, voir
+  [confrontation.md](confrontation.md#ce-que-lanalyse-affiche)) et la **vue
+  Défense** (20 par page, voir [modele.md](modele.md#vue-attaque--défense)).
+
 - **Créer une recommandation** → carte ajoutée en fin de liste **avec un deck
   vide**, **ouverte en édition** (recommandation **et** son deck), et **scroll
   automatique** jusqu'à elle (comme « Ajouter une équipe », voir

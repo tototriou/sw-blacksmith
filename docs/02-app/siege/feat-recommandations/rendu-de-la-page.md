@@ -43,6 +43,16 @@ recommandation liée sur l'appareil :
 - **Favoris** : dans l'application de bureau seulement, une étoile devant
   chaque salon ; les favoris passent en tête de leur serveur. Aucun salon ne
   se masque.
+  - **La provenance « Favoris »**, juste sous « Sur cet appareil », avec son
+    compte : les recommandations des salons étoilés seulement, serveur par
+    serveur dans l'ordre de la colonne (`recosFavorites`). Chaque carte y
+    porte son salon et son état, comme dans « Toutes ».
+  - ⚠️ **Toujours affichée dans l'application de bureau, même à 0** :
+    apparaître à la première étoile, ou disparaître à la dernière retirée,
+    décalerait les salons sous le clic de l'étoile. Vide, la page dit comment
+    la remplir (« clique l'étoile d'un salon… »).
+  - Sur le site, pas de favoris, donc pas de « Favoris » : une provenance
+    « Favoris » y retombe sur « Toutes » (`provenanceValide`).
 - **Le compte Discord, en pied de la colonne et du bloc du téléphone** : connecté,
   le nom, « Installer le bot sur ton serveur » (icône d'aide), « Actualiser »
   (relit les salons) et « Se déconnecter », avec l'heure de la dernière
