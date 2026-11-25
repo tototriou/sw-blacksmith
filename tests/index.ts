@@ -447,7 +447,7 @@ import { testRenduAttaqueConjointeEcran } from './rendu/attaque-conjointe-ecran.
 import { testRenduEffetsEntreCoupsEcran, testRenduEffetsEntreCoupsAnglais } from './rendu/effets-entre-coups-ecran.test';
 import { testRenduRecosPage, testRenduRecosEnTete, testRenduRecosLigneDeckReduite, testRenduRecosDeploiement, testRenduRecosEdition, testRenduRecosVueDefense, testRenduRecosFiabilite, testRenduRecosGrosLot, testRenduRecosTicks, testRenduRecosAnnulerEdition, testRenduRecosStatsEnTotal } from './rendu/recos.test';
 import testAnnulerEdition from './annuler-edition.test';
-import { testRenduRunesResume, testRenduRunesListe, testRenduRunesCourbes, testRenduRunesComparaison, testRenduRunesOptimisation, testRenduRunesAVenir, testRenduRunesFiltresLigne, testRenduRunesTriOnglets, testRenduRunesResumeSouris, testRenduRunesListeSouris, testRenduRunesVuesSouris } from './rendu/runes.test';
+import { testRenduRunesResume, testRenduRunesListe, testRenduRunesCourbes, testRenduRunesComparaison, testRenduRunesOptimisation, testRenduRunesOptimisationPalierEtExclusion, testRenduRunesFenetreExclues, testRenduRunesAVenir, testRenduRunesFiltresLigne, testRenduRunesTriOnglets, testRenduRunesResumeSouris, testRenduRunesListeSouris, testRenduRunesVuesSouris } from './rendu/runes.test';
 import { testRenduCompteMonstres, testRenduCompteArtefactsResume, testRenduCompteArtefactsListe, testRenduCompteArtefactsTop, testRenduCompteSouris, testRenduCompteEffacerFiltres } from './rendu/compte.test';
 import { testRenduSpeedTuneVide, testRenduSpeedTuneRta, testRenduSpeedTuneCamps, testRenduSpeedTuneAnalyse, testRenduSpeedTuneAppliquer, testRenduSpeedTuneExportArene } from './rendu/speed-tune.test';
 import { testRenduOptimizerVide, testRenduOptimizerMonstre, testRenduOptimizerReglages, testRenduTelephoneOptimizer, testRenduOptimizerPrecisionParSort } from './rendu/optimizer.test';
@@ -677,6 +677,8 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testRenduRunesCourbes', testRenduRunesCourbes],
   ['testRenduRunesComparaison', testRenduRunesComparaison],
   ['testRenduRunesOptimisation', testRenduRunesOptimisation],
+  ['testRenduRunesOptimisationPalierEtExclusion', testRenduRunesOptimisationPalierEtExclusion],
+  ['testRenduRunesFenetreExclues', testRenduRunesFenetreExclues],
   ['testRenduRunesAVenir', testRenduRunesAVenir],
   ['testRenduRunesFiltresLigne', testRenduRunesFiltresLigne],
   ['testRenduRunesTriOnglets', testRenduRunesTriOnglets],

@@ -181,7 +181,7 @@ dans la carte).
 
 **Mon compte** — dans `src/components/account/`, `RunesSection.tsx` et `ArtifactsSection.tsx`
 sont les deux racines ; dessous : `RunesList`, `RunesSummary` + `BuildsRapides`, `RunesCurve` +
-`CurveChart` + `curveColors`, `RunesCompare`, `RunesOptim`, `SetFilter`, `SlotFilter`,
+`CurveChart` + `curveColors`, `RunesCompare`, `RunesOptim` + `FenetreRunesExclues`, `SetFilter`, `SlotFilter`,
 `SubSearchBar` + `SubSearchDialog`, `Pager`, `SummaryBits`, `ArtifactsList`, `ArtifactsSummary`,
 `ArtifactsTop`, `ObjectifsSection` (la section Objectifs : ses vues Résumé, Runes et Artéfacts
 dans `VueObjectifs`, son Réglage dans `src/components/ReglagesObjectifs.tsx`) ; « Mes équipes » dans `src/components/account/equipes/` : `EquipesSection` (racine), `CarteEquipe`,
