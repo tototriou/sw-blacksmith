@@ -1,11 +1,12 @@
-import { Hash, HelpCircle, LayoutList, LogOut, RefreshCw, Smartphone, Star, AlertTriangle } from 'lucide-react';
+import { Hash, HelpCircle, LayoutList, Link, LogOut, RefreshCw, Smartphone, Star, AlertTriangle } from 'lucide-react';
 import { Bouton, BoutonIcone, ZoneCliquable } from '../../../ui';
 import { useTraduction } from '../../../hooks/useLangue';
 import { memeProvenance, type EtatAffiche, type GroupeServeur, type Provenance } from '../../../lib/provenancesRecos';
 import type { EtatDiscord } from '../../../hooks/useDiscord';
 
 // Les provenances de la page Recommandations : « Toutes les recommandations »,
-// « Sur cet appareil », « Favoris » (application de bureau), puis un groupe
+// « Sur cet appareil », « Suivis » (dès qu'un salon est lié), « Favoris »
+// (application de bureau), puis un groupe
 // par serveur Discord et ses salons, et le
 // compte Discord en pied. À l'ordinateur, une COLONNE à gauche du contenu ; au
 // téléphone, le même bloc en tête de la page, à plat
@@ -35,6 +36,7 @@ export interface PropsProvenances {
   groupes: GroupeServeur[];
   compteToutes: number;
   compteAppareil: number;
+  compteSuivis: number;
   compteFavoris: number;
   provenance: Provenance;
   onChoisir: (p: Provenance) => void;
@@ -84,6 +86,14 @@ export function ListeProvenances(p: PropsProvenances) {
         icone={<LayoutList size={14} />} nom={t.toutes} fin={<Compteur n={p.compteToutes} />} />
       <Ligne auDoigt={p.auDoigt} choisie={p.provenance.type === 'appareil'} onClick={() => p.onChoisir({ type: 'appareil' })}
         icone={<Smartphone size={14} />} nom={t.appareil} fin={<Compteur n={p.compteAppareil} />} />
+      {/* « Suivis » : les recommandations liées à un salon, tous salons
+          confondus. Seulement quand la colonne a des salons, comme leurs
+          groupes : aucun clic de la colonne ne la fait paraître ni
+          disparaître (on détache depuis la carte). */}
+      {p.groupes.length > 0 && (
+        <Ligne auDoigt={p.auDoigt} choisie={p.provenance.type === 'suivis'} onClick={() => p.onChoisir({ type: 'suivis' })}
+          icone={<Link size={14} />} nom={t.suivis} fin={<Compteur n={p.compteSuivis} />} />
+      )}
       {/* « Favoris » : les recommandations des salons étoilés. ⚠️ Toujours
           là quand les favoris existent (application de bureau), même à 0 :
           apparaître à la première étoile, ou disparaître à la dernière

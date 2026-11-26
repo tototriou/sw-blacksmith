@@ -2727,6 +2727,7 @@ export const fr = {
     provenances: 'Provenances',
     toutes: 'Toutes les recommandations',
     appareil: 'Sur cet appareil',
+    suivis: 'Suivis',
     favoris: 'Favoris',
     favorisVide: 'Aucun salon en favori : clique l’étoile d’un salon pour retrouver ici sa recommandation.',
     etats: { 'a-jour': 'À jour', modifiee: 'Modifiée', conflit: 'Conflit', 'lecture-seule': 'Lecture seule' },

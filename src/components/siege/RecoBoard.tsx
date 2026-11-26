@@ -430,6 +430,7 @@ export default function RecoBoard({
     groupes,
     compteToutes: all.length,
     compteAppareil: all.filter((x) => !x.lien).length,
+    compteSuivis: groupes.reduce((n, g) => n + g.salons.length, 0),
     compteFavoris: recosFavorites(groupes).length,
     provenance,
     onChoisir: setProvenance,
@@ -1059,8 +1060,8 @@ export default function RecoBoard({
                 sousBandeau={!!reco.lien && provenance.type === 'salon'}
                 // La provenance sur la carte, dans « Toutes », seulement quand
                 // il y a des salons : sans Discord, toutes viennent d'ici. Et
-                // dans « Favoris », qui réunit plusieurs salons.
-                provenance={(provenance.type === 'favoris' || (provenance.type === 'toutes' && groupes.length > 0))
+                // dans « Suivis » et « Favoris », qui réunissent plusieurs salons.
+                provenance={(provenance.type === 'suivis' || provenance.type === 'favoris' || (provenance.type === 'toutes' && groupes.length > 0))
                   ? { nom: reco.lien ? reco.lien.nomSalon : td.appareil, etat: etatAffiche(reco) }
                   : undefined}
                 onDetacher={reco.lien ? () => setADetacher(reco) : undefined}
