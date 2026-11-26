@@ -174,13 +174,13 @@ export function brancherSwex(fenetre: BrowserWindow, racine: string, preuve?: Pr
   }
 
   // Donne l'export suivi à la page, s'il y a lieu (`aDonner`).
-  async function donner(pageSansCompte: boolean) {
+  async function donner(pageIncomplete: boolean) {
     const { dossier, fichier } = reglage;
     if (!pagePrete || !dossier || !fichier) return;
     const chemin = join(dossier, fichier);
     try {
       const modifie = (await promises.stat(chemin)).mtimeMs;
-      const { donner: oui, nouveau } = aDonner(modifie, reglage.dernierLu, pageSansCompte);
+      const { donner: oui, nouveau } = aDonner(modifie, reglage.dernierLu, pageIncomplete);
       if (!oui) return;
       const texte = await promises.readFile(chemin, 'utf8');
       envoyer('bureau:swex-export', { texte, modifie, nouveau, fichier, complet });
@@ -555,10 +555,10 @@ export function brancherSwex(fenetre: BrowserWindow, racine: string, preuve?: Pr
 
   // La page est prête (données des monstres chargées, compte conservé relu) :
   // l'export suivi peut lui être donné.
-  ipcMain.on('bureau:swex-pret', (e, pageSansCompte: unknown, pageSansDimension: unknown) => {
+  ipcMain.on('bureau:swex-pret', (e, pageIncomplete: unknown, pageSansDimension: unknown) => {
     if (!deLaPage(e)) return;
     pagePrete = true;
-    void donner(pageSansCompte === true);
+    void donner(pageIncomplete === true);
     void donnerDimension(pageSansDimension === true);
     void suivreDirect(true);
   });
