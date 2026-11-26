@@ -84,7 +84,7 @@ lecteur côté page (`estBureau()` = l'objet présent, avec `bureau: true`).
 | `miseAJour.rechercher()`, `telecharger()`, `redemarrer()` | `bureau:rechercher`, `bureau:telecharger`, `bureau:redemarrer` | page → bureau |
 | `swex.etat()`, `choisirDossier()`, `choisirInvocateur(fichier)`, `aucunInvocateur()`, `oublier()` | `bureau:swex-etat`, `bureau:swex-choisir-dossier`, `bureau:swex-choisir-invocateur`, `bureau:swex-aucun-invocateur`, `bureau:swex-oublier` (`invoke`) | rendent l'état du réglage |
 | `swex.surEtat(rappel)`, `swex.surExport(rappel)` | `bureau:swex-etat`, `bureau:swex-export` | bureau → page |
-| `swex.pret(pageSansCompte)`, `swex.lu(modifie)` | `bureau:swex-pret`, `bureau:swex-lu` | page → bureau |
+| `swex.pret(pageIncomplete, pageSansDimension)`, `swex.lu(modifie)` | `bureau:swex-pret`, `bureau:swex-lu` | page → bureau |
 | `swex.etatDirect()`, `swex.activerDirect(oui)`, `swex.mettreAJour()` | `bureau:swex-direct-etat`, `bureau:swex-direct-activer`, `bureau:swex-mettre-a-jour` (`invoke`) | le direct du plugin SWEX : son état, l'interrupteur, le compte du fichier live sous forme d'export ([feat-swex-direct.md](feat-swex-direct.md)) |
 | `swex.surEtatDirect(rappel)`, `swex.surLignesDirect(rappel)` | `bureau:swex-direct-etat`, `bureau:swex-direct-lignes` | bureau → page |
 | `swex.historique()`, `swex.etatHistorique(cle)` | `bureau:swex-historique`, `bureau:swex-historique-etat` (`invoke`) | l'archive du compte du plugin SWEX, de l'invocateur suivi : la liste des états (sans rien décompresser), puis les runes brutes d'un état ([comparaison.md](../compte/feat-runes/comparaison.md), « Historique ») |
@@ -281,9 +281,10 @@ Le compte tenu à jour **pendant la partie** par le plugin SWEX du dépôt :
 - **Ce qui est importé** : **tout** (prépa RTA, siège, « Mon compte »)
   pour l'export qui suit le choix d'un invocateur — ou d'un dossier qui en
   désigne un d'office —, après la proposition de sauvegarder la session si
-  le travail a changé ; puis **« Mon compte » seulement** pour chaque export
-  suivant (et l'arène classique si elle est vide : rattrapage), jamais la
-  prépa RTA ni le siège (voir [transverse/feat-import-compte/bouton-import.md](../transverse/feat-import-compte/bouton-import.md), § « Le dossier SW
+  le travail a changé ; puis **« Mon compte »** pour chaque export suivant,
+  et **chaque page vide** (prépa RTA, défenses et attaques de siège, chaque
+  côté de l'arène classique) remplie de l'export — jamais une page pleine
+  (voir [transverse/feat-import-compte/bouton-import.md](../transverse/feat-import-compte/bouton-import.md), § « Le dossier SW
   Exporter »). Le processus principal marque `complet` l'export qui suit un
   choix (`bureau:swex-export`), jusqu'au `bureau:swex-lu` de la page.
 - ⚠️ **Un import manuel lâche l'invocateur suivi** (`aucunInvocateur`,
@@ -297,8 +298,10 @@ Le compte tenu à jour **pendant la partie** par le plugin SWEX du dépôt :
   l'invocateur suivi s'y importe en entier, comme après un choix : elle n'a
   rien à perdre, et « Mon compte » seul laissait la prépa et le siège vides.
 - **Quand** : au chargement de la page, si l'export est plus récent que le
-  dernier appliqué (annoncé), ou si la page n'a pas de compte (conservation
-  refusée : relu en silence, en entier si la page est vide) ; puis à chaque changement du dossier, **1,5 s
+  dernier appliqué (annoncé), ou si la page est incomplète — sans compte
+  (conservation refusée), ou avec une page vide que l'export sait remplir :
+  relu en silence, en entier si la page n'a ni compte ni équipes, sinon pour
+  ses pages vides (`pageIncomplete`, `aDonner`) ; puis à chaque changement du dossier, **1,5 s
   après la dernière écriture** (SW Exporter écrit plusieurs Mo).
 - ⚠️ **La page confirme ce qu'elle a appliqué** : un export illisible (à
   moitié écrit) ne passe pas « lu » et sera redonné au prochain changement.

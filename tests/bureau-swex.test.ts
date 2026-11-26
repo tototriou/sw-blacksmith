@@ -47,8 +47,8 @@ export default function testBureauSwex() {
   titre('bureau · SW Exporter — donner l’export à la page, ou pas');
   egal(aDonner(1000, null, false), { donner: true, nouveau: true }, 'jamais lu : donné, annoncé');
   egal(aDonner(2000, 1000, false), { donner: true, nouveau: true }, 'plus récent que le dernier lu : donné, annoncé');
-  egal(aDonner(1000, 1000, false), { donner: false, nouveau: false }, 'déjà lu, la page a son compte : rien');
-  egal(aDonner(1000, 1000, true), { donner: true, nouveau: false }, 'déjà lu, page SANS compte : redonné en silence');
+  egal(aDonner(1000, 1000, false), { donner: false, nouveau: false }, 'déjà lu, la page a son compte et ses pages : rien');
+  egal(aDonner(1000, 1000, true), { donner: true, nouveau: false }, 'déjà lu, page INCOMPLÈTE (sans compte, ou une page vide) : redonné en silence');
 
   titre('bureau · SW Exporter — ce que montre le bloc « Application »');
   const aucun = presentationSwex(null, fr);
@@ -85,6 +85,7 @@ export default function testBureauSwex() {
   ok(/fichier, dernierLu: null, dimensionLue: null \};\s*complet = true;/.test(principal), 'bureau/swex.ts : choisir un invocateur rend l’export suivant complet, et sa saison dimensionnelle à redonner');
   ok(/dernierLu: modifie \};\s*complet = false;/.test(principal), 'bureau/swex.ts : appliqué par la page, l’export suivant redevient « Mon compte »');
   ok(principal.includes("envoyer('bureau:swex-export', { texte, modifie, nouveau, fichier, complet });"), 'bureau/swex.ts : `complet` part avec l’export');
+  ok(/pagePrete = true;\s*void donner\(pageIncomplete === true\);/.test(principal), 'bureau/swex.ts : à la page prête, l’export déjà lu est redonné si elle est incomplète');
 }
 
 // L'arène dimensionnelle : la saison tenue par le plugin SWEX, lue dans son

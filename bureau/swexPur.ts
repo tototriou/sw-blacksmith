@@ -159,7 +159,7 @@ export function pluginAMontrer(installes: PluginLu[], servi: PluginLu): { instal
 // d'une heure serveur (`tvalue`) postérieure à la dernière appliquée — ou
 // toute saison, si la page n'a rien de ce mode (`pageSansDimension` : données
 // non gardées, ou arrivées avant l'onglet qui les montre), comme l'export
-// d'une page sans compte (`aDonner`). Sans heure lisible, jamais : on ne
+// d'une page incomplète (`aDonner`). Sans heure lisible, jamais : on ne
 // saurait pas dire si elle est déjà appliquée.
 export function dimensionADonner(tvalue: unknown, dimensionLue: number | null, pageSansDimension = false): boolean {
   if (typeof tvalue !== 'number' || !Number.isFinite(tvalue)) return false;
@@ -168,13 +168,14 @@ export function dimensionADonner(tvalue: unknown, dimensionLue: number | null, p
 
 // Faut-il donner le fichier à la page ? `nouveau` : un export plus récent que
 // le dernier appliqué (la page l'annonce). Sinon, au chargement d'une page
-// SANS compte (conservation refusée), on le redonne en silence : le compte
-// « se relit du dossier au lancement ».
+// INCOMPLÈTE — sans compte (conservation refusée), ou avec une page vide que
+// l'export sait remplir (prépa RTA, siège, arène) —, on le redonne en
+// silence : le compte « se relit du dossier au lancement ».
 export function aDonner(
   modifie: number,
   dernierLu: number | null,
-  pageSansCompte: boolean
+  pageIncomplete: boolean
 ): { donner: boolean; nouveau: boolean } {
   if (dernierLu === null || modifie > dernierLu) return { donner: true, nouveau: true };
-  return { donner: pageSansCompte, nouveau: false };
+  return { donner: pageIncomplete, nouveau: false };
 }
