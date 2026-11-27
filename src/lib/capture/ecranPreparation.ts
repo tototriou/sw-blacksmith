@@ -11,7 +11,7 @@
 import type { Image } from './image';
 import { lireNombre, scoresParSynthese, type Gabarits, type NombreLu } from './chiffres';
 import { variantes, type Banque, type Reconnaissance } from './portraits';
-import { trouverCartesAToutesEchelles, type Rect } from './cartes';
+import { trouverCartesAToutesEchelles, type OptionsCartes, type Rect } from './cartes';
 import { zoneVitesse } from './pastille';
 
 export interface MonstreLu {
@@ -95,8 +95,10 @@ export function hypothesesVit(zone: Image | null, lu: NombreLu | null, gabarits:
 }
 
 // `null` : les trois cartes des attaquants ne sont pas dans l'image.
-export function lireEcranPreparation(img: Image, banque: Banque, gabarits: Gabarits): LectureEcran | null {
-  const cartes = trouverCartesAToutesEchelles(img);
+// `options.vitFacultative` : trois portraits sans VIT suffisent (l'app, pour
+// un counter ; jamais le bot — voir cartes.ts).
+export function lireEcranPreparation(img: Image, banque: Banque, gabarits: Gabarits, options: OptionsCartes = {}): LectureEcran | null {
+  const cartes = trouverCartesAToutesEchelles(img, options);
   if (!cartes) return null;
   const monstre = (rect: Rect): MonstreLu => ({ rect, portrait: banque.reconnaitre(variantes(img, rect)) });
   const attaquant = (rect: Rect): AttaquantLu => {

@@ -353,6 +353,30 @@ export function testCaptureEcran() {
   egal(absurde.attaquants.map((a) => a.vitesse?.valeur ?? null), [null, null, 357], 'VIT invraisemblable : écartée');
 }
 
+// ---- Sans VIT : l'app (un counter de recommandation) ---------------------------
+
+export function testCaptureSansVit() {
+  titre('Lecture de capture — trois portraits sans VIT : l\'app les lit, le bot non');
+  const banque = banqueDe([1, 2, 3, 4, 5, 6].map((id) => ({ id, img: portrait(id * 7, [ROUGE, BLEU, VERT][id % 3]) })));
+  const portraits = [1, 2, 3, 4, 5, 6].map((id) => portrait(id * 7, [ROUGE, BLEU, VERT][id % 3]));
+  const lire = (img: Image, vitFacultative: boolean) => {
+    const r = lireEcranPreparation(img, banque, gabarits, { vitFacultative });
+    return r && { att: r.attaquants.map((a) => [a.portrait?.meilleur.com2usId, a.vitesse?.valeur ?? null]), def: r.defense.map((d) => d.portrait?.meilleur.com2usId) };
+  };
+  const trois = ecranLibre(330, 130, 31, 22, 81, 96, null, portraits.slice(0, 3), [], true);
+  egal(lire(trois, false), null, 'bot : trois cartes sans VIT, pas d\'attaquant (sa règle ne change pas)');
+  egal(lire(trois, true), { att: [[1, null], [2, null], [3, null]], def: [] }, 'app : les trois portraits, sans VIT ni défense supposée');
+  egal(lire(ecranLibre(317, 125, 20, 22, 80, 94, null, portraits.slice(0, 3), [], true, 80, CADRE_DORE), true)?.att.map((a) => a[0]), [1, 2, 3],
+    'app : trois cartes dorées sans VIT');
+  // Six cartes alignées sans VIT : l'offense à gauche, la défense à droite.
+  const six = dessiner(700, 200, [0, 1, 2, 3, 4, 5].map((k): Rect => [61 + k * 85, 60, 77, 77]), portraits, [], true, CADRE_GRIS, CADRE_GRIS);
+  egal(lire(six, true), { att: [[1, null], [2, null], [3, null]], def: [4, 5, 6] }, 'app : six cartes sans VIT, l\'offense puis la défense');
+  // Avec des VIT, l'option ne change rien.
+  const complet = ecran(portraits, ['357', '367', '385']);
+  egal(lire(complet, true), lire(complet, false), 'écran complet : même lecture avec ou sans l\'option');
+  egal(lire(imageUnie(800, 400, [52, 40, 30]), true), null, 'écran vide : non reconnu, même sans VIT exigée');
+}
+
 // ---- Vraies captures -----------------------------------------------------------
 
 // Les vraies captures de tests/captures-speedtune/ : IGNORÉES par Git (dépôt

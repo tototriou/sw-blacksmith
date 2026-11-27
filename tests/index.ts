@@ -399,6 +399,7 @@ import testSiegePastille from './siege-pastille.test';
 import testSiegeSlotSuivant from './siege-slot-suivant.test';
 import testRecoDefenses from './reco-defenses.test';
 import testRecoFiabilite from './reco-fiabilite.test';
+import { testCaptureCounter } from './capture-counter.test';
 import { testRecoFusionCorrespondance, testRecoFusionDecks, testRecoFusionChef, testRecoFusionImport, testRecoFusionSource } from './reco-fusion.test';
 import { testRenduRecoFusionChoix, testRenduRecoFusionStockage } from './rendu/reco-fusion.test';
 import { testApercuDeuxLignesRecherche, testApercuDeuxLignesBorne, testApercuDeuxLignesNonMonotone, testApercuDeuxLignesFinQuiGrandit, testApercuDeuxLignesRangees } from './apercu-deux-lignes.test';
@@ -406,7 +407,7 @@ import { testRenduRecosApercuCentainesDeDecks } from './rendu/apercu-recos.test'
 import { testPagesRecos, testPagesRecosDeckVise } from './pages-recos.test';
 import { testDiscordDroits, testDiscordSession, testDiscordRecoSalon, testDiscordContributeursFormat, testDiscordRouteurConnexion,
   testDiscordRouteurBureau, testDiscordRouteurSources, testDiscordRouteurSalonEtPublication, testDiscordRouteurToutEtLimites } from './discord-service.test';
-import { testCaptureImage, testCapturePortraits, testCaptureChiffres, testCaptureEcran, testCapturesReelles, testSpeedtuneAnalyse,
+import { testCaptureImage, testCapturePortraits, testCaptureChiffres, testCaptureEcran, testCaptureSansVit, testCapturesReelles, testSpeedtuneAnalyse,
   testSpeedtuneEtat, testSpeedtuneEmojis, testSpeedtuneInteractions } from './speedtune-capture.test';
 import { testRecoDiscordEtat, testRecoDiscordRecevoir, testRecoDiscordSynchro, testRecoDiscordPublication, testRecoDiscordFusion,
   testRecoDiscordFavorisEtStockage } from './reco-discord.test';
@@ -622,6 +623,8 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testCapturePortraits', testCapturePortraits],
   ['testCaptureChiffres', testCaptureChiffres],
   ['testCaptureEcran', testCaptureEcran],
+  ['testCaptureSansVit', testCaptureSansVit],
+  ['testCaptureCounter', testCaptureCounter],
   ['testCapturesReelles', testCapturesReelles],
   ['testSpeedtuneAnalyse', testSpeedtuneAnalyse],
   ['testSpeedtuneEtat', testSpeedtuneEtat],
