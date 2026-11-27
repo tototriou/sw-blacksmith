@@ -28,7 +28,7 @@ import {
   unionRunesUtilisees,
 } from '../src/lib/importAccount';
 import { rejouerDimension } from './plugin-swex-dimension.test';
-import { areneClassiqueVide, equipesAreneClassique, equipesDimension, mapSiegeTeams } from '../src/lib/applyAccount';
+import { equipesAreneClassique, equipesDimension, mapSiegeTeams, pageIncomplete, pagesVides, planExportSuivi } from '../src/lib/applyAccount';
 import type { Monster } from '../src/types';
 import { formatRelicUnique } from '../src/lib/effects';
 import { egal, exportReel, exportExemplairesMultiples, exportSynthetique, ignore, journalSwexReel, ok, saisonDimensionMiniature, titre } from './outils';
@@ -327,11 +327,29 @@ export default function testImport() {
   egal(siegeMappe.teams[0].slots[0].unitId, parseSiegeOffense(objet, fr).decks![0].slots[0]!.unitId,
     'siège : l’exemplaire de chaque monstre suit le deck jusqu’à la page Siège');
   ok(Number.isInteger(siegeMappe.teams[0].slots[0].unitId), 'siège : un exemplaire connu');
-  ok(
-    areneClassiqueVide({ defense: [], offense: [], interserveur: [] }) &&
-      !areneClassiqueVide({ defense: [], offense: [{}], interserveur: [] }),
-    'arène classique vide : aucune équipe d’aucun côté, et elle seule'
+  egal(
+    pagesVides({ rta: 0, siegeDefense: 3, siegeOffense: 0, areneDefense: 1, areneOffense: 0, areneInterserveur: 2 }),
+    ['rta', 'siegeOffense', 'areneOffense'],
+    'pages vides : chacune à part, dans l’ordre donné'
   );
+  const pleines = { rta: 5, siegeDefense: 3, siegeOffense: 40, areneDefense: 1, areneOffense: 2, areneInterserveur: 2 };
+  egal(pagesVides(pleines), [], 'toutes pleines : rien à remplir');
+
+  // L'export du compte suivi (dossier SW Exporter) : ce qu'en fait la page.
+  const sansAttaques = { ...pleines, siegeOffense: 0 };
+  const plan = (e: Partial<Parameters<typeof planExportSuivi>[0]>) =>
+    planExportSuivi({ complet: false, nouveau: true, aCompte: true, aDesEquipes: true, contenus: pleines, ...e });
+  egal(plan({ complet: true, contenus: sansAttaques }), { tout: true, compte: true, pages: [] }, 'après le choix d’un invocateur : tout');
+  egal(plan({ aCompte: false, aDesEquipes: false }), { tout: true, compte: true, pages: [] }, 'page sans compte ni équipes : tout');
+  egal(plan({}), { tout: false, compte: true, pages: [] }, 'export nouveau, pages pleines : « Mon compte » seulement, le travail gardé');
+  egal(plan({ contenus: sansAttaques }), { tout: false, compte: true, pages: ['siegeOffense'] },
+    'export nouveau, attaques de siège vides : « Mon compte », et les attaques remplies');
+  egal(plan({ nouveau: false, contenus: sansAttaques }), { tout: false, compte: false, pages: ['siegeOffense'] },
+    'export déjà lu, redonné au lancement : la page vide seulement, « Mon compte » pas réappliqué');
+  egal(plan({ nouveau: false, aCompte: false, contenus: sansAttaques }), { tout: false, compte: true, pages: ['siegeOffense'] },
+    'déjà lu, sans compte mais avec des équipes : « Mon compte » et les pages vides');
+  ok(pageIncomplete(true, sansAttaques) && pageIncomplete(false, pleines) && !pageIncomplete(true, pleines),
+    'page incomplète au lancement : une page vide, ou sans compte');
 
   /* --- Runes utilisées (decks tous contenus + RTA) --------------------- */
 

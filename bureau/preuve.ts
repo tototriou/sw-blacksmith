@@ -979,6 +979,19 @@ export async function lancerPreuve(fenetre: BrowserWindow, dossier: string, raci
     await attendre(600);
     ma.blocAJour = await bloc();
     ma.recherches = temoins.miseAJour.recherches;
+    // Le contrôle quotidien, à une heure simulée : rien avant 24 h, puis la
+    // même recherche que le lancement.
+    const heure = 60 * 60 * 1000;
+    const t0 = Date.now();
+    const controler = (h: number) => temoins.miseAJour.controler?.(t0 + h * heure);
+    controler(1);
+    await attendre(100);
+    ma.controle1h = { recherches: temoins.miseAJour.recherches, bloc: await bloc() };
+    controler(25);
+    await attendre(100);
+    ma.controle25hPendant = await bloc();
+    await attendre(600);
+    ma.controle25h = { recherches: temoins.miseAJour.recherches, bloc: await bloc(), notification: await notification() };
     temoins.miseAJour.simuler?.('9.9.9');
     await attendre(800);
     ma.disponible = await notification();
@@ -990,6 +1003,10 @@ export async function lancerPreuve(fenetre: BrowserWindow, dossier: string, raci
     await attendre(300);
     ma.apresCroix = await notification();
     ma.blocApresCroix = await bloc();
+    // 24 h plus tard, la même question revient, sans nouvelle recherche.
+    controler(50);
+    await attendre(300);
+    ma.rappel50h = { recherches: temoins.miseAJour.recherches, notification: await notification() };
     ma.telechargementsSansAccord = temoins.miseAJour.telechargements;
     // … puis « Mettre à jour » depuis les Réglages.
     await cliquerBloc();
@@ -1000,6 +1017,10 @@ export async function lancerPreuve(fenetre: BrowserWindow, dossier: string, raci
     ma.telechargements = temoins.miseAJour.telechargements;
     ma.prete = await notification();
     ma.blocPrete = await bloc();
+    // Prête à installer : le contrôle ne relance rien.
+    controler(75);
+    await attendre(100);
+    ma.controlePrete = { recherches: temoins.miseAJour.recherches, bloc: await bloc() };
     ma.clicRedemarrer = await cliquer('Redémarrer');
     await attendre(500);
     ma.redemarrages = temoins.miseAJour.redemarrages;

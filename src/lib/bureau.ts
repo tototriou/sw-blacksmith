@@ -33,7 +33,7 @@ interface PontBureau {
     oublier: () => Promise<EtatSwex | null>;
     surEtat: (rappel: (etat: EtatSwex) => void) => () => void;
     surExport: (rappel: (exp: ExportSwex) => void) => () => void;
-    pret: (pageSansCompte: boolean, pageSansDimension: boolean) => void;
+    pret: (pageIncomplete: boolean, pageSansDimension: boolean) => void;
     lu: (modifie: number) => void;
     surDimension: (rappel: (dim: DimensionSwex) => void) => () => void;
     dimensionLue: (cle: number) => void;
@@ -207,7 +207,7 @@ export interface EtatSwex {
   introuvable: boolean;
 }
 // Un export donné à la page : son texte, sa date, s'il est NOUVEAU (à
-// annoncer) ou seulement relu (page sans compte, au lancement), et s'il suit
+// annoncer) ou seulement relu (page incomplète, au lancement), et s'il suit
 // le CHOIX d'un invocateur (`complet` : tout s'importe, prépa RTA et siège
 // compris — sinon « Mon compte » seulement).
 export interface ExportSwex {

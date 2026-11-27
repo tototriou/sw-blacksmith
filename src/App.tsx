@@ -180,9 +180,11 @@ import {
   mapSiegeTeams,
   mapBoxMonsters,
   BoxItem,
-  areneClassiqueVide,
   equipesAreneClassique,
   equipesDimension,
+  pageIncomplete,
+  planExportSuivi,
+  type PageRattrapable,
 } from './lib/applyAccount';
 import { photographierMemoire, reinitialiserSticky, useStickyState } from './hooks/useStickyState';
 import { PREFIXE_SPEED_TUNE } from './hooks/useSpeedTune';
@@ -1196,31 +1198,66 @@ function Application() {
     }
   }
 
-  // Le dossier SW Exporter : un export du compte suivi. `complet` (il suit
-  // le choix d'un invocateur, déjà gardé par `avantChangementCompte`) : tout
-  // s'importe, comme l'import manuel. Sinon, « Mon compte » seulement. Pas
-  // de question de conservation (c'est un réglage, posé une fois).
-  // ⚠️ **Une page VIDE — ni compte, ni équipes — importe tout** : elle n'a
-  // rien à perdre. C'est le lancement avec la conservation refusée : rien
-  // n'est resté, et « Mon compte » seul laissait la prépa RTA et le siège
-  // vides sous un invocateur pourtant suivi.
+  // Le dossier SW Exporter : un export du compte suivi, appliqué selon
+  // `planExportSuivi` (lib/applyAccount.ts) — tout après le choix d'un
+  // invocateur ou sur une page sans compte ni équipes ; sinon « Mon compte »
+  // (export nouveau) et ⚠️ **chaque page VIDE remplie de l'export** : un
+  // invocateur suivi ne laisse aucune page vide qu'il pourrait remplir, une
+  // page pleine garde le travail de l'utilisateur. Pas de question de
+  // conservation (c'est un réglage, posé une fois).
   // `ok: false` — fichier illisible (à moitié écrit ?) ou sans box : rien
   // n'est touché, et l'export n'est pas marqué lu (bureau/swex.ts le
   // redonnera au prochain changement).
-  function rafraichirCompte(text: string, complet: boolean): { ok: boolean; nom: string | null } {
+  function rafraichirCompte(text: string, complet: boolean, nouveau: boolean): { ok: boolean; nom: string | null } {
     const data = parseAccountSource(text);
     if (!data) return { ok: false, nom: null };
     const compte = preparerCompte(data);
     if (compte.boxItems.length === 0) return { ok: false, nom: null };
-    if (complet || (box.length === 0 && !aDesEquipes())) appliquerTout(data, compte, false);
+    const plan = planExportSuivi({ complet, nouveau, aCompte: box.length > 0, aDesEquipes: aDesEquipes(), contenus: contenusPages() });
+    if (plan.tout) appliquerTout(data, compte, false);
     else {
-      appliquerCompte(data, compte);
-      // Rattrapage : l'arène classique, vide, se remplit de cet export — un
-      // dossier suivi avant l'arrivée de l'arène n'aurait sinon d'import
-      // complet qu'au prochain choix de l'invocateur.
-      if (areneClassiqueVide(equipesArene)) appliquerArene(equipesAreneClassique(data, monsterByCom2us, textes));
+      if (plan.compte) appliquerCompte(data, compte);
+      remplirPages(data, plan.pages);
     }
     return { ok: true, nom: compte.nomJoueur };
+  }
+
+  // Ce que porte chaque page que l'export du compte suivi sait remplir.
+  function contenusPages(): Record<PageRattrapable, number> {
+    return {
+      rta: Object.keys(rta.state.entries).length,
+      siegeDefense: siegeDef.state.teams.length,
+      siegeOffense: siegeOff.state.teams.length,
+      areneDefense: areneDef.state.teams.length,
+      areneOffense: areneOff.state.teams.length,
+      areneInterserveur: areneInter.state.teams.length,
+    };
+  }
+
+  // Remplit de l'export les pages vides `pages`, et elles seules ; une page
+  // que l'export ne sait pas remplir (rien de sauvegardé en jeu) reste vide.
+  function remplirPages(data: Record<string, any>, pages: PageRattrapable[]) {
+    const vides = new Set(pages);
+    if (vides.size === 0) return;
+    if (vides.has('rta')) {
+      const units = parseAccountJson(data, textes).units;
+      // `importEntries` seul : la prépa vide garde ses sections.
+      if (units) rta.importEntries(mapRtaItems(units, monsterByCom2us));
+    }
+    if (vides.has('siegeDefense')) {
+      const def = mapSiegeTeams(parseSiegeDefense(data, textes).decks ?? [], monsterByCom2us);
+      if (def.teams.length) siegeDef.importTeams(def.teams);
+    }
+    if (vides.has('siegeOffense')) {
+      const off = mapSiegeTeams(parseSiegeOffense(data, textes).decks ?? [], monsterByCom2us);
+      if (off.teams.length) siegeOff.importTeams(off.teams);
+    }
+    if (vides.has('areneDefense') || vides.has('areneOffense') || vides.has('areneInterserveur')) {
+      const arene = equipesAreneClassique(data, monsterByCom2us, textes);
+      if (vides.has('areneDefense') && arene.defense.teams.length) areneDef.importTeams(arene.defense.teams);
+      if (vides.has('areneOffense') && arene.offense.teams.length) areneOff.importTeams(arene.offense.teams);
+      if (vides.has('areneInterserveur') && arene.interserveur.teams.length) areneInter.importTeams(arene.interserveur.teams);
+    }
   }
 
   // Les équipes de l'arène classique : seuls les côtés qui en ont sont touchés.
@@ -2454,7 +2491,7 @@ function Application() {
       appliquer={rafraichirCompte}
       appliquerDimension={appliquerDimension}
       pret={!accountHydrating && allMonsters.length > 0}
-      sansCompte={box.length === 0}
+      incomplete={pageIncomplete(box.length > 0, contenusPages())}
       sansDimension={runesDimension.runes.length === 0}
     />
     {/* ⚠️ `data-ctx` sur la RACINE : c'est lui qui décide de l'accent

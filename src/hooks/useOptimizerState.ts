@@ -1,5 +1,6 @@
 import { Dispatch, MutableRefObject, SetStateAction, useCallback, useEffect, useRef, useState } from 'react';
 import type { SortPrecision } from '../lib/precisionParSort';
+import { avecTotauxAdversaire } from '../lib/saisieAdversaire';
 import { useTraduction } from './useLangue';
 import { StatKey } from '../lib/effects';
 import { Objective, SlotFilterPresetKey } from '../lib/runeBuildOptim';
@@ -928,7 +929,12 @@ export function useOptimizerState(contexte?: ContexteMembresOptimizer): Optimize
     objective,
     setObjective: saisie('objective', setObjective),
     damageSetup,
-    setDamageSetup: saisie('damageSetup', setDamageSetup),
+    // ⚠️ Toute écriture du réglage repasse par `avecTotauxAdversaire` : les
+    // totaux de l'adversaire suivent sa saisie en parties, ET ce dont ils
+    // dépendent hors de la fenêtre (contenu des compétences d'invocateur,
+    // élément visé). Voir saisieAdversaire.ts.
+    setDamageSetup: (valeur) => saisie('damageSetup', setDamageSetup)((prec) =>
+      avecTotauxAdversaire(typeof valeur === 'function' ? valeur(prec) : valeur)),
     compterAurasResPre,
     setCompterAurasResPre: saisie('compterAurasResPre', setCompterAurasResPre),
     critereArtefacts,

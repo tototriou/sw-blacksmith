@@ -1,5 +1,6 @@
 // Les provenances de la page Recommandations — « Toutes les recommandations »,
-// « Sur cet appareil », puis un groupe par serveur Discord avec ses salons —,
+// « Sur cet appareil », « Suivis » (dès qu'un salon est lié), « Favoris »
+// (application de bureau), puis un groupe par serveur Discord avec ses salons —,
 // ce que chacune montre, l'état affiché d'un salon et ce qui empêche de
 // publier. Calcul pur, testé (tests/provenances-recos.test.ts).
 // L'écran : docs/02-app/siege/feat-recommandations/rendu-de-la-page.md.
@@ -8,7 +9,11 @@ import type { Reco } from '../types';
 import { etatLien, estModifiee, ordonnerSalons, type BilanSynchro } from './recoDiscord';
 import type { ServeurDuService } from './discordClient';
 
-export type Provenance = { type: 'toutes' } | { type: 'appareil' } | { type: 'salon'; salonId: string };
+// `suivis` : les recommandations liées à un salon Discord, tous salons
+// confondus. `favoris` : celles des salons mis en favori (application de
+// bureau seulement, comme les favoris eux-mêmes).
+export type Provenance =
+  | { type: 'toutes' } | { type: 'appareil' } | { type: 'suivis' } | { type: 'favoris' } | { type: 'salon'; salonId: string };
 
 export const TOUTES: Provenance = { type: 'toutes' };
 
@@ -61,13 +66,26 @@ export function recosDeProvenance(recos: Reco[], p: Provenance, groupes: GroupeS
   const locales = recos.filter((r) => !r.lien);
   const liees = groupes.flatMap((g) => g.salons.map((l) => l.reco));
   if (p.type === 'appareil') return locales;
+  if (p.type === 'suivis') return liees;
+  if (p.type === 'favoris') return recosFavorites(groupes);
   if (p.type === 'salon') return liees.filter((r) => r.lien?.salonId === p.salonId);
   return [...locales, ...liees];
 }
 
+// « Favoris » : les recommandations des salons favoris, dans l'ordre de la
+// colonne (serveur par serveur). `groupes` porte déjà le drapeau `favori` de
+// chaque salon — vide hors de l'application de bureau.
+export function recosFavorites(groupes: GroupeServeur[]): Reco[] {
+  return groupes.flatMap((g) => g.salons.filter((l) => l.favori).map((l) => l.reco));
+}
+
 // Une provenance qui n'existe plus (salon retiré, déconnexion) retombe sur
-// « Toutes les recommandations ».
-export function provenanceValide(p: Provenance, groupes: GroupeServeur[]): Provenance {
+// « Toutes les recommandations ». « Suivis » n'existe qu'avec un salon dans
+// la colonne. « Favoris » n'existe qu'avec les favoris (`favorisActifs`,
+// application de bureau) ; sans favori, elle reste, vide.
+export function provenanceValide(p: Provenance, groupes: GroupeServeur[], favorisActifs = false): Provenance {
+  if (p.type === 'suivis') return groupes.length > 0 ? p : TOUTES;
+  if (p.type === 'favoris') return favorisActifs ? p : TOUTES;
   if (p.type !== 'salon') return p;
   return groupes.some((g) => g.salons.some((l) => l.salonId === p.salonId)) ? p : TOUTES;
 }

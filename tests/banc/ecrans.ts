@@ -245,6 +245,11 @@ const OPT_LISTE: Etape[] = [
   { saisir: { role: 'combobox', nom: 'Rechercher un monstre…' }, texte: 'Cassie' },
   { cliquer: { role: 'option', nom: 'Cassie dark Cassie' } },
 ];
+// Importer Chasun comme adversaire, dans la fenêtre « Dégâts réels ».
+const IMPORT_ADVERSAIRE: Etape[] = [
+  { saisir: { role: 'combobox', nom: "Importer les stats de base d'un monstre adverse" }, texte: 'Chasun' },
+  { cliquer: { role: 'option', nom: 'Chasun wind Chasun SPD 101' } },
+];
 // La même liste en contenu Guilde : le speed tune s'y règle depuis l'équipe.
 const OPT_LISTE_GUILDE: Etape[] = OPT_LISTE.map((e) => ('cliquer' in e && e.cliquer.nom === 'Arène'
   ? { cliquer: { ...e.cliquer, nom: 'Guilde' } } : e));
@@ -260,10 +265,15 @@ const OPT_SPEED_TUNE: Etape[] = [
 ];
 // Vanessa, par son nom : le centre de la carte tombe sur son statut au doigt.
 const OPT_MEMBRE_TUNE: Etape = { cliquer: repere('[data-membre-optimizer="13812"] > :first-child') };
+const OPT_ZONE_TUNE = repere('[data-zone-speed-tune]');
+const OPT_PREPA_TUNE = {
+  telephone: [{ cliquer: bouton('Gérer mes listes') }, ...OPT_LISTE_GUILDE, ...OPT_SPEED_TUNE, OPT_MEMBRE_TUNE,
+    { attendre: OPT_ZONE_TUNE, delaiMs: 20000 }],
+  ordinateur: [...OPT_LISTE_GUILDE, ...OPT_SPEED_TUNE, OPT_MEMBRE_TUNE, choisirReglage('Critères', 'criteres'),
+    { attendre: OPT_ZONE_TUNE, delaiMs: 20000 }],
+};
+// Stats de base exclues : 20 de bonus, sous le bas de la zone.
 const OPT_VIT_MAX: Etape[] = [
-  // La zone calculée : son tableau.
-  { attendre: { role: 'texte', nom: 'VIT. combat' }, delaiMs: 20000 },
-  // Stats de base exclues : 20 de bonus, sous le bas de la zone.
   { saisir: { role: 'textbox', nom: 'VIT maximum' }, texte: '20' },
   { cliquer: { role: 'texte', nom: 'Conditions' } },
   { montrer: repere('[data-conflit-vitesse]') },
@@ -570,6 +580,20 @@ export const ECRANS: Ecran[] = [
         ],
       },
       {
+        id: 'degats-reels-adversaire',
+        libelle: 'modale « Dégâts réels », adversaire importé (Chasun)',
+        // La saisie de l'adversaire en parties (SaisieAdversaire.tsx) : le
+        // portrait, le nom et le tableau remplis par l'import d'un monstre.
+        preparation: {
+          telephone: [{ cliquer: bouton('Gérer mes listes') }, ...OPT_LISTE, { cliquer: OBJECTIF_DEGATS_REELS }, ...IMPORT_ADVERSAIRE],
+          ordinateur: [...OPT_LISTE, VOIR_RESULTATS, { cliquer: OBJECTIF_DEGATS_REELS }, ...IMPORT_ADVERSAIRE],
+        },
+        atteint: [
+          { role: 'dialog', nom: 'Dégâts réels' },
+          { role: 'repere', nom: '[data-saisie-adversaire] [data-portrait]' },
+        ],
+      },
+      {
         // La rangée « Précision par sort » sous « Précision » : S1 et S3 cochés, le
         // minimum de Précision porte sur eux (feat-precision-par-sort.md).
         id: 'precision-par-sort', libelle: 'conditions, précision par sort sur S1 et S3',
@@ -660,14 +684,29 @@ export const ECRANS: Ecran[] = [
         atteint: [repere('[data-colonne="criteres"]'), { role: 'texte', nom: 'Sélectionne au moins un set avant de lancer la recherche.' }],
       },
       {
-        // Speed tune appliqué depuis l'Optimizer (membres attachés), puis une
+        // Speed tune appliqué depuis l'Optimizer : le tableau des vitesses du
+        // membre est replié par défaut, son titre et le verdict restent.
+        id: 'speed-tune-replie', libelle: 'membre attaché au speed tune : tableau des vitesses replié par défaut',
+        tailles: ['telephone', 'ordinateur'],
+        preparation: OPT_PREPA_TUNE,
+        atteint: [repere('[data-zone-speed-tune][aria-expanded="false"]')],
+      },
+      {
+        id: 'speed-tune-deplie', libelle: 'membre attaché au speed tune : tableau des vitesses déplié par son titre',
+        tailles: ['telephone', 'ordinateur'],
+        preparation: {
+          telephone: [...OPT_PREPA_TUNE.telephone, { cliquer: OPT_ZONE_TUNE }],
+          ordinateur: [...OPT_PREPA_TUNE.ordinateur, { cliquer: OPT_ZONE_TUNE }],
+        },
+        atteint: [repere('[data-zone-speed-tune][aria-expanded="true"]'), { role: 'texte', nom: 'VIT. combat' }],
+      },
+      {
         // VIT maximum sous le bas de la zone : le champ en rouge et le message.
         id: 'vitesse-max-speed-tune', libelle: 'membre attaché au speed tune, VIT maximum sous la zone : champ rouge et message',
         tailles: ['telephone', 'ordinateur'],
         preparation: {
-          telephone: [{ cliquer: bouton('Gérer mes listes') }, ...OPT_LISTE_GUILDE, ...OPT_SPEED_TUNE, OPT_MEMBRE_TUNE,
-            ...OPT_VIT_MAX],
-          ordinateur: [...OPT_LISTE_GUILDE, ...OPT_SPEED_TUNE, OPT_MEMBRE_TUNE, choisirReglage('Critères', 'criteres'), ...OPT_VIT_MAX],
+          telephone: [...OPT_PREPA_TUNE.telephone, ...OPT_VIT_MAX],
+          ordinateur: [...OPT_PREPA_TUNE.ordinateur, ...OPT_VIT_MAX],
         },
         atteint: [repere('[data-conflit-vitesse]')],
       },

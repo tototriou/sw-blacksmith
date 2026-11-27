@@ -223,7 +223,10 @@ export function testTheoniaAtqCible() {
   // condition du sort choisi est `atkCibleSousAtkPropre` : c'est ce que la
   // ligne de Theonia active. Lu dans le source, hors commentaires.
   const carte = readFileSync(resolve(racine, 'src/components/outils/DamageSetupCard.tsx'), 'utf8');
+  // La ligne ATQ du tableau de l'adversaire (SaisieAdversaire.tsx) écrit
+  // `enemyAtk` par `avecTotauxAdversaire` : la correspondance est vérifiée
+  // par le calcul dans saisie-adversaire.test.ts.
   ok(carte.includes("const demandeAtkCible = conditionsAvecCle.some(({ condition }) => condition.type === 'atkCibleSousAtkPropre');")
-    && carte.includes('{demandeAtkCible && (') && carte.includes('onChange={(v) => maj({ enemyAtk: v ?? 0 })}'),
-  'écran : le champ « ATQ adverse » (`enemyAtk`) s’ouvre pour une condition `atkCibleSousAtkPropre`');
+    && carte.includes("...(demandeAtkCible ? (['atk'] as const) : []),"),
+  'écran : la ligne ATQ de l’adversaire (`enemyAtk`) s’ouvre pour une condition `atkCibleSousAtkPropre`');
 }

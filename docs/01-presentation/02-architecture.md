@@ -172,15 +172,16 @@ Hooks : `useRtaState`, `useRtaCategories`, `useRtaBackup`, `useRuneMetric`, `use
 et `SiegeVueMembre.tsx` pour un membre, leurs pièces de graphe `SiegeGraphes.tsx`, le comparatif des
 guildes d'un siège `SiegeComparatif.tsx`), `SiegeTeam.tsx`,
 `RecoBoard.tsx` + `RecoCard.tsx` (recommandations), `ChoixFusionRecos.tsx` (fusionner ou ajouter
-à part un import qui complète une recommandation), `LeadPill.tsx`. Hooks `useSiegeState`,
+à part un import qui complète une recommandation), `EtoilesFiabilite.tsx` (la fiabilité d'un deck
+contre une défense, en étoiles), `LeadPill.tsx`. Hooks `useSiegeState`,
 `useSiegeRecos`. Lib `recoMatch`, `recoSearch`, `recoShare`, `recoFromSiege`, `recoDefenses` (la
-vue Défense, calculée à partir des decks, et la clé d'une équipe que la fusion reprend), `recoFusion` (la fusion d'un import), `ownedBuilds`, **`siegeStatut`** (le statut
+vue Défense, calculée à partir des decks, et la clé d'une équipe que la fusion reprend), `recoFusion` (la fusion d'un import), `pagesRecos` (une page de decks à la fois), `ownedBuilds`, **`siegeStatut`** (le statut
 vert / orange / rouge d'une équipe en mode « Vérifier mes tick ATB » — pur et testé, il ne vit pas
 dans la carte).
 
 **Mon compte** — dans `src/components/account/`, `RunesSection.tsx` et `ArtifactsSection.tsx`
 sont les deux racines ; dessous : `RunesList`, `RunesSummary` + `BuildsRapides`, `RunesCurve` +
-`CurveChart` + `curveColors`, `RunesCompare`, `RunesOptim`, `SetFilter`, `SlotFilter`,
+`CurveChart` + `curveColors`, `RunesCompare`, `RunesOptim` + `FenetreRunesExclues`, `SetFilter`, `SlotFilter`,
 `SubSearchBar` + `SubSearchDialog`, `Pager`, `SummaryBits`, `ArtifactsList`, `ArtifactsSummary`,
 `ArtifactsTop`, `ObjectifsSection` (la section Objectifs : ses vues Résumé, Runes et Artéfacts
 dans `VueObjectifs`, son Réglage dans `src/components/ReglagesObjectifs.tsx`) ; « Mes équipes » dans `src/components/account/equipes/` : `EquipesSection` (racine), `CarteEquipe`,
@@ -197,7 +198,8 @@ l'Optimizer) ; hook `useEquipesEnregistrees`.
 
 **Optimizer** — dans `src/components/outils/` : `OptimizerSection.tsx` (racine),
 `MonsterSourcePicker` (recherche — deux modes, bestiaire ou compte réel), `OptimizerListPicker`
-(listes de travail), `SetComboPicker`, `BuildCandidateCard` — fiche :
+(listes de travail), `SetComboPicker`, `BuildCandidateCard`, `SaisieAdversaire` (l'adversaire des
+dégâts réels en parties, calcul dans `src/lib/saisieAdversaire.ts`) — fiche :
 [optimizer/ecran/](../02-app/optimizer/ecran/README.md). Hooks `useOptimizerState` +
 `useBuildOptimSearch` (saisie et recherche, jamais persistées) et `useOptimizerLists` (listes de
 travail créées par l'utilisateur + runes validées scopées par liste — seul état PERSISTÉ de
@@ -382,12 +384,12 @@ Fonctions **pures**, testables sans rendu. C'est ici que va toute logique, jamai
 | Reliques | `relicOptim.ts` (choix de la meilleure relique pour un build, pertinence et dominance structurelle) ; `relicQueue.ts` (résolution EXACTE de l'équipement d'un build — paire d'artéfacts ET relique, ensemble — la partie pure de la file du classeur, et l'état de la relique d'un candidat pour l'écran) ; `resolutionRapide.ts` (la résolution de l'app, appelée par `relicQueue.ts` : elle ne note que les paires faisables) ; `resolutionExhaustive.ts` (la même résolution, toutes les paires notées : référence des tests et diagnostic d'un build rejeté, à la demande) |
 | Tri | `tri.ts` (le SENS d'un tri, partagé par toutes les listes) |
 | Artéfacts | `artifacts.ts` |
-| Dégâts réels | `damage.ts` ([degats-reels/](../02-app/degats-reels/README.md)) |
+| Dégâts réels | `damage.ts`, `saisieAdversaire.ts` (l'adversaire saisi en parties, qui écrit ses totaux) ([degats-reels/](../02-app/degats-reels/README.md)) |
 | Import de compte | `importAccount.ts` (parse SWEX, decks enregistrés compris), `journalSwex.ts` (journal complet de SWEX : la box de l'arène dimensionnelle), `compteDirect.ts` (« Mon compte » en direct : le fichier live du plugin SWEX converti objet par objet par les fonctions de l'import), `applyAccount.ts` (→ états), `accountStore.ts` (IndexedDB), `accountViews.ts` |
 | Mes équipes | `equipesEnregistrees.ts` (modèle, comparaison au compte, opérations), `equipesStore.ts` (IndexedDB `swblacksmith-equipes`), `equipesFichier.ts` (format `swblacksmith/equipes`), `sourcesEquipesEnregistrees.ts` (sources d'équipement et d'import), `importEquipesEnregistrees.ts` (export vers l'Optimizer et mise à jour au retour), `fenetreImport.ts` (filtres, sélection et produits de la fenêtre d'import commune) |
 | Monstres | `monsterForms.ts`, `monsterSkills.ts`, `monsterSort.ts`, `collabPairs.ts` |
 | Siège / statistiques | `siegeStatistiques.ts` (les sièges tirés des fichiers de guilde du plugin SWEX : combats, défenses, résultat, saison, bilan par joueur) |
-| Siège / recos | `recoMatch.ts`, `recoSearch.ts`, `recoShare.ts`, `recoFromSiege.ts`, `recoDefenses.ts`, `recoFusion.ts` (import qui fusionne dans la recommandation qu'il complète), `ownedBuilds.ts`, `annulerEdition.ts` (« Annuler les modifications » d'une reco ou d'un deck en édition), `reinsererA.ts` (« Annuler » une suppression : l'élément revient à sa place, équipes et recos) |
+| Siège / recos | `recoMatch.ts`, `recoSearch.ts`, `recoShare.ts`, `recoFromSiege.ts`, `recoDefenses.ts`, `recoFusion.ts` (import qui fusionne dans la recommandation qu'il complète), `pagesRecos.ts` (pagination des decks, de l'analyse et de la vue Défense), `ownedBuilds.ts`, `annulerEdition.ts` (« Annuler les modifications » d'une reco ou d'un deck en édition), `reinsererA.ts` (« Annuler » une suppression : l'élément revient à sa place, équipes et recos) |
 | Optimizer — listes et équipes | `optimizerMemberStorage.ts` (stockage indépendant des membres, de leurs identités et des équipes ; contenu de liste), `equipesOptimizer.ts` (équipes, lead effectif d'un membre selon le contenu), `criteresOptimizer.ts` (classement des champs en critères personnels du membre ou globaux), `optimizerCriteriaOwner.ts` (à quel membre appartiennent les critères affichés), `optimizerRattachement.ts` (re-rattachement des membres et revérification au réimport du compte), `optimizerBackup.ts` (point de sauvegarde des listes), `optimizerListNames.ts` (premier nom « Liste N » libre), `combatListeOptimizer.ts` + `competencesInvocateur.ts` (le contenu de la liste décide des compétences d'invocateur ; lecture commune de ce réglage) |
 | Optimizer — import d'équipes | `importEquipes.ts` (import commun : rapport, création de liste et d'équipes), `actionImportOptimizer.ts` (action d'import et navigation après acceptation), `importRecoOptimizer.ts` (deck recommandé → membres), `importSpeedTuneOptimizer.ts` (lignes du speed tuning → membres), `deckCompositionOptimizer.ts` (retrouve le deck de siège d'une recommandation ou d'un speed tuning) |
 | Optimizer — speed tune | `planSpeedTune.ts` (le plan photographié à l'export : plateau, verdict, zone d'un membre, sets des cumuls), `contrainteSpeedTune.ts` (la contrainte telle que la recherche la lit : enveloppe des runes, plages de 206 d'un build), `speedTuneEquipe.ts` (le speed tune stocké sur l'équipe, ses liens lignes ↔ membres), `speedTuneMembre.ts` (lignes de l'équipe, bornes du membre, verdict, écarts, Recalculer et Restaurer) ; `src/hooks/useZoneSpeedTune.ts` et `src/workers/zoneSpeedTune.worker.ts` (kits du plan, zone hors du fil de l'interface), `src/hooks/useSpeedTuneMembre.ts` (assemblage sur l'état de l'Optimizer), `src/components/outils/optimizer/SpeedTuneEncart.tsx` (l'encart) — [feat-contrainte-speed-tune.md](../02-app/optimizer/feat-contrainte-speed-tune.md) ; `src/lib/speedTuneDepuisPlan.ts` (l'outil rouvert sur un plan ou sur les membres, « Appliquer à l'équipe » jugé, liens et replis reconstruits) et `src/hooks/useSpeedTuneDepuisOptimizer.ts` (la modale de l'outil ouverte sur une équipe, `SpeedTuneModale.tsx` en mode « appliquer ») — [feat-speed-tune-depuis-optimizer.md](../02-app/optimizer/feat-speed-tune-depuis-optimizer.md) |

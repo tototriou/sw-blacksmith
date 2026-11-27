@@ -27,6 +27,7 @@ import { artifactSubKinds, artifactSubLabel, canAddSet, isArtifactSub } from './
 import { fr, type Dictionnaire } from '../i18n/fr';
 import { NOM_APP } from '../marque';
 import { formatExport, formatReconnu } from './formatsExport';
+import { fiabiliteValide } from './recoDefenses';
 
 const STAT_KEYS = new Set<string>(RECO_STATS.map((s) => s.key));
 const SET_KEYS = new Set<string>(RUNE_SETS.map((s) => s.key));
@@ -221,6 +222,8 @@ function counterListToJson(counters: RecoCounter[] | undefined): { fort_contre?:
       ),
       // La note ne part que si elle existe, comme les consignes.
       ...(c.note.trim() ? { note: texteSortant(c.note, COUNTER_NOTE_MAX) } : {}),
+      // La fiabilité aussi : une défense non notée n'écrit rien.
+      ...(fiabiliteValide(c.fiabilite) !== undefined ? { fiabilite: c.fiabilite } : {}),
     }));
   return utiles.length ? { fort_contre: utiles } : {};
 }
@@ -251,7 +254,14 @@ function jsonToCounter(raw: unknown, ctx: Issues, where: string, t: Dictionnaire
   });
   // Aucun monstre lisible → rien à montrer, on n'ajoute pas un bloc vide.
   if (!monsters.some((m) => m.com2usId != null)) return null;
-  return { monsters, note: cleanText(o.note ?? o.consignes, COUNTER_NOTE_MAX, ctx, where, t) };
+  // Fiabilité : `fiabilite` ou `reliability`. Hors des demi-étoiles de 0 à 5,
+  // ignorée sans bruit — la défense reste, non notée.
+  const fiabilite = fiabiliteValide(o.fiabilite ?? o.reliability);
+  return {
+    monsters,
+    note: cleanText(o.note ?? o.consignes, COUNTER_NOTE_MAX, ctx, where, t),
+    ...(fiabilite !== undefined ? { fiabilite } : {}),
+  };
 }
 
 // Texte borné, en signalant la troncature.
@@ -307,6 +317,9 @@ export const COUNTER_NOTE_MAX = 200;
 // ⚠️ Trop longue, elle est IGNORÉE plutôt que tronquée : une source coupée ne
 // reconnaîtrait plus rien et pourrait en confondre deux.
 export const SOURCE_MAX = 200;
+
+// `fiabilite` d'une défense visée (`fort_contre`) : même règle, un champ en
+// plus. Une app qui ne le connaît pas lit la défense sans sa note.
 
 // `contributeurs` : les membres qui ont publié la recommandation dans son salon
 // Discord, écrits par le service. Même règle que `source` : un champ en plus,

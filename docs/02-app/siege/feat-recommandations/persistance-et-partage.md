@@ -282,3 +282,23 @@ rien. Le rapport de validation reste affiché comme pour tout import.
   caractères est coupé, la liste s'arrête à 50 noms ; ce qui n'est pas une
   liste de textes est ignoré sans avertissement. Une recommandation sans
   contributeurs n'écrit pas de liste vide.
+
+### Le champ `fiabilite` d'une défense visée
+
+```json
+"fort_contre": [ { "monstres": [ … ], "note": "si le Chloe est en lead", "fiabilite": 4.5 } ]
+```
+
+- **Facultatif** : la fiabilité du deck contre cette défense, en étoiles, de
+  0 à 5 par demi-étoile ([defenses-visees.md](defenses-visees.md#fiabilité--quelle-offense-jouer-dabord)).
+  Une défense non notée n'écrit rien ; `0` est une note, et s'écrit.
+- **Un champ en plus, pas une version de plus**, comme `source` : une app qui
+  ne le connaît pas lit la défense sans sa note.
+- Lu sous `fiabilite` ou `reliability`. Tout ce qui n'est pas un multiple de
+  0,5 entre 0 et 5 (`2.3`, `7`, `"4"`) est **ignoré sans avertissement** : la
+  défense reste, non notée — arrondir inventerait une note que personne n'a
+  donnée. Même règle à la relecture du stockage.
+- ⚠️ **À la fusion d'un import**, une défense déjà présente dans le deck garde
+  **sa** fiabilité : le fichier n'ajoute que les défenses que le deck n'avait
+  pas, avec la leur. Dans la synchronisation Discord, la fiabilité fait partie
+  du contenu du deck : la changer rend la recommandation « modifiée ».

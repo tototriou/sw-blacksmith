@@ -1357,6 +1357,27 @@
       "cible": "src/hooks/useOptimizerState.ts",
       "occurrences": 1,
       "statut": "stock"
+    },
+    {
+      "fichier": "tests/rendu/saisie-adversaire.test.tsx",
+      "cible": "src/components/outils/DamageSetupCard.tsx",
+      "occurrences": 1,
+      "statut": "exception",
+      "justification": "Garde des lignes ATQ et VIT du tableau de l'adversaire, ouvertes par une condition qu'aucun monstre du rendu ne porte ; la ligne DEF et le tableau sont vérifiés par rendu serveur dans le même test."
+    },
+    {
+      "fichier": "tests/rendu/saisie-adversaire.test.tsx",
+      "cible": "src/components/outils/OptimizerSection.tsx",
+      "occurrences": 1,
+      "statut": "exception",
+      "justification": "Garde du branchement de la liste des monstres à la recherche de l'adversaire ; la recherche elle-même est rendue par le test."
+    },
+    {
+      "fichier": "tests/rendu/saisie-adversaire.test.tsx",
+      "cible": "src/hooks/useOptimizerState.ts",
+      "occurrences": 1,
+      "statut": "exception",
+      "justification": "Garde du setter de l'écran qui repasse chaque écriture du réglage par avecTotauxAdversaire ; le calcul des totaux est testé par import (saisie-adversaire.test.ts)."
     }
   ]
 }

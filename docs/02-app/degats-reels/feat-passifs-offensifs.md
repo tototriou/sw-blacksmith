@@ -289,8 +289,8 @@ sens sont testés (`'toujours'` retient, `'jamais'` ne rattrape rien).
 
 ## VIT de l'adversaire — `{Relative SPD}` et l'ignore-DEF proportionnel
 
-`DamageSetup.enemySpd` (VIT totale de l'adversaire, buffs compris — saisie
-manuelle, comme `enemyDef`) sert **deux** mécaniques distinctes, confirmées
+`DamageSetup.enemySpd` (VIT totale de l'adversaire, buffs compris — le
+total de la ligne VIT de la saisie de l'adversaire, comme `enemyDef`) sert **deux** mécaniques distinctes, confirmées
 par l'utilisateur, ni l'une ni l'autre déductible du texte du jeu seul :
 
 - **`{Relative SPD}`** — `(Ta VIT − VIT cible) / VIT cible`. 20 sorts du
@@ -315,7 +315,7 @@ par l'utilisateur, ni l'une ni l'autre déductible du texte du jeu seul :
 - **`Relative SPD` ajoutée à `variables` même quand la FORMULE ne la lit
   pas** (Concentrated Stab est `4.7*{ATK}` nu) : c'est le mécanisme
   d'ignore-DEF qui en dépend, pas la formule — sans cet ajout, ni le champ
-  « VIT adversaire » ni la VIT dans le pré-filtrage (`damageRelevantStats`)
+  la ligne VIT de l'adversaire ni la VIT dans le pré-filtrage (`damageRelevantStats`)
   n'apparaîtraient pour ces sorts.
 
 
@@ -364,7 +364,7 @@ un passif avec son propre `'jamais'`/`'toujours'` (fait plus précis sur
 cette contribution précise) garde la priorité sur ce modificateur
 monstre-wide.
 
-⚠️ **Le champ « VIT adversaire » apparaît dès que la VIT de la cible
+⚠️ **La ligne VIT du tableau de l'adversaire apparaît dès que la VIT de la cible
 compte**, même si le sort choisi ne la lit pas (Rigna S1, tout sort de
 Sonia) : `utilise('Relative SPD') || utilise('Target SPD') ||
 critSiPlusRapide || bonusDegatsSelonVit || demandeVitCible`

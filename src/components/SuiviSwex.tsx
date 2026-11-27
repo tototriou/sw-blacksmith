@@ -10,7 +10,8 @@ import { useNotifier } from '../ui/Notification';
 //
 // ⚠️ **`complet` après le choix d'un invocateur seulement** : tout s'importe
 // (prépa RTA, siège, « Mon compte »). Les exports suivants du même
-// invocateur ne mettent à jour que « Mon compte ».
+// invocateur ne mettent à jour que « Mon compte », et remplissent les pages
+// restées vides (prépa RTA, siège, arène).
 //
 // ⚠️ **`pret` seulement une fois les monstres chargés ET le compte conservé
 // relu** (App.tsx) : appliqué plus tôt, l'export donnerait une box vide
@@ -26,16 +27,17 @@ export default function SuiviSwex({
   appliquer,
   appliquerDimension,
   pret,
-  sansCompte,
+  incomplete,
   sansDimension,
 }: {
-  appliquer: (texte: string, complet: boolean) => { ok: boolean; nom: string | null };
+  appliquer: (texte: string, complet: boolean, nouveau: boolean) => { ok: boolean; nom: string | null };
   appliquerDimension: (saison: Record<string, any>, recents: unknown[]) => number;
   pret: boolean;
-  // La page n'a aucun compte (conservation refusée) : l'export se relit en
-  // silence, même s'il a déjà été lu — en entier si elle n'a pas non plus
-  // d'équipes (App.tsx, `rafraichirCompte`).
-  sansCompte: boolean;
+  // La page n'a aucun compte (conservation refusée), ou une de ses pages que
+  // l'export sait remplir est vide (prépa RTA, siège, arène) : l'export se
+  // relit en silence, même s'il a déjà été lu — en entier si elle n'a ni
+  // compte ni équipes, sinon pour ses pages vides (App.tsx, `rafraichirCompte`).
+  incomplete: boolean;
   // La page n'a rien de l'arène dimensionnelle (conservation refusée, ou
   // saison lue avant l'onglet qui la montre) : la dernière saison se redonne,
   // même déjà lue.
@@ -52,8 +54,8 @@ export default function SuiviSwex({
   appliquerRef.current = appliquer;
   const appliquerDimensionRef = useRef(appliquerDimension);
   appliquerDimensionRef.current = appliquerDimension;
-  const sansCompteRef = useRef(sansCompte);
-  sansCompteRef.current = sansCompte;
+  const incompleteRef = useRef(incomplete);
+  incompleteRef.current = incomplete;
   const sansDimensionRef = useRef(sansDimension);
   sansDimensionRef.current = sansDimension;
 
@@ -62,7 +64,7 @@ export default function SuiviSwex({
     if (!s || !pret) return;
     const desabonner = s.surExport((exp) => {
       const complet = exp.complet === true;
-      const r = appliquerRef.current(exp.texte, complet);
+      const r = appliquerRef.current(exp.texte, complet, exp.nouveau);
       // Illisible (à moitié écrit ?) : rien n'est marqué lu, le prochain
       // changement du fichier le redonnera.
       if (!r.ok) return;
@@ -75,7 +77,7 @@ export default function SuiviSwex({
       s.dimensionLue(dim.cle);
       if (dim.nouvelle) notifier({ message: textesVivants.current.application.dimensionMiseAJour(n) });
     });
-    s.pret(sansCompteRef.current, sansDimensionRef.current);
+    s.pret(incompleteRef.current, sansDimensionRef.current);
     return () => {
       desabonner();
       desabonnerDimension();

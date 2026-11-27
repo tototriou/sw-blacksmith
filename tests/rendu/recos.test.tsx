@@ -6,15 +6,18 @@
 // ⚠️ Rendu BUREAU : le panneau d'actions mobile est fermé (`menuOuvert` faux).
 
 import RecoBoard from '../../src/components/siege/RecoBoard';
-import RecoCard, { StatEditor } from '../../src/components/siege/RecoCard';
+import RecoCard, { DeckBlock, StatEditor } from '../../src/components/siege/RecoCard';
 import { useSiegeRecos } from '../../src/hooks/useSiegeRecos';
 import { chercheMonstre } from '../../src/lib/recoSearch';
 import { useSiegeState } from '../../src/hooks/useSiegeState';
 import type { Monster, RecoSlot } from '../../src/types';
 import type { VueRecos } from '../../src/lib/recoDefenses';
+import type { RecoMatch } from '../../src/lib/recoMatch';
 import { ficheSpeedForTick } from '../../src/lib/speed';
 import { egal, faussLocalStorage, monstersJson, ok, titre } from '../outils';
-import { boutons, rendre, texteVisible, valeurs } from './outils-rendu';
+import { bouton, boutons, rendre, texteVisible, valeurs } from './outils-rendu';
+import { ChoixFiabilite } from '../../src/components/siege/EtoilesFiabilite';
+import { amorcerMemoire, reinitialiserSticky } from '../../src/hooks/useStickyState';
 
 const MONSTRES = monstersJson() as Monster[];
 const c2u = (nom: string, el: string) =>
@@ -96,7 +99,7 @@ export function rendreRecos(etat: object = RECOS): string {
   return rendre(<Page />);
 }
 
-function Carte({ ouverte, edition, cherche, vue }: { ouverte: boolean; edition: boolean; cherche?: string; vue?: VueRecos }) {
+function Carte({ ouverte, edition, cherche, vue, match = null }: { ouverte: boolean; edition: boolean; cherche?: string; vue?: VueRecos; match?: RecoMatch | null }) {
   const recos = useSiegeRecos();
   const monsterByCom2us = new Map(MONSTRES.filter((m) => m.com2usId != null).map((m) => [m.com2usId!, m]));
   const monsterById = new Map(MONSTRES.map((m) => [String(m.id), m]));
@@ -116,7 +119,7 @@ function Carte({ ouverte, edition, cherche, vue }: { ouverte: boolean; edition: 
       monsterByCom2us={monsterByCom2us}
       monsterById={monsterById}
       offenseTeams={[]}
-      match={null}
+      match={match}
       canAnalyze={false}
       onAnalyze={() => {}}
       onClearAnalysis={() => {}}
@@ -132,9 +135,51 @@ function Carte({ ouverte, edition, cherche, vue }: { ouverte: boolean; edition: 
   );
 }
 
-export function rendreCarte(ouverte: boolean, edition = false, cherche?: string, vue?: VueRecos, etat: object = RECOS): string {
+export function rendreCarte(ouverte: boolean, edition = false, cherche?: string, vue?: VueRecos, etat: object = RECOS, match: RecoMatch | null = null): string {
   faussLocalStorage({ 'swblacksmith-siege-recos-v1': JSON.stringify(etat) });
-  return rendre(<Carte ouverte={ouverte} edition={edition} cherche={cherche} vue={vue} />);
+  return rendre(<Carte ouverte={ouverte} edition={edition} cherche={cherche} vue={vue} match={match} />);
+}
+
+// Les decks de la recommandation, DÉPLIÉS. Le rendu serveur ne clique pas, et
+// rien ne déplie un deck d'office (pas même la recherche) : on rend donc
+// chaque deck ouvert, comme après un clic sur son chevron.
+function DecksOuverts({ cherche }: { cherche?: string }) {
+  const recos = useSiegeRecos();
+  const reco = recos.state.recos[0];
+  const monsterByCom2us = new Map(MONSTRES.filter((m) => m.com2usId != null).map((m) => [m.com2usId!, m]));
+  const hit = cherche
+    ? (chercheMonstre(recos.state.recos, cherche, 'all', monsterByCom2us) ?? []).find((h) => h.reco.id === reco.id) ?? null
+    : null;
+  return (
+    <>
+      {reco.decks.map((deck, di) => (
+        <DeckBlock
+          key={di}
+          onExporterOptimizer={() => {}}
+          reco={reco}
+          deck={deck}
+          deckIndex={di}
+          monsters={MONSTRES}
+          monsterByCom2us={monsterByCom2us}
+          match={null}
+          editing={false}
+          onToggleEdit={() => {}}
+          onAnnulerEdition={() => {}}
+          annulable={false}
+          folded={false}
+          onToggleFold={() => {}}
+          hit={hit?.decks.find((d) => d.deckIndex === di) ?? null}
+          recos={recos}
+          onSupprime={() => {}}
+        />
+      ))}
+    </>
+  );
+}
+
+function rendreDecksOuverts(cherche?: string, etat: object = RECOS): string {
+  faussLocalStorage({ 'swblacksmith-siege-recos-v1': JSON.stringify(etat) });
+  return rendre(<DecksOuverts cherche={cherche} />);
 }
 
 const nomme = (html: string, nom: string) =>
@@ -208,20 +253,27 @@ export function testRenduRecosLigneDeckReduite() {
   egal(b.filter((x) => x.ariaLabel === 'Exporter vers l\'Optimizer').length, 2, 'et « Exporter vers l\'Optimizer »');
   ok(b.filter((x) => x.ariaLabel === 'Éditer ce deck').every((x) => x.presse === false), 'éditer un deck ne demande pas d\'éditer la recommandation');
   ok(/data-actions-deck/.test(html), 'les actions sont sur la ligne du deck');
-  // Ouvert (une recherche le déplie), le deck écrit ses noms et ses runes.
-  const ouvert = texteVisible(rendreCarte(true, false, 'Lushen'));
+  // Ouvert, le deck écrit ses noms et ses runes.
+  const ouvert = texteVisible(rendreDecksOuverts());
   ok(ouvert.includes('Lushen') && ouvert.includes('Runage'), 'deck ouvert : le nom du monstre et son runage');
 }
 
 export function testRenduRecosDeploiement() {
   titre('rendu · Siège · Recommandations — une recommandation dépliée, ses decks ouverts');
-  // La recherche « Chasun » ouvre les deux decks (il est dans les deux).
-  const html = rendreCarte(true, false, 'Chasun');
-  const t = texteVisible(html);
+  // La recherche « Chasun » trouve les deux decks (il est dans les deux), et
+  // les laisse REPLIÉS : sur un gros lot, les déplier d'office en ouvrait des
+  // dizaines. « Déplier tous les decks » les ouvre d'un geste.
+  const carte = rendreCarte(true, false, 'Chasun');
+  const tc = texteVisible(carte);
+  ok(boutons(carte).some((b) => b.texte === 'Réduire' && b.presse === true), '« Réduire » enclenché');
+  ok(tc.includes('2 sur 2 decks'), 'la recherche dit « 2 sur 2 decks »');
+  ok(tc.includes('Consignes générales Toujours viser le heal en premier.'), 'les consignes générales');
+  egal([nomme(carte, 'Déplier ce deck').length, nomme(carte, 'Replier ce deck').length], [4, 0], 'recherche : les decks trouvés restent repliés');
+  ok(tc.includes('Déplier tous les decks'), 'recherche : « Déplier tous les decks » ouvre les decks trouvés');
 
-  ok(boutons(html).some((b) => b.texte === 'Réduire' && b.presse === true), '« Réduire » enclenché');
-  ok(t.includes('2 sur 2 decks'), 'la recherche dit « 2 sur 2 decks »');
-  ok(t.includes('Consignes générales Toujours viser le heal en premier.'), 'les consignes générales');
+  const html = rendreDecksOuverts('Chasun');
+  const t = texteVisible(html);
+  ok(/bg-accent\/\[0\.10\]/.test(html), 'deck ouvert : le slot du monstre cherché surligné');
   ok(t.includes('Consignes du deck Lushen ouvre.'), 'les consignes du deck');
   ok(/Lushen \+33%/.test(t) && /Galleon \+24%/.test(t), 'le bonus du leader de chaque deck');
   ok(t.includes('×4 ×2'), 'les sets recommandés (4 pièces + 2 pièces)');
@@ -288,6 +340,104 @@ export function testRenduRecosVueDefense() {
   const edition = rendreCarte(true, true, undefined, 'defense');
   ok(!edition.includes('data-defense-visee'), 'en édition : plus de vue Défense');
   ok(boutons(edition).some((b) => b.texte === 'Ajouter un deck vide'), 'en édition : les formulaires de la vue Attaque');
+}
+
+// La fiabilité d'un deck contre une défense : des étoiles de 0 à 5 par
+// demi-étoile, sur la vignette de la défense et sur l'offense en vue Défense,
+// où la plus fiable passe d'abord. La saisie, dans la défense en édition.
+export function testRenduRecosFiabilite() {
+  titre('rendu · Siège · Recommandations — la fiabilité d\'un deck contre une défense');
+  const r = RECOS.recos[0];
+  const defense = r.decks[0].counters[0];
+  // Les deux decks battent la même défense : le premier à 2, le second à 4,5.
+  const etat = {
+    recos: [{
+      ...r,
+      decks: [
+        { ...r.decks[0], counters: [{ ...defense, fiabilite: 2 }] },
+        { ...r.decks[1], counters: [{ ...defense, note: '', fiabilite: 4.5 }] },
+      ],
+    }],
+  };
+
+  // Vue Défense : la plus fiable d'abord, ses étoiles, leur couleur.
+  const html = rendreCarte(true, false, undefined, 'defense', etat);
+  const offenses = [...html.matchAll(/data-offense-contre[\s\S]*?aria-label="(Fiabilité [^"]+)"/g)].map((x) => x[1]);
+  egal(offenses, ['Fiabilité 4,5 sur 5', 'Fiabilité 2 sur 5'], 'vue Défense : l\'offense la plus fiable d\'abord, ses étoiles');
+  ok(/Galleon - Belladeon - Chasun[\s\S]*Lushen - Veromos - Chasun/.test(texteVisible(html)), 'vue Défense : Galleon-Belladeon-Chasun (4,5) avant Lushen-Veromos-Chasun (2)');
+  ok(/data-fiabilite="4.5"[\s\S]*?text-good/.test(html) && /data-fiabilite="2"[\s\S]*?text-warn/.test(html), 'couleur : vert à 4,5, jaune à 2');
+
+  // Vue Attaque, deck ouvert : les étoiles sous les portraits de la défense
+  // (la fiabilité passe par la relecture du stockage).
+  const decks = rendreDecksOuverts(undefined, etat);
+  egal(valeurs(decks, 'aria-label').filter((v) => v.startsWith('Fiabilité ')),
+    ['Fiabilité 2 sur 5', 'Fiabilité 2 sur 5', 'Fiabilité 4,5 sur 5', 'Fiabilité 4,5 sur 5'],
+    'vue Attaque : chaque deck porte la fiabilité de sa défense, sur sa ligne et sur la vignette');
+  ok(!rendreDecksOuverts().includes('data-fiabilite'), 'une défense non notée n\'affiche aucune étoile');
+
+  // La saisie : dix demi-étoiles, « − », « + », « × ».
+  const choix = (note: number | undefined) => rendre(<ChoixFiabilite note={note} onChange={() => {}} />);
+  const vide = choix(undefined);
+  ok(texteVisible(vide).includes('Fiabilité') && texteVisible(vide).includes('Non notée'), 'saisie : « Non notée » par défaut');
+  egal(boutons(vide).filter((b) => b.ariaLabel?.startsWith('Noter ')).map((b) => b.ariaLabel),
+    ['0,5', '1', '1,5', '2', '2,5', '3', '3,5', '4', '4,5', '5'].map((n) => `Noter ${n} sur 5`), 'saisie : une cible par demi-étoile, de 0,5 à 5');
+  const etatBoutons = (h: string) => ['Une demi-étoile de moins', 'Une demi-étoile de plus', 'Retirer la note'].map((n) => !!bouton(h, n)?.desactive);
+  egal(etatBoutons(vide), [true, false, true], 'non notée : « − » et « × » désactivés, « + » actif');
+  egal(etatBoutons(choix(5)), [false, true, false], 'à 5 : « + » désactivé');
+  egal(etatBoutons(choix(0)), [true, false, false], 'à 0 : « − » désactivé, 0 reste une note (« × » actif)');
+  ok(texteVisible(choix(3.5)).includes('3,5 / 5'), 'saisie : la note écrite « 3,5 / 5 »');
+
+  // Une recherche : la ligne repliée de chaque deck trouvé montre la défense
+  // qui répond et ses étoiles ; « Tri » range par fiabilité.
+  const page = (tri: string) => {
+    amorcerMemoire({ 'recos.queries': ['Galleon', '', ''], 'recos.searchMode': 'defense', 'recos.tri': tri });
+    try { return rendreRecos(etat); } finally { reinitialiserSticky('recos.'); }
+  };
+  const parOrdre = page('ordre');
+  egal(valeurs(parOrdre, 'data-fiabilite'), ['2', '4.5'], 'recherche, ordre des recos : chaque deck trouvé porte ses étoiles, dans l\'ordre de la reco');
+  ok(/data-tri-recherche[\s\S]*Ordre des recos[\s\S]*Fiabilité/.test(parOrdre), 'recherche : la rangée « Tri » (Ordre des recos · Fiabilité)');
+  egal(valeurs(page('fiabilite'), 'data-fiabilite'), ['4.5', '2'], 'recherche triée par fiabilité : le deck le plus fiable d\'abord');
+  ok(!rendreRecos(etat).includes('data-tri-recherche'), 'sans recherche : pas de rangée « Tri »');
+}
+
+// Une recommandation de CENTAINES de decks (un lot de salon Discord) : une page
+// à la fois — decks, analyse, défenses —, l'aperçu replié borné. Les rendre
+// tous figeait la page.
+export function testRenduRecosGrosLot() {
+  titre('rendu · Siège · Recommandations — un lot de 700 decks, paginé');
+  const n = 700;
+  const lot = { recos: [{ ...RECOS.recos[0], decks: Array.from({ length: n }, () => RECOS.recos[0].decks[1]) }] };
+
+  // Dépliée : une page de 20 decks, et où l'on en est.
+  const ouverte = rendreCarte(true, false, undefined, undefined, lot);
+  egal(nomme(ouverte, 'Éditer ce deck').length, 20, 'dépliée : 20 decks rendus sur 700');
+  egal((texteVisible(ouverte).match(/1–20 sur 700/g) ?? []).length, 2, 'la plage « 1–20 sur 700 », en haut et en bas du tableau');
+  ok(boutons(ouverte).some((b) => b.ariaLabel === 'Page suivante' && !b.desactive), 'la pagination : « Page suivante »');
+  ok(valeurs(ouverte, 'aria-label').includes('Aller à la page'), 'la pagination : aller directement à une page');
+  ok(texteVisible(ouverte).includes('/ 35'), '35 pages');
+  ok(texteVisible(ouverte).includes('Déplier tous les decks'), '« Déplier tous les decks » reste');
+
+  // Repliée : l'aperçu ne monte que ses premières pastilles, le « +N » compte
+  // les autres.
+  const repliee = rendreCarte(false, false, undefined, undefined, lot);
+  const plus = repliee.match(/data-apercu-plus[^>]*>\+(\d+)</)?.[1];
+  ok(plus != null && Number(plus) >= n - 60, `repliée : au plus 60 pastilles rendues, « +${plus} » pour les autres`);
+
+  // Vue Défense : ce lot n'a aucune défense visée — le bloc « Aucune défense
+  // visée » se pagine lui aussi.
+  const defense = rendreCarte(true, false, undefined, 'defense', lot);
+  egal((defense.match(/data-offense-contre/g) ?? []).length, 20, 'vue Défense : 20 offenses rendues sur 700');
+  ok(texteVisible(defense).includes('1–20 sur 700'), 'vue Défense : la plage');
+
+  // L'analyse : 50 lignes par page.
+  const aComposer = { status: 'nodeck', slots: [], okCount: 0, filled: 3, team: null, copies: null };
+  const match = { status: 'partial', decks: Array.from({ length: n }, () => aComposer), okDecks: 0, totalDecks: n } as unknown as RecoMatch;
+  const analyse = rendreCarte(false, false, undefined, undefined, lot, match);
+  ok(texteVisible(analyse).includes('1–50 sur 700'), 'analyse : la plage « 1–50 sur 700 »');
+  egal(boutons(analyse).filter((b) => b.title?.startsWith('Voir le deck')).length, 50, 'analyse : 50 lignes rendues sur 700');
+
+  // Une recommandation ordinaire n'a pas de pagination.
+  ok(!rendreCarte(true).includes('data-pages-reco'), 'deux decks : aucune pagination');
 }
 
 // Raccourci « Tick rapide / Tick lent » dans la saisie de la VIT d'un deck :

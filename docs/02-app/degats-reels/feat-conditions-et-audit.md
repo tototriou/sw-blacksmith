@@ -67,7 +67,7 @@ less than your Attack Power ») ignorent la DEF à l'égalité ; Jaara
 (« Defense lower than your Attack Power ») et Varus (« lower Defense than
 yours ») ne garantissent pas le critique à l'égalité, conformément à leur
 prose et à la `note` de leur effet. Summary Justice
-(Theonia, S3) gagne +100 % quand l'ATQ ennemie saisie (« ATQ adverse »,
+(Theonia, S3) gagne +100 % quand l'ATQ ennemie saisie (ligne ATQ du tableau de l'adversaire,
 `enemyAtk`) est strictement inférieure à l'ATQ du build (« For enemies with
 Attack Power lower than yours », valeur de la donnée ; [valeurs curées](valeurs-de-jeu-curees.md),
 « Summary Justice de Theonia (S3) »), comme Kassandra et Eleni vent à +30 % ; sa
@@ -380,12 +380,12 @@ ci-dessus.
 | Hammer Punch `11651`-`11655` | « La cible ne porte aucun effet nocif (+1 coup) » | manuel | 2, ou 3 |
 | Pound `11664` | « L’état des PV de la cible est pire que le tien, ou elle porte un effet nocif (+2 coups) » | manuel : les deux clauses de la prose en un seul réglage | 4, ou 6 |
 | Strafe, God's Weapon | « Le tir en plus part » / « Le coup en plus part » (+1 coup) | manuel : la probabilité du coup en plus n'est jamais tirée | 2, ou 3 |
-| Brutal Fists `18301`-`18305` | aucun | `atkCibleSousAtkPropre`, ratio 1, **strict** : ATQ du build > « ATQ adverse » (`enemyAtk`), le champ de Theonia, Kassandra et Eleni | 3, ou 4 |
+| Brutal Fists `18301`-`18305` | aucun | `atkCibleSousAtkPropre`, ratio 1, **strict** : ATQ du build > ATQ adverse (`enemyAtk`), la ligne de Theonia, Kassandra et Eleni | 3, ou 4 |
 | Stormfist `18306`, `18307`, `18309` | aucun | `atkParTranche` (60 %, 3 coups en plus au plus) : `min(6, 3 + ⌊(ATQ de combat / ATQ de base − 1) / 0,6⌋)` | 3 à 6 |
 
 Brutal Fists est **déduit** : le coup en plus se règle dans
 `computeSkillDamageDetail`, avec la même `statsDeCombat` que le reste du calcul
-(`resolvedHits` reçoit l'ATQ du build), et le champ « ATQ adverse » s'ouvre sur
+(`resolvedHits` reçoit l'ATQ du build), et la ligne ATQ de l'adversaire s'ouvre sur
 ce sort. Une ancienne recette sans `enemyAtk` prend la valeur affichée
 (1 000). Le résumé de l'écran et la ligne du CLI décrivent un
 réglage, **sans build** : ils passent par `coupsAffichesDuSort` (même règle que

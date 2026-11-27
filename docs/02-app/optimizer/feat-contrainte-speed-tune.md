@@ -382,7 +382,9 @@ minimum et le verrou « Effet aug. VIT » :
   206 de la classe, 0 pour la classe sans artéfact) et « Set Rapide » (oui ou non) ; les
   titres passent sur deux lignes plutôt que d'élargir la carte. Le titre de la zone
   (« Vitesses de Lushen qui respectent l'ordre et le speed tuning comme défini ») replie et
-  déplie le tableau, déplié par défaut ;
+  déplie le tableau, replié par défaut à chaque ouverture du membre (rien n'est mémorisé) ;
+  les messages d'erreur (verdict, zone vide, aucun set admis, VIT maximum sous la zone) sont
+  hors du tableau et restent visibles replié ;
 - les autres lignes, leur origine (plan, build validé, figé faute de membre) et
   les écarts de la section dédiée, avec leurs boutons ;
 - un bouton « Détacher le speed tune ».

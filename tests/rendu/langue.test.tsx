@@ -332,7 +332,7 @@ export function testRenduLangueDegatsReels() {
 export function testRenduLangueBureauControles() {
   titre('rendu · langue — l’app de bureau et les contrôles partagés, en anglais');
   const bloc = texteVisible(enAnglais(() => rendre(<BlocApplication classeCarte="" />)));
-  for (const morceau of ['SW Exporter folder', 'Summoner', 'Check', 'New versions are checked at launch.', 'Choose the folder where SW Exporter saves its exports'])
+  for (const morceau of ['SW Exporter folder', 'Summoner', 'Check', 'New versions are checked at launch, then daily.', 'Choose the folder where SW Exporter saves its exports'])
     ok(bloc.includes(morceau), `le bloc « Application » : « ${morceau} »`);
   ok(!/Dossier SW Exporter|Invocateur|Rechercher|cherchées/.test(bloc), 'le bloc « Application » : aucun texte français resté');
   egal(presentationSwex({ dossier: 'C:/x', fichier: null, exports: [], dernierLu: null, introuvable: true }, en).invocateur,

@@ -8,7 +8,7 @@ export const DAMAGE_SETUP_CLASSIFICATION = {
   ownHpPct: 'contexte', livingAlliesPct: 'contexte', aliveEnemies: 'contexte',
   sacrificeReservePct: 'sort', enemyAtk: 'contexte',
   enemyHpNotDestroyed: 'contexte', enemyDestroyedHpPct: 'legacy-contexte',
-  enemySpd: 'contexte', enemyElement: 'contexte',
+  enemySpd: 'contexte', adversaire: 'contexte', enemyElement: 'contexte',
   leaderSkill: 'contexte', leaderSpeedPct: 'legacy-contexte', setsAuraExternes: 'contexte',
   atkBuff: 'contexte', defBuff: 'contexte', spdBuff: 'contexte',
   defBreak: 'contexte', defBreakParLeSort: 'sort', attaqueConjointe: 'sort', pendantTourAllie: 'sort', brand: 'contexte',

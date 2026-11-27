@@ -6,6 +6,7 @@ import * as criteres from '../src/lib/criteresOptimizer';
 import * as degats from '../src/lib/damage';
 import * as combatListe from '../src/lib/combatListeOptimizer';
 import * as transitionsDegats from '../src/lib/damageSetupTransition';
+import * as saisieAdversaire from '../src/lib/saisieAdversaire';
 import * as proprietaires from '../src/lib/optimizerCriteriaOwner';
 import * as memoires from '../src/lib/optimizerMemberStorage';
 import * as exemplaires from '../src/lib/optimizerExclusion';
@@ -47,6 +48,7 @@ export async function bancOptimizer() {
     '../lib/damage': degats,
     '../lib/combatListeOptimizer': combatListe,
     '../lib/damageSetupTransition': transitionsDegats,
+    '../lib/saisieAdversaire': saisieAdversaire,
     '../lib/optimizerCriteriaOwner': proprietaires,
     '../lib/optimizerMemberStorage': memoires,
     '../lib/optimizerExclusion': exemplaires,

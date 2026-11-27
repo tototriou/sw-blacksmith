@@ -17,6 +17,7 @@ interface RecoSlot {
 interface RecoCounter {                        // une défense adverse que le deck bat
   monsters: { com2usId: number|null; name: string }[]; // toujours 3
   note: string;                                // « si le Chloe est en lead »
+  fiabilite?: number;                          // 0 à 5 par demi-étoile, absente = non notée (defenses-visees.md)
 }
 interface RecoDeck { name: string; note: string; slots: RecoSlot[]; counters: RecoCounter[] } // 3 slots, index 0 = leader
 interface Reco { id: string; origin: 'mine'|'imported'; name: string; author: string; note: string; decks: RecoDeck[];
@@ -145,6 +146,9 @@ Affichage :
   de son verdict, ses trois portraits (le leader porte son lead), son nom, et
   la **précision** que CE deck donne sur la défense (« — si Galleon est en
   lead »). Un deck qui vise deux fois la même défense n'y figure qu'une fois.
+  ⚠️ **Les offenses d'une défense passent de la plus fiable à la moins
+  fiable**, leurs étoiles après leur nom : on joue la plus sûre d'abord
+  ([defenses-visees.md](defenses-visees.md#fiabilité--quelle-offense-jouer-dabord)).
   ⚠️ **Au doigt, 8 px entre les lignes repliées d'une offense**
   (`compact:gap-y-2`) : le bouton d'export renvoyé à la ligne a une
   boîte de 40 px (règle tactile), et le badge de lead du leader descend de
@@ -153,6 +157,13 @@ Affichage :
   ligne.
 - **Les decks sans défense visée** ne disparaissent pas : ils sont listés à la
   fin, sous « Aucune défense visée ».
+- ⚠️ **Une page de 20 à la fois** (`DEFENSES_PAR_PAGE`,
+  [pagesRecos.ts](../../../../src/lib/pagesRecos.ts)), sur **une seule liste** :
+  les défenses, puis chaque deck sans défense. Paginer les défenses seules
+  laissait « Aucune défense visée » entier — sept cents offenses pour un lot
+  dont personne n'a renseigné les défenses. La barre de pages se pose
+  au-dessus du tableau ; une autre recherche repart de la première page. Voir
+  [interactions.md](interactions.md#une-page-de-decks-à-la-fois).
 - **Recherche** : une offense reste si son deck JOUE le monstre cherché, ou si
   CETTE défense le contient ; une défense sans offense restante disparaît.
 - L'encart d'analyse reste ; ses lignes (« Voir le deck… ») sont

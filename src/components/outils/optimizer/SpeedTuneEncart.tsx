@@ -51,8 +51,9 @@ export default function SpeedTuneEncart({ m, monstres, donnees, zoneChangee = fa
   const t = useTraduction();
   const langue = useLangue();
   const s = t.optimizer.speedTune;
-  // Déplié par défaut : la zone est la raison d'être de l'encart.
-  const [zoneOuverte, setZoneOuverte] = useState(true);
+  // Replié par défaut : le verdict et les écarts suffisent à suivre l'équipe ;
+  // tout message d'erreur reste hors du tableau, donc jamais masqué par le repli.
+  const [zoneOuverte, setZoneOuverte] = useState(false);
   const n = (v: number | null) => (v == null ? '—' : formatNombre(v, langue));
   const nom = (uid: string) => {
     const l = m.plan?.lignes.find((x) => x.uid === uid);
@@ -88,7 +89,7 @@ export default function SpeedTuneEncart({ m, monstres, donnees, zoneChangee = fa
             <div>
               {/* Le titre replie le tableau ; il reste en place, seul ce qui
                   suit bouge. */}
-              <ZoneCliquable onClick={() => setZoneOuverte((v) => !v)} aria-expanded={zoneOuverte}
+              <ZoneCliquable data-zone-speed-tune onClick={() => setZoneOuverte((v) => !v)} aria-expanded={zoneOuverte}
                 className="mb-1 flex w-full items-center gap-2 text-left">
                 <span className="min-w-0 flex-1 text-micro text-ink-dim">{s.zoneTitre(nom(m.lien.uid))}</span>
                 <ChevronDown size={13} className={`flex-none text-ink-dim transition-transform ${zoneOuverte ? 'rotate-180' : ''}`} />
