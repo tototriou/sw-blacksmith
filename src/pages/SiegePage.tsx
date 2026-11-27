@@ -9,6 +9,7 @@ import SiegeStatistiques from '../components/siege/SiegeStatistiques';
 import { CustomLead } from '../hooks/useCustomMonsters';
 import type { ActionImportOptimizer } from '../lib/actionImportOptimizer';
 import type { ExclusionSourceData } from '../lib/optimizerExclusion';
+import type { EquipeEnregistree } from '../lib/equipesEnregistrees';
 
 // Onglet de siège : les deux côtés jouables, les recommandations partagées et
 // les statistiques des sièges joués.
@@ -30,6 +31,8 @@ interface Props {
   // propose les decks des DEUX camps.
   siegeDefenseTeams: SiegeTeamData[];
   siegeOffenseTeams: SiegeTeamData[];
+  // Les équipes de « Mes équipes » : un counter peut partir de l'une d'elles.
+  equipesEnregistrees: EquipeEnregistree[];
   loadState: LoadState;
   onCreateMonster: (name: string, element: ElementKey, speed: number, lead?: CustomLead | null) => Monster;
   customMonsters: Monster[];
@@ -40,8 +43,8 @@ interface Props {
 }
 
 
-// ⚠️ `copies6` est extrait explicitement : laissé dans `...boardProps`, il
-// partait dans `SiegeBoard`, qui ne le connaît pas.
+// ⚠️ `copies6` et `equipesEnregistrees` sont extraits explicitement : laissés
+// dans `...boardProps`, ils partaient dans `SiegeBoard`, qui ne les connaît pas.
 export default function SiegePage({
   tab,
   siege,
@@ -50,6 +53,7 @@ export default function SiegePage({
   builds,
   teams,
   copies6,
+  equipesEnregistrees,
   menuOuvert,
   onFermerMenu,
   ...boardProps
@@ -76,6 +80,7 @@ export default function SiegePage({
           teams={teams}
           copies6={copies6}
           offense={offense}
+          equipesEnregistrees={equipesEnregistrees}
           menuOuvert={menuOuvert}
           onFermerMenu={onFermerMenu}
         />

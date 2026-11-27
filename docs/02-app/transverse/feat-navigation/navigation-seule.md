@@ -104,7 +104,7 @@ rechercher…).
 Hors de la nav, **une icône qui nomme une section prend la sienne** : cartes
 de l'accueil ; au Siège, états vides (bouclier ou épée selon le
 côté, parchemin des Recommandations), « Voir le speed tune » (chronomètre),
-« Importer un deck d'offense » et « Fort contre » (épée) ; à la
+« Fort contre » (épée) ; à la
 RTA, l'état vide, le bouton d'ouverture et l'en-tête d'une prépa d'« Ami »
 (compagnons) ; au Bestiaire, « Aucun monstre ne correspond » (grimoire) ; au
 Speed tuning, la pastille de l'en-tête au téléphone (chronomètre) ;

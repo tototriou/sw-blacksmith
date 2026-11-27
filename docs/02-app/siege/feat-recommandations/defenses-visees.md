@@ -17,17 +17,17 @@ liste de **défenses adverses qu'il bat** (`RecoDeck.counters`) :
 - ⚠️ **Purement informatif : jamais confronté au compte.** L'app ne connaît que
   **mes** équipes, pas celles des adversaires — il n'y a rien à quoi comparer.
   Ce bloc ne porte donc ni statut, ni badge, ni couleur de résultat, et
-  n'intervient pas dans « Analyser mes decks ».
+  n'intervient pas dans « Confronter à mon compte ».
 - Même clé stable que partout : le **`com2usId`**. Un monstre perso n'y entre
   pas.
 - Un monstre ne peut pas occuper deux emplacements de **la même** défense ; il
   peut revenir dans une autre.
 
-**Placement** : bloc dédié **sous les 3 monstres** du deck, séparé par un filet.
-C'est une information sur le **deck entier**, pas sur un slot — et le deck garde
-sa structure habituelle au-dessus. Visible **deck déplié** seulement : la ligne
-repliée porte déjà 3 monstres, y ajouter N×3 portraits adverses la rendrait
-illisible.
+**Placement** : bloc dédié **sous les 3 monstres** du deck déplié, séparé par
+un filet. C'est une information sur le **deck entier**, pas sur un slot — et le
+deck garde sa structure habituelle au-dessus. La ligne repliée en montre un
+aperçu : jusqu'à trois défenses en petit, puis « … »
+([rendu-de-la-page.md](rendu-de-la-page.md#la-ligne-dun-deck)).
 
 - **Lecture** : les défenses sont **côte à côte** (`flex-wrap`), chacune réduite
   à ses **3 portraits**.
@@ -149,34 +149,46 @@ celle de **ce deck contre cette défense** (`RecoCounter.fiabilite`), pas celle
 du deck en général — un deck sûr contre une défense peut être un pari contre
 une autre.
 
-- **En étoiles, de 0 à 5 par demi-étoile** ; 5 est le mieux. **Absente =
-  « non notée »**, distincte de 0 : « pas encore jugé » n'est pas « ne passe
-  pas ». Calcul pur dans [recoDefenses.ts](../../../../src/lib/recoDefenses.ts)
-  (`fiabiliteValide`, `tonFiabilite`, `parFiabilite`), affichage et saisie dans
+- **En étoiles, de 0 à 5, saisie par étoile entière** (0, 1, 2, 3, 4, 5 —
+  `FIABILITE_PAS_SAISIE`) ; 5 est le mieux. **Absente = « non notée »**,
+  distincte de 0 : « pas encore jugé » n'est pas « ne passe pas ». ⚠️ **Relue
+  par demi-étoile** (`FIABILITE_PAS`) : des notes en demi-étoiles existent dans
+  les stockages, les salons et les fichiers ; les refuser les effacerait. Elles
+  s'affichent telles quelles (une demi-étoile dessinée) et passent à l'entier
+  voisin au premier « + » ou « − ». Calcul pur dans
+  [recoDefenses.ts](../../../../src/lib/recoDefenses.ts) (`fiabiliteValide`,
+  `tonFiabilite`, `parFiabilite`), affichage et saisie dans
   [EtoilesFiabilite.tsx](../../../../src/components/siege/EtoilesFiabilite.tsx).
 - **Couleur selon la note**, sur les étoiles pleines : **rouge** sous 2,
   **jaune** de 2 à 3,5, **vert** à partir de 4 (tokens `bad`, `warn`,
   `good`). Les étoiles vides restent grises.
-- **Lecture** : cinq étoiles de 12 px **sous les portraits** de la vignette
-  (vue Attaque), de 10 px sur la **ligne repliée** du deck, après la défense
-  qu'elle montre (celle qui répond à une recherche, sinon la première), et
-  **après le nom de l'offense** en vue Défense. Une défense
-  non notée n'en affiche aucune. Infobulle et nom accessible : « Fiabilité 4,5
-  sur 5 ».
-- **Saisie**, dans la défense en édition, sous la précision :
-  - chaque étoile se touche **par moitié** — gauche une demi-étoile, droite
-    l'étoile entière ;
-  - ⚠️ **« − » et « + »** font le même geste demi-étoile par demi-étoile : une
-    demi-étoile fait 10 px, trop petit pour viser juste **au doigt** ; les deux
-    boutons ont la taille tactile. « + » sur une défense non notée donne 0,5 ;
+- **Lecture** : cinq étoiles **au-dessus des portraits** de chaque défense sur
+  la ligne d'un deck (vue Decks), **sous les portraits** de la vignette dans
+  le deck ouvert, et sur la ligne de l'offense dans la vue Défenses (contre la
+  défense regardée). Infobulle et nom accessible : « Fiabilité 4,5 sur 5 ».
+- ⚠️ **Elle se note SUR PLACE, sans éditer le deck** (`FiabiliteRapide`) : les
+  étoiles — ou « ☆ Noter », sans note — ouvrent le choix dans un flottant.
+  ⚠️ **Noter dit contre QUOI** : un deck n'est pas aussi fort contre toutes ses
+  défenses. Sur la ligne d'un deck, chaque vignette de défense note la
+  sienne, ses portraits en tête du choix ; « … » liste TOUTES les défenses du
+  deck, chacune sa rangée (portraits, étoiles, « − », « + », « × »). Dans la
+  vue Défenses, la défense est celle du volet. Hors du flux : la ligne ne
+  bouge pas à l'ouverture.
+- **Le choix** (`ChoixFiabilite`), sur place comme dans la défense en
+  édition :
+  - toucher la k-ième étoile note k ;
+  - ⚠️ **« − » et « + »** font le même geste étoile par étoile, en cibles
+    tactiles : une étoile de 20 px reste juste à viser au doigt. 0 s'obtient
+    par « − » depuis 1 ; « + » sur une défense non notée donne 1 ;
   - **« × »** la rend non notée. ⚠️ Toujours rendu, désactivé sans note : il
     apparaissait au premier clic et décalait la rangée ;
-  - la note s'écrit à côté (« 3,5 / 5 », ou « Non notée »).
-- ⚠️ **Classement en vue Défense** : les offenses d'une défense passent **de la
-  plus fiable à la moins fiable**, 0 avant les non notées ; à égalité, l'ordre
-  de la vue Attaque. Les défenses elles-mêmes gardent leur ordre. La vue
-  Attaque ne réordonne rien d'elle-même ; pendant une recherche, le tri
-  « Fiabilité » range les decks trouvés
-  ([recherche-par-monstre.md](recherche-par-monstre.md#trier-par-fiabilité)).
+  - la note s'écrit à côté (« 3 / 5 », ou « Non notée ») — sauf dans la liste
+    des défenses d'un deck, où les étoiles la disent : chaque rangée y tient
+    sur une ligne au téléphone.
+- ⚠️ **Classement dans la vue Défenses** : rangées « Par fiabilité », les
+  offenses d'une défense passent **de la plus fiable à la moins fiable**, 0
+  avant les non notées ; à égalité, l'ordre par recommandation
+  ([recherche-par-monstre.md](recherche-par-monstre.md#la-vue-défenses)). La
+  vue Decks ne réordonne rien.
 - **Partage** : voyage dans l'export, champ facultatif `fiabilite`
   ([persistance-et-partage.md](persistance-et-partage.md#le-champ-fiabilite-dune-défense-visée)).

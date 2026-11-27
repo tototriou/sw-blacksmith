@@ -2247,6 +2247,7 @@ function Application() {
         offense={siegeOff}
         siegeDefenseTeams={siegeDef.state.teams}
         siegeOffenseTeams={siegeOff.state.teams}
+        equipesEnregistrees={equipesEnregistrees.equipes}
         recos={recos}
         builds={ownedBuilds}
         teams={ownedTeams}

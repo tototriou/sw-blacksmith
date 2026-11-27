@@ -1,140 +1,85 @@
-# Recommandations — recherche par monstre
+# Recommandations — la vue Défenses et la recherche par monstre
 
-Partie de [Siège · Recommandations](README.md).
+Partie de [Siège · Recommandations](README.md). Fichiers :
+[VoletDefenses.tsx](../../../../src/components/siege/VoletDefenses.tsx) (la vue
+Défenses), [recoDefenses.ts](../../../../src/lib/recoDefenses.ts) (les défenses
+de toutes les recommandations, l'ordre des offenses — calcul pur),
+[recoSearch.ts](../../../../src/lib/recoSearch.ts) (la recherche — calcul pur).
 
-## Recherche par monstre — sur toute la page
+## La vue décide où l'on cherche
 
-**Jusqu'à trois monstres**, avec un sélecteur de **rôle** : `Partout` ·
-`Défense à taper` · `Offense à runer`
-([recoSearch.ts](src/lib/recoSearch.ts), calcul pur).
+Deux questions se posent devant des recommandations, et elles n'ont pas la même
+réponse : « **qui bat** cette défense ? » et « **qui joue** ce monstre ? ». La
+vue y répond, et le champ de recherche cherche là où elle regarde :
 
-**Placement : juste au-dessus des recommandations**, dans le bloc de filtres.
-C'est elle qui décide de ce que la liste montre, elle doit donc être collée à ce
-qu'elle filtre.
+| Vue | Ce qu'elle montre | Où le monstre est cherché | Le champ |
+| --- | --- | --- | --- |
+| **Défenses** (à l'arrivée) | chaque défense visée, et les offenses qui la battent | dans les **défenses visées** (`counters`) | « Monstre de la défense… » |
+| **Decks** | les recommandations, et leurs decks | dans les **decks** (`slots`) | « Monstre d'un deck… » |
 
-### La vue — SORTIE du bloc de filtres, toujours affichée
+⚠️ **Un seul choix, pas deux** : un sélecteur de rôle à côté d'une vue
+redirait la même chose, et pourrait la contredire. Ce qui relève de l'autre vue
+**n'est pas affiché** : demander une défense et voir remonter des offenses
+n'est pas un classement, c'est du bruit.
 
-⚠️ **La vue ne suit pas la règle du bloc de filtres** (ci-dessous), et c'est
-volontaire — elle a hérité de la place et de la règle du filtre d'origine
-qu'elle remplace. Un filtre au-dessus d'une liste vide n'a normalement rien à
-filtrer — c'est vrai pour la recherche par monstre, qui n'a RIEN à chercher
-sans recommandation. Ce n'est **pas** vrai pour la vue : ses deux crans
-(Attaque/Défense) restent un choix qui a un sens dès qu'on **crée**
-la première recommandation, et un bouton d'action qui apparaît une fois qu'on
-en a besoin surprend — on ne l'a jamais vu apparaître d'un geste, il était
-juste absent (voir la règle générale dans
-[03-developpeur/interface/design/mouvement-et-gestes.md](../../../03-developpeur/interface/design/mouvement-et-gestes.md#%EF%B8%8F-un-bouton-daction-ne-disparaît-jamais--il-se-désactive) (design, « Un bouton d'action ne disparaît jamais »)).
-La vue est donc **posée hors du bloc**, **toujours affichée et active** —
-aux deux formats.
+⚠️ **La vue est toujours affichée et active**, même sans recommandation :
+c'est un choix qui a un sens dès qu'on **crée** la première, et un bouton
+d'action qui apparaît une fois qu'on en a besoin surprend (règle générale :
+[mouvement-et-gestes.md](../../../03-developpeur/interface/design/mouvement-et-gestes.md#%EF%B8%8F-un-bouton-daction-ne-disparaît-jamais--il-se-désactive)).
+Elle utilise le vrai [Segmented](../../../../src/ui/Segmented.tsx) ; ses crans
+ne portent pas d'effectif (les deux vues montrent les MÊMES recommandations).
+Mémorisée (`useStickyState`, clé `recos.vue`), comme la recherche.
 
-Rendu **une seule fois** (`vueFilter(pleineLargeur)`), posé aux deux
-endroits — même geste que `actions` et `effacer` :
-- **à la souris** : sur la page, juste au-dessus du bloc de filtres, `hidden
-  lg:flex` ;
-- **au doigt** : dans le panneau « Options » (sous un filet, sous les
-  actions) — la carte reste à la **recherche**, le contrôle qu'on veut sous
-  le pouce sans ouvrir un panneau.
+**Rien dans cette vue, mais dans l'autre** : le message d'absence de résultat
+le dit (« Voir dans Decks (N) ») — sans ça, on conclut que la composition
+n'existe pas alors qu'elle est peut-être de l'autre côté.
 
-⚠️ **Pleine largeur dans le panneau**, pas à sa taille propre : seul contrôle
-de sa ligne, il y flotterait sinon dans une bande vide. `Segmented` passe en
-`size="lg"` (chaque cran se partage la largeur à égalité).
+## La vue Défenses
 
-⚠️ **Intitulé « Vue » : au DOIGT seulement.** Dans le panneau, c'est le
-seul repère de ce contrôle — rien d'autre à côté pour dire ce qu'il fait.
-À la SOURIS, pas d'intitulé : en tête de la barre d'outils, les deux crans
-(Attaque/Défense) se lisent d'eux-mêmes, et leur infobulle dit ce que chacun
-montre.
+**La liste** (`defensesDesRecos`) : chaque défense visée **une fois**, toutes
+recommandations de la provenance confondues, **les plus jouées d'abord** (celle
+que le plus d'offenses battent, celle qu'on rencontre le plus) ; à égalité,
+l'ordre de première apparition. Chaque ligne : les trois portraits, la meilleure
+fiabilité de ses offenses, « N offenses · M recos ». Puis **« Sans défense
+visée »** : les decks qui n'en visent aucune restent atteignables — rien n'est
+caché en changeant de vue. Même identité d'équipe que partout (`cleEquipe` :
+le chef, s'il a un lead actif en siège, puis les deux autres triés —
+[defenses-visees.md](defenses-visees.md)).
 
-⚠️ **`size="md"` à la souris, pas `sm`** — troisième palier ajouté à
-[Segmented.tsx](../../../../src/ui/Segmented.tsx) : le texte et le
-rembourrage de `lg`, sans forcer sa largeur (`lg` reste réservé au panneau, où
-le cran est seul sur sa ligne). Posé seul sur sa propre ligne depuis qu'il est
-sorti du bloc de filtres, ce contrôle a la place d'être aussi lisible qu'un
-réglage structurant.
+**Le volet de la défense choisie** :
 
-### La recherche par composition — sans cadre, sans intitulé « Monstres »
+- **L'en-tête** : la défense, son nom, « N offenses · M recommandations », et
+  le **rangement** de ses offenses, là où il agit :
+  - **Par reco** (à l'arrivée) : une bande par recommandation, dans l'ordre de
+    la page, puis l'ordre de ses decks — celui de son auteur ;
+  - **Par fiabilité** : la plus fiable contre CETTE défense d'abord, à plat, la
+    recommandation en étiquette de ligne ; non notées à la fin, 0 avant elles ;
+    à égalité, l'ordre par reco. Mémorisé (clé `recos.tri`).
+- **« + Ajouter un counter »**, au bout de la rangée de la pagination : un deck
+  contre CETTE défense ([interactions.md](interactions.md#ajouter-un-counter)).
+- **La bande d'une recommandation** : son nom, sa provenance et l'état de son
+  salon, son auteur, « N decks ici · M au total », ses **consignes**
+  (une bulle, qui se lit sans quitter la défense) et son menu « ⋯ » :
+  « Publier dans… », « Éditer la recommandation » (qui passe en vue Decks, la
+  recommandation ouverte en édition), « Exporter en fichier », « Supprimer
+  cette recommandation » — « Détacher de ce salon » pour une recommandation
+  liée.
+- **Une offense** : la ligne d'un deck, la même que dans la vue Decks
+  ([rendu-de-la-page.md](rendu-de-la-page.md#la-ligne-dun-deck)) ; à la place
+  des défenses battues, la **fiabilité contre CETTE défense** (notable depuis
+  la ligne), la précision que ce deck donne contre elle (« Contre cette
+  défense : … ») et ses consignes. ⚠️ **Elle s'ouvre et s'édite sur place** :
+  il fallait repasser en vue Decks, retrouver la recommandation puis le deck.
+- ⚠️ **L'ordre est pris au choix de la défense, du rangement ou de la
+  recherche, puis TENU** (`ordonnerOffenses`, `fige`) : noter un deck pendant
+  qu'on l'édite le déplaçait sous le clic. Ce que l'ordre ne connaît pas (un
+  counter ajouté) vient après — dans sa bande, par reco. L'offense en édition
+  reste dans le volet même si l'édition lui fait quitter cette défense.
 
-Monstres cherchés et rôle **filtrent tous la même liste** et se
-**combinent**. Deux rangées empilées, **sans encart** (ni bordure ni fond) et
-**sans intitulé sur la première** :
+## La recherche par composition
 
-| Rangée | Contrôle | Visible |
-|--------|----------|---------|
-| **(sans intitulé)** | le champ, puis les 3 cases collées à lui, puis « Vider » | dès 1 recommandation |
-| **Rôle** | `Segmented` Partout · Défense à taper · Offense à runer + le compteur de résultats | une fois un monstre posé |
-| **Tri** | `Segmented` Ordre des recos · Fiabilité (voir « Trier par fiabilité ») | une fois un monstre posé |
-
-⚠️ **Pas de cadre** : le contenu n'a pas besoin d'être distingué du reste de la
-page — la vue, juste avant, n'en a pas non plus.
-
-⚠️ **Pas d'intitulé « Monstres ».** Les trois cases et le champ disent déjà par
-leur FORME ce qu'on y fait — une composition de 3 monstres à composer —, un mot
-devant n'ajouterait rien. « Rôle » garde le sien : contrairement aux cases, un
-`Segmented` Partout/Défense/Offense ne dit pas de lui-même sur QUOI il porte.
-
-Ce bloc **n'apparaît que s'il existe au moins une recommandation** : sans rien
-à chercher, la recherche n'a pas sa place — à la différence de la vue, qui
-reste affichée à vide (voir plus haut).
-
-⚠️ **Le champ de recherche à GAUCHE, les portraits des monstres posés à
-sa DROITE, collés à lui.** C'est le champ qu'on utilise en premier — le regard
-commence par lui, pas par des cases encore vides — et les portraits sont son
-RÉSULTAT : ils se lisent après ce qu'on vient de taper, jamais avant.
-⚠️ **Sous `lg`, le champ prend toute la largeur restante** ; il n'est plafonné
-(260 px) qu'à partir de `lg`. Plafonné dès `sm`, avec les cases poussées au
-bord droit (`ml-auto`), il laisserait un grand vide entre les deux, et les
-cases se liraient comme un contrôle à part. Champ et cases forment un seul
-bloc.
-⚠️ **Trois monstres posés : le message « Trois monstres posés — … » prend la
-boîte du champ**, plafond de 260 px compris. Laissé libre de s'étendre, il
-poussait les cases et « Vider » au bord droit de la page au troisième
-monstre — les cases bougeaient sous le clic qui les remplissait.
-
-- ⚠️ **L'intitulé de largeur fixe** (`w-[76px]`) aligne les contrôles entre
-  eux quelle que soit la longueur du mot : sans lui, ce seraient des objets
-  flottants dont rien ne dirait qu'ils portent sur la même liste ni qu'ils se
-  cumulent.
-- ⚠️ **La vue utilise le VRAI [Segmented](src/ui/Segmented.tsx)**, et non une
-  copie écrite à la main : une copie dérive — autre fond, autre rayon, autre
-  taille de texte —, et deux contrôles à cran voisins n'auraient ni le même
-  cadre, ni le même rayon, ni la même taille. Un composant partagé existe, on
-  le prend.
-- Les crans de la vue ne portent pas d'effectif : les deux vues montrent les
-  MÊMES recommandations, il n'y aurait rien à compter.
-- Le **compteur de résultats** est sur la rangée **Rôle** : c'est lui qui décide
-  combien il en reste. Il n'a ainsi pas besoin d'une hauteur de ligne en dur
-  pour se caler sur un contrôle voisin.
-- **« Vider » est sur la rangée Monstres**, avec les cases qu'il vide — et non
-  avec le sélecteur de rôle, auquel il ne touche pas.
-
-### Trier par fiabilité
-
-Chercher une défense, c'est demander « quel deck la bat ? » ; quand plusieurs
-répondent, on veut **le plus sûr d'abord**. La rangée **Tri** range les
-résultats par la fiabilité notée sur chaque défense visée
-([defenses-visees.md](defenses-visees.md#fiabilité--quelle-offense-jouer-dabord)).
-
-- **Ordre des recos** (défaut) : l'ordre de l'utilisateur, inchangé.
-- **Fiabilité** (`trierParFiabilite`, [recoSearch.ts](src/lib/recoSearch.ts)) :
-  dans chaque recommandation, ses decks trouvés du plus fiable au moins
-  fiable ; puis les recommandations, par leur meilleur deck. Non notés à la
-  fin, 0 avant eux ; à égalité, l'ordre d'origine.
-  - ⚠️ **La fiabilité d'un deck trouvé est celle de la défense QUI RÉPOND**
-    (`fiabiliteDuHit`), pas la meilleure du deck : un deck sûr contre une
-    autre défense ne l'est pas contre celle qu'on cherche. Un deck trouvé par
-    ses propres monstres (Offense à runer) prend la meilleure de ses défenses.
-  - ⚠️ **L'ordre est pris au tri, puis tenu** (`suivreOrdre`) : noter un deck
-    pendant qu'on l'édite le déplaçait sous le clic. Il se refait à une autre
-    recherche, un autre rôle, une autre provenance ou en rechoisissant le
-    tri ; ce que l'ordre ne connaît pas (un deck ajouté) vient après.
-- Mémorisé (`useStickyState`, clé `recos.tri`). En vue Défense, les offenses
-  d'une défense sont **toujours** classées par fiabilité ; le tri y range les
-  recommandations.
-- **La fiabilité se voit sans déplier** : la ligne repliée d'un deck montre,
-  dans sa colonne « Fort contre », la défense **qui répond** à la recherche (la
-  plus fiable s'il y en a plusieurs) et ses étoiles — hors recherche, la
-  première défense et les siennes.
-- Changer de tri ramène chaque carte à sa première page de decks.
+**Jusqu'à trois monstres**, dans la barre d'outils, à côté de la vue. Elle
+porte sur la provenance choisie.
 
 ### ⚠️ Plusieurs monstres se cumulent en ET, dans la MÊME composition
 
@@ -143,9 +88,8 @@ qui permet de retrouver une défense qu'on affronte — « Chloé + Trevor + Bel
 sort le deck qui bat **exactement** cette composition, pas les trois listes de
 decks qui jouent l'un des trois.
 
-- Le « tous présents » vaut **par composition** : soit les 3 slots d'un deck,
-  soit une **même** défense visée. Réparti entre les deux, il ne voudrait rien
-  dire — un deck qui *joue* Chloé et qui *bat* Trevor ne réunit pas les deux.
+- Le « tous présents » vaut **par composition** : les 3 slots d'un deck (vue
+  Decks), ou une **même** défense visée (vue Défenses).
 - ⚠️ Une position déjà retenue **ne compte pas deux fois** : chercher deux fois
   le même nom exige **deux** monstres. Sans ça, « chloe chloe » passerait sur un
   deck n'en portant qu'une.
@@ -154,127 +98,73 @@ decks qui jouent l'un des trois.
   inversement (`jumeauCollab`) : « Werner » trouve le deck noté Satoru Gojo.
   C'est le même monstre, et qui a recruté l'un ne connaît pas forcément le nom
   de l'autre.
+- **Casse et accents ignorés** : « chloe » trouve « Chloé ».
+- Le nom comparé est celui du **bestiaire** s'il est chargé, sinon celui **figé
+  au partage** — même repli que partout pour un monstre absent des données.
 
 ### Rendu — trois cases, un champ
 
-⚠️ **Trois CASES au-dessus, et non trois champs texte** : elles montrent la
-forme de ce qu'on cherche — une composition de 3 monstres — **avant même d'avoir
-tapé**, et reprennent le langage des slots de deck de la page. Une case vide
-porte un `+` en tireté.
+⚠️ **Trois CASES, et non trois champs texte** : elles montrent la forme de ce
+qu'on cherche — une composition de 3 monstres — **avant même d'avoir tapé**, et
+reprennent le langage des slots de deck de la page. Une case vide porte un `+`
+en tireté.
 
-- **Un champ unique à côté** (`MonsterPicker`, celui des slots de deck) remplit
-  la **première case libre** : on enchaîne les trois noms sans viser une case
-  entre chaque. Il est sur la **même rangée** que les cases qu'il alimente —
-  empilé dessous, rien ne dirait qu'il les remplit.
+- ⚠️ **Le champ à GAUCHE, les cases à sa DROITE, collées à lui** : c'est le
+  champ qu'on utilise en premier, et les portraits sont son RÉSULTAT. Sous
+  `lg`, il prend toute la largeur restante ; plafonné (260 px) à partir de
+  `lg`.
+- **Un champ unique** (`MonsterPicker`, celui des slots de deck) remplit la
+  **première case libre** : on enchaîne les trois noms sans viser une case
+  entre chaque.
 - **Portrait, jamais le nom seul** : plusieurs monstres portent le même nom
-  (formes 2A) — voir [MonsterAvatar](src/components/MonsterAvatar.tsx). Repli sur
-  les initiales si le monstre est absent des données chargées.
+  (formes 2A) — voir [MonsterAvatar](../../../../src/components/MonsterAvatar.tsx).
+  Repli sur les initiales si le monstre est absent des données chargées.
 - ⚠️ **Les monstres posés sont retirés des suggestions** : le ET exige des
-  monstres **distincts**, en poser deux fois le même garantirait zéro résultat.
-- ⚠️ **Le champ disparaît quand les trois cases sont prises** : un champ de
-  saisie qui n'a plus où poser ce qu'on y tape se lit comme un bug. Un rappel
-  prend sa place.
+  monstres **distincts**.
+- ⚠️ **Trois monstres posés : le message « Trois monstres posés — … » prend la
+  boîte du champ**, plafond compris — laissé libre de s'étendre, il poussait
+  les cases sous le clic qui les remplissait.
 - ⚠️ **Retirer ne tasse pas les cases restantes** : chacune garde sa place,
   sinon les portraits sautent d'une case à l'autre sous le curseur.
 - On stocke les **noms** et non des `com2usId` : la recherche compare des noms,
   et un monstre d'une reco importée peut être absent des données chargées.
 - **Deux effacements, deux portées** : **cliquer un portrait** retire ce
-  monstre (on affine), le bouton **« Vider »** abandonne la recherche entière.
-  Ce dernier n'apparaît **qu'une fois quelque chose posé**.
-- Le message d'absence de résultat **énonce la règle** au-delà d'un terme
-  (« … ne réunit A + B ») : sans ça, une recherche à trois qui ne renvoie rien
-  se lit comme un bug, puisqu'on voit chaque monstre à l'écran.
-- ⚠️ Il **nomme aussi le rôle cherché**, puisque le sélecteur filtre :
-  « Aucune défense visée ne réunit … », « Aucun deck d'offense … », « Aucun deck
-  ni défense visée … ». Sans ça, on conclut que la composition n'existe pas
-  alors qu'elle est peut-être dans l'autre rôle.
-  - Sur un mode restrictif, le message propose **« Chercher partout »** à côté
-    d'« Effacer la recherche » : la sortie utile est d'**élargir**, pas
-    d'abandonner — et c'est un clic.
-
-#### Le sélecteur de rôle : où l'on cherche
-
-Deux questions se posent devant une liste de recommandations, et elles n'ont pas
-la même réponse :
-
-| Question | Où le monstre est trouvé |
-|----------|--------------------------|
-| « **contre quoi** ce monstre est-il joué ? » | dans une **défense visée** (`counters`) |
-| « **qui** joue ce monstre ? » | dans un **deck** (`slots`) |
-
-- ⚠️ **Le sélecteur FILTRE** : il décide **où** l'on cherche, et ce qui relève de
-  l'autre rôle **n'est pas affiché**.
-  - `Offense à runer` ne regarde que les **monstres des decks**, `Défense à
-    taper` que les **défenses visées**, `Partout` les deux.
-  - Un mode qui se contenterait de **trier** laisserait à l'écran des résultats
-    qu'on n'a pas demandés : demander « offense à runer » et voir remonter
-    des défenses n'est pas un classement, c'est du bruit. « Partout » reste là
-    pour qui veut les deux.
-  - Aucun tri n'est donc appliqué ensuite : tout ce qui reste répond au rôle
-    demandé, et l'ordre de la liste reste celui de l'utilisateur.
-- Le sélecteur **n'apparaît qu'une fois quelque chose tapé** : sans requête, il
-  n'y a rien à filtrer.
-- **Casse et accents ignorés** : « chloe » trouve « Chloé », sinon la recherche
-  est inutilisable sur des noms que le jeu accentue.
-- Le nom comparé est celui du **bestiaire** s'il est chargé, sinon celui **figé
-  au partage** — même repli que partout pour un monstre absent des données.
-- ⚠️ **Une carte qui répond est dépliée d'office, sans toucher à l'état de
-  repli.** C'est un état de **consultation**, pas un choix de l'utilisateur :
-  effacer la recherche rend à la page exactement le repli qu'elle avait avant.
-  Sans ça on se retrouve avec six decks ouverts sans les avoir ouverts.
-- ⚠️ **La recherche PROPOSE le dépliage, elle ne l'impose pas.** Une carte
-  ouverte par un résultat reste **refermable en un clic**.
-  - ⚠️ **UN SEUL état à trois valeurs** par carte — *absent* (l'automatique
-    décide) · *ouverte* · *fermée* — et non deux ensembles qui se corrigent
-    l'un l'autre. Avec deux ensembles (« ouvertes » + « refermées pendant la
-    recherche »), fermer une carte à la fois ouverte à la main **et** trouvée
-    par la recherche demanderait **trois clics** : chaque clic n'en corrigerait
-    qu'un, l'autre rouvrirait aussitôt. Un choix explicite écrase l'automatique,
-    point.
-  - Ces choix **ne survivent pas à un changement de recherche** : ils valent
-    pour ces résultats-là. Mais l'effacement **ne s'applique que si une
-    recherche est en cours** — sinon taper puis effacer refermerait les cartes
-    ouvertes à la main bien avant de chercher.
-  - **Règle générale** : un filtre peut changer ce qui est montré, il ne rend
-    jamais un contrôle inopérant — ni ne demande trois clics là où un suffit.
-- ⚠️ **Le filtre porte sur les DEUX niveaux** : quelles recommandations, et
-  **quels decks à l'intérieur**. Les decks qui ne répondent pas ne sont **pas
-  affichés du tout**. Sans ça, une carte remonterait dans les résultats en
-  montrant ses six decks, et il resterait à chercher à l'œil lequel répond.
-  - Les decks sont parcourus dans leur ordre **d'origine** et simplement omis :
-    l'index réel indexe le résultat d'analyse, l'édition et le repli.
-  - Le compteur d'en-tête passe à **« N sur M decks »** : afficher le total
-    alors qu'un seul deck est à l'écran se lit comme un bug — on cherche les
-    cinq autres. Même règle que le compteur filtré de l'inventaire d'artéfacts.
-  - ⚠️ **Les decks trouvés restent REPLIÉS**, comme hors recherche : seule la
-    CARTE se déplie d'office. Déplier chaque deck trouvé ouvrait d'un coup des
-    dizaines de decks sur un gros lot (un salon Discord), à lire en entier
-    pour retrouver celui qu'on voulait ; leurs portraits, slot cherché
-    surligné, suffisent à choisir lequel ouvrir.
-  - **« Déplier tous les decks » porte sur les decks affichés** : pendant une
-    recherche, ceux qu'elle trouve — jamais ceux qu'elle masque. Un deck
-    ouvert pendant la recherche, par lui ou par son chevron, l'est par choix :
-    il reste ouvert une fois la recherche effacée.
-- **Surlignage** : le slot ou la défense qui contient le monstre prend un **fond
-  d'accent léger**.
-  - ⚠️ **Un fond, jamais une bordure** : celle-ci porte déjà le résultat de
-    l'analyse (rouge/vert), la remplacer effacerait cette information au moment
-    même où on parcourt la page. Deux langages, deux supports. Même écho de
-    filtre que les propriétés recherchées d'un artéfact.
-- **Aucun résultat** → message dédié : dire « aucune recommandation » après
-  une recherche ferait croire à une perte de données.
+  monstre (on affine), **« Vider »** abandonne la recherche entière.
+- Le message d'absence de résultat **énonce la règle** (« … ne réunit A + B »)
+  et nomme ce que la vue cherchait (« Aucune défense visée… », « Aucun
+  deck… ») : sans ça, une recherche à trois qui ne renvoie rien se lit comme un
+  bug, puisqu'on voit chaque monstre à l'écran.
 - Persistée via `useStickyState` (survit à la navigation, repartie à vide au
-  reload), comme la vue.
+  reload).
 
-#### Effet du filtre sur les actions
+### Ce qu'une recherche montre
 
-Effet du filtre sur les actions :
+- **Vue Défenses** : seulement les défenses qui réunissent les monstres
+  cherchés, et leurs offenses.
+- **Vue Decks** : seulement les recommandations qui répondent, et ⚠️ **dans
+  chacune, seulement les decks trouvés** — sans ça, une recommandation
+  remonterait en montrant ses six decks, et il resterait à chercher à l'œil
+  lequel répond.
+  - Les decks sont parcourus dans leur ordre **d'origine** et simplement
+    omis : l'index réel indexe la confrontation, l'édition et le repli.
+  - Le compteur passe à **« N sur M decks »**, dans la liste comme dans le
+    volet.
+  - ⚠️ **Les decks trouvés restent REPLIÉS** : les déplier ouvrait d'un coup
+    des dizaines de decks sur un gros lot (un salon Discord) ; leurs portraits,
+    slot cherché surligné, suffisent à choisir lequel ouvrir. « Déplier tous
+    les decks » porte sur les decks affichés.
+  - Un deck en édition reste affiché même si la recherche ne le retient pas
+    (un counter tout juste ajouté s'édite à l'écran).
+- **Surlignage** : le slot ou la défense qui contient le monstre prend un
+  **fond d'accent léger** — ⚠️ un fond, jamais une bordure : celle-ci porte
+  déjà le verdict de la confrontation.
+
+### Effet du filtre sur les actions
+
 - **Export global** : exporte **ce qui est affiché**. ⚠️ Le bouton s'intitule
   **« Tout exporter » en permanence** : un libellé qui change avec le filtre se
-  lit comme un autre bouton, on cesse de le reconnaître d'un écran à l'autre. Ce
-  qui part réellement est dit par l'**infobulle**, et récapitulé par le message
-  de retour (« N recommandation(s) · M deck(s) »).
+  lit comme un autre bouton. Ce qui part réellement est dit par
+  l'**infobulle**, et récapitulé par le message de retour (« N
+  recommandation(s) · M deck(s) »).
 - **Tout effacer** : efface **tout**, filtre ou non (la modale le dit
   explicitement).
-- Filtre sans résultat → message dédié + lien « Voir toutes les recommandations »
-  (l'écran d'invite initial n'apparaît que si le stock réel est vide).

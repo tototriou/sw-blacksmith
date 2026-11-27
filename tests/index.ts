@@ -400,6 +400,7 @@ import testSiegeSlotSuivant from './siege-slot-suivant.test';
 import testRecoDefenses from './reco-defenses.test';
 import testRecoFiabilite from './reco-fiabilite.test';
 import { testCaptureCounter } from './capture-counter.test';
+import { testRecoCounterEquipe, testRecoDefensesDesRecos } from './reco-counter.test';
 import { testRecoFusionCorrespondance, testRecoFusionDecks, testRecoFusionChef, testRecoFusionImport, testRecoFusionSource } from './reco-fusion.test';
 import { testRenduRecoFusionChoix, testRenduRecoFusionStockage } from './rendu/reco-fusion.test';
 import { testApercuDeuxLignesRecherche, testApercuDeuxLignesBorne, testApercuDeuxLignesNonMonotone, testApercuDeuxLignesFinQuiGrandit, testApercuDeuxLignesRangees } from './apercu-deux-lignes.test';
@@ -446,7 +447,7 @@ import { testRenduComparaisonHistorique } from './rendu/comparaison-historique.t
 import { testRenduIcones } from './rendu/icones.test';
 import { testRenduAttaqueConjointeEcran } from './rendu/attaque-conjointe-ecran.test';
 import { testRenduEffetsEntreCoupsEcran, testRenduEffetsEntreCoupsAnglais } from './rendu/effets-entre-coups-ecran.test';
-import { testRenduRecosPage, testRenduRecosEnTete, testRenduRecosLigneDeckReduite, testRenduRecosDeploiement, testRenduRecosEdition, testRenduRecosVueDefense, testRenduRecosFiabilite, testRenduRecosGrosLot, testRenduRecosTicks, testRenduRecosAnnulerEdition, testRenduRecosStatsEnTotal } from './rendu/recos.test';
+import { testRenduRecosPage, testRenduRecosEnTete, testRenduRecosLigneDeckReduite, testRenduRecosDefensesDeLaLigne, testRenduRecosDeploiement, testRenduRecosEdition, testRenduRecosVueDefense, testRenduRecosFiabilite, testRenduRecosGrosLot, testRenduRecosTicks, testRenduRecosAnnulerEdition, testRenduRecosStatsEnTotal } from './rendu/recos.test';
 import testAnnulerEdition from './annuler-edition.test';
 import { testRenduRunesResume, testRenduRunesListe, testRenduRunesCourbes, testRenduRunesComparaison, testRenduRunesOptimisation, testRenduRunesOptimisationPalierEtExclusion, testRenduRunesFenetreExclues, testRenduRunesAVenir, testRenduRunesFiltresLigne, testRenduRunesTriOnglets, testRenduRunesResumeSouris, testRenduRunesListeSouris, testRenduRunesVuesSouris } from './rendu/runes.test';
 import { testRenduCompteMonstres, testRenduCompteArtefactsResume, testRenduCompteArtefactsListe, testRenduCompteArtefactsTop, testRenduCompteSouris, testRenduCompteEffacerFiltres } from './rendu/compte.test';
@@ -610,6 +611,8 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testSiegeSlotSuivant', testSiegeSlotSuivant],
   ['testRecoDefenses', testRecoDefenses],
   ['testRecoFiabilite', testRecoFiabilite],
+  ['testRecoCounterEquipe', testRecoCounterEquipe],
+  ['testRecoDefensesDesRecos', testRecoDefensesDesRecos],
   ['testDiscordDroits', testDiscordDroits],
   ['testDiscordSession', testDiscordSession],
   ['testDiscordRecoSalon', testDiscordRecoSalon],
@@ -666,6 +669,7 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testRenduRecosPage', testRenduRecosPage],
   ['testRenduRecosEnTete', testRenduRecosEnTete],
   ['testRenduRecosLigneDeckReduite', testRenduRecosLigneDeckReduite],
+  ['testRenduRecosDefensesDeLaLigne', testRenduRecosDefensesDeLaLigne],
   ['testRenduRecosDeploiement', testRenduRecosDeploiement],
   ['testRenduRecosEdition', testRenduRecosEdition],
   ['testRenduRecosVueDefense', testRenduRecosVueDefense],

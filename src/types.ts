@@ -453,8 +453,9 @@ export const MAX_ARTIFACT_SUBS = 4;
 export interface RecoCounter {
   monsters: { com2usId: number | null; name: string }[]; // toujours 3
   note: string; // « si le Chloe est en lead » — facultatif
-  // Fiabilité de CE deck contre CETTE défense, en étoiles : de 0 à 5 par
-  // demi-étoile (recoDefenses.ts, `fiabiliteValide`) ; absente = non notée. Classe les offenses d'une même défense en vue
+  // Fiabilité de CE deck contre CETTE défense, en étoiles : de 0 à 5, saisie
+  // par étoile entière, relue par demi-étoile pour les anciennes notes
+  // (recoDefenses.ts, `fiabiliteValide`) ; absente = non notée. Classe les offenses d'une même défense en vue
   // Défense : la plus fiable d'abord (docs/02-app/siege/feat-recommandations/defenses-visees.md).
   fiabilite?: number;
 }

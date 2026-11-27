@@ -13,7 +13,7 @@ async function verifier(source: 'rta' | 'reco' | 'flottant', telephone: boolean)
       await page.waitForTimeout(300);
       await page.screenshot({ path: `${process.env.CAPTURES}/export-${source}-source-${telephone ? 'telephone' : 'bureau'}.png`, fullPage: !telephone, animations: 'disabled' });
     }
-    for (const motif of ['accepte', ...(source === 'rta' ? [] : ['second']), 'indisponible', 'attente', 'collision', 'vide']) {
+    for (const motif of ['accepte', ...(source === 'rta' ? [] : ['second']), 'indisponible', 'attente', 'collision', 'vide', ...(source === 'reco' ? ['ajout'] : [])]) {
       const preuves = await page.evaluate(async ({ source, telephone, motif, capture }) => (globalThis as unknown as {
         bancOptimizer: { scenario: (source: string, telephone: boolean, motif: string, conserverRapport: boolean) => Promise<[boolean, string][]> };
       }).bancOptimizer.scenario(source, telephone, motif, capture), { source, telephone, motif, capture: !!process.env.CAPTURES });
@@ -42,7 +42,10 @@ export function testOptimizerImportRtaRecoBranchement() {
   for (const prop of ['onImporterEquipe={importerEquipe}', 'sourcesOptimizer={optimizerData}', 'compteCharge={box.length > 0 || runes.length > 0}']) ok(rta.includes(prop), `App → RTA : ${prop}`);
   for (const prop of ['onImporterEquipe={boardProps.onImporterEquipe}', 'sourcesOptimizer={boardProps.sourcesOptimizer}', 'compteCharge={boardProps.compteCharge}']) ok(siege.includes(prop), `Siège → recommandations : ${prop}`);
   ok(lire('src/pages/RtaPage.tsx').includes('const exporterOptimizer = () => onImporterEquipe(importerPrepaRtaOptimizer);'), 'RTA appelle le producteur de toute la prépa par l’action commune');
-  ok(montage('src/components/siege/RecoBoard.tsx', 'RecoCard').includes('onExporterDeckOptimizer={deck => onImporterEquipe((data, t) => importerRecoOptimizer(deck, data, t))}'), 'board → carte : même action et seul deck transmis');
+  const fichierBoard = 'src/components/siege/RecoBoard.tsx';
+  ok(lire(fichierBoard).includes('const exporterDeckOptimizer = (deck: RecoDeck) => onImporterEquipe((data, t) => importerRecoOptimizer(deck, data, t));'), 'board : l\'action commune, pour le seul deck transmis');
+  ok(montage(fichierBoard, 'RecoCard').includes('onExporterDeckOptimizer={exporterDeckOptimizer}')
+    && montage(fichierBoard, 'VoletDefenses').includes('onExporterDeckOptimizer={exporterDeckOptimizer}'), 'board → volet d\'une recommandation et volet Défenses : la même action');
   ok(montage('src/App.tsx', 'OutilsPage').includes('recommandations={recos.state.recos}'), 'App → outils : recommandations courantes');
   ok(montage('src/pages/OutilsPage.tsx', 'OptimizerSection').includes('recommandations={recommandations}'), 'outils → Optimizer : recommandations relayées');
   const app = lire('src/App.tsx');

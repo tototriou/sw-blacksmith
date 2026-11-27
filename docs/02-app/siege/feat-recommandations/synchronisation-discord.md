@@ -85,7 +85,7 @@ ne change dans le salon ni pour les autres membres.
 `fusionner(base, la mienne, celle du salon)` compare chaque élément à la base :
 
 - **Un deck se reconnaît par son équipe** (`cleEquipe`, la clé de la fusion
-  des imports et de la vue Défense, [modele.md](modele.md)) ; deux decks de la
+  des imports et de la vue Défenses, [modele.md](modele.md)) ; deux decks de la
   même équipe se distinguent par leur rang. Changer un monstre en fait donc un
   autre deck : l'ancien est retiré, le nouveau ajouté.
 - **Changé d'un seul côté** : passe seul, y compris un deck retiré.

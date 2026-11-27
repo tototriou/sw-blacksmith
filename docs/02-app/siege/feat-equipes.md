@@ -140,7 +140,7 @@ UNE fois et posé à deux endroits selon la largeur (`hidden lg:…` /
   [LeadPill.tsx](src/components/siege/LeadPill.tsx) exporte pour ça deux rendus :
   - **`LeadBadge`** — icône seule (22 px par défaut) posée en **bas-gauche du
     portrait**, montant dans l'infobulle. Utilisé quand la place manque : vue
-    **compacte** du siège et aperçu replié des decks de reco. Il **remplace la
+    **compacte** du siège et ligne d'un deck de reco. Il **remplace la
     couronne** — l'icône du jeu marque déjà le leader *et* dit quel est le lead
     (la couronne ne revient que si le monstre n'a aucun lead).
     ⚠️ **Icône nue et carrée, comme dans le jeu** : pas de pastille ronde, pas
