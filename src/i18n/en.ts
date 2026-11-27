@@ -1037,7 +1037,7 @@ export const en: Dictionnaire = {
     telechargement: 'Downloading…',
     redemarrer: 'Restart',
     reessayer: 'Retry',
-    aucune: 'New versions are checked at launch.',
+    aucune: 'New versions are checked at launch, then daily.',
     enRecherche: 'Checking for a new version…',
     aJour: 'You have the latest version.',
     injoignable: 'Couldn’t check: no connection?',

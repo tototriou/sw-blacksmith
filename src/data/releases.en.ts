@@ -22,6 +22,7 @@ export const RELEASES_EN: Release[] = [
       { kind: 'feat', scope: 'SW Exporter', text: 'In the desktop app, a notification tells you when the SW Blacksmith Live plugin has a new version.' },
       { kind: 'feat', scope: 'SW Exporter', text: 'An app version that does not change the plugin no longer asks you to download it again.' },
       { kind: 'feat', scope: 'Application', text: 'A notification asking a question comes back after an announcement that had replaced it.' },
+      { kind: 'feat', scope: 'Application', text: 'The desktop app, left open, checks for a new version every day and offers again the one you postponed.' },
       { kind: 'feat', scope: 'My account', text: 'A “Goals” section compares your runes and artifacts with what you aim for: runes set by set and slot by slot, artifacts by element or style and by main stat; goals are set, exported and imported there.' },
       { kind: 'fix', scope: 'SW Exporter', text: 'With a followed summoner, an empty page (RTA prep, Siege, Arena) fills from their latest export.' },
     ],

@@ -26,18 +26,26 @@
 //   a-jour         la recherche n'a rien trouvé
 //   injoignable    la recherche qu'il a DEMANDÉE n'a pas abouti
 //
+// ⚠️ **Puis chaque jour, le même mécanisme** : app restée ouverte, un
+// contrôle toutes les heures (et au réveil de la machine) relance la même
+// recherche silencieuse dès que 24 h sont passées depuis la précédente —
+// celle du lancement, « Rechercher », ou la périodique. Une version déjà
+// proposée, dont la notification a pu être fermée, est RAPPELÉE au lieu
+// d'être recherchée (bureau/miseAJourPur.ts).
+//
 // ⚠️ **Jamais de bruit sans demande** : hors ligne, release sans fichiers,
-// dépôt injoignable à la recherche du LANCEMENT… rien ne s'affiche. Tout va dans
+// dépôt injoignable à une recherche du lancement ou périodique… rien ne s'affiche. Tout va dans
 // `mise-a-jour.log` (dossier des données de l'app), réécrit à chaque
 // lancement — le journal que relira la preuve de la version suivante.
 //
 // ⚠️ Seulement dans l'app INSTALLÉE (`app.isPackaged`) : lancée par
 // `npm run bureau*`, elle n'a pas de `app-update.yml`.
 
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow, ipcMain, powerMonitor } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import { appendFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { actionPeriodique, PAS_CONTROLE_MS } from './miseAJourPur';
 
 // `aucune` : rien de connu — la recherche du lancement a échoué, en silence.
 export type PhaseMiseAJour =
@@ -57,12 +65,14 @@ export interface EtatMiseAJour {
 // Mode preuve : aucun réseau. `simuler` (posé ici) annonce une version
 // disponible ; « Rechercher » ne trouve rien, « Mettre à jour » la rend
 // prête sans rien télécharger, « Redémarrer » est COMPTÉ au lieu de
-// redémarrer.
+// redémarrer. `controler` (posé ici) passe le contrôle périodique à l'heure
+// donnée, sans attendre ; sa recherche ne trouve rien.
 export interface PreuveMiseAJour {
   recherches: number;
   telechargements: number;
   redemarrages: number;
   simuler?: (version: string) => void;
+  controler?: (maintenant: number) => void;
 }
 
 export function brancherMiseAJour(fenetre: BrowserWindow, preuve?: PreuveMiseAJour) {
@@ -83,6 +93,9 @@ export function brancherMiseAJour(fenetre: BrowserWindow, preuve?: PreuveMiseAJo
   // refuse cet état : rien ne le débloquerait avant un redémarrage. On conclut
   // donc la recherche restée en cours, comme une erreur.
   let demandee = false;
+  // L'heure de la dernière recherche (ou du dernier rappel), en mémoire :
+  // chaque lancement recherche, l'enregistrer n'apporterait rien.
+  let derniere = Date.now();
   const chercher = () => {
     autoUpdater
       .checkForUpdates()
@@ -98,6 +111,7 @@ export function brancherMiseAJour(fenetre: BrowserWindow, preuve?: PreuveMiseAJo
     if (!deLaPage(evenement)) return;
     if (etat && etat.phase !== 'aucune' && etat.phase !== 'a-jour' && etat.phase !== 'injoignable') return;
     demandee = true;
+    derniere = Date.now();
     passer('recherche', app.getVersion());
     if (preuve) {
       preuve.recherches += 1;
@@ -141,8 +155,32 @@ export function brancherMiseAJour(fenetre: BrowserWindow, preuve?: PreuveMiseAJo
     autoUpdater.quitAndInstall(true, true);
   });
 
+  // Le contrôle périodique : la même recherche que le lancement — non
+  // demandée, donc silencieuse si elle échoue — ou le rappel de la version
+  // déjà proposée.
+  const controler = (maintenant = Date.now()) => {
+    const action = actionPeriodique(etat?.phase ?? null, derniere, maintenant);
+    if (action === 'rien') return;
+    derniere = maintenant;
+    // `rappeler` ne vient que d'une version proposée (`disponible`, `echec`) :
+    // l'offre revient, « Mettre à jour ».
+    if (action === 'rappeler') {
+      if (etat) passer('disponible', etat.version);
+      return;
+    }
+    demandee = false;
+    passer('recherche', app.getVersion());
+    if (preuve) {
+      preuve.recherches += 1;
+      setTimeout(() => passer('a-jour', app.getVersion()), 300);
+      return;
+    }
+    chercher();
+  };
+
   if (preuve) {
     preuve.simuler = (version) => passer('disponible', version);
+    preuve.controler = controler;
     return;
   }
   if (!app.isPackaged) return;
@@ -189,4 +227,14 @@ export function brancherMiseAJour(fenetre: BrowserWindow, preuve?: PreuveMiseAJo
   // La recherche du lancement : les Réglages la montrent (« Recherche… »).
   passer('recherche', app.getVersion());
   chercher();
+
+  // Puis chaque jour. Le réveil contrôle tout de suite : une minuterie ne
+  // tourne pas pendant la veille.
+  const minuterie = setInterval(() => controler(), PAS_CONTROLE_MS);
+  const auReveil = () => controler();
+  powerMonitor.on('resume', auReveil);
+  fenetre.once('closed', () => {
+    clearInterval(minuterie);
+    powerMonitor.removeListener('resume', auReveil);
+  });
 }
