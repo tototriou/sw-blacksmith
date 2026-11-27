@@ -74,7 +74,8 @@ bureau/          # application de bureau Electron (main, protocole, session, SW 
 plugin-swex/     # plugin SWEX « SW Blacksmith Live » : le compte et les combats de guilde suivis pendant la partie
 api/             # service Discord des recommandations : discord.mjs (la fonction Vercel), _source/ (le
                  # service en TypeScript, empaqueté au build dans _paquet/, non suivi) ; interactions.mjs
-                 # (prototype : /speedtune, lecture de capture dans _source/capture/ et _source/speedtune/)
+                 # (prototype : /speedtune, lecture de capture dans src/lib/capture/, décodage Node
+                 # dans _source/capture/, calcul dans _source/speedtune/)
 public/          # icônes, portraits, données SWARFARM (public/data, régénérées par npm run fetch-data)
 scripts/         # outillage Node : données, benchmarks, harnais de diagnostic, hooks, bureau
 tests/           # vérifications (run.mjs + index.ts), fixtures, tests de rendu (tests/rendu/)
@@ -149,7 +150,7 @@ npm run bureau:preuve          # la vérification de l'application de bureau
 | `src/pages/BestiaryPage.tsx`, `src/components/MonsterGrid.tsx`, `src/components/FilterBar.tsx` | [bestiaire/](docs/02-app/bestiaire/README.md) |
 | `src/pages/MechanicsPage.tsx` | [mecaniques/](docs/02-app/mecaniques/README.md) |
 | `api/`, `vercel.json`, `scripts/construire-api.mjs` | [service-discord.md](docs/02-app/siege/feat-recommandations/service-discord.md) |
-| `api/interactions.mjs`, `api/_source/capture/`, `api/_source/speedtune/`, `scripts/construire-banque-portraits.*`, `scripts/construire-gabarits-chiffres.*`, `scripts/enregistrer-commande-speedtune.mjs` | [feat-discord-capture.md](docs/02-app/speed-tuning/feat-discord-capture.md) |
+| `api/interactions.mjs`, `src/lib/capture/`, `api/_source/capture/`, `api/_source/speedtune/`, `scripts/construire-banque-portraits.*`, `scripts/construire-gabarits-chiffres.*`, `scripts/enregistrer-commande-speedtune.mjs` | [feat-discord-capture.md](docs/02-app/speed-tuning/feat-discord-capture.md) |
 | `src/pages/BotDiscordPage.tsx`, `src/lib/botDiscord.ts`, `public/bot-discord/` | [bot-discord/](docs/02-app/bot-discord/README.md) |
 | `bureau/`, `src/lib/bureau.ts`, `electron-builder.yml`, `src/pages/TelechargerPage.tsx` | [bureau/](docs/02-app/bureau/README.md), [telecharger/](docs/02-app/telecharger/README.md) |
 | `plugin-swex/` (le plugin SWEX « SW Blacksmith Live ») | [feat-swex-direct.md](docs/02-app/bureau/feat-swex-direct.md) |

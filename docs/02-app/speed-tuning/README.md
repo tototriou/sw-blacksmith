@@ -27,7 +27,7 @@ Fichiers : [SpeedTuningSection.tsx](src/components/outils/SpeedTuningSection.tsx
 | `src/components/outils/SpeedTuningSection.tsx`, `src/hooks/useSpeedTune.ts`, `src/lib/speedTuneLignes.ts`, l'état de l'outil | [feat-ecran.md](feat-ecran.md) |
 | l'export de « Ton équipe » vers l'Optimizer, `src/lib/importSpeedTuneOptimizer.ts` | [feat-export-optimizer.md](feat-export-optimizer.md) |
 | `scripts/passifs-vitesse.ts` (l'inventaire généré) | [feat-passifs-vitesse.md](feat-passifs-vitesse.md) |
-| `api/_source/capture/`, `api/_source/speedtune/`, `api/interactions.mjs`, la commande Discord `/speedtune` | [feat-discord-capture.md](feat-discord-capture.md) |
+| `src/lib/capture/`, `api/_source/capture/`, `api/_source/speedtune/`, `api/interactions.mjs`, la commande Discord `/speedtune` | [feat-discord-capture.md](feat-discord-capture.md) |
 
 ## Documents du dossier
 

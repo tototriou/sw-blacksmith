@@ -1,5 +1,6 @@
 // `/speedtune` : lecture d'une capture de l'écran de préparation de siège
-// (api/_source/capture/), analyse par le moteur de speed tuning de l'app, et
+// (src/lib/capture/, décodage du service dans api/_source/capture/), analyse
+// par le moteur de speed tuning de l'app, et
 // le point d'arrivée des interactions Discord (api/_source/speedtune/).
 //
 // ⚠️ Aucune vraie capture dans le dépôt (public) : les écrans sont RECOMPOSÉS
@@ -13,17 +14,18 @@ import { generateKeyPairSync, sign } from 'node:crypto';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { PNG } from 'pngjs';
 import jpeg from 'jpeg-js';
-import { decoderImage, decouper, demiTaille, dimensionsPng, imageTropGrande, reduire, type Image } from '../api/_source/capture/image';
-import { Banque, quantifier, signature, TAILLE, COTE, type BanqueSerialisee } from '../api/_source/capture/portraits';
-import { HAUTEUR_CHIFFRE_MIN, lireNombre, scoresParSynthese, type Gabarits } from '../api/_source/capture/chiffres';
-import { hypothesesVit, lireEcranPreparation } from '../api/_source/capture/ecranPreparation';
+import { decoderImage } from '../api/_source/capture/decodage';
+import { decouper, demiTaille, dimensionsPng, imageTropGrande, reduire, type Image } from '../src/lib/capture/image';
+import { Banque, quantifier, signature, TAILLE, COTE, type BanqueSerialisee } from '../src/lib/capture/portraits';
+import { HAUTEUR_CHIFFRE_MIN, lireNombre, scoresParSynthese, type Gabarits } from '../src/lib/capture/chiffres';
+import { hypothesesVit, lireEcranPreparation } from '../src/lib/capture/ecranPreparation';
 import { analyserEquipe, runesAuPire } from '../api/_source/speedtune/analyse';
 import { adresseEnPng, creerInteractions, etatDeLecture, repondre, signatureValide, valeurChamp, type Ressources } from '../api/_source/speedtune/interactions';
 import { embedErreur, ICONE_APP, LIEN_OUTIL, langueDe, type Bouton, type Embed, type Menu, type Modale, type Rangee } from '../api/_source/speedtune/message';
 import { decoderEtat, encoderEtat, LONGUEUR_MAX, VIT_INCONNUE, type Etat } from '../api/_source/speedtune/etat';
 import { creerEmojis } from '../api/_source/speedtune/emojis';
-import gabaritsJson from '../api/_source/capture/chiffres-gabarits.json';
-import banqueJson from '../api/_source/capture/banque-portraits.json';
+import gabaritsJson from '../src/lib/capture/chiffres-gabarits.json';
+import banqueJson from '../src/lib/capture/banque-portraits.json';
 import { combatSpeed, runeSpeedForTarget, siegeLeadFor, speedLeadOf } from '../src/lib/speed';
 import { kitVitesse, sortsVitesse } from '../src/lib/speedTuneKit';
 import { passifsVitesse, pointsDeGain } from '../src/lib/speedTunePassif';

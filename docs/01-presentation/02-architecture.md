@@ -95,8 +95,9 @@ Détail : [service-discord.md](../02-app/siege/feat-recommandations/service-disc
 
 **Prototype** : une seconde fonction, `api/interactions.mjs`, répond à la commande Discord
 `/speedtune` — la lecture d'une capture de l'écran de préparation de siège
-(`api/_source/capture/`), puis le moteur de speed tuning de l'app (`api/_source/speedtune/`). Elle ne
-touche pas l'app : c'est le joueur qui envoie sa capture à Discord. Détail :
+(`src/lib/capture/`, partagée avec l'app ; le décodage Node dans `api/_source/capture/`), puis le
+moteur de speed tuning de l'app (`api/_source/speedtune/`). Elle ne touche pas l'app : c'est le
+joueur qui envoie sa capture à Discord. Détail :
 [feat-discord-capture.md](../02-app/speed-tuning/feat-discord-capture.md).
 
 ## Le shell — `src/App.tsx`

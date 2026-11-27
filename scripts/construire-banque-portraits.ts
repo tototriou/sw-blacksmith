@@ -1,5 +1,5 @@
 // Construit la banque de portraits de la lecture de capture
-// (api/_source/capture/banque-portraits.json) : une signature par icône
+// (src/lib/capture/banque-portraits.json) : une signature par icône
 // SWARFARM de monstre obtenable et éveillé (public/data/monsters.json).
 //
 // Lancé à la demande, quand les données des monstres changent :
@@ -9,12 +9,12 @@
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { decoderImage } from '../api/_source/capture/image';
-import { COTE, quantifier, signature, TAILLE, type BanqueSerialisee } from '../api/_source/capture/portraits';
+import { decoderImage } from '../api/_source/capture/decodage';
+import { COTE, quantifier, signature, TAILLE, type BanqueSerialisee } from '../src/lib/capture/portraits';
 import type { Monster } from '../src/types';
 
 const CACHE = 'node_modules/.cache/portraits-swarfarm';
-const SORTIE = 'api/_source/capture/banque-portraits.json';
+const SORTIE = 'src/lib/capture/banque-portraits.json';
 const PARALLELE = 8;
 
 // Monstre de la banque : obtenable, avec une icône, et éveillé. La forme non

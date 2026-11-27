@@ -11,10 +11,10 @@ import { waitUntil } from '@vercel/functions';
 import type { Monster } from '../../src/types';
 import type { DetailMonstre } from '../../src/lib/monsterSkills';
 import donneesMonstres from '../../public/data/monsters.json';
-import banqueSerialisee from './capture/banque-portraits.json';
-import gabarits from './capture/chiffres-gabarits.json';
-import { Banque, type BanqueSerialisee } from './capture/portraits';
-import type { Gabarits } from './capture/chiffres';
+import banqueSerialisee from '../../src/lib/capture/banque-portraits.json';
+import gabarits from '../../src/lib/capture/chiffres-gabarits.json';
+import { Banque, type BanqueSerialisee } from '../../src/lib/capture/portraits';
+import type { Gabarits } from '../../src/lib/capture/chiffres';
 import { creerInteractions, type Ressources } from './speedtune/interactions';
 import { creerEmojis } from './speedtune/emojis';
 
