@@ -83,12 +83,15 @@ const PROPRES: AurasPropres = { fight: 1, determination: 1, enhance: 0, accuracy
 // n'en garde qu'un (Virus de 570RM, Empathy, Dimensional Memory) ; Blessing of
 // Curse donne un scénario à Here Come the Ghosts! (Jessica). Puis Divine
 // Judgment (Arella) au tirage : une seule de ses branches après le coup 1.
+// Relevée de nouveau le 2026-11-27 : données SWARFARM du patch d'équilibrage
+// de novembre 2026 et ses curations (PV max sur les PV de base, Wheel of
+// Fire, Improvisation, Arsenal of Sacrifice, Infinity Shadow, Snipe, Squash).
 // ⚠️ Un écart veut dire qu'une note a changé. Voulu (modèle de dégâts, données
 // SWARFARM régénérées) : relever l'empreinte de nouveau (le message d'échec
 // la donne) et le dire dans le commit. Sinon : un défaut du code commun au
 // calcul avec et sans memo.
 const EMPREINTE_ANCIEN_CALCUL = {
-  contextes: 12426, notes: 310650, sha256: 'bb84f69df94e686589f909b84dfc6e22fef4117b9aadbc5c9bdb24fac2752790',
+  contextes: 12426, notes: 310650, sha256: '5ff55836a6d11b9dd50c9f259a457bb819bb95ca9de565fb67b3c378e6d15a5e',
 };
 
 // Quatre pièces par sorte, deux principales par sorte : des paires partagent
