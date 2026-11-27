@@ -2,10 +2,11 @@ import HelpPopover from '../../HelpPopover';
 import { Interrupteur, NumberField, Bouton, Pastille } from '../../../ui';
 import { RECO_STATS } from '../../../types';
 import { BASE_TOGGLE_STATS, CAPPED_100 } from './constantes';
-import { Fragment, type Dispatch, type ReactNode, type SetStateAction } from 'react';
+import { Fragment, useState, type Dispatch, type ReactNode, type SetStateAction } from 'react';
 import { RotateCcw } from 'lucide-react';
 import { type StatKey } from '../../../lib/effects';
-import { useTraduction } from '../../../hooks/useLangue';
+import { useLangue, useTraduction } from '../../../hooks/useLangue';
+import { formatNombre } from '../../../i18n/format';
 import { SORTS_PRECISION, type SortPrecision } from '../../../lib/precisionParSort';
 
 export interface ConditionsProps {
@@ -31,6 +32,10 @@ export interface ConditionsProps {
   // ni ne se saisit ; la VIT maximum reste une condition du membre.
   speedTune?: ReactNode;
   vitessePossedee?: boolean;
+  // La VIT maximum saisie sous le bas de la zone du speed tune
+  // (`conflitVitesseMax`), en VIT totale : le champ passe en rouge et un
+  // message le dit sous la grille. Sans lui, « Rechercher » ne ferait rien.
+  conflitVitesse?: { max: number; min: number } | null;
   // Précision minimale PAR SORT (precisionParSort.ts) : les sorts cochés sous
   // la ligne « Précision ». `sortsDisponibles` : ceux que le monstre peut
   // lancer (`sortsPrecisionDisponibles`) ; un sort absent reste décochable.
@@ -40,11 +45,19 @@ export interface ConditionsProps {
   sortsDisponibles?: readonly SortPrecision[];
 }
 
-export default function Conditions({ excludeBase, setExcludeBase, baseOf, artifactFloorOf, minStats, maxStats, setMinStats, setMaxStats, bureau = false, speedTune, vitessePossedee = false, sortsPrecision, setSortsPrecision, sortsDisponibles = SORTS_PRECISION }: ConditionsProps) {
+export default function Conditions({ excludeBase, setExcludeBase, baseOf, artifactFloorOf, minStats, maxStats, setMinStats, setMaxStats, bureau = false, speedTune, vitessePossedee = false, conflitVitesse = null, sortsPrecision, setSortsPrecision, sortsDisponibles = SORTS_PRECISION }: ConditionsProps) {
   const textes = useTraduction();
   const jeu = textes.jeu;
   const k = textes.optimizer.conditions;
   const a = k.aideBase;
+  // ⚠️ Le conflit se montre à la SORTIE du champ : à la frappe, « 2 » puis
+  // « 22 » en route vers « 220 » allumeraient le message à chaque touche.
+  const [saisieVitMax, setSaisieVitMax] = useState(false);
+  const conflitAffiche = vitessePossedee && !saisieVitMax ? conflitVitesse : null;
+  const bonusVit = BASE_TOGGLE_STATS.has('spd') && excludeBase;
+  const langue = useLangue();
+  const n = (v: number) => formatNombre(v, langue);
+  const vitAffichee = (v: number) => (bonusVit ? v - baseOf('spd') : v);
   return (
     <div>
       <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
@@ -142,9 +155,11 @@ export default function Conditions({ excludeBase, setExcludeBase, baseOf, artifa
                 {!bureau && <span className="hidden sm:inline text-ink-dim text-micro">{k.min}</span>}
               </div>
               )}
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1.5"
+                onFocusCapture={st.key === 'spd' ? () => setSaisieVitMax(true) : undefined}>
                 <NumberField
                   value={maxDisplayed}
+                  ton={st.key === 'spd' && conflitAffiche ? 'bad' : 'neutre'}
                   onChange={(v) =>
                     setMaxStats((prev) => {
                       const next = { ...prev };
@@ -176,6 +191,7 @@ export default function Conditions({ excludeBase, setExcludeBase, baseOf, artifa
                   // « max = min » poserait une contrainte que l'utilisateur
                   // n'a pas demandée, et qui ne laisse passer qu'une valeur.
                   onBlur={() => {
+                    if (st.key === 'spd') setSaisieVitMax(false);
                     const mn = minStats[st.key];
                     const mx = maxStats[st.key];
                     if (mn == null || mx == null || mx >= mn) return;
@@ -244,6 +260,13 @@ export default function Conditions({ excludeBase, setExcludeBase, baseOf, artifa
           className="text-ink-dim hoverable:text-bad"
         />
       </div>
+      {/* Sous le bouton de remise à zéro : son apparition ne déplace aucun
+          contrôle de la grille, seulement l'encart qui suit. */}
+      {conflitAffiche && (
+        <p role="alert" data-conflit-vitesse className="mt-1.5 text-xs text-bad">
+          {k.vitesseMaxSousSpeedTune(n(vitAffichee(conflitAffiche.max)), n(vitAffichee(conflitAffiche.min)))}
+        </p>
+      )}
       {speedTune}
     </div>
   );

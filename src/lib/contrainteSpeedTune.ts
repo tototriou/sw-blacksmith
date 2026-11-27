@@ -114,6 +114,18 @@ export function exigenceSousSpeedTune(requirement: BuildRequirement, c: Contrain
   };
 }
 
+// La VIT maximum saisie passe-t-elle sous le bas de l'enveloppe ? C'est le seul
+// refus d'`exigenceSousSpeedTune` qui vient d'un champ des critères (zone vide
+// et sets impossibles se disent dans l'encart) : l'écran le signale sur ce
+// champ, sans quoi « Rechercher » ne fait rien sans dire pourquoi. Valeurs en
+// VIT de fiche (totale) ; `null` sans conflit ou sans zone.
+export function conflitVitesseMax(requirement: BuildRequirement, c: ContrainteSpeedTune): { max: number; min: number } | null {
+  const env = enveloppeZone(c.zone);
+  const max = requirement.maxStats?.spd;
+  if (!env || max == null || max <= 0 || max >= env.min) return null;
+  return { max, min: env.min };
+}
+
 // Les verrous de sous-propriétés sous la contrainte : celui du 206, que le
 // rattachement possède, disparaît.
 export function lignesSousSpeedTune(lignes: LigneVerrouillee[], c: ContrainteSpeedTune | null): LigneVerrouillee[] {

@@ -198,7 +198,7 @@ import { useSpeedTuneMembre } from '../../hooks/useSpeedTuneMembre';
 import { useSpeedTuneDepuisOptimizer } from '../../hooks/useSpeedTuneDepuisOptimizer';
 import SpeedTuneModale from './SpeedTuneModale';
 import SpeedTuneEncart from './optimizer/SpeedTuneEncart';
-import { CODE_206, empreinteSpeedTune, enveloppeZone, exigenceSousSpeedTune } from '../../lib/contrainteSpeedTune';
+import { CODE_206, conflitVitesseMax, empreinteSpeedTune, enveloppeZone, exigenceSousSpeedTune } from '../../lib/contrainteSpeedTune';
 import { entreesDuGear, validationTient } from '../../lib/speedTuneMembre';
 import { nomElement } from '../../i18n/jeu';
 import { phraseDegats } from '../../i18n/phrasesDegats';
@@ -906,6 +906,9 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
   // cas rien ne signalait visuellement à l'utilisateur POURQUOI le clic sur
   // « Rechercher » ne s'est rien passé.
   const setPickerSectionRef = useRef<HTMLDivElement>(null);
+  // Les conditions au doigt : « Rechercher » y amène quand la VIT maximum
+  // contredit le speed tune (`conflitVitesse`).
+  const conditionsRef = useRef<HTMLDivElement>(null);
 
   // ⚠️ « Exclure les runes déjà utilisées » DÉCOCHÉE PAR DÉFAUT — inversion
   // volontaire de l'ancienne case « Utiliser tout l'inventaire » (COCHÉE par
@@ -1807,6 +1810,12 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
   );
   // Attaché, la recherche attend une zone prête et non vide (spec, « Calcul et cache »).
   const speedTuneBloque = speedTuneAttache && (!contrainteSpeedTune || !exigenceSpeedTune);
+  // Le seul blocage qui vient d'un champ des critères : il se signale sur ce
+  // champ (`Conditions`), les autres dans l'encart du speed tune.
+  const conflitVitesse = useMemo(
+    () => (speedTuneAttache && contrainteSpeedTune ? conflitVitesseMax(requirementSansSpeedTune, contrainteSpeedTune) : null),
+    [speedTuneAttache, contrainteSpeedTune, requirementSansSpeedTune]
+  );
 
   /**
    * Ce que l'INVENTAIRE d'artéfacts peut apporter, borné des deux côtés —
@@ -1895,7 +1904,15 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
       return;
     }
     setSetPickerInvalid(false);
-    if (speedTuneBloque) return;
+    if (speedTuneBloque) {
+      // Le message est déjà sous les conditions : on y amène, au doigt comme
+      // au bureau (onglet « Critères »).
+      if (conflitVitesse) {
+        if (sousLg) conditionsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        else setGuideCriteres((n) => (n ?? 0) + 1);
+      }
+      return;
+    }
     setStoppedManually(false);
     // Le tri de départ est la colonne de l'objectif ; Vitesse se trie par VIT.
     const triDeDepart = triDesResultats(objective);
@@ -2900,6 +2917,7 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
     : null;
   const verrousPossedes = speedTuneAttache ? [CODE_206] : undefined;
   const conditions = (
+    <div ref={conditionsRef}>
     <Conditions
       excludeBase={excludeBase}
       setExcludeBase={setExcludeBase}
@@ -2911,10 +2929,12 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
       setMaxStats={setMaxStats}
       speedTune={encartDuMembre(true)}
       vitessePossedee={speedTuneAttache}
+      conflitVitesse={conflitVitesse}
       sortsPrecision={sortsPrecision}
       setSortsPrecision={setSortsPrecision}
       sortsDisponibles={sortsDisponiblesPrecision}
     />
+    </div>
   );
 
   // Le geste d'un membre de la liste de travail (zone C) : il devient le
@@ -3622,6 +3642,7 @@ export default function OptimizerSection({ recommandations = AUCUNE_RECOMMANDATI
             setMaxStats={setMaxStats}
             speedTune={encartDuMembre(false)}
             vitessePossedee={speedTuneAttache}
+            conflitVitesse={conflitVitesse}
             sortsPrecision={sortsPrecision}
             setSortsPrecision={setSortsPrecision}
             sortsDisponibles={sortsDisponiblesPrecision}

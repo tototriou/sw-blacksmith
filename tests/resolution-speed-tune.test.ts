@@ -42,6 +42,7 @@ import {
   ContrainteSpeedTune,
   SetsCumuls,
   ZoneMembre,
+  conflitVitesseMax,
   dansZone,
   exigenceSousSpeedTune,
   lignesBorneesDuBuild,
@@ -312,6 +313,10 @@ export default function testResolutionSpeedTune() {
     egal(exigenceSousSpeedTune({ sets: [], minStats: {} }, c)?.maxStats, { spd: 210 }, '… sans maximum posé : le haut de l’enveloppe');
     egal(exigenceSousSpeedTune({ sets: [], minStats: {}, maxStats: { spd: 150 } }, c), null, '… maximum sous l’enveloppe : la recherche ne part pas');
     egal(exigenceSousSpeedTune(req, { ...c, setsAdmis: [] }), null, '… aucun set admis : la recherche ne part pas');
+    egal(conflitVitesseMax({ sets: [], minStats: {}, maxStats: { spd: 150 } }, c), { max: 150, min: 180 }, 'conflit : maximum sous le bas de l’enveloppe, les deux valeurs pour le message');
+    egal(conflitVitesseMax({ sets: [], minStats: {}, maxStats: { spd: 180 } }, c), null, '… maximum au bas de l’enveloppe : aucun conflit');
+    egal(conflitVitesseMax(req, c), null, '… maximum dans l’enveloppe : aucun conflit');
+    egal(conflitVitesseMax({ sets: [], minStats: {} }, c), null, '… sans maximum : aucun conflit');
 
     const memo = new Map();
     const runes = (sets: string[]) => sets.map((set) => ({ set }));

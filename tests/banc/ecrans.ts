@@ -272,6 +272,12 @@ const OPT_PREPA_TUNE = {
   ordinateur: [...OPT_LISTE_GUILDE, ...OPT_SPEED_TUNE, OPT_MEMBRE_TUNE, choisirReglage('Critères', 'criteres'),
     { attendre: OPT_ZONE_TUNE, delaiMs: 20000 }],
 };
+// Stats de base exclues : 20 de bonus, sous le bas de la zone.
+const OPT_VIT_MAX: Etape[] = [
+  { saisir: { role: 'textbox', nom: 'VIT maximum' }, texte: '20' },
+  { cliquer: { role: 'texte', nom: 'Conditions' } },
+  { montrer: repere('[data-conflit-vitesse]') },
+];
 const OPT_MEMBRES = [repere('[data-membre-optimizer="13812"]'), repere('[data-membre-optimizer="19315"]')];
 const OPT_IMPORT: Etape = {
   importer: bouton('Importer les paramètres de recherche'), fichier: 'optimizer-banc-recette.json',
@@ -693,6 +699,16 @@ export const ECRANS: Ecran[] = [
           ordinateur: [...OPT_PREPA_TUNE.ordinateur, { cliquer: OPT_ZONE_TUNE }],
         },
         atteint: [repere('[data-zone-speed-tune][aria-expanded="true"]'), { role: 'texte', nom: 'VIT. combat' }],
+      },
+      {
+        // VIT maximum sous le bas de la zone : le champ en rouge et le message.
+        id: 'vitesse-max-speed-tune', libelle: 'membre attaché au speed tune, VIT maximum sous la zone : champ rouge et message',
+        tailles: ['telephone', 'ordinateur'],
+        preparation: {
+          telephone: [...OPT_PREPA_TUNE.telephone, ...OPT_VIT_MAX],
+          ordinateur: [...OPT_PREPA_TUNE.ordinateur, ...OPT_VIT_MAX],
+        },
+        atteint: [repere('[data-conflit-vitesse]')],
       },
       {
         // Quatre onglets : depuis Options, l'onglet Résultats montre l'objectif et « Rechercher ».

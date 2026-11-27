@@ -393,7 +393,12 @@ Le verdict d'équipe s'affiche en tête de l'encart de chaque membre de l'équip
 pas encore dans la liste des équipes. Tant que le membre est attaché, la case
 « Min » de VIT dit « speed tune » et ne se saisit pas, et l'« Effet aug. VIT »
 disparaît de l'éditeur des sous-propriétés verrouillées (sans être effacé des
-critères) ; la VIT maximum reste saisissable et resserre l'enveloppe. Les
+critères) ; la VIT maximum reste saisissable et resserre l'enveloppe. Une VIT
+maximum sous le bas de l'enveloppe ne laisse partir aucune recherche : à la
+sortie du champ, celui-ci passe en rouge et un message sous les conditions donne
+les deux valeurs (dans l'unité du champ, bonus ou totale). La valeur n'est pas
+effacée, la zone pouvant changer ; « Rechercher » reste sans effet et ramène aux
+conditions (onglet « Critères » au bureau). Les
 deux formats ont le même contenu ; l'encart suit la grille des conditions de
 chaque format.
 
