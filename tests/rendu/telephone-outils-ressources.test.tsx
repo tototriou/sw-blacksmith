@@ -60,10 +60,14 @@ export function testRenduTelephoneOutilsRessources() {
     'Paramètres : la langue en premier, les réglages, puis les données, jusqu\'à « Tout supprimer »'
   );
   ok(
+    tp.includes('Thème clair Givre Atelier') && tp.indexOf('Thème Auto Clair Sombre') < tp.indexOf('Thème clair Givre Atelier'),
+    'Paramètres : le thème clair (Givre · Atelier), sous le thème'
+  );
+  ok(
     tp.includes('Builds les plus rapides Choisir… 9 combinaisons · 5 builds par combinaison, au Résumé des runes.'),
     'Paramètres : le réglage des builds les plus rapides, et son résumé'
   );
-  egal(boutons(param).length, 16, 'Paramètres : les seize boutons (dont Auto · Français · English de la langue, Cartes · Tableau des résultats de l’Optimizer)');
+  egal(boutons(param).length, 18, 'Paramètres : les dix-huit boutons (dont Auto · Français · English de la langue, Givre · Atelier du thème clair, Cartes · Tableau des résultats de l’Optimizer)');
 
   egal(texteVisible(auTelephone(() => rendre(<ComingSoon title="Arène" icon={Trophy} />))), 'Bientôt disponible Cet outil est en cours de construction.', 'Bientôt : le message');
 }

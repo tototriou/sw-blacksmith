@@ -438,6 +438,7 @@ import { testRenduSwExporter, testRenduSwExporterBureau } from './rendu/sw-expor
 import { testRenduCompteDirect } from './rendu/compte-direct.test';
 import { testRenduNotifPlugin } from './rendu/notif-plugin.test';
 import { testRenduBureauTextes } from './rendu/bureau-textes.test';
+import { testThemesBlocs, testThemesContrastes, testThemeClairReglage } from './themes.test';
 import { testRenduBureauCoeursRecherche } from './rendu/recherche-coeurs.test';
 import { testRenduBarreSession } from './rendu/barre-session.test';
 import { testRenduChangementCompte } from './rendu/changement-compte.test';
@@ -1439,6 +1440,9 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testRenduOptimizerCombatEffectifAffiche', testRenduOptimizerCombatEffectifAffiche],
   ['testRenduTelephoneOptimizerCombatEffectifAffiche', testRenduTelephoneOptimizerCombatEffectifAffiche],
   ['testOptimizerEquipesJetons', testOptimizerEquipesJetons],
+  ['testThemesBlocs', testThemesBlocs],
+  ['testThemesContrastes', testThemesContrastes],
+  ['testThemeClairReglage', testThemeClairReglage],
   ['testRenduOptimizerBandesEquipesClair', testRenduOptimizerBandesEquipesClair],
   ['testRenduOptimizerBandesEquipesSombre', testRenduOptimizerBandesEquipesSombre],
   ['testRenduTelephoneOptimizerBandesEquipesClair', testRenduTelephoneOptimizerBandesEquipesClair],

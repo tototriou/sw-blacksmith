@@ -41,9 +41,13 @@ export const fr = {
     autoNavigateur: 'Suit le thème de ton navigateur',
     autoSysteme: 'Suit le thème de ton système',
     clair: 'Clair',
-    clairAide: 'Atelier — fond clair, encre chaude',
+    clairAide: 'Givre ou Atelier — fond clair',
     sombre: 'Sombre',
     sombreAide: 'Forge — fond profond, accent braise',
+    givre: 'Givre',
+    givreAide: 'Gris doux, cartes blanches',
+    atelier: 'Atelier',
+    atelierAide: 'Papier chaud, encre chaude',
   },
 
   mesure: {
@@ -223,6 +227,8 @@ export const fr = {
     blocApplication: 'Application',
     toutVoir: 'Tout voir',
     theme: 'Thème',
+    themeClair: 'Thème clair',
+    themeClairAide: 'Celui que prennent « Clair » et « Auto » quand le fond est clair.',
     score: 'Score',
     resultatsOptimizer: "Résultats de l'Optimizer",
     resultatsOptimizerAide:

@@ -3,7 +3,8 @@
 @tailwind utilities;
 
 /* ==========================================================================
-   Système visuel — deux thèmes : Forge (sombre) et Atelier (clair).
+   Système visuel — trois thèmes : Givre (clair, le défaut), Atelier (clair,
+   au choix) et Forge (sombre).
    Source de vérité : docs/03-developpeur/interface/
    ==========================================================================
 
@@ -14,131 +15,123 @@
    rune transparent. Voir tailwind.config.js.
 
    Le thème s'applique par `data-theme` sur <html>, posé AVANT la première
-   peinture par le script inline d'index.html. Trois cas :
-     1. `:root`                        → Atelier (clair), le défaut ;
-     2. media dark SANS data-theme     → Forge, quand on suit son OS ;
-     3. `[data-theme="dark"]`          → Forge forcé depuis le menu ⚙.
-   Le cas 2 est gardé par `:not([data-theme="light"])` pour qu'un choix
-   explicite « Clair » l'emporte sur un OS en sombre. */
+   peinture par le script inline d'index.html. Quatre cas :
+     1. `:root`                         → Givre (clair), le défaut ;
+     2. `[data-theme-clair="atelier"]`  → Atelier, l'autre thème clair, choisi
+                                          dans les Paramètres ;
+     3. media dark SANS data-theme      → Forge, quand on suit son OS ;
+     4. `[data-theme="dark"]`           → Forge forcé depuis le menu ⚙.
+   Le cas 3 est gardé par `:not([data-theme="light"])` pour qu'un choix
+   explicite « Clair » l'emporte sur un OS en sombre. Les cas 2 à 4 ont la
+   même spécificité : c'est leur ORDRE dans ce fichier qui fait passer Forge
+   devant Atelier quand le thème appliqué est sombre. */
 
 :root {
-  /* ---- Atelier (clair) — le défaut ----
+  /* ---- Givre (clair) — le défaut ----
      ⚠️ Valeurs MESURÉES au contraste WCAG, pas choisies à l'œil. Seuils :
      4.5 pour le texte, 3.0 pour les bordures et éléments d'interface.
      Voir docs/03-developpeur/interface/ § Contraste. */
-  /* ⚠️ **Les jetons de la
-     toile**, thème Atelier — un papier chaud, l'encre de l'atelier, la braise
-     en accent. Voir docs/03-developpeur/interface/.
+  /* Des gris à peine bleutés, des cartes blanches, la braise en accent.
      ⚠️ Les trois surfaces se distinguent deux à deux, mais faiblement
-     (`panel2` / `bg` 1.09, `panel` / `bg` 1.12) : c'est la BORDURE qui sépare
-     une surface posée sur la page. */
-  --bg: 246 240 228;
-  --panel: 255 253 248;
-  --panel2: 239 230 213;
-  /* Bandes d'équipes alternées, indépendantes de la sélection et de l'élément. */
-  --equipe-a: 255 237 221;
-  --equipe-b: 220 234 239;
+     (`panel2` / `panel` 1.16, `panel2` / `bg` 1.09, `panel` / `bg` 1.06) :
+     c'est la BORDURE qui sépare une surface posée sur la page. */
+  --bg: 246 248 250;
+  --panel: 255 255 255;
+  --panel2: 235 238 242;
+  /* Bandes d'équipes alternées, indépendantes de la sélection et de l'élément.
+     `ink-dimmer` s'y lit : 4.78 sur la braise douce, 4.60 sur le bleu doux. */
+  --equipe-a: 255 238 222;
+  --equipe-b: 227 238 248;
   /* Contour du monstre affiché dans sa bande d'équipe : la teinte de la bande, saturée. */
   --equipe-a-trait: 222 140 80;
   --equipe-b-trait: 96 150 175;
-  /* Barres de l'application (barre latérale, barre du haut). En Atelier,
-     la toile la confond avec `panel` : elle se
-     détache du fond de page par sa bordure. */
-  --bar: 255 253 248;
+  /* Barres de l'application (barre latérale, barre du haut). Elle vaut
+     `panel` : elle se détache du fond de page par sa bordure. */
+  --bar: 255 255 255;
   /* `border-soft` (séparateurs, cadres de carte) et `border` (champs, boutons,
-     puces : là où l'on tape) — `--bs-border` et `--bs-border-strong` de la
-     toile. Mesuré : `border` 1.50 à 1.83, `border-soft` 1.13 à 1.37. Aucune
-     n'atteint 3:1, le seuil d'un contour porteur de sens : elles séparent, elles
-     ne signifient rien (l'état, lui, passe par `accent-lisible`). */
-  --border: 205 188 158;
-  --border-soft: 228 217 198;
-  /* Encres chaudes de la toile. `ink-dimmer` : 5.26 sur `bg`, 5.87 sur `panel`,
-     4.82 sur `panel2` — au-dessus de 4.5 sur les trois. */
-  --ink: 27 26 25;
-  --ink-dim: 63 58 52;
-  --ink-dimmer: 107 98 89;
+     puces : là où l'on tape). Mesuré : `border` 1.30 à 1.51, `border-soft`
+     1.10 à 1.28. Aucune n'atteint 3:1, le seuil d'un contour porteur de sens :
+     elles séparent, elles ne signifient rien (l'état, lui, passe par
+     `accent-lisible`). */
+  --border: 203 211 219;
+  --border-soft: 223 228 234;
+  /* `ink-dimmer` : 5.08 sur `bg`, 5.41 sur `panel`, 4.65 sur `panel2` —
+     au-dessus de 4.5 sur les trois. */
+  --ink: 31 35 40;
+  --ink-dim: 69 76 84;
+  --ink-dimmer: 98 107 117;
 
   /* ⚠️ **Deux braises**. La braise VIVE
      (`--accent`) ne tient qu'en APLAT : comme texte ou comme contour, elle
-     tombe à 2.11-2.57 sur les fonds clairs. Tout ce qui se LIT ou se VOIT comme
+     tombe à 2.24-2.61 sur les fonds clairs. Tout ce qui se LIT ou se VOIT comme
      un trait — texte, contour d'état, anneau de focus, trait de graphique —
-     prend `--accent-lisible` : 4.52 à 5.51 sur les trois surfaces.
+     prend `--accent-lisible` : 4.70 à 5.46 sur les trois surfaces.
      Le partage se fait dans tailwind.config.js (`textColor`, `borderColor`,
      `ringColor`, `outlineColor`) : un composant écrit toujours `text-accent`
      ou `border-accent`, et reçoit la bonne braise. */
   --accent: 255 122 26;
-  --accent-lisible: 166 79 17;
-  /* SURVOL et APPUI de l'aplat de braise (bouton principal) — rebranding R3a,
-     planche « Actions » de la toile. En Atelier, la toile fonce au survol
-     (`--bs-accent-hover` #E0620A) ; l'appui ne peut pas foncer davantage sans
-     que l'encre posée dessus passe sous 4.5 (4.90 ici) : il garde la valeur
-     du survol, et c'est le déplacement d'1 px qui accuse le clic. */
+  --accent-lisible: 173 77 11;
+  /* SURVOL et APPUI de l'aplat de braise (bouton principal). En clair, il
+     fonce au survol ; l'appui ne peut pas foncer davantage sans que l'encre
+     posée dessus passe sous 4.5 (4.90 ici) : il garde la valeur du survol, et
+     c'est le déplacement d'1 px qui accuse le clic. */
   --accent-hover: 224 98 10;
   --accent-appui: 224 98 10;
-  /* ⚠️ **Fonds doux : la VIVACITÉ d'avant, dans la teinte de la toile.**
-     Chacun prend la plus vive (chroma OKLCH) de deux constructions : la teinte
-     fondue à 12 % dans `panel`, OU la chroma et l'écart de clarté de l'ancien
-     fond doux, reportés sur le nouveau `panel`. Le 12 % seul donnait des gris
-     à peine teintés (le mainteneur, R1 : « ça me paraît pâle » — les camps du speed
-     tuning) : la toile a une sémantique pastel, et la fondre dans un fond
-     chaud la délave. L'encre y fait 13.99 au pire. */
-  --accent-soft: 255 237 221;
+  /* ⚠️ **Fonds doux : vifs, pas des gris teintés.** Chacun garde la chroma
+     et l'écart de clarté du fond doux d'Atelier, reportés sur ce `panel`,
+     dans la teinte de la couleur qu'il accompagne. L'encre y fait 12.97 au
+     pire. */
+  --accent-soft: 255 238 222;
   /* Texte posé SUR un aplat de braise (bouton principal plein) : l'encre
      sombre, pas le blanc. Mesuré : 6.66. */
   --accent-ink: 27 26 25;
-  /* Sémantique de la toile. Chacune lisible sur les trois surfaces (5.17 au
-     pire) et sur son fond doux (5.48 au pire). */
-  --good: 47 107 54;
+  /* Sémantique. Chacune lisible sur les trois surfaces (5.03 au pire) et sur
+     son fond doux (5.07 au pire). */
+  --good: 26 116 49;
   /* Fond doux de `good`. Ils vont par PAIRE avec `bad-soft` — le speed tuning
      oppose ton équipe (`good`) au camp d'en face (`bad`). */
-  --good-soft: 227 241 227;
-  /* ⚠️ `warn` est JAUNE / OCRE, plus orange. L'orange de la toile était la braise : ΔE
-     3.8 avec
-     `accent-lisible` en Atelier, et en Forge la valeur même d'`accent-hover`
-     — le mainteneur : « le orange rappelle vachement la couleur principale ». Aucun
-     orange ni ambre lisible ne s'en écartait (balayage des teintes). Ocre :
-     ΔE 9 avec la braise lisible, 5.07 sur `bg`, 4.65 sur `panel2`.
-     ⚠️ En Atelier il reste proche de l'or du lead (`star`, ΔE 4) : choisi en
-     connaissance de cause. C'est le LIBELLÉ qui porte l'avertissement,
-     jamais la couleur seule.
-     ⚠️ Fond doux hors construction : 12 % dans `panel` donnait une crème
-     indiscernable de `panel2` (ΔE 1.3). Chroma 0.07 à la clarté de l'ancien
-     doux : ΔE 5.0 avec `panel2`, l'ocre y fait 4.91. */
-  --warn: 124 99 13;
-  --warn-soft: 251 237 183;
+  --good-soft: 220 245 225;
+  /* ⚠️ `warn` est JAUNE / OCRE, pas orange : un orange ou un ambre lisible se
+     confondrait avec la braise lisible. ΔE 9.7 avec elle, 5.68 sur `bg`,
+     5.20 sur `panel2`. Il reste proche de l'or du lead (`star`, ΔE 5.1) :
+     c'est le LIBELLÉ qui porte l'avertissement, jamais la couleur seule.
+     Fond doux : ΔE 7.5 avec `panel2`, l'ocre y fait 5.42. */
+  --warn: 125 94 0;
+  --warn-soft: 255 243 191;
   /* (Pas de token `--siege-card-*`, fond coloré des cartes de siège : une
-     PASTILLE écrite porte le statut, dans les deux thèmes.) */
+     PASTILLE écrite porte le statut, dans tous les thèmes.) */
 
-  --bad: 163 48 58;
+  --bad: 194 31 44;
   /* Fond doux de `bad`. ⚠️ Il manquait un AXE, pas une variante : l'accent et
      les éléments avaient leur `-soft`, la sémantique non. Il porte le camp
      ADVERSE du speed tuning, en face de `--good-soft`. */
-  --bad-soft: 248 228 227;
+  --bad-soft: 255 233 231;
   /* Les SÉRIES des graphes (Siège › Statistiques) : trois teintes d'identité,
      dans cet ordre, jamais réordonnées — bleu, orange, aqua. Validées toutes
-     paires confondues contre la carte (`panel`) des deux thèmes : séparation
+     paires confondues contre la carte (`panel`) de chaque thème : séparation
      daltonienne ≥ 9 (OKLab ×100), vision normale ≥ 20. ⚠️ Pas `good` et `bad` :
-     ce vert et ce rouge se confondent pour un deutéranope (ΔE 2,5 en clair).
+     ce vert et ce rouge se confondent pour un deutéranope (ΔE 5,8 en Givre,
+     2,5 en Atelier, pour un seuil de 9).
      L'aqua est sous 3:1 sur le clair : légende et libellés directs requis. */
   --serie-1: 42 120 214;
   --serie-2: 235 104 52;
   --serie-3: 27 175 122;
   /* Les GUILDES d'un siège, aux couleurs de la carte du jeu : bleu (ma
      guilde, en bas à gauche), rouge (en haut), jaune (à droite). Validées toutes paires confondues contre la
-     carte (`panel`) des deux thèmes : séparation daltonienne ≥ 9 (OKLab ×100),
+     carte (`panel`) de chaque thème : séparation daltonienne ≥ 9 (OKLab ×100),
      vision normale ≥ 21, contraste ≥ 3:1. ⚠️ Le rouge et le jaune ne se
      séparent, pour un deutéranope, que par leur clarté : ne pas les rapprocher. */
   --guilde-bleue: 42 120 214;
   --guilde-rouge: 184 34 47;
   --guilde-jaune: 179 143 16;
   /* Encre SUR un aplat de `bad` (bouton danger plein), le pendant
-     d'`accent-ink` : blanc ici (6.9 sur `bad`), sombre en Forge, où le rouge
+     d'`accent-ink` : blanc ici (5.96 sur `bad`), sombre en Forge, où le rouge
      est clair. */
   --bad-ink: 255 255 255;
   /* Les NIVEAUX d'un objectif du compte (Mon compte › Objectifs) : rouge,
      orange, jaune, vert clair, vert — moins de 30 %, 50 %, 70 %, 100 %, puis
      atteint. Des APLATS pastel sous une encre sombre (`niveau-ink`), les mêmes
-     dans les deux thèmes : 7:1 au pire (le rouge). ⚠️ Une échelle de DONNÉES,
+     dans tous les thèmes : 7:1 au pire (le rouge). ⚠️ Une échelle de DONNÉES,
      comme les séries : l'orange n'y est pas `warn`, et le pourcentage écrit
      porte toujours la valeur (rouge et vert se confondent pour un
      deutéranope). */
@@ -163,9 +156,9 @@
      Un jaune reste jaune tant qu'il est clair ; l'assombrir jusqu'à 4.5 sur
      `bg` le fait virer au kaki, et un joueur ne reconnaît plus son élément.
      On tient donc 4.5 sur `panel` — la surface des cartes et des listes, là où
-     ces libellés apparaissent réellement — et on accepte moins ailleurs : sur
-     les fonds du rebranding (R1), le vent fait 4.56 sur `panel`, 4.08 sur
-     `bg`, 3.74 sur `panel2` ; la lumière 5.21 / 4.66 / 4.27.
+     ces libellés apparaissent réellement — et on accepte moins ailleurs : le
+     vent fait 4.63 sur `panel`, 4.35 sur `bg`, 3.98 sur `panel2` ; la lumière
+     5.29 / 4.97 / 4.55.
      Ce sont des LIBELLÉS courts et gras, pas du texte courant.
      Voir docs/03-developpeur/interface/ § Contraste. */
   --el-wind: 148 111 0;
@@ -177,25 +170,23 @@
      `--accent-soft` l'est pour l'accent. Ils portent l'élément sans crier :
      une pastille sélectionnée, un en-tête d'écran, une carte de résumé.
      ⚠️ Assez pâles pour que `--ink` reste lisible dessus — ce sont des FONDS,
-     jamais du texte. Même construction que `--accent-soft` (la plus vive des
-     deux). */
-  --el-fire-soft: 248 226 220;
-  --el-water-soft: 225 236 245;
-  --el-wind-soft: 242 236 218;
-  --el-light-soft: 244 238 224;
-  --el-dark-soft: 237 230 249;
-  --el-unknown-soft: 232 235 242;
+     jamais du texte. Même construction que `--accent-soft`. */
+  --el-fire-soft: 250 228 224;
+  --el-water-soft: 227 238 247;
+  --el-wind-soft: 250 237 208;
+  --el-light-soft: 253 239 211;
+  --el-dark-soft: 239 232 251;
+  --el-unknown-soft: 234 237 244;
 
-  /* Le LAITON de la toile (`--bs-brass`) : étoiles, maxima d'efficience.
-     4.79 sur `panel`, 4.29 sur `bg`, 3.93 sur `panel2` — même règle que le
-     vent. */
+  /* Le LAITON : étoiles, maxima d'efficience. 4.87 sur `panel`, 4.58 sur
+     `bg`, 4.19 sur `panel2` — même règle que le vent. */
   --star: 140 109 14;
 
   /* Le CRISTAL du logo : deux facettes,
      la gauche plus claire que la droite, comme l'identité du mainteneur. Aucun
-     jeton existant ne donne cette paire dans les deux thèmes — la braise
-     claire de Forge est plus claire que la braise, celle d'Atelier ne l'est
-     pas. Décoratif : pas de seuil de contraste (le symbole se lit à sa forme). */
+     jeton existant ne donne cette paire en clair comme en sombre — la braise
+     claire de Forge est plus claire que la braise, celle des thèmes clairs ne
+     l'est pas. Décoratif : pas de seuil de contraste (le symbole se lit à sa forme). */
   --logo-cristal: 224 98 10;
   --logo-cristal-clair: 255 122 26;
 
@@ -206,8 +197,7 @@
      — cinq des six étaient invisibles.
      Chaque barre porte son libellé ET sa valeur en clair : l'identité ne repose
      jamais sur la couleur seule. Voir docs/03-developpeur/interface/ § Dataviz.
-     `pal-1` descendu d'un cheveu au rebranding (150 112 10 → 149 111 10) :
-     4.47 sur le nouveau `panel`, 4.53 après. */
+     `pal-1` : 4.61 sur `panel`. */
   --pal-1: 149 111 10; /* or       — ≥ 110 % */
   --pal-2: 122 61 158; /* violet   — 100-110 % */
   --pal-3: 28 122 74; /* vert     — 90-100 % */
@@ -216,7 +206,7 @@
   --pal-6: 107 114 128; /* gris     — < 70 % */
 
   /* Raretés — couleur de TEXTE seulement (la bannière garde le dégradé du jeu,
-     identique dans les deux thèmes). Voir RARITY_META dans lib/effects.ts. */
+     identique dans tous les thèmes). Voir RARITY_META dans lib/effects.ts. */
   --rarity-5: 166 88 12;
   --rarity-4: 118 51 176;
   --rarity-3: 21 88 140;
@@ -228,12 +218,12 @@
      `<select>` natif garde un socle imposé par le navigateur, que ni le
      rembourrage ni la classe ne franchissent. Encodé en `url()` plutôt qu'en
      élément séparé — il n'y a rien à cliquer dessus, le `<select>` capte tout.
-     ⚠️ La couleur est écrite en dur (`%23827c72`, un gris chaud) : une `data:`
-     URI ne peut pas lire une variable CSS. Teinte moyenne choisie pour les
-     deux thèmes à la fois : 3.34 sur le `panel2` d'Atelier, 3.36 sur celui de
-     Forge (rebranding R1 ; c'était un gris bleuté, `%238890b8`). */
+     ⚠️ La couleur est écrite en dur (`%23827c72`) : une `data:` URI ne peut
+     pas lire une variable CSS. Teinte moyenne choisie pour les trois thèmes à
+     la fois : 3.56 sur le `panel2` de Givre, 3.34 sur celui d'Atelier, 3.36
+     sur celui de Forge. */
   --chevron-select: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='none' stroke='%23827c72' stroke-width='1.8' stroke-linecap='round'%3E%3Cpath d='M3 4.5 6 7.5 9 4.5'/%3E%3C/svg%3E");
-  /* Arrondis — LES MÊMES dans les deux thèmes (Forge perd l'angle vif). Quatre crans, chacun un rôle :
+  /* Arrondis — LES MÊMES dans tous les thèmes. Quatre crans, chacun un rôle :
      petit élément (pastille, badge) · bouton et champ · carte · fenêtre.
      `rounded-xl` et `rounded-2xl` étaient les valeurs figées de Tailwind
      (12 et 16 px) : ils passent sous token. Voir docs/03-developpeur/interface/design/typographie-et-rayons.md § Rayons.
@@ -255,11 +245,11 @@
      (`--el-water`) quand l'écran parle d'un monstre, l'accent de l'app sinon.
      Chaque teinte reste donc celle dont le contraste a été mesuré, et il n'y a
      rien de plus à vérifier.
-     ⚠️ Défini pour les DEUX thèmes du seul fait qu'il est un alias : la valeur
+     ⚠️ Défini pour TOUS les thèmes du seul fait qu'il est un alias : la valeur
      suit automatiquement `--accent`, qui change avec le thème.
      ⚠️ `--ctx-lisible` : le pendant de `--accent-lisible` (texte, contour).
      Sans lui, `text-ctx` hors de tout `data-ctx` retombait sur la braise VIVE,
-     illisible en Atelier. Un élément, lui, est lisible tel quel. */
+     illisible en clair. Un élément, lui, est lisible tel quel. */
   --ctx: var(--accent);
   --ctx-lisible: var(--accent-lisible);
   --ctx-soft: var(--accent-soft);
@@ -275,6 +265,60 @@
 [data-ctx='light'] { --ctx: var(--el-light); --ctx-lisible: var(--el-light); --ctx-soft: var(--el-light-soft); }
 [data-ctx='dark'] { --ctx: var(--el-dark); --ctx-lisible: var(--el-dark); --ctx-soft: var(--el-dark-soft); }
 [data-ctx='unknown'] { --ctx: var(--el-unknown); --ctx-lisible: var(--el-unknown); --ctx-soft: var(--el-unknown-soft); }
+
+/* ---- Atelier (clair, au choix) ----
+   Le thème clair d'origine : un papier chaud, l'encre de l'atelier, la braise
+   en accent. Il ne redéfinit que ce qui le distingue de Givre — surfaces,
+   encres, braise lisible, sémantique, fonds doux ; la braise vive, les
+   éléments, le laiton, les séries et les palettes sont communs aux deux
+   thèmes clairs.
+   ⚠️ Placé AVANT les deux déclencheurs de Forge, de même spécificité : un
+   thème appliqué sombre l'emporte, quel que soit le thème clair choisi. */
+:root[data-theme-clair='atelier'] {
+  /* Les trois surfaces se distinguent faiblement (`panel2` / `bg` 1.09,
+     `panel` / `bg` 1.12) : c'est la BORDURE qui sépare une surface posée sur
+     la page. */
+  --bg: 246 240 228;
+  --panel: 255 253 248;
+  --panel2: 239 230 213;
+  --equipe-a: 255 237 221;
+  --equipe-b: 220 234 239;
+  --bar: 255 253 248;
+  /* Mesuré : `border` 1.50 à 1.83, `border-soft` 1.13 à 1.37. */
+  --border: 205 188 158;
+  --border-soft: 228 217 198;
+  /* Encres chaudes. `ink-dimmer` : 5.26 sur `bg`, 5.87 sur `panel`, 4.82 sur
+     `panel2`. */
+  --ink: 27 26 25;
+  --ink-dim: 63 58 52;
+  --ink-dimmer: 107 98 89;
+  /* La braise vive fait 2.11 à 2.57 sur ces fonds ; la lisible, 4.52 à 5.51. */
+  --accent-lisible: 166 79 17;
+  /* Fonds doux : la plus vive (chroma OKLCH) de deux constructions — la
+     teinte fondue à 12 % dans `panel`, ou la chroma et l'écart de clarté d'un
+     fond doux plus ancien reportés sur ce `panel`. Le 12 % seul donnait des
+     gris à peine teintés sur un fond chaud. L'encre y fait 13.99 au pire. */
+  --accent-soft: 255 237 221;
+  /* Sémantique : 5.17 au pire sur les trois surfaces, 5.48 sur son fond doux. */
+  --good: 47 107 54;
+  --good-soft: 227 241 227;
+  /* Ocre : ΔE 9 avec la braise lisible, 5.07 sur `bg`, 4.65 sur `panel2` ;
+     proche de l'or du lead (`star`, ΔE 4). Fond doux hors construction : 12 %
+     dans `panel` donnait une crème indiscernable de `panel2` (ΔE 1.3) ; à
+     chroma 0.07, ΔE 5.0 avec `panel2`, l'ocre y fait 4.91. */
+  --warn: 124 99 13;
+  --warn-soft: 251 237 183;
+  --bad: 163 48 58;
+  --bad-soft: 248 228 227;
+  /* Vent : 4.56 sur `panel`, 4.08 sur `bg`, 3.74 sur `panel2` ; lumière 5.21 /
+     4.66 / 4.27 ; laiton 4.79 / 4.29 / 3.93 ; blanc sur `bad` 6.9. */
+  --el-fire-soft: 248 226 220;
+  --el-water-soft: 225 236 245;
+  --el-wind-soft: 242 236 218;
+  --el-light-soft: 244 238 224;
+  --el-dark-soft: 237 230 249;
+  --el-unknown-soft: 232 235 242;
+}
 
 /* ---- Forge (sombre) : les valeurs, définies UNE SEULE FOIS ----
    ⚠️ Les jetons de la
@@ -661,8 +705,8 @@ html {
    clavier, qui bavait sur ses voisins dans une rangée serrée. La couleur
    d'accent suffit à le repérer — c'est le contraste qui fait un marqueur de
    focus, pas l'épaisseur. Voir docs/03-developpeur/interface/ § contours. */
-/* ⚠️ `accent-lisible`, pas `accent` : en Atelier, la braise vive fait 2.11 à
-   2.57 sur les fonds — un anneau de focus doit tenir 3:1. */
+/* ⚠️ `accent-lisible`, pas `accent` : en clair, la braise vive fait 2.11 à
+   2.61 sur les fonds — un anneau de focus doit tenir 3:1. */
 :focus-visible {
   outline: 1px solid rgb(var(--accent-lisible));
   outline-offset: 1px;

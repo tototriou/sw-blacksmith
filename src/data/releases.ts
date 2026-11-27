@@ -84,6 +84,7 @@ export const RELEASES: Release[] = [
       { kind: 'feat', scope: 'SW Exporter', text: 'Une version de l’app qui ne change pas le plugin ne demande plus de le retélécharger.' },
       { kind: 'feat', scope: 'Application', text: 'Une notification qui pose une question revient après une annonce qui l’avait remplacée.' },
       { kind: 'feat', scope: 'Application', text: 'L’application de bureau restée ouverte cherche une nouvelle version chaque jour, et repropose celle que tu as remise à plus tard.' },
+      { kind: 'feat', scope: 'Application', text: 'Nouveau thème clair par défaut, « Givre », aux gris doux ; l’ancien, « Atelier », reste au choix dans les Paramètres.' },
       { kind: 'feat', scope: 'Mon compte', text: 'Une section « Objectifs » compare tes runes et tes artéfacts à ce que tu vises : runes set par set et emplacement par emplacement, artéfacts par élément ou style et par principale ; les objectifs s’y règlent, s’exportent et s’importent.' },
       { kind: 'fix', scope: 'SW Exporter', text: 'Avec un invocateur suivi, une page vide (prépa RTA, siège, arène) se remplit de son dernier export.' },
     ],

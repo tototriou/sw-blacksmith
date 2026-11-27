@@ -136,17 +136,20 @@ export function testRenduParametres() {
   ok(b.some((x) => x.texte === 'Importer un JSON' && x.title === 'Importer un export de compte SWEX (traité localement, rien n\'est envoyé)'), '« Importer un JSON », et ce qu\'il devient');
   for (const [texte, info, presse] of [
     ['Auto', 'Suit le thème de ton navigateur', true],
-    // Rebranding R1 : « encre froide » et « accent cuivre » décrivaient
-    // l'ancienne identité.
-    ['Clair', 'Atelier — fond clair, encre chaude', false],
+    // « Clair » ne nomme plus un thème : il y en a deux, et le réglage
+    // « Thème clair » dit lequel.
+    ['Clair', 'Givre ou Atelier — fond clair', false],
     ['Sombre', 'Forge — fond profond, accent braise', false],
+    ['Givre', 'Gris doux, cartes blanches', true],
+    ['Atelier', 'Papier chaud, encre chaude', false],
     ['Efficience', 'Efficience communautaire (principale incluse, /2,8)', true],
     ['Score SW', 'Score affiché dans le jeu (stats secondaires uniquement)', false],
   ] as const) ok(b.some((x) => x.texte === texte && x.title === info && x.presse === presse), `« ${texte} », ce qu'il fait, son état`);
   const aria = valeurs(vide, 'aria-label');
   for (const i of ['Afficher le total au-delà de 100 % pour Taux Crit, RES et Précision', 'Toujours ajouter en face mon monstre le plus rapide', 'Garder mes données sur cet appareil'])
     ok(aria.includes(i), `interrupteur « ${i} »`);
-  for (const intitule of ['Thème', 'Score', 'Overcap Taux Crit/RES/Précision', 'Adversaire de référence (speed tuning)', 'Garder mes données', 'Mes données'])
+  ok(t.indexOf('Thème clair') > t.indexOf('Thème') && t.indexOf('Thème clair') < t.indexOf('Score'), '« Thème clair » suit « Thème »');
+  for (const intitule of ['Thème', 'Thème clair', 'Score', 'Overcap Taux Crit/RES/Précision', 'Adversaire de référence (speed tuning)', 'Garder mes données', 'Mes données'])
     ok(t.includes(intitule), `réglage « ${intitule} »`);
   ok(t.includes('Ces trois stats sont plafonnées à 100 % dans le jeu.') && t.includes('Sans ce réglage, il n\'est posé que si personne n\'est en face.') && t.includes('à éviter sur un ordinateur partagé.'), 'chaque réglage expliqué');
   ok(b.some((x) => x.texte === 'Tout supprimer' && x.title === 'Efface la prépa RTA, les équipes de siège, les recommandations, les monstres perso et le compte importé'), '« Tout supprimer », et ce qu\'il efface');

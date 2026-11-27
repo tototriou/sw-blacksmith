@@ -22,7 +22,7 @@ import { SCHEMA, URL_ACCUEIL, cheminDuFichier } from './protocole';
 import { definirLangue, langueDuSysteme } from './textes';
 import { lancerPreuve, lancerPreuveConservation, lancerPreuveDiscord, lancerPreuveSession, lancerPreuveSwex, TemoinsPreuve } from './preuve';
 
-// Les couleurs des deux thèmes, LUES dans `src/index.css` à la compilation
+// Les couleurs du clair par défaut et du sombre, LUES dans `src/index.css` à la compilation
 // (scripts/construire-bureau.mjs) — jamais recopiées ici. Elles habillent la
 // fenêtre tant que la page n'a pas envoyé les siennes.
 declare const __COULEURS_THEMES__: { clair: CouleursFenetre; sombre: CouleursFenetre };

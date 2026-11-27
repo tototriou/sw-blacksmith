@@ -57,6 +57,7 @@ export default async function testPersistance() {
   // ne doit pas les emporter non plus.
   for (const [cle, valeur] of [
     ['swblacksmith-theme-v1', 'dark'],
+    ['swblacksmith-theme-clair-v1', 'atelier'],
     ['swblacksmith-overcap-display-v1', '0'],
     ['swblacksmith-adversaire-reference-v1', '1'],
     ['swblacksmith-builds-rapides-v1', '{"combos":[],"nombre":3}'],
@@ -65,6 +66,7 @@ export default async function testPersistance() {
   }
   await P.purgeDonneesConservees(false);
   egal(mem.get('swblacksmith-theme-v1'), 'dark', 'le thème survit à la purge');
+  egal(mem.get('swblacksmith-theme-clair-v1'), 'atelier', 'le thème clair choisi survit à la purge');
   egal(mem.get('swblacksmith-overcap-display-v1'), '0', 'l’overcap survit à la purge');
   egal(mem.get('swblacksmith-adversaire-reference-v1'), '1', 'l’adversaire de référence survit à la purge');
   egal(mem.get('swblacksmith-builds-rapides-v1'), '{"combos":[],"nombre":3}', 'les builds les plus rapides survivent à la purge');
@@ -96,6 +98,7 @@ export default async function testPersistance() {
     ],
     ['un réglage seul ne vaut pas consentement', { 'swblacksmith-rune-metric-v1': 'score' }, false],
     ['le thème seul ne vaut pas consentement', { 'swblacksmith-theme-v1': 'dark' }, false],
+    ['le thème clair seul ne vaut pas consentement', { 'swblacksmith-theme-clair-v1': 'atelier' }, false],
     ['l’overcap seul ne vaut pas consentement', { 'swblacksmith-overcap-display-v1': '0' }, false],
     ['l’adversaire de référence seul ne vaut pas consentement', { 'swblacksmith-adversaire-reference-v1': '1' }, false],
     ['les builds les plus rapides seuls ne valent pas consentement', { 'swblacksmith-builds-rapides-v1': '{}' }, false],

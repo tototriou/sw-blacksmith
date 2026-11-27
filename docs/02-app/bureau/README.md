@@ -19,10 +19,12 @@ Electron `44.11.4`, electron-builder `26.15.3`, electron-updater `6.8.9`
 - `scripts/construire-bureau.mjs` compile `bureau/main.ts` et
   `bureau/preload.ts` avec esbuild en `main.cjs` et `preload.cjs`, dans le
   dossier `dist-bureau` (non suivi) : un fichier chacun, CommonJS, cible `node22`, `electron`
-  laissé externe. Il lit dans `src/index.css` les couleurs des deux thèmes
-  (`--bg`, `--bar`, `--ink` ; `--forge-bg`, `--forge-bar`, `--forge-ink`) et
-  les injecte en `#rrggbb` (`__COULEURS_THEMES__`) : la fenêtre s'habille
-  avant que la page soit chargée.
+  laissé externe. Il lit dans `src/index.css` les couleurs du clair par défaut et du sombre
+  (`--bg`, `--bar`, `--ink` de Givre, leur première déclaration ;
+  `--forge-bg`, `--forge-bar`, `--forge-ink`) et les injecte en `#rrggbb`
+  (`__COULEURS_THEMES__`) : la fenêtre s'habille avant que la page soit
+  chargée. Atelier n'y figure pas : qui l'a choisi retrouve ses couleurs par
+  celles du dernier thème, mémorisées à la fermeture.
 - `npm run bureau` : le serveur de dev Vite (par son API), la compilation,
   puis Electron sur l'adresse du serveur (`SWBLACKSMITH_DEV_URL`),
   rechargement à chaud ; fermer la fenêtre arrête tout.
@@ -156,7 +158,8 @@ change pas. Ce qui en dépend aujourd'hui :
   `SW Blacksmith`, icône `favicon.png`.
 - **Les couleurs** : au démarrage (`habillerBureau`, `main.tsx`), la page
   pose `data-bureau` et envoie `--bg`, `--bar`, `--ink` calculés, puis à
-  chaque changement de `data-theme` ou du thème du système ; le processus
+  chaque changement de `data-theme`, de `data-theme-clair` ou du thème du
+  système ; le processus
   principal n'accepte que trois `#rrggbb` (`couleursValides`) et recolore
   boutons et fond.
 - **Navigation** (`bureau/navigation.ts`) : un lien externe s'ouvre dans le

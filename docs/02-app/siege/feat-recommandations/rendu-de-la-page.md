@@ -195,7 +195,7 @@ vert / orange / rouge, une page analysée deviendrait un patchwork :
   un point de 6 px ne serait pas assez vive. Non analysé : neutre. Le point
   reste dedans (son creux distingue « monstre manquant » de « à revoir »).
   `PASTILLE_STATUT` dans RecoCard.tsx ; contrastes texte / fond doux mesurés
-  dans les deux thèmes, 4,63:1 au plus bas ;
+  dans chaque thème, 4,63:1 au plus bas ;
 - l'encart de synthèse est neutre, son icône et son titre portent la couleur ;
 - jetons de sets et de propriétés d'artéfact, rapport d'import : les **fonds
   doux** (`good-soft`, `warn-soft`, `bad-soft`) avec le texte à l'encre (les

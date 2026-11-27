@@ -84,6 +84,7 @@ function sources(): SourcesSession {
       'swblacksmith-siege-defense-v1': JSON.stringify({ teams: [{ id: 't1', slots: [] }] }),
       'swblacksmith-siege-recos-v1': JSON.stringify({ recos: [] }),
       'swblacksmith-theme-v1': 'dark',
+      'swblacksmith-theme-clair-v1': 'atelier',
       'swblacksmith-rune-metric-v1': 'score',
       'swblacksmith-overcap-display-v1': '0',
       'swblacksmith-adversaire-reference-v1': '1',
@@ -156,6 +157,7 @@ export default function testSession(avecCompteReel = true) {
   refus({ ...base, version: '1' }, { code: 'versionIllisible' }, 'une version qui n’est pas un nombre');
   refus({ ...base, stockage: [] }, { code: 'travailIllisible' }, 'le stockage n’est pas un objet');
   refus({ ...base, stockage: { ...base.stockage, 'swblacksmith-theme-v1': 'violet' } }, { code: 'valeurIllisible', cle: 'swblacksmith-theme-v1' }, 'un thème inconnu');
+  refus({ ...base, stockage: { ...base.stockage, 'swblacksmith-theme-clair-v1': 'brume' } }, { code: 'valeurIllisible', cle: 'swblacksmith-theme-clair-v1' }, 'un thème clair inconnu');
   refus({ ...base, stockage: { ...base.stockage, 'swblacksmith-rta-v1': '{abîmé' } }, { code: 'valeurIllisible', cle: 'swblacksmith-rta-v1' }, 'une prépa RTA qui n’est pas du JSON');
   refus({ ...base, stockage: { ...base.stockage, 'swblacksmith-siege-recos-v1': 42 } }, { code: 'valeurIllisible', cle: 'swblacksmith-siege-recos-v1' }, 'une valeur qui n’est pas un texte');
 
