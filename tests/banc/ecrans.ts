@@ -245,6 +245,11 @@ const OPT_LISTE: Etape[] = [
   { saisir: { role: 'combobox', nom: 'Rechercher un monstre…' }, texte: 'Cassie' },
   { cliquer: { role: 'option', nom: 'Cassie dark Cassie' } },
 ];
+// Importer Chasun comme adversaire, dans la fenêtre « Dégâts réels ».
+const IMPORT_ADVERSAIRE: Etape[] = [
+  { saisir: { role: 'combobox', nom: "Importer les stats de base d'un monstre adverse" }, texte: 'Chasun' },
+  { cliquer: { role: 'option', nom: 'Chasun wind Chasun SPD 101' } },
+];
 // La même liste en contenu Guilde : le speed tune s'y règle depuis l'équipe.
 const OPT_LISTE_GUILDE: Etape[] = OPT_LISTE.map((e) => ('cliquer' in e && e.cliquer.nom === 'Arène'
   ? { cliquer: { ...e.cliquer, nom: 'Guilde' } } : e));
@@ -566,6 +571,20 @@ export const ECRANS: Ecran[] = [
         atteint: [
           { role: 'dialog', nom: 'Dégâts réels' },
           { role: 'button', nom: 'Non critique' },
+        ],
+      },
+      {
+        id: 'degats-reels-adversaire',
+        libelle: 'modale « Dégâts réels », adversaire importé (Chasun)',
+        // La saisie de l'adversaire en parties (SaisieAdversaire.tsx) : le
+        // portrait, le nom et le tableau remplis par l'import d'un monstre.
+        preparation: {
+          telephone: [{ cliquer: bouton('Gérer mes listes') }, ...OPT_LISTE, { cliquer: OBJECTIF_DEGATS_REELS }, ...IMPORT_ADVERSAIRE],
+          ordinateur: [...OPT_LISTE, VOIR_RESULTATS, { cliquer: OBJECTIF_DEGATS_REELS }, ...IMPORT_ADVERSAIRE],
+        },
+        atteint: [
+          { role: 'dialog', nom: 'Dégâts réels' },
+          { role: 'repere', nom: '[data-saisie-adversaire] [data-portrait]' },
         ],
       },
       {
