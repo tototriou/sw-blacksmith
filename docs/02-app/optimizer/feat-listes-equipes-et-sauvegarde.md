@@ -465,7 +465,7 @@ La zone C groupe chaque équipe dans une bande teintée sans contour. Son
 en-tête porte sur une seule ligne `LeadPill`, numéro, leader éventuel et
 le compte des leads inactifs à place réservée, puis « Modifier l’équipe » tout à droite.
 Le nom tronqué garde son texte complet en infobulle ; l'écart avant les cartes est réduit.
-Les fonds alternent entre les jetons `equipe-a` et `equipe-b`, définis dans les deux thèmes. Les cartes liées et libres gardent
+Les fonds alternent entre les jetons `equipe-a` et `equipe-b`, définis dans chaque thème. Les cartes liées et libres gardent
 le même aspect et la même hauteur, au bureau comme au téléphone ; les libres
 suivent sous « Sans équipe ». La carte du monstre affiché prend la teinte de sa
 bande, plus soutenue que le fond de la bande, au contour comme au fond (jetons

@@ -13,44 +13,48 @@ hexadécimal.
 
 Les valeurs sont celles d'[index.css](../../../../src/index.css).
 
-| Token | Forge (sombre) | Atelier (clair) | Rôle |
-|-------|----------------|-----------------|------|
-| `bg` | `#161514` | `#f6f0e4` | Fond de page |
-| `bar` | `#1b1a19` | `#fffdf8` | Barres de l'application : latérale, du haut |
-| `panel` | `#232120` | `#fffdf8` | Carte, panneau |
-| `panel2` | `#2e2c2a` | `#efe6d5` | Surface enfoncée (piste de barre, cadre de `Segmented`) |
-| `border` | `#5a544d` | `#cdbc9e` | Bordure standard — champs, boutons, puces |
-| `border-soft` | `#3a3734` | `#e4d9c6` | Séparateur intérieur, ligne de table, cadre de carte |
-| `ink` | `#ede3d1` | `#1b1a19` | Texte principal |
-| `ink-dim` | `#cfc3ae` | `#3f3a34` | Texte secondaire, libellés |
-| `ink-dimmer` | `#a89a86` | `#6b6259` | Texte tertiaire (rare) |
+| Token | Forge (sombre) | Givre (clair) | Atelier (clair) | Rôle |
+|-------|----------------|---------------|-----------------|------|
+| `bg` | `#161514` | `#f6f8fa` | `#f6f0e4` | Fond de page |
+| `bar` | `#1b1a19` | `#ffffff` | `#fffdf8` | Barres de l'application : latérale, du haut |
+| `panel` | `#232120` | `#ffffff` | `#fffdf8` | Carte, panneau |
+| `panel2` | `#2e2c2a` | `#ebeef2` | `#efe6d5` | Surface enfoncée (piste de barre, cadre de `Segmented`) |
+| `border` | `#5a544d` | `#cbd3db` | `#cdbc9e` | Bordure standard — champs, boutons, puces |
+| `border-soft` | `#3a3734` | `#dfe4ea` | `#e4d9c6` | Séparateur intérieur, ligne de table, cadre de carte |
+| `ink` | `#ede3d1` | `#1f2328` | `#1b1a19` | Texte principal |
+| `ink-dim` | `#cfc3ae` | `#454c54` | `#3f3a34` | Texte secondaire, libellés |
+| `ink-dimmer` | `#a89a86` | `#626b75` | `#6b6259` | Texte tertiaire (rare) |
 
 ⚠️ **`bar` n'est pas `panel`.** En Forge, la barre est un cran sous la carte
-(1,08) et un cran au-dessus du fond (1,05). En Atelier, elle vaut `panel`, et
-c'est son filet qui la détache du fond.
+(1,08) et un cran au-dessus du fond (1,05). En Givre comme en Atelier, elle
+vaut `panel`, et c'est son filet qui la détache du fond.
+
+**Bandes d'équipes** (`equipe-a`, `equipe-b`, listes de l'Optimizer) : la
+braise douce et un bleu doux, sur lesquels `ink-dimmer` tient 4,5 dans chaque
+thème (4,60 au pire en Givre, 4,85 en Atelier).
 
 ### Accent et sémantique
 
-| Token | Forge | Atelier | Rôle |
-|-------|-------|---------|------|
-| `accent` | `#ff7a1a` | `#ff7a1a` | La braise VIVE : aplats seulement (`bg-accent`, bouton principal) |
-| `accent-lisible` | `#ff7a1a` | `#a64f11` | La braise qui se LIT : texte, contour d'état, focus, trait de graphique |
-| `accent-hover` | `#ff9a4d` | `#e0620a` | Survol de l'APLAT de braise (bouton principal) |
-| `accent-appui` | `#e0620a` | `#e0620a` | Appui du même aplat ; en Atelier, il ne peut pas foncer plus sans que l'encre passe sous 4,5 (4,90) |
-| `accent-soft` | `#3a2415` | `#ffeddd` | Fond d'un élément actif — en Forge, une braise sombre |
-| `accent-ink` | `#1b1a19` | `#1b1a19` | Texte posé SUR un aplat de braise (bouton principal plein) |
-| `good` | `#73e06b` | `#2f6b36` | Au tick, gain, succès — et **ton camp** |
-| `good-soft` | `#253024` | `#e3f1e3` | Fond doux de `good` |
-| `warn` | `#f2c230` | `#7c630d` | Avertissement — **jaune / ocre**, pas orange : il se confondrait avec la braise |
-| `warn-soft` | `#39311b` | `#fbedb7` | Fond doux de `warn` — en Atelier hors construction (voir index.css) |
-| `bad` | `#f27a84` | `#a3303a` | Hors tick, destructif, erreur |
-| `bad-soft` | `#372324` | `#f8e4e3` | Fond doux de `bad` |
-| `bad-ink` | `#1b1a19` | `#ffffff` | Encre SUR un aplat de `bad` (bouton danger plein) — le pendant d'`accent-ink` |
-| `star` | `#c9a227` | `#8c6d0e` | Le laiton : étoiles, maxima d'efficience |
+| Token | Forge | Givre | Atelier | Rôle |
+|-------|-------|-------|---------|------|
+| `accent` | `#ff7a1a` | `#ff7a1a` | `#ff7a1a` | La braise VIVE : aplats seulement (`bg-accent`, bouton principal) |
+| `accent-lisible` | `#ff7a1a` | `#ad4d0b` | `#a64f11` | La braise qui se LIT : texte, contour d'état, focus, trait de graphique |
+| `accent-hover` | `#ff9a4d` | `#e0620a` | `#e0620a` | Survol de l'APLAT de braise (bouton principal) |
+| `accent-appui` | `#e0620a` | `#e0620a` | `#e0620a` | Appui du même aplat ; en clair, il ne peut pas foncer plus sans que l'encre passe sous 4,5 (4,90) |
+| `accent-soft` | `#3a2415` | `#ffeede` | `#ffeddd` | Fond d'un élément actif — en Forge, une braise sombre |
+| `accent-ink` | `#1b1a19` | `#1b1a19` | `#1b1a19` | Texte posé SUR un aplat de braise (bouton principal plein) |
+| `good` | `#73e06b` | `#1a7431` | `#2f6b36` | Au tick, gain, succès — et **ton camp** |
+| `good-soft` | `#253024` | `#dcf5e1` | `#e3f1e3` | Fond doux de `good` |
+| `warn` | `#f2c230` | `#7d5e00` | `#7c630d` | Avertissement — **jaune / ocre**, pas orange : il se confondrait avec la braise |
+| `warn-soft` | `#39311b` | `#fff3bf` | `#fbedb7` | Fond doux de `warn` — en Atelier hors construction (voir index.css) |
+| `bad` | `#f27a84` | `#c21f2c` | `#a3303a` | Hors tick, destructif, erreur |
+| `bad-soft` | `#372324` | `#ffe9e7` | `#f8e4e3` | Fond doux de `bad` |
+| `bad-ink` | `#1b1a19` | `#ffffff` | `#ffffff` | Encre SUR un aplat de `bad` (bouton danger plein) — le pendant d'`accent-ink` |
+| `star` | `#c9a227` | `#8c6d0e` | `#8c6d0e` | Le laiton : étoiles, maxima d'efficience |
 
 ### Séries des graphes
 
-| Token | Forge (sombre) | Atelier (clair) | Rôle |
+| Token | Forge (sombre) | Givre et Atelier (clair) | Rôle |
 |---|---|---|---|
 | `serie-1` | `#3987e5` | `#2a78d6` | Bleu — première série d'un graphe (ma guilde, une série seule) |
 | `serie-2` | `#d95926` | `#eb6834` | Orange — deuxième série |
@@ -58,15 +62,16 @@ c'est son filet qui la détache du fond.
 
 Les **identités** des graphes (Siège › Statistiques), dans cet ordre, jamais réordonnées : une
 couleur suit son entité, pas son rang. Validées toutes paires confondues contre la carte
-(`panel`) des deux thèmes par le validateur du skill `dataviz` : séparation daltonienne ≥ 9
+(`panel`) de chaque thème par le validateur du skill `dataviz` : séparation daltonienne ≥ 9
 (OKLab ×100), vision normale ≥ 20. ⚠️ **Jamais `good` et `bad` pour deux séries** : ce vert et ce
-rouge se confondent pour un deutéranope (ΔE 2,5 en Atelier). L'aqua est sous 3:1 en Atelier :
+rouge se confondent pour un deutéranope (ΔE 5,8 en Givre, 2,5 en Atelier). L'aqua est sous 3:1
+en clair (2,82 sur le `panel` de Givre, 2,77 sur celui d'Atelier) :
 tout graphe qui l'emploie porte une légende et des libellés directs. Le texte d'un graphe reste
 aux encres (`ink`, `ink-dim`), jamais à la couleur d'une série.
 
 ### Guildes d'un siège
 
-| Token | Forge (sombre) | Atelier (clair) | Rôle |
+| Token | Forge (sombre) | Givre et Atelier (clair) | Rôle |
 |---|---|---|---|
 | `guilde-bleue` | `#3987e5` | `#2a78d6` | Ma guilde, toujours en bas à gauche sur la carte du jeu |
 | `guilde-rouge` | `#c8303b` | `#b8222f` | La place suivante (en haut) |
@@ -76,15 +81,15 @@ Une **guilde** d'un siège prend la couleur de sa place sur la carte du jeu, vue
 (`couleurDeGuilde`) :
 courbes, légendes, cartes des guildes, territoire d'une tour. Ce qui n'est pas une guilde (WR en
 attaque, en défense) garde les séries. Validées toutes paires confondues contre la carte
-(`panel`) des deux thèmes par le validateur du skill `dataviz` : séparation daltonienne ≥ 9,
-vision normale ≥ 21, contraste ≥ 3:1. ⚠️ Pour un deutéranope, le rouge et le jaune ne se
+(`panel`) de chaque thème par le validateur du skill `dataviz` : séparation daltonienne ≥ 9,
+vision normale ≥ 21, contraste ≥ 3:1 (le jaune, au plus bas : 3,06 en Givre, 3,01 en Atelier). ⚠️ Pour un deutéranope, le rouge et le jaune ne se
 séparent que par leur **clarté** : un jaune plus sombre ou un rouge plus clair les confond (essai
 `#b98c12` / `#e5484d` : ΔE 5,4). L'écusson d'une tour, rendu du jeu, prend les valeurs Forge
 (`forge-guilde-*`) dans les deux thèmes, sur fond sombre.
 
 ### Niveaux d'un objectif du compte
 
-| Token | Les deux thèmes | Rôle |
+| Token | Tous les thèmes | Rôle |
 |---|---|---|
 | `niveau-0` | `#f08a8a` | Rouge — moins de 30 % ; une case vide |
 | `niveau-1` | `#f2ab78` | Orange — moins de 50 % |
@@ -95,7 +100,7 @@ séparent que par leur **clarté** : un jaune plus sombre ou un rouge plus clair
 
 L'échelle de la section Objectifs de Mon compte
 ([feat-objectifs.md](../../../02-app/compte/feat-objectifs.md)) : cartes du résumé, score et
-colonnes des fiches. Des **aplats pastel sous une encre sombre**, les mêmes dans les deux thèmes
+colonnes des fiches. Des **aplats pastel sous une encre sombre**, les mêmes dans tous les thèmes
 (7:1 au pire, sur le rouge). ⚠️ Une échelle de **données**, comme les séries : son orange n'est
 pas `warn`, et il ne sert qu'ici. Le pourcentage reste toujours écrit — le rouge et le vert se
 confondent pour un deutéranope.
@@ -106,10 +111,11 @@ il se DESSINE en jaune / ocre. Lire `warn`, pas une teinte. (Ne concerne pas
 les couleurs du jeu : rareté légendaire, part de meule, etc.)
 
 ⚠️ **Deux braises, un seul nom de classe**.
-En Atelier, la braise vive fait **2,11 à 2,57** sur les fonds : illisible comme
-texte, invisible comme contour (seuil 3:1 d'un trait qui porte un état). Elle
-reste l'aplat ; tout ce qui se lit ou se trace prend `accent-lisible` (4,52 à
-5,51). Le partage est fait **dans `tailwind.config.js`** : `textColor`,
+En clair, la braise vive fait **2,24 à 2,61** sur les fonds de Givre et
+**2,11 à 2,57** sur ceux d'Atelier : illisible comme texte, invisible comme
+contour (seuil 3:1 d'un trait qui porte un état). Elle reste l'aplat ; tout ce
+qui se lit ou se trace prend `accent-lisible` (4,70 à 5,46 en Givre, 4,52 à
+5,51 en Atelier). Le partage est fait **dans `tailwind.config.js`** : `textColor`,
 `borderColor`, `ringColor` et `outlineColor` lisent `accent-lisible`, `colors`
 (donc `bg-`, `from-`, `accent-`) lit la vive. Un composant écrit `text-accent`
 ou `border-accent` et reçoit la bonne braise — aucun renommage, et un
@@ -119,22 +125,26 @@ voit pas s'écrit à la main : l'anneau `:focus-visible` (index.css), les traits
 SVG des courbes (`rgb(var(--accent-lisible))`).
 
 ⚠️ **L'avertissement ressemble à l'accent — assumé.** `warn` a la valeur du
-survol de la braise : ΔE 6,7 avec l'accent en Forge, 3,8 avec la braise
-lisible en Atelier. Aucun ambre lisible ne s'en éloigne vraiment en clair
-(ΔE 10 au mieux, un brun terne). Un avertissement se lit donc à son
+survol de la braise : ΔE 6,7 avec l'accent en Forge ; avec la braise lisible,
+9,7 en Givre et 8,9 en Atelier. Aucun ambre lisible ne s'en éloigne vraiment
+en clair (ΔE 10 au mieux, un brun terne). Un avertissement se lit donc à son
 **libellé** — une pastille écrite — jamais à sa seule couleur.
 
 ⚠️ **Vert et rouge de Forge : saturés, pas pastel.** `#73e06b` et `#f27a84`
 font 8,35 et 5,23 de contraste au pire. Le rouge garde sa teinte rosée : vers
-le corail, il se rapprocherait de la braise (ΔE 7,7) et du Feu. Atelier a ses
-propres valeurs (voir le tableau). Sur l'aplat rouge, le blanc tombe à 2,66 en
-Forge : d'où `bad-ink`, sombre en Forge (6,53), blanc en Atelier (6,91).
+le corail, il se rapprocherait de la braise (ΔE 7,7) et du Feu. Givre et
+Atelier ont leurs propres valeurs (voir le tableau). Sur l'aplat rouge, le
+blanc tombe à 2,66 en Forge : d'où `bad-ink`, sombre en Forge (6,53), blanc en
+clair (5,96 en Givre, 6,91 en Atelier).
 
 **Fonds doux : vifs, pas des gris teintés.** Une teinte sémantique fondue à
 12 % dans un fond brun donnerait un gris à peine teinté : chaque fond doux
-garde assez de chroma pour dire sa teinte. L'encre y fait 9,71 au pire (Forge)
-et 13,99 (Atelier). L'accent et la sémantique restent lisibles sur leur propre
-fond doux (4,91 au pire, `accent-lisible` en Atelier) ; un élément pas
+garde assez de chroma pour dire sa teinte. L'encre y fait 9,71 au pire
+(Forge), 12,97 (Givre) et 13,99 (Atelier). Les fonds doux de Givre reprennent
+la chroma et l'écart de clarté de ceux d'Atelier, reportés sur son `panel`
+blanc, dans la teinte de la couleur qu'ils accompagnent. L'accent et la
+sémantique restent lisibles sur leur propre fond doux (au pire,
+`accent-lisible` : 4,82 en Givre, 4,91 en Atelier) ; un élément pas
 toujours (3,92 à 10,85) — ses fonds doux portent l'encre, jamais la couleur de
 l'élément en texte.
 
@@ -161,9 +171,9 @@ données ; `accent` dit « ceci est actif ou sélectionné ». Les confondre ren
 filtre actif indiscernable d'une alerte.
 
 ⚠️ **`accent-ink` n'est jamais du blanc.** Sur la braise, le blanc tombe sous
-le seuil ; l'encre sombre (`#1b1a19`) y fait **6,66**, dans les
-deux thèmes. En Atelier, l'aplat de braise ne se détache du fond qu'à 2,30 —
-sous le 3,0 d'un élément d'interface — mais un bouton plein porte son
+le seuil ; l'encre sombre (`#1b1a19`) y fait **6,66**, dans tous les
+thèmes. En clair, l'aplat de braise ne se détache du fond qu'à 2,45 en Givre
+et 2,30 en Atelier — sous le 3,0 d'un élément d'interface — mais un bouton plein porte son
 libellé, et c'est lui qui l'identifie.
 
 ### Rayon intérieur : `rounded-lg-inner`
@@ -193,7 +203,7 @@ l'écran devient bruyant dès que trois filtres sont posés.
 | Support | Marqueur | Pourquoi pas l'autre |
 |---------|----------|----------------------|
 | **Champ de saisie** (`select`, `input`, `textarea`) | `border-accent` | Un fond coloré passe derrière du texte qu'on doit lire, et concurrence le curseur |
-| **Pastille de filtre** (`Pastille`, sets, emplacements, étoiles du Bestiaire) | `MARQUEUR_FILTRE_ACTIF` : `border-accent bg-accent-soft text-ink` | **La couleur de l'app, teintée** : le contour porte l'état, le fond le rend lisible d'un coup d'œil. Le fond est une braise sombre (`accent-soft`, `#3a2415` en Forge) ; **ni coche ni gras**, qui élargiraient la pastille au clic. Contraste mesuré : texte 11,44 (Forge) et 15,23 (Atelier) ; contour, en `accent-lisible`, 5,58 et 4,91. Pas de couleur inversée (aplat d'encre) : ce serait un aplat blanc en thème sombre. Une seule constante, exportée de `Pastille`, importée par les filtres qui ne passent pas par elle. ⚠️ **Exception, à la souris : les filtres de sets et d'emplacements des RUNES** prennent le gabarit et le marqueur du `Segmented` (sans contour ; un aplat de braise) — posés sur une ligne à côté du filtre des antiques, qui EST un `Segmented`, deux marqueurs se liraient comme deux familles de boutons (`gabaritFiltre.ts`) |
+| **Pastille de filtre** (`Pastille`, sets, emplacements, étoiles du Bestiaire) | `MARQUEUR_FILTRE_ACTIF` : `border-accent bg-accent-soft text-ink` | **La couleur de l'app, teintée** : le contour porte l'état, le fond le rend lisible d'un coup d'œil. Le fond est une braise sombre (`accent-soft`, `#3a2415` en Forge) ; **ni coche ni gras**, qui élargiraient la pastille au clic. Contraste mesuré : texte 11,44 (Forge), 13,94 (Givre) et 15,23 (Atelier) ; contour, en `accent-lisible`, 5,58, 4,82 et 4,91. Pas de couleur inversée (aplat d'encre) : ce serait un aplat blanc en thème sombre. Une seule constante, exportée de `Pastille`, importée par les filtres qui ne passent pas par elle. ⚠️ **Exception, à la souris : les filtres de sets et d'emplacements des RUNES** prennent le gabarit et le marqueur du `Segmented` (sans contour ; un aplat de braise) — posés sur une ligne à côté du filtre des antiques, qui EST un `Segmented`, deux marqueurs se liraient comme deux familles de boutons (`gabaritFiltre.ts`) |
 | **Cran de `Segmented`, onglet** | `bg-accent text-accent-ink` (le cadre porte le contour) | Un choix UNIQUE dans un cadre commun, pas un filtre en rangée. **Un APLAT de braise.** Toujours un seul marqueur. Encre dessus : 6,66 |
 
 ⚠️ **Les pastilles voisines partagent le même marqueur.** Les numéros de
@@ -249,7 +259,7 @@ Mais le Vent (`#E7C22E`) et la Lumière (`#EAEBF0`) sont **illisibles sur fond
 clair** — contraste sous 2:1. Chaque élément porte donc **deux valeurs, même
 teinte, luminosité adaptée** :
 
-| Élément | Forge (sombre) | Atelier (clair) | Note |
+| Élément | Forge (sombre) | Givre et Atelier (clair) | Note |
 |---------|----------------|-----------------|------|
 | Feu | `#E85C50` | `#C41C10` | — |
 | Eau | `#2FA0E0` | `#006AA6` | — |
@@ -262,5 +272,5 @@ teinte, luminosité adaptée** :
 devient pas vert. Un joueur qui repère ses monstres Vent à la volée dans une
 liste dense doit continuer à le faire.
 
-Les icônes officielles (`public/elements/`) restent **inchangées** dans les deux
+Les icônes officielles (`public/elements/`) restent **inchangées** dans tous les
 thèmes : ce sont des images du jeu, elles portent leur propre fond.

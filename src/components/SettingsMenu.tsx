@@ -4,7 +4,7 @@ import { IconeParametres } from './IconesAtelier';
 import { choixMesure, setRuneMetric, useRuneMetric } from '../hooks/useRuneMetric';
 import { setFormeResultats, useFormeResultats, type FormeResultats } from '../hooks/useFormeResultats';
 import { setPersistence, storageAvailable, usePersistence } from '../hooks/usePersistence';
-import { choixTheme, setTheme, useTheme } from '../hooks/useTheme';
+import { choixTheme, choixThemeClair, setTheme, setThemeClair, useTheme, useThemeClair } from '../hooks/useTheme';
 import { setChoixLangue, useChoixLangue, useTraduction } from '../hooks/useLangue';
 import { LANGUES, NOM_LANGUE, type ChoixLangue, type Dictionnaire } from '../i18n';
 import { setOvercapDisplay, useOvercapDisplay } from '../hooks/useOvercapDisplay';
@@ -119,6 +119,7 @@ export function SettingsList({
   const keep = usePersistence();
   const storageOk = storageAvailable();
   const theme = useTheme();
+  const themeClair = useThemeClair();
   const overcap = useOvercapDisplay();
   const adversaireRef = useAdversaireReference();
   const buildsRapides = useBuildsRapides();
@@ -158,6 +159,13 @@ export function SettingsList({
 
       <Setting title={t.theme}>
         <Segmented options={choixTheme(textes)} value={theme} onChange={setTheme} />
+      </Setting>
+
+      {/* Toujours affiché, thème sombre compris : il règle ce que « Auto »
+          prendra quand le système repassera en clair, et un réglage qui
+          apparaît au clic déplacerait ce qu'on vient de cliquer. */}
+      <Setting title={t.themeClair} hint={t.themeClairAide}>
+        <Segmented options={choixThemeClair(textes)} value={themeClair} onChange={setThemeClair} />
       </Setting>
 
       <Setting title={t.score}>

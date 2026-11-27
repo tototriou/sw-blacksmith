@@ -220,7 +220,7 @@ Rien n'est envoyé à un serveur. Aucune authentification.
   tout passe par `saveLocal`. C'est ce qui garantit qu'un refus vaut pour l'app
   entière, et qu'un futur état persistant n'ouvrira pas une fuite.
 - **Exception** : les **réglages** restent écrits, par leur propre hook — choix
-  de conservation, mesure de score, langue, thème, overcap, adversaire de référence,
+  de conservation, mesure de score, langue, thème, thème clair, overcap, adversaire de référence,
   builds les plus rapides, forme des résultats de l'Optimizer (cartes ou
   tableau), « Discord activé » et salons favoris des recommandations
   ([synchronisation-discord.md](../../siege/feat-recommandations/synchronisation-discord.md)). Ce
@@ -268,7 +268,7 @@ Ce qui part :
 Ce qui reste :
 
 - les **réglages** (`CLES_DE_REGLAGE`) : choix de conservation, mesure de
-  score, langue, thème, overcap, adversaire de référence, builds les plus rapides,
+  score, langue, thème, thème clair, overcap, adversaire de référence, builds les plus rapides,
   objectifs du compte ;
 - les **fichiers** : sessions de l'application de bureau, exports.
 
@@ -286,7 +286,7 @@ renommées au lancement.
   d'échec, l'ancienne valeur est remise, intacte, et reprise au lancement
   suivant.
 - Le script de thème d'`index.html`, qui passe avant, lit l'ancienne clé en
-  repli.
+  repli (le thème clair, lui, n'a de clé que sous le préfixe `swblacksmith-`).
 - ⚠️ Toute nouvelle clé prend le préfixe `swblacksmith-` ; un test refuse un
   littéral d'un autre préfixe hors du module de migration.
 - ⚠️ Le stockage d'un navigateur est lié à l'**adresse** du site : un

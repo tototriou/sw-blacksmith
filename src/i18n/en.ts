@@ -35,9 +35,13 @@ export const en: Dictionnaire = {
     autoNavigateur: 'Follows your browser theme',
     autoSysteme: 'Follows your system theme',
     clair: 'Light',
-    clairAide: 'Atelier — light background, warm ink',
+    clairAide: 'Givre or Atelier — light background',
     sombre: 'Dark',
     sombreAide: 'Forge — deep background, ember accent',
+    givre: 'Givre',
+    givreAide: 'Soft greys, white cards',
+    atelier: 'Atelier',
+    atelierAide: 'Warm paper, warm ink',
   },
 
   mesure: {
@@ -211,6 +215,8 @@ export const en: Dictionnaire = {
     blocApplication: 'Application',
     toutVoir: 'See all',
     theme: 'Theme',
+    themeClair: 'Light theme',
+    themeClairAide: 'The one “Light” and “Auto” use when the background is light.',
     score: 'Score',
     resultatsOptimizer: 'Optimizer results',
     resultatsOptimizerAide:

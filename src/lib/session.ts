@@ -55,6 +55,7 @@ export const CLES_SESSION = [
   OPTIMIZER_BACKUP_STORAGE_KEY,
   // Les réglages.
   'swblacksmith-theme-v1',
+  'swblacksmith-theme-clair-v1',
   'swblacksmith-langue-v1',
   'swblacksmith-rune-metric-v1',
   'swblacksmith-overcap-display-v1',
@@ -70,6 +71,7 @@ export const CLES_SESSION = [
 // JSON : les réglages sont des mots ou des `0`/`1` écrits tels quels.
 const VALEURS_PERMISES: Partial<Record<(typeof CLES_SESSION)[number], readonly string[]>> = {
   'swblacksmith-theme-v1': ['auto', 'light', 'dark'],
+  'swblacksmith-theme-clair-v1': ['givre', 'atelier'],
   'swblacksmith-langue-v1': ['auto', ...LANGUES],
   'swblacksmith-rune-metric-v1': ['eff', 'score'],
   'swblacksmith-overcap-display-v1': ['0', '1'],

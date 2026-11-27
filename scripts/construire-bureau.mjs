@@ -4,10 +4,13 @@
 // fichier (esbuild, installé avec Vite et déjà utilisé par `tests/run.mjs`),
 // `electron` laissé externe — il est fourni par l'exécutable, jamais embarqué.
 //
-// ⚠️ Les couleurs des deux thèmes sont LUES dans `src/index.css` (jetons
-// `--bg`, `--bar`, `--ink` d'Atelier, `--forge-*` de Forge) et injectées dans
-// le processus principal (`__COULEURS_THEMES__`) : la fenêtre s'habille avant
-// que la page soit chargée, sans une couleur recopiée à la main.
+// ⚠️ Les couleurs du clair et du sombre sont LUES dans `src/index.css` (jetons
+// `--bg`, `--bar`, `--ink` de Givre, le clair par défaut — leur PREMIÈRE
+// déclaration, celle de `:root` ; `--forge-*` de Forge) et injectées dans le
+// processus principal (`__COULEURS_THEMES__`) : la fenêtre s'habille avant que
+// la page soit chargée, sans une couleur recopiée à la main. Atelier n'y est
+// pas : qui l'a choisi retrouve ses couleurs par l'état de la fenêtre, que la
+// page renseigne dès son premier rendu.
 
 import { readFileSync } from 'node:fs';
 import { build } from 'esbuild';

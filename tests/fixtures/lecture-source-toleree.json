@@ -1347,6 +1347,13 @@
       "statut": "stock"
     },
     {
+      "fichier": "tests/themes.test.ts",
+      "cible": "src/index.css",
+      "occurrences": 1,
+      "statut": "exception",
+      "justification": "Les jetons des trois thèmes n’existent que dans la feuille : leurs valeurs (contrastes) et l’ordre des blocs se lisent là, aucun module ne les porte."
+    },
+    {
       "fichier": "tests/verifier-toutes.test.ts",
       "cible": "src/components/outils/OptimizerSection.tsx",
       "occurrences": 1,

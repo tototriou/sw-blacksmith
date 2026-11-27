@@ -197,7 +197,11 @@ fragile. Au démarrage, la page demande au bureau la session choisie
   `usePersistence.ts`). Un réglage s'écrit tel quel ; le travail suit
   « Garder mes données » — accepté, sur le disque ; refusé, dans le miroir
   seulement. ⚠️ Les hooks du travail relisent donc leur état au démarrage
-  par `lireTravail` (le miroir d'abord), jamais par `localStorage` seul ;
+  par `lireTravail` (le miroir d'abord), jamais par `localStorage` seul.
+  Le thème et le thème clair, que le script d'`index.html` a déjà posés sur
+  `<html>` d'après le stockage d'avant, sont reposés au chargement de
+  `useTheme.ts`. Un fichier sans la clé du thème clair donne Givre, son
+  défaut ;
 - **le compte** : écrit dans IndexedDB si la conservation est acceptée
   (effacé si la session n'en a pas), et relu par `App.tsx` depuis
   `sessionChargee()` dans les deux cas ;
@@ -241,7 +245,7 @@ compact (`composerSession`, `ecrireSession`, `src/lib/session.ts`) :
 |-------|---------|-------------------|
 | `format`, `version` | `swblacksmith/session`, `2` pour toute session écrite | — |
 | `enregistreeLe`, `versionApp` | date ISO du clic ; version de l'app | — |
-| `stockage` | clé → valeur brute, pour les clés de `CLES_SESSION` : prépa RTA, ses catégories, ses deux points de retour ; siège défense et offense ; recommandations ; monstres perso ; listes de l'Optimizer ; thème, langue, score, overcap, adversaire de référence, builds les plus rapides (du JSON, relu et validé par `lireReglageBuildsRapides`), objectifs du compte (du JSON, relu par `lireObjectifsStockes`) | `lireTravail` (`usePersistence.ts`) : la dernière valeur écrite par `saveLocal`, gardée en mémoire même conservation refusée (`saveLocal` n'écrit alors rien sur le disque), sinon le stockage local ; `oublierLocal` efface les deux |
+| `stockage` | clé → valeur brute, pour les clés de `CLES_SESSION` : prépa RTA, ses catégories, ses deux points de retour ; siège défense et offense ; recommandations ; monstres perso ; listes de l'Optimizer ; thème, thème clair, langue, score, overcap, adversaire de référence, builds les plus rapides (du JSON, relu et validé par `lireReglageBuildsRapides`), objectifs du compte (du JSON, relu par `lireObjectifsStockes`) | `lireTravail` (`usePersistence.ts`) : la dernière valeur écrite par `saveLocal`, gardée en mémoire même conservation refusée (`saveLocal` n'écrit alors rien sur le disque), sinon le stockage local ; `oublierLocal` efface les deux |
 | `compte` | le compte importé (`StoredAccount`, schéma 7), ou `null` | le compte en mémoire de `App.tsx`, pas IndexedDB |
 | `equipes` | les équipes de « Mes équipes » ([feat-equipes.md](../compte/feat-equipes.md)) ; absent d'une session plus ancienne, relu comme un tableau vide | `useEquipesEnregistrees` (`App.tsx`), en mémoire, pas IndexedDB |
 | `outils.memoire` | clé → valeur de chaque `useStickyState`, sauf `STICKY_HORS_SESSION` (`sidebar.retractee`, `mobileNotice.ferme`, `ecranPartage.volets`) | `photographierMemoire` (`useStickyState.ts`) |
@@ -291,7 +295,7 @@ plus que par la colonne VIT) s'y relit `spd`, sans avertissement, par
   `VERSION_SESSION` (« mets-la à jour pour la charger ») ; un `stockage`
   qui n'est pas un objet ; une valeur de stockage qui n'est pas un texte de
   la forme que son hook relit (`valeurStockageValide` : thème `auto`,
-  `light`, `dark` ; score `eff`, `score` ; overcap et adversaire `0`, `1` ;
+  `light`, `dark` ; thème clair `givre`, `atelier` ; score `eff`, `score` ; overcap et adversaire `0`, `1` ;
   le reste du JSON, sauf le texte opaque du point de sauvegarde Optimizer).
 - **Lu, avec un avertissement** : un compte qui ne passe pas `compteValide`
   (schéma périmé) devient `null` ; une équipe qui ne passe pas

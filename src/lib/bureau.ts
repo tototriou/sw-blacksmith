@@ -372,7 +372,8 @@ function envoyerCouleurs(p: PontBureau) {
 // À appeler une fois au démarrage (main.tsx). Dans l'app : pose
 // `html[data-bureau]` (index.css en fait la barre de la fenêtre) et envoie
 // les couleurs du thème au processus principal, puis à chaque changement —
-// choix du menu ⚙ (`data-theme`) ou thème du système en mode Auto. Envoie
+// choix du menu ⚙ (`data-theme`, `data-theme-clair`) ou thème du système en
+// mode Auto. Envoie
 // de même la langue de l'app (`html[lang]`, posée par useLangue) : les boîtes
 // du système que le bureau ouvre la suivent.
 export function habillerBureau() {
@@ -381,7 +382,7 @@ export function habillerBureau() {
   const racine = document.documentElement;
   racine.setAttribute('data-bureau', p.plateforme);
   envoyerCouleurs(p);
-  new MutationObserver(() => envoyerCouleurs(p)).observe(racine, { attributes: true, attributeFilter: ['data-theme'] });
+  new MutationObserver(() => envoyerCouleurs(p)).observe(racine, { attributes: true, attributeFilter: ['data-theme', 'data-theme-clair'] });
   p.langue(racine.lang);
   new MutationObserver(() => p.langue(racine.lang)).observe(racine, { attributes: true, attributeFilter: ['lang'] });
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => envoyerCouleurs(p));

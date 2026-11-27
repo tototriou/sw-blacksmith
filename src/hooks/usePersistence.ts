@@ -32,6 +32,8 @@ const CLES_DE_REGLAGE = new Set([
   ANCIENNE_CLE,
   'swblacksmith-rune-metric-v1',
   'swblacksmith-theme-v1',
+  // Givre ou Atelier, pour le thème clair (useTheme.ts).
+  'swblacksmith-theme-clair-v1',
   // La langue de l'interface (useLangue.ts).
   'swblacksmith-langue-v1',
   'swblacksmith-overcap-display-v1',

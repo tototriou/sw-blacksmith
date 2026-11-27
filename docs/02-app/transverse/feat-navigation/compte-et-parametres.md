@@ -113,7 +113,9 @@ Contenu actuel, dans l'ordre :
 - Bloc **« Réglages »** :
   - **Langue** → trois options (`Auto`, `Français`, `English`), voir
     [feat-langues.md](../feat-langues.md) ;
-  - **Thème** → trois options (`Auto` et les deux thèmes), voir
+  - **Thème** → trois options (`Auto`, `Clair`, `Sombre`), puis **Thème
+    clair** → `Givre` / `Atelier`, avec en `hint` ce qu'il règle (le clair que
+    prennent « Clair » et « Auto »), voir
     [design/reglage-du-theme.md](../../../03-developpeur/interface/design/reglage-du-theme.md) ;
   - **Score** → `Efficience` / `Score SW` (voir
     [compte/feat-runes/mesure.md](../../compte/feat-runes/mesure.md)) ;

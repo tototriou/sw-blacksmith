@@ -119,7 +119,7 @@ Source de vérité du rendu : [03-developpeur/interface/](../03-developpeur/inte
 
 - ⚠️ **Les tokens sont des TRIPLETS RGB**, consommés avec `<alpha-value>`. Écrits en hexadécimal,
   Tailwind n'émet **aucune** règle pour `bg-panel/50`.
-- **Deux thèmes** : Forge (sombre) / Atelier (clair), + `data-theme` forcé.
+- **Trois thèmes** : Forge (sombre), Givre (clair, le défaut) et Atelier (clair, au choix), + `data-theme` forcé et `data-theme-clair`.
 - **Accent contextuel `--ctx`** : posé par un `data-ctx` sur un ancêtre. Un composant écrit
   `text-ctx` sans rien savoir de l'élément courant.
 - **Variantes maison** : `hoverable:` (remplace `hover:`), `no-hover:`, `coarse:` (cibles),

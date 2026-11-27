@@ -80,6 +80,10 @@
           // clés (src/lib/migrationStockage.ts), au tout premier lancement.
           var c = localStorage.getItem('swblacksmith-theme-v1') || localStorage.getItem('sw-forge-theme-v1');
           if (c === 'light' || c === 'dark') document.documentElement.setAttribute('data-theme', c);
+          // Lequel des deux thèmes clairs : Givre est le `:root` nu, seul
+          // Atelier pose un attribut (src/hooks/useTheme.ts).
+          if (localStorage.getItem('swblacksmith-theme-clair-v1') === 'atelier')
+            document.documentElement.setAttribute('data-theme-clair', 'atelier');
         } catch (e) {
           /* stockage indisponible : on suit le navigateur */
         }

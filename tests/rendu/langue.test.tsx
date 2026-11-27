@@ -78,9 +78,15 @@ export function testRenduLangueReglage() {
 export function testRenduLangueParametres() {
   titre('rendu · langue — les Paramètres en anglais');
   const texte = enAnglais(() => texteVisible(reglages()));
-  for (const attendu of ['Language', 'Theme', 'Keep my data', 'Delete everything', 'Account exported on']) {
+  for (const attendu of ['Language', 'Theme', 'Light theme', 'Keep my data', 'Delete everything', 'Account exported on']) {
     ok(texte.includes(attendu), `« ${attendu} »`);
   }
+  // Givre et Atelier sont des noms propres : seuls leurs intitulés d'aide se traduisent.
+  const choix = enAnglais(() => boutons(reglages()));
+  ok(
+    choix.some((b) => b.texte === 'Givre' && b.title === 'Soft greys, white cards') && choix.some((b) => b.texte === 'Atelier' && b.title === 'Warm paper, warm ink'),
+    'les deux thèmes clairs gardent leur nom, l’aide est en anglais',
+  );
   for (const absent of ['Thème', 'Garder mes données', 'Tout supprimer', 'Compte exporté']) {
     ok(!texte.includes(absent), `plus de « ${absent} »`);
   }
@@ -116,7 +122,7 @@ export function testRenduLangueApp() {
   titre('rendu · langue — l’app, en anglais : navigation, barre du haut, Paramètres');
   const html = enAnglais(() => rendreApp('#/parametres'));
   const texte = texteVisible(html);
-  for (const attendu of ['Home', 'Play', 'My account', 'Tools', 'Resources', 'Settings', 'Go to…', 'These settings apply to the whole app']) {
+  for (const attendu of ['Home', 'Play', 'My account', 'Tools', 'Resources', 'Settings', 'Go to…', 'These settings apply to the whole app', 'Light theme']) {
     ok(texte.includes(attendu), `« ${attendu} »`);
   }
   ok(html.includes('aria-label="Main navigation"'), 'onglets du bas : « Main navigation »');

@@ -117,8 +117,8 @@ rune, médaillon) ; la nav a ses propres icônes des trois inventaires.
 ### L'entrée active — en braise (bureau)
 
 ⚠️ **Dans la barre latérale BUREAU** : fond `accent-soft` (une braise sombre),
-texte et icône en braise lisible (`text-accent`, 5,58 en Forge, 4,91 en
-Atelier) ; le survol est un voile d'encre (`bg-ink/5`). Un voile d'ENCRE et
+texte et icône en braise lisible (`text-accent`, 5,58 en Forge, 4,82 en
+Givre, 4,91 en Atelier) ; le survol est un voile d'encre (`bg-ink/5`). Un voile d'ENCRE et
 non une surface : la barre a le fond de la page, et `panel`/`panel2` ne s'en
 écartent pas dans le même ordre d'un thème à l'autre ; l'encre s'en écarte
 toujours d'autant plus qu'elle est dense. **Une section déroulée ne porte pas
