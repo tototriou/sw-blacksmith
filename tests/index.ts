@@ -403,6 +403,8 @@ import testRecoFiabilite from './reco-fiabilite.test';
 import { testCaptureCounter } from './capture-counter.test';
 import { testRecoCounterEquipe, testRecoDefensesDesRecos } from './reco-counter.test';
 import { testAjoutOffenseRecoCombat, testAjoutOffenseRecoEquipe } from './ajout-offense-reco.test';
+import { testRecoModifies } from './reco-modifies.test';
+import { testRenduRecosModifies } from './rendu/recos-modifies.test';
 import { testRecoFusionCorrespondance, testRecoFusionDecks, testRecoFusionChef, testRecoFusionImport, testRecoFusionSource } from './reco-fusion.test';
 import { testRenduRecoFusionChoix, testRenduRecoFusionStockage } from './rendu/reco-fusion.test';
 import { testApercuDeuxLignesRecherche, testApercuDeuxLignesBorne, testApercuDeuxLignesNonMonotone, testApercuDeuxLignesFinQuiGrandit, testApercuDeuxLignesRangees } from './apercu-deux-lignes.test';
@@ -617,6 +619,7 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testRecoDefensesDesRecos', testRecoDefensesDesRecos],
   ['testAjoutOffenseRecoCombat', testAjoutOffenseRecoCombat],
   ['testAjoutOffenseRecoEquipe', testAjoutOffenseRecoEquipe],
+  ['testRecoModifies', testRecoModifies],
   ['testDiscordDroits', testDiscordDroits],
   ['testDiscordSession', testDiscordSession],
   ['testDiscordRecoSalon', testDiscordRecoSalon],
@@ -671,6 +674,7 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testRenduSiegeEdition', testRenduSiegeEdition],
   ['testRenduSiegeArtefactsDimension', testRenduSiegeArtefactsDimension],
   ['testRenduRecosPage', testRenduRecosPage],
+  ['testRenduRecosModifies', testRenduRecosModifies],
   ['testRenduRecosEnTete', testRenduRecosEnTete],
   ['testRenduRecosLigneDeckReduite', testRenduRecosLigneDeckReduite],
   ['testRenduRecosDefensesDeLaLigne', testRenduRecosDefensesDeLaLigne],

@@ -39,6 +39,7 @@ import {
 import { DeckMatch, FaultCause, RecoMatch, SlotMatch, deckFaults, fmtStat, slotFaults } from '../../lib/recoMatch';
 import { DeckHit, RecoHit } from '../../lib/recoSearch';
 import { fiabiliteValide, parFiabilite } from '../../lib/recoDefenses';
+import { decksModifies } from '../../lib/recoModifies';
 import { Bouton, BoutonIcone, Champ, Flottant, Menu, Selecteur, ZoneCliquable, useNotifier } from '../../ui';
 import type { ElementMenu } from '../../ui';
 import { NOTE_MAX, DECK_NOTE_MAX, COUNTER_NOTE_MAX } from '../../lib/recoShare';
@@ -319,6 +320,9 @@ export default function RecoCard({
   const decksFiltres = hit != null;
   // Positions du monstre dans un deck donné, pour le surlignage.
   const hitDeDeck = (di: number) => hit?.decks.find((d) => d.deckIndex === di) ?? null;
+  // Les decks qui diffèrent de la version du salon : une empreinte par deck,
+  // une fois par modification de la recommandation.
+  const modifies = useMemo(() => decksModifies(reco), [reco]);
 
   // ── Une page de decks à la fois ─────────────────────────────────────────
   //
@@ -742,6 +746,7 @@ export default function RecoCard({
                     hit={hitDeDeck(di)}
                     recos={recos}
                     onSupprime={() => setEditingDeck(null)}
+                    modifie={modifies.has(di)}
                   />
               );
             })}
@@ -1358,7 +1363,11 @@ export function DeckBlock({
   recos,
   onSupprime,
   contre,
+  modifie = false,
 }: {
+  // Le deck diffère de la version de son salon : le tag « Modifié »
+  // (recoModifies.ts, calculé une fois par recommandation par l'appelant).
+  modifie?: boolean;
   raisonExportOptimizer?: string;
   onExporterOptimizer: () => void;
   reco: Reco;
@@ -1413,7 +1422,7 @@ export function DeckBlock({
   const leaderLead = leaderId != null ? monsterByCom2us.get(leaderId)?.leaderSkill ?? null : null;
   // L'ordre des défenses de la ligne : pendant une recherche, celles qui
   // répondent d'abord, la plus fiable en tête ; sinon celui du deck.
-  const ordreDefenses = hit?.counters.length
+  const ordreDefenses = hit?.counters.length && !hit.filtre
     ? [
         ...[...hit.counters].sort((a, b) => parFiabilite(deck.counters[a], deck.counters[b])),
         ...deck.counters.map((_, ci) => ci).filter((ci) => !hit.counters.includes(ci)),
@@ -1570,16 +1579,18 @@ export function DeckBlock({
             seulement ; ✎ devient ✓ à la même place — aucun bouton ne bouge
             sous le clic. Le ✓ doré est la convention de l'édition en cours
             sur cette page. */}
-        <ActionsDeck
-          editing={editing}
-          annulable={annulable}
-          onAnnuler={onAnnulerEdition}
-          onSupprimer={supprimerDeck}
-          raisonExportOptimizer={raisonExportOptimizer}
-          onExporterOptimizer={onExporterOptimizer}
-          onToggleEdit={onToggleEdit}
-          className="ml-auto"
-        />
+        <div className="ml-auto flex flex-none items-center gap-2">
+          {modifie && <TagModifie />}
+          <ActionsDeck
+            editing={editing}
+            annulable={annulable}
+            onAnnuler={onAnnulerEdition}
+            onSupprimer={supprimerDeck}
+            raisonExportOptimizer={raisonExportOptimizer}
+            onExporterOptimizer={onExporterOptimizer}
+            onToggleEdit={onToggleEdit}
+          />
+        </div>
       </div>
 
       {!folded && (
@@ -1598,6 +1609,25 @@ export function DeckBlock({
         </div>
       )}
     </div>
+  );
+}
+
+// « Modifié » sur la ligne d'un deck d'une recommandation de salon qui diffère
+// de la dernière version reçue : pas encore publié (recoModifies.ts). Le
+// dessin de l'état « modifiée » d'une recommandation (`PastilleEtat`) : on
+// lit d'un coup d'œil que c'est la même chose, deck par deck. Pas un bouton :
+// il part en publiant.
+export function TagModifie() {
+  const cr = useTraduction().carteReco;
+  return (
+    <span
+      title={cr.modifieAide}
+      className="inline-flex flex-none items-center gap-1 whitespace-nowrap rounded-full bg-warn-soft px-2 py-0.5 text-micro font-semibold text-warn"
+      data-deck-modifie
+    >
+      <span className="h-1.5 w-1.5 flex-none rounded-full bg-warn" aria-hidden />
+      {cr.modifie}
+    </span>
   );
 }
 
@@ -1869,7 +1899,8 @@ export function DetailDeck({ reco, deck, deckIndex, monsters, monsterByCom2us, m
         monsters={monsters}
         monsterByCom2us={monsterByCom2us}
         recos={recos}
-        hitCounters={hit?.counters ?? []}
+        // Retenu par « Modifiés » : rien n'a été cherché, rien à surligner.
+        hitCounters={hit && !hit.filtre ? hit.counters : []}
       />
     </div>
   );

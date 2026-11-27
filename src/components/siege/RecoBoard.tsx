@@ -13,6 +13,7 @@ import { appliquerImport, BilanImport, messageFusion, trouverCorrespondances } f
 import ChoixFusionRecos from './ChoixFusionRecos';
 import { contexteConfrontationReco, matchReco, RecoMatch } from '../../lib/recoMatch';
 import { chercheMonstre, type RecoHit, type TriRecherche } from '../../lib/recoSearch';
+import { CLE_FILTRE_MODIFIES, croiserHits, hitsModifies } from '../../lib/recoModifies';
 import { defensesDesRecos, type VueRecos } from '../../lib/recoDefenses';
 import { ConfirmDialog } from '../../ui/Dialogs';
 import { useTraduction } from '../../hooks/useLangue';
@@ -142,6 +143,10 @@ export default function RecoBoard({
   // « Confronter à mon compte » : les verdicts sur tous les decks de la page,
   // ou nulle part. Remplace l'analyse à la demande, carte par carte.
   const [confronter, setConfronter] = useStickyState<boolean>('recos.confronter', false);
+  // « Modifiés » : seuls les decks qui diffèrent de la version de leur salon,
+  // pas encore publiés (recoModifies.ts). Collant : la fenêtre d'ajout des
+  // statistiques l'allume avant d'ouvrir la page (`CLE_FILTRE_MODIFIES`).
+  const [modifiesActif, setModifiesActif] = useStickyState<boolean>(CLE_FILTRE_MODIFIES, false);
   const termesPoses = queries.map((q) => q.trim()).filter(Boolean);
   const aUneRecherche = termesPoses.length > 0;
   // Vide les trois cases d'un coup.
@@ -487,9 +492,18 @@ export default function RecoBoard({
   // Recherche par monstre. `null` = aucune recherche en cours (état neutre de la
   // page : rien n'est filtré, rien n'est déplié d'office). Elle porte sur la
   // provenance choisie.
-  const hits = useMemo(
+  const hitsRecherche = useMemo(
     () => chercheMonstre(deLaProvenance, queries, searchMode, monsterByCom2us),
     [deLaProvenance, queries, searchMode, monsterByCom2us]
+  );
+  // « Modifiés » : un résultat comme un autre pour la page (liste, volets,
+  // vue Défenses), croisé avec la recherche quand les deux sont posés.
+  // Calculé une fois par liste : une empreinte par deck.
+  const modifies = useMemo(() => hitsModifies(deLaProvenance), [deLaProvenance]);
+  const nModifies = modifies.reduce((n, h) => n + h.decks.length, 0);
+  const hits = useMemo(
+    () => croiserHits(hitsRecherche, modifiesActif ? modifies : null),
+    [hitsRecherche, modifiesActif, modifies]
   );
   // ⚠️ Mémorisée : un tableau neuf à chaque rendu relançait l'agrégation des
   // défenses (vue Défenses) pendant une recherche.
@@ -500,13 +514,13 @@ export default function RecoBoard({
   // Rien trouvé dans cette vue : combien dans l'autre, pour le renvoi
   // « Voir dans Decks (N) ». Calculé seulement dans ce cas.
   const dansAutreVue = useMemo(() => {
-    if (!hits || hits.length > 0) return 0;
+    if (!hits || hits.length > 0 || !hitsRecherche) return 0;
     const autres = chercheMonstre(deLaProvenance, queries, MODE_DE[AUTRE[vue]], monsterByCom2us) ?? [];
     if (AUTRE[vue] === 'attaque') return autres.reduce((n, h) => n + h.decks.length, 0);
     const parReco = new Map(autres.map((h) => [h.reco.id, h]));
     return defensesDesRecos(autres.map((h) => h.reco), monsterByCom2us, (reco, di, ci) =>
       ci != null && !!parReco.get(reco.id)?.decks.find((d) => d.deckIndex === di)?.counters.includes(ci)).defenses.length;
-  }, [hits, deLaProvenance, queries, vue, monsterByCom2us]);
+  }, [hits, hitsRecherche, deLaProvenance, queries, vue, monsterByCom2us]);
   // Où se trouve le monstre, par recommandation — le volet s'en sert pour ne
   // montrer que les decks trouvés et surligner les bons portraits.
   const hitPar = useMemo(() => {
@@ -588,6 +602,22 @@ export default function RecoBoard({
       title={peutConfronter ? r.confronterAide : r.importerPourAnalyser}
       className="disabled:cursor-not-allowed disabled:opacity-50"
       data-confronter
+    />
+  );
+
+  // « Modifiés (N) » : toujours affiché, désactivé sans deck modifié (sauf
+  // allumé : on l'éteint toujours). ⚠️ Dans la PAGE aux deux formats, pas
+  // dans « Options » : on l'allume et l'éteint en reprenant ses ajouts, ce
+  // n'est pas un réglage.
+  const filtreModifies = (
+    <Interrupteur
+      actif={modifiesActif}
+      onChange={setModifiesActif}
+      disabled={!modifiesActif && nModifies === 0}
+      libelle={r.modifies(nModifies)}
+      title={nModifies === 0 && !modifiesActif ? r.modifiesAucun : r.modifiesAide}
+      className="disabled:cursor-not-allowed disabled:opacity-50"
+      data-filtre-modifies
     />
   );
 
@@ -920,9 +950,14 @@ export default function RecoBoard({
           </div>
         </div>
       )}
-      {/* Au bout de la barre, à la souris : posé à droite, il ne bouge pas
-          quand « Vider » apparaît. Au doigt : dans « Options ». */}
-      <div className="hidden lg:ml-auto lg:flex">{interrupteur}</div>
+      {/* Au bout de la barre, à la souris : posés à droite, ils ne bougent pas
+          quand « Vider » apparaît. Au doigt : « Modifiés » sous la
+          recherche, « Confronter » dans « Options ». */}
+      <div className="mt-2.5 lg:hidden" data-modifies-telephone>{filtreModifies}</div>
+      <div className="hidden lg:ml-auto lg:flex lg:items-center lg:gap-4">
+        {filtreModifies}
+        {interrupteur}
+      </div>
       </div>
 
       {/* ⚠️ **Les provenances** : à l'ordinateur, une COLONNE à gauche du
@@ -950,6 +985,17 @@ export default function RecoBoard({
         // qu'une page vide qui se lit comme une perte.
         <div className="mt-4 rounded-xl border border-dashed border-border bg-panel/40 py-8 px-6 text-center lg:mt-0" data-favoris-vide>
           <p className="text-sm text-ink-dim">{td.favorisVide}</p>
+        </div>
+      ) : list.length === 0 && hits && !hitsRecherche ? (
+        // Le filtre « Modifiés » seul ne retient rien ici (tout est publié,
+        // ou une autre provenance) : le dire, et l'éteindre d'un geste.
+        <div className="mt-4 rounded-xl border border-dashed border-border bg-panel/40 py-8 px-6 text-center lg:mt-0" data-modifies-vide>
+          <p className="text-sm text-ink-dim">
+            {r.modifiesVide}{' '}
+            <button onClick={() => setModifiesActif(false)} className="text-ink underline transition hoverable:text-star">
+              {r.modifiesEteindre}
+            </button>
+          </p>
         </div>
       ) : list.length === 0 && hits ? (
         // ⚠️ La RECHERCHE ne renvoie rien — message distinct de celui du filtre.

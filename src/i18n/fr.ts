@@ -1014,6 +1014,7 @@ export const fr = {
       ajoutee: 'Ajoutée',
       nouvelleReco: 'Nouvelle recommandation',
       voirRecos: 'Voir les recommandations',
+      voirModifications: 'Voir mes modifications',
       discord: {
         horsConnexion: 'Connecte-toi à Discord pour voir les recommandations partagées de tes salons et y ajouter cette offense.',
         lecture: 'Lecture de tes salons Discord…',
@@ -2675,6 +2676,11 @@ export const fr = {
     voirDans: (vue: string, n: number) => `Voir dans ${vue} (${n})`,
     confronter: 'Confronter à mon compte',
     confronterAide: 'Les verdicts (Bon, À revoir…) s’affichent sur tous les decks de la page',
+    modifies: (n: number) => `Modifiés (${n})`,
+    modifiesAide: 'Seulement les decks modifiés ou ajoutés depuis la dernière version de leur salon Discord, pas encore publiés',
+    modifiesAucun: 'Aucun deck modifié : tout ce que tu as changé dans les recommandations de tes salons est publié',
+    modifiesVide: 'Aucun deck modifié ici : tout est publié.',
+    modifiesEteindre: 'Tout afficher',
     // Le volet Défenses.
     defensesVisees: (n: number, offenses: number) =>
       `${n} défense${n > 1 ? 's' : ''} visée${n > 1 ? 's' : ''} · ${offenses} offense${offenses > 1 ? 's' : ''}`,
@@ -3043,6 +3049,8 @@ export const fr = {
     deplierDeck: 'Déplier ce deck',
     replierDeck: 'Replier ce deck',
     terminerDeck: "Terminer l'édition de ce deck",
+    modifie: 'Modifié',
+    modifieAide: 'Ce deck diffère de la dernière version du salon : pas encore publié',
     editerDeck: 'Éditer ce deck',
     supprimerDeck: 'Supprimer ce deck',
     consignesDeck: 'Consignes du deck',

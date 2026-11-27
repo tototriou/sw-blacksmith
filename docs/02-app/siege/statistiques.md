@@ -235,8 +235,13 @@ tant qu'elle est ouverte. Pas de panneau « Options » : aucune action de page (
     **« Déjà dedans »**, désactivée, quand elle y bat déjà cette défense. ⚠️ **Jamais de doublon** :
     une offense déjà recommandée ne refait pas de deck. Une recommandation neuve (« Nouvelle
     recommandation », dans le pied) reçoit le deck à la place de son deck vide.
+  - Dans une recommandation de salon, le deck qui reçoit l'offense est **« Modifié »** tant
+    qu'il n'est pas publié : la page Recommandations le retrouve d'un interrupteur pour y poser
+    stats et sets ([interactions.md](feat-recommandations/interactions.md#modifiés)).
   - La fenêtre **reste ouverte** après un ajout : la ligne passe à « Ajoutée », on peut ajouter
-    ailleurs ; « Voir les recommandations » mène à `#/siege/recommandations`. La liste a une
+    ailleurs ; « Voir les recommandations » mène à `#/siege/recommandations` — après un ajout
+    dans une recommandation de salon, il devient « Voir mes modifications » et la page s'ouvre
+    filtre « Modifiés » allumé. La liste a une
     **hauteur fixe** : une recommandation créée ne regrandit pas la fenêtre (recentrée, elle ferait
     bouger le bouton touché).
   - ⚠️ **Les recommandations partagées viennent de Discord.** La page lit les salons **en

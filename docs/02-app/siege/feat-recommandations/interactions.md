@@ -74,7 +74,8 @@ visée », avec sa raison). Il ouvre la fenêtre d'ajout
 Un counter s'ajoute aussi **depuis Siège › Statistiques**, d'un combat gagné :
 l'offense en deck, la défense battue visée, jamais en double
 ([statistiques.md](../statistiques.md), « Ajouter une offense à une
-recommandation »).
+recommandation »). Dans une recommandation de salon, le deck qui le reçoit est
+alors « Modifié » ([plus bas](#modifiés)).
 
 ### Depuis une capture
 
@@ -122,6 +123,49 @@ l'édition de la recommandation : sa page s'ouvre, puis il vient à l'écran.
 retiennent pas** : un counter tout juste ajouté s'édite à l'écran. Dans la vue
 Défenses, rangée par reco, il prend place sous sa recommandation, après ses
 autres offenses (l'ordre tenu, sinon, l'aurait mis dans une seconde bande).
+
+## Modifiés
+
+Ce que j'ai changé dans les recommandations de mes salons Discord et qui
+n'est **pas encore publié**, deck par deck
+([recoModifies.ts](../../../../src/lib/recoModifies.ts)) — par exemple les
+offenses ajoutées depuis Siège › Statistiques, à compléter de leurs stats et
+sets avant de les publier.
+
+- ⚠️ **Calculé, jamais stocké.** Un deck est modifié quand aucun deck de la
+  dernière version reçue du salon n'a la même empreinte (`empreinteDeck`, la
+  forme normalisée de l'export — la comparaison de l'état « modifiée » d'une
+  recommandation, [synchronisation-discord.md](synchronisation-discord.md),
+  deck par deck). L'ordre ne compte pas ; deux decks identiques comptent deux
+  fois ; un deck vide n'est jamais publié, donc jamais modifié. **Publier**
+  pose une nouvelle version de référence : le tag part de lui-même. Rien
+  n'est ajouté au format exporté.
+- Une recommandation **de l'appareil** (sans salon) n'a pas de version de
+  référence : rien n'y est « modifié ».
+- **L'interrupteur « Modifiés (N) »**, dans la page aux deux formats : au bout
+  de la barre à la souris, à côté de « Confronter » ; sous la recherche au
+  doigt (`data-modifies-telephone`) — on l'allume et l'éteint en reprenant ses
+  ajouts, ce n'est pas un réglage rangé dans « Options ». N compte les decks
+  modifiés de la provenance choisie. Toujours affiché, désactivé à 0 (sauf
+  allumé : on l'éteint toujours), la raison en infobulle. Mémorisé
+  (`useStickyState`).
+- **Allumé**, la page ne montre que les decks modifiés, dans les deux vues,
+  comme une recherche : la liste « N sur M decks », le volet ses seuls decks
+  modifiés, la vue Défenses les défenses qu'ils visent. Avec une recherche,
+  les deux se cumulent. Rien de modifié dans la provenance : la page le dit,
+  avec « Tout afficher ». Le deck en édition reste affiché, même revenu à
+  l'identique.
+- **Sur la ligne du deck**, le tag « Modifié », au dessin de l'état
+  « modifiée » d'une recommandation (`PastilleEtat`) : un tag, pas un bouton.
+- **Depuis les statistiques**, après un ajout dans une recommandation de
+  salon, le bouton de la fenêtre devient « Voir mes modifications » : la page
+  s'ouvre filtre allumé.
+- **Limite** : ce qui ne tient pas dans un deck — un deck supprimé, le nom ou
+  les consignes générales changés — ne fait pas de tag ; la recommandation, elle,
+  porte son état « modifiée » dans la liste.
+- ⚠️ **Fluide** : une empreinte encode tout un deck ; le résultat est gardé
+  une fois par version de la recommandation (cache par identité : une
+  recommandation modifiée est un nouvel objet).
 
 ## Une page de decks à la fois
 

@@ -22,6 +22,7 @@ Fichiers :
 - [ownedBuilds.ts](src/lib/ownedBuilds.ts) — collecte de tous les builds du joueur.
 - [recoFromSiege.ts](src/lib/recoFromSiege.ts) — deck pré-rempli depuis un deck d'offense ou une équipe de Mes équipes.
 - [ajoutOffenseReco.ts](../../../../src/lib/ajoutOffenseReco.ts), [AjoutOffenseReco.tsx](../../../../src/components/siege/AjoutOffenseReco.tsx) — une offense venue d'ailleurs ajoutée à une recommandation en un geste, sans doublon : un combat gagné de Siège › Statistiques ([statistiques.md](../statistiques.md)), une équipe de Mes équipes ([feat-equipes.md](../../compte/feat-equipes.md)).
+- [recoModifies.ts](../../../../src/lib/recoModifies.ts) — « Modifiés » : les decks d'une recommandation de salon qui diffèrent de la dernière version reçue, pas encore publiés (calcul pur).
 - [recoSearch.ts](src/lib/recoSearch.ts) — recherche d'un monstre dans les recos (calcul pur).
 - [pagesRecos.ts](src/lib/pagesRecos.ts) — une page de decks, de lignes d'analyse ou de défenses à la fois (calcul pur).
 - [recoDiscord.ts](src/lib/recoDiscord.ts) — recommandations liées à un salon Discord : état, synchronisation, fusion à trois voies (calcul pur).
@@ -45,6 +46,7 @@ Fichiers :
 | `src/lib/recoShare.ts`, `src/hooks/useSiegeRecos.ts`, `src/lib/recoFusion.ts`, `src/components/siege/ChoixFusionRecos.tsx`, l'export, l'import, sa validation et sa fusion | [persistance-et-partage.md](persistance-et-partage.md) |
 | `src/lib/recoMatch.ts`, `src/lib/ownedBuilds.ts`, « Confronter à mon compte », le bilan | [confrontation.md](confrontation.md) |
 | le repli d'un deck, l'édition, `src/lib/annulerEdition.ts`, la pagination des decks, `src/lib/pagesRecos.ts` | [interactions.md](interactions.md) |
+| `src/lib/recoModifies.ts`, « Modifiés », le tag d'un deck pas encore publié | [interactions.md](interactions.md#modifiés) |
 | `src/lib/recoFromSiege.ts`, partir d'un deck d'offense ou d'une équipe de Mes équipes | [import-deck-offense.md](import-deck-offense.md) |
 | `src/lib/ajoutOffenseReco.ts`, `src/components/siege/AjoutOffenseReco.tsx`, ajouter une offense depuis les statistiques ou Mes équipes | [../statistiques.md](../statistiques.md) (« Ajouter une offense à une recommandation »), [feat-equipes.md](../../compte/feat-equipes.md) (« Ajouter à une recommandation ») |
 | `api/`, `vercel.json`, `scripts/construire-api.mjs`, le service Discord, ses routes, droits, cache et variables | [service-discord.md](service-discord.md) |

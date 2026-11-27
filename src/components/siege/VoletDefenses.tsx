@@ -21,6 +21,7 @@ import type { UseRecoState } from '../../hooks/useSiegeRecos';
 import type { RecoMatch } from '../../lib/recoMatch';
 import type { RecoHit, TriRecherche } from '../../lib/recoSearch';
 import { cleEquipe, cleOffense, defensesDesRecos, ordonnerOffenses, type OffenseDesRecos } from '../../lib/recoDefenses';
+import { decksModifies } from '../../lib/recoModifies';
 import { DECKS_PAR_PAGE, DEFENSES_PAR_PAGE, pageBornee, pageDeLaPosition, tranche } from '../../lib/pagesRecos';
 import { contenuDeck, memeContenu, type ContenuDeck } from '../../lib/annulerEdition';
 import type { EtatAffiche } from '../../lib/provenancesRecos';
@@ -303,6 +304,7 @@ export default function VoletDefenses({
           hit={o.counterIndex >= 0 ? { deckIndex: o.deckIndex, slots: [], counters: [o.counterIndex] } : null}
           recos={recos}
           onSupprime={() => setEdition(null)}
+          modifie={decksModifies(reco).has(o.deckIndex)}
         />
     );
   };

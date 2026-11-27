@@ -967,6 +967,7 @@ export const en: Dictionnaire = {
       ajoutee: 'Added',
       nouvelleReco: 'New recommendation',
       voirRecos: 'See recommendations',
+      voirModifications: 'See my changes',
       discord: {
         horsConnexion: 'Sign in with Discord to see the shared recommendations of your channels and add this offense to one.',
         lecture: 'Reading your Discord channels…',
@@ -2525,6 +2526,11 @@ export const en: Dictionnaire = {
     voirDans: (vue: string, n: number) => `See in ${vue} (${n})`,
     confronter: 'Check against my account',
     confronterAide: 'The verdicts (Good, To review…) show on every deck of the page',
+    modifies: (n: number) => `Modified (${n})`,
+    modifiesAide: 'Only the decks modified or added since the last version of their Discord channel, not yet published',
+    modifiesAucun: 'No modified deck: everything you changed in your channel recommendations is published',
+    modifiesVide: 'No modified deck here: everything is published.',
+    modifiesEteindre: 'Show all',
     defensesVisees: (n: number, offenses: number) =>
       `${n} target defense${n > 1 ? 's' : ''} · ${offenses} offense${offenses > 1 ? 's' : ''}`,
     plusJouees: 'most played first',
@@ -2876,6 +2882,8 @@ export const en: Dictionnaire = {
     deplierDeck: 'Expand this deck',
     replierDeck: 'Collapse this deck',
     terminerDeck: 'Finish editing this deck',
+    modifie: 'Modified',
+    modifieAide: 'This deck differs from the last version of the channel: not yet published',
     editerDeck: 'Edit this deck',
     supprimerDeck: 'Delete this deck',
     consignesDeck: 'Deck notes',

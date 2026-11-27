@@ -673,7 +673,9 @@ calcul dans [ajoutOffenseReco.ts](../../../src/lib/ajoutOffenseReco.ts) ;
   recommandation » dans le pied ; la fenêtre reste ouverte après un ajout.
 - **Discord** : la fenêtre lit les salons à son ouverture, Discord activé
   (`AjoutOffenseRecoDiscord`) — la page, elle, ne lit rien. Sans connexion, elle le dit et
-  renvoie à la page Recommandations.
+  renvoie à la page Recommandations. Un ajout dans une recommandation de salon y est « Modifié »
+  jusqu'à sa publication ([interactions.md](../siege/feat-recommandations/interactions.md#modifiés)) ;
+  « Voir mes modifications » ouvre la page sur ce filtre.
 - **Toujours dans le menu**, désactivé avec sa raison : pour une prépa RTA (un ensemble de
   monstres, pas une équipe) ou une équipe sans monstre connu des données.
 

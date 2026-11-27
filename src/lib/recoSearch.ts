@@ -24,6 +24,9 @@ export interface DeckHit {
   slots: number[];
   // Index des défenses visées qui le contiennent — le deck bat ce monstre.
   counters: number[];
+  // Retenu par le filtre « Modifiés », pas par une recherche : ses défenses
+  // passent toutes, aucune n'est surlignée (recoModifies.ts).
+  filtre?: true;
 }
 
 export interface RecoHit {

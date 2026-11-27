@@ -13,11 +13,13 @@ action mise en avant. Au doigt, les actions sont dans le panneau « Options ».
 
 ⚠️ **À la souris, une seule barre d'outils sous l'en-tête** :
 Vue (« Défenses » / « Decks ») · filet vertical · recherche par monstre et ses
-trois cases · au bout, l'interrupteur « Confronter à mon compte »
+trois cases · au bout, les interrupteurs « Modifiés (N) »
+([interactions.md](interactions.md#modifiés)) et « Confronter à mon compte »
 ([confrontation.md](confrontation.md)). Au doigt, la vue est un `Segmented`
-pleine largeur sur la page (`data-vue-telephone`), et l'interrupteur passe dans
-le panneau « Options ». La vue et l'interrupteur sont mémorisés ; à la toute
-première arrivée, la vue Défenses.
+pleine largeur sur la page (`data-vue-telephone`), « Modifiés » reste dans
+la page sous la recherche (on l'allume et l'éteint en reprenant ses ajouts), et
+« Confronter » passe dans le panneau « Options ». La vue et les interrupteurs
+sont mémorisés ; à la toute première arrivée, la vue Défenses.
 
 ## Les deux vues : une liste, un volet
 

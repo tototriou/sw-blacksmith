@@ -29,6 +29,8 @@ import { useTraduction } from '../../hooks/useLangue';
 import type { UseRecoState } from '../../hooks/useSiegeRecos';
 import { useDiscord, type RecosSynchronisees, type StatutDiscord } from '../../hooks/useDiscord';
 import { placeDeLOffense, type OffenseAAjouter, type PlaceOffense, type TrioReco } from '../../lib/ajoutOffenseReco';
+import { CLE_FILTRE_MODIFIES } from '../../lib/recoModifies';
+import { amorcerMemoire } from '../../hooks/useStickyState';
 import type { Reco } from '../../types';
 import { Bouton, ZoneCliquable } from '../../ui';
 import { Modale } from '../../ui/Dialogs';
@@ -61,6 +63,11 @@ export default function AjoutOffenseReco({ ajout, recos, parCom2us, statutDiscor
     recos.ajouterOffense(id, ajout, parCom2us);
     setAjoutees((s) => new Set(s).add(id));
   };
+  // Un ajout dans une recommandation de salon : la page Recommandations
+  // s'ouvre sur « Modifiés », ce qu'on vient d'ajouter et qui reste à publier.
+  // Une recommandation de l'appareil n'a pas de version de salon : rien n'y
+  // serait « modifié ».
+  const versUnSalon = recos.state.recos.some((r) => ajoutees.has(r.id) && r.lien);
 
   return (
     <Modale
@@ -72,7 +79,15 @@ export default function AjoutOffenseReco({ ajout, recos, parCom2us, statutDiscor
       largeur="max-w-[480px]"
       actions={(
         <>
-          <Bouton href="#/siege/recommandations" fond="vide" libelle={a.voirRecos} data-voir-recos />
+          <Bouton
+            href="#/siege/recommandations"
+            onClick={() => {
+              if (versUnSalon) amorcerMemoire({ [CLE_FILTRE_MODIFIES]: true });
+            }}
+            fond="vide"
+            libelle={versUnSalon ? a.voirModifications : a.voirRecos}
+            data-voir-recos
+          />
           <Bouton
             onClick={() => ajouter(recos.addReco())}
             fond="vide"
