@@ -62,6 +62,7 @@ Monstres cherchés et rôle **filtrent tous la même liste** et se
 |--------|----------|---------|
 | **(sans intitulé)** | le champ, puis les 3 cases collées à lui, puis « Vider » | dès 1 recommandation |
 | **Rôle** | `Segmented` Partout · Défense à taper · Offense à runer + le compteur de résultats | une fois un monstre posé |
+| **Tri** | `Segmented` Ordre des recos · Fiabilité (voir « Trier par fiabilité ») | une fois un monstre posé |
 
 ⚠️ **Pas de cadre** : le contenu n'a pas besoin d'être distingué du reste de la
 page — la vue, juste avant, n'en a pas non plus.
@@ -84,6 +85,10 @@ RÉSULTAT : ils se lisent après ce qu'on vient de taper, jamais avant.
 bord droit (`ml-auto`), il laisserait un grand vide entre les deux, et les
 cases se liraient comme un contrôle à part. Champ et cases forment un seul
 bloc.
+⚠️ **Trois monstres posés : le message « Trois monstres posés — … » prend la
+boîte du champ**, plafond de 260 px compris. Laissé libre de s'étendre, il
+poussait les cases et « Vider » au bord droit de la page au troisième
+monstre — les cases bougeaient sous le clic qui les remplissait.
 
 - ⚠️ **L'intitulé de largeur fixe** (`w-[76px]`) aligne les contrôles entre
   eux quelle que soit la longueur du mot : sans lui, ce seraient des objets
@@ -101,6 +106,35 @@ bloc.
   pour se caler sur un contrôle voisin.
 - **« Vider » est sur la rangée Monstres**, avec les cases qu'il vide — et non
   avec le sélecteur de rôle, auquel il ne touche pas.
+
+### Trier par fiabilité
+
+Chercher une défense, c'est demander « quel deck la bat ? » ; quand plusieurs
+répondent, on veut **le plus sûr d'abord**. La rangée **Tri** range les
+résultats par la fiabilité notée sur chaque défense visée
+([defenses-visees.md](defenses-visees.md#fiabilité--quelle-offense-jouer-dabord)).
+
+- **Ordre des recos** (défaut) : l'ordre de l'utilisateur, inchangé.
+- **Fiabilité** (`trierParFiabilite`, [recoSearch.ts](src/lib/recoSearch.ts)) :
+  dans chaque recommandation, ses decks trouvés du plus fiable au moins
+  fiable ; puis les recommandations, par leur meilleur deck. Non notés à la
+  fin, 0 avant eux ; à égalité, l'ordre d'origine.
+  - ⚠️ **La fiabilité d'un deck trouvé est celle de la défense QUI RÉPOND**
+    (`fiabiliteDuHit`), pas la meilleure du deck : un deck sûr contre une
+    autre défense ne l'est pas contre celle qu'on cherche. Un deck trouvé par
+    ses propres monstres (Offense à runer) prend la meilleure de ses défenses.
+  - ⚠️ **L'ordre est pris au tri, puis tenu** (`suivreOrdre`) : noter un deck
+    pendant qu'on l'édite le déplaçait sous le clic. Il se refait à une autre
+    recherche, un autre rôle, une autre provenance ou en rechoisissant le
+    tri ; ce que l'ordre ne connaît pas (un deck ajouté) vient après.
+- Mémorisé (`useStickyState`, clé `recos.tri`). En vue Défense, les offenses
+  d'une défense sont **toujours** classées par fiabilité ; le tri y range les
+  recommandations.
+- **La fiabilité se voit sans déplier** : la ligne repliée d'un deck montre,
+  dans sa colonne « Fort contre », la défense **qui répond** à la recherche (la
+  plus fiable s'il y en a plusieurs) et ses étoiles — hors recherche, la
+  première défense et les siennes.
+- Changer de tri ramène chaque carte à sa première page de decks.
 
 ### ⚠️ Plusieurs monstres se cumulent en ET, dans la MÊME composition
 
@@ -212,9 +246,15 @@ la même réponse :
   - Le compteur d'en-tête passe à **« N sur M decks »** : afficher le total
     alors qu'un seul deck est à l'écran se lit comme un bug — on cherche les
     cinq autres. Même règle que le compteur filtré de l'inventaire d'artéfacts.
-  - **« Déplier tous les decks » est masqué** pendant une recherche : les decks
-    trouvés sont déjà dépliés, et le lien désignerait des decks absents de
-    l'écran.
+  - ⚠️ **Les decks trouvés restent REPLIÉS**, comme hors recherche : seule la
+    CARTE se déplie d'office. Déplier chaque deck trouvé ouvrait d'un coup des
+    dizaines de decks sur un gros lot (un salon Discord), à lire en entier
+    pour retrouver celui qu'on voulait ; leurs portraits, slot cherché
+    surligné, suffisent à choisir lequel ouvrir.
+  - **« Déplier tous les decks » porte sur les decks affichés** : pendant une
+    recherche, ceux qu'elle trouve — jamais ceux qu'elle masque. Un deck
+    ouvert pendant la recherche, par lui ou par son chevron, l'est par choix :
+    il reste ouvert une fois la recherche effacée.
 - **Surlignage** : le slot ou la défense qui contient le monstre prend un **fond
   d'accent léger**.
   - ⚠️ **Un fond, jamais une bordure** : celle-ci porte déjà le résultat de

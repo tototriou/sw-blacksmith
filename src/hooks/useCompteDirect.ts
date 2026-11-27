@@ -28,7 +28,7 @@ export const useDirectSwex = () => useContext(DirectSwexContext);
 
 export function useCompteDirect(
   monsterByCom2us: Map<number, Monster>,
-  appliquer: (texte: string, complet: boolean) => { ok: boolean; nom: string | null }
+  appliquer: (texte: string, complet: boolean, nouveau: boolean) => { ok: boolean; nom: string | null }
 ) {
   const [etat, setEtat] = useState<EtatDirectSwex | null>(null);
   const [compte, setCompte] = useState<CompteDirect | null>(null);
@@ -88,7 +88,8 @@ export function useCompteDirect(
   const mettreAJour = useCallback(async () => {
     const r = await swex()?.mettreAJour();
     if (!r) return { ok: false, nom: null };
-    return appliquerRef.current(r.texte, false);
+    // Un geste de l'utilisateur : « Mon compte » se réapplique toujours.
+    return appliquerRef.current(r.texte, false, true);
   }, []);
 
   const direct: DirectSwex = useMemo(

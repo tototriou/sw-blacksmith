@@ -4,7 +4,10 @@ Boîte à outils **Summoners War** : préparation RTA et siège, exploration du 
 runes, speed tuning, dégâts réels. **Local par défaut** : une app web qui lit un export de compte
 dans le navigateur, et dont rien ne part sans un geste de l'utilisateur
 ([local-par-defaut.md](docs/04-decisions/adr/local-par-defaut.md)). La même app existe en **application de bureau**
-(Electron, Windows et Linux). Le dépôt est **public**.
+(Electron, Windows et Linux). Le dépôt est **public**, sous licence **PolyForm Noncommercial
+1.0.0** ([LICENSE.md](LICENSE.md), [NOTICE.md](NOTICE.md),
+[licence-non-commerciale.md](docs/04-decisions/adr/licence-non-commerciale.md)) : jamais
+« open source » dans un texte.
 
 > Documentation : [`docs/`](docs/) (carte : [docs/README.md](docs/README.md)). Où se trouve quoi,
 > par écran : [docs/01-presentation/02-architecture.md](docs/01-presentation/02-architecture.md). Décisions : [`docs/04-decisions/`](docs/04-decisions/README.md).

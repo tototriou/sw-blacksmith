@@ -19,7 +19,8 @@ import { useTraduction } from '../hooks/useLangue';
 //
 // ⚠️ **Une seule à la fois** : la suivante remplace la précédente, dont le geste
 // devient définitif. Deux notifications empilées se liraient comme deux choses
-// à décider.
+// à décider. Une QUESTION remplacée par une annonce passagère n'est pas
+// perdue : elle revient quand l'annonce s'en va (`questionEnAttente`).
 
 export interface Annonce {
   message: string;
@@ -41,24 +42,55 @@ export const useNotifier = () => useContext(Contexte);
 
 const DUREE = 6000;
 
+type Affichee = Annonce & { cle: number };
+
+// Ce que devient la question mise de côté quand `suivante` s'affiche à la
+// place de `courante` : une annonce passagère met la question de côté (ou
+// garde celle qui l'était déjà) ; une nouvelle question la remplace.
+export function questionEnAttente(courante: Annonce | null, enAttente: Annonce | null, suivante: Annonce): Annonce | null {
+  if (suivante.persistante) return null;
+  return courante?.persistante ? courante : enAttente;
+}
+
 export function FournisseurNotification({ children }: { children: ReactNode }) {
-  const [courante, setCourante] = useState<(Annonce & { cle: number }) | null>(null);
+  const [courante, setCourante] = useState<Affichee | null>(null);
   const [retenue, setRetenue] = useState(false);
   const cle = useRef(0);
+  const couranteRef = useRef(courante);
+  couranteRef.current = courante;
+  // La question qu'une annonce passagère a remplacée : elle revient quand
+  // l'annonce s'en va.
+  const enAttente = useRef<Annonce | null>(null);
 
-  const notifier = useCallback<Notifier>((annonce) => {
+  const afficher = useCallback((annonce: Annonce | null) => {
     cle.current += 1;
-    setCourante({ ...annonce, cle: cle.current });
+    setCourante(annonce && { ...annonce, cle: cle.current });
     setRetenue(false);
   }, []);
+
+  const notifier = useCallback<Notifier>(
+    (annonce) => {
+      enAttente.current = questionEnAttente(couranteRef.current, enAttente.current, annonce);
+      afficher(annonce);
+    },
+    [afficher]
+  );
+
+  // Fermée (croix, action, fin des 6 s) : une annonce passagère rend la place
+  // à la question qu'elle avait remplacée ; une question fermée ne revient pas.
+  const fermer = useCallback(() => {
+    const reprise = couranteRef.current?.persistante ? null : enAttente.current;
+    enAttente.current = null;
+    afficher(reprise);
+  }, [afficher]);
 
   // 6 s, puis elle s'en va — sauf tant qu'on la survole ou qu'elle a le focus,
   // et jamais si elle est persistante.
   useEffect(() => {
     if (!courante || retenue || courante.persistante) return;
-    const id = setTimeout(() => setCourante(null), DUREE);
+    const id = setTimeout(fermer, DUREE);
     return () => clearTimeout(id);
-  }, [courante, retenue]);
+  }, [courante, retenue, fermer]);
 
   return (
     <Contexte.Provider value={notifier}>
@@ -67,7 +99,7 @@ export function FournisseurNotification({ children }: { children: ReactNode }) {
         <BandeauNotification
           key={courante.cle}
           annonce={courante}
-          onFermer={() => setCourante(null)}
+          onFermer={fermer}
           onRetenir={setRetenue}
         />
       )}

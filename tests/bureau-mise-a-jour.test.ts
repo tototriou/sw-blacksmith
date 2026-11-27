@@ -7,6 +7,7 @@
 
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { actionPeriodique, DELAI_VERIFICATION_MS, PAS_CONTROLE_MS, type PhaseVerifiee } from '../bureau/miseAJourPur';
 import { presentationMiseAJour } from '../src/components/BlocApplication';
 import { TELECHARGEMENTS } from '../src/lib/bureau';
 import { egal, ok, titre } from './outils';
@@ -44,6 +45,33 @@ export default function testBureauMiseAJour() {
     return p.libelle === 'Mettre à jour' || p.libelle === 'Réessayer';
   });
   egal(versTelechargement.map(([e]) => e?.phase), ['disponible', 'echec'], 'seuls « disponible » et « echec » proposent de télécharger');
+
+  titre('bureau · mise à jour — la vérification quotidienne');
+  egal(DELAI_VERIFICATION_MS, 24 * 3600 * 1000, 'délai : 24 h depuis la dernière recherche');
+  ok(PAS_CONTROLE_MS > 0 && PAS_CONTROLE_MS <= 3600 * 1000, 'contrôle au moins toutes les heures : au plus 25 h entre deux recherches');
+  const t = 1_000_000_000_000;
+  const jour = DELAI_VERIFICATION_MS;
+  const attendu: [PhaseVerifiee | null, string][] = [
+    [null, 'chercher'],
+    ['aucune', 'chercher'],
+    ['a-jour', 'chercher'],
+    ['injoignable', 'chercher'],
+    ['disponible', 'rappeler'],
+    ['echec', 'rappeler'],
+    ['recherche', 'rien'],
+    ['telechargement', 'rien'],
+    ['prete', 'rien'],
+  ];
+  for (const [phase, action] of attendu) {
+    const nom = phase ?? 'rien reçu';
+    egal(actionPeriodique(phase, t, t + jour - 1), 'rien', `${nom} : rien avant 24 h`);
+    egal(actionPeriodique(phase, t, t + jour), action, `${nom} : 24 h passées → ${action}`);
+    egal(actionPeriodique(phase, t, t + 3 * jour), action, `${nom} : plusieurs jours (veille) → ${action}`);
+  }
+  egal(actionPeriodique('a-jour', t, t - 1000), 'chercher', 'horloge reculée : compte comme un délai écoulé');
+  // Une version proposée n'est jamais recherchée à nouveau : une recherche
+  // qui échouerait hors ligne effacerait l'offre.
+  ok(attendu.every(([p, a]) => (p === 'disponible' || p === 'echec') === (a === 'rappeler')), 'seules les versions proposées sont rappelées');
 
   // L'accueil du site télécharge le fichier par une
   // adresse FIXE. Ses noms doivent être ceux qu'electron-builder produit.

@@ -167,7 +167,7 @@ function creerFenetre(preuve: TemoinsPreuve | undefined): BrowserWindow {
   // preuve, simulée.
   brancherMiseAJour(fenetre, preuve?.miseAJour);
   // Le dossier SW Exporter : « Mon compte » suit les exports.
-  brancherSwex(fenetre, preuve?.swex);
+  brancherSwex(fenetre, RACINE, preuve?.swex);
   // La connexion à Discord (recommandations de siège) : la session du service,
   // gardée ici, jamais par la page.
   const discord = brancherDiscord(fenetre, { service: adresseService(process.env.SWBLACKSMITH_SERVICE_DISCORD), preuve });

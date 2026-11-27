@@ -225,12 +225,44 @@ export function equipesAreneClassique(
   };
 }
 
-// L'arène classique est-elle vide (aucune équipe d'aucun côté) ? Le dossier
-// SW Exporter la remplit alors depuis un export qui ne met à jour que « Mon
-// compte » : l'arène, arrivée après le choix de l'invocateur, n'attendrait
-// sinon qu'un nouveau choix.
-export function areneClassiqueVide(equipes: { defense: unknown[]; offense: unknown[]; interserveur: unknown[] }): boolean {
-  return equipes.defense.length === 0 && equipes.offense.length === 0 && equipes.interserveur.length === 0;
+// Les pages qu'un export du compte suivi (dossier SW Exporter) remplit
+// QUAND ELLES SONT VIDES, alors qu'il ne met à jour que « Mon compte » :
+// prépa RTA, défenses et attaques de siège, chaque côté de l'arène
+// classique. Vide, une page n'a rien à perdre ; pleine, elle porte le travail
+// de l'utilisateur (classement, leads, ticks) et l'export n'y touche pas.
+export type PageRattrapable = 'rta' | 'siegeDefense' | 'siegeOffense' | 'areneDefense' | 'areneOffense' | 'areneInterserveur';
+
+// Les pages vides parmi `contenus` (le nombre d'entrées ou d'équipes de
+// chacune), dans l'ordre donné.
+export function pagesVides(contenus: Record<PageRattrapable, number>): PageRattrapable[] {
+  return (Object.keys(contenus) as PageRattrapable[]).filter((p) => contenus[p] === 0);
+}
+
+// Ce que fait la page d'un export du compte suivi :
+// - `tout` : l'import complet — après le choix d'un invocateur (`complet`),
+//   ou sur une page sans compte ni équipes (conservation refusée : rien à
+//   perdre) ;
+// - sinon `compte` : « Mon compte » se met à jour pour un export NOUVEAU, ou
+//   sans compte ; un export déjà lu, redonné au lancement pour une page vide,
+//   ne le réapplique pas (il remettrait l'Optimizer à zéro à chaque
+//   lancement) ;
+// - et `pages` : les pages vides, que l'export remplit.
+export function planExportSuivi(e: {
+  complet: boolean;
+  nouveau: boolean;
+  aCompte: boolean;
+  aDesEquipes: boolean;
+  contenus: Record<PageRattrapable, number>;
+}): { tout: boolean; compte: boolean; pages: PageRattrapable[] } {
+  if (e.complet || (!e.aCompte && !e.aDesEquipes)) return { tout: true, compte: true, pages: [] };
+  return { tout: false, compte: e.nouveau || !e.aCompte, pages: pagesVides(e.contenus) };
+}
+
+// La page se déclare INCOMPLÈTE au lancement — sans compte, ou avec une page
+// vide que l'export sait remplir : l'export suivi, même déjà lu, lui est
+// redonné (bureau/swexPur.ts, `aDonner`).
+export function pageIncomplete(aCompte: boolean, contenus: Record<PageRattrapable, number>): boolean {
+  return !aCompte || pagesVides(contenus).length > 0;
 }
 
 // Les équipes de l'arène dimensionnelle, prêtes pour les états : la défense de

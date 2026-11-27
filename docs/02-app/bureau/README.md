@@ -84,7 +84,7 @@ lecteur côté page (`estBureau()` = l'objet présent, avec `bureau: true`).
 | `miseAJour.rechercher()`, `telecharger()`, `redemarrer()` | `bureau:rechercher`, `bureau:telecharger`, `bureau:redemarrer` | page → bureau |
 | `swex.etat()`, `choisirDossier()`, `choisirInvocateur(fichier)`, `aucunInvocateur()`, `oublier()` | `bureau:swex-etat`, `bureau:swex-choisir-dossier`, `bureau:swex-choisir-invocateur`, `bureau:swex-aucun-invocateur`, `bureau:swex-oublier` (`invoke`) | rendent l'état du réglage |
 | `swex.surEtat(rappel)`, `swex.surExport(rappel)` | `bureau:swex-etat`, `bureau:swex-export` | bureau → page |
-| `swex.pret(pageSansCompte)`, `swex.lu(modifie)` | `bureau:swex-pret`, `bureau:swex-lu` | page → bureau |
+| `swex.pret(pageIncomplete, pageSansDimension)`, `swex.lu(modifie)` | `bureau:swex-pret`, `bureau:swex-lu` | page → bureau |
 | `swex.etatDirect()`, `swex.activerDirect(oui)`, `swex.mettreAJour()` | `bureau:swex-direct-etat`, `bureau:swex-direct-activer`, `bureau:swex-mettre-a-jour` (`invoke`) | le direct du plugin SWEX : son état, l'interrupteur, le compte du fichier live sous forme d'export ([feat-swex-direct.md](feat-swex-direct.md)) |
 | `swex.surEtatDirect(rappel)`, `swex.surLignesDirect(rappel)` | `bureau:swex-direct-etat`, `bureau:swex-direct-lignes` | bureau → page |
 | `swex.historique()`, `swex.etatHistorique(cle)` | `bureau:swex-historique`, `bureau:swex-historique-etat` (`invoke`) | l'archive du compte du plugin SWEX, de l'invocateur suivi : la liste des états (sans rien décompresser), puis les runes brutes d'un état ([comparaison.md](../compte/feat-runes/comparaison.md), « Historique ») |
@@ -217,6 +217,13 @@ côté du service : [service-discord.md § Application de bureau](../siege/feat-
   `deconnexion` ; `routeAutorisee`), avec leur méthode : jamais une adresse
   quelconque. Côté page, `recupererParLeBureau` (`src/lib/bureau.ts`) en
   fait le `fetch` du client : la synchronisation est celle du site.
+- **Le corps d'une publication** est borné comme par le service
+  (`CORPS_PUBLICATION_MAX`, le double de `TAILLE_MAX` de
+  `api/_source/service/recoSalon.ts`, comparés par
+  `tests/bureau-discord.test.ts`) : au-delà, le processus principal répond
+  413 sans appeler le service, et la page dit la recommandation trop
+  volumineuse. ⚠️ Une borne plus basse que celle du service refuserait ici
+  ce que le site publie (une recommandation tirée de vidéos pèse plus d'un Mo).
 - **La session** : remplacée par celle que rend le service quand il la
   renouvelle (en-tête `x-session-discord`) ; oubliée à la déconnexion, à un
   401, et par « Tout supprimer ». Un appel attend la première réponse de la
@@ -274,9 +281,10 @@ Le compte tenu à jour **pendant la partie** par le plugin SWEX du dépôt :
 - **Ce qui est importé** : **tout** (prépa RTA, siège, « Mon compte »)
   pour l'export qui suit le choix d'un invocateur — ou d'un dossier qui en
   désigne un d'office —, après la proposition de sauvegarder la session si
-  le travail a changé ; puis **« Mon compte » seulement** pour chaque export
-  suivant (et l'arène classique si elle est vide : rattrapage), jamais la
-  prépa RTA ni le siège (voir [transverse/feat-import-compte/bouton-import.md](../transverse/feat-import-compte/bouton-import.md), § « Le dossier SW
+  le travail a changé ; puis **« Mon compte »** pour chaque export suivant,
+  et **chaque page vide** (prépa RTA, défenses et attaques de siège, chaque
+  côté de l'arène classique) remplie de l'export — jamais une page pleine
+  (voir [transverse/feat-import-compte/bouton-import.md](../transverse/feat-import-compte/bouton-import.md), § « Le dossier SW
   Exporter »). Le processus principal marque `complet` l'export qui suit un
   choix (`bureau:swex-export`), jusqu'au `bureau:swex-lu` de la page.
 - ⚠️ **Un import manuel lâche l'invocateur suivi** (`aucunInvocateur`,
@@ -290,8 +298,10 @@ Le compte tenu à jour **pendant la partie** par le plugin SWEX du dépôt :
   l'invocateur suivi s'y importe en entier, comme après un choix : elle n'a
   rien à perdre, et « Mon compte » seul laissait la prépa et le siège vides.
 - **Quand** : au chargement de la page, si l'export est plus récent que le
-  dernier appliqué (annoncé), ou si la page n'a pas de compte (conservation
-  refusée : relu en silence, en entier si la page est vide) ; puis à chaque changement du dossier, **1,5 s
+  dernier appliqué (annoncé), ou si la page est incomplète — sans compte
+  (conservation refusée), ou avec une page vide que l'export sait remplir :
+  relu en silence, en entier si la page n'a ni compte ni équipes, sinon pour
+  ses pages vides (`pageIncomplete`, `aDonner`) ; puis à chaque changement du dossier, **1,5 s
   après la dernière écriture** (SW Exporter écrit plusieurs Mo).
 - ⚠️ **La page confirme ce qu'elle a appliqué** : un export illisible (à
   moitié écrit) ne passe pas « lu » et sera redonné au prochain changement.
@@ -391,7 +401,9 @@ de SWEX n'est nécessaire.
   `SW-Blacksmith.deb`, `SW-Blacksmith.AppImage`) : seule adresse fixe pour
   `releases/latest/download`.
 - Le paquet ne contient que `dist/`, les deux `.cjs` et `package.json`
-  (aucun `node_modules`) ; l'icône Windows est `bureau/icone.ico`
+  (aucun `node_modules`) ; `LICENSE.md` et `NOTICE.md` sont posés à côté de
+  l'exécutable (`extraFiles`), comme les licences d'Electron : qui reçoit
+  l'app reçoit les termes de sa licence. L'icône Windows est `bureau/icone.ico`
   (`scripts/generer-icone-bureau.mjs`), petites tailles en BMP.
 - **Une mise à jour garde les données** (l'ancien désinstalleur passe avec
   `--updated`) ; **une désinstallation efface tout** — données, raccourcis,
@@ -430,8 +442,19 @@ notification), `BlocApplication` (Réglages).
   fermeture. « Réessayer » si le téléchargement demandé échoue.
 - **Remise à plus tard** : le bloc « Application » des Réglages garde
   l'offre, et peut relancer une recherche (« Rechercher »).
+- **Puis chaque jour, le même mécanisme** : app restée ouverte, un contrôle
+  toutes les heures (`PAS_CONTROLE_MS`) et au réveil de la machine
+  (`powerMonitor` `resume`) relance la recherche du lancement dès que 24 h
+  (`DELAI_VERIFICATION_MS`) sont passées depuis la précédente — du
+  lancement, de « Rechercher » ou périodique ; l'heure reste en mémoire,
+  chaque lancement recherchant déjà. Une version déjà proposée (notification
+  fermée par la croix, ou téléchargement échoué) n'est pas recherchée à
+  nouveau : la même question « Nouvelle version X disponible · Mettre à
+  jour » revient, et une recherche hors ligne ne peut pas effacer l'offre.
+  Rien pendant une recherche, un téléchargement, ni une mise à jour prête.
+  Décision pure : `actionPeriodique` (`bureau/miseAJourPur.ts`).
 - **Jamais de bruit sans demande** : une recherche qui échoue au lancement
-  ne dit rien ; tout va dans `mise-a-jour.log` (dossier des données).
+  ou au contrôle quotidien ne dit rien ; tout va dans `mise-a-jour.log` (dossier des données).
 - ⚠️ **Une recherche se conclut toujours** : quand `checkForUpdates` se
   termine sans aucun événement (il rend `null` quand electron-updater
   s'estime inactif, une AppImage extraite par exemple), elle passe en
@@ -452,7 +475,7 @@ boutons restent affichés, désactivés quand il n'y a rien à faire.
 
   | Phase | Bouton | Ligne dessous |
   |-------|--------|---------------|
-  | `aucune` (ou rien reçu) | Rechercher | Les nouvelles versions sont cherchées au lancement. |
+  | `aucune` (ou rien reçu) | Rechercher | Les nouvelles versions sont cherchées au lancement, puis chaque jour. |
   | `recherche` | Recherche… (désactivé) | Recherche d'une nouvelle version… |
   | `a-jour` | Rechercher | Tu as la dernière version. |
   | `injoignable` | Rechercher | Impossible de vérifier : pas de connexion ? |
@@ -491,6 +514,6 @@ il ne touche jamais celles de l'utilisateur. Il note les liens au lieu de
 les ouvrir, range les téléchargements dans `<dossier>/telechargements` et
 les sessions dans `<dossier>/swblacksmith/sessions` (le dossier SW
 Blacksmith « choisi ») sans boîte de dialogue, simule la
-mise à jour, se contrôle de l'intérieur,
+mise à jour (et son contrôle quotidien, à une heure simulée), se contrôle de l'intérieur,
 écrit ses résultats en JSON puis quitte, sans capture d'écran ; le script
 compare et rend 1 si un verdict échoue.

@@ -32,7 +32,7 @@ Code dans **`bureau/`** (hors de `src/` : il tourne dans Node) :
   fichier servi, adresse interne, lien ouvrable dehors), `navigation.ts` (liens vers le
   navigateur, navigations bloquées, « Enregistrer sous »), `fenetre.ts` (état mémorisé, pur),
   `preload.ts` ;
-- `miseAJour.ts` (mise à jour automatique, `electron-updater`) ;
+- `miseAJour.ts` + `miseAJourPur.ts` (mise à jour automatique, `electron-updater` : au lancement, puis chaque jour) ;
 - `swex.ts` + `swexPur.ts` (dossier SW Exporter : « Mon compte » suit les exports) ;
   `swexLive.ts` (le fichier live du plugin SWEX, lu au fil de l'eau : « Mon compte » en direct,
   « Mettre à jour mon compte », la version du plugin installé) ;
@@ -55,6 +55,7 @@ Empaqueté par `electron-builder.yml`, publié au tag `v*` par `.github/workflow
 `dist-bureau` (non suivi), lancé par `scripts/lib/electron.mjs` (l'environnement hérité de VS
 Code nettoyé par `scripts/lib/environnementElectron.mjs`). Côté page : `src/lib/bureau.ts` (`estBureau()`, couleurs du thème,
 mise à jour, cœurs physiques), `src/components/MiseAJourBureau.tsx` (la mise à jour dite par la notification),
+`src/components/MiseAJourPlugin.tsx` (le plugin SWEX à remplacer, dit par la notification),
 `src/components/BlocApplication.tsx` (bloc « Application » des Réglages : version, mise à jour à
 portée, dossier SW Exporter), `src/components/SuiviSwex.tsx` (applique l'export : tout après le
 choix d'un invocateur, « Mon compte » ensuite), `src/hooks/useCompteDirect.ts` +

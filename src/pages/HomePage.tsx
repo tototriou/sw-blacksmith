@@ -10,6 +10,7 @@ import {
   IconeArene,
   IconeArtefacts,
   IconeEquipes,
+  IconeObjectifs,
   IconeBestiaire,
   IconeDefense,
   IconeMecaniques,
@@ -215,6 +216,7 @@ export default function HomePage({ stats, onImport, monstres = [] }: Props) {
           <PastilleOutil href="#/arene-dimensionnelle/defense" icon={IconeArene} accent={COULEUR_SECTION['arene-dimensionnelle']} titre={a.cartes.areneDimensionnelle.titre} />
           <PastilleOutil href="#/compte/runes" icon={IconeRunes} accent={COULEUR_COMPTE_SUB.runes} titre={a.cartes.runes.titre} />
           <PastilleOutil href="#/compte/artefacts" icon={IconeArtefacts} accent={COULEUR_COMPTE_SUB.artefacts} titre={a.cartes.artefacts.titre} />
+          <PastilleOutil href="#/compte/objectifs" icon={IconeObjectifs} accent={COULEUR_COMPTE_SUB.objectifs} titre={a.cartes.objectifs.titre} />
           <PastilleOutil href="#/compte/equipes" icon={IconeEquipes} accent={COULEUR_COMPTE_SUB.equipes} titre={a.cartes.equipes.titre} />
           <PastilleOutil href="#/bestiary" icon={IconeBestiaire} accent={COULEUR_SECTION.bestiary} titre={a.cartes.bestiaire.titre} />
           <PastilleOutil href="#/bot-discord" icon={IconeBotDiscord} accent={COULEUR_SECTION['bot-discord']} titre={a.cartes.botDiscord.titre} />

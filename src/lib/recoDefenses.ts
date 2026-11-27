@@ -29,6 +29,39 @@ export interface OffenseContre {
   deckIndex: number;
   counterIndex: number;
   note: string;
+  fiabilite?: number;
+}
+
+// ── Fiabilité d'un deck contre une défense ────────────────────────────────
+//
+// Une note en étoiles, de 0 à 5 par demi-étoile, que l'auteur donne à CE deck
+// contre CETTE défense (`RecoCounter.fiabilite`) : quand plusieurs offenses
+// battent la même défense, on joue la plus fiable d'abord. Absente = non
+// notée — distincte de 0 : « pas encore jugé » n'est pas « ne passe pas ».
+export const FIABILITE_MAX = 5;
+export const FIABILITE_PAS = 0.5;
+
+// Une fiabilité lue d'un stockage ou d'un fichier : un multiple de 0,5 de 0 à
+// 5, ou `undefined` (non notée). Tout le reste — 2.3, « 4 », 9, -1 — est
+// ignoré : arrondir ou borner inventerait une note que personne n'a donnée.
+export function fiabiliteValide(raw: unknown): number | undefined {
+  return typeof raw === 'number' && Number.isInteger(raw / FIABILITE_PAS) && raw >= 0 && raw <= FIABILITE_MAX
+    ? raw
+    : undefined;
+}
+
+// La couleur d'une note : rouge en bas, jaune au milieu, vert en haut — les
+// tokens sémantiques `bad`, `warn`, `good`. Seuils : moins de 2, puis moins
+// de 4.
+export type TonFiabilite = 'bad' | 'warn' | 'good';
+export function tonFiabilite(note: number): TonFiabilite {
+  return note < 2 ? 'bad' : note < 4 ? 'warn' : 'good';
+}
+
+// Ordre des offenses d'une défense : la plus fiable d'abord, les non notées à
+// la fin (après un 0) ; à égalité, l'ordre de la vue Attaque (le tri est stable).
+export function parFiabilite(a: { fiabilite?: number }, b: { fiabilite?: number }): number {
+  return (b.fiabilite ?? -1) - (a.fiabilite ?? -1);
 }
 
 export interface DefenseVisee {
@@ -152,13 +185,17 @@ export function vueDefenses(
       // Un deck qui vise deux fois la même défense n'y figure qu'une fois : la
       // première saisie, et sa précision.
       if (!defense.offenses.some((o) => o.deckIndex === deckIndex)) {
-        defense.offenses.push({ deckIndex, counterIndex, note: counter.note });
+        const fiabilite = fiabiliteValide(counter.fiabilite);
+        defense.offenses.push({ deckIndex, counterIndex, note: counter.note, ...(fiabilite !== undefined ? { fiabilite } : {}) });
       }
     });
     if (!viseUneDefense && (!garder || garder(deckIndex, null))) sansDefense.push(deckIndex);
   });
 
-  // Ordre de PREMIÈRE apparition (deck puis défense) : celui de la vue Attaque,
-  // qu'on retrouve en changeant de vue. `Map` garde l'ordre d'insertion.
-  return { defenses: [...parCle.values()], sansDefense };
+  // Les défenses : ordre de PREMIÈRE apparition (deck puis défense), celui de
+  // la vue Attaque, qu'on retrouve en changeant de vue — `Map` garde l'ordre
+  // d'insertion. Leurs offenses : la plus fiable d'abord (`parFiabilite`).
+  const defenses = [...parCle.values()];
+  for (const d of defenses) d.offenses.sort(parFiabilite);
+  return { defenses, sansDefense };
 }

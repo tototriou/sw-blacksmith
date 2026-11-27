@@ -34,7 +34,7 @@ la précédente).
 | `src/components/account/RunesCurve.tsx`, `src/lib/runeCourbes.ts`, `src/components/account/CurveChart.tsx`, `src/components/account/CurveLegend.tsx` | [courbes.md](courbes.md) |
 | `src/components/account/RunesCompare.tsx`, `src/lib/runeCurveShare.ts`, `src/components/account/curveColors.ts` | [comparaison.md](comparaison.md) |
 | `src/components/account/SetFilter.tsx`, `src/components/account/SlotFilter.tsx`, `src/components/account/FiltresRunes.tsx`, `src/components/account/gabaritFiltre.ts` | [filtres-set-et-slot.md](filtres-set-et-slot.md) |
-| `src/components/account/RunesOptim.tsx`, `src/components/account/AncientFilter.tsx`, `src/lib/crafts.ts` | [optimisation.md](optimisation.md) |
+| `src/components/account/RunesOptim.tsx`, `src/components/account/FenetreRunesExclues.tsx`, `src/components/account/AncientFilter.tsx`, `src/lib/crafts.ts` | [optimisation.md](optimisation.md) |
 | les onglets Meules et Gemmes | [meules-et-gemmes.md](meules-et-gemmes.md) |
 
 ## Parties
@@ -47,5 +47,5 @@ la précédente).
 | [courbes.md](courbes.md) | L'onglet Courbes (`RunesCurve`) : courbes de qualité actuelle et potentielles, interactives au doigt et lisibles en plein écran. |
 | [comparaison.md](comparaison.md) | L'onglet Comparaison (`RunesCompare`) : courbes partagées et fichiers de compte d'amis, rien de conservé, « Tout retirer », ce qui est commun aux deux. |
 | [filtres-set-et-slot.md](filtres-set-et-slot.md) | Les filtres par set (`SetFilter`) et par slot (`SlotFilter`), partagés par plusieurs onglets, et leur place dans le panneau « Options » au doigt. |
-| [optimisation.md](optimisation.md) | L'onglet Optimisation (`RunesOptim`) : potentiel (gemme optimale puis grind), modes, affichage, filtres à cases, « Marqueurs », « Runes utilisées », « Faisable avec ma réserve ». |
+| [optimisation.md](optimisation.md) | L'onglet Optimisation (`RunesOptim`) : potentiel (gemme optimale puis grind), modes, affichage (dont le palier sur le potentiel), runes exclues, filtres à cases, « Marqueurs », « Runes utilisées », « Faisable avec ma réserve ». |
 | [meules-et-gemmes.md](meules-et-gemmes.md) | Les onglets Meules et Gemmes, en construction, et pourquoi ils ne refont pas l'Optimisation. |

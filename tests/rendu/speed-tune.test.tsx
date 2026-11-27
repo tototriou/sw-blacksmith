@@ -8,6 +8,7 @@
 // n'est pas lancée ; ce qui en dépend est couvert par `tests/speed-tune.test.ts`.
 
 import SpeedTuningSection from '../../src/components/outils/SpeedTuningSection';
+import { ticksDuRepere } from '../../src/components/outils/speedTune/VuesSpeedTune';
 import { leadPresent, ligneVierge, type Ligne } from '../../src/lib/speedTuneLignes';
 import type { Monster } from '../../src/types';
 import { planDepuisSpeedTune } from '../../src/lib/planSpeedTune';
@@ -89,7 +90,12 @@ export function testRenduSpeedTuneVide() {
   const html = rendreSpeedTune();
   const t = texteVisible(html);
   const b = boutons(html);
-  ok(t.startsWith('Speed tuning À chaque tick, la barre d\'action monte de vitesse × 7 % ; un seul monstre agit par tick. Ajoute tes monstres et ceux d\'en face pour voir qui joue avant qui.'), 'le titre et la règle des ticks');
+  ok(t.startsWith('Speed tuning À chaque tick, la barre d\'action monte de vitesse × taille du tick (7 % en siège et en arène, 4,5 % en raid, 1,5 % en RTA) ; un seul monstre agit par tick. Ajoute tes monstres et ceux d\'en face pour voir qui joue avant qui.'), 'le titre et la règle des ticks, pour les trois contenus');
+  // (`Segmented` rend aussi ses copies de mesure, cachées : les libellés s'y répètent.)
+  ok(t.includes('Contenu Siège · Arène Raid RTA') && t.indexOf('Contenu') < t.indexOf('Vitesse de combat pour agir au tick'), 'le contenu se choisit au-dessus du repère');
+  const contenus = b.filter((x) => ['Siège · Arène', 'Raid', 'RTA'].includes(x.texte));
+  ok(contenus.length > 0 && contenus.every((x) => x.presse === (x.texte === 'Siège · Arène')), 'le siège par défaut, seul enfoncé');
+  ok(contenus.some((x) => x.texte === 'RTA' && x.title === 'La barre monte de vitesse × 1,5 % à chaque tick'), 'chaque contenu dit sa taille de tick');
   ok(t.includes('Vitesse de combat pour agir au tick · repère de speed tune 3 477 4 358 5 286 6 239 7 205 8 179 9 159 10 143 11 130'), 'le repère des ticks, du 3 au 11');
   ok(t.includes(`Ton équipe Lead ${LEADS}`) && t.includes(`En face Lead ${LEADS}`), 'deux camps, chacun avec tous les leads');
   const aria = valeurs(html, 'aria-label');
@@ -103,6 +109,36 @@ export function testRenduSpeedTuneVide() {
   egal(imports.length, 4, '« Importer un deck de siège ou d’arène » dans chaque camp, à chaque format');
   ok(imports.every((x) => x.desactive && x.title === IMPORT_VIDE), 'désactivé sans équipe de siège ni d’arène, et pourquoi');
   ok(t.endsWith('Ajoute au moins un monstre pour visualiser le remplissage des barres et l\'ordre de tour.'), 'ce qu\'il faut faire pour voir les tableaux');
+}
+
+// Le raid et la RTA : la taille du tick change le repère et la première
+// colonne des tableaux (docs/02-app/speed-tuning/feat-formule.md).
+export function testRenduSpeedTuneRta() {
+  titre('rendu · Speed tuning — en RTA et en raid');
+  const html = rendreSpeedTune({ ...ETAT_EQUIPE(), 'speedTune.contenu': 'rta' });
+  const t = texteVisible(html);
+  const contenus = boutons(html).filter((x) => ['Siège · Arène', 'Raid', 'RTA'].includes(x.texte));
+  ok(contenus.length > 0 && contenus.every((x) => x.presse === (x.texte === 'RTA')), 'RTA choisie : seule enfoncée');
+  ok(
+    t.includes('repère de speed tune 20 334 21 318 22 304 23 290 24 278 25 267 26 257 27 247 28 239 Ton équipe'),
+    'le repère : les ticks de l’équipe à 1,5 %, un de part et d’autre'
+  );
+  ok(!/bg-accent-soft[^>]*>\s*<div[^>]*>\s*<span[^>]*>28</.test(html), '239 au tick 28 de la RTA n’est pas le tick « Lent » du siège');
+  ok(t.includes('Ordre de tour 1 Veromos tick 19 → 2 Galleon tick 20 → 3 Belladeon tick 25 → 4 Lushen tick 27'), 'l’ordre de tour aux ticks de la RTA');
+  // Veromos a une case saisie au tick 2 : les colonnes partent d'elle, pas du
+  // premier tour (19), pour qu'elle reste visible.
+  ok(/% rempli sur 40 ticks — [^]*? Monstre 2 3 4 5 /.test(t), 'les colonnes partent de la case saisie la plus tôt');
+  const raid = texteVisible(rendreSpeedTune({ ...ETAT_EQUIPE(), 'speedTune.contenu': 'raid' }));
+  ok(raid.includes('repère de speed tune 6 371 7 318 8 278 9 247 10 223 Ton équipe'), 'en raid, le repère à 4,5 %');
+  ok(raid.includes('Ordre de tour 1 Veromos tick 7 → 2 Galleon tick 8 → 3 Belladeon tick 9 → 4 Lushen tick 10'), 'en raid, l’ordre de tour');
+
+  const illisible = rendreSpeedTune({ ...ETAT_EQUIPE(), 'speedTune.contenu': 'pve' });
+  ok(texteVisible(illisible).includes('repère de speed tune 3 477 4 358 5 286'), 'un contenu gardé illisible retombe sur le siège');
+
+  egal(ticksDuRepere(new Map(), 'siege'), [3, 4, 5, 6, 7, 8, 9, 10, 11], 'le repère du siège ne bouge pas');
+  egal(ticksDuRepere(new Map([[21, []], [27, []]]), 'rta'), [20, 21, 22, 23, 24, 25, 26, 27, 28], 'en RTA, de l’équipe ±1');
+  const vide = ticksDuRepere(new Map(), 'rta');
+  egal([vide[0], vide[vide.length - 1]], [14, 52], 'sans monstre en RTA, la plage du siège (477 à 130)');
 }
 
 export function testRenduSpeedTuneCamps() {

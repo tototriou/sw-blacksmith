@@ -5,7 +5,8 @@ import type { Monster } from '../types';
 import type { LeadInfo } from './speed';
 import { analyseAutomatique, type ChoixSorts, type DonneesKit } from './speedTuneAuto';
 import { ligneVierge, uidDe, type Leads, type Ligne } from './speedTuneLignes';
-import { entreesDuPlan, planDepuisSpeedTune, planTient, type Bestiaire, type EntreesLigne, type PlanSpeedTune, type RefusPlan } from './planSpeedTune';
+import { entreesDuPlan, horlogeDuPlan, planDepuisSpeedTune, planTient, type Bestiaire, type EntreesLigne, type PlanSpeedTune, type RefusPlan } from './planSpeedTune';
+import type { ContenuSpeedTune } from './speedTune';
 import { ligneModifiee } from './speedTuneMembre';
 import { exclusionSelectorKey, type ExclusionSelector } from './optimizerExclusion';
 import type { MembreLigne, SpeedTuneEquipe } from './speedTuneEquipe';
@@ -21,6 +22,8 @@ export interface EtatOutil {
   ordre: string[];
   // L'ordre voulu est-il rangé (figé) ?
   ordreRange: boolean;
+  // Le contenu (taille du tick) : celui du plan, le siège sans plan.
+  contenu: ContenuSpeedTune;
 }
 
 export type RefusOuverture = { motif: 'monstre-introuvable'; monsterId: Monster['id'] };
@@ -45,7 +48,12 @@ export function etatDepuisPlan(plan: PlanSpeedTune, d: DonneesKit, monstres: Bes
   for (const l of plan.lignes) if (!monstres.has(l.monsterId)) return { motif: 'monstre-introuvable', monsterId: l.monsterId };
   const choix = choixExplicites(plan);
   const saisiesAllies = new Map(plan.lignes.filter((l) => l.camp === 'allie').map((l) => [l.uid, { atb: l.atb, speed: l.speed }] as const));
-  const { mods } = analyseAutomatique(entreesDuPlan(plan, monstres), 0, d, { choix, deviner: false, saisiesAllies });
+  const { mods } = analyseAutomatique(entreesDuPlan(plan, monstres), 0, d, {
+    choix,
+    deviner: false,
+    saisiesAllies,
+    horizon: horlogeDuPlan(plan),
+  });
   const lignes = plan.lignes.map((l): Ligne => {
     const monster = monstres.get(l.monsterId)!;
     const base: Ligne = {
@@ -64,7 +72,7 @@ export function etatDepuisPlan(plan: PlanSpeedTune, d: DonneesKit, monstres: Bes
     // Sans écriture de l'analyse (adversaire) : ses cases saisies, rien d'automatique.
     return { ...base, atbMod: { ...l.atb }, speedMod: { ...l.speed }, casesAuto: { atb: {}, speed: {} } };
   });
-  return { lignes, leads: { ...plan.leads }, choix, ordre: [...plan.ordre], ordreRange: true };
+  return { lignes, leads: { ...plan.leads }, choix, ordre: [...plan.ordre], ordreRange: true, contenu: plan.contenu ?? 'siege' };
 }
 
 // Un membre de l'équipe pour « Ton équipe » : son monstre et ses entrées
@@ -96,7 +104,8 @@ export function etatDepuisMembres(membres: readonly MembrePourOutil[], lead: Lea
   }
   return {
     lignes, leads: { allie: lead, ennemi: null }, choix: { sort: {}, sort2: {}, cible: {}, atbChoisi: {} },
-    ordre: lignes.map((l) => l.uid), ordreRange: false,
+    // Sans plan, rien ne dit le contenu : le siège, comme un outil neuf.
+    ordre: lignes.map((l) => l.uid), ordreRange: false, contenu: 'siege',
   };
 }
 
@@ -139,11 +148,11 @@ export type Application =
 
 export function jugerApplication(
   lignes: readonly Ligne[], leads: Leads, choix: ChoixSorts, ordre: string[], d: DonneesKit, monstres: Bestiaire,
-  verdictEcran: boolean
+  verdictEcran: boolean, contenu: ContenuSpeedTune
 ): Application {
   const manque = vitesseManquante(lignes);
   if (manque) return { manque };
-  const r = planDepuisSpeedTune([...lignes], leads, choix, ordre, d);
+  const r = planDepuisSpeedTune([...lignes], leads, choix, ordre, d, contenu);
   if ('refus' in r) return r;
   return { plan: r.plan, verdictDifferent: planTient(r.plan, d, monstres).ok !== verdictEcran };
 }

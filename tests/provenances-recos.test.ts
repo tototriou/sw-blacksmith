@@ -40,6 +40,18 @@ export function testProvenancesRecos() {
   egal(recosDeProvenance(recos, { type: 'salon', salonId: 'C' }, g).map((r) => r.id), [c.id], 'un salon : sa recommandation');
   egal(provenanceValide({ type: 'salon', salonId: 'Z' }, g), TOUTES, 'un salon disparu ramène à « Toutes »');
 
+  // « Suivis » : toutes les recommandations liées, dans l'ordre de la colonne.
+  egal(recosDeProvenance(recos, { type: 'suivis' }, g).map((r) => r.id), [b.id, a.id, c.id], '« Suivis » : les recommandations liées seulement, dans l\'ordre de la colonne');
+  egal(provenanceValide({ type: 'suivis' }, g), { type: 'suivis' }, '« Suivis » reste choisie tant qu\'un salon est dans la colonne');
+  egal(provenanceValide({ type: 'suivis' }, groupesSalons([locale('L1')], serveurs, [])), TOUTES, 'plus aucun salon lié : retour à « Toutes »');
+
+  // « Favoris » : les recommandations des salons étoilés, dans l'ordre de la colonne.
+  const g2 = groupesSalons(recos, serveurs, ['C', 'B']);
+  egal(recosDeProvenance(recos, { type: 'favoris' }, g2).map((r) => r.id), [b.id, c.id], '« Favoris » : les salons étoilés seulement, dans l\'ordre de la colonne');
+  egal(recosDeProvenance(recos, { type: 'favoris' }, groupesSalons(recos, serveurs, [])), [], '« Favoris » sans étoile : vide');
+  egal(provenanceValide({ type: 'favoris' }, g2, true), { type: 'favoris' }, '« Favoris » reste choisie dans l\'application de bureau, même vide');
+  egal(provenanceValide({ type: 'favoris' }, g2), TOUTES, 'sur le site, sans favoris : retour à « Toutes »');
+
   egal(etatAffiche(liee(salon('G1', 'R', false), 'x')), 'lecture-seule', 'à jour sans droit d\'écrire : lecture seule');
   egal(etatAffiche(b), 'modifiee', 'modifiée, même en lecture seule');
   egal(etatAffiche(locale('L')), null, 'locale : pas d\'état');

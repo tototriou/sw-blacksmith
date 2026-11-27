@@ -63,8 +63,8 @@ contextBridge.exposeInMainWorld(
           ipcRenderer.removeListener('bureau:swex-export', ecouteur);
         };
       },
-      pret: (pageSansCompte: boolean, pageSansDimension: boolean) =>
-        ipcRenderer.send('bureau:swex-pret', pageSansCompte, pageSansDimension),
+      pret: (pageIncomplete: boolean, pageSansDimension: boolean) =>
+        ipcRenderer.send('bureau:swex-pret', pageIncomplete, pageSansDimension),
       lu: (modifie: number) => ipcRenderer.send('bureau:swex-lu', modifie),
       // L'arène dimensionnelle, tenue par le plugin SWEX (dimension.json).
       surDimension: (rappel: (dim: unknown) => void) => {
