@@ -24,7 +24,11 @@ distinctes**) :
   max (RES/Précision/Taux Crit/Dmg Crit **non grindables**). Une rune déjà grindée
   au-delà (ex. légendaire) est **ramenée** au max du scénario en héroïque (delta
   négatif possible).
-- **Gemme** :
+- **Gemme** — ⚠️ **par défaut, seule une gemme DÉJÀ posée est relancée** ; une
+  rune vierge n'en reçoit aucune (choix du mainteneur : changer la stat d'une
+  ligne, RES → ATQ% par exemple, est déjà un « regemme différent »). Les deux
+  cas ci-dessous ne valent tels quels qu'avec **« Autoriser un regemme
+  différent »** allumé (voir Modes) :
   - rune **non gemmée** → on choisit **le meilleur substat à remplacer** par la
     **meilleure stat grindable** (PV%/ATQ%/DEF%/VIT, sinon un flat), **sans
     doublon** (≠ principale / innée / **autres** substats) et en respectant les
@@ -59,16 +63,20 @@ même violet que le plan ci-dessous (voir
 
 ### Modes
 
-- **Gemme + meule** (défaut) : potentiel complet ci-dessus.
+- **Gemme + meule** (défaut) : potentiel ci-dessus — meules au max, et la gemme
+  déjà posée relancée à son max.
 - **Meule seule** : garde les **stats actuelles** (aucune gemme), ne pousse que les
   meules → pour repérer les runes à **grinder en priorité**.
 - **« Autoriser un regemme différent »** — bouton, **éteint par défaut**, mémorisé
-  (`optim.regemLibre`). Allumé, une rune **déjà gemmée** peut voir sa ligne
-  gemmée remplacée par **une autre stat** absente de la rune (mêmes exclusions et
-  emplacements qu'une rune vierge) ; éteint, sa stat reste figée. **Grisé en
-  « Meule seule »** : sans gemme, rien à regemmer. ⚠️ **Pas aux Courbes**, qui
-  ne changent jamais la stat d'une gemme et n'en simulent aucune sur une rune
-  qui n'en a pas (voir [courbes.md](courbes.md)).
+  (`optim.regemLibre`). **Éteint** : une gemme déjà posée se relance dans sa
+  stat, une rune vierge ne reçoit **aucune** gemme (`gemmeExistanteSeule` de
+  `runePotential` et `runePlan`, la même lecture que les Courbes). **Allumé** :
+  toute gemme — la ligne gemmée peut passer à **une autre stat** absente de la
+  rune, et une rune vierge reçoit la meilleure gemme sur la ligne qui y gagne le
+  plus (`regemLibre`). **Grisé en « Meule seule »** : sans gemme, rien à
+  regemmer. ⚠️ **Pas aux Courbes**, qui ne changent jamais la stat d'une gemme
+  et n'en simulent aucune sur une rune qui n'en a pas (voir
+  [courbes.md](courbes.md)).
   - ⚠️ **Un réglage du CALCUL, pas un filtre** : il change le potentiel, le
     gain, le plan « Actuel | Optimisé » et la faisabilité sous « Faisable avec
     ma réserve » (la gemme réclamée peut devenir une autre). Le Résumé, lui,
@@ -80,8 +88,19 @@ même violet que le plan ci-dessous (voir
   Liste) : Efficience actuelle (défaut) · Potentiel héroïque ·
   Potentiel légendaire · Gain héroïque · Gain légendaire. **Gain** = potentiel −
   efficience actuelle.
-- **Palier** : champ % — n'affiche que les runes dont l'efficience actuelle ≥ palier
-  (défaut 100 %).
+- **Palier** : champ % (défaut 100 %) — n'affiche que les runes dont le
+  **potentiel** atteint le palier, **celui du grade du tri** : héroïque sous
+  « Potentiel héroïque » et « Gain héroïque », légendaire sous les trois autres
+  — ou le seul grade coché sous « Faisable avec ma réserve »
+  (`scenarioDeLaReserve`), comme le plan. C'est `potentielDuScenario`.
+  - ⚠️ **Le potentiel, pas la valeur actuelle** : la question de l'écran est
+    « que vaudra cette rune une fois travaillée ? ». Une rune à 95 % qui monte à
+    120 % en légendaire doit passer un palier de 110 ; filtrée sur l'actuelle,
+    elle disparaissait.
+  - Le compteur le dit : « 5 runes · potentiel légendaire ≥ 100% » ; le message
+    de liste vide aussi.
+  - Le palier **garde sa valeur** quand le tri change de grade : la coupe se
+    déplace avec ce qu'elle mesure, c'est voulu.
   - ⚠️ **Converti au changement de mesure** (`convertirPalier` dans
     [useRuneMetric.ts](src/hooks/useRuneMetric.ts)) : « 100 » ne veut pas dire la
     même chose en efficience et en score, et garder la valeur brute déplacerait la
@@ -93,7 +112,9 @@ même violet que le plan ci-dessous (voir
     **457 runes au lieu de 139**.
   - La conversion se fait donc **par rang** : on compte ce qui passait, on prend
     la valeur de la n-ième meilleure dans la nouvelle mesure. Exact pour la seule
-    question que le palier pose — *où je coupe*.
+    question que le palier pose — *où je coupe*. ⚠️ Les rangs se prennent sur
+    **le potentiel du grade retenu**, recalculé dans l'ancienne mesure avec les
+    mêmes réglages (gemme, réserve, regemme), pas sur la valeur actuelle.
   - Un palier qui ne gardait **rien** reste au-dessus du maximum : sans ça, la
     liste se remplirait toute seule au changement d'unité.
 - **Sets** (`SetFilter`) et **slot** (`SlotFilter`) : mêmes composants que les
@@ -138,14 +159,15 @@ même violet que le plan ci-dessous (voir
   positionnelle + `SPIN`).
 - **Détail au clic** : plan **« Actuel | Optimisé »** (`OptimPlanBox`) — substats
   actuels à gauche (base blanche + meule orange), optimisés à droite avec **seul ce
-  qui change en violet** (grind posé ou 💎 gemme/proc max).
+  qui change en violet** (grind posé ou 💎 gemme/proc max). Sous le plan,
+  **« Exclure de la liste »** (voir § « Runes exclues »).
 - **Aide « ? »** sur la ligne des filtres — le composant partagé
   [HelpPopover](src/components/HelpPopover.tsx) (bulle à la souris, **panneau
   montant** au doigt), voir l'onglet Courbes § « L'aide a DEUX supports ». Elle
   détaille les deux modes, le choix de la gemme (dont le regemme différent), le gain, **le palier** (ce qu'il
   mesure et sa reconversion), **les icônes marteau/gemme** du plan, le filtre
-  de réserve et ses grades, **« Sans les immémoriaux »**, **« Runes utilisées »** et
-  **« Marqueurs »**.
+  de réserve et ses grades, **« Sans les immémoriaux »**, **« Runes utilisées »**,
+  **« Marqueurs »** et **les runes exclues**.
 
 #### ⚠️ Le panneau « Options » (mobile) ne prend que huit contrôles
 
@@ -200,6 +222,47 @@ rangée d'options (`modeControl`, écrit une fois, posé aux deux endroits).
   voir [AncientFilter](src/components/account/AncientFilter.tsx).
 - ⚠️ Au **bureau**, les huit sont visibles dans la rangée de filtres. Le
   panneau n'existe que sous `lg`.
+
+### Runes exclues — écarter une rune à la main
+
+Le seul filtre qui vise **une rune précise** : celle qu'on a déjà regardée et
+écartée, et qui encombrait la tête de chaque tri.
+
+- **Exclure** : « Exclure de la liste » au bas du plan d'une tuile (pas sur la
+  tuile : à ~175 px au doigt, une icône de plus mangeait le texte, et le geste
+  se distingue mieux d'une ouverture une fois le plan sous les yeux). Le plan se
+  ferme, la rune sort de la liste.
+- **Remettre** : dès qu'une rune est exclue, un bouton **« Runes exclues (N) »**
+  apparaît au bout du compteur — là où on lit ce que la liste montre, donc ce
+  qu'elle cache. Ce bouton n'est pas celui qu'on vient de cliquer : son
+  apparition ne déplace rien sous le doigt. Il ouvre la fenêtre
+  [FenetreRunesExclues](src/components/account/FenetreRunesExclues.tsx), une
+  `Modale` **quasi plein écran** (1400 px max, 90 dvh) :
+  - chaque exclue **en carte complète, celle de la Liste** (`CarteRune` :
+    principale, innée, substats, meules, gemme, bascule détail ↔ total), dans la
+    grille de la Liste (`auto-fill` à 215 px), une colonne au téléphone, avec
+    **« Remettre »** dessous. ⚠️ Remettre une rune, c'est la rejuger : un
+    résumé (principale, set, valeur) ne suffisait pas ;
+  - **des filtres pour retrouver une rune** : sets (ceux des exclues
+    seulement), slot, antiques, **stat principale** et **propriété
+    secondaire** (listes déroulantes des stats que portent les exclues), le
+    compte (« 2 runes sur 5 ») et « Effacer les filtres ». ⚠️ Pas la barre de
+    recherche de la Liste (`SubSearchBar`) : elle ouvre sa propre modale, et
+    deux modales empilées se ferment ensemble à Échap. ⚠️ **État local**,
+    remis à zéro à chaque ouverture : les filtres de la page restent ceux de
+    la page ;
+  - ⚠️ **à la souris, les filtres restent en haut** et seule la grille défile ;
+    **au doigt, ils défilent avec elle** — fixés, ils prendraient la moitié de
+    l'écran avant la première carte ;
+  - le pied porte **« Tout remettre »** et « Fermer ». Remettre la dernière
+    ferme la fenêtre.
+- **S'applique par-dessus tous les autres filtres**, aux deux formats ; rien
+  dans le panneau « Options ».
+- État : `optim.runesExclues`, les `rune.id` (identifiant du jeu) — **état
+  collant** (`useStickyState`) : il survit à la navigation, pas au
+  rechargement, comme les autres réglages de l'écran. ⚠️ Un id qui ne vise plus
+  aucune rune de l'inventaire (rune vendue, autre compte) **ne compte pas** :
+  seules les exclues présentes sont comptées et listées.
 
 ### Filtres à cases — `FiltreACases`
 

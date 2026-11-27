@@ -23,10 +23,12 @@ import {
   Coupure,
   EffetSort,
   HORIZON_TICKS,
+  Horizon,
   ModParTick,
   TuneMonstre,
   VitesseRequise,
   artefactsRequis,
+  ticksDe,
   cleOccurrence,
   litOccurrence,
   diagnostiquerChaine,
@@ -349,7 +351,8 @@ export interface ChoixSorts {
 }
 
 export interface OptionsAuto {
-  horizon?: number;
+  // L'horloge de la simulation (ticks ET contenu : la taille du tick en dépend).
+  horizon?: Horizon;
   choix?: ChoixSorts;
   // L'identifiant à donner à l'adversaire de référence. Par défaut `ref:<id du
   // modèle>` ; l'écran y met l'identifiant de SA ligne, pour pouvoir y reporter
@@ -656,7 +659,7 @@ function analyseEnDeuxPasses(
         // mauvais côté.
         const saisi = m.atbMod?.[t] !== undefined;
         const cible = saisi ? t : t + 1;
-        if (v !== 0 && cible <= horizon && (saisi || (m.atbMod?.[cible] === undefined && manuel?.atb[cible] === undefined))) {
+        if (v !== 0 && cible <= ticksDe(horizon) && (saisi || (m.atbMod?.[cible] === undefined && manuel?.atb[cible] === undefined))) {
           atbMod[cible] = v;
           if (!saisi) atbAuto[cible] = v;
         }

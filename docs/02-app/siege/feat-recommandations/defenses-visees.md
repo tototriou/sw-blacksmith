@@ -140,3 +140,43 @@ Les **quatre** sorties sont couvertes :
   moins un. **Zéro défense visée est l'état normal.**
 - Le bloc vit **dans la partie dépliée du deck** : son état d'édition se
   réinitialise donc de lui-même au repli, sans rien à gérer.
+
+## Fiabilité : quelle offense jouer d'abord
+
+Quand plusieurs decks battent la même défense, on veut jouer **le plus sûr
+d'abord**, puis les autres. Chaque défense visée porte donc une **fiabilité** :
+celle de **ce deck contre cette défense** (`RecoCounter.fiabilite`), pas celle
+du deck en général — un deck sûr contre une défense peut être un pari contre
+une autre.
+
+- **En étoiles, de 0 à 5 par demi-étoile** ; 5 est le mieux. **Absente =
+  « non notée »**, distincte de 0 : « pas encore jugé » n'est pas « ne passe
+  pas ». Calcul pur dans [recoDefenses.ts](../../../../src/lib/recoDefenses.ts)
+  (`fiabiliteValide`, `tonFiabilite`, `parFiabilite`), affichage et saisie dans
+  [EtoilesFiabilite.tsx](../../../../src/components/siege/EtoilesFiabilite.tsx).
+- **Couleur selon la note**, sur les étoiles pleines : **rouge** sous 2,
+  **jaune** de 2 à 3,5, **vert** à partir de 4 (tokens `bad`, `warn`,
+  `good`). Les étoiles vides restent grises.
+- **Lecture** : cinq étoiles de 12 px **sous les portraits** de la vignette
+  (vue Attaque), de 10 px sur la **ligne repliée** du deck, après la défense
+  qu'elle montre (celle qui répond à une recherche, sinon la première), et
+  **après le nom de l'offense** en vue Défense. Une défense
+  non notée n'en affiche aucune. Infobulle et nom accessible : « Fiabilité 4,5
+  sur 5 ».
+- **Saisie**, dans la défense en édition, sous la précision :
+  - chaque étoile se touche **par moitié** — gauche une demi-étoile, droite
+    l'étoile entière ;
+  - ⚠️ **« − » et « + »** font le même geste demi-étoile par demi-étoile : une
+    demi-étoile fait 10 px, trop petit pour viser juste **au doigt** ; les deux
+    boutons ont la taille tactile. « + » sur une défense non notée donne 0,5 ;
+  - **« × »** la rend non notée. ⚠️ Toujours rendu, désactivé sans note : il
+    apparaissait au premier clic et décalait la rangée ;
+  - la note s'écrit à côté (« 3,5 / 5 », ou « Non notée »).
+- ⚠️ **Classement en vue Défense** : les offenses d'une défense passent **de la
+  plus fiable à la moins fiable**, 0 avant les non notées ; à égalité, l'ordre
+  de la vue Attaque. Les défenses elles-mêmes gardent leur ordre. La vue
+  Attaque ne réordonne rien d'elle-même ; pendant une recherche, le tri
+  « Fiabilité » range les decks trouvés
+  ([recherche-par-monstre.md](recherche-par-monstre.md#trier-par-fiabilité)).
+- **Partage** : voyage dans l'export, champ facultatif `fiabilite`
+  ([persistance-et-partage.md](persistance-et-partage.md#le-champ-fiabilite-dune-défense-visée)).

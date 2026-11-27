@@ -12,6 +12,7 @@
 // bruit. « Partout » reste là pour qui veut les deux.
 
 import { Monster, Reco, RecoDeck } from '../types';
+import { fiabiliteValide, parFiabilite } from './recoDefenses';
 
 // Où chercher. `all` = les deux rôles.
 export type RecoSearchMode = 'all' | 'defense' | 'offense';
@@ -159,6 +160,69 @@ export function chercheMonstre(
 
   // ⚠️ Aucun tri : le mode a déjà FILTRÉ à la source (voir `chercheDansDeck`).
   // Ce qui reste répond toutes au rôle demandé, il n'y a plus rien à départager
-  // — et l'ordre de la liste reste celui de l'utilisateur.
+  // — et l'ordre de la liste reste celui de l'utilisateur. Le tri par
+  // fiabilité est un choix à part (`trierParFiabilite`).
   return hits;
+}
+
+// ── Tri des résultats par fiabilité ───────────────────────────────────────
+//
+// L'ordre des résultats : celui des recommandations (défaut), ou la fiabilité
+// — le deck le plus sûr d'abord.
+export type TriRecherche = 'ordre' | 'fiabilite';
+
+// La fiabilité d'un deck TROUVÉ : la meilleure de ses défenses qui répondent
+// à la recherche (le deck bat la défense cherchée — c'est elle qui compte), ou,
+// si la recherche l'a trouvé par ses propres monstres, la meilleure de toutes
+// ses défenses. `undefined` : aucune défense notée.
+export function fiabiliteDuHit(deck: RecoDeck, hit: DeckHit): number | undefined {
+  const indices = hit.counters.length ? hit.counters : deck.counters.map((_, i) => i);
+  let meilleure: number | undefined;
+  for (const i of indices) {
+    const f = fiabiliteValide(deck.counters[i]?.fiabilite);
+    if (f !== undefined && (meilleure === undefined || f > meilleure)) meilleure = f;
+  }
+  return meilleure;
+}
+
+// Les résultats triés par fiabilité : dans chaque recommandation, ses decks
+// trouvés, le plus fiable d'abord ; puis les recommandations, par leur
+// meilleur deck. Non notés à la fin, 0 avant eux ; à égalité, l'ordre
+// d'origine (les tris sont stables). Rien n'est retiré.
+export function trierParFiabilite(hits: RecoHit[]): RecoHit[] {
+  const tries = hits.map((h) => {
+    const notes = new Map(h.decks.map((d) => [d.deckIndex, fiabiliteDuHit(h.reco.decks[d.deckIndex], d)]));
+    const decks = [...h.decks].sort((a, b) => parFiabilite({ fiabilite: notes.get(a.deckIndex) }, { fiabilite: notes.get(b.deckIndex) }));
+    return { hit: { ...h, decks }, fiabilite: decks.length ? notes.get(decks[0].deckIndex) : undefined };
+  });
+  return tries.sort(parFiabilite).map((t) => t.hit);
+}
+
+// L'ordre de résultats triés : les recommandations, et dans chacune ses decks.
+export interface OrdreResultats {
+  recos: string[];
+  decks: Map<string, number[]>;
+}
+
+export function ordreDe(hits: RecoHit[]): OrdreResultats {
+  return { recos: hits.map((h) => h.reco.id), decks: new Map(hits.map((h) => [h.reco.id, h.decks.map((d) => d.deckIndex)])) };
+}
+
+// ⚠️ Des résultats RECALCULÉS remis dans un ordre FIGÉ. Trié par fiabilité,
+// noter un deck pendant qu'on l'édite le déplaçait sous le clic (un clic ne
+// déplace jamais ce qu'on vient de cliquer) : l'ordre est donc pris au moment
+// du tri, ou d'une autre recherche, et tenu ensuite. Ce que l'ordre ne connaît
+// pas (un deck ajouté, une recommandation qui se met à répondre) vient après,
+// dans son ordre d'origine.
+export function suivreOrdre(hits: RecoHit[], ordre: OrdreResultats): RecoHit[] {
+  const rang = (l: readonly (string | number)[], x: string | number) => {
+    const i = l.indexOf(x);
+    return i < 0 ? l.length : i;
+  };
+  return hits
+    .map((h) => {
+      const connus = ordre.decks.get(h.reco.id) ?? [];
+      return { ...h, decks: [...h.decks].sort((a, b) => rang(connus, a.deckIndex) - rang(connus, b.deckIndex)) };
+    })
+    .sort((a, b) => rang(ordre.recos, a.reco.id) - rang(ordre.recos, b.reco.id));
 }

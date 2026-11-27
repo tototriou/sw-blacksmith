@@ -65,7 +65,7 @@ export function dansGroupe(art: ArtifactDetail, groupe: GroupeTop): boolean {
 // Titres et en-têtes se lisent dans la langue de `t` : les familles portent
 // une CLÉ (`artefactsCompte.familles`), les en-têtes une fonction du dictionnaire.
 type Entete = (t: Dictionnaire) => string;
-type CleFamille = keyof Dictionnaire['artefactsCompte']['familles'];
+export type CleFamille = keyof Dictionnaire['artefactsCompte']['familles'];
 interface FamilleDef {
   titre: CleFamille;
   colonnes: { code: number; entete?: Entete }[];
@@ -120,6 +120,13 @@ const FAMILLES: FamilleDef[] = [
 
 // Tout le reste tombe sous « Autres sous-propriétés », comme dans le jeu
 // (`artefactsCompte.familles.autres`).
+export const ORDRE_FAMILLES: CleFamille[] = [...FAMILLES.map((f) => f.titre), 'autres'];
+
+// La famille d'une secondaire : celle de son tableau ici. Les objectifs
+// d'artéfacts (objectifsCompte.ts) se rangent de la même façon.
+export function familleArtefact(code: number): CleFamille {
+  return FAMILLES.find((f) => f.colonnes.some((c) => c.code === code))?.titre ?? 'autres';
+}
 
 export interface CelluleTop {
   art: ArtifactDetail;

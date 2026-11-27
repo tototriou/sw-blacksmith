@@ -54,10 +54,16 @@ export const ADRESSES: Record<string, string> = {
   '#/compte/runes/gemmes': 'compte/runes/gemmes',
   '#/compte/artefacts/resume': 'compte/artefacts/resume',
   '#/compte/artefacts/liste': 'compte/artefacts/liste',
+  '#/compte/objectifs/resume': 'compte/objectifs/resume',
+  '#/compte/objectifs/runes': 'compte/objectifs/runes',
+  '#/compte/objectifs/artefacts': 'compte/objectifs/artefacts',
+  '#/compte/objectifs/monstres': 'compte/objectifs/monstres',
+  '#/compte/objectifs/reglage': 'compte/objectifs/reglage',
   '#/compte/equipes/liste': 'compte/equipes/liste',
   // Adresses tronquées, utilisées par les cartes de l'accueil.
   '#/compte/runes': 'compte/runes/resume',
   '#/compte/artefacts': 'compte/artefacts/resume',
+  '#/compte/objectifs': 'compte/objectifs/resume',
   '#/compte/equipes': 'compte/equipes/liste',
   '#/outils/optimizer': 'outils/optimizer',
   '#/outils/speed-tuning': 'outils/speed-tuning',
@@ -89,7 +95,7 @@ export function testNavigationAdresses() {
 
   // Deux adresses distinctes de la table ne mènent jamais à la même page, sauf
   // les formes tronquées, qui mènent par construction au défaut de leur section.
-  const tronquees = new Set(['#/compte/runes', '#/compte/artefacts', '#/compte/equipes', '#/bot-discord']);
+  const tronquees = new Set(['#/compte/runes', '#/compte/artefacts', '#/compte/objectifs', '#/compte/equipes', '#/bot-discord']);
   const pages = Object.entries(ADRESSES).filter(([h]) => !tronquees.has(h)).map(([, p]) => p);
   egal(pages.length, new Set(pages).size, 'chaque adresse complète mène à une page différente');
 
@@ -139,6 +145,8 @@ export function testNavigationAdressesDefauts() {
     'compte/artefacts/resume',
     'vue qui n’existe pas pour cet inventaire (les artéfacts n’ont pas de courbes) → Résumé'
   );
+  egal(destination('#/compte/objectifs/liste'), 'compte/objectifs/resume', 'les Objectifs n’ont pas de liste → Résumé');
+  egal(destination('#/compte/runes/reglage'), 'compte/runes/resume', 'le Réglage n’existe que dans les Objectifs → Résumé des runes');
 
   // Section inconnue : l'accueil.
   egal(destination('#/nimportequoi'), 'home', 'section inconnue → accueil');

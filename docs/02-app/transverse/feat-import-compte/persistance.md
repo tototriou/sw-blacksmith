@@ -268,7 +268,8 @@ Ce qui part :
 Ce qui reste :
 
 - les **réglages** (`CLES_DE_REGLAGE`) : choix de conservation, mesure de
-  score, langue, thème, overcap, adversaire de référence, builds les plus rapides ;
+  score, langue, thème, overcap, adversaire de référence, builds les plus rapides,
+  objectifs du compte ;
 - les **fichiers** : sessions de l'application de bureau, exports.
 
 ## Migration des clés d'un autre préfixe — [migrationStockage.ts](src/lib/migrationStockage.ts)

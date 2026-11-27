@@ -112,9 +112,14 @@ export function testSpeedTuneJugerApplication() {
   titre('Speed tune depuis l’Optimizer · « Appliquer à l’équipe » jugé');
   const lignes = analysees(lignesDe({ a: 200, b: 160, c: 150, e: 150 }));
   const tient = planTient(planDe(lignes), donnees, bestiaire).ok;
-  const r = jugerApplication(lignes, leads, choix, ordre, donnees, bestiaire, tient);
+  const r = jugerApplication(lignes, leads, choix, ordre, donnees, bestiaire, tient, 'siege');
   ok('plan' in r && !r.verdictDifferent, 'verdict de l’écran celui du plan : appliqué sans question');
-  const autre = jugerApplication(lignes, leads, choix, ordre, donnees, bestiaire, !tient);
+  ok('plan' in r && !('contenu' in r.plan), 'un plan de siège n’écrit pas son contenu (il reste celui d’avant le champ)');
+  const enRta = jugerApplication(lignes, leads, choix, ordre, donnees, bestiaire, tient, 'rta');
+  ok('plan' in enRta && enRta.plan.contenu === 'rta', 'un plan de RTA emporte son contenu');
+  if ('plan' in enRta) egal(rouvert(enRta.plan).contenu, 'rta', 'rouvert dans l’outil, il revient en RTA');
+  if ('plan' in r) egal(rouvert(r.plan).contenu, 'siege', 'un plan sans contenu se rouvre en siège');
+  const autre = jugerApplication(lignes, leads, choix, ordre, donnees, bestiaire, !tient, 'siege');
   ok('plan' in autre && autre.verdictDifferent, 'verdict différent : confirmation demandée');
   // Une vitesse changée sans relancer l'analyse : l'écran garde ses cases d'avant,
   // le plan rejoue les sorts à leurs nouveaux ticks. Le geste le voit quand les
@@ -123,7 +128,7 @@ export function testSpeedTuneJugerApplication() {
   for (let base = 150; base <= 230; base += 20) for (const b of [110, 160, 200]) for (let a = 120; a <= 260; a += 7) {
     const changees = analysees(lignesDe({ a: base, b, c: 150, e: 150 })).map((l) => (l.uid === 'allie:9001' ? { ...l, runeSpeed: a } : l));
     const ecran = diagnostiquerSequence(tuneDe(changees, leads, donnees, choix), ordre).ok;
-    const j = jugerApplication(changees, leads, choix, ordre, donnees, bestiaire, ecran);
+    const j = jugerApplication(changees, leads, choix, ordre, donnees, bestiaire, ecran, 'siege');
     if (!('plan' in j)) continue;
     n++;
     const differe = planTient(j.plan, donnees, bestiaire).ok !== ecran;
@@ -131,9 +136,9 @@ export function testSpeedTuneJugerApplication() {
     if (j.verdictDifferent === differe) justes++;
   }
   ok(divergences > 0 && justes === n, `vitesse changée sans analyse : ${divergences} verdict(s) divergent(s), tous signalés`);
-  const sansVitesse = jugerApplication(lignes.map((l) => (l.uid === 'allie:9002' ? { ...l, runeSpeed: null } : l)), leads, choix, ordre, donnees, bestiaire, tient);
+  const sansVitesse = jugerApplication(lignes.map((l) => (l.uid === 'allie:9002' ? { ...l, runeSpeed: null } : l)), leads, choix, ordre, donnees, bestiaire, tient, 'siege');
   egal('manque' in sansVitesse && sansVitesse.manque.uid, 'allie:9002', 'vitesse alliée manquante : refusé avant le constructeur');
-  const seul = jugerApplication(lignes.filter((l) => l.uid === 'allie:9001'), leads, choix, ['allie:9001'], donnees, bestiaire, tient);
+  const seul = jugerApplication(lignes.filter((l) => l.uid === 'allie:9001'), leads, choix, ['allie:9001'], donnees, bestiaire, tient, 'siege');
   egal('refus' in seul && seul.refus.motif, 'membres-insuffisants', 'refus du constructeur : rendu tel quel');
   const plan = planDe(lignes);
   ok(!perdOrigine(plan) && !perdOrigine(null), 'plan sans ligne recalculée : rien à dire');

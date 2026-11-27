@@ -86,18 +86,29 @@ latérale, qui devient alors un menu.
   complet.
 - **Puis chaque nouvel export de cet invocateur** — au lancement s'il est
   plus récent que le dernier lu, puis à chaque écriture tant que l'app est
-  ouverte — met à jour **« Mon compte » seulement** (box 6★, inventaire,
-  reliques, runes utilisées, marqueurs), annoncé par « Compte de
-  <invocateur> mis à jour depuis SW Exporter ». **Rattrapage** : si l'arène
-  classique est vide (aucune équipe d'aucun côté), ses équipes viennent de
-  cet export (`areneClassiqueVide`, `equipesAreneClassique`) — un dossier
-  suivi avant l'arrivée de l'arène n'aurait sinon d'import complet qu'au
-  prochain choix de l'invocateur.
-- ⚠️ **Après le choix, jamais la prépa RTA ni le siège.** L'import complet
-  les REMPLACE (classement RTA, leads et ticks remis à zéro) : le faire à
-  chaque connexion au jeu effacerait le travail de l'utilisateur. Le
-  processus principal ([bureau/swex.ts](bureau/swex.ts)) marque `complet`
-  le seul export qui suit un choix, jusqu'à ce que la page l'ait appliqué.
+  ouverte — met à jour **« Mon compte »** (box 6★, inventaire, reliques,
+  runes utilisées, marqueurs), annoncé par « Compte de <invocateur> mis à
+  jour depuis SW Exporter ».
+- ⚠️ **Une page vide se remplit toujours de l'export suivi** : prépa RTA,
+  défenses de siège, attaques de siège, et chaque côté de l'arène classique
+  (défense, attaques, interserveur), chacune à part (`pagesVides`,
+  `planExportSuivi` dans [applyAccount.ts](src/lib/applyAccount.ts)). Un
+  invocateur suivi ne laisse ainsi aucune page vide que son export pourrait
+  remplir — après une conservation partielle, un « Tout effacer », ou une
+  page arrivée après le choix de l'invocateur. Une page que l'export ne sait
+  pas remplir (rien de sauvegardé en jeu) reste vide.
+  - **Au lancement aussi** : la page se déclare incomplète
+    (`pageIncomplete` : sans compte, ou une page vide), et le processus
+    principal lui redonne l'export même déjà lu, en silence. Cet export
+    déjà lu ne remplit que les pages vides : « Mon compte » ne se
+    réapplique pas (il remettrait l'Optimizer à zéro à chaque lancement),
+    sauf sans compte.
+- ⚠️ **Après le choix, jamais une page pleine.** L'import complet REMPLACE
+  la prépa RTA et le siège (classement RTA, leads et ticks remis à zéro) :
+  le faire à chaque connexion au jeu effacerait le travail de
+  l'utilisateur. Le processus principal ([bureau/swex.ts](bureau/swex.ts))
+  marque `complet` le seul export qui suit un choix, jusqu'à ce que la page
+  l'ait appliqué.
 - ⚠️ **Avant de changer de compte, la sauvegarde est proposée.** Choisir un
   autre invocateur (carte du compte ou Réglages) ou un dossier, quand le
   travail a changé depuis la dernière sauvegarde de session, ouvre

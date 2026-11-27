@@ -90,3 +90,10 @@ Discord de l'app : [discord.gg/R2Fe4GJZET](https://discord.gg/R2Fe4GJZET)
   l'import possible.
 
 Données de jeu et images © Com2uS. Projet non officiel, sans affiliation avec Com2uS.
+
+## Licence
+
+Le code est public sous licence [PolyForm Noncommercial 1.0.0](LICENSE.md) : tu peux l'utiliser,
+l'étudier, le modifier et le redistribuer pour un usage non commercial, en créditant le projet ;
+tout usage commercial est interdit. Ce que la licence couvre, ce qu'elle laisse à Com2uS et à
+SWARFARM, et comment créditer : [NOTICE.md](NOTICE.md).

@@ -12,7 +12,9 @@ import type { AccountView } from '../../src/App';
 import type { CraftLine, EffectLine, RuneDetail } from '../../src/types';
 import { egal, faussLocalStorage, ok, titre } from '../outils';
 import { runesUtiliseesVides } from '../../src/lib/importAccount';
-import { boutons, onglets, rendre, texteVisible, valeurs } from './outils-rendu';
+import { amorcerMemoire, reinitialiserSticky } from '../../src/hooks/useStickyState';
+import { auTelephone, boutons, onglets, rendre, texteVisible, valeurs } from './outils-rendu';
+import FenetreRunesExclues from '../../src/components/account/FenetreRunesExclues';
 
 // Une réserve courte mais variée : six slots, six sets, une antique, une rune
 // gemmée, une meulée, une innée, des niveaux et des raretés différents — de
@@ -71,9 +73,13 @@ function filtresCommuns(html: string, vue: string) {
   ok(b.some((x) => x.texte === 'Aucune antique' && x.title === 'Masquer les runes antiques' && x.presse === false), `${vue} : « Aucune antique »`);
 }
 
-// Le potentiel : avec la gemme optimale, ou meules seulement. Les Courbes ne
-// simulent aucune gemme nouvelle : leur « Gemme + meule » le dit.
-function modePotentiel(html: string, vue: string, aideGemme = 'Potentiel avec la gemme optimale + les meules') {
+// Le potentiel : avec la gemme, ou meules seulement. Aucun des deux onglets ne
+// simule de gemme nouvelle par défaut : leur « Gemme + meule » le dit.
+function modePotentiel(
+  html: string,
+  vue: string,
+  aideGemme = 'Potentiel avec les meules et la gemme déjà posée relancée à son max (toute gemme avec « Autoriser un regemme différent »)',
+) {
   const b = boutons(html);
   ok(b.some((x) => x.texte === 'Gemme + meule' && x.title === aideGemme && x.presse === true), `${vue} : « Gemme + meule », enclenché`);
   ok(b.some((x) => x.texte === 'Meule seule' && x.title === 'Potentiel en gardant les stats actuelles (meules seulement)' && x.presse === false), `${vue} : « Meule seule »`);
@@ -186,8 +192,68 @@ export function testRenduRunesOptimisation() {
   ok(b.some((x) => x.texte === 'Sans les immémoriaux' && x.presse === false && !!x.title?.startsWith('Garder tes gemmes et meules immémoriales de côté')), '« Sans les immémoriaux », et pourquoi');
   ok(b.some((x) => x.texte === 'Runes utilisées' && x.presse === false && !!x.title?.startsWith('Ne garder que les 2 runes qui jouent')), '« Runes utilisées », et combien');
   ok(b.some((x) => x.ariaLabel === 'Comment est-ce calculé ?' && x.presse === false), 'aide « Comment est-ce calculé ? »');
-  ok(t.includes('1 rune ≥ 100%'), 'combien de runes au palier');
-  ok(b.some((x) => x.texte === 'Dgts critiq. +80% actuelle 109.5% Héro +19.9 → 129.5% Légend +28.3 → 137.8%'), 'une rune : actuelle, puis gain et potentiel héroïque et légendaire');
+  // Le palier mesure le potentiel du grade du tri — légendaire sous « Valeur
+  // actuelle » : 104.8, 101.8, 103.6, 114.6 et 124.4 passent 100 %.
+  ok(t.includes('5 runes · potentiel légendaire ≥ 100%'), 'combien de runes au palier, sur le potentiel légendaire');
+  ok(!b.some((x) => x.texte?.startsWith('Runes exclues')), 'aucune exclusion : pas de bouton « Runes exclues »');
+  // « Autoriser un regemme différent » éteint : cette rune, jamais gemmée, ne
+  // reçoit AUCUNE gemme — seules les meules montent (allumé, une gemme PV% la
+  // porterait à 129.5 / 137.8 : runeOptim, testRegemmeDifferent).
+  ok(b.some((x) => x.texte === 'Autoriser un regemme différent' && x.presse === false && !!x.title?.startsWith('Proposer aussi une gemme d’une autre stat')), '« Autoriser un regemme différent », éteint, et ce qu’il ajoute');
+  ok(b.some((x) => x.texte === 'Dgts critiq. +80% actuelle 109.5% Héro +11.0 → 120.5% Légend +14.9 → 124.4%'), 'une rune vierge : actuelle, puis gain et potentiel héroïque et légendaire, sans gemme');
+}
+
+// Le palier suit le grade du TRI, et une rune exclue sort de la liste avec un
+// bouton pour la remettre. État posé en mémoire : un rendu serveur ne clique pas.
+export function testRenduRunesOptimisationPalierEtExclusion() {
+  titre('rendu · Mon compte · Runes — Optimisation : palier héroïque, runes exclues');
+  const avec = (memoire: Record<string, unknown>) => {
+    amorcerMemoire(memoire);
+    try {
+      const html = rendreVue('optimisation');
+      return { t: texteVisible(html), b: boutons(html) };
+    } finally {
+      reinitialiserSticky('optim.');
+    }
+  };
+  // Héroïque ≥ 100 : 100.9, 110.7 et 120.5.
+  const hero = avec({ 'optim.sort': 'potHero' });
+  ok(hero.t.includes('3 runes · potentiel héroïque ≥ 100%'), 'tri héroïque : le palier porte sur le potentiel héroïque');
+  // La rune 9 (Dgts critiq. +80 %, la mieux classée) exclue.
+  const exclue = avec({ 'optim.runesExclues': new Set([9]) });
+  ok(exclue.t.includes('4 runes · potentiel légendaire ≥ 100%'), 'une rune exclue sort du compte');
+  ok(!exclue.b.some((x) => x.texte?.startsWith('Dgts critiq. +80% actuelle 109.5%')), 'une rune exclue sort de la grille');
+  ok(exclue.b.some((x) => x.texte === 'Runes exclues (1)' && x.title === 'Voir les runes retirées de la liste, et les remettre'), '« Runes exclues (1) », et ce qu’il fait');
+  // Un id qui ne vise aucune rune de l'inventaire ne compte pas.
+  const fantome = avec({ 'optim.runesExclues': new Set([999]) });
+  ok(!fantome.b.some((x) => x.texte?.startsWith('Runes exclues')), 'une exclusion sans rune présente ne compte pas');
+}
+
+// La fenêtre des runes exclues : la carte complète de chaque rune, « Remettre »
+// sous chacune, et les filtres pour en retrouver une. Rendue au téléphone : le
+// harnais n'affiche une modale (portail) que là.
+export function testRenduRunesFenetreExclues() {
+  titre('rendu · Mon compte · Runes — Optimisation : la fenêtre des runes exclues');
+  const exclues = [RUNES[0], RUNES[2], RUNES[5]];
+  faussLocalStorage({});
+  const html = auTelephone(() =>
+    rendre(<FenetreRunesExclues runes={exclues} onRemettre={() => {}} onToutRemettre={() => {}} onFermer={() => {}} />)
+  );
+  const t = texteVisible(html);
+  const b = boutons(html);
+  ok(t.includes('Runes exclues') && t.includes('quels que soient les filtres'), 'le titre, et ce que veut dire « exclue »');
+  ok(b.filter((x) => x.texte === 'Remettre' && x.title === 'Remettre cette rune dans la liste').length === 3, '« Remettre » sous chacune des trois runes');
+  ok(b.some((x) => x.texte === 'Tout remettre') && b.some((x) => x.texte === 'Fermer'), 'le pied : « Tout remettre », « Fermer »');
+  ok(t.includes('3 runes'), 'combien de runes exclues');
+  // La carte de la Liste : les substats, meule comprise, et sa bascule (Rapide
+  // slot 3 : PV 10 % + 3 de meule).
+  ok(b.some((x) => x.texte.includes('DEF +160') && x.texte.includes('PV 10% +3%') && x.title === 'Voir les valeurs totales, meule comprise'), 'la carte complète : les substats, la meule, la bascule vers les totaux');
+  // Les filtres : sets (ceux des exclues seulement), slots, antiques, principale, propriété.
+  for (const s of ['Violente', 'Rapide', 'Désespoir']) ok(b.some((x) => x.ariaLabel === s && x.presse === true), `filtre : set « ${s} », enclenché`);
+  ok(!b.some((x) => x.ariaLabel === 'Volonté'), 'filtre : pas de set qu’aucune exclue ne porte');
+  ok(b.some((x) => x.texte === 'Aucune antique'), 'filtre : antiques');
+  ok(valeurs(html, 'aria-label').includes('Stat principale') && valeurs(html, 'aria-label').includes('Propriété secondaire'), 'filtre : stat principale, propriété secondaire');
+  ok(b.some((x) => x.texte === 'Effacer les filtres' && x.desactive && x.title === 'Aucun filtre posé'), '« Effacer les filtres », désactivé sans filtre');
 }
 
 export function testRenduRunesAVenir() {

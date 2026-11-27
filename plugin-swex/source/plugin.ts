@@ -131,9 +131,10 @@ export function creerPlugin() {
     };
 
     proxy.on('apiCommand', (req, res) => {
+      let commande = '';
       try {
         if (!reglage().enabled) return;
-        const commande = String(req?.command ?? res?.command ?? '');
+        commande = String(req?.command ?? res?.command ?? '');
         if (!res || Number(res.ret_code) !== 0) return;
 
         if (commande === 'HubUserLogin') {
@@ -198,8 +199,9 @@ export function creerPlugin() {
         }
       } catch (e) {
         // ⚠️ Jamais d'exception vers SWEX : une commande que le plugin ne
-        // comprend pas ne doit pas gêner les autres plugins ni le jeu.
-        journal('error', (e as Error).message);
+        // comprend pas ne doit pas gêner les autres plugins ni le jeu. Le
+        // journal la nomme : sans elle, un signalement ne dit pas où chercher.
+        journal('error', `${commande || '?'} : ${(e as Error).message}`);
       }
     });
   }

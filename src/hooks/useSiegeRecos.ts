@@ -18,7 +18,7 @@ import { artifactSubKinds, canAddSet, isArtifactSub } from '../lib/effects';
 import { cleanArtifacts, cleanSetOptions } from '../lib/recoShare';
 import { fr } from '../i18n/fr';
 import { avecContenuDeck, ContenuDeck } from '../lib/annulerEdition';
-import type { MonstresConnus } from '../lib/recoDefenses';
+import { fiabiliteValide, type MonstresConnus } from '../lib/recoDefenses';
 import { appliquerImport, BilanImport } from '../lib/recoFusion';
 import {
   apresConflit, apresPublication, appliquerFusion, delier, lireLien, synchroniser,
@@ -113,7 +113,10 @@ function loadCounter(raw: unknown): RecoCounter {
       name: typeof m?.name === 'string' ? m.name : '',
     };
   });
-  return { monsters, note: typeof c.note === 'string' ? c.note : '' };
+  // Fiabilité : absente des enregistrements antérieurs, et une valeur qui
+  // n'est pas une demi-étoile de 0 à 5 se relit « non notée ».
+  const fiabilite = fiabiliteValide(c.fiabilite);
+  return { monsters, note: typeof c.note === 'string' ? c.note : '', ...(fiabilite !== undefined ? { fiabilite } : {}) };
 }
 
 // Le contenu d'une recommandation relu du stockage — la recommandation
@@ -193,6 +196,8 @@ export interface UseRecoState {
     name: string
   ) => void;
   setCounterNote: (id: string, deck: number, ci: number, note: string) => void;
+  // `null` : la fiabilité redevient « non notée ».
+  setCounterFiabilite: (id: string, deck: number, ci: number, fiabilite: number | null) => void;
   setSlotMonster: (id: string, deck: number, idx: number, com2usId: number | null, name: string) => void;
   setSlotStat: (id: string, deck: number, idx: number, stat: RecoStatKey, value: number | null) => void;
   addSlotArtifact: (id: string, deck: number, idx: number, kind: ArtifactKind, code: number) => void;
@@ -346,6 +351,20 @@ export function useSiegeRecos(): UseRecoState {
       updateDeck(id, deck, (d) => ({
         ...d,
         counters: d.counters.map((c, i) => (i === ci ? { ...c, note } : c)),
+      })),
+    [updateDeck]
+  );
+
+  const setCounterFiabilite = useCallback(
+    (id: string, deck: number, ci: number, fiabilite: number | null) =>
+      updateDeck(id, deck, (d) => ({
+        ...d,
+        counters: d.counters.map((c, i) => {
+          if (i !== ci) return c;
+          const { fiabilite: _avant, ...reste } = c;
+          const note = fiabiliteValide(fiabilite);
+          return note !== undefined ? { ...reste, fiabilite: note } : reste;
+        }),
       })),
     [updateDeck]
   );
@@ -544,6 +563,7 @@ export function useSiegeRecos(): UseRecoState {
     removeCounter,
     setCounterMonster,
     setCounterNote,
+    setCounterFiabilite,
     setSlotMonster,
     setSlotStat,
     addSlotArtifact,

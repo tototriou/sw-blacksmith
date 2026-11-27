@@ -507,13 +507,32 @@ export function testRegemmeDifferent() {
     'aucune autre ligne que la ligne gemmée n’est regemmée'
   );
 
-  // Rune vierge : l'option ne change rien, toute ligne y était déjà candidate.
+  // Rune vierge, au niveau du calcul : `regemLibre` seul n'y change rien, toute
+  // ligne y était déjà candidate.
   const vierge: RuneDetail = { ...vitGemmee, subs: vitGemmee.subs.map((s) => ({ ...s, enchant: undefined })) };
   egal(
     runePotential(vierge, true, 'eff', false, undefined, true),
     runePotential(vierge, true, 'eff'),
-    'rune jamais gemmée → même potentiel avec ou sans l’option'
+    '`regemLibre` seul : rune jamais gemmée → même potentiel'
   );
+
+  // ⚠️ L'ONGLET Optimisation (choix du mainteneur) : option ÉTEINTE, une rune
+  // vierge ne reçoit AUCUNE gemme — changer RES en ATQ% sur une rune qui n'en a
+  // pas, c'est déjà un « regemme différent ». L'écran passe
+  // `gemmeExistanteSeule = !regemLibre` au potentiel ET au plan.
+  const eteinte = runePotential(vierge, true, 'eff', false, undefined, false, true);
+  egal([eteinte.heroGem, eteinte.legendGem], [null, null], 'éteinte : aucune gemme sur une rune vierge');
+  egal(eteinte.legendEff, runePotential(vierge, false, 'eff').legendEff, 'éteinte : rune vierge = meules seules');
+  const planEteint = runePlan(vierge, 'legend', true, 'eff', false, undefined, false, true);
+  ok(planEteint.gemCode === null && planEteint.subs.every((s) => !s.isGem), 'éteinte : le plan détaillé ne gemme aucune ligne');
+  const allumee = runePotential(vierge, true, 'eff', false, undefined, true, false);
+  ok(allumee.legendGem !== null && allumee.legendEff > eteinte.legendEff, 'allumée : la meilleure gemme revient, le potentiel monte');
+
+  // Éteinte, une gemme DÉJÀ posée se relance toujours dans sa stat.
+  const vitBasse: RuneDetail = { ...vitGemmee, subs: vitGemmee.subs.map((s) => (s.code === 8 ? { ...s, value: 5 } : s)) };
+  const planRelance = runePlan(vitBasse, 'legend', true, 'eff', false, undefined, false, true);
+  egal(planRelance.gemCode, 8, 'éteinte : la VIT gemmée (5) est relancée en VIT');
+  egal(planRelance.subs[1].base, 10, 'à sa base de gemme légendaire (10)');
 }
 
 export function testReserveParGrade() {

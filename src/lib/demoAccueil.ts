@@ -133,7 +133,7 @@ export function recosFigees(reco: Reco): UseRecoState {
     state: { recos: [reco] },
     addReco: fige, removeReco: rien, setMeta: rien, addDeck: rien, addDeckWith: rien, removeDeck: rien,
     restaurerReco: rien, restaurerDeck: rien, setDeckMeta: rien, remettreContenuDeck: rien,
-    addCounter: rien, removeCounter: rien, setCounterMonster: rien, setCounterNote: rien,
+    addCounter: rien, removeCounter: rien, setCounterMonster: rien, setCounterNote: rien, setCounterFiabilite: rien,
     setSlotMonster: rien, setSlotStat: rien, addSlotArtifact: rien, removeSlotArtifact: rien,
     addSlotSet: rien, removeSlotSet: rien, addSetOption: rien, removeSetOption: rien, swapSlots: rien,
     importRecos: fige, clearAll: rien, synchroniserDiscord: fige, delierReco: rien,

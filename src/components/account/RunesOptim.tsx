@@ -1,5 +1,5 @@
 import { memo, ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { RotateCw, AlertTriangle, PackageCheck, Swords, Lock, Hammer, Gem, ChevronDown, Tag } from 'lucide-react';
+import { RotateCw, AlertTriangle, PackageCheck, Swords, Lock, Hammer, Gem, ChevronDown, Tag, EyeOff } from 'lucide-react';
 import { CraftLine, RuneDetail } from '../../types';
 import { formatRuneEffect, RUNE_EFFECT } from '../../lib/effects';
 import { useTraduction } from '../../hooks/useLangue';
@@ -20,10 +20,11 @@ import {
   scenarioDeLaReserve,
 } from '../../lib/crafts';
 import { nomGrade } from '../../i18n/jeu';
-import { useRuneMetric, formatRuneMetric, convertirPalier, runeMetricValue } from '../../hooks/useRuneMetric';
+import { useRuneMetric, formatRuneMetric, convertirPalier } from '../../hooks/useRuneMetric';
 import { useStickyState } from '../../hooks/useStickyState';
 import { useMediaQuery, SOUS_LG } from '../../hooks/useMediaQuery';
 import RuneSlotIcon from '../RuneSlotIcon';
+import FenetreRunesExclues from './FenetreRunesExclues';
 import { VIOLET } from '../PieceDetail';
 import Pager from './Pager';
 import SetFilter from './SetFilter';
@@ -86,6 +87,14 @@ const SORT_VAL: Record<SortMode, (p: RunePotential) => number> = {
 // Scénario (héro/légend) du plan affiché au clic, déduit du tri.
 const scenarioOf = (s: SortMode): 'hero' | 'legend' =>
   s === 'gainHero' || s === 'potHero' ? 'hero' : 'legend';
+
+// ⚠️ **Le palier mesure le POTENTIEL du grade retenu**, pas la valeur actuelle :
+// la question de l'écran est « que vaudra cette rune une fois travaillée ? ».
+// Une rune à 95 % qui monte à 120 % en légendaire mérite d'être vue sous un
+// palier de 110 ; filtrée sur l'actuelle, elle disparaissait. Le grade est
+// celui du plan (`scenario`) : celui du tri, ou le seul coché sous « Faisable ».
+export const potentielDuScenario = (p: RunePotential, s: 'hero' | 'legend') =>
+  s === 'hero' ? p.heroEff : p.legendEff;
 
 // Gain signé (« +2.3 » / « -1.4 »), à la précision de la mesure (score = entier).
 export const signed = (g: number, metric: 'eff' | 'score') =>
@@ -234,9 +243,11 @@ export default function RunesOptim({
   // Sens du tri — le même axe que dans la Liste, le même bouton (voir lib/tri.ts).
   const [sens, setSens] = useStickyState<SensTri>('optim.sens', SENS_PAR_DEFAUT);
   const [gemMode, setGemMode] = useStickyState<'gem' | 'grind'>('optim.gemMode', 'gem');
-  // « Autoriser un regemme différent » — éteint par défaut : la stat d'une rune
-  // DÉJÀ gemmée reste celle choisie par le joueur (choix produit, voir
-  // runeOptim.ts). Allumé, sa ligne gemmée peut passer à une autre stat.
+  // « Autoriser un regemme différent » — éteint par défaut : seule une gemme
+  // DÉJÀ posée est relancée, dans sa stat, et une rune vierge ne reçoit aucune
+  // gemme (choix produit du mainteneur : on ne change pas la stat d'une ligne
+  // sans qu'il le demande). Allumé, toute gemme : la ligne gemmée peut changer
+  // de stat, une rune vierge reçoit la meilleure gemme.
   const [regemLibre, setRegemLibre] = useStickyState('optim.regemLibre', false);
   // Antiques : elles ont leurs propres tables de max, donc un potentiel qui ne
   // se compare pas aux runes normales — pouvoir les écarter (ou n'avoir qu'elles)
@@ -291,6 +302,33 @@ export default function RunesOptim({
   const libelleMarqueur = (k: number) =>
     k === SANS_MARQUEUR ? o.sansMarqueur : runeMarkerLabels[k] ?? o.marqueur(k);
   const [page, setPage] = useState(0);
+  const [openId, setOpenId] = useState<number | null>(null);
+  // Runes EXCLUES à la main (`rune.id`, l'identifiant du jeu) : celles qu'on a
+  // déjà regardées et écartées, qui encombraient la tête de chaque tri. Le seul
+  // filtre qui vise une rune précise ; il s'applique par-dessus tous les autres.
+  // ⚠️ Un id qui ne vise plus aucune rune de l'inventaire (rune vendue, autre
+  // compte) ne compte pas : `runesExclues` ne liste que les présentes.
+  const [exclues, setExclues] = useStickyState<Set<number>>('optim.runesExclues', new Set());
+  const [voirExclues, setVoirExclues] = useState(false);
+  const runesExclues = useMemo(() => runes.filter((r) => exclues.has(r.id)), [runes, exclues]);
+  const exclure = useCallback(
+    (id: number) => {
+      setExclues((avant) => new Set(avant).add(id));
+      setOpenId(null);
+    },
+    [setExclues]
+  );
+  const remettre = (id: number) => {
+    const next = new Set(exclues);
+    next.delete(id);
+    setExclues(next);
+    // La dernière remise : la fenêtre n'a plus rien à montrer.
+    if (!runesExclues.some((r) => r.id !== id)) setVoirExclues(false);
+  };
+  const toutRemettre = () => {
+    setExclues(new Set());
+    setVoirExclues(false);
+  };
   // Changer un filtre ramène à la première page.
   const choisirSets = (next: Set<string>) => {
     setSets(next);
@@ -300,7 +338,6 @@ export default function RunesOptim({
     setSlots(next);
     setPage(0);
   };
-  const [openId, setOpenId] = useState<number | null>(null);
   const toggleOpen = useCallback((id: number) => setOpenId((c) => (c === id ? null : id)), []);
   const withGem = gemMode === 'gem';
   // Sous `lg`, la grille passe à DEUX colonnes fixes et les tuiles au rendu
@@ -449,7 +486,8 @@ export default function RunesOptim({
             verifie
               ? { hero: dispoReserve(stock, rune, 'hero'), legend: dispoReserve(stock, rune, 'legend') }
               : undefined,
-            regemLibre
+            regemLibre,
+            !regemLibre
           ),
         })
       ),
@@ -463,20 +501,22 @@ export default function RunesOptim({
     if (!verifie) return null;
     const ok = new Set<number>();
     for (const r of rows) {
-      const plan = runePlan(r.rune, scenario, withGem, metric, true, dispoReserve(stock, r.rune, scenario), regemLibre);
+      const plan = runePlan(r.rune, scenario, withGem, metric, true, dispoReserve(stock, r.rune, scenario), regemLibre, !regemLibre);
       if (planNeeds(plan).length > 0 && plan.targetEff > plan.eff) ok.add(r.id);
     }
     return ok;
   }, [verifie, rows, scenario, withGem, metric, stock, regemLibre]);
 
-  // Runes dont l'efficience actuelle dépasse le palier, triées selon le mode choisi.
+  // Runes dont le potentiel du grade retenu atteint le palier, triées selon le
+  // mode choisi.
   const filtered = useMemo(() => {
     const val = SORT_VAL[sort];
     const signe = signeTri(sens);
     return rows
       .filter(
         (r) =>
-          r.pot.eff >= threshold &&
+          potentielDuScenario(r.pot, scenario) >= threshold &&
+          !exclues.has(r.rune.id) &&
           keepAncient(r.rune, ancient) &&
           (!filtreUtilisees || utilisees.has(r.rune.id)) &&
           sets.has(r.rune.set) &&
@@ -488,6 +528,8 @@ export default function RunesOptim({
   }, [
     rows,
     threshold,
+    scenario,
+    exclues,
     sort,
     ancient,
     sets,
@@ -509,20 +551,40 @@ export default function RunesOptim({
   // question que le palier pose. Elle ne s'exécute qu'au **changement** de
   // mesure : la recalculer en continu écraserait la valeur qu'on est en train
   // de taper.
+  //
+  // ⚠️ Les rangs se prennent sur ce que le palier MESURE — le potentiel du grade
+  // retenu, calculé avec les mêmes réglages — et non sur la valeur actuelle :
+  // sinon la conversion préserverait une sélection que le palier ne fait plus.
   const mesurePrecedente = useRef(metric);
   useEffect(() => {
     const avant = mesurePrecedente.current;
     if (avant === metric) return;
     mesurePrecedente.current = metric;
-    if (runes.length === 0) return;
+    if (rows.length === 0) return;
     setThreshold(
       convertirPalier(
-        runes.map((r) => ({ avant: runeMetricValue(r, avant), apres: runeMetricValue(r, metric) })),
+        rows.map((r) => ({
+          avant: potentielDuScenario(
+            runePotential(
+              r.rune,
+              withGem,
+              avant,
+              verifie,
+              verifie
+                ? { hero: dispoReserve(stock, r.rune, 'hero'), legend: dispoReserve(stock, r.rune, 'legend') }
+                : undefined,
+              regemLibre,
+              !regemLibre
+            ),
+            scenario
+          ),
+          apres: potentielDuScenario(r.pot, scenario),
+        })),
         threshold
       )
     );
     setPage(0);
-  }, [metric, runes, threshold, setThreshold]);
+  }, [metric, rows, threshold, setThreshold, withGem, verifie, stock, regemLibre, scenario]);
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE));
   const safePage = Math.min(page, pageCount - 1);
@@ -878,6 +940,9 @@ export default function RunesOptim({
                 <span className="text-ink font-semibold">{o.utilisees}</span> {o.aideUtilisees}{' '}
                 <span className="text-ink font-semibold">{o.marqueurs}</span> {o.aideMarqueurs}
               </p>
+              <p className="mt-2">
+                <span className="text-ink font-semibold">{o.exclusesTitre}</span> {o.aideExclure}
+              </p>
           </HelpPopover>
         </div>
       </div>
@@ -893,8 +958,9 @@ export default function RunesOptim({
       </MobileSheet>
 
       <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
+        <div className="flex items-center gap-3 flex-wrap">
         <p className="font-mono text-xs text-ink-dim">
-          {o.nRunes(filtered.length)} ≥ {threshold}
+          {o.nRunes(filtered.length)} · {o.palierDe[scenario]} ≥ {threshold}
           {metric === 'eff' ? '%' : ''}
           {ancient === 'without' && o.resume.horsAntiques}
           {ancient === 'only' && o.resume.antiquesSeules}
@@ -913,8 +979,31 @@ export default function RunesOptim({
             })`}
           {filtreMarqueurs && o.resume.marqueurs(nbMarqueursExclus)}
         </p>
+        {/* ⚠️ Au bout du compteur, et seulement s'il y a des exclues : c'est
+            là qu'on lit ce que la liste montre, donc ce qu'elle cache. Il
+            apparaît quand on exclut depuis le plan d'une tuile — ce n'est pas
+            lui qu'on vient de cliquer, rien ne bouge sous le doigt. */}
+        {runesExclues.length > 0 && (
+          <Bouton
+            onClick={() => setVoirExclues(true)}
+            taille="sm"
+            title={o.exclusesAide}
+            icone={<EyeOff size={14} />}
+            libelle={o.exclues(runesExclues.length)}
+          />
+        )}
+        </div>
         <Pager page={safePage} pageCount={pageCount} onChange={setPage} />
       </div>
+
+      {voirExclues && runesExclues.length > 0 && (
+        <FenetreRunesExclues
+          runes={runesExclues}
+          onRemettre={remettre}
+          onToutRemettre={toutRemettre}
+          onFermer={() => setVoirExclues(false)}
+        />
+      )}
 
       {/* Clé POSITIONNELLE : la tuile est réutilisée d'une page/d'un tri à
           l'autre, donc le cadre de rune pivote vers son nouveau slot (voir SPIN).
@@ -939,6 +1028,7 @@ export default function RunesOptim({
             stock={stockDispo ? stock : null}
             open={openId === row.id}
             onToggle={toggleOpen}
+            onExclure={exclure}
             etroit={etroit}
           />
         ))}
@@ -946,7 +1036,7 @@ export default function RunesOptim({
 
       {filtered.length === 0 && (
         <p className="text-ink-dim text-sm">
-          {o.vide.aucune} {threshold}
+          {o.vide.aucune(o.palierDe[scenario])} {threshold}
           {metric === 'eff' ? '%' : ''}
           {ancient !== 'all' && (ancient === 'without' ? o.vide.horsAntiques : o.vide.parmiAntiques)}
           {filtreUtilisees && (perimetres.size === 0 ? o.vide.aucunPerimetre : o.vide.parmiUtilisees)}
@@ -977,6 +1067,7 @@ export const OptimTile = memo(function OptimTile({
   stock,
   open,
   onToggle,
+  onExclure,
   etroit = false,
 }: {
   row: OptimRow;
@@ -988,6 +1079,11 @@ export const OptimTile = memo(function OptimTile({
   stock: CraftStock | null;
   open: boolean;
   onToggle: (id: number) => void;
+  // Retire la rune de la liste (`rune.id`). Le bouton vit dans le plan ouvert,
+  // pas sur la tuile : à ~175 px de large au doigt, une icône de plus sur la
+  // tuile mangeait le texte, et un clic d'exclusion se distingue mieux d'un clic
+  // d'ouverture une fois le plan sous les yeux.
+  onExclure?: (runeId: number) => void;
   // Rendu resserré des DEUX colonnes sur téléphone : police et icône réduites
   // pour que la tuile tienne à ~175 px. Lu une fois par la liste, passé ici (voir
   // RunesOptim). Ne touche QUE la tuile fermée — le plan ouvert (FlottantAuto)
@@ -1061,7 +1157,7 @@ export const OptimTile = memo(function OptimTile({
           se cale dans l'écran (voir son clamp horizontal) au lieu de déborder —
           sur la grille à deux colonnes du téléphone, une tuile de ~170 px ne
           laissait sinon pas la place à ses 340 px. */}
-      <FlottantAuto ouvert={open} ancre={ref} hauteur={300} largeur={340} rembourrage="md">
+      <FlottantAuto ouvert={open} ancre={ref} hauteur={onExclure ? 340 : 300} largeur={340} rembourrage="md">
         <OptimPlanBox
           rune={rune}
           scenario={scenario}
@@ -1071,6 +1167,17 @@ export const OptimTile = memo(function OptimTile({
           restreint={restreint}
           stock={stock}
         />
+        {onExclure && (
+          <div className="mt-3 flex justify-end border-t border-border/40 pt-2">
+            <Bouton
+              onClick={() => onExclure(rune.id)}
+              taille="sm"
+              title={textes.optimRunes.exclureAide}
+              icone={<EyeOff size={14} />}
+              libelle={textes.optimRunes.exclure}
+            />
+          </div>
+        )}
       </FlottantAuto>
     </div>
   );
@@ -1182,7 +1289,7 @@ export function OptimPlanBox({
 
   // Le plan affiché doit être CELUI du chiffre affiché : sous le filtre, il se
   // limite lui aussi à ce que la réserve permet.
-  const plan = runePlan(rune, scenario, withGem, metric, noDowngrade, restreint ? dispo : undefined, regemLibre);
+  const plan = runePlan(rune, scenario, withGem, metric, noDowngrade, restreint ? dispo : undefined, regemLibre, !regemLibre);
   const gain = plan.targetEff - plan.eff;
 
   return (

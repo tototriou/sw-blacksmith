@@ -250,6 +250,28 @@ const IMPORT_ADVERSAIRE: Etape[] = [
   { saisir: { role: 'combobox', nom: "Importer les stats de base d'un monstre adverse" }, texte: 'Chasun' },
   { cliquer: { role: 'option', nom: 'Chasun wind Chasun SPD 101' } },
 ];
+// La même liste en contenu Guilde : le speed tune s'y règle depuis l'équipe.
+const OPT_LISTE_GUILDE: Etape[] = OPT_LISTE.map((e) => ('cliquer' in e && e.cliquer.nom === 'Arène'
+  ? { cliquer: { ...e.cliquer, nom: 'Guilde' } } : e));
+const OPT_SPEED_TUNE: Etape[] = [
+  { cliquer: bouton('Lier une équipe') },
+  { cliquer: { role: 'texte', nom: 'Vanessa', dans: '[role="dialog"]' } },
+  { cliquer: { role: 'texte', nom: 'Cassie', dans: '[role="dialog"]' } },
+  { cliquer: { role: 'button', nom: 'Lier', dans: '[role="dialog"]' } },
+  { cliquer: bouton('Régler le speed tune') },
+  // Cassie n'est pas possédée : sa vitesse de runes se saisit.
+  { saisir: { role: 'textbox', nom: 'Vitesse des runes de Cassie' }, texte: '60' },
+  { cliquer: bouton("Appliquer à l'équipe") },
+];
+// Vanessa, par son nom : le centre de la carte tombe sur son statut au doigt.
+const OPT_MEMBRE_TUNE: Etape = { cliquer: repere('[data-membre-optimizer="13812"] > :first-child') };
+const OPT_ZONE_TUNE = repere('[data-zone-speed-tune]');
+const OPT_PREPA_TUNE = {
+  telephone: [{ cliquer: bouton('Gérer mes listes') }, ...OPT_LISTE_GUILDE, ...OPT_SPEED_TUNE, OPT_MEMBRE_TUNE,
+    { attendre: OPT_ZONE_TUNE, delaiMs: 20000 }],
+  ordinateur: [...OPT_LISTE_GUILDE, ...OPT_SPEED_TUNE, OPT_MEMBRE_TUNE, choisirReglage('Critères', 'criteres'),
+    { attendre: OPT_ZONE_TUNE, delaiMs: 20000 }],
+};
 const OPT_MEMBRES = [repere('[data-membre-optimizer="13812"]'), repere('[data-membre-optimizer="19315"]')];
 const OPT_IMPORT: Etape = {
   importer: bouton('Importer les paramètres de recherche'), fichier: 'optimizer-banc-recette.json',
@@ -654,6 +676,23 @@ export const ECRANS: Ecran[] = [
         id: 'guidage-set', libelle: 'Rechercher sans set ouvre Critères et montre le set', tailles: OPT_BUREAU,
         preparation: [...OPT_LISTE, choisirReglage('Options', 'complements'), VOIR_RESULTATS, { cliquer: bouton('Rechercher') }],
         atteint: [repere('[data-colonne="criteres"]'), { role: 'texte', nom: 'Sélectionne au moins un set avant de lancer la recherche.' }],
+      },
+      {
+        // Speed tune appliqué depuis l'Optimizer : le tableau des vitesses du
+        // membre est replié par défaut, son titre et le verdict restent.
+        id: 'speed-tune-replie', libelle: 'membre attaché au speed tune : tableau des vitesses replié par défaut',
+        tailles: ['telephone', 'ordinateur'],
+        preparation: OPT_PREPA_TUNE,
+        atteint: [repere('[data-zone-speed-tune][aria-expanded="false"]')],
+      },
+      {
+        id: 'speed-tune-deplie', libelle: 'membre attaché au speed tune : tableau des vitesses déplié par son titre',
+        tailles: ['telephone', 'ordinateur'],
+        preparation: {
+          telephone: [...OPT_PREPA_TUNE.telephone, { cliquer: OPT_ZONE_TUNE }],
+          ordinateur: [...OPT_PREPA_TUNE.ordinateur, { cliquer: OPT_ZONE_TUNE }],
+        },
+        atteint: [repere('[data-zone-speed-tune][aria-expanded="true"]'), { role: 'texte', nom: 'VIT. combat' }],
       },
       {
         // Quatre onglets : depuis Options, l'onglet Résultats montre l'objectif et « Rechercher ».

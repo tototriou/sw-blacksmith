@@ -3,12 +3,15 @@ import { Monster, SiegeTeam } from '../types';
 import { LeadInfo, runeSpeedForTarget, type RegleLead } from '../lib/speed';
 import {
   ArtefactRequis,
+  CONTENUS_SPEED_TUNE,
   Camp,
+  ContenuSpeedTune,
   Fenetre,
-  HORIZON_TICKS,
   ModParTick,
   RaisonOrdre,
   artefactsRequis,
+  debutAffiche,
+  horlogePour,
   diagnostiquerChaine,
   diagnostiquerSequence,
   fenetresRequises,
@@ -227,6 +230,12 @@ export function useSpeedTune({
   // Blade Fan, % de Start of Attacking), en paliers. Absent = 0 : ce que le
   // sort donne dépend de l'adverse, un speed tune ne l'attend pas.
   const [atbChoisi, setAtbChoisi] = useCle<Record<string, number>>('speedTune.atbChoisi', {});
+  // Le CONTENU du combat : siège (et arène), raid ou RTA. Il fixe la taille du
+  // tick (7 %, 4,5 %, 1,5 %), donc toute la simulation. Une valeur gardée
+  // illisible retombe sur le siège.
+  const [contenuGarde, setContenu] = useCle<ContenuSpeedTune>('speedTune.contenu', 'siege');
+  const contenu: ContenuSpeedTune = CONTENUS_SPEED_TUNE.includes(contenuGarde) ? contenuGarde : 'siege';
+  const horloge = useMemo(() => horlogePour(contenu), [contenu]);
 
   // Les données de kit sous la forme que la lib partagée attend.
   const donneesKit = useMemo(() => ({ kits, sorts, passifs }), [kits, sorts, passifs]);
@@ -317,6 +326,7 @@ export function useSpeedTune({
     setAtbChoisi(e.choix.atbChoisi);
     setOrdreVoulu(e.ordre);
     setOrdreRange(e.ordreRange);
+    setContenu(e.contenu);
   };
   // Les kits de TOUTES les lignes du plan, lus à part : ils ne dépendent pas
   // des lignes de l'outil, qu'un geste pendant la lecture pourrait changer.
@@ -573,8 +583,11 @@ export function useSpeedTune({
     [lignes, leadAllie, leadEnnemi, donneesKit, choixSorts]
   );
 
-  // Simulation multi-tours (40 ticks) avec les modificateurs.
-  const sim = useMemo(() => simuler(tune, HORIZON_TICKS), [tune]);
+  // Simulation multi-tours avec les modificateurs, sur l'horloge du contenu
+  // (40 ticks en siège, la même durée de jeu en raid et en RTA).
+  const sim = useMemo(() => simuler(tune, horloge), [tune, horloge]);
+  // La première colonne montrée des tableaux (le tick 1 en siège).
+  const debut = useMemo(() => debutAffiche(sim, contenu, tune), [sim, contenu, tune]);
 
   // L'ANALYSE : elle lit les kits, puis POSE le résultat dans les grilles, comme
   // si on les avait remplies à la main. Après quoi elle ne repasse plus.
@@ -649,6 +662,7 @@ export function useSpeedTune({
     const resultat = analyseAutomatique(plateau, 0, donneesKit, {
       choix: { sort: choix, sort2: sortChoisi2, cible: cibleSort, atbChoisi: atbChoisi },
       idReference: uidRef,
+      horizon: horloge,
     });
 
     if (!ordreRange) {
@@ -774,16 +788,16 @@ export function useSpeedTune({
   );
   // Chaîne d'ouverture : toute l'équipe joue-t-elle avant le premier adverse ?
   // Et sinon, quelle vitesse de combat faut-il à ceux qui sont coupés.
-  const chaine = useMemo(() => diagnostiquerChaine(tune, HORIZON_TICKS), [tune]);
+  const chaine = useMemo(() => diagnostiquerChaine(tune, horloge), [tune, horloge]);
   const requis = useMemo(
-    () => (chaine.ok ? [] : vitessesRequises(plateauRequis, HORIZON_TICKS)),
-    [plateauRequis, chaine]
+    () => (chaine.ok ? [] : vitessesRequises(plateauRequis, horloge)),
+    [plateauRequis, chaine, horloge]
   );
   // L'AUTRE levier quand un buff de vitesse est en jeu : monter l'artéfact
   // « Effet aug. VIT », qui l'amplifie. Vide s'il n'y a rien à en attendre.
   const arteRequis = useMemo(
-    () => (chaine.ok ? [] : artefactsRequis(plateauRequis, HORIZON_TICKS)),
-    [plateauRequis, chaine]
+    () => (chaine.ok ? [] : artefactsRequis(plateauRequis, horloge)),
+    [plateauRequis, chaine, horloge]
   );
 
   // Premiers tours (ordre de tour), numéro d'action par (monstre, tick) et
@@ -828,8 +842,8 @@ export function useSpeedTune({
   // Verdict de l'analyse poussée : l'ordre est-il tenu, et quelle FENÊTRE de
   // vitesse laisse chaque rang (un rang se rate aussi en étant trop rapide).
   const sequence = useMemo(
-    () => diagnostiquerSequence(tune, ordreVoulu, HORIZON_TICKS),
-    [tune, ordreVoulu]
+    () => diagnostiquerSequence(tune, ordreVoulu, horloge),
+    [tune, ordreVoulu, horloge]
   );
   // ⚠️ **ENCHAÎNÉES** : chaque fenêtre suppose les autres corrigées. Calculées
   // indépendamment, deux monstres trop lents à la suite en rendaient une VIDE
@@ -838,13 +852,13 @@ export function useSpeedTune({
   // pose ici : quelles vitesses pour que TOUT passe.
   // ⚠️ Sur le plateau des requis, comme la chaîne : chaque boost suit son lanceur.
   const fenetres = useMemo(
-    () => fenetresRequises(plateauRequis, ordreVoulu, HORIZON_TICKS, 'combat', true),
-    [plateauRequis, ordreVoulu]
+    () => fenetresRequises(plateauRequis, ordreVoulu, horloge, 'combat', true),
+    [plateauRequis, ordreVoulu, horloge]
   );
   // Le même calcul sur l'autre levier : l'artéfact qui amplifie le buff reçu.
   const fenetresArte = useMemo(
-    () => fenetresRequises(plateauRequis, ordreVoulu, HORIZON_TICKS, 'artefactBuff', true),
-    [plateauRequis, ordreVoulu]
+    () => fenetresRequises(plateauRequis, ordreVoulu, horloge, 'artefactBuff', true),
+    [plateauRequis, ordreVoulu, horloge]
   );
   const fenetreParUid = useMemo(() => new Map(fenetres.map((f) => [f.id, f])), [fenetres]);
   const fenetreArteParUid = useMemo(() => new Map(fenetresArte.map((f) => [f.id, f])), [fenetresArte]);
@@ -957,14 +971,14 @@ export function useSpeedTune({
   // Regroupement par tick NATUREL (vitesse seule, sans modificateur) pour poser
   // le portrait dans la case du repère qui correspond à la vitesse du monstre.
   const parTick = useMemo(
-    () => parTickNaturel(lignes, leads, donneesKit),
+    () => parTickNaturel(lignes, leads, donneesKit, contenu),
     // ⚠️ **`donneesKit` EN FAIT PARTIE.** `combatDe` y lit le gain de passif
     // (Shumar +15, Chilling +20 par buff) : les kits se chargeant en asynchrone,
     // sans cette dépendance les repères restaient calculés SANS le gain une fois
     // les données arrivées — et contredisaient la card et le tableau, qui eux le
     // comptaient. Un écran qui se contredit sur la même vitesse.
     // (`leads` est recréé à chaque rendu : ses deux leads, comme pour `tune`.)
-    [lignes, leadAllie, leadEnnemi, donneesKit]
+    [lignes, leadAllie, leadEnnemi, donneesKit, contenu]
   );
 
   const rien = lignes.length === 0;
@@ -1049,6 +1063,10 @@ export function useSpeedTune({
     cibleSort,
     atbChoisi,
     combatDe,
+    contenu,
+    setContenu,
+    horloge,
+    debut,
     decks,
     deplacer,
     donneesKit,

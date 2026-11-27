@@ -8,6 +8,7 @@ import {
   IconeArtefacts,
   IconeEquipes,
   IconeMonstres,
+  IconeObjectifs,
   IconeRunes,
   IconeBestiaire,
   IconeCompte,
@@ -96,6 +97,7 @@ import {
 import { ConfirmDialog, KeepAccountDialog, Modale } from './ui/Dialogs';
 import { useEquipesEnregistrees } from './hooks/useEquipesEnregistrees';
 import EquipesSection from './components/account/equipes/EquipesSection';
+import ObjectifsSection from './components/account/ObjectifsSection';
 import type { DemandeEquipeOptimizer } from './lib/importEquipesEnregistrees';
 import type { ContexteSourcesEquipes } from './lib/sourcesEquipesEnregistrees';
 import { indexerInventaire } from './lib/equipesEnregistrees';
@@ -124,6 +126,7 @@ import {
 } from './lib/volets';
 import { useSessionEnCours } from './hooks/useSessionEnCours';
 import MiseAJourBureau from './components/MiseAJourBureau';
+import MiseAJourPlugin from './components/MiseAJourPlugin';
 import SuiviSwex from './components/SuiviSwex';
 import { DirectSwexContext, useCompteDirect } from './hooks/useCompteDirect';
 import ChangementCompteDialog from './components/ChangementCompteDialog';
@@ -177,9 +180,11 @@ import {
   mapSiegeTeams,
   mapBoxMonsters,
   BoxItem,
-  areneClassiqueVide,
   equipesAreneClassique,
   equipesDimension,
+  pageIncomplete,
+  planExportSuivi,
+  type PageRattrapable,
 } from './lib/applyAccount';
 import { photographierMemoire, reinitialiserSticky, useStickyState } from './hooks/useStickyState';
 import { PREFIXE_SPEED_TUNE } from './hooks/useSpeedTune';
@@ -246,7 +251,7 @@ type Route =
   | 'bot-discord'
   | 'sw-exporter'
   | 'parametres';
-export type AccountSub = 'monstres' | 'runes' | 'artefacts' | 'equipes';
+export type AccountSub = 'monstres' | 'runes' | 'artefacts' | 'objectifs' | 'equipes';
 
 // Sous-sections de RTA. `prepa` = la sienne (tout l'écran historique), `ami` =
 // celle de quelqu'un d'autre, en lecture.
@@ -270,7 +275,13 @@ export type AccountView =
   | 'comparaison'
   | 'optimisation'
   | 'meules'
-  | 'gemmes';
+  | 'gemmes'
+  // Les vues des Objectifs : le détail de chaque inventaire, les monstres, et
+  // le réglage.
+  | 'runes'
+  | 'artefacts'
+  | 'monstres'
+  | 'reglage';
 export type ToolSub = 'optimizer' | 'speed-tuning';
 // Les onglets de l'Arène et de l'arène dimensionnelle : un côté d'équipes, ou
 // les runes de l'arène dimensionnelle.
@@ -326,7 +337,7 @@ export function parseHash(hash: string = window.location.hash): {
     // `compte/runes/courbes` → sous-section « runes », vue « courbes ».
     const [, sub, vue] = h.split('/');
     const accountSub: AccountSub =
-      sub === 'runes' ? 'runes' : sub === 'artefacts' ? 'artefacts' : sub === 'equipes' ? 'equipes' : 'monstres';
+      sub === 'runes' || sub === 'artefacts' || sub === 'objectifs' || sub === 'equipes' ? sub : 'monstres';
     return {
       route: 'compte',
       rtaSub: 'prepa',
@@ -444,6 +455,7 @@ const ACCOUNT_SUBS: { sub: AccountSub; texte: CleNavigation; icon: IconeAtelier;
   { sub: 'monstres', texte: 'monstres', icon: IconeMonstres, couleur: COULEUR_COMPTE_SUB.monstres },
   { sub: 'runes', texte: 'runes', icon: IconeRunes, couleur: COULEUR_COMPTE_SUB.runes },
   { sub: 'artefacts', texte: 'artefacts', icon: IconeArtefacts, couleur: COULEUR_COMPTE_SUB.artefacts },
+  { sub: 'objectifs', texte: 'objectifs', icon: IconeObjectifs, couleur: COULEUR_COMPTE_SUB.objectifs },
   { sub: 'equipes', texte: 'mesEquipes', icon: IconeEquipes, couleur: COULEUR_COMPTE_SUB.equipes },
 ];
 
@@ -1186,31 +1198,66 @@ function Application() {
     }
   }
 
-  // Le dossier SW Exporter : un export du compte suivi. `complet` (il suit
-  // le choix d'un invocateur, déjà gardé par `avantChangementCompte`) : tout
-  // s'importe, comme l'import manuel. Sinon, « Mon compte » seulement. Pas
-  // de question de conservation (c'est un réglage, posé une fois).
-  // ⚠️ **Une page VIDE — ni compte, ni équipes — importe tout** : elle n'a
-  // rien à perdre. C'est le lancement avec la conservation refusée : rien
-  // n'est resté, et « Mon compte » seul laissait la prépa RTA et le siège
-  // vides sous un invocateur pourtant suivi.
+  // Le dossier SW Exporter : un export du compte suivi, appliqué selon
+  // `planExportSuivi` (lib/applyAccount.ts) — tout après le choix d'un
+  // invocateur ou sur une page sans compte ni équipes ; sinon « Mon compte »
+  // (export nouveau) et ⚠️ **chaque page VIDE remplie de l'export** : un
+  // invocateur suivi ne laisse aucune page vide qu'il pourrait remplir, une
+  // page pleine garde le travail de l'utilisateur. Pas de question de
+  // conservation (c'est un réglage, posé une fois).
   // `ok: false` — fichier illisible (à moitié écrit ?) ou sans box : rien
   // n'est touché, et l'export n'est pas marqué lu (bureau/swex.ts le
   // redonnera au prochain changement).
-  function rafraichirCompte(text: string, complet: boolean): { ok: boolean; nom: string | null } {
+  function rafraichirCompte(text: string, complet: boolean, nouveau: boolean): { ok: boolean; nom: string | null } {
     const data = parseAccountSource(text);
     if (!data) return { ok: false, nom: null };
     const compte = preparerCompte(data);
     if (compte.boxItems.length === 0) return { ok: false, nom: null };
-    if (complet || (box.length === 0 && !aDesEquipes())) appliquerTout(data, compte, false);
+    const plan = planExportSuivi({ complet, nouveau, aCompte: box.length > 0, aDesEquipes: aDesEquipes(), contenus: contenusPages() });
+    if (plan.tout) appliquerTout(data, compte, false);
     else {
-      appliquerCompte(data, compte);
-      // Rattrapage : l'arène classique, vide, se remplit de cet export — un
-      // dossier suivi avant l'arrivée de l'arène n'aurait sinon d'import
-      // complet qu'au prochain choix de l'invocateur.
-      if (areneClassiqueVide(equipesArene)) appliquerArene(equipesAreneClassique(data, monsterByCom2us, textes));
+      if (plan.compte) appliquerCompte(data, compte);
+      remplirPages(data, plan.pages);
     }
     return { ok: true, nom: compte.nomJoueur };
+  }
+
+  // Ce que porte chaque page que l'export du compte suivi sait remplir.
+  function contenusPages(): Record<PageRattrapable, number> {
+    return {
+      rta: Object.keys(rta.state.entries).length,
+      siegeDefense: siegeDef.state.teams.length,
+      siegeOffense: siegeOff.state.teams.length,
+      areneDefense: areneDef.state.teams.length,
+      areneOffense: areneOff.state.teams.length,
+      areneInterserveur: areneInter.state.teams.length,
+    };
+  }
+
+  // Remplit de l'export les pages vides `pages`, et elles seules ; une page
+  // que l'export ne sait pas remplir (rien de sauvegardé en jeu) reste vide.
+  function remplirPages(data: Record<string, any>, pages: PageRattrapable[]) {
+    const vides = new Set(pages);
+    if (vides.size === 0) return;
+    if (vides.has('rta')) {
+      const units = parseAccountJson(data, textes).units;
+      // `importEntries` seul : la prépa vide garde ses sections.
+      if (units) rta.importEntries(mapRtaItems(units, monsterByCom2us));
+    }
+    if (vides.has('siegeDefense')) {
+      const def = mapSiegeTeams(parseSiegeDefense(data, textes).decks ?? [], monsterByCom2us);
+      if (def.teams.length) siegeDef.importTeams(def.teams);
+    }
+    if (vides.has('siegeOffense')) {
+      const off = mapSiegeTeams(parseSiegeOffense(data, textes).decks ?? [], monsterByCom2us);
+      if (off.teams.length) siegeOff.importTeams(off.teams);
+    }
+    if (vides.has('areneDefense') || vides.has('areneOffense') || vides.has('areneInterserveur')) {
+      const arene = equipesAreneClassique(data, monsterByCom2us, textes);
+      if (vides.has('areneDefense') && arene.defense.teams.length) areneDef.importTeams(arene.defense.teams);
+      if (vides.has('areneOffense') && arene.offense.teams.length) areneOff.importTeams(arene.offense.teams);
+      if (vides.has('areneInterserveur') && arene.interserveur.teams.length) areneInter.importTeams(arene.interserveur.teams);
+    }
   }
 
   // Les équipes de l'arène classique : seuls les côtés qui en ont sont touchés.
@@ -1751,6 +1798,7 @@ function Application() {
   };
   const sectionRunesBureau = sectionInventaireBureau('runes');
   const sectionArtefactsBureau = sectionInventaireBureau('artefacts');
+  const sectionObjectifsBureau = sectionInventaireBureau('objectifs');
 
   // Premier niveau. ⚠️ L'ordre d'importance est gardé — Accueil, puis le jeu
   // (RTA, Siège, Arène), le compte, les outils, les ressources — mais Arène
@@ -1784,6 +1832,7 @@ function Application() {
         },
         { key: 'runes', label: nomNav('runes'), icon: <IconeRunes size={18} />, ouvre: sectionRunesBureau, actif: route === 'compte' && accountSub === 'runes' },
         { key: 'artefacts', label: nomNav('artefacts'), icon: <IconeArtefacts size={18} />, ouvre: sectionArtefactsBureau, actif: route === 'compte' && accountSub === 'artefacts' },
+        { key: 'objectifs', label: nomNav('objectifs'), icon: <IconeObjectifs size={18} />, ouvre: sectionObjectifsBureau, actif: route === 'compte' && accountSub === 'objectifs' },
         {
           key: 'equipes',
           label: nomNav('mesEquipes'),
@@ -2246,6 +2295,17 @@ function Application() {
         menuOuvert={menu.ouvert}
         onFermerMenu={menu.fermer}
       />
+    ) : n.route === 'compte' && n.accountSub === 'objectifs' ? (
+      // ⚠️ Avant les écrans du compte : le Réglage se fait sans compte importé.
+      <ObjectifsSection
+        vue={vueValide('objectifs', n.accountView)}
+        runes={enDirect?.runes ?? runes}
+        artifacts={enDirect?.artifacts ?? artifacts}
+        box={enDirect?.box ?? box}
+        allMonsters={allMonsters}
+        monsterByCom2us={monsterByCom2us}
+        hydrating={accountHydrating}
+      />
     ) : n.route === 'compte' && n.accountSub === 'equipes' ? (
       // ⚠️ Avant les écrans du compte : « Mes équipes » se lit sans compte importé.
       <EquipesSection
@@ -2422,13 +2482,16 @@ function Application() {
     <EquipesAreneContext.Provider value={equipesArene}>
     {/* Application de bureau : « Mise à jour prête · Redémarrer ». Inerte sur le site. */}
     <MiseAJourBureau />
+    {/* Application de bureau : « Nouvelle version du plugin SW Blacksmith Live
+        disponible · Mettre à jour », vers la page SW Exporter. Inerte sur le site. */}
+    <MiseAJourPlugin />
     {/* Application de bureau : le dossier SW Exporter importe le compte
         choisi, puis met « Mon compte » à jour. Inerte sur le site. */}
     <SuiviSwex
       appliquer={rafraichirCompte}
       appliquerDimension={appliquerDimension}
       pret={!accountHydrating && allMonsters.length > 0}
-      sansCompte={box.length === 0}
+      incomplete={pageIncomplete(box.length > 0, contenusPages())}
       sansDimension={runesDimension.runes.length === 0}
     />
     {/* ⚠️ `data-ctx` sur la RACINE : c'est lui qui décide de l'accent

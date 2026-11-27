@@ -97,7 +97,10 @@ interface Props {
 export function lireFrappe(brut: string, decimales = 0, allowEmpty = false):
   { valeur: number | null } | { brouillon: string; valeur?: number } | null {
   const texte = brut.trim();
-  if (texte === '') return { valeur: allowEmpty ? null : 0 };
+  // ⚠️ Sans `allowEmpty`, un champ vidé vaut 0 mais RESTE vide à l'écran
+  // jusqu'à la sortie du champ : réafficher « 0 » aussitôt empêchait d'effacer
+  // un chiffre seul pour en taper un autre.
+  if (texte === '') return allowEmpty ? { valeur: null } : { brouillon: '', valeur: 0 };
   if (texte === '-') return { brouillon: '-' };
   const motif = decimales > 0 ? new RegExp(`^-?\\d+([.,]\\d{0,${decimales}})?$`) : /^-?\d+$/;
   if (!motif.test(texte)) return null;
@@ -160,6 +163,8 @@ export default function NumberField({
     const suivant = borne((valeurCourante.current ?? 0) + delta);
     if (suivant === valeurCourante.current) return false;
     valeurCourante.current = suivant;
+    // Un champ vidé puis réglé par − / + montre la valeur obtenue.
+    setBrouillon(null);
     onChange(suivant);
     return true;
   };
