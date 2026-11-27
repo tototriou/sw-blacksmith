@@ -182,7 +182,7 @@ export function testInventaireEffetsEntreCoups() {
     if (porteurs.join('|') !== [...a.porteurs].sort().join('|')) ecarts.push(`${id} ${v.nom} : porteurs ${porteurs.join(', ')}`);
   }
   egal(ecarts, [], 'chaque sort de l’inventaire garde ses effets, leurs rangs et ses porteurs');
-  egal(trouve.size, 280, 'témoin : 280 sorts des formes jouables proposent une pose entre leurs coups');
+  egal(trouve.size, 285, 'témoin : 285 sorts des formes jouables proposent une pose entre leurs coups');
 }
 
 /** Chaque effet néfaste du corpus entier a sa traduction dans le calcul. */

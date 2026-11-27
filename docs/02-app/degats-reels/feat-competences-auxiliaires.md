@@ -158,7 +158,7 @@ dans « Compétence utilisée », comme Tempest (`PASSIFS_OFFENSIFS_CONNUS`,
 
 | Passif · monstre | Formule (auxiliaire) | Portée |
 | --- | --- | --- |
-| Rageful Return · Psamathe `21111` | `6.0*{ATK}` (11916), +30 % | zone (prose « all enemies » ; l'auxiliaire dit mono-cible) |
+| Rageful Return · Psamathe `21111` | `7.2*{ATK}` (11916, `6.0` avant le patch de novembre 2026), +30 % | zone (prose « all enemies » ; l'auxiliaire dit mono-cible) |
 | Parrying · Hollyberry Cookie `26411` | `3.5*{DEF}` (16216), +25 % | mono-cible |
 | Fat Macaron · Manon `26911` | `3.5*{DEF}` (16716), +25 % | mono-cible |
 

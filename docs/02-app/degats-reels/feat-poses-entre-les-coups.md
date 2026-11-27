@@ -77,7 +77,7 @@ prose du passif) ; le libellé nomme le passif :
 | Might · Thunder | Dyeus lumière | Réduction de DEF en état Thunderer (son Étourdissement, sans lecteur, n'est pas proposé) |
 | Blood Talon, Heaven's Might | Hwoarang feu, Taebaek feu | Marque |
 | Nano Vision | Amber eau | Irrécupérable, compté par sa règle brute |
-| Empathy, Dimensional Memory | Übel ténèbres, Wieb ténèbres | Marque ou Réduction de DEF, tirées au hasard (« 1 random harmful effect that was applied in the current battle ») : un seul effet par coup |
+| Empathy, Dimensional Memory | Übel ténèbres, Irren ténèbres | Marque ou Réduction de DEF, tirées au hasard (« 1 random harmful effect that was applied in the current battle ») : un seul effet par coup |
 | Blessing of Curse | Jessica lumière | Marque ou Réduction de DEF, si Jessica la porte (« Grants 1 of the harmful effects granted on yourself to the target »), comme Empathy (utilisateur, 2026-11-02) : un seul effet par coup |
 
 Ne sont pas retenus :
@@ -93,7 +93,7 @@ Ne sont pas retenus :
   relevé qui le tranche (S2 à deux coups contre une cible seule, coup 2 /
   coup 1) est dans la
   [piste](../../05-feuille-de-route/pistes-degats-reels.md#poses-entre-les-coups--buff-posé-par-le-sort-eightfold-poses-au-hasard) ;
-- Severing Edge et Dimension Shatter (Übel et Wieb vent), « attacks the target
+- Severing Edge et Dimension Shatter (Übel et Irren vent), « attacks the target
   2 to 3 more times to decrease its Defense » : ces coups du passif
   (`0.8*{ATK}`) ne sont pas calculés du tout, après un sort à un coup ; leur
   Réduction de DEF n'a donc rien à majorer
@@ -107,7 +107,7 @@ l'utilisateur), chacun avec son compteur à l'écran :
 | Sort ou passif | Ce qu'il lit | Comment |
 | --- | --- | --- |
 | Yoga Sunburst (DHALSIM vent 14213), Chemical Gas Spray (Jarrett 14728) | les dégâts continus de la cible | +50 % par dégât continu (`source: 'degatsContinus'`) |
-| Reelseiden・Havoc (Übel feu 25212), Dimension Slash・Havoc (Wieb feu 25712) | les dégâts continus de la cible | dégâts bruts : 5 % des PV max de la cible par dégât continu, à chaque coup |
+| Reelseiden・Havoc (Übel feu 25212), Dimension Slash・Havoc (Irren feu 25712) | les dégâts continus de la cible | dégâts bruts : 5 % des PV max de la cible par dégât continu, à chaque coup |
 | Start of Pain (Kiki ténèbres, sur chacun de ses sorts) | les effets néfastes de la cible, 2 au plus | dégâts bruts : 4 % des PV max de Kiki par effet, à chaque coup |
 | Nano Vision (Amber eau, sur chacun de ses sorts) | les effets néfastes de la cible, 3 au plus | dégâts bruts : 4 % des PV max de la cible par effet, à chaque coup |
 | Bullet Assassination (Nina lumière 22714), Shining Butterfly (Shasha lumière 23214) | la présence d'un effet néfaste | dégâts bruts : 25 % des PV max de la cible, au dernier coup seul |

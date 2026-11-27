@@ -66,7 +66,7 @@ const DECLENCHEES: [string, number, number, number[], boolean, number, number, n
 
 // [monstre, forme, passif, formule, zone, skillups %]
 const HORS_TOUR: [string, number, number, string, boolean, number][] = [
-  ['Psamathe', 21111, 11911, '6.0*{ATK}', true, 30],
+  ['Psamathe', 21111, 11911, '7.2*{ATK}', true, 30], // 6.0 avant le patch de novembre 2026
   ['Hollyberry Cookie', 26411, 16211, '3.5*{DEF}', false, 25],
   ['Manon', 26911, 16711, '3.5*{DEF}', false, 25],
 ];

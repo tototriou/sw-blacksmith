@@ -8,7 +8,7 @@ est écarté : [feat-poses-entre-les-coups.md](feat-poses-entre-les-coups.md).
 Cette liste est figée par `testInventaireEffetsEntreCoups`
 ([tests/degats-effets-entre-coups.test.ts](../../../tests/degats-effets-entre-coups.test.ts),
 fixture [tests/fixtures/effets-entre-coups-inventaire.json](../../../tests/fixtures/effets-entre-coups-inventaire.json)) :
-280 sorts, 165 lignes ci-dessous (un même nom aux effets identiques sur une
+285 sorts, 168 lignes ci-dessous (un même nom aux effets identiques sur une
 ligne). Un sort que des données régénérées ajoutent ou retirent fait échouer
 le test : relire sa prose, puis mettre à jour la fixture et cette page dans le
 même commit.
@@ -43,6 +43,7 @@ deux.
 | Bittersweet Knight | 16915 | Truffle ténèbres | Réduction de DEF — chaque coup |
 | Black Meteor | 19615 | Celestara ténèbres | Dégâts continus ×2 — chaque coup |
 | Blackout Kick | 3454 | Sia lumière | Réduction de DEF — coup 1 |
+| Blade Drive | 22106, 22109 | White Tiger Blade Master eau, White Tiger Blade Master lumière | Réduction de DEF — chaque coup |
 | Bond of the Pack | 24306, 24308, 24310 | Night Fang eau, Night Fang vent, Night Fang ténèbres | Réduction de DEF — chaque coup |
 | Brand of Hell | 11206, 11209, 11222 | Avaris eau, Amarna lumière, Iunu vent | Marque — chaque coup |
 | Brutal Fists | 18301, 18302, 18303, 18304, 18305 | Mayasura eau, Varuna feu, Usha vent, Danu lumière, Vritra ténèbres | Marque — chaque coup |
@@ -71,6 +72,7 @@ deux.
 | Curse of the Beautiful | 11306, 11307, 11310 | Bastet eau, Sekhmet feu, Nephthys ténèbres | Réduction de DEF — chaque coup |
 | Cursed Energy Kicks | 20106, 20109 | Yuji Itadori eau, Yuji Itadori lumière | Marque — coups 1, 2, 3 |
 | Dark Dragon Descent | 21915 | Azure Dragon Swordsman ténèbres | Réduction de DEF — chaque coup |
+| Dark Guardian Angel | 7215 | Nicki ténèbres | Marque — chaque coup |
 | Dark Storm | 2910 | Grogen ténèbres | Étourdissement — chaque coup (allume le +50 % contre une cible sous incapacité) |
 | Darkslayer Knight | 16415 | Madeleine Cookie ténèbres | Réduction de DEF — chaque coup |
 | Deadly Dart | 3457 | Colleen feu | Marque — chaque coup |
@@ -82,9 +84,9 @@ deux.
 | Desert Predator | 17812 | Ashour feu | Réduction de DEF — chaque coup |
 | Destruct Evil | 9211 | Gildong eau | Réduction de DEF — chaque coup |
 | Devil's Whip | 6915 | Ran ténèbres | Réduction de DEF — chaque coup |
-| Dimension Slash・Flurry | 25706 | Wieb eau | Réduction de DEF — coup 1 |
-| Dimension Slash・Flurry | 25710 | Wieb ténèbres | Réduction de DEF — chaque coup<br>Marque — chaque coup (par Dimensional Memory, au hasard parmi les effets du combat) |
-| Dimension Slash・Havoc | 25712 | Wieb feu | Dégâts continus — chaque coup |
+| Dimension Slash・Flurry | 25706 | Irren eau | Réduction de DEF — coup 1 |
+| Dimension Slash・Flurry | 25710 | Irren ténèbres | Réduction de DEF — chaque coup<br>Marque — chaque coup (par Dimensional Memory, au hasard parmi les effets du combat) |
+| Dimension Slash・Havoc | 25712 | Irren feu | Dégâts continus — chaque coup |
 | Divergent Fist | 20107, 20108, 20110 | Yuji Itadori feu, Yuji Itadori vent, Yuji Itadori ténèbres | Réduction de DEF — coup 1 |
 | Divine Judgment | 23514 | Arella lumière | Réduction de DEF — chaque coup (si les ennemis ont subi au moins autant de dégâts que les alliés)<br>Marque — chaque coup (si les alliés ont subi plus de dégâts que les ennemis) |
 | Double Strike | 12608 | Melissa vent | Réduction de DEF — coup 1 |
@@ -119,15 +121,16 @@ deux.
 | Mach Crush | 10013 | Akhamamir vent | Irrécupérable — chaque coup |
 | Magic Shot | 10606, 10610 | Lapis eau, Lanett ténèbres | Réduction de DEF — chaque coup |
 | Magical Eye | 15105 | Kiki ténèbres | Réduction d’ATQ — chaque coup |
-| Mana Particle Cannon・Barrage | 25506, 25508, 25510 | Luen eau, Luen vent, Luen ténèbres | Réduction de DEF — chaque coup |
+| Mana Particle Cannon・Barrage | 25506, 25508, 25510 | Ruhe eau, Ruhe vent, Ruhe ténèbres | Réduction de DEF — chaque coup |
 | Meteor Strike | 19215 | Triss ténèbres | Dégâts continus ×2 — chaque coup |
 | Necromancy: Knights | 21011 | Lamiella eau | Marque — chaque coup |
 | Night Crow | 15107, 15109 | Coco feu, Dorothy lumière | Marque — chaque coup |
 | Nimble Assault | 17207, 17208, 17210 | Ezio feu, Ezio vent, Ezio ténèbres | Réduction de DEF — chaque coup |
-| Overcharge Axe | 25614 | Schporte lumière | Réduction de DEF — chaque coup |
+| Overcharge Axe | 25614 | Robust lumière | Réduction de DEF — chaque coup |
 | Panda Supremacy | 12012 | Xiong Fei feu | Chances de coup glancing augmentées — chaque coup<br>Réduction d’ATQ — chaque coup<br>Réduction de VIT — chaque coup<br>Irrécupérable — chaque coup |
 | Phantom Light | 2212 | Shihwa feu | Marque — chaque coup |
 | Phoenix Kick | 8113 | Huan vent | Réduction de DEF — chaque coup |
+| Pierce | 21506, 21509 | Inosuke Hashibira eau, Inosuke Hashibira lumière | Réduction de DEF — chaque coup |
 | Pierce Soul | 11219 | Amarna lumière | Réduction de DEF — chaque coup |
 | Poisonous Teeth | 8701, 8702, 8703, 8704, 8705 | Kernodon eau, Igmanodon feu, Velfinodon vent, Glinodon lumière, Devinodon ténèbres | Réduction de DEF — chaque coup |
 | PPK Combo | 13915 | RYU ténèbres | Réduction de DEF — coups 4, 5 |
