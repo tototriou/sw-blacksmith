@@ -6,12 +6,13 @@
 import SiegeStatistiques, { Releves } from '../../src/components/siege/SiegeStatistiques';
 import { COMBATS_PAR_PAGE, JOURS_GLISSANTS, TOUS_LES_SIEGES, type RelevesSiege, type SiegeReleve } from '../../src/lib/siegeStatistiques';
 import { Tendance } from '../../src/components/siege/SiegeStatsElements';
+import type { RecosPourAjout } from '../../src/components/siege/AjoutOffenseReco';
 import { fr } from '../../src/i18n/fr';
 import Tableau from '../../src/ui/Tableau';
 import { Legende } from '../../src/components/siege/SiegeGraphes';
 import type { Monster } from '../../src/types';
 import { ok, titre } from '../outils';
-import { auTelephone, rendre, texteVisible, valeurs } from './outils-rendu';
+import { auTelephone, boutons, rendre, texteVisible, valeurs } from './outils-rendu';
 
 const s = fr.siegeStats;
 const MOI = 1;
@@ -58,10 +59,16 @@ const releves = (resume = true): RelevesSiege => ({
   membres: null,
 });
 const APRES = Date.UTC(2026, 10, 18) / 1000;
+// Aucune recommandation : la page ne les touche qu'au clic, jamais au rendu ;
+// Discord éteint, rien n'est lu.
+const RECOS: RecosPourAjout = {
+  state: { recos: [] }, addReco: () => '', ajouterOffense: () => {},
+  synchroniserDiscord: () => ({ ajoutees: 0, misesAJour: 0, conflits: 0, retirees: 0, detachees: 0 }), apresPublicationDiscord: () => {}, apresConflitDiscord: () => {},
+};
 
 export function testRenduSiegeStatistiquesSite() {
   titre('rendu · Siège › Statistiques — sur le site, et au chargement dans l’app');
-  const html = rendre(<SiegeStatistiques monsters={[]} />);
+  const html = rendre(<SiegeStatistiques monsters={[]} recos={RECOS} />);
   ok(texteVisible(html).includes(s.site), 'sur le site : il faut l’application de bureau et le plugin');
   const liens = valeurs(html, 'href');
   ok(liens.includes('#/telecharger') && liens.includes('#/sw-exporter'), 'et la page renvoie vers Télécharger et la page du plugin');
@@ -69,7 +76,7 @@ export function testRenduSiegeStatistiquesSite() {
   const pont = globalThis as { swblacksmithBureau?: unknown };
   pont.swblacksmithBureau = { bureau: true, plateforme: 'win32', swex: { sieges: async () => null, surSiegesChanges: () => () => {} } };
   try {
-    ok(texteVisible(rendre(<SiegeStatistiques monsters={[]} />)).includes(s.chargement), 'dans l’app : la lecture des sièges s’annonce');
+    ok(texteVisible(rendre(<SiegeStatistiques monsters={[]} recos={RECOS} />)).includes(s.chargement), 'dans l’app : la lecture des sièges s’annonce');
   } finally {
     delete pont.swblacksmithBureau;
   }
@@ -220,7 +227,7 @@ const UN = siege(true).matchId;
 
 export function testRenduSiegeStatistiques() {
   titre('rendu · Siège › Statistiques — les sièges relevés, à l’ordinateur');
-  const parDefaut = rendre(<Releves releves={releves()} monsters={MONSTRES} maintenant={APRES} />);
+  const parDefaut = rendre(<Releves recos={RECOS} releves={releves()} monsters={MONSTRES} maintenant={APRES} />);
   ok(
     parDefaut.includes(`<option value="${TOUS_LES_SIEGES}" selected="">`) && !texteVisible(parDefaut).includes(s.ensemble.courbeTitre) && texteVisible(parDefaut).includes(s.ensemble.sieges),
     'la page s’ouvre sur « Tous les sièges » : le nombre de sièges, pas de courbe heure par heure'
@@ -230,7 +237,7 @@ export function testRenduSiegeStatistiques() {
     '« Tous les sièges » : le WR de la guilde siège par siège, qui ouvre un siège au clic — un seul siège relevé, la page le dit'
   );
   ok(
-    !texteVisible(rendre(<Releves releves={releves()} monsters={MONSTRES} maintenant={APRES} angleDepart="membre" siegeDepart={UN} />)).includes(s.membre.evolutionTitre),
+    !texteVisible(rendre(<Releves recos={RECOS} releves={releves()} monsters={MONSTRES} maintenant={APRES} angleDepart="membre" siegeDepart={UN} />)).includes(s.membre.evolutionTitre),
     'un membre, un siège choisi : pas de WR au fil des sièges non plus'
   );
   // La tendance des WR, sous eux : sur « Tous les sièges », pour la guilde et
@@ -255,18 +262,18 @@ export function testRenduSiegeStatistiques() {
   const signe = (n: number) => `${n.toLocaleString('fr-FR', { maximumFractionDigits: 1, signDisplay: 'exceptZero' })} %`;
   const enHausse = (html: string, texte: string) => new RegExp(`text-good"><svg[^]*?</svg>${texte.replace('+', '\\+')}`).test(html);
   const enBaisse = (html: string, texte: string) => new RegExp(`text-bad"><svg[^]*?</svg>${texte}`).test(html);
-  const guilde = rendre(<Releves releves={deuxMois} monsters={MONSTRES} maintenant={APRES} />);
+  const guilde = rendre(<Releves recos={RECOS} releves={deuxMois} monsters={MONSTRES} maintenant={APRES} />);
   const chiffres = guilde.slice(guilde.indexOf(s.ensemble.tauxAttaque), guilde.indexOf(s.ensemble.evolutionTitre));
   ok(
     enBaisse(chiffres, signe(-50)) && enHausse(chiffres, signe(100)) && chiffres.indexOf(signe(-50)) < chiffres.indexOf(s.ensemble.tenue),
     '« Tous les sièges » : sous le WR en attaque, « -50 % » en rouge ; sous celui en défense, « +100 % » en vert — chacun avec sa flèche, jamais la couleur seule'
   );
   ok(!texteVisible(chiffres).includes(`${s.ensemble.tauxAttaque} ·`) && texteVisible(chiffres).includes(ecart), 'pas de chiffre de plus : la flèche s’ajoute aux WR déjà affichés');
-  const membre = rendre(<Releves releves={deuxMois} monsters={MONSTRES} maintenant={APRES} angleDepart="membre" />);
+  const membre = rendre(<Releves recos={RECOS} releves={deuxMois} monsters={MONSTRES} maintenant={APRES} angleDepart="membre" />);
   ok(enBaisse(membre, signe(-50)), '« Tous les sièges » : la tendance d’un membre aussi — mon WR en attaque baisse');
   ok(!texteVisible(parDefaut).includes(ecart), 'un seul siège relevé : rien le mois d’avant, pas de flèche');
   ok(
-    ![rendre(<Releves releves={deuxMois} monsters={MONSTRES} maintenant={APRES} siegeDepart={UN} />), rendre(<Releves releves={deuxMois} monsters={MONSTRES} maintenant={APRES} angleDepart="membre" siegeDepart={UN} />)].some((h) =>
+    ![rendre(<Releves recos={RECOS} releves={deuxMois} monsters={MONSTRES} maintenant={APRES} siegeDepart={UN} />), rendre(<Releves recos={RECOS} releves={deuxMois} monsters={MONSTRES} maintenant={APRES} angleDepart="membre" siegeDepart={UN} />)].some((h) =>
       texteVisible(h).includes(ecart)
     ),
     'un siège choisi : pas de tendance, ni pour la guilde ni pour un membre'
@@ -295,27 +302,47 @@ export function testRenduSiegeStatistiques() {
   );
   ok(legende.includes('disabled=""') && legende.includes(`title="${s.ensemble.legendeDerniere}"`), 'légende : la dernière série affichée ne se masque pas, désactivée à sa place');
   ok(!rendre(<Legende elements={[{ couleur: 0, nom: 'Score', cle: 's' }]} onBasculer={() => {}} />).includes('<button'), 'légende : une seule entrée ne se clique pas');
-  verifierEnsemble(rendre(<Releves releves={releves()} monsters={MONSTRES} maintenant={APRES} siegeDepart={UN} />), 'ordinateur');
-  verifier(rendre(<Releves releves={releves()} monsters={MONSTRES} maintenant={APRES} vueDepart="detail" siegeDepart={UN} />), 'ordinateur');
-  verifierMembre(rendre(<Releves releves={releves()} monsters={MONSTRES} maintenant={APRES} angleDepart="membre" />), 'ordinateur');
-  const detailMembre = texteVisible(rendre(<Releves releves={releves()} monsters={MONSTRES} maintenant={APRES} angleDepart="membre" vueDepart="detail" />));
+  verifierEnsemble(rendre(<Releves recos={RECOS} releves={releves()} monsters={MONSTRES} maintenant={APRES} siegeDepart={UN} />), 'ordinateur');
+  verifier(rendre(<Releves recos={RECOS} releves={releves()} monsters={MONSTRES} maintenant={APRES} vueDepart="detail" siegeDepart={UN} />), 'ordinateur');
+  verifierMembre(rendre(<Releves recos={RECOS} releves={releves()} monsters={MONSTRES} maintenant={APRES} angleDepart="membre" />), 'ordinateur');
+  const detailMembreHtml = rendre(<Releves recos={RECOS} releves={releves()} monsters={MONSTRES} maintenant={APRES} angleDepart="membre" vueDepart="detail" />);
+  const detailMembre = texteVisible(detailMembreHtml);
   ok(
     detailMembre.includes(s.attaquesTitre) && detailMembre.includes(s.filtres.resultat.victoires) && !detailMembre.includes(s.membre.evolutionTitre),
     'le détail d’un membre : ses combats, filtrables, sans les graphes'
   );
-  const sansResume = rendre(<Releves releves={releves(false)} monsters={MONSTRES} maintenant={APRES} vueDepart="detail" siegeDepart={UN} />);
+  // « Ajouter à une recommandation » : sur chaque carte de combat, actif sur
+  // une victoire aux six monstres connus, désactivé avec sa raison sinon.
+  const a = s.ajoutReco;
+  const ajouts = boutons(detailMembreHtml).filter((b) => b.ariaLabel?.startsWith(a.bouton));
+  ok(
+    ajouts.length === 2 && ajouts.some((b) => b.ariaLabel === a.bouton && !b.desactive),
+    'ajout à une recommandation : un bouton par combat, actif sur la victoire aux monstres connus'
+  );
+  ok(
+    ajouts.some((b) => b.desactive && b.title === `${a.bouton} — ${a.raisons.defaite}`),
+    'ajout à une recommandation : toujours affiché sur une défaite, désactivé, la raison en infobulle'
+  );
+  const sansMonstres = boutons(
+    rendre(<Releves recos={RECOS} releves={releves()} monsters={MONSTRES.slice(0, 5)} maintenant={APRES} vueDepart="detail" siegeDepart={UN} />)
+  ).filter((b) => b.ariaLabel?.startsWith(a.bouton));
+  ok(
+    sansMonstres.length === 1 && sansMonstres[0].desactive && sansMonstres[0].title === `${a.bouton} — ${a.raisons.monstresInconnus}`,
+    'ajout à une recommandation : un monstre du combat absent des données, désactivé — un deck ne se compose que de monstres connus'
+  );
+  const sansResume = rendre(<Releves recos={RECOS} releves={releves(false)} monsters={MONSTRES} maintenant={APRES} vueDepart="detail" siegeDepart={UN} />);
   ok(texteVisible(sansResume).includes(s.manques.resume), 'le journal des combats jamais ouvert : la page le dit');
   ok(sansResume.includes(s.monstresInconnus), 'et les monstres utilisés restent inconnus, pas zéro');
   const r = releves();
   const sansDefenses = texteVisible(
-    rendre(<Releves releves={{ ...r, sieges: [{ ...r.sieges[0], defenses: [], sources: { ...r.sieges[0].sources, defenses: false } }] }} monsters={MONSTRES} maintenant={APRES} vueDepart="detail" />)
+    rendre(<Releves recos={RECOS} releves={{ ...r, sieges: [{ ...r.sieges[0], defenses: [], sources: { ...r.sieges[0].sources, defenses: false } }] }} monsters={MONSTRES} maintenant={APRES} vueDepart="detail" />)
   );
   ok(!sansDefenses.includes(s.abr.decks(0)), 'decks inconnus : aucun membre n’affiche « 0 déf. »');
   ok(sansDefenses.includes(s.defensesAdversesTitre) && sansDefenses.includes(s.abr.tenues(0, 1)), 'sans les decks de la carte, les défenses se reconstituent quand même d’après les combats');
 
   ok(
-    texteVisible(rendre(<Releves releves={releves()} monsters={MONSTRES} maintenant={APRES} siegeDepart={UN} />)).includes(s.maGuilde) &&
-      !texteVisible(rendre(<Releves releves={releves()} monsters={MONSTRES} maintenant={APRES} siegeDepart={UN} angleDepart="membre" />)).includes(s.maGuilde),
+    texteVisible(rendre(<Releves recos={RECOS} releves={releves()} monsters={MONSTRES} maintenant={APRES} siegeDepart={UN} />)).includes(s.maGuilde) &&
+      !texteVisible(rendre(<Releves recos={RECOS} releves={releves()} monsters={MONSTRES} maintenant={APRES} siegeDepart={UN} angleDepart="membre" />)).includes(s.maGuilde),
     'les cartes des guildes du siège (score, rang) sous l’angle « Guilde » seulement'
   );
 
@@ -328,7 +355,7 @@ export function testRenduSiegeStatistiques() {
       return { ...x, matchId: x.matchId - k, debut: x.debut! - k * 3.5 * 86400, fin: x.fin! - k * 3.5 * 86400, attaques: [...dix, ...x.attaques.slice(1)] };
     }),
   };
-  const detailTous = rendre(<Releves releves={quatre} monsters={MONSTRES} maintenant={APRES} vueDepart="detail" />);
+  const detailTous = rendre(<Releves recos={RECOS} releves={quatre} monsters={MONSTRES} maintenant={APRES} vueDepart="detail" />);
   ok(
     detailTous.split('<h3').length - 1 === 3 && detailTous.split(`>${s.fleche}<`).length - 1 === COMBATS_PAR_PAGE,
     `« Tous les sièges », détail : les combats siège par siège, ${COMBATS_PAR_PAGE} combats par page (ici trois sièges)`
@@ -339,14 +366,14 @@ export function testRenduSiegeStatistiques() {
     'le bilan de tous les combats en tête, celui de chaque siège sous sa date'
   );
   // Ses attaques : onze par siège (dix, plus une sans monstres) — le troisième siège est coupé.
-  const membreTous = rendre(<Releves releves={quatre} monsters={MONSTRES} maintenant={APRES} vueDepart="detail" angleDepart="membre" />);
+  const membreTous = rendre(<Releves recos={RECOS} releves={quatre} monsters={MONSTRES} maintenant={APRES} vueDepart="detail" angleDepart="membre" />);
   ok(membreTous.split('<h3').length - 1 === 3 && !membreTous.includes(`(${s.suite})`), 'le détail d’un membre : ses attaques siège par siège aussi, la suite d’un siège coupé sur la page suivante');
-  const detailUn = rendre(<Releves releves={quatre} monsters={MONSTRES} maintenant={APRES} vueDepart="detail" siegeDepart={quatre.sieges[0].matchId} />);
+  const detailUn = rendre(<Releves recos={RECOS} releves={quatre} monsters={MONSTRES} maintenant={APRES} vueDepart="detail" siegeDepart={quatre.sieges[0].matchId} />);
   ok(!detailUn.includes('<h3') && !detailUn.includes(`aria-label="${fr.pagination.allerA}"`), 'un siège seul de dix combats : sans en-tête de siège, une seule page');
 
   // L'allié a quitté la guilde : absent de la liste des membres, relevée après le siège.
   const parti: RelevesSiege = { ...releves(), membres: { t: APRES, ids: [MOI] } };
-  const tous = rendre(<Releves releves={parti} monsters={MONSTRES} maintenant={APRES} />);
+  const tous = rendre(<Releves recos={RECOS} releves={parti} monsters={MONSTRES} maintenant={APRES} />);
   ok(
     tous.split(`title="${s.ancienMembre}"`).length - 1 === 2 && tous.includes(`aria-label="${s.voirJoueur('Allié')} (${s.ancienMembre})"`),
     '« Tous les sièges » : l’ancien membre reste dans les deux tableaux, marqué comme tel'
@@ -382,14 +409,14 @@ export function testRenduSiegeStatistiques() {
     'Tableau : trié par une colonne, une ligne à part reste après l’intertitre, même avec la plus grande valeur'
   );
   ok(!rendre(<Tableau lignes={[{ nom: 'Actuel' }]} colonnes={[{ cle: 'nom', libelle: 'Nom', fixe: true, valeur: (l) => l.nom }]} cleLigne={(l) => l.nom} libelleTri={(c) => c} aPart={{ ligne: () => false, titre: 'À part' }} />).includes('À part'), 'Tableau : aucune ligne à part, aucun intertitre');
-  ok(!rendre(<Releves releves={parti} monsters={MONSTRES} maintenant={APRES} siegeDepart={UN} />).includes(s.ancienMembre), 'dans un siège seul, il était membre : aucune marque');
-  ok(!rendre(<Releves releves={releves()} monsters={MONSTRES} maintenant={APRES} />).includes(s.ancienMembre), 'sans liste des membres relevée : aucun ancien membre supposé');
-  const selecteur = rendre(<Releves releves={parti} monsters={MONSTRES} maintenant={APRES} angleDepart="membre" />);
+  ok(!rendre(<Releves recos={RECOS} releves={parti} monsters={MONSTRES} maintenant={APRES} siegeDepart={UN} />).includes(s.ancienMembre), 'dans un siège seul, il était membre : aucune marque');
+  ok(!rendre(<Releves recos={RECOS} releves={releves()} monsters={MONSTRES} maintenant={APRES} />).includes(s.ancienMembre), 'sans liste des membres relevée : aucun ancien membre supposé');
+  const selecteur = rendre(<Releves recos={RECOS} releves={parti} monsters={MONSTRES} maintenant={APRES} angleDepart="membre" />);
   ok(
     selecteur.indexOf(`<optgroup label="${s.anciensMembres}">`) > selecteur.indexOf('>Moi-même</option>') && selecteur.indexOf('>Allié</option>') > selecteur.indexOf(`<optgroup label="${s.anciensMembres}">`),
     'le sélecteur « Membre » : les membres actuels, puis les anciens à part'
   );
-  const cartes = rendre(<Releves releves={parti} monsters={MONSTRES} maintenant={APRES} vueDepart="detail" />);
+  const cartes = rendre(<Releves recos={RECOS} releves={parti} monsters={MONSTRES} maintenant={APRES} vueDepart="detail" />);
   const grilleMembres = cartes.indexOf(`>${s.membresTitre}</h2>`);
   const grilleAnciens = cartes.indexOf(`>${s.anciensMembres}</h2>`);
   ok(
@@ -404,7 +431,7 @@ export function testRenduSiegeStatistiques() {
 
 export function testRenduTelephoneSiegeStatistiques() {
   titre('rendu · Siège › Statistiques — les sièges relevés, au téléphone');
-  verifierEnsemble(auTelephone(() => rendre(<Releves releves={releves()} monsters={MONSTRES} maintenant={APRES} siegeDepart={UN} />)), 'téléphone');
-  verifier(auTelephone(() => rendre(<Releves releves={releves()} monsters={MONSTRES} maintenant={APRES} vueDepart="detail" siegeDepart={UN} />)), 'téléphone');
-  verifierMembre(auTelephone(() => rendre(<Releves releves={releves()} monsters={MONSTRES} maintenant={APRES} angleDepart="membre" />)), 'téléphone');
+  verifierEnsemble(auTelephone(() => rendre(<Releves recos={RECOS} releves={releves()} monsters={MONSTRES} maintenant={APRES} siegeDepart={UN} />)), 'téléphone');
+  verifier(auTelephone(() => rendre(<Releves recos={RECOS} releves={releves()} monsters={MONSTRES} maintenant={APRES} vueDepart="detail" siegeDepart={UN} />)), 'téléphone');
+  verifierMembre(auTelephone(() => rendre(<Releves recos={RECOS} releves={releves()} monsters={MONSTRES} maintenant={APRES} angleDepart="membre" />)), 'téléphone');
 }

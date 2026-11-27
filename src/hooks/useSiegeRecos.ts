@@ -20,6 +20,7 @@ import { fr } from '../i18n/fr';
 import { avecContenuDeck, ContenuDeck } from '../lib/annulerEdition';
 import { fiabiliteValide, type MonstresConnus } from '../lib/recoDefenses';
 import { appliquerImport, BilanImport } from '../lib/recoFusion';
+import { recoAvecOffense, type OffenseAAjouter } from '../lib/ajoutOffenseReco';
 import {
   apresConflit, apresPublication, appliquerFusion, delier, lireLien, synchroniser,
   type BilanSynchro, type ChoixFusion, type Fusion, type SalonAccessible, type VersionValide,
@@ -176,6 +177,10 @@ export interface UseRecoState {
   setMeta: (id: string, patch: Partial<Pick<Reco, 'name' | 'author' | 'note'>>) => void;
   addDeck: (id: string) => void;
   addDeckWith: (id: string, deck: RecoDeck) => void; // deck pré-rempli (ex. depuis le siège)
+  // Une offense venue d'ailleurs (un combat des statistiques, une équipe de
+  // Mes équipes) : un deck de plus, ou la défense ajoutée au deck de cette
+  // offense — jamais de doublon (ajoutOffenseReco.ts).
+  ajouterOffense: (id: string, ajout: OffenseAAjouter, connus: MonstresConnus) => void;
   removeDeck: (id: string, deck: number) => void;
   // « Annuler » une suppression : remet à sa place, tel quel.
   restaurerReco: (reco: Reco, index: number) => void;
@@ -276,6 +281,12 @@ export function useSiegeRecos(): UseRecoState {
   // Ajoute un deck déjà constitué (import depuis une équipe de siège).
   const addDeckWith = useCallback(
     (id: string, deck: RecoDeck) => update(id, (r) => ({ ...r, decks: [...r.decks, deck] })),
+    [update]
+  );
+
+  const ajouterOffense = useCallback(
+    (id: string, ajout: OffenseAAjouter, connus: MonstresConnus) =>
+      update(id, (r) => recoAvecOffense(r, ajout, connus)),
     [update]
   );
 
@@ -555,6 +566,7 @@ export function useSiegeRecos(): UseRecoState {
     setMeta,
     addDeck,
     addDeckWith,
+    ajouterOffense,
     removeDeck,
     restaurerDeck,
     setDeckMeta,

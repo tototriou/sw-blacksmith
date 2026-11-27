@@ -10,6 +10,7 @@ import ModaleGroupe from '../../src/components/account/equipes/ModaleGroupe';
 import FenetreImport from '../../src/components/FenetreImport';
 import { ChoixEquipement } from '../../src/components/account/equipes/AjoutMonstreModale';
 import type { EquipesEnregistreesApi } from '../../src/hooks/useEquipesEnregistrees';
+import type { RecosPourAjout } from '../../src/components/siege/AjoutOffenseReco';
 import { creerEquipe, indexerInventaire, type EquipeEnregistree } from '../../src/lib/equipesEnregistrees';
 import { sourcesEquipementEspece, sourcesImportEquipes, type ContexteSourcesEquipes } from '../../src/lib/sourcesEquipesEnregistrees';
 import { fr } from '../../src/i18n/fr';
@@ -41,10 +42,15 @@ const EQUIPES: EquipeEnregistree[] = [
 const api = (equipes = EQUIPES, relecture: 'en-cours' | 'finie' = 'finie'): EquipesEnregistreesApi => ({
   equipes, relecture, illisibles: 0, signalements: [], clesReservees: new Set(), signaler: () => {}, appliquer: () => {}, remplacerTout: () => {},
 });
+// Aucune recommandation : la page ne les touche qu'au clic, jamais au rendu.
+const RECOS: RecosPourAjout = {
+  state: { recos: [] }, addReco: () => '', ajouterOffense: () => {},
+  synchroniserDiscord: () => ({ ajoutees: 0, misesAJour: 0, conflits: 0, retirees: 0, detachees: 0 }), apresPublicationDiscord: () => {}, apresConflitDiscord: () => {},
+};
 const section = (o: { api?: EquipesEnregistreesApi; compte?: boolean; menuOuvert?: boolean } = {}) => (
   <EquipesSection api={o.api ?? api()} ctx={ctx(o.compte ?? true)} inventaire={o.compte === false ? null : INVENTAIRE}
     allMonsters={MONSTRES} optimizer={null} onImporterOptimizer={() => ({ listeCreee: null, membresImportes: 0, equipesCreees: 0, ignores: [], equipesNonCreees: [], messages: [] })}
-    onEquipeCreee={() => {}} menuOuvert={o.menuOuvert ?? false} onFermerMenu={() => {}} />
+    onEquipeCreee={() => {}} menuOuvert={o.menuOuvert ?? false} onFermerMenu={() => {}} ajoutRecos={RECOS} />
 );
 const e = fr.equipes;
 
@@ -72,6 +78,16 @@ export function testRenduEquipesBureau() {
   const menu = boutons(html).map((b) => b.texte);
   egal(menu.slice(menu.indexOf(e.carte.renommer), menu.indexOf(e.carte.renommer) + 2), [e.carte.renommer, e.carte.dupliquer],
     'le menu d’une carte : « Renommer » juste au-dessus de « Dupliquer »');
+  const versReco = bouton(html, e.carte.ajouterReco);
+  ok(!!versReco && !versReco.desactive && versReco.title === e.carte.ajouterRecoAide && menu.indexOf(e.carte.ajouterReco) === menu.indexOf(e.carte.renommer) - 1,
+    'le menu d’une carte : « Ajouter à une recommandation », avant « Renommer », ce qu’il ajoute en infobulle');
+  amorcerMemoire({ 'equipes.categorie': 'rta' });
+  try {
+    const prepa = bouton(rendre(section()), e.carte.ajouterReco);
+    ok(!!prepa && prepa.desactive && prepa.title === e.carte.recoPrepa, 'une prépa RTA : toujours dans le menu, désactivé, et pourquoi');
+  } finally {
+    reinitialiserSticky('equipes.');
+  }
   ok(valeurs(html, 'placeholder').includes(e.recherche), 'la recherche par monstre');
   ok(!texteVisible(rendre(section({ compte: false }))).includes(e.carte.modifiees(1)), 'sans compte, aucun écart affiché');
   const vide = rendre(section({ api: api([], 'en-cours') }));

@@ -216,6 +216,48 @@ tant qu'elle est ouverte. Pas de panneau « Options » : aucune action de page (
   guilde n'est jamais nommée, elle va de soi. ⚠️ Ce nom est
   le seul texte à la couleur d'une guilde (demande de l'utilisateur), en gras : le jaune n'atteint
   que 3:1 sur le clair.
+- **Ajouter une offense à une recommandation** : chaque carte de combat (les combats de la guilde,
+  les attaques d'un membre) porte, au bout de sa ligne d'en-tête, le bouton « Ajouter à une
+  recommandation » (icône liste +). Il ouvre une fenêtre
+  ([AjoutOffenseReco.tsx](../../../src/components/siege/AjoutOffenseReco.tsx), calcul dans
+  [ajoutOffenseReco.ts](../../../src/lib/ajoutOffenseReco.ts), la même fenêtre que depuis
+  [Mes équipes](../compte/feat-equipes.md)) : les trois monstres de l'attaque deviennent
+  un deck, les trois de la défense battue sa **défense visée**, sans note de fiabilité (un jugement
+  de l'auteur, pas un taux de victoire) ; ni runes, ni stats, ni sets : les combats ne les donnent
+  pas.
+  - ⚠️ **Toujours affiché, actif sur une VICTOIRE aux six monstres connus** — seule une victoire
+    dit que l'offense bat la défense, et un deck se compose de monstres des données chargées. Sur
+    une défaite, un résultat inconnu ou un monstre absent (journal jamais ouvert, monstre hors des
+    données), désactivé, la raison en infobulle.
+  - **La fenêtre** montre le combat, puis une ligne par recommandation qui dit d'avance ce que fera
+    le clic : **« Nouveau deck »** ; **« Défense ajoutée à son deck »** quand l'offense y est déjà
+    (même équipe au sens de `cleEquipe`, [modele.md](feat-recommandations/modele.md)) ;
+    **« Déjà dedans »**, désactivée, quand elle y bat déjà cette défense. ⚠️ **Jamais de doublon** :
+    une offense déjà recommandée ne refait pas de deck. Une recommandation neuve (« Nouvelle
+    recommandation », dans le pied) reçoit le deck à la place de son deck vide.
+  - La fenêtre **reste ouverte** après un ajout : la ligne passe à « Ajoutée », on peut ajouter
+    ailleurs ; « Voir les recommandations » mène à `#/siege/recommandations`. La liste a une
+    **hauteur fixe** : une recommandation créée ne regrandit pas la fenêtre (recentrée, elle ferait
+    bouger le bouton touché).
+  - ⚠️ **Les recommandations partagées viennent de Discord.** La page lit les salons **en
+    arrière-plan** à son ouverture (`useDiscord`, comme la page Recommandations,
+    [synchronisation-discord.md](feat-recommandations/synchronisation-discord.md)) quand Discord
+    est activé : la fenêtre les propose déjà, chacune avec le nom de son salon. Éteint, rien ne
+    part. Une zone à **hauteur réservée**, sous le combat, dit l'état de Discord :
+    - **pas connecté** (jamais connecté, déconnecté, connexion en attente de son code) : la phrase
+      le dit, et « Se connecter à Discord » mène à la page Recommandations, où l'on se connecte ;
+    - **lecture des salons** en cours ; **Discord injoignable** (les recommandations partagées sont
+      celles de la dernière lecture) ;
+    - **connecté** : une recommandation d'un salon se publie ensuite depuis la page
+      Recommandations. L'ajout est une modification de la copie locale (état « modifiée »),
+      **jamais publiée d'office**.
+  - ⚠️ **SUPPOSÉ : le premier monstre d'une équipe du journal est son leader.** Le deck garde
+    l'ordre du combat, et le slot 0 d'un deck porte le lead ; rien dans les données relevées ne
+    l'établit (« Une équipe = ses trois monstres », plus haut). La fenêtre dit de vérifier le
+    leader. Si c'est faux, une offense déjà recommandée avec un autre chef ne se reconnaît pas :
+    elle fait un deck de plus, sans rien perdre. Un relevé en jeu le tranchera : sur un combat dont
+    le leader de l'attaque n'est pas le premier monstre affiché par la carte, comparer la carte à
+    l'écran du jeu.
   **Une défense** : ses trois monstres, son joueur, ses combats gagnés sur les combats
   subis, son WR. ⚠️ Côté défense, la page dit **gagnés** ou **perdus**, jamais « tenus ». Des monstres jamais montrés par le jeu : « monstres non vus en jeu » (une équipe
   inconnue dans un combat : « ? »).

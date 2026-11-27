@@ -68,7 +68,7 @@ export default function SiegePage({
           latérale. Le titre de la barre du haut dit la vue courante. */}
 
       {tab === 'stats' ? (
-        <SiegeStatistiques monsters={boardProps.monsters} />
+        <SiegeStatistiques monsters={boardProps.monsters} recos={recos} />
       ) : tab === 'recos' ? (
         <RecoBoard
           onImporterEquipe={boardProps.onImporterEquipe}

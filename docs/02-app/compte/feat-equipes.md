@@ -308,7 +308,8 @@ sinon « N pièces modifiées », « N pièces disparues ». Le détail marque c
   requête de conteneur). Une carte : le nom, les avatars des monstres dans l'ordre
   (le leader marqué), la note sur une ligne tronquée, le résumé d'écart, et un menu
   d'actions (`Menu`) : « Ouvrir », « Exporter vers l'Optimizer », « Mettre à jour
-  depuis l'Optimizer », « Renommer », « Dupliquer », « Déplacer vers… », « Supprimer ».
+  depuis l'Optimizer », « Ajouter à une recommandation » (§ plus bas), « Renommer »,
+  « Dupliquer », « Déplacer vers… », « Supprimer ».
 - Au-delà de 24 équipes dans l'onglet (après recherche), la grille se pagine
   (`Pager`), posé **au-dessus** de la grille : la hauteur d'une page varie avec ses
   cartes, et un pager placé dessous bougerait sous le clic.
@@ -649,6 +650,32 @@ membres repris, nouveaux compris, pour que le retour suivant les retrouve.
 Une liste liée supprimée de l'Optimizer désactive l'action (« La liste de l'Optimizer
 n'existe plus ») ; le lien reste, inoffensif. Exporter de nouveau remplace le lien
 par la nouvelle liste.
+
+## Ajouter à une recommandation
+
+Une équipe devient un deck d'une recommandation de siège en un geste : « Ajouter à une
+recommandation », dans le menu de la carte et du détail, ouvre la fenêtre partagée avec les
+statistiques de siège ([AjoutOffenseReco.tsx](../../../src/components/siege/AjoutOffenseReco.tsx),
+calcul dans [ajoutOffenseReco.ts](../../../src/lib/ajoutOffenseReco.ts) ;
+[statistiques.md](../siege/statistiques.md), « Ajouter une offense à une recommandation »).
+
+- **Le deck** : celui que donne déjà l'onglet « Mes decks et équipes » de « + Ajouter un
+  counter » (`deckFromEquipeEnregistree`,
+  [import-deck-offense.md](../siege/feat-recommandations/import-deck-offense.md)) — le leader en
+  tête, puis les autres dans l'ordre de l'équipe, **trois au plus** ; les stats, sets et
+  propriétés d'artéfact de l'équipement enregistré, à ajuster dans la recommandation. Une copie :
+  le modifier ne touche pas l'équipe.
+- **Aucune défense visée** : une équipe dit ce qu'on joue, pas ce qu'elle bat. La fenêtre le
+  dit ; la défense se pose ensuite dans la recommandation.
+- **La fenêtre** liste les recommandations, celles des salons Discord comprises (avec leur
+  salon), et dit d'avance ce que fera le clic : « Nouveau deck », ou **« Déjà dedans »**,
+  désactivée, quand la même équipe (`cleEquipe`) y est déjà — jamais de doublon. « Nouvelle
+  recommandation » dans le pied ; la fenêtre reste ouverte après un ajout.
+- **Discord** : la fenêtre lit les salons à son ouverture, Discord activé
+  (`AjoutOffenseRecoDiscord`) — la page, elle, ne lit rien. Sans connexion, elle le dit et
+  renvoie à la page Recommandations.
+- **Toujours dans le menu**, désactivé avec sa raison : pour une prépa RTA (un ensemble de
+  monstres, pas une équipe) ou une équipe sans monstre connu des données.
 
 ## Conservation
 

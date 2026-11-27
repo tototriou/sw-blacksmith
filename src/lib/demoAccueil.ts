@@ -131,7 +131,7 @@ const rien = () => {};
 export function recosFigees(reco: Reco): UseRecoState {
   return {
     state: { recos: [reco] },
-    addReco: fige, removeReco: rien, setMeta: rien, addDeck: rien, addDeckWith: rien, removeDeck: rien,
+    addReco: fige, removeReco: rien, setMeta: rien, addDeck: rien, addDeckWith: rien, ajouterOffense: rien, removeDeck: rien,
     restaurerReco: rien, restaurerDeck: rien, setDeckMeta: rien, remettreContenuDeck: rien,
     addCounter: rien, removeCounter: rien, setCounterMonster: rien, setCounterNote: rien, setCounterFiabilite: rien,
     setSlotMonster: rien, setSlotStat: rien, addSlotArtifact: rien, removeSlotArtifact: rien,

@@ -31,6 +31,9 @@ import {
 } from '../../../lib/sourcesEquipesEnregistrees';
 import { categorieDuGroupe, creerEquipesChoisies, monstresChoisis, type SelectionImport } from '../../../lib/fenetreImport';
 import type { Reco } from '../../../types';
+import { deckFromEquipeEnregistree, equipeProposable } from '../../../lib/recoFromSiege';
+import { offenseDuDeck, type OffenseAAjouter } from '../../../lib/ajoutOffenseReco';
+import { AjoutOffenseRecoDiscord, type RecosPourAjout } from '../../siege/AjoutOffenseReco';
 import {
   CATEGORIES_EQUIPES, SOUS_CATEGORIES_EQUIPES, ajouterMonstre, categorieDe, compteParCategorie, compteParOnglet, libelleRangement, libelleSousCategorie, sousCategorieDe,
   appliquerGroupe, conflitsGroupe, creerEquipe, deplacerVersOnglet, dupliquerEquipe, equipesDuGroupe, equipesFiltrees, gesteSurBrouillon, groupesDeLOnglet, nomEquipeLibre, rangement,
@@ -53,6 +56,8 @@ interface Props {
   optimizer: { stockage: StockageOptimizer; data: ExclusionSourceData } | null;
   // Les recommandations de la page Siège, une source d'import.
   recos?: readonly Reco[];
+  // Leurs gestes : « Ajouter à une recommandation » d'une équipe.
+  ajoutRecos: RecosPourAjout;
   // L'action commune d'import de l'Optimizer, qui l'ouvre après acceptation.
   onImporterOptimizer: ActionImportOptimizer | null;
   // La première équipe créée pose la question de conservation (App).
@@ -70,7 +75,7 @@ interface Rapport { titre: string; lignes: string[] }
 // La page « Mes équipes » (docs/02-app/compte/feat-equipes.md) : les onglets,
 // la recherche par monstre dans l'onglet ouvert, la grille de cartes, le
 // détail, les imports et le fichier.
-export default function EquipesSection({ api, ctx, inventaire, allMonsters, optimizer, recos = [], onImporterOptimizer, onEquipeCreee, demandeOptimizer = null, onDemandeTraitee, menuOuvert, onFermerMenu }: Props) {
+export default function EquipesSection({ api, ctx, inventaire, allMonsters, optimizer, recos = [], ajoutRecos, onImporterOptimizer, onEquipeCreee, demandeOptimizer = null, onDemandeTraitee, menuOuvert, onFermerMenu }: Props) {
   const t = useTraduction();
   const e = t.equipes;
   const g = e.groupes;
@@ -105,6 +110,12 @@ export default function EquipesSection({ api, ctx, inventaire, allMonsters, opti
   // « Nouvelle équipe » demande d'abord le nom.
   const [nommage, setNommage] = useState(false);
   const [aRenommer, setARenommer] = useState<EquipeEnregistree | null>(null);
+  // « Ajouter à une recommandation » : l'équipe en deck pré-rempli, dans la
+  // fenêtre partagée avec les statistiques de siège (AjoutOffenseReco.tsx).
+  const [versReco, setVersReco] = useState<OffenseAAjouter | null>(null);
+  // Les monstres par `com2usId`, au type que la fenêtre et la conversion
+  // attendent ; recopiés seulement quand les données changent.
+  const parCom2us = useMemo(() => new Map(ctx.monsterByCom2us), [ctx.monsterByCom2us]);
   const [imports, setImports] = useState(false);
   // « Importer des monstres » dans l'équipe ouverte.
   const [importMonstres, setImportMonstres] = useState(false);
@@ -309,10 +320,16 @@ export default function EquipesSection({ api, ctx, inventaire, allMonsters, opti
     // Une prépa : jamais liée (elle part en membres seuls), et elle ne change
     // pas d'onglet.
     const prepa = estPrepa(x.onglet);
+    // « Ajouter à une recommandation » : toujours là, désactivé avec sa raison
+    // pour une prépa (un ensemble de monstres, pas une équipe) ou une équipe
+    // sans monstre connu des données.
+    const recoImpossible = prepa ? c.recoPrepa : !equipeProposable(x, parCom2us) ? c.recoSansMonstre : null;
     return [
       { cle: 'ouvrir', libelle: c.ouvrir, onClick: () => setOuverte(x.id) },
       { cle: 'exporter', libelle: c.exporterOptimizer, disabled: exportImpossible !== null, title: exportImpossible ?? undefined, onClick: () => exporterOptimizer(x) },
       ...(prepa ? [] : [{ cle: 'retour', libelle: c.mettreAJour, disabled: retourImpossible !== null, title: retourImpossible ?? undefined, onClick: () => demanderRetour(x) }]),
+      { cle: 'recommandation', libelle: c.ajouterReco, disabled: recoImpossible !== null, title: recoImpossible ?? c.ajouterRecoAide,
+        onClick: () => setVersReco(offenseDuDeck(deckFromEquipeEnregistree(x, parCom2us))) },
       { cle: 'renommer', libelle: c.renommer, onClick: () => setARenommer(x) },
       { cle: 'dupliquer', libelle: c.dupliquer, onClick: () => ajouterEquipes([dupliquerEquipe(x, tirerIdEquipe(), e.copie(x.nom), tirerUid, new Date())]) },
       // Vers un autre onglet, sans catégorie ; la catégorie se choisit dans le détail.
@@ -537,6 +554,9 @@ export default function EquipesSection({ api, ctx, inventaire, allMonsters, opti
       {ajout && equipeOuverte && (
         <AjoutMonstreModale monstres={allMonsters} ctx={ctx} onChoisir={ajouterMonstreChoisi} onFermer={() => setAjout(false)} />
       )}
+      {/* Discord lu à l'ouverture de la fenêtre (Discord activé) : les
+          recommandations partagées y sont proposées. */}
+      {versReco && <AjoutOffenseRecoDiscord ajout={versReco} recos={ajoutRecos} parCom2us={parCom2us} onClose={() => setVersReco(null)} />}
       {imports && (
         <FenetreImport titre={t.fenetreImport.titre} sources={sourcesImport} ordre={['jeu', 'optimizer', 'recos']} ongletInitial={onglet}
           mode="equipes" monstreParCom2us={ctx.monsterByCom2us} actions={actionsImport} onFermer={() => setImports(false)} />

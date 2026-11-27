@@ -374,6 +374,7 @@ import { testHistoriqueRunes } from './historique-runes.test';
 import { testCourbeChoix } from './courbe-choix.test';
 import { testUiTableauTri } from './ui-tableau.test';
 import { testRenduSiegeStatistiques, testRenduSiegeStatistiquesSite, testRenduTelephoneSiegeStatistiques } from './rendu/siege-statistiques.test';
+import { testRenduAjoutOffenseReco } from './rendu/ajout-offense-reco.test';
 import { testSiegeStatistiquesCarte, testSiegeStatistiquesCodes, testSiegeStatistiquesDebuts, testSiegeStatistiquesParticipation, testSiegeStatistiquesFiltres, testSiegeStatistiquesEnsemble, testSiegeStatistiquesCumul, testSiegeStatistiquesDefensesCombats, testSiegeStatistiquesTableaux, testSiegeStatistiquesJournaux, testSiegeStatistiquesPlusieurs, testSiegeStatistiquesTroisGuildes, testSiegeStatistiquesMembre, testSiegeStatistiquesAnciensMembres, testSiegeStatistiquesWrGlissant } from './siege-statistiques.test';
 import { testCompteDirect } from './compte-direct.test';
 import {
@@ -401,6 +402,7 @@ import testRecoDefenses from './reco-defenses.test';
 import testRecoFiabilite from './reco-fiabilite.test';
 import { testCaptureCounter } from './capture-counter.test';
 import { testRecoCounterEquipe, testRecoDefensesDesRecos } from './reco-counter.test';
+import { testAjoutOffenseRecoCombat, testAjoutOffenseRecoEquipe } from './ajout-offense-reco.test';
 import { testRecoFusionCorrespondance, testRecoFusionDecks, testRecoFusionChef, testRecoFusionImport, testRecoFusionSource } from './reco-fusion.test';
 import { testRenduRecoFusionChoix, testRenduRecoFusionStockage } from './rendu/reco-fusion.test';
 import { testApercuDeuxLignesRecherche, testApercuDeuxLignesBorne, testApercuDeuxLignesNonMonotone, testApercuDeuxLignesFinQuiGrandit, testApercuDeuxLignesRangees } from './apercu-deux-lignes.test';
@@ -613,6 +615,8 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testRecoFiabilite', testRecoFiabilite],
   ['testRecoCounterEquipe', testRecoCounterEquipe],
   ['testRecoDefensesDesRecos', testRecoDefensesDesRecos],
+  ['testAjoutOffenseRecoCombat', testAjoutOffenseRecoCombat],
+  ['testAjoutOffenseRecoEquipe', testAjoutOffenseRecoEquipe],
   ['testDiscordDroits', testDiscordDroits],
   ['testDiscordSession', testDiscordSession],
   ['testDiscordRecoSalon', testDiscordRecoSalon],
@@ -1300,6 +1304,7 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testRenduSiegeStatistiquesSite', testRenduSiegeStatistiquesSite],
   ['testRenduSiegeStatistiques', testRenduSiegeStatistiques],
   ['testRenduTelephoneSiegeStatistiques', testRenduTelephoneSiegeStatistiques],
+  ['testRenduAjoutOffenseReco', testRenduAjoutOffenseReco],
   ['testPluginSwexEtat', testPluginSwexEtat],
   ['testPluginSwexLive', testPluginSwexLive],
   ['testPluginSwexArchive', testPluginSwexArchive],

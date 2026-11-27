@@ -15,9 +15,10 @@
 // page dit pourquoi (`manquesDuSiege`, « monstres non vus en jeu »).
 
 import { ReactNode, memo, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
-import { UserMinus } from 'lucide-react';
+import { ListPlus, UserMinus } from 'lucide-react';
 import { useLangue, useTraduction } from '../../hooks/useLangue';
 import { useSiegesSwex } from '../../hooks/useSiegesSwex';
+import { useDiscord } from '../../hooks/useDiscord';
 import { formatDate, formatDateHeure, formatNombre } from '../../i18n/format';
 import {
   anciensMembres,
@@ -66,12 +67,14 @@ import SiegeVueMembre from './SiegeVueMembre';
 import Pager from '../account/Pager';
 import { FOND_GUILDE, TEXTE_GUILDE } from './SiegeGraphes';
 import SiegeComparatif from './SiegeComparatif';
-import { Bouton, Jeton, Segmented, Selecteur, ZoneCliquable } from '../../ui';
+import { Bouton, BoutonIcone, Jeton, Segmented, Selecteur, ZoneCliquable } from '../../ui';
+import { raisonNonAjoutable, trioDe, type OffenseAAjouter } from '../../lib/ajoutOffenseReco';
+import AjoutOffenseReco, { type RecosPourAjout } from './AjoutOffenseReco';
 
 export type AngleStats = 'guilde' | 'membre';
 export type VueStats = 'ensemble' | 'detail';
 
-export default function SiegeStatistiques({ monsters }: { monsters: Monster[] }) {
+export default function SiegeStatistiques({ monsters, recos }: { monsters: Monster[]; recos: RecosPourAjout }) {
   const textes = useTraduction();
   const s = textes.siegeStats;
   const etat = useSiegesSwex();
@@ -94,13 +97,14 @@ export default function SiegeStatistiques({ monsters }: { monsters: Monster[] })
   if (etat.etat === 'chargement') return <p className="mt-4 text-sm text-ink-dim">{s.chargement}</p>;
   if (!etat.releves) return <Note>{s.sansPlugin}</Note>;
   if (etat.releves.sieges.length === 0) return <Note>{s.aucunSiege}</Note>;
-  return <Releves releves={etat.releves} monsters={monsters} />;
+  return <Releves releves={etat.releves} monsters={monsters} recos={recos} />;
 }
 
 // Le contenu, une fois les sièges lus. Exporté pour les tests de rendu.
 export function Releves({
   releves,
   monsters,
+  recos,
   maintenant = Date.now() / 1000,
   angleDepart = 'guilde',
   vueDepart = 'ensemble',
@@ -108,6 +112,8 @@ export function Releves({
 }: {
   releves: RelevesSiege;
   monsters: Monster[];
+  // Un combat gagné s'ajoute à une recommandation (AjoutOffenseReco.tsx).
+  recos: RecosPourAjout;
   maintenant?: number;
   // L'angle et la vue à l'ouverture (les tests de rendu ouvrent les quatre).
   angleDepart?: AngleStats;
@@ -127,6 +133,14 @@ export function Releves({
   const [joueur, setJoueur] = useState(releves.moi);
   // Les filtres des combats et des défenses ; ils restent d'un siège à l'autre.
   const [filtre, setFiltre] = useState<FiltreSiege>(FILTRE_VIDE);
+  // Le combat dont on ajoute l'offense à une recommandation. Le setter est
+  // stable : les cartes de combat, mémorisées, ne se redessinent pas pour lui.
+  const [combatAjout, setCombatAjout] = useState<OffenseAAjouter | null>(null);
+  // ⚠️ **Discord en arrière-plan** : les recommandations partagées viennent
+  // des salons. Discord activé, la page les lit à son ouverture, comme la page
+  // Recommandations — la fenêtre d'ajout les propose déjà. Éteint, rien ne part
+  // (useDiscord.ts) : la fenêtre renvoie à la connexion.
+  const discord = useDiscord(recos);
   // « Tous les sièges » : un siège cumulé (`siegesCumules`), que chaque vue lit
   // comme les autres.
   const cumul = useMemo(() => siegesCumules(releves), [releves]);
@@ -329,7 +343,7 @@ export function Releves({
           {detail && (
             <>
               <Combats key={clePages} titre={s.combatsTitre} aide={s.combatsAide} groupes={detail.combats} plusieurs={tous} libelleSiege={libelleSiege}
-                guildes={guildesConnues} parCom2us={parCom2us} filtre={affiche.filtre} vide={s.aucunCombat} avecAttaquant />
+                guildes={guildesConnues} parCom2us={parCom2us} filtre={affiche.filtre} vide={s.aucunCombat} onAjouterReco={setCombatAjout} avecAttaquant />
               <Defenses key={`d-${clePages}`} titre={s.defensesTitre} siege={siege} defenses={detail.defenses} guildes={guildesConnues} parCom2us={parCom2us} filtre={affiche.filtre} avecJoueur />
               <Defenses key={`a-${clePages}`} titre={s.defensesAdversesTitre} siege={siege} defenses={detail.adverses} guildes={guildesConnues} parCom2us={parCom2us} filtre={affiche.filtre} avecJoueur />
             </>
@@ -339,12 +353,15 @@ export function Releves({
         detail && (
           <>
             <Combats key={clePages} titre={s.attaquesTitre} groupes={detail.combats} plusieurs={tous} libelleSiege={libelleSiege}
-              guildes={guildesConnues} parCom2us={parCom2us} filtre={affiche.filtre} vide={s.aucuneAttaque} />
+              guildes={guildesConnues} parCom2us={parCom2us} filtre={affiche.filtre} vide={s.aucuneAttaque} onAjouterReco={setCombatAjout} />
             <Defenses key={`d-${clePages}`} titre={s.defensesTitre} siege={siege} defenses={detail.defenses} guildes={guildesConnues} parCom2us={parCom2us} filtre={affiche.filtre} />
           </>
         )
       )}
       </div>
+      {combatAjout && (
+        <AjoutOffenseReco ajout={combatAjout} recos={recos} parCom2us={parCom2us} statutDiscord={discord.etat.statut} onClose={() => setCombatAjout(null)} />
+      )}
     </div>
   );
 }
@@ -497,6 +514,7 @@ function Combats({
   parCom2us,
   filtre,
   vide,
+  onAjouterReco,
   avecAttaquant = false,
 }: {
   titre: string;
@@ -509,6 +527,7 @@ function Combats({
   parCom2us: ParCom2us;
   filtre: FiltreSiege;
   vide: string;
+  onAjouterReco: (ajout: OffenseAAjouter) => void;
   avecAttaquant?: boolean;
 }) {
   const textes = useTraduction();
@@ -543,7 +562,7 @@ function Combats({
                 )}
                 <div className={`grid gap-2 ${COLONNES.grande}`}>
                   {attaques.map((x) => (
-                    <CarteCombat key={`${x.t}-${x.attaquant}-${x.defenseur}`} combat={x} siege={g.siege} guildes={guildes} parCom2us={parCom2us} avecAttaquant={avecAttaquant} />
+                    <CarteCombat key={`${x.t}-${x.attaquant}-${x.defenseur}`} combat={x} siege={g.siege} guildes={guildes} parCom2us={parCom2us} avecAttaquant={avecAttaquant} onAjouterReco={onAjouterReco} />
                   ))}
                 </div>
               </div>
@@ -556,25 +575,31 @@ function Combats({
   );
 }
 
-// Un combat : en tête l'heure, la base et le résultat ; puis les deux équipes
-// face à face ; puis qui contre qui. Mémorisé : un changement de page ou de
-// filtre ne redessine pas les cartes qui restent.
+// Un combat : en tête l'heure, la base, le résultat et « Ajouter à une
+// recommandation » ; puis les deux équipes face à face ; puis qui contre qui.
+// Mémorisé : un changement de page ou de filtre ne redessine pas les cartes
+// qui restent.
 const CarteCombat = memo(function CarteCombat({
   combat: x,
   siege,
   guildes,
   parCom2us,
   avecAttaquant,
+  onAjouterReco,
 }: {
   combat: AttaqueSiege;
   siege: SiegeReleve;
   guildes: Map<number, InfoGuilde>;
   parCom2us: ParCom2us;
   avecAttaquant: boolean;
+  onAjouterReco: (ajout: OffenseAAjouter) => void;
 }) {
   const s = useTraduction().siegeStats;
   const langue = useLangue();
   const nom = (id: number) => nomDuJoueur(siege, id) || s.joueurInconnu;
+  // ⚠️ Toujours affiché, désactivé avec sa raison : seule une victoire aux six
+  // monstres connus dit qu'une offense bat une défense.
+  const raison = raisonNonAjoutable(x, (id) => parCom2us.has(id));
   return (
     <div className={CARTE}>
       <div className="flex items-center gap-2 text-xs text-ink-dim">
@@ -583,6 +608,19 @@ const CarteCombat = memo(function CarteCombat({
         <span className="ml-auto">
           <Resultat victoire={x.victoire} />
         </span>
+        <BoutonIcone
+          icone={<ListPlus size={15} />}
+          libelle={raison ? `${s.ajoutReco.bouton} — ${s.ajoutReco.raisons[raison]}` : s.ajoutReco.bouton}
+          disabled={raison !== null}
+          onClick={() => {
+            if (!x.monstres) return;
+            const nom = (id: number) => parCom2us.get(id)?.name ?? '';
+            onAjouterReco({ offense: trioDe(x.monstres.attaque, nom), defense: trioDe(x.monstres.defense, nom) });
+          }}
+          zoneEtendue
+          className="-my-1"
+          data-ajout-reco
+        />
       </div>
       {x.monstres ? (
         <div className="mt-2 flex items-center gap-2">

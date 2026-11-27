@@ -65,7 +65,10 @@ export interface UseDiscord {
 const recupererDuSite: Recuperer = (url, init) => fetch(url, init);
 const ETAT_INACTIF: EtatDiscord = { statut: 'inactif', utilisateur: null, sources: null, salons: [], luA: null, conservable: true };
 
-export function useDiscord(recos: UseRecoState, recupererInjecte?: Recuperer): UseDiscord {
+// Les gestes des recommandations que la synchronisation appelle.
+export type RecosSynchronisees = Pick<UseRecoState, 'synchroniserDiscord' | 'apresPublicationDiscord' | 'apresConflitDiscord'>;
+
+export function useDiscord(recos: RecosSynchronisees, recupererInjecte?: Recuperer): UseDiscord {
   const t = useTraduction().recosDiscord;
   const notifier = useNotifier();
   const { actif, favoris } = useReglagesDiscord();

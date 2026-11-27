@@ -116,6 +116,11 @@ ceux du salon.
   les sources, puis la version de chaque salon, en parallèle, et la
   synchronisation. Un salon refusé compte comme un accès perdu ; un salon en
   panne garde sa recommandation telle quelle.
+- **À l'ouverture de Siège › Statistiques** aussi, Discord activé : la même
+  lecture, en arrière-plan, pour que la fenêtre « Ajouter à une
+  recommandation » propose les recommandations partagées
+  ([statistiques.md](../statistiques.md)). Cette page ne se connecte pas :
+  sans connexion, sa fenêtre renvoie à celle-ci.
 - **« Publier dans… »** pose aussitôt la version publiée comme recommandation
   liée du salon, sans attendre une relecture que le cache de 15 s du service
   pourrait encore servir à l'ancienne. **Détacher** relit les salons, pour que

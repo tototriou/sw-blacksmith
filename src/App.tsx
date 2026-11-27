@@ -2316,6 +2316,7 @@ function Application() {
         allMonsters={allMonsters}
         optimizer={optimizerPourEquipes}
         recos={recos.state.recos}
+        ajoutRecos={recos}
         onImporterOptimizer={importerEquipe}
         onEquipeCreee={demanderConservationEquipes}
         demandeOptimizer={demandeOptimizer}

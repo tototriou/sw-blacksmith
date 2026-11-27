@@ -21,6 +21,7 @@ Fichiers :
 - [recoMatch.ts](src/lib/recoMatch.ts) — confrontation avec le compte (calcul pur).
 - [ownedBuilds.ts](src/lib/ownedBuilds.ts) — collecte de tous les builds du joueur.
 - [recoFromSiege.ts](src/lib/recoFromSiege.ts) — deck pré-rempli depuis un deck d'offense ou une équipe de Mes équipes.
+- [ajoutOffenseReco.ts](../../../../src/lib/ajoutOffenseReco.ts), [AjoutOffenseReco.tsx](../../../../src/components/siege/AjoutOffenseReco.tsx) — une offense venue d'ailleurs ajoutée à une recommandation en un geste, sans doublon : un combat gagné de Siège › Statistiques ([statistiques.md](../statistiques.md)), une équipe de Mes équipes ([feat-equipes.md](../../compte/feat-equipes.md)).
 - [recoSearch.ts](src/lib/recoSearch.ts) — recherche d'un monstre dans les recos (calcul pur).
 - [pagesRecos.ts](src/lib/pagesRecos.ts) — une page de decks, de lignes d'analyse ou de défenses à la fois (calcul pur).
 - [recoDiscord.ts](src/lib/recoDiscord.ts) — recommandations liées à un salon Discord : état, synchronisation, fusion à trois voies (calcul pur).
@@ -45,6 +46,7 @@ Fichiers :
 | `src/lib/recoMatch.ts`, `src/lib/ownedBuilds.ts`, « Confronter à mon compte », le bilan | [confrontation.md](confrontation.md) |
 | le repli d'un deck, l'édition, `src/lib/annulerEdition.ts`, la pagination des decks, `src/lib/pagesRecos.ts` | [interactions.md](interactions.md) |
 | `src/lib/recoFromSiege.ts`, partir d'un deck d'offense ou d'une équipe de Mes équipes | [import-deck-offense.md](import-deck-offense.md) |
+| `src/lib/ajoutOffenseReco.ts`, `src/components/siege/AjoutOffenseReco.tsx`, ajouter une offense depuis les statistiques ou Mes équipes | [../statistiques.md](../statistiques.md) (« Ajouter une offense à une recommandation »), [feat-equipes.md](../../compte/feat-equipes.md) (« Ajouter à une recommandation ») |
 | `api/`, `vercel.json`, `scripts/construire-api.mjs`, le service Discord, ses routes, droits, cache et variables | [service-discord.md](service-discord.md) |
 | `src/lib/recoDiscord.ts`, `src/lib/discordClient.ts`, `src/hooks/useDiscord.ts`, `src/hooks/useReglagesDiscord.ts`, une recommandation liée à un salon, son état, la synchronisation, la fusion à trois voies, les favoris | [synchronisation-discord.md](synchronisation-discord.md) |
 | `src/components/siege/discord/`, `src/lib/provenancesRecos.ts`, la colonne des provenances, le bandeau d'un salon, « Publier dans… », les dialogues Discord | [rendu-de-la-page.md](rendu-de-la-page.md#provenances-et-discord) |

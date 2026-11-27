@@ -71,6 +71,11 @@ visée », avec sa raison). Il ouvre la fenêtre d'ajout
 - **« Deck vide »**, dans le pied, à côté d'« Ajouter ce counter » (toujours
   affiché, désactivé tant qu'aucune capture n'est lue).
 
+Un counter s'ajoute aussi **depuis Siège › Statistiques**, d'un combat gagné :
+l'offense en deck, la défense battue visée, jamais en double
+([statistiques.md](../statistiques.md), « Ajouter une offense à une
+recommandation »).
+
 ### Depuis une capture
 
 - ⚠️ **Coller d'abord** : une capture se prend dans le presse-papiers (Win +
