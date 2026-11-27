@@ -85,13 +85,14 @@ const PROPRES: AurasPropres = { fight: 1, determination: 1, enhance: 0, accuracy
 // Judgment (Arella) au tirage : une seule de ses branches après le coup 1.
 // Relevée de nouveau le 2026-11-27 : données SWARFARM du patch d'équilibrage
 // de novembre 2026 et ses curations (PV max sur les PV de base, Wheel of
-// Fire, Improvisation, Arsenal of Sacrifice, Infinity Shadow, Snipe, Squash).
+// Fire, Improvisation, Arsenal of Sacrifice, Infinity Shadow, Snipe, Squash), puis la Marque posée par l'attaque d'avant le sort de
+// Protection de l'ombre (Shadow of Right Arm).
 // ⚠️ Un écart veut dire qu'une note a changé. Voulu (modèle de dégâts, données
 // SWARFARM régénérées) : relever l'empreinte de nouveau (le message d'échec
 // la donne) et le dire dans le commit. Sinon : un défaut du code commun au
 // calcul avec et sans memo.
 const EMPREINTE_ANCIEN_CALCUL = {
-  contextes: 12426, notes: 310650, sha256: '5ff55836a6d11b9dd50c9f259a457bb819bb95ca9de565fb67b3c378e6d15a5e',
+  contextes: 12426, notes: 310650, sha256: '532b951e387ae81391000bff36337232f63d292368b1e5cf4388a14f649ee189',
 };
 
 // Quatre pièces par sorte, deux principales par sorte : des paires partagent

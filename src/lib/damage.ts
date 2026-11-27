@@ -5544,6 +5544,10 @@ export interface PassifOffensifProfile {
   // Menace de Shadow of Right Arm) : elle lit l'état de la cible d'avant le
   // sort, sans la réduction de Défense qu'il pose, et l'écran dit « avant ».
   avantLeSort?: true;
+  // Donnée pure : vrai = cette attaque d'avant le sort pose une Marque (sans
+  // probabilité) que le sort choisi, puis les passifs qui le suivent, lisent
+  // (Protection de l'ombre). L'attaque elle-même frappe sans elle.
+  poseMarqueAvantLeSort?: true;
   // Donnée pure : vrai = `profile` est AUSSI proposé comme sort par
   // `monsterDamageSkills` (voir `PassifOffensifConnu`).
   selectionnableCommeSort?: boolean;
@@ -5732,6 +5736,8 @@ interface AttaqueAuxiliaireConnue {
   slots?: readonly number[];
   // L'attaque frappe AVANT le sort choisi (voir `PassifOffensifProfile.avantLeSort`).
   avantLeSort?: true;
+  // …et pose une Marque que le sort lit (voir `PassifOffensifProfile.poseMarqueAvantLeSort`).
+  poseMarqueAvantLeSort?: true;
   // Pour un déclencheur SANS auxiliaire dans l'API : celle d'un homonyme,
   // empruntée sur décision de l'utilisateur, jamais par ressemblance. Le
   // profil prend son identifiant et sa formule, un coup, sur une cible, et
@@ -5746,31 +5752,38 @@ export const ATTAQUES_AUXILIAIRES_PAR_DECLENCHEUR: Readonly<Record<number, Attaq
     condition: 'l’étourdissement de ce sort réussit (probabilité du jeu non tirée)',
     source: 'prose et auxiliaire 11016 ; une répétition à 7,4 × ATQ, sans nouvel étourdissement : utilisateur, 2026-09-23',
   },
-  // Shadow of Right Arm — Minato (25911), Ren (25912), Ritsu (25915) : « you go
-  // under the Threat state while the enemy attacks with a single-target skill
-  // 1 time ». Auxiliaires 15716, 15717, 15720 `4.5*{ATK}` : l'attaque lancée
-  // consécutivement en état de Menace, activable ; elle frappe AVANT le sort
-  // choisi, S1 ou S2, et aussi S3 pour Ren (utilisateur, 2026-10-17).
+  // Shadow of Right Arm — Minato (25911), Ren (25912), Ritsu (25915) : « you
+  // receive {shadow_pt} for 1 turn ». Auxiliaires 15716, 15717, 15720
+  // `4.5*{ATK}` : l'attaque activable qui frappe AVANT le sort choisi, S1 ou
+  // S2, et aussi S3 pour Ren (utilisateur, 2026-10-17). Depuis le patch de
+  // novembre 2026, l'effet Shadow's Protection (Protection de l'ombre) la
+  // décrit : « On your next turn, using a skill will perform an additional
+  // pre-attack on the target before the main attack to leave a Branding
+  // effect for 2 turns » — la Marque compte pour le sort (utilisateur,
+  // 2026-11-27).
   15706: {
-    libelle: 'Shadow of Right Arm — attaque en Menace',
-    condition: 'tu es en état de Menace et l’ennemi t’attaque d’un sort mono-cible',
+    libelle: 'Shadow of Right Arm — attaque avant le sort',
+    condition: 'Protection de l’ombre est encore sur toi à ton tour : l’attaque pose une Marque avant le sort',
     source: 'auxiliaire 15716 ; utilisateur, 2026-10-17',
     slots: [1, 2],
     avantLeSort: true,
+    poseMarqueAvantLeSort: true,
   },
   15707: {
-    libelle: 'Shadow of Right Arm — attaque en Menace',
-    condition: 'tu es en état de Menace et l’ennemi t’attaque d’un sort mono-cible',
+    libelle: 'Shadow of Right Arm — attaque avant le sort',
+    condition: 'Protection de l’ombre est encore sur toi à ton tour : l’attaque pose une Marque avant le sort',
     source: 'auxiliaire 15717 ; utilisateur, 2026-10-17',
     slots: [1, 2, 3],
     avantLeSort: true,
+    poseMarqueAvantLeSort: true,
   },
   15710: {
-    libelle: 'Shadow of Right Arm — attaque en Menace',
-    condition: 'tu es en état de Menace et l’ennemi t’attaque d’un sort mono-cible',
+    libelle: 'Shadow of Right Arm — attaque avant le sort',
+    condition: 'Protection de l’ombre est encore sur toi à ton tour : l’attaque pose une Marque avant le sort',
     source: 'auxiliaire 15720 ; utilisateur, 2026-10-17',
     slots: [1, 2],
     avantLeSort: true,
+    poseMarqueAvantLeSort: true,
   },
   // Guilty Sentence — Theonia (34215) : « Attacks all enemies … In addition,
   // attacks the enemy with the lowest Defense ». Auxiliaire 23517
@@ -5835,6 +5848,7 @@ function attaquesAuxiliairesDeLaFiche(detail: DetailMonstre): PassifOffensifProf
       coupsDuSortActif: false,
       slotsDeclencheurs: connue.slots ?? [declencheur.slot],
       ...(connue.avantLeSort ? { avantLeSort: true as const } : {}),
+      ...(connue.poseMarqueAvantLeSort ? { poseMarqueAvantLeSort: true as const } : {}),
       categorie: { type: 'conditionnel', condition: connue.condition },
       profile: nomme,
     });
@@ -7341,6 +7355,7 @@ export class PreparationReglage {
     if (this.sorts.length >= BORNE_SORTS_PREPARES) this.sorts = [];
     this.sorts.push({ profile, passifs, setup, monsterWide, stack, conditionnel, valeur });
     // Les objets construits une fois pour toutes sont désormais connus.
+    if (valeur.setupSort && valeur.setupSort !== setup) this.ajouterReglage(valeur.setupSort);
     if (valeur.setupCritForce) this.ajouterReglage(valeur.setupCritForce);
     for (const pp of valeur.passifs) {
       this.ajouterProfil(pp.profil);
@@ -7445,6 +7460,9 @@ export interface PassifPrepare {
 export interface SortPrepare {
   vitEnnemie: number;
   contexteSort: ContexteAttaqueConjointe | null;
+  // Le réglage du sort choisi : celui de l'appel, Marque comprise quand une
+  // attaque d'avant le sort la pose (`poseMarqueAvantLeSort`).
+  setupSort: DamageSetup | null;
   // Le réglage du sort sous critique forcé, construit une fois quand la
   // préparation est retenue ; `null` sinon.
   setupCritForce: DamageSetup | null;
@@ -7472,7 +7490,7 @@ const AUCUN_PASSIF: readonly PassifPrepare[] = Object.freeze([]);
 // réécrit en entier à chaque appel, lu par lui seul (`computeTotalDamage`
 // n'appelle aucun autre `computeTotalDamage`). Jamais une mémoire.
 const SORT_SANS_MEMOIRE: SortPrepare = {
-  vitEnnemie: 0, contexteSort: null, setupCritForce: null, passifs: AUCUN_PASSIF,
+  vitEnnemie: 0, contexteSort: null, setupSort: null, setupCritForce: null, passifs: AUCUN_PASSIF,
   facteurStack: 0, conditionnelActif: false, facteurVelaska: 0,
 };
 
@@ -7494,6 +7512,10 @@ function preparerSort(
   // comprises, pour les contributions qui SUIVENT le sort ; `null` sans
   // scénario actif (voir `etatCibleApresSort`).
   const setupApresSort = etatCibleApresSort(profile, passifs, setup, monsterWide, reglage);
+  // Protection de l'ombre : l'attaque d'avant le sort pose une Marque, que le
+  // sort et les passifs qui le suivent lisent ; l'attaque elle-même non.
+  const marqueAvant = !setup.brand && passifs.some((p) => p.poseMarqueAvantLeSort && passifCompte(p, profile, setup));
+  const setupDuSort = marqueAvant ? { ...setup, brand: true } : setup;
   let prepares: PassifPrepare[] | null = null;
   for (const p of passifs) {
     if (!passifCompte(p, profile, setup)) continue;
@@ -7519,7 +7541,8 @@ function preparerSort(
     // dernier coup : sous scénario, les poses entre les coups comprises ;
     // sinon le réglage, avec la réduction que le sort pose lui-même. Une
     // attaque qui le PRÉCÈDE (`avantLeSort`) lit le réglage tel quel.
-    const etatCible = p.avantLeSort ? setup : setupApresSort ?? setup;
+    const etatApres = setupApresSort ?? setup;
+    const etatCible = p.avantLeSort ? setup : marqueAvant ? { ...etatApres, brand: true } : etatApres;
     const base = { ...etatCible, defBreak: p.avantLeSort ? setup.defBreak : defBreakApres(etatCible) };
     prepares.push({
       p, contexte, bonusActif, profil, base, avant: null,
@@ -7527,12 +7550,13 @@ function preparerSort(
     });
   }
   const r: SortPrepare = reglage
-    ? { vitEnnemie: 0, contexteSort: null, setupCritForce: null, passifs: AUCUN_PASSIF, facteurStack: 0, conditionnelActif: false, facteurVelaska: 0 }
+    ? { vitEnnemie: 0, contexteSort: null, setupSort: null, setupCritForce: null, passifs: AUCUN_PASSIF, facteurStack: 0, conditionnelActif: false, facteurVelaska: 0 }
     : SORT_SANS_MEMOIRE;
   // ⚠️ Bornée à 1, comme dans `computeSkillDamageDetail`.
   r.vitEnnemie = Math.max(1, setup.enemySpd ?? DEFAULT_DAMAGE_SETUP.enemySpd!);
   r.contexteSort = contexteAttaqueConjointe(profile, setup, 'sort-choisi');
-  r.setupCritForce = reglage ? { ...setup, critMode: 'crit' as const } : null;
+  r.setupSort = setupDuSort;
+  r.setupCritForce = reglage ? { ...setupDuSort, critMode: 'crit' as const } : null;
   r.passifs = prepares ?? AUCUN_PASSIF;
   r.facteurStack = stack ? 1 + resolvedStackPct(stack, setup) / 100 : 1;
   r.conditionnelActif = !!(
@@ -9133,7 +9157,8 @@ export function computeTotalDamage(
   const maVit = maVitCombat(stats, setup, element, artefacts.ampliVitPct);
   const ecartVit = maVit - prepare.vitEnnemie;
   const forceCrit = critSiPlusRapide && ecartVit > 0;
-  const setupSort = forceCrit ? prepare.setupCritForce ?? { ...setup, critMode: 'crit' as const } : setup;
+  const setupDuSort = prepare.setupSort ?? setup;
+  const setupSort = forceCrit ? prepare.setupCritForce ?? { ...setupDuSort, critMode: 'crit' as const } : setupDuSort;
   // Un PASSIF choisi lui-même comme sort (Tempest seul, `passif: true`) n'a pas
   // la place du premier coup du tour : ce cran isole sa contribution, mais il
   // frappe toujours après le S1 ou le S2 qui le déclenche — 411 (« Dgts CRIT

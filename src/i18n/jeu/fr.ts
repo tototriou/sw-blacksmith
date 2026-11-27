@@ -341,6 +341,7 @@ export const jeuFr = {
     'Increases ATB effects': { long: "Augmentation des effets sur la jauge d'attaque" },
     'Remove inability effect': { long: "Suppression des effets d'incapacité" },
     'Shadow Trap': { long: "Piège d'ombre" },
+    "Shadow's Protection": { long: "Protection de l'ombre" },
     'Increase Heal Amount': { long: 'Augmentation des soins' },
     'Limit Harmful Effects': { long: 'Limitation des effets nocifs' },
     'Prevent Harmful Effect Reapply': { long: 'Effets nocifs non réapplicables' },

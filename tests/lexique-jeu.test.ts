@@ -23,10 +23,7 @@ const RACINE = join(dirname(fileURLToPath(import.meta.url)), '..');
 // encore été relevé en jeu. Ils s'affichent sous leur nom SWARFARM, en anglais.
 // ⚠️ On n'y ajoute un effet qu'en sachant qu'il manque ; on l'en retire quand
 // son nom entre dans `jeuFr.effets`.
-const EFFETS_SANS_TRADUCTION: readonly string[] = [
-  // Ritsu (Shadow of Right Arm), arrivé avec le patch de novembre 2026.
-  "Shadow's Protection",
-];
+const EFFETS_SANS_TRADUCTION: readonly string[] = [];
 
 // Les noms d'effets que portent les compétences des données SWARFARM.
 function effetsDesDonnees(): Set<string> {
