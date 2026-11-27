@@ -167,7 +167,7 @@ du jeu de chaque entrée) :
 | Eye of the Desert / Eagle Deception | Desert Warrior/Salah, Bayek | compté sur la seule cible configurée malgré « random enemy » — même monstre, même passif (Bayek = version collaboration, Salah = version SW native), confirmation étendue de l'un à l'autre |
 | Turning Slash / Flash Step | Birgitta, Ciri (Lumière), Magic Order Swordsinger | **2 coups** (prose) ; magnitude croissante avec les PV bas NON modélisée → plancher |
 | Hidden Gun / Meticulous Attack | Ezio, Evan, Steel Commander | **critique toujours** ; base inconditionnelle, seul le +100 % dépend du bouton |
-| Improvisation | Dominic, Weapon Master | bouton `bonus`/`dejaInclus` (+100 % si PV > 50 %, formule déjà majorée) |
+| Improvisation | Dominic, Weapon Master | bouton `bonus`/`dejaInclus` (+120 % si PV > 50 % depuis le patch de novembre 2026, formule déjà majorée) |
 | Ruins | Silver | **3 coups**, critique normalement, déclenchement `defBreak` |
 | Slash Waves / Slash Wind | Roid | déclenchement `defBreak` (2 coups pour Slash Waves) |
 | Tempest | Teshar, Phoenix (Vent) | formule curée `3.7 × ATQ` (données vides), en zone, +30 % d'améliorations, une instance ; bouton `conditionnel`, après S1 ou S2 seulement ; aussi choisissable comme sort, jamais par défaut |

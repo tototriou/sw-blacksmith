@@ -1803,7 +1803,12 @@ export interface CombatStatProfile {
   /** Pourcentage ajouté depuis l'ATQ de base, distinct d'un multiplicateur sur l'ATQ totale. */
   atkBasePct?: number;
   defPct?: number;
-  hpPct?: number;
+  /**
+   * Pourcentage des PV de BASE ajouté aux PV max — depuis le patch de novembre
+   * 2026, une hausse de PV max d'un passif ou d'un état se calcule sur les PV
+   * de base, plus sur les PV totaux (relevé de l'utilisateur, 2026-11-27).
+   */
+  hpBasePct?: number;
   spdPct?: number;
   spdFlat?: number;
   /**
@@ -1849,7 +1854,11 @@ const STATS_COMBAT_PAR_ID_CONNUS: Record<number, CombatStatConfig[]> = {
   23914: [{ source: 'stacks', label: 'Charges de Quick Steps', max: 15, atkPct: 10, defPct: 10 }],
   24414: [{ source: 'stacks', label: 'Charges de Deer Steps', max: 15, atkPct: 10, defPct: 10 }],
   2214: [{ source: 'stacks', label: 'Cumuls de Reincarnate', max: 5, atkPct: 50, defPct: 50 }],
-  1856: [{ source: 'stacks', label: 'Cumuls de Crouch', max: 5, hpPct: 20 }],
+  1856: [{ source: 'stacks', label: 'Cumuls de Crouch', max: 5, hpBasePct: 20 }],
+  // Squash (Volcaris) : « increases your MAX HP by 70%, up to 350%, each time
+  // this skill is used », depuis le patch de novembre 2026 (+20 % jusqu'à
+  // +100 % avant, non modélisé).
+  25812: [{ source: 'stacks', label: 'Utilisations de Squash', max: 5, hpBasePct: 70 }],
   13501: [{ source: 'stacks', label: 'Cumuls de Stone Claws', max: 5, defPct: 30 }],
   13502: [{ source: 'stacks', label: 'Cumuls de Stone Claws', max: 5, defPct: 30 }],
   13503: [{ source: 'stacks', label: 'Cumuls de Stone Claws', max: 5, defPct: 30 }],
@@ -1883,7 +1892,9 @@ const STATS_COMBAT_PAR_ID_CONNUS: Record<number, CombatStatConfig[]> = {
   18137: [{ source: 'toggle', label: 'État Thunderer', atkPct: 100 }],
   18138: [{ source: 'toggle', label: 'État Thunderer', spdPct: 100 }],
   18139: [{ source: 'toggle', label: 'État Thunderer', togglePartageCondition: true }],
-  18140: [{ source: 'toggle', label: 'État Thunderer', hpPct: 30 }],
+  // PV max +100 % des PV de base depuis le patch de novembre 2026 (+30 % des
+  // PV totaux avant).
+  18140: [{ source: 'toggle', label: 'État Thunderer', hpBasePct: 100 }],
 };
 
 // Les identifiants de `STATS_COMBAT_PAR_ID_CONNUS`, en lecture seule : la table
@@ -1932,7 +1943,9 @@ const CONDITIONS_MONSTRE_PAR_ID_CONNUS: Record<number, ConditionCombatProfile[]>
   }],
   10712: [{ type: 'compteurMin', min: 5, max: 5, label: 'Soins reçus par les ennemis', ignoreDefPct: 100 }],
   13113: [{ type: 'ignoreDefParStack', max: 5, pctParStack: 15, pctAuMax: 100, label: 'Connaissances' }],
-  15714: [{ type: 'manuel', libelle: 'la cible est liée à Infinity Shadow', ignoreDefPct: 100 }],
+  // « ignores its Defense and attacks with a 50% Critical Rate bonus » — le
+  // taux critique depuis le patch de novembre 2026.
+  15714: [{ type: 'manuel', libelle: 'la cible est liée à Infinity Shadow', ignoreDefPct: 100, crPoints: 50 }],
   15815: [{ type: 'manuel', libelle: 'Bombay et la cible sont tous deux endormis', ignoreDefPct: 100 }],
   18139: [{ type: 'manuel', libelle: 'Dyeus est en état Thunderer', critiqueGaranti: true }],
   9611: [{ type: 'manuel', libelle: 'Berserk est déjà actif avant le coup', pct: 100 }],
@@ -2941,6 +2954,26 @@ const BONUS_STACK_PROPRE_CONNUS: Record<string, NonNullable<SkillDamageProfile['
     aide: 'le nombre de tours écoulés sans utiliser ce S3',
     suffix: '',
   },
+  // Fern et Ruhe, depuis le patch de novembre 2026 : « Increases the damage
+  // of [ce sort] by 50%, up to 200%, each time this skill is used ».
+  'Zoltraak・Snipe': {
+    triggerMax: 4,
+    triggerStep: 1,
+    ratio: 50,
+    pctMax: 200,
+    label: 'Utilisations précédentes de ce sort',
+    aide: 'le nombre de fois où ce S3 a déjà été utilisé dans le combat',
+    suffix: '',
+  },
+  'Mana Particle Cannon・Snipe': {
+    triggerMax: 4,
+    triggerStep: 1,
+    ratio: 50,
+    pctMax: 200,
+    label: 'Utilisations précédentes de ce sort',
+    aide: 'le nombre de fois où ce S3 a déjà été utilisé dans le combat',
+    suffix: '',
+  },
 };
 
 // ── Effets néfastes posés ENTRE les coups d'un sort ─────────────────────────
@@ -3174,7 +3207,7 @@ const EFFETS_ENTRE_COUPS_EXCEPTIONS_PAR_ID: Readonly<Record<number, ExceptionEff
 
 // Dégâts bruts par effet nocif de la cible, propres à UN sort (valeurs de
 // l'utilisateur, 2026-11-02) :
-// - Reelseiden・Havoc (Übel feu) et Dimension Slash・Havoc (Wieb feu) : « deals
+// - Reelseiden・Havoc (Übel feu) et Dimension Slash・Havoc (Irren feu) : « deals
 //   fixed damage equal to 5% of its MAX HP for each Continuous Damage granted on
 //   the target » — à chaque coup, les dégâts continus déjà posés comptés ;
 // - Bullet Assassination (Nina lumière) et Shining Butterfly (Shasha lumière) :
@@ -3217,7 +3250,7 @@ function brutParEffetDesPassifs(detail: DetailMonstre): BrutParEffetCibleProfile
 // ⚠️ Écartés : Eagle Deception (Bayek ténèbres, 17315) et Eye of the Desert
 // (Salah, 17815), dont la bête frappe « a random enemy … when you attack on
 // your turn » — ni la cible ni l'instant (avant le coup 2 ?) ne sont dits ;
-// Severing Edge et Dimension Shatter (Übel vent, Wieb vent) : les coups en plus
+// Severing Edge et Dimension Shatter (Übel vent, Irren vent) : les coups en plus
 // sont ceux du passif, après un sort à un coup.
 // `tirage` : le passif tire UN effet au hasard par attaque, parmi ceux de son
 // entrée (un seul par coup, `EffetEntreCoupsProfile.tirage`).
@@ -3252,7 +3285,7 @@ const EFFETS_ENTRE_COUPS_PAR_PASSIF_PAR_ID: Readonly<Record<number, readonly Eff
   // turn » — compté par sa propre règle brute (4 % des PV max de la cible par
   // effet nocif).
   15911: [{ effet: 'Unrecoverable', precision: [{ cle: 'parPassif', passif: 'Nano Vision' }] }],
-  // Empathy (Übel ténèbres) et Dimensional Memory (Wieb ténèbres) : « Grants 1
+  // Empathy (Übel ténèbres) et Dimensional Memory (Irren ténèbres) : « Grants 1
   // random harmful effect that was applied in the current battle on the enemy
   // … whenever you attack » — le joueur choisit si c'est une Marque ou une
   // Réduction de DEF (utilisateur, 2026-11-02).
@@ -3743,7 +3776,14 @@ const BOMBES_SANS_COUP_DIRECT_CONNUS = new Set(['Cursed Apple']);
 const FORMULES_CUREES_PAR_ID: Record<number, string> = {
   7808: '5.5*{ATK}',
   7810: '5.5*{ATK}',
-  21010: '{MAX HP}*{Sacrifice Reserve %}/{Alive Enemies} (Fixed)',
+  // Wheel of Fire (Clara, Pierrette) : depuis le patch de novembre 2026,
+  // SWARFARM écrit `ATK5` en formule, alors que sa formule brute
+  // (`multiplier_formula_raw`) dit `[["ATK", "*", 1.05]]` — 4 coups au lieu de
+  // 3 × 1,4. On retient la formule brute.
+  5512: '1.05*{ATK}',
+  // « damage equal to 90% of your MAX HP » depuis le patch de novembre 2026
+  // (la prose d'avant ne chiffrait pas : 100 % supposés).
+  21010: '0.9*{MAX HP}*{Sacrifice Reserve %}/{Alive Enemies} (Fixed)',
 };
 
 // La formule d'une fiche à `formule: ""` que porte sa compétence auxiliaire :
@@ -3840,7 +3880,8 @@ export function porteeRetenue(c: Competence): boolean {
 }
 
 const COMPOSANTES_FIXES_ADDITIONNELLES_PAR_ID: Record<number, string> = {
-  21006: '{MAX HP}*{Sacrifice Reserve %}/{Alive Enemies}',
+  // 90 % des PV max, comme Velaska (`FORMULES_CUREES_PAR_ID`).
+  21006: '0.9*{MAX HP}*{Sacrifice Reserve %}/{Alive Enemies}',
 };
 
 const DEGATS_FIXES_SANS_BONUS_ELEMENTAIRE = new Set([21010]);
@@ -5120,8 +5161,8 @@ export function estPrisEnCharge(p: SkillDamageProfile | SkillDamageUnsupported):
 //   Lumière ») — un bouton bascule CE bonus précis, désactivé par défaut.
 //   ⚠️ **`dejaInclus`** : sur certains passifs, `Competence.formule` porte
 //   directement le cas MAJORÉ (le bonus déjà appliqué), pas le cas de base —
-//   Dominic/Weapon Master (« Improvisation ») : `2.0*{ATK} (Fixed)` = 100 %
-//   de base × (1 + 100 % si PV > 50 %), aucune formule séparée pour le cas de
+//   Dominic/Weapon Master (« Improvisation ») : `2.2*{ATK} (Fixed)` = 100 %
+//   de base × (1 + 120 % si PV > 50 %), aucune formule séparée pour le cas de
 //   base. Décoché par défaut (même discipline pessimiste que les autres
 //   `bonus`), la contribution est alors DIVISÉE par `1 + pct/100` plutôt que
 //   MULTIPLIÉE — l'inverse de l'opération habituelle, jamais une réécriture
@@ -5260,7 +5301,7 @@ const PASSIFS_OFFENSIFS_CONNUS: PassifOffensifConnu[] = [
   // DIVISÉE par 2 plutôt que multipliée, retrouvant le cas de base (100 %
   // de l'ATQ) sans jamais réécrire `formule`. `(Fixed)` : ni critique ni
   // facteur DEF.
-  { nom: 'Improvisation (Passive)', categorie: { type: 'bonus', pct: 100, condition: 'tes PV dépassent 50 %', dejaInclus: true } }, // Weapon Master, Dominic
+  { nom: 'Improvisation (Passive)', categorie: { type: 'bonus', pct: 120, condition: 'tes PV dépassent 50 %', dejaInclus: true } }, // Weapon Master, Dominic
   // — Bonus conditionnel à pourcentage fixe —
   // ⚠️ `critique: 'toujours'` : « The additional attack ALWAYS LANDS AS A
   // CRITICAL HIT » — l'inverse de Winds and Clouds, et indépendant du mode
@@ -5378,7 +5419,7 @@ const PASSIFS_OFFENSIFS_CONNUS: PassifOffensifConnu[] = [
     categorie: { type: 'conditionnel', condition: 'un allié est frappé pendant le tour ennemi et la riposte part (15 %, probabilité du jeu non tirée)' },
   }, // Manon (eau)
   // « The activation of [Rageful Return] deals significant damage to all
-  // enemies » — à sa résurrection ; auxiliaire `6.0*{ATK}` (11916). Zone : la
+  // enemies » — à sa résurrection ; auxiliaire `7.2*{ATK}` (11916, `6.0` avant le patch de novembre 2026). Zone : la
   // prose dit « all enemies », comme la fiche (`aoe: true`) ; l'auxiliaire dit
   // `aoe: false`, la prose l'emporte.
   {
@@ -6869,7 +6910,7 @@ function combatStatCount(profile: CombatStatProfile, setup: DamageSetup): number
 }
 
 function resolvedCombatStatBonuses(profiles: CombatStatProfile[], setup: DamageSetup) {
-  const out = { atkPct: 0, atkBasePct: 0, defPct: 0, hpPct: 0, spdPct: 0, spdFlat: 0, spdBasePct: 0, atkFlat: 0, atkDepuisSpd: 0, crPoints: 0 };
+  const out = { atkPct: 0, atkBasePct: 0, defPct: 0, hpBasePct: 0, spdPct: 0, spdFlat: 0, spdBasePct: 0, atkFlat: 0, atkDepuisSpd: 0, crPoints: 0 };
   for (const profile of profiles) {
     if (profile.source === 'debuffsInverses') {
       if (setup.atkDebuff) out.atkPct += 50;
@@ -6881,7 +6922,7 @@ function resolvedCombatStatBonuses(profiles: CombatStatProfile[], setup: DamageS
     out.atkPct += (profile.atkPct ?? 0) * count;
     out.atkBasePct += (profile.atkBasePct ?? 0) * count;
     out.defPct += (profile.defPct ?? 0) * count;
-    out.hpPct += (profile.hpPct ?? 0) * count;
+    out.hpBasePct += (profile.hpBasePct ?? 0) * count;
     out.spdPct += (profile.spdPct ?? 0) * count;
     out.spdFlat += (profile.spdFlat ?? 0) * count;
     out.spdBasePct += (profile.spdBasePct ?? 0) * count;
@@ -7881,7 +7922,9 @@ function calculerStatsDeCombat(
       bonusCombat.atkFlat +
       bonusCombat.atkDepuisSpd * baseCombat.spd,
     def: (baseCombat.def * (100 + bonusCombat.defPct)) / 100,
-    hp: (baseCombat.hp * (100 + bonusCombat.hpPct)) / 100,
+    // `hpBasePct` : un pourcentage des PV de BASE ajouté tel quel, comme
+    // `atkBasePct` pour l'ATQ.
+    hp: baseCombat.hp + ((stats.find((s) => s.key === 'hp')?.base ?? 0) * bonusCombat.hpBasePct) / 100,
     // `spdBasePct` (Gold Headband) : un pourcentage de la VIT de BASE ajouté
     // tel quel, comme `atkBasePct` pour l'ATQ — SANS arrondi (13,92 par cumul
     // pour une base 116). ⚠️ Le Speed tune
@@ -9494,7 +9537,7 @@ export function damageRelevantStats(
       if (!keys.includes('spd')) keys.push('spd');
     }
     if (p.defPct && !keys.includes('def')) keys.push('def');
-    if (p.hpPct && !keys.includes('hp')) keys.push('hp');
+    if (p.hpBasePct && !keys.includes('hp')) keys.push('hp');
     // `spdBasePct` à parité avec `atkBasePct` ci-dessus : sans lui, la VIT
     // sortait des stats pertinentes de Mei Hou Wang.
     if ((p.spdPct || p.spdFlat || p.spdBasePct) && !keys.includes('spd')) keys.push('spd');
