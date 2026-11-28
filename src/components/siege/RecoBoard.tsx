@@ -1,20 +1,20 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Plus, Download, Upload, Trash2, AlertTriangle, XCircle, X, Gauge } from 'lucide-react';
+import { Plus, Download, Upload, Trash2, AlertTriangle, XCircle, X, ArrowLeft } from 'lucide-react';
 import { IconeRecos } from '../IconesAtelier';
-import { Monster, Reco, RecoPayload } from '../../types';
+import { Monster, Reco, RecoDeck, RecoPayload } from '../../types';
 import { UseRecoState } from '../../hooks/useSiegeRecos';
 import { UseSiegeState } from '../../hooks/useSiegeState';
 import { useStickyState } from '../../hooks/useStickyState';
-import { teamSummary, isTeamUsable } from '../../lib/recoFromSiege';
+import { teamSummary, isTeamUsable, deckFromEquipeEnregistree, equipeProposable } from '../../lib/recoFromSiege';
+import { categorieDe, libelleRangement, type EquipeEnregistree } from '../../lib/equipesEnregistrees';
+import type { EquipeChoix } from './AjoutCounter';
 import { encodeRecosJson, validateRecosImport, ImportReport, slugify } from '../../lib/recoShare';
 import { appliquerImport, BilanImport, messageFusion, trouverCorrespondances } from '../../lib/recoFusion';
 import ChoixFusionRecos from './ChoixFusionRecos';
 import { contexteConfrontationReco, matchReco, RecoMatch } from '../../lib/recoMatch';
-import {
-  chercheMonstre, ordreDe, suivreOrdre, trierParFiabilite,
-  type OrdreResultats, type RecoHit, type RecoSearchMode, type TriRecherche,
-} from '../../lib/recoSearch';
-import type { VueRecos } from '../../lib/recoDefenses';
+import { chercheMonstre, type RecoHit, type TriRecherche } from '../../lib/recoSearch';
+import { CLE_FILTRE_MODIFIES, croiserHits, hitsModifies } from '../../lib/recoModifies';
+import { defensesDesRecos, type VueRecos } from '../../lib/recoDefenses';
 import { ConfirmDialog } from '../../ui/Dialogs';
 import { useTraduction } from '../../hooks/useLangue';
 import { OwnedBuild, OwnedTeam } from '../../lib/ownedBuilds';
@@ -25,7 +25,9 @@ import MobileSheet from '../../ui/MobileSheet';
 import MonsterAvatar from '../MonsterAvatar';
 import MonsterPicker from '../MonsterPicker';
 import RecoCard from './RecoCard';
-import { BarreActions, Bouton, BoutonIcone, Selecteur, ZoneCliquable } from '../../ui';
+import VoletDefenses from './VoletDefenses';
+import ListeRecos from './ListeRecos';
+import { BarreActions, Bouton, BoutonIcone, Interrupteur, ZoneCliquable } from '../../ui';
 import { PREFIXE_FICHIER } from '../../marque';
 import type { ActionImportOptimizer } from '../../lib/actionImportOptimizer';
 import type { ExclusionSourceData } from '../../lib/optimizerExclusion';
@@ -58,31 +60,27 @@ interface Props {
   // deck en parallèle ». Vient de la BOX seule (voir countCopiesByCom2us).
   copies6: Map<number, number>;
   offense: UseSiegeState; // équipes d'attaque de siège, réutilisables comme decks
+  // Les équipes de « Mes équipes », elles aussi point de départ d'un counter.
+  equipesEnregistrees: EquipeEnregistree[];
   // Panneau d'actions mobile — piloté par le bouton « Options » (voir App.tsx).
   menuOuvert: boolean;
   onFermerMenu: () => void;
 }
 
-// ⚠️ **Deux VUES des mêmes recommandations** (Le mainteneur : « au lieu du tri Toutes /
-// Mes recos / Importées, mets plutôt un tri
-// attaque / défense ; je veux que les deux affichages soient possibles ») :
-// - Attaque : chaque deck, puis les défenses contre lesquelles il est fort —
-//   l'affichage d'avant, et celui où l'on MODIFIE ;
-// - Défense : chaque défense visée, puis les offenses fortes contre elle —
-//   calculée à partir des decks (lib/recoDefenses.ts), en lecture seule.
-// Le filtre d'origine qu'elle remplace est retiré ([retrait #19]) ; la pastille
-// « Importée » reste sur chaque carte reçue.
-// Libellés et infobulles : `recos.vues` du dictionnaire.
-const VUES: VueRecos[] = ['attaque', 'defense'];
+// ⚠️ **Deux VUES des mêmes recommandations, et UN seul choix** :
+// - Défenses : chaque défense visée, toutes recommandations confondues, et qui
+//   la bat (VoletDefenses.tsx) ;
+// - Decks : les cartes des recommandations, leurs decks, l'édition.
+// La vue décide AUSSI où cherche le champ (les défenses visées, ou les monstres
+// des decks) : la vue Attaque/Défense et le rôle Partout/Défense à taper/
+// Offense à runer disaient deux fois la même chose, et se contredisaient
+// (vue Défense + Offense à runer). Libellés : `recos.vues` du dictionnaire.
+const VUES: VueRecos[] = ['defense', 'attaque'];
+const MODE_DE = { defense: 'defense', attaque: 'offense' } as const;
+const AUTRE: Record<VueRecos, VueRecos> = { defense: 'attaque', attaque: 'defense' };
 
-// Où chercher quand on tape un nom de monstre. Le mode FILTRE : ce qui relève
-// de l'autre rôle n'est pas affiché — voir lib/recoSearch.ts.
-// Libellés et infobulles : `recos.modes` du dictionnaire.
-const SEARCH_MODES: RecoSearchMode[] = ['all', 'defense', 'offense'];
-const TRIS_RECHERCHE: TriRecherche[] = ['ordre', 'fiabilite'];
-
-// Le message quand la recherche ne renvoie rien nomme le rôle où l'on vient de
-// chercher, puisque le sélecteur filtre : `recos.aucunResultat` du dictionnaire.
+// Le message quand la recherche ne renvoie rien nomme la vue où l'on vient de
+// chercher, et renvoie vers l'autre quand elle a des résultats.
 // ⚠️ Formulé au SINGULIER et sans accord à porter par la suite de la phrase
 // (« … ne réunit X », « … ne contient X ») : le libellé change, pas la
 // grammaire autour.
@@ -97,19 +95,36 @@ export default function RecoBoard({
   teams,
   copies6,
   offense,
+  equipesEnregistrees,
   menuOuvert,
   onFermerMenu,
 }: Props) {
   const textes = useTraduction();
   const r = textes.recos;
-  const disponibilitesExport = useMemo(() => new Map(recos.state.recos.map(reco => [reco.id,
-    reco.decks.map(deck => !compteCharge ? r.exportSansCompte
-      : importerRecoOptimizer(deck, sourcesOptimizer, textes).membres.length ? undefined : r.exportDeckVide)
-  ])), [r, recos.state.recos, sourcesOptimizer, compteCharge, textes]);
+  // Pourquoi un deck ne part pas dans l'Optimizer (`undefined` : il part).
+  // ⚠️ **À la lecture, mémorisé par deck** (identité de l'objet, comme la
+  // confrontation) : calculé pour TOUS les decks de TOUTES les recos à chaque
+  // modification, il faisait ramer la page dès qu'on notait ou tapait — un
+  // lot de salon Discord compte des centaines de decks. Seules les lignes
+  // affichées le demandent ; un deck inchangé garde son résultat.
+  const raisonExportDe = useMemo(() => {
+    const cache = new WeakMap<RecoDeck, { raison: string | undefined }>();
+    return (deck: RecoDeck): string | undefined => {
+      if (!compteCharge) return r.exportSansCompte;
+      let c = cache.get(deck);
+      if (!c) {
+        c = { raison: importerRecoOptimizer(deck, sourcesOptimizer, textes).membres.length ? undefined : r.exportDeckVide };
+        cache.set(deck, c);
+      }
+      return c.raison;
+    };
+  }, [r, sourcesOptimizer, compteCharge, textes]);
   // Mémorisée comme l'était le filtre qu'elle remplace : on retrouve la vue
   // qu'on avait choisie. Clé NEUVE — l'ancienne (`recos.filter`) portait une
   // origine, pas une vue.
-  const [vue, setVue] = useStickyState<VueRecos>('recos.vue', 'attaque');
+  // À l'arrivée : Défenses, la question qu'on se pose devant une défense
+  // rencontrée (« qui la bat ? »).
+  const [vue, setVue] = useStickyState<VueRecos>('recos.vue', 'defense');
   // Recherche par monstre : jusqu'à TROIS, autant qu'une composition.
   //
   // ⚠️ Les trois se cumulent en ET (voir recoSearch.ts) : on décrit la défense
@@ -121,9 +136,17 @@ export default function RecoBoard({
   // (voir recoSearch.ts), et un monstre d'une reco importée peut être absent des
   // données chargées — il ne porterait alors aucun id local.
   const [queries, setQueries] = useStickyState<string[]>('recos.queries', ['', '', '']);
-  const [searchMode, setSearchMode] = useStickyState<RecoSearchMode>('recos.searchMode', 'all');
-  // L'ordre des résultats : celui des recommandations, ou la fiabilité.
+  const searchMode = MODE_DE[vue];
+  // Le rangement des offenses d'une défense, dans son volet : par
+  // recommandation, ou par fiabilité.
   const [triRecherche, setTriRecherche] = useStickyState<TriRecherche>('recos.tri', 'ordre');
+  // « Confronter à mon compte » : les verdicts sur tous les decks de la page,
+  // ou nulle part. Remplace l'analyse à la demande, carte par carte.
+  const [confronter, setConfronter] = useStickyState<boolean>('recos.confronter', false);
+  // « Modifiés » : seuls les decks qui diffèrent de la version de leur salon,
+  // pas encore publiés (recoModifies.ts). Collant : la fenêtre d'ajout des
+  // statistiques l'allume avant d'ouvrir la page (`CLE_FILTRE_MODIFIES`).
+  const [modifiesActif, setModifiesActif] = useStickyState<boolean>(CLE_FILTRE_MODIFIES, false);
   const termesPoses = queries.map((q) => q.trim()).filter(Boolean);
   const aUneRecherche = termesPoses.length > 0;
   // Vide les trois cases d'un coup.
@@ -156,36 +179,26 @@ export default function RecoBoard({
   // Rapport de validation du dernier import : NON éphémère (il faut pouvoir le lire).
   const [report, setReport] = useState<ImportReport | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
-  // Recommandations dépliées (« Consulter ») — toutes repliées par défaut, pour
-  // garder une liste lisible quand on en a beaucoup.
-  // ⚠️ UN SEUL état à trois valeurs par carte, et non deux ensembles qui se
-  // corrigent l'un l'autre :
-  //
-  //   absent  → l'automatique décide (repliée, ou dépliée si c'est un résultat)
-  //   true    → l'utilisateur l'a ouverte
-  //   false   → l'utilisateur l'a fermée, même si c'est un résultat
-  //
-  // Deux ensembles séparés (« ouvertes » + « refermées pendant la recherche »)
-  // demandaient TROIS clics pour fermer une carte à la fois ouverte à la main et
-  // trouvée par la recherche : chaque clic n'en corrigeait qu'un des deux, et
-  // l'autre rouvrait aussitôt. Un choix explicite écrase l'automatique, point.
-  const [choixOuverture, setChoixOuverture] = useState<Map<string, boolean>>(new Map());
-  const estOuverte = (id: string) => choixOuverture.get(id) ?? hitPar.has(id);
-  const toggleOpen = (id: string) => {
-    const ouverte = estOuverte(id);
-    setChoixOuverture((m) => new Map(m).set(id, !ouverte));
+  // ⚠️ **Vue Decks : UNE recommandation ouverte à la fois**, celle qu'on
+  // choisit dans la liste (la première tant qu'on n'en a pas choisi). Étroit
+  // (téléphone, fenêtre étroite), la liste, puis la recommandation touchée à
+  // sa place, avec un retour (`detailDecks`).
+  const [choixReco, setChoixReco] = useState<string | null>(null);
+  const [detailDecks, setDetailDecks] = useState(false);
+  const voletDecks = useRef<HTMLDivElement>(null);
+  const choisirReco = (id: string) => {
+    setChoixReco(id);
+    setDetailDecks(true);
+    // Étroit, le volet remplace la liste : on remonte à son début. Créée ou
+    // ouverte en édition depuis la vue Défenses, la recommandation est là où
+    // l'on regarde.
+    requestAnimationFrame(() => {
+      const el = voletDecks.current;
+      if (el && el.getBoundingClientRect().top < 0) el.scrollIntoView({ block: 'start' });
+    });
   };
   const fileRef = useRef<HTMLInputElement>(null);
-
-  // Scroll vers la recommandation qu'on vient de créer (comme les équipes).
-  const [scrollToLast, setScrollToLast] = useState(false);
   const [effacementAConfirmer, setEffacementAConfirmer] = useState(false);
-  const lastRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!scrollToLast) return;
-    lastRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    setScrollToLast(false);
-  }, [scrollToLast]);
 
   // Message éphémère (même convention que l'import de compte).
   useEffect(() => {
@@ -222,51 +235,55 @@ export default function RecoBoard({
     [offense.state.teams, monsterById, textes.siege.equipeVide]
   );
 
+  // Les équipes de « Mes équipes » proposables comme counter : les offenses de
+  // siège d'abord, puis le reste du combat de guilde, puis les autres contenus
+  // (tri stable : l'ordre de « Mes équipes » dans chaque rang). Le deck n'est
+  // construit qu'au clic (`creer`).
+  const equipesChoix = useMemo<EquipeChoix[]>(() => {
+    const rang = (e: EquipeEnregistree) => (e.onglet === 'guilde/offense-siege' ? 0 : categorieDe(e.onglet) === 'guilde' ? 1 : 2);
+    return equipesEnregistrees
+      .filter((e) => equipeProposable(e, monsterByCom2us))
+      .sort((a, b) => rang(a) - rang(b))
+      .map((e) => {
+        const ordre = e.leader
+          ? [...e.monstres.filter((m) => m.uid === e.leader), ...e.monstres.filter((m) => m.uid !== e.leader)]
+          : e.monstres;
+        const trio = ordre.slice(0, 3).map((m) => monsterByCom2us.get(m.com2usId) ?? null);
+        return {
+          id: e.id,
+          nom: e.nom,
+          rangement: libelleRangement(e.onglet, textes),
+          monstres: trio,
+          resume: [e.nom, ...trio.map((m) => m?.name ?? '')].join(' · '),
+          creer: () => deckFromEquipeEnregistree(e, monsterByCom2us),
+        };
+      });
+  }, [equipesEnregistrees, monsterByCom2us, textes]);
+
   const matchCtx = useMemo(
     () => contexteConfrontationReco(builds, teams, copies6),
     [builds, teams, copies6]
   );
 
-  // Confrontation À LA DEMANDE (bouton « Analyser ») et non à chaque rendu :
-  // on mémorise la reco et les builds analysés pour détecter qu'un résultat est
-  // périmé (toute édition recrée les objets → comparaison par identité).
-  const [analyses, setAnalyses] = useState<
-    Map<string, { match: RecoMatch; reco: Reco; builds: OwnedBuild[] }>
-  >(new Map());
-
-  const analyzeReco = (reco: Reco) =>
-    setAnalyses((m) => new Map(m).set(reco.id, { match: matchReco(reco, matchCtx), reco, builds }));
-
-  // ⚠️ **Lancée depuis le panneau « Options », au DOIGT.** Le bouton « Analyser
-  // mes decks » de l'en-tête vit sur la carte elle-même — mais au doigt il
-  // faut d'abord faire défiler jusqu'à la bonne recommandation pour l'atteindre.
-  // Le panneau propose donc le même geste sans quitter le haut de l'écran : un
-  // menu choisit LAQUELLE (il n'y a pas de carte sous les yeux pour le dire),
-  // puis « Analyser » fait le reste — et ouvre la carte visée, pour que le
-  // résultat soit là au premier défilement plutôt que caché repliée.
-  const [pickAnalyse, setPickAnalyse] = useState('');
-  function analyserDepuisPanneau() {
-    const reco = list.find((r) => r.id === pickAnalyse);
-    if (!reco) return;
-    analyzeReco(reco);
-    setChoixOuverture((m) => new Map(m).set(reco.id, true));
-    setPickAnalyse('');
-    onFermerMenu();
-    setMsg({ text: r.analyseLancee(reco.name || r.cetteReco) });
-  }
-
-  // Effacer le résultat : la carte redevient neutre (plus d'aura ni de pastille).
-  const clearAnalysis = (id: string) =>
-    setAnalyses((m) => {
-      const next = new Map(m);
-      next.delete(id);
-      return next;
-    });
-
-  const matchOf = (reco: Reco): RecoMatch | null => {
-    const entry = analyses.get(reco.id);
-    return entry && entry.reco === reco && entry.builds === builds ? entry.match : null;
-  };
+  // ⚠️ **Confrontation de toute la page, tenue à jour seule** : le résultat de
+  // chaque recommandation est mémorisé par IDENTITÉ (une édition recrée
+  // l'objet, un autre compte recrée le contexte) — rien n'est recalculé tant
+  // que rien ne change, et aucun résultat n'est jamais « périmé ». Calculé à
+  // la lecture : seules les recommandations affichées le sont.
+  const peutConfronter = builds.length > 0;
+  const actif = confronter && peutConfronter;
+  const confronterReco = useMemo(() => {
+    const cache = new WeakMap<Reco, RecoMatch>();
+    return (reco: Reco) => {
+      let m = cache.get(reco);
+      if (!m) {
+        m = matchReco(reco, matchCtx);
+        cache.set(reco, m);
+      }
+      return m;
+    };
+  }, [matchCtx]);
+  const matchOf = (reco: Reco): RecoMatch | null => (actif ? confronterReco(reco) : null);
 
   // ⚠️ **Confirmation avant l'export**, même s'il ne détruit rien sur place :
   // c'est un geste vers l'EXTÉRIEUR (un fichier qui part sur le disque, prêt à
@@ -443,37 +460,69 @@ export default function RecoBoard({
     onAideInstallation: () => setInstallationOuverte(true),
   };
 
+  // Ce que la carte (vue Decks) et le bandeau d'une recommandation (vue
+  // Défenses) disent et font de la même façon.
+  // La provenance, dans « Toutes », seulement quand il y a des salons : sans
+  // Discord, toutes viennent d'ici. Et dans « Suivis » et « Favoris », qui
+  // réunissent plusieurs salons.
+  const provenanceDe = (reco: Reco) =>
+    (provenance.type === 'suivis' || provenance.type === 'favoris' || (provenance.type === 'toutes' && groupes.length > 0))
+      ? { nom: reco.lien ? reco.lien.nomSalon : td.appareil, etat: etatAffiche(reco) }
+      : undefined;
+  const publierDansDe = (reco: Reco) => (reco.lien ? undefined : {
+    raison: connecte ? null : td.publierDansHorsConnexion,
+    onClick: () => setAPublierDans(reco),
+  });
+  const exporterDeckOptimizer = (deck: RecoDeck) => onImporterEquipe((data, t) => importerRecoOptimizer(deck, data, t));
+  // Supprimer une recommandation SE DÉFAIT au lieu de se confirmer (même geste
+  // que sur sa carte).
+  const supprimerReco = (reco: Reco) => {
+    const index = all.findIndex((x) => x.id === reco.id);
+    recos.removeReco(reco.id);
+    notifier({ message: textes.carteReco.supprimee, action: () => recos.restaurerReco(reco, index) });
+  };
+  // « Éditer la recommandation » depuis le volet Défenses : on passe en vue
+  // Decks, la recommandation ouverte en édition.
+  const editerDepuisVolet = (reco: Reco) => {
+    setVue('attaque');
+    setEditingId(reco.id);
+    choisirReco(reco.id);
+  };
+
   // Recherche par monstre. `null` = aucune recherche en cours (état neutre de la
   // page : rien n'est filtré, rien n'est déplié d'office). Elle porte sur la
   // provenance choisie.
-  const hitsBruts = useMemo(
+  const hitsRecherche = useMemo(
     () => chercheMonstre(deLaProvenance, queries, searchMode, monsterByCom2us),
     [deLaProvenance, queries, searchMode, monsterByCom2us]
   );
-  // Trié par fiabilité : l'ordre est pris au tri, ou à une autre recherche,
-  // puis TENU (`suivreOrdre`) — noter un deck pendant qu'on l'édite ne le
-  // déplace pas sous le clic. Il se refait à la recherche suivante.
-  const cleTri = JSON.stringify([queries, searchMode, provenance, triRecherche]);
-  const ordreFige = useRef<{ cle: string; ordre: OrdreResultats } | null>(null);
-  const hits = useMemo(() => {
-    if (!hitsBruts || triRecherche !== 'fiabilite') return hitsBruts;
-    if (ordreFige.current?.cle === cleTri) return suivreOrdre(hitsBruts, ordreFige.current.ordre);
-    const tries = trierParFiabilite(hitsBruts);
-    ordreFige.current = { cle: cleTri, ordre: ordreDe(tries) };
-    return tries;
-  }, [hitsBruts, triRecherche, cleTri]);
-  const list = hits ? hits.map((h) => h.reco) : deLaProvenance;
-  // Où se trouve le monstre, par recommandation — la carte s'en sert pour
-  // déplier les bons decks et surligner les bons portraits.
-  // ⚠️ Changer de recherche efface les choix d’ouverture : ils valaient pour CES
-  // résultats-là. Et SEULEMENT quand une recherche est en cours — sans cette
-  // garde, taper puis effacer refermait les cartes ouvertes à la main avant.
-  const cleRecherche = queries.join('\0');
-  useEffect(() => {
-    if (!cleRecherche.trim()) return;
-    setChoixOuverture(new Map());
-  }, [cleRecherche]);
-
+  // « Modifiés » : un résultat comme un autre pour la page (liste, volets,
+  // vue Défenses), croisé avec la recherche quand les deux sont posés.
+  // Calculé une fois par liste : une empreinte par deck.
+  const modifies = useMemo(() => hitsModifies(deLaProvenance), [deLaProvenance]);
+  const nModifies = modifies.reduce((n, h) => n + h.decks.length, 0);
+  const hits = useMemo(
+    () => croiserHits(hitsRecherche, modifiesActif ? modifies : null),
+    [hitsRecherche, modifiesActif, modifies]
+  );
+  // ⚠️ Mémorisée : un tableau neuf à chaque rendu relançait l'agrégation des
+  // défenses (vue Défenses) pendant une recherche.
+  const list = useMemo(() => (hits ? hits.map((h) => h.reco) : deLaProvenance), [hits, deLaProvenance]);
+  // La recommandation ouverte dans la vue Decks : celle qu'on a choisie si elle
+  // est encore dans la liste (provenance, recherche), sinon la première.
+  const recoChoisie = list.find((x) => x.id === choixReco) ?? list[0] ?? null;
+  // Rien trouvé dans cette vue : combien dans l'autre, pour le renvoi
+  // « Voir dans Decks (N) ». Calculé seulement dans ce cas.
+  const dansAutreVue = useMemo(() => {
+    if (!hits || hits.length > 0 || !hitsRecherche) return 0;
+    const autres = chercheMonstre(deLaProvenance, queries, MODE_DE[AUTRE[vue]], monsterByCom2us) ?? [];
+    if (AUTRE[vue] === 'attaque') return autres.reduce((n, h) => n + h.decks.length, 0);
+    const parReco = new Map(autres.map((h) => [h.reco.id, h]));
+    return defensesDesRecos(autres.map((h) => h.reco), monsterByCom2us, (reco, di, ci) =>
+      ci != null && !!parReco.get(reco.id)?.decks.find((d) => d.deckIndex === di)?.counters.includes(ci)).defenses.length;
+  }, [hits, hitsRecherche, deLaProvenance, queries, vue, monsterByCom2us]);
+  // Où se trouve le monstre, par recommandation — le volet s'en sert pour ne
+  // montrer que les decks trouvés et surligner les bons portraits.
   const hitPar = useMemo(() => {
     const m = new Map<string, RecoHit>();
     for (const h of hits ?? []) m.set(h.reco.id, h);
@@ -489,10 +538,12 @@ export default function RecoBoard({
       <Bouton
         onClick={() => {
           const id = recos.addReco();
+          // Une recommandation se compose dans sa carte : vue Decks.
+          setVue('attaque');
           setEditingId(id);
-          setScrollToLast(true);
+          choisirReco(id);
           // ⚠️ Même geste que « Ajouter une équipe » (SiegeBoard) : le panneau
-          // « Options » se referme et la page défile jusqu'à la nouvelle carte.
+          // « Options » se referme et la nouvelle recommandation est ouverte.
           // Créer une reco est le geste principal de cet écran, comme composer
           // une équipe l'est en défense/offense — il doit se voir tout de suite,
           // pas rester caché derrière un panneau resté ouvert.
@@ -527,35 +578,48 @@ export default function RecoBoard({
     </>
   );
 
-  // Vue Attaque / Défense — le VRAI Segmented, pas une copie :
-  // deux contrôles à cran dans la même page doivent avoir le même cadre, le
-  // même rayon et la même taille de texte. Rendu une seule fois, posé à deux
-  // endroits selon la largeur (voir plus bas) — même geste que `actions` et
-  // `effacer`, et même place que le filtre d'origine qu'elle remplace.
-  // ⚠️ `pleineLargeur` : au doigt, dans le panneau « Options », le cran prend
-  // TOUTE la largeur (`Segmented` en `size="lg"`, intitulé au-dessus plutôt
-  // qu'à côté) — c'est le seul contrôle de cette ligne, le laisser à sa
-  // largeur propre le fait flotter dans une bande vide.
-  const vueFilter = (pleineLargeur: boolean) => {
-    const segmented = (
-      <Segmented
-        value={vue}
-        onChange={setVue}
-        size={pleineLargeur ? 'lg' : 'md'}
-        options={VUES.map((key) => ({ key, label: r.vues[key].label, hint: r.vues[key].hint }))}
-      />
-    );
-    // Pas d'intitulé à la SOURIS : les deux crans se lisent d'eux-mêmes, en
-    // tête de la barre d'outils. Gardé au DOIGT, seul repère du panneau.
-    return pleineLargeur ? (
-      <div className="w-full">
-        <span className="label mb-1 block">{r.vue}</span>
-        {segmented}
-      </div>
-    ) : (
-      segmented
-    );
-  };
+  // Défenses · Decks — le VRAI Segmented, pas une copie. Sur la PAGE aux deux
+  // formats : c'est lui qui décide ce qu'on voit et où cherche le champ, il
+  // ne se cache pas dans un panneau. ⚠️ `pleineLargeur` : au doigt, seul sur
+  // sa ligne, chaque cran prend la moitié de la largeur (`size="lg"`).
+  const vueFilter = (pleineLargeur: boolean) => (
+    <Segmented
+      value={vue}
+      onChange={setVue}
+      size={pleineLargeur ? 'lg' : 'md'}
+      options={VUES.map((key) => ({ key, label: r.vues[key].label, hint: r.vues[key].hint }))}
+    />
+  );
+
+  // « Confronter à mon compte » : toujours affiché, désactivé sans compte
+  // importé, avec sa raison.
+  const interrupteur = (
+    <Interrupteur
+      actif={actif}
+      onChange={setConfronter}
+      disabled={!peutConfronter}
+      libelle={r.confronter}
+      title={peutConfronter ? r.confronterAide : r.importerPourAnalyser}
+      className="disabled:cursor-not-allowed disabled:opacity-50"
+      data-confronter
+    />
+  );
+
+  // « Modifiés (N) » : toujours affiché, désactivé sans deck modifié (sauf
+  // allumé : on l'éteint toujours). ⚠️ Dans la PAGE aux deux formats, pas
+  // dans « Options » : on l'allume et l'éteint en reprenant ses ajouts, ce
+  // n'est pas un réglage.
+  const filtreModifies = (
+    <Interrupteur
+      actif={modifiesActif}
+      onChange={setModifiesActif}
+      disabled={!modifiesActif && nModifies === 0}
+      libelle={r.modifies(nModifies)}
+      title={nModifies === 0 && !modifiesActif ? r.modifiesAucun : r.modifiesAide}
+      className="disabled:cursor-not-allowed disabled:opacity-50"
+      data-filtre-modifies
+    />
+  );
 
   // ⚠️ « Tout effacer » reste SÉPARÉ : dans la page il se pose à l'opposé
   // (`ml-auto`), loin des gestes de construction. Un bouton destructeur ne se
@@ -626,8 +690,9 @@ export default function RecoBoard({
               icone: <Plus size={15} />,
               onClick: () => {
                 const id = recos.addReco();
+                setVue('attaque');
                 setEditingId(id);
-                setScrollToLast(true);
+                choisirReco(id);
               },
             },
           ]}
@@ -656,48 +721,13 @@ export default function RecoBoard({
       <MobileSheet ouvert={menuOuvert} onFermer={onFermerMenu} titre={r.actions}>
         <div data-rangee-actions>{actions}</div>
 
-        {/* ⚠️ « Analyser mes decks », AU DOIGT : le bouton de l'en-tête d'une
-            carte demande d'abord d'y faire défiler. Le panneau propose le même
-            geste d'ici — un menu choisit LAQUELLE, puisqu'aucune carte n'est
-            sous les yeux pour le dire — voir `analyserDepuisPanneau` plus haut.
-            ⚠️ **Toujours affiché**, désactivé sans recommandation ni compte
-            importé plutôt que retiré — même règle que « Tout exporter » et
-            « Tout effacer » : un contrôle qui apparaît une fois qu'on a de
-            quoi l'utiliser surprend, on ne l'a jamais vu absent d'un geste. */}
+        {/* « Confronter à mon compte », AU DOIGT : un réglage de la page, pas
+            un geste qu'on refait — sa place est avec les actions, la page
+            garde la vue et la recherche sous le pouce. */}
         <div className="mt-4 flex flex-col gap-1.5 border-t border-border pt-3">
-          <span className="label">{r.analyserUne}</span>
-          <div className="flex items-center gap-1.5">
-            <Selecteur
-              value={pickAnalyse}
-              onChange={(e) => setPickAnalyse(e.target.value)}
-              disabled={list.length === 0 || builds.length === 0}
-              className="flex-1"
-            >
-              <option value="">
-                {list.length === 0 ? r.aucune : builds.length === 0 ? r.importerPourAnalyser : r.choisir}
-              </option>
-              {list.map((reco, i) => (
-                <option key={reco.id} value={reco.id}>
-                  {reco.name || textes.partage.reco.recommandation(i + 1)}
-                </option>
-              ))}
-            </Selecteur>
-            <Bouton
-              onClick={analyserDepuisPanneau}
-              disabled={!pickAnalyse || list.length === 0 || builds.length === 0}
-              icone={<Gauge size={14} />}
-              libelle={r.analyser}
-              taille="sm"
-            />
-          </div>
+          {interrupteur}
+          <span className="text-micro text-ink-dim">{peutConfronter ? r.confronterAide : r.importerPourAnalyser}</span>
         </div>
-
-        {/* ⚠️ La vue AU DOIGT : dans le panneau plutôt que sur la page, qui
-            garde la carte pour la recherche — voir `vueFilter` plus haut.
-            **Toujours affichée, active même sans recommandation** : un
-            contrôle qui apparaît une fois la première recommandation créée
-            ne s'explique pas. */}
-        <div className="mt-4 border-t border-border pt-3">{vueFilter(true)}</div>
         <div data-zone-destructive className="mt-4 border-t border-border pt-3">
           {effacer(true)}
         </div>
@@ -779,32 +809,26 @@ export default function RecoBoard({
         <ValidationReport report={report} onClose={() => setReport(null)} />
       )}
 
-      {/* ⚠️ **La vue, à la SOURIS : toujours affichée et active**, même sans
-          recommandation — contrairement à la recherche par composition
-          (Monstres/Rôle, plus bas), qui n'a rien à filtrer sur une liste
-          vide. Rendue une seule fois (`vueFilter`), posée aux deux endroits
-          (ici et dans le panneau « Options » au doigt). */}
-      {/* ⚠️ **À la souris, UNE barre d'outils** (la maquette) :
-          Vue · filet · recherche, sur la même ligne ; le « Rôle » passe
-          dessous (`lg:basis-full`). Les deux conteneurs d'origine s'effacent
-          dans celui-ci (`lg:contents`). Au doigt, rien ne change : la vue
-          vit dans le panneau « Options », la recherche reste en colonne. */}
-      <div className="lg:mt-4 lg:flex lg:flex-wrap lg:items-center lg:gap-2">
+      {/* ⚠️ **La vue : toujours affichée et active**, même sans
+          recommandation — contrairement à la recherche par composition, qui
+          n'a rien à filtrer sur une liste vide.
+          ⚠️ **À la souris, UNE barre d'outils** : Défenses · Decks · filet ·
+          champ et cases · Vider, et « Confronter à mon compte » au bout. Plus
+          de rangées Rôle ni Tri dessous. Au doigt, la vue pleine largeur,
+          puis la recherche en colonne ; l'interrupteur est dans « Options ». */}
+      <div className="mt-3 lg:mt-4 lg:flex lg:flex-wrap lg:items-center lg:gap-2">
+      <div className="lg:hidden" data-vue-telephone>{vueFilter(true)}</div>
       <div className="hidden lg:contents">
         {vueFilter(false)}
       </div>
       {all.length > 0 && <span className="mx-1 hidden h-5 w-px flex-none bg-border-soft lg:block" aria-hidden />}
 
-      {/* Bloc de filtres — composition cherchée, rôle.
+      {/* Bloc de recherche — la composition cherchée.
           ⚠️ **Sans cadre ni intitulé « Monstres »** : les trois cases ET le
           champ de recherche disent déjà par leur FORME ce qu'on y fait — une
           composition de 3 monstres à composer —, un mot devant n'ajoutait
-          rien. Le cadre (bordure + fond) enfermait un contenu qui n'a pas
-          besoin d'être distingué du reste de la page : Origine, juste
-          au-dessus, n'en a pas non plus.
-          ⚠️ « Rôle » garde son intitulé, lui : contrairement aux cases, un
-          `Segmented` Partout/Défense/Offense ne dit pas de lui-même sur QUOI
-          il porte.
+          rien. Le texte du champ dit OÙ il cherche (« Monstre de la
+          défense… », « Monstre d'un deck… ») : c'est la vue qui en décide.
           ⚠️ N'apparaît que s'il y a des recommandations : à la différence
           d'Origine, il n'y a RIEN à chercher dans une liste vide — poser le
           bloc quand même laisserait croire qu'on n'a rien trouvé alors qu'il
@@ -835,7 +859,7 @@ export default function RecoBoard({
                   // ET exige des monstres DISTINCTS (voir recoSearch.ts), poser
                   // deux fois le même garantirait zéro résultat.
                   excludeIds={dejaPoses}
-                  placeholder={textes.siege.board.nomMonstre}
+                  placeholder={r.chercheDans[vue]}
                   onPick={(id) => {
                     const m = monsters.find((x) => String(x.id) === id);
                     if (m) poserMonstre(m.name);
@@ -907,8 +931,7 @@ export default function RecoBoard({
             </div>
 
             {/* Vider les trois cases d'un coup — distinct du retrait d'un seul
-                portrait, qui sert à affiner. Il vit AVEC les cases qu'il vide,
-                et non avec le sélecteur de rôle, qui ne les touche pas. */}
+                portrait, qui sert à affiner. Il vit AVEC les cases qu'il vide. */}
             {/* ⚠️ Ton NEUTRE, pas `danger` : vider une recherche se repose en un
                 geste, ça ne se confirme pas (voir docs/03-developpeur/) — la
                 surestimer en rouge permanent la ferait paraître plus grave
@@ -925,44 +948,16 @@ export default function RecoBoard({
               />
             )}
           </div>
-
-          {/* ⚠️ Le sélecteur FILTRE : ce qui relève de l'autre rôle n'est pas
-              affiché (voir SEARCH_MODES). Il n'apparaît qu'une fois quelque
-              chose posé — sans monstre, il n'y a rien à filtrer.
-              Le compteur de résultats vit sur CETTE rangée : c'est le rôle qui
-              décide combien il en reste, et il n'a ainsi plus besoin d'une
-              hauteur de ligne en dur pour se caler sur un contrôle voisin. */}
-          {aUneRecherche && (
-            <div className="flex flex-wrap items-center gap-2 lg:mt-0.5 lg:basis-full">
-              <span className="w-[76px] flex-none label">{r.role}</span>
-              <Segmented
-                value={searchMode}
-                onChange={setSearchMode}
-                options={SEARCH_MODES.map((key) => ({ key, label: r.modes[key].label, hint: r.modes[key].hint }))}
-              />
-              {hits && (
-                <span className="font-mono text-micro text-ink-dim">
-                  {hits.length === 0 ? r.aucunResultat : r.resultats(hits.length)}
-                </span>
-              )}
-            </div>
-          )}
-          {/* L'ordre des résultats : celui des recommandations, ou la
-              fiabilité — le deck le plus sûr contre la défense cherchée
-              d'abord (recoSearch.ts, `trierParFiabilite`). Même rangée,
-              même intitulé de largeur fixe que « Rôle ». */}
-          {aUneRecherche && (
-            <div className="flex flex-wrap items-center gap-2 lg:basis-full" data-tri-recherche>
-              <span className="w-[76px] flex-none label">{r.tri}</span>
-              <Segmented
-                value={triRecherche}
-                onChange={setTriRecherche}
-                options={TRIS_RECHERCHE.map((key) => ({ key, label: r.tris[key].label, hint: r.tris[key].hint }))}
-              />
-            </div>
-          )}
         </div>
       )}
+      {/* Au bout de la barre, à la souris : posés à droite, ils ne bougent pas
+          quand « Vider » apparaît. Au doigt : « Modifiés » sous la
+          recherche, « Confronter » dans « Options ». */}
+      <div className="mt-2.5 lg:hidden" data-modifies-telephone>{filtreModifies}</div>
+      <div className="hidden lg:ml-auto lg:flex lg:items-center lg:gap-4">
+        {filtreModifies}
+        {interrupteur}
+      </div>
       </div>
 
       {/* ⚠️ **Les provenances** : à l'ordinateur, une COLONNE à gauche du
@@ -991,6 +986,17 @@ export default function RecoBoard({
         <div className="mt-4 rounded-xl border border-dashed border-border bg-panel/40 py-8 px-6 text-center lg:mt-0" data-favoris-vide>
           <p className="text-sm text-ink-dim">{td.favorisVide}</p>
         </div>
+      ) : list.length === 0 && hits && !hitsRecherche ? (
+        // Le filtre « Modifiés » seul ne retient rien ici (tout est publié,
+        // ou une autre provenance) : le dire, et l'éteindre d'un geste.
+        <div className="mt-4 rounded-xl border border-dashed border-border bg-panel/40 py-8 px-6 text-center lg:mt-0" data-modifies-vide>
+          <p className="text-sm text-ink-dim">
+            {r.modifiesVide}{' '}
+            <button onClick={() => setModifiesActif(false)} className="text-ink underline transition hoverable:text-star">
+              {r.modifiesEteindre}
+            </button>
+          </p>
+        </div>
       ) : list.length === 0 && hits ? (
         // ⚠️ La RECHERCHE ne renvoie rien — message distinct de celui du filtre.
         // Dire « tu n'as créé aucune recommandation » alors qu'on vient de taper
@@ -1001,33 +1007,32 @@ export default function RecoBoard({
                 trois doivent être dans la MÊME composition. Sans ça, une
                 recherche à trois termes qui ne renvoie rien se lit comme un bug
                 — on voit bien chaque monstre à l'écran, séparément. */}
-            {/* ⚠️ Le message nomme aussi le RÔLE cherché : avec un sélecteur
-                qui filtre, « aucun deck ne réunit X » est incomplet — le deck
-                existe peut-être, dans l'autre rôle. Le dire évite de conclure
-                qu'il n'existe pas alors qu'il suffit de basculer sur
-                « Partout ». */}
+            {/* ⚠️ Le message nomme aussi la VUE où l'on a cherché : « aucune
+                défense visée ne contient X » — le deck existe peut-être, et
+                le renvoi le dit. */}
             {termesPoses.length > 1 ? (
               <>
-                {r.videSelon[searchMode]} {r.neReunit}{' '}
+                {r.videSelon[vue]} {r.neReunit}{' '}
                 <b className="text-ink">{termesPoses.join(' + ')}</b>
               </>
             ) : (
               <>
-                {r.videSelon[searchMode]} {r.neContient}{' '}
+                {r.videSelon[vue]} {r.neContient}{' '}
                 <b className="text-ink">{termesPoses[0]}</b> {r.guillemetFermant}
               </>
             )}
 .{' '}
-            {/* ⚠️ Sur un mode restrictif, la porte de sortie utile n'est pas
-                d'effacer mais d'ÉLARGIR : le résultat existe peut-être dans
-                l'autre rôle, et c'est un clic. Effacer reste proposé à côté. */}
-            {searchMode !== 'all' && (
+            {/* ⚠️ La porte de sortie utile n'est pas d'effacer mais de
+                regarder dans l'AUTRE vue, quand elle a des résultats : un
+                clic, qui garde la recherche. Effacer reste proposé à côté. */}
+            {dansAutreVue > 0 && (
               <>
                 <button
-                  onClick={() => setSearchMode('all')}
+                  onClick={() => setVue(AUTRE[vue])}
                   className="text-ink underline transition hoverable:text-star"
+                  data-renvoi-vue
                 >
-                  {r.chercherPartout}
+                  {r.voirDans(r.vues[AUTRE[vue]].label, dansAutreVue)}
                 </button>
                 {' · '}
               </>
@@ -1040,62 +1045,100 @@ export default function RecoBoard({
             </button>
           </p>
         </div>
+      ) : vue === 'defense' ? (
+        <div className="mt-4 lg:mt-0">
+          <VoletDefenses
+            recos={recos}
+            liste={list}
+            hits={hits}
+            termes={termesPoses}
+            monsters={monsters}
+            monsterByCom2us={monsterByCom2us}
+            monsterById={monsterById}
+            offenseTeams={offenseTeams}
+            equipesChoix={equipesChoix}
+            matchOf={matchOf}
+            raisonExportDe={raisonExportDe}
+            onExporterDeckOptimizer={exporterDeckOptimizer}
+            tri={triRecherche}
+            onTri={setTriRecherche}
+            provenanceDe={provenanceDe}
+            actionsReco={(reco) => ({
+              onEditer: () => editerDepuisVolet(reco),
+              onExporter: () => requestExport([reco], reco.name || r.cetteReco),
+              onSupprimer: () => supprimerReco(reco),
+              onDetacher: reco.lien ? () => setADetacher(reco) : undefined,
+              publierDans: publierDansDe(reco),
+            })}
+          />
+        </div>
       ) : (
-        // Une recommandation contient plusieurs decks (3 monstres chacun) :
-        // elle prend toute la largeur, pas de mise en 2 colonnes.
-        <div className="mt-4 flex flex-col gap-4 lg:mt-0">
-          {list.map((reco, i) => (
-            <div key={reco.id} ref={i === list.length - 1 ? lastRef : undefined}>
-              {/* Le bandeau du salon, au-dessus de la carte, quand on regarde un salon. */}
-              {reco.lien && provenance.type === 'salon' && (
-                <BandeauSalon
-                  reco={reco}
-                  connecte={connecte}
-                  enCours={enCours}
-                  onPublier={() => void publierLiee(reco)}
-                  onFusionner={() => ouvrirFusion(reco)}
-                />
-              )}
-              <RecoCard
-                sousBandeau={!!reco.lien && provenance.type === 'salon'}
-                // La provenance sur la carte, dans « Toutes », seulement quand
-                // il y a des salons : sans Discord, toutes viennent d'ici. Et
-                // dans « Suivis » et « Favoris », qui réunissent plusieurs salons.
-                provenance={(provenance.type === 'suivis' || provenance.type === 'favoris' || (provenance.type === 'toutes' && groupes.length > 0))
-                  ? { nom: reco.lien ? reco.lien.nomSalon : td.appareil, etat: etatAffiche(reco) }
-                  : undefined}
-                onDetacher={reco.lien ? () => setADetacher(reco) : undefined}
-                publierDans={reco.lien ? undefined : {
-                  raison: connecte ? null : td.publierDansHorsConnexion,
-                  onClick: () => setAPublierDans(reco),
-                }}
-                raisonsExportOptimizer={disponibilitesExport.get(reco.id)!}
-                onExporterDeckOptimizer={deck => onImporterEquipe((data, t) => importerRecoOptimizer(deck, data, t))}
-                reco={reco}
-                index={i}
-                monsters={monsters}
-                monsterByCom2us={monsterByCom2us}
-                monsterById={monsterById}
-                offenseTeams={offenseTeams}
-                match={matchOf(reco)}
-                canAnalyze={builds.length > 0}
-                onAnalyze={() => analyzeReco(reco)}
-                onClearAnalysis={() => clearAnalysis(reco.id)}
-                // ⚠️ Une carte qui répond à la recherche est dépliée d’office,
-                // mais la recherche PROPOSE ce dépliage, elle ne l’impose pas :
-                // un choix explicite de l’utilisateur l’emporte toujours, dans les
-                // deux sens (voir `estOuverte`).
-                open={estOuverte(reco.id)}
-                onToggleOpen={toggleOpen}
-                hit={hitPar.get(reco.id) ?? null}
-                editing={editingId === reco.id}
-                onToggleEdit={(id) => setEditingId((cur) => (cur === id ? null : id))}
-                onExport={(r) => requestExport([r], r.name || `reco-${i + 1}`)}
-                recos={recos}
-                vue={vue}
+        // ⚠️ **Vue Decks : deux volets, comme la vue Défenses** — à gauche les
+        // recommandations, à droite celle qu'on a choisie. Selon la place du
+        // CONTENEUR (`@3xl`) : étroit, la liste, puis la recommandation
+        // touchée à sa place, avec un retour.
+        <div className="@container mt-4 lg:mt-0" data-volet-decks>
+          <div className="flex flex-col gap-4 @3xl:grid @3xl:grid-cols-[minmax(230px,280px)_minmax(0,1fr)] @3xl:items-start">
+            <div className={`min-w-0 ${detailDecks ? 'hidden @3xl:block' : ''}`}>
+              <ListeRecos
+                liste={list}
+                choisie={recoChoisie?.id ?? null}
+                onChoisir={choisirReco}
+                hitDe={(id) => hitPar.get(id)}
+                matchOf={matchOf}
+                provenanceDe={provenanceDe}
+                rangDe={(reco) => list.indexOf(reco)}
               />
             </div>
-          ))}
+            <div ref={voletDecks} className={`min-w-0 ${detailDecks ? '' : 'hidden @3xl:block'}`}>
+              {recoChoisie && (
+                <>
+                  {/* Le bandeau du salon, au-dessus du volet, quand on regarde un salon. */}
+                  {recoChoisie.lien && provenance.type === 'salon' && (
+                    <BandeauSalon
+                      reco={recoChoisie}
+                      connecte={connecte}
+                      enCours={enCours}
+                      onPublier={() => void publierLiee(recoChoisie)}
+                      onFusionner={() => ouvrirFusion(recoChoisie)}
+                    />
+                  )}
+                  <RecoCard
+                    // Une autre recommandation : son volet repart de zéro
+                    // (page, decks ouverts, édition d'un deck).
+                    key={recoChoisie.id}
+                    sousBandeau={!!recoChoisie.lien && provenance.type === 'salon'}
+                    provenance={provenanceDe(recoChoisie)}
+                    onDetacher={recoChoisie.lien ? () => setADetacher(recoChoisie) : undefined}
+                    publierDans={publierDansDe(recoChoisie)}
+                    raisonExportDe={raisonExportDe}
+                    onExporterDeckOptimizer={exporterDeckOptimizer}
+                    reco={recoChoisie}
+                    index={list.indexOf(recoChoisie)}
+                    monsters={monsters}
+                    monsterByCom2us={monsterByCom2us}
+                    monsterById={monsterById}
+                    offenseTeams={offenseTeams}
+                    equipesChoix={equipesChoix}
+                    match={matchOf(recoChoisie)}
+                    retour={(
+                      <BoutonIcone
+                        onClick={() => setDetailDecks(false)}
+                        icone={<ArrowLeft size={16} />}
+                        libelle={r.toutesLesRecos}
+                        className="flex-none @3xl:hidden"
+                      />
+                    )}
+                    hit={hitPar.get(recoChoisie.id) ?? null}
+                    editing={editingId === recoChoisie.id}
+                    onToggleEdit={(id) => setEditingId((cur) => (cur === id ? null : id))}
+                    onExport={(x) => requestExport([x], x.name || r.cetteReco)}
+                    recos={recos}
+                  />
+                </>
+              )}
+            </div>
+          </div>
         </div>
       )}
       </div>

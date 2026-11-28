@@ -1,5 +1,5 @@
 // Construit les gabarits de chiffres de la lecture de capture
-// (api/_source/capture/chiffres-gabarits.json) :
+// (src/lib/capture/chiffres-gabarits.json) :
 //   - les dix chiffres de la police Inter (graisses 500, 600, 700), rendus par
 //     Chromium en blanc sur fond sombre. Inter est la police installée la plus
 //     proche de celle du jeu : seule à lire sans erreur les chiffres relevés
@@ -25,12 +25,12 @@
 
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { chromium } from 'playwright';
-import { decoderImage } from '../api/_source/capture/image';
-import { GH, GL, glyphes, glyphesDuNombre, masqueClair, normaliser, type Gabarits } from '../api/_source/capture/chiffres';
-import { zoneVitesse } from '../api/_source/capture/pastille';
-import { trouverCartes } from '../api/_source/capture/cartes';
+import { decoderImage } from '../api/_source/capture/decodage';
+import { GH, GL, glyphes, glyphesDuNombre, masqueClair, normaliser, type Gabarits } from '../src/lib/capture/chiffres';
+import { zoneVitesse } from '../src/lib/capture/pastille';
+import { trouverCartes } from '../src/lib/capture/cartes';
 
-const SORTIE = 'api/_source/capture/chiffres-gabarits.json';
+const SORTIE = 'src/lib/capture/chiffres-gabarits.json';
 const arrondi = (v: Float32Array) => Array.from(v, (x) => Math.round(x * 1000) / 1000);
 
 // Conteneur Linux (claude.ai/code) : Chromium y est préinstallé pour une autre

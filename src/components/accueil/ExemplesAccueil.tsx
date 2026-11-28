@@ -67,7 +67,7 @@ export function ExempleRecos({ monstres, liste }: { monstres: ParCom2us; liste: 
   return (
     <CadreExemple etiquette={v.etiquette} data="recos">
       <RecoCard
-        raisonsExportOptimizer={reco.decks.map(() => undefined)}
+        raisonExportDe={() => undefined}
         onExporterDeckOptimizer={() => {}}
         reco={reco}
         index={0}
@@ -75,12 +75,8 @@ export function ExempleRecos({ monstres, liste }: { monstres: ParCom2us; liste: 
         monsterByCom2us={monstres}
         monsterById={parId}
         offenseTeams={[]}
+        equipesChoix={[]}
         match={null}
-        canAnalyze={false}
-        onAnalyze={() => {}}
-        onClearAnalysis={() => {}}
-        open
-        onToggleOpen={() => {}}
         editing={false}
         onToggleEdit={() => {}}
         onExport={() => {}}

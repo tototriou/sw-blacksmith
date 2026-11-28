@@ -2247,6 +2247,7 @@ function Application() {
         offense={siegeOff}
         siegeDefenseTeams={siegeDef.state.teams}
         siegeOffenseTeams={siegeOff.state.teams}
+        equipesEnregistrees={equipesEnregistrees.equipes}
         recos={recos}
         builds={ownedBuilds}
         teams={ownedTeams}
@@ -2315,6 +2316,7 @@ function Application() {
         allMonsters={allMonsters}
         optimizer={optimizerPourEquipes}
         recos={recos.state.recos}
+        ajoutRecos={recos}
         onImporterOptimizer={importerEquipe}
         onEquipeCreee={demanderConservationEquipes}
         demandeOptimizer={demandeOptimizer}

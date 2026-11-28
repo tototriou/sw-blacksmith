@@ -7,6 +7,25 @@ import type { ImportOptimizer } from './importEquipes';
 import { idCanoniqueCollab } from './monsterForms';
 import { exclusionSelectorKey, resolveExclusionEntry, type ExclusionSelector, type ExclusionSourceData } from './optimizerExclusion';
 
+// Le monstre d'un `com2usId`, par un index construit UNE fois par jeu de
+// données (`monsterById` est le même objet tant que les données ne changent
+// pas). ⚠️ Un `[...values()].find` par slot recopiait et parcourait tous les
+// monstres du jeu : la page des recommandations le paie pour chaque deck
+// affiché. Le PREMIER rencontré l'emporte, comme avec `find`.
+type MonstresParId = ExclusionSourceData['monsterById'];
+type MonstreDesDonnees = MonstresParId extends Map<string, infer M> ? M : never;
+const INDEX_COM2US = new WeakMap<MonstresParId, Map<number, MonstreDesDonnees>>();
+function monstreDuCom2us(data: ExclusionSourceData, com2usId: number | null | undefined): MonstreDesDonnees | undefined {
+  if (com2usId == null) return undefined;
+  let index = INDEX_COM2US.get(data.monsterById);
+  if (!index) {
+    index = new Map();
+    for (const m of data.monsterById.values()) if (m.com2usId != null && !index.has(m.com2usId)) index.set(m.com2usId, m);
+    INDEX_COM2US.set(data.monsterById, index);
+  }
+  return index.get(com2usId);
+}
+
 function criteresDuSlot(slot: RecoSlot, libelle: string, messages: string[], t: Dictionnaire): CriteresPartielsOptimizer {
   const m = t.optimizer.importsEquipe.reco;
   const criteres: CriteresPartielsOptimizer = { minStats: {}, comboSets: [], lignesVerrouillees: [] };
@@ -65,7 +84,7 @@ export function importerRecoOptimizer(deck: RecoDeck, data: ExclusionSourceData,
   let leader: ExclusionSelector | undefined;
   deck.slots.forEach((slot, index) => {
     if (slot.com2usId === null) return;
-    const monstre = [...data.monsterById.values()].find(m => m.com2usId === slot.com2usId);
+    const monstre = monstreDuCom2us(data, slot.com2usId);
     const libelle = monstre?.name ?? (slot.name || m.espece(slot.com2usId));
     let selector: ExclusionSelector = { source: 'unowned', monsterId: String(monstre?.id ?? slot.com2usId) };
     const ignorer = (raison: string) => resultat.ignores.push({ selector: { ...selector }, libelle, raison });
@@ -87,7 +106,7 @@ export function importerRecoOptimizer(deck: RecoDeck, data: ExclusionSourceData,
       if (offenseRetenue) resultat.messages.push(m.repliCompte(libelle));
       let choisi = selecteurRepliCompositionOptimizer(String(monstre.id), slot.com2usId, data, 'offense', selecteursPris);
       const jumeau = monstre.jumeauCollab != null
-        ? [...data.monsterById.values()].find(x => x.com2usId === monstre.jumeauCollab) : undefined;
+        ? monstreDuCom2us(data, monstre.jumeauCollab) : undefined;
       if ((!choisi || choisi.source === 'unowned') && jumeau?.com2usId != null) {
         const autre = selecteurRepliCompositionOptimizer(String(jumeau.id), jumeau.com2usId, data, 'offense', selecteursPris);
         if (autre && autre.source !== 'unowned') choisi = autre;
@@ -117,7 +136,7 @@ export function importerRecoOptimizer(deck: RecoDeck, data: ExclusionSourceData,
       criteres: criteresDuSlot(slot, libelle, resultat.messages, t) });
     if (index === 0) leader = { ...selector };
   });
-  const monstreLeader = [...data.monsterById.values()].find(m => deck.slots[0]?.com2usId != null && m.com2usId === deck.slots[0].com2usId);
+  const monstreLeader = monstreDuCom2us(data, deck.slots[0]?.com2usId);
   resultat.equipes.push({ libelle: nom, members: resultat.membres.map(m => ({ ...m.selector })),
     ...(leader ? { leader } : {}), lead: structuredClone(monstreLeader?.leaderSkill ?? null) });
   return resultat;

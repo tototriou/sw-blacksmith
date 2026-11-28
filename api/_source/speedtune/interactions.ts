@@ -30,10 +30,11 @@ import { kitVitesse, sortsVitesse } from '../../../src/lib/speedTuneKit';
 import { passifsVitesse, pointsDeGain, type PassifVitesse } from '../../../src/lib/speedTunePassif';
 import { sortRetenu, sortSecondRetenu, type DonneesKit, type EntreeAuto } from '../../../src/lib/speedTuneAuto';
 import { API, type Recuperer } from '../service/discordApi';
-import { decoderImage, imageTropGrande } from '../capture/image';
-import type { Banque } from '../capture/portraits';
-import type { Gabarits } from '../capture/chiffres';
-import { lireEcranPreparation, type LectureEcran } from '../capture/ecranPreparation';
+import { decoderImage } from '../capture/decodage';
+import { imageTropGrande } from '../../../src/lib/capture/image';
+import { ECART_DOUTE, SCORE_PORTRAIT_MIN, type Banque } from '../../../src/lib/capture/portraits';
+import type { Gabarits } from '../../../src/lib/capture/chiffres';
+import { lireEcranPreparation, type LectureEcran } from '../../../src/lib/capture/ecranPreparation';
 import { analyserEquipe } from './analyse';
 import {
   champSaisie, embedErreur, embedResultat, langueDe, messageQuestion, modaleSaisie, rangeeOutil, texteEphemere,
@@ -48,11 +49,8 @@ export const OPTION_CAPTURE = 'capture';
 // permet de l'envoyer : 25 Mo au plus.
 export const TAILLE_MAX_IMAGE = 25 * 1024 * 1024;
 const CDN_DISCORD = /^https:\/\/(cdn\.discordapp\.com|media\.discordapp\.net)\//;
-// Sous ce score, le portrait n'est pas celui d'un monstre : la capture n'est
-// pas l'écran attendu (un portrait juste dépasse 0,8).
-export const SCORE_PORTRAIT_MIN = 0.5;
-// Écart au deuxième candidat sous lequel le portrait est dit incertain.
-export const ECART_DOUTE = 0.05;
+// Les seuils d'un portrait, partagés avec l'app (src/lib/capture/portraits.ts).
+export { ECART_DOUTE, SCORE_PORTRAIT_MIN } from '../../../src/lib/capture/portraits';
 // Sous cette confiance, la VIT lue est dite incertaine (sous 0,7, elle n'est
 // pas lue du tout : CONFIANCE_VIT_PLANCHER).
 export const CONFIANCE_VIT_MIN = 0.75;

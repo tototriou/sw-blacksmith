@@ -241,9 +241,56 @@ const memeLigne = (a: Rect, b: Rect) => proches(a[1], b[1], 2 + 0.1 * a[2]) && p
 
 export interface CartesTrouvees { attaquants: Rect[]; defense: Rect[] }
 
+// `vitFacultative` : faute de trois cartes portant une VIT, trois cartes de
+// même taille côte à côte font l'équipe. ⚠️ Pour l'APP (un counter de
+// recommandation : trois portraits recadrés suffisent, la VIT n'y sert pas),
+// jamais pour le speed tune du bot, qui a besoin des VIT — et dont la règle
+// « les attaquants sont ceux qui portent une VIT » écarte la défense et la
+// liste des monstres d'un écran entier. Les portraits départagent ensuite :
+// un trio qui n'est pas de monstres n'est pas reconnu.
+export interface OptionsCartes { vitFacultative?: boolean }
+
 const LONGUEUR_CARTE_MIN = 12;
 
-export function trouverCartes(img: Image): CartesTrouvees | null {
+// Trois cadres de même taille, sur une même ligne, côte à côte à pas
+// régulier ; `garder` dit lesquels comptent.
+function triosDe(rects: Rect[], garder: (t: Rect[]) => boolean): Rect[][] {
+  const trios: Rect[][] = [];
+  for (const a of rects) for (const b of rects) {
+    const pas = b[0] - a[0];
+    if (!memeLigne(a, b) || pas < 0.9 * a[2] || pas > 1.6 * a[2]) continue;
+    for (const c of rects) {
+      if (!memeLigne(a, c) || !proches(c[0] - b[0], pas, 2 + 0.1 * a[2])) continue;
+      if (garder([a, b, c])) trios.push([a, b, c]);
+    }
+  }
+  return trios;
+}
+
+// Le trio retenu, ramené à une même taille (la médiane), et la défense : les
+// cadres de même taille, à droite, sur la même ligne ; sinon, si `symetrique`,
+// le symétrique des attaquants. ⚠️ Une capture recadrée sur les seuls
+// attaquants n'a pas de défense : le symétrique tomberait sur eux, ou hors de
+// l'image — aucune carte de défense alors.
+function cartesDuTrio(img: Image, tous: Rect[], trio: Rect[], symetrique: boolean): CartesTrouvees {
+  const mediane = (v: number[]) => [...v].sort((a, b) => a - b)[1];
+  const y = mediane(trio.map((r) => r[1])), cote = mediane(trio.map((r) => r[2])), hauteur = mediane(trio.map((r) => r[3]));
+  const attaquants = trio.map(([x]): Rect => [x, y, cote, hauteur]);
+  const pas = (attaquants[2][0] - attaquants[0][0]) / 2;
+  const finAttaque = attaquants[2][0] + cote;
+  const aDroite = contours(tous)
+    .filter((r) => r[0] >= finAttaque && memeLigne(attaquants[0], r))
+    .sort((p, q) => p[0] - q[0]);
+  if (aDroite.length >= 3) return { attaquants, defense: aDroite.slice(0, 3).map(([x]): Rect => [x, y, cote, hauteur]) };
+  if (!symetrique) return { attaquants, defense: [] };
+  const x0Defense = aDroite.length ? aDroite[0][0] : img.largeur - finAttaque;
+  const defense: Rect[] = [0, 1, 2]
+    .map((k): Rect => [x0Defense + k * pas, y, cote, hauteur])
+    .filter(([x]) => x >= finAttaque + pas - cote && x + cote <= img.largeur);
+  return { attaquants, defense };
+}
+
+export function trouverCartes(img: Image, options: OptionsCartes = {}): CartesTrouvees | null {
   // ⚠️ Un seuil en pixels, pas en part de l'image : une capture de tout
   // l'écran, où la fenêtre du jeu n'occupe qu'un coin, a des cartes petites
   // devant l'image. Sous 12 pixels, une VIT ne se lit plus de toute façon.
@@ -267,18 +314,22 @@ export function trouverCartes(img: Image): CartesTrouvees | null {
   // trios possibles (le contour et le bord intérieur des mêmes cartes, à un
   // ou deux pixels près) : celui dont les trois nombres sont nets, puis les
   // plus grandes cartes, puis la plus haute.
-  const trios: Rect[][] = [];
-  for (const a of avecPastille) for (const b of avecPastille) {
-    const pas = b[0] - a[0];
-    if (!memeLigne(a, b) || pas < 0.9 * a[2] || pas > 1.6 * a[2]) continue;
-    for (const c of avecPastille) {
-      if (!memeLigne(a, c) || !proches(c[0] - b[0], pas, 2 + 0.1 * a[2])) continue;
-      if ([a, b, c].filter((r) => nombre.has(r)).length >= 2) trios.push([a, b, c]);
-    }
-  }
   const nets = (t: Rect[]) => t.filter((r) => nombre.has(r)).length;
+  const trios = triosDe(avecPastille, (t) => nets(t) >= 2);
   trios.sort((p, q) => nets(q) - nets(p) || q[0][2] - p[0][2] || p[0][1] - q[0][1]);
-  if (!trios.length) return null;
+  if (!trios.length) {
+    if (!options.vitFacultative) return null;
+    // Sans VIT : les plus grandes cartes, puis la ligne la plus haute, puis le
+    // trio le plus à GAUCHE (six cartes alignées : l'offense, puis la défense
+    // à droite) ; pour ces mêmes cartes, le plus grand cadre (leur contour,
+    // comme plus bas).
+    const sansVit = triosDe(uniques, () => true).sort((p, q) => q[0][2] - p[0][2] || p[0][1] - q[0][1] || p[0][0] - q[0][0]);
+    if (!sansVit.length) return null;
+    const retenu = sansVit
+      .filter((t) => t.every((r, k) => recouvrement(r, sansVit[0][k]) > 0.5))
+      .sort((p, q) => q[0][2] * q[0][3] - p[0][2] * p[0][3])[0];
+    return cartesDuTrio(img, tous, retenu, false);
+  }
   // ⚠️ Les nombres nets disent QUELLES cartes ; pour ces mêmes cartes, le
   // plus grand cadre est leur contour (comme `contours`). Le portrait se
   // reconnaît sur la carte entière : sur son bord intérieur, plus petit d'un
@@ -289,26 +340,9 @@ export function trouverCartes(img: Image): CartesTrouvees | null {
   const trio = trios
     .filter((t) => t.every((r, k) => recouvrement(r, trios[0][k]) > 0.5))
     .sort((p, q) => q[0][2] * q[0][3] - p[0][2] * p[0][3])[0];
-  // Une même taille pour les trois (la médiane), chacune à sa place.
-  const mediane = (v: number[]) => [...v].sort((a, b) => a - b)[1];
-  const y = mediane(trio.map((r) => r[1])), cote = mediane(trio.map((r) => r[2])), hauteur = mediane(trio.map((r) => r[3]));
-  const attaquants = trio.map(([x]): Rect => [x, y, cote, hauteur]);
-  const pas = (attaquants[2][0] - attaquants[0][0]) / 2;
-
-  // La défense : les cadres de même taille, à droite, sur la même ligne, sans
-  // VIT ; sinon le symétrique des attaquants. ⚠️ Une capture recadrée sur les
-  // seuls attaquants n'a pas de défense : le symétrique tomberait sur eux, ou
-  // hors de l'image — aucune carte de défense alors.
-  const finAttaque = attaquants[2][0] + cote;
-  const aDroite = contours(tous)
-    .filter((r) => r[0] >= finAttaque && memeLigne(attaquants[0], r))
-    .sort((p, q) => p[0] - q[0]);
-  if (aDroite.length >= 3) return { attaquants, defense: aDroite.slice(0, 3).map(([x]): Rect => [x, y, cote, hauteur]) };
-  const x0Defense = aDroite.length ? aDroite[0][0] : img.largeur - finAttaque;
-  const defense: Rect[] = [0, 1, 2]
-    .map((k): Rect => [x0Defense + k * pas, y, cote, hauteur])
-    .filter(([x]) => x >= finAttaque + pas - cote && x + cote <= img.largeur);
-  return { attaquants, defense };
+  // Une même taille pour les trois (la médiane), chacune à sa place ; la
+  // défense à droite, ou symétrique des attaquants (`cartesDuTrio`).
+  return cartesDuTrio(img, tous, trio, true);
 }
 
 // Les cartes, à l'échelle de l'image, ou — faute de les y trouver sur une
@@ -321,10 +355,10 @@ export function trouverCartes(img: Image): CartesTrouvees | null {
 // perdu de leur détail. Une image où les cartes se trouvent n'est jamais réduite.
 const COTE_REDUCTION_MIN = 1200; // en dessous, une moitié n'aurait plus de quoi montrer ses cartes
 
-export function trouverCartesAToutesEchelles(img: Image): CartesTrouvees | null {
+export function trouverCartesAToutesEchelles(img: Image, options: OptionsCartes = {}): CartesTrouvees | null {
   let courante = img, facteur = 1;
   for (;;) {
-    const cartes = trouverCartes(courante);
+    const cartes = trouverCartes(courante, options);
     if (cartes) {
       if (facteur === 1) return cartes;
       const agrandir = ([x, y, l, h]: Rect): Rect => [x * facteur, y * facteur, l * facteur, h * facteur];

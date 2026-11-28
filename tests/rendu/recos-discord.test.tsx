@@ -13,7 +13,7 @@ import { groupesSalons } from '../../src/lib/provenancesRecos';
 import type { Monster, Reco, RecoDeck, RecoPayload } from '../../src/types';
 import { egal, monstersJson, ok, titre } from '../outils';
 import { boutons, rendre, texteVisible } from './outils-rendu';
-import { RECOS, rendreRecos } from './recos.test';
+import { RECOS, rendreCarte, rendreRecos } from './recos.test';
 
 const MONSTRES = monstersJson() as Monster[];
 const parCom2us = new Map(MONSTRES.filter((m) => m.com2usId != null).map((m) => [m.com2usId!, m]));
@@ -30,29 +30,37 @@ const liee = (s: SalonAccessible, p: RecoPayload) => recoLiee(s, { messageId: `m
 export function testRenduRecosDiscordPage() {
   titre('rendu · Recommandations — page avec des recommandations liées, hors connexion');
   const lieeSiege = liee(salon('siege'), contenu('Défenses GvO', [deck(ids.slice(0, 3))]));
-  const html = rendreRecos({ recos: [...RECOS.recos, lieeSiege] });
+  // Vue Decks : la liste des recommandations, et la première (celle du salon)
+  // ouverte à côté.
+  const html = rendreRecos({ recos: [lieeSiege, ...RECOS.recos] }, 'attaque');
   const t = texteVisible(html);
   ok(t.includes('Toutes les recommandations 3') && t.includes('Sur cet appareil 2'), 'colonne : « Toutes » et « Sur cet appareil », avec leurs comptes');
   ok(t.includes('Suivis 1'), 'colonne : « Suivis », avec le compte des recommandations liées');
   ok(t.includes('Ma guilde') && t.includes('blacksmith-reco-siege À jour'), 'colonne : le serveur, son salon et son état');
   ok(/aria-current="true"[^>]*>(?:(?!<\/button>)[\s\S])*Toutes les recommandations/.test(html), '« Toutes les recommandations » choisie à l\'ouverture');
   ok(t.includes('Contres des défenses feu') && t.includes('Defs de guilde') && t.includes('Défenses GvO'), '« Toutes » montre les recommandations locales et celle du salon');
-  ok(html.includes('data-provenance-carte'), 'les cartes portent leur provenance quand il y a des salons');
-  ok(t.includes('Défenses GvO Consulter Analyser mes decks 1 deck · par Toto · avec Lulu blacksmith-reco-siege À jour Importée'),
-    'l\'en-tête se lit de haut en bas : le nom, puis les decks et l\'auteur, enfin la source et les étiquettes');
+  ok(html.includes('data-provenance-liste'), 'la liste porte la provenance de chaque recommandation quand il y a des salons');
+  ok(t.includes('Défenses GvO 1 deck blacksmith-reco-siege À jour Importée'), 'la liste : le nom, les decks, puis le salon, son état et les étiquettes');
+  ok(html.includes('data-provenance-carte'), 'le volet porte aussi la provenance');
+  // Le volet de la recommandation liée (le rendu serveur ne clique pas : on
+  // le rend seul).
+  const voletLiee = rendreCarte(false, undefined, { recos: [lieeSiege] }, null, { provenance: { nom: 'blacksmith-reco-siege', etat: 'a-jour' }, onDetacher: () => {} });
+  ok(texteVisible(voletLiee).includes('1 deck · par Toto · avec Lulu blacksmith-reco-siege À jour Importée'),
+    'l\'en-tête du volet se lit de haut en bas : les decks et l\'auteur, puis la source et les étiquettes');
+  ok(boutons(voletLiee).some((x) => x.texte === 'Détacher de ce salon') && !boutons(voletLiee).some((x) => x.texte === 'Supprimer cette recommandation'),
+    'la recommandation liée se détache, elle ne se supprime pas');
   const b = boutons(html);
-  ok(b.some((x) => x.ariaLabel === 'Détacher de ce salon'), 'la recommandation liée se détache, elle ne se supprime pas');
   ok(b.filter((x) => x.texte === 'Publier dans…').every((x) => x.desactive && x.title === 'Connecte-toi à Discord pour publier'),
     '« Publier dans… » toujours affiché, désactivé hors connexion avec sa raison');
   ok(b.some((x) => x.texte === 'Se connecter à Discord' && !x.desactive), 'encart : « Se connecter à Discord »');
   ok(b.some((x) => x.texte === 'Installer le bot sur ton serveur'), 'encart : l\'aide d\'installation');
-  ok(t.includes('par Toto · avec Lulu'), 'auteur et contributeurs en lecture seule');
+  ok(texteVisible(voletLiee).includes('par Toto · avec Lulu'), 'auteur et contributeurs en lecture seule');
   // Au téléphone : les provenances et le compte EN TÊTE de la page, à plat.
   const tel = html.indexOf('data-provenances-telephone');
   ok(tel >= 0 && tel < html.indexOf('data-colonne-provenances') && tel < html.indexOf('placeholder="'),
     'téléphone : les provenances en tête de la page, avant la recherche');
-  ok(!html.includes('data-selecteur-provenance') && !html.includes('aria-haspopup="dialog"'), 'téléphone : aucun sélecteur à dérouler');
   const blocTel = html.slice(tel, html.indexOf('</section>', tel));
+  ok(!html.includes('data-selecteur-provenance') && !blocTel.includes('aria-haspopup'), 'téléphone : aucun sélecteur à dérouler');
   ok(texteVisible(blocTel).includes('Toutes les recommandations 3') && blocTel.includes('min-h-10') && blocTel.includes('data-compte-discord="deconnecte"'),
     'téléphone : les lignes au doigt, puis l\'encart Discord');
   ok(!html.includes('placeholder="Pseudo'), 'l\'auteur ne se saisit plus');

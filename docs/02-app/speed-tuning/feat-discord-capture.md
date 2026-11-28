@@ -148,16 +148,22 @@ reconnu. Une VIT n'en est jamais la cause.
 
 ## La lecture de la capture
 
-`api/_source/capture/`, sans dépendance native (empaquetée par esbuild) :
+`src/lib/capture/`, sans dépendance native ni API de Node : la même lecture
+sert le service (empaquetée par esbuild) et l'app, dans le navigateur — l'ajout
+d'un counter depuis une capture
+([interactions.md](../siege/feat-recommandations/interactions.md)). Seul le
+décodage du service reste côté `api/` :
 
-- [image.ts](../../../api/_source/capture/image.ts) — décodage PNG
-  (`pngjs`) et JPEG (`jpeg-js`), découpe, réduction par moyenne de surface.
-  Plus de 40 millions de pixels : refusée avant décodage — pour un PNG, la
-  taille se lit dans son en-tête IHDR (un PNG uni de 10 Mo peut annoncer des
-  milliards de pixels). En deçà, toute capture passe, même de tout un bureau
-  (`Win + Impr. écran` prend tous les écrans : deux écrans 4K font 16,6
-  millions de pixels) ; un écran 8K se lit en 2,3 s avec 0,5 Go de mémoire.
-- [cartes.ts](../../../api/_source/capture/cartes.ts) — les cartes
+- [decodage.ts](../../../api/_source/capture/decodage.ts) — décodage PNG
+  (`pngjs`) et JPEG (`jpeg-js`), pour Node. Plus de 40 millions de pixels :
+  refusée avant décodage — pour un PNG, la taille se lit dans son en-tête IHDR
+  (un PNG uni de 10 Mo peut annoncer des milliards de pixels). En deçà, toute
+  capture passe, même de tout un bureau (`Win + Impr. écran` prend tous les
+  écrans : deux écrans 4K font 16,6 millions de pixels) ; un écran 8K se lit
+  en 2,3 s avec 0,5 Go de mémoire. L'app, elle, décode par le navigateur.
+- [image.ts](../../../src/lib/capture/image.ts) — l'image en mémoire, découpe,
+  réduction par moyenne de surface, et la taille annoncée par un PNG.
+- [cartes.ts](../../../src/lib/capture/cartes.ts) — les cartes
   **trouvées** dans l'image, quels que soient sa taille et son format :
   téléphone, tablette, fenêtre PC avec ou sans barre de titre, capture
   décentrée, recadrée sur les trois attaquants seuls, ou capture de tout
@@ -190,6 +196,16 @@ reconnu. Une VIT n'en est jamais la cause.
   3. **La défense** : les cadres de même taille, à droite, sur la même ligne ;
      sinon le symétrique des attaquants par rapport au centre ; une capture
      recadrée sur les attaquants n'en a pas.
+  - ⚠️ **VIT facultative, pour l'app seulement** (`vitFacultative`) : faute de
+    trois cartes portant une VIT, trois cartes de même taille côte à côte font
+    l'équipe — la plus grande, puis la plus haute, puis la plus à gauche ;
+    six cartes alignées donnent l'offense puis la défense à sa droite. Aucune
+    défense n'est alors supposée par symétrie. Un counter de recommandation se
+    lit ainsi sur trois portraits recadrés, sans pastille ; les portraits
+    départagent ensuite (un trio qui n'est pas de monstres n'est pas
+    reconnu). Le bot ne l'active jamais : sa règle des VIT écarte la défense
+    et la liste des monstres d'un écran entier, et son speed tune a besoin
+    des VIT.
   4. ⚠️ **Une grande image sans équipe trouvée est relue réduite**
      (`trouverCartesAToutesEchelles`) : de moitié, puis de moitié encore,
      tant que son plus grand côté fait 1 200 pixels ; les cartes trouvées sont
@@ -200,7 +216,7 @@ reconnu. Une VIT n'en est jamais la cause.
      la fenêtre du jeu dans un coin d'un écran 4K, dont les petites cartes ne
      survivraient pas à la réduction. Coût : 5 à 9 s pour une image de 3 700
      à 7 900 pixels de large.
-- [pastille.ts](../../../api/_source/capture/pastille.ts) — la pastille de
+- [pastille.ts](../../../src/lib/capture/pastille.ts) — la pastille de
   VIT d'une carte, ce qui en fait un attaquant. La VIT est écrite en blanc
   dans une pastille sombre, en bas à droite de la carte ; la pastille est
   **trouvée** dans la carte, pas placée par des proportions. Son bas : la
@@ -227,7 +243,7 @@ reconnu. Une VIT n'en est jamais la cause.
   haut de ses chiffres. Une carte porte un **nombre net** quand sa zone se découpe en deux à
   quatre glyphes : un coin de portrait sombre au reflet clair ressemble à une
   pastille, surtout en JPEG, pas à un nombre.
-- [ecranPreparation.ts](../../../api/_source/capture/ecranPreparation.ts) —
+- [ecranPreparation.ts](../../../src/lib/capture/ecranPreparation.ts) —
   la lecture des cartes trouvées. ⚠️ Aucune position n'est supposée : sans
   trois attaquants trouvés, l'écran n'est pas reconnu. ⚠️ Une VIT fausse donnée
   pour sûre est pire qu'une VIT demandée : hors de 100 à 450 (en
@@ -238,14 +254,14 @@ reconnu. Une VIT n'en est jamais la cause.
   l'accord des deux lectures vaut ; sous 6 pixels, la VIT n'est jamais sûre —
   à 5 pixels, les deux lectures se sont accordées sur un « 340 » pour 349.
   Sous 0,75, la commande la demande aussi.
-- [portraits.ts](../../../api/_source/capture/portraits.ts) — le monstre
+- [portraits.ts](../../../src/lib/capture/portraits.ts) — le monstre
   reconnu à son portrait, porté du projet « Youtube-to-offenses-decks »
   (portraits.py) : zone centrale ramenée à 24 × 24 en Lab, centrée-réduite,
   corrélée à chaque icône de la banque, moins une pénalité d'écart de teinte
   (même dessin, autre élément) ; découpe recalée sur 75 voisines. Les deux
   faces d'une paire collab comptent pour un monstre. Score d'un portrait
   juste : 0,8 à 0,93 ; sous 0,5, l'écran n'est pas reconnu.
-- [chiffres.ts](../../../api/_source/capture/chiffres.ts) — la VIT : seuil
+- [chiffres.ts](../../../src/lib/capture/chiffres.ts) — la VIT : seuil
   d'Otsu sur la plus petite composante (l'écriture est claire), découpage par
   colonnes. La hauteur d'un chiffre est celle du glyphe notable le plus à
   droite (le dernier chiffre), pas du plus haut (l'icône de vitesse, grandie
@@ -272,7 +288,7 @@ reconnu. Une VIT n'en est jamais la cause.
   que les deux donnent est lu même quand deux chiffres sont proches. Sous 3
   pixels de haut, un chiffre n'a plus de forme : il n'est pas lu.
 - **Les hypothèses**, quand la VIT n'est pas sûre (`hypothesesVit`
-  d'[ecranPreparation.ts](../../../api/_source/capture/ecranPreparation.ts)) :
+  d'[ecranPreparation.ts](../../../src/lib/capture/ecranPreparation.ts)) :
   les 351 VIT possibles (100 à 450) sont classées **en entier** — un chiffre
   qui hésite seul se départage par ce qu'une VIT peut être (549 n'en est pas
   une). Trois glyphes ou plus : la somme des scores de ses chiffres à la
@@ -287,7 +303,25 @@ reconnu. Une VIT n'en est jamais la cause.
   100, y ajouter la lecture agrandie en perdait la moitié ; la synthèse, 50,
   ne sert que sans glyphes.
 
-Les données voyagent dans le paquet de la fonction :
+Dans l'app, la même lecture donne un counter de recommandation :
+
+- [lectureNavigateur.ts](../../../src/lib/capture/lectureNavigateur.ts) — le
+  navigateur décode la capture (PNG, JPEG, WebP, image collée), sans
+  conversion de couleur ni alpha prémultiplié ; un **Web Worker**
+  ([lectureCapture.worker.ts](../../../src/workers/lectureCapture.worker.ts))
+  la lit, VIT facultative : 1 à 3 s, l'écran ne fige pas. Le Worker est créé
+  à la première lecture et gardé ; la banque de portraits n'est chargée
+  qu'avec lui, ni la page ni le paquet principal ne la portent. ⚠️ La capture
+  ne quitte jamais l'appareil.
+- [counterDepuisCapture.ts](../../../src/lib/capture/counterDepuisCapture.ts) —
+  la lecture devient un deck : la règle du bot pour les monstres (sous 0,5,
+  ou absent des données : l'écran n'est pas reconnu ; un second candidat à
+  moins de 0,05 est « à vérifier »), les attaquants dans l'ordre, la défense
+  lue en défense visée (une place non reconnue reste vide), la VIT ignorée.
+  Les corrections faites dans l'aperçu (remplacer, vider) y passent.
+
+Les données voyagent dans le paquet de la fonction (et, dans l'app, dans
+celui du Worker) :
 
 | Fichier | Contenu | Reconstruit par |
 | --- | --- | --- |
@@ -407,4 +441,8 @@ la 2.4.6 encore compris), Effet aug. VIT saisi d'un second bouton (une
 fenêtre, un champ par monstre buffé, au-delà de 60 % refusé en privé), aucun
 pied sous le résultat, capture collée (type annoncé absent ou quelconque) lue, capture
 WebP rendue en PNG par Discord, GIF non converti refusé,
-et message final devant un Discord simulé.
+et message final devant un Discord simulé. `testCaptureSansVit` : trois cartes
+sans VIT refusées par le bot, lues par l'app, six cartes alignées en offense
+puis défense, un écran complet lu de même avec ou sans l'option.
+[tests/capture-counter.test.ts](../../../tests/capture-counter.test.ts) : la
+lecture devenue un deck de recommandation, et les corrections de l'aperçu.

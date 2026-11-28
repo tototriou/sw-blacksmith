@@ -1,5 +1,6 @@
 // `/speedtune` : lecture d'une capture de l'écran de préparation de siège
-// (api/_source/capture/), analyse par le moteur de speed tuning de l'app, et
+// (src/lib/capture/, décodage du service dans api/_source/capture/), analyse
+// par le moteur de speed tuning de l'app, et
 // le point d'arrivée des interactions Discord (api/_source/speedtune/).
 //
 // ⚠️ Aucune vraie capture dans le dépôt (public) : les écrans sont RECOMPOSÉS
@@ -13,17 +14,18 @@ import { generateKeyPairSync, sign } from 'node:crypto';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { PNG } from 'pngjs';
 import jpeg from 'jpeg-js';
-import { decoderImage, decouper, demiTaille, dimensionsPng, imageTropGrande, reduire, type Image } from '../api/_source/capture/image';
-import { Banque, quantifier, signature, TAILLE, COTE, type BanqueSerialisee } from '../api/_source/capture/portraits';
-import { HAUTEUR_CHIFFRE_MIN, lireNombre, scoresParSynthese, type Gabarits } from '../api/_source/capture/chiffres';
-import { hypothesesVit, lireEcranPreparation } from '../api/_source/capture/ecranPreparation';
+import { decoderImage } from '../api/_source/capture/decodage';
+import { decouper, demiTaille, dimensionsPng, imageTropGrande, reduire, type Image } from '../src/lib/capture/image';
+import { Banque, quantifier, signature, TAILLE, COTE, type BanqueSerialisee } from '../src/lib/capture/portraits';
+import { HAUTEUR_CHIFFRE_MIN, lireNombre, scoresParSynthese, type Gabarits } from '../src/lib/capture/chiffres';
+import { hypothesesVit, lireEcranPreparation } from '../src/lib/capture/ecranPreparation';
 import { analyserEquipe, runesAuPire } from '../api/_source/speedtune/analyse';
 import { adresseEnPng, creerInteractions, etatDeLecture, repondre, signatureValide, valeurChamp, type Ressources } from '../api/_source/speedtune/interactions';
 import { embedErreur, ICONE_APP, LIEN_OUTIL, langueDe, type Bouton, type Embed, type Menu, type Modale, type Rangee } from '../api/_source/speedtune/message';
 import { decoderEtat, encoderEtat, LONGUEUR_MAX, VIT_INCONNUE, type Etat } from '../api/_source/speedtune/etat';
 import { creerEmojis } from '../api/_source/speedtune/emojis';
-import gabaritsJson from '../api/_source/capture/chiffres-gabarits.json';
-import banqueJson from '../api/_source/capture/banque-portraits.json';
+import gabaritsJson from '../src/lib/capture/chiffres-gabarits.json';
+import banqueJson from '../src/lib/capture/banque-portraits.json';
 import { combatSpeed, runeSpeedForTarget, siegeLeadFor, speedLeadOf } from '../src/lib/speed';
 import { kitVitesse, sortsVitesse } from '../src/lib/speedTuneKit';
 import { passifsVitesse, pointsDeGain } from '../src/lib/speedTunePassif';
@@ -349,6 +351,30 @@ export function testCaptureEcran() {
   // Une VIT hors de portée du jeu n'est pas une VIT.
   const absurde = lireEcranPreparation(ecran(portraits, ['9', '999', '357']), banque, gabarits)!;
   egal(absurde.attaquants.map((a) => a.vitesse?.valeur ?? null), [null, null, 357], 'VIT invraisemblable : écartée');
+}
+
+// ---- Sans VIT : l'app (un counter de recommandation) ---------------------------
+
+export function testCaptureSansVit() {
+  titre('Lecture de capture — trois portraits sans VIT : l\'app les lit, le bot non');
+  const banque = banqueDe([1, 2, 3, 4, 5, 6].map((id) => ({ id, img: portrait(id * 7, [ROUGE, BLEU, VERT][id % 3]) })));
+  const portraits = [1, 2, 3, 4, 5, 6].map((id) => portrait(id * 7, [ROUGE, BLEU, VERT][id % 3]));
+  const lire = (img: Image, vitFacultative: boolean) => {
+    const r = lireEcranPreparation(img, banque, gabarits, { vitFacultative });
+    return r && { att: r.attaquants.map((a) => [a.portrait?.meilleur.com2usId, a.vitesse?.valeur ?? null]), def: r.defense.map((d) => d.portrait?.meilleur.com2usId) };
+  };
+  const trois = ecranLibre(330, 130, 31, 22, 81, 96, null, portraits.slice(0, 3), [], true);
+  egal(lire(trois, false), null, 'bot : trois cartes sans VIT, pas d\'attaquant (sa règle ne change pas)');
+  egal(lire(trois, true), { att: [[1, null], [2, null], [3, null]], def: [] }, 'app : les trois portraits, sans VIT ni défense supposée');
+  egal(lire(ecranLibre(317, 125, 20, 22, 80, 94, null, portraits.slice(0, 3), [], true, 80, CADRE_DORE), true)?.att.map((a) => a[0]), [1, 2, 3],
+    'app : trois cartes dorées sans VIT');
+  // Six cartes alignées sans VIT : l'offense à gauche, la défense à droite.
+  const six = dessiner(700, 200, [0, 1, 2, 3, 4, 5].map((k): Rect => [61 + k * 85, 60, 77, 77]), portraits, [], true, CADRE_GRIS, CADRE_GRIS);
+  egal(lire(six, true), { att: [[1, null], [2, null], [3, null]], def: [4, 5, 6] }, 'app : six cartes sans VIT, l\'offense puis la défense');
+  // Avec des VIT, l'option ne change rien.
+  const complet = ecran(portraits, ['357', '367', '385']);
+  egal(lire(complet, true), lire(complet, false), 'écran complet : même lecture avec ou sans l\'option');
+  egal(lire(imageUnie(800, 400, [52, 40, 30]), true), null, 'écran vide : non reconnu, même sans VIT exigée');
 }
 
 // ---- Vraies captures -----------------------------------------------------------

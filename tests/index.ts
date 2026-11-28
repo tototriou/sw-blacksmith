@@ -374,6 +374,7 @@ import { testHistoriqueRunes } from './historique-runes.test';
 import { testCourbeChoix } from './courbe-choix.test';
 import { testUiTableauTri } from './ui-tableau.test';
 import { testRenduSiegeStatistiques, testRenduSiegeStatistiquesSite, testRenduTelephoneSiegeStatistiques } from './rendu/siege-statistiques.test';
+import { testRenduAjoutOffenseReco } from './rendu/ajout-offense-reco.test';
 import { testSiegeStatistiquesCarte, testSiegeStatistiquesCodes, testSiegeStatistiquesDebuts, testSiegeStatistiquesParticipation, testSiegeStatistiquesFiltres, testSiegeStatistiquesEnsemble, testSiegeStatistiquesCumul, testSiegeStatistiquesDefensesCombats, testSiegeStatistiquesTableaux, testSiegeStatistiquesJournaux, testSiegeStatistiquesPlusieurs, testSiegeStatistiquesTroisGuildes, testSiegeStatistiquesMembre, testSiegeStatistiquesAnciensMembres, testSiegeStatistiquesWrGlissant } from './siege-statistiques.test';
 import { testCompteDirect } from './compte-direct.test';
 import {
@@ -399,6 +400,11 @@ import testSiegePastille from './siege-pastille.test';
 import testSiegeSlotSuivant from './siege-slot-suivant.test';
 import testRecoDefenses from './reco-defenses.test';
 import testRecoFiabilite from './reco-fiabilite.test';
+import { testCaptureCounter } from './capture-counter.test';
+import { testRecoCounterEquipe, testRecoDefensesDesRecos } from './reco-counter.test';
+import { testAjoutOffenseRecoCombat, testAjoutOffenseRecoEquipe } from './ajout-offense-reco.test';
+import { testRecoModifies } from './reco-modifies.test';
+import { testRenduRecosModifies } from './rendu/recos-modifies.test';
 import { testRecoFusionCorrespondance, testRecoFusionDecks, testRecoFusionChef, testRecoFusionImport, testRecoFusionSource } from './reco-fusion.test';
 import { testRenduRecoFusionChoix, testRenduRecoFusionStockage } from './rendu/reco-fusion.test';
 import { testApercuDeuxLignesRecherche, testApercuDeuxLignesBorne, testApercuDeuxLignesNonMonotone, testApercuDeuxLignesFinQuiGrandit, testApercuDeuxLignesRangees } from './apercu-deux-lignes.test';
@@ -406,7 +412,7 @@ import { testRenduRecosApercuCentainesDeDecks } from './rendu/apercu-recos.test'
 import { testPagesRecos, testPagesRecosDeckVise } from './pages-recos.test';
 import { testDiscordDroits, testDiscordSession, testDiscordRecoSalon, testDiscordContributeursFormat, testDiscordRouteurConnexion,
   testDiscordRouteurBureau, testDiscordRouteurSources, testDiscordRouteurSalonEtPublication, testDiscordRouteurToutEtLimites } from './discord-service.test';
-import { testCaptureImage, testCapturePortraits, testCaptureChiffres, testCaptureEcran, testCapturesReelles, testSpeedtuneAnalyse,
+import { testCaptureImage, testCapturePortraits, testCaptureChiffres, testCaptureEcran, testCaptureSansVit, testCapturesReelles, testSpeedtuneAnalyse,
   testSpeedtuneEtat, testSpeedtuneEmojis, testSpeedtuneInteractions } from './speedtune-capture.test';
 import { testRecoDiscordEtat, testRecoDiscordRecevoir, testRecoDiscordSynchro, testRecoDiscordPublication, testRecoDiscordFusion,
   testRecoDiscordFavorisEtStockage } from './reco-discord.test';
@@ -447,7 +453,7 @@ import { testRenduAttaqueConjointeEcran } from './rendu/attaque-conjointe-ecran.
 import { testRenduSaisieAdversaire, testRenduSaisieAdversaireAnglais, testSaisieAdversaireBranchement } from './rendu/saisie-adversaire.test';
 import { testSaisieAdversaireCalcul, testSaisieAdversaireRecette } from './saisie-adversaire.test';
 import { testRenduEffetsEntreCoupsEcran, testRenduEffetsEntreCoupsAnglais } from './rendu/effets-entre-coups-ecran.test';
-import { testRenduRecosPage, testRenduRecosEnTete, testRenduRecosLigneDeckReduite, testRenduRecosDeploiement, testRenduRecosEdition, testRenduRecosVueDefense, testRenduRecosFiabilite, testRenduRecosGrosLot, testRenduRecosTicks, testRenduRecosAnnulerEdition, testRenduRecosStatsEnTotal } from './rendu/recos.test';
+import { testRenduRecosPage, testRenduRecosEnTete, testRenduRecosLigneDeckReduite, testRenduRecosDefensesDeLaLigne, testRenduRecosDeploiement, testRenduRecosEdition, testRenduRecosVueDefense, testRenduRecosFiabilite, testRenduRecosGrosLot, testRenduRecosTicks, testRenduRecosAnnulerEdition, testRenduRecosStatsEnTotal } from './rendu/recos.test';
 import testAnnulerEdition from './annuler-edition.test';
 import { testRenduRunesResume, testRenduRunesListe, testRenduRunesCourbes, testRenduRunesComparaison, testRenduRunesOptimisation, testRenduRunesOptimisationPalierEtExclusion, testRenduRunesFenetreExclues, testRenduRunesAVenir, testRenduRunesFiltresLigne, testRenduRunesTriOnglets, testRenduRunesResumeSouris, testRenduRunesListeSouris, testRenduRunesVuesSouris } from './rendu/runes.test';
 import { testRenduCompteMonstres, testRenduCompteArtefactsResume, testRenduCompteArtefactsListe, testRenduCompteArtefactsTop, testRenduCompteSouris, testRenduCompteEffacerFiltres } from './rendu/compte.test';
@@ -611,6 +617,11 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testSiegeSlotSuivant', testSiegeSlotSuivant],
   ['testRecoDefenses', testRecoDefenses],
   ['testRecoFiabilite', testRecoFiabilite],
+  ['testRecoCounterEquipe', testRecoCounterEquipe],
+  ['testRecoDefensesDesRecos', testRecoDefensesDesRecos],
+  ['testAjoutOffenseRecoCombat', testAjoutOffenseRecoCombat],
+  ['testAjoutOffenseRecoEquipe', testAjoutOffenseRecoEquipe],
+  ['testRecoModifies', testRecoModifies],
   ['testDiscordDroits', testDiscordDroits],
   ['testDiscordSession', testDiscordSession],
   ['testDiscordRecoSalon', testDiscordRecoSalon],
@@ -624,6 +635,8 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testCapturePortraits', testCapturePortraits],
   ['testCaptureChiffres', testCaptureChiffres],
   ['testCaptureEcran', testCaptureEcran],
+  ['testCaptureSansVit', testCaptureSansVit],
+  ['testCaptureCounter', testCaptureCounter],
   ['testCapturesReelles', testCapturesReelles],
   ['testSpeedtuneAnalyse', testSpeedtuneAnalyse],
   ['testSpeedtuneEtat', testSpeedtuneEtat],
@@ -663,8 +676,10 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testRenduSiegeEdition', testRenduSiegeEdition],
   ['testRenduSiegeArtefactsDimension', testRenduSiegeArtefactsDimension],
   ['testRenduRecosPage', testRenduRecosPage],
+  ['testRenduRecosModifies', testRenduRecosModifies],
   ['testRenduRecosEnTete', testRenduRecosEnTete],
   ['testRenduRecosLigneDeckReduite', testRenduRecosLigneDeckReduite],
+  ['testRenduRecosDefensesDeLaLigne', testRenduRecosDefensesDeLaLigne],
   ['testRenduRecosDeploiement', testRenduRecosDeploiement],
   ['testRenduRecosEdition', testRenduRecosEdition],
   ['testRenduRecosVueDefense', testRenduRecosVueDefense],
@@ -1300,6 +1315,7 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testRenduSiegeStatistiquesSite', testRenduSiegeStatistiquesSite],
   ['testRenduSiegeStatistiques', testRenduSiegeStatistiques],
   ['testRenduTelephoneSiegeStatistiques', testRenduTelephoneSiegeStatistiques],
+  ['testRenduAjoutOffenseReco', testRenduAjoutOffenseReco],
   ['testPluginSwexEtat', testPluginSwexEtat],
   ['testPluginSwexLive', testPluginSwexLive],
   ['testPluginSwexArchive', testPluginSwexArchive],

@@ -41,13 +41,13 @@ const initiales = (): ExclusionSourceData => ({ box, monsterById: new Map(monstr
 type Source = 'rta' | 'reco' | 'flottant';
 let source: Source, telephone: boolean, attente = false, refus = '', racine: Root | undefined;
 let etat: OptimizerState, listes: UseOptimizerLists, changerCompte: (v: boolean) => void;
-let changerSources: (v: ExclusionSourceData) => void, changerMenu: (v: boolean) => void;
+let changerSources: (v: ExclusionSourceData) => void;
 
 function Banc() {
   const rta = useRtaState(), defense = useSiegeState('defense'), offense = useSiegeState('offense'), recos = useSiegeRecos();
   const [data, setData] = useState(initiales), [charge, setCharge] = useState(true), [menu, setMenu] = useState(telephone && source === 'rta');
   const [route, setRoute] = useState(location.hash), [rapport, setRapport] = useState<RapportImportOptimizer | null>(null);
-  changerCompte = setCharge; changerSources = setData; changerMenu = setMenu;
+  changerCompte = setCharge; changerSources = setData;
   listes = useOptimizerLists();
   etat = useOptimizerState({ lists: listes, data, runeIds: new Set(), reverificationEnAttente: () => attente });
   useEffect(() => { const changer = () => setRoute(location.hash); window.addEventListener('hashchange', changer);
@@ -75,7 +75,7 @@ function Banc() {
         customMonsters={[]} onDeleteMonster={() => {}} menuOuvert={menu} onFermerMenu={() => setMenu(false)}
         onImporterEquipe={importer} sourcesOptimizer={data} compteCharge={charge} /> :
       <SiegePage tab="recos" siege={defense} offense={offense} recos={recos} builds={collectOwnedBuilds(args)} teams={collectOwnedTeams(args)}
-        copies6={countCopiesByCom2us(data.box)} monsters={monstres} loadState="live" onCreateMonster={() => monstres[0]}
+        copies6={countCopiesByCom2us(data.box)} equipesEnregistrees={[]} monsters={monstres} loadState="live" onCreateMonster={() => monstres[0]}
         customMonsters={[]} onDeleteMonster={() => {}} menuOuvert={menu} onFermerMenu={() => setMenu(false)}
         siegeDefenseTeams={data.siegeDefenseTeams} siegeOffenseTeams={data.siegeOffenseTeams}
         onImporterEquipe={importer} sourcesOptimizer={data} compteCharge={charge} />}
@@ -86,6 +86,15 @@ async function geste(action: () => void) { flushSync(action); await new Promise(
 const visible = (e: Element) => e.getBoundingClientRect().width > 0 && getComputedStyle(e).visibility !== 'hidden';
 const boutons = () => [...document.querySelectorAll<HTMLButtonElement>('button')].filter(visible);
 const trouver = (nom: string) => boutons().find(b => b.getAttribute('aria-label') === nom || b.textContent?.trim() === nom || b.title === nom);
+// Une ligne de liste, par le début de son texte (le nom, avant le reste).
+const commence = (nom: string) => boutons().find(b => b.textContent?.trim().startsWith(nom));
+// Un onglet, par son libellé visible (une copie invisible réserve sa largeur).
+const onglet = (nom: string) => boutons().find(b => b.getAttribute('role') === 'tab' && b.querySelector('[data-libelle-onglet]')?.textContent === nom);
+// Un clic sur un bouton qui doit être là : son absence se nomme.
+const cliquer = async (bouton: HTMLButtonElement | undefined, nom: string) => {
+  if (!bouton) throw new Error(`bouton absent : ${nom}`);
+  await geste(() => bouton.click());
+};
 // La case d'un deck dans la fenêtre d'import, par son nom.
 // La case d'un deck, à gauche de sa ligne, porte le nom du deck.
 const caseDeck = (nom: string) => [...document.querySelectorAll<HTMLInputElement>('[role="dialog"] input[type="checkbox"]')]
@@ -108,18 +117,40 @@ export async function scenario(s: Source, mobile: boolean, motif = 'accepte', co
   await geste(() => racine!.render(<Banc />));
   verifier(matchMedia('(pointer: coarse)').matches === mobile, 'pointage du format attendu');
   if (s === 'reco') {
-    await geste(() => (trouver('Consulter') ?? trouver('Contres'))!.click());
+    // Vue Decks : la liste, puis la recommandation ouverte à côté (au
+    // téléphone, à sa place : on la touche dans la liste).
+    const ouvrirDecks = async () => {
+      await cliquer(trouver('Decks'), 'Decks');
+      // Revenue sur la vue, la recommandation déjà choisie reste ouverte.
+      if (mobile && !boutonsExport().length) await cliquer(commence('Contres'), 'Contres (liste)');
+    };
+    await ouvrirDecks();
     verifier(boutonsExport().length === 2, 'une action pour chacun des deux decks repliés');
-    await geste(() => trouver('Déplier ce deck')!.click());
+    await cliquer(trouver('Déplier ce deck'), 'Déplier ce deck');
     verifier(boutonsExport().length === 2, 'actions conservées quand un deck est déplié');
-    await geste(() => trouver('Replier ce deck')!.click());
-    if (mobile) await geste(() => changerMenu(true));
-    await geste(() => trouver('Défense')!.click());
-    if (mobile) await geste(() => changerMenu(false));
-    verifier(boutonsExport().length === 2, 'une action par offense dans la vue Défense');
-    if (mobile) await geste(() => changerMenu(true));
-    await geste(() => trouver('Attaque')!.click());
-    if (mobile) await geste(() => changerMenu(false));
+    await cliquer(trouver('Replier ce deck'), 'Replier ce deck');
+    // Vue Défenses : la défense visée par les deux decks, et ses offenses.
+    await cliquer(trouver('Défenses'), 'Défenses');
+    if (mobile) await cliquer(trouver('Voir qui bat cette défense'), 'Voir qui bat cette défense');
+    verifier(boutonsExport().length === 2, 'une action par offense dans la vue Défenses');
+    await ouvrirDecks();
+    if (motif === 'ajout') {
+      // « + Ajouter un counter » : la fenêtre, coller d'abord ; « Deck vide »
+      // ajoute et ouvre le deck en édition, sans éditer la recommandation.
+      const fenetre = () => document.querySelector<HTMLElement>('[role="dialog"]');
+      const avant = boutonsExport().length;
+      await cliquer(trouver('Ajouter un counter'), 'Ajouter un counter');
+      verifier(!!fenetre()?.innerText.includes('Colle ta capture (Ctrl+V)'), 'la fenêtre s\'ouvre sur la capture : coller d\'abord');
+      verifier(!!trouver('Coller') && !!trouver('Choisir un fichier'), 'coller, ou choisir un fichier');
+      verifier(trouver('Ajouter ce counter')?.disabled === true, '« Ajouter ce counter » attend une capture');
+      await cliquer(onglet('Mes decks et équipes'), 'Mes decks et équipes');
+      verifier(!!fenetre()?.innerText.includes('Aucun deck d\'offense ni équipe'), 'mes decks et équipes : rien à proposer sans compte ni équipe, et c\'est dit');
+      await cliquer(trouver('Deck vide'), 'Deck vide');
+      verifier(!fenetre(), '« Deck vide » referme la fenêtre');
+      verifier(boutonsExport().length === avant + 1 && !!document.querySelector('[data-deck-ligne][data-edition]'), 'le deck ajouté, ouvert en édition');
+      verifier(!trouver("Terminer l'édition"), 'sans éditer la recommandation');
+      return preuves;
+    }
   }
   if (s === 'rta' && !mobile && !boutonsExport().length) await geste(() => trouver("Plus d'actions")!.click());
   if (s === 'flottant') {

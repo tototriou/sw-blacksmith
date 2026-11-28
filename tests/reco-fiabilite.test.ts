@@ -1,8 +1,9 @@
 // Recommandations — la fiabilité d'un deck contre une défense : une note en
-// étoiles, de 0 à 5 par demi-étoile, qui classe les offenses d'une même
-// défense en vue Défense, et voyage dans l'export.
+// étoiles, de 0 à 5, saisie par étoile entière et relue par demi-étoile (les
+// notes d'avant), qui classe les offenses d'une même défense en vue Défense,
+// et voyage dans l'export.
 
-import { fiabiliteValide, parFiabilite, tonFiabilite, vueDefenses, type MonstresConnus } from '../src/lib/recoDefenses';
+import { FIABILITE_PAS_SAISIE, fiabiliteValide, parFiabilite, tonFiabilite, vueDefenses, type MonstresConnus } from '../src/lib/recoDefenses';
 import { decodeRecosJson, encodeRecosJson } from '../src/lib/recoShare';
 import { fiabiliteDuHit, ordreDe, suivreOrdre, trierParFiabilite, type DeckHit, type RecoHit } from '../src/lib/recoSearch';
 import { emptyRecoSlot, type Reco, type RecoCounter, type RecoDeck } from '../src/types';
@@ -24,8 +25,10 @@ const connus: MonstresConnus = new Map();
 export default function testRecoFiabilite() {
   titre('Recommandations — la fiabilité d\'un deck contre une défense');
 
-  // Une demi-étoile de 0 à 5, rien d'autre.
-  egal([0, 0.5, 2.5, 5].map(fiabiliteValide), [0, 0.5, 2.5, 5], 'de 0 à 5 par demi-étoile : retenue');
+  // Saisie par étoile entière ; relue par demi-étoile, de 0 à 5, rien d'autre :
+  // une note d'avant en demi-étoile n'est pas effacée.
+  egal(FIABILITE_PAS_SAISIE, 1, 'saisie : 0, 1, 2, 3, 4, 5');
+  egal([0, 0.5, 2.5, 5].map(fiabiliteValide), [0, 0.5, 2.5, 5], 'de 0 à 5 par demi-étoile : relue');
   egal([2.3, 5.5, -0.5, '4', null, NaN].map(fiabiliteValide), [undefined, undefined, undefined, undefined, undefined, undefined],
     'hors des demi-étoiles, au-delà de 5, négative, texte : non notée');
 

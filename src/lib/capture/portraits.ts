@@ -120,6 +120,12 @@ export interface BanqueSerialisee {
   dessins: string;
 }
 
+// Sous ce score, le portrait n'est pas celui d'un monstre : la capture n'est
+// pas l'écran attendu (un portrait juste dépasse 0,8).
+export const SCORE_PORTRAIT_MIN = 0.5;
+// Écart au deuxième candidat sous lequel le portrait est dit incertain.
+export const ECART_DOUTE = 0.05;
+
 export interface Candidat { com2usId: number; score: number }
 export interface Reconnaissance { meilleur: Candidat; suivants: Candidat[] }
 
@@ -132,8 +138,12 @@ export class Banque {
     if (s.version !== 1 || s.cote !== COTE) throw new Error('banque de portraits incompatible');
     this.ids = s.ids;
     this.teintes = Float32Array.from(s.teintes);
-    const brut = Buffer.from(s.dessins, 'base64');
-    this.dessins = new Int8Array(brut.buffer, brut.byteOffset, brut.length);
+    // ⚠️ `atob`, pas `Buffer` : la banque se lit dans le navigateur (l'app)
+    // comme dans Node (le service), où `atob` existe aussi.
+    const binaire = atob(s.dessins);
+    const octets = new Uint8Array(binaire.length);
+    for (let i = 0; i < binaire.length; i++) octets[i] = binaire.charCodeAt(i);
+    this.dessins = new Int8Array(octets.buffer);
     if (this.dessins.length !== s.ids.length * TAILLE) throw new Error('banque de portraits tronquée');
   }
 

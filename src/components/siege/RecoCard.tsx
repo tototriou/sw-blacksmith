@@ -13,12 +13,11 @@ import {
   StickyNote,
   Download,
   ChevronDown,
-  Search,
-  Gauge,
   Undo2,
+  MoreHorizontal,
 } from 'lucide-react';
 // L'épée de la section Offense, à la place des deux épées de lucide :
-// « Importer un deck d'offense », « Fort contre ».
+// « Fort contre ».
 import { IconeOffense, IconeOptimizer } from '../IconesAtelier';
 import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -39,19 +38,18 @@ import {
 } from '../../types';
 import { DeckMatch, FaultCause, RecoMatch, SlotMatch, deckFaults, fmtStat, slotFaults } from '../../lib/recoMatch';
 import { DeckHit, RecoHit } from '../../lib/recoSearch';
-import { VueDefenses, VueRecos, parFiabilite, vueDefenses } from '../../lib/recoDefenses';
-import { Bouton, BoutonIcone, Champ, Flottant, Selecteur, ZoneCliquable, useNotifier } from '../../ui';
+import { fiabiliteValide, parFiabilite } from '../../lib/recoDefenses';
+import { decksModifies } from '../../lib/recoModifies';
+import { Bouton, BoutonIcone, Champ, Flottant, Menu, Selecteur, ZoneCliquable, useNotifier } from '../../ui';
+import type { ElementMenu } from '../../ui';
 import { NOTE_MAX, DECK_NOTE_MAX, COUNTER_NOTE_MAX } from '../../lib/recoShare';
-import { deckFromSiegeTeam } from '../../lib/recoFromSiege';
+import AjoutCounter, { type EquipeChoix } from './AjoutCounter';
 import { compterLignes, etapeRecherche, rechercheInitiale } from '../../lib/apercuDeuxLignes';
 import {
   DECKS_PAR_PAGE,
-  DEFENSES_PAR_PAGE,
-  LIGNES_ANALYSE_PAR_PAGE,
   nombrePages,
   pageBornee,
   pageDeLaPosition,
-  pageDuDeck,
   plageDeLaPage,
   tranche,
 } from '../../lib/pagesRecos';
@@ -78,7 +76,7 @@ import MonsterPicker from '../MonsterPicker';
 import { JetonSlot, prochainFocus } from './slotVideSuivant';
 import MonsterAvatar from '../MonsterAvatar';
 import LeadPill from './LeadPill';
-import { ChoixFiabilite, EtoilesFiabilite } from './EtoilesFiabilite';
+import { ApercuNote, ChoixFiabilite, FiabiliteRapide } from './EtoilesFiabilite';
 import { SIEGE_TICKS, TICK_ABOVE_MARGIN, ficheSpeedForTick, siegeLeadFor, speedLeadOf } from '../../lib/speed';
 import {
   ContenuDeck,
@@ -138,7 +136,9 @@ export interface OffenseChoice {
 }
 
 interface Props {
-  raisonsExportOptimizer: (string | undefined)[];
+  // Pourquoi un deck ne part pas dans l'Optimizer (`undefined` : il part).
+  // Une fonction, appelée pour les seuls decks affichés (voir RecoBoard).
+  raisonExportDe: (deck: RecoDeck) => string | undefined;
   onExporterDeckOptimizer: (deck: RecoDeck) => void;
   reco: Reco;
   index: number;
@@ -146,12 +146,14 @@ interface Props {
   monsterByCom2us: Map<number, Monster>;
   monsterById: Map<string, Monster>; // par id local (slots de siège)
   offenseTeams: OffenseChoice[]; // équipes d'offense proposables à l'import
-  match: RecoMatch | null; // null = pas (ou plus) analysée
-  canAnalyze: boolean; // un compte est chargé
-  onAnalyze: () => void;
-  onClearAnalysis: () => void; // efface le résultat → carte de nouveau neutre
-  open: boolean; // dépliée (« Consulter ») — repliée par défaut
-  onToggleOpen: (id: string) => void;
+  // Les équipes de « Mes équipes » proposables (la fenêtre d'ajout d'un counter).
+  equipesChoix: EquipeChoix[];
+  // La confrontation au compte, `null` quand « Confronter à mon compte » est
+  // éteint (ou sans compte) : la carte reste neutre.
+  match: RecoMatch | null;
+  // Le retour à la liste des recommandations, posé devant le titre quand le
+  // volet remplace la liste (téléphone, fenêtre étroite).
+  retour?: React.ReactNode;
   editing: boolean;
   onToggleEdit: (id: string) => void;
   onExport: (reco: Reco) => void;
@@ -159,8 +161,6 @@ interface Props {
   // Où le monstre cherché se trouve dans CETTE recommandation, `null` hors
   // recherche. Sert à déplier les bons decks et à surligner les bons portraits.
   hit?: RecoHit | null;
-  // Vue de la page. Absente : Attaque, l'affichage d'avant.
-  vue?: VueRecos;
   // Synchronisation Discord (docs/02-app/siege/feat-recommandations/rendu-de-la-page.md) :
   // - `provenance` : dans « Toutes les recommandations », d'où vient la carte ;
   // - `onDetacher` : recommandation LIÉE, sa corbeille devient « Détacher de ce salon » ;
@@ -188,7 +188,7 @@ const AURA: Record<string, string> = {
 };
 
 export default function RecoCard({
-  raisonsExportOptimizer,
+  raisonExportDe,
   onExporterDeckOptimizer,
   reco,
   index,
@@ -196,18 +196,14 @@ export default function RecoCard({
   monsterByCom2us,
   monsterById,
   offenseTeams,
+  equipesChoix,
   match,
-  canAnalyze,
-  onAnalyze,
-  onClearAnalysis,
-  open,
-  onToggleOpen,
+  retour,
   hit,
   editing,
   onToggleEdit,
   onExport,
   recos,
-  vue = 'attaque',
   provenance,
   onDetacher,
   publierDans,
@@ -234,14 +230,6 @@ export default function RecoCard({
     if (!editing) setEditingDeck(null);
   }, [editing]);
 
-  // Éditer (à l'un ou l'autre niveau) implique de voir le contenu.
-  const expanded = open || editing || editingDeck !== null;
-  const [pickOffense, setPickOffense] = useState(false);
-  const [offenseQuery, setOffenseQuery] = useState('');
-  const q = offenseQuery.trim().toLowerCase();
-  const filteredOffense = q
-    ? offenseTeams.filter((t) => t.summary.toLowerCase().includes(q))
-    : offenseTeams;
 
   // Decks DÉPLIÉS (par index) : par défaut aucun, donc déplier la recommandation
   // montre la liste de ses decks sans dérouler leur contenu — on ouvre ensuite
@@ -332,6 +320,9 @@ export default function RecoCard({
   const decksFiltres = hit != null;
   // Positions du monstre dans un deck donné, pour le surlignage.
   const hitDeDeck = (di: number) => hit?.decks.find((d) => d.deckIndex === di) ?? null;
+  // Les decks qui diffèrent de la version du salon : une empreinte par deck,
+  // une fois par modification de la recommandation.
+  const modifies = useMemo(() => decksModifies(reco), [reco]);
 
   // ── Une page de decks à la fois ─────────────────────────────────────────
   //
@@ -341,10 +332,29 @@ export default function RecoCard({
   // qu'une recherche trouve, DANS L'ORDRE DE SES RÉSULTATS (celui de la
   // recommandation, ou la fiabilité si on trie par elle) — c'est cette liste
   // qui se pagine, et `di` reste l'index réel du deck.
-  const indexAffiches = useMemo(
+  const indexCherches = useMemo(
     () => (hit ? hit.decks.map((d) => d.deckIndex) : reco.decks.map((_, i) => i)),
     [reco.decks, hit]
   );
+  // ⚠️ **Les pastilles du bilan filtrent LE TABLEAU** : rien d'enclenché =
+  // tout est montré ; enclencher restreint, cumulable (plusieurs verdicts à la
+  // fois). Elles listaient leurs decks dans une seconde liste, au-dessus du
+  // tableau qui redisait les mêmes verdicts.
+  const [verdictsVus, setVerdictsVus] = useState<Set<VerdictKey>>(new Set());
+  const filtreVerdict = match && verdictsVus.size > 0;
+  // ⚠️ Le deck en édition reste affiché même si la recherche ou le filtre ne
+  // le retiennent pas : un counter tout juste ajouté (vide) s'édite à l'écran.
+  const indexAffiches = useMemo(() => {
+    const filtres = filtreVerdict
+      ? indexCherches.filter((di) => {
+          const v = VERDICT_DE[match.decks[di]?.status ?? 'unknown'];
+          return v != null && verdictsVus.has(v);
+        })
+      : indexCherches;
+    return editingDeck != null && editingDeck < reco.decks.length && !filtres.includes(editingDeck)
+      ? [...filtres, editingDeck]
+      : filtres;
+  }, [indexCherches, filtreVerdict, match, verdictsVus, editingDeck, reco.decks.length]);
   const [pageDecks, setPageDecks] = useState(0);
   const pageDecksBornee = pageBornee(pageDecks, indexAffiches.length, DECKS_PAR_PAGE);
   const decksDeLaPage = tranche(indexAffiches, pageDecks, DECKS_PAR_PAGE);
@@ -362,77 +372,36 @@ export default function RecoCard({
   // première page. ⚠️ Clé = les decks affichés dans leur ordre, pas l'objet
   // `hit` : celui-ci est recalculé à chaque modification de la recommandation,
   // et éditer un deck de la page 3 ramenait à la page 1.
-  const cleListe = hit ? indexAffiches.join(',') : '';
+  const cleListe = hit || filtreVerdict ? indexCherches.join(',') + '|' + [...verdictsVus].join(',') : '';
   useEffect(() => setPageDecks(0), [cleListe]);
   // Le deck en édition est TOUJOURS à l'écran : un deck ajouté (en fin de
   // liste) ouvre la dernière page, sinon on l'éditerait sans le voir.
+  // ⚠️ Déclaré APRÈS le retour à la première page : il passe en dernier.
+  const posEdition = editingDeck == null ? -1 : indexAffiches.indexOf(editingDeck);
   useEffect(() => {
-    if (editingDeck != null && !decksFiltres) setPageDecks(pageDeLaPosition(editingDeck, DECKS_PAR_PAGE));
-  }, [editingDeck, decksFiltres]);
+    if (posEdition >= 0) setPageDecks(pageDeLaPosition(posEdition, DECKS_PAR_PAGE));
+  }, [editingDeck, posEdition]);
 
-  // ── Vue Défense ─────────────────────────────────────────────────────────
-  //
-  // ⚠️ **En LECTURE SEULE** : dès qu'on édite — la
-  // recommandation ou l'un de ses decks —, la carte reprend la vue Attaque,
-  // celle où se trouvent les formulaires. Changer de vue ne fait donc jamais
-  // disparaître une édition en cours.
-  const enVueDefense = vue === 'defense' && !editing && editingDeck === null;
-  // Pendant une recherche : on garde l'offense si son deck JOUE le monstre
-  // cherché, ou si CETTE défense le contient — la même règle que le
-  // dépliage des decks en vue Attaque.
-  const defenses = useMemo(
-    () =>
-      vueDefenses(
-        reco,
-        monsterByCom2us,
-        hit
-          ? (di, ci) => {
-              const h = hit.decks.find((d) => d.deckIndex === di);
-              return !!h && (h.slots.length > 0 || (ci != null && h.counters.includes(ci)));
-            }
-          : undefined,
-      ),
-    [reco, monsterByCom2us, hit],
-  );
-
-  // ── Aller d'une ligne du résumé au deck correspondant ────────────────────
-  //
-  // Le résumé dit ce qui cloche ; le geste suivant est toujours d'aller voir le
-  // deck. Sans ce lien, il fallait déplier la carte, retrouver le deck à l'œil
-  // parmi six, puis l'ouvrir — alors que la ligne le désigne déjà.
-  const deckRefs = useRef<Map<number, HTMLDivElement>>(new Map());
-  // Deck vers lequel défiler une fois qu'il est monté ET déplié. Le scroll ne
-  // peut pas se faire dans le `onClick` : la carte ou le deck viennent peut-être
-  // d'être dépliés dans la même passe, et leur hauteur n'est pas encore posée.
-  const [deckAViser, setDeckAViser] = useState<number | null>(null);
-
-  const allerAuDeck = (di: number) => {
-    // ⚠️ Déplier la CARTE aussi : le résumé reste visible carte repliée (c'est
-    // tout son intérêt), donc on clique souvent depuis une carte fermée où le
-    // deck visé n'est pas rendu du tout.
-    if (!expanded) onToggleOpen(reco.id);
-    setOpenDecks((s) => new Set(s).add(di));
-    // La page qui le porte, sinon il n'est pas rendu et rien ne défile.
-    const p = pageDuDeck(indexAffiches, di, DECKS_PAR_PAGE);
-    if (p != null) setPageDecks(p);
-    setDeckAViser(di);
-  };
-
+  // « + Ajouter un counter » ouvre la fenêtre d'ajout (capture, mes decks,
+  // deck vide — AjoutCounter.tsx) ; le deck ajouté s'ouvre en édition, sans
+  // passer par l'édition de la recommandation. On le fait venir à l'écran une
+  // fois rendu (sa page peut changer d'abord, d'où l'effet à chaque rendu).
+  const [ajoutOuvert, setAjoutOuvert] = useState(false);
+  const racine = useRef<HTMLElement>(null);
+  const aMontrer = useRef(false);
   useEffect(() => {
-    if (deckAViser == null) return;
-    // ⚠️ Une frame d'attente avant de viser : la carte et le deck viennent
-    // peut-être d'être dépliés dans la même passe, et leur hauteur n'est pas
-    // encore posée — `scrollIntoView` calerait sur une position périmée.
-    const t = requestAnimationFrame(() => {
-      // ⚠️ Un deck peut n'avoir AUCUNE ref : pendant une recherche, seuls les
-      // decks trouvés sont rendus. On ne fait alors rien plutôt que de sauter
-      // au hasard — le deck est bien déplié, il réapparaîtra à sa place dès que
-      // la recherche sera effacée.
-      deckRefs.current.get(deckAViser)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      setDeckAViser(null);
-    });
-    return () => cancelAnimationFrame(t);
-  }, [deckAViser]);
+    if (!aMontrer.current) return;
+    const el = racine.current?.querySelector('[data-deck-ligne][data-edition]');
+    if (el) {
+      aMontrer.current = false;
+      el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+  });
+  function ajouterCounter(deck: RecoDeck) {
+    recos.addDeckWith(reco.id, deck);
+    setEditingDeck(reco.decks.length);
+    aMontrer.current = true;
+  }
 
   // La source de la recommandation et ses autres étiquettes (provenance, état
   // du salon, Importée), quand il y en a : la 3ᵉ rangée de l'en-tête, sous le
@@ -450,7 +419,11 @@ export default function RecoCard({
     // et chaque `p-4` coûte 32 px de haut multipliés par leur nombre.
     // Gabarit des cartes de la refonte : rayon 12, contour discret (`AURA`).
     // Sous le bandeau d'un salon, la carte en est la suite : coins du haut droits.
-    <section className={`${sousBandeau ? 'rounded-b-xl' : 'rounded-xl'} border p-4 compact:p-2.5 transition-colors ${AURA[status]}`}>
+    // ⚠️ **Le volet d'UNE recommandation** (vue Decks, à droite de la liste) :
+    // toujours ouvert, en bandes séparées d'un filet — en-tête, consignes,
+    // bilan, pagination, puis les lignes de decks, bord à bord.
+    <section ref={racine} className={`${sousBandeau ? 'rounded-b-xl' : 'rounded-xl'} min-w-0 border transition-colors ${AURA[status]}`} data-volet-reco>
+      <div className="border-b border-border-soft px-4 py-3 compact:px-3">
       {/* En-tête de la recommandation.
           ⚠️ **TROIS zones, pas deux.** Le titre et les icônes d'action
           vivaient chacun dans leur propre bloc (titre + badges à gauche,
@@ -469,24 +442,13 @@ export default function RecoCard({
           souris, une grille : le chevron devant le titre, et au bout, sur
           toute la hauteur, Analyser, Publier dans… et les actions. Au doigt,
           les actions restent à côté du titre. */}
-      <div className="lg:mb-3 lg:grid lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:items-center lg:gap-x-3 lg:gap-y-1">
+      <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center lg:gap-x-3 lg:gap-y-1">
       <div className="mb-1.5 flex items-center gap-2 lg:contents">
-        {/* ⚠️ **À la souris, le repli de la carte est un CHEVRON en tête de
-            ligne** — même bouton, même taille et même
-            place que le chevron de chaque deck juste en dessous. Il remplace
-            « Consulter / Réduire » au bout de la ligne, qui reste au doigt
-            (masqué `lg:hidden` plus bas).
-            ⚠️ En édition il reste là, DÉSACTIVÉ : la carte est forcément
-            dépliée, mais le retirer décalerait le champ du nom. */}
-        <BoutonIcone
-          onClick={() => onToggleOpen(reco.id)}
-          disabled={editing}
-          aria-expanded={expanded}
-          taille="serre"
-          icone={<ChevronDown size={15} className={`transition-transform ${expanded ? '' : '-rotate-90'}`} />}
-          libelle={editing ? cr.terminePourReplier : open ? cr.reduire : cr.consulter}
-          className={`hidden lg:col-start-1 lg:inline-flex ${rangTitre} ${ICONE_LG}`}
-        />
+        {/* Le retour à la liste, quand le volet la remplace (téléphone,
+            fenêtre étroite) : `retour` est posé par la page, DEVANT le titre,
+            dans la même cellule. */}
+        <div className={`flex min-w-0 flex-1 items-center gap-2 lg:col-start-1 ${rangTitre}`}>
+        {retour}
         {editing ? (
           <Champ
             value={reco.name}
@@ -499,84 +461,24 @@ export default function RecoCard({
             }}
             placeholder={textes.partage.reco.recommandation(index + 1)}
             pleineLargeur={false}
-            className={`min-w-[min(160px,100%)] flex-1 bg-panel py-1 text-base font-semibold lg:col-start-2 ${rangTitre}`}
+            className="min-w-[min(160px,100%)] flex-1 bg-panel py-1 text-base font-semibold"
           />
         ) : (
-          // ⚠️ **Le TITRE bascule la carte**, comme le bouton « Consulter » qui
-          // reste à côté : deux cibles pour le même geste, pas deux gestes
-          // différents. Sur une liste de recommandations qu'on parcourt au
-          // pouce, le titre est la cible la plus large et la plus naturelle —
-          // on ne vise plus le petit bouton du coin.
-          <ZoneCliquable
-            onClick={() => onToggleOpen(reco.id)}
-            aria-expanded={expanded}
-            title={open ? cr.replier : cr.voirDecks(reco.decks.length)}
-            // ⚠️ `p-0` explicite : un `<button>` porte un rembourrage par
-            // défaut du navigateur, invisible à l'œil mais qui élargit sa
-            // boîte au-delà du texte.
-            // `lg:justify-self-start` : à la souris, la cible du titre s'arrête
-            // à son texte, la ligne de métadonnées passe dessous.
-            className={`min-w-0 flex-1 truncate p-0 text-left transition hoverable:text-ctx lg:col-start-2 lg:justify-self-start ${rangTitre}`}
-          >
-            {/* ⚠️ `compact:text-base` : même resserrement que le titre d'une
-                équipe de siège (SiegeTeam.tsx) — au doigt, `text-lg` pesait
-                trop lourd. `leading-none` : sans lui, la boîte de ligne du
-                texte (interligne 1,6 de l'échelle) dépassait la hauteur des
-                icônes juste à côté, et l'écart se lisait comme un défaut. */}
-            <h3 className="truncate font-display text-lg leading-none tracking-wide compact:text-base">
-              {reco.name || textes.partage.reco.recommandation(index + 1)}
-            </h3>
-          </ZoneCliquable>
+          // ⚠️ `compact:text-base` : même resserrement que le titre d'une
+          // équipe de siège (SiegeTeam.tsx). Deux lignes au plus : à côté des
+          // actions, dans un volet, une seule coupait les noms longs.
+          <h3 className="line-clamp-2 min-w-0 flex-1 break-words font-display text-lg leading-tight tracking-wide compact:text-base">
+            {reco.name || textes.partage.reco.recommandation(index + 1)}
+          </h3>
         )}
+        </div>
 
         {/* Actions — sur la MÊME rangée que le titre, à sa hauteur ; à la
-            souris, au BOUT de l'en-tête, sur la hauteur de ses deux rangées. */}
-        <div className={`flex flex-none items-center gap-1.5 lg:col-start-3 lg:row-start-1 ${hauteurActions}`}>
-          {/* En édition, la carte est forcément dépliée → le bouton n'a pas de sens.
-              ⚠️ **Masqué au DOIGT** (`compact:hidden`) : le titre bascule
-              désormais la carte lui-même (voir plus haut), et ce petit bouton
-              du coin devenait une seconde cible pour le même geste — sur un
-              écran qu'on parcourt au pouce, la plus petite des deux. Il reste
-              à la SOURIS, où viser un bouton précis ne coûte rien et où le
-              chevron confirme l'état d'un coup d'œil. */}
-          {!editing && (
-            <Bouton
-              onClick={() => onToggleOpen(reco.id)}
-              actif={open}
-              aria-expanded={expanded}
-              taille="sm"
-              icone={
-                <ChevronDown size={13} className={`transition-transform ${expanded ? 'rotate-180' : ''}`} />
-              }
-              libelle={open ? cr.reduire : cr.consulter}
-              title={open ? cr.replier : cr.voirDecks(reco.decks.length)}
-              className="compact:hidden lg:hidden"
-            />
-          )}
-          {/* ⚠️ **À la SOURIS seulement** (`compact:hidden`) : au doigt, ce
-              bouton étiqueté encombrait le titre sur une carte étroite ;
-              « Analyser » y vit dans le panneau « Options ».
-              ⚠️ **Masqué aussi sous `lg`** (`max-lg:hidden`), même à la
-              souris : sous ce seuil, la page prend sa disposition téléphone,
-              et « Analyser » vit dans le panneau « Options » — une fenêtre
-              étroite le montrait aux DEUX endroits.
-              ⚠️ **Bouton à DEUX ÉTATS** : un premier clic analyse, un second
-              MASQUE le résultat — le même geste que la croix de l'encart.
-              Bouton À CADRE, comme les autres boutons à libellé de la page. */}
-          {!editing && (
-            <Bouton
-              onClick={match ? onClearAnalysis : onAnalyze}
-              disabled={!match && !canAnalyze}
-              actif={Boolean(match)}
-              title={
-                match ? cr.masquerAnalyse : canAnalyze ? cr.confronter : textes.recos.importerPourAnalyser
-              }
-              taille="sm"
-              icone={<Gauge size={13} />}
-              libelle={cr.analyserMesDecks}
-              className={`compact:hidden max-lg:hidden ${BOUTON_LG}`}
-            />
-          )}
+            souris, au BOUT de l'en-tête, sur la hauteur de ses rangées. */}
+        <div className={`flex flex-none items-center gap-1.5 lg:col-start-2 lg:row-start-1 ${hauteurActions}`}>
+          {/* « Publier dans… » : à la souris, un bouton à libellé ; au doigt,
+              une icône du groupe (plus bas). Pas en édition : on publie ce
+              qu'on a fini d'écrire. */}
           {!editing && publierDans && (
             <Bouton
               onClick={publierDans.onClick}
@@ -609,13 +511,6 @@ export default function RecoCard({
               `lg:` passent après les classes de base dans la feuille : l'ordre
               est garanti, pas supposé. */}
           <div className="flex items-center gap-1 -mr-1 lg:mr-0 lg:gap-0.5">
-            <BoutonIcone
-              onClick={() => onExport(reco)}
-              taille="serre"
-              icone={<Upload size={13} />}
-              libelle={cr.exporter}
-              className={ICONE_ACTION}
-            />
             {/* ⚠️ Pas `actif` (le marqueur d'état standard) : le ✓ DORÉ
                 (`text-star`) est la convention DOCUMENTÉE de l'édition en
                 cours sur cette page entière (voir docs/02-app/siege/
@@ -650,7 +545,7 @@ export default function RecoCard({
             {/* « Publier dans… » au DOIGT : une icône du groupe ; à la souris,
                 le bouton à libellé près d'« Analyser » (plus bas). Toujours
                 affiché, désactivé avec sa raison. */}
-            {publierDans && (
+            {publierDans && !editing && (
               <BoutonIcone
                 onClick={publierDans.onClick}
                 disabled={!!publierDans.raison}
@@ -660,26 +555,14 @@ export default function RecoCard({
                 className={`lg:hidden ${ICONE_ACTION}`}
               />
             )}
-            {/* Une recommandation LIÉE ne se supprime pas : elle se détache de
-                son salon, pour ce membre seul (un dialogue le dit). */}
-            {onDetacher ? (
-              <BoutonIcone
-                onClick={onDetacher}
-                taille="serre"
-                icone={<Link2Off size={13} />}
-                libelle={td.detacher}
-                className={ICONE_ACTION}
-              />
-            ) : (
-              <BoutonIcone
-                onClick={supprimerReco}
-                ton="danger"
-                taille="serre"
-                icone={<Trash2 size={13} />}
-                libelle={cr.supprimer}
-                className={ICONE_ACTION}
-              />
-            )}
+            {/* ⋯ : l'export en fichier, puis Supprimer — ou, pour une
+                recommandation LIÉE, « Détacher de ce salon » (elle ne se
+                supprime pas). Rares et lourds, ces gestes ne restent pas sous
+                le pouce à côté du crayon. */}
+            <MenuReco
+              libelle={cr.plusActions}
+              elements={actionsMenuReco({ cr, td, onExport: () => onExport(reco), onDetacher, onSupprimer: supprimerReco })}
+            />
           </div>
         </div>
       </div>
@@ -689,7 +572,7 @@ export default function RecoCard({
           titre/icônes : provenance, Importée, nombre de decks, auteur et
           contributeurs. À la souris, la 2ᵉ rangée de la grille de l'en-tête,
           sous le titre. */}
-      <div className={`${aSource ? 'mb-1.5' : 'mb-3'} flex flex-wrap items-center gap-2 lg:col-start-2 lg:mb-0 lg:gap-y-1 ${rangMeta}`}>
+      <div className={`${aSource ? 'mb-1.5' : ''} flex flex-wrap items-center gap-2 lg:col-start-1 lg:mb-0 lg:gap-y-1 ${rangMeta}`}>
         {/* ⚠️ Pendant une recherche, le compteur dit « N sur M » : afficher le
             total alors qu'un seul deck est à l'écran se lit comme un bug
             d'affichage — on cherche les cinq autres. Même règle que le compteur
@@ -711,7 +594,7 @@ export default function RecoCard({
       </div>
       {/* Enfin la source et les autres étiquettes, sous les decks et l'auteur. */}
       {aSource && (
-        <div className="mb-3 flex flex-wrap items-center gap-1.5 lg:col-start-2 lg:row-start-3 lg:mb-0" data-source-reco>
+        <div className="flex flex-wrap items-center gap-1.5 lg:col-start-1 lg:row-start-3" data-source-reco>
           {/* Dans « Toutes les recommandations » : d'où vient la carte, et
               l'état de son salon. */}
           {provenance && (
@@ -736,9 +619,10 @@ export default function RecoCard({
         </div>
       )}
       </div>
+      </div>
 
       {editing && (
-        <div className="flex flex-col gap-2 mb-3">
+        <div className="border-b border-border-soft px-4 py-3 compact:px-3">
           <NoteEditor
             value={reco.note}
             max={NOTE_MAX}
@@ -750,103 +634,30 @@ export default function RecoCard({
         </div>
       )}
 
-      {/* Résultat d'analyse : ce qui ne passe pas, deck par deck */}
+      {/* Les consignes générales sur UNE ligne ; « lire » les ouvre en entier. */}
+      {!editing && reco.note && <ConsignesLigne note={reco.note} />}
+
+      {/* Le bilan de la confrontation, dans la rangée des filtres : son résumé
+          et ses pastilles, qui filtrent les decks juste en dessous. */}
       {!editing && match && (
-        <AnalysisSummary
-          reco={reco}
+        <BilanAnalyse
           match={match}
-          monsterByCom2us={monsterByCom2us}
-          onClear={onClearAnalysis}
-          onGoToDeck={enVueDefense ? undefined : allerAuDeck}
-        />
-      )}
-
-      {!editing && expanded && reco.note && <NoteBlock text={reco.note} label={cr.consignesGenerales} />}
-
-      {/* Repliée : un aperçu d'une ligne — le nom de chaque deck et sa pastille
-          de statut, pour savoir quoi ouvrir sans tout déplier. */}
-      {/* En vue Défense : une puce par DÉFENSE visée, le point du meilleur
-          verdict de ses offenses (verte si l'une au moins est jouable), et
-          combien d'offenses la battent. */}
-      {!expanded && enVueDefense && (
-        <ZoneCliquable onClick={() => onToggleOpen(reco.id)} className="w-full text-left" title={cr.consulterReco}>
-          <ApercuDeuxLignes
-            pastilles={defenses.defenses.map((d) => ({
-              cle: d.cle,
-              nom: defenseLabel(d.monsters, monsterByCom2us),
-              noeud: (
-                <span
-                  className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-micro ${
-                    PASTILLE_STATUT[meilleurStatut(d.offenses, match)]
-                  }`}
-                >
-                  <span className={`w-1.5 h-1.5 rounded-full flex-none ${DOT[meilleurStatut(d.offenses, match)]}`} />
-                  {defenseLabel(d.monsters, monsterByCom2us)}
-                  <span className="font-mono">· {d.offenses.length}</span>
-                </span>
-              ),
-            }))}
-            fin={<>
-              {defenses.sansDefense.length > 0 && (
-                <span className="inline-flex items-center gap-1 text-micro text-ink-dim">
-                  {cr.sansDefense(defenses.sansDefense.length)}
-                </span>
-              )}
-              {reco.note && (
-                <span className="inline-flex items-center gap-1 text-micro text-ink-dim">
-                  <StickyNote size={11} className="text-star" /> {cr.consignes}
-                </span>
-              )}
-            </>}
-          />
-        </ZoneCliquable>
-      )}
-      {!expanded && !enVueDefense && (
-        <ZoneCliquable onClick={() => onToggleOpen(reco.id)} className="w-full text-left" title={cr.consulterReco}>
-          <ApercuDeuxLignes
-            pastilles={reco.decks.map((deck, di) => {
-              const st = match?.decks[di]?.status ?? 'unknown';
-              return {
-                cle: String(di),
-                nom: deckLabel(deck, monsterByCom2us, di),
-                noeud: (
-                  <span className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-micro ${PASTILLE_STATUT[st]}`}>
-                    <span className={`w-1.5 h-1.5 rounded-full flex-none ${DOT[st]}`} />
-                    {deckLabel(deck, monsterByCom2us, di)}
-                  </span>
-                ),
-              };
-            })}
-            fin={reco.note ? (
-              <span className="inline-flex items-center gap-1 text-micro text-ink-dim">
-                <StickyNote size={11} className="text-star" /> {cr.consignes}
-              </span>
-            ) : null}
-          />
-        </ZoneCliquable>
-      )}
-
-      {/* Vue Défense : les défenses visées, et les offenses qui les battent. */}
-      {expanded && enVueDefense && (
-        <TableauDefenses
-          raisonsExportOptimizer={raisonsExportOptimizer}
-          onExporterDeckOptimizer={onExporterDeckOptimizer}
-          reco={reco}
-          vue={defenses}
-          match={match}
-          monsterByCom2us={monsterByCom2us}
+          decks={indexCherches}
+          vus={verdictsVus}
+          onChange={setVerdictsVus}
         />
       )}
 
       {/* Les decks de la recommandation */}
-      {expanded && !enVueDefense && (
         <>
           {/* ⚠️ La pagination À GAUCHE de « Déplier tous », sur la même
-              rangée : au-dessus du tableau, elle ne bouge pas quand la page
+              rangée : au-dessus des decks, elle ne bouge pas quand la page
               change de hauteur (un clic ne déplace jamais ce qu'on vient de
-              cliquer). Absente sous une page. */}
-          {indexAffiches.length > 1 && (
-            <div className="flex items-center justify-end gap-3 flex-wrap mb-1.5">
+              cliquer). */}
+          {/* ⚠️ La rangée est TOUJOURS là, pour « + Ajouter un counter » : au
+              bout à droite, il ne bouge pas quand la pagination ou « Déplier
+              tous » apparaissent à sa gauche après un ajout. */}
+          <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-1.5 border-b border-border-soft px-4 py-1.5 compact:px-3">
               <BarrePages
                 page={pageDecksBornee}
                 n={indexAffiches.length}
@@ -876,8 +687,17 @@ export default function RecoCard({
                 className={`hidden lg:inline-flex ${BOUTON_LG}`}
               />
               </>)}
-            </div>
-          )}
+              <Bouton
+                onClick={() => setAjoutOuvert(true)}
+                trait="pointille"
+                taille="sm"
+                icone={<Plus size={14} />}
+                libelle={cr.ajouterCounter}
+                title={cr.ajouterCounterAide}
+                className={BOUTON_LG}
+                data-ajouter-counter
+              />
+          </div>
           {/* Les decks se posent au dépliage plutôt que d'apparaître d'un bloc.
               ⚠️ L'animation est sur CE conteneur, déjà présent, et non sur un
               `<div>` ajouté autour du fragment : un wrapper de plus casserait
@@ -891,21 +711,11 @@ export default function RecoCard({
               la rangée d'intitulés et les lignes se tassaient dans la
               première, « Offense · sets visés » passait sur trois lignes et
               « Fort contre » chevauchait dès qu'on éditait un deck. Retiré. */}
-          <div
-            className={`grid grid-cols-1 gap-2.5 animate-[apparition_180ms_var(--ease-out)]
-                       lg:gap-0 lg:overflow-hidden lg:rounded-xl lg:border lg:border-border-soft ${
-                         editing ? 'lg:rounded-b-none' : ''
-                       }`}
-          >
-            {/* Intitulés des colonnes — à la souris seulement, même gabarit que
-                chaque ligne (`LIGNE_DECK`). */}
-            <div className={`hidden bg-panel2 px-3 py-1.5 ${LIGNE_DECK}`} aria-hidden data-intitules-decks>
-              <span />
-              <span className="label">{cr.colOffense}</span>
-              <span className="label">{cr.colFortContre}</span>
-              <span className="label text-right">{cr.colVerdict}</span>
-              <span className="label text-right">{cr.colActions}</span>
-            </div>
+          {/* ⚠️ Les lignes bord à bord, sans rangée d'intitulés : chaque ligne
+              se lit d'elle-même (portraits, défense battue, verdict,
+              actions), et une rangée de colonnes ne tient pas dans un volet
+              dont la largeur varie. */}
+          <div className="animate-[apparition_180ms_var(--ease-out)]" data-decks-reco>
             {/* ⚠️ Pendant une recherche, SEULS les decks trouvés sont rendus —
                 les autres disparaissent complètement. Sans ça la carte remontait
                 dans les résultats en affichant ses six decks, et il fallait
@@ -917,17 +727,9 @@ export default function RecoCard({
             {decksDeLaPage.map((di) => {
               const deck = reco.decks[di];
               return (
-                // Conteneur porteur de la ref : c'est la cible du défilement
-                // quand on clique la ligne correspondante du résumé.
-                <div
-                  key={di}
-                  ref={(el) => {
-                    if (el) deckRefs.current.set(di, el);
-                    else deckRefs.current.delete(di);
-                  }}
-                >
                   <DeckBlock
-                    raisonExportOptimizer={raisonsExportOptimizer[di]}
+                    key={di}
+                    raisonExportOptimizer={raisonExportDe(deck)}
                     onExporterOptimizer={() => onExporterDeckOptimizer(deck)}
                     reco={reco}
                     deck={deck}
@@ -944,125 +746,143 @@ export default function RecoCard({
                     hit={hitDeDeck(di)}
                     recos={recos}
                     onSupprime={() => setEditingDeck(null)}
+                    modifie={modifies.has(di)}
                   />
-                </div>
               );
             })}
           </div>
-          {/* La même pagination au bas de la page, pour ne pas remonter tout
-              le tableau. ⚠️ Pas en édition : le pied d'ajout des decks est
-              collé sous le tableau, rien ne s'intercale. */}
-          {!editing && (
-            <BarrePages
-              page={pageDecksBornee}
-              n={indexAffiches.length}
-              parPage={DECKS_PAR_PAGE}
-              onChange={setPageDecks}
-              className="mt-2 justify-center"
-            />
-          )}
-        </>
-      )}
-
-      {/* ⚠️ **À la souris, le PIED du tableau des decks** : collé sous le cadre (`lg:mt-0`, le cadre perd ses coins
-          du bas en édition), le filet du cadre pour séparateur — un seul
-          trait —, les ajouts à DROITE, en boutons pointillés À FOND (fantômes
-          un temps, ils ne ressortaient pas). Au doigt, rien ne change. */}
-      {editing && (
-        <div className="mt-2.5 lg:mt-0 lg:rounded-b-xl lg:border lg:border-t-0 lg:border-border-soft lg:px-3 lg:py-2">
-          <div className="flex items-center gap-2 flex-wrap lg:justify-end">
-            <Bouton
-              onClick={() => {
-                recos.addDeck(reco.id);
-                setEditingDeck(reco.decks.length); // le nouveau deck s'ouvre en édition
-              }}
-              trait="pointille"
-              taille="sm"
-              icone={<Plus size={14} />}
-              libelle={cr.ajouterDeck}
-              className={BOUTON_LG}
-            />
-            {/* ⚠️ `trait` bascule pointillé → plein avec l'état, comme le fond :
-                le pointillé dit « pas encore rempli », et perd son sens une fois
-                le choix ouvert. `actif` seul ne pilote que le fond dans `Bouton`. */}
-            <Bouton
-              onClick={() => setPickOffense((v) => !v)}
-              disabled={offenseTeams.length === 0}
-              actif={pickOffense}
-              trait={pickOffense ? 'plein' : 'pointille'}
-              title={
-                offenseTeams.length === 0 ? cr.sansOffense : cr.partirOffense
-              }
-              taille="sm"
-              icone={<IconeOffense size={14} />}
-              className={BOUTON_LG}
-              libelle={
-                <>
-                  {cr.importerOffense}{' '}
-                  <span className="font-mono text-micro opacity-70">{offenseTeams.length}</span>
-                </>
-              }
-            />
-          </div>
-
-          {pickOffense && offenseTeams.length > 0 && (
-            <div className="mt-2 rounded-xl border border-border bg-panel/60 p-2">
-              <p className="label mb-1.5">
-                {cr.tesOffenses}
-              </p>
-
-              {/* Recherche par monstre : avec ~50 attaques sauvegardées, c'est
-                  le seul moyen de retrouver une équipe. */}
-              <Champ
-                value={offenseQuery}
-                onChange={(e) => setOffenseQuery(e.target.value)}
-                placeholder={cr.filtrerMonstre}
-                icone={<Search size={13} />}
-                className="mb-1.5 py-1 text-xs"
+          {/* La même pagination au bas des decks, pour ne pas remonter toute
+              la liste. ⚠️ Pas en édition : le pied d'ajout des decks est
+              collé sous les decks, rien ne s'intercale. */}
+          {!editing && nombrePages(indexAffiches.length, DECKS_PAR_PAGE) > 1 && (
+            <div className="border-t border-border-soft px-4 py-2">
+              <BarrePages
+                page={pageDecksBornee}
+                n={indexAffiches.length}
+                parPage={DECKS_PAR_PAGE}
+                onChange={setPageDecks}
+                className="justify-center"
               />
-
-              <div className="max-h-[240px] overflow-y-auto flex flex-col gap-1">
-                {filteredOffense.map(({ team, index, summary, monsters: trio }) => (
-                  <ZoneCliquable
-                    key={team.id}
-                    onClick={() => {
-                      // Nom laissé vide → il reprend les noms des monstres.
-                      recos.addDeckWith(reco.id, deckFromSiegeTeam(team, monsterById));
-                      setEditingDeck(reco.decks.length); // prêt à ajuster
-                      setPickOffense(false);
-                      setOffenseQuery('');
-                    }}
-                    title={summary}
-                    className="flex items-center gap-2 rounded-lg border border-border bg-panel px-2.5 py-1.5
-                               hoverable:border-accent transition"
-                  >
-                    <span className="font-mono text-micro text-ink-dim flex-none">#{index + 1}</span>
-                    <span className="flex items-center gap-1.5 flex-1">
-                      {trio.map((m, i) => (
-                        <MiniMonster key={i} monster={m} size={30} />
-                      ))}
-                    </span>
-                    <Plus size={13} className="flex-none text-ink-dim" />
-                  </ZoneCliquable>
-                ))}
-                {filteredOffense.length === 0 && (
-                  <p className="px-1 py-2 text-xs text-ink-dim">{cr.aucuneEquipe}</p>
-                )}
-              </div>
             </div>
           )}
-        </div>
+        </>
+
+      {/* L'ajout d'un counter : capture, mes decks ou deck vide. Partir d'une
+          de ses équipes s'y fait aussi, hors du mode édition. */}
+      {ajoutOuvert && (
+        <AjoutCounter
+          recos={[{ id: reco.id, nom: reco.name || textes.partage.reco.recommandation(index + 1) }]}
+          defenseVisee={null}
+          offenseTeams={offenseTeams}
+          equipes={equipesChoix}
+          monsters={monsters}
+          monsterById={monsterById}
+          monsterByCom2us={monsterByCom2us}
+          onAjouter={(_, deck) => ajouterCounter(deck)}
+          onClose={() => setAjoutOuvert(false)}
+        />
       )}
     </section>
   );
 }
 
 
+/* ---- Consignes générales, bilan en miniature ---------------------------- */
+
+// Les consignes générales sur UNE ligne, tronquée ; « lire » les ouvre en
+// entier, à la même place (le bouton reste au bout de la première ligne).
+function ConsignesLigne({ note }: { note: string }) {
+  const textes = useTraduction();
+  const cr = textes.carteReco;
+  const [ouvert, setOuvert] = useState(false);
+  return (
+    <div className="flex items-start gap-2 border-b border-border-soft px-4 py-2 text-sm compact:px-3" data-consignes-reco>
+      <StickyNote size={13} className="mt-1 flex-none text-star" />
+      <p className={`min-w-0 flex-1 text-ink-dim ${ouvert ? 'whitespace-pre-line' : 'truncate'}`}>
+        <b className="font-semibold text-ink">{cr.consignesGenerales}</b> · {note}
+      </p>
+      <button
+        onClick={() => setOuvert((o) => !o)}
+        aria-expanded={ouvert}
+        className="flex-none text-xs text-ink-dim underline transition hoverable:text-ink"
+      >
+        {ouvert ? cr.replier : cr.lire}
+      </button>
+    </div>
+  );
+}
+
+// Le bilan d'une recommandation en miniature, dans la liste de la vue Decks :
+// un compte par verdict, le point de sa couleur (creux pour « monstre
+// manquant »), le libellé en infobulle. Rien sans confrontation.
+export function BilanMini({ match }: { match: RecoMatch }) {
+  const cr = useTraduction().carteReco;
+  const comptes = new Map<VerdictKey, number>();
+  for (const d of match.decks) {
+    const v = VERDICT_DE[d.status];
+    if (v) comptes.set(v, (comptes.get(v) ?? 0) + 1);
+  }
+  return (
+    <span className="inline-flex items-center gap-2 font-mono text-micro text-ink-dim" data-bilan-mini>
+      {VERDICTS.map((v) => (
+        <span key={v.key} className="inline-flex items-center gap-1" title={cr.verdicts[v.key]}>
+          <span className={`h-1.5 w-1.5 flex-none rounded-full ${v.dot}`} />
+          {comptes.get(v.key) ?? 0}
+        </span>
+      ))}
+    </span>
+  );
+}
+
+/* ---- Le ⋯ d'une recommandation ----------------------------------------- */
+
+// Les gestes rares d'une recommandation, derrière son ⋯ : sur sa carte (vue
+// Decks) comme sur son bandeau dans le volet Défenses. `avant` : ce que le
+// volet y ajoute (Publier dans…, Éditer), en tête.
+export function actionsMenuReco({ cr, td, onExport, onDetacher, onSupprimer, avant = [] }: {
+  cr: Dictionnaire['carteReco'];
+  td: Dictionnaire['recosDiscord'];
+  onExport: () => void;
+  onDetacher?: () => void;
+  onSupprimer: () => void;
+  avant?: ElementMenu[];
+}): ElementMenu[] {
+  return [
+    ...avant,
+    { cle: 'exporter', libelle: cr.exporter, title: cr.exporterAide, icone: <Upload size={14} />, onClick: onExport },
+    // Une recommandation LIÉE ne se supprime pas : elle se détache de son
+    // salon, pour ce membre seul (un dialogue le dit) — rien n'est perdu, d'où
+    // pas de `danger`.
+    onDetacher
+      ? { cle: 'detacher', libelle: td.detacher, icone: <Link2Off size={14} />, onClick: onDetacher }
+      : { cle: 'supprimer', libelle: cr.supprimer, icone: <Trash2 size={14} />, danger: true, onClick: onSupprimer },
+  ];
+}
+
+// Le ⋯ : le bouton d'icône de la page (28 px à la souris), pas le « ⋯ » des
+// en-têtes d'écran, plus haut.
+// ⚠️ Enveloppé dans une boîte à sa taille : avec un déclencheur fourni, le
+// menu prend `w-full`, et dans une rangée d'icônes il s'étirerait.
+export function MenuReco({ libelle, elements, grand = false }: { libelle: string; elements: ElementMenu[]; grand?: boolean }) {
+  return (
+    <div className="flex-none" data-menu-reco>
+      <Menu
+        libelle={libelle}
+        elements={elements}
+        declencheur={({ ref, ...p }) => (
+          <BoutonIcone ref={ref} {...p} taille="serre" icone={<MoreHorizontal size={15} />} libelle={libelle}
+            className={grand ? 'h-10 w-10 lg:h-7 lg:w-7 lg:rounded-lg' : ICONE_ACTION} />
+        )}
+      />
+    </div>
+  );
+}
+
 /* ---- Pagination --------------------------------------------------------- */
 
 // « 21–40 sur 700 » puis le `Pager` de l'inventaire (flèches et champ de
 // page). Rien sous une page : une recommandation ordinaire n'en voit rien.
-function BarrePages({ page, n, parPage, onChange, className = '' }: {
+export function BarrePages({ page, n, parPage, onChange, className = '' }: {
   page: number;
   n: number;
   parPage: number;
@@ -1292,11 +1112,6 @@ const PASTILLE_STATUT: Record<string, string> = {
   unknown: 'border-border bg-panel2/60 text-ink-dim',
 };
 
-const RANG_DE = Object.fromEntries(VERDICTS.map((v) => [v.key, v.rang])) as Record<
-  VerdictKey,
-  number
->;
-
 const VERDICT_DE: Record<string, VerdictKey | null> = {
   ok: 'ok',
   nodeck: 'nodeck',
@@ -1305,86 +1120,92 @@ const VERDICT_DE: Record<string, VerdictKey | null> = {
   unknown: null,
 };
 
-// Synthèse après « Analyser » : le verdict de CHAQUE deck, bons compris, et le
-// détail de ceux qui ne passent pas. C'est le livrable de l'analyse — il reste
-// visible même recommandation repliée.
-//
-// ⚠️ Les decks au niveau sont LISTÉS, pas seulement comptés. Un « 4/6 au
-// niveau » oblige à rouvrir la carte pour savoir LESQUELS sont jouables — or
-// c'est la question qu'on se pose devant une défense de guilde à poser. Le
-// détail par monstre reste réservé aux decks fautifs : sur un deck bon, il n'y
-// a rien à corriger.
-function AnalysisSummary({
-  reco,
-  match,
-  monsterByCom2us,
-  onClear,
-  onGoToDeck,
-}: {
-  reco: Reco;
-  match: RecoMatch;
+// La cause d'un verdict, en clair, écrite SOUS la pastille du deck : ce qui
+// le rend jouable (l'équipe retenue), ou ce qui cloche. Le détail monstre par
+// monstre va dans l'infobulle (`detailVerdict`) et dans les fiches du deck
+// ouvert. Elle n'était lisible que dans la liste du bilan.
+function causeVerdict(dm: DeckMatch, t: Dictionnaire, byCom2us: Map<number, Monster>, deck: RecoDeck): string {
+  const cr = t.carteReco;
+  if (dm.status === 'ok') return dm.team ? cr.jouableAvec(libelleSource(dm.team, cr.sources)) : cr.jouable;
+  if (dm.status === 'nodeck') return cr.probleme.aComposerCourt;
+  if (dm.status === 'missing') {
+    const absents = deck.slots.flatMap((s, i) => (dm.slots[i]?.status === 'absent'
+      ? [(s.com2usId != null ? byCom2us.get(s.com2usId)?.name : null) ?? s.name ?? '?'] : []));
+    return absents.length ? `${absents.join(', ')} — ${cr.indisponible}` : cr.probleme.deckImpossible;
+  }
+  return deckProblem(dm, t);
+}
+
+function detailVerdict(dm: DeckMatch, t: Dictionnaire, byCom2us: Map<number, Monster>, deck: RecoDeck): string {
+  const lignes = deck.slots.flatMap((slot, si) => {
+    const txt = dm.slots[si] ? slotProblem(slot, dm.slots[si], byCom2us, t) : null;
+    return txt ? [txt] : [];
+  });
+  return [verdictDeck(dm, t)?.text, ...lignes].filter(Boolean).join('\n');
+}
+
+// Le verdict d'un deck, le même partout (ligne du tableau, volet Défenses) :
+// la pastille, combien de fois il se monte, et sa cause dessous.
+export function VerdictDeck({ dm, deck, monsterByCom2us, aDroite = false }: {
+  dm: DeckMatch;
+  deck: RecoDeck;
   monsterByCom2us: Map<number, Monster>;
-  onClear: () => void;
-  // Déplie le deck visé (et la carte si besoin) puis y fait défiler.
-  // Absent en vue Défense, où les decks ne sont pas affichés.
-  onGoToDeck?: (deckIndex: number) => void;
+  aDroite?: boolean;
+}) {
+  const textes = useTraduction();
+  const cle = VERDICT_DE[dm.status];
+  const v = cle ? VERDICTS.find((x) => x.key === cle) : null;
+  if (!v) return null;
+  return (
+    // La pastille, puis sur une ligne : la cause (tronquée, entière en
+    // infobulle) et combien de fois le deck se monte.
+    <span className={`flex min-w-0 max-w-full flex-col gap-0.5 ${aDroite ? 'lg:items-end' : 'items-start'}`} title={detailVerdict(dm, textes, monsterByCom2us, deck)} data-verdict-deck>
+      <span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2 py-0.5 text-micro font-semibold ${PASTILLE_STATUT[dm.status] ?? PASTILLE_STATUT.unknown}`}>
+        <span className={`h-1.5 w-1.5 flex-none rounded-full ${v.dot}`} />
+        {textes.carteReco.verdicts[v.key]}
+      </span>
+      <span className={`flex min-w-0 max-w-full items-baseline gap-1 text-micro leading-tight ${aDroite ? 'lg:justify-end' : ''}`}>
+        <span className="min-w-0 truncate text-ink-dim" data-cause-verdict>{causeVerdict(dm, textes, monsterByCom2us, deck)}</span>
+        <span className="flex-none whitespace-nowrap"><CopiesBadge copies={dm.copies} /></span>
+      </span>
+    </span>
+  );
+}
+
+// Le bilan de la confrontation, carte dépliée : le résumé, puis une pastille
+// par verdict qui FILTRE le tableau des decks (rien d'enclenché = tout).
+// ⚠️ Cumulables (plusieurs verdicts à la fois) : des pastilles indépendantes,
+// pas un `Segmented`, qui dirait que les choix s'excluent. Leurs comptes
+// portent sur les decks AFFICHÉS (une recherche en cours compte).
+function BilanAnalyse({
+  match,
+  decks,
+  vus,
+  onChange,
+}: {
+  match: RecoMatch;
+  decks: number[];
+  vus: Set<VerdictKey>;
+  onChange: (vus: Set<VerdictKey>) => void;
 }) {
   const textes = useTraduction();
   const cr = textes.carteReco;
-  // Tous les decks analysables, triés du plus urgent au plus tranquille :
-  // ⚠️ ROUGE → ORANGE → VERT. Ce qui demande du travail se lit en premier ; les
-  // decks déjà jouables closent la liste au lieu de la précéder — sinon il faut
-  // les dépasser pour atteindre ce sur quoi on peut agir.
-  // ⚠️ Tri STABLE (`sort` l'est en JS moderne) sur le seul rang : à verdict
-  // égal, les decks gardent l'ordre de la recommandation, qui est celui de son
-  // auteur. Trier aussi à l'intérieur d'une famille mélangerait ses decks sans
-  // que rien à l'écran ne dise pourquoi.
-  const lignes = reco.decks
-    .map((deck, i) => ({ deck, i, dm: match.decks[i] }))
-    .filter(({ dm }) => dm && dm.status !== 'unknown')
-    .map((l) => ({ ...l, verdict: VERDICT_DE[l.dm.status] as VerdictKey }))
-    .sort((a, b) => RANG_DE[a.verdict] - RANG_DE[b.verdict]);
-
-  const compte = (k: VerdictKey) => lignes.filter((l) => l.verdict === k).length;
-  const rates = lignes.filter((l) => l.verdict !== 'ok');
-
-  // Filtres de verdict. ⚠️ Rien de coché = TOUT est montré : un écran de
-  // filtres tous éteints qui n'afficherait rien se lirait comme une analyse
-  // vide. Cocher restreint, et l'ensemble reste cumulable (plusieurs couleurs
-  // à la fois) — d'où des pastilles indépendantes et non un `Segmented`.
-  const [vus, setVusBrut] = useState<Set<VerdictKey>>(new Set());
-  // Une page de lignes à la fois (voir pagesRecos.ts) ; un autre filtre de
-  // verdict repart de la première.
-  const [page, setPage] = useState(0);
-  const setVus = (next: Set<VerdictKey> | ((cur: Set<VerdictKey>) => Set<VerdictKey>)) => {
-    setVusBrut(next);
-    setPage(0);
+  const verdicts = decks.flatMap((di) => {
+    const v = VERDICT_DE[match.decks[di]?.status ?? 'unknown'];
+    return v ? [v] : [];
+  });
+  const compte = (k: VerdictKey) => verdicts.filter((v) => v === k).length;
+  const rates = match.totalDecks - match.okDecks;
+  const bascule = (k: VerdictKey) => {
+    const next = new Set(vus);
+    if (!next.delete(k)) next.add(k);
+    onChange(next);
   };
-  const bascule = (k: VerdictKey) =>
-    setVus((cur) => {
-      const next = new Set(cur);
-      if (!next.delete(k)) next.add(k);
-      return next;
-    });
-  const visibles = vus.size === 0 ? lignes : lignes.filter((l) => vus.has(l.verdict));
-  const pageAffichee = pageBornee(page, visibles.length, LIGNES_ANALYSE_PAR_PAGE);
-  const lignesDeLaPage = tranche(visibles, page, LIGNES_ANALYSE_PAR_PAGE);
-
-  // Referme le résultat : la carte redevient neutre (halo et pastille compris).
-  const closeBtn = (
-    <BoutonIcone
-      onClick={onClear}
-      libelle={cr.masquerAnalyse}
-      icone={<X size={14} />}
-      className="ml-auto"
-    />
-  );
 
   if (match.totalDecks === 0) {
     return (
-      <div className="mb-3 flex items-center gap-2 rounded-lg border border-border bg-panel/60 px-3 py-2">
+      <div className="border-b border-border-soft px-4 py-2 compact:px-3" data-bilan-analyse>
         <p className="text-sm text-ink-dim">{cr.rienAAnalyser}</p>
-        {closeBtn}
       </div>
     );
   }
@@ -1394,10 +1215,13 @@ function AnalysisSummary({
   // lignes, pour ne pas alarmer sur une reco dont il ne manque qu'une équipe à
   // composer. ⚠️ Le FOND reste neutre (voir `AURA`) : un encart teinté
   // posé dans une carte teintée ne ressortait plus.
-  const toutPasse = rates.length === 0;
+  const toutPasse = rates === 0;
 
   return (
-    <div className="mb-3 rounded-lg border border-border-soft bg-panel2 px-3 py-2">
+    // ⚠️ **Une rangée, pas un encart** : le résumé puis les pastilles qui
+    // filtrent, entre deux filets — un encart de plus dans le volet pesait
+    // autant que les decks qu'il résume.
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 border-b border-border-soft px-4 py-2 compact:px-3" data-bilan-analyse>
       <div className="flex items-center gap-2">
         {toutPasse ? (
           <Check size={15} className="flex-none text-good" />
@@ -1405,9 +1229,8 @@ function AnalysisSummary({
           <AlertTriangle size={15} className="flex-none text-warn" />
         )}
         <p className={`text-sm font-semibold ${toutPasse ? 'text-good' : 'text-warn'}`}>
-          {toutPasse ? cr.toutRespecte(match.totalDecks) : cr.bilan(match.okDecks, match.totalDecks, rates.length)}
+          {toutPasse ? cr.toutRespecte(match.totalDecks) : cr.bilan(match.okDecks, match.totalDecks, rates)}
         </p>
-        {closeBtn}
       </div>
 
       {/* Filtres de verdict — pastilles CUMULABLES (plusieurs couleurs à la
@@ -1427,7 +1250,7 @@ function AnalysisSummary({
           sémantique (bon/à composer/à revoir/manquant), et aucune n'est un ton
           de bouton (accent, danger…) — même exception que les pastilles
           manque/surplus de siège et « Recommandation ignorée ». */}
-      <div className="mt-2 flex flex-wrap items-center gap-1.5">
+      <div className="flex flex-wrap items-center gap-1.5">
         {VERDICTS.map((v) => {
           const n = compte(v.key);
           const actif = vus.has(v.key);
@@ -1461,19 +1284,20 @@ function AnalysisSummary({
             </button>
           );
         })}
+        {/* « Tout afficher », après les pastilles : il apparaît sans déplacer
+            celle qu'on vient d'enclencher. Au doigt : le lien souligné ; à la
+            souris : un bouton fantôme de la librairie, comme « Déplier tous
+            les decks ». */}
         {vus.size > 0 && (
           <>
-            {/* Au doigt : le lien souligné d'avant. À la souris : un
-                bouton fantôme de la librairie, comme « Déplier tous les
-                decks ». */}
             <button
-              onClick={() => setVus(new Set())}
+              onClick={() => onChange(new Set())}
               className="text-xs text-ink-dim underline transition hoverable:text-ink lg:hidden"
             >
               {textes.commun.toutAfficher}
             </button>
             <Bouton
-              onClick={() => setVus(new Set())}
+              onClick={() => onChange(new Set())}
               fond="vide"
               trait="aucun"
               taille="sm"
@@ -1483,127 +1307,12 @@ function AnalysisSummary({
           </>
         )}
       </div>
-
-      {/* ⚠️ TOUS les decks sont listés, les bons compris : « lesquels puis-je
-          poser » est la question qu'on se pose devant une défense de guilde, et
-          un simple compteur obligeait à rouvrir la carte pour y répondre. */}
-      {/* Au-dessus de la liste : elle ne bouge pas quand la page change. */}
-      <BarrePages
-        page={pageAffichee}
-        n={visibles.length}
-        parPage={LIGNES_ANALYSE_PAR_PAGE}
-        onChange={setPage}
-        className="mt-2"
-      />
-      <ul className="mt-2 space-y-1.5">
-        {lignesDeLaPage.map(({ deck, i, dm, verdict }) => {
-          const v = VERDICTS.find((x) => x.key === verdict)!;
-          return (
-            <li key={i}>
-              {/* ⚠️ La ligne entière est un BOUTON : le résumé dit ce qui
-                  cloche, et le geste suivant est toujours d'aller voir le deck.
-                  Sans ça il fallait déplier la carte, retrouver le deck à l'œil
-                  parmi six, puis l'ouvrir — alors que la ligne le désigne déjà.
-                  ⚠️ Le DÉTAIL par monstre reste HORS du bouton : c'est du texte
-                  qu'on lit et qu'on veut pouvoir sélectionner, pas une cible. */}
-              {/* ⚠️ En vue Défense (`onGoToDeck` absent), les decks ne sont pas
-                  affichés : la ligne reste, DÉSACTIVÉE, et dit pourquoi — un
-                  clic qui ne mène nulle part se lirait comme un défaut. */}
-              <ZoneCliquable
-                onClick={() => onGoToDeck?.(i)}
-                disabled={!onGoToDeck}
-                className="flex w-full items-baseline gap-1.5 flex-wrap rounded-md px-1 py-0.5 -mx-1
-                           transition hoverable:bg-panel2/60 disabled:hoverable:bg-transparent"
-                title={
-                  onGoToDeck
-                    ? cr.voirDeck(deckLabel(deck, monsterByCom2us, i))
-                    : cr.passerEnAttaque
-                }
-              >
-                {/* Le point du VERDICT, pas `DOT[status]` : il doit être le
-                    même que celui de la pastille qui filtre cette ligne — dont
-                    le creux distingue « monstre manquant » de « à revoir ».
-                    `DOT` reste la table de l'aperçu replié, où le vocabulaire à
-                    trois couleurs suffit. */}
-                <span className={`w-2 h-2 rounded-full flex-none self-center ${v.dot}`} />
-                <span className="text-xs font-semibold text-ink">
-                  {deckLabel(deck, monsterByCom2us, i)}
-                </span>
-                <span className={`font-mono text-micro ${v.texte}`}>
-                  {/* Un deck bon annonce ce qui le rend jouable — l'équipe
-                      retenue —, pas un simple « ok » : c'est elle qu'on va
-                      chercher en jeu. */}
-                  {verdict === 'ok' ? (dm.team ? cr.jouableAvec(libelleSource(dm.team, cr.sources)) : cr.jouable) : deckProblem(dm, textes)}
-                </span>
-                {/* Combien de fois le deck est montable EN PARALLÈLE avec la
-                    réserve 6★ (`deckCopies`). C'est la question qu'on se pose
-                    devant SIX défenses de guilde à remplir : un deck jouable
-                    une seule fois n'en couvre qu'une.
-                    ⚠️ Affiché sur TOUS les verdicts, pas seulement les bons :
-                    savoir qu'un deck à revoir n'existe de toute façon qu'en un
-                    exemplaire change ce qu'on décide d'aller corriger. */}
-                <CopiesBadge copies={dm.copies} />
-              </ZoneCliquable>
-              {/* Détail par monstre : sur les deux verdicts rouges. « à
-                  revoir » dit quoi corriger, « monstre manquant » dit LEQUEL
-                  manque — sans quoi on saurait le deck bloqué sans savoir par
-                  qui. « nodeck » n'en a pas (aucun build à confronter) et un
-                  deck bon n'a rien à montrer. */}
-              {(verdict === 'ko' || verdict === 'missing') && (
-                <ul className="ml-3 mt-0.5 space-y-0.5">
-                  {deck.slots.map((slot, si) => {
-                    const txt = dm.slots[si] ? slotProblem(slot, dm.slots[si], monsterByCom2us, textes) : null;
-                    return txt ? (
-                      <li key={si} className="text-xs text-ink-dim leading-snug">
-                        • {txt}
-                      </li>
-                    ) : null;
-                  })}
-                </ul>
-              )}
-            </li>
-          );
-        })}
-      </ul>
     </div>
   );
 }
 
 /* ---- Un deck (3 monstres) ---------------------------------------------- */
 
-// Pastille de statut d'un deck dans l'aperçu replié.
-// `nodeck` = orange (à composer) ; `ko` et `missing` = rouge (bloquant).
-const DOT: Record<string, string> = {
-  ok: 'bg-good',
-  nodeck: 'bg-warn',
-  ko: 'bg-bad',
-  missing: 'bg-bad',
-  partial: 'bg-warn',
-  unknown: 'bg-unknown',
-};
-
-// Un deck : le statut au CONTOUR (au doigt, où le deck est une carte), le fond
-// reste neutre — plus d'aplat teinté (voir `AURA`). À la souris, le deck est
-// une ligne de tableau sans contour propre : la pastille de la colonne Verdict
-// porte le statut.
-const DECK_AURA: Record<string, string> = {
-  ok: 'border-good/60 bg-panel2',
-  nodeck: 'border-warn/60 bg-panel2',
-  ko: 'border-bad/60 bg-panel2',
-  missing: 'border-bad/60 bg-panel2',
-  partial: 'border-warn/60 bg-panel2',
-  unknown: 'border-border-soft bg-panel2',
-};
-
-// ⚠️ **À la souris, un deck est une LIGNE de tableau** : chevron · offense
-// (les portraits seuls) · fort contre · verdict · actions (Annuler réservé,
-// Exporter, Éditer, Supprimer). Même gabarit de colonnes pour la rangée
-// d'intitulés et pour chaque ligne. Écrit EN TOUTES LETTRES : Tailwind lit le
-// source comme du texte. La ligne elle-même est la grille du deck entier : ses
-// enfants s'y posent directement (`lg:contents` sur les conteneurs), le détail
-// sur la rangée suivante.
-const LIGNE_DECK =
-  'lg:grid lg:grid-cols-[28px_minmax(0,1fr)_minmax(0,170px)_minmax(0,150px)_auto] lg:items-center lg:gap-3';
 
 // ⚠️ **UN seul bouton d'icône sur toute la page, à la souris** : un carré de 28 px aux coins arrondis, sans cadre ni fond —
 // chevrons, Exporter, Éditer, Supprimer, en-tête de recommandation comme ligne
@@ -1616,9 +1325,24 @@ const ICONE_ACTION = `h-6 w-6 ${ICONE_LG}`;
 // haut à la souris, la hauteur des boutons d'icône. Seul « + Défense » y
 // échappe — il prend la hauteur des vignettes de défense qu'il prolonge.
 const BOUTON_LG = 'lg:h-7';
-// ⚠️ Plus de bouton d'ajout FANTÔME : « Ajouter un deck vide », « Importer un
+// ⚠️ Plus de bouton d'ajout FANTÔME : « Ajouter un counter », « Importer un
 // deck d'offense » et « + Défense » l'ont été un temps, et ne
 // ressortaient pas. Ils gardent le fond d'un bouton et le bord POINTILLÉ d'un ajout.
+
+// Supprimer un deck SE DÉFAIT au lieu de se confirmer : immédiat, puis
+// « Deck supprimé · Annuler » le remet à SA place. Le même geste depuis la
+// carte et depuis le volet Défenses.
+export function supprimerDeckAnnulable(
+  recos: UseRecoState,
+  notifier: ReturnType<typeof useNotifier>,
+  cr: Dictionnaire['carteReco'],
+  recoId: string,
+  deck: RecoDeck,
+  deckIndex: number,
+) {
+  recos.removeDeck(recoId, deckIndex);
+  notifier({ message: cr.deckSupprime, action: () => recos.restaurerDeck(recoId, deck, deckIndex) });
+}
 
 export function DeckBlock({
   raisonExportOptimizer,
@@ -1638,7 +1362,12 @@ export function DeckBlock({
   hit,
   recos,
   onSupprime,
+  contre,
+  modifie = false,
 }: {
+  // Le deck diffère de la version de son salon : le tag « Modifié »
+  // (recoModifies.ts, calculé une fois par recommandation par l'appelant).
+  modifie?: boolean;
   raisonExportOptimizer?: string;
   onExporterOptimizer: () => void;
   reco: Reco;
@@ -1647,6 +1376,12 @@ export function DeckBlock({
   monsters: Monster[];
   monsterByCom2us: Map<number, Monster>;
   match: DeckMatch | null;
+  // Dans le volet Défenses : la défense est déjà nommée au-dessus. La ligne
+  // dit à sa place la fiabilité de CE deck contre elle, sa précision, ses
+  // consignes, et sa recommandation quand les offenses sont à plat.
+  // `counterIndex` : la défense dans `deck.counters`, pour la noter sur place
+  // (-1 : le deck ne la vise pas).
+  contre?: { fiabilite?: number; note: string; vise: boolean; counterIndex: number; reco?: string };
   editing: boolean; // édition de CE deck (indépendante de celle de la reco)
   onToggleEdit: () => void;
   // Sortir de l'édition en remettant le deck tel qu'il était à son ouverture.
@@ -1672,131 +1407,125 @@ export function DeckBlock({
   const notifier = useNotifier();
   function supprimerDeck() {
     onSupprime();
-    recos.removeDeck(reco.id, deckIndex);
-    notifier({ message: cr.deckSupprime, action: () => recos.restaurerDeck(reco.id, deck, deckIndex) });
+    supprimerDeckAnnulable(recos, notifier, cr, reco.id, deck, deckIndex);
   }
-  // Un monstre choisi → le curseur passe au slot vide suivant (voir
-  // `slotVideSuivant`) : on compose les trois d'affilée, sans la souris.
-  const [focus, setFocus] = useState<JetonSlot | null>(null);
-
-  // Un monstre ne peut pas occuper deux slots du MÊME deck (il peut revenir
-  // dans un autre deck de la recommandation).
-  const usedIds = new Set(
-    deck.slots
-      .map((s) => (s.com2usId != null ? monsterByCom2us.get(s.com2usId) : null))
-      .filter((m): m is Monster => !!m)
-      .map((m) => String(m.id))
-  );
   const status = match?.status ?? 'unknown';
   const empty = deck.slots.every((s) => s.com2usId == null);
-  // Le verdict de la ligne (souris), avec les libellés et points des filtres.
-  const verdictKey = match ? VERDICT_DE[match.status] : null;
-  const verdictLigne = verdictKey ? VERDICTS.find((v) => v.key === verdictKey) ?? null : null;
-  // Le verdict de la ligne, le même aux deux formats : la pastille des filtres
-  // (la phrase complète en infobulle) et combien de fois le deck est montable.
-  // Avant l'analyse, ou en édition : rien.
-  const verdict = !editing && match && !empty && verdictLigne ? (
-    <>
-      <span
-        className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2 py-0.5 text-micro font-semibold ${
-          PASTILLE_STATUT[match.status] ?? PASTILLE_STATUT.unknown
-        }`}
-        title={verdictDeck(match, textes)?.text}
-      >
-        <span className={`h-1.5 w-1.5 flex-none rounded-full ${verdictLigne.dot}`} />
-        {cr.verdicts[verdictLigne.key]}
-      </span>
-      <CopiesBadge copies={match.copies} />
-    </>
-  ) : null;
+  // Le verdict de la ligne, le même aux deux formats : la pastille des filtres,
+  // combien de fois le deck est montable, et sa cause dessous (le détail en
+  // infobulle). Sans confrontation, ou en édition : rien.
+  const verdict = (aDroite: boolean) => (!editing && match && !empty
+    ? <VerdictDeck dm={match} deck={deck} monsterByCom2us={monsterByCom2us} aDroite={aDroite} />
+    : null);
   // Lead porté par le slot 0 du deck recommandé.
   const leaderId = deck.slots[0]?.com2usId;
   const leaderLead = leaderId != null ? monsterByCom2us.get(leaderId)?.leaderSkill ?? null : null;
-  // La défense de la ligne repliée : pendant une recherche, la plus fiable de
-  // celles qui répondent ; sinon la première.
-  const defenseMontree: RecoCounter | undefined = hit?.counters.length
-    ? [...hit.counters].map((i) => deck.counters[i]).sort(parFiabilite)[0]
-    : deck.counters[0];
-  // Lead de VITESSE du deck (slot 0), pour le raccourci « Rapide / Lent » de la
-  // saisie : la VIT de fiche qui tombe sur un tick dépend du lead.
-  const leadVitesse = speedLeadOf(leaderId != null ? monsterByCom2us.get(leaderId) : null);
+  // L'ordre des défenses de la ligne : pendant une recherche, celles qui
+  // répondent d'abord, la plus fiable en tête ; sinon celui du deck.
+  const ordreDefenses = hit?.counters.length && !hit.filtre
+    ? [
+        ...[...hit.counters].sort((a, b) => parFiabilite(deck.counters[a], deck.counters[b])),
+        ...deck.counters.map((_, ci) => ci).filter((ci) => !hit.counters.includes(ci)),
+      ]
+    : deck.counters.map((_, ci) => ci);
+  // La fiabilité se note SUR la ligne (étoiles ou « Noter ») : un flottant,
+  // sans ouvrir l'édition du deck.
+  const noter = (ci: number) => (n: number | null) => recos.setCounterFiabilite(reco.id, deckIndex, ci, n);
+
+  // Les défenses battues, en petit : la note au-dessus, les portraits dessous.
+  const portraitsDefense = (c: RecoCounter, taille: number) => (
+    <span className="flex flex-none items-center gap-1 pr-1">
+      {c.monsters
+        .filter((cm) => cm.com2usId != null || cm.name)
+        .map((cm, i) => (
+          <MiniMonster key={i} monster={cm.com2usId != null ? monsterByCom2us.get(cm.com2usId) ?? null : null} fallback={cm.name} size={taille} />
+        ))}
+    </span>
+  );
+  const libelleChoix = (c: RecoCounter) => (
+    <span className="flex w-[88px] flex-none items-center">{portraitsDefense(c, 24)}</span>
+  );
+  // ⚠️ **Plusieurs défenses sur la ligne, autant que la place en laisse** :
+  // une, deux ou trois vignettes selon la largeur de la colonne (requêtes de
+  // CONTENEUR : la ligne vit dans un volet dont la largeur varie), puis « … »
+  // quand il en reste. Chaque vignette note SA défense (un deck n'est pas
+  // aussi fort contre toutes) ; « … » ouvre la liste de toutes, chacune sa
+  // note en face. Classes écrites EN TOUTES LETTRES : Tailwind lit le source.
+  // Une vignette fait environ 84 px (trois portraits de 22) : deux tiennent
+  // dans 11rem, trois dans 17rem, « … » compris quand il en reste.
+  const VISIBILITE = ['flex', 'hidden @[11rem]:flex', 'hidden @[17rem]:flex'];
+  const n = deck.counters.length;
+  const visibiliteSuite = n > 3 ? 'flex' : n === 3 ? 'flex @[17rem]:hidden' : n === 2 ? 'flex @[11rem]:hidden' : 'hidden';
+  const bat = n > 0 ? (
+    <span className="flex min-w-0 items-center gap-x-1.5" data-fort-contre>
+      {ordreDefenses.slice(0, 3).map((ci, rang) => {
+        const c = deck.counters[ci];
+        return (
+          <span key={ci} className={`${VISIBILITE[rang]} flex-none`} data-defense-ligne>
+            <FiabiliteRapide
+              libelle={cr.fiabiliteModifier}
+              apercu={(
+                // `gap-1.5` : l'icône d'élément d'un portrait dépasse de 4 px
+                // vers le haut, elle ne touche pas les étoiles au-dessus.
+                <span className="flex flex-col items-start gap-1.5">
+                  <ApercuNote note={fiabiliteValide(c.fiabilite)} taille={10} />
+                  {portraitsDefense(c, 22)}
+                </span>
+              )}
+            >
+              <ChoixFiabilite note={c.fiabilite} onChange={noter(ci)} libelle={libelleChoix(c)} sansValeur />
+            </FiabiliteRapide>
+          </span>
+        );
+      })}
+      <span className={`${visibiliteSuite} flex-none`} data-defenses-suite>
+        <FiabiliteRapide
+          libelle={cr.fiabiliteToutes(n)}
+          apercu={<span className="px-0.5 font-mono text-sm leading-none text-ink-dim">…</span>}
+        >
+          <div className="flex flex-col gap-2" data-fiabilites-deck>
+            <span className="label">{cr.fiabiliteParDefense}</span>
+            {ordreDefenses.map((ci) => (
+              <ChoixFiabilite
+                key={ci}
+                note={deck.counters[ci].fiabilite}
+                onChange={noter(ci)}
+                sansValeur
+                libelle={libelleChoix(deck.counters[ci])}
+              />
+            ))}
+          </div>
+        </FiabiliteRapide>
+      </span>
+    </span>
+  ) : (
+    <span className="text-micro text-ink-dimmer">—</span>
+  );
 
   return (
-    // ⚠️ À la souris, la carte du deck devient une LIGNE du tableau : plus de
-    // cadre ni d'arrondi, un filet au-dessus (celui du tableau). Le fond
-    // teinté de l'analyse (`DECK_AURA`) reste : il colore la ligne entière.
-    <div
-      className={`rounded-xl border p-2.5 compact:p-1 ${DECK_AURA[empty ? 'unknown' : status]}
-        lg:rounded-none lg:border-0 lg:border-t lg:border-border-soft lg:bg-transparent lg:px-3 lg:py-2
-        ${LIGNE_DECK} lg:gap-y-0`}
-    >
-      {/* ⚠️ **Au doigt, une grille de deux colonnes** : à gauche la rangée
-          (chevron, portraits, « Fort contre »), les sets visés dessous et le
-          verdict sous le tout ; à droite, sur la hauteur de la rangée et des
-          sets, la COLONNE d'actions (Supprimer, Éditer, Exporter). Sur une
-          seule ligne, à 360 px, les trois icônes prenaient la place des
-          portraits, qui se chevauchaient.
-          À la souris, `lg:contents` : rien ne change, ses enfants se
-          posent dans la grille de la ligne. */}
-      <div className="mb-2 max-lg:grid max-lg:grid-cols-[minmax(0,1fr)_auto] max-lg:gap-x-2 lg:contents">
-        {/* ⚠️ **Rangée à part, jamais mêlée au verdict/copies en dessous** :
-            le crayon doit rester en HAUT À DROITE quel que soit l'état du
-            deck. Le mettre dans la même rangée flex-wrap que le verdict le
-            faisait suivre le badge sur sa ligne (repoussé en bas dès que
-            « réalisable N fois » prenait sa propre ligne, voir plus bas) —
-            un bouton d'action ne doit pas se déplacer selon ce qui s'affiche
-            à côté de lui. */}
-        {/* `max-lg:min-h-10` : la hauteur qu'elle avait au doigt (40 px, celle
-            du bouton d'export, règle tactile, parti dans la colonne) — les
-            portraits et les sets restent à leur hauteur, et la colonne
-            (3 × 20 px + 2 × 2) tient dans la rangée et les sets (40 + 6 +
-            19 px) : la carte ne grandit pas. `max-lg:self-start` : en
-            édition, la colonne s'allonge (« Annuler ») sans étirer la rangée.
-            `max-lg:pr-1 max-lg:-mr-1` : la rangée finit sur « Fort contre »,
-            dont le dernier portrait porte une icône d'élément qui dépasse de
-            4 px à droite ; la place entre dans la rangée, prise sur
-            l'espacement de la colonne d'actions : rien ne bouge. */}
-        {/* ⚠️ `max-lg:flex-wrap` + `max-lg:min-w-fit` sur les portraits :
-            quand la rangée ne tient pas le deck ET « Fort contre » (écran
-            étroit), « Fort contre » passe à la ligne — les portraits du deck
-            ne se compriment plus sous les siens (chevauchement relevé par le
-            mainteneur sur l'accueil). `gap-y-3` : la pastille LEADER dépasse
-            sous le portrait du leader, elle ne doit pas toucher la ligne
-            suivante. */}
-        <div className="flex items-center gap-2 max-lg:min-h-10 max-lg:flex-wrap max-lg:gap-y-3 max-lg:self-start max-lg:pr-1 max-lg:-mr-1 lg:contents">
-          {/* Chevron de repli : indispensable en édition avec plusieurs decks */}
-          <BoutonIcone
-            onClick={onToggleFold}
-            aria-expanded={!folded}
-            taille="serre"
-            icone={<ChevronDown size={14} className={`transition-transform ${folded ? '-rotate-90' : ''}`} />}
-            libelle={folded ? cr.deplierDeck : cr.replierDeck}
-            className={ICONE_LG}
-          />
-
-          {/* ⚠️ **Plus de titre texte : les portraits SEULS identifient le
-              deck**, plus grands (34 px, contre 26 pour l'ancien aperçu replié
-              seul) pour porter ce que le mot enlevé portait. Un titre — libre ou
-              calculé — redoublait ce que ces portraits montrent déjà ; les
-              garder seuls, agrandis, évite la redite plutôt que de biffer un mot
-              de plus dans un en-tête déjà chargé. Toujours affichés, replié ou
-              non : c'est le seul repère du deck quel que soit son état.
-              ⚠️ `deck.name` reste dans le TYPE et le stockage (retrocompat) :
-              une recommandation exportée avant ce changement, ou reçue d'un ami
-              qui n'a pas encore mis à jour l'app, garde son champ `name` — il
-              n'a jamais été lu ici, et n'est pas rejeté à l'import. */}
-          {/* ⚠️ **Une ligne de deck COMPACTE : les portraits seuls**, sans nom
-              ni sets — ceux-ci s'écrivent dans le deck ouvert, sur la fiche de
-              chaque monstre. Le nom passe en infobulle du portrait.
-              ⚠️ **Aucune icône ne chevauche sa voisine** : l'icône d'élément
-              d'un portrait dépasse de 4 px à droite (`-right-1`, MonsterAvatar),
-              d'où `pr-1` sur chaque enveloppe — la place entre dans la boîte,
-              l'espacement des portraits reste entier. */}
-          <ZoneCliquable
-            onClick={onToggleFold}
-            className="flex min-w-0 flex-1 items-center gap-2 max-lg:min-w-fit"
-            title={folded ? cr.deplierDeck : cr.replierDeck}
-          >
+    // ⚠️ **UNE rangée souple, aux deux formats et dans les deux vues** :
+    // chevron et portraits · la défense battue (ou, dans le volet Défenses,
+    // la fiabilité contre celle qu'on regarde) · le verdict et sa cause · les
+    // actions, poussées au bout. Ce qui ne tient pas passe à la ligne
+    // (`flex-wrap`) au lieu de se comprimer : la ligne vit dans un volet dont
+    // la largeur dépend de l'écran ET de la colonne des provenances, et une
+    // grille de colonnes fixes y faisait se chevaucher les portraits.
+    <div className="border-t border-border-soft px-3 py-2.5 first:border-t-0" data-deck-ligne={status} data-edition={editing || undefined}>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        {/* Le chevron ET les portraits : une seule cible pour déplier. Les
+            portraits identifient le deck (le nom en infobulle). `pr-1` sur
+            chacun : son icône d'élément dépasse de 4 px à droite. */}
+        <ZoneCliquable
+          onClick={onToggleFold}
+          aria-expanded={!folded}
+          aria-label={folded ? cr.deplierDeck : cr.replierDeck}
+          title={folded ? cr.deplierDeck : cr.replierDeck}
+          className="group/ligne flex flex-none items-center gap-2"
+        >
+          <span className="flex h-7 w-7 flex-none items-center justify-center rounded-lg text-ink-dim transition group-hover/ligne:bg-panel2" aria-hidden>
+            <ChevronDown size={14} className={`transition-transform ${folded ? '-rotate-90' : ''}`} />
+          </span>
+          <span className="flex flex-none items-center gap-1">
             {deck.slots.map((sl, i) => {
               const m = sl.com2usId != null ? monsterByCom2us.get(sl.com2usId) ?? null : null;
               return (
@@ -1805,109 +1534,181 @@ export function DeckBlock({
                 </span>
               );
             })}
-          </ZoneCliquable>
-
-          {/* FORT CONTRE — les portraits de la première défense visée, +N s'il
-              y en a d'autres. Purement informatif, comme le bloc détaillé.
-              ⚠️ **Au téléphone aussi** :
-              la rangée repliée dit l'offense ET ce qu'elle bat, séparées par
-              un filet. Il était réservé à la souris.
-              `max-lg:pr-1 max-lg:-mr-1` : même place pour l'icône d'élément
-              de son dernier portrait (sans « +N », c'est lui qui le finit). */}
-          {/* ⚠️ Pendant une recherche, la défense montrée est celle QUI
-              RÉPOND (« quel deck bat cette défense ? »), pas la première — et
-              ses étoiles disent avec quelle fiabilité. Hors recherche, la
-              première, avec les siennes. */}
-          <span className="flex min-w-0 flex-none items-center gap-1 max-lg:border-l max-lg:border-border-soft max-lg:pl-2 max-lg:pr-1 max-lg:-mr-1">
-            {defenseMontree ? (
-              <>
-                {defenseMontree.monsters
-                  .filter((cm) => cm.com2usId != null || cm.name)
-                  .map((cm, i) => (
-                    <MiniMonster
-                      key={i}
-                      monster={cm.com2usId != null ? monsterByCom2us.get(cm.com2usId) ?? null : null}
-                      fallback={cm.name}
-                      size={24}
-                    />
-                  ))}
-                {defenseMontree.fiabilite !== undefined && (
-                  <span className="ml-0.5"><EtoilesFiabilite note={defenseMontree.fiabilite} taille={10} /></span>
-                )}
-                {deck.counters.length > 1 && (
-                  <span className="font-mono text-micro text-ink-dim">+{deck.counters.length - 1}</span>
-                )}
-              </>
-            ) : (
-              <span className="text-micro text-ink-dimmer">—</span>
-            )}
           </span>
+        </ZoneCliquable>
 
-          {/* À la souris : le VERDICT — la pastille des filtres (Bon, À
-              composer, À revoir, Monstre manquant), la phrase complète en
-              infobulle, et combien de fois le deck est montable. Avant
-              l'analyse : rien. Au doigt, le même, sur la rangée suivante. */}
-          <span className="hidden min-w-0 flex-col items-end gap-0.5 lg:flex">{verdict}</span>
-          {/* Le lead n'est pas dans l'en-tête : il est posé sur le leader lui-même
-              (aperçu replié ci-dessous, ou slot 0 déplié) — comme en siège. */}
+        {/* `@container` : les défenses de la ligne se montrent selon SA
+            largeur (voir `bat`).
+            ⚠️ **Au téléphone, sur sa propre ligne, pleine largeur**
+            (`compact:order-last compact:basis-full`) : à côté des actions,
+            dont deux places sont réservées, il ne restait la place que d'une
+            défense. Les portraits et les actions restent sur la première. */}
+        <div className="@container flex min-w-0 flex-1 basis-[150px] flex-col gap-1 compact:order-last compact:basis-full">
+          {contre ? (
+            <>
+              <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+                {contre.vise && contre.counterIndex >= 0 && (
+                  <FiabiliteRapide note={contre.fiabilite} onChange={noter(contre.counterIndex)} />
+                )}
+                {contre.reco && (
+                  <span className="inline-flex min-w-0 max-w-full items-center rounded-full border border-border-soft bg-panel2 px-2 py-0.5 text-micro text-ink-dim" data-reco-offense>
+                    <span className="truncate">{contre.reco}</span>
+                  </span>
+                )}
+              </span>
+              {contre.note && (
+                <p className="text-xs leading-snug text-ink-dim">
+                  <em className="not-italic text-ink">{textes.recos.contreCetteDefense}</em> <span>{contre.note}</span>
+                </p>
+              )}
+              {deck.note && (
+                <p className="flex items-start gap-1.5 text-xs leading-snug text-ink-dim">
+                  <StickyNote size={11} className="mt-0.5 flex-none text-star" />
+                  <span className="line-clamp-2">{deck.note}</span>
+                </p>
+              )}
+            </>
+          ) : bat}
         </div>
 
-        {/* ⚠️ **Les actions du deck sur SA LIGNE, replié ou non** : Exporter
-            vers l'Optimizer, Éditer ce deck, Supprimer ce deck. « Éditer ce
-            deck » ouvre le deck en édition DIRECTEMENT : ni l'édition de la
-            recommandation, ni un dépliage d'abord (l'édition déplie d'office,
-            voir `folded` dans RecoCard).
-            À la souris : la 5ᵉ colonne de la ligne (`lg:col-start-5
-            lg:row-start-1`). Au doigt : la rangée sous les portraits, le
-            verdict à gauche, les actions à droite, en cibles de 40 px (règle
-            tactile) — l'ancienne colonne d'icônes de 20 px serrait les
-            portraits.
-            ⚠️ **Une place est RÉSERVÉE à « Annuler les modifications »**, devant
-            les trois : hors édition, le bouton est là mais invisible
-            (`invisible`, hors tabulation). En édition il apparaît, et ✎ devient
-            ✓ à la même place : aucun bouton ne bouge sous le clic.
-            ⚠️ Le ✓ doré est la convention documentée de l'édition en cours sur
-            cette page (docs/02-app/siege/), pas le marqueur d'état standard. */}
-        <div className="mt-1 flex items-center gap-2 lg:contents">
-          <span className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-0.5 pl-7 lg:hidden">{verdict}</span>
-          <div className="flex flex-none items-center gap-0.5 lg:col-start-5 lg:row-start-1 lg:justify-end" data-actions-deck>
-            <BoutonIcone
-              onClick={onAnnulerEdition}
-              disabled={!annulable}
-              icone={<Undo2 size={13} />}
-              libelle={cr.annulerModifs}
-              className={editing ? ICONE_LG : `invisible ${ICONE_LG}`}
-              tabIndex={editing ? undefined : -1}
-              aria-hidden={editing ? undefined : true}
-            />
-            <Bouton aria-label={textes.commun.exporterOptimizer} icone={<IconeOptimizer size={14} />} taille="carre" trait="aucun" fond="vide"
-              disabled={!!raisonExportOptimizer} title={raisonExportOptimizer ?? textes.commun.exporterOptimizer}
-              onClick={onExporterOptimizer} className={`h-7 w-7 ${ICONE_LG}`} />
-            <BoutonIcone
-              onClick={onToggleEdit}
-              aria-pressed={editing}
-              icone={editing ? <Check size={14} className="text-star" /> : <Pencil size={13} />}
-              libelle={editing ? cr.terminerDeck : cr.editerDeck}
-              className={ICONE_LG}
-            />
-            {/* Toujours présent : la suppression se défait par la notification. */}
-            <BoutonIcone
-              onClick={supprimerDeck}
-              ton="danger"
-              icone={<Trash2 size={13} />}
-              libelle={cr.supprimerDeck}
-              className={ICONE_LG}
-            />
-          </div>
-        </div>
+        {verdict(false) && <div className="flex min-w-0 max-w-[220px] flex-none">{verdict(false)}</div>}
 
+        {/* ⚠️ **Les actions du deck sur SA LIGNE, replié ou non**, au bout.
+            Deux places RÉSERVÉES devant Optimizer et ✎ : « Annuler les
+            modifications » et « Supprimer ce deck », visibles en édition
+            seulement ; ✎ devient ✓ à la même place — aucun bouton ne bouge
+            sous le clic. Le ✓ doré est la convention de l'édition en cours
+            sur cette page. */}
+        <div className="ml-auto flex flex-none items-center gap-2">
+          {modifie && <TagModifie />}
+          <ActionsDeck
+            editing={editing}
+            annulable={annulable}
+            onAnnuler={onAnnulerEdition}
+            onSupprimer={supprimerDeck}
+            raisonExportOptimizer={raisonExportOptimizer}
+            onExporterOptimizer={onExporterOptimizer}
+            onToggleEdit={onToggleEdit}
+          />
+        </div>
       </div>
 
       {!folded && (
-      // ⚠️ À la souris, le détail d'une ligne dépliée est une CARTE sous elle,
-      // en retrait du chevron. Au doigt, il suit la ligne, sous un filet.
-      <div className="mt-2 border-t border-border-soft pt-2 lg:col-span-full lg:mb-1 lg:ml-8 lg:rounded-xl lg:border lg:border-border-soft lg:bg-panel lg:p-3">
+        <div className="mt-2 rounded-xl border border-border-soft bg-panel p-3 compact:p-2">
+          <DetailDeck
+            reco={reco}
+            deck={deck}
+            deckIndex={deckIndex}
+            monsters={monsters}
+            monsterByCom2us={monsterByCom2us}
+            match={match}
+            editing={editing}
+            hit={hit}
+            recos={recos}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
 
+// « Modifié » sur la ligne d'un deck d'une recommandation de salon qui diffère
+// de la dernière version reçue : pas encore publié (recoModifies.ts). Le
+// dessin de l'état « modifiée » d'une recommandation (`PastilleEtat`) : on
+// lit d'un coup d'œil que c'est la même chose, deck par deck. Pas un bouton :
+// il part en publiant.
+export function TagModifie() {
+  const cr = useTraduction().carteReco;
+  return (
+    <span
+      title={cr.modifieAide}
+      className="inline-flex flex-none items-center gap-1 whitespace-nowrap rounded-full bg-warn-soft px-2 py-0.5 text-micro font-semibold text-warn"
+      data-deck-modifie
+    >
+      <span className="h-1.5 w-1.5 flex-none rounded-full bg-warn" aria-hidden />
+      {cr.modifie}
+    </span>
+  );
+}
+
+// Les actions d'un deck, le même groupe sur sa ligne de la carte et dans le
+// volet Défenses : Annuler et Supprimer (places réservées, visibles en
+// édition), Exporter vers l'Optimizer, ✎/✓.
+export function ActionsDeck({ editing, annulable, onAnnuler, onSupprimer, raisonExportOptimizer, onExporterOptimizer, onToggleEdit, className = '' }: {
+  editing: boolean;
+  annulable: boolean;
+  onAnnuler: () => void;
+  onSupprimer: () => void;
+  raisonExportOptimizer?: string;
+  onExporterOptimizer: () => void;
+  onToggleEdit: () => void;
+  className?: string;
+}) {
+  const textes = useTraduction();
+  const cr = textes.carteReco;
+  const reserve = (visible: boolean) => ({
+    className: visible ? ICONE_LG : `invisible ${ICONE_LG}`,
+    tabIndex: visible ? undefined : -1,
+    'aria-hidden': visible ? undefined : true,
+  });
+  return (
+    <div className={`flex flex-none items-center gap-0.5 ${className}`} data-actions-deck>
+      <BoutonIcone onClick={onAnnuler} disabled={!annulable} icone={<Undo2 size={13} />} libelle={cr.annulerModifs} {...reserve(editing)} />
+      {/* La suppression se défait par la notification. */}
+      <BoutonIcone onClick={onSupprimer} ton="danger" icone={<Trash2 size={13} />} libelle={cr.supprimerDeck} {...reserve(editing)} />
+      <Bouton aria-label={textes.commun.exporterOptimizer} icone={<IconeOptimizer size={14} />} taille="carre" trait="aucun" fond="vide"
+        disabled={!!raisonExportOptimizer} title={raisonExportOptimizer ?? textes.commun.exporterOptimizer}
+        onClick={onExporterOptimizer} className={`h-7 w-7 ${ICONE_LG}`} />
+      <BoutonIcone
+        onClick={onToggleEdit}
+        aria-pressed={editing}
+        icone={editing ? <Check size={14} className="text-star" /> : <Pencil size={13} />}
+        libelle={editing ? cr.terminerDeck : cr.editerDeck}
+        className={ICONE_LG}
+      />
+    </div>
+  );
+}
+
+// Le détail d'un deck ouvert : ses consignes, la fiche de chacun de ses trois
+// monstres (lecture ou édition), puis les défenses qu'il bat. Le même dans la
+// carte (vue Decks) et dans le volet Défenses.
+// ⚠️ Les trois fiches se rangent selon la largeur du CONTENEUR
+// (`@container`), pas de l'écran : le deck ouvert vit dans un volet dont la
+// largeur dépend de l'écran, de la barre latérale et de la colonne des
+// provenances. Trois fiches de 140 px y débordaient.
+export function DetailDeck({ reco, deck, deckIndex, monsters, monsterByCom2us, match, editing, hit, recos }: {
+  reco: Reco;
+  deck: RecoDeck;
+  deckIndex: number;
+  monsters: Monster[];
+  monsterByCom2us: Map<number, Monster>;
+  match: DeckMatch | null;
+  editing: boolean;
+  hit: DeckHit | null;
+  recos: UseRecoState;
+}) {
+  const textes = useTraduction();
+  const cr = textes.carteReco;
+  // Un monstre choisi → le curseur passe au slot vide suivant (voir
+  // `slotVideSuivant`) : on compose les trois d'affilée, sans la souris.
+  const [focus, setFocus] = useState<JetonSlot | null>(null);
+  // Un monstre ne peut pas occuper deux slots du MÊME deck (il peut revenir
+  // dans un autre deck de la recommandation).
+  const usedIds = new Set(
+    deck.slots
+      .map((s) => (s.com2usId != null ? monsterByCom2us.get(s.com2usId) : null))
+      .filter((m): m is Monster => !!m)
+      .map((m) => String(m.id))
+  );
+  // Lead porté par le slot 0 du deck recommandé.
+  const leaderId = deck.slots[0]?.com2usId;
+  const leaderLead = leaderId != null ? monsterByCom2us.get(leaderId)?.leaderSkill ?? null : null;
+  // Lead de VITESSE du deck (slot 0), pour le raccourci « Rapide / Lent » de la
+  // saisie : la VIT de fiche qui tombe sur un tick dépend du lead.
+  const leadVitesse = speedLeadOf(leaderId != null ? monsterByCom2us.get(leaderId) : null);
+  return (
+    <div className="@container">
       {/* Consignes propres à ce deck */}
       {editing ? (
         <div className="mb-2">
@@ -1924,7 +1725,7 @@ export function DeckBlock({
         deck.note && <NoteBlock text={deck.note} label={cr.consignesDeck} compact />
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+      <div className="grid grid-cols-1 gap-2.5 @2xl:grid-cols-3">
         {deck.slots.map((slot, idx) => {
           const monster = slot.com2usId != null ? monsterByCom2us.get(slot.com2usId) ?? null : null;
           const sm = match?.slots[idx] ?? null;
@@ -2098,10 +1899,9 @@ export function DeckBlock({
         monsters={monsters}
         monsterByCom2us={monsterByCom2us}
         recos={recos}
-        hitCounters={hit?.counters ?? []}
+        // Retenu par « Modifiés » : rien n'a été cherché, rien à surligner.
+        hitCounters={hit && !hit.filtre ? hit.counters : []}
       />
-      </div>
-      )}
     </div>
   );
 }
@@ -2393,16 +2193,18 @@ function CounterRow({
       </div>
     );
     // La fiabilité, sous les portraits : la vignette garde sa largeur (cinq
-    // étoiles de 12 px tiennent sous trois portraits de 30).
-    const contenu =
-      counter.fiabilite === undefined ? (
-        portraits
-      ) : (
-        <div className="flex flex-col items-start gap-0.5">
-          {portraits}
-          <EtoilesFiabilite note={counter.fiabilite} />
-        </div>
-      );
+    // étoiles de 12 px tiennent sous trois portraits de 30). ⚠️ HORS de la zone
+    // qui ouvre la précision : elle se note sur place (un bouton dans un
+    // bouton serait invalide).
+    const contenu = portraits;
+    const fiabilite = (
+      <div className="px-2 pb-1">
+        <FiabiliteRapide
+          note={counter.fiabilite}
+          onChange={(n) => recos.setCounterFiabilite(reco.id, deckIndex, counterIndex, n)}
+        />
+      </div>
+    );
 
     // La vignette dont la précision est ouverte prend la bordure d'accent, comme
     // le monstre sélectionné d'une équipe de siège dont on consulte les runes
@@ -2451,14 +2253,15 @@ function CounterRow({
           <ZoneCliquable
             onClick={onToggleNote}
             aria-expanded={noteOuverte}
-            className="flex w-full items-center rounded-lg px-2 py-1.5 transition hoverable:brightness-110"
+            className="flex w-full items-center rounded-lg px-2 pb-0.5 pt-1.5 transition hoverable:brightness-110"
             title={noteOuverte ? cr.masquerPrecision : cr.voirPrecision}
           >
             {contenu}
           </ZoneCliquable>
         ) : (
-          <div className="px-2 py-1.5">{contenu}</div>
+          <div className="px-2 pb-0.5 pt-1.5">{contenu}</div>
         )}
+        {fiabilite}
 
         {/* La précision, en POPOVER ancré sous SA vignette.
             ⚠️ Flottant et non posé dans le flux : il naît de son ancre, donc il
@@ -2594,189 +2397,17 @@ function CounterRow({
   );
 }
 
-/* ---- Vue Défense ------------------------------------------ */
-
-// Rang d'un statut de deck, du plus favorable au moins favorable : le point
-// d'une défense prend le MEILLEUR de ses offenses — une seule jouable suffit
-// à la taper.
-const RANG_STATUT: Record<string, number> = { ok: 0, partial: 1, nodeck: 2, ko: 3, missing: 4, unknown: 5 };
-
-function meilleurStatut(offenses: { deckIndex: number }[], match: RecoMatch | null): string {
-  let meilleur = 'unknown';
-  for (const o of offenses) {
-    const st = match?.decks[o.deckIndex]?.status ?? 'unknown';
-    if ((RANG_STATUT[st] ?? 5) < (RANG_STATUT[meilleur] ?? 5)) meilleur = st;
-  }
-  return meilleur;
-}
-
 // « Galleon - Belladeon », même forme que le nom d'un deck (`deckLabel`).
-function defenseLabel(monsters: RecoCounter['monsters'], byCom2us: Map<number, Monster>): string {
+export function defenseLabel(monsters: RecoCounter['monsters'], byCom2us: Map<number, Monster>): string {
   return monsters
     .map((m) => (m.com2usId != null ? byCom2us.get(m.com2usId)?.name ?? m.name : m.name).trim())
     .filter(Boolean)
     .join(' - ');
 }
 
-// ⚠️ **Lecture seule** : on consulte « contre cette défense,
-// j'ai ces offenses » ; on modifie en vue Attaque. Même cadre et même rangée
-// d'intitulés que le tableau des decks, pour qu'une vue se lise comme l'autre.
-// Au doigt, chaque défense s'empile au-dessus de ses offenses.
-function TableauDefenses({
-  raisonsExportOptimizer,
-  onExporterDeckOptimizer,
-  reco,
-  vue,
-  match,
-  monsterByCom2us,
-}: {
-  raisonsExportOptimizer: (string | undefined)[];
-  onExporterDeckOptimizer: (deck: RecoDeck) => void;
-  reco: Reco;
-  vue: VueDefenses;
-  match: RecoMatch | null;
-  monsterByCom2us: Map<number, Monster>;
-}) {
-  const textes = useTraduction();
-  const cr = textes.carteReco;
-  const monstre = (id: number | null) => (id != null ? monsterByCom2us.get(id) ?? null : null);
-
-  // Une offense : ses trois portraits (le leader porte son lead), le point de
-  // son verdict si la recommandation est analysée, et la précision que CE deck
-  // donne sur la défense (« si Galleon est en lead »).
-  // Sa fiabilité contre CETTE défense, en étoiles : les offenses arrivent déjà
-  // triées, la plus fiable d'abord (`vueDefenses`).
-  const offense = (deckIndex: number, note: string, fiabilite?: number) => {
-    const deck = reco.decks[deckIndex];
-    const st = match?.decks[deckIndex]?.status ?? 'unknown';
-    const leader = monstre(deck.slots[0]?.com2usId ?? null);
-    // ⚠️ `compact:gap-y-2` : au doigt, la boîte du bouton d'export fait 40 px
-    // (règle tactile) ; renvoyé à la ligne, il commençait 4 px sous les
-    // portraits quand le badge de lead du leader en descend de 6 — 2 px du
-    // bouton ne répondaient plus au toucher. 8 px d'écart suffisent ; le badge
-    // ne change pas. À la souris, le bouton reste sur la ligne : rien ne change.
-    return (
-      <li key={deckIndex} className="flex flex-wrap items-center gap-x-2 gap-y-1 compact:gap-y-2" data-offense-contre>
-        <span className={`h-2 w-2 flex-none rounded-full ${DOT[st]}`} aria-hidden />
-        {/* `pr-1 -mr-1` : la place de l'icône d'élément du dernier portrait,
-            qui dépasse de 4 px à droite, entre dans la rangée ; la marge
-            négative la rend à l'espacement de la ligne : rien ne bouge. */}
-        <span className="flex flex-none items-center gap-1 pr-1 -mr-1" title={deckLabel(deck, monsterByCom2us, deckIndex)}>
-          {deck.slots.map((sl, i) => (
-            <MiniMonster
-              key={i}
-              monster={monstre(sl.com2usId)}
-              fallback={sl.name}
-              size={28}
-              lead={i === 0 ? leader?.leaderSkill ?? null : null}
-            />
-          ))}
-        </span>
-        <span className="text-xs text-ink">{deckLabel(deck, monsterByCom2us, deckIndex)}</span>
-        {fiabilite !== undefined && <EtoilesFiabilite note={fiabilite} />}
-        <Bouton aria-label={textes.commun.exporterOptimizer} icone={<IconeOptimizer size={14} />} taille="carre" trait="aucun" fond="vide"
-          disabled={!!raisonsExportOptimizer[deckIndex]} title={raisonsExportOptimizer[deckIndex] ?? textes.commun.exporterOptimizer}
-          onClick={() => onExporterDeckOptimizer(deck)} className={`h-7 w-7 ${ICONE_LG}`} />
-        {note && <span className="text-micro text-ink-dim">— {note}</span>}
-      </li>
-    );
-  };
-
-  // ⚠️ Une page à la fois (voir pagesRecos.ts), sur UNE liste : les défenses,
-  // puis chaque deck sans défense. Paginer les défenses seules laissait le bloc
-  // « Aucune défense visée » entier — sept cents offenses pour un lot dont
-  // personne n'a renseigné les défenses. Une autre vue (recherche) repart de la
-  // première page.
-  const elements = useMemo(
-    () => [
-      ...vue.defenses.map((d) => ({ defense: d, sans: null })),
-      ...vue.sansDefense.map((di) => ({ defense: null, sans: di })),
-    ],
-    [vue]
-  );
-  const [page, setPage] = useState(0);
-  useEffect(() => setPage(0), [vue]);
-  const pageAffichee = pageBornee(page, elements.length, DEFENSES_PAR_PAGE);
-  const deLaPage = tranche(elements, page, DEFENSES_PAR_PAGE);
-  const defensesDeLaPage = deLaPage.flatMap((e) => (e.defense ? [e.defense] : []));
-  const sansDeLaPage = deLaPage.flatMap((e) => (e.sans != null ? [e.sans] : []));
-
-  if (vue.defenses.length === 0 && vue.sansDefense.length === 0) {
-    return <p className="py-3 text-center text-xs text-ink-dim">{cr.aucunDeckDansReco}</p>;
-  }
-
-  return (
-    <>
-    <BarrePages
-      page={pageAffichee}
-      n={elements.length}
-      parPage={DEFENSES_PAR_PAGE}
-      onChange={setPage}
-      className="mb-1.5"
-    />
-    <div
-      className="grid grid-cols-1 gap-2.5 animate-[apparition_180ms_var(--ease-out)]
-                 lg:gap-0 lg:overflow-hidden lg:rounded-xl lg:border lg:border-border-soft"
-    >
-      <div
-        className="hidden bg-panel2 px-3 py-1.5 lg:grid lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:gap-3"
-        aria-hidden
-        data-intitules-defenses
-      >
-        <span className="label">{cr.defense}</span>
-        <span className="label">{cr.offensesFortes}</span>
-      </div>
-      {defensesDeLaPage.map((d) => {
-        const leader = monstre(d.monsters[0]?.com2usId ?? null);
-        return (
-          <div
-            key={d.cle}
-            className="rounded-xl border border-border-soft bg-panel2 p-2.5 compact:p-1.5
-                       lg:grid lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:items-center lg:gap-3
-                       lg:rounded-none lg:border-0 lg:border-t lg:bg-transparent lg:px-3 lg:py-2"
-            data-defense-visee
-          >
-            <div className="mb-2 flex min-w-0 items-center gap-2 lg:mb-0">
-              {/* `pr-1 -mr-1` : même place que pour les portraits d'une offense. */}
-              <span className="flex flex-none items-center gap-1 pr-1 -mr-1">
-                {d.monsters.map((m, i) => (
-                  <MiniMonster
-                    key={i}
-                    monster={monstre(m.com2usId)}
-                    fallback={m.name}
-                    size={34}
-                    lead={i === 0 ? leader?.leaderSkill ?? null : null}
-                  />
-                ))}
-              </span>
-              <span className="min-w-0 truncate text-sm font-semibold text-ink">
-                {defenseLabel(d.monsters, monsterByCom2us)}
-              </span>
-            </div>
-            <ul className="flex flex-col gap-1.5">{d.offenses.map((o) => offense(o.deckIndex, o.note, o.fiabilite))}</ul>
-          </div>
-        );
-      })}
-      {/* Les decks sans défense visée : pas de ligne à eux, mais ils ne
-          disparaissent pas en changeant de vue. */}
-      {sansDeLaPage.length > 0 && (
-        <div
-          className="rounded-xl border border-dashed border-border-soft p-2.5 compact:p-1.5
-                     lg:grid lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:items-center lg:gap-3
-                     lg:rounded-none lg:border-0 lg:border-t lg:border-solid lg:px-3 lg:py-2"
-        >
-          <p className="mb-2 text-xs text-ink-dim lg:mb-0">{textes.recos.videSelon.defense}</p>
-          <ul className="flex flex-col gap-1.5">{sansDeLaPage.map((di) => offense(di, ''))}</ul>
-        </div>
-      )}
-    </div>
-    </>
-  );
-}
-
 // Petit portrait hexagonal, sans nom — pour les aperçus compacts, badge de
 // lead réduit avec le portrait.
-function MiniMonster({
+export function MiniMonster({
   monster,
   fallback,
   size,

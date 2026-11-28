@@ -62,7 +62,7 @@ function Recos({ menuOuvert }: { menuOuvert: boolean }) {
   const recos = useSiegeRecos();
   const offense = useSiegeState('offense');
   return (
-    <RecoBoard recos={recos} monsters={MONSTRES} builds={[]} teams={[]} copies6={new Map()} offense={offense} menuOuvert={menuOuvert} onFermerMenu={() => {}}
+    <RecoBoard recos={recos} monsters={MONSTRES} builds={[]} teams={[]} copies6={new Map()} offense={offense} equipesEnregistrees={[]} menuOuvert={menuOuvert} onFermerMenu={() => {}}
       onImporterEquipe={() => { throw new Error('Action non attendue dans le rendu serveur.'); }} compteCharge={false}
       sourcesOptimizer={{ box: [], rtaEntries: {}, siegeDefenseTeams: [], siegeOffenseTeams: [], monsterById: new Map(MONSTRES.map(m => [String(m.id), m])) }} />
   );
@@ -112,20 +112,21 @@ export function testRenduTelephoneRecos() {
   const ferme = rendreRecos(false);
   const t = texteVisible(ferme);
   egal(dialogues(ferme), 0, 'panneau « Options » fermé : aucun dialogue');
-  ok(t.includes('Contres des défenses feu Consulter Analyser mes decks Publier dans… 2 decks · par Joueur Lushen - Veromos - Chasun Galleon - Belladeon - Chasun'),
-    'une recommandation : nom, analyse, « Publier dans… », puis decks et auteur sous le nom, compositions');
-  ok(t.includes('Defs de guilde Consulter Analyser mes decks Publier dans… 1 deck · par Ami Importée'),
-    'une recommandation importée : le nom, les decks et l\'auteur, puis l\'étiquette « Importée »');
+  // À l'arrivée, la vue Défenses : la liste des défenses, puis le volet de la
+  // première, ses offenses par recommandation.
+  ok(/data-vue-telephone/.test(ferme) && boutons(ferme).some((x) => x.texte === 'Défenses' && x.presse === true), 'les deux vues, sur la page ; Défenses à l\'arrivée');
+  ok(t.includes('1 défense visée · 1 offense'), 'la liste des défenses visées');
+  ok(t.includes('Galleon - Belladeon 1 offense · 1 recommandation'), 'le volet de la défense');
+  ok(t.includes('Contres des défenses feu par Joueur · 1 deck ici · 2 au total') && t.includes('Contre cette défense : si Galleon est en lead'),
+    'la recommandation, puis son offense contre cette défense');
+  ok(boutons(ferme).some((x) => x.texte === 'Ajouter un counter'), '« Ajouter un counter », au doigt aussi');
 
   const ouvert = rendreRecos(true);
   const to = texteVisible(ouvert);
   const b = boutons(ouvert);
   egal(dialogues(ouvert), 1, 'panneau « Options » ouvert');
   ok(valeurs(ouvert, 'aria-label').includes('Actions — recommandations'), 'le panneau est nommé');
-  ok(to.includes('Actions — recommandations Créer Créer une recommandation Importer Exporter Tout exporter Analyser une recommandation Importe ton compte pour analyser Contres des défenses feu Defs de guilde Analyser Vue Attaque Défense'), 'ses actions, l\'analyse d\'une recommandation, la vue');
-  ok(b.some((x) => x.texte === 'Analyser' && x.desactive), '« Analyser » désactivé sans compte');
-  ok(b.some((x) => x.texte === 'Attaque' && x.presse === true) && b.some((x) => x.texte === 'Défense' && x.presse === false), 'vue Attaque / Défense');
-  for (const a of ['Consulter', 'Exporter cette recommandation (tous ses decks)', 'Éditer la recommandation', 'Supprimer cette recommandation'])
-    egal(b.filter((x) => x.ariaLabel === a).length, 2, `« ${a} » sur chaque recommandation`);
-  egal(b.filter((x) => x.texte === 'Analyser mes decks' && x.desactive && x.title === 'Importe ton compte pour analyser').length, 2, '« Analyser mes decks » désactivé sans compte, et pourquoi');
+  ok(to.includes('Actions — recommandations Créer Créer une recommandation Importer Exporter Tout exporter Confronter à mon compte Importe ton compte pour analyser Tout effacer'),
+    'ses actions, dans l\'ordre, et « Confronter à mon compte »');
+  ok(b.some((x) => x.texte === 'Confronter à mon compte' && x.desactive && x.title === 'Importe ton compte pour analyser'), '« Confronter à mon compte » désactivé sans compte, et pourquoi');
 }

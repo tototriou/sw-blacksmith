@@ -34,12 +34,18 @@ export interface OffenseContre {
 
 // ── Fiabilité d'un deck contre une défense ────────────────────────────────
 //
-// Une note en étoiles, de 0 à 5 par demi-étoile, que l'auteur donne à CE deck
-// contre CETTE défense (`RecoCounter.fiabilite`) : quand plusieurs offenses
-// battent la même défense, on joue la plus fiable d'abord. Absente = non
-// notée — distincte de 0 : « pas encore jugé » n'est pas « ne passe pas ».
+// Une note en étoiles, de 0 à 5, que l'auteur donne à CE deck contre CETTE
+// défense (`RecoCounter.fiabilite`) : quand plusieurs offenses battent la même
+// défense, on joue la plus fiable d'abord. Absente = non notée — distincte de
+// 0 : « pas encore jugé » n'est pas « ne passe pas ».
+// ⚠️ **Saisie par étoile ENTIÈRE** (0, 1, 2, 3, 4, 5 : `FIABILITE_PAS_SAISIE`),
+// **lecture par demi-étoile** (`FIABILITE_PAS`) : des notes en demi-étoiles
+// existent dans les stockages, les salons et les fichiers d'avant ; les
+// refuser les effacerait. Elles s'affichent telles quelles et passent à
+// l'entier voisin au premier « + » ou « − ».
 export const FIABILITE_MAX = 5;
 export const FIABILITE_PAS = 0.5;
+export const FIABILITE_PAS_SAISIE = 1;
 
 // Une fiabilité lue d'un stockage ou d'un fichier : un multiple de 0,5 de 0 à
 // 5, ou `undefined` (non notée). Tout le reste — 2.3, « 4 », 9, -1 — est
@@ -198,4 +204,93 @@ export function vueDefenses(
   const defenses = [...parCle.values()];
   for (const d of defenses) d.offenses.sort(parFiabilite);
   return { defenses, sansDefense };
+}
+
+// ── Les défenses de TOUTES les recommandations affichées ─────────────────
+//
+// La vue Défenses de la page : chaque défense visée UNE fois, toutes
+// recommandations confondues, et les offenses qui la battent, d'où qu'elles
+// viennent. Même identité d'équipe que `vueDefenses` (`cleEquipe`).
+
+// Une offense qui bat la défense : sa recommandation, son deck, et la défense
+// telle que CE deck la porte (précision, fiabilité).
+export interface OffenseDesRecos extends OffenseContre {
+  recoId: string;
+}
+
+export interface DefenseDesRecos {
+  cle: string;
+  monsters: RecoCounter['monsters'];
+  // Dans l'ordre des recommandations, puis de leurs decks.
+  offenses: OffenseDesRecos[];
+  // Combien de recommandations la visent.
+  recos: number;
+  // La meilleure fiabilité de ses offenses, `undefined` si aucune n'est notée.
+  meilleure?: number;
+}
+
+export interface DefensesDesRecos {
+  defenses: DefenseDesRecos[];
+  // Les decks qui ne visent aucune défense : ils restent atteignables dans la
+  // vue Défenses (rien n'est caché en changeant de vue).
+  sansDefense: { recoId: string; deckIndex: number }[];
+}
+
+// `garder` : filtre d'une recherche en cours, comme pour `vueDefenses`
+// (`counterIndex` vaut `null` pour un deck sans défense visée).
+//
+// ⚠️ **Les plus jouées d'abord** : la défense que le plus d'offenses battent
+// est celle qu'on rencontre le plus ; à égalité, l'ordre de première
+// apparition (recommandation, deck, défense) — le tri est stable.
+export function defensesDesRecos(
+  recos: readonly Reco[],
+  connus: MonstresConnus,
+  garder?: (reco: Reco, deckIndex: number, counterIndex: number | null) => boolean,
+): DefensesDesRecos {
+  const parCle = new Map<string, DefenseDesRecos & { idsRecos: Set<string> }>();
+  const sansDefense: DefensesDesRecos['sansDefense'] = [];
+  for (const reco of recos) {
+    const vue = vueDefenses(reco, connus, garder ? (di, ci) => garder(reco, di, ci) : undefined);
+    for (const d of vue.defenses) {
+      let defense = parCle.get(d.cle);
+      if (!defense) {
+        defense = { cle: d.cle, monsters: d.monsters, offenses: [], recos: 0, idsRecos: new Set() };
+        parCle.set(d.cle, defense);
+      }
+      // `vueDefenses` range ses offenses par fiabilité ; ici, l'ordre des decks
+      // de la recommandation, celui de son auteur.
+      const offenses = [...d.offenses].sort((a, b) => a.deckIndex - b.deckIndex);
+      defense.offenses.push(...offenses.map((o) => ({ ...o, recoId: reco.id })));
+      defense.idsRecos.add(reco.id);
+    }
+    for (const deckIndex of vue.sansDefense) sansDefense.push({ recoId: reco.id, deckIndex });
+  }
+  const defenses = [...parCle.values()].map(({ idsRecos, ...d }) => {
+    let meilleure: number | undefined;
+    for (const o of d.offenses) if (o.fiabilite !== undefined && (meilleure === undefined || o.fiabilite > meilleure)) meilleure = o.fiabilite;
+    return { ...d, recos: idsRecos.size, ...(meilleure !== undefined ? { meilleure } : {}) };
+  });
+  defenses.sort((a, b) => b.offenses.length - a.offenses.length);
+  return { defenses, sansDefense };
+}
+
+// L'ordre des offenses d'une défense dans son volet.
+//  - `ordre` : par recommandation (dans l'ordre de la page), puis l'ordre de
+//    leurs decks — l'ordre de `defensesDesRecos` ;
+//  - `fiabilite` : la plus fiable d'abord, non notées à la fin, à égalité
+//    l'ordre par recommandation.
+// ⚠️ `fige` : un ordre pris plus tôt (clés `recoId:deckIndex`) et TENU — noter
+// un deck pendant qu'on l'édite le déplaçait sous le clic. Ce qu'il ne connaît
+// pas (un deck qui se met à viser la défense) vient après, dans l'ordre demandé.
+export const cleOffense = (o: { recoId: string; deckIndex: number }) => `${o.recoId}:${o.deckIndex}`;
+export function ordonnerOffenses<T extends OffenseDesRecos>(
+  offenses: readonly T[],
+  tri: 'ordre' | 'fiabilite',
+  fige?: readonly string[],
+): T[] {
+  const demandees = tri === 'fiabilite' ? [...offenses].sort(parFiabilite) : [...offenses];
+  if (!fige) return demandees;
+  const rang = new Map(fige.map((c, i) => [c, i]));
+  const r = (o: T) => rang.get(cleOffense(o)) ?? fige.length;
+  return demandees.map((o, i) => ({ o, i })).sort((a, b) => r(a.o) - r(b.o) || a.i - b.i).map((x) => x.o);
 }

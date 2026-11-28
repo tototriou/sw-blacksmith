@@ -2,146 +2,48 @@
 
 Partie de [Siège · Recommandations](README.md).
 
-## Confrontation avec mon compte — bouton « Analyser mes decks »
+## Confronter à mon compte — un interrupteur pour toute la page
 
-Calcul pur dans [recoMatch.ts](src/lib/recoMatch.ts) → stats réelles via
-`computeStats` ([stats.ts](src/lib/stats.ts)).
+Calcul pur dans [recoMatch.ts](../../../../src/lib/recoMatch.ts) → stats
+réelles via `computeStats` ([stats.ts](../../../../src/lib/stats.ts)).
 
-### À la demande, pas en continu
+### Un interrupteur, pas un bouton par recommandation
 
-⚠️ **Rien n'est confronté par défaut.** Une carte non analysée est neutre : pas
-d'aura, pas de pastille, pas de badge sur les monstres. L'analyse se lance **par
-recommandation**, via le bouton **« Analyser mes decks »** de son en-tête — le
-libellé dit bien que la confrontation porte sur **l'ensemble des decks**, pas
-sur un seul.
+⚠️ **« Confronter à mon compte »** : un interrupteur, à la souris au bout de la
+barre d'outils, au doigt dans le panneau « Options ». Allumé, **chaque deck de
+la page** porte son verdict, dans les deux vues ; éteint, tout est neutre (pas
+de pastille, pas de badge sur les monstres). Mémorisé (`useStickyState`, clé
+`recos.confronter`).
 
-⚠️ **Bouton à DEUX ÉTATS** : un clic analyse, un second **masque** le
-résultat — le même geste que la croix « Masquer le résultat de l'analyse » de
-l'encart. Il est enclenché (`aria-pressed`, fond d'accent) tant qu'une analyse
-est affichée, avec « Masquer le résultat de l'analyse » en infobulle. Masquer
-reste possible sans compte chargé (rien à calculer). Il n'y a pas de
-« Réanalyser » : relancer se fait en deux clics, et relancer sans rien avoir
-changé redonnerait le même résultat, puisqu'un résultat périmé est de toute
-façon effacé (voir plus bas).
+- **Désactivé sans compte importé** (rien à quoi comparer), avec sa raison.
+- ⚠️ **Calculé à la lecture, gardé par identité** : le résultat de chaque
+  recommandation est mémorisé par l'objet lui-même (`WeakMap`) — une édition
+  recrée l'objet, un autre compte recrée le contexte. Rien n'est recalculé tant
+  que rien ne change, aucun résultat n'est jamais « périmé », et seules les
+  recommandations affichées sont confrontées.
 
-⚠️ **À la SOURIS seulement** (`compact:hidden`), étiqueté, à côté du titre — la
-place ne manque pas. Au doigt, il n'est pas sur la carte : choisir SA carte
-demanderait d'abord d'y faire défiler — un geste que le panneau « Options »
-fait sans quitter le haut de l'écran (voir plus bas). Une icône de plus dans
-un coin déjà chargé, pour un geste qui a un meilleur endroit, ne se justifie
-pas.
+### Ce que la confrontation affiche
 
-⚠️ **Et seulement à partir de `lg`** (`max-lg:hidden` en plus de
-`compact:hidden`) : sous ce seuil la page prend sa disposition téléphone,
-panneau « Options » compris — même à la souris, dans une fenêtre étroite. Sans
-cette seconde condition, le bouton apparaîtrait aux DEUX endroits, sur la
-carte et dans le panneau. Un geste, un endroit : la carte à partir de `lg`, le
-panneau en dessous.
-
-- Le bouton est **désactivé sans compte importé** (rien à quoi comparer).
-- Le résultat est **mémorisé dans le board** avec la reco et les builds qui ont
-  servi ; il devient **périmé** dès que l'un des deux change (comparaison par
-  **identité d'objet** : toute édition recrée les objets). La carte repasse alors
-  à l'état non analysé et le bouton réaffiche « Analyser ».
-- Motivation : confronter *toutes* les recos à *tous* les builds à chaque rendu
-  serait un coût permanent pour une information qu'on ne consulte que ponctuellement.
-
-### Analyser depuis le panneau « Options » — LE chemin au doigt
-
-⚠️ Au doigt, analyser n'est plus un bouton sur la carte : c'est le panneau
-« Options » qui porte le geste, avec un menu déroulant qui choisit **laquelle**
-analyser (aucune carte n'est sous les yeux pour le dire), puis « Analyser » qui
-fait le reste.
-
-- Le menu liste les recommandations **affichées** (`list` — recherche déjà
-  appliquée), avec le même nom de repli
-  (« Recommandation N ») que sur les cartes.
-- **Désactivé sans compte importé**, même condition que le bouton de la souris.
-- Au clic sur « Analyser » : l'analyse se lance, la carte visée **s'ouvre**
-  (elle serait sinon repliée et le résultat invisible au premier défilement),
-  le panneau se referme, et un message éphémère confirme sur quelle
-  recommandation.
-
-### Ce que l'analyse affiche
-
-Un **encart de synthèse** sous l'en-tête, visible **même recommandation repliée** :
-
-- bandeau vert « Tout est respecté : les N deck(s) sont jouables » si tout passe,
-  orange « N/M deck(s) au niveau · K à corriger » sinon ;
-- puis **la liste de TOUS les decks analysés**, chacun avec son verdict, sa
-  réserve (« réalisable N fois ») et, s'il y a lieu, le détail par monstre :
-  - `Def 1` · **jouable · Offense 3** (vert)
-  - `Trevor - Bella - Tarq` · **aucun deck avec ces monstres — tu peux le composer**
-    (pas de détail : sans équipe, il n'y a aucun build à confronter)
-  - `Def 2` · **monstre indisponible — deck impossible** → `Tarq — monstre indisponible`
-  - `Def 3` · **runage, artéfacts et stats à revoir** →
-    `Bella — set Violent manquant · artéfact d'attribut : Dégâts sur l'Eau +X% absent · VIT 117 au lieu de 212`
-- aucun deck rempli → « Rien à analyser ».
-
-⚠️ **Une page de 50 lignes à la fois** (`LIGNES_ANALYSE_PAR_PAGE`,
-[pagesRecos.ts](../../../../src/lib/pagesRecos.ts)) : un lot de centaines de
-decks donnait autant de lignes. La barre de pages (« 1–50 sur 700 » et le
-`Pager`) se pose **au-dessus de la liste**, sous les filtres de verdict ;
-changer de filtre repart de la première page. Sous 51 lignes, rien ne change.
-Voir [interactions.md](interactions.md#une-page-de-decks-à-la-fois).
-
-#### Ordre de la liste — ⚠️ ROUGE → ORANGE → VERT
-
-Du plus urgent au plus tranquille : **monstre manquant**, **à revoir**, **à
-composer**, puis les **bons**. Ce qui demande du travail se lit en premier ; les
-decks déjà jouables closent la liste au lieu de la précéder — sinon il faut les
-dépasser pour atteindre ce sur quoi on peut agir.
-
-- Des deux rouges, **`missing` passe devant `ko`** : rien de ce qu'on possède ne
-  répare un monstre absent, alors qu'un « à revoir » se corrige le soir même
-  avec les runes qu'on a déjà.
-
-- ⚠️ **Tri STABLE sur le seul verdict** : à verdict égal, les decks gardent
-  l'ordre de la recommandation, qui est celui de son auteur. Trier aussi à
-  l'intérieur d'une famille les mélangerait sans que rien à l'écran ne dise
-  pourquoi.
-- ⚠️ **L'ordre des PASTILLES est l'inverse** (Bon · À composer · À revoir), et
-  c'est voulu : une légende ordonne des catégories du meilleur au pire, une
-  liste hiérarchise l'urgence. Deux objets, deux logiques.
-
-#### ⚠️ Chaque ligne mène à SON deck
-
-La ligne entière est un **bouton** : le résumé dit ce qui cloche, et le geste
-suivant est toujours d'aller voir le deck. Sans ce lien, il faudrait déplier la
-carte, retrouver le deck à l'œil parmi six, puis l'ouvrir — alors que la ligne le
-désigne déjà.
-
-Un clic **déplie la carte si elle est repliée** (le résumé reste visible carte
-fermée — c'est tout son intérêt —, donc on clique souvent depuis une carte où le
-deck n'est même pas rendu), **déplie le deck visé**, puis y **fait défiler**
-(`scrollIntoView`, `block: 'center'`).
-
-- ⚠️ Le défilement attend **une frame** (`requestAnimationFrame`) : la carte et
-  le deck viennent peut-être d'être dépliés dans la même passe, et leur hauteur
-  n'est pas encore posée — viser tout de suite calerait sur une position périmée.
-- ⚠️ Pendant une **recherche**, seuls les decks trouvés sont rendus : un deck
-  masqué n'a **aucune ref**. On ne fait alors rien plutôt que de sauter au
-  hasard — le deck est bien déplié et réapparaîtra à sa place dès la recherche
-  effacée.
-- ⚠️ Le **détail par monstre reste HORS du bouton** : c'est du texte qu'on lit et
-  qu'on veut pouvoir sélectionner, pas une cible de clic.
-
-#### ⚠️ Les decks au niveau sont LISTÉS, pas seulement comptés
-
-Les bons decks sont listés aussi, pas résumés en « 4/6 au niveau » :
-« **lesquels** puis-je poser » est exactement la question qu'on se pose devant
-une défense de guilde à remplir, et il faudrait sinon rouvrir la carte et
-parcourir les decks pour y répondre.
-
-- Un deck bon annonce **l'équipe qui le rend jouable** (« jouable · Offense 3 »),
-  pas un simple « ok » : c'est elle qu'on va chercher en jeu.
-- Le **détail par monstre reste réservé aux decks `ko`** : sur un deck au niveau
-  il n'y a rien à corriger, et `nodeck` n'a aucun build à confronter.
+- **Sur la ligne de chaque deck** : la pastille du verdict, avec les libellés
+  des filtres, et dessous sa **cause** (la phrase entière en infobulle) et
+  « réalisable N fois » :
+  - **Bon** · « jouable · Offense 3 » ;
+  - **À composer** · « aucun deck avec ces monstres — tu peux le composer » ;
+  - **Monstre manquant** · « Tarq — monstre indisponible » ;
+  - **À revoir** · « Bella — set Violent manquant · VIT 117 au lieu de 212 ».
+- **Dans le volet d'une recommandation, le bilan** : une rangée sous les
+  consignes, « N/M deck(s) au niveau · K à corriger », puis les **pastilles de
+  verdict, qui filtrent les decks juste en dessous** (plus bas). Aucun deck
+  rempli : « Rien à analyser ».
+- **Dans la liste de la vue Decks** : un bilan en miniature par
+  recommandation, un point et un compte par verdict (`BilanMini`).
+- **Dans le deck ouvert** : le build retenu sous chaque monstre, et la
+  comparaison stat par stat (plus bas).
 
 #### Filtres de verdict — Bon · À composer · À revoir · Monstre manquant
 
-**Quatre pastilles** sous le bandeau, une par statut réel, avec l'effectif de
-chacune :
+**Quatre pastilles** dans la rangée du bilan, une par statut réel, avec
+l'effectif de chacune :
 
 | Pastille | Couleur | Statut | Point |
 |----------|---------|--------|-------|
@@ -161,28 +63,29 @@ chacune :
   n'introduit pas une cinquième couleur qui mentirait sur la gravité.
 - ⚠️ **Le point de « Monstre manquant » est CREUX.** Deux pastilles de la même
   couleur côte à côte ne se distinguent plus que par leur texte, qu'on ne relit
-  pas une fois la barre connue. Le creux dit « il manque quelque chose ». Il est
-  porté aussi par la **ligne** correspondante de la liste, qui reprend donc le
-  point du **verdict** et non `DOT[status]` — `DOT` reste la table de l'aperçu
-  replié, où le vocabulaire à trois couleurs suffit.
-- Le **détail par monstre** est affiché sur **les deux verdicts rouges** : « à
-  revoir » dit quoi corriger, « monstre manquant » dit **lequel** manque — sans
-  quoi on saurait le deck bloqué sans savoir par qui.
+  pas une fois la barre connue. Le creux dit « il manque quelque chose » ; la
+  pastille du verdict de chaque ligne de deck le reprend.
+- La **cause** est écrite sur **les deux verdicts rouges** : « à revoir » dit
+  quoi corriger, « monstre manquant » dit **lequel** manque — sans quoi on
+  saurait le deck bloqué sans savoir par qui.
+- ⚠️ **Les pastilles filtrent les decks juste en dessous** : rien enclenché,
+  tout est montré ; enclencher **restreint**. Une seconde liste qui redirait
+  les verdicts au-dessus des decks qui les portent déjà ferait lire la même
+  chose deux fois.
 - ⚠️ **Cumulables** : on peut isoler vert **et** rouge à la fois. D'où des
   **pastilles indépendantes** et non un `Segmented`, dont le cadre commun dirait
   que les choix s'excluent.
-- ⚠️ **Rien de coché = tout est montré.** Un écran de filtres tous éteints
-  n'affichant rien se lirait comme une analyse vide. Cocher **restreint** ; un
-  lien « Tout afficher » rétablit dès qu'un filtre est posé.
+- **« Tout afficher »** rétablit, seulement quand un filtre est posé : réservé
+  sans filtre, il laissait une bande vide dans le bilan.
 - Un verdict **sans aucun deck** est **grisé, jamais retiré** : on voit qu'il n'y
   en a aucun au lieu de chercher un bouton disparu. Même règle que les pastilles
   d'attribut de l'inventaire d'artéfacts.
 - Le marqueur d'actif est la **bordure** (règle des pastilles de filtre, voir
   [../../03-developpeur/interface/](../../../03-developpeur/interface/)).
-- État **local à l'encart** : il vit et meurt avec le résultat d'analyse.
-
-Une fois analysée, la carte reprend tout le langage visuel décrit plus bas (aura,
-pastille, badges de deck et de monstre, comparaison stat par stat).
+- Les decks filtrés se paginent comme les autres
+  ([interactions.md](interactions.md#une-page-de-decks-à-la-fois)) ; un deck en
+  édition reste affiché même si le filtre ne le retient pas.
+- État **local au volet** de la recommandation.
 
 #### Combien de fois le deck est montable — « réalisable N fois »
 
@@ -191,11 +94,11 @@ avec la réserve du joueur (`deckCopies` dans
 [recoMatch.ts](src/lib/recoMatch.ts)). C'est ce qui dit si on peut poser le même
 deck sur plusieurs défenses de guilde.
 
-**Affiché à deux endroits** : dans l'en-tête du deck, et sur **chaque ligne du
-résumé d'analyse** — c'est là qu'on arbitre entre six défenses de guilde à
-remplir, et un deck jouable une seule fois n'en couvre qu'une. Sur **tous les
-verdicts**, pas seulement les bons : savoir qu'un deck à revoir n'existe de toute
-façon qu'en un exemplaire change ce qu'on décide d'aller corriger.
+**Sur la ligne de chaque deck**, à côté de sa cause — c'est là qu'on arbitre
+entre six défenses de guilde à remplir, et un deck jouable une seule fois n'en
+couvre qu'une. Sur **tous les verdicts**, pas seulement les bons : savoir qu'un
+deck à revoir n'existe de toute façon qu'en un exemplaire change ce qu'on
+décide d'aller corriger.
 
 - ⚠️ **Les 6★ UNIQUEMENT**, et depuis la **box seule**
   (`countCopiesByCom2us` dans [ownedBuilds.ts](src/lib/ownedBuilds.ts)) :
@@ -219,17 +122,12 @@ façon qu'en un exemplaire change ce qu'on décide d'aller corriger.
   le deck mais une information de **stock**. Les fondre ferait lire
   « jouable ×2 » comme un degré de conformité.
 
-**Fermer le résultat** : une **croix**, sur l'**encart de synthèse** (ses trois
-états : vert, orange, « rien à analyser »), efface l'analyse et la carte
-**redevient neutre** — halo, encart et badges disparaissent d'un coup. Utile
-quand tout est vert : l'information a été lue, le halo n'a plus rien à dire. Il
-suffit de relancer « Analyser mes decks » pour la revoir.
+**Ne plus voir le résultat** : éteindre l'interrupteur. Toute la page
+**redevient neutre** d'un coup — pastilles, bilans et badges disparaissent.
 
 ⚠️ **Pas de pastille en-tête redondante.** Une seconde pastille dans l'en-tête
-(« 1/4 decks au niveau ») reprendrait, un cran plus haut, exactement ce que
-dit déjà l'encart de synthèse juste en dessous, lui-même visible carte repliée
-(voir plus haut) : deux endroits pour la même phrase, sur une carte déjà
-chargée, sans qu'aucun n'apprenne quoi que ce soit que l'autre ne dise pas.
+du volet (« 1/4 decks au niveau ») reprendrait, un cran plus haut, exactement
+ce que dit déjà le bilan juste en dessous.
 
 ### ⚠️ Source : TOUS les builds, pas seulement la box
 
@@ -349,25 +247,20 @@ lire les chiffres. Le slot fautif prend une bordure rouge, comme un slot dont le
 monstre est indisponible : les deux sont bloquants.
 
 - Statut **de la recommandation** (`matchReco`) = **agrégat de ses decks non
-  vides**, aura de la carte SEULE (voir `AURA` dans RecoCard.tsx) — le résumé en
-  mots ne vit plus qu'à l'encart de synthèse, voir plus haut :
-
-⚠️ **L'aura se règle sur le MODE CLAIR, pas sur le sombre.** À 5–10 %
-d'opacité, elle est lisible sur fond profond et invisible sur blanc — la carte
-y paraîtrait neutre alors qu'elle signale un deck bloqué. Les opacités sont de
-**20–45 % selon la teinte et la surface** (l'ambre, plus pâle, en demande plus
-que le vert et le rouge). Une valeur qui « se voit » en sombre ne prouve
-rien : c'est le clair qui fixe le plancher.
+  vides**. ⚠️ Le volet reste **neutre** quel que soit le statut (`AURA` dans
+  RecoCard.tsx, la même valeur pour tous) : le statut se lit au bilan et aux
+  pastilles, jamais à un aplat ([rendu-de-la-page.md](rendu-de-la-page.md#couleurs-et-pastilles-de-statut)).
 
 | Statut | Couleur | Condition |
 |--------|---------|-----------|
 | `ok` | `good` | **tous** les decks jouables |
 | `partial` | `warn` | une partie seulement |
 | `missing` | `bad` | **aucun** deck jouable, tous bloqués par un monstre manquant |
-| `unknown` | neutre | **pas encore analysée**, ou aucun deck rempli |
+| `unknown` | neutre | **non confrontée**, ou aucun deck rempli |
 
-- Sans compte importé : bouton « Analyser » **désactivé**, cartes neutres. Les
-  recommandations restent consultables, éditables et exportables.
+- Sans compte importé : interrupteur « Confronter à mon compte »
+  **désactivé**, page neutre. Les recommandations restent consultables,
+  éditables et exportables.
 - Par stat, la vue affiche `minimum` puis **ta valeur** : verte avec ✓ si
   atteinte, rouge avec l'écart `(−X)` sinon.
 - Par set, une puce **icône + ×2/×4** : verte avec ✓ si le set est porté, rouge

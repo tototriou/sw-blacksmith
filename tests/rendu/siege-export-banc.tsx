@@ -60,7 +60,7 @@ function Banc() {
       optimizer={etat} onImporterEquipe={importer} lists={listes} accountName="Synthétique"
       menuOuvert={false} onFermerMenu={() => {}} onOuvrirMenu={() => {}} /> :
       <SiegePage tab={cote} siege={cote === 'defense' ? defense : offense} offense={offense} recos={recos}
-        builds={[]} teams={[]} copies6={new Map()} monsters={monstres} loadState="live"
+        builds={[]} teams={[]} copies6={new Map()} equipesEnregistrees={[]} monsters={monstres} loadState="live"
         siegeDefenseTeams={data.siegeDefenseTeams} siegeOffenseTeams={data.siegeOffenseTeams}
         compteCharge={charge} sourcesOptimizer={data} onImporterEquipe={importer}
         onCreateMonster={() => monstres[0]} customMonsters={[]} onDeleteMonster={() => {}}

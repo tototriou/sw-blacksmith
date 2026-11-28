@@ -366,23 +366,19 @@ const RECO_FERMER_PANNEAU: Etape = {
   cliquer: { role: 'button', nom: 'Fermer', pres: { role: 'heading', nom: 'Actions — recommandations' } },
 };
 const RECO_IMPORT_TELEPHONE: Etape[] = [{ cliquer: RECO_OPTIONS }, RECO_IMPORT, RECO_FERMER_PANNEAU];
-// Chaque liste s'ouvre par son bouton « Consulter », repéré par son titre ; au
-// téléphone, le titre lui-même est le bouton.
-const RECO_CONSULTER: Record<Format, Etape[]> = {
-  ordinateur: RECO_LISTES_NOMS.map((nom) => ({
-    cliquer: { role: 'button', nom: 'Consulter', pres: { role: 'heading', nom } },
-  })),
-  telephone: RECO_LISTES_NOMS.map((nom) => ({ cliquer: { role: 'button', nom } })),
-};
-// Les listes à plusieurs decks ont « Déplier tous les decks » ; celle d'un seul deck, son chevron.
-const RECO_DEPLIER: Etape[] = [
-  ...RECO_LISTES_NOMS.slice(0, 2).map((nom): Etape => ({
-    cliquer: { role: 'button', nom: 'Déplier tous les decks', pres: { role: 'heading', nom } },
-  })),
-  { cliquer: { role: 'button', nom: 'Déplier ce deck', pres: { role: 'heading', nom: RECO_LISTES_NOMS[2] } } },
-];
+// La vue Decks : la liste des recommandations à gauche, celle qu'on touche
+// dans le volet de droite (la première, à l'arrivée sur une fenêtre large).
+const RECO_VUE_DECKS: Etape = { cliquer: { role: 'button', nom: 'Decks' }, siPresse: false };
+const RECO_VUE_DEFENSES: Etape = { cliquer: { role: 'button', nom: 'Défenses' }, siPresse: false };
+const RECO_ITEM = (n: number): Cible => ({ role: 'repere', nom: `:nth-match([data-reco-liste], ${n})` });
+const RECO_CONSULTER: Etape[] = [RECO_VUE_DECKS, { cliquer: RECO_ITEM(1) }];
+// La première a plusieurs decks : « Déplier tous les decks ».
+const RECO_DEPLIER: Etape[] = [{ cliquer: { role: 'button', nom: 'Déplier tous les decks' } }];
 const RECO_IMPORTEES: Cible = { role: 'texte', nom: '3 recommandation(s) · 6 deck(s) · 18 monstre(s) importés.' };
-const RECO_LISTES: Cible[] = RECO_LISTES_NOMS.map((nom) => ({ role: 'heading', nom }));
+// La liste des trois recommandations (masquée au doigt quand une est ouverte)
+// et le titre de celle qu'on regarde.
+const RECO_LISTES: Cible[] = [{ role: 'heading', nom: RECO_LISTES_NOMS[0] }];
+const RECO_LA_LISTE: Cible[] = [RECO_ITEM(1), RECO_ITEM(2), RECO_ITEM(3)];
 // Réimport du même fichier : le choix de la fusion, puis son rapport.
 const RECO_FUSION_TITRE: Cible = { role: 'heading', nom: 'Ce fichier complète tes recommandations' };
 // Les options du choix se repèrent par leur attribut : leur nom accessible
@@ -395,15 +391,43 @@ const RECO_FUSION_FAITE: Cible = {
   nom: "Fusion : rien de nouveau, tous ses decks et leurs défenses étaient déjà là. Rien n'a été retiré ni modifié.",
 };
 // Lignes d'artéfacts propres à un seul deck du fichier.
+// Une propriété d'artéfact d'un deck de la première recommandation, ouverte.
 const RECO_DETAIL: Cible[] = [
   { role: 'texte', nom: 'Dgts de bombe +X%' },
-  { role: 'texte', nom: 'Effet aug. VIT +X%' },
 ];
-// Notes de contres propres à une seule défense visée du fichier.
+// La vue Défenses : la liste des défenses visées et le volet de la première.
 const RECO_CONTRES: Cible[] = [
-  { role: 'texte', nom: '— défense de départ, sans bouclier' },
-  { role: 'texte', nom: '— défense lente' },
+  { role: 'repere', nom: '[data-liste-defenses]' },
+  { role: 'repere', nom: '[data-volet-defense]' },
 ];
+const RECO_CONFRONTER: Cible = { role: 'switch', nom: 'Confronter à mon compte' };
+// « + Ajouter un counter » : le deck ajouté s'ouvre en édition, sans éditer
+// la recommandation. Dans la vue Défenses, la première défense du banc est
+// visée par deux recommandations : un menu demande laquelle.
+const RECO_AJOUTER_COUNTER: Cible = { role: 'repere', nom: ':nth-match([data-ajouter-counter], 1)' };
+const RECO_COUNTER_EDITE: Cible = { role: 'repere', nom: '[data-deck-ligne][data-edition]' };
+// La fenêtre d'ajout : « Deck vide » ajoute directement ; la capture se lit
+// dans le navigateur. ⚠️ Aucune vraie capture dans le dépôt (public) : une
+// image synthétique, refusée par la lecture, exerce la chaîne entière
+// (décodage, Worker, banque de portraits) — une panne afficherait un autre
+// message.
+const RECO_FENETRE_AJOUT: Cible = { role: 'dialog', nom: 'Ajouter un counter' };
+const RECO_DECK_VIDE: Cible = { role: 'button', nom: 'Deck vide', dans: '[role="dialog"]' };
+const RECO_ONGLET_MES_DECKS: Cible = { role: 'tab', nom: 'Mes decks et équipes' };
+const RECO_CAPTURE_REFUSEE: Etape = {
+  importer: { role: 'repere', nom: '[data-zone-capture]' },
+  fichier: 'capture-non-reconnue.png',
+  confirme: { role: 'texte', nom: "Écran non reconnu : il faut trois attaquants côte à côte, seuls ou sur l'écran de préparation d'un combat de siège." },
+};
+// La fiabilité notée depuis la ligne d'un deck : les étoiles (ou « Noter »)
+// ouvrent le choix dans un flottant, sans éditer le deck.
+const RECO_NOTER_DECKS: Cible = { role: 'repere', nom: ':nth-match([data-volet-reco] [data-fiabilite-rapide] button, 1)' };
+const RECO_NOTER_DEFENSES: Cible = { role: 'repere', nom: ':nth-match([data-volet-defense] [data-fiabilite-rapide] button, 1)' };
+const RECO_CHOIX_FIABILITE: Cible = { role: 'repere', nom: '[data-choix-fiabilite]' };
+// La première offense du volet, ouverte sur place.
+const RECO_OFFENSE_VOLET: Cible = { role: 'repere', nom: ':nth-match([data-volet-defense] [data-deck-ligne] button[aria-expanded], 1)' };
+// Au téléphone, le volet s'ouvre en touchant une défense de la liste.
+const RECO_PREMIERE_DEFENSE: Cible = { role: 'repere', nom: ':nth-match([data-defense-liste], 1)' };
 
 // « Mes équipes » remplie par ses propres imports : la défense de siège 1 du
 // compte du banc (deux monstres).
@@ -736,41 +760,140 @@ export const ECRANS: Ecran[] = [
     id: 'siege-recommandations',
     libelle: 'Siège — Recommandations',
     hash: '#/siege/recommandations',
+    // La vue Défenses range ses deux volets selon la place du CONTENEUR : à
+    // 1 100, la liste puis le volet ; à 1 920, côte à côte, le volet large.
+    tailles: [...TAILLES_PAR_DEFAUT,
+      { id: 'bureau-1100', libelle: '1100×900', format: 'ordinateur', largeur: 1100, hauteur: 900, tactile: false },
+      { id: 'bureau-1920', libelle: '1920×940', format: 'ordinateur', largeur: 1920, hauteur: 940, tactile: false }],
     motifs: [...MOTIFS_SIEGE, 'tests/fixtures/recommandations-banc'],
     etats: [
       DEFAUT,
       {
-        id: 'reco-attaque-repliee',
-        libelle: 'recommandations importées, vue Attaque, decks repliés',
+        id: 'reco-decks-liste',
+        libelle: 'vue Decks à l’arrivée : la liste des recommandations (et, sur une fenêtre large, la première ouverte)',
         preparation: {
-          telephone: [...RECO_IMPORT_TELEPHONE, ...RECO_CONSULTER.telephone],
-          ordinateur: [RECO_IMPORT, ...RECO_CONSULTER.ordinateur],
+          telephone: [...RECO_IMPORT_TELEPHONE, RECO_VUE_DECKS],
+          ordinateur: [RECO_IMPORT, RECO_VUE_DECKS],
+        },
+        atteint: [RECO_IMPORTEES, ...RECO_LA_LISTE],
+      },
+      {
+        id: 'reco-attaque-repliee',
+        libelle: 'vue Decks, la première recommandation ouverte, ses decks repliés',
+        preparation: {
+          telephone: [...RECO_IMPORT_TELEPHONE, ...RECO_CONSULTER],
+          ordinateur: [RECO_IMPORT, ...RECO_CONSULTER],
         },
         atteint: [RECO_IMPORTEES, ...RECO_LISTES],
       },
       {
         id: 'reco-attaque',
-        libelle: 'recommandations importées, vue Attaque, decks dépliés',
+        libelle: 'vue Decks, la première recommandation ouverte, ses decks dépliés',
         preparation: {
-          telephone: [...RECO_IMPORT_TELEPHONE, ...RECO_CONSULTER.telephone, ...RECO_DEPLIER],
-          ordinateur: [RECO_IMPORT, ...RECO_CONSULTER.ordinateur, ...RECO_DEPLIER],
+          telephone: [...RECO_IMPORT_TELEPHONE, ...RECO_CONSULTER, ...RECO_DEPLIER],
+          ordinateur: [RECO_IMPORT, ...RECO_CONSULTER, ...RECO_DEPLIER],
         },
         atteint: [RECO_IMPORTEES, ...RECO_LISTES, ...RECO_DETAIL],
       },
       {
-        id: 'reco-defense',
-        libelle: 'recommandations importées, vue Défense',
+        id: 'reco-ajout-fenetre',
+        libelle: 'vue Decks, « + Ajouter un counter » : la fenêtre d\'ajout, onglet capture',
         preparation: {
-          telephone: [
-            { cliquer: RECO_OPTIONS },
-            RECO_IMPORT,
-            { cliquer: { role: 'button', nom: 'Défense' } },
-            RECO_FERMER_PANNEAU,
-            ...RECO_CONSULTER.telephone,
-          ],
-          ordinateur: [RECO_IMPORT, { cliquer: { role: 'button', nom: 'Défense' } }, ...RECO_CONSULTER.ordinateur],
+          telephone: [...RECO_IMPORT_TELEPHONE, ...RECO_CONSULTER, { cliquer: RECO_AJOUTER_COUNTER }],
+          ordinateur: [RECO_IMPORT, ...RECO_CONSULTER, { cliquer: RECO_AJOUTER_COUNTER }],
         },
-        atteint: [RECO_IMPORTEES, ...RECO_LISTES, ...RECO_CONTRES],
+        atteint: [RECO_FENETRE_AJOUT, { role: 'repere', nom: '[data-zone-capture]' }],
+      },
+      {
+        id: 'reco-ajout-capture-refusee',
+        libelle: 'fenêtre d\'ajout : une image qui n\'est pas l\'écran de préparation, lue dans le navigateur et refusée',
+        preparation: {
+          telephone: [...RECO_IMPORT_TELEPHONE, ...RECO_CONSULTER, { cliquer: RECO_AJOUTER_COUNTER }, RECO_CAPTURE_REFUSEE],
+          ordinateur: [RECO_IMPORT, ...RECO_CONSULTER, { cliquer: RECO_AJOUTER_COUNTER }, RECO_CAPTURE_REFUSEE],
+        },
+        atteint: [RECO_FENETRE_AJOUT],
+      },
+      {
+        id: 'reco-ajout-mes-decks',
+        libelle: 'fenêtre d\'ajout, onglet « Mes decks et équipes » : les decks d\'offense du compte (Mes équipes, vide au banc)',
+        preparation: {
+          telephone: [...RECO_IMPORT_TELEPHONE, ...RECO_CONSULTER, { cliquer: RECO_AJOUTER_COUNTER }, { cliquer: RECO_ONGLET_MES_DECKS }],
+          ordinateur: [RECO_IMPORT, ...RECO_CONSULTER, { cliquer: RECO_AJOUTER_COUNTER }, { cliquer: RECO_ONGLET_MES_DECKS }],
+        },
+        atteint: [RECO_FENETRE_AJOUT],
+      },
+      {
+        id: 'reco-ajout-counter',
+        libelle: 'vue Decks, « Deck vide » : le deck ajouté, ouvert en édition',
+        preparation: {
+          telephone: [...RECO_IMPORT_TELEPHONE, ...RECO_CONSULTER, { cliquer: RECO_AJOUTER_COUNTER }, { cliquer: RECO_DECK_VIDE }],
+          ordinateur: [RECO_IMPORT, ...RECO_CONSULTER, { cliquer: RECO_AJOUTER_COUNTER }, { cliquer: RECO_DECK_VIDE }],
+        },
+        atteint: [RECO_IMPORTEES, ...RECO_LISTES, RECO_COUNTER_EDITE],
+      },
+      {
+        id: 'reco-noter',
+        libelle: 'vue Decks, la fiabilité notée depuis la ligne : la première défense du deck, ses étoiles en flottant',
+        preparation: {
+          telephone: [...RECO_IMPORT_TELEPHONE, ...RECO_CONSULTER, { cliquer: RECO_NOTER_DECKS }],
+          ordinateur: [RECO_IMPORT, ...RECO_CONSULTER, { cliquer: RECO_NOTER_DECKS }],
+        },
+        atteint: [RECO_IMPORTEES, ...RECO_LISTES, RECO_CHOIX_FIABILITE],
+      },
+      {
+        id: 'reco-confrontee',
+        libelle: 'vue Decks, decks dépliés, « Confronter à mon compte » allumé : bilan, verdicts et leurs causes',
+        preparation: {
+          telephone: [...RECO_IMPORT_TELEPHONE, { cliquer: RECO_OPTIONS }, { cliquer: RECO_CONFRONTER }, RECO_FERMER_PANNEAU, ...RECO_CONSULTER, ...RECO_DEPLIER],
+          ordinateur: [RECO_IMPORT, { cliquer: RECO_CONFRONTER }, ...RECO_CONSULTER, ...RECO_DEPLIER],
+        },
+        atteint: [RECO_IMPORTEES, ...RECO_LISTES, { role: 'repere', nom: ':nth-match([data-bilan-analyse], 1)' }],
+      },
+      {
+        id: 'reco-defense',
+        libelle: 'recommandations importées, vue Défenses : la liste et le volet de la première',
+        preparation: {
+          telephone: [...RECO_IMPORT_TELEPHONE, RECO_VUE_DEFENSES, { cliquer: RECO_PREMIERE_DEFENSE }],
+          // Dans une fenêtre étroite, le volet s'ouvre aussi en touchant la défense.
+          ordinateur: [RECO_IMPORT, RECO_VUE_DEFENSES, { cliquer: RECO_PREMIERE_DEFENSE }],
+        },
+        atteint: [RECO_IMPORTEES, RECO_CONTRES[1]],
+      },
+      {
+        id: 'reco-defense-offense',
+        libelle: 'vue Défenses, la première offense du volet ouverte sur place',
+        preparation: {
+          telephone: [...RECO_IMPORT_TELEPHONE, RECO_VUE_DEFENSES, { cliquer: RECO_PREMIERE_DEFENSE }, { cliquer: RECO_OFFENSE_VOLET }],
+          ordinateur: [RECO_IMPORT, RECO_VUE_DEFENSES, { cliquer: RECO_PREMIERE_DEFENSE }, { cliquer: RECO_OFFENSE_VOLET }],
+        },
+        atteint: [RECO_IMPORTEES, RECO_CONTRES[1]],
+      },
+      {
+        id: 'reco-defense-ajout-counter',
+        libelle: 'vue Défenses, « + Ajouter un counter » : l\'offense ajoutée contre la défense, ouverte en édition',
+        preparation: {
+          telephone: [...RECO_IMPORT_TELEPHONE, RECO_VUE_DEFENSES, { cliquer: RECO_PREMIERE_DEFENSE }, { cliquer: RECO_AJOUTER_COUNTER }, { cliquer: RECO_DECK_VIDE }],
+          ordinateur: [RECO_IMPORT, RECO_VUE_DEFENSES, { cliquer: RECO_PREMIERE_DEFENSE }, { cliquer: RECO_AJOUTER_COUNTER }, { cliquer: RECO_DECK_VIDE }],
+        },
+        atteint: [RECO_IMPORTEES, RECO_CONTRES[1], RECO_COUNTER_EDITE],
+      },
+      {
+        id: 'reco-defense-ajout-fenetre',
+        libelle: 'vue Défenses, la fenêtre d\'ajout : la défense visée par deux recommandations, laquelle choisir',
+        preparation: {
+          telephone: [...RECO_IMPORT_TELEPHONE, RECO_VUE_DEFENSES, { cliquer: RECO_PREMIERE_DEFENSE }, { cliquer: RECO_AJOUTER_COUNTER }],
+          ordinateur: [RECO_IMPORT, RECO_VUE_DEFENSES, { cliquer: RECO_PREMIERE_DEFENSE }, { cliquer: RECO_AJOUTER_COUNTER }],
+        },
+        atteint: [RECO_FENETRE_AJOUT, { role: 'texte', nom: 'Dans la recommandation' }],
+      },
+      {
+        id: 'reco-defense-noter',
+        libelle: 'vue Défenses, la fiabilité de la première offense notée sur place : le choix des étoiles en flottant',
+        preparation: {
+          telephone: [...RECO_IMPORT_TELEPHONE, RECO_VUE_DEFENSES, { cliquer: RECO_PREMIERE_DEFENSE }, { cliquer: RECO_NOTER_DEFENSES }],
+          ordinateur: [RECO_IMPORT, RECO_VUE_DEFENSES, { cliquer: RECO_PREMIERE_DEFENSE }, { cliquer: RECO_NOTER_DEFENSES }],
+        },
+        atteint: [RECO_IMPORTEES, RECO_CONTRES[1], RECO_CHOIX_FIABILITE],
       },
       // Le même fichier importé deux fois : il complète les trois listes (même
       // auteur, même nom), l'import propose de fusionner ou d'ajouter à part.
@@ -787,10 +910,10 @@ export const ECRANS: Ecran[] = [
         id: 'reco-fusion-faite',
         libelle: 'même fichier réimporté puis fusionné : rien de nouveau, rien de doublé',
         preparation: {
-          telephone: [...RECO_IMPORT_TELEPHONE, { cliquer: RECO_OPTIONS }, RECO_REIMPORT, { cliquer: RECO_FUSIONNER }, RECO_FERMER_PANNEAU],
-          ordinateur: [RECO_IMPORT, RECO_REIMPORT, { cliquer: RECO_FUSIONNER }],
+          telephone: [...RECO_IMPORT_TELEPHONE, { cliquer: RECO_OPTIONS }, RECO_REIMPORT, { cliquer: RECO_FUSIONNER }, RECO_FERMER_PANNEAU, RECO_VUE_DECKS],
+          ordinateur: [RECO_IMPORT, RECO_REIMPORT, { cliquer: RECO_FUSIONNER }, RECO_VUE_DECKS],
         },
-        atteint: [RECO_FUSION_FAITE, ...RECO_LISTES],
+        atteint: [RECO_FUSION_FAITE, ...RECO_LA_LISTE],
       },
     ],
   },

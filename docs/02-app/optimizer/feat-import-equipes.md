@@ -146,7 +146,7 @@ la prépa avec ses vitesses à `importerPrepaRtaOptimizer`, indépendamment
 des sections et des filtres affichés : liste Arène, sans équipe ni lead.
 
 Chaque deck recommandé propose la même action dans sa ligne, repliée ou
-dépliée, et dans les offenses de la vue Défense. Un clic transmet uniquement
+dépliée, dans les deux vues (Défenses et Decks) de la page. Un clic transmet uniquement
 ce deck à `importerRecoOptimizer` : liste Guilde, équipe, minimums, premier
 runage, propriétés d’artéfact et lead du slot 0. Les exemplaires suivent
 la confrontation commune décrite dans la conversion du deck recommandé.

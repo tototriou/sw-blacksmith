@@ -1,13 +1,9 @@
-// Une image en mémoire, décodée d'un PNG ou d'un JPEG (les deux formats d'une
-// capture d'écran), et les deux opérations dont la lecture a besoin : découper
-// un rectangle et le réduire par moyenne de surface.
+// Une image en mémoire (RGBA), et les opérations dont la lecture d'une capture
+// a besoin : découper un rectangle, le réduire par moyenne de surface.
 //
-// ⚠️ Décodeurs en JavaScript pur (`pngjs`, `jpeg-js`) : la fonction Vercel est
-// empaquetée par esbuild, où un module natif (sharp, canvas) ne se transporte
-// pas.
-
-import { PNG } from 'pngjs';
-import jpeg from 'jpeg-js';
+// ⚠️ **Aucun décodeur ici** : ce module sert l'app (dans le navigateur, qui
+// décode lui-même la capture) ET le service Discord. Le décodage PNG/JPEG du
+// service, en JavaScript pur pour Node, vit dans api/_source/capture/decodage.ts.
 
 export interface Image {
   largeur: number;
@@ -22,8 +18,7 @@ export interface Image {
 // lit en 2,3 s avec 0,5 Go de mémoire.
 export const PIXELS_MAX = 40_000_000;
 
-const estPng = (o: Uint8Array) => o.length > 8 && o[0] === 0x89 && o[1] === 0x50 && o[2] === 0x4e && o[3] === 0x47;
-const estJpeg = (o: Uint8Array) => o.length > 3 && o[0] === 0xff && o[1] === 0xd8 && o[2] === 0xff;
+export const estPng = (o: Uint8Array) => o.length > 8 && o[0] === 0x89 && o[1] === 0x50 && o[2] === 0x4e && o[3] === 0x47;
 
 // La taille annoncée par l'en-tête d'un PNG : le premier bloc est toujours
 // IHDR (longueur sur 4 octets, « IHDR », puis largeur et hauteur sur 4 octets
@@ -39,28 +34,6 @@ export function dimensionsPng(o: Uint8Array): { largeur: number; hauteur: number
 export function imageTropGrande(octets: Uint8Array): boolean {
   const dims = estPng(octets) ? dimensionsPng(octets) : null;
   return !!dims && dims.largeur * dims.hauteur > PIXELS_MAX;
-}
-
-// `null` : ni PNG ni JPEG, illisible, ou trop grande.
-export function decoderImage(octets: Uint8Array): Image | null {
-  try {
-    if (estPng(octets)) {
-      // ⚠️ La taille se lit dans l'en-tête IHDR AVANT de décoder : un PNG d'une
-      // couleur unie se compresse à presque rien, et 10 Mo peuvent en cacher
-      // des milliards de pixels — la fonction manquait de mémoire au décodage.
-      const dims = dimensionsPng(octets);
-      if (!dims || dims.largeur * dims.hauteur > PIXELS_MAX) return null;
-      const png = PNG.sync.read(Buffer.from(octets));
-      return { largeur: png.width, hauteur: png.height, rgba: new Uint8Array(png.data.buffer, png.data.byteOffset, png.data.length) };
-    }
-    if (estJpeg(octets)) {
-      const j = jpeg.decode(octets, { useTArray: true, formatAsRGBA: true, maxResolutionInMP: PIXELS_MAX / 1e6, maxMemoryUsageInMB: 512 });
-      return { largeur: j.width, hauteur: j.height, rgba: j.data };
-    }
-  } catch {
-    return null;
-  }
-  return null;
 }
 
 // Le rectangle [x, y, largeur, hauteur] ramené dans l'image, `null` s'il en sort.

@@ -218,8 +218,8 @@ correspondent à rien sont ajoutées à part dans les deux cas.
 - **Nom, auteur, consignes de la recommandation** : ceux de l'existante, tels
   quels — l'utilisateur a pu les retoucher.
 - ⚠️ **Un deck et une défense visée se reconnaissent par la même clé
-  d'équipe que la vue Défense** ([modele.md](modele.md), « Vue Attaque /
-  Défense ») : même **chef** — le premier monstre, s'il a un lead actif en
+  d'équipe que la vue Défenses** ([modele.md](modele.md), « Vues Défenses /
+  Decks ») : même **chef** — le premier monstre, s'il a un lead actif en
   siège — et mêmes deux autres monstres dans n'importe quel ordre ; sans chef,
   mêmes trois monstres dans n'importe quel ordre. Solveig-Odin-Adriana se
   reconnaît dans Solveig-Adriana-Odin ; Odin-Adriana-Solveig, au chef
@@ -290,7 +290,8 @@ rien. Le rapport de validation reste affiché comme pour tout import.
 ```
 
 - **Facultatif** : la fiabilité du deck contre cette défense, en étoiles, de
-  0 à 5 par demi-étoile ([defenses-visees.md](defenses-visees.md#fiabilité--quelle-offense-jouer-dabord)).
+  0 à 5 — saisie par étoile entière, relue par demi-étoile pour les notes qui
+  en portent ([defenses-visees.md](defenses-visees.md#fiabilité--quelle-offense-jouer-dabord)).
   Une défense non notée n'écrit rien ; `0` est une note, et s'écrit.
 - **Un champ en plus, pas une version de plus**, comme `source` : une app qui
   ne le connaît pas lit la défense sans sa note.
