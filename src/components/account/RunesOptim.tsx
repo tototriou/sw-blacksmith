@@ -3,7 +3,7 @@ import { RotateCw, AlertTriangle, PackageCheck, Swords, Lock, Hammer, Gem, Chevr
 import { CraftLine, RuneDetail } from '../../types';
 import { formatRuneEffect, RUNE_EFFECT } from '../../lib/effects';
 import { useTraduction } from '../../hooks/useLangue';
-import { runePotential, RunePotential, runePlan, planNeeds } from '../../lib/runeOptim';
+import { GemmeChoix, runePotential, RunePotential, runePlan } from '../../lib/runeOptim';
 import {
   PERIMETRES_UTILISES,
   PerimetreUtilise,
@@ -15,7 +15,9 @@ import {
   EMPTY_STOCK,
   GRADES_RESERVE,
   buildCraftStock,
-  dispoReserve,
+  EtatReserve,
+  etatsReserve,
+  planEnReserve,
   reserveDesGrades,
   scenarioDeLaReserve,
 } from '../../lib/crafts';
@@ -455,54 +457,32 @@ export default function RunesOptim({
 
   // Potentiel calculé une fois par import (linéaire, mémoïsé).
   //
-  // ⚠️ Sous le filtre, le calcul change deux fois :
-  //  - `noDowngrade` : on ne redescend jamais une meule déjà posée ;
-  //  - `dispo` : **seules les stats dont le consommable est en réserve** sont
-  //    poussées.
-  //
-  // Exiger le plan COMPLET écartait des runes parfaitement travaillables : une
-  // Swift dont trois substats sur quatre étaient meulables disparaissait parce
-  // qu'il manquait la meule VIT. Le gain affiché est donc celui qu'on peut
-  // vraiment aller chercher aujourd'hui, ni plus ni moins.
-  //
-  // ⚠️ **Chaque chiffre contre la réserve de SON grade** (`dispoReserve`) : le
-  // potentiel héroïque d'une tuile contre les consommables héroïques ou mieux,
-  // le légendaire contre les légendaires — quel que soit le tri. Une seule
-  // réserve, celle du grade du tri, surestimait le chiffre légendaire (trié en
-  // héroïque, une meule héroïque y passait pour légendaire) et sous-estimait
-  // l'héroïque (trié autrement, une meule héroïque présente était refusée).
-  // Le tri ne choisit plus que le grade du FILTRE et du PLAN, plus bas.
+  // ⚠️ **La réserve n'entre pas dans le calcul** : potentiel, gemme et plan sont
+  // ceux d'un sac sans limite, filtre allumé ou non. Sous le filtre, seul
+  // `noDowngrade` change — on ne redescend jamais une meule déjà posée, une
+  // question de grade et pas de sac.
   const rows = useMemo(
     () =>
       runes.map(
         (rune, id): OptimRow => ({
           rune,
           id,
-          pot: runePotential(
-            rune,
-            withGem,
-            metric,
-            verifie,
-            verifie
-              ? { hero: dispoReserve(stock, rune, 'hero'), legend: dispoReserve(stock, rune, 'legend') }
-              : undefined,
-            regemLibre,
-            !regemLibre
-          ),
+          pot: runePotential(rune, withGem, metric, verifie, regemLibre, !regemLibre),
         })
       ),
-    [runes, withGem, metric, verifie, stock, regemLibre]
+    [runes, withGem, metric, verifie, regemLibre]
   );
 
-  // Une rune est retenue si le plan **restreint à la réserve** apporte encore
-  // quelque chose. Plus de confrontation à faire : le plan ne contient déjà que
-  // du réalisable.
+  // Une rune est retenue dès qu'UNE ligne de son plan se pose avec la réserve,
+  // pour l'une des gemmes au même gain (`planEnReserve`) : le filtre choisit
+  // les runes, il ne touche pas aux chiffres.
   const faisable = useMemo(() => {
     if (!verifie) return null;
     const ok = new Set<number>();
     for (const r of rows) {
-      const plan = runePlan(r.rune, scenario, withGem, metric, true, dispoReserve(stock, r.rune, scenario), regemLibre, !regemLibre);
-      if (planNeeds(plan).length > 0 && plan.targetEff > plan.eff) ok.add(r.id);
+      const planDe = (choix?: GemmeChoix) =>
+        runePlan(r.rune, scenario, withGem, metric, true, regemLibre, !regemLibre, choix);
+      if (planEnReserve(planDe, r.rune, stock, metric).faisable) ok.add(r.id);
     }
     return ok;
   }, [verifie, rows, scenario, withGem, metric, stock, regemLibre]);
@@ -565,17 +545,7 @@ export default function RunesOptim({
       convertirPalier(
         rows.map((r) => ({
           avant: potentielDuScenario(
-            runePotential(
-              r.rune,
-              withGem,
-              avant,
-              verifie,
-              verifie
-                ? { hero: dispoReserve(stock, r.rune, 'hero'), legend: dispoReserve(stock, r.rune, 'legend') }
-                : undefined,
-              regemLibre,
-              !regemLibre
-            ),
+            runePotential(r.rune, withGem, avant, verifie, regemLibre, !regemLibre),
             scenario
           ),
           apres: potentielDuScenario(r.pot, scenario),
@@ -584,7 +554,7 @@ export default function RunesOptim({
       )
     );
     setPage(0);
-  }, [metric, rows, threshold, setThreshold, withGem, verifie, stock, regemLibre, scenario]);
+  }, [metric, rows, threshold, setThreshold, withGem, verifie, regemLibre, scenario]);
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE));
   const safePage = Math.min(page, pageCount - 1);
@@ -928,6 +898,7 @@ export default function RunesOptim({
                   <Gem size={12} className="inline mb-0.5" /> {o.aidePlan}
                 </span>{' '}
                 : <b className="text-good">{o.aideVert}</b>{o.aideVertSuite}{' '}
+                <b style={{ color: 'rgb(var(--rarity-4))' }}>{o.aideHeroiqueMarque}</b>{o.aideHeroiqueMarqueSuite}{' '}
                 <b className="text-ink">{o.aideGrise}</b>{o.aideGriseSuite}{' '}
                 <b className="text-ink">{o.aideImmemoriaux}</b> {o.aideImmemoriauxSuite}
               </p>
@@ -1024,7 +995,6 @@ export default function RunesOptim({
             withGem={withGem}
             regemLibre={regemLibre}
             noDowngrade={verifie}
-            restreint={verifie}
             stock={stockDispo ? stock : null}
             open={openId === row.id}
             onToggle={toggleOpen}
@@ -1063,7 +1033,6 @@ export const OptimTile = memo(function OptimTile({
   withGem,
   regemLibre,
   noDowngrade,
-  restreint,
   stock,
   open,
   onToggle,
@@ -1075,7 +1044,6 @@ export const OptimTile = memo(function OptimTile({
   withGem: boolean;
   regemLibre: boolean;
   noDowngrade: boolean;
-  restreint: boolean; // le plan se limite à ce que la réserve permet
   stock: CraftStock | null;
   open: boolean;
   onToggle: (id: number) => void;
@@ -1164,7 +1132,6 @@ export const OptimTile = memo(function OptimTile({
           withGem={withGem}
           regemLibre={regemLibre}
           noDowngrade={noDowngrade}
-          restreint={restreint}
           stock={stock}
         />
         {onExclure && (
@@ -1206,10 +1173,11 @@ function SubLine({
   baseViolet?: boolean;
   grindViolet?: boolean;
   // `null` = rien à poser sur cette ligne, ou réserve inconnue → aucun marquage.
-  enReserve?: { kind: 'grind' | 'gem'; ok: boolean } | null;
+  enReserve?: { kind: 'grind' | 'gem'; etat: EtatReserve } | null;
 }) {
   const textes = useTraduction();
   const jeu = textes.jeu;
+  const o = textes.optimRunes;
   const def = RUNE_EFFECT[code];
   // La stat seule : la ligne porte déjà le « % » après sa valeur.
   const label = def ? jeu.stats[def.stat] : `#${code}`;
@@ -1241,20 +1209,25 @@ function SubLine({
       )}
       {/* ⚠️ La ligne qu'on peut poser TOUT DE SUITE est marquée. L'icône dit de
           quel consommable il s'agit, la couleur dit s'il est en réserve : vert
-          = disponible, grisé = à farmer. Sans ce repère, il fallait aller
-          compter ses meules ailleurs pour savoir par où commencer. */}
+          = disponible au grade du plan, couleur de l'héroïque = seulement en
+          héroïque (plan légendaire, il améliore déjà), grisé = à farmer. Sans
+          ce repère, il fallait aller compter ses meules ailleurs pour savoir
+          par où commencer. */}
       {enReserve &&
-        (enReserve.kind === 'grind' ? (
-          <Hammer
-            size={10}
-            className={`ml-auto flex-none ${enReserve.ok ? 'text-good' : 'text-ink-dim opacity-40'}`}
-          />
-        ) : (
-          <Gem
-            size={10}
-            className={`ml-auto flex-none ${enReserve.ok ? 'text-good' : 'text-ink-dim opacity-40'}`}
-          />
-        ))}
+        (() => {
+          const { etat } = enReserve;
+          const props = {
+            size: 10,
+            'aria-label': o.marqueReserve[etat],
+            className: etat === 'grade' ? 'text-good' : etat === 'manque' ? 'text-ink-dim opacity-40' : undefined,
+            style: etat === 'heroique' ? { color: 'rgb(var(--rarity-4))' } : undefined,
+          };
+          return (
+            <span title={o.marqueReserve[etat]} className="ml-auto flex-none inline-flex">
+              {enReserve.kind === 'grind' ? <Hammer {...props} /> : <Gem {...props} />}
+            </span>
+          );
+        })()}
     </div>
   );
 }
@@ -1267,7 +1240,6 @@ export function OptimPlanBox({
   withGem,
   regemLibre = false,
   noDowngrade = false,
-  restreint = false,
   stock = null,
 }: {
   rune: RuneDetail;
@@ -1275,22 +1247,42 @@ export function OptimPlanBox({
   withGem: boolean;
   regemLibre?: boolean;
   noDowngrade?: boolean;
-  restreint?: boolean;
   stock?: CraftStock | null;
 }) {
   const textes = useTraduction();
   const jeu = textes.jeu;
   const metric = useRuneMetric();
+  const o = textes.optimRunes;
+  // Le plan affiché est CELUI du chiffre affiché : entier, réserve ou non. Le
+  // marquage ci-dessous dit ce qui est en réserve.
+  const planDe = (g?: GemmeChoix) =>
+    runePlan(rune, scenario, withGem, metric, noDowngrade, regemLibre, !regemLibre, g);
+  // ⚠️ **Plusieurs gemmes au même gain** (ATQ% et DEF% ont les mêmes tables) :
+  // le joueur choisit celle qui va avec sa rune. Par défaut, celle qui est en
+  // réserve (`planEnReserve`, la même règle que le filtre), sinon la première.
+  // Le gain annoncé ne bouge pas, seule la gemme change.
+  const [choix, setChoix] = useState<GemmeChoix | null>(null);
+  const plan = choix ? planDe(choix) : stock ? planEnReserve(planDe, rune, stock, metric).plan : planDe();
   // ⚠️ **Quelle ligne puis-je poser MAINTENANT.** Le plan dit quoi faire, la
   // réserve dit ce qui est à portée : sans le croisement, il faut aller compter
-  // ses meules ailleurs pour savoir par où commencer.
-  // Même règle que la liste (`dispoReserve`) : il n'y en a qu'une.
-  const dispo = stock ? dispoReserve(stock, rune, scenario) : () => false;
-
-  // Le plan affiché doit être CELUI du chiffre affiché : sous le filtre, il se
-  // limite lui aussi à ce que la réserve permet.
-  const plan = runePlan(rune, scenario, withGem, metric, noDowngrade, restreint ? dispo : undefined, regemLibre, !regemLibre);
+  // ses meules ailleurs pour savoir par où commencer. Même règle que le filtre
+  // (`etatsReserve`) : il n'y en a qu'une.
+  const etats = stock ? etatsReserve(plan, rune, stock, metric) : null;
   const gain = plan.targetEff - plan.eff;
+  const cleGemme = (g: GemmeChoix) => `${g.slot}-${g.code}`;
+  const nomStat = (code: number) => {
+    const def = RUNE_EFFECT[code];
+    return def ? `${jeu.stats[def.stat]}${def.suffix ?? ''}` : `#${code}`;
+  };
+  // Sur plusieurs lignes, le choix dit aussi laquelle est remplacée.
+  const plusieursLignes = new Set(plan.gemmes.map((g) => g.slot)).size > 1;
+  const gemmeDuPlan = plan.subs.findIndex((s) => s.isGem);
+  const etatGemme = (g: GemmeChoix) => {
+    if (!stock) return undefined;
+    const p = planDe(g);
+    const e = etatsReserve(p, rune, stock, metric)[g.slot];
+    return e ? o.marqueReserve[e] : undefined;
+  };
 
   return (
     // Sans cadre : le seul appelant (`RuneCard` ci-dessus) l'affiche dans un
@@ -1306,6 +1298,21 @@ export function OptimPlanBox({
           <span className={gain >= 0 ? 'text-good' : 'text-bad'}>({signed(gain, metric)})</span>
         </span>
       </div>
+
+      {plan.gemmes.length > 1 && (
+        <div className="mb-2 flex flex-wrap items-center gap-x-2 gap-y-1" data-gemmes-meme-gain>
+          <span className="text-micro text-ink-dim">{o.memeGain}</span>
+          <Segmented
+            options={plan.gemmes.map((g) => ({
+              key: cleGemme(g),
+              label: plusieursLignes ? `${nomStat(rune.subs[g.slot].code)} → ${nomStat(g.code)}` : nomStat(g.code),
+              hint: etatGemme(g),
+            }))}
+            value={gemmeDuPlan >= 0 ? cleGemme({ slot: gemmeDuPlan, code: plan.subs[gemmeDuPlan].code }) : null}
+            onChange={(k) => setChoix(plan.gemmes.find((g) => cleGemme(g) === k) ?? null)}
+          />
+        </div>
+      )}
 
       {/* stat principale + innée (communes aux deux colonnes) */}
       <div className="text-sm font-black text-ink leading-tight">{formatRuneEffect(rune.main, jeu)}</div>
@@ -1335,11 +1342,7 @@ export function OptimPlanBox({
           {plan.subs.map((s, i) => {
             // Une seule marque par ligne : la gemme prime, c'est elle qui
             // conditionne le reste (elle remet la meule du slot à zéro).
-            const marque = s.isGem
-              ? { kind: 'gem' as const, ok: dispo('gem', s.code) }
-              : s.grindable && s.grind > s.curGrind
-                ? { kind: 'grind' as const, ok: dispo('grind', s.code) }
-                : null;
+            const etat = etats?.[i] ?? null;
             return (
               <SubLine
                 key={i}
@@ -1349,7 +1352,7 @@ export function OptimPlanBox({
                 enchant={s.isGem || rune.subs[i]?.enchant}
                 baseViolet={s.isGem} // la stat/base ne change qu'à la gemme
                 grindViolet={s.isGem || s.grind !== s.curGrind}
-                enReserve={stock ? marque : null}
+                enReserve={etat ? { kind: s.isGem ? 'gem' : 'grind', etat } : null}
               />
             );
           })}

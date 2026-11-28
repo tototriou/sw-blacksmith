@@ -77,6 +77,17 @@ même violet que le plan ci-dessous (voir
   regemmer. ⚠️ **Pas aux Courbes**, qui ne changent jamais la stat d'une gemme
   et n'en simulent aucune sur une rune qui n'en a pas (voir
   [courbes.md](courbes.md)).
+  - ⚠️ **Les gemmes au même gain sont toutes proposées.** PV%, ATQ% et DEF% ont
+    les mêmes tables : sur une même ligne, elles donnent le même potentiel. Le
+    plan ouvert les montre côte à côte (« Gemme au même gain : », un
+    `Segmented`) et le joueur prend celle qui va avec sa rune — le gain
+    annoncé ne bouge pas. Choisir pour lui la première de la liste lui imposait
+    PV% sur une rune d'attaque. Par défaut, le plan pose celle qui est **en
+    réserve** (`planEnReserve` dans [crafts.ts](src/lib/crafts.ts)), sinon la
+    première ; l'infobulle de chaque choix dit si elle est en réserve. Si
+    l'égalité porte sur plusieurs lignes, le choix nomme la ligne remplacée
+    (« RES → ATQ% »). Calcul : `gemmes` de `runePlan`, et son argument `choix`
+    ([runeOptim.ts](src/lib/runeOptim.ts)) ; test `testGemmesMemeGain`.
   - ⚠️ **Un réglage du CALCUL, pas un filtre** : il change le potentiel, le
     gain, le plan « Actuel | Optimisé » et la faisabilité sous « Faisable avec
     ma réserve » (la gemme réclamée peut devenir une autre). Le Résumé, lui,
@@ -114,7 +125,8 @@ même violet que le plan ci-dessous (voir
     la valeur de la n-ième meilleure dans la nouvelle mesure. Exact pour la seule
     question que le palier pose — *où je coupe*. ⚠️ Les rangs se prennent sur
     **le potentiel du grade retenu**, recalculé dans l'ancienne mesure avec les
-    mêmes réglages (gemme, réserve, regemme), pas sur la valeur actuelle.
+    mêmes réglages (gemme, regemme, meules jamais reprises à la baisse sous le
+    filtre de réserve), pas sur la valeur actuelle.
   - Un palier qui ne gardait **rien** reste au-dessus du maximum : sans ça, la
     liste se remplirait toute seule au changement d'unité.
 - **Sets** (`SetFilter`) et **slot** (`SlotFilter`) : mêmes composants que les
@@ -389,26 +401,42 @@ contient (union).
 ### « Faisable avec ma réserve » — le filtre qui regarde le sac
 
 Un potentiel de +20 d'efficience ne vaut rien si la meule qui l'apporte n'est pas
-dans le sac. Ce bouton restreint la liste aux runes dont **le plan complet est
-couvert** par la réserve de meules et de gemmes du compte.
+dans le sac. Ce bouton restreint la liste aux runes dont **au moins une ligne du
+plan** — une meule ou la gemme — se pose avec la réserve de meules et de gemmes
+du compte.
 
 ⚠️ **Un filtre, pas un onglet.** C'est la même liste, restreinte : potentiel
 héroïque, potentiel légendaire, les deux gains et le tri restent là. En faire une
 vue séparée obligerait à tout y réimplémenter.
 
+⚠️ **La réserve ne change PAS le calcul, elle choisit les runes.** Potentiels,
+gains, gemme proposée et plan sont ceux d'une réserve sans limite, au max de
+leur grade, filtre allumé ou non ; la réserve ne décide que des runes gardées
+(`planFaisable` et `etatsReserve` dans [crafts.ts](src/lib/crafts.ts)). Un plan
+taillé à la réserve — une stat dont le consommable manque n'était pas poussée,
+une gemme absente remplacée par une autre — changeait le chiffre et la gemme
+selon le sac : la tuile annonçait un potentiel qui n'était plus celui de la
+rune, et le plan ouvert n'était pas celui qu'on viserait. Verrouillé par le test
+`testPlanFaisable`.
+
+- ⚠️ **Une ligne suffit.** Une Swift dont la meule VIT manque reste dans la liste
+  si une autre de ses meules est en réserve : son plan reste entier, la ligne VIT
+  grisée. Exiger le plan complet effaçait des chantiers qu'on peut commencer ce
+  soir.
+- ⚠️ **En légendaire, un consommable héroïque compte s'il améliore la rune.** Le
+  plan et les chiffres restent au **max légendaire** ; l'héroïque n'est qu'un pas
+  dans sa direction. Une meule héroïque compte si son max dépasse la meule déjà
+  posée sur la ligne ; une gemme héroïque, si la rune y gagne, rejouée avec la
+  meule de la réserve (légendaire, sinon héroïque, sinon aucune — le regemme
+  remet la meule du slot à zéro). La ligne gemmée se juge sur sa **gemme** : sa
+  meule seule ne s'applique à rien.
+- **Gemmes au même gain** (regemme libre) : la rune est gardée si **l'une**
+  d'elles est en réserve, et son plan s'ouvre sur celle-là.
 - Le **scénario suit le tri** (gain/potentiel héroïque → grade 4, sinon 5) :
   trier par gain héroïque tout en filtrant sur du légendaire n'aurait aucun sens.
   Ce grade décide des runes **gardées** et du **plan** ouvert au clic — sauf
-  quand une seule case de grade est cochée (ci-dessous).
-- ⚠️ **Mais chaque chiffre de la tuile se vérifie contre la réserve de SON
-  grade**, quel que soit le tri : **Héro** contre les consommables héroïques ou
-  mieux, **Légend** contre les légendaires (`dispoReserve` dans
-  [crafts.ts](src/lib/crafts.ts), une par scénario). Calculés avec la seule
-  réserve du grade du tri, les deux chiffres seraient faux : trié en héroïque,
-  une meule héroïque ferait compter au chiffre légendaire la table légendaire
-  (**surestimé** — un potentiel annoncé faisable qui ne l'est pas) ; trié
-  autrement, le chiffre héroïque refuserait une meule héroïque présente
-  (**sous-estimé**). Verrouillé par le test `testReserveParGrade`.
+  quand une seule case de grade est cochée (ci-dessous). Un plan héroïque se
+  sert d'un consommable héroïque ou mieux.
 - Les plans ne sont calculés **que si le filtre est actif** — c'est plus lourd
   qu'un potentiel, et inutile tant qu'on ne le demande pas.
 - Une rune **sans rien à appliquer** est écartée : la question posée est « que
@@ -419,19 +447,14 @@ vue séparée obligerait à tout y réimplémenter.
 - Le compteur rappelle le filtre actif (« · faisables avec ma réserve »), pour
   qu'une liste courte ne passe pas pour une absence de runes.
 
-⚠️ **Le plan est RESTREINT à la réserve, il n'est pas exigé en entier.** Une stat
-dont le consommable manque n'est simplement pas poussée (`CraftDispo` dans
-[runeOptim.ts](src/lib/runeOptim.ts)). Exiger le plan complet écarterait des
-runes parfaitement travaillables : une Swift dont trois substats sur quatre
-sont meulables disparaîtrait faute d'une seule meule VIT. Le gain affiché est donc
-**celui qu'on peut aller chercher aujourd'hui**, ni plus ni moins — et le plan du
-détail applique la même restriction, sans quoi il contredirait le chiffre.
-
 **Marquage ligne par ligne** dans le plan (`SubLine`) : chaque substat à
 travailler porte l'icône de son consommable — **marteau** pour une meule,
-**gemme** pour une gemme — en **vert s'il est en réserve**, grisé sinon. Le plan
-dit quoi faire, la réserve dit ce qui est à portée ; sans le croisement il
-faudrait aller compter ses meules ailleurs pour savoir par où commencer.
+**gemme** pour une gemme — en **vert s'il est en réserve** au grade du plan, dans
+**la couleur de l'héroïque** si seul un héroïque qui améliore est en réserve
+(plan légendaire), grisé sinon ; une infobulle le dit. C'est la même règle que le
+filtre (`etatsReserve`). Le plan dit quoi faire, la réserve dit ce qui est à
+portée ; sans le croisement il faudrait aller compter ses meules ailleurs pour
+savoir par où commencer.
 ⚠️ Une seule marque par ligne, la **gemme prime** : c'est elle qui conditionne le
 reste, puisqu'elle remet le meulage du slot à zéro. Le marquage s'affiche dès
 qu'une réserve est connue, filtre actif ou non.
@@ -455,10 +478,12 @@ côté s'il y a lieu). État collant : `optim.gradesReserve`.
 - ⚠️ **Un filtre de la RÉSERVE, pas du calcul** — même procédé que « Sans les
   immémoriaux » : un grade décoché sort de la réserve en amont de
   `buildCraftStock` (`reserveDesGrades` dans [crafts.ts](src/lib/crafts.ts)).
-  Potentiels, gains, plan et marquage vert/grisé suivent sans règle de plus.
+  Les runes gardées et le marquage vert/grisé suivent sans règle de plus ;
+  potentiels et gains ne bougent pas.
 - ⚠️ **« Héroïque » seul = héroïques STRICTEMENT.** Sans les cases, un
   scénario héroïque puise aussi dans les légendaires (grade ≥ scénario) ;
-  décochée, la légendaire n'est plus dans le sac.
+  décochée, la légendaire n'est plus dans le sac. De même, **« Légendaire »
+  seul** retire les héroïques : plus aucun ne compte pour un plan légendaire.
 - ⚠️ **Un seul grade coché impose son scénario** au filtre et au plan
   (`scenarioDeLaReserve`), quel que soit le tri : « Héroïque » seul trié par
   potentiel légendaire chercherait des légendaires absents, et la liste serait
