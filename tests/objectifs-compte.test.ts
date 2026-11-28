@@ -162,7 +162,7 @@ export default function testObjectifsCompte() {
     [sansGemme(gemmee, 'heroEff'), sansGemme(gemmee, 'legendEff')],
     'rune gemmée : la meule seule, gemme inchangée'
   );
-  const relancee = runePotential(gemmee, true, 'eff', true, undefined, false, true);
+  const relancee = runePotential(gemmee, true, 'eff', true, false, true);
   ok(
     mg.effMax.heroique < relancee.heroEff && mg.effMax.legendaire < relancee.legendEff,
     'rune gemmée : en dessous de la gemme relancée au maximum (preuve qu’elle ne l’est pas)'

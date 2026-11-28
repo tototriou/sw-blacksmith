@@ -5,12 +5,12 @@
 // n'est pas dans le sac. Ce module répond à la seule question qui décide de
 // l'action du jour. Calcul pur — aucune dépendance React.
 
-import { CraftKind, CraftLine } from '../types';
+import { CraftKind, CraftLine, RuneDetail } from '../types';
 import { libelleEffetRune } from './effects';
 // Texte rédigé en français : les libellés du jeu qu'il cite viennent du
 // lexique français (`jeuFr`), pour que la phrase reste d'une seule langue.
 import { jeuFr } from '../i18n/jeu/fr';
-import { CraftDispo, RunePlan } from './runeOptim';
+import { GemmeChoix, RunePlan, OptimMetric, gemmeAmeliore, meuleMax } from './runeOptim';
 
 // Un consommable qu'un plan réclame. Pas de quantité : un plan ne demande
 // jamais deux fois le même (une gemme par rune, une meule par substat).
@@ -153,23 +153,89 @@ export function scenarioDeLaReserve(
   return scenarioTri;
 }
 
-// « Ai-je ce consommable pour CE scénario ? » — la `CraftDispo` que le calcul
-// de potentiel attend (voir runeOptim.ts), liée à une rune et à un grade.
+// Ce que la réserve permet sur UNE ligne du plan :
+//  - `grade` : le consommable du grade du scénario (ou mieux) est en réserve ;
+//  - `heroique` : plan légendaire, seul un héroïque est en réserve, et il
+//    améliore déjà la ligne (meule) ou la rune (gemme) ;
+//  - `manque` : rien d'utilisable ;
+//  - `null` : rien à poser sur cette ligne.
+export type EtatReserve = 'grade' | 'heroique' | 'manque';
+
+// L'état de chaque ligne du plan (aligné sur `plan.subs`), face à la réserve.
 //
-// ⚠️ **Une par scénario, jamais une pour deux.** Le potentiel héroïque et le
-// potentiel légendaire d'une tuile se vérifient chacun contre la réserve de
-// LEUR grade. Une seule fonction — celle du grade du tri — faisait compter au
-// chiffre légendaire une meule héroïque (surestimé, trié en héroïque) et
-// refusait au chiffre héroïque une meule héroïque présente (sous-estimé, trié
-// autrement).
-export function dispoReserve(
+// ⚠️ **La réserve ne touche JAMAIS au plan.** Le plan reçu est celui d'une
+// réserve sans limite, au max de son grade : c'est lui que la tuile chiffre.
+// La réserve ne dit que ce qu'on peut en poser ce soir. Le tailler au sac
+// changeait le potentiel et la gemme proposée selon ce qu'on possède.
+//
+// ⚠️ **Une gemme héroïque compte pour un plan légendaire** si elle améliore la
+// rune, rejouée avec la meule de la réserve (légendaire, sinon héroïque) ; une
+// meule héroïque, si son max dépasse la meule déjà posée. Le plan reste au max
+// légendaire : l'héroïque est un pas dans sa direction, pas un autre plan.
+//
+// La ligne gemmée se juge sur sa GEMME : sa meule suit la nouvelle stat, sans
+// la gemme elle ne s'applique à rien.
+export function etatsReserve(
+  plan: RunePlan,
+  rune: RuneDetail,
   stock: CraftStock,
-  rune: { set: string; rank: number },
-  scenario: RunePlan['scenario']
-): CraftDispo {
-  const grade = GRADE_SCENARIO[scenario];
+  metric: OptimMetric
+): (EtatReserve | null)[] {
   const ancient = rune.rank > 10;
-  return (kind, stat) => ownsCraft(stock, { kind, setKey: rune.set, stat, grade, ancient });
+  const grade = GRADE_SCENARIO[plan.scenario];
+  const legendaire = plan.scenario === 'legend';
+  const possede = (kind: CraftKind, stat: number, g: number) =>
+    ownsCraft(stock, { kind, setKey: rune.set, stat, grade: g, ancient });
+  return plan.subs.map((s, i) => {
+    if (s.isGem) {
+      if (possede('gem', s.code, grade)) return 'grade';
+      if (!legendaire || !possede('gem', s.code, GRADE_SCENARIO.hero)) return 'manque';
+      const meule = possede('grind', s.code, GRADE_SCENARIO.legend)
+        ? 'legend'
+        : possede('grind', s.code, GRADE_SCENARIO.hero)
+          ? 'hero'
+          : null;
+      return gemmeAmeliore(rune, i, s.code, 'hero', meule, metric) ? 'heroique' : 'manque';
+    }
+    if (!s.grindable || s.grind <= s.curGrind) return null;
+    if (possede('grind', s.code, grade)) return 'grade';
+    const heroique = legendaire && possede('grind', s.code, GRADE_SCENARIO.hero);
+    return heroique && (meuleMax(s.code, ancient, 'hero') ?? 0) > s.curGrind ? 'heroique' : 'manque';
+  });
+}
+
+// « Faisable avec ma réserve » : le plan apporte quelque chose, et AU MOINS une
+// de ses lignes peut se poser avec la réserve (`etatsReserve`). Une meule VIT
+// manquante n'efface pas une rune dont trois autres lignes sont à portée.
+export function planFaisable(plan: RunePlan, rune: RuneDetail, stock: CraftStock, metric: OptimMetric): boolean {
+  return plan.targetEff > plan.eff && etatsReserve(plan, rune, stock, metric).some(posable);
+}
+
+const posable = (e: EtatReserve | null) => e === 'grade' || e === 'heroique';
+
+// Le plan à montrer parmi les gemmes au même gain (`plan.gemmes`), et si la
+// rune est faisable. `planDe(choix)` rebâtit le plan avec une autre gemme.
+//
+// ⚠️ **Faisable si UNE des gemmes au même gain l'est** : ATQ% et DEF% valent
+// autant, la rune ne sort pas de la liste parce que le calcul a nommé la
+// première et que la réserve a l'autre. Le plan montré d'abord est celui dont
+// la GEMME est en réserve (au grade, sinon en héroïque) ; le joueur garde le
+// choix des autres.
+export function planEnReserve(
+  planDe: (choix?: GemmeChoix) => RunePlan,
+  rune: RuneDetail,
+  stock: CraftStock,
+  metric: OptimMetric
+): { plan: RunePlan; faisable: boolean } {
+  const premier = planDe();
+  const plans = premier.gemmes.length > 1 ? premier.gemmes.map((g) => planDe(g)) : [premier];
+  const juges = plans.map((p) => ({ p, etats: etatsReserve(p, rune, stock, metric) }));
+  const gemmeA = (etat: EtatReserve) => juges.find((j) => j.p.subs.some((s, i) => s.isGem && j.etats[i] === etat));
+  const choisi = gemmeA('grade') ?? gemmeA('heroique') ?? juges[0];
+  return {
+    plan: choisi.p,
+    faisable: juges.some((j) => j.p.targetEff > j.p.eff && j.etats.some(posable)),
+  };
 }
 
 // Les lots qui seraient consommés en appliquant ce plan, sous forme de clés de

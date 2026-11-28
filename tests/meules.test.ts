@@ -10,16 +10,18 @@ import {
   buildCraftStock,
   craftLabel,
   craftsToSpend,
-  dispoReserve,
   missingCrafts,
   ownsCraft,
   pickCraft,
+  etatsReserve,
+  planEnReserve,
+  planFaisable,
   GRADE_SCENARIO,
   GRADES_RESERVE,
   reserveDesGrades,
   scenarioDeLaReserve,
 } from '../src/lib/crafts';
-import { planNeeds, runePlan, runePotential } from '../src/lib/runeOptim';
+import { GemmeChoix, gemmeAmeliore, planNeeds, runePlan, runePotential } from '../src/lib/runeOptim';
 import { CraftLine, RuneDetail } from '../src/types';
 import { convertirPalier } from '../src/hooks/useRuneMetric';
 import { egal, ignore, ok, titre, exportReel } from './outils';
@@ -476,11 +478,11 @@ export function testRegemmeDifferent() {
     ],
   };
   egal(runePotential(defPlate, true, 'eff').legendGem, null, 'éteinte : la DEF plate gemmée reste en place');
-  const libre = runePotential(defPlate, true, 'eff', false, undefined, true);
+  const libre = runePotential(defPlate, true, 'eff', false, true);
   egal(libre.legendGem, 6, 'allumée : la ligne gemmée passe en DEF%');
   ok(libre.legendEff > runePotential(defPlate, true, 'eff').legendEff, 'et le potentiel augmente');
 
-  const plan = runePlan(defPlate, 'legend', true, 'eff', false, undefined, true);
+  const plan = runePlan(defPlate, 'legend', true, 'eff', false, true);
   const ligne = plan.subs[0];
   ok(ligne.isGem && ligne.fromCode === 5 && ligne.code === 6, 'le plan remplace la ligne gemmée, pas une autre');
   egal([ligne.base, ligne.grind], [13, 10], 'gemme DEF% légendaire (13) puis meule (10)');
@@ -500,7 +502,7 @@ export function testRegemmeDifferent() {
       { code: 11, value: 8 },
     ],
   };
-  const planVit = runePlan(vitGemmee, 'legend', true, 'eff', false, undefined, true);
+  const planVit = runePlan(vitGemmee, 'legend', true, 'eff', false, true);
   egal(planVit.gemCode, 6, 'un regemme est bien proposé (VIT → DEF%) — le test ne passe pas à vide');
   ok(
     planVit.subs.every((s, j) => !s.isGem || j === 1),
@@ -511,7 +513,7 @@ export function testRegemmeDifferent() {
   // ligne y était déjà candidate.
   const vierge: RuneDetail = { ...vitGemmee, subs: vitGemmee.subs.map((s) => ({ ...s, enchant: undefined })) };
   egal(
-    runePotential(vierge, true, 'eff', false, undefined, true),
+    runePotential(vierge, true, 'eff', false, true),
     runePotential(vierge, true, 'eff'),
     '`regemLibre` seul : rune jamais gemmée → même potentiel'
   );
@@ -520,26 +522,29 @@ export function testRegemmeDifferent() {
   // vierge ne reçoit AUCUNE gemme — changer RES en ATQ% sur une rune qui n'en a
   // pas, c'est déjà un « regemme différent ». L'écran passe
   // `gemmeExistanteSeule = !regemLibre` au potentiel ET au plan.
-  const eteinte = runePotential(vierge, true, 'eff', false, undefined, false, true);
+  const eteinte = runePotential(vierge, true, 'eff', false, false, true);
   egal([eteinte.heroGem, eteinte.legendGem], [null, null], 'éteinte : aucune gemme sur une rune vierge');
   egal(eteinte.legendEff, runePotential(vierge, false, 'eff').legendEff, 'éteinte : rune vierge = meules seules');
-  const planEteint = runePlan(vierge, 'legend', true, 'eff', false, undefined, false, true);
+  const planEteint = runePlan(vierge, 'legend', true, 'eff', false, false, true);
   ok(planEteint.gemCode === null && planEteint.subs.every((s) => !s.isGem), 'éteinte : le plan détaillé ne gemme aucune ligne');
-  const allumee = runePotential(vierge, true, 'eff', false, undefined, true, false);
+  const allumee = runePotential(vierge, true, 'eff', false, true, false);
   ok(allumee.legendGem !== null && allumee.legendEff > eteinte.legendEff, 'allumée : la meilleure gemme revient, le potentiel monte');
 
   // Éteinte, une gemme DÉJÀ posée se relance toujours dans sa stat.
   const vitBasse: RuneDetail = { ...vitGemmee, subs: vitGemmee.subs.map((s) => (s.code === 8 ? { ...s, value: 5 } : s)) };
-  const planRelance = runePlan(vitBasse, 'legend', true, 'eff', false, undefined, false, true);
+  const planRelance = runePlan(vitBasse, 'legend', true, 'eff', false, false, true);
   egal(planRelance.gemCode, 8, 'éteinte : la VIT gemmée (5) est relancée en VIT');
   egal(planRelance.subs[1].base, 10, 'à sa base de gemme légendaire (10)');
 }
 
-export function testReserveParGrade() {
-  titre('« Faisable » : chaque potentiel contre la réserve de SON grade');
+// « Faisable avec ma réserve » choisit les runes, il ne touche pas au calcul :
+// le plan est celui d'une réserve sans limite, au max de son grade, et la rune
+// est gardée dès qu'UNE de ses lignes se pose avec la réserve — en légendaire,
+// un consommable héroïque compte s'il améliore déjà la rune.
+export function testPlanFaisable() {
+  titre('« Faisable » : au moins une ligne en réserve, calcul inchangé');
 
-  // VIT meulable, les trois autres substats non meulables : seule la meule VIT
-  // compte. Dans le sac, UNE meule VIT **héroïque** Violent, rien d'autre.
+  // VIT et ATQ% meulables, les deux autres non : le plan réclame deux meules.
   const rune: RuneDetail = {
     id: 31,
     slot: 2,
@@ -550,39 +555,115 @@ export function testReserveParGrade() {
     main: { code: 8, value: 42 },
     subs: [
       { code: 8, value: 5, grind: 0 },
-      { code: 9, value: 6 },
+      { code: 4, value: 6, grind: 0 },
       { code: 11, value: 7 },
       { code: 12, value: 8 },
     ],
   };
-  const heroique = stock([{ kind: 'grind' as const, stat: 8, grade: 4 }]);
-  const parGrade = (s: ReturnType<typeof stock>) => ({
-    hero: dispoReserve(s, rune, 'hero'),
-    legend: dispoReserve(s, rune, 'legend'),
-  });
+  const plan = (scenario: 'hero' | 'legend') => runePlan(rune, scenario, false, 'eff', true);
+  const meule = (stat: number, grade: number) => ({ kind: 'grind' as const, stat, grade });
 
-  const pot = runePotential(rune, false, 'eff', true, parGrade(heroique));
-  ok(pot.heroGain > 0, 'héroïque : la meule héroïque en réserve est comptée');
-  egal(pot.legendGain, 0, 'légendaire : une meule héroïque ne vaut pas une légendaire, rien à pousser');
-  egal(
-    runePlan(rune, 'hero', false, 'eff', true, dispoReserve(heroique, rune, 'hero')).subs[0].grind,
-    4,
-    'le plan héroïque pose bien la meule (+4)'
-  );
+  const faisable = (p: ReturnType<typeof plan>, r: RuneDetail, s: ReturnType<typeof stock>) => planFaisable(p, r, s, 'eff');
+  const etats = (p: ReturnType<typeof plan>, r: RuneDetail, s: ReturnType<typeof stock>) => etatsReserve(p, r, s, 'eff');
 
-  // ⚠️ Une SEULE dispo pour les deux chiffres, celle du grade du tri, serait
-  // fausse : trié en héroïque (grade 4), le chiffre légendaire compterait la
-  // meule héroïque avec la table légendaire (+5).
-  const unSeulGrade = runePotential(rune, false, 'eff', true, {
-    hero: dispoReserve(heroique, rune, 'hero'),
-    legend: dispoReserve(heroique, rune, 'hero'),
-  });
-  ok(unSeulGrade.legendEff > pot.legendEff, 'le grade du tri pour les deux chiffres surestimerait le légendaire');
+  const lesDeux = stock([meule(8, 5), meule(4, 5)]);
+  ok(faisable(plan('legend'), rune, lesDeux), 'les deux meules légendaires en réserve : faisable');
+  egal(etats(plan('legend'), rune, lesDeux), ['grade', 'grade', null, null], 'chaque ligne meulable marquée en réserve');
+  ok(faisable(plan('hero'), rune, lesDeux), 'une meule légendaire sert au plan héroïque (grade ≥ scénario)');
 
-  // Grade ≥ scénario : une meule LÉGENDAIRE sert aux deux chiffres.
-  const legendaire = stock([{ kind: 'grind' as const, stat: 8, grade: 5 }]);
-  const pot5 = runePotential(rune, false, 'eff', true, parGrade(legendaire));
-  ok(pot5.heroGain > 0 && pot5.legendGain > pot5.heroGain, 'une meule légendaire compte en héroïque ET en légendaire');
+  // UNE ligne suffit : il manque la meule ATQ%, la rune reste, le plan entier.
+  const vitSeule = stock([meule(8, 5)]);
+  ok(faisable(plan('legend'), rune, vitSeule), 'une seule meule en réserve : faisable');
+  egal(etats(plan('legend'), rune, vitSeule), ['grade', 'manque', null, null], 'la meule ATQ% marquée à farmer');
+  egal(plan('legend').subs[1].grind, 10, 'le plan garde la meule ATQ% absente du sac (+10)');
+  ok(!faisable(plan('legend'), rune, stock([])), 'sac vide : pas faisable');
+
+  // Plan légendaire, meules héroïques : elles améliorent, la rune est gardée,
+  // et le calcul reste au max légendaire.
+  const heroiques = stock([meule(8, 4), meule(4, 4)]);
+  ok(faisable(plan('hero'), rune, heroiques), 'meules héroïques : plan héroïque faisable');
+  ok(faisable(plan('legend'), rune, heroiques), 'meules héroïques : plan légendaire gardé, elles améliorent');
+  egal(etats(plan('legend'), rune, heroiques), ['heroique', 'heroique', null, null], 'marquées « héroïque seulement »');
+  egal(plan('legend').subs[0].grind, 5, 'le plan reste au max légendaire (+5 VIT)');
+
+  // Une meule héroïque qui n'améliore pas — VIT déjà meulée à +4, son max
+  // héroïque — ne compte pas pour le plan légendaire.
+  const vitHero: RuneDetail = { ...rune, subs: rune.subs.map((s) => (s.code === 8 ? { ...s, value: 9, grind: 4 } : s)) };
+  const planVitHero = runePlan(vitHero, 'legend', false, 'eff', true);
+  ok(!faisable(planVitHero, vitHero, stock([meule(8, 4)])), 'meule héroïque sur une VIT déjà à +4 : pas faisable');
+  ok(faisable(planVitHero, vitHero, stock([meule(8, 5)])), 'la meule légendaire, elle, ajoute (+5)');
+
+  // Rien à poser (tout déjà au max) : écartée, même sac plein.
+  const finie: RuneDetail = {
+    ...rune,
+    subs: rune.subs.map((s) => (s.code === 8 ? { ...s, value: 10, grind: 5 } : s.code === 4 ? { ...s, value: 16, grind: 10 } : s)),
+  };
+  ok(!faisable(runePlan(finie, 'legend', false, 'eff', true), finie, lesDeux), 'rien à poser : pas faisable');
+
+  // La gemme du plan est celle d'une réserve sans limite, au max légendaire.
+  const vierge: RuneDetail = { ...rune, subs: [{ code: 9, value: 6 }, { code: 11, value: 7 }, { code: 12, value: 8 }, { code: 10, value: 5 }] };
+  const planGemme = runePlan(vierge, 'legend', true, 'eff', true, true);
+  const gemme = planGemme.gemCode!;
+  ok(planGemme.gemCode != null, 'rune vierge, regemme libre : une gemme est proposée');
+  const gemmeDe = (grade: number) => ({ kind: 'gem' as const, stat: gemme, grade });
+  ok(faisable(planGemme, vierge, stock([gemmeDe(5)])), 'la gemme légendaire du plan en réserve : faisable');
+  ok(faisable(planGemme, vierge, stock([gemmeDe(4)])), 'la même en héroïque : faisable, elle améliore la rune');
+  ok(etats(planGemme, vierge, stock([gemmeDe(4)])).includes('heroique'), 'marquée « héroïque seulement »');
+  ok(!faisable(planGemme, vierge, stock([{ kind: 'gem' as const, stat: gemme === 2 ? 4 : 2, grade: 5 }])), 'une autre gemme : pas faisable');
+  ok(!faisable(planGemme, vierge, stock([meule(gemme, 5)])), 'la meule de la ligne gemmée sans sa gemme : pas faisable');
+
+  // Une gemme héroïque n'améliore pas une ligne déjà au-dessus de son max :
+  // ATQ% gemmée à 12, max héroïque 11, max légendaire 13.
+  const atq12: RuneDetail = { ...rune, subs: [{ code: 4, value: 12, enchant: true }, { code: 9, value: 6 }, { code: 11, value: 7 }, { code: 12, value: 8 }] };
+  ok(!gemmeAmeliore(atq12, 0, 4, 'hero', null, 'eff'), 'gemme ATQ% héroïque sur ATQ% 12 : n’améliore pas');
+  ok(gemmeAmeliore(atq12, 0, 4, 'legend', null, 'eff'), 'gemme ATQ% légendaire : améliore (13)');
+}
+
+// Regemme libre : PV%, ATQ% et DEF% ont les mêmes tables, donc le même gain.
+// Le plan les propose toutes, le joueur choisit ; le filtre garde la rune si
+// l'une d'elles est en réserve, et la montre d'abord.
+export function testGemmesMemeGain() {
+  titre('Regemme : les gemmes au même gain sont toutes proposées');
+  // RES à 5 : la ligne qui gagne le plus à être regemmée.
+  const rune: RuneDetail = {
+    id: 33,
+    slot: 2,
+    set: 'violent',
+    rank: 6,
+    rarity: 5,
+    level: 15,
+    main: { code: 8, value: 42 },
+    subs: [
+      { code: 9, value: 6 },
+      { code: 10, value: 7 },
+      { code: 11, value: 5 },
+      { code: 12, value: 8 },
+    ],
+  };
+  const planDe = (choix?: GemmeChoix) => runePlan(rune, 'legend', true, 'eff', true, true, false, choix);
+  const plan = planDe();
+  egal(plan.gemmes.map((g) => g.code), [2, 4, 6], 'PV%, ATQ% et DEF% au même gain');
+  ok(plan.gemmes.every((g) => g.slot === 2), 'toutes sur la ligne RES');
+  egal(plan.gemCode, 2, 'sans choix : la première');
+  const def = planDe({ slot: 2, code: 6 });
+  egal(def.gemCode, 6, 'DEF% choisie : le plan la pose');
+  egal(def.targetEff, plan.targetEff, 'et le gain annoncé ne bouge pas');
+  egal(planDe({ slot: 0, code: 6 }).gemCode, 2, 'un choix hors des gemmes au même gain est ignoré');
+  egal(runePotential(rune, true, 'eff', true, true).legendGem, 2, 'le potentiel nomme toujours la première');
+
+  // Le filtre : la réserve n'a que la DEF% — la rune est gardée, plan DEF%.
+  const sacDef = stock([{ kind: 'gem' as const, stat: 6, grade: 5 }]);
+  const enReserve = planEnReserve(planDe, rune, sacDef, 'eff');
+  ok(enReserve.faisable, 'gemme DEF% en réserve : faisable');
+  egal(enReserve.plan.gemCode, 6, 'le plan montré pose la DEF% en réserve');
+  ok(!planFaisable(plan, rune, sacDef, 'eff'), 'le plan PV% seul, lui, ne l’était pas');
+  const rien = planEnReserve(planDe, rune, stock([]), 'eff');
+  ok(!rien.faisable && rien.plan.gemCode === 2, 'sac vide : pas faisable, la première montrée');
+
+  // Gemme figée (regemme éteint) : une ATQ% gemmée à 5 se relance en ATQ%,
+  // une seule gemme, rien à choisir.
+  const gemmee: RuneDetail = { ...rune, subs: rune.subs.map((s) => (s.code === 11 ? { code: 4, value: 5, enchant: true } : s)) };
+  egal(runePlan(gemmee, 'legend', true, 'eff', true, false, true).gemmes.length, 1, 'regemme éteint : une seule gemme');
 }
 
 // Les cases « Héroïque » / « Légendaire » de « Faisable avec ma réserve » :
@@ -629,12 +710,19 @@ export function testReserveDesGrades() {
     ],
   };
   const sac = [ligne({ grade: 5 })];
-  const plan = (grades: Set<number>) => {
-    const s = buildCraftStock(reserveDesGrades(sac, grades));
-    const scenario = scenarioDeLaReserve(grades, 'hero');
-    return runePlan(rune, scenario, false, 'eff', true, dispoReserve(s, rune, scenario));
+  const juger = (grades: Set<number>, lignesSac = sac, tri: 'hero' | 'legend' = 'hero') => {
+    const scenario = scenarioDeLaReserve(grades, tri);
+    const plan = runePlan(rune, scenario, false, 'eff', true);
+    return { plan, faisable: planFaisable(plan, rune, buildCraftStock(reserveDesGrades(lignesSac, grades)), 'eff') };
   };
-  egal(plan(tous).subs[0].grind, 4, 'les deux cochés, trié en héroïque : la meule légendaire sert au plan héroïque (+4)');
-  egal(planNeeds(plan(new Set([4]))).length, 0, '« Héroïque » seul : la meule légendaire n’est pas utilisée, rune non faisable');
-  egal(plan(new Set([5])).subs[0].grind, 5, '« Légendaire » seul, trié en héroïque : plan légendaire (+5)');
+  ok(juger(tous).faisable && juger(tous).plan.subs[0].grind === 4, 'les deux cochés, trié en héroïque : la meule légendaire sert au plan héroïque (+4)');
+  ok(!juger(new Set([4])).faisable, '« Héroïque » seul : la meule légendaire n’est pas utilisée, rune non faisable');
+  egal(juger(new Set([4])).plan.subs[0].grind, 4, '… mais le plan héroïque reste entier (+4)');
+  ok(juger(new Set([5])).faisable && juger(new Set([5])).plan.subs[0].grind === 5, '« Légendaire » seul, trié en héroïque : plan légendaire (+5)');
+
+  // Une meule VIT HÉROÏQUE, trié en légendaire : les deux cochés, elle compte
+  // (elle améliore) ; « Légendaire » seul la sort du sac.
+  const sacHero = [ligne({ grade: 4 })];
+  ok(juger(tous, sacHero, 'legend').faisable, 'les deux cochés, trié en légendaire : la meule héroïque compte');
+  ok(!juger(new Set([5]), sacHero, 'legend').faisable, '« Légendaire » seul : la meule héroïque n’est plus dans le sac');
 }

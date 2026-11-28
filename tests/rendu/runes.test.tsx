@@ -15,6 +15,8 @@ import { runesUtiliseesVides } from '../../src/lib/importAccount';
 import { amorcerMemoire, reinitialiserSticky } from '../../src/hooks/useStickyState';
 import { auTelephone, boutons, onglets, rendre, texteVisible, valeurs } from './outils-rendu';
 import FenetreRunesExclues from '../../src/components/account/FenetreRunesExclues';
+import { OptimPlanBox } from '../../src/components/account/RunesOptim';
+import { buildCraftStock } from '../../src/lib/crafts';
 
 // Une réserve courte mais variée : six slots, six sets, une antique, une rune
 // gemmée, une meulée, une innée, des niveaux et des raretés différents — de
@@ -201,6 +203,31 @@ export function testRenduRunesOptimisation() {
   // porterait à 129.5 / 137.8 : runeOptim, testRegemmeDifferent).
   ok(b.some((x) => x.texte === 'Autoriser un regemme différent' && x.presse === false && !!x.title?.startsWith('Proposer aussi une gemme d’une autre stat')), '« Autoriser un regemme différent », éteint, et ce qu’il ajoute');
   ok(b.some((x) => x.texte === 'Dgts critiq. +80% actuelle 109.5% Héro +11.0 → 120.5% Légend +14.9 → 124.4%'), 'une rune vierge : actuelle, puis gain et potentiel héroïque et légendaire, sans gemme');
+}
+
+// Regemme libre, plusieurs gemmes au même gain : le plan les propose toutes, et
+// pose d'abord celle qui est en réserve.
+export function testRenduRunesPlanGemmesMemeGain() {
+  titre('rendu · Mon compte · Runes — Optimisation : gemmes au même gain');
+  faussLocalStorage({});
+  // RES à 5 : la ligne à regemmer ; PV%, ATQ% et DEF% y valent autant.
+  const vierge = rune(40, 2, 'violent', e(8, 42), [e(9, 6), e(10, 7), e(11, 5), e(12, 8)]);
+  const sacDef = buildCraftStock([{ kind: 'gem', setKey: 'violent', stat: 6, grade: 5, ancient: false, amount: 1 } as CraftLine]);
+  const html = rendre(<OptimPlanBox rune={vierge} scenario="legend" withGem regemLibre noDowngrade stock={sacDef} />);
+  const t = texteVisible(html);
+  const b = boutons(html);
+  ok(t.includes('Gemme au même gain :'), 'le choix est annoncé');
+  egal(
+    b.filter((x) => x.presse !== undefined).map((x) => x.texte),
+    ['PV%', 'ATQ%', 'DEF%'],
+    'les trois gemmes au même gain'
+  );
+  ok(b.some((x) => x.texte === 'DEF%' && x.presse === true && x.title === 'En réserve'), 'la DEF%, en réserve, posée d’abord');
+  ok(b.some((x) => x.texte === 'ATQ%' && x.presse === false && x.title === 'À farmer'), 'l’ATQ%, à farmer, au choix');
+
+  // Regemme éteint : rune vierge sans gemme, aucun choix.
+  const sans = rendre(<OptimPlanBox rune={vierge} scenario="legend" withGem noDowngrade stock={sacDef} />);
+  ok(!texteVisible(sans).includes('Gemme au même gain'), 'regemme éteint : pas de choix');
 }
 
 // Le palier suit le grade du TRI, et une rune exclue sort de la liste avec un

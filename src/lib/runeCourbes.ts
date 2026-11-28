@@ -43,7 +43,7 @@ export function distributionsCourbes(
   metric: OptimMetric,
   runeARune = false
 ): DistributionsCourbes {
-  const pots = runes.map((r) => ({ rune: r, p: runePotential(r, withGem, metric, false, undefined, false, true) }));
+  const pots = runes.map((r) => ({ rune: r, p: runePotential(r, withGem, metric, false, false, true) }));
   const parActuelle = [...pots].sort((a, b) => b.p.eff - a.p.eff);
   const classe = (val: (p: RunePotential) => number): Distribution => {
     const tri = runeARune ? parActuelle : [...pots].sort((a, b) => val(b.p) - val(a.p));

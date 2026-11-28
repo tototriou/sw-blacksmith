@@ -91,7 +91,7 @@ import { testOptimizerRattachementReferenceConservee } from './optimizer-rattach
 import { testOptimizerRattachementIdentites, verificationsOptimizerRattachementOrdres, testOptimizerRattachementDepartageEtPrises,
   testOptimizerRattachementCopiesSansExemplaire, testOptimizerRattachementPermutationEtProprietaire,
   testOptimizerRattachementRuneVendue, testOptimizerRattachementDefensesComplet, testOptimizerRattachementBranchement, testOptimizerRattachementSpeedTune } from './optimizer-rattachement.test';
-import testMeules, { testGemmeMemeStat, testRegemmeDifferent, testReserveParGrade, testReserveDesGrades, testPalier, testRegistre, testSansDowngrade } from './meules.test';
+import testMeules, { testGemmeMemeStat, testRegemmeDifferent, testPlanFaisable, testGemmesMemeGain, testReserveDesGrades, testPalier, testRegistre, testSansDowngrade } from './meules.test';
 import { testCourbesRunesParRang, testCourbesRunesRuneARune, testCourbesRunesSansGemmeSimulee } from './rune-courbes.test';
 import testArtefacts from './artefacts.test';
 import testArtefactsTop from './artefacts-top.test';
@@ -447,7 +447,7 @@ import { testRenduAttaqueConjointeEcran } from './rendu/attaque-conjointe-ecran.
 import { testRenduEffetsEntreCoupsEcran, testRenduEffetsEntreCoupsAnglais } from './rendu/effets-entre-coups-ecran.test';
 import { testRenduRecosPage, testRenduRecosEnTete, testRenduRecosLigneDeckReduite, testRenduRecosDeploiement, testRenduRecosEdition, testRenduRecosVueDefense, testRenduRecosFiabilite, testRenduRecosGrosLot, testRenduRecosTicks, testRenduRecosAnnulerEdition, testRenduRecosStatsEnTotal } from './rendu/recos.test';
 import testAnnulerEdition from './annuler-edition.test';
-import { testRenduRunesResume, testRenduRunesListe, testRenduRunesCourbes, testRenduRunesComparaison, testRenduRunesOptimisation, testRenduRunesOptimisationPalierEtExclusion, testRenduRunesFenetreExclues, testRenduRunesAVenir, testRenduRunesFiltresLigne, testRenduRunesTriOnglets, testRenduRunesResumeSouris, testRenduRunesListeSouris, testRenduRunesVuesSouris } from './rendu/runes.test';
+import { testRenduRunesResume, testRenduRunesListe, testRenduRunesCourbes, testRenduRunesComparaison, testRenduRunesOptimisation, testRenduRunesOptimisationPalierEtExclusion, testRenduRunesPlanGemmesMemeGain, testRenduRunesFenetreExclues, testRenduRunesAVenir, testRenduRunesFiltresLigne, testRenduRunesTriOnglets, testRenduRunesResumeSouris, testRenduRunesListeSouris, testRenduRunesVuesSouris } from './rendu/runes.test';
 import { testRenduCompteMonstres, testRenduCompteArtefactsResume, testRenduCompteArtefactsListe, testRenduCompteArtefactsTop, testRenduCompteSouris, testRenduCompteEffacerFiltres } from './rendu/compte.test';
 import { testRenduSpeedTuneVide, testRenduSpeedTuneRta, testRenduSpeedTuneCamps, testRenduSpeedTuneAnalyse, testRenduSpeedTuneAppliquer, testRenduSpeedTuneExportArene } from './rendu/speed-tune.test';
 import { testRenduOptimizerVide, testRenduOptimizerMonstre, testRenduOptimizerReglages, testRenduTelephoneOptimizer, testRenduOptimizerPrecisionParSort } from './rendu/optimizer.test';
@@ -678,6 +678,7 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testRenduRunesComparaison', testRenduRunesComparaison],
   ['testRenduRunesOptimisation', testRenduRunesOptimisation],
   ['testRenduRunesOptimisationPalierEtExclusion', testRenduRunesOptimisationPalierEtExclusion],
+  ['testRenduRunesPlanGemmesMemeGain', testRenduRunesPlanGemmesMemeGain],
   ['testRenduRunesFenetreExclues', testRenduRunesFenetreExclues],
   ['testRenduRunesAVenir', testRenduRunesAVenir],
   ['testRenduRunesFiltresLigne', testRenduRunesFiltresLigne],
@@ -1260,7 +1261,8 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testCourbesRunesParRang', testCourbesRunesParRang],
   ['testCourbesRunesRuneARune', testCourbesRunesRuneARune],
   ['testCourbesRunesSansGemmeSimulee', testCourbesRunesSansGemmeSimulee],
-  ['testReserveParGrade', testReserveParGrade],
+  ['testPlanFaisable', testPlanFaisable],
+  ['testGemmesMemeGain', testGemmesMemeGain],
   ['testReserveDesGrades', testReserveDesGrades],
   ['testPalier', testPalier],
   ['testMigrationStockage', testMigrationStockage],
