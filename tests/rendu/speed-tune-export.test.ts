@@ -85,5 +85,26 @@ async function verifierResetAtbApp(telephone: boolean) {
     for (const [condition, texte] of preuves) ok(condition, texte);
   } finally { await browser.close(); }
 }
+// Judgment Storm (S3 de Driana) : plusieurs alliés désignés dans le vrai App.
+async function verifierCiblesMultiplesApp(telephone: boolean) {
+  titre('App · Judgment Storm vise plusieurs alliés · ' + (telephone ? 'téléphone' : 'bureau'));
+  const corpus = JSON.parse(readFileSync('public/data/monsters.json', 'utf8')) as { monsters: Monster[] };
+  const ids = [34213, 15311, 13413];
+  const cibles = {
+    monstres: ids.map(id => corpus.monsters.find(m => m.com2usId === id)!),
+    details: ids.map(id => JSON.parse(readFileSync('public/data/skills/' + id + '.json', 'utf8')) as DetailMonstre),
+    parcours: 'cibles' as const,
+  };
+  const { browser, page } = await navigateurOptimizer(telephone, 'tests/rendu/speed-tune-export-app-banc.tsx');
+  try {
+    const preuves = await page.evaluate((cibles) => (globalThis as unknown as {
+      bancOptimizer: { scenario: (reset: { monstres: Monster[]; details: DetailMonstre[]; parcours: 'cibles' }) => Promise<[boolean, string][]> };
+    }).bancOptimizer.scenario(cibles), cibles);
+    ok(preuves.length > 0, 'vrai App monté avec les fiches de Driana, Rina et Lushen');
+    for (const [condition, texte] of preuves) ok(condition, texte);
+  } finally { await browser.close(); }
+}
+export const testRenduSpeedTuneCiblesMultiplesApp = () => verifierCiblesMultiplesApp(false);
+export const testRenduTelephoneSpeedTuneCiblesMultiplesApp = () => verifierCiblesMultiplesApp(true);
 export const testRenduSpeedTuneResetAtbApp = () => verifierResetAtbApp(false);
 export const testRenduTelephoneSpeedTuneResetAtbApp = () => verifierResetAtbApp(true);

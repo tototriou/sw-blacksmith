@@ -100,7 +100,7 @@ aide tout autant à passer devant lui. D'où `EffetSort`
 | `atbTousAZero` | Remet exactement à **0 %** les jauges des deux camps, avant les remplissages |
 | `atbTous` | Ajoute des points de barre aux **deux camps**, lanceur compris |
 | `atbEquipe` | +% de barre à **tout son camp**, lui compris |
-| `atbAllie` | +% de barre à **UN** allié : celui dont la barre est la plus basse |
+| `atbAllie` | +% de barre à **UN** allié : celui dont la barre est la plus basse, ou à chacun des alliés désignés (`ciblesAllie`) |
 | `atbSoi` | +% sur **sa** barre |
 | `atbEnnemi` / `atbEnnemiTous` | −% de barre à l'adverse (le plus avancé), ou à tous |
 | `buffEquipe` / `buffSoi` | +30 % de vitesse, à partir du tick **suivant** ; `buffEquipeSansSoi` exclut le lanceur |
@@ -128,7 +128,7 @@ aide tout autant à passer devant lui. D'où `EffetSort`
   Même règle pour le buff de vitesse et pour le **comptage des buffs d'équipe**
   (`buffsEquipe`, qui nourrit l'estimation des passifs à cumuls) : un effet
   **bénéfique** de zone va sur les alliés, que le lanceur en profite ou non.
-- ⚠️ **La cible se DÉSIGNE** (`cibleAllie`) quand le sort laisse viser — « increases
+- ⚠️ **La cible se DÉSIGNE** (`ciblesAllie`) quand le sort laisse viser — « increases
   the Attack Bar of **the target ally** », le S3 de Sapsaree. La barre la plus
   basse n'est qu'un **défaut raisonnable**, pas une règle du jeu : l'ordre des
   sorts porte donc un « sur : … » à côté du sort, listant les alliés du lanceur.
@@ -137,6 +137,26 @@ aide tout autant à passer devant lui. D'où `EffetSort`
 - ⚠️ **UNE cible pour le sort, pas une par effet.** `atbAllie` et `buffAllie`
   sortent du même sort : ils sont résolus **une seule fois**, ensemble. Les
   résoudre séparément aurait rempli la barre de l'un et buffé l'autre.
+- ⚠️ **Un sort peut viser PLUSIEURS alliés.** *Judgment Storm* (S3 de Driana
+  et de ses deux autres formes, 23513) agit sur les **4 monstres du terrain aux
+  PV les plus bas**, alliés et adverses mêlés : chaque allié touché reçoit +50 %
+  de barre. Lesquels dépend du combat, donc le « sur : … » devient une **liste à
+  choix multiple** (`SelecteurMultiple`), bornée à 4 — une fois la limite
+  atteinte, les autres alliés restent proposés, désactivés, avec la raison.
+  Chaque allié coché reçoit la barre **et** le buff du sort (`ciblesAllie`) ;
+  rien de coché retombe sur le défaut (barre la plus basse, un seul allié).
+  Les drapeaux SWARFARM d'un tel sort sont ceux d'un sort mono-cible
+  (`aoe=false, surSoi=false`) : seule la prose dit « 4 targets ». Le nombre de
+  cibles est donc **curé par identifiant** (`CIBLES_ALLIEES_CONNUES` de
+  [speedTuneKit.ts](src/lib/speedTuneKit.ts), exposé en `SortVitesse.ciblesMax`),
+  après balayage des sorts à remplissage de barre ou buff de vitesse ni de zone
+  ni sur soi : *Judgment Storm* est le seul. Une liste désignée plus longue que
+  le nombre de cibles du sort (sort changé après coup) n'en garde que les
+  premières (`ciblesDesignees`). ⚠️ **Aucune migration** : la cible désignée
+  (`ChoixSorts.cible`, clé `speedTune.cibles`) est une chaîne pour un sort
+  mono-cible et une liste pour un sort multi-cible (`CibleDesignee`) ; une cible
+  enregistrée avant, dans l'outil, une équipe ou un plan exporté, se relit telle
+  quelle.
 - ⚠️ **Le lanceur PEUT se viser lui-même** — le jeu l'autorise, et c'est le geste
   recherché quand le sort porte un buff de vitesse : *Rabbit's Agility* (Racuni,
   Harg, Dova) rend son tour au lanceur **et** l'accélère de 30 %. Il figure donc

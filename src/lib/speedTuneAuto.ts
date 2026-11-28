@@ -340,10 +340,23 @@ export function noterChoix(
   return next;
 }
 
+// L'allié (ou les alliés) désigné pour un sort « sur un allié ». Une chaîne pour
+// un sort mono-cible ; une liste pour un sort qui en touche plusieurs
+// (`SortVitesse.ciblesMax`). ⚠️ **Aucune migration** : une cible enregistrée
+// avant les sorts multi-cibles reste une chaîne et se lit telle quelle.
+export type CibleDesignee = string | string[];
+
+// Les alliés désignés, bornés au nombre de cibles du sort ; `undefined` quand
+// personne ne l'est (le moteur retombe alors sur la barre la plus basse).
+export function ciblesDesignees(v: CibleDesignee | undefined, max = 1): string[] | undefined {
+  const liste = (typeof v === 'string' ? [v] : v ?? []).filter((x) => x !== '').slice(0, Math.max(1, max));
+  return liste.length > 0 ? liste : undefined;
+}
+
 export interface ChoixSorts {
   sort?: Record<string, string>;
   sort2?: Record<string, string>;
-  cible?: Record<string, string>;
+  cible?: Record<string, CibleDesignee>;
   // La valeur désignée d'un remplissage de barre AU CHOIX (`atbAuChoix` : buffs
   // retirés par Blade Fan, % de Start of Attacking), en paliers. Par tour,
   // comme la cible ; absent = 0.
@@ -548,7 +561,11 @@ function analyseEnDeuxPasses(
       }
       const sort = sortDe(e);
       const second = sortDe(e)?.rejoue ? secondDe(e) : null;
-      const cible = choix?.cible?.[e.id] || undefined;
+      const cible = choix?.cible?.[e.id];
+      const cibleDuTour = (n: number): CibleDesignee | undefined => {
+        const propre = choix?.cible?.[cleOccurrence(e.id, n)];
+        return ciblesDesignees(propre) ? propre : n === 1 ? cible : undefined;
+      };
       // ⚠️ **La clé de rechargement est le NOM du sort.** Tant qu'un monstre
       // relançait toujours le même, l'horloge par tour suffisait ; dès qu'il en
       // lance deux, les deux la partageraient et le second serait bloqué.
@@ -565,14 +582,14 @@ function analyseEnDeuxPasses(
               // premier : enchaîner Breeze après un Rabbit's Agility visé sur
               // soi aurait visé le lanceur une seconde fois, sans qu'on l'ait
               // demandé. Chaque tour part du défaut et se désigne à part.
-              cibleAllie: choix?.cible?.[cleOccurrence(e.id, n)] || (n === 1 ? cible : undefined),
+              ciblesAllie: ciblesDesignees(cibleDuTour(n), x.ciblesMax),
             }
           : undefined;
       // Rien tant qu'aucun tour supplémentaire n'est désigné : le moteur
       // retombe alors sur `sort`, exactement comme avant.
       // Un sort mono-cible SANS cible désignée : le verdict dépend alors d'un
       // choix que l'app a fait à la place du joueur.
-      if ((sort?.effet.atbAllie || sort?.effet.buffAllie) && !cible) indecise = true;
+      if ((sort?.effet.atbAllie || sort?.effet.buffAllie) && !ciblesDesignees(cible, sort.ciblesMax)) indecise = true;
       const dernier = derniereOccurrence(e);
       const sortsParTour =
         dernier > 1
@@ -596,7 +613,12 @@ function analyseEnDeuxPasses(
         rejoue: sort?.rejoue ?? false,
         ...rejoueEnGrilles(sort, sortsParTour),
         sort2: second
-          ? { ...sansReductionAdverse(second.effet), cooldown: second.cooldown, cle: second.nom, cibleAllie: cible }
+          ? {
+              ...sansReductionAdverse(second.effet),
+              cooldown: second.cooldown,
+              cle: second.nom,
+              ciblesAllie: ciblesDesignees(cible, second.ciblesMax),
+            }
           : undefined,
         sortsParTour,
       };

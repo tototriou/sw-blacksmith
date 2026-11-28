@@ -3973,6 +3973,8 @@ export const en: Dictionnaire = {
       tour: (rang: number) => `${ordinalEn(rang)} turn`,
       sur: 'on',
       allieVise: (nom: string) => `Ally targeted by ${nom}'s skill`,
+      alliesVises: (nom: string) => `Allies targeted by ${nom}'s skill`,
+      ciblesAuPlus: (max: number) => `This skill hits at most ${max} targets: remove an ally to choose another.`,
       barreLaPlusBasse: 'lowest bar',
       luiMeme: ' (self)',
       tourDePlus: (nom: string) => `${nom} gets an extra turn — add a line to choose what it uses then`,

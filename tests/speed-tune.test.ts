@@ -59,6 +59,7 @@ import {
   combatAuto,
   cumulsEquipe,
   cumulsEstimes,
+  ciblesDesignees,
   noterChoix,
   sortRetenu,
   sortSecondRetenu,
@@ -68,6 +69,7 @@ import {
   DonneesKit,
 } from '../src/lib/speedTuneAuto';
 import { DetailMonstre, Competence, EffetCompetence } from '../src/lib/monsterSkills';
+import { planSpeedTuneValide } from '../src/lib/speedTuneEquipe';
 import { readFileSync } from 'fs';
 import { PREFIXE_SPEED_TUNE } from '../src/hooks/useSpeedTune';
 import { Monster, SiegeTeam } from '../src/types';
@@ -1001,7 +1003,7 @@ export function testSpeedTuneChaine() {
   // laissent le joueur viser (« the target ally », S3 de Sapsaree).
   {
     const equipe = (cible?: string) => [
-      { ...m('lanceur', 300, 'allie'), sort: { atbAllie: 40, cibleAllie: cible } },
+      { ...m('lanceur', 300, 'allie'), sort: { atbAllie: 40, ciblesAllie: cible ? [cible] : undefined } },
       m('bas', 100, 'allie'),
       m('haut', 240, 'allie'),
     ];
@@ -1020,7 +1022,7 @@ export function testSpeedTuneChaine() {
   // vitesse (Rabbit's Agility). Le lanceur était exclu de la liste des cibles.
   {
     const equipe = (cible?: string) => [
-      { ...m('lanceur', 300, 'allie'), sort: { atbAllie: 40, cibleAllie: cible } },
+      { ...m('lanceur', 300, 'allie'), sort: { atbAllie: 40, ciblesAllie: cible ? [cible] : undefined } },
       m('bas', 100, 'allie'),
     ];
     const gainDe = (sim: Simulation, id: string) => Object.values(sim.lignes.find((l) => l.id === id)!.effetAtb);
@@ -1050,7 +1052,7 @@ export function testSpeedTuneChaine() {
       m('cible', 150, 'allie'),
     ];
     const sans = simuler(equipe(), 40);
-    const avec = simuler(equipe({ buffAllie: 30, cibleAllie: 'cible' }), 40);
+    const avec = simuler(equipe({ buffAllie: 30, ciblesAllie: ['cible'] }), 40);
     ok(
       toursDe(avec, 'cible')[1] < toursDe(sans, 'cible')[1],
       "buffée, la cible revient plus tôt à son tour suivant"
@@ -1075,7 +1077,7 @@ export function testSpeedTuneChaine() {
   {
     const sim = simuler(
       [
-        { ...m('lanceur', 300, 'allie'), sort: { atbAllie: 40, buffAllie: 30, cibleAllie: 'haut' } },
+        { ...m('lanceur', 300, 'allie'), sort: { atbAllie: 40, buffAllie: 30, ciblesAllie: ['haut'] } },
         m('bas', 100, 'allie'),
         m('haut', 240, 'allie'),
       ],
@@ -4295,11 +4297,11 @@ export function testSpeedTuneResetAtb() {
     egal(sim.lignes.map(l => l.effetSpeed[2] ?? 0), [0, 30, 0], camp + ' : Tablo ne reçoit pas son propre buff, ni l’adverse');
     const tresHaut = simuler(plateau.map(m => ({ ...m, combat: m.combat * 10 })), 1);
     egal(tresHaut.lignes.find(l => l.id === 'adverse')!.trajectoire[0], 0, camp + ' : remise à zéro exacte même à 1260 %, sans sentinelle −999');
-    const rempli = simuler(plateau.map(m => m.id === 'lanceur' ? { ...m, sort: { ...fast.effet, cibleAllie: 'partenaire', cooldown: 4 } } : m), 2);
+    const rempli = simuler(plateau.map(m => m.id === 'lanceur' ? { ...m, sort: { ...fast.effet, ciblesAllie: ['partenaire'], cooldown: 4 } } : m), 2);
     egal(rempli.lignes.filter(l => l.id !== 'lanceur').map(l => l.trajectoire[0]), [100, 100], camp + ' : Fast Pace fixe les deux camps à 100, sans conserver le surplus');
     egal(rempli.lignes.find(l => l.id === 'lanceur')!.effetAtb[1], 100, camp + ' : le lanceur reçoit lui aussi les 100 points après sa remise à zéro');
     egal(rempli.lignes.map(l => l.effetSpeed[2] ?? 0), [0, 30, 0], camp + ' : seul l’allié ciblé reçoit le buff de Fast Pace');
-    const surSoi = simuler([{ ...plateau[0], sort: { ...fast.effet, cibleAllie: 'lanceur', cooldown: 4 } }, ...plateau.slice(1)], 2);
+    const surSoi = simuler([{ ...plateau[0], sort: { ...fast.effet, ciblesAllie: ['lanceur'], cooldown: 4 } }, ...plateau.slice(1)], 2);
     egal(surSoi.lignes.map(l => l.effetSpeed[2] ?? 0), [30, 0, 0], camp + ' : Fast Pace permet aussi de se viser soi-même');
   }
   const modifie = (v: number) => simuler([{ id: 'cible', combat: 200, camp: 'allie', atbMod: { 8: v } }], 8).lignes[0].trajectoire[7];
@@ -4361,4 +4363,81 @@ export function testSpeedTuneResetAtb() {
     egal(casesSaisies(ancienne), null, 'une grille non vide sans provenance est de provenance inconnue');
     egal(casesSaisies({ ...ancienne, speedMod: {} }), { atb: {}, speed: {} }, 'une grille vide n’a rien à départager');
   }
+}
+
+// ⚠️ **Un sort « sur un allié » peut en viser PLUSIEURS.** Judgment Storm (S3 de
+// Driana) agit sur les 4 monstres du terrain aux PV les plus bas : lesquels
+// dépend du combat, d'où une cible à choix multiple, bornée à 4.
+export function testSpeedTuneCiblesMultiples() {
+  titre('speed tuning · sort à plusieurs cibles (Judgment Storm de Driana)');
+  const fiche = (id: number): DetailMonstre => JSON.parse(readFileSync('public/data/skills/' + id + '.json', 'utf8'));
+
+  // Kit : la curation `CIBLES_ALLIEES_CONNUES` est la seule chose qui dit « 4 » —
+  // les drapeaux SWARFARM (`aoe=false, surSoi=false`) sont ceux d'un sort mono-cible.
+  for (const id of [34213, 34203]) {
+    const storm = sortsVitesse(fiche(id)).find((s) => s.nom === 'Judgment Storm')!;
+    egal(storm.ciblesMax, 4, id + ' : Judgment Storm vise jusqu’à 4 alliés');
+    egal(storm.effet.atbAllie, 50, id + ' : +50 % de barre à chaque allié visé');
+  }
+  const agilite = sortsVitesse(fiche(21002)).find((s) => s.nom === "Rabbit's Agility")!;
+  egal(agilite.ciblesMax, undefined, 'un sort « sur un allié » ordinaire garde une seule cible');
+
+  // Lecture de la cible désignée : une chaîne enregistrée avant reste valable.
+  egal(ciblesDesignees('a'), ['a'], 'une cible simple, enregistrée avant les sorts multi-cibles, se relit');
+  egal(ciblesDesignees(''), undefined, 'une chaîne vide = le défaut');
+  egal(ciblesDesignees([]), undefined, 'une liste vide = le défaut');
+  egal(ciblesDesignees(['a', 'b']), ['a'], 'un sort mono-cible ne garde que le premier allié désigné');
+  egal(ciblesDesignees(['a', 'b', 'c', 'd', 'e'], 4), ['a', 'b', 'c', 'd'], 'jamais plus de cibles que le sort n’en touche');
+
+  // Moteur : chaque allié désigné reçoit la barre ET le buff ; les autres rien.
+  {
+    const m = (id: string, combat: number): TuneMonstre => ({ id, combat, camp: 'allie' });
+    const sim = simuler(
+      [{ ...m('lanceur', 300), sort: { atbAllie: 50, buffAllie: 30, ciblesAllie: ['a', 'c'] } }, m('a', 100), m('b', 100), m('c', 100)],
+      12
+    );
+    const ligne = (id: string) => sim.lignes.find((l) => l.id === id)!;
+    egal(['a', 'c'].map((id) => Object.values(ligne(id).effetAtb)[0]), [50, 50], 'les deux alliés désignés reçoivent la barre');
+    ok(['a', 'c'].every((id) => Object.keys(ligne(id).effetSpeed).length > 0), 'et le buff du même sort');
+    egal(Object.keys(ligne('b').effetAtb).length + Object.keys(ligne('b').effetSpeed).length, 0, "l'allié non désigné ne reçoit rien");
+  }
+
+  // Branchement : de la cible choisie à l'écran (`choix.cible`) aux grilles écrites par l'analyse.
+  {
+    const corpus = JSON.parse(readFileSync('public/data/monsters.json', 'utf8')) as { monsters: Monster[] };
+    const monstres = new Map(corpus.monsters.map((x) => [x.com2usId, x]));
+    const donnees: DonneesKit = { kits: new Map([[34213, kitVitesse(fiche(34213))]]), sorts: new Map([[34213, sortsVitesse(fiche(34213))]]), passifs: new Map() };
+    const autres = corpus.monsters.filter((x) => x.com2usId !== 34213).slice(0, 4);
+    const lignes = [
+      { ...ligneVierge(monstres.get(34213)!, 'allie'), runeSpeed: 250 },
+      ...autres.map((x) => ({ ...ligneVierge(x, 'allie'), runeSpeed: 40 })),
+    ];
+    egal(new Set(lignes.map((l) => l.uid)).size, 5, 'cinq alliés distincts');
+    const [driana, a, b, c, d] = lignes.map((l) => l.uid);
+    const leads = { allie: null, ennemi: null };
+    const recu = (cible: ChoixSorts['cible']) => {
+      const choix: ChoixSorts = { sort: { [driana]: 'Judgment Storm', [a]: '', [b]: '', [c]: '', [d]: '' }, cible };
+      const r = analyseAutomatique(plateauDeLignes(lignes, leads), 0, donnees, { choix, horizon: 15 });
+      return [a, b, c, d].map((uid) => Object.values(r.mods.get(uid)?.atbMod ?? {}).includes(50));
+    };
+    egal(recu({ [driana]: [a, c, d] }), [true, false, true, true], 'trois alliés désignés : chacun reçoit +50 %, le quatrième rien');
+    egal(recu({ [driana]: b }), [false, true, false, false], 'une cible simple enregistrée avant reste appliquée');
+    egal(recu({ [driana]: [a, b, c, d, driana] }).filter(Boolean).length, 4, 'au-delà de 4 désignés, seuls les 4 premiers comptent');
+  }
+
+  // Un plan enregistré (équipe, export vers l'Optimizer) se relit avec une liste de cibles.
+  const plan = {
+    version: 1,
+    lignes: [
+      { uid: 'allie:1', camp: 'allie', monsterId: 1, runeSpeed: 100, swift: false, artefactBuff: 0, cumulsPassif: 0, lead: 0, atb: {}, speed: {} },
+      { uid: 'allie:2', camp: 'allie', monsterId: 2, runeSpeed: 90, swift: false, artefactBuff: 0, cumulsPassif: 0, lead: 0, atb: {}, speed: {} },
+    ],
+    choix: { cible: { 'allie:1': ['allie:1', 'allie:2'], 'allie:2': 'allie:1' } },
+    ordre: ['allie:1', 'allie:2'],
+    leads: { allie: null, ennemi: null },
+    origine: {},
+    referenceGains: {},
+  };
+  ok(planSpeedTuneValide(plan), 'un plan aux cibles multiples se relit, à côté d’une cible simple');
+  ok(!planSpeedTuneValide({ ...plan, choix: { cible: { 'allie:1': [1] } } }), 'une liste de cibles illisible écarte le plan');
 }

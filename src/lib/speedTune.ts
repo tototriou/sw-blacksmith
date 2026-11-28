@@ -124,12 +124,16 @@ export interface EffetSort {
   // ⚠️ **L'allié VISÉ**, quand on le désigne. Certains sorts laissent le joueur
   // choisir sa cible (« increases the Attack Bar of the target ally », le S3 de
   // Sapsaree) : la barre la plus basse est un défaut raisonnable, pas une règle
-  // du jeu. `undefined` = on retombe sur ce défaut.
+  // du jeu. Absent ou vide = on retombe sur ce défaut.
+  //
+  // ⚠️ **PLUSIEURS alliés quand le sort en touche plusieurs** (Judgment Storm de
+  // Driana : les 4 monstres aux PV les plus bas). Chacun reçoit la barre ET le
+  // buff du sort. L'appelant borne la liste au nombre de cibles du sort.
   //
   // ⚠️ **Le lanceur est une cible comme une autre.** Le jeu autorise à se viser
   // soi-même avec un sort « sur un allié », et c'est même l'usage recherché
   // quand le sort porte un buff de vitesse (Rabbit's Agility de Racuni / Harg).
-  cibleAllie?: string;
+  ciblesAllie?: readonly string[];
   atbSoi?: number; // lui seul
   atbEnnemi?: number; // RETIRÉ à l'adverse (valeur positive = retrait)
   atbEnnemiTous?: boolean; // le retrait touche tout le camp adverse
@@ -461,26 +465,24 @@ export function simuler(monstres: TuneMonstre[], horloge: Horizon = HORIZON_TICK
       if (sort.atbTous) for (const m of etat) ajouter(m, sort.atbTous);
       if (sort.atbEquipe) for (const m of etat) if (m.camp === camp) ajouter(m, sort.atbEquipe);
       if (sort.atbSoi) ajouter(gagnant, sort.atbSoi);
-      // La cible d'un sort « sur un allié », résolue UNE FOIS : la barre et le
-      // buff de vitesse partent du même sort, donc sur le même monstre. Les
+      // Les cibles d'un sort « sur un allié », résolues UNE FOIS : la barre et le
+      // buff de vitesse partent du même sort, donc sur les mêmes monstres. Les
       // résoudre séparément aurait permis de remplir la barre de l'un et de
       // buffer l'autre.
-      const cibleAlliee = (() => {
-        if (!sort.atbAllie && !sort.buffAllie) return null;
-        // ⚠️ **Une cible DÉSIGNÉE l'emporte, le lanceur COMPRIS.** C'est le
+      const ciblesAlliees = (() => {
+        if (!sort.atbAllie && !sort.buffAllie) return [];
+        // ⚠️ **Les cibles DÉSIGNÉES l'emportent, le lanceur COMPRIS.** C'est le
         // joueur qui vise, en jeu, et le jeu l'autorise à se viser lui-même.
-        if (sort.cibleAllie) {
-          const visee = etat.find((m) => m.camp === camp && m.id === sort.cibleAllie);
-          if (visee) return visee;
-        }
+        const visees = etat.filter((m) => m.camp === camp && (sort.ciblesAllie ?? []).includes(m.id));
+        if (visees.length > 0) return visees;
         // ⚠️ **Mais le lanceur est EXCLU du choix PAR DÉFAUT** : sa barre vient
         // de retomber à 0, il serait systématiquement « celui qui l'a la plus
         // basse » et se rendrait à lui-même un boost dont personne ne compte.
         // Se viser soi-même doit être un geste, jamais le défaut.
         const cibles = etat.filter((m) => m.camp === camp && m !== gagnant);
-        return cibles.length > 0 ? cibles.reduce((a, b) => (b.atb < a.atb ? b : a)) : null;
+        return cibles.length > 0 ? [cibles.reduce((a, b) => (b.atb < a.atb ? b : a))] : [];
       })();
-      if (sort.atbAllie && cibleAlliee) ajouter(cibleAlliee, sort.atbAllie);
+      if (sort.atbAllie) for (const m of ciblesAlliees) ajouter(m, sort.atbAllie);
       if (sort.atbEnnemi) {
         const ennemis = etat.filter((m) => m.camp === adverse);
         // ⚠️ Cible d'un retrait de barre : celui qui est le PLUS AVANCÉ — c'est
@@ -499,8 +501,9 @@ export function simuler(monstres: TuneMonstre[], horloge: Horizon = HORIZON_TICK
         } else if (sort.buffEquipe > buffCamp[camp]) buffCamp[camp] = sort.buffEquipe;
       }
       if (sort.buffSoi && sort.buffSoi > (buffIndiv[gagnant.id] ?? 0)) buffIndiv[gagnant.id] = sort.buffSoi;
-      if (sort.buffAllie && cibleAlliee && sort.buffAllie > (buffIndiv[cibleAlliee.id] ?? 0))
-        buffIndiv[cibleAlliee.id] = sort.buffAllie;
+      if (sort.buffAllie)
+        for (const m of ciblesAlliees)
+          if (sort.buffAllie > (buffIndiv[m.id] ?? 0)) buffIndiv[m.id] = sort.buffAllie;
       if (sort.ralenti && sort.ralenti > ralentiCamp[adverse]) ralentiCamp[adverse] = sort.ralenti;
       return true;
     };

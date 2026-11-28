@@ -53,7 +53,32 @@ async function ouvrirParPalette(recherche = 'Allié', attendreOrdre = true) {
   if (attendreOrdre) await attendre(() => Object.entries(photographierMemoire()).some(([cle, v]) => cle.endsWith('.ordre') && Array.isArray(v) && v.length > 0));
 }
 
-export async function scenario(reset?: { monstres: Monster[]; details: DetailMonstre[] }): Promise<[boolean, string][]> {
+// Le S3 de Driana (Judgment Storm) vise jusqu'à 4 alliés : on en coche deux dans
+// l'ordre des sorts, et chacun reçoit ses +50 % dans les grilles.
+async function parcoursCibles(verifier: (v: boolean, m: string) => void) {
+  await ouvrirParPalette('Driana', false);
+  await geste(() => bouton(modale()!, 'Analyser')!.click());
+  // L'analyse retient Judgment Storm d'elle-même : le bouton du sort porte alors son nom.
+  await patienter(() => !!bouton(modale()!, 'Judgment Storm'));
+  verifier(!!bouton(modale()!, 'Judgment Storm'), 'l’analyse retient Judgment Storm pour Driana');
+  const declencheur = () => [...modale()!.querySelectorAll<HTMLButtonElement>('button[aria-haspopup="true"]')]
+    .find(b => b.getAttribute('aria-label')?.startsWith('Alliés visés par le sort de Driana'));
+  await patienter(() => !!declencheur());
+  verifier(!!declencheur(), 'Judgment Storm : la cible se désigne par une liste à choix multiple');
+  if (!declencheur()) return;
+  await geste(() => declencheur()!.click());
+  const surface = () => document.querySelector<HTMLElement>('[role="group"][aria-label="Alliés visés par le sort de Driana"]')!;
+  const caseDe = (nom: string) => [...surface().querySelectorAll('label')].find(l => l.textContent?.trim() === nom)?.querySelector('input');
+  for (const nom of ['Rina', 'Lushen']) await geste(() => caseDe(nom)!.click());
+  verifier(declencheur()!.getAttribute('aria-label') === 'Alliés visés par le sort de Driana : Rina, Lushen', 'les deux alliés cochés sont nommés sur la liste fermée');
+  const recoit = (nom: string) => [...modale()!.querySelectorAll<HTMLInputElement>(`input[aria-label^="${nom} — tick "]`)].some(c => c.value === '50');
+  await patienter(() => recoit('Rina') && recoit('Lushen'));
+  verifier(recoit('Rina') && recoit('Lushen'), 'l’analyse relancée écrit +50 % de barre à chacun des deux alliés désignés');
+}
+
+export async function scenario(
+  reset?: { monstres: Monster[]; details: DetailMonstre[]; parcours?: 'reset' | 'cibles' }
+): Promise<[boolean, string][]> {
   const preuves: [boolean, string][] = [], verifier = (v: boolean, m: string) => preuves.push([v, m]);
   if (reset) {
     monstres.splice(0, monstres.length, ...reset.monstres);
@@ -80,6 +105,10 @@ export async function scenario(reset?: { monstres: Monster[]; details: DetailMon
   try {
     await geste(() => racine.render(<App />));
     await attendre(() => [...document.querySelectorAll('button')].some(b => b.textContent?.trim() === 'Importer une équipe'));
+    if (reset?.parcours === 'cibles') {
+      await parcoursCibles(verifier);
+      return preuves;
+    }
     if (reset) {
       await ouvrirParPalette('Tablo', false);
       await geste(() => bouton(modale()!, 'Analyser')!.click());

@@ -58,7 +58,7 @@ import {
 } from '../lib/speedTuneLignes';
 import { kitVitesse, sortsVitesse, KitVitesse, SortVitesse } from '../lib/speedTuneKit';
 import { passifsVitesse, PassifVitesse } from '../lib/speedTunePassif';
-import { analyseAutomatique, noterChoix, sortRetenu } from '../lib/speedTuneAuto';
+import { analyseAutomatique, noterChoix, sortRetenu, type CibleDesignee } from '../lib/speedTuneAuto';
 import { chargerDetail } from '../lib/monsterSkills';
 import { teamSummary } from '../lib/recoFromSiege';
 import { formesJouables } from '../lib/monsterForms';
@@ -223,9 +223,10 @@ export function useSpeedTune({
   // Le sort du SECOND tour, pour ceux dont la compétence leur rend leur tour
   // (Kroa) : on ne devine pas ce qu'ils lancent ensuite, c'est à désigner.
   const [sortChoisi2, setSortChoisi2] = useCle<Record<string, string>>('speedTune.sorts2', {});
-  // L'allié VISÉ par un sort qui n'en touche qu'un (S3 de Sapsaree). Vide = la
-  // barre la plus basse, le défaut du moteur.
-  const [cibleSort, setCibleSort] = useCle<Record<string, string>>('speedTune.cibles', {});
+  // L'allié VISÉ par un sort « sur un allié » (S3 de Sapsaree), ou les alliés
+  // visés par un sort qui en touche plusieurs (S3 de Driana). Vide = la barre la
+  // plus basse, le défaut du moteur.
+  const [cibleSort, setCibleSort] = useCle<Record<string, CibleDesignee>>('speedTune.cibles', {});
   // La valeur désignée d'un remplissage de barre AU CHOIX (buffs retirés par
   // Blade Fan, % de Start of Attacking), en paliers. Absent = 0 : ce que le
   // sort donne dépend de l'adverse, un speed tune ne l'attend pas.
@@ -720,7 +721,7 @@ export function useSpeedTune({
   const signatureDes = (
     sorts: Record<string, string>,
     seconds: Record<string, string>,
-    cibles: Record<string, string>,
+    cibles: Record<string, CibleDesignee>,
     auChoix: Record<string, number>
   ) => JSON.stringify([sorts, seconds, cibles, auChoix]);
   const sortsSignature = signatureDes(sortChoisi, sortChoisi2, cibleSort, atbChoisi);
@@ -885,8 +886,9 @@ export function useSpeedTune({
     setSortChoisi((prev) => noterChoix(prev, uid, valeur));
   }
 
-  // L'allié visé par un sort mono-cible. '' = le défaut (barre la plus basse).
-  function choisirCible(uid: string, valeur: string) {
+  // L'allié visé par un sort mono-cible, les alliés visés par un sort qui en
+  // touche plusieurs. '' ou [] = le défaut (barre la plus basse).
+  function choisirCible(uid: string, valeur: CibleDesignee) {
     setCibleSort((prev) => ({ ...prev, [uid]: valeur }));
   }
 
