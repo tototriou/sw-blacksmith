@@ -137,18 +137,18 @@ export default function testAuditDegatsConditionnels() {
   ok(!!lamiella.composanteFixeAdditionnelle, 'Lamiella — la réserve de Sacrifice est une composante fixe séparée');
   const lamiellaSansReserve = computeSkillDamage(lamiella, buildAudit, { ...setupAudit, sacrificeReservePct: 0, aliveEnemies: 3 }, AUCUNE_AURA_PROPRE);
   const lamiellaAvecReserve = computeSkillDamage(lamiella, buildAudit, { ...setupAudit, sacrificeReservePct: 60, aliveEnemies: 3 }, AUCUNE_AURA_PROPRE);
-  egal(lamiellaAvecReserve - lamiellaSansReserve, 4000, 'Lamiella — réserve linéaire de PV max répartie entre trois ennemis');
+  egal(lamiellaAvecReserve - lamiellaSansReserve, 3600, 'Lamiella — réserve linéaire de 90 % des PV max répartie entre trois ennemis');
   ok(
     computeSkillDamage(lamiella, buildAudit, { ...setupAudit, sacrificeReservePct: 0, critMode: 'crit' }, AUCUNE_AURA_PROPRE) > lamiellaSansReserve,
     'Lamiella — la composante ATQ peut infliger un coup critique'
   );
 
   const velaska = profilDe(31315, 21010);
-  egal(velaska.formule, '{MAX HP}*{Sacrifice Reserve %}/{Alive Enemies} (Fixed)', 'Velaska — la formule est entièrement fixe');
+  egal(velaska.formule, '0.9*{MAX HP}*{Sacrifice Reserve %}/{Alive Enemies} (Fixed)', 'Velaska — la formule est entièrement fixe');
   egal(
     computeSkillDamage(velaska, buildAudit, { ...setupAudit, sacrificeReservePct: 60, aliveEnemies: 3 }, AUCUNE_AURA_PROPRE),
-    4000,
-    'Velaska — réserve linéaire de PV max répartie entre trois ennemis'
+    3600,
+    'Velaska — réserve linéaire de 90 % des PV max répartie entre trois ennemis'
   );
   egal(
     computeSkillDamage(skogul, buildAudit, { ...setupAudit, aliveEnemies: 99 }, AUCUNE_AURA_PROPRE),
@@ -179,21 +179,21 @@ export default function testAuditDegatsConditionnels() {
   );
   egal(
     computeTotalDamage(velaska, [], buildAudit, { ...setupAudit, sacrificeReservePct: 60, aliveEnemies: 3, enemyElement: 'fire' }, AUCUNE_AURA_PROPRE, 'dark', artefactFeu20),
-    4000,
+    3600,
     'Velaska — les dégâts élémentaires d’artéfact ne majorent pas la réserve'
   );
   const lamiellaMirinae0 = computeTotalDamage(lamiella, [], buildAudit, { ...setupAudit, sacrificeReservePct: 0, aliveEnemies: 3, mirinaeActif: true }, AUCUNE_AURA_PROPRE, 'water');
   const lamiellaMirinae60 = computeTotalDamage(lamiella, [], buildAudit, { ...setupAudit, sacrificeReservePct: 60, aliveEnemies: 3, mirinaeActif: true }, AUCUNE_AURA_PROPRE, 'water');
-  egal(lamiellaMirinae60 - lamiellaMirinae0, 4000, 'Lamiella — Mirinae ne majore que la partie ATQ');
+  egal(lamiellaMirinae60 - lamiellaMirinae0, 3600, 'Lamiella — Mirinae ne majore que la partie ATQ');
   const lamiellaVelaska0 = computeTotalDamage(lamiella, [], buildAudit, { ...setupAudit, sacrificeReservePct: 0, aliveEnemies: 3, velaskaActif: true, velaskaPvPerduPct: 100 }, AUCUNE_AURA_PROPRE, 'water');
   const lamiellaVelaska60 = computeTotalDamage(lamiella, [], buildAudit, { ...setupAudit, sacrificeReservePct: 60, aliveEnemies: 3, velaskaActif: true, velaskaPvPerduPct: 100 }, AUCUNE_AURA_PROPRE, 'water');
   ok(
-    Math.abs(lamiellaVelaska60 - lamiellaVelaska0 - 4000) < 1e-9,
+    Math.abs(lamiellaVelaska60 - lamiellaVelaska0 - 3600) < 1e-9,
     'Lamiella — Price of Pain ne majore que la partie ATQ'
   );
   const lamiellaBrand0 = computeTotalDamage(lamiella, [], buildAudit, { ...setupAudit, sacrificeReservePct: 0, aliveEnemies: 3, brand: true }, AUCUNE_AURA_PROPRE, 'water');
   const lamiellaBrand60 = computeTotalDamage(lamiella, [], buildAudit, { ...setupAudit, sacrificeReservePct: 60, aliveEnemies: 3, brand: true }, AUCUNE_AURA_PROPRE, 'water');
-  egal(lamiellaBrand60 - lamiellaBrand0, 5000, 'Lamiella — la Marque majore aussi la réserve fixe');
+  egal(lamiellaBrand60 - lamiellaBrand0, 4500, 'Lamiella — la Marque majore aussi la réserve fixe');
   const moLong = profilDe(21211, 12011);
   const moLongBase = computeTotalDamage(moLong, [], buildAudit, { ...setupAudit, enemyElement: 'fire' }, AUCUNE_AURA_PROPRE, 'water');
   egal(
@@ -1512,7 +1512,7 @@ function testSuiteDuSortVoitLesPosesP4b() {
   // Dominic (Improvisation) et Benedict (Final Strike) — la Marque de Weakness
   // Shot (coup 1) majore aussi la contribution qui suit le sort.
   for (const [forme, sort, sans, ratio, nom] of [
-    [25713, 15508, 3979.0517, 1.225, 'Dominic'],
+    [25713, 15508, 4219.0517, 1.227, 'Dominic'], // Improvisation à +120 % (patch de novembre 2026)
     [25714, 15509, 3050.1551, 1.218, 'Benedict'],
   ] as const) {
     const s = { ...cible, skillCom2usId: sort };

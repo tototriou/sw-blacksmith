@@ -2219,9 +2219,10 @@ export default function testDegats() {
 
   // Dominic — « Improvisation (Passive) » : `bonus` avec `dejaInclus: true`
   // (un bouton, comme Hidden Gun/Ezio).
-  // La formule `(Fixed)` porte le cas MAJORÉ (`2.0*{ATK}` = 100 % de base ×
-  // (1 + 100 % si PV > 50 %)) — décoché (par défaut), la contribution est
-  // DIVISÉE par 2 pour retomber au cas de base, jamais multipliée.
+  // La formule `(Fixed)` porte le cas MAJORÉ (`2.2*{ATK}` = 100 % de base ×
+  // (1 + 120 % si PV > 50 %), depuis le patch de novembre 2026) — décoché (par
+  // défaut), la contribution est DIVISÉE par 2,2 pour retomber au cas de base,
+  // jamais multipliée.
   const dominic = fiche(25713);
   const dominicBase = defaultDamageSkill(monsterDamageSkills(dominic));
   ok(dominicBase !== null, 'Dominic : un sort de dégâts par défaut est trouvé');
@@ -2249,14 +2250,14 @@ export default function testDegats() {
       null
     ),
     dominicSort + dominicPassifMajore,
-    'bouton coché : la contribution du passif est le cas MAJORÉ tel que parsé (2.0 × ATQ)'
+    'bouton coché : la contribution du passif est le cas MAJORÉ tel que parsé (2.2 × ATQ)'
   );
   ok(
     Math.abs(
       computeTotalDamage(dominicBase!, dominicPassifs, dominicStats, dominicSetup, AUCUNE_AURA_PROPRE, null) -
-        (dominicSort + dominicPassifMajore / 2)
+        (dominicSort + dominicPassifMajore / 2.2)
     ) < 1e-9,
-    'bouton décoché (par défaut) : la contribution est DIVISÉE par 2, retombant au cas de base (1.0 × ATQ)'
+    'bouton décoché (par défaut) : la contribution est DIVISÉE par 2,2, retombant au cas de base (1.0 × ATQ)'
   );
   // Les dégâts de ce passif (`(Fixed)`) sont insensibles à la DEF adverse,
   // et PLUS FORT qu'un

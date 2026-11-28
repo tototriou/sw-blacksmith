@@ -65,7 +65,7 @@ codée porte « Calcul partiel »
   répétition d'Elise sous 50 % de PV non plus, ni Chain Effect (`18132`,
   Vendhan feu : « uses the same skill again with reduced damage », taux non
   donné), ni les coups en plus de Severing Edge et Dimension Shatter
-  (`25213`, `25713`, Übel et Wieb vent : « attacks the target 2 to 3 more
+  (`25213`, `25713`, Übel et Irren vent : « attacks the target 2 to 3 more
   times », `0.8*{ATK}`). Exploding Hands (`11015`) se
   répète par sa compétence auxiliaire, améliorations comprises, sans
   confirmation ([02-app/degats-reels/feat-competences-auxiliaires.md](../02-app/degats-reels/feat-competences-auxiliaires.md)) ;
@@ -172,7 +172,7 @@ codée porte « Calcul partiel »
   (`src/lib/damage.ts`) ne portent ni Sindar's Volley ni Sylvan Volley
   (2 à 5 coups, valeur fournie), ni Wild Shot! (`13306`), Cleave
   (`19910`), Exorcism Orb (`20510`), Blade Dance of the Reaper (`10711`,
-  Stella), Chain Fire, Arcane Discharge (`25412`, Freu feu, « Attacks all
+  Stella), Chain Fire, Arcane Discharge (`25412`, Freuen feu, « Attacks all
   enemies 2 to 3 times », calculé à 2), ni les sorts de Lala et de Coco :
   ils frappent le nombre de coups de la donnée. Les coups au hasard d'un sort se règlent
   (`COUPS_AU_HASARD_PAR_ID`), mais pas l'attaque appelée au hasard

@@ -55,9 +55,9 @@ function sortDe(detail: DetailMonstre, id: number): SkillDamageProfile {
 // Minato, Ren, Ritsu : avant le S1 ou le S2, et le S3 pour Ren (utilisateur, 2026-10-17).
 const DECLENCHEES: [string, number, number, number[], boolean, number, number, number, string][] = [
   ['Jackie', 20215, 11015, [3], false, 11016, 7.4, 20, 'Exploding Hands — attaque en plus'],
-  ['Minato', 25911, 15706, [1, 2], true, 15716, 4.5, 25, 'Shadow of Right Arm — attaque en Menace'],
-  ['Ren', 25912, 15707, [1, 2, 3], true, 15717, 4.5, 25, 'Shadow of Right Arm — attaque en Menace'],
-  ['Ritsu', 25915, 15710, [1, 2], true, 15720, 4.5, 25, 'Shadow of Right Arm — attaque en Menace'],
+  ['Minato', 25911, 15706, [1, 2], true, 15716, 4.5, 25, 'Shadow of Right Arm — attaque avant le sort'],
+  ['Ren', 25912, 15707, [1, 2, 3], true, 15717, 4.5, 25, 'Shadow of Right Arm — attaque avant le sort'],
+  ['Ritsu', 25915, 15710, [1, 2], true, 15720, 4.5, 25, 'Shadow of Right Arm — attaque avant le sort'],
   ['Theonia', 34215, 23510, [2], false, 23517, 3.3, 25, 'Guilty Sentence — attaque sur la DEF la plus faible'],
   // Sans auxiliaire dans l'API : celle de Theonia, empruntée (utilisateur, 2026-10-17).
   ['Agrenia', 34212, 23507, [2], false, 23517, 3.3, 25, 'Guilty Sentence — attaque sur la DEF la plus faible'],
@@ -66,7 +66,7 @@ const DECLENCHEES: [string, number, number, number[], boolean, number, number, n
 
 // [monstre, forme, passif, formule, zone, skillups %]
 const HORS_TOUR: [string, number, number, string, boolean, number][] = [
-  ['Psamathe', 21111, 11911, '6.0*{ATK}', true, 30],
+  ['Psamathe', 21111, 11911, '7.2*{ATK}', true, 30], // 6.0 avant le patch de novembre 2026
   ['Hollyberry Cookie', 26411, 16211, '3.5*{DEF}', false, 25],
   ['Manon', 26911, 16711, '3.5*{DEF}', false, 25],
 ];
@@ -84,20 +84,29 @@ export default function testDegatsAttaquesAuxiliaires() {
     const p = passifs.find((x) => x.skillCom2usId === aux);
     ok(p !== undefined, `${forme} : l’attaque de l’auxiliaire ${aux} est proposée`);
     if (!p) continue;
+    // Protection de l'ombre (patch de novembre 2026) : l'attaque d'avant le sort
+    // de Shadow of Right Arm pose une Marque que le sort lit.
+    const marque = declencheur === 15706 || declencheur === 15707 || declencheur === 15710;
     egal(
-      { nom: p.nom, slots: p.slotsDeclencheurs, avant: p.avantLeSort ?? false, type: p.categorie.type, formule: p.profile.formule, hits: p.profile.hits, skillup: p.profile.skillupDamagePct },
-      { nom: libelle, slots, avant, type: 'conditionnel', formule: `${ratio}*{ATK}`, hits: 1, skillup },
+      { nom: p.nom, slots: p.slotsDeclencheurs, avant: p.avantLeSort ?? false, marque: p.poseMarqueAvantLeSort ?? false, type: p.categorie.type, formule: p.profile.formule, hits: p.profile.hits, skillup: p.profile.skillupDamagePct },
+      { nom: libelle, slots, avant, marque, type: 'conditionnel', formule: `${ratio}*{ATK}`, hits: 1, skillup },
       `${forme} : ${ratio} × ATQ, un coup, +${skillup} %, ${moment}, interrupteur`,
     );
     const attendu = ATQ * ratio * (1 + skillup / 100) * df;
     for (const sort of monsterDamageSkills(detail)) {
       if (!estPrisEnCharge(sort) || sort.passif) continue;
       const seul = computeSkillDamageDetail(sort, st, base, AUCUNE_AURA_PROPRE, null).total;
+      const seulMarque = marque ? computeSkillDamageDetail(sort, st, { ...base, brand: true }, AUCUNE_AURA_PROPRE, null).total : seul;
       const eteint = computeTotalDamage(sort, passifs, st, { ...base, skillCom2usId: sort.skillCom2usId }, AUCUNE_AURA_PROPRE, null);
       const allume = computeTotalDamage(sort, passifs, st, { ...base, skillCom2usId: sort.skillCom2usId, passifsOffensifs: { [aux]: true } }, AUCUNE_AURA_PROPRE, null);
       if (slots.includes(sort.slot)) {
         ok(proche(eteint, seul), `${forme}, ${sort.nom} (S${sort.slot}) : interrupteur éteint (défaut) = le sort seul`);
-        ok(proche(allume - seul, attendu), `${forme}, ${sort.nom} (S${sort.slot}) : allumé, + ${ratio} × ATQ × ${1 + skillup / 100} × FacteurDéf = ${attendu.toFixed(2)}`);
+        ok(proche(allume - seulMarque, attendu), `${forme}, ${sort.nom} (S${sort.slot}) : allumé, + ${ratio} × ATQ × ${1 + skillup / 100} × FacteurDéf = ${attendu.toFixed(2)}${marque ? ', le sort compté sous la Marque posée' : ''}`);
+        if (marque) {
+          ok(proche(seulMarque, seul * 1.25), `${forme}, ${sort.nom} (S${sort.slot}) : la Marque de Protection de l’ombre majore le sort de 25 %`);
+          const dejaMarque = computeTotalDamage(sort, passifs, st, { ...base, brand: true, skillCom2usId: sort.skillCom2usId, passifsOffensifs: { [aux]: true } }, AUCUNE_AURA_PROPRE, null);
+          ok(proche(dejaMarque - allume, attendu * 0.25), `${forme}, ${sort.nom} (S${sort.slot}) : cible déjà marquée, la Marque ne compte qu’une fois pour le sort ; seule l’attaque d’avant en profite en plus`);
+        }
       } else {
         ok(!passifPeutSuivre(p, sort), `${forme} : n’accompagne pas ${sort.nom} (S${sort.slot})`);
       }
@@ -113,9 +122,9 @@ export default function testDegatsAttaquesAuxiliaires() {
     const s2 = sortDe(detail, 15706);
     ok(s2.appliqueDefBreak, 'précondition : le S2 de Minato pose une réduction de Défense');
     const reglage = { ...base, skillCom2usId: 15706, defBreakParLeSort: true, passifsOffensifs: { 15716: true } };
-    const seul = computeSkillDamageDetail(s2, st, { ...base, defBreakParLeSort: true }, AUCUNE_AURA_PROPRE, null).total;
+    const seul = computeSkillDamageDetail(s2, st, { ...base, defBreakParLeSort: true, brand: true }, AUCUNE_AURA_PROPRE, null).total;
     const total = computeTotalDamage(s2, passifs, st, reglage, AUCUNE_AURA_PROPRE, null);
-    ok(proche(total - seul, ATQ * 4.5 * 1.25 * df), 'attaque en Menace : DEF pleine (1 000), la réduction posée par le S2 n’est pas encore là');
+    ok(proche(total - seul, ATQ * 4.5 * 1.25 * df), 'attaque avant le sort : DEF pleine (1 000) et sans Marque, ni la réduction posée par le S2 ni sa propre Marque ne sont encore là');
   }
 
   titre('Mode auxiliaire — Unlimited Power (Liam, 25711) : 4 ennemis ou plus dans la fiche, 3 ou moins à part');

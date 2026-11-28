@@ -4,11 +4,11 @@
 // 1. `testProseStatsCombat` — la fonction pure `renduStatsCombat`
 //    (src/lib/proseStatsCombat.ts) sur TOUT le corpus, avec les blocs voisins
 //    construits par les mêmes producteurs que l'écran (OptimizerSection.tsx) :
-//    l'inventaire des passifs de stats de combat (38 identifiants, 40 réglages, 80 formes), 30
-//    proses pour 32 réglages, une par identifiant, jamais déjà rendue par un
+//    l'inventaire des passifs de stats de combat (41 identifiants, 43 réglages, 86 formes), 31
+//    proses pour 33 réglages, une par identifiant, jamais déjà rendue par un
 //    bloc voisin. Les huit exclusions sont DÉDUITES de ces blocs, le test
 //    vérifie seulement qu'on retrouve celles de l'inventaire. L'icône et le nom
-//    du passif coiffent les 27 réglages dont le contrôle ne le nomme pas.
+//    du passif coiffent les 28 réglages dont le contrôle ne le nomme pas.
 // 2. `testProseStatsCombatCarte` — la carte, sur la source (le dépôt n'a pas
 //    d'infrastructure de test React, voir tests/run.mjs) : la prose passe par
 //    `renduStatsCombat`, à un seul endroit, entre ce qui nomme le passif et
@@ -124,17 +124,17 @@ export function testProseStatsCombat() {
   const somme = (ids: number[]) => ids.reduce((s, id) => s + reglagesParId.get(id)!.length, 0);
   const tous = [...reglagesParId.keys()].sort((a, b) => a - b);
 
-  egal([tous.length, somme(tous), formes.length], [40, 42, 84],
-    'inventaire retrouvé, dont Flash Step et Turning Slash (compteurs de VIT, quatre formes) : 40 identifiants, 42 réglages, 84 formes');
+  egal([tous.length, somme(tous), formes.length], [41, 43, 86],
+    'inventaire retrouvé, dont Flash Step et Turning Slash (compteurs de VIT, quatre formes) et Squash (Volcaris, deux formes) : 41 identifiants, 43 réglages, 86 formes');
   egal([...nonUniformes], [], 'même rendu sur toutes les formes qui partagent un identifiant');
   egal(doublons, [],
-    'aucun doublon : sur les 84 formes, aucune prose rendue deux fois par le bloc, aucune déjà rendue par un bloc voisin');
+    'aucun doublon : sur les 86 formes, aucune prose rendue deux fois par le bloc, aucune déjà rendue par un bloc voisin');
   egal(reformulees, [], 'prose du jeu telle quelle : la description de la compétence, jamais reformulée');
 
   const avecProse = tous.filter((id) => reglagesParId.get(id)!.some(([, , prose]) => prose));
   egal(reglagesParId.get(10014)?.length === 2 && reglagesParId.get(11663)?.length === 2, true,
     'précondition : Elsharion (10014) et Crane (11663) portent deux réglages chacun');
-  egal([avecProse.length, somme(avecProse)], [30, 32], '30 proses, une par identifiant, pour 32 réglages');
+  egal([avecProse.length, somme(avecProse)], [31, 33], '31 proses, une par identifiant, pour 33 réglages');
   egal(tous.filter((id) => reglagesParId.get(id)!.filter(([, , prose]) => prose).length > 1), [],
     'jamais deux proses pour un même identifiant');
   egal(reglagesParId.get(10014), [[false, true, true], [false, false, false]],
@@ -149,8 +149,8 @@ export function testProseStatsCombat() {
   // L'icône et le nom au-dessus des réglages dont le contrôle ne nomme pas le passif.
   const nus = tous.filter((id) => reglagesParId.get(id)!.every(([nomme]) => !nomme));
   const coiffes = nus.filter((id) => !exclus.includes(id));
-  egal([coiffes.length, somme(coiffes)], [25, 27],
-    'icône et nom du passif au-dessus des 27 réglages sans nom (25 passifs, un en-tête chacun)');
+  egal([coiffes.length, somme(coiffes)], [26, 28],
+    'icône et nom du passif au-dessus des 28 réglages sans nom (26 passifs, un en-tête chacun)');
   const nommes = tous.filter((id) => !exclus.includes(id) && reglagesParId.get(id)!.every(([nomme]) => nomme));
   egal(nommes.map((id) => [id, reglagesParId.get(id)!.every(([, ouvre, prose]) => ouvre && prose)]),
     [[14313, true], [14813, true], [19814, true], [21515, true], [22115, true]],

@@ -134,8 +134,8 @@ sort ».
 | Déclencheur · monstres | Attaque (auxiliaire) | Accompagne | Interrupteur | Source |
 | --- | --- | --- | --- | --- |
 | Exploding Hands (S3) · Jackie `20215` | `7.4*{ATK}` (11016), +20 % | après le S3 | l'étourdissement de ce sort réussit | prose ; une répétition sans nouvel étourdissement : utilisateur, 2026-09-23 |
-| Shadow of Right Arm (S2) · Minato `25911`, Ritsu `25915` | `4.5*{ATK}` (15716, 15720), +25 % | **avant** le S1 ou le S2 | tu es en état de Menace et l'ennemi t'attaque d'un sort mono-cible | utilisateur, 2026-10-17 |
-| Shadow of Right Arm (S2) · Ren `25912` | `4.5*{ATK}` (15717), +25 % | **avant** le S1, le S2 ou le S3 | idem | utilisateur, 2026-10-17 |
+| Shadow of Right Arm (S2) · Minato `25911`, Ritsu `25915` | `4.5*{ATK}` (15716, 15720), +25 % | **avant** le S1 ou le S2 ; pose une **Marque** que le sort et les passifs qui le suivent lisent | Protection de l'ombre est encore sur toi à ton tour | utilisateur, 2026-10-17 ; Marque de Protection de l'ombre (patch de novembre 2026) : utilisateur, 2026-11-27 |
+| Shadow of Right Arm (S2) · Ren `25912` | `4.5*{ATK}` (15717), +25 % | **avant** le S1, le S2 ou le S3 ; même Marque | idem | idem |
 | Guilty Sentence (S2) · Theonia `34215` | `3.3*{ATK}` (23517), +25 % | après le S2 | ta cible est l'ennemi à la plus faible DEF | prose et API |
 | Guilty Sentence (S2) · Agrenia `34212`, Driana `34213` | `3.3*{ATK}`, l'auxiliaire 23517 de Theonia **empruntée** (`auxiliaireEmpruntee`), +25 % | après le S2 | idem | l'API ne leur en donne pas : utilisateur, 2026-10-17 |
 
@@ -158,7 +158,7 @@ dans « Compétence utilisée », comme Tempest (`PASSIFS_OFFENSIFS_CONNUS`,
 
 | Passif · monstre | Formule (auxiliaire) | Portée |
 | --- | --- | --- |
-| Rageful Return · Psamathe `21111` | `6.0*{ATK}` (11916), +30 % | zone (prose « all enemies » ; l'auxiliaire dit mono-cible) |
+| Rageful Return · Psamathe `21111` | `7.2*{ATK}` (11916, `6.0` avant le patch de novembre 2026), +30 % | zone (prose « all enemies » ; l'auxiliaire dit mono-cible) |
 | Parrying · Hollyberry Cookie `26411` | `3.5*{DEF}` (16216), +25 % | mono-cible |
 | Fat Macaron · Manon `26911` | `3.5*{DEF}` (16716), +25 % | mono-cible |
 

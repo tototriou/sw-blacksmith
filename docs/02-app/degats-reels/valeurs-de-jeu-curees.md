@@ -140,3 +140,22 @@ un état déduit : l'app ne sait pas où en est l'ATB de la cible.
 Les skillups de Blade Surge et de Tempest, ainsi que la cible du troisième
 coup de Blade Surge, sont des valeurs curées fournies par l'utilisateur :
 aucune de ces trois règles n'est une hypothèse.
+
+## Le patch d'équilibrage de novembre 2026
+
+Ce que le patch a changé dans les curations, quand SWARFARM l'a intégré
+(données du 2026-11-27). Les ratios, coups et temps de recharge que la donnée
+porte elle-même (Rageful Return `7.2 × ATQ`, Pierce et Blade Drive
+`3,05 × ATQ` × 2, Alter Ego Attack en 5 coups…) ne sont pas curés : ils
+viennent de la donnée.
+
+| Mécanique | Valeur retenue | Source |
+| --- | --- | --- |
+| Hausses de PV max (Thunderer de Devaraja, Crouch de Dagora, Squash de Volcaris) | Calculées sur les **PV de base**, plus sur les PV totaux (`hpBasePct`) | utilisateur, 2026-11-27 |
+| Thunderer (Devaraja, `18140`) | PV max **+100 %** des PV de base en état Thunderer (+30 % avant) | prose SWARFARM, 2026-11-27 |
+| Squash (Volcaris, `25812`) | Compteur d'utilisations, **+70 %** des PV de base chacune, **5** au plus (350 %) ; non modélisé avant le patch | prose SWARFARM, 2026-11-27 |
+| Wheel of Fire (Clara, Pierrette, `5512`) | `1.05 × ATQ`, 4 coups : SWARFARM écrit `ATK5` en formule, sa formule brute (`multiplier_formula_raw`) dit 1,05 | donnée SWARFARM, 2026-11-27 |
+| Improvisation (Dominic, Weapon Master) | Formule `2.2 × ATQ` (Fixed) = 100 % de base × (1 + **120 %**) si PV > 50 % | prose et donnée SWARFARM, 2026-11-27 |
+| Arsenal of Sacrifice (Lamiella, Velaska) | Réserve = **90 %** des PV max × réserve / ennemis vivants (la prose d'avant ne chiffrait pas : 100 % supposés) | prose SWARFARM, 2026-11-27 |
+| Infinity Shadow (Shun) | Cible liée : ignore la DEF **et +50 points de Taux Crit** | prose SWARFARM, 2026-11-27 |
+| Zoltraak・Snipe (Fern), Mana Particle Cannon・Snipe (Ruhe) | Compteur d'utilisations précédentes : **+50 %** de dégâts chacune, 200 % au plus (4 utilisations) | prose SWARFARM, 2026-11-27 |

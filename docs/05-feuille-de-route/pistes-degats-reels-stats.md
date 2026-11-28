@@ -134,7 +134,7 @@ les coups. La forme d'une piste et des relevés en jeu est celle de
   « Calcul partiel » (`22413`, `22913`, `CALCUL_PARTIEL_PAR_ID`) ; ni
   Mandrake (`12815`), ni les S1 et S2 de Shakan que Disdain renforce
   (`5603`, `5608`, `5653`, `5658`), ni les sorts des alliés de Lucifer ne
-  l'ont. (Kiki, Amber, Übel feu, Wieb feu, Nina et
+  l'ont. (Kiki, Amber, Übel feu, Irren feu, Nina et
   Shasha lumière, eux, se comptent : `BRUT_PAR_EFFET_CIBLE_PAR_ID` et
   `BRUT_PAR_EFFET_CIBLE_PAR_PASSIF_PAR_ID`,
   [feat-poses-entre-les-coups.md](../02-app/degats-reels/feat-poses-entre-les-coups.md).)

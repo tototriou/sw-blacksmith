@@ -64,7 +64,7 @@ lignes d’artéfact viennent des réponses de l’utilisateur.
   défaut. Le libellé est
   construit, `<nom> (S<slot>) se déclenche après ce sort`, pour tout passif
   `conditionnel` à slots déclencheurs — « avant ce sort » pour une attaque
-  qui le précède (`avantLeSort`, l'attaque en Menace de Shadow of Right Arm). Il remplace la phrase « Se déclenche
+  qui le précède (`avantLeSort`, l'attaque de Protection de l'ombre de Shadow of Right Arm, qui pose une Marque lue par le sort : `poseMarqueAvantLeSort`). Il remplace la phrase « Se déclenche
   si … » des autres interrupteurs. Il n’a **pas de survol** (`title`) :
   un survol n’existe pas au doigt ; les autres interrupteurs de passif
   gardent le leur. La condition du jeu reste lisible dans la prose du

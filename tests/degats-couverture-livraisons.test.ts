@@ -295,6 +295,35 @@ export function testCouvertureIgnoreDefIdentifiants() {
         `${etiquette} : condition remplie, la DEF de la cible ne compte plus`);
     }
   }
+
+  // Shun (208) : depuis le patch de novembre 2026, la même condition ajoute
+  // « a 50% Critical Rate bonus ».
+  const shun = monsterConditionsCombat(fiche(25914)).find((c) => c.skillCom2usId === 15714);
+  egal(shun?.condition.crPoints, 50, '208 — Infinity Shadow Shun (15714) : cible liée, +50 points de Taux Crit (patch de novembre 2026)');
+}
+
+/**
+ * Le patch d'équilibrage de novembre 2026 : les curations qu'il a demandées.
+ * Les valeurs que SWARFARM porte d'elle-même (formules, coups) ne sont pas ici.
+ */
+export function testDegatsPatchNovembre2026() {
+  titre('Dégâts réels — patch d\'équilibrage de novembre 2026');
+
+  // Wheel of Fire : SWARFARM écrit `ATK5` en formule, sa formule brute dit
+  // 1,05 × ATQ ; la formule curée rend le sort calculable, sur 4 coups.
+  for (const forme of [13902, 13912]) {
+    const p = profilDe(forme, 5512);
+    egal([p.formule, p.hits], ['1.05*{ATK}', 4], `Wheel of Fire (5512, forme ${forme}) : 1,05 × ATQ sur 4 coups`);
+  }
+
+  // Zoltraak・Snipe (Fern), Mana Particle Cannon・Snipe (Ruhe) : +50 % par
+  // utilisation précédente, plafonné à +200 %.
+  for (const [forme, sort, nom] of [[35801, 25011, 'Zoltraak・Snipe Fern'], [36401, 25511, 'Mana Particle Cannon・Snipe Ruhe']] as const) {
+    const stack = profilDe(forme, sort).bonusStackPropre;
+    egal([stack?.ratio, stack?.pctMax, stack?.triggerMax], [50, 200, 4], `${nom} (${sort}) : +50 % par utilisation, 200 % au plus`);
+    rapportSonde(`${nom} : 2 utilisations précédentes, ×2`, forme, sort, {}, { stackPersonnalise: { [sort]: 2 } }, 2);
+    rapportSonde(`${nom} : 4 utilisations précédentes, ×3 (plafond)`, forme, sort, {}, { stackPersonnalise: { [sort]: 4 } }, 3);
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -493,7 +522,9 @@ const CUMULS: LigneCumul[] = [
   [101, 'Quick Steps (Legolas)', 23914, 34714, cumuls(23914), { atk: 10, def: 10 }, {}, 15],
   [101, 'Deer Steps (Elder Horn)', 24414, 35314, cumuls(24414), { atk: 10, def: 10 }, {}, 15],
   [102, 'Reincarnate (Chamie)', 2214, 11214, cumuls(2214), { atk: 50, def: 50 }, {}, 5],
-  [103, 'Crouch (Dagora)', 1856, 10731, cumuls(1856), { hp: 20 }, {}, 5],
+  // Hausses de PV sur les PV de BASE (patch de novembre 2026) : des points, 20 % de BASE_SONDE.hp par cumul.
+  [103, 'Crouch (Dagora)', 1856, 10731, cumuls(1856), {}, { hp: BASE_SONDE.hp * 0.2 }, 5],
+  [103, 'Squash (Volcaris)', 25812, 36702, cumuls(25812), {}, { hp: BASE_SONDE.hp * 0.7 }, 5],
   [104, 'Stone Claws (Tanzaite)', 13501, 23311, cumuls(13501), { def: 30 }, {}, 5],
   [104, 'Stone Claws (Kunite)', 13502, 23312, cumuls(13502), { def: 30 }, {}, 5],
   [104, 'Stone Claws (Malite)', 13503, 23313, cumuls(13503), { def: 30 }, {}, 5],
@@ -502,7 +533,7 @@ const CUMULS: LigneCumul[] = [
 ];
 
 // Passifs permanents ou à interrupteur : [constat, nom, identifiant, forme, élément, réglage, % ATQ/DEF/PV/VIT]
-type LigneFixe = [number, string, number, number, ElementKey, Partial<DamageSetup>, Partial<Record<CleStat, number>>];
+type LigneFixe = [number, string, number, number, ElementKey, Partial<DamageSetup>, Partial<Record<CleStat, number>>, Partial<Record<CleStat, number>>?];
 const FIXES: LigneFixe[] = [
   [105, 'Fierce Attack! (Inosuke), ATQ', 21515, 32115, 'fire', {}, { atk: 30 }],
   [105, 'Attack Instinct (White Tiger), ATQ', 22115, 32815, 'fire', {}, { atk: 30 }],
@@ -517,7 +548,8 @@ const FIXES: LigneFixe[] = [
   [123, 'Thunderer, DEF (18136)', 18136, 28311, 'fire', { statsCombatActives: { 18136: true } }, { def: 100 }],
   [123, 'Thunderer, ATQ (18137)', 18137, 28312, 'fire', { statsCombatActives: { 18137: true } }, { atk: 100 }],
   [123, 'Thunderer, VIT (18138)', 18138, 28313, 'fire', { statsCombatActives: { 18138: true } }, { spd: 100 }],
-  [123, 'Thunderer, PV (18140)', 18140, 28315, 'fire', { statsCombatActives: { 18140: true } }, { hp: 30 }],
+  // PV max +100 % des PV de BASE depuis le patch de novembre 2026 (+30 % des PV totaux avant) : en points.
+  [123, 'Thunderer, PV (18140)', 18140, 28315, 'fire', { statsCombatActives: { 18140: true } }, {}, { hp: BASE_SONDE.hp }],
 ];
 
 export function testCouvertureStatsCombat() {
@@ -532,9 +564,9 @@ export function testCouvertureStatsCombat() {
     ok(apportConforme(forme, compteur(0), 'fire', pct, pts, 0) === null, `${etiquette} : sans cumul, aucun apport`);
   }
 
-  for (const [constat, nom, id, forme, element, reglage, pct] of FIXES) {
+  for (const [constat, nom, id, forme, element, reglage, pct, pts] of FIXES) {
     const etiquette = `${constat} — ${nom} (${id}, forme ${forme})`;
-    const ecart = apportConforme(forme, reglage, element, pct, {}, 1);
+    const ecart = apportConforme(forme, reglage, element, pct, pts ?? {}, 1);
     ok(ecart === null, ecart === null ? `${etiquette} : apport attendu` : `${etiquette} : apport attendu — ${ecart}`);
     if (Object.keys(reglage).length > 0) {
       ok(apportConforme(forme, {}, element, {}, {}, 1) === null, `${etiquette} : sans l'interrupteur, aucun apport`);

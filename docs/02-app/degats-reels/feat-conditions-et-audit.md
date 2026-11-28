@@ -46,7 +46,8 @@ l'écran.
 Ces deux exclusions de la partie 1 sont levées en partie 2 : Atlas Stone de
 Skogul/Trasar vaut `PV max / ennemis vivants` en dégâts fixes ; Trasar ajoute
 15 % par mort, au plus 30 %, à son S2 uniquement. Arsenal of Sacrifice de
-Velaska vaut `PV max × réserve de Sacrifice / 100 / ennemis vivants`, avec
+Velaska vaut `0,9 × PV max × réserve de Sacrifice / 100 / ennemis vivants`
+(90 % depuis le patch de novembre 2026), avec
 une réserve linéaire de 0 à 100. Lamiella conserve en plus sa composante
 ordinaire `1,2 × ATQ`, qui peut critiquer et reçoit les modificateurs usuels ;
 sa réserve est ajoutée séparément comme dégâts fixes. Le nombre d'ennemis

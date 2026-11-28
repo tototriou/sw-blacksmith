@@ -1,8 +1,8 @@
 {
   "meta": {
-    "generated_at": "2026-11-02T15:04:38.642Z",
+    "generated_at": "2026-11-27T19:07:10.262Z",
     "source": "live",
-    "count": 3141
+    "count": 3142
   },
   "monsters": [
     {
@@ -20257,8 +20257,8 @@
         "accuracy": 0
       },
       "leaderSkill": {
-        "stat": "Critical Rate",
-        "amount": 17,
+        "stat": "HP",
+        "amount": 22,
         "area": "General",
         "element": null
       },
@@ -20289,8 +20289,8 @@
         "accuracy": 0
       },
       "leaderSkill": {
-        "stat": "Critical Rate",
-        "amount": 17,
+        "stat": "HP",
+        "amount": 22,
         "area": "General",
         "element": null
       },
@@ -23098,8 +23098,8 @@
         "speed": 105,
         "critRate": 15,
         "critDamage": 50,
-        "resistance": 40,
-        "accuracy": 0
+        "resistance": 15,
+        "accuracy": 25
       },
       "leaderSkill": {
         "stat": "Critical Rate",
@@ -39823,8 +39823,8 @@
         "speed": 108,
         "critRate": 15,
         "critDamage": 50,
-        "resistance": 40,
-        "accuracy": 0
+        "resistance": 15,
+        "accuracy": 25
       },
       "leaderSkill": null,
       "transformsTo": 1341,
@@ -66312,8 +66312,8 @@
         "attack": 878,
         "defense": 549,
         "speed": 101,
-        "critRate": 30,
-        "critDamage": 50,
+        "critRate": 15,
+        "critDamage": 70,
         "resistance": 15,
         "accuracy": 0
       },
@@ -80922,8 +80922,8 @@
         "hp": 10545,
         "attack": 790,
         "defense": 648,
-        "speed": 104,
-        "critRate": 30,
+        "speed": 119,
+        "critRate": 15,
         "critDamage": 50,
         "resistance": 15,
         "accuracy": 0
@@ -83618,8 +83618,8 @@
         "hp": 10545,
         "attack": 790,
         "defense": 648,
-        "speed": 104,
-        "critRate": 30,
+        "speed": 119,
+        "critRate": 15,
         "critDamage": 50,
         "resistance": 15,
         "accuracy": 0
@@ -89843,9 +89843,9 @@
         "attack": 790,
         "defense": 637,
         "speed": 103,
-        "critRate": 15,
+        "critRate": 30,
         "critDamage": 50,
-        "resistance": 40,
+        "resistance": 15,
         "accuracy": 0
       },
       "leaderSkill": {
@@ -91082,9 +91082,9 @@
         "attack": 790,
         "defense": 637,
         "speed": 103,
-        "critRate": 15,
+        "critRate": 30,
         "critDamage": 50,
-        "resistance": 40,
+        "resistance": 15,
         "accuracy": 0
       },
       "leaderSkill": {
@@ -91928,7 +91928,7 @@
     {
       "id": 3117,
       "com2usId": 36301,
-      "name": "Freu",
+      "name": "Freuen",
       "element": "water",
       "archetype": "attack",
       "stars": 5,
@@ -91960,7 +91960,7 @@
     {
       "id": 3118,
       "com2usId": 36302,
-      "name": "Freu",
+      "name": "Freuen",
       "element": "fire",
       "archetype": "attack",
       "stars": 5,
@@ -91992,7 +91992,7 @@
     {
       "id": 3119,
       "com2usId": 36303,
-      "name": "Freu",
+      "name": "Freuen",
       "element": "wind",
       "archetype": "attack",
       "stars": 5,
@@ -92024,7 +92024,7 @@
     {
       "id": 3120,
       "com2usId": 36304,
-      "name": "Freu",
+      "name": "Freuen",
       "element": "light",
       "archetype": "attack",
       "stars": 5,
@@ -92056,7 +92056,7 @@
     {
       "id": 3121,
       "com2usId": 36305,
-      "name": "Freu",
+      "name": "Freuen",
       "element": "dark",
       "archetype": "attack",
       "stars": 5,
@@ -92088,7 +92088,7 @@
     {
       "id": 3122,
       "com2usId": 36311,
-      "name": "Freu",
+      "name": "Freuen",
       "element": "water",
       "archetype": "attack",
       "stars": 6,
@@ -92121,7 +92121,7 @@
     {
       "id": 3123,
       "com2usId": 36312,
-      "name": "Freu",
+      "name": "Freuen",
       "element": "fire",
       "archetype": "attack",
       "stars": 6,
@@ -92154,7 +92154,7 @@
     {
       "id": 3124,
       "com2usId": 36313,
-      "name": "Freu",
+      "name": "Freuen",
       "element": "wind",
       "archetype": "attack",
       "stars": 6,
@@ -92187,7 +92187,7 @@
     {
       "id": 3125,
       "com2usId": 36314,
-      "name": "Freu",
+      "name": "Freuen",
       "element": "light",
       "archetype": "attack",
       "stars": 6,
@@ -92220,7 +92220,7 @@
     {
       "id": 3126,
       "com2usId": 36315,
-      "name": "Freu",
+      "name": "Freuen",
       "element": "dark",
       "archetype": "attack",
       "stars": 6,
@@ -92253,7 +92253,7 @@
     {
       "id": 3127,
       "com2usId": 36401,
-      "name": "Luen",
+      "name": "Ruhe",
       "element": "water",
       "archetype": "attack",
       "stars": 5,
@@ -92285,7 +92285,7 @@
     {
       "id": 3128,
       "com2usId": 36402,
-      "name": "Luen",
+      "name": "Ruhe",
       "element": "fire",
       "archetype": "attack",
       "stars": 4,
@@ -92312,7 +92312,7 @@
     {
       "id": 3129,
       "com2usId": 36403,
-      "name": "Luen",
+      "name": "Ruhe",
       "element": "wind",
       "archetype": "attack",
       "stars": 5,
@@ -92344,7 +92344,7 @@
     {
       "id": 3130,
       "com2usId": 36404,
-      "name": "Luen",
+      "name": "Ruhe",
       "element": "light",
       "archetype": "attack",
       "stars": 5,
@@ -92376,7 +92376,7 @@
     {
       "id": 3131,
       "com2usId": 36405,
-      "name": "Luen",
+      "name": "Ruhe",
       "element": "dark",
       "archetype": "attack",
       "stars": 4,
@@ -92403,7 +92403,7 @@
     {
       "id": 3132,
       "com2usId": 36411,
-      "name": "Luen",
+      "name": "Ruhe",
       "element": "water",
       "archetype": "attack",
       "stars": 6,
@@ -92436,7 +92436,7 @@
     {
       "id": 3133,
       "com2usId": 36412,
-      "name": "Luen",
+      "name": "Ruhe",
       "element": "fire",
       "archetype": "attack",
       "stars": 5,
@@ -92469,7 +92469,7 @@
     {
       "id": 3134,
       "com2usId": 36413,
-      "name": "Luen",
+      "name": "Ruhe",
       "element": "wind",
       "archetype": "attack",
       "stars": 6,
@@ -92482,9 +92482,9 @@
         "attack": 790,
         "defense": 637,
         "speed": 103,
-        "critRate": 15,
+        "critRate": 30,
         "critDamage": 50,
-        "resistance": 40,
+        "resistance": 15,
         "accuracy": 0
       },
       "leaderSkill": {
@@ -92502,7 +92502,7 @@
     {
       "id": 3135,
       "com2usId": 36414,
-      "name": "Luen",
+      "name": "Ruhe",
       "element": "light",
       "archetype": "attack",
       "stars": 6,
@@ -92535,7 +92535,7 @@
     {
       "id": 3136,
       "com2usId": 36415,
-      "name": "Luen",
+      "name": "Ruhe",
       "element": "dark",
       "archetype": "attack",
       "stars": 5,
@@ -92568,7 +92568,7 @@
     {
       "id": 3137,
       "com2usId": 36501,
-      "name": "Schporte",
+      "name": "Robust",
       "element": "water",
       "archetype": "hp",
       "stars": 4,
@@ -92595,7 +92595,7 @@
     {
       "id": 3138,
       "com2usId": 36502,
-      "name": "Schporte",
+      "name": "Robust",
       "element": "fire",
       "archetype": "hp",
       "stars": 5,
@@ -92627,7 +92627,7 @@
     {
       "id": 3139,
       "com2usId": 36503,
-      "name": "Schporte",
+      "name": "Robust",
       "element": "wind",
       "archetype": "hp",
       "stars": 5,
@@ -92659,7 +92659,7 @@
     {
       "id": 3140,
       "com2usId": 36504,
-      "name": "Schporte",
+      "name": "Robust",
       "element": "light",
       "archetype": "hp",
       "stars": 4,
@@ -92686,7 +92686,7 @@
     {
       "id": 3141,
       "com2usId": 36505,
-      "name": "Schporte",
+      "name": "Robust",
       "element": "dark",
       "archetype": "hp",
       "stars": 5,
@@ -92718,7 +92718,7 @@
     {
       "id": 3142,
       "com2usId": 36511,
-      "name": "Schporte",
+      "name": "Robust",
       "element": "water",
       "archetype": "hp",
       "stars": 5,
@@ -92751,7 +92751,7 @@
     {
       "id": 3143,
       "com2usId": 36512,
-      "name": "Schporte",
+      "name": "Robust",
       "element": "fire",
       "archetype": "hp",
       "stars": 6,
@@ -92784,7 +92784,7 @@
     {
       "id": 3144,
       "com2usId": 36513,
-      "name": "Schporte",
+      "name": "Robust",
       "element": "wind",
       "archetype": "hp",
       "stars": 6,
@@ -92817,7 +92817,7 @@
     {
       "id": 3145,
       "com2usId": 36514,
-      "name": "Schporte",
+      "name": "Robust",
       "element": "light",
       "archetype": "hp",
       "stars": 5,
@@ -92850,7 +92850,7 @@
     {
       "id": 3146,
       "com2usId": 36515,
-      "name": "Schporte",
+      "name": "Robust",
       "element": "dark",
       "archetype": "hp",
       "stars": 6,
@@ -92883,7 +92883,7 @@
     {
       "id": 3147,
       "com2usId": 36601,
-      "name": "Wieb",
+      "name": "Irren",
       "element": "water",
       "archetype": "attack",
       "stars": 4,
@@ -92910,7 +92910,7 @@
     {
       "id": 3148,
       "com2usId": 36602,
-      "name": "Wieb",
+      "name": "Irren",
       "element": "fire",
       "archetype": "attack",
       "stars": 4,
@@ -92937,7 +92937,7 @@
     {
       "id": 3149,
       "com2usId": 36603,
-      "name": "Wieb",
+      "name": "Irren",
       "element": "wind",
       "archetype": "attack",
       "stars": 4,
@@ -92964,7 +92964,7 @@
     {
       "id": 3150,
       "com2usId": 36604,
-      "name": "Wieb",
+      "name": "Irren",
       "element": "light",
       "archetype": "attack",
       "stars": 4,
@@ -92991,7 +92991,7 @@
     {
       "id": 3151,
       "com2usId": 36605,
-      "name": "Wieb",
+      "name": "Irren",
       "element": "dark",
       "archetype": "attack",
       "stars": 4,
@@ -93018,7 +93018,7 @@
     {
       "id": 3152,
       "com2usId": 36611,
-      "name": "Wieb",
+      "name": "Irren",
       "element": "water",
       "archetype": "attack",
       "stars": 5,
@@ -93046,7 +93046,7 @@
     {
       "id": 3153,
       "com2usId": 36612,
-      "name": "Wieb",
+      "name": "Irren",
       "element": "fire",
       "archetype": "attack",
       "stars": 5,
@@ -93074,7 +93074,7 @@
     {
       "id": 3154,
       "com2usId": 36613,
-      "name": "Wieb",
+      "name": "Irren",
       "element": "wind",
       "archetype": "attack",
       "stars": 5,
@@ -93102,7 +93102,7 @@
     {
       "id": 3155,
       "com2usId": 36614,
-      "name": "Wieb",
+      "name": "Irren",
       "element": "light",
       "archetype": "attack",
       "stars": 5,
@@ -93130,7 +93130,7 @@
     {
       "id": 3156,
       "com2usId": 36615,
-      "name": "Wieb",
+      "name": "Irren",
       "element": "dark",
       "archetype": "attack",
       "stars": 5,
@@ -93154,6 +93154,33 @@
       "familyId": 36600,
       "skillGroupId": 36000,
       "jumeauCollab": 36015
+    },
+    {
+      "id": 3157,
+      "com2usId": 90000001,
+      "name": "제작용 더미",
+      "element": "water",
+      "archetype": null,
+      "stars": 1,
+      "naturalStars": 1,
+      "secondAwaken": false,
+      "obtainable": false,
+      "image": "https://swarfarm.com/static/herders/images/monsters/unit_icon_0000_0_0.png",
+      "stats": {
+        "hp": 9885,
+        "attack": 659,
+        "defense": 494,
+        "speed": 100,
+        "critRate": 15,
+        "critDamage": 50,
+        "resistance": 15,
+        "accuracy": 0
+      },
+      "leaderSkill": null,
+      "transformsTo": null,
+      "swarfarmId": 3157,
+      "familyId": 90000000,
+      "skillGroupId": 45000
     }
   ]
 }
