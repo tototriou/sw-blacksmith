@@ -36,7 +36,7 @@ import { testRenduRtaExportOptimizer, testRenduTelephoneRtaExportOptimizer, test
   testRenduTelephoneRecoExportOptimizer, testRenduOptimizerImportRecommandation, testRenduTelephoneOptimizerImportRecommandation,
   testOptimizerImportRtaRecoBranchement } from './rendu/rta-reco-export.test';
 import { testRenduSiegeExportOptimizer, testRenduTelephoneSiegeExportOptimizer, testOptimizerImportSiegeBranchement } from './rendu/siege-export.test';
-import { testRenduSpeedTuneResetAtbApp, testRenduTelephoneSpeedTuneResetAtbApp, testRenduSpeedTuneExportOptimizer, testRenduTelephoneSpeedTuneExportOptimizer, testOptimizerImportSpeedTuneBranchement, testRenduSpeedTuneExportAppOptimizer, testRenduTelephoneSpeedTuneExportAppOptimizer } from './rendu/speed-tune-export.test';
+import { testRenduSpeedTuneResetAtbApp, testRenduSpeedTuneCiblesMultiplesApp, testRenduTelephoneSpeedTuneCiblesMultiplesApp, testRenduTelephoneSpeedTuneResetAtbApp, testRenduSpeedTuneExportOptimizer, testRenduTelephoneSpeedTuneExportOptimizer, testOptimizerImportSpeedTuneBranchement, testRenduSpeedTuneExportAppOptimizer, testRenduTelephoneSpeedTuneExportAppOptimizer } from './rendu/speed-tune-export.test';
 import { testOptimizerImportActionDemontee, testOptimizerImportEcrituresGroupees, testOptimizerImportReverificationEnAttente, testOptimizerImportCollision, testRenduOptimizerImportDefenses, testRenduTelephoneOptimizerImportDefenses,
   testRenduOptimizerImportOffense, testRenduTelephoneOptimizerImportOffense, testRenduOptimizerImportRta,
   testRenduTelephoneOptimizerImportRta, testRenduOptimizerImportIndisponible, testRenduTelephoneOptimizerImportIndisponible, testRenduOptimizerImportRapportPartage, testRenduOptimizerImportDisponibiliteMemoisee } from './rendu/optimizer-import.test';
@@ -415,7 +415,7 @@ import { testProvenancesRecos, testClientDiscord } from './provenances-recos.tes
 import { testRenduRecosDiscordPage, testRenduRecosDiscordComposants } from './rendu/recos-discord.test';
 import testSiegePartage from './siege-partage.test';
 import testMarque from './marque.test';
-import testSpeedTune, { testSpeedTuneDeck, testSpeedTuneChaine, testSpeedTuneKit, testSpeedTuneResetAtb, testSpeedTuneSequence, testSpeedTuneReference, testSpeedTunePassif, testSpeedTuneAuto, testSpeedTuneModele } from './speed-tune.test';
+import testSpeedTune, { testSpeedTuneDeck, testSpeedTuneChaine, testSpeedTuneKit, testSpeedTuneResetAtb, testSpeedTuneSequence, testSpeedTuneReference, testSpeedTunePassif, testSpeedTuneAuto, testSpeedTuneModele, testSpeedTuneCiblesMultiples } from './speed-tune.test';
 import { testRenduSiegeDefense, testRenduSiegeOffense, testRenduSiegeEnTete, testRenduSiegeEdition, testRenduSiegeArtefactsDimension } from './rendu/siege.test';
 import { testRenduUiBouton, testRenduUiEtats, testRenduUiMenu, testRenduUiSelecteurMultiple, testRenduUiNotification, testRenduUiOnglets, testRenduPalette } from './rendu/ui.test';
 import { testRenduUiSelecteurTab, testRenduTelephoneUiSelecteurListe, testRenduUiFlottantBoiteQuiDefile, testRenduUiSegmentedDeuxLignes } from './rendu/ui-flottants.test';
@@ -606,6 +606,7 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testSpeedTunePassif', testSpeedTunePassif],
   ['testSpeedTuneAuto', testSpeedTuneAuto],
   ['testSpeedTuneModele', testSpeedTuneModele],
+  ['testSpeedTuneCiblesMultiples', testSpeedTuneCiblesMultiples],
   ['testSiegeStatut', testSiegeStatut],
   ['testSiegePastille', testSiegePastille],
   ['testSiegeSlotSuivant', testSiegeSlotSuivant],
@@ -1340,6 +1341,8 @@ const VERIFICATIONS: [string, () => void | Promise<void>][] = [
   ['testRenduSpeedTuneExportAppOptimizer', testRenduSpeedTuneExportAppOptimizer],
   ['testRenduSpeedTuneResetAtbApp', testRenduSpeedTuneResetAtbApp],
   ['testRenduTelephoneSpeedTuneResetAtbApp', testRenduTelephoneSpeedTuneResetAtbApp],
+  ['testRenduSpeedTuneCiblesMultiplesApp', testRenduSpeedTuneCiblesMultiplesApp],
+  ['testRenduTelephoneSpeedTuneCiblesMultiplesApp', testRenduTelephoneSpeedTuneCiblesMultiplesApp],
   ['testRenduTelephoneSpeedTuneExportAppOptimizer', testRenduTelephoneSpeedTuneExportAppOptimizer],
   ['testOptimizerImportEcrituresGroupees', testOptimizerImportEcrituresGroupees],
   ['testOptimizerImportReverificationEnAttente', testOptimizerImportReverificationEnAttente],

@@ -4220,6 +4220,9 @@ export const fr = {
       tour: (rang: number) => `${rang}ᵉ tour`,
       sur: 'sur',
       allieVise: (nom: string) => `Allié visé par le sort de ${nom}`,
+      // Un sort qui touche plusieurs alliés (Judgment Storm : 4 cibles).
+      alliesVises: (nom: string) => `Alliés visés par le sort de ${nom}`,
+      ciblesAuPlus: (max: number) => `Ce sort touche ${max} cibles au plus : retire un allié pour en choisir un autre.`,
       barreLaPlusBasse: 'barre la plus basse',
       luiMeme: ' (lui-même)',
       tourDePlus: (nom: string) => `${nom} joue un tour de plus — ajoute une ligne pour désigner ce qu'il y lance`,

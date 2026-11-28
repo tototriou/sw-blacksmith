@@ -91,7 +91,11 @@ function ligne(v: unknown): v is LignePlan {
 function choix(v: unknown): v is ChoixSorts {
   if (!objet(v)) return false;
   const chaines = (x: unknown) => x === undefined || dictionnaire(x, (y): y is string => typeof y === 'string');
-  return chaines(v.sort) && chaines(v.sort2) && chaines(v.cible)
+  // Une cible : un allié (chaîne), ou plusieurs pour un sort multi-cible.
+  const cibles = (x: unknown) => x === undefined
+    || dictionnaire(x, (y): y is string | string[] =>
+      typeof y === 'string' || (Array.isArray(y) && y.every((z) => typeof z === 'string')));
+  return chaines(v.sort) && chaines(v.sort2) && cibles(v.cible)
     && (v.atbChoisi === undefined || dictionnaire(v.atbChoisi, nombre));
 }
 

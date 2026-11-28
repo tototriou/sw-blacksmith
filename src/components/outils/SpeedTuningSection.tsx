@@ -51,7 +51,7 @@ import {
 } from '../../lib/speedTuneLignes';
 import { kitVitesse, sortsVitesse, KitVitesse, SortVitesse, KIT_VIDE } from '../../lib/speedTuneKit';
 import { passifsVitesse, pointsDeGain, PassifVitesse } from '../../lib/speedTunePassif';
-import { analyseAutomatique, cumulsEstimes, sortRetenu, sortSecondRetenu, EntreeAuto } from '../../lib/speedTuneAuto';
+import { analyseAutomatique, ciblesDesignees, cumulsEstimes, sortRetenu, sortSecondRetenu, EntreeAuto } from '../../lib/speedTuneAuto';
 import { chargerDetail } from '../../lib/monsterSkills';
 import { teamSummary } from '../../lib/recoFromSiege';
 import { formesJouables } from '../../lib/monsterForms';
@@ -78,6 +78,7 @@ import {
   Flottant,
   NumberField,
   Selecteur,
+  SelecteurMultiple,
   BoutonIcone,
   ZoneCliquable,
   ConfirmDialog,
@@ -617,13 +618,49 @@ export default function SpeedTuningSection({
                                       ⚠️ Affiché aussi pour un sort qui ne fait que
                                       BUFFER un allié : lui aussi vise, et c'est la
                                       même cible que la barre — un seul sort. */}
-                                  {(sortDeLaLigne?.effet.atbAllie || sortDeLaLigne?.effet.buffAllie) && (
+                                  {/* ⚠️ Un sort qui touche PLUSIEURS alliés (Judgment
+                                      Storm de Driana : les 4 aux PV les plus bas)
+                                      se vise par une liste à choix multiple, bornée
+                                      à son nombre de cibles : lesquels dépend du
+                                      combat, on les désigne. */}
+                                  {(sortDeLaLigne?.effet.atbAllie || sortDeLaLigne?.effet.buffAllie) &&
+                                    (sortDeLaLigne.ciblesMax ?? 1) > 1 && (() => {
+                                      const max = sortDeLaLigne.ciblesMax ?? 1;
+                                      const choisis = ciblesDesignees(cibleSort[cle], max) ?? [];
+                                      return (
+                                        <div className="flex items-center gap-1.5">
+                                          <span className="text-micro uppercase tracking-wide text-ink-dimmer">{st.ordreSorts.sur}</span>
+                                          <SelecteurMultiple
+                                            taille="sm"
+                                            libelle={st.ordreSorts.alliesVises(l.monster.name)}
+                                            vide={st.ordreSorts.barreLaPlusBasse}
+                                            largeurSurface="14rem"
+                                            valeurs={choisis}
+                                            onChange={(v) => choisirCible(cle, v)}
+                                            options={lignesVisibles
+                                              .filter((x) => x.camp === l.camp)
+                                              .map((x) => {
+                                                // Désactivée, jamais retirée : la limite atteinte se dit.
+                                                const plein = choisis.length >= max && !choisis.includes(x.uid);
+                                                return {
+                                                  valeur: x.uid,
+                                                  libelle: `${x.monster.name}${x.uid === uid ? st.ordreSorts.luiMeme : ''}`,
+                                                  disabled: plein,
+                                                  title: plein ? st.ordreSorts.ciblesAuPlus(max) : undefined,
+                                                };
+                                              })}
+                                          />
+                                        </div>
+                                      );
+                                    })()}
+                                  {(sortDeLaLigne?.effet.atbAllie || sortDeLaLigne?.effet.buffAllie) &&
+                                    (sortDeLaLigne.ciblesMax ?? 1) <= 1 && (
                                     <label className="flex items-center gap-1.5">
                                       <span className="text-micro uppercase tracking-wide text-ink-dimmer">{st.ordreSorts.sur}</span>
                                       <Selecteur
                                         taille="sm"
                                         pleineLargeur={false}
-                                        value={cibleSort[cle] ?? ''}
+                                        value={ciblesDesignees(cibleSort[cle])?.[0] ?? ''}
                                         onChange={(e) => choisirCible(cle, e.target.value)}
                                         aria-label={st.ordreSorts.allieVise(l.monster.name)}
                                       >

@@ -38,6 +38,15 @@ const ATB_GLOBAUX_CONNUS = new Map<number, EffetSort>([
   [10243010, { atbTousAZero: true, atbTous: 100, buffAllie: BUFF_SPD_JEU }],
 ]);
 
+// Sorts « sur un allié » qui touchent PLUSIEURS cibles, et combien. Les drapeaux
+// SWARFARM n'en disent rien (`aoe=false, surSoi=false`, comme un sort mono-cible) :
+// seule la prose le dit. Curation par identifiant, après balayage des sorts à
+// remplissage de barre ou buff de vitesse ni de zone ni sur soi :
+// Judgment Storm (Driana et ses deux autres formes) agit sur les 4 monstres du
+// terrain aux PV les plus bas, alliés et adverses mêlés — jusqu'à 4 alliés,
+// lanceur compris. Lesquels dépend du combat : on les désigne.
+const CIBLES_ALLIEES_CONNUES = new Map<number, number>([[23513, 4]]);
+
 // Le ralenti du jeu vaut −30 % de vitesse, comme le buff en vaut +30 ; les
 // données SWARFARM ne donnent là encore que sa DURÉE en tours.
 export const RALENTI_SPD_JEU = 30;
@@ -137,6 +146,9 @@ export interface SortVitesse {
   // barre (Start of Attacking : 0 à 50). ⚠️ Absent de `effet` : il ne compte
   // que pour le nombre désigné (`effetAuChoix`), zéro par défaut.
   atbAuChoix?: { pas: number; max: number; unite: 'retrait' | 'pourcent' };
+  // Combien d'alliés le sort « sur un allié » peut viser à la fois (Judgment
+  // Storm : 4). Absent = un seul, le cas de tous les autres.
+  ciblesMax?: number;
   // ⚠️ Combien de BUFFS elle pose sur son camp (bouclier, immunité, ATQ/DEF,
   // buff de vitesse…). Ça n'a rien à voir avec la vitesse — mais certains
   // passifs COMPTENT les buffs portés (Chilling : +20 de vitesse par buff), et
@@ -410,6 +422,9 @@ export function sortsVitesse(detail: DetailMonstre | null): SortVitesse[] {
       // manquer les buffs d'équipe les plus courants au comptage du passif.
       buffsEquipe: c.effets.filter((e) => e.bonus && e.aoe).length,
       ...(atbAuChoix ? { atbAuChoix } : {}),
+      ...(c.com2usId != null && CIBLES_ALLIEES_CONNUES.has(c.com2usId)
+        ? { ciblesMax: CIBLES_ALLIEES_CONNUES.get(c.com2usId) }
+        : {}),
     });
   }
   return out;
